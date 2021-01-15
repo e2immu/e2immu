@@ -17,22 +17,13 @@
 
 package org.e2immu.analyser.parser;
 
-import com.google.common.collect.ImmutableSet;
-import org.e2immu.analyser.analyser.VariableInfo;
-import org.e2immu.analyser.analyser.VariableProperty;
-import org.e2immu.analyser.config.*;
-import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.config.DebugConfiguration;
+import org.e2immu.analyser.config.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.model.expression.EmptyExpression;
-import org.e2immu.analyser.model.expression.LocalVariableCreation;
-import org.e2immu.analyser.model.expression.VariableExpression;
-import org.e2immu.analyser.model.statement.Block;
 import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Set;
 
 public class Test_18_E2Immutable extends CommonTestRunner {
     public Test_18_E2Immutable() {
@@ -48,8 +39,21 @@ public class Test_18_E2Immutable extends CommonTestRunner {
 
     @Test
     public void test_1() throws IOException {
-        testClass("E2Immutable_1", 0, 0, new DebugConfiguration.Builder()
+        final String TYPE = "org.e2immu.analyser.testexample.E2Immutable_1";
+        final String CONSTRUCTOR2 = TYPE + ".E2Immutable_1(E2Immutable_1,String)";
+        final String LEVEL2 = TYPE + ".level2";
 
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if (CONSTRUCTOR2.equals(d.methodInfo().fullyQualifiedName) && LEVEL2.equals(d.variableName())) {
+                if ("1".equals(d.statementId())) {
+                    // we never know in the first iteration...
+                    String expectValue = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "2+parent2Param.level2";
+                    Assert.assertEquals(expectValue, d.currentValue().toString());
+                }
+            }
+        };
+        testClass("E2Immutable_1", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 

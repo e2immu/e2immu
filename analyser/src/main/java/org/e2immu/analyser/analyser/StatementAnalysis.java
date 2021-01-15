@@ -469,9 +469,10 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             }
             // so from here on, isConfirmedVariableField may be set
         }
+        boolean selfReference = inPartOfConstruction() && !(fieldReference.scope instanceof This);
 
         // this is the first time we see this field (initial)
-        ExpressionAndLinkedVariables initialValue = initialValueOfField(analyserContext, fieldReference);
+        ExpressionAndLinkedVariables initialValue = initialValueOfField(analyserContext, fieldReference, selfReference);
         Map<VariableProperty, Integer> map = propertyMap(analyserContext, fieldReference.fieldInfo);
 
         // copy into initial
@@ -645,7 +646,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             vic.setLinkedVariables(LinkedVariables.EMPTY, true);
 
         } else if (variable instanceof FieldReference fieldReference) {
-            ExpressionAndLinkedVariables initialValue = initialValueOfField(analyserContext, fieldReference);
+            ExpressionAndLinkedVariables initialValue = initialValueOfField(analyserContext, fieldReference, false);
             if (!initialValue.expression.isUnknown()) { // both NO_VALUE and EMPTY_EXPRESSION
                 vic.setValue(initialValue.expression, propertyMap(analyserContext, fieldReference.fieldInfo), true);
             }
@@ -697,15 +698,18 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         }
     }
 
-    private ExpressionAndLinkedVariables initialValueOfField(AnalyserContext analyserContext, FieldReference fieldReference) {
+    private boolean inPartOfConstruction() {
+        return  methodAnalysis.getMethodInfo().methodResolution.get().partOfConstruction() ==
+                MethodResolution.CallStatus.PART_OF_CONSTRUCTION;
+    }
+    private ExpressionAndLinkedVariables initialValueOfField(AnalyserContext analyserContext, FieldReference fieldReference, boolean selfReference) {
         FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(fieldReference.fieldInfo);
         LinkedVariables initialLinkedVariables = LinkedVariables.EMPTY; // rather than fieldAnalysis.getLinkedVariables
         FieldAnalyser fieldAnalyser = analyserContext.getFieldAnalysers().get(fieldReference.fieldInfo);
 
-        boolean inPartOfConstruction = methodAnalysis.getMethodInfo().methodResolution.get().partOfConstruction() ==
-                MethodResolution.CallStatus.PART_OF_CONSTRUCTION;
-        if (inPartOfConstruction && fieldReference.scope instanceof This thisVariable
-                && thisVariable.typeInfo.equals(methodAnalysis.getMethodInfo().typeInfo)) { // field that must be initialised
+        boolean myOwn = fieldReference.scope instanceof This thisVariable && thisVariable.typeInfo.equals(methodAnalysis.getMethodInfo().typeInfo);
+
+        if (inPartOfConstruction() && myOwn) { // field that must be initialised
             Expression initialValue = analyserContext.getFieldAnalysis(fieldReference.fieldInfo).getInitialValue();
             if (initialValue == EmptyExpression.NO_VALUE || initialValue.isConstant()) {
                 return new ExpressionAndLinkedVariables(initialValue, LinkedVariables.EMPTY);
@@ -716,14 +720,16 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         }
 
         int effectivelyFinal = fieldAnalysis.getProperty(VariableProperty.FINAL);
-        if (effectivelyFinal == Level.DELAY) {
+        if (effectivelyFinal == Level.DELAY && !selfReference) {
             return new ExpressionAndLinkedVariables(EmptyExpression.NO_VALUE, LinkedVariables.DELAY);
         }
+        // when selfReference (as in this.x = other.x during construction), we never delay
+
         boolean variableField = effectivelyFinal == Level.FALSE;
         if (!variableField) {
             Expression efv = fieldAnalysis.getEffectivelyFinalValue();
             if (efv == null) {
-                if (analyserContext.getTypeAnalysis(fieldReference.fieldInfo.owner).isBeingAnalysed()) {
+                if (analyserContext.getTypeAnalysis(fieldReference.fieldInfo.owner).isBeingAnalysed() && !selfReference) {
                     return new ExpressionAndLinkedVariables(EmptyExpression.NO_VALUE, LinkedVariables.DELAY);
                 }
             } else {
@@ -835,7 +841,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             if (vic.isLocalVariableInLoopDefinedOutside()) {
                 StatementAnalysis relevantLoop = mostEnclosingLoop();
                 if (relevantLoop.localVariablesAssignedInThisLoop.isFrozen()) {
-                    if(relevantLoop.localVariablesAssignedInThisLoop.contains(fqn)) {
+                    if (relevantLoop.localVariablesAssignedInThisLoop.contains(fqn)) {
                         String localCopyFqn = createLocalLoopCopyFQN(vic, vi);
                         VariableInfoContainer newVic = variables.get(localCopyFqn);
                         return newVic.getPreviousOrInitial();
@@ -848,7 +854,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         return vi;
     }
 
-    private StatementAnalysis mostEnclosingLoop( ) {
+    private StatementAnalysis mostEnclosingLoop() {
         StatementAnalysis sa = this;
         while (sa != null) {
             if (sa.statement instanceof LoopStatement) {
