@@ -21,6 +21,7 @@ import com.google.common.collect.ImmutableMap;
 import org.e2immu.analyser.analyser.util.MergeHelper;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Level;
+import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.expression.Negation;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.Variable;
@@ -364,7 +365,7 @@ class VariableInfoImpl implements VariableInfo {
         Expression currentValue = getValue();
         if (!atLeastOneBlockExecuted && currentValue.isUnknown()) return currentValue;
 
-        boolean haveANoValue = mergeSources.stream().anyMatch(cav -> !cav.variableInfo().valueIsSet());
+        boolean haveANoValue = mergeSources.stream().anyMatch(cav -> !cav.variableInfo().valueIsSet() || cav.condition() == NO_VALUE);
         if (haveANoValue) return NO_VALUE;
 
         if (mergeSources.isEmpty()) {

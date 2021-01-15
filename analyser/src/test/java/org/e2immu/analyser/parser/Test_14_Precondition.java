@@ -18,7 +18,6 @@
 
 package org.e2immu.analyser.parser;
 
-import org.e2immu.analyser.analyser.StatementAnalyser;
 import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
@@ -172,8 +171,9 @@ public class Test_14_Precondition extends CommonTestRunner {
                 }
             }
             if (RETURN_VAR.equals(d.variableName())) {
-                if (d.statementId().startsWith("0")) {
-                    Assert.assertEquals("<return value>", d.currentValue().toString());
+                if ("0".equals(d.statementId())) {
+                    String expectValue = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "<return value>";
+                    Assert.assertEquals(expectValue, d.currentValue().toString());
                 }
                 if ("1".equals(d.statementId())) {
                     if (d.iteration() == 0) {
@@ -194,7 +194,8 @@ public class Test_14_Precondition extends CommonTestRunner {
                     Assert.assertEquals(expect, d.evaluationResult().value().toString());
                 }
                 if ("0.0.2".equals(d.statementId())) {
-                    Assert.assertEquals("ii", d.evaluationResult().value().toString());
+                    String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "ii";
+                    Assert.assertEquals(expect, d.evaluationResult().value().toString());
                 }
                 if ("1".equals(d.statementId())) {
                     String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "ii";

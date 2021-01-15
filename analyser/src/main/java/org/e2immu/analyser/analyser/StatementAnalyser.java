@@ -999,17 +999,16 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             String newFqn = fqn + "$" + index(); // must be compatible with statementAnalysis.createLocalLoopCopyFQN
             if (!statementAnalysis.variables.isSet(newFqn)) {
                 LocalVariableReference newLvr = createLocalCopyOfLoopVariable(vic, newFqn);
-                VariableInfoContainer newVic = VariableInfoContainerImpl.newVariable(newLvr, VariableInfoContainer.NOT_A_VARIABLE_FIELD,
-                        new VariableInLoop(index(), VariableInLoop.VariableType.LOOP_COPY), true);
-                statementAnalysis.variables.put(newFqn, newVic);
                 String assigned = index() + VariableInfoContainer.Level.INITIAL;
                 String read = index() + VariableInfoContainer.Level.EVALUATION;
-                newVic.ensureEvaluation(assigned, read, VariableInfoContainer.NOT_A_VARIABLE_FIELD, Set.of());
-                NewObject newObject = NewObject.localVariableInLoop(statementAnalysis.primitives, newLvr.parameterizedType());
-                // copy from original loop variable, mostly NOT_NULL as in forEach
-                Map<VariableProperty, Integer> propertiesToSet = vic.current().getProperties();
-                newVic.setValue(newObject, propertiesToSet, false);
-                newVic.setLinkedVariables(new LinkedVariables(Set.of(vic.current().variable())), false);
+                VariableInfoContainer newVic = VariableInfoContainerImpl.newLoopVariable(newLvr, assigned,
+                        read,
+                        NewObject.localVariableInLoop(statementAnalysis.primitives, newLvr.parameterizedType()),
+                        vic.current().getProperties(),
+                        new LinkedVariables(Set.of(vic.current().variable())),
+                        new VariableInLoop(index(), VariableInLoop.VariableType.LOOP_COPY),
+                        true);
+                statementAnalysis.variables.put(newFqn, newVic);
             }
         });
         return expressionsToEvaluate;

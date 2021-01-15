@@ -401,7 +401,7 @@ public class Test_01_Loops extends CommonTestRunner {
                     Assert.assertEquals("0", d.variableInfoContainer().getStatementIndexOfThisLoopVariable());
 
                     if (d.statementId().startsWith("0")) {
-                        String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "i$0";
+                        String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "instance type int";
                         Assert.assertEquals(expect, d.currentValue().toString());
                     }
                 }
@@ -411,21 +411,30 @@ public class Test_01_Loops extends CommonTestRunner {
                         Assert.assertEquals(expect, d.currentValue().toString());
                     }
                     if ("0.0.0".equals(d.statementId())) {
-                        String expect = d.iteration() == 0 ? "<return value>" : "1==i$0?4:<return value>";
+                        String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "1==i$0?4:<return value>";
                         Assert.assertEquals(expect, d.currentValue().toString());
                     }
                     if ("0".equals(d.statementId())) {
-                        String expect = d.iteration() == 0 ? "<return value>" : "instance type int<=9?1==instance type int?4:<return value>:<return value>";
+                        String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "instance type int<=9?1==instance type int?4:<return value>:<return value>";
                         Assert.assertEquals(expect, d.currentValue().toString());
                     }
                     if ("1".equals(d.statementId())) {
-                        String expect = d.iteration() == 0 ? "<return value>" : "instance type int>=10?0:instance type int<=9?1==instance type int?4:<return value>:<return value>";
+                        String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() :  "instance type int>=10?0:instance type int<=9?1==instance type int?4:<return value>:<return value>";
                         Assert.assertEquals(expect, d.currentValue().toString());
                     }
                 }
             }
         };
+
+        EvaluationResultVisitor evaluationResultVisitor = d -> {
+            if ("method".equals(d.methodInfo().name) && "0".equals(d.statementId())) {
+                String expectValue = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString(): "i$0<=9";
+                Assert.assertEquals(expectValue, d.evaluationResult().value().toString());
+            }
+        };
+
         testClass("Loops_4", 0, 0, new DebugConfiguration.Builder()
+                .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
