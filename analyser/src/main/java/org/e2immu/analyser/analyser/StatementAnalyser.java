@@ -967,13 +967,15 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
 
         if (statementAnalysis.statement instanceof LoopStatement) {
             for (Expression expression : statementAnalysis.statement.getStructure().updaters()) {
-                if (expression instanceof Assignment assignment && assignment.target instanceof VariableExpression ve) {
-                    if (!(statementAnalysis.localVariablesAssignedInThisLoop.isFrozen()) &&
-                            !statementAnalysis.localVariablesAssignedInThisLoop.contains(ve.name())) {
-                        statementAnalysis.localVariablesAssignedInThisLoop.add(ve.name());
+                expression.visit(e -> {
+                    if (e instanceof Assignment assignment && assignment.target instanceof VariableExpression ve) {
+                        if (!(statementAnalysis.localVariablesAssignedInThisLoop.isFrozen()) &&
+                                !statementAnalysis.localVariablesAssignedInThisLoop.contains(ve.name())) {
+                            statementAnalysis.localVariablesAssignedInThisLoop.add(ve.name());
+                        }
+                        expressionsToEvaluate.add(assignment); // we do evaluate the assignment no that the var will be there
                     }
-                    expressionsToEvaluate.add(assignment.value); // we do not want to actually change the value
-                } // else: IMPROVE extract all updaters, this code only does the simplest case
+                });
             }
         } else if (statementAnalysis.statement instanceof ExplicitConstructorInvocation) {
             Structure structure = statement().getStructure();

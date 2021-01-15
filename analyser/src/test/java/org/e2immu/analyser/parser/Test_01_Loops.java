@@ -404,7 +404,7 @@ public class Test_01_Loops extends CommonTestRunner {
                     Assert.assertEquals("0", d.variableInfoContainer().getStatementIndexOfThisLoopVariable());
 
                     if (d.statementId().startsWith("0")) {
-                        String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "instance type int";
+                        String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "1+i$0";
                         Assert.assertEquals(expect, d.currentValue().toString());
                     }
                 }
@@ -414,15 +414,15 @@ public class Test_01_Loops extends CommonTestRunner {
                         Assert.assertEquals(expect, d.currentValue().toString());
                     }
                     if ("0.0.0".equals(d.statementId())) {
-                        String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "1==i$0?4:<return value>";
+                        String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "0==i$0?4:<return value>";
                         Assert.assertEquals(expect, d.currentValue().toString());
                     }
                     if ("0".equals(d.statementId())) {
-                        String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "instance type int<=9?1==instance type int?4:<return value>:<return value>";
+                        String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "instance type int<=9?0==instance type int?4:<return value>:<return value>";
                         Assert.assertEquals(expect, d.currentValue().toString());
                     }
                     if ("1".equals(d.statementId())) {
-                        String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "instance type int>=10?0:instance type int<=9?1==instance type int?4:<return value>:<return value>";
+                        String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "instance type int>=10?0:instance type int<=9?0==instance type int?4:<return value>:<return value>";
                         Assert.assertEquals(expect, d.currentValue().toString());
                     }
                 }
@@ -448,30 +448,36 @@ public class Test_01_Loops extends CommonTestRunner {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
                 if ("1.0.0".equals(d.statementId())) {
-                    String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "1==i$1";
+                    // instead of 1==i$1, it is 0==i$1 because i's value is i$1+1
+                    String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "0==i$1";
                     Assert.assertEquals(expect, d.evaluationResult().value().toString());
                 }
                 if ("2".equals(d.statementId())) {
-                    String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "true";
+                    String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "instance type int>=9";
                     Assert.assertEquals(expect, d.evaluationResult().value().toString());
                 }
             }
         };
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-            if ("method".equals(d.methodInfo().name) && "i".equals(d.variableName())) {
+            if (!"method".equals(d.methodInfo().name)) return;
+            if ("i$1".equals(d.variableName())) {
+                Assert.assertTrue(d.iteration() > 0);
+                Assert.assertEquals("instance type int", d.currentValue().toString());
+            }
+            if ("i".equals(d.variableName())) {
                 if ("1.0.0".equals(d.statementId())) {
                     Assert.assertEquals("1", d.variableInfoContainer().getVariableInLoop()
                             .statementId(VariableInLoop.VariableType.IN_LOOP_DEFINED_OUTSIDE));
-                    String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "i$1";
+                    String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "1+i$1";
                     Assert.assertEquals(expect, d.currentValue().toString());
                 }
                 if ("1".equals(d.statementId())) {
-                    String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "i$1";
+                    String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "1+instance type int";
                     if (d.iteration() > 0) Assert.assertTrue(d.variableInfoContainer().hasMerge());
                     Assert.assertEquals(expect, d.currentValue().toString());
                 }
                 if ("2".equals(d.statementId())) {
-                    String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "i$1";
+                    String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "1+instance type int";
                     Assert.assertEquals(expect, d.currentValue().toString());
                 }
             }

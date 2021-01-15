@@ -72,9 +72,6 @@ public class Equals extends BinaryOperator {
         CommonTerms ct = computeCommonTerms(leftTerms, rightTerms);
 
         if (ct.leftTerms.isEmpty() && ct.rightTerms.isEmpty()) return new BooleanConstant(primitives, true, objectFlow);
-        if (ct.leftTerms.isEmpty() || ct.rightTerms.isEmpty())
-            return new BooleanConstant(primitives, false, objectFlow);
-
         Expression newLeft = sum(evaluationContext, ct.leftTerms);
         Expression newRight = sum(evaluationContext, ct.rightTerms);
 
@@ -148,7 +145,7 @@ public class Equals extends BinaryOperator {
 
 
     private static Expression sum(EvaluationContext evaluationContext, List<Expression> terms) {
-        assert terms.size() > 0;
+        if (terms.size() == 0) return new IntConstant(evaluationContext.getPrimitives(), 0);
         if (terms.size() == 1) return terms.get(0);
         Collections.sort(terms);
         return terms.stream().reduce((t1, t2) -> Sum.sum(evaluationContext, t1, t2, ObjectFlow.NO_FLOW)).orElseThrow();

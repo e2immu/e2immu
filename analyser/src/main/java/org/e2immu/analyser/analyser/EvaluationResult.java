@@ -123,7 +123,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             LinkedVariables combinedLinkedVariables = linkedVariables.merge(other.linkedVariables);
             Set<Integer> combinedReadAtStatementTime = SetUtil.immutableUnion(readAtStatementTime, other.readAtStatementTime);
             Map<VariableProperty, Integer> combinedProperties = VariableInfoImpl.mergeProperties(properties, other.properties);
-            return new ChangeData(other.value,
+            return new ChangeData(other.value == EmptyExpression.NO_VALUE ? value: other.value,
                     other.stateIsDelayed,
                     other.markAssignment || markAssignment,
                     combinedReadAtStatementTime,
