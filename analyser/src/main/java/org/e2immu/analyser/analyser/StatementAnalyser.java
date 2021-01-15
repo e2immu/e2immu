@@ -504,7 +504,9 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             Variable variable = entry.getKey();
             EvaluationResult.ChangeData changeData = entry.getValue();
 
-            Set<Variable> additionalLinks = ensureVariables(variable, changeData, evaluationResult.statementTime());
+            // make a copy because we might add a variable when linking the local loop copy
+            Set<Variable> additionalLinks =
+                    new HashSet<>(ensureVariables(variable, changeData, evaluationResult.statementTime()));
 
             // we're now guaranteed to find the variable
             VariableInfoContainer vic = statementAnalysis.variables.get(variable.fullyQualifiedName());
@@ -548,10 +550,10 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                 if (local != null && haveEvaluationResult && valueToWrite != NO_VALUE) {
                     // assign the value of the assignment to the local copy created
                     log(ANALYSER, "Write value {} to local copy variable {}", valueToWrite, local.current().variable().fullyQualifiedName());
-                    local.ensureEvaluation(index() + VariableInfoContainer.Level.EVALUATION,
-                            VariableInfoContainer.NOT_YET_READ, VariableInfoContainer.NOT_A_VARIABLE_FIELD, Set.of());
                     Map<VariableProperty, Integer> propertiesToSet = sharedState.evaluationContext.getValueProperties(valueToWrite);
                     local.setValue(valueToWrite, propertiesToSet, false);
+                    local.setLinkedVariables(new LinkedVariables(Set.of(vi.variable())), false);
+                    additionalLinks.add(local.current().variable());
                 }
             }
 
@@ -735,8 +737,6 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
     In i=3; while(c) { i=5; if(x) break; }, we return c?5:3, as soon as c has a value
 
     Q: what is the best place for this piece of code? EvalResult?? This here seems too late
-
-    FIXME: vi1?? shouldn't we take the local copy?
      */
     private Expression maybeValueNeedsState(EvaluationContext evaluationContext, VariableInfoContainer vic, VariableInfo vi1, Expression value) {
         if (value != NO_VALUE
@@ -751,7 +751,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                 state = null;
             }
             if (state != null) {
-                Expression valueOfVariablePreAssignment = evaluationContext.currentValue(vi1.variable(), statementAnalysis.statementTime(VariableInfoContainer.Level.INITIAL),true );
+                // do not take vi1 itself, but "the" local copy of the variable
+                Expression valueOfVariablePreAssignment = evaluationContext.currentValue(vi1.variable(), statementAnalysis.statementTime(VariableInfoContainer.Level.INITIAL), true);
                 return EvaluateInlineConditional.conditionalValueConditionResolved(evaluationContext, state, value,
                         valueOfVariablePreAssignment, ObjectFlow.NO_FLOW).value();
             }
@@ -790,7 +791,13 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
 
             VariableInfoContainer newVic = new VariableInfoContainerImpl(newLvr, VariableInfoContainer.NOT_A_VARIABLE_FIELD,
                     new VariableInLoop(loopIndex, VariableInLoop.VariableType.LOOP_COPY), navigationData.hasSubBlocks());
+            String assigned = index() + VariableInfoContainer.Level.INITIAL;
+            String read = index() + VariableInfoContainer.Level.EVALUATION;
+            newVic.ensureEvaluation(assigned, read, VariableInfoContainer.NOT_A_VARIABLE_FIELD, Set.of());
+
             statementAnalysis.variables.put(newFqn, newVic);
+
+            // value will be set in main apply
             return newVic;
         }
         return statementAnalysis.variables.get(newFqn);
@@ -968,7 +975,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         return expressionsToEvaluate;
     }
 
-    private List<Expression> localVariablesInLoop() {
+    private List<Expression> localVariablesInLoop(EvaluationContext evaluationContext) {
         if (statementAnalysis.localVariablesAssignedInThisLoop == null) {
             return List.of(); // not for us
         }
@@ -990,8 +997,14 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                 VariableInfoContainer newVic = new VariableInfoContainerImpl(newLvr, VariableInfoContainer.NOT_A_VARIABLE_FIELD,
                         new VariableInLoop(index(), VariableInLoop.VariableType.LOOP_COPY), true);
                 statementAnalysis.variables.put(newFqn, newVic);
-                expressionsToEvaluate.add(new Assignment(statementAnalysis.primitives, new VariableExpression(newLvr),
-                        NewObject.localVariableInLoop(statementAnalysis.primitives, newLvr.parameterizedType())));
+                String assigned = index() + VariableInfoContainer.Level.INITIAL;
+                String read = index() + VariableInfoContainer.Level.EVALUATION;
+                newVic.ensureEvaluation(assigned, read, VariableInfoContainer.NOT_A_VARIABLE_FIELD, Set.of());
+                NewObject newObject = NewObject.localVariableInLoop(statementAnalysis.primitives, newLvr.parameterizedType());
+                // copy from original loop variable, mostly NOT_NULL as in forEach
+                Map<VariableProperty, Integer> propertiesToSet = vic.current().getProperties();
+                newVic.setValue(newObject, propertiesToSet, false);
+                newVic.setLinkedVariables(new LinkedVariables(Set.of(vic.current().variable())), false);
             }
         });
         return expressionsToEvaluate;
@@ -1012,7 +1025,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
     private AnalysisStatus evaluationOfMainExpression(SharedState sharedState) {
 
         List<Expression> expressionsFromInitAndUpdate = initialisersAndUpdaters(sharedState);
-        List<Expression> expressionsFromLocalVariablesInLoop = localVariablesInLoop();
+        List<Expression> expressionsFromLocalVariablesInLoop = localVariablesInLoop(sharedState.evaluationContext);
         /*
         if we're in a loop statement and there are delays (localVariablesAssignedInThisLoop not frozen)
         we have to come back!

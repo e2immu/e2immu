@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.AnalysisStatus.*;
@@ -83,7 +84,7 @@ public class MethodLevelData {
     }
 
     public final AnalyserComponents<String, SharedState> analyserComponents = new AnalyserComponents.Builder<String, SharedState>()
-            .add("ensureThisProperties", sharedState -> ensureThisProperties(sharedState.evaluationContext, sharedState.statementAnalysis))
+            .add("ensureThisProperties", sharedState -> ensureThisProperties())
             .add("computeContentModifications", this::computeContentModifications)
             .add("combinePrecondition", this::combinePrecondition)
             .build();
@@ -93,14 +94,13 @@ public class MethodLevelData {
                                   MethodLevelData previous,
                                   StateData stateData) {
         EvaluationContext evaluationContext = sharedState.evaluationContext();
-        MethodInfo methodInfo = evaluationContext.getCurrentMethod().methodInfo;
-        String logLocation = methodInfo.distinguishingName();
+        String logLocation = statementAnalysis.location().toString();
         try {
             StatementAnalyserResult.Builder builder = sharedState.builder();
             SharedState localSharedState = new SharedState(builder, evaluationContext, statementAnalysis, logLocation, previous, stateData);
             return analyserComponents.run(localSharedState);
         } catch (RuntimeException rte) {
-            LOGGER.warn("Caught exception in linking computation, method {}", logLocation);
+            LOGGER.warn("Caught exception in linking computation, {}", logLocation);
             throw rte;
         }
     }
@@ -178,7 +178,11 @@ public class MethodLevelData {
                 .filter(variableInfo -> !(variableInfo.variable() instanceof This))
                 .forEach(variableInfo -> {
                     Variable baseVariable = variableInfo.variable();
-                    Set<Variable> variablesBaseLinksTo = SetUtil.immutableUnion(Set.of(baseVariable), dependencyGraph.dependencies(baseVariable));
+                    //Set<Variable> variablesBaseLinksTo = SetUtil.immutableUnion(Set.of(baseVariable), dependencyGraph.dependencies(baseVariable));
+                    Set<Variable> variablesBaseLinksTo =
+                            Stream.concat(Stream.of(baseVariable), dependencyGraph.dependencies(baseVariable).stream())
+                                    .filter(v -> v == DELAY_VAR || sharedState.statementAnalysis.variables.isSet(v.fullyQualifiedName()))
+                                    .collect(Collectors.toSet());
                     boolean containsDelayVar = variablesBaseLinksTo.stream().anyMatch(v -> v == DELAY_VAR);
                     if (!containsDelayVar) {
                         int summary = sharedState.evaluationContext.summarizeModification(variablesBaseLinksTo);
@@ -258,21 +262,12 @@ public class MethodLevelData {
     /**
      * Finish odds and ends
      *
-     * @param evaluationContext context
      * @return if any change happened to methodAnalysis
      */
-    private AnalysisStatus ensureThisProperties(EvaluationContext evaluationContext, StatementAnalysis statementAnalysis) {
+    private AnalysisStatus ensureThisProperties() {
         if (!callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod.isSet()) {
             callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod.set(false);
         }
-/*
-        if (!statementAnalysis.methodAnalysis.getMethodInfo().methodInspection.get().isStatic()) {
-            Variable thisVariable = new This(evaluationContext.getAnalyserContext(), evaluationContext.getCurrentType());
-            VariableInfoContainer thisVic = statementAnalysis.findForWriting(thisVariable);
-            thisVic.ensureEvaluation(statementAnalysis.index + VariableInfoContainer.Level.EVALUATION.label,
-                    VariableInfoContainer.NOT_YET_READ, evaluationContext.getInitialStatementTime());
-        }
-*/
         return DONE;
     }
 }
