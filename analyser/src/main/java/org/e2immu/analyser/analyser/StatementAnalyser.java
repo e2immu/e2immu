@@ -917,6 +917,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
 
             if (expression instanceof LocalVariableCreation lvc) {
                 LocalVariableReference lvr;
+                VariableInfoContainer vic;
                 if (!statementAnalysis.variables.isSet(lvc.localVariable.name())) {
 
                     // create the local (loop, catch) variable
@@ -924,7 +925,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                     lvr = new LocalVariableReference(analyserContext, lvc.localVariable, List.of());
                     VariableInLoop variableInLoop = statement() instanceof LoopStatement ?
                             new VariableInLoop(index(), VariableInLoop.VariableType.LOOP) : VariableInLoop.NOT_IN_LOOP;
-                    VariableInfoContainer vic = new VariableInfoContainerImpl(lvr, VariableInfoContainer.NOT_A_VARIABLE_FIELD,
+                    vic = new VariableInfoContainerImpl(lvr, VariableInfoContainer.NOT_A_VARIABLE_FIELD,
                             variableInLoop, statementAnalysis.navigationData.hasSubBlocks());
 
                     if (statement() instanceof LoopStatement) {
@@ -932,19 +933,23 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                     }
                     statementAnalysis.variables.put(lvc.localVariable.name(), vic);
                 } else {
-                    lvr = (LocalVariableReference) statementAnalysis.variables.get(lvc.localVariable.name()).current().variable();
+                    vic = statementAnalysis.variables.get(lvc.localVariable.name());
+                    lvr = (LocalVariableReference) vic.current().variable();
                 }
 
                 // what should we evaluate? catch: assign a value which will be read; for(int i=0;...) --> 0 instead of i=0;
                 if (sharedState.forwardAnalysisInfo.inCatch()) {
                     initialiserToEvaluate = new Assignment(statementAnalysis.primitives,
-                            new VariableExpression(lvr),
-                            PropertyWrapper.propertyWrapper(sharedState.evaluationContext,
-                                    NewObject.forCatchOrThis(statementAnalysis.primitives, lvr.parameterizedType()),
-                                    Map.of(VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL), null));
+                            new VariableExpression(lvr), NewObject.forCatchOrThis(statementAnalysis.primitives, lvr.parameterizedType()));
                     // so that the variable has always been read, no errors
                 } else if (statement() instanceof LoopStatement) {
                     initialiserToEvaluate = lvc.expression;
+                    // but, because we don't evaluate the assignment, we need to assign some value to the loop variable
+                    // otherwise we'll get delays
+                    // especially in the case of forEach, the lvc.expression is empty, anyway
+                    // an assignment may be difficult. The value is never used, only local copies are
+                    vic.setValue(NewObject.forCatchOrThis(statementAnalysis.primitives, lvr.parameterizedType()), Map.of(), true);
+                    vic.setLinkedVariables(new LinkedVariables(Set.of()), true);
                 } else {
                     initialiserToEvaluate = lvc; // == expression
                 }
@@ -975,7 +980,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         return expressionsToEvaluate;
     }
 
-    private List<Expression> localVariablesInLoop(EvaluationContext evaluationContext) {
+    private List<Expression> localVariablesInLoop() {
         if (statementAnalysis.localVariablesAssignedInThisLoop == null) {
             return List.of(); // not for us
         }
@@ -1025,7 +1030,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
     private AnalysisStatus evaluationOfMainExpression(SharedState sharedState) {
 
         List<Expression> expressionsFromInitAndUpdate = initialisersAndUpdaters(sharedState);
-        List<Expression> expressionsFromLocalVariablesInLoop = localVariablesInLoop(sharedState.evaluationContext);
+        List<Expression> expressionsFromLocalVariablesInLoop = localVariablesInLoop();
         /*
         if we're in a loop statement and there are delays (localVariablesAssignedInThisLoop not frozen)
         we have to come back!
@@ -1151,9 +1156,12 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             Structure structure = statementAnalysis.statement.getStructure();
             LocalVariableCreation lvc = (LocalVariableCreation) structure.initialisers().get(0);
             VariableInfoContainer vic = statementAnalysis.findForWriting(lvc.localVariable.name());
-            vic.ensureEvaluation(index() + VariableInfoContainer.Level.EVALUATION.label,
+            vic.ensureEvaluation(VariableInfoContainer.NOT_YET_ASSIGNED, //index() + VariableInfoContainer.Level.EVALUATION.label,
                     VariableInfoContainer.NOT_YET_READ, VariableInfoContainer.NOT_A_VARIABLE_FIELD, Set.of());
+            VariableInfo initial = vic.getPreviousOrInitial();
+            vic.setValue(initial.getValue(), Map.of(), false);
             vic.setProperty(VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL, VariableInfoContainer.Level.EVALUATION);
+            vic.setLinkedVariables(initial.getLinkedVariables(), false);
         }
     }
 

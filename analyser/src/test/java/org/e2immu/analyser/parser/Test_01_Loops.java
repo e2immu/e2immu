@@ -264,6 +264,9 @@ public class Test_01_Loops extends CommonTestRunner {
                 Assert.assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL, d.evaluationResult().value()
                         .getProperty(d.evaluationResult().evaluationContext(), VariableProperty.NOT_NULL));
             }
+            if ("1.0.0".equals(d.statementId()) && d.iteration() > 0) {
+                Assert.assertEquals("s$1", d.evaluationResult().value().toString());
+            }
         };
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if (!"method".equals(d.methodInfo().name)) return;
@@ -273,6 +276,11 @@ public class Test_01_Loops extends CommonTestRunner {
                     Assert.assertEquals(expectNN, d.getProperty(VariableProperty.NOT_NULL));
                     Assert.assertEquals("java.lang.String", d.variableInfo().variable()
                             .parameterizedType().typeInfo.fullyQualifiedName);
+
+                    String expectValue = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "instance type String";
+                    Assert.assertEquals(expectValue, d.currentValue().toString());
+                    String expectLinked = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : ""; // for now
+                    Assert.assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
                 }
             }
             if ("s$1".equals(d.variableName())) {
@@ -286,24 +294,30 @@ public class Test_01_Loops extends CommonTestRunner {
             if ("res$1$1_0_0-E".equals(d.variableName())) {
                 Assert.assertEquals("1.0.0", d.statementId());
 
-                String expectValue = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : " ";
+                String expectValue = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "s$1";
                 Assert.assertEquals(expectValue, d.currentValue().toString());
                 String expectLinked = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "res";
                 Assert.assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
-                int expectNN = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
+                int expectNN = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
                 Assert.assertEquals(expectNN, d.getProperty(VariableProperty.NOT_NULL));
             }
             if ("res".equals(d.variableName())) {
+                if ("1.0.0".equals(d.statementId())) {
+                    String expectValue = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "s$1";
+                    Assert.assertEquals(expectValue, d.currentValue().toString());
+                    String expectLinked = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "s,s$1,res$1$1_0_0-E";
+                    Assert.assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
+                }
                 if ("2".equals(d.statementId())) {
                     int expectNn = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
                     Assert.assertEquals(expectNn, d.getProperty(VariableProperty.NOT_NULL));
-                    String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "instance type String/*@NotNull*/";
+                    String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "instance type String";
                     Assert.assertEquals(expect, d.currentValue().toString());
                 }
             }
             if ("org.e2immu.analyser.testexample.Loops_2.method()".equals(d.variableName())) {
                 if ("2".equals(d.statementId())) {
-                    String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "instance type String/*@NotNull*/";
+                    String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "res"; // indirection
                     Assert.assertEquals(expect, d.currentValue().toString());
                 }
             }

@@ -150,7 +150,8 @@ public interface VariableInfoContainer {
     Is true at all times for variables declared in the loop statement's level 2 (for, forEach)
      */
     default boolean isLocalVariableInLoopDefinedOutside() {
-        return getVariableInLoop().variableType() == VariableInLoop.VariableType.IN_LOOP_DEFINED_OUTSIDE;
+        VariableInLoop.VariableType vt = getVariableInLoop().variableType();
+        return vt == VariableInLoop.VariableType.IN_LOOP_DEFINED_OUTSIDE || vt == VariableInLoop.VariableType.LOOP;
     }
 
     /*
