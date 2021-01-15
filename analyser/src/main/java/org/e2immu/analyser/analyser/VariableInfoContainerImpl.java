@@ -42,31 +42,50 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
     private final Level levelForPrevious;
 
     /*
-    constructor for existing variables
+    factory method for existing variables
      */
-    public VariableInfoContainerImpl(VariableInfoContainer previous,
-                                     String statementIndexForLocalVariableInLoop,
-                                     boolean previousIsParent,
-                                     boolean statementHasSubBlocks) {
+    public static VariableInfoContainerImpl existingVariable(VariableInfoContainer previous,
+                                                             String statementIndexForLocalVariableInLoop,
+                                                             boolean previousIsParent,
+                                                             boolean statementHasSubBlocks) {
         Objects.requireNonNull(previous);
-        previousOrInitial = Either.left(previous);
-        variableInLoop = computeVariableInLoop(previous, statementIndexForLocalVariableInLoop);
-        merge = statementHasSubBlocks ? new SetOnce<>() : null;
-        levelForPrevious = previousIsParent ? Level.EVALUATION : Level.MERGE;
+        return new VariableInfoContainerImpl(computeVariableInLoop(previous, statementIndexForLocalVariableInLoop),
+                Either.left(previous),
+                statementHasSubBlocks ? new SetOnce<>() : null,
+                previousIsParent ? Level.EVALUATION : Level.MERGE);
     }
 
     /*
-    constructor for new variables
+    factory method for new variables
      */
-    public VariableInfoContainerImpl(Variable variable,
-                                     int statementTime,
-                                     VariableInLoop variableInLoop,
-                                     boolean statementHasSubBlocks) {
+    public static VariableInfoContainerImpl newVariable(Variable variable,
+                                                        int statementTime,
+                                                        VariableInLoop variableInLoop,
+                                                        boolean statementHasSubBlocks) {
         VariableInfoImpl initial = new VariableInfoImpl(variable, NOT_YET_ASSIGNED, NOT_YET_READ, statementTime, Set.of());
-        previousOrInitial = Either.right(initial);
+        return new VariableInfoContainerImpl(variableInLoop, Either.right(initial), statementHasSubBlocks ? new SetOnce<>() : null, null);
+    }
+
+    /*
+   factory method for new variables
+    */
+    public static VariableInfoContainerImpl existingLocalVariableIntoLoop(VariableInfoContainer previous,
+                                                                          VariableInLoop variableInLoop,
+                                                                          boolean previousIsParent) {
+        return new VariableInfoContainerImpl(variableInLoop,
+                Either.left(previous),
+                new SetOnce<>(),
+                previousIsParent ? Level.EVALUATION : Level.MERGE);
+    }
+
+    private VariableInfoContainerImpl(VariableInLoop variableInLoop,
+                                      Either<VariableInfoContainer, VariableInfoImpl> previousOrInitial,
+                                      SetOnce<VariableInfoImpl> merge,
+                                      Level levelForPrevious) {
         this.variableInLoop = variableInLoop;
-        merge = statementHasSubBlocks ? new SetOnce<>() : null;
-        levelForPrevious = null; // should NOT be used!!!
+        this.previousOrInitial = previousOrInitial;
+        this.merge = merge;
+        this.levelForPrevious = levelForPrevious;
     }
 
     private static VariableInLoop computeVariableInLoop(VariableInfoContainer previous,

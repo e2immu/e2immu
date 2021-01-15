@@ -127,8 +127,7 @@ public class Test_01_Loops extends CommonTestRunner {
             if ("2.0.0".equals(d.statementId())) {
                 if (d.iteration() == 0) {
                     VariableInfoContainer vic = d.statementAnalysis().variables.get("i");
-                    //Assert.assertEquals(1, vic.getCurrentLevel());
-                    Assert.assertSame(EmptyExpression.NO_VALUE, vic.current().getValue());
+                    Assert.assertEquals("0", vic.current().getValue().toString());
                 }
             }
             if ("2.0.2".equals(d.statementId())) {
@@ -332,15 +331,33 @@ public class Test_01_Loops extends CommonTestRunner {
     @Test
     public void test3() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-            if ("method".equals(d.methodInfo().name) && "1".equals(d.statementId()) && "s".equals(d.variableName())) {
-                Assert.assertEquals("1", d.variableInfoContainer().getStatementIndexOfThisLoopVariable());
+            if ("method".equals(d.methodInfo().name)) {
+                if ("1".equals(d.statementId()) && "s".equals(d.variableName())) {
+                    Assert.assertEquals("1", d.variableInfoContainer().getStatementIndexOfThisLoopVariable());
+                }
+                if ("res".equals(d.variableName())) {
+                    if ("0".equals(d.statementId())) {
+                        Assert.assertEquals("\"a\"", d.currentValue().toString());
+                    }
+                    if ("1".equals(d.statementId())) {
+                        // make sure that res isn't messed with
+                        VariableInfo initial = d.variableInfoContainer().getPreviousOrInitial();
+                        Assert.assertEquals("\"a\"", initial.getValue().toString());
+
+                        // once we have determined that the loop is empty, the merger should take the original value
+                        String expectValue = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "\"a\"";
+                        Assert.assertEquals(expectValue, d.currentValue().toString());
+                        String expectLinked = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "";
+                        Assert.assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
+                    }
+                }
             }
         };
 
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
                 if ("1.0.0".equals(d.statementId())) {
-                    Assert.fail("statement should be unreachable");
+                    Assert.assertEquals("statement should be unreachable after iteration 0", 0, d.iteration());
                 }
                 if ("1".equals(d.statementId())) {
                     if (d.statementAnalysis().statement instanceof ForEachStatement forEachStatement) {
@@ -351,9 +368,10 @@ public class Test_01_Loops extends CommonTestRunner {
 
                         StatementAnalysis firstInBlock = d.statementAnalysis().navigationData.blocks.get().get(0).orElseThrow();
                         Assert.assertEquals("1.0.0", firstInBlock.index);
-                        Assert.assertTrue(firstInBlock.flowData.isUnreachable());
-
-                        Assert.assertNotNull(d.haveError(Message.EMPTY_LOOP));
+                        if (d.iteration() > 0) {
+                            Assert.assertTrue(firstInBlock.flowData.isUnreachable());
+                            Assert.assertNotNull(d.haveError(Message.EMPTY_LOOP));
+                        }
                     } else Assert.fail();
                 }
                 if ("2".equals(d.statementId())) {

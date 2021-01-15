@@ -27,9 +27,8 @@ import org.e2immu.analyser.model.Statement;
 import org.e2immu.analyser.model.TranslationMap;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.expression.ArrayInitializer;
+import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.expression.LocalVariableCreation;
-import org.e2immu.analyser.model.expression.NewObject;
-import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Space;
 import org.e2immu.analyser.output.Symbol;
@@ -52,15 +51,17 @@ public class ForEachStatement extends LoopStatement {
     }
 
     private static FlowData.Execution computeExecution(Expression expression, EvaluationContext evaluationContext) {
+        if (expression == EmptyExpression.NO_VALUE) return FlowData.Execution.DELAYED_EXECUTION;
+
         if (expression instanceof ArrayInitializer arrayInitializer) {
             return arrayInitializer.multiExpression.expressions().length == 0 ? FlowData.Execution.NEVER : FlowData.Execution.ALWAYS;
         }
+        /* IMPROVE we can try to extract a length or size
         if (expression instanceof VariableExpression variableExpression) {
             NewObject newObject = evaluationContext.currentInstance(variableExpression.variable(), evaluationContext.getInitialStatementTime());
-            if (newObject != null && !newObject.state().isBoolValueTrue()) {
-                // TODO we can try to extract a length or size
-            }
+            if (newObject != null && !newObject.state().isBoolValueTrue()) { ... }
         }
+        */
         return FlowData.Execution.CONDITIONALLY; // we have no clue
     }
 

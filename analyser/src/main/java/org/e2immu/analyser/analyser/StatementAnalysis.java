@@ -366,18 +366,18 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         VariableInfoContainer newVic;
         // as we move into a loop statement, the VariableInLoop is added to obtain local variable in loop defined outside
         if (!vic.isLocalVariableInLoopDefinedOutside() && statement instanceof LoopStatement && vi.variable().isLocal()) {
-            newVic = new VariableInfoContainerImpl(vi.variable(),
-                    VariableInfoContainer.NOT_A_VARIABLE_FIELD,
-                    new VariableInLoop(index, VariableInLoop.VariableType.IN_LOOP_DEFINED_OUTSIDE),
-                    navigationData.hasSubBlocks());
-            vi.propertyStream().forEach(e -> newVic.setProperty(e.getKey(), e.getValue(), VariableInfoContainer.Level.INITIAL));
+            // the variable itself will not be used anymore, only its "local copy" associated with the loop
+            // however, the loop may turn out to be completely empty, in which case the initial value is kept
+            // so we must keep the initial value
+            newVic = VariableInfoContainerImpl.existingLocalVariableIntoLoop(vic,
+                    new VariableInLoop(index, VariableInLoop.VariableType.IN_LOOP_DEFINED_OUTSIDE), previousIsParent);
         } else if (indexOfPrevious != null && indexOfPrevious.equals(vic.getStatementIndexOfThisLoopOrShadowVariable())) {
             // this is the very specific situation that the previous statement introduced a loop variable (or a shadow copy)
             // this loop variable should not go beyond the loop statement
             return; // skip
         } else {
             // make a simple reference copy; potentially resetting localVariableInLoopDefinedOutside
-            newVic = new VariableInfoContainerImpl(vic, index, previousIsParent, navigationData.hasSubBlocks());
+            newVic = VariableInfoContainerImpl.existingVariable(vic, index, previousIsParent, navigationData.hasSubBlocks());
         }
         variables.put(fqn, newVic);
     }
@@ -422,7 +422,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                     if (!variables.isSet(fqn) && variable instanceof LocalVariableReference) {
                         // other variables that don't exist here and that we do not want to copy: foreign fields,
                         // such as System.out
-                        VariableInfoContainer newVic = new VariableInfoContainerImpl(vicFrom,
+                        VariableInfoContainer newVic = VariableInfoContainerImpl.existingVariable(vicFrom,
                                 null, copyIsParent, navigationData.hasSubBlocks());
                         variables.put(fqn, newVic);
                     }
@@ -618,7 +618,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
 
         int statementTimeForVariable = statementTimeForVariable(analyserContext, variable, statementTime);
 
-        VariableInfoContainer vic = new VariableInfoContainerImpl(variable, statementTimeForVariable, VariableInLoop.NOT_IN_LOOP, navigationData.hasSubBlocks());
+        VariableInfoContainer vic = VariableInfoContainerImpl.newVariable(variable, statementTimeForVariable, VariableInLoop.NOT_IN_LOOP, navigationData.hasSubBlocks());
 
         variables.put(variable.fullyQualifiedName(), vic);
         log(VARIABLE_PROPERTIES, "Added variable to map: {}", variable.fullyQualifiedName());
@@ -896,7 +896,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
 
         String prefix = vi.name() + "$" + vic.getVariableInLoop().statementId();
         if (vi.getAssignmentId().compareTo(vic.getVariableInLoop().statementId()) > 0) {
-            return prefix + "$" + vi.getAssignmentId().replace(".","_");
+            return prefix + "$" + vi.getAssignmentId().replace(".", "_");
         }
         return prefix;
     }

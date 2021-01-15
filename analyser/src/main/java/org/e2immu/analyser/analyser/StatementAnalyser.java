@@ -789,7 +789,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         if (!statementAnalysis.variables.isSet(newFqn)) {
             LocalVariableReference newLvr = createLocalCopyOfLoopVariable(vic, newFqn);
 
-            VariableInfoContainer newVic = new VariableInfoContainerImpl(newLvr, VariableInfoContainer.NOT_A_VARIABLE_FIELD,
+            VariableInfoContainer newVic = VariableInfoContainerImpl.newVariable(newLvr, VariableInfoContainer.NOT_A_VARIABLE_FIELD,
                     new VariableInLoop(loopIndex, VariableInLoop.VariableType.LOOP_COPY), navigationData.hasSubBlocks());
             String assigned = index() + VariableInfoContainer.Level.INITIAL;
             String read = index() + VariableInfoContainer.Level.EVALUATION;
@@ -925,7 +925,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                     lvr = new LocalVariableReference(analyserContext, lvc.localVariable, List.of());
                     VariableInLoop variableInLoop = statement() instanceof LoopStatement ?
                             new VariableInLoop(index(), VariableInLoop.VariableType.LOOP) : VariableInLoop.NOT_IN_LOOP;
-                    vic = new VariableInfoContainerImpl(lvr, VariableInfoContainer.NOT_A_VARIABLE_FIELD,
+                    vic = VariableInfoContainerImpl.newVariable(lvr, VariableInfoContainer.NOT_A_VARIABLE_FIELD,
                             variableInLoop, statementAnalysis.navigationData.hasSubBlocks());
 
                     if (statement() instanceof LoopStatement) {
@@ -999,7 +999,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             String newFqn = fqn + "$" + index(); // must be compatible with statementAnalysis.createLocalLoopCopyFQN
             if (!statementAnalysis.variables.isSet(newFqn)) {
                 LocalVariableReference newLvr = createLocalCopyOfLoopVariable(vic, newFqn);
-                VariableInfoContainer newVic = new VariableInfoContainerImpl(newLvr, VariableInfoContainer.NOT_A_VARIABLE_FIELD,
+                VariableInfoContainer newVic = VariableInfoContainerImpl.newVariable(newLvr, VariableInfoContainer.NOT_A_VARIABLE_FIELD,
                         new VariableInLoop(index(), VariableInLoop.VariableType.LOOP_COPY), true);
                 statementAnalysis.variables.put(newFqn, newVic);
                 String assigned = index() + VariableInfoContainer.Level.INITIAL;
