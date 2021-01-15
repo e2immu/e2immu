@@ -18,7 +18,10 @@
 package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.*;
-import org.e2immu.analyser.config.*;
+import org.e2immu.analyser.config.DebugConfiguration;
+import org.e2immu.analyser.config.EvaluationResultVisitor;
+import org.e2immu.analyser.config.StatementAnalyserVariableVisitor;
+import org.e2immu.analyser.config.StatementAnalyserVisitor;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
@@ -419,7 +422,7 @@ public class Test_01_Loops extends CommonTestRunner {
                         Assert.assertEquals(expect, d.currentValue().toString());
                     }
                     if ("1".equals(d.statementId())) {
-                        String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() :  "instance type int>=10?0:instance type int<=9?1==instance type int?4:<return value>:<return value>";
+                        String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "instance type int>=10?0:instance type int<=9?1==instance type int?4:<return value>:<return value>";
                         Assert.assertEquals(expect, d.currentValue().toString());
                     }
                 }
@@ -428,7 +431,7 @@ public class Test_01_Loops extends CommonTestRunner {
 
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("method".equals(d.methodInfo().name) && "0".equals(d.statementId())) {
-                String expectValue = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString(): "i$0<=9";
+                String expectValue = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "i$0<=9";
                 Assert.assertEquals(expectValue, d.evaluationResult().value().toString());
             }
         };
@@ -443,17 +446,37 @@ public class Test_01_Loops extends CommonTestRunner {
     @Test
     public void test5() throws IOException {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
-            if ("method".equals(d.methodInfo().name) && "1.0.0".equals(d.statementId())) {
-                String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "1==i$1";
-                Assert.assertEquals(expect, d.evaluationResult().value().toString());
+            if ("method".equals(d.methodInfo().name)) {
+                if ("1.0.0".equals(d.statementId())) {
+                    String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "1==i$1";
+                    Assert.assertEquals(expect, d.evaluationResult().value().toString());
+                }
+                if ("2".equals(d.statementId())) {
+                    String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "true";
+                    Assert.assertEquals(expect, d.evaluationResult().value().toString());
+                }
             }
         };
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-            if ("method".equals(d.methodInfo().name) && "1.0.0".equals(d.statementId()) && "i".equals(d.variableName())) {
-                Assert.assertEquals("1", d.variableInfoContainer().getVariableInLoop()
-                        .statementId(VariableInLoop.VariableType.IN_LOOP_DEFINED_OUTSIDE));
+            if ("method".equals(d.methodInfo().name) && "i".equals(d.variableName())) {
+                if ("1.0.0".equals(d.statementId())) {
+                    Assert.assertEquals("1", d.variableInfoContainer().getVariableInLoop()
+                            .statementId(VariableInLoop.VariableType.IN_LOOP_DEFINED_OUTSIDE));
+                    String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "i$1";
+                    Assert.assertEquals(expect, d.currentValue().toString());
+                }
+                if ("1".equals(d.statementId())) {
+                    String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "i$1";
+                    if (d.iteration() > 0) Assert.assertTrue(d.variableInfoContainer().hasMerge());
+                    Assert.assertEquals(expect, d.currentValue().toString());
+                }
+                if ("2".equals(d.statementId())) {
+                    String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "i$1";
+                    Assert.assertEquals(expect, d.currentValue().toString());
+                }
             }
         };
+        // expect: warning: always true in assert
         testClass("Loops_5", 0, 1, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addEvaluationResultVisitor(evaluationResultVisitor)
@@ -462,13 +485,7 @@ public class Test_01_Loops extends CommonTestRunner {
 
     @Test
     public void test6() throws IOException {
-        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
-            if ("method".equals(d.methodInfo().name)) {
-                Assert.assertNotNull(d.haveError(Message.LOOP_WITHOUT_MODIFICATION));
-            }
-        };
-        testClass("Loops_6", 3, 0, new DebugConfiguration.Builder()
-                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+        testClass("Loops_6", 2, 0, new DebugConfiguration.Builder()
                 .build());
     }
 

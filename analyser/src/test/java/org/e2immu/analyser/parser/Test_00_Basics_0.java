@@ -72,7 +72,6 @@ public class Test_00_Basics_0 extends CommonTestRunner {
                     Assert.assertSame(EmptyExpression.NO_VALUE, d.currentValue());
                 } else {
                     Assert.assertEquals(new StringConstant(d.evaluationContext().getPrimitives(), "abc"), d.currentValue());
-                    Assert.assertTrue(d.hasProperty(VariableProperty.NOT_NULL));
                 }
                 return;
             }

@@ -514,8 +514,9 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             VariableInfo vi1 = vic.getPreviousOrInitial();
             assert vi != vi1 : "There should already be a different EVALUATION object";
 
-            Expression value = bestValue(changeData, vi1);
-            Expression valueToWrite = maybeValueNeedsState(sharedState.evaluationContext, vic, vi1, value);
+            Expression valueToWrite = changeData.markAssignment() ?
+                    maybeValueNeedsState(sharedState.evaluationContext, vic, vi1, bestValue(changeData, vi1)) :
+                    changeData.value();
 
             if (haveEvaluationResult) {
                 // if the evaluation was not delayed...
@@ -739,23 +740,25 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
     Q: what is the best place for this piece of code? EvalResult?? This here seems too late
      */
     private Expression maybeValueNeedsState(EvaluationContext evaluationContext, VariableInfoContainer vic, VariableInfo vi1, Expression value) {
-        if (value != NO_VALUE
-                && vic.getVariableInLoop().variableType() == VariableInLoop.VariableType.IN_LOOP_DEFINED_OUTSIDE) {
-            if (localConditionManager.isDelayed()) return NO_VALUE;
-            Expression state;
-            if (!localConditionManager.state().isBoolValueTrue()) {
-                state = localConditionManager.state();
-            } else if (!localConditionManager.condition().isBoolValueTrue()) {
-                state = localConditionManager.condition();
-            } else {
-                state = null;
-            }
-            if (state != null) {
-                // do not take vi1 itself, but "the" local copy of the variable
-                Expression valueOfVariablePreAssignment = evaluationContext.currentValue(vi1.variable(), statementAnalysis.statementTime(VariableInfoContainer.Level.INITIAL), true);
-                return EvaluateInlineConditional.conditionalValueConditionResolved(evaluationContext, state, value,
-                        valueOfVariablePreAssignment, ObjectFlow.NO_FLOW).value();
-            }
+        if (value == NO_VALUE ||
+                vic.getVariableInLoop().variableType() != VariableInLoop.VariableType.IN_LOOP_DEFINED_OUTSIDE) {
+            // not applicable
+            return value;
+        }
+        if (localConditionManager.isDelayed()) return NO_VALUE;
+        Expression state;
+        if (!localConditionManager.state().isBoolValueTrue()) {
+            state = localConditionManager.state();
+        } else if (!localConditionManager.condition().isBoolValueTrue()) {
+            state = localConditionManager.condition();
+        } else {
+            state = null;
+        }
+        if (state != null) {
+            // do not take vi1 itself, but "the" local copy of the variable
+            Expression valueOfVariablePreAssignment = evaluationContext.currentValue(vi1.variable(), statementAnalysis.statementTime(VariableInfoContainer.Level.INITIAL), true);
+            return EvaluateInlineConditional.conditionalValueConditionResolved(evaluationContext, state, value,
+                    valueOfVariablePreAssignment, ObjectFlow.NO_FLOW).value();
         }
         return value;
     }
