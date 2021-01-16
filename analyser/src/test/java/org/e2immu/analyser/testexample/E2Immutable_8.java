@@ -23,7 +23,7 @@ import org.e2immu.annotation.*;
 import java.util.HashMap;
 import java.util.Map;
 
-// here, SimpleContainer cannot be replaced by T or Object, map8 is linked to the parameter
+// Constructor and getter are dependent
 @E1Container
 @Independent(absent = true)
 public class E2Immutable_8 {

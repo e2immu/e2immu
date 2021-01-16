@@ -622,6 +622,11 @@ public class TypeAnalyser extends AbstractAnalyser {
 
         // RULE 3
 
+        Variable thisVariable = new This(analyserContext, typeInfo);
+        Set<FieldReference> fieldReferencesLinkedToParameters = fieldsLinkedToParameters.stream()
+                .map(fa -> new FieldReference(analyserContext, fa.fieldInfo, thisVariable))
+                .collect(Collectors.toSet());
+
         for (MethodAnalyser methodAnalyser : myMethodAnalysers) {
             if (methodAnalyser.methodInfo.hasReturnValue() && methodAnalyser.hasCode() &&
                     !typeAnalysis.implicitlyImmutableDataTypes.get().contains(methodAnalyser.methodInfo.returnType())) {
@@ -636,7 +641,7 @@ public class TypeAnalyser extends AbstractAnalyser {
                             typeInfo.fullyQualifiedName, methodAnalyser.methodInfo.name);
                     return DELAYS;
                 }
-                boolean safeMethod = Collections.disjoint(variableInfo.getLinkedVariables().variables(), fieldsLinkedToParameters);
+                boolean safeMethod = Collections.disjoint(variableInfo.getLinkedVariables().variables(), fieldReferencesLinkedToParameters);
                 if (!safeMethod) {
                     log(INDEPENDENT, "Type {} cannot be @Independent, method {}'s return values link to some of the fields linked to constructors",
                             typeInfo.fullyQualifiedName, methodAnalyser.methodInfo.name);
