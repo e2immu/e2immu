@@ -254,8 +254,8 @@ public class Assignment implements Expression {
         // connect the value to the assignment target
         if (resultOfExpression != NO_VALUE) {
             linkedVariables = evaluationContext.linkedVariables(resultOfExpression);
-            log(LINKED_VARIABLES, "In assignment, link {} to [{}]", at.fullyQualifiedName(),
-                    Variable.fullyQualifiedName(linkedVariables.variables()));
+            assert linkedVariables != null : "Expression " + resultOfExpression + " " + resultOfExpression.getClass();
+            log(LINKED_VARIABLES, "In assignment, link {} to [{}]", at.fullyQualifiedName(), linkedVariables);
         } else {
             linkedVariables = LinkedVariables.DELAY;
         }

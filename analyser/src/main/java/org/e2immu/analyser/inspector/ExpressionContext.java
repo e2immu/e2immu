@@ -37,6 +37,7 @@ import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.Pair;
+import org.e2immu.analyser.util.StringUtil;
 import org.e2immu.annotation.NotModified;
 import org.e2immu.annotation.NotNull;
 import org.slf4j.Logger;
@@ -59,6 +60,7 @@ public class ExpressionContext {
     public final TypeInfo primaryType;
     public final VariableContext variableContext; // gets modified! so this class cannot even be a container...
     public final TopLevel topLevel;
+    public final MethodInfo enclosingMethod;
 
     private final List<TypeInfo> newlyCreatedTypes = new LinkedList<>();
 
@@ -81,7 +83,7 @@ public class ExpressionContext {
     public static ExpressionContext forInspectionOfPrimaryType(@NotNull @NotModified TypeInfo typeInfo,
                                                                @NotNull @NotModified TypeContext typeContext) {
         log(CONTEXT, "Creating a new expression context for {}", typeInfo.fullyQualifiedName);
-        return new ExpressionContext(Objects.requireNonNull(typeInfo), typeInfo,
+        return new ExpressionContext(Objects.requireNonNull(typeInfo), null, typeInfo,
                 Objects.requireNonNull(typeContext),
                 VariableContext.initialVariableContext(new HashMap<>()),
                 new TopLevel());
@@ -92,7 +94,7 @@ public class ExpressionContext {
                                                    @NotNull @NotModified TypeContext typeContext) {
         Map<String, FieldReference> staticallyImportedFields = typeContext.staticFieldImports();
         log(CONTEXT, "Creating a new expression context for {}", enclosingType.fullyQualifiedName);
-        return new ExpressionContext(Objects.requireNonNull(enclosingType),
+        return new ExpressionContext(Objects.requireNonNull(enclosingType), null,
                 Objects.requireNonNull(primaryType),
                 Objects.requireNonNull(typeContext),
                 VariableContext.initialVariableContext(staticallyImportedFields),
@@ -100,6 +102,7 @@ public class ExpressionContext {
     }
 
     private ExpressionContext(TypeInfo enclosingType,
+                              MethodInfo enclosingMethod,
                               TypeInfo primaryType,
                               TypeContext typeContext,
                               VariableContext variableContext,
@@ -109,34 +112,42 @@ public class ExpressionContext {
         this.enclosingType = enclosingType;
         this.topLevel = topLevel;
         this.variableContext = variableContext;
+        this.enclosingMethod = enclosingMethod;
+    }
+
+    public ExpressionContext newVariableContext(MethodInfo methodInfo) {
+        log(CONTEXT, "Creating a new variable context for method {}", methodInfo.fullyQualifiedName);
+        return new ExpressionContext(enclosingType, methodInfo, primaryType, typeContext,
+                VariableContext.dependentVariableContext(variableContext), topLevel);
     }
 
     public ExpressionContext newVariableContext(@NotNull String reason) {
         log(CONTEXT, "Creating a new variable context for {}", reason);
-        return new ExpressionContext(enclosingType, primaryType,
+        return new ExpressionContext(enclosingType, enclosingMethod, primaryType,
                 typeContext, VariableContext.dependentVariableContext(variableContext),
                 topLevel);
     }
 
     public ExpressionContext newVariableContext(@NotNull VariableContext newVariableContext, String reason) {
         log(CONTEXT, "Creating a new variable context for {}", reason);
-        return new ExpressionContext(enclosingType, primaryType, typeContext, newVariableContext, topLevel);
+        return new ExpressionContext(enclosingType, enclosingMethod, primaryType, typeContext, newVariableContext, topLevel);
     }
 
     public ExpressionContext newSubType(@NotNull TypeInfo subType) {
         log(CONTEXT, "Creating a new type context for subtype {}", subType.simpleName);
-        return new ExpressionContext(subType, primaryType,
+        return new ExpressionContext(subType, null, primaryType,
                 new TypeContext(typeContext), variableContext, topLevel);
     }
 
     public ExpressionContext newTypeContext(String reason) {
         log(CONTEXT, "Creating a new type context for {}", reason);
-        return new ExpressionContext(enclosingType, primaryType,
+        return new ExpressionContext(enclosingType, enclosingMethod, primaryType,
                 new TypeContext(typeContext), variableContext, topLevel);
     }
 
     @NotNull
     public Block parseBlockOrStatement(@NotNull @NotModified Statement stmt) {
+        assert enclosingMethod != null;
         return parseBlockOrStatement(stmt, null);
     }
 
@@ -353,9 +364,8 @@ public class ExpressionContext {
 
     private org.e2immu.analyser.model.Statement localClassDeclaration(LocalClassDeclarationStmt statement) {
         String localName = statement.getClassDeclaration().getNameAsString();
-        String primaryTypeSimpleName = enclosingType.primaryType().simpleName;
-        String typeName = primaryTypeSimpleName + "$" + localName + "$" + topLevel.newIndex(enclosingType);
-        TypeInfo typeInfo = new TypeInfo(enclosingType.packageName(), typeName);
+        String typeName = StringUtil.capitalise(enclosingMethod.name) + "$" + localName + "$" + topLevel.newIndex(enclosingType);
+        TypeInfo typeInfo = new TypeInfo(enclosingType, typeName);
         typeContext.typeMapBuilder.ensureTypeAndInspection(typeInfo, TypeInspectionImpl.InspectionState.STARTING_JAVA_PARSER);
         TypeInspector typeInspector = new TypeInspector(typeContext.typeMapBuilder, typeInfo, true);
         typeInspector.inspectLocalClassDeclaration(this, statement.getClassDeclaration());

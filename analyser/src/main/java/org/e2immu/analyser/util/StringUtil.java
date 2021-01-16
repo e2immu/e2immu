@@ -90,4 +90,9 @@ public class StringUtil {
         }
         throw new UnsupportedOperationException("?? awfully long method");
     }
+
+    public static String capitalise(String name) {
+        assert name != null && !name.isEmpty();
+        return Character.toUpperCase(name.charAt(0)) + name.substring(1);
+    }
 }

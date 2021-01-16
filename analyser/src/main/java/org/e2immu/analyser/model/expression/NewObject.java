@@ -277,9 +277,9 @@ public record NewObject(MethodInfo constructor,
                     || typeIndependent == MultiLevel.EFFECTIVE) { // RULE 3
                 return LinkedVariables.EMPTY;
             }
-            if (independent == Level.DELAY) return null;
-            if (immutable == MultiLevel.DELAY) return null;
-            if (typeIndependent == MultiLevel.DELAY) return null;
+            if (independent == Level.DELAY) return LinkedVariables.DELAY;
+            if (immutable == MultiLevel.DELAY) return LinkedVariables.DELAY;
+            if (typeIndependent == MultiLevel.DELAY) return LinkedVariables.DELAY;
         }
 
         // default case

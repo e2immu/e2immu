@@ -40,30 +40,34 @@ public class Test_22_SubTypes extends CommonTestRunner {
 
     @Test
     public void test_1() throws IOException {
-        final String KV = "org.e2immu.analyser.testexample.SubTypes_1$KV$1";
+        final String SUBTYPE = "MethodWithSubType$KV$1";
+        final String KV = "org.e2immu.analyser.testexample.SubTypes_1." + SUBTYPE;
         final String KEY = KV + ".key";
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
-            if ("key".equals(d.fieldInfo().name) && "SubTypes_1$KV$1".equals(d.fieldInfo().owner.simpleName)) {
+            if ("key".equals(d.fieldInfo().name) && SUBTYPE.equals(d.fieldInfo().owner.simpleName)) {
                 Assert.assertEquals(Level.TRUE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
-                if (d.iteration() == 0) {
-                    Assert.assertNull(d.fieldAnalysis().getLinkedVariables());
-                } else {
-                    Assert.assertEquals("key", d.fieldAnalysis().getLinkedVariables().toString());
-                }
+                Assert.assertEquals("", d.fieldAnalysis().getLinkedVariables().toString());
             }
         };
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
-            if ("SubTypes_1$KV$1".equals(d.methodInfo().name)) {
+            if (SUBTYPE.equals(d.methodInfo().name)) {
                 Assert.assertTrue(d.methodInfo().isConstructor);
             }
         };
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-            if ("SubTypes_1$KV$1".equals(d.methodInfo().name) && KEY.equals(d.variableName())) {
+            if (SUBTYPE.equals(d.methodInfo().name) && KEY.equals(d.variableName())) {
                 Assert.assertEquals("key", d.currentValue().toString());
-                Assert.assertEquals("xx", d.variableInfo().getLinkedVariables().toString());
+                // empty because String is @E2Container!
+                Assert.assertEquals("", d.variableInfo().getLinkedVariables().toString());
+            }
+        };
+
+        EvaluationResultVisitor evaluationResultVisitor = d -> {
+            if (SUBTYPE.equals(d.methodInfo().name) && "0".equals(d.statementId())) {
+                Assert.assertEquals("key", d.evaluationResult().value().toString());
             }
         };
 
@@ -71,6 +75,7 @@ public class Test_22_SubTypes extends CommonTestRunner {
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addEvaluationResultVisitor(evaluationResultVisitor)
                 .build());
     }
 

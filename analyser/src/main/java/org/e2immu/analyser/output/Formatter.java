@@ -61,6 +61,11 @@ public record Formatter(FormattingOptions options) {
         void increment() {
             if (seenFirstMid) countLines++;
         }
+
+        @Override
+        public String toString() {
+            return "Tab indent " + indent + " guide index " + guideIndex + " newLinesBefore? " + allowNewLineBefore;
+        }
     }
 
     // guides typically organised as  ( S int i, M int j, M int k E )
@@ -177,7 +182,8 @@ public record Formatter(FormattingOptions options) {
         while (!tabs.isEmpty() && tabs.peek().guideIndex == LINE_SPLIT) {
             pop(tabs, "", writer);
         }
-        assert tabs.isEmpty() || tabs.peek().guideIndex == guide.index();
+        assert tabs.isEmpty() || tabs.peek().guideIndex == guide.index() :
+                "Tabs: " + tabs + "; guide.index " + guide.index();
 
         boolean writeNewLineBefore = !tabs.isEmpty() && tabs.peek().countLines > 1 && tabs.peek().allowNewLineBefore;
 

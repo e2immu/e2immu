@@ -434,7 +434,7 @@ public class Resolver {
                          BlockStmt block,
                          DependencyGraph<WithInspectionAndAnalysis> methodFieldSubTypeGraph) {
         try {
-            ExpressionContext newContext = expressionContext.newVariableContext("resolving " + methodInfo.fullyQualifiedName());
+            ExpressionContext newContext = expressionContext.newVariableContext(methodInfo);
             methodInspection.getParameters().forEach(newContext.variableContext::add);
             log(RESOLVE, "Parsing block with variable context {}", newContext.variableContext);
             Block parsedBlock = newContext.parseBlockOrStatement(block);
