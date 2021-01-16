@@ -26,8 +26,10 @@ import org.e2immu.analyser.model.expression.Lambda;
 import org.e2immu.analyser.model.expression.UnevaluatedLambdaExpression;
 import org.e2immu.analyser.model.expression.UnevaluatedMethodCall;
 import org.e2immu.analyser.model.statement.Block;
+import org.e2immu.analyser.model.statement.ExpressionAsStatement;
 import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.analyser.parser.InspectionProvider;
+import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.TypeMapImpl;
 
 import java.util.ArrayList;
@@ -86,6 +88,7 @@ public class ParseLambdaExpr {
 
         // we've added name and parameters, so we're ready to build the FQN and make the parameters immutable
         applyMethodInspectionBuilder.readyToComputeFQN(inspectionProvider);
+        applyMethodInspectionBuilder.makeParametersImmutable();
         applyMethodInspectionBuilder.getParameters().forEach(newVariableContext::add);
 
         ExpressionContext newExpressionContext = expressionContext.newVariableContext(newVariableContext, "lambda");
@@ -101,7 +104,11 @@ public class ParseLambdaExpr {
                 return partiallyParse(lambdaExpr);
             }
             inferredReturnType = expr.returnType();
-            block = new Block.BlockBuilder().addStatement(new ReturnStatement(false, expr)).build();
+            if (Primitives.isVoid(inferredReturnType)) {
+                block = new Block.BlockBuilder().addStatement(new ExpressionAsStatement(expr)).build();
+            } else {
+                block = new Block.BlockBuilder().addStatement(new ReturnStatement(false, expr)).build();
+            }
         } else {
             block = newExpressionContext.parseBlockOrStatement(lambdaExpr.getBody());
             inferredReturnType = block.mostSpecificReturnType(inspectionProvider);

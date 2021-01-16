@@ -430,6 +430,10 @@ public class JavaUtil extends AnnotatedAPI {
 
         @NotModified
         V get(Object key) { return null; }
+
+        @NotNull1
+        @NotModified
+        Collection<V> values() { return null; }
     }
 
     @Container
