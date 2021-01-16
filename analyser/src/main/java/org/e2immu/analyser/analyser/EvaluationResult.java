@@ -507,7 +507,8 @@ public record EvaluationResult(EvaluationContext evaluationContext,
 
         public void addErrorAssigningToFieldOutsideType(FieldInfo fieldInfo) {
             assert evaluationContext != null;
-            messages.add(Message.newMessage(new Location(fieldInfo), Message.ADVISE_AGAINST_ASSIGNMENT_TO_FIELD_OUTSIDE_TYPE));
+            messages.add(Message.newMessage(evaluationContext.getLocation(),
+                    Message.ADVISE_AGAINST_ASSIGNMENT_TO_FIELD_OUTSIDE_TYPE, "Field "+fieldInfo.fullyQualifiedName()));
         }
 
         public void addParameterShouldNotBeAssignedTo(ParameterInfo parameterInfo) {
