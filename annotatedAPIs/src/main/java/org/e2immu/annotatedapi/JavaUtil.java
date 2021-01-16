@@ -19,9 +19,7 @@ package org.e2immu.annotatedapi;
 
 import org.e2immu.annotation.*;
 
-import java.util.Collection;
-import java.util.Comparator;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.IntFunction;
 import java.util.function.Supplier;
@@ -407,5 +405,47 @@ public class JavaUtil extends AnnotatedAPI {
 
         static <T> boolean addAll(@NotNull @Modified Collection<? super T> c,
                                   @NotModified T... elements) { return false; }
+    }
+
+    @Container
+    static class Map$<K, V> {
+
+        boolean clear$Clear$Size(int i) { return i == 0; }
+        @Modified
+        void clear() { }
+
+        boolean containsKey$Value$Size(int i, Object key, boolean retVal) { return i != 0 && retVal; }
+        @NotModified
+        boolean containsKey(@NotNull Object key) { return true; }
+
+        boolean size$Invariant$Size(int i) { return i >= 0; }
+        void size$Aspect$Size() {}
+        @NotModified
+        int size() { return 0; }
+
+        int entrySet$Transfer$Size(int i) { return i; }
+        @NotNull1
+        @NotModified
+        Set<Map.Entry<K, V>> entrySet() { return null; }
+
+        @NotModified
+        V get(Object key) { return null; }
+    }
+
+    @Container
+    static class HashMap$<K, V> {
+        // content is known
+        boolean HashMap$Modification$Size(int post) { return post == 0; }
+        boolean HashMap$Postcondition() { return org.e2immu.annotatedapi.AnnotatedAPI.isKnown(false); }
+
+        @Independent
+        public HashMap$() {
+        }
+
+        // content is not known
+        boolean HashMap$Modification$Size(int post, Map<? extends  K, ? extends V> map) { return post == map.size(); }
+        @Independent
+        public HashMap$(@NotNull1 Map<? extends  K, ? extends V> map) {
+        }
     }
 }

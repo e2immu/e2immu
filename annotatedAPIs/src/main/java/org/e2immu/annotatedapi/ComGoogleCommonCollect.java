@@ -19,9 +19,11 @@ package org.e2immu.annotatedapi;
 
 import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import org.e2immu.annotation.*;
 
+import java.io.Serializable;
 import java.util.*;
 
 public class ComGoogleCommonCollect {
@@ -83,6 +85,27 @@ public class ComGoogleCommonCollect {
         @NotNull
         @E2Container
         static <E> ImmutableSet<E> copyOf(@NotNull Collection<? extends E> collection) { return null; }
+    }
+
+
+    // this extension of HashMap is purely a convenience to inherit companions from Map in JavaUtil
+    @E2Container
+    static class ImmutableMap$<K, V> extends HashMap<K, V> {
+
+        @Container(builds = ImmutableMap.class)
+        public static class Builder<K, V> {
+
+            // we cannot transfer size, as the builder has no size method! int build$Transfer$Size(int size) { return size; }
+            @NotNull1
+            @Independent
+            @NotModified
+            public ImmutableMap<K, V> build() { return null; }
+        }
+
+        int copyOf$Transfer$Size(int size) { return size; }
+        @NotNull1
+        @E2Container
+        static <K, V> ImmutableMap<K, V> copyOf(@NotNull Map<? extends K, ? extends V> map) { return null; }
     }
 
 }
