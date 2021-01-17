@@ -20,10 +20,7 @@ package org.e2immu.analyser.model.value;
 import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.ShallowTypeAnalyser;
 import org.e2immu.analyser.inspector.MethodInspectionImpl;
-import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.MethodInfo;
-import org.e2immu.analyser.model.ParameterizedType;
-import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.expression.util.EvaluateInlineConditional;
 import org.e2immu.analyser.objectflow.ObjectFlow;
@@ -67,9 +64,9 @@ public class TestConditionalValue extends CommonAbstractValue {
         ParameterizedType annotatedAPIPt = new ParameterizedType(annotatedAPI, 0);
         MethodInfo isFact = new MethodInfo(annotatedAPI, "isFact", ShallowTypeAnalyser.IS_FACT_FQN, ShallowTypeAnalyser.IS_FACT_FQN, false);
         isFact.methodInspection.set(new MethodInspectionImpl.Builder(annotatedAPI).setReturnType(PRIMITIVES.booleanParameterizedType).build(InspectionProvider.DEFAULT));
-        Expression isFactA = new MethodCall(new TypeExpression(annotatedAPIPt, ObjectFlow.NO_FLOW), isFact, List.of(a), ObjectFlow.NO_FLOW);
+        Expression isFactA = new MethodCall(new TypeExpression(annotatedAPIPt, Diamond.NO, ObjectFlow.NO_FLOW), isFact, List.of(a), ObjectFlow.NO_FLOW);
         Assert.assertEquals("AnnotatedAPI.isFact(a)", isFactA.toString());
-        Expression isFactB = new MethodCall(new TypeExpression(annotatedAPIPt, ObjectFlow.NO_FLOW), isFact, List.of(b), ObjectFlow.NO_FLOW);
+        Expression isFactB = new MethodCall(new TypeExpression(annotatedAPIPt, Diamond.NO, ObjectFlow.NO_FLOW), isFact, List.of(b), ObjectFlow.NO_FLOW);
         Assert.assertEquals("AnnotatedAPI.isFact(b)", isFactB.toString());
 
         Assert.assertTrue(minimalEvaluationContext.getConditionManager().state().isBoolValueTrue());

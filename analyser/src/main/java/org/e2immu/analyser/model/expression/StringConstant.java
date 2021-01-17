@@ -19,6 +19,7 @@
 package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.analyser.EvaluationResult;
+import org.e2immu.analyser.model.Diamond;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
@@ -90,7 +91,7 @@ public record StringConstant(Primitives primitives,
     public NewObject getInstance(EvaluationResult evaluationResult) {
         // TODO static flow
         // TODO apply code from method call to produce a decent state
-        return NewObject.objectCreation(primitives, oneParameterConstructor(), primitives.stringParameterizedType,
+        return NewObject.objectCreation(primitives, oneParameterConstructor(), primitives.stringParameterizedType, Diamond.NO,
                 List.of(this), ObjectFlow.NO_FLOW);
     }
 

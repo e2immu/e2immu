@@ -20,10 +20,7 @@ package org.e2immu.analyser.inspector.expr;
 
 import com.github.javaparser.ast.expr.ObjectCreationExpr;
 import org.e2immu.analyser.inspector.*;
-import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.NamedType;
-import org.e2immu.analyser.model.ParameterizedType;
-import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.NewObject;
 import org.e2immu.analyser.model.expression.UnevaluatedMethodCall;
 import org.e2immu.analyser.objectflow.ObjectFlow;
@@ -47,7 +44,8 @@ public class ParseObjectCreationExpr {
             typeInspector.inspectAnonymousType(parameterizedType, expressionContext.newVariableContext("anonymous class body"),
                     objectCreationExpr.getAnonymousClassBody().get());
             expressionContext.addNewlyCreatedType(anonymousType);
-            return NewObject.withAnonymousClass(typeContext.getPrimitives(), parameterizedType, anonymousType);
+            // FIXME showall
+            return NewObject.withAnonymousClass(typeContext.getPrimitives(), parameterizedType, anonymousType, Diamond.NO);
         }
 
         Map<NamedType, ParameterizedType> typeMap = parameterizedType.initialTypeParameterMap(typeContext);
@@ -59,6 +57,6 @@ public class ParseObjectCreationExpr {
                         parameterizedType, objectCreationExpr.getBegin().orElseThrow());
         if (method == null) return new UnevaluatedMethodCall(parameterizedType.detailedString() + "::new");
         return NewObject.objectCreation(typeContext.getPrimitives(),
-                method.methodInspection.getMethodInfo(), parameterizedType, newParameterExpressions, ObjectFlow.NO_FLOW);
+                method.methodInspection.getMethodInfo(), parameterizedType, Diamond.NO, newParameterExpressions, ObjectFlow.NO_FLOW);
     }
 }

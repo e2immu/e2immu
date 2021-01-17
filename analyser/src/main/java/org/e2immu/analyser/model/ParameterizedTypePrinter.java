@@ -41,13 +41,15 @@ public record ParameterizedTypePrinter(boolean fullyQualified, boolean numericTy
     public String print(InspectionProvider inspectionProvider,
                         ParameterizedType parameterizedType,
                         boolean varargs,
+                        Diamond diamond,
                         boolean withoutArrays) {
-        return print(inspectionProvider, parameterizedType, varargs, withoutArrays, true, new HashSet<>());
+        return print(inspectionProvider, parameterizedType, varargs, diamond, withoutArrays, true, new HashSet<>());
     }
 
     public String print(InspectionProvider inspectionProvider,
                         ParameterizedType parameterizedType,
                         boolean varargs,
+                        Diamond diamond,
                         boolean withoutArrays,
                         boolean keepItSimple,
                         Set<TypeParameter> visitedTypeParameters) {
@@ -81,10 +83,10 @@ public record ParameterizedTypePrinter(boolean fullyQualified, boolean numericTy
             } else {
                 if (parameterizedType.typeInfo.isPrimaryType() ||
                         inspectionProvider.getTypeInspection(parameterizedType.typeInfo).isStatic()) { // shortcut
-                    sb.append(singleType(inspectionProvider, parameterizedType.typeInfo, keepItSimple, false,
+                    sb.append(singleType(inspectionProvider, parameterizedType.typeInfo, diamond, keepItSimple, false,
                             parameterizedType.parameters, visitedTypeParameters));
                 } else {
-                    sb.append(distributeTypeParameters(inspectionProvider, parameterizedType, visitedTypeParameters, keepItSimple));
+                    sb.append(distributeTypeParameters(inspectionProvider, parameterizedType, visitedTypeParameters, diamond, keepItSimple));
                 }
             }
         }
@@ -127,6 +129,7 @@ public record ParameterizedTypePrinter(boolean fullyQualified, boolean numericTy
     private String distributeTypeParameters(InspectionProvider inspectionProvider,
                                             ParameterizedType parameterizedType,
                                             Set<TypeParameter> visitedTypeParameters,
+                                            Diamond diamond,
                                             boolean keepItSimple) {
         TypeInfo typeInfo = parameterizedType.typeInfo;
         assert typeInfo != null;
@@ -153,7 +156,7 @@ public record ParameterizedTypePrinter(boolean fullyQualified, boolean numericTy
             typeInfo = next;
         }
         return taps.stream().map(tap -> singleType(inspectionProvider,
-                tap.typeInfo, keepItSimple, !tap.isPrimaryType, tap.typeParameters, visitedTypeParameters))
+                tap.typeInfo, diamond, keepItSimple, !tap.isPrimaryType, tap.typeParameters, visitedTypeParameters))
                 .collect(Collectors.joining("."));
     }
 
@@ -162,15 +165,18 @@ public record ParameterizedTypePrinter(boolean fullyQualified, boolean numericTy
 
     private String singleType(InspectionProvider inspectionProvider,
                               TypeInfo typeInfo,
+                              Diamond diamond,
                               boolean keepItSimple,
                               boolean forceSimple,
                               List<ParameterizedType> typeParameters,
                               Set<TypeParameter> visitedTypeParameters) {
         StringBuilder sb = new StringBuilder(typeName(typeInfo, keepItSimple, forceSimple));
-        if (!typeParameters.isEmpty()) {
+        if (!typeParameters.isEmpty() && diamond != Diamond.NO) {
             sb.append("<");
-            sb.append(typeParameters.stream().map(tp -> print(inspectionProvider, tp, false, false, false,
-                    visitedTypeParameters)).collect(Collectors.joining(", ")));
+            if (diamond == Diamond.SHOW_ALL) {
+                sb.append(typeParameters.stream().map(tp -> print(inspectionProvider, tp, false, Diamond.SHOW_ALL, false, false,
+                        visitedTypeParameters)).collect(Collectors.joining(", ")));
+            }
             sb.append(">");
         }
         return sb.toString();

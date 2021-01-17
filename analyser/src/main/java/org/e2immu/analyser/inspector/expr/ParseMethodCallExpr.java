@@ -99,7 +99,7 @@ public record ParseMethodCallExpr(InspectionProvider inspectionProvider) {
         boolean objectIsImplicit = scope == null;
         if (objectIsImplicit) {
             if (method.methodInspection.isStatic()) {
-                computedScope = new TypeExpression(methodInfo.typeInfo.asParameterizedType(inspectionProvider));
+                computedScope = new TypeExpression(methodInfo.typeInfo.asParameterizedType(inspectionProvider), Diamond.NO);
             } else {
                 Variable thisVariable = new This(inspectionProvider, expressionContext.enclosingType);
                 computedScope = new VariableExpression(thisVariable);

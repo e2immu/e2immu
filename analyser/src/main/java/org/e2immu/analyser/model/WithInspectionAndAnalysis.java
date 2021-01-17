@@ -111,15 +111,17 @@ public interface WithInspectionAndAnalysis {
                 }
             }
         }
-        for (AnnotationExpression annotation : annotations) {
-            Analysis.AnnotationCheck annotationCheck = getAnalysis().getAnnotation(annotation);
-            if (annotationCheck != Analysis.AnnotationCheck.ABSENT) {
-                OutputBuilder outputBuilder = new OutputBuilder().add(annotation.output());
-                if (annotationCheck.writeComment()) {
-                    outputBuilder.add(Symbol.LEFT_BLOCK_COMMENT).add(new Text(annotationCheck.toString()))
-                            .add(Symbol.RIGHT_BLOCK_COMMENT);
+        if(hasBeenAnalysed()) {
+            for (AnnotationExpression annotation : annotations) {
+                Analysis.AnnotationCheck annotationCheck = getAnalysis().getAnnotation(annotation);
+                if (annotationCheck != Analysis.AnnotationCheck.ABSENT) {
+                    OutputBuilder outputBuilder = new OutputBuilder().add(annotation.output());
+                    if (annotationCheck.writeComment()) {
+                        outputBuilder.add(Symbol.LEFT_BLOCK_COMMENT).add(new Text(annotationCheck.toString()))
+                                .add(Symbol.RIGHT_BLOCK_COMMENT);
+                    }
+                    perAnnotation.add(outputBuilder);
                 }
-                perAnnotation.add(outputBuilder);
             }
         }
         if (perAnnotation.size() > 1) {

@@ -29,7 +29,7 @@ public class SubTypes_5 {
         int lower = 0;
 
         // for this test, do not turn into Lambda!
-        return new Iterable<Integer>() {
+        return new Iterable<>() {
 
             @Override
             public Iterator<Integer> iterator() {

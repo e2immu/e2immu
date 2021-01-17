@@ -166,9 +166,9 @@ public class ParameterizedType {
         return new OutputBuilder().add(new Text(print()));
     }
 
-    public OutputBuilder output(boolean varArgs) {
+    public OutputBuilder output(boolean varArgs, Diamond diamond) {
         // FIXME
-        return new OutputBuilder().add(new Text(print(varArgs)));
+        return new OutputBuilder().add(new Text(print(varArgs, diamond)));
     }
 
     @Override
@@ -177,19 +177,19 @@ public class ParameterizedType {
     }
 
     public String print() {
-        return ParameterizedTypePrinter.DEFAULT.print(InspectionProvider.DEFAULT, this, false, false);
+        return ParameterizedTypePrinter.DEFAULT.print(InspectionProvider.DEFAULT, this, false, Diamond.SHOW_ALL, false);
     }
 
-    public String print(boolean varargs) {
-        return ParameterizedTypePrinter.DEFAULT.print(InspectionProvider.DEFAULT, this, varargs, false);
+    public String print(boolean varargs, Diamond diamond) {
+        return ParameterizedTypePrinter.DEFAULT.print(InspectionProvider.DEFAULT, this, varargs, diamond, false);
     }
 
-    public String print(InspectionProvider inspectionProvider, boolean varargs) {
-        return ParameterizedTypePrinter.DEFAULT.print(inspectionProvider, this, varargs, false);
+    public String print(InspectionProvider inspectionProvider, boolean varargs, Diamond diamond) {
+        return ParameterizedTypePrinter.DEFAULT.print(inspectionProvider, this, varargs, diamond, false);
     }
 
-    public String print(InspectionProvider inspectionProvider, boolean varargs, Set<TypeParameter> visitedTypeParameters, boolean keepItSimple) {
-        return ParameterizedTypePrinter.DEFAULT.print(inspectionProvider, this, varargs, false, keepItSimple, visitedTypeParameters);
+    public String print(InspectionProvider inspectionProvider, boolean varargs, Diamond diamond, Set<TypeParameter> visitedTypeParameters, boolean keepItSimple) {
+        return ParameterizedTypePrinter.DEFAULT.print(inspectionProvider, this, varargs, diamond, false, keepItSimple, visitedTypeParameters);
     }
 
     /**
@@ -200,15 +200,11 @@ public class ParameterizedType {
      * Tn or Mn, with n the index, and T for type, M for method
      */
     public String distinguishingName(InspectionProvider inspectionProvider, boolean varArgs) {
-        return ParameterizedTypePrinter.DISTINGUISHING.print(inspectionProvider, this, varArgs, false);
+        return ParameterizedTypePrinter.DISTINGUISHING.print(inspectionProvider, this, varArgs, Diamond.SHOW_ALL, false);
     }
 
     public String detailedString() {
-        return ParameterizedTypePrinter.DETAILED.print(InspectionProvider.DEFAULT, this, false, false);
-    }
-
-    public String streamWithoutArrays() {
-        return ParameterizedTypePrinter.DEFAULT.print(InspectionProvider.DEFAULT, this, false, true);
+        return ParameterizedTypePrinter.DETAILED.print(InspectionProvider.DEFAULT, this, false, Diamond.SHOW_ALL, false);
     }
 
     @Override

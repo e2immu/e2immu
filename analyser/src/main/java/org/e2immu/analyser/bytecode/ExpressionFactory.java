@@ -18,6 +18,7 @@
 
 package org.e2immu.analyser.bytecode;
 
+import org.e2immu.analyser.model.Diamond;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.parser.Primitives;
@@ -40,7 +41,7 @@ public class ExpressionFactory {
         if (value instanceof Boolean b) return new BooleanConstant(primitives, b);
         if (value instanceof Type t)
             return new TypeExpression(typeContext.getFullyQualified(t.getClassName(), true)
-                    .asParameterizedType(typeContext));
+                    .asParameterizedType(typeContext), Diamond.SHOW_ALL);
         throw new UnsupportedOperationException("Value " + value + " is of " + value.getClass());
     }
 }

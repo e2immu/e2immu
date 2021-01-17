@@ -134,7 +134,7 @@ public class TestTypeInfoStream {
                 .build();
         MethodInfo hashMapConstructor = new MethodInspectionImpl.Builder(hashMap).build(IP).getMethodInfo();
         Expression creationExpression = NewObject.objectCreation(primitives, hashMapConstructor,
-                hashMapParameterizedType, List.of(), ObjectFlow.NO_FLOW);
+                hashMapParameterizedType, Diamond.NO, List.of(), ObjectFlow.NO_FLOW);
         ParameterInspectionImpl.Builder p0 = new ParameterInspectionImpl.Builder(typeT, "value", 0);
         MethodInfo put = new MethodInspectionImpl.Builder(testTypeInfo, "put")
                 .setReturnType(typeT)

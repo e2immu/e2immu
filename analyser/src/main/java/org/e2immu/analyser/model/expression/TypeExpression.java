@@ -37,14 +37,16 @@ import java.util.Objects;
 public class TypeExpression implements Expression {
     public final ParameterizedType parameterizedType;
     public final ObjectFlow objectFlow;
+    public final Diamond diamond;
 
-    public TypeExpression(@NotNull ParameterizedType parameterizedType) {
-        this(parameterizedType, ObjectFlow.NYE);
+    public TypeExpression(@NotNull ParameterizedType parameterizedType, Diamond diamond) {
+        this(parameterizedType, diamond, ObjectFlow.NYE);
     }
 
-    public TypeExpression(ParameterizedType parameterizedType, ObjectFlow objectFlow) {
+    public TypeExpression(ParameterizedType parameterizedType, Diamond diamond, ObjectFlow objectFlow) {
         this.parameterizedType = Objects.requireNonNull(parameterizedType);
         this.objectFlow = Objects.requireNonNull(objectFlow);
+        this.diamond = diamond;
     }
 
     @Override
@@ -72,7 +74,7 @@ public class TypeExpression implements Expression {
 
     @Override
     public OutputBuilder output() {
-        return new OutputBuilder().add(parameterizedType.output());
+        return new OutputBuilder().add(parameterizedType.output(false, diamond));
     }
 
     @Override
@@ -89,12 +91,12 @@ public class TypeExpression implements Expression {
     public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
         ObjectFlow objectFlow = builder.createLiteralObjectFlow(parameterizedType);
-        return builder.setExpression(new TypeExpression(parameterizedType, objectFlow)).build();
+        return builder.setExpression(new TypeExpression(parameterizedType, diamond, objectFlow)).build();
     }
 
     @Override
     public Expression translate(TranslationMap translationMap) {
-        return new TypeExpression(translationMap.translateType(parameterizedType));
+        return new TypeExpression(translationMap.translateType(parameterizedType), diamond, objectFlow);
     }
 
     @Override

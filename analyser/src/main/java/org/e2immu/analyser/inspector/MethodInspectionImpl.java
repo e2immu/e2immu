@@ -338,7 +338,7 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
 
         public void readyToComputeFQN(InspectionProvider inspectionProvider) {
             fullyQualifiedName = owner.fullyQualifiedName + "." + name + "(" + parameters.stream()
-                    .map(p -> p.getParameterizedType().print(inspectionProvider, p.isVarArgs()))
+                    .map(p -> p.getParameterizedType().print(inspectionProvider, p.isVarArgs(), Diamond.SHOW_ALL))
                     .collect(Collectors.joining(",")) + ")";
             distinguishingName = owner.fullyQualifiedName + "." + name + "(" + parameters.stream()
                     .map(p -> p.getParameterizedType().distinguishingName(inspectionProvider, p.isVarArgs()))

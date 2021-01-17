@@ -49,7 +49,7 @@ public class ParseFieldAccessExpr {
             String fullyQualifiedName = String.join(".", packagePrefix.prefix) + "." + name;
             TypeInfo typeInfo = expressionContext.typeContext.getFullyQualified(fullyQualifiedName, true);
             ParameterizedType objectType = new ParameterizedType(typeInfo, 0);
-            return new TypeExpression(objectType);
+            return new TypeExpression(objectType, Diamond.NO);
         }
         return createFieldAccess(expressionContext, object, name, fieldAccessExpr.getBegin().orElseThrow());
     }
@@ -69,7 +69,7 @@ public class ParseFieldAccessExpr {
             TypeInspection objectTypeInspection = expressionContext.typeContext.getTypeInspection(objectType.typeInfo);
             Optional<TypeInfo> oSubType = objectTypeInspection.subTypes().stream().filter(s -> name.equals(s.name())).findFirst();
             if (oSubType.isPresent()) {
-                return new TypeExpression(oSubType.get().asParameterizedType(expressionContext.typeContext));
+                return new TypeExpression(oSubType.get().asParameterizedType(expressionContext.typeContext), Diamond.NO);
             }
             throw new UnsupportedOperationException("Unknown field or subtype " + name + " in type " + objectType.typeInfo.fullyQualifiedName + " at " + positionForErrorReporting);
         } else {

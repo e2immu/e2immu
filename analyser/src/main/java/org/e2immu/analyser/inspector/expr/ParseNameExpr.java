@@ -30,7 +30,7 @@ public class ParseNameExpr {
         String name = nameExpr.getNameAsString();
         NamedType namedType = expressionContext.typeContext.get(name, false);
         if (namedType instanceof TypeInfo) {
-            return new TypeExpression(new ParameterizedType((TypeInfo) namedType, 0));
+            return new TypeExpression(new ParameterizedType((TypeInfo) namedType, 0), Diamond.SHOW_ALL);
         }
         if (namedType instanceof TypeParameter) {
             throw new UnsupportedOperationException("How is this possible?");

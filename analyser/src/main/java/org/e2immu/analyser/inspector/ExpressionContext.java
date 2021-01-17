@@ -512,7 +512,7 @@ public class ExpressionContext {
                             scope = new VariableExpression(variable);
                         } else {
                             ParameterizedType parameterizedType = ParameterizedTypeFactory.from(typeContext, cit.getScope().get());
-                            scope = new TypeExpression(parameterizedType);
+                            scope = new TypeExpression(parameterizedType, Diamond.NO);
                         }
                         return ParseFieldAccessExpr.createFieldAccess(this, scope, cit.getNameAsString(), expression.getBegin().orElseThrow());
                     }
@@ -524,7 +524,7 @@ public class ExpressionContext {
                     }
                 }
                 ParameterizedType parameterizedType = ParameterizedTypeFactory.from(typeContext, typeExpr.getType());
-                return new TypeExpression(parameterizedType);
+                return new TypeExpression(parameterizedType, Diamond.SHOW_ALL);
             }
             if (expression.isClassExpr()) {
                 ClassExpr classExpr = (ClassExpr) expression;

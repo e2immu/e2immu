@@ -122,7 +122,7 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
             ObjectFlow objectFlow = builder.createInternalObjectFlow(location, methodInfo.returnType(), Origin.NEW_OBJECT_CREATION);
             MethodAnalysis methodAnalysis = evaluationContext.getMethodAnalysis(methodInfo);
             NewObject initialInstance = NewObject.objectCreation(evaluationContext.getPrimitives(),
-                    methodInfo, methodInfo.returnType(), List.of(), objectFlow);
+                    methodInfo, methodInfo.returnType(), Diamond.SHOW_ALL, List.of(), objectFlow);
             NewObject instance = MethodCall.checkCompanionMethodsModifying(builder, evaluationContext, methodInfo,
                     methodAnalysis, scope, initialInstance, List.of());
             builder.setExpression(instance);
