@@ -18,8 +18,6 @@
 
 package org.e2immu.analyser.testexample;
 
-import org.e2immu.annotation.Nullable;
-
 import java.util.Iterator;
 
 public class SubTypes_0 {

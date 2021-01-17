@@ -433,6 +433,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
 
     private AnalysisStatus analyseLambdas(SharedState sharedState) {
         if (!lambdaAnalysers.isSet()) {
+            // IMPROVE add newly created anonymous functions as well
             List<Lambda> lambdas = statementAnalysis.statement.getStructure().findLambdas();
             List<MethodAnalyser> methodAnalysers = lambdas.stream().map(lambda -> {
                 MethodAnalyser methodAnalyser = new MethodAnalyser(lambda.methodInfo, analyserContext.getTypeAnalysis(lambda.methodInfo.typeInfo),

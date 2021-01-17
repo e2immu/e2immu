@@ -46,12 +46,6 @@ public class SubTypes_1 {
         return kv1.toString();
     }
 
-    /*
-     IMPROVE
-
-     Note that scoping rules for local variables accessible as final fields in the sub-type have not
-     yet been implemented. The method inspector will crash on "+ s" in the KV constructor.
-
     protected static String methodWithSubType2() {
         String s = "abc";
 
@@ -72,5 +66,4 @@ public class SubTypes_1 {
         KV kv1 = new KV("a", "BC");
         return kv1.toString();
     }
-    */
 }
