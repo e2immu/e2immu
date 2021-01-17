@@ -66,7 +66,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
     private AnalysisStatus analysisStatus;
     private AnalyserComponents<String, SharedState> analyserComponents;
 
-    private final SetOnce<List<MethodAnalyser>> lambdaAnalysers = new SetOnce<>();
+    private final SetOnce<List<Analyser>> localAnalysers = new SetOnce<>();
 
     private StatementAnalyser(AnalyserContext analyserContext,
                               MethodAnalyser methodAnalyser,
@@ -323,7 +323,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                         .add("checkUnreachableStatement", sharedState -> checkUnreachableStatement(previous,
                                 sharedState.forwardAnalysisInfo.execution()))
                         .add("initialiseOrUpdateVariables", this::initialiseOrUpdateVariables)
-                        .add("analyseLambdas", this::analyseLambdas)
+                        .add("analyseTypesInStatement", this::analyseTypesInStatement)
                         .add("evaluationOfMainExpression", this::evaluationOfMainExpression)
                         .add("subBlocks", this::subBlocks)
                         .add("analyseFlowData", sharedState -> statementAnalysis.flowData.analyse(this, previous,
@@ -377,9 +377,9 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
     // in a separate task, so that it can be skipped when the statement is unreachable
     private AnalysisStatus initialiseOrUpdateVariables(SharedState sharedState) {
         if (sharedState.evaluationContext.getIteration() == 0) {
-            statementAnalysis.initIteration0(analyserContext, myMethodAnalyser.methodInfo, sharedState.previous);
+            statementAnalysis.initIteration0(sharedState.evaluationContext, myMethodAnalyser.methodInfo, sharedState.previous);
         } else {
-            statementAnalysis.initIteration1Plus(analyserContext, myMethodAnalyser.methodInfo, sharedState.previous);
+            statementAnalysis.initIteration1Plus(sharedState.evaluationContext, myMethodAnalyser.methodInfo, sharedState.previous);
         }
 
         if (!statementAnalysis.flowData.initialTimeIsSet()) {
@@ -431,24 +431,24 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         }
     }
 
-    private AnalysisStatus analyseLambdas(SharedState sharedState) {
-        if (!lambdaAnalysers.isSet()) {
-            // IMPROVE add newly created anonymous functions as well
-            List<Lambda> lambdas = statementAnalysis.statement.getStructure().findLambdas();
-            List<MethodAnalyser> methodAnalysers = lambdas.stream().map(lambda -> {
-                MethodAnalyser methodAnalyser = new MethodAnalyser(lambda.methodInfo, analyserContext.getTypeAnalysis(lambda.methodInfo.typeInfo),
+    private AnalysisStatus analyseTypesInStatement(SharedState sharedState) {
+        if (!localAnalysers.isSet()) {
+            List<TypeInfo> locallyDefinedTypes = statementAnalysis.statement.getStructure().findTypeDefinedInStatement();
+            List<Analyser> analysers = locallyDefinedTypes.stream().map(typeInfo -> {
+                MethodInfo methodInfo = typeInfo.typeInspection.get().methods().get(0);
+                MethodAnalyser methodAnalyser = new MethodAnalyser(methodInfo, analyserContext.getTypeAnalysis(typeInfo),
                         true, analyserContext);
                 methodAnalyser.initialize();
                 return methodAnalyser;
             }).collect(Collectors.toUnmodifiableList());
-            lambdaAnalysers.set(methodAnalysers);
+            localAnalysers.set(analysers);
         }
 
         AnalysisStatus analysisStatus = DONE;
-        for (MethodAnalyser lambdaAnalyser : lambdaAnalysers.get()) {
-            log(ANALYSER, "------- Starting lambda analyser ------");
-            AnalysisStatus lambdaStatus = lambdaAnalyser.analyse(sharedState.evaluationContext.getIteration(), sharedState.evaluationContext);
-            log(ANALYSER, "------- Ending lambda analyser   ------");
+        for (Analyser analyser : localAnalysers.get()) {
+            log(ANALYSER, "------- Starting local analyser {} ------", analyser.getName());
+            AnalysisStatus lambdaStatus = analyser.analyse(sharedState.evaluationContext.getIteration(), sharedState.evaluationContext);
+            log(ANALYSER, "------- Ending local analyser   {} ------", analyser.getName());
             analysisStatus = analysisStatus.combine(lambdaStatus);
         }
         return analysisStatus;
@@ -506,8 +506,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             EvaluationResult.ChangeData changeData = entry.getValue();
 
             // make a copy because we might add a variable when linking the local loop copy
-            Set<Variable> additionalLinks =
-                    new HashSet<>(ensureVariables(variable, changeData, evaluationResult.statementTime()));
+            Set<Variable> additionalLinks = new HashSet<>(ensureVariables(sharedState.evaluationContext, variable,
+                    changeData, evaluationResult.statementTime()));
 
             // we're now guaranteed to find the variable
             VariableInfoContainer vic = statementAnalysis.variables.get(variable.fullyQualifiedName());
@@ -633,12 +633,13 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
     Local variables, This, Parameters will already exist, minimally in INITIAL level
     Fields (and forms of This (super...)) will not exist in the first iteration; they need creating
      */
-    private Set<Variable> ensureVariables(Variable variable,
+    private Set<Variable> ensureVariables(EvaluationContext evaluationContext,
+                                          Variable variable,
                                           EvaluationResult.ChangeData changeData,
                                           int newStatementTime) {
         VariableInfoContainer vic;
         if (!statementAnalysis.variables.isSet(variable.fullyQualifiedName())) {
-            vic = statementAnalysis.createVariable(analyserContext, variable, statementAnalysis.flowData.getInitialTime());
+            vic = statementAnalysis.createVariable(evaluationContext, variable, statementAnalysis.flowData.getInitialTime());
         } else {
             vic = statementAnalysis.variables.get(variable.fullyQualifiedName());
         }

@@ -29,7 +29,11 @@ public interface Analyser {
 
     void initialize();
 
-    AnalysisStatus analyse(int iteration);
+    /*
+    closure is null when called from primary type analyser, is not null when a type/method/... is being
+    analysed from the statement analyser
+     */
+    AnalysisStatus analyse(int iteration, EvaluationContext closure);
 
     void write();
 

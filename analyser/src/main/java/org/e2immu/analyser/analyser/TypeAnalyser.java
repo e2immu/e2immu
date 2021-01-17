@@ -216,7 +216,7 @@ public class TypeAnalyser extends AbstractAnalyser {
     }
 
     @Override
-    public AnalysisStatus analyse(int iteration) {
+    public AnalysisStatus analyse(int iteration, EvaluationContext closure) {
         log(ANALYSER, "Analysing type {}", typeInfo.fullyQualifiedName);
         try {
             AnalysisStatus analysisStatus = analyserComponents.run(iteration);
@@ -428,7 +428,7 @@ public class TypeAnalyser extends AbstractAnalyser {
 
     private void handlePrecondition(@NotModified MethodAnalyser methodAnalyser, Expression precondition, Map<String, Expression> tempApproved, int iteration) {
         EvaluationContext evaluationContext = new EvaluationContextImpl(iteration,
-                ConditionManager.initialConditionManager(analyserContext.getPrimitives()));
+                ConditionManager.initialConditionManager(analyserContext.getPrimitives()), null);
         Expression negated = Negation.negate(evaluationContext, precondition);
         String label = labelOfPreconditionForMarkAndOnly(precondition);
         Expression inMap = tempApproved.get(label);
@@ -929,8 +929,8 @@ public class TypeAnalyser extends AbstractAnalyser {
 
     class EvaluationContextImpl extends AbstractEvaluationContextImpl implements EvaluationContext {
 
-        protected EvaluationContextImpl(int iteration, ConditionManager conditionManager) {
-            super(iteration, conditionManager, null);
+        protected EvaluationContextImpl(int iteration, ConditionManager conditionManager, EvaluationContext closure) {
+            super(iteration, conditionManager, closure);
         }
 
         @Override

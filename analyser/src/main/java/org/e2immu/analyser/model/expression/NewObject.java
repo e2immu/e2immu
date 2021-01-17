@@ -207,6 +207,11 @@ public record NewObject(MethodInfo constructor,
     }
 
     @Override
+    public TypeInfo definesType() {
+        return anonymousClass;
+    }
+
+    @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;

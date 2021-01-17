@@ -272,11 +272,6 @@ public class MethodAnalyser extends AbstractAnalyser {
 
     // called from primary type analyser
     @Override
-    public AnalysisStatus analyse(int iteration) {
-        return analyse(iteration, null);
-    }
-
-    // called from statement analyser
     public AnalysisStatus analyse(int iteration, EvaluationContext closure) {
         log(ANALYSER, "Analysing method {}", methodInfo.fullyQualifiedName());
         EvaluationContext evaluationContext = new EvaluationContextImpl(iteration,

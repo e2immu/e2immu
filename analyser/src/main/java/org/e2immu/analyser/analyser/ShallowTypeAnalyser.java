@@ -262,7 +262,7 @@ public class ShallowTypeAnalyser implements AnalyserContext {
                             e2ImmuAnnotationExpressions);
                 } else {
                     MethodAnalyser methodAnalyser = either.getLeft();
-                    AnalysisStatus analysisStatus = methodAnalyser.analyse(effectivelyFinalIteration);
+                    AnalysisStatus analysisStatus = methodAnalyser.analyse(effectivelyFinalIteration, null);
                     if (analysisStatus != AnalysisStatus.DONE) {
                         log(DELAYED, "{} in analysis of {}, full method analyser", analysisStatus, methodInfo.fullyQualifiedName());
                         methodAnalysisStatus.set(analysisStatus);

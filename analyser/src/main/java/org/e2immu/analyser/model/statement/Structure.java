@@ -22,8 +22,8 @@ import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Statement;
 import org.e2immu.analyser.model.StatementExecution;
+import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.expression.EmptyExpression;
-import org.e2immu.analyser.model.expression.Lambda;
 import org.e2immu.annotation.NotNull;
 
 import java.util.ArrayList;
@@ -77,18 +77,19 @@ public record Structure(List<Expression> initialisers,
         this.expressionIsCondition = expressionIsCondition;
     }
 
-    public List<Lambda> findLambdas() {
+    public List<TypeInfo> findTypeDefinedInStatement() {
         Stream<Expression> expressions = Stream.concat(Stream.concat(initialisers.stream(), updaters.stream()),
                 expression == EmptyExpression.EMPTY_EXPRESSION ? Stream.empty() : Stream.of(expression));
-        List<Lambda> lambdas = new ArrayList<>();
+        List<TypeInfo> types = new ArrayList<>();
         expressions.forEach(expression -> expression.visit(e -> {
-            if (e instanceof Lambda lambda) {
-                lambdas.add(lambda);
+            TypeInfo typeInfo = e.definesType();
+            if(typeInfo != null) {
+                types.add(typeInfo);
                 return false;
             }
             return true;
         }));
-        return lambdas;
+        return types;
     }
 
     public List<Statement> getStatements() {

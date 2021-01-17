@@ -68,7 +68,7 @@ public class FieldAnalyser extends AbstractAnalyser {
     public final FieldAnalysisImpl.Builder fieldAnalysis;
     public final MethodAnalyser sam;
     private final boolean fieldCanBeWrittenFromOutsideThisType;
-    private final AnalyserComponents<String, Integer> analyserComponents;
+    private final AnalyserComponents<String, SharedState> analyserComponents;
     private final CheckConstant checkConstant;
     private final CheckLinks checkLinks;
     private final boolean haveInitialiser;
@@ -77,6 +77,9 @@ public class FieldAnalyser extends AbstractAnalyser {
     private List<MethodAnalyser> allMethodsAndConstructors;
     private List<MethodAnalyser> myMethodsAndConstructors;
     private TypeAnalyser myTypeAnalyser;
+
+    private record SharedState(int iteration, EvaluationContext closure) {
+    }
 
     public FieldAnalyser(FieldInfo fieldInfo,
                          TypeInfo primaryType,
@@ -95,7 +98,7 @@ public class FieldAnalyser extends AbstractAnalyser {
         fieldCanBeWrittenFromOutsideThisType = fieldInfo.owner.isRecord() || !fieldInfo.isPrivate() && !fieldInfo.isExplicitlyFinal();
         haveInitialiser = fieldInspection.fieldInitialiserIsSet() && fieldInspection.getFieldInitialiser().initialiser() != EmptyExpression.EMPTY_EXPRESSION;
 
-        analyserComponents = new AnalyserComponents.Builder<String, Integer>()
+        analyserComponents = new AnalyserComponents.Builder<String, SharedState>()
                 .add(COMPUTE_IMPLICITLY_IMMUTABLE_DATA_TYPE, (iteration) -> computeImplicitlyImmutableDataType())
                 .add(EVALUATE_INITIALISER, this::evaluateInitialiser)
                 .add(ANALYSE_FINAL, this::analyseFinal)
@@ -112,7 +115,7 @@ public class FieldAnalyser extends AbstractAnalyser {
     }
 
     @Override
-    public AnalyserComponents<String, Integer> getAnalyserComponents() {
+    public AnalyserComponents<String, SharedState> getAnalyserComponents() {
         return analyserComponents;
     }
 
@@ -143,18 +146,21 @@ public class FieldAnalyser extends AbstractAnalyser {
     }
 
     @Override
-    public AnalysisStatus analyse(int iteration) {
+    public AnalysisStatus analyse(int iteration, EvaluationContext closure) {
         log(ANALYSER, "Analysing field {}", fieldInfo.fullyQualifiedName());
 
         // analyser visitors
         try {
-            AnalysisStatus analysisStatus = analyserComponents.run(iteration);
+            SharedState sharedState = new SharedState(iteration, closure);
+            AnalysisStatus analysisStatus = analyserComponents.run(sharedState);
 
             List<FieldAnalyserVisitor> visitors = analyserContext.getConfiguration().debugConfiguration.afterFieldAnalyserVisitors;
             if (!visitors.isEmpty()) {
-                EvaluationContext evaluationContext = new EvaluationContextImpl(iteration, ConditionManager.initialConditionManager(analyserContext.getPrimitives()));
+                EvaluationContext evaluationContext = new EvaluationContextImpl(iteration,
+                        ConditionManager.initialConditionManager(analyserContext.getPrimitives()), closure);
                 for (FieldAnalyserVisitor fieldAnalyserVisitor : visitors) {
-                    fieldAnalyserVisitor.visit(new FieldAnalyserVisitor.Data(iteration, evaluationContext, fieldInfo, fieldAnalysis, analyserComponents.getStatusesAsMap()));
+                    fieldAnalyserVisitor.visit(new FieldAnalyserVisitor.Data(iteration, evaluationContext,
+                            fieldInfo, fieldAnalysis, analyserComponents.getStatusesAsMap()));
                 }
             }
             return analysisStatus;
@@ -170,11 +176,12 @@ public class FieldAnalyser extends AbstractAnalyser {
         fieldAnalysis.transferPropertiesToAnnotations(analyserContext, e2);
     }
 
-    private AnalysisStatus evaluateInitialiser(int iteration) {
+    private AnalysisStatus evaluateInitialiser(SharedState sharedState) {
         if (fieldInspection.fieldInitialiserIsSet()) {
             FieldInspection.FieldInitialiser fieldInitialiser = fieldInspection.getFieldInitialiser();
             if (fieldInitialiser.initialiser() != EmptyExpression.EMPTY_EXPRESSION) {
-                EvaluationContext evaluationContext = new EvaluationContextImpl(iteration, ConditionManager.initialConditionManager(analyserContext.getPrimitives()));
+                EvaluationContext evaluationContext = new EvaluationContextImpl(sharedState.iteration(),
+                        ConditionManager.initialConditionManager(analyserContext.getPrimitives()), sharedState.closure());
                 EvaluationResult evaluationResult = fieldInitialiser.initialiser().evaluate(evaluationContext, ForwardEvaluationInfo.DEFAULT);
                 Expression initialiserValue = evaluationResult.value();
                 if (initialiserValue != NO_VALUE) {
@@ -228,7 +235,7 @@ public class FieldAnalyser extends AbstractAnalyser {
         return DONE;
     }
 
-    private AnalysisStatus analyseNotNull(int iteration) {
+    private AnalysisStatus analyseNotNull(SharedState sharedState) {
         if (fieldAnalysis.getProperty(VariableProperty.NOT_NULL) != Level.DELAY) return DONE;
 
         int isFinal = fieldAnalysis.getProperty(VariableProperty.FINAL);
@@ -245,8 +252,8 @@ public class FieldAnalyser extends AbstractAnalyser {
         if (!fieldAnalysis.values.isSet()) return DELAYS;
 
         boolean allDelaysResolved = fieldAnalysis.allLinksHaveBeenEstablished.isSet();
-        EvaluationContext evaluationContext = new EvaluationContextImpl(iteration,
-                ConditionManager.initialConditionManager(analyserContext.getPrimitives()));
+        EvaluationContext evaluationContext = new EvaluationContextImpl(sharedState.iteration,
+                ConditionManager.initialConditionManager(analyserContext.getPrimitives()), sharedState.closure);
 
         int worstOverValues = fieldAnalysis.values.get().stream()
                 .mapToInt(expression -> evaluationContext.getProperty(expression, VariableProperty.NOT_NULL))
@@ -311,7 +318,7 @@ public class FieldAnalyser extends AbstractAnalyser {
         return methodAnalyser.getFieldAsVariableStream(fieldInfo, true).anyMatch(VariableInfo::isRead);
     }
 
-    private AnalysisStatus analyseImmutable(int iteration) {
+    private AnalysisStatus analyseImmutable(SharedState sharedState) {
         if (fieldInfo.type.isFunctionalInterface()) return DONE; // not for me
         // not an assert, because the value is not directly determined by the actual property
         if (fieldAnalysis.getProperty(VariableProperty.IMMUTABLE) != Level.DELAY) return DONE;
@@ -341,8 +348,8 @@ public class FieldAnalyser extends AbstractAnalyser {
 
         boolean allDelaysResolved = fieldAnalysis.allLinksHaveBeenEstablished.isSet();
 
-        EvaluationContext evaluationContext = new EvaluationContextImpl(iteration,
-                ConditionManager.initialConditionManager(analyserContext.getPrimitives()));
+        EvaluationContext evaluationContext = new EvaluationContextImpl(sharedState.iteration,
+                ConditionManager.initialConditionManager(analyserContext.getPrimitives()), sharedState.closure);
         int valueFromAssignment = fieldAnalysis.values.get().stream()
                 .mapToInt(expression -> evaluationContext.getProperty(expression, VariableProperty.IMMUTABLE))
                 .min()
@@ -537,9 +544,9 @@ public class FieldAnalyser extends AbstractAnalyser {
         return DONE;
     }
 
-    private AnalysisStatus analyseFinal(int iteration) {
+    private AnalysisStatus analyseFinal(SharedState sharedState) {
         assert fieldAnalysis.getProperty(VariableProperty.FINAL) == Level.DELAY;
-        assert iteration == 0;
+        assert sharedState.iteration == 0;
 
         if (fieldInfo.isExplicitlyFinal()) {
             fieldAnalysis.setProperty(VariableProperty.FINAL, Level.TRUE);
@@ -697,14 +704,10 @@ public class FieldAnalyser extends AbstractAnalyser {
         return messages.getMessageStream();
     }
 
-    public EvaluationContext createEvaluationContext() {
-        return new EvaluationContextImpl(0, ConditionManager.initialConditionManager(analyserContext.getPrimitives()));
-    }
-
     private class EvaluationContextImpl extends AbstractEvaluationContextImpl {
 
-        private EvaluationContextImpl(int iteration, ConditionManager conditionManager) {
-            super(iteration, conditionManager, null);
+        private EvaluationContextImpl(int iteration, ConditionManager conditionManager, EvaluationContext closure) {
+            super(iteration, conditionManager, closure);
         }
 
         @Override
@@ -744,7 +747,7 @@ public class FieldAnalyser extends AbstractAnalyser {
         @Override
         public EvaluationContext child(Expression condition) {
             ConditionManager cm = conditionManager.newAtStartOfNewBlock(getPrimitives(), condition);
-            return FieldAnalyser.this.new EvaluationContextImpl(iteration, cm);
+            return FieldAnalyser.this.new EvaluationContextImpl(iteration, cm, closure);
         }
 
         @Override

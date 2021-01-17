@@ -99,4 +99,8 @@ public interface Element {
     default String debugOutput() {
         return output().debug();
     }
+
+    default TypeInfo definesType() {
+        return null;
+    }
 }

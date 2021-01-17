@@ -163,7 +163,7 @@ public class PrimaryTypeAnalyser implements AnalyserContext {
         int iteration = 0;
         AnalyserComponents.Builder<Analyser, Integer> builder = new AnalyserComponents.Builder<>();
         for (Analyser analyser : analysers) {
-            builder.add(analyser, analyser::analyse);
+            builder.add(analyser, it -> analyser.analyse(it, null));
         }
         AnalyserComponents<Analyser, Integer> analyserComponents = builder.build();
 

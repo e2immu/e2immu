@@ -69,6 +69,11 @@ public class Lambda implements Expression {
     }
 
     @Override
+    public TypeInfo definesType() {
+        return methodInfo.typeInfo;
+    }
+
+    @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;

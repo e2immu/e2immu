@@ -35,6 +35,11 @@ public class LocalClassDeclaration extends StatementWithStructure {
     }
 
     @Override
+    public TypeInfo definesType() {
+        return typeInfo;
+    }
+
+    @Override
     public Statement translate(TranslationMap translationMap) {
         return this; // TODO we will need something more complicated here.
     }
