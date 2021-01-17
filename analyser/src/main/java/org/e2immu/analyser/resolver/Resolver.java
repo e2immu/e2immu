@@ -43,6 +43,13 @@ import static org.e2immu.analyser.util.Logger.LogTarget.STATIC_METHOD_CALLS;
 import static org.e2immu.analyser.util.Logger.isLogEnabled;
 import static org.e2immu.analyser.util.Logger.log;
 
+/*
+The Resolver is recursive with respect to types defined in statements: anonymous types (new XXX() { }),
+lambdas, and classes defined in methods.
+These result in a "new" SortedType object that is stored in the local type's TypeResolution object.
+
+Sub-types defined in the primary type go along with methods and fields.
+ */
 public class Resolver {
     private static final Logger LOGGER = LoggerFactory.getLogger(Resolver.class);
 
@@ -50,17 +57,20 @@ public class Resolver {
     private final boolean shallowResolver;
     private final E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions;
     private final InspectionProvider inspectionProvider;
+    private final Resolver parent;
 
     public Stream<Message> getMessageStream() {
         return messages.getMessageStream();
     }
 
-    public Resolver(InspectionProvider inspectionProvider,
+    public Resolver(Resolver parent,
+                    InspectionProvider inspectionProvider,
                     E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions,
                     boolean shallowResolver) {
         this.shallowResolver = shallowResolver;
         this.e2ImmuAnnotationExpressions = e2ImmuAnnotationExpressions;
         this.inspectionProvider = inspectionProvider;
+        this.parent = parent;
     }
 
     /**
@@ -83,7 +93,12 @@ public class Resolver {
                 TypeInfo typeInfo = entry.getKey();
                 TypeContext typeContext = entry.getValue();
 
-                assert typeInfo.isPrimaryType() : "Not a primary type: " + typeInfo.fullyQualifiedName;
+                if (parent == null) {
+                    assert typeInfo.isPrimaryType() : "Not a primary type: " + typeInfo.fullyQualifiedName;
+                } else {
+                    assert !typeInfo.isPrimaryType() :
+                            "?? in recursive situation we do not expect a primary type" + typeInfo.fullyQualifiedName;
+                }
                 SortedType sortedType = addToTypeGraph(typeGraph, stayWithin, typeInfo, typeContext);
                 toSortedType.put(typeInfo, sortedType);
             } catch (RuntimeException rte) {
@@ -91,9 +106,7 @@ public class Resolver {
                 throw rte;
             }
         }
-        List<SortedType> result = sortWarnForCircularDependencies(typeGraph).stream().map(toSortedType::get).collect(Collectors.toList());
-        log(RESOLVE, "Result of type sorting: {}", result);
-        return result;
+        return sortWarnForCircularDependencies(typeGraph, toSortedType);
     }
 
     private List<TypeInfo> typeAndAllSubTypes(TypeInfo typeInfo) {
@@ -110,7 +123,7 @@ public class Resolver {
         }
     }
 
-    private List<TypeInfo> sortWarnForCircularDependencies(DependencyGraph<TypeInfo> typeGraph) {
+    private List<SortedType> sortWarnForCircularDependencies(DependencyGraph<TypeInfo> typeGraph, Map<TypeInfo, SortedType> toSortedType) {
         Map<TypeInfo, Set<TypeInfo>> participatesInCycles = new HashMap<>();
         List<TypeInfo> sorted = typeGraph.sorted(typeInfo -> {
             // typeInfo is part of a cycle, dependencies are:
@@ -123,24 +136,28 @@ public class Resolver {
             messages.add(Message.newMessage(new Location(typeInfo), Message.CIRCULAR_TYPE_DEPENDENCY,
                     typesInCycle.stream().map(t -> t.fullyQualifiedName).collect(Collectors.joining(", "))));
         });
-        for (TypeInfo typeInfo : sorted) {
-            computeTypeResolution(typeInfo, participatesInCycles);
-        }
-        return sorted;
+
+        return sorted.stream().map(typeInfo -> computeTypeResolution(typeInfo, participatesInCycles, toSortedType))
+                .collect(Collectors.toList());
     }
 
-    private void computeTypeResolution(TypeInfo typeInfo,
-                                       Map<TypeInfo, Set<TypeInfo>> participatesInCycles) {
+    private SortedType computeTypeResolution(TypeInfo typeInfo,
+                                             Map<TypeInfo, Set<TypeInfo>> participatesInCycles,
+                                             Map<TypeInfo, SortedType> toSortedType) {
         Set<TypeInfo> circularDependencies = participatesInCycles.get(typeInfo);
-        TypeResolution typeResolution = new TypeResolution(circularDependencies == null ? Set.of() : circularDependencies,
+        SortedType sortedType = toSortedType.get(typeInfo);
+        TypeResolution typeResolution = new TypeResolution(parent != null ? sortedType : null,
+                circularDependencies == null ? Set.of() : circularDependencies,
                 superTypesExcludingJavaLangObject(inspectionProvider, typeInfo));
         typeInfo.typeResolution.set(typeResolution);
         for (TypeInfo subType : inspectionProvider.getTypeInspection(typeInfo).subTypes()) {
-            // TODO circular dependencies not computed for sub-types at the moment
-            TypeResolution subTypeResolution = new TypeResolution(circularDependencies == null ? Set.of() : circularDependencies,
+            // IMPROVE circular dependencies not computed for sub-types at the moment
+            TypeResolution subTypeResolution = new TypeResolution(null, circularDependencies == null ? Set.of() : circularDependencies,
                     superTypesExcludingJavaLangObject(inspectionProvider, subType));
             subType.typeResolution.set(subTypeResolution);
         }
+        log(RESOLVE, "Result of type sorting: {}", sortedType);
+        return sortedType;
     }
 
     private SortedType addToTypeGraph(DependencyGraph<TypeInfo> typeGraph,
@@ -191,7 +208,7 @@ public class Resolver {
             }
             typeInspection.subTypes().forEach(typeContextOfType::addToContext);
 
-            // recursion, do sub-types first
+            // recursion, do sub-types first (no recursion at resolver level!)
             typeInspection.subTypes().forEach(subType -> {
                 log(RESOLVE, "From {} into {}", typeInfo.fullyQualifiedName, subType.fullyQualifiedName);
                 doType(subType, typeContextOfType, methodFieldSubTypeGraph);
@@ -381,7 +398,7 @@ public class Resolver {
             BlockStmt block = methodInspection.getBlock();
             if (block != null && !block.getStatements().isEmpty()) {
                 log(RESOLVE, "Parsing block of method {}", methodInfo.name);
-                doBlock(subContext, methodInfo, methodInspection, block, methodFieldSubTypeGraph);
+                doBlock(subContext, methodInfo, methodInspection, block);
             } else {
                 methodInspection.setInspectedBlock(Block.EMPTY_BLOCK);
             }
@@ -429,10 +446,10 @@ public class Resolver {
         }
     }
 
-    private void doBlock(ExpressionContext expressionContext, MethodInfo methodInfo,
+    private void doBlock(ExpressionContext expressionContext,
+                         MethodInfo methodInfo,
                          MethodInspectionImpl.Builder methodInspection,
-                         BlockStmt block,
-                         DependencyGraph<WithInspectionAndAnalysis> methodFieldSubTypeGraph) {
+                         BlockStmt block) {
         try {
             ExpressionContext newContext = expressionContext.newVariableContext(methodInfo);
             methodInspection.getParameters().forEach(newContext.variableContext::add);
@@ -440,7 +457,11 @@ public class Resolver {
             Block parsedBlock = newContext.parseBlockOrStatement(block);
             methodInspection.setInspectedBlock(parsedBlock);
 
-            newContext.streamNewlyCreatedTypes().forEach(anonymousType -> doType(anonymousType, newContext.typeContext, methodFieldSubTypeGraph));
+            newContext.streamNewlyCreatedTypes().forEach(anonymousType -> {
+                Resolver resolver = new Resolver(this, inspectionProvider, e2ImmuAnnotationExpressions, false);
+                resolver.sortTypes(Map.of(anonymousType, newContext.typeContext));
+                // result can be ignored, because it is stored in the anonymousType's TypeResolution
+            });
 
         } catch (RuntimeException rte) {
             LOGGER.warn("Caught runtime exception while resolving block starting at line {}", block.getBegin().orElse(null));

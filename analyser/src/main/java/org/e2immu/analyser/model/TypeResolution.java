@@ -17,8 +17,19 @@
 
 package org.e2immu.analyser.model;
 
+import org.e2immu.analyser.resolver.SortedType;
+
 import java.util.Set;
 
-public record TypeResolution(Set<TypeInfo> circularDependencies, Set<TypeInfo> superTypesExcludingJavaLangObject) {
+/*
+The resolver is used recursively at the level of sub-types defined in statements, not at the level
+of "normal" subtypes -- only the former require a new EvaluationContext closure.
 
+This recursion results in a SortedType object which will be used to create a PrimaryTypeAnalyser
+in the statement analyser.
+SortedType is only not-null for sub-types defined in statements; it is kept null for primary types.
+ */
+public record TypeResolution(SortedType sortedType,
+                             Set<TypeInfo> circularDependencies,
+                             Set<TypeInfo> superTypesExcludingJavaLangObject) {
 }

@@ -52,7 +52,7 @@ import static org.e2immu.analyser.util.Logger.log;
 import static org.e2immu.analyser.util.StringUtil.pad;
 
 @Container(builds = StatementAnalysis.class)
-public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
+public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, HoldsAnalysers {
     private static final Logger LOGGER = LoggerFactory.getLogger(StatementAnalyser.class);
     public static final String ANALYSE_METHOD_LEVEL_DATA = "analyseMethodLevelData";
 
@@ -66,7 +66,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
     private AnalysisStatus analysisStatus;
     private AnalyserComponents<String, SharedState> analyserComponents;
 
-    private final SetOnce<List<Analyser>> localAnalysers = new SetOnce<>();
+    private final SetOnce<List<PrimaryTypeAnalyser>> localAnalysers = new SetOnce<>();
 
     private StatementAnalyser(AnalyserContext analyserContext,
                               MethodAnalyser methodAnalyser,
@@ -434,18 +434,20 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
     private AnalysisStatus analyseTypesInStatement(SharedState sharedState) {
         if (!localAnalysers.isSet()) {
             List<TypeInfo> locallyDefinedTypes = statementAnalysis.statement.getStructure().findTypeDefinedInStatement();
-            List<Analyser> analysers = locallyDefinedTypes.stream().map(typeInfo -> {
-                MethodInfo methodInfo = typeInfo.typeInspection.get().methods().get(0);
-                MethodAnalyser methodAnalyser = new MethodAnalyser(methodInfo, analyserContext.getTypeAnalysis(typeInfo),
-                        true, analyserContext);
-                methodAnalyser.initialize();
-                return methodAnalyser;
+            List<PrimaryTypeAnalyser> analysers = locallyDefinedTypes.stream().map(typeInfo -> {
+                PrimaryTypeAnalyser primaryTypeAnalyser = new PrimaryTypeAnalyser(analyserContext,
+                        typeInfo.typeResolution.get().sortedType(),
+                        analyserContext.getConfiguration(),
+                        analyserContext.getPrimitives(),
+                        analyserContext.getE2ImmuAnnotationExpressions());
+                primaryTypeAnalyser.initialize();
+                return primaryTypeAnalyser;
             }).collect(Collectors.toUnmodifiableList());
             localAnalysers.set(analysers);
         }
 
         AnalysisStatus analysisStatus = DONE;
-        for (Analyser analyser : localAnalysers.get()) {
+        for (PrimaryTypeAnalyser analyser : localAnalysers.get()) {
             log(ANALYSER, "------- Starting local analyser {} ------", analyser.getName());
             AnalysisStatus lambdaStatus = analyser.analyse(sharedState.evaluationContext.getIteration(), sharedState.evaluationContext);
             log(ANALYSER, "------- Ending local analyser   {} ------", analyser.getName());
@@ -454,6 +456,16 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         return analysisStatus;
     }
 
+    @Override
+    public void makeImmutable() {
+        if (localAnalysers.isSet()) {
+            localAnalysers.get().forEach(PrimaryTypeAnalyser::makeImmutable);
+        }
+        for(Optional<StatementAnalyser> block: navigationData.blocks.get()){
+            block.ifPresent(StatementAnalyser::makeImmutable);
+        }
+        navigationData.next.get().ifPresent(StatementAnalyser::makeImmutable);
+    }
 
     // executed only once per statement, at the very beginning of the loop
     // we're assuming that the flowData are computed correctly

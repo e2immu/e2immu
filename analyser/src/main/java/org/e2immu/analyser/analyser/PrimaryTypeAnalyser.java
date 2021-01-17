@@ -30,7 +30,6 @@ import org.e2immu.analyser.resolver.SortedType;
 import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.analyser.util.Pair;
 import org.e2immu.analyser.util.SetOnce;
-import org.e2immu.annotation.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,7 +43,7 @@ import java.util.stream.Stream;
 import static org.e2immu.analyser.util.Logger.LogTarget.ANALYSER;
 import static org.e2immu.analyser.util.Logger.log;
 
-public class PrimaryTypeAnalyser implements AnalyserContext {
+public class PrimaryTypeAnalyser implements AnalyserContext, Analyser, HoldsAnalysers {
     private static final Logger LOGGER = LoggerFactory.getLogger(PrimaryTypeAnalyser.class);
 
     private final PatternMatcher<StatementAnalyser> patternMatcher;
@@ -58,18 +57,26 @@ public class PrimaryTypeAnalyser implements AnalyserContext {
     private final Map<ParameterInfo, ParameterAnalyser> parameterAnalysers;
     private final Messages messages = new Messages();
     private final Primitives primitives;
+    private final AnalyserContext parent;
 
-    public PrimaryTypeAnalyser(@NotNull SortedType sortedType,
-                               @NotNull Configuration configuration,
-                               @NotNull Primitives primitives,
-                               @NotNull E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
+    private final AnalyserComponents<Analyser, SharedState> analyserComponents;
+
+    record SharedState(int iteration, EvaluationContext closure) {
+    }
+
+    public PrimaryTypeAnalyser(AnalyserContext parent,
+                               SortedType sortedType,
+                               Configuration configuration,
+                               Primitives primitives,
+                               E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
+        this.parent = parent;
         this.configuration = configuration;
         this.e2ImmuAnnotationExpressions = e2ImmuAnnotationExpressions;
         Objects.requireNonNull(primitives);
         patternMatcher = configuration.analyserConfiguration.newPatternMatcher();
         this.primitives = primitives;
         this.primaryType = Objects.requireNonNull(sortedType.primaryType());
-        assert this.primaryType.isPrimaryType();
+        assert (parent == null) == this.primaryType.isPrimaryType();
 
         // do the types first, so we can pass on a TypeAnalysis objects
         ImmutableMap.Builder<TypeInfo, TypeAnalyser> typeAnalysersBuilder = new ImmutableMap.Builder<>();
@@ -143,39 +150,57 @@ public class PrimaryTypeAnalyser implements AnalyserContext {
         analysers = ListUtil.immutableConcat(methodAnalysersInOrder, fieldAnalysersInOrder, typeAnalysersInOrder);
         // all important fields of the interface have been set.
         analysers.forEach(Analyser::initialize);
+
+        AnalyserComponents.Builder<Analyser, SharedState> builder = new AnalyserComponents.Builder<>();
+        for (Analyser analyser : analysers) {
+            builder.add(analyser, sharedState -> analyser.analyse(sharedState.iteration, sharedState.closure));
+        }
+        analyserComponents = builder.build();
     }
 
+    @Override
+    public AnalyserContext getParent() {
+        return parent;
+    }
 
     @Override
     public Primitives getPrimitives() {
         return primitives;
     }
 
+    @Override
     public Stream<Message> getMessageStream() {
         return Stream.concat(messages.getMessageStream(), analysers.stream().flatMap(Analyser::getMessageStream));
     }
 
+    @Override
+    public WithInspectionAndAnalysis getMember() {
+        return primaryType;
+    }
+
+    @Override
+    public Analysis getAnalysis() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public String getName() {
+        return "PTA " + primaryType.fullyQualifiedName;
+    }
+
+    @Override
     public void check() {
         analysers.forEach(Analyser::check);
     }
 
     public void analyse() {
         int iteration = 0;
-        AnalyserComponents.Builder<Analyser, Integer> builder = new AnalyserComponents.Builder<>();
-        for (Analyser analyser : analysers) {
-            builder.add(analyser, it -> analyser.analyse(it, null));
-        }
-        AnalyserComponents<Analyser, Integer> analyserComponents = builder.build();
-
         AnalysisStatus analysisStatus = AnalysisStatus.PROGRESS;
 
         while (analysisStatus != AnalysisStatus.DONE) {
             log(ANALYSER, "\n******\nStarting iteration {} of the primary type analyser on {}\n******", iteration, primaryType.fullyQualifiedName);
 
-            patternMatcher.startNewIteration();
-
-            analysisStatus = analyserComponents.run(iteration);
-
+            analysisStatus = analyse(iteration, null);
             iteration++;
             if (iteration > 10) {
                 logAnalysisStatuses(analyserComponents);
@@ -184,7 +209,7 @@ public class PrimaryTypeAnalyser implements AnalyserContext {
         }
     }
 
-    private void logAnalysisStatuses(AnalyserComponents<Analyser, Integer> analyserComponents) {
+    private void logAnalysisStatuses(AnalyserComponents<Analyser, SharedState> analyserComponents) {
         LOGGER.warn("Status of analysers:\n{}", analyserComponents.details());
         for (Pair<Analyser, AnalysisStatus> pair : analyserComponents.getStatuses()) {
             if (pair.v == AnalysisStatus.DELAYS) {
@@ -196,26 +221,51 @@ public class PrimaryTypeAnalyser implements AnalyserContext {
         }
     }
 
+    @Override
+    public AnalyserComponents<String, ?> getAnalyserComponents() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void initialize() {
+        // nothing to be done
+    }
+
+    @Override
+    public AnalysisStatus analyse(int iteration, EvaluationContext closure) {
+        patternMatcher.startNewIteration();
+        return analyserComponents.run(new SharedState(iteration, closure));
+    }
+
+    @Override
     public void write() {
         analysers.forEach(Analyser::write);
     }
 
+    @Override
     public void makeImmutable() {
-        analysers.forEach(analyser -> analyser.getMember().setAnalysis(analyser.getAnalysis().build()));
+        analysers.forEach(analyser -> {
+            analyser.getMember().setAnalysis(analyser.getAnalysis().build());
+            if(analyser instanceof HoldsAnalysers holdsAnalysers) holdsAnalysers.makeImmutable();
+        });
     }
 
+    @Override
     public TypeInfo getPrimaryType() {
         return primaryType;
     }
 
+    @Override
     public PatternMatcher<StatementAnalyser> getPatternMatcher() {
         return patternMatcher;
     }
 
+    @Override
     public E2ImmuAnnotationExpressions getE2ImmuAnnotationExpressions() {
         return e2ImmuAnnotationExpressions;
     }
 
+    @Override
     public Configuration getConfiguration() {
         return configuration;
     }
@@ -235,6 +285,7 @@ public class PrimaryTypeAnalyser implements AnalyserContext {
         return typeAnalysers;
     }
 
+    @Override
     public Map<ParameterInfo, ParameterAnalyser> getParameterAnalysers() {
         return parameterAnalysers;
     }

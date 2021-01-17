@@ -118,8 +118,8 @@ public class Parser {
             typeMapBuilder.makeParametersImmutable();
         }
         // phase 2: resolve methods and fields
-        Resolver resolver = new Resolver(input.globalTypeContext(), input.globalTypeContext().typeMapBuilder.getE2ImmuAnnotationExpressions(),
-                shallowResolver);
+        Resolver resolver = new Resolver(null, input.globalTypeContext(),
+                input.globalTypeContext().typeMapBuilder.getE2ImmuAnnotationExpressions(), shallowResolver);
         List<SortedType> sortedPrimaryTypes = resolver.sortTypes(onDemandSourceInspection.typeContexts);
         messages.addAll(resolver.getMessageStream()
                 .filter(m -> m.severity != Message.Severity.WARN || reportWarnings));
@@ -199,7 +199,7 @@ public class Parser {
     }
 
     private void analyseSortedType(SortedType sortedType) {
-        PrimaryTypeAnalyser primaryTypeAnalyser = new PrimaryTypeAnalyser(sortedType, configuration,
+        PrimaryTypeAnalyser primaryTypeAnalyser = new PrimaryTypeAnalyser(null, sortedType, configuration,
                 getTypeContext().getPrimitives(), getTypeContext().typeMapBuilder.getE2ImmuAnnotationExpressions());
         try {
             primaryTypeAnalyser.analyse();

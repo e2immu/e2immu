@@ -168,7 +168,7 @@ public class TypeAnalyser extends AbstractAnalyser {
         Either<String, TypeInfo> pe = typeInfo.packageNameOrEnclosingType;
         List<TypeAnalysis> tmp = new ArrayList<>(2);
         if (pe.isRight() && !typeInfo.isStatic()) {
-            tmp.add(analyserContext.getTypeAnalysers().get(pe.getRight()).typeAnalysis);
+            tmp.add(analyserContext.getTypeAnalysis(pe.getRight()));
         }
         if (!Primitives.isJavaLangObject(typeInspection.parentClass())) {
             TypeAnalyser typeAnalyser = analyserContext.getTypeAnalysers().get(typeInspection.parentClass().typeInfo);

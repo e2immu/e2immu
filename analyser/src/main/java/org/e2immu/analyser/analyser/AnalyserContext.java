@@ -77,10 +77,18 @@ public interface AnalyserContext extends AnalysisProvider, InspectionProvider {
         return null;
     }
 
+    default AnalyserContext getParent() {
+        return null;
+    }
+
     default FieldAnalysis getFieldAnalysis(FieldInfo fieldInfo) {
         try {
             FieldAnalyser fieldAnalyser = getFieldAnalysers().get(fieldInfo);
-            if (fieldAnalyser == null) return fieldInfo.fieldAnalysis.get();
+            if (fieldAnalyser == null) {
+                AnalyserContext parent = getParent();
+                if (parent != null) return parent.getFieldAnalysis(fieldInfo);
+                return fieldInfo.fieldAnalysis.get();
+            }
             return fieldAnalyser.fieldAnalysis;
         } catch (UnsupportedOperationException e) {
             throw new UnsupportedOperationException("Field analysis of " + fieldInfo.fullyQualifiedName() + " not yet set");
@@ -90,6 +98,8 @@ public interface AnalyserContext extends AnalysisProvider, InspectionProvider {
     default ParameterAnalysis getParameterAnalysis(ParameterInfo parameterInfo) {
         ParameterAnalyser parameterAnalyser = getParameterAnalysers().get(parameterInfo);
         if (parameterAnalyser == null) {
+            AnalyserContext parent = getParent();
+            if (parent != null) return parent.getParameterAnalysis(parameterInfo);
             if (parameterInfo.parameterAnalysis.isSet()) return parameterInfo.parameterAnalysis.get();
             throw new UnsupportedOperationException("Parameter analysis of " + parameterInfo.fullyQualifiedName() + " not yet set");
         }
@@ -99,7 +109,11 @@ public interface AnalyserContext extends AnalysisProvider, InspectionProvider {
     default TypeAnalysis getTypeAnalysis(TypeInfo typeInfo) {
         try {
             TypeAnalyser typeAnalyser = getTypeAnalysers().get(typeInfo);
-            if (typeAnalyser == null) return typeInfo.typeAnalysis.get();
+            if (typeAnalyser == null) {
+                AnalyserContext parent = getParent();
+                if (parent != null) return parent.getTypeAnalysis(typeInfo);
+                return typeInfo.typeAnalysis.get();
+            }
             return typeAnalyser.typeAnalysis;
         } catch (UnsupportedOperationException e) {
             throw new UnsupportedOperationException("Type analysis of " + typeInfo.fullyQualifiedName + " not yet set");
@@ -109,7 +123,11 @@ public interface AnalyserContext extends AnalysisProvider, InspectionProvider {
     default MethodAnalysis getMethodAnalysis(MethodInfo methodInfo) {
         try {
             MethodAnalyser methodAnalyser = getMethodAnalysers().get(methodInfo);
-            if (methodAnalyser == null) return methodInfo.methodAnalysis.get();
+            if (methodAnalyser == null) {
+                AnalyserContext parent = getParent();
+                if (parent != null) return parent.getMethodAnalysis(methodInfo);
+                return methodInfo.methodAnalysis.get();
+            }
             return methodAnalyser.methodAnalysis;
         } catch (UnsupportedOperationException e) {
             throw new UnsupportedOperationException("Method analysis of " + methodInfo.fullyQualifiedName() + " not yet set");

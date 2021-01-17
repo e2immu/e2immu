@@ -55,7 +55,7 @@ import static org.e2immu.analyser.util.Logger.LogTarget.*;
 import static org.e2immu.analyser.util.Logger.isLogEnabled;
 import static org.e2immu.analyser.util.Logger.log;
 
-public class MethodAnalyser extends AbstractAnalyser {
+public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
     private static final Logger LOGGER = LoggerFactory.getLogger(MethodAnalyser.class);
     public static final String STATEMENT_ANALYSER = "StatementAnalyser";
 
@@ -303,6 +303,13 @@ public class MethodAnalyser extends AbstractAnalyser {
         // before we check, we copy the properties into annotations
         methodAnalysis.transferPropertiesToAnnotations(analyserContext, e2);
         parameterAnalysers.forEach(ParameterAnalyser::write);
+    }
+
+    @Override
+    public void makeImmutable() {
+        if(firstStatementAnalyser != null) {
+            firstStatementAnalyser.makeImmutable();
+        }
     }
 
     private AnalysisStatus detectMissingStaticModifier() {
