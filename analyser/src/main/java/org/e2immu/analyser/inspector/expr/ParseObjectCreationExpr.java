@@ -31,32 +31,48 @@ import java.util.List;
 import java.util.Map;
 
 public class ParseObjectCreationExpr {
-    public static Expression parse(ExpressionContext expressionContext, ObjectCreationExpr objectCreationExpr, MethodTypeParameterMap singleAbstractMethod) {
+    public static Expression parse(ExpressionContext expressionContext,
+                                   ObjectCreationExpr objectCreationExpr,
+                                   ParameterizedType impliedParameterizedType) {
         TypeContext typeContext = expressionContext.typeContext;
 
-        ParameterizedType parameterizedType = ParameterizedTypeFactory.from(typeContext, objectCreationExpr.getType());
+        Diamond diamond = objectCreationExpr.getType().getTypeArguments()
+                .map(list -> list.isEmpty() ? Diamond.YES : Diamond.SHOW_ALL).orElse(Diamond.NO);
+
+        ParameterizedType parameterizedType;
+        if (diamond == Diamond.YES) {
+            ParameterizedType diamondType = ParameterizedTypeFactory.from(typeContext, objectCreationExpr.getType());
+            ParameterizedType formalType = diamondType.typeInfo.asParameterizedType(expressionContext.typeContext);
+
+            parameterizedType = formalType.inferDiamondNewObjectCreation(expressionContext.typeContext, impliedParameterizedType);
+        } else {
+            parameterizedType = ParameterizedTypeFactory.from(typeContext, objectCreationExpr.getType());
+        }
 
         if (objectCreationExpr.getAnonymousClassBody().isPresent()) {
-            // TODO parameterizedType can be Iterator<>, we will need to detect the correct type from context if needed
-            TypeInfo anonymousType = new TypeInfo(expressionContext.enclosingType, expressionContext.topLevel.newIndex(expressionContext.enclosingType));
+            TypeInfo anonymousType = new TypeInfo(expressionContext.enclosingType,
+                    expressionContext.topLevel.newIndex(expressionContext.enclosingType));
             typeContext.typeMapBuilder.ensureTypeAndInspection(anonymousType, TypeInspectionImpl.InspectionState.STARTING_JAVA_PARSER);
             TypeInspector typeInspector = new TypeInspector(typeContext.typeMapBuilder, anonymousType, true);
             typeInspector.inspectAnonymousType(parameterizedType, expressionContext.newVariableContext("anonymous class body"),
                     objectCreationExpr.getAnonymousClassBody().get());
             expressionContext.addNewlyCreatedType(anonymousType);
-            // FIXME showall
-            return NewObject.withAnonymousClass(typeContext.getPrimitives(), parameterizedType, anonymousType, Diamond.NO);
+            return NewObject.withAnonymousClass(typeContext.getPrimitives(), parameterizedType, anonymousType, diamond);
         }
 
         Map<NamedType, ParameterizedType> typeMap = parameterizedType.initialTypeParameterMap(typeContext);
-        List<TypeContext.MethodCandidate> methodCandidates = typeContext.resolveConstructor(parameterizedType, objectCreationExpr.getArguments().size(), typeMap);
+        List<TypeContext.MethodCandidate> methodCandidates = typeContext.resolveConstructor(parameterizedType,
+                objectCreationExpr.getArguments().size(), typeMap);
         List<Expression> newParameterExpressions = new ArrayList<>();
+
+        MethodTypeParameterMap singleAbstractMethod = impliedParameterizedType == null ? null :
+                impliedParameterizedType.findSingleAbstractMethodOfInterface(expressionContext.typeContext);
         MethodTypeParameterMap method = new ParseMethodCallExpr(typeContext)
                 .chooseCandidateAndEvaluateCall(expressionContext, methodCandidates, objectCreationExpr.getArguments(),
                         newParameterExpressions, singleAbstractMethod, new HashMap<>(), "constructor",
                         parameterizedType, objectCreationExpr.getBegin().orElseThrow());
         if (method == null) return new UnevaluatedMethodCall(parameterizedType.detailedString() + "::new");
         return NewObject.objectCreation(typeContext.getPrimitives(),
-                method.methodInspection.getMethodInfo(), parameterizedType, Diamond.NO, newParameterExpressions, ObjectFlow.NO_FLOW);
+                method.methodInspection.getMethodInfo(), parameterizedType, diamond, newParameterExpressions, ObjectFlow.NO_FLOW);
     }
 }

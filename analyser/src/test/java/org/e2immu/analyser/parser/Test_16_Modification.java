@@ -21,8 +21,6 @@ import java.util.Set;
 
 public class Test_16_Modification extends CommonTestRunner {
 
-    public static final String INSTANCE_TYPE_HASH_SET = "instance type HashSet";
-
     public Test_16_Modification() {
         super(true);
     }
@@ -39,7 +37,7 @@ public class Test_16_Modification extends CommonTestRunner {
                     Assert.assertEquals(expectModified, d.getProperty(VariableProperty.MODIFIED));
                     String expectLinked = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "";
                     Assert.assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
-                    String expectValue = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "instance type HashSet";
+                    String expectValue = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "instance type HashSet<E>";
                     Assert.assertEquals(expectValue, d.currentValue().debugOutput());
                 }
             }
@@ -177,6 +175,7 @@ public class Test_16_Modification extends CommonTestRunner {
                 }
             }
         };
+        final String INSTANCE_TYPE_HASH_SET = "instance type HashSet<E>";
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("add3".equals(d.methodInfo().name) && "local3".equals(d.variableName())) {
@@ -211,7 +210,7 @@ public class Test_16_Modification extends CommonTestRunner {
                         // there is a variable info in level 1, copied from level 1 in statement 0
                         // problem is that there is one in level 3 already, with a NO_VALUE
                         VariableInfo vi1 = d.variableInfoContainer().current();
-                        Assert.assertEquals("instance type HashSet", vi1.getValue().toString());
+                        Assert.assertEquals("instance type HashSet<E>", vi1.getValue().toString());
                         Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.MODIFIED));
                     }
                     if (d.iteration() > 1) {
@@ -562,7 +561,7 @@ public class Test_16_Modification extends CommonTestRunner {
                     Assert.assertEquals("s2", d.currentValue().toString());
                 }
                 if (d.statementId().equals("2") && d.iteration() > 0) {
-                    Assert.assertEquals("instance type HashSet", d.currentValue().toString());
+                    Assert.assertEquals("instance type HashSet<E>", d.currentValue().toString());
                 }
             }
             if ("add".equals(d.methodInfo().name) && S2.equals(d.variableName())) {

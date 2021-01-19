@@ -177,9 +177,11 @@ public class ExpressionContext {
 
             org.e2immu.analyser.model.Statement newStatement;
             if (statement.isReturnStmt()) {
-                newStatement = new ReturnStatement(false, parseExpression(((ReturnStmt) statement).getExpression()));
+                newStatement = new ReturnStatement(false, ((ReturnStmt) statement).getExpression()
+                        .map(this::parseExpression).orElse(EmptyExpression.EMPTY_EXPRESSION));
             } else if (statement.isYieldStmt()) {
-                newStatement = new ReturnStatement(true, parseExpression(((ReturnStmt) statement).getExpression()));
+                newStatement = new ReturnStatement(true, ((ReturnStmt) statement).getExpression()
+                        .map(this::parseExpression).orElse(EmptyExpression.EMPTY_EXPRESSION));
             } else if (statement.isExpressionStmt()) {
                 Expression expression = parseExpression(((ExpressionStmt) statement).getExpression());
                 newStatement = new ExpressionAsStatement(expression);
@@ -406,19 +408,13 @@ public class ExpressionContext {
     }
 
     @NotNull
-    public org.e2immu.analyser.model.Expression parseExpression(Optional<com.github.javaparser.ast.expr.Expression> oExpression) {
-        if (oExpression.isPresent()) {
-            return parseExpression(oExpression.get());
-        }
-        return EmptyExpression.EMPTY_EXPRESSION;
-    }
-
-    @NotNull
     public org.e2immu.analyser.model.Expression parseExpression(@NotNull com.github.javaparser.ast.expr.Expression expression) {
-        return parseExpression(expression, null);
+        return parseExpression(expression, null, null);
     }
 
-    public org.e2immu.analyser.model.Expression parseExpression(@NotNull com.github.javaparser.ast.expr.Expression expression, MethodTypeParameterMap singleAbstractMethod) {
+    public org.e2immu.analyser.model.Expression parseExpression(@NotNull com.github.javaparser.ast.expr.Expression expression,
+                                                                ParameterizedType impliedParameterizedType,
+                                                                MethodTypeParameterMap singleAbstractMethod) {
         try {
             if (expression.isStringLiteralExpr()) {
                 StringLiteralExpr stringLiteralExpr = (StringLiteralExpr) expression;
@@ -536,7 +532,7 @@ public class ExpressionContext {
             }
             if (expression.isObjectCreationExpr()) {
                 ObjectCreationExpr objectCreationExpr = (ObjectCreationExpr) expression;
-                return ParseObjectCreationExpr.parse(this, objectCreationExpr, singleAbstractMethod);
+                return ParseObjectCreationExpr.parse(this, objectCreationExpr, impliedParameterizedType);
             }
             if (expression.isVariableDeclarationExpr()) {
                 VariableDeclarationExpr vde = (VariableDeclarationExpr) expression;
@@ -548,7 +544,7 @@ public class ExpressionContext {
                 vde.getAnnotations().forEach(ae -> localVariable.addAnnotation(AnnotationInspector.inspect(this, ae)));
                 vde.getModifiers().forEach(m -> localVariable.addModifier(LocalVariableModifier.from(m)));
                 org.e2immu.analyser.model.Expression initializer = var.getInitializer()
-                        .map(i -> parseExpression(i, parameterizedType.findSingleAbstractMethodOfInterface(typeContext)))
+                        .map(i -> parseExpression(i, parameterizedType, parameterizedType.findSingleAbstractMethodOfInterface(typeContext)))
                         .orElse(EmptyExpression.EMPTY_EXPRESSION);
                 return new LocalVariableCreation(typeContext, localVariable.setOwningType(enclosingType).build(), initializer);
             }
@@ -556,7 +552,7 @@ public class ExpressionContext {
                 AssignExpr assignExpr = (AssignExpr) expression;
                 org.e2immu.analyser.model.Expression target = parseExpression(assignExpr.getTarget());
                 org.e2immu.analyser.model.Expression value = parseExpression(assignExpr.getValue(),
-                        target.returnType().findSingleAbstractMethodOfInterface(typeContext));
+                        target.returnType(), target.returnType().findSingleAbstractMethodOfInterface(typeContext));
                 if (value.returnType().isType() && Primitives.isPrimitiveExcludingVoid(value.returnType()) &&
                         target.returnType().isType() && Primitives.isPrimitiveExcludingVoid(target.returnType())) {
                     ParameterizedType widestType = typeContext.getPrimitives().widestType(value.returnType(), target.returnType());

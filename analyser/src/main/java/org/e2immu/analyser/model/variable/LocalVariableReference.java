@@ -33,9 +33,7 @@ public class LocalVariableReference extends VariableWithConcreteReturnType {
     public LocalVariableReference(InspectionProvider inspectionProvider,
                                   LocalVariable localVariable,
                                   List<Expression> assignmentExpressions) {
-        super(assignmentExpressions.isEmpty() ? localVariable.parameterizedType() :
-                localVariable.parameterizedType().fillTypeParameters(inspectionProvider,
-                        assignmentExpressions.get(0).returnType()));
+        super(assignmentExpressions.isEmpty() ? localVariable.parameterizedType() : assignmentExpressions.get(0).returnType());
         this.variable = Objects.requireNonNull(localVariable);
         this.assignmentExpressions = Objects.requireNonNull(assignmentExpressions);
     }

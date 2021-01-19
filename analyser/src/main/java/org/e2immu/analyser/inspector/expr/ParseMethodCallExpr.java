@@ -41,6 +41,9 @@ import static org.e2immu.analyser.model.ParameterizedType.NOT_ASSIGNABLE;
 import static org.e2immu.analyser.util.Logger.LogTarget.METHOD_CALL;
 import static org.e2immu.analyser.util.Logger.log;
 
+// FIXME have 3x null as impliedParameterizedType, this is probably wrong, especially when the
+// type of the parameter is known for sure (all method candidates have the same type!)
+
 public record ParseMethodCallExpr(InspectionProvider inspectionProvider) {
     private static final Logger LOGGER = LoggerFactory.getLogger(ParseMethodCallExpr.class);
 
@@ -133,14 +136,14 @@ public record ParseMethodCallExpr(InspectionProvider inspectionProvider) {
                     pos = findParameterWhereUnevaluatedLambdaWillHelp(expressions, methodCandidates, evaluatedExpressions.keySet());
                 }
                 if (pos != null) {
-                    evaluatedExpression = expressionContext.parseExpression(expressions.get(pos), singleAbstractMethod == null ? null : singleAbstractMethod.copyWithoutMethod());
+                    evaluatedExpression = expressionContext.parseExpression(expressions.get(pos), null, singleAbstractMethod == null ? null : singleAbstractMethod.copyWithoutMethod());
                 } else {
                     Pair<MethodTypeParameterMap, Integer> pair = findParameterWithASingleFunctionalInterfaceType(methodCandidates,
                             evaluatedExpressions.keySet());
                     if (pair != null) {
                         pos = pair.v;
                         MethodTypeParameterMap abstractInterfaceMethod = determineAbstractInterfaceMethod(pair.k, pos, singleAbstractMethod);
-                        evaluatedExpression = expressionContext.parseExpression(expressions.get(pos), abstractInterfaceMethod);
+                        evaluatedExpression = expressionContext.parseExpression(expressions.get(pos), null, abstractInterfaceMethod);
                     }
                 }
                 if (pos != null) {
@@ -240,7 +243,7 @@ public record ParseMethodCallExpr(InspectionProvider inspectionProvider) {
                         mapForEvaluation = singleAbstractMethod;
                     }
                 }
-                Expression reParsed = expressionContext.parseExpression(expressions.get(i), mapForEvaluation);
+                Expression reParsed = expressionContext.parseExpression(expressions.get(i), null, mapForEvaluation);
                 if (reParsed instanceof UnevaluatedMethodCall || reParsed instanceof UnevaluatedLambdaExpression) {
                     log(METHOD_CALL, "Reevaluation of {} fails, have {}", methodNameForErrorReporting, reParsed.debugOutput());
                     return null;
@@ -258,7 +261,7 @@ public record ParseMethodCallExpr(InspectionProvider inspectionProvider) {
             log(METHOD_CALL, "Examine parameter {}", i);
             ParameterizedType concreteParameterType = expression.returnType();
             Map<NamedType, ParameterizedType> translated = formalParameters.get(i).parameterizedType
-                    .translateMap(inspectionProvider, concreteParameterType);
+                    .translateMap(inspectionProvider, concreteParameterType, true);
             ParameterizedType concreteTypeInMethod = method.getConcreteTypeOfParameter(i);
 
             translated.forEach((k, v) -> {

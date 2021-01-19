@@ -116,7 +116,7 @@ public class TestVariableInfo extends CommonVariableInfo {
         Assert.assertEquals(MultiLevel.MUTABLE, viC.getProperty(VariableProperty.NOT_NULL));
 
         // in a second iteration, we may encounter:
-        viC.mergeIntoMe(minimalEvaluationContext, TRUE, false, viC, xViB);
+        viC.mergeIntoMe(minimalEvaluationContext, TRUE, false, viA, xViB);
         // this should execute without raising exceptions
     }
 

@@ -527,6 +527,49 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
 
     @Override
     public UpgradableBooleanMap<TypeInfo> typesReferenced() {
-        return typeInspection.get().typesReferenced();
+        return typeInspection.get("types referenced of type "+fullyQualifiedName).typesReferenced();
+    }
+
+    public Map<NamedType, ParameterizedType> mapInTermsOfParametersOfSuperOrSubType(InspectionProvider inspectionProvider, TypeInfo superType, boolean inTermsOfSuperType) {
+        assert superType != this;
+        TypeInspection ti = inspectionProvider.getTypeInspection(this);
+        if (ti.parentClass() != null) {
+            if (ti.parentClass().typeInfo == superType) {
+                return ti.parentClass().initialTypeParameterMap(inspectionProvider);
+            }
+            Map<NamedType, ParameterizedType> map = ti.parentClass().typeInfo.mapInTermsOfParametersOfSuperOrSubType(inspectionProvider, superType, inTermsOfSuperType);
+            if (map != null) {
+                if(inTermsOfSuperType) {
+                    return combineMaps(ti.parentClass().initialTypeParameterMap(inspectionProvider), map);
+                }
+                return combineMaps(map, ti.parentClass().initialTypeParameterMap(inspectionProvider));
+            }
+        }
+        for (ParameterizedType implementedInterface : ti.interfacesImplemented()) {
+            if (implementedInterface.typeInfo == superType) {
+                return implementedInterface.initialTypeParameterMap(inspectionProvider);
+            }
+            Map<NamedType, ParameterizedType> map = implementedInterface.typeInfo.mapInTermsOfParametersOfSuperOrSubType(inspectionProvider, superType, inTermsOfSuperType);
+            if (map != null) {
+                return combineMaps(implementedInterface.initialTypeParameterMap(inspectionProvider), map);
+            }
+        }
+        return null; // not in this branch of the recursion
+    }
+
+    /*
+    StringMap<V> -> HashMap<K,V> -> Map<K, V>
+
+    M2: K(map) -> K(hashmap), M1: K(hashmap) -> String
+     */
+    public static Map<NamedType, ParameterizedType> combineMaps(Map<NamedType, ParameterizedType> m1, Map<NamedType, ParameterizedType> m2) {
+        assert m1 != null;
+        if(m2.isEmpty()) return m1;
+        if(m1.isEmpty()) return m2;
+        return m2.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey,
+                e -> e.getValue().isTypeParameter() ? m1.getOrDefault(e.getValue().typeParameter, e.getValue()) : e.getValue(),
+                (v1, v2) -> {
+                    throw new UnsupportedOperationException();
+                }, LinkedHashMap::new));
     }
 }

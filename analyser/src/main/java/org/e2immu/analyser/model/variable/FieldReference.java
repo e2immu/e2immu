@@ -37,8 +37,11 @@ public class FieldReference extends VariableWithConcreteReturnType {
     public final Variable scope;
 
     public FieldReference(InspectionProvider inspectionProvider, FieldInfo fieldInfo, Variable scope) {
-        super(scope == null ? fieldInfo.type : fieldInfo.type.fillTypeParameters
-                (inspectionProvider, scope.concreteReturnType()));
+        super(scope == null ? fieldInfo.type :
+                // it is possible that the field's type shares a type parameter with the scope
+                // if so, there *may* be a concrete type to fill
+                fieldInfo.type.inferConcreteFieldTypeFromConcreteScope(inspectionProvider,
+                        fieldInfo.owner.asParameterizedType(inspectionProvider), scope.concreteReturnType()));
         this.fieldInfo = Objects.requireNonNull(fieldInfo);
         this.scope = scope;
     }

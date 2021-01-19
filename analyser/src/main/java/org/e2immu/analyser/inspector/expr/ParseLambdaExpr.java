@@ -22,6 +22,7 @@ import com.github.javaparser.ast.body.Parameter;
 import com.github.javaparser.ast.expr.LambdaExpr;
 import org.e2immu.analyser.inspector.*;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.expression.Lambda;
 import org.e2immu.analyser.model.expression.UnevaluatedLambdaExpression;
 import org.e2immu.analyser.model.expression.UnevaluatedMethodCall;
@@ -98,7 +99,7 @@ public class ParseLambdaExpr {
 
         boolean isExpression = lambdaExpr.getExpressionBody().isPresent();
         if (isExpression) {
-            Expression expr = newExpressionContext.parseExpression(lambdaExpr.getExpressionBody());
+            Expression expr = lambdaExpr.getExpressionBody().map(newExpressionContext::parseExpression).orElse(EmptyExpression.EMPTY_EXPRESSION);
             if (expr instanceof UnevaluatedMethodCall) {
                 log(LAMBDA, "Body results in unevaluated method call, so I can't be evaluated either");
                 return partiallyParse(lambdaExpr);

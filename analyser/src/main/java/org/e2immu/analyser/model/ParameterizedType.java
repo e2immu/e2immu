@@ -162,7 +162,7 @@ public class ParameterizedType {
     }
 
     public OutputBuilder output() {
-        // FIXME
+        // FIXME split into multiple parts
         return new OutputBuilder().add(new Text(print()));
     }
 
@@ -250,66 +250,156 @@ public class ParameterizedType {
 
     // ******************************************************************************************************
 
-    // make a map from the type's abstract parameters to its concrete ones
+    /*
+     Given a concrete type (List<String>) make a map from the type's abstract parameters to its concrete ones (E -> String)
+     */
     public Map<NamedType, ParameterizedType> initialTypeParameterMap(InspectionProvider inspectionProvider) {
-        // TODO make recursive
         if (!isType()) return Map.of();
         if (parameters.isEmpty()) return Map.of();
         ParameterizedType originalType = typeInfo.asParameterizedType(inspectionProvider);
         int i = 0;
-        Map<NamedType, ParameterizedType> map = new HashMap<>();
+        // linkedHashMap to maintain an order for testing
+        Map<NamedType, ParameterizedType> map = new LinkedHashMap<>();
         for (ParameterizedType parameter : originalType.parameters) {
             if (parameter.isTypeParameter()) {
                 map.put(parameter.typeParameter, parameters.get(i));
+            } else if (parameter.isType()) {
+                Map<NamedType, ParameterizedType> recursive = parameter.initialTypeParameterMap(inspectionProvider);
+                map.putAll(recursive);
             }
             i++;
         }
         return map;
     }
 
-    public Map<NamedType, ParameterizedType> translateMap(InspectionProvider inspectionProvider, ParameterizedType concreteType) {
+    /*
+    Starting from a formal type (List<E>), fill in a translation map given a concrete type (List<String>)
+    IMPORTANT: the formal type has to have its formal parameters present, i.e., starting from TypeInfo,
+    you should call this method on typeInfo.asParameterizedType(inspectionProvider) to ensure all formal
+    parameters are present in this object.
+
+    In the case of functional interfaces, this method goes via the SAM, avoiding the need of a formal implementation
+    of the interface (i.e., a functional interface can have a SAM which is a function (1 argument, 1 return type)
+    without explicitly implementing java.lang.function.Function)
+
+    The third parameter decides the direction of the relation between the formal and the concrete type.
+    When called from ParseMethodCallExpr, for example, 'this' is the parameter's formal parameter, and the concrete
+    type has to be assignable to it.
+     */
+
+    public Map<NamedType, ParameterizedType> translateMap(InspectionProvider inspectionProvider,
+                                                          ParameterizedType concreteType,
+                                                          boolean concreteTypeIsAssignableToThis) {
+        if (concreteTypeIsAssignableToThis) {
+            assert isAssignableFrom(inspectionProvider, concreteType);
+        } else {
+            assert concreteType.isAssignableFrom(inspectionProvider, this);
+        }
+
         if (parameters.isEmpty()) {
-            if (isTypeParameter())
+            if (isTypeParameter()) {
+                // T <-- String
                 return Map.of(this.typeParameter, concreteType);
+            }
+            // String <-- String, no translation map
             return Map.of();
         }
-        Map<NamedType, ParameterizedType> res = new HashMap<>();
-        boolean iAmFunctionalInterface = isFunctionalInterface(inspectionProvider);
-        boolean concreteTypeIsFunctionalInterface = concreteType.isFunctionalInterface(inspectionProvider);
+        assert typeInfo != null;
+        assert concreteType.typeInfo != null;
 
-        if (iAmFunctionalInterface && concreteTypeIsFunctionalInterface) {
-            MethodTypeParameterMap methodTypeParameterMap = findSingleAbstractMethodOfInterface(inspectionProvider);
-            List<ParameterInfo> methodParams = methodTypeParameterMap.methodInspection.getParameters();
-            MethodTypeParameterMap concreteTypeMap = concreteType.findSingleAbstractMethodOfInterface(inspectionProvider);
-            List<ParameterInfo> concreteTypeAbstractParams = concreteTypeMap.methodInspection.getParameters();
-
-            if (methodParams.size() != concreteTypeAbstractParams.size()) {
-                throw new UnsupportedOperationException("Have different param sizes for functional interface " +
-                        detailedString() + " method " +
-                        methodTypeParameterMap.methodInspection.getFullyQualifiedName() + " and " +
-                        concreteTypeMap.methodInspection.getFullyQualifiedName());
-            }
-            for (int i = 0; i < methodParams.size(); i++) {
-                ParameterizedType abstractTypeParameter = methodParams.get(i).parameterizedType;
-                ParameterizedType concreteTypeParameter = concreteTypeMap.getConcreteTypeOfParameter(i);
-                res.putAll(abstractTypeParameter.translateMap(inspectionProvider, concreteTypeParameter));
-            }
-            // and now the return type
-            ParameterizedType myReturnType = methodTypeParameterMap.getConcreteReturnType();
-            ParameterizedType concreteReturnType = concreteTypeMap.getConcreteReturnType();
-            res.putAll(myReturnType.translateMap(inspectionProvider, concreteReturnType));
-        } else {
-            // it is possible that the concrete type has fewer type parameters than the formal one
-            // e.g., when "new Stack<>" is to be matched with "Stack<String>"
-            for (int i = 0; i < Math.min(parameters.size(), concreteType.parameters.size()); i++) {
-                ParameterizedType abstractTypeParameter = parameters.get(i);
-                ParameterizedType concreteTypeParameter = concreteType.parameters.get(i);
-                res.putAll(abstractTypeParameter.translateMap(inspectionProvider, concreteTypeParameter));
-            }
+        if (isFunctionalInterface(inspectionProvider) && concreteType.isFunctionalInterface(inspectionProvider)) {
+            return translationMapForFunctionalInterfaces(inspectionProvider, concreteType, concreteTypeIsAssignableToThis);
         }
 
+        Map<NamedType, ParameterizedType> mapOfConcreteType = concreteType.initialTypeParameterMap(inspectionProvider);
+        if (typeInfo == concreteType.typeInfo) return mapOfConcreteType;
+        if (concreteTypeIsAssignableToThis) {
+            // this is the super type (Set), concrete type is the sub-type (HashSet)
+            Map<NamedType, ParameterizedType> formalMap = concreteType.typeInfo.mapInTermsOfParametersOfSuperOrSubType(inspectionProvider, typeInfo, true);
+            return TypeInfo.combineMaps(mapOfConcreteType, formalMap);
+        }
+        // concrete type is the super type, we MUST work towards the supertype!
+        Map<NamedType, ParameterizedType> formalMap = typeInfo.mapInTermsOfParametersOfSuperOrSubType(inspectionProvider, concreteType.typeInfo, false);
+        return TypeInfo.combineMaps(formalMap, mapOfConcreteType);
+    }
+
+    // TODO write tests!
+    private Map<NamedType, ParameterizedType> translationMapForFunctionalInterfaces(InspectionProvider inspectionProvider,
+                                                                                    ParameterizedType concreteType,
+                                                                                    boolean concreteTypeIsAssignableToThis) {
+        Map<NamedType, ParameterizedType> res = new HashMap<>();
+        MethodTypeParameterMap methodTypeParameterMap = findSingleAbstractMethodOfInterface(inspectionProvider);
+        List<ParameterInfo> methodParams = methodTypeParameterMap.methodInspection.getParameters();
+        MethodTypeParameterMap concreteTypeMap = concreteType.findSingleAbstractMethodOfInterface(inspectionProvider);
+        List<ParameterInfo> concreteTypeAbstractParams = concreteTypeMap.methodInspection.getParameters();
+
+        if (methodParams.size() != concreteTypeAbstractParams.size()) {
+            throw new UnsupportedOperationException("Have different param sizes for functional interface " +
+                    detailedString() + " method " +
+                    methodTypeParameterMap.methodInspection.getFullyQualifiedName() + " and " +
+                    concreteTypeMap.methodInspection.getFullyQualifiedName());
+        }
+        for (int i = 0; i < methodParams.size(); i++) {
+            ParameterizedType abstractTypeParameter = methodParams.get(i).parameterizedType;
+            ParameterizedType concreteTypeParameter = concreteTypeMap.getConcreteTypeOfParameter(i);
+            res.putAll(abstractTypeParameter.translateMap(inspectionProvider, concreteTypeParameter, concreteTypeIsAssignableToThis));
+        }
+        // and now the return type
+        ParameterizedType myReturnType = methodTypeParameterMap.getConcreteReturnType();
+        ParameterizedType concreteReturnType = concreteTypeMap.getConcreteReturnType();
+        res.putAll(myReturnType.translateMap(inspectionProvider, concreteReturnType, concreteTypeIsAssignableToThis));
         return res;
     }
+
+
+    /*
+    Typical example: Set<String> set = new HashSet<>();
+    'this' is the formal type of HashSet, the result should be a concrete version based on the concrete type 'Set<String>' given
+    as a parameter.
+
+    In this situation, 'this' is assignable to the concrete type, rather than the other way around.
+
+    In case of concreteType.typeInfo == this.typeInfo, the 'initialTypeParameterMap' method would suffice.
+    Otherwise, we need to make use of the TypeInfo.mapInTermsOfParametersOfSuperType method.
+    Finally, the case of functional interfaces may have no formal link between the two types; it is dealt with separately.
+     */
+    public ParameterizedType inferDiamondNewObjectCreation(InspectionProvider inspectionProvider, ParameterizedType concreteType) {
+        // new T<> is not allowed
+        assert typeInfo != null;
+        // HashSet<String> set = new HashSet<>();  both have the same type; no translation is needed
+        if (typeInfo == concreteType.typeInfo) return concreteType;
+
+        Map<NamedType, ParameterizedType> typeParameterMap = translateMap(inspectionProvider, concreteType, false);
+        return MethodTypeParameterMap.apply(typeParameterMap, this);
+    }
+
+    /*
+    'this' is the formal type of a field f in type A<T>; the concrete scope type is the scope of a field reference b.f.
+    Here f may have a type parameter such as in
+
+    class A<T> {
+      public final List<T> f = ...;
+    }
+
+    The scope b could be an instance
+        b = new A<String>(...)
+    or,
+
+    class B extends A<String> { ... } b = new B()
+
+    We therefore want to apply a type parameter map on f's formal type. This map should go from the A's formal type parameters
+    to the concrete type parameters of A or a type assignable to A.
+    Note that it is perfectly possible that f's formal type is not parameterized at all (that's the most common situation)!
+     */
+    public ParameterizedType inferConcreteFieldTypeFromConcreteScope(InspectionProvider inspectionProvider,
+                                                                     ParameterizedType formalScopeType,
+                                                                     ParameterizedType concreteScopeType) {
+        if (parameters.isEmpty()) return this;
+
+        Map<NamedType, ParameterizedType> typeParameterMap = formalScopeType.translateMap(inspectionProvider, concreteScopeType, true);
+        return MethodTypeParameterMap.apply(typeParameterMap, this);
+    }
+
 
     // semantics: can type be assigned to me? I should be equal or a super type of type
 
@@ -452,18 +542,6 @@ public class ParameterizedType {
 
     public boolean betterDefinedThan(ParameterizedType v) {
         return (typeParameter != null || typeInfo != null) && v.typeParameter == null && v.typeInfo == null;
-    }
-
-
-    /*
-     * Pair<Integer, String> pair = new Pair<>(); expression = pair.k
-     * The scope of the expression is 'pair', which has a concrete return type of 'Pair<Integer, String>'.
-     * The field 'k' has an abstract type K, which can be filled to get a concrete return type Integer
-     */
-
-    public ParameterizedType fillTypeParameters(InspectionProvider inspectionProvider, ParameterizedType concreteType) {
-        Map<NamedType, ParameterizedType> typeParameterMap = concreteType.initialTypeParameterMap(inspectionProvider);
-        return MethodTypeParameterMap.apply(typeParameterMap, this);
     }
 
     public int getProperty(AnalysisProvider analysisProvider, VariableProperty variableProperty) {

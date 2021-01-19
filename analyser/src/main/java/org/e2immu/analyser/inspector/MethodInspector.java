@@ -26,6 +26,7 @@ import com.github.javaparser.ast.body.Parameter;
 import com.github.javaparser.ast.expr.AnnotationExpr;
 import com.github.javaparser.ast.type.ReferenceType;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.analyser.parser.InspectionProvider;
@@ -77,7 +78,7 @@ public class MethodInspector {
         addAnnotations(builder, amd.getAnnotations(), expressionContext);
         if (fullInspection) {
             addModifiers(builder, amd.getModifiers());
-            Expression expression = expressionContext.parseExpression(amd.getDefaultValue());
+            Expression expression = amd.getDefaultValue().map(expressionContext::parseExpression).orElse(EmptyExpression.EMPTY_EXPRESSION);
             Block body = new Block.BlockBuilder().addStatement(new ReturnStatement(false, expression)).build();
             builder.setInspectedBlock(body);
             ParameterizedType returnType = ParameterizedTypeFactory.from(expressionContext.typeContext, amd.getType());

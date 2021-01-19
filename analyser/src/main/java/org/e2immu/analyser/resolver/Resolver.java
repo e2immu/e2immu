@@ -289,7 +289,7 @@ public class Resolver {
                 singleAbstractMethod = singleAbstractMethod.expand(fieldInfo.type.initialTypeParameterMap(expressionContext.typeContext));
                 log(RESOLVE, "Passing on functional interface method to field initializer of {}: {}", fieldInfo.name, singleAbstractMethod);
             }
-            org.e2immu.analyser.model.Expression parsedExpression = subContext.parseExpression(expression, singleAbstractMethod);
+            org.e2immu.analyser.model.Expression parsedExpression = subContext.parseExpression(expression, fieldInfo.type, singleAbstractMethod);
             subContext.streamNewlyCreatedTypes().forEach(anonymousType -> doType(anonymousType, subContext.typeContext, methodFieldSubTypeGraph));
 
             MethodInfo sam;
