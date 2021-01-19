@@ -199,15 +199,15 @@ public class TestParameterizedType {
     @Test
     public void test_2A() {
         // 1 level
-        Map<NamedType, ParameterizedType> t = hashMap.mapInTermsOfParametersOfSuperOrSubType(IP, map, true);
+        Map<NamedType, ParameterizedType> t = hashMap.mapInTermsOfParametersOfSuperType(IP, map);
         Assert.assertEquals("{K as #0 in org.e2immu.Map=Type param K, V as #1 in org.e2immu.Map=Type param V}", t.toString());
 
         // 2 levels (1x combine)
-        Map<NamedType, ParameterizedType> t2 = stringMap.mapInTermsOfParametersOfSuperOrSubType(IP, map, true);
+        Map<NamedType, ParameterizedType> t2 = stringMap.mapInTermsOfParametersOfSuperType(IP, map);
         Assert.assertEquals("{K as #0 in org.e2immu.Map=Type java.lang.String, V as #1 in org.e2immu.Map=Type param V}", t2.toString());
 
         // 3 levels (2x combine)
-        Map<NamedType, ParameterizedType> t3 = table.mapInTermsOfParametersOfSuperOrSubType(IP, map, true);
+        Map<NamedType, ParameterizedType> t3 = table.mapInTermsOfParametersOfSuperType(IP, map);
         Assert.assertEquals("{K as #0 in org.e2immu.Map=Type java.lang.String, V as #1 in org.e2immu.Map=Type java.lang.Integer}", t3.toString());
     }
 
@@ -246,16 +246,16 @@ public class TestParameterizedType {
     @Test
     public void test_3A() {
         // 1 level
-        Map<NamedType, ParameterizedType> t = hashMap.mapInTermsOfParametersOfSuperOrSubType(IP, map, false);
+        Map<NamedType, ParameterizedType> t = hashMap.mapInTermsOfParametersOfSubType(IP, map);
         Assert.assertEquals("{K as #0 in org.e2immu.HashMap=Type param K, V as #1 in org.e2immu.HashMap=Type param V}", t.toString());
 
         // 2 levels (1x combine)
-        Map<NamedType, ParameterizedType> t2 = stringMap.mapInTermsOfParametersOfSuperOrSubType(IP, map, false);
-        Assert.assertEquals("{K as #0 in org.e2immu.Map=Type java.lang.String, V as #1 in org.e2immu.Map=Type param V}", t2.toString());
+        Map<NamedType, ParameterizedType> t2 = stringMap.mapInTermsOfParametersOfSubType(IP, map);
+        Assert.assertEquals("{V as #0 in org.e2immu.StringMap=Type param V}", t2.toString());
 
         // 3 levels (2x combine)
-        Map<NamedType, ParameterizedType> t3 = table.mapInTermsOfParametersOfSuperOrSubType(IP, map, true);
-        Assert.assertEquals("{K as #0 in org.e2immu.Map=Type java.lang.String, V as #1 in org.e2immu.Map=Type java.lang.Integer}", t3.toString());
+        Map<NamedType, ParameterizedType> t3 = table.mapInTermsOfParametersOfSubType(IP, map);
+        Assert.assertEquals("{}", t3.toString());
     }
 
     @Test
@@ -276,6 +276,6 @@ public class TestParameterizedType {
         Map<NamedType, ParameterizedType> t2 = stringMapPt.translateMap(IP, mapStringInteger, false);
         Assert.assertEquals("{V as #0 in org.e2immu.StringMap=Type int}", t2.toString());
         ParameterizedType concreteStringMap = stringMapPt.inferDiamondNewObjectCreation(IP, mapStringInteger);
-        Assert.assertEquals("Type org.e2immu.StringMap<int>", concreteHashMap.toString());
+        Assert.assertEquals("Type org.e2immu.StringMap<int>", concreteStringMap.toString());
     }
 }

@@ -103,7 +103,7 @@ public class Test_03_CompanionMethods extends CommonTestRunner {
     }
 
 
-    public static final String INSTANCE_SIZE_1_CONTAINS = "instance type ArrayList<E>/*this.contains(\"a\")&&1==this.size()*/";
+    public static final String INSTANCE_SIZE_1_CONTAINS = "instance type ArrayList<String>/*this.contains(\"a\")&&1==this.size()*/";
 
     @Test
     public void test1() throws IOException {
@@ -161,11 +161,11 @@ public class Test_03_CompanionMethods extends CommonTestRunner {
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("test".equals(d.methodInfo().name) && "1".equals(d.statementId()) && "list".equals(d.variableName())) {
-                Assert.assertEquals("instance type ArrayList<E>/*this.contains(\"a\")&&1==this.size()*/",
+                Assert.assertEquals("instance type ArrayList<String>/*this.contains(\"a\")&&1==this.size()*/",
                         d.currentValue().toString());
             }
             if ("test".equals(d.methodInfo().name) && "2".equals(d.statementId()) && "list".equals(d.variableName())) {
-                Assert.assertEquals("instance type ArrayList<E>/*this.contains(\"a\")&&this.contains(\"b\")&&2==this.size()*/",
+                Assert.assertEquals("instance type ArrayList<String>/*this.contains(\"a\")&&this.contains(\"b\")&&2==this.size()*/",
                         d.currentValue().toString());
             }
         };
@@ -343,11 +343,11 @@ public class Test_03_CompanionMethods extends CommonTestRunner {
                             d.currentValue().toString());
                 }
                 if ("2".equals(d.statementId())) {
-                    Assert.assertEquals("instance type HashSet<E>/*this.contains(\"a\")&&1+strings.size()>=this.size()&&this.size()>=strings.size()*/",
+                    Assert.assertEquals("instance type HashSet<String>/*this.contains(\"a\")&&1+strings.size()>=this.size()&&this.size()>=strings.size()*/",
                             d.currentValue().toString());
                 }
                 if ("4".equals(d.statementId())) {
-                    Assert.assertEquals("instance type HashSet<E>/*this.isKnown(true)&&0==this.size()*/",
+                    Assert.assertEquals("instance type HashSet<String>/*this.isKnown(true)&&0==this.size()*/",
                             d.currentValue().toString());
                 }
             }
@@ -437,7 +437,7 @@ public class Test_03_CompanionMethods extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("test".equals(d.methodInfo().name) && "set".equals(d.variableName())) {
                 if ("5".equals(d.statementId())) {
-                    Assert.assertEquals("instance type HashSet<E>/*this.size()>=in.size()*/", d.currentValue().toString());
+                    Assert.assertEquals("instance type HashSet<String>/*this.size()>=in.size()*/", d.currentValue().toString());
                 }
             }
         };

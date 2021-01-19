@@ -527,31 +527,53 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
 
     @Override
     public UpgradableBooleanMap<TypeInfo> typesReferenced() {
-        return typeInspection.get("types referenced of type "+fullyQualifiedName).typesReferenced();
+        return typeInspection.get("types referenced of type " + fullyQualifiedName).typesReferenced();
     }
 
-    public Map<NamedType, ParameterizedType> mapInTermsOfParametersOfSuperOrSubType(InspectionProvider inspectionProvider, TypeInfo superType, boolean inTermsOfSuperType) {
+    public Map<NamedType, ParameterizedType> mapInTermsOfParametersOfSuperType(InspectionProvider inspectionProvider, TypeInfo superType) {
         assert superType != this;
         TypeInspection ti = inspectionProvider.getTypeInspection(this);
         if (ti.parentClass() != null) {
             if (ti.parentClass().typeInfo == superType) {
                 return ti.parentClass().initialTypeParameterMap(inspectionProvider);
             }
-            Map<NamedType, ParameterizedType> map = ti.parentClass().typeInfo.mapInTermsOfParametersOfSuperOrSubType(inspectionProvider, superType, inTermsOfSuperType);
+            Map<NamedType, ParameterizedType> map = ti.parentClass().typeInfo.mapInTermsOfParametersOfSuperType(inspectionProvider, superType);
             if (map != null) {
-                if(inTermsOfSuperType) {
-                    return combineMaps(ti.parentClass().initialTypeParameterMap(inspectionProvider), map);
-                }
-                return combineMaps(map, ti.parentClass().initialTypeParameterMap(inspectionProvider));
+                return combineMaps(ti.parentClass().initialTypeParameterMap(inspectionProvider), map);
             }
         }
         for (ParameterizedType implementedInterface : ti.interfacesImplemented()) {
             if (implementedInterface.typeInfo == superType) {
                 return implementedInterface.initialTypeParameterMap(inspectionProvider);
             }
-            Map<NamedType, ParameterizedType> map = implementedInterface.typeInfo.mapInTermsOfParametersOfSuperOrSubType(inspectionProvider, superType, inTermsOfSuperType);
+            Map<NamedType, ParameterizedType> map = implementedInterface.typeInfo.mapInTermsOfParametersOfSuperType(inspectionProvider, superType);
             if (map != null) {
                 return combineMaps(implementedInterface.initialTypeParameterMap(inspectionProvider), map);
+            }
+        }
+        return null; // not in this branch of the recursion
+    }
+
+    // practically the duplicate of the previous, except that we should parameterize initialTypeParameterMap as well to collapse them
+    public Map<NamedType, ParameterizedType> mapInTermsOfParametersOfSubType(InspectionProvider inspectionProvider, TypeInfo superType) {
+        assert superType != this;
+        TypeInspection ti = inspectionProvider.getTypeInspection(this);
+        if (ti.parentClass() != null) {
+            if (ti.parentClass().typeInfo == superType) {
+                return ti.parentClass().forwardTypeParameterMap(inspectionProvider);
+            }
+            Map<NamedType, ParameterizedType> map = ti.parentClass().typeInfo.mapInTermsOfParametersOfSubType(inspectionProvider, superType);
+            if (map != null) {
+                return combineMaps(map, ti.parentClass().forwardTypeParameterMap(inspectionProvider));
+            }
+        }
+        for (ParameterizedType implementedInterface : ti.interfacesImplemented()) {
+            if (implementedInterface.typeInfo == superType) {
+                return implementedInterface.forwardTypeParameterMap(inspectionProvider);
+            }
+            Map<NamedType, ParameterizedType> map = implementedInterface.typeInfo.mapInTermsOfParametersOfSubType(inspectionProvider, superType);
+            if (map != null) {
+                return combineMaps(map, implementedInterface.forwardTypeParameterMap(inspectionProvider));
             }
         }
         return null; // not in this branch of the recursion
@@ -564,8 +586,8 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
      */
     public static Map<NamedType, ParameterizedType> combineMaps(Map<NamedType, ParameterizedType> m1, Map<NamedType, ParameterizedType> m2) {
         assert m1 != null;
-        if(m2.isEmpty()) return m1;
-        if(m1.isEmpty()) return m2;
+        // if (m2.isEmpty()) return m1;
+        // if (m1.isEmpty()) return m2;
         return m2.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey,
                 e -> e.getValue().isTypeParameter() ? m1.getOrDefault(e.getValue().typeParameter, e.getValue()) : e.getValue(),
                 (v1, v2) -> {

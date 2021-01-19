@@ -273,6 +273,28 @@ public class ParameterizedType {
     }
 
     /*
+    HashMap<K, V> implements Map<K, V>
+    Given Map<K, V>, go from abstract to concrete (HM:K to Map:K, HM:V to Map:V)
+    */
+    public Map<NamedType, ParameterizedType> forwardTypeParameterMap(InspectionProvider inspectionProvider) {
+        if (!isType()) return Map.of();
+        if (parameters.isEmpty()) return Map.of();
+        ParameterizedType originalType = typeInfo.asParameterizedType(inspectionProvider); // Map:K, Map:V
+        assert originalType.parameters.size() == parameters.size();
+        int i = 0;
+        // linkedHashMap to maintain an order for testing
+        Map<NamedType, ParameterizedType> map = new LinkedHashMap<>();
+        for (ParameterizedType parameter : originalType.parameters) {
+            ParameterizedType p = parameters.get(i);
+            if (p.isTypeParameter()) {
+                map.put(p.typeParameter, parameter);
+            }
+            i++;
+        }
+        return map;
+    }
+
+    /*
     Starting from a formal type (List<E>), fill in a translation map given a concrete type (List<String>)
     IMPORTANT: the formal type has to have its formal parameters present, i.e., starting from TypeInfo,
     you should call this method on typeInfo.asParameterizedType(inspectionProvider) to ensure all formal
@@ -313,14 +335,15 @@ public class ParameterizedType {
 
         Map<NamedType, ParameterizedType> mapOfConcreteType = concreteType.initialTypeParameterMap(inspectionProvider);
         if (typeInfo == concreteType.typeInfo) return mapOfConcreteType;
+        Map<NamedType, ParameterizedType> formalMap;
         if (concreteTypeIsAssignableToThis) {
             // this is the super type (Set), concrete type is the sub-type (HashSet)
-            Map<NamedType, ParameterizedType> formalMap = concreteType.typeInfo.mapInTermsOfParametersOfSuperOrSubType(inspectionProvider, typeInfo, true);
-            return TypeInfo.combineMaps(mapOfConcreteType, formalMap);
+            formalMap = concreteType.typeInfo.mapInTermsOfParametersOfSuperType(inspectionProvider, typeInfo);
+        } else {
+            // concrete type is the super type, we MUST work towards the supertype!
+            formalMap = typeInfo.mapInTermsOfParametersOfSubType(inspectionProvider, concreteType.typeInfo);
         }
-        // concrete type is the super type, we MUST work towards the supertype!
-        Map<NamedType, ParameterizedType> formalMap = typeInfo.mapInTermsOfParametersOfSuperOrSubType(inspectionProvider, concreteType.typeInfo, false);
-        return TypeInfo.combineMaps(formalMap, mapOfConcreteType);
+        return TypeInfo.combineMaps(mapOfConcreteType, formalMap);
     }
 
     // TODO write tests!
