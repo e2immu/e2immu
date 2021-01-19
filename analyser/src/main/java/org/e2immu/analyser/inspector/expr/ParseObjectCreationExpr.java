@@ -51,7 +51,7 @@ public class ParseObjectCreationExpr {
 
         if (objectCreationExpr.getAnonymousClassBody().isPresent()) {
             TypeInfo anonymousType = new TypeInfo(expressionContext.enclosingType,
-                    expressionContext.topLevel.newIndex(expressionContext.enclosingType));
+                    expressionContext.anonymousTypeCounters.newIndex(expressionContext.primaryType));
             typeContext.typeMapBuilder.ensureTypeAndInspection(anonymousType, TypeInspectionImpl.InspectionState.STARTING_JAVA_PARSER);
             TypeInspector typeInspector = new TypeInspector(typeContext.typeMapBuilder, anonymousType, true);
             typeInspector.inspectAnonymousType(parameterizedType, expressionContext.newVariableContext("anonymous class body"),

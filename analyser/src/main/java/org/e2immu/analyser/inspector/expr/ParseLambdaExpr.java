@@ -60,7 +60,7 @@ public class ParseLambdaExpr {
 
         MethodInspectionImpl.Builder applyMethodInspectionBuilder =
                 createAnonymousTypeAndApplyMethod(singleAbstractMethod.methodInspection.getMethodInfo().name,
-                        expressionContext.enclosingType, expressionContext.topLevel.newIndex(expressionContext.enclosingType));
+                        expressionContext.enclosingType, expressionContext.anonymousTypeCounters.newIndex(expressionContext.primaryType));
 
         for (Parameter parameter : lambdaExpr.getParameters()) {
             ParameterizedType parameterType = null;

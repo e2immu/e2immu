@@ -26,6 +26,7 @@ import org.e2immu.analyser.bytecode.ByteCodeInspector;
 import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.config.TypeMapVisitor;
 import org.e2immu.analyser.inspector.ParseAndInspect;
+import org.e2immu.analyser.inspector.AnonymousTypeCounters;
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.inspector.TypeInspectionImpl;
 import org.e2immu.analyser.model.TypeInfo;
@@ -54,6 +55,7 @@ public class Parser {
     public final Configuration configuration;
     private final Input input;
     private final Messages messages = new Messages();
+    private final AnonymousTypeCounters anonymousTypeCounters = new AnonymousTypeCounters(); // anonymous class counter
 
     public Parser() throws IOException {
         // all the defaults will do...
@@ -118,7 +120,7 @@ public class Parser {
             typeMapBuilder.makeParametersImmutable();
         }
         // phase 2: resolve methods and fields
-        Resolver resolver = new Resolver(null, input.globalTypeContext(),
+        Resolver resolver = new Resolver(anonymousTypeCounters, input.globalTypeContext(),
                 input.globalTypeContext().typeMapBuilder.getE2ImmuAnnotationExpressions(), shallowResolver);
         List<SortedType> sortedPrimaryTypes = resolver.sortTypes(onDemandSourceInspection.typeContexts);
         messages.addAll(resolver.getMessageStream()
@@ -152,7 +154,7 @@ public class Parser {
                 InputStreamReader isr = new InputStreamReader(url.openStream(), configuration.inputConfiguration.sourceEncoding);
                 String source = IOUtils.toString(isr);
                 ParseAndInspect parseAndInspect = new ParseAndInspect(input.classPath(),
-                        input.globalTypeContext().typeMapBuilder, typesForWildcardImport);
+                        input.globalTypeContext().typeMapBuilder, typesForWildcardImport, anonymousTypeCounters);
                 List<TypeInfo> primaryTypes = parseAndInspect.run(inspectionTypeContext, url.toString(), source);
                 primaryTypes.forEach(t -> typeContexts.put(t, inspectionTypeContext));
 

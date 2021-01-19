@@ -58,6 +58,7 @@ public class Resolver {
     private final E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions;
     private final InspectionProvider inspectionProvider;
     private final Resolver parent;
+    private final AnonymousTypeCounters anonymousTypeCounters;
 
     public Stream<Message> getMessageStream() {
         return messages.getMessageStream();
@@ -71,6 +72,18 @@ public class Resolver {
         this.e2ImmuAnnotationExpressions = e2ImmuAnnotationExpressions;
         this.inspectionProvider = inspectionProvider;
         this.parent = parent;
+        this.anonymousTypeCounters = parent.anonymousTypeCounters;
+    }
+
+    public Resolver(AnonymousTypeCounters anonymousTypeCounters,
+                    InspectionProvider inspectionProvider,
+                    E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions,
+                    boolean shallowResolver) {
+        this.shallowResolver = shallowResolver;
+        this.e2ImmuAnnotationExpressions = e2ImmuAnnotationExpressions;
+        this.inspectionProvider = inspectionProvider;
+        this.parent = null;
+        this.anonymousTypeCounters = anonymousTypeCounters;
     }
 
     /**
@@ -217,7 +230,7 @@ public class Resolver {
             log(RESOLVE, "Resolving type {}", typeInfo.fullyQualifiedName);
             TypeInfo primaryType = typeInfo.primaryType();
             ExpressionContext expressionContext = ExpressionContext.forBodyParsing(typeInfo,
-                    primaryType, typeContextOfType);
+                    primaryType, typeContextOfType, anonymousTypeCounters);
             TypeContext typeContext = expressionContext.typeContext;
             typeContext.addToContext(typeInfo);
             typeInspection.typeParameters().forEach(typeContext::addToContext);
