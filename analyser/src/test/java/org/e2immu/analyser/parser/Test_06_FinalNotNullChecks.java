@@ -31,7 +31,7 @@ public class Test_06_FinalNotNullChecks extends CommonTestRunner {
             } else {
                 Assert.assertTrue("Have " + d.currentValue().getClass(), d.currentValue() instanceof NewObject);
                 Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.FINAL));
-                Assert.assertEquals("nullable? instance type String", d.currentValue().toString());
+                Assert.assertEquals("instance type String", d.currentValue().toString());
             }
         }
         if ("FinalNotNullChecks".equals(d.methodInfo().name)) {
@@ -69,7 +69,7 @@ public class Test_06_FinalNotNullChecks extends CommonTestRunner {
             } else {
                 int notNull = d.getFieldAsVariable(input).getProperty(VariableProperty.NOT_NULL);
                 Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, notNull);
-                Assert.assertEquals("nullable? instance type String", d.getFieldAsVariable(input).getValue().toString());
+                Assert.assertEquals("instance type String", d.getFieldAsVariable(input).getValue().toString());
             }
         }
     };
@@ -109,7 +109,7 @@ public class Test_06_FinalNotNullChecks extends CommonTestRunner {
             if (d.iteration() == 0) {
                 Assert.assertSame(EmptyExpression.NO_VALUE, vi.getValue());
             } else {
-                Assert.assertEquals("nullable? instance type String", vi.getValue().toString());
+                Assert.assertEquals("instance type String", vi.getValue().toString());
             }
             int notNull = vi.getProperty(VariableProperty.NOT_NULL);
             int expectNotNull = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;

@@ -92,7 +92,7 @@ public class Test_00_Basics_2 extends CommonTestRunner {
         }
         if (STRING_FIELD.equals(d.variableName()) && "getString".equals(d.methodInfo().name)) {
             Assert.assertTrue(d.variableInfo().isRead());
-            String expectValue = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "nullable? instance type String";
+            String expectValue = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "nullable instance type String";
             Assert.assertEquals(expectValue, d.currentValue().toString());
             int expectNotNull = d.iteration() == 0 ? Level.DELAY : MultiLevel.NULLABLE;
             Assert.assertEquals(expectNotNull, d.getProperty(VariableProperty.NOT_NULL));
