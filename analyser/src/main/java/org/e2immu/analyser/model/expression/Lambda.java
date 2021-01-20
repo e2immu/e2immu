@@ -171,16 +171,24 @@ public class Lambda implements Expression {
         ObjectFlow objectFlow = builder.createInternalObjectFlow(location, parameterizedType, Origin.NEW_OBJECT_CREATION);
         Expression result = null;
 
-        MethodAnalysis methodAnalysis = evaluationContext.getMethodAnalysis(methodInfo);
-        Expression srv = methodAnalysis.getSingleReturnValue();
-        if (srv != null) {
-            InlinedMethod inlineValue = srv.asInstanceOf(InlinedMethod.class);
-            if (inlineValue != null) {
-                result = inlineValue;
+        if (evaluationContext.getLocalPrimaryTypeAnalysers() == null) {
+            result = EmptyExpression.NO_VALUE; // delay
+        } else {
+            MethodAnalysis methodAnalysis = evaluationContext
+                    .getLocalPrimaryTypeAnalysers().stream()
+                    .filter(pta -> pta.primaryType == methodInfo.typeInfo)
+                    .map(pta -> pta.getMethodAnalysis(methodInfo))
+                    .findFirst().orElseThrow();
+            Expression srv = methodAnalysis.getSingleReturnValue();
+            if (srv != null) {
+                InlinedMethod inlineValue = srv.asInstanceOf(InlinedMethod.class);
+                if (inlineValue != null) {
+                    result = inlineValue;
+                }
             }
-        }
-        if (result == null) {
-            result = NewObject.forGetInstance(evaluationContext.getPrimitives(), parameterizedType, objectFlow);
+            if (result == null) {
+                result = NewObject.forGetInstance(evaluationContext.getPrimitives(), parameterizedType, objectFlow);
+            }
         }
 
         builder.setExpression(result);

@@ -1848,5 +1848,10 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         public boolean isPresent(Variable variable) {
             return statementAnalysis.variables.isSet(variable.fullyQualifiedName());
         }
+
+        @Override
+        public List<PrimaryTypeAnalyser> getLocalPrimaryTypeAnalysers() {
+            return localAnalysers.isSet() ? localAnalysers.get(): null;
+        }
     }
 }

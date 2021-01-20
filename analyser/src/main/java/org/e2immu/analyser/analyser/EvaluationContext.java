@@ -30,6 +30,7 @@ import org.e2immu.annotation.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -235,4 +236,6 @@ public interface EvaluationContext {
     default boolean isPresent(Variable variable) {
         return true;
     }
+
+    default List<PrimaryTypeAnalyser> getLocalPrimaryTypeAnalysers() { return List.of(); }
 }
