@@ -88,35 +88,10 @@ public interface EvaluationContext {
         throw new UnsupportedOperationException();
     }
 
-    default MethodAnalysis getMethodAnalysis(MethodInfo methodInfo) {
-        MethodAnalysis methodAnalysis = getAnalyserContext().getMethodAnalysis(methodInfo);
-        return methodAnalysis != null ? methodAnalysis : methodInfo.methodAnalysis.get();
-    }
-
-    default FieldAnalysis getFieldAnalysis(FieldInfo fieldInfo) {
-        FieldAnalyser fieldAnalyser = getAnalyserContext().getFieldAnalysers().get(fieldInfo);
-        return fieldAnalyser != null ? fieldAnalyser.fieldAnalysis : fieldInfo.fieldAnalysis.get();
-    }
-
     default Stream<ParameterAnalysis> getParameterAnalyses(MethodInfo methodInfo) {
-        MethodAnalyser methodAnalyser = getAnalyserContext().getMethodAnalysers().get(methodInfo);
+        MethodAnalyser methodAnalyser = getAnalyserContext().getMethodAnalyser(methodInfo);
         return methodAnalyser != null ? methodAnalyser.getParameterAnalysers().stream().map(ParameterAnalyser::getParameterAnalysis)
                 : methodInfo.methodInspection.get().getParameters().stream().map(parameterInfo -> parameterInfo.parameterAnalysis.get());
-    }
-
-    default ParameterAnalysis getParameterAnalysis(ParameterInfo parameterInfo) {
-        ParameterAnalysis parameterAnalysis = getAnalyserContext().getParameterAnalysis(parameterInfo);
-        return parameterAnalysis != null ? parameterAnalysis : parameterInfo.parameterAnalysis.get();
-    }
-
-    default TypeAnalysis getTypeAnalysis(TypeInfo typeInfo) {
-        try {
-            TypeAnalyser typeAnalyser = getAnalyserContext().getTypeAnalysers().get(typeInfo);
-            return typeAnalyser != null ? typeAnalyser.typeAnalysis : typeInfo.typeAnalysis.get();
-        } catch (RuntimeException e) {
-            LOGGER.error("Caught exception in default get type analysis: " + typeInfo.fullyQualifiedName);
-            throw e;
-        }
     }
 
     default Stream<ObjectFlow> getInternalObjectFlows() {
@@ -132,13 +107,13 @@ public interface EvaluationContext {
         if (value instanceof VariableExpression variableValue) {
             Variable variable = variableValue.variable();
             if (variable instanceof ParameterInfo parameterInfo) {
-                return getParameterAnalysis(parameterInfo).getProperty(variableProperty);
+                return getAnalyserContext().getParameterAnalysis(parameterInfo).getProperty(variableProperty);
             }
             if (variable instanceof FieldReference fieldReference) {
-                return getFieldAnalysis(fieldReference.fieldInfo).getProperty(variableProperty);
+                return getAnalyserContext().getFieldAnalysis(fieldReference.fieldInfo).getProperty(variableProperty);
             }
             if (variable instanceof This thisVariable) {
-                return getTypeAnalysis(thisVariable.typeInfo).getProperty(variableProperty);
+                return getAnalyserContext().getTypeAnalysis(thisVariable.typeInfo).getProperty(variableProperty);
             }
             if (variable instanceof PreAspectVariable pre) {
                 return pre.valueForProperties().getProperty(this, variableProperty);

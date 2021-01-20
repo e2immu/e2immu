@@ -271,22 +271,32 @@ public class PrimaryTypeAnalyser implements AnalyserContext, Analyser, HoldsAnal
     }
 
     @Override
-    public Map<FieldInfo, FieldAnalyser> getFieldAnalysers() {
-        return fieldAnalysers;
+    public FieldAnalyser getFieldAnalyser(FieldInfo fieldInfo) {
+        return fieldAnalysers.get(fieldInfo);
     }
 
     @Override
-    public Map<MethodInfo, MethodAnalyser> getMethodAnalysers() {
-        return methodAnalysers;
+    public Stream<FieldAnalyser> fieldAnalyserStream() {
+        return fieldAnalysers.values().stream();
     }
 
     @Override
-    public Map<TypeInfo, TypeAnalyser> getTypeAnalysers() {
-        return typeAnalysers;
+    public MethodAnalyser getMethodAnalyser(MethodInfo methodInfo) {
+        return methodAnalysers.get(methodInfo);
     }
 
     @Override
-    public Map<ParameterInfo, ParameterAnalyser> getParameterAnalysers() {
-        return parameterAnalysers;
+    public Stream<MethodAnalyser> methodAnalyserStream() {
+        return methodAnalysers.values().stream();
+    }
+
+    @Override
+    public TypeAnalyser getTypeAnalyser(TypeInfo typeInfo) {
+        return typeAnalysers.get(typeInfo);
+    }
+
+    @Override
+    public ParameterAnalyser getParameterAnalyser(ParameterInfo parameterInfo) {
+        return parameterAnalysers.get(parameterInfo);
     }
 }

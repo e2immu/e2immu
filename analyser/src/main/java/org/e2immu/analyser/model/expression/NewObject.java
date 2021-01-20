@@ -280,10 +280,10 @@ public record NewObject(MethodInfo constructor,
         // RULE 2, 3
         boolean notSelf = constructor.typeInfo != evaluationContext.getCurrentType();
         if (notSelf) {
-            TypeAnalysis typeAnalysisOfConstructor = evaluationContext.getTypeAnalysis(constructor.typeInfo);
+            TypeAnalysis typeAnalysisOfConstructor = evaluationContext.getAnalyserContext().getTypeAnalysis(constructor.typeInfo);
             int immutable = typeAnalysisOfConstructor.getProperty(VariableProperty.IMMUTABLE);
             int typeIndependent = typeAnalysisOfConstructor.getProperty(VariableProperty.INDEPENDENT);
-            MethodAnalysis methodAnalysisOfConstructor = evaluationContext.getMethodAnalysis(constructor);
+            MethodAnalysis methodAnalysisOfConstructor = evaluationContext.getAnalyserContext().getMethodAnalysis(constructor);
             int independent = methodAnalysisOfConstructor.getProperty(VariableProperty.INDEPENDENT);
 
             if (MultiLevel.isE2Immutable(immutable) || independent == MultiLevel.EFFECTIVE
@@ -337,7 +337,7 @@ public record NewObject(MethodInfo constructor,
                 if (Primitives.isPrimitiveExcludingVoid(bestType)) return variableProperty.best;
                 return bestType == null ? variableProperty.falseValue :
                         Math.max(variableProperty.falseValue,
-                                evaluationContext.getTypeAnalysis(bestType).getProperty(variableProperty));
+                                evaluationContext.getAnalyserContext().getTypeAnalysis(bestType).getProperty(variableProperty));
             }
             default:
         }
@@ -462,7 +462,7 @@ public record NewObject(MethodInfo constructor,
         NewObject instance;
         if (constructor != null) {
             // check state changes of companion methods
-            MethodAnalysis constructorAnalysis = evaluationContext.getMethodAnalysis(constructor);
+            MethodAnalysis constructorAnalysis = evaluationContext.getAnalyserContext().getMethodAnalysis(constructor);
             instance = MethodCall.checkCompanionMethodsModifying(res.k, evaluationContext, constructor, constructorAnalysis,
                     null, initialInstance, res.v);
         } else {

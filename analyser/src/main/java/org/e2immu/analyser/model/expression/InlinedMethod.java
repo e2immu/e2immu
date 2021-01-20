@@ -112,7 +112,7 @@ public record InlinedMethod(MethodInfo methodInfo, Expression expression,
     @Override
     public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
         if (VariableProperty.METHOD_PROPERTIES_IN_INLINE_SAM.contains(variableProperty)) {
-            return evaluationContext.getMethodAnalysis(methodInfo).getProperty(variableProperty);
+            return evaluationContext.getAnalyserContext().getMethodAnalysis(methodInfo).getProperty(variableProperty);
         }
         return expression.getProperty(evaluationContext, variableProperty);
     }

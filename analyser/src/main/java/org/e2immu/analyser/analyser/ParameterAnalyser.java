@@ -26,8 +26,8 @@ import org.e2immu.analyser.parser.Messages;
 import org.e2immu.annotation.*;
 
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.AnalysisStatus.*;
@@ -55,8 +55,8 @@ public class ParameterAnalyser {
         return parameterAnalysis;
     }
 
-    public void initialize(Map<FieldInfo, FieldAnalyser> fieldAnalysers) {
-        this.fieldAnalysers = Objects.requireNonNull(fieldAnalysers);
+    public void initialize(Stream<FieldAnalyser> fieldAnalyserStream) {
+        this.fieldAnalysers = fieldAnalyserStream.collect(Collectors.toUnmodifiableMap(fa -> fa.fieldInfo, fa -> fa));
     }
 
     public void check() {

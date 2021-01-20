@@ -195,9 +195,9 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         List<EvaluationResult> reParams = parameterExpressions.stream().map(v -> v.reEvaluate(evaluationContext, translation)).collect(Collectors.toList());
         EvaluationResult reObject = object.reEvaluate(evaluationContext, translation);
         List<Expression> reParamValues = reParams.stream().map(EvaluationResult::value).collect(Collectors.toList());
-        int modified = evaluationContext.getMethodAnalysis(methodInfo).getProperty(VariableProperty.MODIFIED);
+        int modified = evaluationContext.getAnalyserContext().getMethodAnalysis(methodInfo).getProperty(VariableProperty.MODIFIED);
         EvaluationResult mv = EvaluateMethodCall.methodValue(modified, evaluationContext, methodInfo,
-                evaluationContext.getMethodAnalysis(methodInfo), reObject.value(), reParamValues, getObjectFlow());
+                evaluationContext.getAnalyserContext().getMethodAnalysis(methodInfo), reObject.value(), reParamValues, getObjectFlow());
         return new EvaluationResult.Builder(evaluationContext).compose(reParams).compose(reObject, mv)
                 .setExpression(mv.value()).build();
     }
@@ -249,7 +249,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
         MethodAnalysis methodAnalysis;
         try {
-            methodAnalysis = evaluationContext.getMethodAnalysis(methodInfo);
+            methodAnalysis = evaluationContext.getAnalyserContext().getMethodAnalysis(methodInfo);
         } catch (UnsupportedOperationException e) {
             LOGGER.warn("Error obtaining method analysis for {}", methodInfo.fullyQualifiedName());
             throw e;
@@ -391,7 +391,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                     CompanionAnalysis companionAnalysis = methodAnalysis.getCompanionAnalyses().get(companionMethodName);
                     MethodInfo aspectMethod;
                     if (companionMethodName.aspect() != null) {
-                        aspectMethod = evaluationContext.getTypeAnalysis(methodInfo.typeInfo).getAspects().get(companionMethodName.aspect());
+                        aspectMethod = evaluationContext.getAnalyserContext().getTypeAnalysis(methodInfo.typeInfo).getAspects().get(companionMethodName.aspect());
                         assert aspectMethod != null : "Expect aspect method to be known";
                     } else {
                         aspectMethod = null;
@@ -560,7 +560,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         } else {
             method = methodInfo;
         }
-        MethodAnalysis methodAnalysis = evaluationContext.getMethodAnalysis(method);
+        MethodAnalysis methodAnalysis = evaluationContext.getAnalyserContext().getMethodAnalysis(method);
         int modified = methodAnalysis.getProperty(VariableProperty.MODIFIED);
         int immutable = evaluationContext.getProperty(objectValue, VariableProperty.IMMUTABLE);
         if (modified == Level.TRUE && immutable >= MultiLevel.EVENTUALLY_E2IMMUTABLE) {
@@ -631,10 +631,10 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     }
 
     private SideEffect sideEffectNotTakingEventualIntoAccount(EvaluationContext evaluationContext) {
-        MethodAnalysis methodAnalysis = evaluationContext.getMethodAnalysis(methodInfo);
+        MethodAnalysis methodAnalysis = evaluationContext.getAnalyserContext().getMethodAnalysis(methodInfo);
         int modified = methodAnalysis.getProperty(VariableProperty.MODIFIED);
 
-        TypeAnalysis typeAnalysis = evaluationContext.getTypeAnalysis(methodInfo.typeInfo);
+        TypeAnalysis typeAnalysis = evaluationContext.getAnalyserContext().getTypeAnalysis(methodInfo.typeInfo);
         int immutable = typeAnalysis.getProperty(VariableProperty.IMMUTABLE);
 
         boolean effectivelyE2Immutable = immutable == MultiLevel.EFFECTIVELY_E2IMMUTABLE;
@@ -674,11 +674,11 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             return variableProperty.best;
         }
         if (variableProperty == VariableProperty.NOT_NULL) {
-            int fluent = evaluationContext.getMethodAnalysis(methodInfo).getProperty(VariableProperty.FLUENT);
+            int fluent = evaluationContext.getAnalyserContext().getMethodAnalysis(methodInfo).getProperty(VariableProperty.FLUENT);
             if (fluent == Level.TRUE) return Level.best(MultiLevel.EFFECTIVELY_NOT_NULL,
-                    evaluationContext.getTypeAnalysis(methodInfo.typeInfo).getProperty(VariableProperty.NOT_NULL));
+                    evaluationContext.getAnalyserContext().getTypeAnalysis(methodInfo.typeInfo).getProperty(VariableProperty.NOT_NULL));
         }
-        return evaluationContext.getMethodAnalysis(methodInfo).getProperty(variableProperty);
+        return evaluationContext.getAnalyserContext().getMethodAnalysis(methodInfo).getProperty(variableProperty);
     }
 
     @Override
@@ -688,7 +688,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         ParameterizedType returnType = methodInfo.returnType();
         if (Primitives.isVoid(returnType)) return LinkedVariables.EMPTY; // no assignment
 
-        MethodAnalysis methodAnalysis = evaluationContext.getMethodAnalysis(methodInfo);
+        MethodAnalysis methodAnalysis = evaluationContext.getAnalyserContext().getMethodAnalysis(methodInfo);
 
         // RULE 1: if the return type is E2IMMU, then no links at all
         boolean notSelf = returnType.typeInfo != evaluationContext.getCurrentType();

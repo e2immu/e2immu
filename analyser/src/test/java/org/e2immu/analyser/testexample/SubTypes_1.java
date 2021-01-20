@@ -26,32 +26,11 @@ package org.e2immu.analyser.testexample;
 public class SubTypes_1 {
 
     protected static String methodWithSubType() {
-
-        class KV {
-            private final String key;
-            String value;
-
-            KV(String key, String value) {
-                this.key = key;
-                this.value = value;
-            }
-
-            @Override
-            public String toString() {
-                return "KV=(" + key + "," + value + ")";
-            }
-        }
-
-        KV kv1 = new KV("a", "BC");
-        return kv1.toString();
-    }
-
-    protected static String methodWithSubType2() {
         String s = "abc";
 
         class KV {
-            String key;
-            String value;
+            final String key;
+            final String value;
 
             KV(String key, String value) {
                 this.key = key;
@@ -63,6 +42,7 @@ public class SubTypes_1 {
                 return "KV=(" + key + "," + value + ")";
             }
         }
+
         KV kv1 = new KV("a", "BC");
         return kv1.toString();
     }

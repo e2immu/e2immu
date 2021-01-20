@@ -177,7 +177,7 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
     @Override
     public void initialize() {
         ImmutableMap.Builder<FieldInfo, FieldAnalyser> myFieldAnalysers = new ImmutableMap.Builder<>();
-        analyserContext.getFieldAnalysers().values().forEach(analyser -> {
+        analyserContext.fieldAnalyserStream().forEach(analyser -> {
             if (analyser.fieldInfo.owner == methodInfo.typeInfo) {
                 myFieldAnalysers.put(analyser.fieldInfo, analyser);
             }
@@ -188,7 +188,7 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
         methodAnalysis.fromAnnotationsIntoProperties(false, methodInspection.getAnnotations(),
                 analyserContext.getE2ImmuAnnotationExpressions());
 
-        parameterAnalysers.forEach(pa -> pa.initialize(analyserContext.getFieldAnalysers()));
+        parameterAnalysers.forEach(pa -> pa.initialize(analyserContext.fieldAnalyserStream()));
     }
 
     @Override
@@ -307,7 +307,7 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
 
     @Override
     public void makeImmutable() {
-        if(firstStatementAnalyser != null) {
+        if (firstStatementAnalyser != null) {
             firstStatementAnalyser.makeImmutable();
         }
     }
@@ -881,15 +881,15 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
 
         int e2ImmutableStatusOfFieldRefs = linkedVariables.variables().stream()
                 .filter(v -> isFieldNotOfImplicitlyImmutableType(v, analyserContext))
-                .map(v -> analyserContext.getFieldAnalysers().get(((FieldReference) v).fieldInfo))
+                .map(v -> analyserContext.getFieldAnalyser(((FieldReference) v).fieldInfo))
                 .mapToInt(fa -> MultiLevel.value(fa.fieldAnalysis.getProperty(VariableProperty.IMMUTABLE), MultiLevel.E2IMMUTABLE))
                 .min().orElse(MultiLevel.EFFECTIVE);
         if (e2ImmutableStatusOfFieldRefs == MultiLevel.DELAY) {
             log(DELAYED, "Have a dependency on a field whose E2Immutable status is not known: {}",
                     linkedVariables.variables().stream()
                             .filter(v -> isFieldNotOfImplicitlyImmutableType(v, analyserContext) &&
-                                    MultiLevel.value(analyserContext.getFieldAnalysers()
-                                                    .get(((FieldReference) v).fieldInfo).fieldAnalysis.getProperty(VariableProperty.IMMUTABLE),
+                                    MultiLevel.value(analyserContext.getFieldAnalyser(((FieldReference) v).fieldInfo)
+                                                    .fieldAnalysis.getProperty(VariableProperty.IMMUTABLE),
                                             MultiLevel.E2IMMUTABLE) == MultiLevel.DELAY)
                             .map(Variable::fullyQualifiedName)
                             .collect(Collectors.joining(", ")));
@@ -998,10 +998,10 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
         @Override
         public int getProperty(Variable variable, VariableProperty variableProperty) {
             if (variable instanceof FieldReference fieldReference) {
-                return getFieldAnalysis(fieldReference.fieldInfo).getProperty(variableProperty);
+                return getAnalyserContext().getFieldAnalysis(fieldReference.fieldInfo).getProperty(variableProperty);
             }
             if (variable instanceof ParameterInfo parameterInfo) {
-                return getParameterAnalysis(parameterInfo).getProperty(variableProperty);
+                return getAnalyserContext().getParameterAnalysis(parameterInfo).getProperty(variableProperty);
             }
             throw new UnsupportedOperationException();
         }

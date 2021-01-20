@@ -58,7 +58,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
 
     public final StatementAnalysis statementAnalysis;
     private final MethodAnalyser myMethodAnalyser;
-    private final AnalyserContext analyserContext;
+    private final ExpandableAnalyserContextImpl analyserContext;
     public final NavigationData<StatementAnalyser> navigationData = new NavigationData<>();
 
     // shared state over the different analysers
@@ -74,7 +74,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                               StatementAnalysis parent,
                               String index,
                               boolean inSyncBlock) {
-        this.analyserContext = Objects.requireNonNull(analyserContext);
+        this.analyserContext = new ExpandableAnalyserContextImpl(Objects.requireNonNull(analyserContext));
         this.myMethodAnalyser = Objects.requireNonNull(methodAnalyser);
         this.statementAnalysis = new StatementAnalysis(analyserContext.getPrimitives(),
                 methodAnalyser.methodAnalysis, statement, parent, index, inSyncBlock);
@@ -433,8 +433,9 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
 
     private AnalysisStatus analyseTypesInStatement(SharedState sharedState) {
         if (!localAnalysers.isSet()) {
-            List<TypeInfo> locallyDefinedTypes = statementAnalysis.statement.getStructure().findTypeDefinedInStatement();
-            List<PrimaryTypeAnalyser> analysers = locallyDefinedTypes.stream().map(typeInfo -> {
+            Stream<TypeInfo> locallyDefinedTypes = Stream.concat(statementAnalysis.statement.getStructure().findTypeDefinedInStatement().stream(),
+                    statement() instanceof LocalClassDeclaration lcd ? Stream.of(lcd.typeInfo) : Stream.empty());
+            List<PrimaryTypeAnalyser> analysers = locallyDefinedTypes.map(typeInfo -> {
                 PrimaryTypeAnalyser primaryTypeAnalyser = new PrimaryTypeAnalyser(analyserContext,
                         typeInfo.typeResolution.get().sortedType(),
                         analyserContext.getConfiguration(),
@@ -444,6 +445,25 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 return primaryTypeAnalyser;
             }).collect(Collectors.toUnmodifiableList());
             localAnalysers.set(analysers);
+
+            boolean haveNext = navigationData.next.get().isPresent();
+            // first, simple propagation of those analysers that we've already accumulated
+            if (haveNext) {
+                navigationData.next.get().get().analyserContext.addAll(analyserContext);
+                navigationData.blocks.get().forEach(opt -> opt.ifPresent(sa -> sa.analyserContext.addAll(analyserContext)));
+            }
+
+            // in the subsequent statements, we'll want to used this local class declaration!
+            if (statement() instanceof LocalClassDeclaration localClassDeclaration) {
+                if (haveNext) {
+                    // we'll need to ensure that the local type's analysers are available in the coming statements
+                    StatementAnalyser next = navigationData.next.get().get();
+                    localAnalysers.get().forEach(next.analyserContext::addPrimaryTypeAnalyser);
+                } else {
+                    statementAnalysis.ensure(Message.newMessage(getLocation(),
+                            Message.USELESS_LOCAL_CLASS_DECLARATION, localClassDeclaration.typeInfo.simpleName));
+                }
+            }
         }
 
         AnalysisStatus analysisStatus = DONE;
@@ -453,6 +473,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             log(ANALYSER, "------- Ending local analyser   {} ------", analyser.getName());
             analysisStatus = analysisStatus.combine(lambdaStatus);
         }
+
+
         return analysisStatus;
     }
 
@@ -461,7 +483,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         if (localAnalysers.isSet()) {
             localAnalysers.get().forEach(PrimaryTypeAnalyser::makeImmutable);
         }
-        for(Optional<StatementAnalyser> block: navigationData.blocks.get()){
+        for (Optional<StatementAnalyser> block : navigationData.blocks.get()) {
             block.ifPresent(StatementAnalyser::makeImmutable);
         }
         navigationData.next.get().ifPresent(StatementAnalyser::makeImmutable);
@@ -1590,7 +1612,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
     }
 
     public MethodAnalysis getMethodAnalysis(MethodInfo methodInfo) {
-        MethodAnalyser methodAnalyser = analyserContext.getMethodAnalysers().get(methodInfo);
+        MethodAnalyser methodAnalyser = analyserContext.getMethodAnalyser(methodInfo);
         return methodAnalyser != null ? methodAnalyser.methodAnalysis : methodInfo.methodAnalysis.get();
     }
 
@@ -1851,7 +1873,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
 
         @Override
         public List<PrimaryTypeAnalyser> getLocalPrimaryTypeAnalysers() {
-            return localAnalysers.isSet() ? localAnalysers.get(): null;
+            return localAnalysers.isSet() ? localAnalysers.get() : null;
         }
     }
 }

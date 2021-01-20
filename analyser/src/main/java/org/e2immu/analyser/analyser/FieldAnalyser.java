@@ -134,13 +134,13 @@ public class FieldAnalyser extends AbstractAnalyser {
         ImmutableList.Builder<MethodAnalyser> allMethodsAndConstructors = new ImmutableList.Builder<>();
         ImmutableList.Builder<MethodAnalyser> myMethodsAndConstructors = new ImmutableList.Builder<>();
 
-        analyserContext.getMethodAnalysers().values().forEach(analyser -> {
+        analyserContext.methodAnalyserStream().forEach(analyser -> {
             allMethodsAndConstructors.add(analyser);
             if (analyser.methodInfo.typeInfo == fieldInfo.owner) {
                 myMethodsAndConstructors.add(analyser);
             }
         });
-        myTypeAnalyser = analyserContext.getTypeAnalysers().get(fieldInfo.owner);
+        myTypeAnalyser = analyserContext.getTypeAnalyser(fieldInfo.owner);
         this.allMethodsAndConstructors = allMethodsAndConstructors.build();
         this.myMethodsAndConstructors = myMethodsAndConstructors.build();
     }
@@ -651,7 +651,7 @@ public class FieldAnalyser extends AbstractAnalyser {
     @Override
     protected Expression getVariableValue(Variable variable) {
         FieldReference fieldReference = (FieldReference) variable;
-        FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysers().get(fieldReference.fieldInfo).fieldAnalysis;
+        FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalyser(fieldReference.fieldInfo).fieldAnalysis;
         int effectivelyFinal = fieldAnalysis.getProperty(VariableProperty.FINAL);
         if (effectivelyFinal == Level.DELAY) return NO_VALUE;
         ObjectFlow objectFlow = fieldAnalysis.getObjectFlow();
@@ -767,13 +767,13 @@ public class FieldAnalyser extends AbstractAnalyser {
         @Override
         public int getProperty(Variable variable, VariableProperty variableProperty) {
             if (variable instanceof FieldReference fieldReference) {
-                return getFieldAnalysis(fieldReference.fieldInfo).getProperty(variableProperty);
+                return getAnalyserContext().getFieldAnalysis(fieldReference.fieldInfo).getProperty(variableProperty);
             }
             if (variable instanceof This thisVariable) {
-                return getTypeAnalysis(thisVariable.typeInfo).getProperty(variableProperty);
+                return getAnalyserContext().getTypeAnalysis(thisVariable.typeInfo).getProperty(variableProperty);
             }
             if (variable instanceof ParameterInfo parameterInfo) {
-                return getParameterAnalysis(parameterInfo).getProperty(variableProperty);
+                return getAnalyserContext().getParameterAnalysis(parameterInfo).getProperty(variableProperty);
             }
             throw new UnsupportedOperationException("?? variable of " + variable.getClass());
         }

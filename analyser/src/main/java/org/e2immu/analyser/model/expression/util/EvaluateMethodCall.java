@@ -166,7 +166,7 @@ public class EvaluateMethodCall {
                     Variable variable = ve.variable();
                     if (variable instanceof FieldReference) {
                         FieldInfo fieldInfo = ((FieldReference) variable).fieldInfo;
-                        FieldAnalysis fieldAnalysis = evaluationContext.getFieldAnalysis(fieldInfo);
+                        FieldAnalysis fieldAnalysis = evaluationContext.getAnalyserContext().getFieldAnalysis(fieldInfo);
                         if (fieldAnalysis.getProperty(VariableProperty.FINAL) == Level.TRUE) {
                             int i = 0;
                             List<ParameterAnalysis> parameterAnalyses = evaluationContext
@@ -312,12 +312,13 @@ public class EvaluateMethodCall {
                 .forEach(e -> {
                     // we're assuming the aspects retain their name, but apart from the name we allow them to be different methods
                     CompanionMethodName cmn = e.getKey();
-                    MethodInfo oldAspectMethod = evaluationContext.getTypeAnalysis(instance.parameterizedType().typeInfo)
-                            .getAspects().get(cmn.aspect());
+                    MethodInfo oldAspectMethod = evaluationContext.getAnalyserContext()
+                            .getTypeAnalysis(instance.parameterizedType().typeInfo).getAspects().get(cmn.aspect());
                     Expression oldValue = new MethodCall(
                             new VariableExpression(new This(evaluationContext.getAnalyserContext(), oldAspectMethod.typeInfo)),
                             oldAspectMethod, List.of(), ObjectFlow.NO_FLOW);
-                    MethodInfo newAspectMethod = evaluationContext.getTypeAnalysis(methodInfo.typeInfo).getAspects().get(cmn.aspect());
+                    MethodInfo newAspectMethod = evaluationContext.getAnalyserContext()
+                            .getTypeAnalysis(methodInfo.typeInfo).getAspects().get(cmn.aspect());
                     Expression newValue = new MethodCall(
                             new VariableExpression(new This(evaluationContext.getAnalyserContext(), newAspectMethod.typeInfo)),
                             newAspectMethod, List.of(), ObjectFlow.NO_FLOW);

@@ -107,4 +107,8 @@ public class SetOnceMap<K, V> extends Freezable {
         map.put(k, vv);
         return vv;
     }
+
+    public void addAll(SetOnceMap<K, V> other) {
+        other.stream().forEach(e -> put(e.getKey(), e.getValue()));
+    }
 }

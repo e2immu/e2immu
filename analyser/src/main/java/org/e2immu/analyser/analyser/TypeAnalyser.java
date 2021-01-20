@@ -138,7 +138,7 @@ public class TypeAnalyser extends AbstractAnalyser {
         ImmutableList.Builder<MethodAnalyser> myConstructors = new ImmutableList.Builder<>();
         ImmutableList.Builder<FieldAnalyser> myFieldAnalysers = new ImmutableList.Builder<>();
 
-        analyserContext.getMethodAnalysers().values().forEach(methodAnalyser -> {
+        analyserContext.methodAnalyserStream().forEach(methodAnalyser -> {
             if (methodAnalyser.methodInfo.typeInfo == typeInfo) {
                 if (methodAnalyser.methodInfo.isConstructor) {
                     myConstructors.add(methodAnalyser);
@@ -153,7 +153,7 @@ public class TypeAnalyser extends AbstractAnalyser {
                 }
             }
         });
-        analyserContext.getFieldAnalysers().values().forEach(fieldAnalyser -> {
+        analyserContext.fieldAnalyserStream().forEach(fieldAnalyser -> {
             if (fieldAnalyser.fieldInfo.owner == typeInfo) {
                 myFieldAnalysers.add(fieldAnalyser);
             }
@@ -171,7 +171,7 @@ public class TypeAnalyser extends AbstractAnalyser {
             tmp.add(analyserContext.getTypeAnalysis(pe.getRight()));
         }
         if (!Primitives.isJavaLangObject(typeInspection.parentClass())) {
-            TypeAnalyser typeAnalyser = analyserContext.getTypeAnalysers().get(typeInspection.parentClass().typeInfo);
+            TypeAnalyser typeAnalyser = analyserContext.getTypeAnalyser(typeInspection.parentClass().typeInfo);
             tmp.add(typeAnalyser != null ? typeAnalyser.typeAnalysis : typeInspection.parentClass().typeInfo.typeAnalysis.get());
         }
         parentAndOrEnclosingTypeAnalysis = ImmutableList.copyOf(tmp);

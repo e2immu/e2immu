@@ -73,7 +73,7 @@ public class EvaluateParameters {
                     if (evaluationContext.getCurrentMethod() != null && evaluationContext.getCurrentMethod().methodInfo == methodInfo) {
                         map = new HashMap<>(Map.of(VariableProperty.MODIFIED, Level.FALSE, VariableProperty.NOT_NULL, MultiLevel.NULLABLE));
                     } else {
-                        map = evaluationContext.getParameterAnalysis(parameterInfo)
+                        map = evaluationContext.getAnalyserContext().getParameterAnalysis(parameterInfo)
                                 .getProperties(VariableProperty.FORWARD_PROPERTIES_ON_PARAMETERS);
                     }
                 } catch (RuntimeException e) {
@@ -124,7 +124,7 @@ public class EvaluateParameters {
                             methodInfo.fullyQualifiedName());
                     source.delay();
                 } else {
-                    ParameterAnalysis parameterAnalysis = evaluationContext.getParameterAnalysis(parameterInfo);
+                    ParameterAnalysis parameterAnalysis = evaluationContext.getAnalyserContext().getParameterAnalysis(parameterInfo);
                     ObjectFlow destination = parameterAnalysis.getObjectFlow();
                     builder.addCallOut(modified == Level.TRUE, destination, parameterValue);
                 }
@@ -151,7 +151,7 @@ public class EvaluateParameters {
 
 
         if (methodInfo != null) {
-            MethodAnalysis methodAnalysis = evaluationContext.getMethodAnalysis(methodInfo);
+            MethodAnalysis methodAnalysis = evaluationContext.getAnalyserContext().getMethodAnalysis(methodInfo);
             Expression precondition = methodAnalysis.getPrecondition();
             if (precondition != null && !precondition.isBooleanConstant()) {
                 // there is a precondition, and we have a list of values... let's see what we can learn

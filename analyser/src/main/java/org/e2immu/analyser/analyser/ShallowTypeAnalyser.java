@@ -176,12 +176,22 @@ public class ShallowTypeAnalyser implements AnalyserContext {
     }
 
     @Override
-    public Map<FieldInfo, FieldAnalyser> getFieldAnalysers() {
-        return Map.of(); // IMPROVE
+    public FieldAnalyser getFieldAnalyser(FieldInfo fieldInfo) {
+        return null; // IMPROVE ME
     }
 
     @Override
-    public Map<MethodInfo, MethodAnalyser> getMethodAnalysers() {
+    public Stream<FieldAnalyser> fieldAnalyserStream() {
+        return Stream.empty(); // IMPROVE ME
+    }
+
+    @Override
+    public MethodAnalyser getMethodAnalyser(MethodInfo methodInfo) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Stream<MethodAnalyser> methodAnalyserStream() {
         throw new UnsupportedOperationException();
     }
 
@@ -199,7 +209,7 @@ public class ShallowTypeAnalyser implements AnalyserContext {
     }
 
     @Override
-    public Map<TypeInfo, TypeAnalyser> getTypeAnalysers() {
+    public TypeAnalyser getTypeAnalyser(TypeInfo typeInfo) {
         throw new UnsupportedOperationException();
     }
 

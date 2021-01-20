@@ -24,7 +24,7 @@ import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.pattern.PatternMatcher;
 
-import java.util.Map;
+import java.util.stream.Stream;
 
 /**
  * many default values are there to make testing easier
@@ -61,19 +61,27 @@ public interface AnalyserContext extends AnalysisProvider, InspectionProvider {
         return null;
     }
 
-    default Map<MethodInfo, MethodAnalyser> getMethodAnalysers() {
+    default Stream<MethodAnalyser> methodAnalyserStream() {
         return null;
     }
 
-    default Map<FieldInfo, FieldAnalyser> getFieldAnalysers() {
+    default MethodAnalyser getMethodAnalyser(MethodInfo methodInfo) {
         return null;
     }
 
-    default Map<TypeInfo, TypeAnalyser> getTypeAnalysers() {
+    default FieldAnalyser getFieldAnalyser(FieldInfo fieldInfo) {
         return null;
     }
 
-    default Map<ParameterInfo, ParameterAnalyser> getParameterAnalysers() {
+    default Stream<FieldAnalyser> fieldAnalyserStream() {
+        return null;
+    }
+
+    default TypeAnalyser getTypeAnalyser(TypeInfo typeInfo) {
+        return null;
+    }
+
+    default ParameterAnalyser getParameterAnalyser(ParameterInfo parameterInfo) {
         return null;
     }
 
@@ -83,7 +91,7 @@ public interface AnalyserContext extends AnalysisProvider, InspectionProvider {
 
     default FieldAnalysis getFieldAnalysis(FieldInfo fieldInfo) {
         try {
-            FieldAnalyser fieldAnalyser = getFieldAnalysers().get(fieldInfo);
+            FieldAnalyser fieldAnalyser = getFieldAnalyser(fieldInfo);
             if (fieldAnalyser == null) {
                 AnalyserContext parent = getParent();
                 if (parent != null) return parent.getFieldAnalysis(fieldInfo);
@@ -96,19 +104,20 @@ public interface AnalyserContext extends AnalysisProvider, InspectionProvider {
     }
 
     default ParameterAnalysis getParameterAnalysis(ParameterInfo parameterInfo) {
-        ParameterAnalyser parameterAnalyser = getParameterAnalysers().get(parameterInfo);
-        if (parameterAnalyser == null) {
-            AnalyserContext parent = getParent();
-            if (parent != null) return parent.getParameterAnalysis(parameterInfo);
-            if (parameterInfo.parameterAnalysis.isSet()) return parameterInfo.parameterAnalysis.get();
-            throw new UnsupportedOperationException("Parameter analysis of " + parameterInfo.fullyQualifiedName() + " not yet set");
+        ParameterAnalyser parameterAnalyser = getParameterAnalyser(parameterInfo);
+        if (parameterAnalyser != null) {
+            return parameterAnalyser.parameterAnalysis;
         }
-        return parameterAnalyser.parameterAnalysis;
+        AnalyserContext parent = getParent();
+        if (parent != null) return parent.getParameterAnalysis(parameterInfo);
+
+        if (parameterInfo.parameterAnalysis.isSet()) return parameterInfo.parameterAnalysis.get();
+        throw new UnsupportedOperationException("Parameter analysis of " + parameterInfo.fullyQualifiedName() + " not yet set");
     }
 
     default TypeAnalysis getTypeAnalysis(TypeInfo typeInfo) {
         try {
-            TypeAnalyser typeAnalyser = getTypeAnalysers().get(typeInfo);
+            TypeAnalyser typeAnalyser = getTypeAnalyser(typeInfo);
             if (typeAnalyser == null) {
                 AnalyserContext parent = getParent();
                 if (parent != null) return parent.getTypeAnalysis(typeInfo);
@@ -122,7 +131,7 @@ public interface AnalyserContext extends AnalysisProvider, InspectionProvider {
 
     default MethodAnalysis getMethodAnalysis(MethodInfo methodInfo) {
         try {
-            MethodAnalyser methodAnalyser = getMethodAnalysers().get(methodInfo);
+            MethodAnalyser methodAnalyser = getMethodAnalyser(methodInfo);
             if (methodAnalyser == null) {
                 AnalyserContext parent = getParent();
                 if (parent != null) return parent.getMethodAnalysis(methodInfo);

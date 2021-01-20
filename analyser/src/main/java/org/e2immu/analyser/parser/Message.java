@@ -91,6 +91,8 @@ public class Message {
     public static final String CONTRADICTING_ANNOTATIONS = "Contradicting annotations";
     public static final String WRONG_LINKS = "Contradicting linked variable information";
 
+    public static final String USELESS_LOCAL_CLASS_DECLARATION ="Unused local class declaration (no statements follow)";
+
     @NotNull1
     @E2Container
     public static final Map<String, Severity> SEVERITY_MAP;

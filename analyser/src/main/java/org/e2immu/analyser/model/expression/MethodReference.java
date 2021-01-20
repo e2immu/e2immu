@@ -120,7 +120,7 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
             // TODO arrays? TODO ObjectFlow
             Location location = evaluationContext.getLocation(this);
             ObjectFlow objectFlow = builder.createInternalObjectFlow(location, methodInfo.returnType(), Origin.NEW_OBJECT_CREATION);
-            MethodAnalysis methodAnalysis = evaluationContext.getMethodAnalysis(methodInfo);
+            MethodAnalysis methodAnalysis = evaluationContext.getAnalyserContext().getMethodAnalysis(methodInfo);
             NewObject initialInstance = NewObject.objectCreation(evaluationContext.getPrimitives(),
                     methodInfo, methodInfo.returnType(), Diamond.SHOW_ALL, List.of(), objectFlow);
             NewObject instance = MethodCall.checkCompanionMethodsModifying(builder, evaluationContext, methodInfo,
@@ -128,7 +128,7 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
             builder.setExpression(instance);
         } else {
             // normal method call, very similar to MethodCall.evaluate
-            MethodAnalysis methodAnalysis = evaluationContext.getMethodAnalysis(methodInfo);
+            MethodAnalysis methodAnalysis = evaluationContext.getAnalyserContext().getMethodAnalysis(methodInfo);
             // check the not-null aspect
             int notNull = MultiLevel.value(methodAnalysis.getProperty(VariableProperty.NOT_NULL), MultiLevel.NOT_NULL);
             int forwardNotNull = MultiLevel.value(forwardEvaluationInfo.getProperty(VariableProperty.NOT_NULL), MultiLevel.NOT_NULL);

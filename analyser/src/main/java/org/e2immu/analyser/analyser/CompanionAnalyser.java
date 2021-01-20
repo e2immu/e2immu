@@ -172,23 +172,6 @@ public class CompanionAnalyser {
         }
 
         @Override
-        public ParameterAnalysis getParameterAnalysis(ParameterInfo parameterInfo) {
-            MethodAnalysis methodAnalysis = getMethodAnalysis(parameterInfo.owner);
-            return methodAnalysis.getParameterAnalyses().get(parameterInfo.index);
-            //return getAnalyserContext().getParameterAnalysis(parameterInfo);
-        }
-
-        @Override
-        public MethodAnalysis getMethodAnalysis(MethodInfo methodInfo) {
-            return getAnalyserContext().getMethodAnalysis(methodInfo);
-        }
-
-        @Override
-        public TypeAnalysis getTypeAnalysis(TypeInfo typeInfo) {
-            return getAnalyserContext().getTypeAnalysis(typeInfo);
-        }
-
-        @Override
         public AnalyserContext getAnalyserContext() {
             return analyserContext;
         }
