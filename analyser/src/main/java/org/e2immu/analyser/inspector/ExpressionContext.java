@@ -77,21 +77,20 @@ public class ExpressionContext {
         log(CONTEXT, "Creating a new expression context for {}", typeInfo.fullyQualifiedName);
         return new ExpressionContext(Objects.requireNonNull(typeInfo), null, typeInfo,
                 Objects.requireNonNull(typeContext),
-                VariableContext.initialVariableContext(new HashMap<>()),
+                VariableContext.initialVariableContext(null, new HashMap<>()),
                 Objects.requireNonNull(anonymousTypeCounters));
     }
 
     public static ExpressionContext forBodyParsing(@NotNull @NotModified TypeInfo enclosingType,
                                                    @NotNull @NotModified TypeInfo primaryType,
-                                                   @NotNull @NotModified TypeContext typeContext,
-                                                   @NotNull @NotModified AnonymousTypeCounters anonymousTypeCounters) {
-        Map<String, FieldReference> staticallyImportedFields = typeContext.staticFieldImports();
+                                                   @NotNull @NotModified ExpressionContext expressionContextOfType) {
+        Map<String, FieldReference> staticallyImportedFields = expressionContextOfType.typeContext.staticFieldImports();
         log(CONTEXT, "Creating a new expression context for {}", enclosingType.fullyQualifiedName);
         return new ExpressionContext(Objects.requireNonNull(enclosingType), null,
                 Objects.requireNonNull(primaryType),
-                Objects.requireNonNull(typeContext),
-                VariableContext.initialVariableContext(staticallyImportedFields),
-                Objects.requireNonNull(anonymousTypeCounters));
+                Objects.requireNonNull(expressionContextOfType.typeContext),
+                VariableContext.initialVariableContext(expressionContextOfType.variableContext, staticallyImportedFields),
+                Objects.requireNonNull(expressionContextOfType.anonymousTypeCounters));
     }
 
     private ExpressionContext(TypeInfo enclosingType,

@@ -25,10 +25,7 @@ import org.e2immu.analyser.annotationxml.AnnotationXmlWriter;
 import org.e2immu.analyser.bytecode.ByteCodeInspector;
 import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.config.TypeMapVisitor;
-import org.e2immu.analyser.inspector.ParseAndInspect;
-import org.e2immu.analyser.inspector.AnonymousTypeCounters;
-import org.e2immu.analyser.inspector.TypeContext;
-import org.e2immu.analyser.inspector.TypeInspectionImpl;
+import org.e2immu.analyser.inspector.*;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.TypeInspection;
 import org.e2immu.analyser.resolver.Resolver;
@@ -122,7 +119,11 @@ public class Parser {
         // phase 2: resolve methods and fields
         Resolver resolver = new Resolver(anonymousTypeCounters, input.globalTypeContext(),
                 input.globalTypeContext().typeMapBuilder.getE2ImmuAnnotationExpressions(), shallowResolver);
-        List<SortedType> sortedPrimaryTypes = resolver.sortTypes(onDemandSourceInspection.typeContexts);
+
+        Map<TypeInfo, ExpressionContext> expressionContexts = onDemandSourceInspection.typeContexts.entrySet().stream()
+                .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey,
+                        e -> ExpressionContext.forInspectionOfPrimaryType(e.getKey(), e.getValue(), anonymousTypeCounters)));
+        List<SortedType> sortedPrimaryTypes = resolver.sortTypes(expressionContexts);
         messages.addAll(resolver.getMessageStream()
                 .filter(m -> m.severity != Message.Severity.WARN || reportWarnings));
         return sortedPrimaryTypes;

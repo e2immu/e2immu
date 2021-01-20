@@ -32,15 +32,15 @@ import java.util.Map;
 public class VariableContext {
     public final VariableContext parentContext;
 
-    public static VariableContext initialVariableContext(Map<String, FieldReference> staticallyImportedFields) {
-        return new VariableContext(staticallyImportedFields, null);
+    public static VariableContext initialVariableContext(VariableContext parentContext, Map<String, FieldReference> staticallyImportedFields) {
+        return new VariableContext(parentContext, staticallyImportedFields);
     }
 
     public static VariableContext dependentVariableContext(VariableContext parentContext) {
-        return new VariableContext(new HashMap<>(), parentContext);
+        return new VariableContext(parentContext, new HashMap<>());
     }
 
-    private VariableContext(Map<String, FieldReference> staticallyImportedFields, VariableContext parentContext) {
+    private VariableContext(VariableContext parentContext, Map<String, FieldReference> staticallyImportedFields) {
         this.fields = new HashMap<>(staticallyImportedFields);
         this.parentContext = parentContext;
     }

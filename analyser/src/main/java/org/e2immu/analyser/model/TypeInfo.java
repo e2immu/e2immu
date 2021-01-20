@@ -527,7 +527,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
 
     @Override
     public UpgradableBooleanMap<TypeInfo> typesReferenced() {
-        return typeInspection.get("types referenced of type " + fullyQualifiedName).typesReferenced();
+        return typeInspection.get("type inspection of " + fullyQualifiedName).typesReferenced();
     }
 
     public Map<NamedType, ParameterizedType> mapInTermsOfParametersOfSuperType(InspectionProvider inspectionProvider, TypeInfo superType) {

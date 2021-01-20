@@ -88,10 +88,6 @@ public class TypeInspector {
         builder.setInspectionState(STARTING_JAVA_PARSER);
     }
 
-    public TypeInspection build() {
-        return builder.build();
-    }
-
     public void inspectAnonymousType(ParameterizedType classImplemented,
                                      ExpressionContext expressionContext,
                                      NodeList<BodyDeclaration<?>> members) {

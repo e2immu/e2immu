@@ -158,7 +158,9 @@ public class ParseLambdaExpr {
         typeInspectionBuilder.setTypeNature(TypeNature.CLASS);
         typeInspectionBuilder.addInterfaceImplemented(functionalInterfaceType);
         typeInspectionBuilder.addMethod(methodInfo);
+        TypeInspection builtTypeInspection = typeInspectionBuilder.build();
+        typeInfo.typeInspection.set(builtTypeInspection);
 
-        return typeInspectionBuilder;
+        return builtTypeInspection;
     }
 }

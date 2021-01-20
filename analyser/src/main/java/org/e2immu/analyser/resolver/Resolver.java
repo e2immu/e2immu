@@ -94,17 +94,17 @@ public class Resolver {
      * @return A list of sorted primary types, each with their sub-elements (sub-types, fields, methods) sorted.
      */
 
-    public List<SortedType> sortTypes(Map<TypeInfo, TypeContext> inspectedTypes) {
+    public List<SortedType> sortTypes(Map<TypeInfo, ExpressionContext> inspectedTypes) {
         DependencyGraph<TypeInfo> typeGraph = new DependencyGraph<>();
         Map<TypeInfo, SortedType> toSortedType = new HashMap<>();
         Set<TypeInfo> stayWithin = inspectedTypes.keySet().stream()
                 .flatMap(typeInfo -> typeAndAllSubTypes(typeInfo).stream())
                 .collect(Collectors.toUnmodifiableSet());
 
-        for (Map.Entry<TypeInfo, TypeContext> entry : inspectedTypes.entrySet()) {
+        for (Map.Entry<TypeInfo, ExpressionContext> entry : inspectedTypes.entrySet()) {
             try {
                 TypeInfo typeInfo = entry.getKey();
-                TypeContext typeContext = entry.getValue();
+                ExpressionContext expressionContext = entry.getValue();
 
                 if (parent == null) {
                     assert typeInfo.isPrimaryType() : "Not a primary type: " + typeInfo.fullyQualifiedName;
@@ -112,7 +112,7 @@ public class Resolver {
                     assert !typeInfo.isPrimaryType() :
                             "?? in recursive situation we do not expect a primary type" + typeInfo.fullyQualifiedName;
                 }
-                SortedType sortedType = addToTypeGraph(typeGraph, stayWithin, typeInfo, typeContext);
+                SortedType sortedType = addToTypeGraph(typeGraph, stayWithin, typeInfo, expressionContext);
                 toSortedType.put(typeInfo, sortedType);
             } catch (RuntimeException rte) {
                 LOGGER.warn("Caught runtime exception while resolving type {}", entry.getKey().fullyQualifiedName);
@@ -176,12 +176,12 @@ public class Resolver {
     private SortedType addToTypeGraph(DependencyGraph<TypeInfo> typeGraph,
                                       Set<TypeInfo> stayWithin,
                                       TypeInfo typeInfo,
-                                      TypeContext typeContextOfFile) {
+                                      ExpressionContext expressionContextOfFile) {
 
         // main call
-        TypeContext typeContextOfType = new TypeContext(typeContextOfFile);
+        //TypeContext typeContextOfType = new TypeContext(expressionContextOfFile.typeContext);
         DependencyGraph<WithInspectionAndAnalysis> methodFieldSubTypeGraph = new DependencyGraph<>();
-        List<TypeInfo> typeAndAllSubTypes = doType(typeInfo, typeContextOfType, methodFieldSubTypeGraph);
+        List<TypeInfo> typeAndAllSubTypes = doType(typeInfo, expressionContextOfFile, methodFieldSubTypeGraph);
 
         // FROM HERE ON, ALL INSPECTION HAS BEEN SET!
 
@@ -191,7 +191,7 @@ public class Resolver {
 
         // remove myself and all my enclosing types, and stay within the set of inspectedTypes
         Set<TypeInfo> typeDependencies = shallowResolver ?
-                new HashSet<>(superTypesExcludingJavaLangObject(typeContextOfType, typeInfo)) :
+                new HashSet<>(superTypesExcludingJavaLangObject(expressionContextOfFile.typeContext, typeInfo)) :
                 typeInfo.typesReferenced().stream().map(Map.Entry::getKey).collect(Collectors.toCollection(HashSet::new));
 
         typeDependencies.removeAll(typeAndAllSubTypes);
@@ -211,27 +211,27 @@ public class Resolver {
         return new SortedType(typeInfo, methodFieldSubTypeOrder);
     }
 
-    private List<TypeInfo> doType(TypeInfo typeInfo, TypeContext typeContextOfType,
+    private List<TypeInfo> doType(TypeInfo typeInfo,
+                                  ExpressionContext expressionContextOfType,
                                   DependencyGraph<WithInspectionAndAnalysis> methodFieldSubTypeGraph) {
         try {
-            TypeInspection typeInspection = typeContextOfType.getTypeInspection(typeInfo);
+            TypeInspection typeInspection = expressionContextOfType.typeContext.getTypeInspection(typeInfo);
             if (typeInspection.getInspectionState().le(TypeInspectionImpl.InspectionState.TRIGGER_BYTECODE_INSPECTION)) {
                 // no need to inspect this method, we'll never use it
                 return List.of(typeInfo);
             }
-            typeInspection.subTypes().forEach(typeContextOfType::addToContext);
+            typeInspection.subTypes().forEach(expressionContextOfType.typeContext::addToContext);
 
             // recursion, do sub-types first (no recursion at resolver level!)
             typeInspection.subTypes().forEach(subType -> {
                 log(RESOLVE, "From {} into {}", typeInfo.fullyQualifiedName, subType.fullyQualifiedName);
-                doType(subType, typeContextOfType, methodFieldSubTypeGraph);
+                doType(subType, expressionContextOfType, methodFieldSubTypeGraph);
             });
 
             log(RESOLVE, "Resolving type {}", typeInfo.fullyQualifiedName);
             TypeInfo primaryType = typeInfo.primaryType();
-            ExpressionContext expressionContext = ExpressionContext.forBodyParsing(typeInfo,
-                    primaryType, typeContextOfType, anonymousTypeCounters);
-            TypeContext typeContext = expressionContext.typeContext;
+            ExpressionContext expressionContextForBody = ExpressionContext.forBodyParsing(typeInfo, primaryType, expressionContextOfType);
+            TypeContext typeContext = expressionContextForBody.typeContext;
             typeContext.addToContext(typeInfo);
             typeInspection.typeParameters().forEach(typeContext::addToContext);
 
@@ -240,7 +240,7 @@ public class Resolver {
 
             // add visible fields to variable context
             accessibleFieldsStream(typeContext, typeInfo, primaryType)
-                    .forEach(fieldInfo -> expressionContext.variableContext.add(new FieldReference(
+                    .forEach(fieldInfo -> expressionContextForBody.variableContext.add(new FieldReference(
                             typeContext,
                             fieldInfo,
                             fieldInfo.isStatic() ? null : new This(typeContext, fieldInfo.owner))));
@@ -248,8 +248,8 @@ public class Resolver {
             List<TypeInfo> typeAndAllSubTypes = typeAndAllSubTypes(typeInfo);
             Set<TypeInfo> restrictToType = new HashSet<>(typeAndAllSubTypes);
 
-            doFields(typeInspection, expressionContext, methodFieldSubTypeGraph, restrictToType);
-            doMethodsAndConstructors(typeInspection, expressionContext, methodFieldSubTypeGraph, restrictToType);
+            doFields(typeInspection, expressionContextForBody, methodFieldSubTypeGraph, restrictToType);
+            doMethodsAndConstructors(typeInspection, expressionContextForBody, methodFieldSubTypeGraph, restrictToType);
 
             // dependencies of the type
 
@@ -303,7 +303,7 @@ public class Resolver {
                 log(RESOLVE, "Passing on functional interface method to field initializer of {}: {}", fieldInfo.name, singleAbstractMethod);
             }
             org.e2immu.analyser.model.Expression parsedExpression = subContext.parseExpression(expression, fieldInfo.type, singleAbstractMethod);
-            subContext.streamNewlyCreatedTypes().forEach(anonymousType -> doType(anonymousType, subContext.typeContext, methodFieldSubTypeGraph));
+            subContext.streamNewlyCreatedTypes().forEach(anonymousType -> doType(anonymousType, subContext, methodFieldSubTypeGraph));
 
             MethodInfo sam;
             boolean artificial;
@@ -472,7 +472,7 @@ public class Resolver {
 
             newContext.streamNewlyCreatedTypes().forEach(anonymousType -> {
                 Resolver resolver = new Resolver(this, inspectionProvider, e2ImmuAnnotationExpressions, false);
-                resolver.sortTypes(Map.of(anonymousType, newContext.typeContext));
+                resolver.sortTypes(Map.of(anonymousType, newContext));
                 // result can be ignored, because it is stored in the anonymousType's TypeResolution
             });
 
