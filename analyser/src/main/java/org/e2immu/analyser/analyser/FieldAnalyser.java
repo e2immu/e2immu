@@ -759,7 +759,7 @@ public class FieldAnalyser extends AbstractAnalyser {
         public int getProperty(Expression value, VariableProperty variableProperty) {
             if (value instanceof VariableExpression variableValue) {
                 Variable variable = variableValue.variable();
-               return getProperty(variable, variableProperty);
+                return getProperty(variable, variableProperty);
             }
             return value.getProperty(this, variableProperty);
         }
@@ -786,6 +786,15 @@ public class FieldAnalyser extends AbstractAnalyser {
             if (variable instanceof This) {
                 return myTypeAnalyser.getVariableValue(variable);
             }
+            if (variable instanceof ParameterInfo) {
+                /*
+                 the parameter must belong to the closure somewhere (otherwise you can't have parameters in field expressions,
+                 see test SubTypes_5
+                 */
+                assert closure != null;
+                return closure.currentValue(variable, statementTime, isNotAssignmentTarget);
+            }
+
             throw new UnsupportedOperationException("Variable of " + variable.getClass() + " not implemented here");
         }
 

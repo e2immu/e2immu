@@ -56,6 +56,19 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
     }
 
     /*
+   factory method for existing variables in enclosing methods
+    */
+    public static VariableInfoContainerImpl copyOfExistingVariableInEnclosingMethod(VariableInfoContainer previous,
+                                                                                    boolean statementHasSubBlocks) {
+        Objects.requireNonNull(previous);
+        return new VariableInfoContainerImpl(VariableInLoop.COPY_FROM_ENCLOSING_METHOD,
+                Either.left(previous),
+                statementHasSubBlocks ? new SetOnce<>() : null,
+                Level.MERGE);
+    }
+
+
+    /*
     factory method for new variables
      */
     public static VariableInfoContainerImpl newVariable(Variable variable,
@@ -255,7 +268,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
                 setProperty(e.getKey(), e.getValue(), false, Level.EVALUATION));
 
         VariableInfoImpl evaluation = this.evaluation.get();
-        boolean noAssignmentInThisStatement = !isAssignedInThisStatement();
+        boolean noAssignmentInThisStatement = isNotAssignedInThisStatement();
         boolean notReadInThisStatement = !isReadInThisStatement();
         if (noAssignmentInThisStatement && notReadInThisStatement) {
             if (previous.valueIsSet()) {

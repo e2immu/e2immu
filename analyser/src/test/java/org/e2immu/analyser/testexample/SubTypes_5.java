@@ -50,7 +50,7 @@ public class SubTypes_5 {
         };
     }
 
-    public int sum() {
+    public static int sum() {
         int sum = 0;
         for (int i : makeIterator(5)) {
             sum += i;

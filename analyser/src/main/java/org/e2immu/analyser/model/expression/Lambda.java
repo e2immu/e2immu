@@ -184,20 +184,7 @@ public class Lambda implements Expression {
             } else {
                 result = EmptyExpression.NO_VALUE; // delay
             }
-            methodAnalysis.getLastStatement().variableStream()
-                    // parameters are already present, fields should become present if they're not local
-                    .filter(variableInfo -> evaluationContext.isPresent(variableInfo.variable()) ||
-                            variableInfo.variable() instanceof FieldReference fieldReference &&
-                                    fieldReference.fieldInfo.owner != methodInfo.typeInfo &&
-                                    fieldReference.fieldInfo.owner.primaryType() == methodInfo.typeInfo.primaryType())
-                    .forEach(variableInfo -> {
-                        if (variableInfo.getReadId().compareTo(VariableInfoContainer.NOT_YET_READ) > 0) {
-                            builder.markRead(variableInfo.variable());
-                        }
-                        if (variableInfo.getAssignmentId().compareTo(VariableInfoContainer.NOT_YET_READ) > 0) {
-                            builder.assignment(variableInfo.variable(), variableInfo.getValue(), variableInfo.getLinkedVariables());
-                        }
-                    });
+            builder.markVariablesFromSubMethod(methodAnalysis);
         }
 
         builder.setExpression(result);

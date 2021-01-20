@@ -212,5 +212,11 @@ public interface EvaluationContext {
         return true;
     }
 
-    default List<PrimaryTypeAnalyser> getLocalPrimaryTypeAnalysers() { return List.of(); }
+    default List<PrimaryTypeAnalyser> getLocalPrimaryTypeAnalysers() {
+        return List.of();
+    }
+
+    default Stream<Map.Entry<String, VariableInfoContainer>> localVariableStream() {
+        return Stream.empty();
+    }
 }

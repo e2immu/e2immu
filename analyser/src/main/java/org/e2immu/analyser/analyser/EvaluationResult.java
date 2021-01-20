@@ -123,7 +123,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             LinkedVariables combinedLinkedVariables = linkedVariables.merge(other.linkedVariables);
             Set<Integer> combinedReadAtStatementTime = SetUtil.immutableUnion(readAtStatementTime, other.readAtStatementTime);
             Map<VariableProperty, Integer> combinedProperties = VariableInfoImpl.mergeProperties(properties, other.properties);
-            return new ChangeData(other.value == EmptyExpression.NO_VALUE ? value: other.value,
+            return new ChangeData(other.value == EmptyExpression.NO_VALUE ? value : other.value,
                     other.stateIsDelayed,
                     other.markAssignment || markAssignment,
                     combinedReadAtStatementTime,
@@ -508,7 +508,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
         public void addErrorAssigningToFieldOutsideType(FieldInfo fieldInfo) {
             assert evaluationContext != null;
             messages.add(Message.newMessage(evaluationContext.getLocation(),
-                    Message.ADVISE_AGAINST_ASSIGNMENT_TO_FIELD_OUTSIDE_TYPE, "Field "+fieldInfo.fullyQualifiedName()));
+                    Message.ADVISE_AGAINST_ASSIGNMENT_TO_FIELD_OUTSIDE_TYPE, "Field " + fieldInfo.fullyQualifiedName()));
         }
 
         public void addParameterShouldNotBeAssignedTo(ParameterInfo parameterInfo) {
@@ -523,6 +523,44 @@ public record EvaluationResult(EvaluationContext evaluationContext,
 
         public int getStatementTime() {
             return statementTime;
+        }
+
+        private boolean acceptForMarking(Variable variable, TypeInfo subType) {
+            assert evaluationContext != null;
+            return evaluationContext.isPresent(variable) ||
+                    variable instanceof FieldReference fieldReference &&
+                            fieldReference.fieldInfo.owner != subType &&
+                            fieldReference.fieldInfo.owner.primaryType() == subType.primaryType();
+        }
+
+        public void markVariablesFromSubMethod(MethodAnalysis methodAnalysis) {
+            StatementAnalysis statementAnalysis = methodAnalysis.getLastStatement();
+            if (statementAnalysis == null) return; // nothing we can do here
+            statementAnalysis.variableStream()
+                    // parameters are already present, fields should become present if they're not local
+                    .filter(variableInfo -> acceptForMarking(variableInfo.variable(), methodAnalysis.getMethodInfo().typeInfo))
+                    .forEach(variableInfo -> {
+                        if (variableInfo.getReadId().compareTo(VariableInfoContainer.NOT_YET_READ) > 0) {
+                            markRead(variableInfo.variable());
+                        }
+                        if (variableInfo.getAssignmentId().compareTo(VariableInfoContainer.NOT_YET_READ) > 0) {
+                            assignment(variableInfo.variable(), variableInfo.getValue(), variableInfo.getLinkedVariables());
+                        }
+                    });
+        }
+
+        public void markVariablesFromPrimaryTypeAnalyser(PrimaryTypeAnalyser pta) {
+            pta.methodAnalyserStream().forEach(ma -> markVariablesFromSubMethod(ma.methodAnalysis));
+            pta.fieldAnalyserStream().forEach(fa -> markVariablesFromSubFieldInitialisers(fa.fieldAnalysis, pta.primaryType));
+        }
+
+        private void markVariablesFromSubFieldInitialisers(FieldAnalysisImpl.Builder fieldAnalysis, TypeInfo subType) {
+            assert evaluationContext != null;
+            Expression initialValue = fieldAnalysis.getInitialValue();
+            if (initialValue == EmptyExpression.EMPTY_EXPRESSION || initialValue == null) return;
+            initialValue.variables().stream()
+                    .filter(variable -> acceptForMarking(variable, subType))
+                    .forEach(this::markRead);
         }
     }
 }

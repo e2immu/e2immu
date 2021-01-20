@@ -472,6 +472,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             AnalysisStatus lambdaStatus = analyser.analyse(sharedState.evaluationContext.getIteration(), sharedState.evaluationContext);
             log(ANALYSER, "------- Ending local analyser   {} ------", analyser.getName());
             analysisStatus = analysisStatus.combine(lambdaStatus);
+            statementAnalysis.ensureMessages(analyser.getMessageStream());
         }
 
 
@@ -1068,7 +1069,6 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
     }
 
     private AnalysisStatus evaluationOfMainExpression(SharedState sharedState) {
-
         List<Expression> expressionsFromInitAndUpdate = initialisersAndUpdaters(sharedState);
         List<Expression> expressionsFromLocalVariablesInLoop = localVariablesInLoop();
         /*
@@ -1094,6 +1094,12 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 Expression state = localConditionManager.stateUpTo(sharedState.evaluationContext, correspondingLoop.steps());
                 correspondingLoop.statementAnalysis().stateData.addStateOfInterrupt(index(), state);
                 if (state == NO_VALUE) return DELAYS;
+            } else if (statement() instanceof LocalClassDeclaration localClassDeclaration) {
+                EvaluationResult.Builder builder = new EvaluationResult.Builder(sharedState.evaluationContext);
+                PrimaryTypeAnalyser primaryTypeAnalyser =
+                        localAnalysers.get().stream().filter(pta -> pta.primaryType == localClassDeclaration.typeInfo).findFirst().orElseThrow();
+                builder.markVariablesFromPrimaryTypeAnalyser(primaryTypeAnalyser);
+                return apply(sharedState, builder.build(), statementAnalysis);
             }
             return analysisStatus;
         }
@@ -1106,7 +1112,6 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             Expression toEvaluate = expressionsFromInitAndUpdate.size() == 1 ? expressionsFromInitAndUpdate.get(0) :
                     new CommaExpression(expressionsFromInitAndUpdate);
             EvaluationResult result = toEvaluate.evaluate(sharedState.evaluationContext, structure.forwardEvaluationInfo());
-
             if (statementAnalysis.flowData.timeAfterExecutionNotYetSet()) {
                 statementAnalysis.flowData.setTimeAfterEvaluation(result.statementTime(), index());
             }
@@ -1538,17 +1543,20 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         boolean alwaysInterrupts = bestAlwaysInterrupt != InterruptsFlow.NO;
         boolean atEndOfBlock = navigationData.next.get().isEmpty();
         if (atEndOfBlock || alwaysInterrupts) {
-            statementAnalysis.variableStream().forEach(variableInfo -> {
-                if (variableInfo.notReadAfterAssignment()) {
-                    boolean isLocalAndLocalToThisBlock = statementAnalysis.isLocalVariableAndLocalToThisBlock(variableInfo.name());
-                    if (bestAlwaysInterrupt == InterruptsFlow.ESCAPE ||
-                            isLocalAndLocalToThisBlock ||
-                            variableInfo.variable().isLocal() && bestAlwaysInterrupt == InterruptsFlow.RETURN &&
-                                    localVariableAssignmentInThisBlock(variableInfo)) {
-                        statementAnalysis.ensure(Message.newMessage(getLocation(), Message.USELESS_ASSIGNMENT, variableInfo.name()));
-                    }
-                }
-            });
+            statementAnalysis.variables.stream()
+                    .filter(e -> e.getValue().getVariableInLoop() != VariableInLoop.COPY_FROM_ENCLOSING_METHOD)
+                    .map(e -> e.getValue().current())
+                    .forEach(variableInfo -> {
+                        if (variableInfo.notReadAfterAssignment()) {
+                            boolean isLocalAndLocalToThisBlock = statementAnalysis.isLocalVariableAndLocalToThisBlock(variableInfo.name());
+                            if (bestAlwaysInterrupt == InterruptsFlow.ESCAPE ||
+                                    isLocalAndLocalToThisBlock ||
+                                    variableInfo.variable().isLocal() && bestAlwaysInterrupt == InterruptsFlow.RETURN &&
+                                            localVariableAssignmentInThisBlock(variableInfo)) {
+                                statementAnalysis.ensure(Message.newMessage(getLocation(), Message.USELESS_ASSIGNMENT, variableInfo.name()));
+                            }
+                        }
+                    });
         }
         return DONE;
     }
@@ -1564,7 +1572,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             // at the end of the block, check for variables created in this block
             // READ is set in the first iteration, so there is no reason to expect delays
             statementAnalysis.variables.stream()
-                    .filter(e -> e.getValue().getStatementIndexOfThisLoopVariable() == null)
+                    .filter(e -> e.getValue().getStatementIndexOfThisLoopVariable() == null &&
+                            e.getValue().getVariableInLoop() != VariableInLoop.COPY_FROM_ENCLOSING_METHOD)
                     .map(e -> e.getValue().current())
                     .filter(vi -> statementAnalysis.isLocalVariableAndLocalToThisBlock(vi.name()) && !vi.isRead())
                     .forEach(vi -> statementAnalysis.ensure(Message.newMessage(getLocation(),
@@ -1874,6 +1883,11 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         @Override
         public List<PrimaryTypeAnalyser> getLocalPrimaryTypeAnalysers() {
             return localAnalysers.isSet() ? localAnalysers.get() : null;
+        }
+
+        @Override
+        public Stream<Map.Entry<String, VariableInfoContainer>> localVariableStream() {
+            return statementAnalysis.variables.stream().filter(e -> e.getValue().current().variable() instanceof LocalVariableReference);
         }
     }
 }

@@ -19,6 +19,7 @@ package org.e2immu.analyser.analyser;
 
 public record VariableInLoop(String statementId, VariableType variableType) {
     public static final VariableInLoop NOT_IN_LOOP = new VariableInLoop(null, VariableType.NOT_IN_LOOP);
+    public static final VariableInLoop COPY_FROM_ENCLOSING_METHOD = new VariableInLoop(null, VariableType.COPY_FROM_ENCLOSING_METHOD);
 
     public String statementId(VariableType type) {
         return variableType == type ? statementId : null;
@@ -29,6 +30,6 @@ public record VariableInLoop(String statementId, VariableType variableType) {
     }
 
     public enum VariableType {
-        NOT_IN_LOOP, LOOP, LOOP_COPY, IN_LOOP_DEFINED_OUTSIDE;
+        NOT_IN_LOOP, LOOP, LOOP_COPY, IN_LOOP_DEFINED_OUTSIDE, COPY_FROM_ENCLOSING_METHOD;
     }
 }

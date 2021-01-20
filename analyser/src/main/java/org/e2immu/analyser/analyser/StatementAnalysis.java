@@ -326,7 +326,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
      * Before iteration 0, all statements: create what was already present higher up
      *
      * @param evaluationContext overview object for the analysis of this primary type
-     * @param previous        the previous statement, or null if there is none (start of block)
+     * @param previous          the previous statement, or null if there is none (start of block)
      */
     public void initIteration0(EvaluationContext evaluationContext, MethodInfo currentMethod, StatementAnalysis previous) {
         if (previous == null) {
@@ -338,12 +338,32 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             }
             // if we're at the beginning of the method, we're done.
             if (parent == null) {
-                for (ParameterInfo parameterInfo : currentMethod.methodInspection.get().getParameters()) {
-                    createVariable(evaluationContext, parameterInfo, 0);
+                // copy all parameters, also of enclosing methods
+                assert evaluationContext != null;
+                EvaluationContext closure = evaluationContext;
+                boolean inClosure = false;
+                while (closure != null) {
+                    if (closure.getCurrentMethod() != null) {
+                        for (ParameterInfo parameterInfo : closure.getCurrentMethod().methodInspection.getParameters()) {
+                            createVariable(closure, parameterInfo, 0, inClosure ? VariableInLoop.COPY_FROM_ENCLOSING_METHOD : VariableInLoop.NOT_IN_LOOP);
+                        }
+                    }
+                    closure = closure.getClosure();
+                    inClosure = true;
                 }
+                // for now, other variations on this are not explicitly present at the moment IMPROVE?
                 if (!currentMethod.methodInspection.get().isStatic()) {
                     This thisVariable = new This(evaluationContext.getAnalyserContext(), currentMethod.typeInfo);
                     createVariable(evaluationContext, thisVariable, 0);
+                }
+
+                // we'll copy local variables from outside this method
+                // NOT a while statement, because this one will work recursively
+                EvaluationContext closure4Local = evaluationContext.getClosure();
+                if (closure4Local != null) {
+                    closure4Local.localVariableStream().forEach(e ->
+                            copyVariableFromPreviousInIteration0(e,
+                                    true, null, true));
                 }
                 return;
             }
@@ -352,20 +372,25 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         copyFrom.variableEntryStream()
                 // never copy a return variable from the parent
                 .filter(e -> previous != null || !(e.getValue().current().variable() instanceof ReturnVariable))
-                .forEach(e -> copyVariableFromPreviousInIteration0(e, previous == null, previous == null ? null : previous.index));
+                .forEach(e -> copyVariableFromPreviousInIteration0(e,
+                        previous == null, previous == null ? null : previous.index, false));
 
         flowData.initialiseAssignmentIds(copyFrom.flowData);
     }
 
     private void copyVariableFromPreviousInIteration0(Map.Entry<String, VariableInfoContainer> entry,
                                                       boolean previousIsParent,
-                                                      String indexOfPrevious) {
+                                                      String indexOfPrevious,
+                                                      boolean markCopyOfEnclosingMethod) {
         String fqn = entry.getKey();
         VariableInfoContainer vic = entry.getValue();
         VariableInfo vi = vic.current();
         VariableInfoContainer newVic;
-        // as we move into a loop statement, the VariableInLoop is added to obtain local variable in loop defined outside
-        if (!vic.isLocalVariableInLoopDefinedOutside() && statement instanceof LoopStatement && vi.variable().isLocal()) {
+
+        if (markCopyOfEnclosingMethod) {
+            newVic = VariableInfoContainerImpl.copyOfExistingVariableInEnclosingMethod(vic, navigationData.hasSubBlocks());
+        } else if (!vic.isLocalVariableInLoopDefinedOutside() && statement instanceof LoopStatement && vi.variable().isLocal()) {
+            // as we move into a loop statement, the VariableInLoop is added to obtain local variable in loop defined outside
             // the variable itself will not be used anymore, only its "local copy" associated with the loop
             // however, the loop may turn out to be completely empty, in which case the initial value is kept
             // so we must keep the initial value
@@ -387,7 +412,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
      * of the method.
      *
      * @param evaluationContext overview object for the analysis of this primary type
-     * @param previous        the previous statement, or null if there is none (start of block)
+     * @param previous          the previous statement, or null if there is none (start of block)
      */
     public void initIteration1Plus(EvaluationContext evaluationContext, MethodInfo currentMethod,
                                    StatementAnalysis previous) {
@@ -496,7 +521,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
          */
         VariableInfo viEval = vic.best(VariableInfoContainer.Level.EVALUATION);
         // not assigned in this statement
-        if (viEval != viInitial && !vic.isAssignedInThisStatement()) {
+        if (viEval != viInitial && vic.isNotAssignedInThisStatement()) {
             if (!viEval.valueIsSet() && !initialValue.expression.isUnknown() && !viEval.isRead()) {
                 vic.setValue(initialValue.expression, map, false);
             } else {
@@ -543,6 +568,10 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                 }
             }
         }
+    }
+
+    public void ensureMessages(Stream<Message> messageStream) {
+        messageStream.forEach(this::ensure);
     }
 
     public record ConditionAndLastStatement(Expression condition, StatementAnalyser lastStatement) {
@@ -609,18 +638,25 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         ));
     }
 
+    public VariableInfoContainer createVariable(EvaluationContext evaluationContext, Variable variable, int statementTime) {
+        return createVariable(evaluationContext, variable, statementTime, VariableInLoop.NOT_IN_LOOP);
+    }
+
     /*
     create a variable, potentially even assign an initial value and a linked variables set.
     everything is written into the INITIAL level, assignmentId and readId are both NOT_YET...
      */
-    public VariableInfoContainer createVariable(EvaluationContext evaluationContext, Variable variable, int statementTime) {
+    public VariableInfoContainer createVariable(EvaluationContext evaluationContext, Variable variable, int statementTime, VariableInLoop variableInLoop) {
         AnalyserContext analyserContext = evaluationContext.getAnalyserContext();
         String fqn = variable.fullyQualifiedName();
-        if (variables.isSet(fqn)) throw new UnsupportedOperationException("Already exists");
+        if (variables.isSet(fqn)) {
+            throw new UnsupportedOperationException("Already exists: " +
+                    fqn + " in " + index + ", " + methodAnalysis.getMethodInfo().fullyQualifiedName);
+        }
 
         int statementTimeForVariable = statementTimeForVariable(analyserContext, variable, statementTime);
 
-        VariableInfoContainer vic = VariableInfoContainerImpl.newVariable(variable, statementTimeForVariable, VariableInLoop.NOT_IN_LOOP, navigationData.hasSubBlocks());
+        VariableInfoContainer vic = VariableInfoContainerImpl.newVariable(variable, statementTimeForVariable, variableInLoop, navigationData.hasSubBlocks());
 
         variables.put(variable.fullyQualifiedName(), vic);
         log(VARIABLE_PROPERTIES, "Added variable to map: {}", variable.fullyQualifiedName());
@@ -700,9 +736,10 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
     }
 
     private boolean inPartOfConstruction() {
-        return  methodAnalysis.getMethodInfo().methodResolution.get().partOfConstruction() ==
+        return methodAnalysis.getMethodInfo().methodResolution.get().partOfConstruction() ==
                 MethodResolution.CallStatus.PART_OF_CONSTRUCTION;
     }
+
     private ExpressionAndLinkedVariables initialValueOfField(EvaluationContext evaluationContext,
                                                              FieldReference fieldReference,
                                                              boolean selfReference) {

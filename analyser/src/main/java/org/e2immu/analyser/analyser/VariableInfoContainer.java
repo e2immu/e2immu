@@ -46,8 +46,8 @@ public interface VariableInfoContainer {
 
     boolean hasMerge();
 
-    default boolean isAssignedInThisStatement() {
-        return hasEvaluation() && getPreviousOrInitial().getAssignmentId().compareTo(best(Level.EVALUATION).getAssignmentId()) < 0;
+    default boolean isNotAssignedInThisStatement() {
+        return !hasEvaluation() || getPreviousOrInitial().getAssignmentId().compareTo(best(Level.EVALUATION).getAssignmentId()) >= 0;
     }
 
     default boolean isReadInThisStatement() {

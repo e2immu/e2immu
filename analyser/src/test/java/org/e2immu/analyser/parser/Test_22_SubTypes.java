@@ -63,11 +63,15 @@ public class Test_22_SubTypes extends CommonTestRunner {
                 // empty because String is @E2Container!
                 Assert.assertEquals("", d.variableInfo().getLinkedVariables().toString());
             }
+
         };
 
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if (SUBTYPE.equals(d.methodInfo().name) && "0".equals(d.statementId())) {
                 Assert.assertEquals("key", d.evaluationResult().value().toString());
+            }
+            if (SUBTYPE.equals(d.methodInfo().name) && "1".equals(d.statementId())) {
+                Assert.assertEquals("value+\"abc\"", d.evaluationResult().value().toString());
             }
         };
 

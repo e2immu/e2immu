@@ -475,6 +475,12 @@ public record NewObject(MethodInfo constructor,
             res.k.incrementStatementTime();
         }
 
+        if (anonymousClass != null) {
+            evaluationContext.getLocalPrimaryTypeAnalysers().stream()
+                    .filter(pta -> pta.primaryType == anonymousClass)
+                    .forEach(res.k::markVariablesFromPrimaryTypeAnalyser);
+        }
+
         return res.k.build();
     }
 
