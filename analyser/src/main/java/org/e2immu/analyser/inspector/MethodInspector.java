@@ -31,6 +31,7 @@ import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.TypeMapImpl;
+import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.analyser.util.SetOnce;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,6 +39,7 @@ import org.slf4j.LoggerFactory;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.INSPECT;
 import static org.e2immu.analyser.util.Logger.log;
@@ -103,9 +105,65 @@ public class MethodInspector {
                 builderOnceFQNIsKnown.set(builder);
                 return builder;
             }
+            // not a full inspection, method does not exist. we make a copy, IF the method exists in one of the direct
+            // super types. See JavaUtil, forEach in Collection, with different annotations than forEach in Iterable
+
+            MethodInspection parent = allowCopyFromSuperType(inspectionProvider, builder);
+            if (parent != null) {
+                log(INSPECT, "Create method {} as copy from super type, shallow inspection", builder.getDistinguishingName());
+                builder.setReturnType(parent.getReturnType());
+                builderOnceFQNIsKnown.set(builder);
+                typeMapBuilder.registerMethodInspection(builder);
+                return builder;
+            }
             throw new UnsupportedOperationException("Cannot find method " + builder.getDistinguishingName());
         }
         throw new UnsupportedOperationException();
+    }
+
+    static MethodInspection allowCopyFromSuperType(InspectionProvider inspectionProvider, MethodInspectionImpl.Builder builder) {
+        TypeInspection typeInspection = inspectionProvider.getTypeInspection(builder.owner);
+        MethodInspection parent = buildCopyFromSuperType(inspectionProvider, builder, typeInspection.parentClass());
+        if (parent != null) return parent;
+        for (ParameterizedType interfaceImplemented : typeInspection.interfacesImplemented()) {
+            MethodInspection fromSuper = buildCopyFromSuperType(inspectionProvider, builder, interfaceImplemented);
+            if (fromSuper != null) return fromSuper;
+        }
+        return null;
+    }
+
+    static MethodInspection buildCopyFromSuperType(InspectionProvider inspectionProvider,
+                                                   MethodInspectionImpl.Builder builder,
+                                                   ParameterizedType superTypeDefinition) {
+        TypeInspection typeInspection = inspectionProvider.getTypeInspection(superTypeDefinition.typeInfo);
+        Optional<MethodInfo> candidate;
+        if (builder.isConstructor) {
+            candidate = typeInspection.constructors().stream()
+                    .filter(c -> identicalParameterLists(inspectionProvider, c, builder, superTypeDefinition)).findFirst();
+        } else {
+            candidate = typeInspection.methods().stream().filter(m -> m.name.equals(builder.name))
+                    .filter(c -> identicalParameterLists(inspectionProvider, c, builder, superTypeDefinition)).findFirst();
+        }
+        return candidate.map(inspectionProvider::getMethodInspection).orElse(null);
+    }
+
+    static boolean identicalParameterLists(InspectionProvider inspectionProvider, MethodInfo candidate, MethodInspectionImpl.Builder me,
+                                           ParameterizedType superTypeDefinition) {
+        MethodInspection candidateInspection = inspectionProvider.getMethodInspection(candidate);
+        if (candidateInspection.getParameters().size() != me.getParameters().size()) return false;
+        return ListUtil.joinLists(candidateInspection.getParameters(), me.getParameters()).allMatch(pair ->
+                sameType(pair.k.parameterizedType, pair.v.parameterizedType, superTypeDefinition));
+    }
+
+    /*
+    forEach(Consumer<? super E>) in Collection -- forEach(Consumer<? super E>) in Iterable, knowing that Collection<E> implements Iterable<E>
+    superTypeDefinition is Iterable<E>, so we know that E in Collection maps to the 1st type parameter of Iterable
+     */
+    static boolean sameType(ParameterizedType ptSub, ParameterizedType ptSuper, ParameterizedType superTypeDefinition) {
+        if (ptSub.isType() && ptSuper.isType()) {
+            if (ptSub.typeInfo != ptSuper.typeInfo) return false;
+        }
+        return true; // FIXME need more code here! and this probably exists somewhere?
     }
 
     private void checkCompanionMethods(Map<CompanionMethodName, MethodInspectionImpl.Builder> companionMethods, String mainMethodName) {

@@ -89,8 +89,7 @@ public class JavaUtil extends AnnotatedAPI {
 
         // there is a "default forEach" in Iterable, but here we can guarantee that consumer is @NotNull1 (its
         // arguments will not be null either)
-        // FIXME
-        // void forEach(@NotNull1 Consumer<? super E> action) {}
+        void forEach(@NotNull1 Consumer<? super E> action) {}
 
         boolean remove$Modification$Size(int i, int j) { return i <= j && i >= j - 1; }
         boolean remove$Value$Size(int i, Object object, boolean retVal) { return i != 0 && retVal; }
