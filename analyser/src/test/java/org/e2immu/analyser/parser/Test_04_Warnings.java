@@ -323,17 +323,12 @@ public class Test_04_Warnings extends CommonTestRunner {
 
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("methodMustNotBeStatic4".equals(d.methodInfo().name) && "0".equals(d.statementId())) {
-                if (d.iteration() > 0) {
-                    //  TODO  VariableInfoContainer vic = d.statementAnalysis().variables.get(T);
-                    //   Assert.assertTrue(vic.current().isRead());
-                } else {
-                    Assert.assertFalse(d.statementAnalysis().variables.isSet(T));
-                }
+                VariableInfoContainer vic = d.statementAnalysis().variables.get(T);
+                Assert.assertTrue(vic.current().isRead());
             }
             if ("apply".equals(d.methodInfo().name) && "1".equals(d.statementId())) {
-                if (d.iteration() > 0) {
-                    Assert.assertTrue(d.statementAnalysis().variables.isSet(T));
-                }
+                VariableInfoContainer vic = d.statementAnalysis().variables.get(T);
+                Assert.assertTrue(vic.current().isRead());
             }
         };
 
@@ -348,6 +343,13 @@ public class Test_04_Warnings extends CommonTestRunner {
                 Assert.assertEquals(Level.FALSE, parameterAnalysis.getProperty(VariableProperty.MODIFIED));
 
                 Assert.assertEquals(Level.TRUE, d.methodAnalysis().getProperty(VariableProperty.FLUENT));
+            }
+            if ("methodMustNotBeStatic4".equals(d.methodInfo().name)) {
+                if(d.iteration() == 0) {
+                    Assert.assertNull(d.methodAnalysis().getSingleReturnValue());
+                } else {
+                    Assert.assertEquals("Stream.of(input).map(null==s?\"null\":s+\"something\"+t).findAny().get()", d.methodAnalysis().getSingleReturnValue().toString());
+                }
             }
             if ("methodMustNotBeStatic5".equals(d.methodInfo().name)) {
                 Assert.assertEquals("this", d.methodAnalysis().getSingleReturnValue().toString());

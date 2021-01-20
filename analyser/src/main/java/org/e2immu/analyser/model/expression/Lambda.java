@@ -18,13 +18,11 @@
 
 package org.e2immu.analyser.model.expression;
 
-import org.e2immu.analyser.analyser.EvaluationContext;
-import org.e2immu.analyser.analyser.EvaluationResult;
-import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
-import org.e2immu.analyser.analyser.StatementAnalysis;
+import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ReturnStatement;
+import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.output.Guide;
@@ -169,7 +167,7 @@ public class Lambda implements Expression {
         ParameterizedType parameterizedType = methodInfo.typeInfo.asParameterizedType(evaluationContext.getAnalyserContext());
         Location location = evaluationContext.getLocation(this);
         ObjectFlow objectFlow = builder.createInternalObjectFlow(location, parameterizedType, Origin.NEW_OBJECT_CREATION);
-        Expression result = null;
+        Expression result;
 
         if (evaluationContext.getLocalPrimaryTypeAnalysers() == null) {
             result = EmptyExpression.NO_VALUE; // delay
@@ -182,13 +180,24 @@ public class Lambda implements Expression {
             Expression srv = methodAnalysis.getSingleReturnValue();
             if (srv != null) {
                 InlinedMethod inlineValue = srv.asInstanceOf(InlinedMethod.class);
-                if (inlineValue != null) {
-                    result = inlineValue;
-                }
+                result = Objects.requireNonNullElse(inlineValue, srv);
+            } else {
+                result = EmptyExpression.NO_VALUE; // delay
             }
-            if (result == null) {
-                result = NewObject.forGetInstance(evaluationContext.getPrimitives(), parameterizedType, objectFlow);
-            }
+            methodAnalysis.getLastStatement().variableStream()
+                    // parameters are already present, fields should become present if they're not local
+                    .filter(variableInfo -> evaluationContext.isPresent(variableInfo.variable()) ||
+                            variableInfo.variable() instanceof FieldReference fieldReference &&
+                                    fieldReference.fieldInfo.owner != methodInfo.typeInfo &&
+                                    fieldReference.fieldInfo.owner.primaryType() == methodInfo.typeInfo.primaryType())
+                    .forEach(variableInfo -> {
+                        if (variableInfo.getReadId().compareTo(VariableInfoContainer.NOT_YET_READ) > 0) {
+                            builder.markRead(variableInfo.variable());
+                        }
+                        if (variableInfo.getAssignmentId().compareTo(VariableInfoContainer.NOT_YET_READ) > 0) {
+                            builder.assignment(variableInfo.variable(), variableInfo.getValue(), variableInfo.getLinkedVariables());
+                        }
+                    });
         }
 
         builder.setExpression(result);
