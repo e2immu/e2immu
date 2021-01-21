@@ -9,7 +9,7 @@ import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
-public class AnnotationsOnLambdas {
+public class SubTypes_6 {
     // here we come in the
 
     // somehow we should add the @NotModified(absent=true)
@@ -31,18 +31,4 @@ public class AnnotationsOnLambdas {
         return set;
     };
 
-    static class Example7<T> {
-        final BiFunction<Integer, T, String> method = (i, t) -> {
-            return i + t.toString();
-        };
-    }
-
-    static class Example8<T> {
-        final BiFunction<Integer, T, String> method2 = new BiFunction<Integer, T, String>() {
-            @Override
-            public String apply(Integer i, T t) {
-                return i + t.toString();
-            }
-        };
-    }
 }

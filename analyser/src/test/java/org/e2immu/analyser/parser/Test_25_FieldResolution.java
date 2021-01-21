@@ -24,15 +24,15 @@ import org.junit.Test;
 
 import java.io.IOException;
 
-public class TestAnnotationsOnLambdas extends CommonTestRunner {
-    public TestAnnotationsOnLambdas() {
-        super(true);
+public class Test_25_FieldResolution extends CommonTestRunner {
+
+    public Test_25_FieldResolution() {
+        super(false);
     }
 
     @Test
-    public void testAnnotationsOnLambdas() throws IOException {
-        testClass("AnnotationsOnLambdas", 0, 0, new DebugConfiguration.Builder()
-
+    public void test0() throws IOException {
+        testClass("FieldResolution_0", 0, 0, new DebugConfiguration.Builder()
                 .build());
     }
 

@@ -1,3 +1,4 @@
+
 /*
  * e2immu-analyser: code analyser for effective and eventual immutability
  * Copyright 2020, Bart Naudts, https://www.e2immu.org
@@ -16,27 +17,35 @@
  *
  */
 
-package org.e2immu.analyser.testexample;
+package org.e2immu.analyser.parser;
 
-public class FieldResolution {
+import org.e2immu.analyser.config.DebugConfiguration;
+import org.junit.Test;
 
-    static class C1 {
-        public final String s1;
+import java.io.IOException;
 
-        public C1(String in1, C2 c2) {
-            s1 = in1 + c2.prefix2;
-        }
+public class Test_26_Enum extends CommonTestRunner {
+
+    public Test_26_Enum() {
+        super(false);
     }
 
-    static class C2 {
-        public final String prefix2;
-
-        public C2(String in2) {
-            prefix2 = in2;
-        }
-
-        public String withC1(C1 c1) {
-            return c1.s1 + prefix2;
-        }
+    @Test
+    public void test0() throws IOException {
+        testClass("Enum_0", 0, 0, new DebugConfiguration.Builder()
+                .build());
     }
+
+    @Test
+    public void test1() throws IOException {
+        testClass("Enum_1", 0, 0, new DebugConfiguration.Builder()
+                .build());
+    }
+
+    @Test
+    public void test2() throws IOException {
+        testClass("Enum_2", 0, 0, new DebugConfiguration.Builder()
+                .build());
+    }
+
 }

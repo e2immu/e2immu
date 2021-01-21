@@ -128,4 +128,14 @@ public class Test_22_SubTypes extends CommonTestRunner {
     public void test_5() throws IOException {
         testClass("SubTypes_5", 0, 0, new DebugConfiguration.Builder().build());
     }
+
+    @Test
+    public void test_6() throws IOException {
+        testClass("SubTypes_6", 0, 0, new DebugConfiguration.Builder().build());
+    }
+
+    @Test
+    public void test_7() throws IOException {
+        testClass("SubTypes_7", 0, 0, new DebugConfiguration.Builder().build());
+    }
 }
