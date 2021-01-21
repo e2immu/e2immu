@@ -12,8 +12,8 @@ import org.junit.Test;
 import java.io.IOException;
 import java.util.Collection;
 
-public class TestTypeParameters extends CommonTestRunner {
-    public TestTypeParameters() {
+public class Test_24_TypeParameters extends CommonTestRunner {
+    public Test_24_TypeParameters() {
         super(true);
     }
 
@@ -25,9 +25,28 @@ public class TestTypeParameters extends CommonTestRunner {
     };
 
     @Test
-    public void test() throws IOException {
-        testClass("TypeParameters", 0, 0, new DebugConfiguration.Builder()
+    public void test_0() throws IOException {
+        testClass("TypeParameters_0", 0, 0, new DebugConfiguration.Builder()
                 .addTypeMapVisitor(typeMapVisitor)
+                .build());
+    }
+
+    @Test
+    public void test_1() throws IOException {
+        testClass("TypeParameters_1", 0, 0, new DebugConfiguration.Builder()
+                .addTypeMapVisitor(typeMapVisitor)
+                .build());
+    }
+
+    @Test
+    public void test_2() throws IOException {
+        testClass("TypeParameters_2", 0, 0, new DebugConfiguration.Builder()
+                .build());
+    }
+
+    @Test
+    public void test_3() throws IOException {
+        testClass("TypeParameters_3", 0, 0, new DebugConfiguration.Builder()
                 .build());
     }
 
