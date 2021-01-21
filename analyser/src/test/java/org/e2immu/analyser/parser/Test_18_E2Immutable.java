@@ -17,8 +17,13 @@
 
 package org.e2immu.analyser.parser;
 
+import org.e2immu.analyser.analyser.LinkedVariables;
+import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
+import org.e2immu.analyser.config.EvaluationResultVisitor;
+import org.e2immu.analyser.config.MethodAnalyserVisitor;
 import org.e2immu.analyser.config.StatementAnalyserVariableVisitor;
+import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.junit.Assert;
 import org.junit.Test;
@@ -94,8 +99,41 @@ public class Test_18_E2Immutable extends CommonTestRunner {
 
     @Test
     public void test_7() throws IOException {
-        testClass("E2Immutable_7", 0, 0, new DebugConfiguration.Builder()
+        EvaluationResultVisitor evaluationResultVisitor = d -> {
+            if ("accept".equals(d.methodInfo().name) && "$1".equals(d.methodInfo().typeInfo.simpleName)) {
+                String expectValue = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "<no return value>";
+                Assert.assertEquals(expectValue, d.evaluationResult().value().toString());
+            }
+        };
 
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("getMap7".equals(d.methodInfo().name) && "incremented".equals(d.variableName())) {
+                String expectValue = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "new HashMap<>(map7)/*this.size()==map7.size()*/";
+                Assert.assertEquals("it " + d.iteration() + ", statement " + d.statementId(), expectValue, d.currentValue().toString());
+                String expectLinked = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "";
+                Assert.assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
+            }
+        };
+
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("setI".equals(d.methodInfo().name)) {
+                Assert.assertEquals(Level.TRUE, d.methodAnalysis().getProperty(VariableProperty.MODIFIED));
+            }
+            if ("getI".equals(d.methodInfo().name)) {
+                int expectModified = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
+                Assert.assertEquals(expectModified, d.methodAnalysis().getProperty(VariableProperty.MODIFIED));
+                if (d.iteration() == 0) {
+                    Assert.assertNull(d.methodAnalysis().getSingleReturnValue());
+                } else {
+                    Assert.assertEquals("org.e2immu.analyser.testexample.E2Immutable_7.SimpleContainer.i$0", d.methodAnalysis().getSingleReturnValue().toString());
+                }
+            }
+        };
+
+        testClass("E2Immutable_7", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addEvaluationResultVisitor(evaluationResultVisitor)
                 .build());
     }
 

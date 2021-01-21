@@ -61,8 +61,14 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
     public static VariableInfoContainerImpl copyOfExistingVariableInEnclosingMethod(VariableInfoContainer previous,
                                                                                     boolean statementHasSubBlocks) {
         Objects.requireNonNull(previous);
+        VariableInfo outside = previous.current();
+        VariableInfoImpl initial = new VariableInfoImpl(outside.variable(), NOT_YET_ASSIGNED,
+                NOT_YET_READ, NOT_A_VARIABLE_FIELD, Set.of());
+        if (outside.getValue() != NO_VALUE) initial.setValue(outside.getValue());
+        if (outside.getLinkedVariables() != LinkedVariables.DELAY)
+            initial.setLinkedVariables(outside.getLinkedVariables());
         return new VariableInfoContainerImpl(VariableInLoop.COPY_FROM_ENCLOSING_METHOD,
-                Either.left(previous),
+                Either.right(initial),
                 statementHasSubBlocks ? new SetOnce<>() : null,
                 Level.MERGE);
     }

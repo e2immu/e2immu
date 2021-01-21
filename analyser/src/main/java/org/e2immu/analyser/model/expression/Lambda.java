@@ -18,11 +18,13 @@
 
 package org.e2immu.analyser.model.expression;
 
-import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.EvaluationContext;
+import org.e2immu.analyser.analyser.EvaluationResult;
+import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
+import org.e2immu.analyser.analyser.StatementAnalysis;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ReturnStatement;
-import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.output.Guide;
@@ -177,12 +179,16 @@ public class Lambda implements Expression {
                     .filter(pta -> pta.primaryType == methodInfo.typeInfo)
                     .map(pta -> pta.getMethodAnalysis(methodInfo))
                     .findFirst().orElseThrow();
-            Expression srv = methodAnalysis.getSingleReturnValue();
-            if (srv != null) {
-                InlinedMethod inlineValue = srv.asInstanceOf(InlinedMethod.class);
-                result = Objects.requireNonNullElse(inlineValue, srv);
+            if (methodInfo.hasReturnValue()) {
+                Expression srv = methodAnalysis.getSingleReturnValue();
+                if (srv != null) {
+                    InlinedMethod inlineValue = srv.asInstanceOf(InlinedMethod.class);
+                    result = Objects.requireNonNullElse(inlineValue, srv);
+                } else {
+                    result = EmptyExpression.NO_VALUE; // delay
+                }
             } else {
-                result = EmptyExpression.NO_VALUE; // delay
+                result = EmptyExpression.NO_RETURN_VALUE; // there is no return value (void method)
             }
             builder.markVariablesFromSubMethod(methodAnalysis);
         }
