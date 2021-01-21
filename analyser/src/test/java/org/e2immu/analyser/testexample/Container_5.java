@@ -40,7 +40,7 @@ public class Container_5 {
     }
 
     @Independent
-    public Container_5(@NotNull Collection<String> coll5) {
+    public Container_5(@NotNull1 Collection<String> coll5) {
         this();
         addAll5(coll5);
     }
@@ -50,7 +50,7 @@ public class Container_5 {
         this.list.add(string);
     }
 
-    @NotModified(absent = true)
+    @Modified
     public void addAll5(@NotNull1 Collection<String> collection) {
         list.addAll(collection);
     }

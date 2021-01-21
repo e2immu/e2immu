@@ -312,6 +312,32 @@ public class Test_17_Container extends CommonTestRunner {
     @Test
     public void test_5() throws IOException {
 
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("Container_5".equals(d.methodInfo().name) && d.variable() instanceof ParameterInfo p && "coll5".equals(p.name)) {
+                Assert.assertEquals("nullable? instance type Collection<String>", d.currentValue().toString());
+                Assert.assertEquals("", d.variableInfo().getLinkedVariables().toString());
+                if ("1".equals(d.statementId())) {
+                    int expectModified = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
+                    Assert.assertEquals(expectModified, d.getProperty(VariableProperty.MODIFIED));
+                }
+            }
+        };
+
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("Container_5".equals(d.methodInfo().name) && d.methodInfo().methodInspection.get().getParameters().size() == 1) {
+                ParameterAnalysis coll5 = d.parameterAnalyses().get(0);
+                Assert.assertEquals(Level.FALSE, coll5.getProperty(VariableProperty.MODIFIED));
+                // Assert.assertEquals(d.iteration() > 0, d.methodAnalysis().methodLevelData().linksHaveBeenEstablished.isSet());
+            }
+            if ("addAll5".equals(d.methodInfo().name)) {
+                ParameterAnalysis collection = d.parameterAnalyses().get(0);
+                int expectModifiedParam = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
+                int expectModifiedMethod = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
+                Assert.assertEquals(expectModifiedParam, collection.getProperty(VariableProperty.MODIFIED));
+                Assert.assertEquals(expectModifiedMethod, d.methodAnalysis().getProperty(VariableProperty.MODIFIED));
+            }
+        };
+
         TypeMapVisitor typeMapVisitor = typeMap -> {
             TypeInfo collection = typeMap.get(Collection.class);
             MethodInfo forEach = collection.findUniqueMethod("forEach", 1);
@@ -325,8 +351,12 @@ public class Test_17_Container extends CommonTestRunner {
             ParameterInfo param1Constructor1 = constructor1.methodInspection.get().getParameters().get(0);
             Assert.assertEquals(Level.FALSE, param1Constructor1.parameterAnalysis.get().getProperty(VariableProperty.MODIFIED));
         };
+
+
         testClass("Container_5", 0, 0, new DebugConfiguration.Builder()
                 .addTypeMapVisitor(typeMapVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 

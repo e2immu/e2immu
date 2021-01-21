@@ -131,6 +131,10 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                     combinedProperties);
         }
 
+        public boolean haveMethodDelay() {
+            return properties.getOrDefault(VariableProperty.METHOD_DELAY, Level.DELAY) == Level.TRUE
+                    && properties.getOrDefault(VariableProperty.METHOD_DELAY_RESOLVED, Level.DELAY) < Level.TRUE;
+        }
     }
 
     // lazy creation of lists

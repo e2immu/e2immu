@@ -39,7 +39,7 @@ public enum VariableProperty {
 
     // purpose: goes to false when a parameter occurs in a not_null context, but there is a delay
     // goes to true when that delay has been resolved
-    NOT_NULL_DELAYS_RESOLVED("notnull delay"),
+    NOT_NULL_DELAYS_RESOLVED("notnull delay resolved"),
 
     // the ones corresponding to annotations
 

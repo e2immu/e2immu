@@ -580,6 +580,10 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 log(DELAYED, "Apply of {}, {} is delayed because of unknown value for {}",
                         index(), myMethodAnalyser.methodInfo.fullyQualifiedName, variable);
                 status = DELAYS;
+            } else if (changeData.haveMethodDelay()) {
+                log(DELAYED, "Apply of {}, {} is delayed because of delay in method call on {}",
+                        index(), myMethodAnalyser.methodInfo.fullyQualifiedName, variable);
+                status = DELAYS;
             }
 
             if (changeData.markAssignment() && vic.isLocalVariableInLoopDefinedOutside()) {
