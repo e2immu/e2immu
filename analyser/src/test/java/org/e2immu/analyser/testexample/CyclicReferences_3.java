@@ -18,16 +18,24 @@
 
 package org.e2immu.analyser.testexample;
 
-public class CyclicReferences_2 {
+public class CyclicReferences_3 {
 
-    public static boolean methodA(String paramA) {
-        if ("b".equals(paramA)) return methodB(paramA);
-        return "a".equals(paramA);
+    public static boolean methodC(String paramC) {
+        if ("b".equals(paramC)) return methodD(paramC);
+        return "a".equals(paramC);
     }
 
-    public static boolean methodB(String paramB) {
-        if ("a".equals(paramB)) return methodA(paramB);
-        return "b".equals(paramB);
+    public static boolean methodD(String paramD) {
+        if ("a".equals(paramD)) return methodE(paramD);
+        return "b".equals(paramD);
+    }
+    public static boolean methodE(String paramE) {
+        if ("b".equals(paramE)) return methodF(paramE);
+        return "a".equals(paramE);
     }
 
+    public static boolean methodF(String paramF) {
+        if ("a".equals(paramF)) return methodC(paramF);
+        return "b".equals(paramF);
+    }
 }

@@ -78,4 +78,9 @@ public class Test_20_CyclicReferences extends CommonTestRunner {
     public void test_2() throws IOException {
         testClass("CyclicReferences_2", 0, 0, new DebugConfiguration.Builder().build());
     }
+
+    @Test
+    public void test_3() throws IOException {
+        testClass("CyclicReferences_3", 0, 0, new DebugConfiguration.Builder().build());
+    }
 }

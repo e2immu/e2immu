@@ -218,14 +218,14 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
         // potential circular reference?
         boolean alwaysModifying;
-        boolean delayUndeclared = false;
+        boolean delayUndeclared;
         boolean recursiveCall;
 
         if (evaluationContext.getCurrentMethod() != null) {
             TypeInfo currentPrimaryType = evaluationContext.getCurrentType().primaryType();
             TypeInfo methodPrimaryType = methodInfo.typeInfo.primaryType();
 
-            boolean circularCall = methodPrimaryType != currentPrimaryType &&
+            boolean circularCallOutsidePrimaryType = methodPrimaryType != currentPrimaryType &&
                     currentPrimaryType.typeResolution.get().circularDependencies().contains(methodPrimaryType) &&
                     !ShallowTypeAnalyser.IS_FACT_FQN.equals(methodInfo.fullyQualifiedName());
 
@@ -236,14 +236,16 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 delayUndeclared = b == null;
             } else {
                 undeclaredFunctionalInterface = false;
+                delayUndeclared = false;
             }
-            if ((circularCall || undeclaredFunctionalInterface)) {
+            if ((circularCallOutsidePrimaryType || undeclaredFunctionalInterface)) {
                 builder.addCircularCallOrUndeclaredFunctionalInterface();
             }
-            alwaysModifying = circularCall || undeclaredFunctionalInterface;
+            alwaysModifying = circularCallOutsidePrimaryType || undeclaredFunctionalInterface;
             recursiveCall = evaluationContext.getCurrentMethod().methodInfo == this.methodInfo; // recursive call
         } else {
             alwaysModifying = false;
+            delayUndeclared = false;
             recursiveCall = false;
         }
 
