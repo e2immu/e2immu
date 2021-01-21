@@ -112,7 +112,7 @@ public class TypeExpression implements Expression {
     @Override
     public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
         if (variableProperty == VariableProperty.NOT_NULL) return MultiLevel.EFFECTIVELY_NOT_NULL;
-        return Level.FALSE;
+        return variableProperty.falseValue;
     }
 
     @Override

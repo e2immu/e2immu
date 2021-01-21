@@ -39,7 +39,6 @@ public class TypeParameters_0 {
 
     public TypeParameters_0(List<Integer> input) {
         strings = input.stream().map(C::new).collect(Collectors.toList());
-
     }
 
     public List<C> getStrings() {

@@ -28,6 +28,7 @@ import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.output.Text;
+import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 
@@ -122,7 +123,8 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
             ObjectFlow objectFlow = builder.createInternalObjectFlow(location, methodInfo.returnType(), Origin.NEW_OBJECT_CREATION);
             MethodAnalysis methodAnalysis = evaluationContext.getAnalyserContext().getMethodAnalysis(methodInfo);
             NewObject initialInstance = NewObject.objectCreation(evaluationContext.getPrimitives(),
-                    methodInfo, methodInfo.returnType(), Diamond.SHOW_ALL, List.of(), objectFlow);
+                    methodInfo, makeParameterizedTypeFromContext(evaluationContext.getAnalyserContext(),
+                            methodInfo.typeInfo, scopeResult.value().returnType()), Diamond.NO, List.of(), objectFlow);
             NewObject instance = MethodCall.checkCompanionMethodsModifying(builder, evaluationContext, methodInfo,
                     methodAnalysis, scope, initialInstance, List.of());
             builder.setExpression(instance);
@@ -165,6 +167,10 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
         }
 
         return builder.build();
+    }
+
+    private ParameterizedType makeParameterizedTypeFromContext(InspectionProvider inspectionProvider, TypeInfo typeInfo, ParameterizedType returnType) {
+        return typeInfo.asParameterizedType(inspectionProvider); //  TODO
     }
 
     @Override

@@ -18,6 +18,7 @@
 package org.e2immu.analyser.model.expression.util;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.inspector.ExpressionContext;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.variable.FieldReference;
@@ -290,7 +291,11 @@ public class EvaluateMethodCall {
                     // only truths have been added
                     return new BooleanConstant(evaluationContext.getPrimitives(), true);
                 }
-            } else throw new UnsupportedOperationException("Not yet implemented");
+            } else if (resultingValue instanceof InlineConditional inlineConditional) {
+                // resulting value is expected to be an inline operator, its condition to be combined with the instance state
+                return resultingValue;
+
+            } else throw new UnsupportedOperationException();
             // unsuccessful
         }
         return null;

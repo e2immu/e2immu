@@ -2,6 +2,7 @@ package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
+import org.e2immu.analyser.config.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.config.TypeMapVisitor;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.MultiLevel;
@@ -26,7 +27,18 @@ public class Test_24_TypeParameters extends CommonTestRunner {
 
     @Test
     public void test_0() throws IOException {
+        final String TYPE = "org.e2immu.analyser.testexample.TypeParameters_0";
+        final String STRINGS = TYPE+".strings";
+
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("TypeParameters_0".equals(d.methodInfo().name) && STRINGS.equals(d.variableName())) {
+                Assert.assertEquals("(instance type Stream<E>).map(new C()).collect(Collectors.toList())", d.currentValue().toString());
+                Assert.assertEquals("", d.variableInfo().getLinkedVariables().toString());
+            }
+        };
+
         testClass("TypeParameters_0", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addTypeMapVisitor(typeMapVisitor)
                 .build());
     }
