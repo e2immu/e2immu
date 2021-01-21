@@ -22,9 +22,17 @@ import com.github.javaparser.ast.NodeList;
 import com.github.javaparser.ast.body.*;
 import com.github.javaparser.ast.expr.AnnotationExpr;
 import com.github.javaparser.ast.expr.Expression;
+import com.github.javaparser.ast.expr.ObjectCreationExpr;
 import com.github.javaparser.ast.type.ClassOrInterfaceType;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.expression.ArrayInitializer;
+import org.e2immu.analyser.model.expression.BooleanConstant;
+import org.e2immu.analyser.model.expression.NewObject;
+import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.statement.Block;
+import org.e2immu.analyser.model.statement.ReturnStatement;
+import org.e2immu.analyser.model.variable.FieldReference;
+import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
@@ -165,11 +173,9 @@ public class TypeInspector {
         if (fullInspection) {
             if (typeDeclaration instanceof EnumDeclaration) {
                 doEnumDeclaration(expressionContext, (EnumDeclaration) typeDeclaration);
-            }
-            if (typeDeclaration instanceof AnnotationDeclaration) {
+            } else if (typeDeclaration instanceof AnnotationDeclaration) {
                 doAnnotationDeclaration(expressionContext, (AnnotationDeclaration) typeDeclaration);
-            }
-            if (typeDeclaration instanceof ClassOrInterfaceDeclaration) {
+            } else if (typeDeclaration instanceof ClassOrInterfaceDeclaration) {
                 doClassOrInterfaceDeclaration(expressionContext, (ClassOrInterfaceDeclaration) typeDeclaration);
             }
 
@@ -207,6 +213,8 @@ public class TypeInspector {
 
     private void doEnumDeclaration(ExpressionContext expressionContext, EnumDeclaration enumDeclaration) {
         builder.setTypeNature(TypeNature.ENUM);
+        List<FieldInfo> enumFields = new ArrayList<>();
+
         enumDeclaration.getEntries().forEach(enumConstantDeclaration -> {
             FieldInfo fieldInfo = new FieldInfo(typeInfo.asSimpleParameterizedType(),
                     enumConstantDeclaration.getNameAsString(), typeInfo);
@@ -214,9 +222,14 @@ public class TypeInspector {
             fieldBuilder.addModifier(FieldModifier.FINAL);
             fieldBuilder.addModifier(FieldModifier.PUBLIC);
             fieldBuilder.addModifier(FieldModifier.STATIC);
-            fieldInfo.fieldInspection.set(fieldBuilder.build());
+            ObjectCreationExpr objectCreationExpr = new ObjectCreationExpr();
+            objectCreationExpr.setArguments(enumConstantDeclaration.getArguments());
+            objectCreationExpr.setType(typeInfo.simpleName);
+            objectCreationExpr.setRange(enumConstantDeclaration.getRange().orElseThrow());
+            fieldBuilder.setInitialiserExpression(objectCreationExpr); // = new EnumType(...)
+            expressionContext.typeContext.typeMapBuilder.registerFieldInspection(fieldInfo, fieldBuilder);
             builder.addField(fieldInfo);
-            // TODO we have arguments, class body
+            enumFields.add(fieldInfo);
         });
         Primitives primitives = expressionContext.typeContext.getPrimitives();
         E2ImmuAnnotationExpressions e2 = expressionContext.typeContext.typeMapBuilder.getE2ImmuAnnotationExpressions();
@@ -224,6 +237,8 @@ public class TypeInspector {
         MethodInspectionImpl.Builder nameBuilder = new MethodInspectionImpl.Builder(typeInfo, "name")
                 .setReturnType(primitives.stringParameterizedType)
                 .addAnnotation(e2.notModified);
+        nameBuilder.readyToComputeFQN(expressionContext.typeContext);
+        expressionContext.typeContext.typeMapBuilder.registerMethodInspection(nameBuilder);
         builder.addMethod(nameBuilder.getMethodInfo());
 
         MethodInspectionImpl.Builder valueOfBuilder = new MethodInspectionImpl.Builder(typeInfo, "valueOf")
@@ -232,7 +247,27 @@ public class TypeInspector {
                 .addAnnotation(e2.notModified);
         ParameterInspectionImpl.Builder valueOfP0B = new ParameterInspectionImpl.Builder(primitives.stringParameterizedType,
                 "name", 0).addAnnotation(e2.notNull);
-        builder.addMethod(valueOfBuilder.addParameter(valueOfP0B).build(expressionContext.typeContext).getMethodInfo());
+        valueOfBuilder.addParameter(valueOfP0B);
+        valueOfBuilder.readyToComputeFQN(expressionContext.typeContext);
+        expressionContext.typeContext.typeMapBuilder.registerMethodInspection(valueOfBuilder);
+        builder.addMethod(valueOfBuilder.getMethodInfo());
+
+        ArrayInitializer arrayInitializer = new ArrayInitializer(primitives, ObjectFlow.NO_FLOW,
+                enumFields.stream().map(fieldInfo -> new VariableExpression(new FieldReference(expressionContext.typeContext,
+                        fieldInfo, null))).collect(Collectors.toUnmodifiableList()),
+                typeInfo.asParameterizedType(expressionContext.typeContext));
+        ParameterizedType valuesReturnType = new ParameterizedType(typeInfo, 1);
+        ReturnStatement returnNewArray = new ReturnStatement(false, NewObject.withArrayInitialiser(null,
+                valuesReturnType, List.of(), arrayInitializer, new BooleanConstant(primitives, true), ObjectFlow.NO_FLOW));
+        Block valuesBlock = new Block.BlockBuilder().addStatement(returnNewArray).build();
+        MethodInspectionImpl.Builder valuesBuilder = new MethodInspectionImpl.Builder(typeInfo, "values")
+                .setReturnType(valuesReturnType)
+                .setStatic(true)
+                .setInspectedBlock(valuesBlock)
+                .addAnnotation(e2.notModified);
+        valuesBuilder.readyToComputeFQN(expressionContext.typeContext);
+        expressionContext.typeContext.typeMapBuilder.registerMethodInspection(valuesBuilder);
+        builder.addMethod(valuesBuilder.getMethodInfo());
     }
 
     private void doClassOrInterfaceDeclaration(ExpressionContext expressionContext, ClassOrInterfaceDeclaration cid) {
@@ -453,9 +488,10 @@ public class TypeInspector {
         }
 
         // add empty constructor if needed
+        boolean privateEmptyConstructor = builder.typeNature() == TypeNature.ENUM;
 
         if (builder.constructors().isEmpty()) {
-            builder.addConstructor(createEmptyConstructor(expressionContext.typeContext));
+            builder.addConstructor(createEmptyConstructor(expressionContext.typeContext, privateEmptyConstructor));
         }
 
         log(INSPECT, "Setting type inspection of {}", typeInfo.fullyQualifiedName);
@@ -463,10 +499,10 @@ public class TypeInspector {
         return dollarTypes;
     }
 
-    private MethodInfo createEmptyConstructor(TypeContext typeContext) {
+    private MethodInfo createEmptyConstructor(TypeContext typeContext, boolean makePrivate) {
         MethodInspectionImpl.Builder builder = new MethodInspectionImpl.Builder(typeInfo);
         builder.setInspectedBlock(Block.EMPTY_BLOCK);
-        builder.addModifier(MethodModifier.PUBLIC);
+        builder.addModifier(makePrivate ? MethodModifier.PRIVATE : MethodModifier.PUBLIC);
         builder.readyToComputeFQN(typeContext);
         typeContext.typeMapBuilder.registerMethodInspection(builder);
         return builder.getMethodInfo();

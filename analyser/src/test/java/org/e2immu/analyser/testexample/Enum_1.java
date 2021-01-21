@@ -38,4 +38,11 @@ public enum Enum_1 {
     public static Enum_1 highest() {
         return THREE;
     }
+
+    public int posInList() {
+        for (int i = 0; i < values().length; i++) {
+            if (values()[i] == this) return i;
+        }
+        throw new UnsupportedOperationException();
+    }
 }

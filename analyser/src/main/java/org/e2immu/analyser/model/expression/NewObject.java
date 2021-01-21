@@ -446,7 +446,8 @@ public record NewObject(MethodInfo constructor,
             builder.compose(results);
             List<Expression> values = results.stream().map(EvaluationResult::getExpression).collect(Collectors.toList());
             ObjectFlow objectFlow = builder.createLiteralObjectFlow(arrayInitializer.returnType());
-            builder.setExpression(new ArrayInitializer(evaluationContext.getPrimitives(), objectFlow, values));
+            builder.setExpression(new ArrayInitializer(evaluationContext.getPrimitives(),
+                    objectFlow, values, arrayInitializer.returnType()));
             return builder.build();
         }
 

@@ -37,7 +37,8 @@ public class ParseArrayCreationExpr {
         ArrayInitializer arrayInitializer = arrayCreationExpr.getInitializer().map(i ->
                 new ArrayInitializer(expressionContext.typeContext.getPrimitives(), ObjectFlow.NO_FLOW,
                         i.getValues().stream()
-                                .map(expressionContext::parseExpression).collect(Collectors.toList()))).orElse(null);
+                                .map(expressionContext::parseExpression).collect(Collectors.toList()),
+                        parameterizedType.copyWithOneFewerArrays())).orElse(null);
         List<Expression> indexExpressions = arrayCreationExpr.getLevels()
                 .stream().map(level -> level.getDimension().map(expressionContext::parseExpression)
                         .orElse(new IntConstant(expressionContext.typeContext.getPrimitives(), 0))).collect(Collectors.toList());

@@ -581,7 +581,7 @@ public class ExpressionContext {
             }
             if (expression.isArrayInitializerExpr()) {
                 return new ArrayInitializer(typeContext.getPrimitives(), ObjectFlow.NO_FLOW, expression.asArrayInitializerExpr().getValues().stream()
-                        .map(this::parseExpression).collect(Collectors.toList()));
+                        .map(this::parseExpression).collect(Collectors.toList()), impliedParameterizedType);
             }
             if (expression.isEnclosedExpr()) {
                 return new EnclosedExpression(parseExpression(((EnclosedExpr) expression).getInner()));

@@ -22,6 +22,7 @@ import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.ParameterizedType;
+import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.expression.NullConstant;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.InspectionProvider;
@@ -42,6 +43,7 @@ public record MultiExpression(Expression... expressions) {
     public ParameterizedType commonType(Primitives primitives) {
         ParameterizedType commonType = null;
         for (Expression expression : expressions) {
+            if (expression == EmptyExpression.NO_VALUE) return primitives.objectParameterizedType; // DELAYS
             if (expression != NullConstant.NULL_CONSTANT) {
                 ParameterizedType parameterizedType = expression.returnType();
                 if (commonType == null) commonType = parameterizedType;

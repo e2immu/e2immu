@@ -47,11 +47,15 @@ public class ArrayInitializer implements Expression {
     private final ParameterizedType commonType;
     private final Primitives primitives;
 
-    public ArrayInitializer(Primitives primitives, ObjectFlow objectFlow, List<Expression> values) {
+    public ArrayInitializer(Primitives primitives, ObjectFlow objectFlow, List<Expression> values, ParameterizedType formalCommonType) {
         this.objectFlow = Objects.requireNonNull(objectFlow);
         this.multiExpression = MultiExpression.create(values);
-        this.commonType = multiExpression.commonType(primitives);
+        this.commonType = best(formalCommonType, multiExpression.commonType(primitives));
         this.primitives = primitives;
+    }
+
+    private ParameterizedType best(ParameterizedType formalCommonType, ParameterizedType commonType) {
+        return formalCommonType; // TODO make better
     }
 
     @Override
@@ -60,7 +64,7 @@ public class ArrayInitializer implements Expression {
         List<Expression> reValues = reClauseERs.stream().map(EvaluationResult::value).collect(Collectors.toList());
         return new EvaluationResult.Builder()
                 .compose(reClauseERs)
-                .setExpression(new ArrayInitializer(evaluationContext.getPrimitives(), objectFlow, reValues))
+                .setExpression(new ArrayInitializer(evaluationContext.getPrimitives(), objectFlow, reValues, commonType))
                 .build();
     }
 
@@ -68,7 +72,7 @@ public class ArrayInitializer implements Expression {
     public Expression translate(TranslationMap translationMap) {
         return new ArrayInitializer(primitives, ObjectFlow.NYE,
                 multiExpression.stream().map(translationMap::translateExpression)
-                        .collect(Collectors.toList()));
+                        .collect(Collectors.toList()), translationMap.translateType(commonType));
     }
 
     @Override
@@ -109,7 +113,7 @@ public class ArrayInitializer implements Expression {
 
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext).compose(results);
         ObjectFlow objectFlow = builder.createLiteralObjectFlow(commonType);
-        builder.setExpression(new ArrayInitializer(evaluationContext.getPrimitives(), objectFlow, values));
+        builder.setExpression(new ArrayInitializer(evaluationContext.getPrimitives(), objectFlow, values, commonType));
 
         return builder.build();
     }

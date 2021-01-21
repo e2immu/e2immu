@@ -366,7 +366,7 @@ public class Test_01_Loops extends CommonTestRunner {
                     if (d.statementAnalysis().statement instanceof ForEachStatement forEachStatement) {
                         FlowData.Execution exec = forEachStatement.structure.statementExecution()
                                 .apply(new ArrayInitializer(d.statementAnalysis().primitives, ObjectFlow.NO_FLOW,
-                                        List.of()), d.evaluationContext());
+                                        List.of(), d.statementAnalysis().primitives.stringParameterizedType), d.evaluationContext());
                         Assert.assertSame(FlowData.Execution.NEVER, exec);
 
                         StatementAnalysis firstInBlock = d.statementAnalysis().navigationData.blocks.get().get(0).orElseThrow();
