@@ -29,22 +29,22 @@ import java.util.Set;
 public class Modification_11 {
 
     @Modified
-    @Linked(to = {"Modification_11.set1"})
+    @Linked(to = {"Modification_11:set1"})
     final Set<String> s1;
 
     @NotModified(absent = true)
     @Modified
-    @Linked(to = {"Modification_11.set2"})
+    @Linked(to = {"Modification_11:set2"})
     final Set<String> s2;
 
     @NotModified(absent = true)
     @Modified
-    @Linked(to = {"Modification_11.set3"})
+    @Linked(to = {"Modification_11:set3"})
     final C1 c3;
 
     public Modification_11(@Modified @NotModified(absent = true) Set<String> set1,
-            @Modified @NotModified(absent = true) Set<String> set2,
-                           @Modified @NotModified(absent = true) Set<String> set3) {
+                           @Modified Set<String> set2,
+                           @Modified Set<String> set3) {
         s1 = set1;
         s2 = new C1(set2).getSet();
         c3 = new C1(set3);
@@ -52,12 +52,13 @@ public class Modification_11 {
 
     @E1Immutable // final fields, not all parameters @NotModified
     static class C1 {
-        @Linked(to = {"C1.setC"})
+        @Linked(to = {"C1:setC"})
         @NotNull1
         @Modified
         final Set<String> set; // linked to set1
 
-        C1(@NotNull1 @Modified Set<String> setC) {
+        // IMPROVE at the moment we have no means of computing @NotNull1 unless it's used in addAll or so
+        C1(@NotNull @Modified Set<String> setC) {
             this.set = Objects.requireNonNull(setC);
         }
 
@@ -92,6 +93,7 @@ public class Modification_11 {
     }
 
     @Linked(absent = true) // primitive
+    @Modified
     private boolean example2() {
         C1 d = new C1(Set.of("d"));
         return addAllOnC(c3, d);

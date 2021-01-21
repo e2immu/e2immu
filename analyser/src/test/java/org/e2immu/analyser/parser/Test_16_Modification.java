@@ -620,7 +620,7 @@ public class Test_16_Modification extends CommonTestRunner {
                 if (iteration == 0) {
                     Assert.assertFalse(list.isAssignedToFieldDelaysResolved());
                 } else {
-                    Assert.assertEquals("{c1=NO, s0=NO, c0=ASSIGNED, s1=NO, l1=NO, l2=NO, l0=NO}", list.getAssignedToField().toString());
+                    Assert.assertEquals("{c1=LINKED, s0=NO, c0=ASSIGNED, s1=NO, l1=NO, l2=NO, l0=NO}", list.getAssignedToField().toString());
                 }
                 if (iteration >= 2) {
                     Assert.assertEquals(0, list.getProperty(VariableProperty.MODIFIED));
@@ -666,8 +666,14 @@ public class Test_16_Modification extends CommonTestRunner {
 
     @Test
     public void test11() throws IOException {
+        FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+            if ("set".equals(d.fieldInfo().name)) {
+                Assert.assertEquals("setC", d.fieldAnalysis().getLinkedVariables().toString());
+                Assert.assertEquals("setC/*@NotNull*/", d.fieldAnalysis().getEffectivelyFinalValue().debugOutput());
+            }
+        };
         testClass("Modification_11", 0, 0, new DebugConfiguration.Builder()
-
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build());
     }
 }

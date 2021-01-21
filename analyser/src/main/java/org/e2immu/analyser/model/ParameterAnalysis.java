@@ -40,7 +40,7 @@ public interface ParameterAnalysis extends Analysis {
     }
 
     enum AssignedOrLinked {
-        ASSIGNED, LINKED, NO;
+        ASSIGNED, LINKED, NO, DELAYED;
 
         public boolean isAssignedOrLinked() {
             return this == ASSIGNED || this == LINKED;

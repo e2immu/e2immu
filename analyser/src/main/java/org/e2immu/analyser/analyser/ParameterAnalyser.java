@@ -117,37 +117,11 @@ public class ParameterAnalyser {
         // find a field that's linked to me; bail out when not all field's values are set.
         for (FieldInfo fieldInfo : parameterInfo.owner.typeInfo.typeInspection.get().fields()) {
             FieldAnalysis fieldAnalysis = analysisProvider.getFieldAnalysis(fieldInfo);
-            int effFinal = fieldAnalysis.getProperty(VariableProperty.FINAL);
-            if (effFinal == Level.DELAY) {
+            ParameterAnalysis.AssignedOrLinked assignedOrLinked = determineAssignedOrLinked(fieldAnalysis);
+            if (assignedOrLinked == DELAYED) {
                 delays = true;
-            } else if (effFinal == Level.TRUE) {
-                Expression effectivelyFinal = fieldAnalysis.getEffectivelyFinalValue();
-                if (effectivelyFinal == null) {
-                    delays = true;
-                } else {
-                    VariableExpression variableValue;
-                    ParameterAnalysis.AssignedOrLinked assignedOrLinked;
-                    if ((variableValue = effectivelyFinal.asInstanceOf(VariableExpression.class)) != null
-                            && variableValue.variable() == parameterInfo) {
-                        assignedOrLinked = ASSIGNED;
-                    } else {
-                        assignedOrLinked = NO;
-                    }
-                    if (parameterAnalysis.addAssignedToField(fieldInfo, assignedOrLinked)) {
-                        changed |= assignedOrLinked == ASSIGNED;
-                    }
-                }
-            } else {
-                // variable field
-                LinkedVariables linked = fieldAnalysis.getLinkedVariables();
-                if (linked == LinkedVariables.DELAY) {
-                    delays = true;
-                } else {
-                    ParameterAnalysis.AssignedOrLinked assignedOrLinked = linked.variables().contains(parameterInfo) ? LINKED : NO;
-                    if (parameterAnalysis.addAssignedToField(fieldInfo, assignedOrLinked)) {
-                        changed |= assignedOrLinked == LINKED;
-                    }
-                }
+            } else if (parameterAnalysis.addAssignedToField(fieldInfo, assignedOrLinked)) {
+                changed |= assignedOrLinked.isAssignedOrLinked();
             }
         }
         if (delays) {
@@ -185,6 +159,30 @@ public class ParameterAnalyser {
             return DONE;
         }
         return changed ? AnalysisStatus.PROGRESS : AnalysisStatus.DELAYS;
+    }
+
+    private ParameterAnalysis.AssignedOrLinked determineAssignedOrLinked(FieldAnalysis fieldAnalysis) {
+        int effFinal = fieldAnalysis.getProperty(VariableProperty.FINAL);
+        if (effFinal == Level.DELAY) {
+            return DELAYED;
+        }
+        if (effFinal == Level.TRUE) {
+            Expression effectivelyFinal = fieldAnalysis.getEffectivelyFinalValue();
+            if (effectivelyFinal == null) {
+                return DELAYED;
+            }
+            VariableExpression variableValue;
+            if ((variableValue = effectivelyFinal.asInstanceOf(VariableExpression.class)) != null
+                    && variableValue.variable() == parameterInfo) {
+                return ASSIGNED;
+            }
+        }
+        // variable field, no direct assignment to parameter
+        LinkedVariables linked = fieldAnalysis.getLinkedVariables();
+        if (linked == LinkedVariables.DELAY) {
+            return DELAYED;
+        }
+        return linked.variables().contains(parameterInfo) ? LINKED : NO;
     }
 
     private boolean checkNotLinkedOrAssigned(Map<FieldInfo, ParameterAnalysis.AssignedOrLinked> map) {

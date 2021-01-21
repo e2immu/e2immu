@@ -295,7 +295,7 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
 
         private int typeImmutable() {
             return fieldInfo.owner == bestType || bestType == null ? MultiLevel.FALSE :
-                    bestType.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE);
+                    analysisProvider.getTypeAnalysis(bestType).getProperty(VariableProperty.IMMUTABLE);
         }
 
         public boolean isDeclaredFunctionalInterface() {
