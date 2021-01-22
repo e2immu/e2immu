@@ -292,6 +292,10 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             Logger.log(DELAYED, "Delayed method call because one of the parameter values of {} is delayed: {}",
                     methodInfo.name, parameterValues);
             builder.setExpression(EmptyExpression.NO_VALUE);
+            // set scope delay
+            objectValue.variables().forEach(variable -> builder.setProperty(variable, VariableProperty.SCOPE_DELAY, Level.TRUE));
+            object.variables().forEach(variable -> builder.setProperty(variable, VariableProperty.SCOPE_DELAY, Level.TRUE));
+
             return builder.build();
         }
 
@@ -354,8 +358,13 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         }
         builder.setExpression(result);
 
-        checkCommonErrors(builder, evaluationContext, objectValue);
+        // scope delay
+        if (builder.getExpression() == EmptyExpression.NO_VALUE || methodDelay == Level.TRUE) {
+            objectValue.variables().forEach(variable -> builder.setProperty(variable, VariableProperty.SCOPE_DELAY, Level.TRUE));
+            object.variables().forEach(variable -> builder.setProperty(variable, VariableProperty.SCOPE_DELAY, Level.TRUE));
+        }
 
+        checkCommonErrors(builder, evaluationContext, objectValue);
         return builder.build();
     }
 

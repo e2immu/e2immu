@@ -554,25 +554,22 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                     maybeValueNeedsState(sharedState.evaluationContext, vic, vi1, bestValue(changeData, vi1)) :
                     changeData.value();
 
-            if (haveEvaluationResult) {
-                // if the evaluation was not delayed...
+            // we explicitly check for NO_VALUE, because "<no return value>" is legal!
+            if (haveEvaluationResult && valueToWrite != NO_VALUE) {
+                log(ANALYSER, "Write value {} to variable {}", valueToWrite, variable.fullyQualifiedName());
+                // first do the properties that come with the value; later, we'll write the ones in changeData
+                Map<VariableProperty, Integer> propertiesToSet = sharedState.evaluationContext.getValueProperties(valueToWrite);
+                vic.setValue(valueToWrite, propertiesToSet, false);
+            }
 
-                // we explicitly check for NO_VALUE, because "<no return value>" is legal!
-                if (valueToWrite != NO_VALUE) {
-                    log(ANALYSER, "Write value {} to variable {}", valueToWrite, variable.fullyQualifiedName());
-                    // first do the properties that come with the value; later, we'll write the ones in changeData
-                    Map<VariableProperty, Integer> propertiesToSet = sharedState.evaluationContext.getValueProperties(valueToWrite);
-                    vic.setValue(valueToWrite, propertiesToSet, false);
-                }
-                if (!changeData.markAssignment()) {
-                    // we're not assigning (and there is no change in instance because of a modifying method)
-                    // only then we copy from INIT to EVAL
-                    if (vi.getValue() == NO_VALUE && vi1.getValue() != NO_VALUE) {
-                        vic.setValue(vi1.getValue(), vi1.getProperties(), false);
-                    } else {
-                        vi1.getProperties().forEach((vp, v) ->
-                                vic.setProperty(vp, v, false, VariableInfoContainer.Level.EVALUATION));
-                    }
+            if (!changeData.markAssignment() && (haveEvaluationResult || !changeData.haveScopeDelay())) {
+                // we're not assigning (and there is no change in instance because of a modifying method)
+                // only then we copy from INIT to EVAL
+                if (vi.getValue() == NO_VALUE && vi1.getValue() != NO_VALUE) {
+                    vic.setValue(vi1.getValue(), vi1.getProperties(), false);
+                } else {
+                    vi1.getProperties().forEach((vp, v) ->
+                            vic.setProperty(vp, v, false, VariableInfoContainer.Level.EVALUATION));
                 }
             }
 

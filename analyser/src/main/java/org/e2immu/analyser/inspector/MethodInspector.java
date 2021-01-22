@@ -188,12 +188,15 @@ public class MethodInspector {
     public void inspect(ConstructorDeclaration cd,
                         ExpressionContext expressionContext,
                         Map<CompanionMethodName, MethodInspectionImpl.Builder> companionMethods,
-                        TypeInspector.DollarResolver dollarResolver) {
+                        TypeInspector.DollarResolver dollarResolver,
+                        boolean makePrivate) {
         MethodInspectionImpl.Builder tempBuilder = new MethodInspectionImpl.Builder(typeInfo);
         addParameters(tempBuilder, cd.getParameters(), expressionContext, dollarResolver);
         MethodInspectionImpl.Builder builder = fqnIsKnown(expressionContext.typeContext, tempBuilder);
         inspectParameters(cd.getParameters(), builder.getParameterBuilders(), expressionContext);
-
+        if(makePrivate) {
+            builder.addModifier(MethodModifier.PRIVATE);
+        }
         builder.addCompanionMethods(companionMethods);
         checkCompanionMethods(companionMethods, typeInfo.simpleName);
         addAnnotations(builder, cd.getAnnotations(), expressionContext);

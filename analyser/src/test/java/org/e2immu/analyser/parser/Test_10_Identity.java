@@ -61,12 +61,10 @@ public class Test_10_Identity extends CommonTestRunner {
                 } else if ("1".equals(d.statementId())) {
                     Assert.assertTrue(d.variableInfo().isRead());
                     Assert.assertEquals("1" + VariableInfoContainer.Level.EVALUATION, d.variableInfo().getReadId());
-                    int expectModified = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
-                    Assert.assertEquals(expectModified, d.getProperty(VariableProperty.MODIFIED));
+                    Assert.assertEquals(Level.FALSE, d.getProperty(VariableProperty.MODIFIED));
 
                     // there is an explicit @NotNull on the first parameter of debug
-                    int expectNN = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
-                    Assert.assertEquals(expectNN, d.getProperty(VariableProperty.NOT_NULL));
+                    Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL));
                 } else Assert.fail();
             }
         };
@@ -107,8 +105,7 @@ public class Test_10_Identity extends CommonTestRunner {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("idem2".equals(d.methodInfo().name) && "1".equals(d.statementId())) {
                 // false because static method
-                int expectMC = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
-                Assert.assertEquals(expectMC, d.getThisAsVariable().getProperty(VariableProperty.METHOD_CALLED));
+                Assert.assertEquals(Level.FALSE, d.getThisAsVariable().getProperty(VariableProperty.METHOD_CALLED));
             }
         };
 
@@ -143,18 +140,7 @@ public class Test_10_Identity extends CommonTestRunner {
                 if ("0".equals(d.statementId())) {
                     Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL));
                 }
-                if ("1.0.0".equals(d.statementId())) {
-                    Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.METHOD_DELAY));
-
-                    int expectResolved = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
-                    Assert.assertEquals(expectResolved, d.getProperty(VariableProperty.METHOD_DELAY_RESOLVED));
-                }
-                if ("1.1.0".equals(d.statementId())) {
-                    int expectModified = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
-                    Assert.assertEquals(expectModified, d.getProperty(VariableProperty.MODIFIED));
-                } else {
-                    Assert.assertEquals(Level.FALSE, d.getProperty(VariableProperty.MODIFIED));
-                }
+                Assert.assertEquals(Level.FALSE, d.getProperty(VariableProperty.MODIFIED));
             }
         };
 

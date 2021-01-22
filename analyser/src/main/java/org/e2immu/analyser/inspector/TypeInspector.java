@@ -447,11 +447,13 @@ public class TypeInspector {
         AtomicInteger countNonStaticNonDefaultIfInterface = new AtomicInteger();
         Map<CompanionMethodName, MethodInspectionImpl.Builder> companionMethodsWaiting = new LinkedHashMap<>();
 
+        boolean isEnumConstructorMustBePrivate = builder.typeNature() == TypeNature.ENUM;
+
         for (BodyDeclaration<?> bodyDeclaration : members) {
             bodyDeclaration.ifConstructorDeclaration(cd -> {
                 MethodInspector methodInspector = new MethodInspector(expressionContext.typeContext.typeMapBuilder, typeInfo,
                         fullInspection);
-                methodInspector.inspect(cd, subContext, companionMethodsWaiting, dollarResolver);
+                methodInspector.inspect(cd, subContext, companionMethodsWaiting, dollarResolver, isEnumConstructorMustBePrivate);
                 builder.ensureConstructor(methodInspector.getBuilder().getMethodInfo());
                 companionMethodsWaiting.clear();
             });

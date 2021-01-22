@@ -72,7 +72,7 @@ public class Test_00_Basics_2 extends CommonTestRunner {
         if (COLLECTION.equals(d.variableName()) && "add".equals(d.methodInfo().name) && "0".equals(d.statementId())) {
 
             if (d.iteration() == 0) {
-                Assert.assertEquals("0"+ VariableInfoContainer.Level.EVALUATION, d.variableInfo().getReadId());
+                Assert.assertEquals("0" + VariableInfoContainer.Level.EVALUATION, d.variableInfo().getReadId());
                 Assert.assertTrue(d.variableInfoContainer().hasEvaluation());
                 Assert.assertSame(EmptyExpression.NO_VALUE, d.currentValue());
             } else {
@@ -87,8 +87,7 @@ public class Test_00_Basics_2 extends CommonTestRunner {
             Assert.assertTrue(d.variableInfo().isAssigned());
         }
         if (THIS.equals(d.variableName()) && "getString".equals(d.methodInfo().name)) {
-            int expect = d.iteration() == 0 ? Level.DELAY:MultiLevel.EFFECTIVELY_NOT_NULL;
-            Assert.assertEquals(expect, d.getProperty(VariableProperty.NOT_NULL));
+            Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL));
         }
         if (STRING_FIELD.equals(d.variableName()) && "getString".equals(d.methodInfo().name)) {
             Assert.assertTrue(d.variableInfo().isRead());
@@ -118,12 +117,12 @@ public class Test_00_Basics_2 extends CommonTestRunner {
                 Assert.assertEquals(expectModified, d.methodAnalysis().getProperty(VariableProperty.MODIFIED));
 
                 // property of the field as variable info in the method
-                Assert.assertEquals(expectModified, fieldModified);
+                Assert.assertEquals(Level.FALSE, fieldModified);
             }
             if ("setString".equals(d.methodInfo().name)) {
                 assert fieldAsVariable != null;
                 Assert.assertTrue(fieldAsVariable.isAssigned());
-                int expectModified = d.iteration() == 0 ? Level.DELAY: Level.FALSE;
+                int expectModified = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
                 Assert.assertEquals(expectModified, fieldModified); // Assigned, but not modified
             }
             if ("add".equals(d.methodInfo().name)) {

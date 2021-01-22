@@ -125,8 +125,7 @@ public class Test_04_Warnings extends CommonTestRunner {
                         Assert.assertEquals("1" + E, d.variableInfo().getReadId());
 
                         // in iteration 0 we don't know if integers will be assigned to
-                        String expectLinked = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "";
-                        Assert.assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
+                        Assert.assertEquals("", d.variableInfo().getLinkedVariables().toString());
                     }
                 }
                 if ("loopVar".equals(d.variableName())) {
@@ -305,8 +304,7 @@ public class Test_04_Warnings extends CommonTestRunner {
                         Assert.assertEquals("nullable? instance type String", d.currentValue().toString());
                     }
                     if ("1".equals(d.statementId())) {
-                        String expectValue = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "nullable? instance type String";
-                        Assert.assertEquals(expectValue, d.currentValue().toString());
+                        Assert.assertEquals("nullable? instance type String", d.currentValue().toString());
                     }
                 }
                 if (T.equals(d.variableName())) {

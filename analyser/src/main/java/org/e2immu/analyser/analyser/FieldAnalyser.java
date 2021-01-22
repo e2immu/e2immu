@@ -462,7 +462,7 @@ public class FieldAnalyser extends AbstractAnalyser {
         // check constant
 
         E2ImmuAnnotationExpressions e2 = analyserContext.getE2ImmuAnnotationExpressions();
-        if (effectivelyFinalValue.isConstant()) {
+        if (effectivelyFinalValue.isConstant() || !downgradeFromNewInstanceWithConstructor) {
             // directly adding the annotation; it will not be used for inspection
             AnnotationExpression constantAnnotation = checkConstant.createConstantAnnotation(e2, effectivelyFinalValue);
             fieldAnalysis.annotations.put(constantAnnotation, true);

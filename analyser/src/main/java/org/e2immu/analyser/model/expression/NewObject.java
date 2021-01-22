@@ -342,8 +342,7 @@ public record NewObject(MethodInfo constructor,
                 TypeInfo bestType = parameterizedType.bestTypeInfo();
                 if (Primitives.isPrimitiveExcludingVoid(bestType)) return variableProperty.best;
                 return bestType == null ? variableProperty.falseValue :
-                        Math.max(variableProperty.falseValue,
-                                evaluationContext.getAnalyserContext().getTypeAnalysis(bestType).getProperty(variableProperty));
+                                evaluationContext.getAnalyserContext().getTypeAnalysis(bestType).getProperty(variableProperty);
             }
             default:
         }

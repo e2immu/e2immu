@@ -234,7 +234,7 @@ public class Test_16_Modification extends CommonTestRunner {
                     Assert.assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
                     String expectValue = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : INSTANCE_TYPE_HASH_SET;
                     Assert.assertEquals(expectValue, d.variableInfo().getValue().toString());
-                    int expectModified = d.iteration() == 0 ? Level.DELAY : d.iteration() == 1 ? Level.FALSE : Level.TRUE;
+                    int expectModified = d.iteration() <= 1 ? Level.FALSE : Level.TRUE;
                     Assert.assertEquals(expectModified, d.getProperty(VariableProperty.MODIFIED));
                 }
             }
@@ -426,8 +426,7 @@ public class Test_16_Modification extends CommonTestRunner {
                 }
 
                 if (EXAMPLE6.equals(d.variableName())) {
-                    String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "nullable? instance type Modification_6";
-                    Assert.assertEquals(expect, d.currentValue().toString());
+                    Assert.assertEquals("nullable? instance type Modification_6", d.currentValue().toString());
                     Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL));
                 }
                 if (EXAMPLE6_SET6.equals(d.variableName())) {
