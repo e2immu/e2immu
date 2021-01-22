@@ -144,6 +144,12 @@ public record NewObject(MethodInfo constructor,
                 new BooleanConstant(evaluationContext.getPrimitives(), true), objectFlow);
     }
 
+    public static NewObject genericArrayAccess(EvaluationContext evaluationContext, Expression array, Variable variable, ObjectFlow objectFlow) {
+        int notNull = evaluationContext.getProperty(array, VariableProperty.NOT_NULL);
+        return new NewObject(null, variable.parameterizedType(), Diamond.SHOW_ALL, List.of(), notNull, null, null,
+                new BooleanConstant(evaluationContext.getPrimitives(), true), objectFlow);
+    }
+
     /*
     When creating an anonymous instance of a class (new SomeType() { })
      */

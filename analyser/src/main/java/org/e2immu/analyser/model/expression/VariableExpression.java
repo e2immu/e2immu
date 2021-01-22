@@ -30,6 +30,7 @@ import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.E2Container;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 @E2Container
@@ -100,6 +101,26 @@ public record VariableExpression(Variable variable,
     @Override
     public ObjectFlow getObjectFlow() {
         return objectFlow;
+    }
+
+    /*
+    the purpose of having this extra "markRead" here (as compared to the default implementation in Expression),
+    is to ensure that fields exist when they are encountered -- reEvaluate is called from the single return value of
+    method; if this one returns a field, that field has to be made available to the next iteration; see Enum_3 statement 0 in
+    posInList
+
+    Full evaluation causes a lot of trouble with improper delays because we have no decent ForwardEvaluationInfo
+     */
+    @Override
+    public EvaluationResult reEvaluate(EvaluationContext evaluationContext, Map<Expression, Expression> translation) {
+        Expression inMap = translation.get(this);
+        if (inMap != null) {
+            return new EvaluationResult.Builder().setExpression(inMap).build();
+        }
+        EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
+        builder.setExpression(this);
+        builder.markRead(variable);
+        return builder.build();
     }
 
     @Override

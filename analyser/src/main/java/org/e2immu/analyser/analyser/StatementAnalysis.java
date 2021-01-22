@@ -431,22 +431,22 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             ensureLocalCopiesOfConfirmedVariableFields(evaluationContext, vic);
         });
         if (copyFrom != null) {
-            explicitlyPropagateLocalVariables(copyFrom, previous == null);
+            explicitlyPropagateVariables(copyFrom, previous == null);
         }
     }
 
-    // explicitly copy local variables from above or previous (they cannot be created on demand)
-    // loop variables at the statement are not copied to the next one
-    private void explicitlyPropagateLocalVariables(StatementAnalysis copyFrom, boolean copyIsParent) {
+    /* explicitly copy local variables from above or previous (they cannot be created on demand)
+       loop variables at the statement are not copied to the next one
+       Some fields only become visible in a later iteration (see e.g. Enum_3 test, field inside constant result
+       of array initialiser) -- so we don't explicitly restrict to local variables
+     */
+    private void explicitlyPropagateVariables(StatementAnalysis copyFrom, boolean copyIsParent) {
         copyFrom.variables.stream().filter(e -> copyIsParent ||
                 !copyFrom.index.equals(e.getValue().getStatementIndexOfThisLoopOrShadowVariable()))
                 .forEach(e -> {
                     String fqn = e.getKey();
                     VariableInfoContainer vicFrom = e.getValue();
-                    Variable variable = vicFrom.current().variable();
-                    if (!variables.isSet(fqn) && variable instanceof LocalVariableReference) {
-                        // other variables that don't exist here and that we do not want to copy: foreign fields,
-                        // such as System.out
+                    if (!variables.isSet(fqn)) {
                         VariableInfoContainer newVic = VariableInfoContainerImpl.existingVariable(vicFrom,
                                 null, copyIsParent, navigationData.hasSubBlocks());
                         variables.put(fqn, newVic);

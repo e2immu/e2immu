@@ -896,9 +896,11 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
             return null;
         }
         if (e2ImmutableStatusOfFieldRefs == MultiLevel.EFFECTIVE) return true;
-        int immutable = methodInfo.returnType().getProperty(analyserContext, VariableProperty.IMMUTABLE);
+        ParameterizedType returnType = methodInfo.returnType();
+        int immutable = returnType.getProperty(analyserContext, VariableProperty.IMMUTABLE);
         int formalE2ImmutableStatusOfReturnType = MultiLevel.value(immutable, MultiLevel.E2IMMUTABLE);
-        if (formalE2ImmutableStatusOfReturnType == MultiLevel.DELAY) {
+        boolean notMyOwnType = returnType.typeInfo != methodInfo.typeInfo;
+        if (formalE2ImmutableStatusOfReturnType == MultiLevel.DELAY && notMyOwnType) {
             log(DELAYED, "Have formal return type, no idea if E2Immutable: {}", methodInfo.distinguishingName());
             return null;
         }

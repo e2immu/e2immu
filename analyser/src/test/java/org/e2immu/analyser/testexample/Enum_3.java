@@ -41,6 +41,7 @@ public enum Enum_3 {
 
     public int posInList() {
         Enum_3[] array = values();
+        assert 3 == array.length;
         for (int i = 0; i < array.length; i++) {
             if (array[i] == this) return i;
         }

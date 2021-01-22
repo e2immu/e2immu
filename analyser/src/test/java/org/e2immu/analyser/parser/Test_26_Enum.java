@@ -20,6 +20,11 @@
 package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.config.DebugConfiguration;
+import org.e2immu.analyser.config.EvaluationResultVisitor;
+import org.e2immu.analyser.config.StatementAnalyserVariableVisitor;
+import org.e2immu.analyser.config.StatementAnalyserVisitor;
+import org.e2immu.analyser.model.expression.EmptyExpression;
+import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -51,7 +56,73 @@ public class Test_26_Enum extends CommonTestRunner {
 
     @Test
     public void test3() throws IOException {
-        testClass("Enum_3", 0, 0, new DebugConfiguration.Builder()
+        final String TYPE = "org.e2immu.analyser.testexample.Enum_3";
+        final String ONE = TYPE + ".THREE";
+        final String TWO = TYPE + ".TWO";
+        final String THREE = TYPE + ".THREE";
+        final String THIS = TYPE + ".this";
+
+        EvaluationResultVisitor evaluationResultVisitor = d -> {
+            if ("posInList".equals(d.methodInfo().name) && "2".equals(d.statementId())) {
+                String expectValue = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "i$2<=2";
+                Assert.assertEquals(expectValue, d.evaluationResult().value().toString());
+            }
+            if ("posInList".equals(d.methodInfo().name) && "2.0.0".equals(d.statementId())) {
+                String expectValue = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "instance type Enum_3==this";
+                Assert.assertEquals(expectValue, d.evaluationResult().value().toString());
+            }
+        };
+
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if (!"posInList".equals(d.methodInfo().name)) return;
+            if ("array".equals(d.variableName()) && ("0".equals(d.statementId()) || "1".equals(d.statementId()))) {
+                String expectValue = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "{ONE,TWO,THREE}";
+                Assert.assertEquals(expectValue, d.currentValue().toString());
+            }
+            if ("array[i]".equals(d.variableName())) {
+                String expectValue = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "instance type Enum_3";
+                Assert.assertEquals(expectValue, d.currentValue().toString());
+            }
+            if (THIS.equals(d.variableName())) {
+                if ("0".equals(d.statementId())) {
+                    Assert.assertEquals("instance type Enum_3", d.currentValue().toString());
+                }
+            }
+            if (THREE.equals(d.variableName())) {
+                if ("0".equals(d.statementId()) || "1".equals(d.statementId()) || "2.0.0.0.0".equals(d.statementId())) {
+                    Assert.assertEquals("Statement " + d.statementId() + " it " + d.iteration(),
+                            "instance type Enum_3", d.currentValue().toString());
+                }
+                if ("2.0.0".equals(d.statementId())) {
+                    String expectValue = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "instance type Enum_3";
+                    //         Assert.assertEquals(expectValue, d.currentValue().toString());
+                }
+            }
+        };
+
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("posInList".equals(d.methodInfo().name)) { // starting from statement 0, they'll all have to be there
+                Assert.assertEquals(d.iteration() > 0, d.statementAnalysis().variables.isSet(ONE));
+                Assert.assertEquals(d.iteration() > 0, d.statementAnalysis().variables.isSet(TWO));
+                Assert.assertEquals(d.iteration() > 0, d.statementAnalysis().variables.isSet(THREE));
+
+                if ("2.0.0.0.0".equals(d.statementId())) {
+                    String expectCondition = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "instance type Enum_3==this";
+                    Assert.assertEquals(expectCondition, d.condition().toString());
+                }
+
+                if ("2.0.0".equals(d.statementId())) {
+                    Assert.assertTrue(d.statementAnalysis().variables.isSet("array[i]"));
+                    String expectCondition = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "i$2<=2";
+                    Assert.assertEquals(expectCondition, d.condition().toString());
+                }
+            }
+        };
+        // expect an "always true" warning on the assert
+        testClass("Enum_3", 0, 1, new DebugConfiguration.Builder()
+                .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 }

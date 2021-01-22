@@ -18,10 +18,7 @@
 
 package org.e2immu.analyser.model.expression;
 
-import org.e2immu.analyser.analyser.EvaluationContext;
-import org.e2immu.analyser.analyser.EvaluationResult;
-import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
-import org.e2immu.analyser.analyser.VariableProperty;
+import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.variable.DependentVariable;
 import org.e2immu.analyser.model.variable.Variable;
@@ -165,13 +162,26 @@ public class ArrayAccess implements Expression {
                     returnType(),
                     variableTarget != null ? variableTarget.dependencies : List.of(), arrayVariable);
 
+            // dependentVariable is our best effort at evaluation of the individual components
+
             if (dependentVariable.arrayVariable != null) {
                 builder.variableOccursInNotNullContext(dependentVariable.arrayVariable, array.value(), MultiLevel.EFFECTIVELY_NOT_NULL);
             }
             if (forwardEvaluationInfo.isNotAssignmentTarget()) {
                 builder.markRead(variableTarget);
-                Expression variableValue = builder.currentExpression(dependentVariable, true);
-                builder.setExpression(variableValue);
+                if (evaluationContext.isPresent(dependentVariable)) {
+                    Expression variableValue = builder.currentExpression(dependentVariable, true);
+                    builder.setExpression(variableValue);
+                } else {
+                    // the result is not known, lets return an unknown instance
+                    NewObject newObject = NewObject.genericArrayAccess(evaluationContext, array.value(),
+                            dependentVariable, ObjectFlow.NO_FLOW);
+                    builder.setExpression(newObject);
+
+                    // NOTE (?): linked variables of a generic access to a known array -> links to ALL linked variables
+                    // of all elements == serious worst case scenario, but maybe completely relevant
+                    builder.assignment(variableTarget, newObject, LinkedVariables.EMPTY);
+                }
             } else {
                 builder.setExpression(new VariableExpression(dependentVariable));
             }
