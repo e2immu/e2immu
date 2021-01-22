@@ -37,6 +37,8 @@ import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.TypeMapImpl;
+import org.e2immu.annotation.NotModified;
+import org.e2immu.annotation.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -234,9 +236,14 @@ public class TypeInspector {
         Primitives primitives = expressionContext.typeContext.getPrimitives();
         E2ImmuAnnotationExpressions e2 = expressionContext.typeContext.typeMapBuilder.getE2ImmuAnnotationExpressions();
 
+        AnnotationExpression notNullContract = E2ImmuAnnotationExpressions.createContract(primitives, e2.notNull);
+        AnnotationExpression notModifiedContract = E2ImmuAnnotationExpressions.createContract(primitives, e2.notModified);
+
         MethodInspectionImpl.Builder nameBuilder = new MethodInspectionImpl.Builder(typeInfo, "name")
                 .setReturnType(primitives.stringParameterizedType)
-                .addAnnotation(e2.notModified);
+                .addModifier(MethodModifier.PUBLIC)
+                .addAnnotation(notNullContract)
+                .addAnnotation(notModifiedContract);
         nameBuilder.readyToComputeFQN(expressionContext.typeContext);
         expressionContext.typeContext.typeMapBuilder.registerMethodInspection(nameBuilder);
         builder.addMethod(nameBuilder.getMethodInfo());
@@ -244,9 +251,11 @@ public class TypeInspector {
         MethodInspectionImpl.Builder valueOfBuilder = new MethodInspectionImpl.Builder(typeInfo, "valueOf")
                 .setReturnType(typeInfo.asParameterizedType(expressionContext.typeContext))
                 .setStatic(true)
-                .addAnnotation(e2.notModified);
+                .addModifier(MethodModifier.PUBLIC)
+                .addAnnotation(notNullContract)
+                .addAnnotation(notModifiedContract);
         ParameterInspectionImpl.Builder valueOfP0B = new ParameterInspectionImpl.Builder(primitives.stringParameterizedType,
-                "name", 0).addAnnotation(e2.notNull);
+                "name", 0).addAnnotation(notNullContract);
         valueOfBuilder.addParameter(valueOfP0B);
         valueOfBuilder.readyToComputeFQN(expressionContext.typeContext);
         expressionContext.typeContext.typeMapBuilder.registerMethodInspection(valueOfBuilder);
@@ -263,8 +272,8 @@ public class TypeInspector {
         MethodInspectionImpl.Builder valuesBuilder = new MethodInspectionImpl.Builder(typeInfo, "values")
                 .setReturnType(valuesReturnType)
                 .setStatic(true)
-                .setInspectedBlock(valuesBlock)
-                .addAnnotation(e2.notModified);
+                .addModifier(MethodModifier.PUBLIC)
+                .setInspectedBlock(valuesBlock);
         valuesBuilder.readyToComputeFQN(expressionContext.typeContext);
         expressionContext.typeContext.typeMapBuilder.registerMethodInspection(valuesBuilder);
         builder.addMethod(valuesBuilder.getMethodInfo());

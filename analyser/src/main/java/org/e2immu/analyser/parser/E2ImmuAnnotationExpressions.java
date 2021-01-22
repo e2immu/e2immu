@@ -4,6 +4,8 @@ import com.google.common.collect.ImmutableMap;
 import org.e2immu.analyser.model.AnnotationExpression;
 import org.e2immu.analyser.model.AnnotationExpressionImpl;
 import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.model.expression.BooleanConstant;
+import org.e2immu.analyser.model.expression.MemberValuePair;
 import org.e2immu.annotation.*;
 
 import java.util.List;
@@ -76,6 +78,17 @@ public class E2ImmuAnnotationExpressions {
     @NotModified
     private AnnotationExpression create(Class<?> clazz) {
         return new AnnotationExpressionImpl(new TypeInfo(clazz.getPackageName(), clazz.getSimpleName()), List.of());
+    }
+
+    /*
+    Important: do not create a new typeInfo here, but rely on the original, because there is identity checking with '=='
+    in fromAnnotationsIntoProperties
+    */
+    public static AnnotationExpression createContract(Primitives primitives, AnnotationExpression original) {
+        return new AnnotationExpressionImpl.Builder()
+                .setTypeInfo(original.typeInfo())
+                .addExpression(new MemberValuePair("contract", new BooleanConstant(primitives, true)))
+                .build();
     }
 
     public TypeInfo immutableAnnotation(Class<?> key) {

@@ -789,7 +789,8 @@ public class TypeAnalyser extends AbstractAnalyser {
                 if (modified == Level.FALSE || !typeAnalysis.isEventual()) {
                     int returnTypeImmutable = methodAnalyser.methodAnalysis.getProperty(VariableProperty.IMMUTABLE);
                     int returnTypeE2Immutable = MultiLevel.value(returnTypeImmutable, MultiLevel.E2IMMUTABLE);
-                    if (returnTypeE2Immutable == MultiLevel.DELAY) {
+                    boolean returnTypeNotMyType = typeInfo != analyserContext.getMethodInspection(methodAnalyser.methodInfo).getReturnType().typeInfo;
+                    if (returnTypeE2Immutable == MultiLevel.DELAY && returnTypeNotMyType) {
                         log(DELAYED, "Return type of {} not known if @E2Immutable, delaying", methodAnalyser.methodInfo.distinguishingName());
                         return DELAYS;
                     }

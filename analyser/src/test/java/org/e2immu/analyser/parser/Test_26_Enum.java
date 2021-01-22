@@ -48,4 +48,10 @@ public class Test_26_Enum extends CommonTestRunner {
                 .build());
     }
 
+
+    @Test
+    public void test3() throws IOException {
+        testClass("Enum_3", 0, 0, new DebugConfiguration.Builder()
+                .build());
+    }
 }

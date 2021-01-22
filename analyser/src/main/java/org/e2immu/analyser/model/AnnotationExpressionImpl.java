@@ -99,26 +99,28 @@ public record AnnotationExpressionImpl(TypeInfo typeInfo,
 
     @Override
     public <T> T extract(String fieldName, T defaultValue) {
-        if (expressions.isEmpty()) return defaultValue;
         for (Expression expression : expressions) {
-            ParameterizedType returnType = typeInfo.typeInspection.get().methodStream(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM)
-                    .filter(m -> m.name.equals(fieldName))
-                    .findFirst()
-                    .map(MethodInfo::returnType).orElseThrow();
             if (expression instanceof MemberValuePair mvp) {
                 if (mvp.name().equals(fieldName)) {
-                    return (T) returnValueOfAnnotationExpression(returnType, mvp.value());
+                    return (T) returnValueOfAnnotationExpression(fieldName, mvp.value());
                 }
             } else if ("value".equals(fieldName)) {
-                return (T) returnValueOfAnnotationExpression(returnType, expression);
+                return (T) returnValueOfAnnotationExpression(fieldName, expression);
             }
         }
         return defaultValue;
     }
 
-    private static Object returnValueOfAnnotationExpression(ParameterizedType returnType, Expression expression) {
-        // it is always possible that the return type is an array, but only one value is present...
+    private Object returnValueOfAnnotationExpression(String fieldName, Expression expression) {
+        // important: the constant expression situation is the most common case
+        // there'll be trouble with other situations when the typeInfo has not been inspected yet,
+        // as we don't have an inspection provider here
+        if (expression instanceof ConstantExpression<?> ce) {
+            return ce.getValue();
+        }
 
+        // it is always possible that the return type is an array, but only one value is present...
+        ParameterizedType returnType = returnType(fieldName);
         if (expression instanceof ArrayInitializer arrayInitializer) {
             Object[] array = createArray(returnType, arrayInitializer.multiExpression.expressions().length);
             int i = 0;
@@ -134,6 +136,13 @@ public record AnnotationExpressionImpl(TypeInfo typeInfo,
         array[0] = value;
         return array;
 
+    }
+
+    private ParameterizedType returnType(String fieldName) {
+        return typeInfo.typeInspection.get().methodStream(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM)
+                .filter(m -> m.name.equals(fieldName))
+                .findFirst()
+                .map(MethodInfo::returnType).orElseThrow();
     }
 
     private static Object returnValueOfNonArrayExpression(ParameterizedType returnType, Expression expression) {

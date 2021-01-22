@@ -58,7 +58,7 @@ public class ArrayAccess implements Expression {
         String name = (arrayVariable == null ? expression.minimalOutput() : arrayVariable.fullyQualifiedName())
                 + "[" + (indexVariable == null ? index.minimalOutput() : indexVariable.fullyQualifiedName()) + "]";
         return new DependentVariable(name,
-                arrayVariable.getOwningType(),
+                arrayVariable == null ? null : arrayVariable.getOwningType(),
                 returnType, indexVariable == null ? List.of() : List.of(indexVariable), arrayVariable);
     }
 
@@ -157,7 +157,7 @@ public class ArrayAccess implements Expression {
                 arrayVariable = evaluatedArrayValue.variable();
             }
             Variable indexVariable = singleVariable(indexValue.value());
-            String index = indexVariable == null ?  indexValue.value().minimalOutput() : indexVariable.fullyQualifiedName();
+            String index = indexVariable == null ? indexValue.value().minimalOutput() : indexVariable.fullyQualifiedName();
 
             String name = (arrayVariable != null ? arrayVariable.fullyQualifiedName() : array.value().toString()) + "[" + index + "]";
             DependentVariable dependentVariable = new DependentVariable(name,
