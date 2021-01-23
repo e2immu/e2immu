@@ -24,15 +24,21 @@ import org.junit.Test;
 
 import java.io.IOException;
 
-public class Test_00_Basics_9 extends CommonTestRunner {
+public class Test_00_Basics_9plus extends CommonTestRunner {
 
-    public Test_00_Basics_9() {
+    public Test_00_Basics_9plus() {
         super(false);
     }
 
     @Test
-    public void test() throws IOException {
+    public void test_9() throws IOException {
         testClass("Basics_9", 0, 2, new DebugConfiguration.Builder()
+                .build());
+    }
+
+    @Test
+    public void test_10() throws IOException {
+        testClass("Basics_10", 0, 0, new DebugConfiguration.Builder()
                 .build());
     }
 

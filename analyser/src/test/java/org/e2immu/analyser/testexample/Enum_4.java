@@ -18,26 +18,27 @@
 package org.e2immu.analyser.testexample;
 
 import org.e2immu.annotation.Constant;
+import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.NotModified;
 
-public enum Enum_1 {
+@E2Container
+public enum Enum_4 {
     ONE(1), TWO(2), THREE(3);
 
     public final int cnt;
 
-    Enum_1(int cnt) {
+    Enum_4(int cnt) {
         this.cnt = cnt;
     }
 
-    @NotModified
-    public int best(Enum_1 other) {
-        return Math.max(cnt, other.cnt);
+    public int getCnt() {
+        return cnt;
     }
 
-    public int posInList() {
-        for (int i = 0; i < values().length; i++) {
-            if (values()[i] == this) return i;
-        }
-        throw new UnsupportedOperationException();
+    @Constant
+    public static Enum_4 highest() {
+        assert 2 == TWO.cnt;
+        assert 1 == ONE.getCnt();
+        return THREE;
     }
 }

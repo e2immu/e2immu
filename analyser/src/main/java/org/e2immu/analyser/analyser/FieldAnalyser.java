@@ -422,7 +422,11 @@ public class FieldAnalyser extends AbstractAnalyser {
     be computed in the first iteration either (it can if the type is immediately known to be @E2Immutable, such as for primitives)
      */
     private AnalysisStatus analyseFinalValue() {
-        if (fieldAnalysis.getProperty(VariableProperty.FINAL) != Level.TRUE || fieldAnalysis.effectivelyFinalValue.isSet()) {
+        if (fieldAnalysis.effectivelyFinalValue.isSet()) {
+            return DONE;
+        }
+        if (fieldAnalysis.getProperty(VariableProperty.FINAL) != Level.TRUE) {
+            fieldAnalysis.setProperty(VariableProperty.CONSTANT, Level.FALSE);
             return DONE;
         }
         if (!fieldAnalysis.values.isSet()) {
@@ -456,26 +460,59 @@ public class FieldAnalyser extends AbstractAnalyser {
             log(OBJECT_FLOW, "Confirming the initial object flow for {}", fieldInfo.fullyQualifiedName());
         }
 
-        fieldAnalysis.effectivelyFinalValue.set(effectivelyFinalValue);
-        fieldAnalysis.setProperty(VariableProperty.CONSTANT, Level.fromBool(effectivelyFinalValue.isConstant()));
+        // check constant, but before we set the effectively final value
+        Boolean recursivelyConstant;
+        if (downgradeFromNewInstanceWithConstructor) recursivelyConstant = false;
+        else recursivelyConstant = recursivelyConstant(effectivelyFinalValue);
+        if (recursivelyConstant == null) {
+            log(DELAYED, "Delaying effectively final value because of recursively constant computation on value {} of {}",
+                    fieldInfo.fullyQualifiedName(), effectivelyFinalValue);
+            return DELAYS;
+        }
 
-        // check constant
+        fieldAnalysis.effectivelyFinalValue.set(effectivelyFinalValue);
 
         E2ImmuAnnotationExpressions e2 = analyserContext.getE2ImmuAnnotationExpressions();
-        if (effectivelyFinalValue.isConstant() || !downgradeFromNewInstanceWithConstructor) {
+        if (recursivelyConstant) {
             // directly adding the annotation; it will not be used for inspection
             AnnotationExpression constantAnnotation = checkConstant.createConstantAnnotation(e2, effectivelyFinalValue);
             fieldAnalysis.annotations.put(constantAnnotation, true);
+            fieldAnalysis.setProperty(VariableProperty.CONSTANT, Level.TRUE);
             log(CONSTANT, "Added @Constant annotation on field {}", fieldInfo.fullyQualifiedName());
         } else {
             log(CONSTANT, "Marked that field {} cannot be @Constant", fieldInfo.fullyQualifiedName());
             fieldAnalysis.annotations.put(e2.constant, false);
+            fieldAnalysis.setProperty(VariableProperty.CONSTANT, Level.FALSE);
         }
 
         log(CONSTANT, "Setting initial value of effectively final of field {} to {}",
                 fieldInfo.fullyQualifiedName(), effectivelyFinalValue);
 
         return DONE;
+    }
+
+    /*
+    we already know that this type is @E2Immutable, but does it contain only constants?
+     */
+    private Boolean recursivelyConstant(Expression effectivelyFinalValue) {
+        if (effectivelyFinalValue.isConstant()) return true;
+        if (effectivelyFinalValue instanceof NewObject newObject) {
+            if (newObject.constructor() == null) return false;
+            for (Expression parameter : newObject.getParameterExpressions()) {
+                if (!parameter.isConstant()) {
+                    EvaluationContext evaluationContext = new EvaluationContextImpl(0, // IMPROVE
+                            ConditionManager.initialConditionManager(fieldAnalysis.primitives), null);
+                    int immutable = evaluationContext.getProperty(parameter, VariableProperty.IMMUTABLE);
+                    if (immutable == Level.DELAY) return null;
+                    if (!MultiLevel.isEffectivelyNotNull(immutable)) return false;
+                    Boolean recursively = recursivelyConstant(parameter);
+                    if (recursively == null) return null;
+                    if (!recursively) return false;
+                }
+            }
+            return true;
+        }
+        return false;
     }
 
     private Expression determineEffectivelyFinalValue(List<Expression> values, boolean downgradeFromNewInstanceWithConstructor) {

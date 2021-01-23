@@ -188,7 +188,13 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
         methodAnalysis.fromAnnotationsIntoProperties(false, methodInspection.getAnnotations(),
                 analyserContext.getE2ImmuAnnotationExpressions());
 
-        parameterAnalysers.forEach(pa -> pa.initialize(analyserContext.fieldAnalyserStream()));
+        parameterAnalysers.forEach(pa -> {
+            Collection<AnnotationExpression> annotations = pa.parameterInfo.getInspection().getAnnotations();
+            pa.parameterAnalysis.fromAnnotationsIntoProperties(false, annotations,
+                    analyserContext.getE2ImmuAnnotationExpressions());
+
+            pa.initialize(analyserContext.fieldAnalyserStream());
+        });
     }
 
     @Override
@@ -568,7 +574,7 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
         } else {
             int modified = methodAnalysis.getProperty(VariableProperty.MODIFIED);
             if (modified == Level.DELAY) {
-                log(DELAYED, "Delaying return value of {}, waiting for MODIFIED (we may try to inline!)", methodInfo.distinguishingName());
+                log(DELAYED, "Delaying return value of {}, waiting for MODIFIED (we may try to inline!)", methodInfo.distinguishingName);
                 return DELAYS;
             }
             if (modified == Level.FALSE) {
@@ -583,8 +589,19 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
                 immutable = MultiLevel.MUTABLE; // no idea
             }
         }
+        boolean valueIsConstantField;
+        if (value instanceof InlinedMethod inlined &&
+                inlined.expression() instanceof VariableExpression ve && ve.variable() instanceof FieldReference fieldReference) {
+            FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(fieldReference.fieldInfo);
+            int constantField = fieldAnalysis.getProperty(VariableProperty.CONSTANT);
+            if (constantField == Level.DELAY) {
+                log(DELAYED, "Delaying return value of {}, waiting for effectively final value's @Constant designation", methodInfo.distinguishingName);
+                return DELAYS;
+            }
+            valueIsConstantField = constantField == Level.TRUE;
+        } else valueIsConstantField = false;
 
-        boolean isConstant = value.isConstant();
+        boolean isConstant = value.isConstant() || valueIsConstantField;
 
         methodAnalysis.singleReturnValue.set(value);
         methodAnalysis.singleReturnValueImmutable.set(immutable);

@@ -20,10 +20,9 @@
 package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.LinkedVariables;
-import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.config.EvaluationResultVisitor;
-import org.e2immu.analyser.config.StatementAnalyserVariableVisitor;
-import org.e2immu.analyser.config.StatementAnalyserVisitor;
+import org.e2immu.analyser.analyser.VariableProperty;
+import org.e2immu.analyser.config.*;
+import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.junit.Assert;
 import org.junit.Test;
@@ -132,11 +131,34 @@ public class Test_26_Enum extends CommonTestRunner {
                 }
             }
         };
+
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("highest".equals(d.methodInfo().name)) {
+                int expectConstant = d.iteration() <= 1 ? Level.DELAY : Level.TRUE;
+                Assert.assertEquals(expectConstant, d.methodAnalysis().getProperty(VariableProperty.CONSTANT));
+            }
+        };
+
+        FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+            if ("THREE".equals(d.fieldInfo().name)) {
+                int expectConstant = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
+                Assert.assertEquals(expectConstant, d.fieldAnalysis().getProperty(VariableProperty.CONSTANT));
+            }
+        };
+
         // expect an "always true" warning on the assert
         testClass("Enum_3", 0, 1, new DebugConfiguration.Builder()
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .build());
+    }
+
+    @Test
+    public void test4() throws IOException {
+        testClass("Enum_4", 0, 0, new DebugConfiguration.Builder()
                 .build());
     }
 }

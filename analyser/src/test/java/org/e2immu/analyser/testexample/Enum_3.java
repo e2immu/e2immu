@@ -36,7 +36,7 @@ public enum Enum_3 {
         return Math.max(cnt, other.cnt);
     }
 
-    @Constant
+    @Constant("THREE")
     public static Enum_3 highest() {
         return THREE;
     }

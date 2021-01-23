@@ -1,6 +1,7 @@
 package org.e2immu.analyser.analyser.check;
 
 import org.e2immu.analyser.analyser.AbstractAnalysisBuilder;
+import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.ConstantExpression;
 import org.e2immu.analyser.model.expression.EmptyExpression;
@@ -39,7 +40,8 @@ public record CheckConstant(Primitives primitives, E2ImmuAnnotationExpressions e
                                Expression singleReturnValue,
                                List<AnnotationExpression> annotations,
                                Location where) {
-        String computedValue = singleReturnValue instanceof ConstantExpression ? singleReturnValue.minimalOutput(): null;
+        boolean isConstant = analysis.getPropertyAsIs(VariableProperty.CONSTANT) == Level.TRUE;
+        String computedValue = isConstant ? singleReturnValue.minimalOutput(): null;
         Function<AnnotationExpression, String> extractInspected = ae -> {
             String value = ae.extract("value", "");
             return singleReturnValue instanceof StringConstant ? StringUtil.quote(value) : value;
