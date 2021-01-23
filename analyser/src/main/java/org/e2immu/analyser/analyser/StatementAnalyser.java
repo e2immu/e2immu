@@ -1327,21 +1327,22 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
 
         int blocksExecuted = 0;
         for (ExecutionOfBlock executionOfBlock : executions) {
-            if (executionOfBlock.execution != NEVER && executionOfBlock.startOfBlock != null) {
+            if (executionOfBlock.startOfBlock != null) {
+                if (executionOfBlock.execution != NEVER) {
+                    StatementAnalyserResult result = executionOfBlock.startOfBlock.analyseAllStatementsInBlock(evaluationContext.getIteration(),
+                            new ForwardAnalysisInfo(executionOfBlock.execution, executionOfBlock.conditionManager, executionOfBlock.inCatch),
+                            evaluationContext.getClosure());
+                    sharedState.builder.add(result);
+                    analysisStatus = analysisStatus.combine(result.analysisStatus);
+                    blocksExecuted++;
+                } else {
+                    // ensure that the first statement is unreachable
+                    FlowData flowData = executionOfBlock.startOfBlock.statementAnalysis.flowData;
+                    flowData.setGuaranteedToBeReachedInMethod(NEVER);
 
-                StatementAnalyserResult result = executionOfBlock.startOfBlock.analyseAllStatementsInBlock(evaluationContext.getIteration(),
-                        new ForwardAnalysisInfo(executionOfBlock.execution, executionOfBlock.conditionManager, executionOfBlock.inCatch),
-                        evaluationContext.getClosure());
-                sharedState.builder.add(result);
-                analysisStatus = analysisStatus.combine(result.analysisStatus);
-                blocksExecuted++;
-            } else if (executionOfBlock.startOfBlock != null) {
-                // ensure that the first statement is unreachable
-                FlowData flowData = executionOfBlock.startOfBlock.statementAnalysis.flowData;
-                flowData.setGuaranteedToBeReachedInMethod(NEVER);
-
-                if (statement() instanceof LoopStatement) {
-                    statementAnalysis.ensure(Message.newMessage(getLocation(), Message.EMPTY_LOOP));
+                    if (statement() instanceof LoopStatement) {
+                        statementAnalysis.ensure(Message.newMessage(getLocation(), Message.EMPTY_LOOP));
+                    }
                 }
             }
         }
@@ -1350,7 +1351,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             boolean atLeastOneBlockExecuted = atLeastOneBlockExecuted(executions);
 
             List<StatementAnalysis.ConditionAndLastStatement> lastStatements = executions.stream()
-                    .filter(ex -> !ex.startOfBlock.statementAnalysis.flowData.isUnreachable())
+                    .filter(ex -> ex.startOfBlock != null && !ex.startOfBlock.statementAnalysis.flowData.isUnreachable())
                     .map(ex -> new StatementAnalysis.ConditionAndLastStatement(ex.condition, ex.startOfBlock.lastStatement()))
                     .collect(Collectors.toUnmodifiableList());
             int maxTime = lastStatements.stream()
@@ -1480,6 +1481,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 conditionForSubStatement = new BooleanConstant(statementAnalysis.primitives, true);
             } else if (statementsExecution == NEVER) {
                 conditionForSubStatement = null; // will not be executed anyway
+            } else if (statement() instanceof TryStatement) { // catch
+                conditionForSubStatement = NewObject.forCatchOrThis(statementAnalysis.primitives, statementAnalysis.primitives.booleanParameterizedType);
             } else if (statement() instanceof SwitchEntry switchEntry) {
                 Expression constant = switchEntry.switchVariableAsExpression.evaluate(evaluationContext, ForwardEvaluationInfo.DEFAULT).value();
                 conditionForSubStatement = Equals.equals(evaluationContext, value, constant, ObjectFlow.NO_FLOW);
