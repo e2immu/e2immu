@@ -25,7 +25,7 @@ import org.junit.Test;
 import java.io.IOException;
 import java.util.List;
 
-public class TestPair extends CommonTestRunner {
+public class Test_Own_00_Pair extends CommonTestRunner {
 
 
     @Test

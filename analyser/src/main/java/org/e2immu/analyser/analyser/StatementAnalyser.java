@@ -1362,14 +1362,18 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         if (blocksExecuted > 0) {
             boolean atLeastOneBlockExecuted = atLeastOneBlockExecuted(executions);
 
+            // note that isEscapeAlwaysExecuted cannot be delayed (otherwise, it wasn't ALWAYS?)
             List<StatementAnalysis.ConditionAndLastStatement> lastStatements = executions.stream()
                     .filter(ex -> ex.startOfBlock != null && !ex.startOfBlock.statementAnalysis.flowData.isUnreachable())
-                    .map(ex -> new StatementAnalysis.ConditionAndLastStatement(ex.condition, ex.startOfBlock.lastStatement()))
+                    .map(ex -> new StatementAnalysis.ConditionAndLastStatement(ex.condition, ex.startOfBlock.lastStatement(),
+                            ex.startOfBlock.lastStatement().isEscapeAlwaysExecutedInCurrentBlock() == Boolean.TRUE))
                     .collect(Collectors.toUnmodifiableList());
+
             int maxTime = lastStatements.stream()
                     .map(StatementAnalysis.ConditionAndLastStatement::lastStatement)
                     .mapToInt(sa -> sa.statementAnalysis.flowData.getTimeAfterSubBlocks())
                     .max().orElseThrow();
+
             if (statementAnalysis.flowData.timeAfterSubBlocksNotYetSet()) {
                 statementAnalysis.flowData.setTimeAfterSubBlocks(maxTime, index());
             }

@@ -574,10 +574,15 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         messageStream.forEach(this::ensure);
     }
 
-    public record ConditionAndLastStatement(Expression condition, StatementAnalyser lastStatement) {
+    public record ConditionAndLastStatement(Expression condition, StatementAnalyser lastStatement,
+                                            boolean alwaysEscapes) {
     }
 
-    public record ConditionAndVariableInfo(Expression condition, VariableInfo variableInfo) {
+    public record ConditionAndVariableInfo(Expression condition, VariableInfo variableInfo, boolean alwaysEscapes) {
+        // for testing
+        public ConditionAndVariableInfo(Expression condition, VariableInfo variableInfo) {
+            this(condition, variableInfo, false);
+        }
     }
 
     /**
@@ -603,16 +608,12 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         variableStream.filter(vic -> !index.equals(vic.getValue().getStatementIndexOfThisLoopOrShadowVariable())).forEach(e -> {
             String fqn = e.getKey();
             VariableInfoContainer vic = e.getValue();
+            VariableInfo current = vic.current();
 
             // the variable stream comes from multiple blocks; we ensure that merging takes place once only
             // this goes into a list instead of a map, because the condition can be overall NO_VALUE (both if and !if = else)
 
             if (merged.add(fqn)) {
-                List<ConditionAndVariableInfo> toMerge = lastStatements.stream()
-                        .filter(e2 -> e2.lastStatement.statementAnalysis.variables.isSet(fqn))
-                        .map(e2 -> new ConditionAndVariableInfo(e2.condition,
-                                e2.lastStatement.statementAnalysis.variables.get(fqn).current()))
-                        .collect(Collectors.toUnmodifiableList());
                 VariableInfoContainer destination;
                 if (!variables.isSet(fqn)) {
                     Variable variable = e.getValue().current().variable();
@@ -620,6 +621,11 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                 } else {
                     destination = vic;
                 }
+                List<ConditionAndVariableInfo> toMerge = lastStatements.stream()
+                        .filter(e2 -> e2.lastStatement.statementAnalysis.variables.isSet(fqn))
+                        .map(e2 -> new ConditionAndVariableInfo(e2.condition,
+                                e2.lastStatement.statementAnalysis.variables.get(fqn).current(), e2.alwaysEscapes))
+                        .collect(Collectors.toUnmodifiableList());
                 destination.merge(evaluationContext, stateOfConditionManagerBeforeExecution, atLeastOneBlockExecuted, toMerge);
             }
         });

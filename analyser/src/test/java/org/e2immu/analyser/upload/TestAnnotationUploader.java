@@ -49,7 +49,7 @@ public class TestAnnotationUploader {
         Configuration configuration = new Configuration.Builder()
                 .setInputConfiguration(new InputConfiguration.Builder()
                         .addSources("src/test/java")
-                        .addRestrictSourceToPackages("org.e2immu.analyser.testexample.Basics")
+                        .addRestrictSourceToPackages("org.e2immu.analyser.testexample.Basics_0")
                         .addClassPath(InputConfiguration.DEFAULT_CLASSPATH)
                         .addClassPath(Input.JAR_WITH_PATH_PREFIX + "com/google/common/collect")
                         .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/junit")
@@ -71,6 +71,6 @@ public class TestAnnotationUploader {
         Map<String, String> map = annotationUploader.createMap(Set.of(basics));
         map.forEach((k, v) -> System.out.println(k + " --> " + v));
 
-        Assert.assertEquals("e2container-t", map.get("java.lang.String"));
+        Assert.assertEquals("e2container-mt", map.get("org.e2immu.analyser.testexample.Basics_0.getExplicitlyFinal() java.lang.String"));
     }
 }

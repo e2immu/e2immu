@@ -31,6 +31,7 @@ import org.e2immu.analyser.util.SetOnce;
 import java.util.*;
 import java.util.function.Function;
 import java.util.function.IntBinaryOperator;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.VariableInfoContainer.*;
@@ -372,21 +373,25 @@ class VariableInfoImpl implements VariableInfo {
             return currentValue;
         }
 
-        boolean allValuesIdentical = mergeSources.stream().allMatch(cav -> currentValue.equals(cav.variableInfo().getValue()));
+        // here is the correct point to remove dead branches
+        List<StatementAnalysis.ConditionAndVariableInfo> reduced =
+                mergeSources.stream().filter(cav ->!cav.alwaysEscapes()).collect(Collectors.toUnmodifiableList());
+
+        boolean allValuesIdentical = reduced.stream().allMatch(cav -> currentValue.equals(cav.variableInfo().getValue()));
         if (allValuesIdentical) return currentValue;
 
         MergeHelper mergeHelper = new MergeHelper(evaluationContext, this);
 
-        if (mergeSources.size() == 1) {
-            StatementAnalysis.ConditionAndVariableInfo e = mergeSources.get(0);
+        if (reduced.size() == 1) {
+            StatementAnalysis.ConditionAndVariableInfo e = reduced.get(0);
             Expression result = mergeHelper.one(e.variableInfo(), stateOfDestination, e.condition());
             if (result != null) return result;
         }
 
-        if (mergeSources.size() == 2) {
-            StatementAnalysis.ConditionAndVariableInfo e = mergeSources.get(0);
+        if (reduced.size() == 2) {
+            StatementAnalysis.ConditionAndVariableInfo e = reduced.get(0);
             Expression negated = Negation.negate(evaluationContext, e.condition());
-            StatementAnalysis.ConditionAndVariableInfo e2 = mergeSources.get(1);
+            StatementAnalysis.ConditionAndVariableInfo e2 = reduced.get(1);
 
             if (e2.condition().equals(negated)) {
                 Expression result = mergeHelper.twoComplementary(e.variableInfo(), stateOfDestination, e.condition(), e2.variableInfo());
@@ -399,7 +404,7 @@ class VariableInfoImpl implements VariableInfo {
         // all the rest is the territory of switch and try statements, not yet implemented
 
         // one thing we can already do: if the try statement ends with a 'finally', we return this value
-        StatementAnalysis.ConditionAndVariableInfo eLast = mergeSources.get(mergeSources.size() - 1);
+        StatementAnalysis.ConditionAndVariableInfo eLast = reduced.get(reduced.size() - 1);
         if (eLast.condition().isBoolValueTrue()) return eLast.variableInfo().getValue();
 
         // no clue
