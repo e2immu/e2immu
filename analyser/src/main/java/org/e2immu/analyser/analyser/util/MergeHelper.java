@@ -134,7 +134,7 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfo vi) 
         return inlineConditional(condition, vi1.getValue(), vi.getValue());
     }
 
-    public Expression two(VariableInfo vi1, Expression stateOfParent, Expression firstCondition, VariableInfo vi2) {
+    public Expression twoComplementary(VariableInfo vi1, Expression stateOfParent, Expression firstCondition, VariableInfo vi2) {
         Expression two;
         if (firstCondition.isBoolValueTrue()) two = vi1.getValue(); // to bypass the error check on "safe"
         else if (firstCondition.isBoolValueFalse()) two = vi2.getValue();

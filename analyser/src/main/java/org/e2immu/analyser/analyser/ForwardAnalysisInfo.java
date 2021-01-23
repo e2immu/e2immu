@@ -17,11 +17,12 @@
 
 package org.e2immu.analyser.analyser;
 
+import org.e2immu.analyser.model.expression.LocalVariableCreation;
 import org.e2immu.analyser.parser.Primitives;
 
-public record ForwardAnalysisInfo(FlowData.Execution execution, ConditionManager conditionManager, boolean inCatch) {
+public record ForwardAnalysisInfo(FlowData.Execution execution, ConditionManager conditionManager, LocalVariableCreation catchVariable) {
 
     public static ForwardAnalysisInfo startOfMethod(Primitives primitives) {
-        return new ForwardAnalysisInfo(FlowData.Execution.ALWAYS, ConditionManager.initialConditionManager(primitives), false);
+        return new ForwardAnalysisInfo(FlowData.Execution.ALWAYS, ConditionManager.initialConditionManager(primitives), null);
     }
 }

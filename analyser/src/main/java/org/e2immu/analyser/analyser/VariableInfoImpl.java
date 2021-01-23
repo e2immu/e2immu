@@ -21,7 +21,6 @@ import com.google.common.collect.ImmutableMap;
 import org.e2immu.analyser.analyser.util.MergeHelper;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Level;
-import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.expression.Negation;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.Variable;
@@ -294,7 +293,7 @@ class VariableInfoImpl implements VariableInfo {
         if (!existingValuesWillBeOverwritten) {
             if (existing.linkedVariablesIsSet()) {
                 merged.addAll(existing.getLinkedVariables().variables());
-            } else if(existing.isAssigned()) {
+            } else if (existing.isAssigned()) {
                 return; // DELAY
             }
             // typical situation: int a; if(x) { a = 5; }. Existing has not been assigned
@@ -379,23 +378,29 @@ class VariableInfoImpl implements VariableInfo {
         MergeHelper mergeHelper = new MergeHelper(evaluationContext, this);
 
         if (mergeSources.size() == 1) {
-            StatementAnalysis.ConditionAndVariableInfo e = mergeSources.stream().findFirst().orElseThrow();
+            StatementAnalysis.ConditionAndVariableInfo e = mergeSources.get(0);
             Expression result = mergeHelper.one(e.variableInfo(), stateOfDestination, e.condition());
             if (result != null) return result;
         }
 
         if (mergeSources.size() == 2) {
-            StatementAnalysis.ConditionAndVariableInfo e = mergeSources.stream().findFirst().orElseThrow();
+            StatementAnalysis.ConditionAndVariableInfo e = mergeSources.get(0);
             Expression negated = Negation.negate(evaluationContext, e.condition());
-            VariableInfo vi2 = mergeSources.stream().filter(cav -> cav.condition().equals(negated))
-                    .map(StatementAnalysis.ConditionAndVariableInfo::variableInfo).findFirst().orElse(null);
-            if (vi2 != null) {
-                Expression result = mergeHelper.two(e.variableInfo(), stateOfDestination, e.condition(), vi2);
+            StatementAnalysis.ConditionAndVariableInfo e2 = mergeSources.get(1);
+
+            if (e2.condition().equals(negated)) {
+                Expression result = mergeHelper.twoComplementary(e.variableInfo(), stateOfDestination, e.condition(), e2.variableInfo());
                 if (result != null) return result;
+            } else if (e2.condition().isBoolValueTrue()) {
+                return e2.variableInfo().getValue();
             }
         }
 
-        // all the rest is the territory of switch statements, not yet implemented
+        // all the rest is the territory of switch and try statements, not yet implemented
+
+        // one thing we can already do: if the try statement ends with a 'finally', we return this value
+        StatementAnalysis.ConditionAndVariableInfo eLast = mergeSources.get(mergeSources.size() - 1);
+        if (eLast.condition().isBoolValueTrue()) return eLast.variableInfo().getValue();
 
         // no clue
         return mergeHelper.noConclusion();

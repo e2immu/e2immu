@@ -361,7 +361,8 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
 
         boolean delays = !methodLevelData.internalObjectFlows.isFrozen();
         if (delays) {
-            log(DELAYED, "Not yet setting internal object flows on {}, delaying", methodInfo.distinguishingName());
+            log(DELAYED, "Delaying internal object flows of method {}, delay in MethodLevelData",
+                    methodInfo.distinguishingName());
             return DELAYS;
         }
 

@@ -5,9 +5,8 @@ import org.e2immu.annotation.NotNull;
 
 public class TryStatement_3 {
 
-
     @NotNull(absent = true)
-    @Constant
+    @Constant("null")
     public static String method(String s) {
         String res;
         try {

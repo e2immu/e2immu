@@ -3,6 +3,7 @@ package org.e2immu.analyser.parser;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.config.MethodAnalyserVisitor;
+import org.e2immu.analyser.config.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.config.StatementAnalyserVisitor;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Level;
@@ -25,6 +26,14 @@ public class Test_29_TryStatement extends CommonTestRunner {
         final String TYPE = "org.e2immu.analyser.testexample.TryStatement_0";
         final String METHOD_FQN = TYPE + ".method(String)";
 
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("method".equals(d.methodInfo().name) && METHOD_FQN.equals(d.variableName())) {
+                if ("0".equals(d.statementId())) {
+                    // meaning: no idea
+                    Assert.assertEquals("nullable instance type String", d.currentValue().toString());
+                }
+            }
+        };
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
                 if ("0.0.0".equals(d.statementId())) {
@@ -35,17 +44,20 @@ public class Test_29_TryStatement extends CommonTestRunner {
                     Expression value1 = d.statementAnalysis().variables.get(METHOD_FQN).current().getValue();
                     Assert.assertTrue("Got " + value1.getClass(), value1 instanceof ConstantExpression);
                 }
+                Assert.assertTrue("Statement " + d.statementId() + ", it " + d.iteration(),
+                        d.statementAnalysis().methodLevelData.internalObjectFlows.isFrozen());
             }
         };
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
                 Expression srv = d.methodAnalysis().getSingleReturnValue();
-                Assert.assertNull(srv); // multiple exit points
+                Assert.assertEquals("nullable instance type String", srv.toString());
             }
         };
 
         testClass("TryStatement_0", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build());
@@ -60,17 +72,42 @@ public class Test_29_TryStatement extends CommonTestRunner {
 
     @Test
     public void test_2() throws IOException {
-        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
-            if ("method".equals(d.methodInfo().name) && "1.1.1".equals(d.statementId())) {
-                Assert.assertEquals("s", d.haveError(Message.USELESS_ASSIGNMENT));
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("method".equals(d.methodInfo().name) && "npe".equals(d.variableName())) {
+                if ("1.1.0".equals(d.statementId())) {
+                    Assert.assertEquals("instance type NullPointerException", d.currentValue().toString());
+                }
             }
         };
-        testClass("TryStatement_2", 1, 0, new DebugConfiguration.Builder()
+
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("method".equals(d.methodInfo().name) && "1.1.1".equals(d.statementId())) {
+                Assert.assertEquals("ERROR in M:method:1.1.1: Useless assignment: res",
+                        d.haveError(Message.USELESS_ASSIGNMENT));
+            }
+            if ("method".equals(d.methodInfo().name) && "1.2.1".equals(d.statementId())) {
+                Assert.assertEquals("ERROR in M:method:1.2.1: Useless assignment: res",
+                        d.haveError(Message.USELESS_ASSIGNMENT));
+            }
+        };
+
+        // warn: unused parameter
+        testClass("TryStatement_2", 2, 1, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build());
     }
 
     @Test
     public void test_3() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("method".equals(d.methodInfo().name) && "res".equals(d.variableName())) {
+                if ("1".equals(d.statementId()) || "2".equals(d.statementId())) {
+                    Assert.assertEquals("null", d.currentValue().toString());
+                }
+            }
+        };
+
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
                 Assert.assertEquals(Level.TRUE, d.methodAnalysis().getProperty(VariableProperty.CONSTANT));
@@ -78,6 +115,7 @@ public class Test_29_TryStatement extends CommonTestRunner {
         };
 
         testClass("TryStatement_3", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }

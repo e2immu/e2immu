@@ -953,6 +953,19 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         // part 1: Create a local variable x for(X x: Xs) {...}, or in catch(Exception e), or for(int i=...), or int i=3, j=4;
         // variable will be set to a NewObject case of a catch
 
+        if (sharedState.forwardAnalysisInfo.catchVariable() != null) {
+            // inject a catch(E1 | E2 e) { } exception variable, directly with assigned value, "read"
+            LocalVariableCreation catchVariable = sharedState.forwardAnalysisInfo.catchVariable();
+            String name = catchVariable.localVariable.name();
+            if (!statementAnalysis.variables.isSet(name)) {
+                LocalVariableReference lvr = new LocalVariableReference(analyserContext, catchVariable.localVariable, List.of());
+                VariableInfoContainer vic = VariableInfoContainerImpl.newCatchVariable(lvr, index(),
+                        NewObject.forCatchOrThis(statementAnalysis.primitives, lvr.parameterizedType()),
+                        statementAnalysis.navigationData.hasSubBlocks());
+                statementAnalysis.variables.put(name, vic);
+            }
+        }
+
         for (Expression expression : statementAnalysis.statement.getStructure().initialisers()) {
             Expression initialiserToEvaluate;
 
@@ -979,11 +992,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 }
 
                 // what should we evaluate? catch: assign a value which will be read; for(int i=0;...) --> 0 instead of i=0;
-                if (sharedState.forwardAnalysisInfo.inCatch()) {
-                    initialiserToEvaluate = new Assignment(statementAnalysis.primitives,
-                            new VariableExpression(lvr), NewObject.forCatchOrThis(statementAnalysis.primitives, lvr.parameterizedType()));
-                    // so that the variable has always been read, no errors
-                } else if (statement() instanceof LoopStatement) {
+                if (statement() instanceof LoopStatement) {
                     initialiserToEvaluate = lvc.expression;
                     // but, because we don't evaluate the assignment, we need to assign some value to the loop variable
                     // otherwise we'll get delays
@@ -1089,6 +1098,9 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             }
             if (statementAnalysis.flowData.timeAfterExecutionNotYetSet()) {
                 statementAnalysis.flowData.copyTimeAfterExecutionFromInitialTime();
+            }
+            if (!statementAnalysis.methodLevelData.internalObjectFlows.isFrozen()) {
+                statementAnalysis.methodLevelData.internalObjectFlows.freeze();
             }
             if (statementAnalysis.statement instanceof BreakStatement breakStatement) {
                 StatementAnalysis.FindLoopResult correspondingLoop = statementAnalysis.findLoopByLabel(breakStatement);
@@ -1308,7 +1320,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                                     ConditionManager conditionManager,
                                     Expression condition,
                                     boolean isDefault,
-                                    boolean inCatch) {
+                                    LocalVariableCreation catchVariable) {
         public boolean escapesAlways() {
             return execution != NEVER && startOfBlock != null && startOfBlock.statementAnalysis.flowData.interruptStatus() == ALWAYS;
         }
@@ -1330,7 +1342,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             if (executionOfBlock.startOfBlock != null) {
                 if (executionOfBlock.execution != NEVER) {
                     StatementAnalyserResult result = executionOfBlock.startOfBlock.analyseAllStatementsInBlock(evaluationContext.getIteration(),
-                            new ForwardAnalysisInfo(executionOfBlock.execution, executionOfBlock.conditionManager, executionOfBlock.inCatch),
+                            new ForwardAnalysisInfo(executionOfBlock.execution, executionOfBlock.conditionManager, executionOfBlock.catchVariable),
                             evaluationContext.getClosure());
                     sharedState.builder.add(result);
                     analysisStatus = analysisStatus.combine(result.analysisStatus);
@@ -1462,7 +1474,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         FlowData.Execution firstBlockStatementsExecution = structure.statementExecution().apply(value, evaluationContext);
         FlowData.Execution firstBlockExecution = statementAnalysis.flowData.execution(firstBlockStatementsExecution);
 
-        executions.add(makeExecutionOfBlock(firstBlockExecution, startOfBlocks, value));
+        executions.add(makeExecutionOfPrimaryBlock(firstBlockExecution, startOfBlocks, value));
 
         for (int count = 1; count < startOfBlocks.size(); count++) {
             Structure subStatements = structure.subStatements().get(count - 1);
@@ -1493,15 +1505,17 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             ConditionManager subCm = execution == NEVER ? null :
                     localConditionManager.newAtStartOfNewBlock(statementAnalysis.primitives, conditionForSubStatement);
             boolean inCatch = statement() instanceof TryStatement && !subStatements.initialisers().isEmpty(); // otherwise, it is finally
-            executions.add(new ExecutionOfBlock(execution, startOfBlocks.get(count).orElse(null), subCm, conditionForSubStatement, isDefault, inCatch));
+            LocalVariableCreation catchVariable = inCatch ? (LocalVariableCreation) subStatements.initialisers().get(0) : null;
+            executions.add(new ExecutionOfBlock(execution, startOfBlocks.get(count).orElse(null), subCm,
+                    conditionForSubStatement, isDefault, catchVariable));
         }
 
         return executions;
     }
 
-    private ExecutionOfBlock makeExecutionOfBlock(FlowData.Execution firstBlockExecution,
-                                                  List<Optional<StatementAnalyser>> startOfBlocks,
-                                                  Expression value) {
+    private ExecutionOfBlock makeExecutionOfPrimaryBlock(FlowData.Execution firstBlockExecution,
+                                                         List<Optional<StatementAnalyser>> startOfBlocks,
+                                                         Expression value) {
         Structure structure = statementAnalysis.statement.getStructure();
         Expression condition;
         ConditionManager cm;
@@ -1516,7 +1530,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             condition = new BooleanConstant(statementAnalysis.primitives, true);
         }
         return new ExecutionOfBlock(firstBlockExecution, startOfBlocks.get(0).orElse(null), cm, condition,
-                false, false);
+                false, null);
     }
 
     private Expression defaultCondition(EvaluationContext evaluationContext, List<ExecutionOfBlock> executions) {

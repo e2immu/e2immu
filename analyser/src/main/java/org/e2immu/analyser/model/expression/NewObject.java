@@ -89,7 +89,8 @@ public record NewObject(MethodInfo constructor,
 
     // never null, never more interesting.
     public static NewObject forCatchOrThis(Primitives primitives, ParameterizedType parameterizedType) {
-        return new NewObject(null, parameterizedType, Diamond.SHOW_ALL, List.of(), MultiLevel.EFFECTIVELY_NOT_NULL, null, null,
+        Diamond diamond = parameterizedType.parameters.isEmpty() ? Diamond.NO: Diamond.SHOW_ALL;
+        return new NewObject(null, parameterizedType, diamond, List.of(), MultiLevel.EFFECTIVELY_NOT_NULL, null, null,
                 new BooleanConstant(primitives, true), ObjectFlow.NO_FLOW);
     }
 
