@@ -1547,6 +1547,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             statementAnalysis.variables.stream()
                     .filter(e -> e.getValue().getVariableInLoop() != VariableInLoop.COPY_FROM_ENCLOSING_METHOD)
                     .map(e -> e.getValue().current())
+                    .filter(vi -> !(vi.variable() instanceof ReturnVariable)) // that's for the compiler!
                     .forEach(variableInfo -> {
                         if (variableInfo.notReadAfterAssignment()) {
                             boolean isLocalAndLocalToThisBlock = statementAnalysis.isLocalVariableAndLocalToThisBlock(variableInfo.name());

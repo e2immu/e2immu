@@ -43,7 +43,24 @@ public class Test_26_Enum extends CommonTestRunner {
 
     @Test
     public void test1() throws IOException {
+        final String RET_VAR = "org.e2immu.analyser.testexample.Enum_1.posInList()";
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("posInList".equals(d.methodInfo().name) && RET_VAR.equals(d.variableName())) {
+                if ("0.0.0".equals(d.statementId())) {
+                    String expectValue = d.iteration() <= 1 ? EmptyExpression.NO_VALUE.toString() :
+                            "instance type Enum_1==this?1+i$0:<return value>";
+                    Assert.assertEquals(expectValue, d.currentValue().toString());
+                }
+                if ("0".equals(d.statementId()) || "1".equals(d.statementId())) {
+                    String expectValue = d.iteration() <= 1 ? EmptyExpression.NO_VALUE.toString() :
+                            "instance type int<=2?instance type Enum_1==this?1+instance type int:<return value>:<return value>";
+                    Assert.assertEquals(expectValue, d.currentValue().toString());
+                }
+            }
+        };
+
         testClass("Enum_1", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 
