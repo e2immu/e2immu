@@ -35,10 +35,10 @@ public enum Enum_4 {
         return cnt;
     }
 
-    @Constant
+    @Constant("THREE")
     public static Enum_4 highest() {
-        assert 2 == TWO.cnt;
         assert 1 == ONE.getCnt();
+        assert 2 == TWO.cnt;
         return THREE;
     }
 }

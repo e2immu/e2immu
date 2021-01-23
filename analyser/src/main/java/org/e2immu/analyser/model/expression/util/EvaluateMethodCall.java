@@ -18,7 +18,6 @@
 package org.e2immu.analyser.model.expression.util;
 
 import org.e2immu.analyser.analyser.*;
-import org.e2immu.analyser.inspector.ExpressionContext;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.variable.FieldReference;
@@ -160,30 +159,9 @@ public class EvaluateMethodCall {
             if (srv.isInstanceOf(InlinedMethod.class)) {
                 InlinedMethod iv = srv.asInstanceOf(InlinedMethod.class);
 
-                // special situation
-                // we have an instance object, like new Pair("a", "b"), and then a getter applying to this instance object
-                // this we can resolve immediately
-                if (objectValue instanceof NewObject ovNo && iv.expression() instanceof VariableExpression ve) {
-                    Variable variable = ve.variable();
-                    if (variable instanceof FieldReference) {
-                        FieldInfo fieldInfo = ((FieldReference) variable).fieldInfo;
-                        FieldAnalysis fieldAnalysis = evaluationContext.getAnalyserContext().getFieldAnalysis(fieldInfo);
-                        if (fieldAnalysis.getProperty(VariableProperty.FINAL) == Level.TRUE) {
-                            int i = 0;
-                            List<ParameterAnalysis> parameterAnalyses = evaluationContext
-                                    .getParameterAnalyses(ovNo.constructor()).collect(Collectors.toList());
-                            for (ParameterAnalysis parameterAnalysis : parameterAnalyses) {
-                                Map<FieldInfo, ParameterAnalysis.AssignedOrLinked> assigned = parameterAnalysis.getAssignedToField();
-                                for (Map.Entry<FieldInfo, ParameterAnalysis.AssignedOrLinked> e : assigned.entrySet()) {
-                                    if (e.getKey() == fieldInfo && e.getValue() == ParameterAnalysis.AssignedOrLinked.ASSIGNED) {
-                                        return builder.setExpression(ovNo.getParameterExpressions().get(i)).build();
-                                    }
-                                }
-                                i++;
-                            }
-                        }
-                    }
-                }
+                EvaluationResult shortCut = tryEvaluationShortCut(evaluationContext, builder, objectValue, iv);
+                if (shortCut != null) return shortCut;
+
                 Map<Expression, Expression> translationMap = EvaluateParameters.translationMap(methodInfo, parameters);
                 EvaluationResult reSrv = srv.reEvaluate(evaluationContext, translationMap);
                 return builder.compose(reSrv).setExpression(reSrv.value()).build();
@@ -191,7 +169,7 @@ public class EvaluateMethodCall {
             if (srv.isConstant()) {
                 return builder.setExpression(srv).build();
             }
-        } else if (methodAnalysis.isBeingAnalysed() && !recursiveCall) {
+        } else if (methodAnalysis.isBeingAnalysed()) {
             // we will, at some point, analyse this method
             log(Logger.LogTarget.DELAYED, "Delaying method value on {}", methodInfo.fullyQualifiedName);
             return builder.setExpression(EmptyExpression.NO_VALUE).build();
@@ -200,6 +178,53 @@ public class EvaluateMethodCall {
         // normal method value
         MethodCall methodValue = new MethodCall(objectValue, methodInfo, parameters, objectFlowOfResult);
         return builder.setExpression(methodValue).build();
+    }
+
+    /*
+    special situation
+    We have an instance object, like new Pair("a", "b"), and then a getter applying to this instance object
+    this we can resolve immediately
+
+    See also FieldAccess which has a similar method
+    */
+    private static EvaluationResult tryEvaluationShortCut(EvaluationContext evaluationContext,
+                                                          EvaluationResult.Builder builder,
+                                                          Expression objectValue,
+                                                          InlinedMethod iv) {
+        NewObject newObject;
+        if (objectValue instanceof NewObject no) newObject = no;
+        else if (objectValue instanceof VariableExpression varEx && varEx.variable() instanceof FieldReference fieldReference) {
+            FieldAnalysis fieldAnalysis = evaluationContext.getAnalyserContext().getFieldAnalysis(fieldReference.fieldInfo);
+            if (fieldAnalysis.getEffectivelyFinalValue() instanceof NewObject no) {
+                newObject = no;
+            } else {
+                return null;
+            }
+        } else {
+            return null;
+        }
+        if (iv.expression() instanceof VariableExpression ve) {
+            Variable variable = ve.variable();
+            if (variable instanceof FieldReference) {
+                FieldInfo fieldInfo = ((FieldReference) variable).fieldInfo;
+                FieldAnalysis fieldAnalysis = evaluationContext.getAnalyserContext().getFieldAnalysis(fieldInfo);
+                if (fieldAnalysis.getProperty(VariableProperty.FINAL) == Level.TRUE) {
+
+                    int i = 0;
+                    List<ParameterAnalysis> parameterAnalyses = evaluationContext
+                            .getParameterAnalyses(newObject.constructor()).collect(Collectors.toList());
+                    for (ParameterAnalysis parameterAnalysis : parameterAnalyses) {
+                        Map<FieldInfo, ParameterAnalysis.AssignedOrLinked> assigned = parameterAnalysis.getAssignedToField();
+                        ParameterAnalysis.AssignedOrLinked assignedOrLinked = assigned.get(fieldInfo);
+                        if (assignedOrLinked == ParameterAnalysis.AssignedOrLinked.ASSIGNED) {
+                            return builder.setExpression(newObject.getParameterExpressions().get(i)).build();
+                        }
+                        i++;
+                    }
+                }
+            }
+        }
+        return null;
     }
 
     private static Expression computeEvaluationOfEquals(EvaluationContext evaluationContext,

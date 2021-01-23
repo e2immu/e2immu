@@ -21,27 +21,24 @@ package org.e2immu.analyser.model.expression;
 import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
-import org.e2immu.analyser.model.Element;
-import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.ParameterizedType;
-import org.e2immu.analyser.model.TranslationMap;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.output.OutputBuilder;
-import org.e2immu.analyser.output.Symbol;
-import org.e2immu.analyser.parser.Message;
 import org.e2immu.annotation.E2Immutable;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 @E2Immutable
-public record FieldAccess(Expression expression,
-                          Variable variable) implements Expression {
-    public FieldAccess(Expression expression, Variable variable) {
-        this.variable = Objects.requireNonNull(variable);
-        this.expression = Objects.requireNonNull(expression);
+public record FieldAccess(Expression expression, Variable variable) implements Expression {
+
+    public FieldAccess {
+        Objects.requireNonNull(variable);
+        Objects.requireNonNull(expression);
     }
 
     @Override
@@ -122,7 +119,37 @@ public record FieldAccess(Expression expression,
         } else {
             newVar = variable;
         }
+        Expression shortCut = tryShortCut(evaluationContext, newVar);
+        if (shortCut != null) {
+            return new EvaluationResult.Builder().compose(scopeResult).setExpression(shortCut).build();
+        }
         EvaluationResult evaluationResult = VariableExpression.evaluate(evaluationContext, forwardEvaluationInfo, newVar);
         return new EvaluationResult.Builder(evaluationContext).compose(scopeResult, evaluationResult).build();
+    }
+
+    /*
+    See also EvaluateMethodCall, which has a similar method
+     */
+    private Expression tryShortCut(EvaluationContext evaluationContext, Variable variable) {
+        if (expression instanceof VariableExpression ve && ve.variable() instanceof FieldReference scopeField) {
+            FieldAnalysis fieldAnalysis = evaluationContext.getAnalyserContext().getFieldAnalysis(scopeField.fieldInfo);
+            if (fieldAnalysis.getEffectivelyFinalValue() instanceof NewObject newObject && newObject.constructor() != null) {
+                // we may have direct values for the field
+                if (variable instanceof FieldReference fieldReference) {
+                    int i = 0;
+                    List<ParameterAnalysis> parameterAnalyses = evaluationContext
+                            .getParameterAnalyses(newObject.constructor()).collect(Collectors.toList());
+                    for (ParameterAnalysis parameterAnalysis : parameterAnalyses) {
+                        Map<FieldInfo, ParameterAnalysis.AssignedOrLinked> assigned = parameterAnalysis.getAssignedToField();
+                        ParameterAnalysis.AssignedOrLinked assignedOrLinked = assigned.get(fieldReference.fieldInfo);
+                        if (assignedOrLinked == ParameterAnalysis.AssignedOrLinked.ASSIGNED) {
+                            return newObject.getParameterExpressions().get(i);
+                        }
+                        i++;
+                    }
+                }
+            }
+        }
+        return null;
     }
 }

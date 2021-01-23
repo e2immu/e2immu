@@ -175,7 +175,7 @@ public class Test_26_Enum extends CommonTestRunner {
 
     @Test
     public void test4() throws IOException {
-        testClass("Enum_4", 0, 0, new DebugConfiguration.Builder()
+        testClass("Enum_4", 0, 2, new DebugConfiguration.Builder()
                 .build());
     }
 }
