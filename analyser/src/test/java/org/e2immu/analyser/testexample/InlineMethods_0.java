@@ -2,7 +2,7 @@ package org.e2immu.analyser.testexample;
 
 import org.e2immu.annotation.Constant;
 
-public class InlineMethods {
+public class InlineMethods_0 {
 
     private static int product(int x, int y) {
         return x*y;

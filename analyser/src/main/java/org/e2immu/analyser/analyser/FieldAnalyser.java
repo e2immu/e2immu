@@ -160,7 +160,7 @@ public class FieldAnalyser extends AbstractAnalyser {
                         ConditionManager.initialConditionManager(analyserContext.getPrimitives()), closure);
                 for (FieldAnalyserVisitor fieldAnalyserVisitor : visitors) {
                     fieldAnalyserVisitor.visit(new FieldAnalyserVisitor.Data(iteration, evaluationContext,
-                            fieldInfo, fieldAnalysis, analyserComponents.getStatusesAsMap()));
+                            fieldInfo, fieldAnalysis, this::getMessageStream, analyserComponents.getStatusesAsMap()));
                 }
             }
             return analysisStatus;

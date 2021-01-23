@@ -22,10 +22,10 @@ import org.e2immu.annotation.E2Container;
 
 import java.util.Set;
 
-public class DynamicTypeAnnotation {
+public class DynamicTypeAnnotation_0 {
 
-    boolean DynamicTypeAnnotation$Invariant() { return set1.size() == 2; }
-    public DynamicTypeAnnotation() {}
+    //boolean DynamicTypeAnnotation$Invariant() { return set1.size() == 2; }
+    public DynamicTypeAnnotation_0() {}
     
     @E2Container
     private final Set<String> set1 = Set.of("a", "b");

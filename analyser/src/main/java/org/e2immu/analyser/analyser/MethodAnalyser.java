@@ -342,7 +342,7 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
 
     private boolean absentUnlessStatic(Predicate<VariableInfo> variableProperty) {
         return methodAnalysis.getLastStatement().variableStream()
-                .filter(vi -> vi.variable() instanceof FieldReference)
+                .filter(vi -> vi.variable() instanceof FieldReference fieldReference && fieldReference.scope instanceof This)
                 .allMatch(vi -> !variableProperty.test(vi) || vi.variable().isStatic());
     }
 

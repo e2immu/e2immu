@@ -1,17 +1,19 @@
 package org.e2immu.analyser.parser;
 
+import org.e2immu.analyser.analyser.LinkedVariables;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.expression.InlinedMethod;
 import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.IOException;
 
-public class Test_11_IfStatementChecks extends CommonTestRunner {
-    public Test_11_IfStatementChecks() {
+public class Test_11_IfStatement extends CommonTestRunner {
+    public Test_11_IfStatement() {
         super(false);
     }
 
@@ -34,7 +36,7 @@ public class Test_11_IfStatementChecks extends CommonTestRunner {
             }
         };
 
-        final String RETURN = "org.e2immu.analyser.testexample.IfStatementChecks_0.method1(String)";
+        final String RETURN = "org.e2immu.analyser.testexample.IfStatement_0.method1(String)";
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if (RETURN.equals(d.variableName())) {
                 if ("0".equals(d.statementId())) {
@@ -47,7 +49,7 @@ public class Test_11_IfStatementChecks extends CommonTestRunner {
             }
         };
 
-        testClass("IfStatementChecks_0", 0, 0, new DebugConfiguration.Builder()
+        testClass("IfStatement_0", 0, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
@@ -64,7 +66,7 @@ public class Test_11_IfStatementChecks extends CommonTestRunner {
             }
         };
 
-        final String RETURN = "org.e2immu.analyser.testexample.IfStatementChecks_1.method2(String)";
+        final String RETURN = "org.e2immu.analyser.testexample.IfStatement_1.method2(String)";
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if (RETURN.equals(d.variableName())) {
                 if ("0.0.0".equals(d.statementId())) {
@@ -84,7 +86,7 @@ public class Test_11_IfStatementChecks extends CommonTestRunner {
             }
         };
 
-        testClass("IfStatementChecks_1", 0, 0, new DebugConfiguration.Builder()
+        testClass("IfStatement_1", 0, 0, new DebugConfiguration.Builder()
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
@@ -101,7 +103,7 @@ public class Test_11_IfStatementChecks extends CommonTestRunner {
             }
         };
 
-        final String RETURN = "org.e2immu.analyser.testexample.IfStatementChecks_2.method3(String)";
+        final String RETURN = "org.e2immu.analyser.testexample.IfStatement_2.method3(String)";
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if (RETURN.equals(d.variableName())) {
                 if ("0.0.0".equals(d.statementId())) {
@@ -116,7 +118,7 @@ public class Test_11_IfStatementChecks extends CommonTestRunner {
             }
         };
 
-        testClass("IfStatementChecks_2", 0, 0, new DebugConfiguration.Builder()
+        testClass("IfStatement_2", 0, 0, new DebugConfiguration.Builder()
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
@@ -148,7 +150,44 @@ public class Test_11_IfStatementChecks extends CommonTestRunner {
             }
         };
 
-        testClass("IfStatementChecks_3", 0, 0, new DebugConfiguration.Builder()
+        testClass("IfStatement_3", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .build());
+    }
+
+    /*
+    Linked variables come later in get2 and get3 as compared to get1.
+    Should we be worried about this?
+     */
+
+    @Test
+    public void test4() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("get3".equals(d.methodInfo().name) && "i3".equals(d.variableName())) {
+                String expectValue = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "map.get(label3)";
+                Assert.assertEquals(expectValue, d.currentValue().toString());
+                String expectLinked = d.iteration() <= 1 ? LinkedVariables.DELAY_STRING : "this.map";
+                Assert.assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
+            }
+        };
+
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("get1".equals(d.methodInfo().name) && d.iteration() > 0) {
+                Assert.assertEquals("null==map.get(label1)?defaultValue1:map.get(label1)",
+                        d.methodAnalysis().getSingleReturnValue().toString());
+            }
+            if ("get2".equals(d.methodInfo().name) && d.iteration() >= 2) {
+                Assert.assertEquals("null==map.get(label2)?defaultValue2:map.get(label2)",
+                        d.methodAnalysis().getSingleReturnValue().toString());
+            }
+            if ("get3".equals(d.methodInfo().name) && d.iteration() >= 2) {
+                Assert.assertEquals("null==map.get(label3)?defaultValue3:map.get(label3)",
+                        d.methodAnalysis().getSingleReturnValue().toString());
+            }
+        };
+
+        testClass("IfStatement_4", 0, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());

@@ -26,9 +26,9 @@ import org.junit.Test;
 
 import java.io.IOException;
 
-public class TestDynamicTypeAnnotation extends CommonTestRunner {
+public class Test_27_DynamicTypeAnnotation extends CommonTestRunner {
 
-    public TestDynamicTypeAnnotation() {
+    public Test_27_DynamicTypeAnnotation() {
         super(true);
     }
 
@@ -45,8 +45,8 @@ public class TestDynamicTypeAnnotation extends CommonTestRunner {
 
 
     @Test
-    public void test() throws IOException {
-        testClass("DynamicTypeAnnotation", 2, 0, new DebugConfiguration.Builder()
+    public void test_0() throws IOException {
+        testClass("DynamicTypeAnnotation_0", 2, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build());
     }

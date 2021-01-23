@@ -4,7 +4,7 @@ import org.e2immu.annotation.*;
 
 @E2Container
 @ExtensionClass(of = String.class)
-public class IfStatementChecks_1 {
+public class IfStatement_1 {
 
     @NotNull
     public static String method2(String b) {

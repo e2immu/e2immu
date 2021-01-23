@@ -2,25 +2,25 @@ package org.e2immu.analyser.testexample;
 
 import org.e2immu.annotation.NotNull;
 
-public class InnerClass {
+public class InnerClass_0 {
 
     @NotNull
     private final String outerField;
 
-    public InnerClass(@NotNull String outerField) {
+    public InnerClass_0(@NotNull String outerField) {
         if(outerField == null) throw new NullPointerException();
         this.outerField = outerField;
     }
 
     class SubClass {
-        private final String innerField; // this one causes an error (private field not read outside constructors)
+        private final String innerField; // this one should not cause an error, field is read, but outside the inner class
 
         SubClass(String innerField) {
             this.innerField = innerField + outerField.charAt(0);
         }
 
         String getOuter() {
-            return InnerClass.this.outerField; // this tests the InnerClass.this construct
+            return InnerClass_0.this.outerField; // this tests the InnerClass.this construct
         }
     }
 
@@ -77,6 +77,6 @@ public class InnerClass {
     // ERROR method should be marked static
     public void doAssignmentIntoNestedType(String s) {
         SubClassAssignmentFromEnclosing a = new SubClassAssignmentFromEnclosing();
-        a.willBeAssignedFromOutside = s; // ERROR not allowed to assign
+        a.willBeAssignedFromOutside = s; // WARN not allowed to assign
     }
 }
