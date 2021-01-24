@@ -104,7 +104,6 @@ public class TypeAnalyser extends AbstractAnalyser {
 
         if (!typeInfo.isInterface()) {
             builder.add("analyseOnlyMarkEventuallyE1Immutable", this::analyseOnlyMarkEventuallyE1Immutable)
-                    //     .add("analyseEffectivelyE1Immutable", (iteration) -> analyseEffectivelyE1Immutable())
                     .add("analyseIndependent", (iteration) -> analyseIndependent())
                     .add("analyseEffectivelyEventuallyE2Immutable", (iteration) -> analyseEffectivelyEventuallyE2Immutable())
                     .add("analyseContainer", (iteration) -> analyseContainer())
@@ -540,16 +539,6 @@ public class TypeAnalyser extends AbstractAnalyser {
         return DONE;
     }
 
-    private AnalysisStatus analyseEffectivelyE1Immutable() {
-        int typeE1Immutable = MultiLevel.value(typeAnalysis.getProperty(VariableProperty.IMMUTABLE), MultiLevel.E1IMMUTABLE);
-        if (typeE1Immutable != MultiLevel.DELAY) return DONE; // we have a decision already
-
-
-        log(E1IMMUTABLE, "Improve IMMUTABLE property of type {} to @E1Immutable", typeInfo.fullyQualifiedName);
-        typeAnalysis.setProperty(VariableProperty.IMMUTABLE, MultiLevel.EFFECTIVELY_E1IMMUTABLE);
-        return DONE;
-    }
-
     private static int convertMultiLevelEffectiveToDelayTrue(int i) {
         if (i <= MultiLevel.DELAY) return Level.DELAY;
         if (i == MultiLevel.EFFECTIVE) return Level.TRUE;
@@ -726,7 +715,7 @@ public class TypeAnalyser extends AbstractAnalyser {
             return DELAYS;
         }
 
-        int whenE2Fails;
+        int myWhenE2Fails;
         int e1Component;
         boolean eventual;
         if (e1 == Level.FALSE) {
@@ -741,14 +730,29 @@ public class TypeAnalyser extends AbstractAnalyser {
                 typeAnalysis.setProperty(VariableProperty.IMMUTABLE, MultiLevel.MUTABLE);
                 return DONE;
             }
-            whenE2Fails = MultiLevel.compose(MultiLevel.EVENTUALLY_E1IMMUTABLE, MultiLevel.FALSE);
+            myWhenE2Fails = MultiLevel.compose(MultiLevel.EVENTUALLY_E1IMMUTABLE, MultiLevel.FALSE);
             e1Component = MultiLevel.EVENTUAL;
             eventual = true;
         } else {
-            whenE2Fails = MultiLevel.compose(MultiLevel.EFFECTIVELY_E1IMMUTABLE, MultiLevel.FALSE);
+            myWhenE2Fails = MultiLevel.compose(MultiLevel.EFFECTIVELY_E1IMMUTABLE, MultiLevel.FALSE);
             e1Component = MultiLevel.EFFECTIVE;
             eventual = false;
         }
+
+        int fromParentOrEnclosing = parentAndOrEnclosingTypeAnalysis.stream()
+                .mapToInt(typeAnalysis -> typeAnalysis.getProperty(VariableProperty.IMMUTABLE)).min()
+                .orElse(VariableProperty.IMMUTABLE.best);
+        if (fromParentOrEnclosing == Level.DELAY) {
+            log(DELAYED, "Waiting with immutable on {} for parent or enclosing types", typeInfo.fullyQualifiedName);
+            return DELAYS;
+        }
+        if (fromParentOrEnclosing == MultiLevel.MUTABLE) {
+            log(E2IMMUTABLE, "{} is not an E1Immutable, E2Immutable class, because parent or enclosing is Mutable",
+                    typeInfo.fullyQualifiedName);
+            typeAnalysis.setProperty(VariableProperty.IMMUTABLE, MultiLevel.MUTABLE);
+            return DONE;
+        }
+        int whenE2Fails = Math.min(fromParentOrEnclosing, myWhenE2Fails);
 
         // E2
 
@@ -871,7 +875,8 @@ public class TypeAnalyser extends AbstractAnalyser {
 
         log(E2IMMUTABLE, "Improve @Immutable of type {} to @E2Immutable", typeInfo.fullyQualifiedName);
         int e2Component = eventual ? MultiLevel.EVENTUAL : MultiLevel.EFFECTIVE;
-        typeAnalysis.setProperty(VariableProperty.IMMUTABLE, MultiLevel.compose(e1Component, e2Component));
+        int finalValue = Math.min(fromParentOrEnclosing, MultiLevel.compose(e1Component, e2Component));
+        typeAnalysis.setProperty(VariableProperty.IMMUTABLE, finalValue);
         return DONE;
     }
 

@@ -137,7 +137,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
         }
 
         public boolean haveScopeDelay() {
-            return  properties.getOrDefault(VariableProperty.SCOPE_DELAY, Level.DELAY) == Level.TRUE;
+            return properties.getOrDefault(VariableProperty.SCOPE_DELAY, Level.DELAY) == Level.TRUE;
         }
     }
 
@@ -403,13 +403,12 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             }
         }
 
-        public void markContentModified(Variable variable, Expression value, int modified) {
+        public void markContentModified(Variable variable, int modified) {
             assert evaluationContext != null;
             if (evaluationContext.isPresent(variable)) {
                 int ignoreContentModifications = evaluationContext.getProperty(variable, VariableProperty.IGNORE_MODIFICATIONS);
                 if (ignoreContentModifications != Level.TRUE) {
                     log(DEBUG_MODIFY_CONTENT, "Mark method object as content modified {}: {}", modified, variable.fullyQualifiedName());
-                    StatementAnalyser statementAnalyser = evaluationContext.getCurrentStatement();
                     setProperty(variable, VariableProperty.MODIFIED, modified);
 
                     /*

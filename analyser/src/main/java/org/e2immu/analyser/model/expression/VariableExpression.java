@@ -22,6 +22,7 @@ import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.model.variable.FieldReference;
+import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.output.OutputBuilder;
@@ -125,7 +126,14 @@ public record VariableExpression(Variable variable,
 
     @Override
     public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
-        return evaluate(evaluationContext, forwardEvaluationInfo, variable);
+        return evaluate(evaluationContext, forwardEvaluationInfo, replaceSuperByThis(evaluationContext, variable));
+    }
+
+    public static Variable replaceSuperByThis(EvaluationContext evaluationContext, Variable variable) {
+        if (variable instanceof This tv && tv.typeInfo != evaluationContext.getCurrentType()) {
+            return new This(evaluationContext.getAnalyserContext(), evaluationContext.getCurrentType());
+        }
+        return variable;
     }
 
     // code also used by FieldAccess
@@ -149,7 +157,10 @@ public record VariableExpression(Variable variable,
         }
         int modified = forwardEvaluationInfo.getProperty(VariableProperty.MODIFIED);
         if (modified != Level.DELAY) {
-            builder.markContentModified(variable, currentValue, modified);
+            builder.markContentModified(variable, modified);
+            if (variable instanceof FieldReference fieldReference && fieldReference.scope instanceof This thisVar) {
+                builder.markContentModified(replaceSuperByThis(evaluationContext, thisVar), modified);
+            }
         }
 
         int notModified1 = forwardEvaluationInfo.getProperty(VariableProperty.NOT_MODIFIED_1);
