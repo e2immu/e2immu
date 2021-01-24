@@ -119,6 +119,19 @@ public class TypeAnalyser extends AbstractAnalyser {
     }
 
     @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        TypeAnalyser that = (TypeAnalyser) o;
+        return typeInfo.equals(that.typeInfo);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(typeInfo);
+    }
+
+    @Override
     public AnalyserComponents<String, Integer> getAnalyserComponents() {
         return analyserComponents;
     }

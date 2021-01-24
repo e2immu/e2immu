@@ -33,10 +33,7 @@ import org.e2immu.analyser.util.SetOnce;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -82,7 +79,7 @@ public class PrimaryTypeAnalyser implements AnalyserContext, Analyser, HoldsAnal
         ImmutableMap.Builder<TypeInfo, TypeAnalyser> typeAnalysersBuilder = new ImmutableMap.Builder<>();
         SetOnce<TypeAnalyser> primaryTypeAnalyser = new SetOnce<>();
         sortedType.methodsFieldsSubTypes().forEach(mfs -> {
-            if (mfs instanceof TypeInfo typeInfo) {
+            if (mfs instanceof TypeInfo typeInfo && !typeInfo.typeAnalysis.isSet()) {
                 TypeAnalyser typeAnalyser = new TypeAnalyser(typeInfo, primaryType, this);
                 typeAnalysersBuilder.put(typeInfo, typeAnalyser);
                 if (typeInfo == primaryType) primaryTypeAnalyser.set(typeAnalyser);
@@ -96,7 +93,7 @@ public class PrimaryTypeAnalyser implements AnalyserContext, Analyser, HoldsAnal
         ImmutableMap.Builder<ParameterInfo, ParameterAnalyser> parameterAnalysersBuilder = new ImmutableMap.Builder<>();
         ImmutableMap.Builder<MethodInfo, MethodAnalyser> methodAnalysersBuilder = new ImmutableMap.Builder<>();
         sortedType.methodsFieldsSubTypes().forEach(mfs -> {
-            if (mfs instanceof MethodInfo methodInfo) {
+            if (mfs instanceof MethodInfo methodInfo && !methodInfo.methodAnalysis.isSet()) {
                 MethodAnalyser analyser = new MethodAnalyser(methodInfo, typeAnalysers.get(methodInfo.typeInfo).typeAnalysis,
                         false, this);
                 for (ParameterAnalyser parameterAnalyser : analyser.getParameterAnalysers()) {
@@ -113,28 +110,24 @@ public class PrimaryTypeAnalyser implements AnalyserContext, Analyser, HoldsAnal
         ImmutableMap.Builder<FieldInfo, FieldAnalyser> fieldAnalysersBuilder = new ImmutableMap.Builder<>();
         List<Analyser> allAnalysers = sortedType.methodsFieldsSubTypes().stream().flatMap(mfs -> {
             Analyser analyser;
-            if (mfs instanceof FieldInfo fieldInfo) {
-                MethodAnalyser samAnalyser = null;
+            if (mfs instanceof FieldInfo fieldInfo && !fieldInfo.fieldAnalysis.isSet()) {
+                MethodAnalyser samAnalyser;
                 if (fieldInfo.fieldInspection.get().fieldInitialiserIsSet()) {
                     FieldInspection.FieldInitialiser fieldInitialiser = fieldInfo.fieldInspection.get().getFieldInitialiser();
                     MethodInfo sam = fieldInitialiser.implementationOfSingleAbstractMethod();
                     if (sam != null) {
-                        samAnalyser = new MethodAnalyser(sam, typeAnalysers.get(fieldInfo.owner).typeAnalysis, true, this);
-                    }
-                }
+                        samAnalyser = Objects.requireNonNull(methodAnalysers.get(sam));
+                    } else samAnalyser = null;
+                } else samAnalyser = null;
                 TypeAnalysis ownerTypeAnalysis = typeAnalysers.get(fieldInfo.owner).typeAnalysis;
                 analyser = new FieldAnalyser(fieldInfo, primaryType, ownerTypeAnalysis, samAnalyser, this);
                 fieldAnalysersBuilder.put(fieldInfo, (FieldAnalyser) analyser);
-                if (samAnalyser != null) {
-                    return List.of(analyser, samAnalyser).stream();
-                }
             } else if (mfs instanceof MethodInfo) {
                 analyser = methodAnalysers.get(mfs);
             } else if (mfs instanceof TypeInfo) {
                 analyser = typeAnalysers.get(mfs);
             } else throw new UnsupportedOperationException();
-            assert analyser != null : "Cannot find analyser for " + mfs.fullyQualifiedName();
-            return Stream.of(analyser);
+            return analyser == null ? Stream.empty() : Stream.of(analyser);
         }).collect(Collectors.toList());
         fieldAnalysers = fieldAnalysersBuilder.build();
 
@@ -148,6 +141,8 @@ public class PrimaryTypeAnalyser implements AnalyserContext, Analyser, HoldsAnal
             else throw new UnsupportedOperationException();
         });
         analysers = ListUtil.immutableConcat(methodAnalysersInOrder, fieldAnalysersInOrder, typeAnalysersInOrder);
+        assert analysers.size() == new HashSet<>(analysers).size() : "There are be duplicates among the analysers?";
+
         // all important fields of the interface have been set.
         analysers.forEach(Analyser::initialize);
 
@@ -246,7 +241,7 @@ public class PrimaryTypeAnalyser implements AnalyserContext, Analyser, HoldsAnal
     public void makeImmutable() {
         analysers.forEach(analyser -> {
             analyser.getMember().setAnalysis(analyser.getAnalysis().build());
-            if(analyser instanceof HoldsAnalysers holdsAnalysers) holdsAnalysers.makeImmutable();
+            if (analyser instanceof HoldsAnalysers holdsAnalysers) holdsAnalysers.makeImmutable();
         });
     }
 

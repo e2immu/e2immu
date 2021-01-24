@@ -174,11 +174,7 @@ public class Lambda implements Expression {
         if (evaluationContext.getLocalPrimaryTypeAnalysers() == null) {
             result = EmptyExpression.NO_VALUE; // delay
         } else {
-            MethodAnalysis methodAnalysis = evaluationContext
-                    .getLocalPrimaryTypeAnalysers().stream()
-                    .filter(pta -> pta.primaryType == methodInfo.typeInfo)
-                    .map(pta -> pta.getMethodAnalysis(methodInfo))
-                    .findFirst().orElseThrow();
+            MethodAnalysis methodAnalysis = evaluationContext.findMethodAnalysisOfLambda(methodInfo);
             if (methodInfo.hasReturnValue()) {
                 Expression srv = methodAnalysis.getSingleReturnValue();
                 if (srv != null) {

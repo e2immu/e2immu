@@ -219,4 +219,13 @@ public interface EvaluationContext {
     default Stream<Map.Entry<String, VariableInfoContainer>> localVariableStream() {
         return Stream.empty();
     }
+
+    default MethodAnalysis findMethodAnalysisOfLambda(MethodInfo methodInfo) {
+        MethodAnalysis inLocalPTAs = getLocalPrimaryTypeAnalysers().stream()
+                .filter(pta -> pta.primaryType == methodInfo.typeInfo)
+                .map(pta -> pta.getMethodAnalysis(methodInfo))
+                .findFirst().orElse(null);
+        if (inLocalPTAs != null) return inLocalPTAs;
+        return getAnalyserContext().getMethodAnalysis(methodInfo);
+    }
 }

@@ -161,6 +161,19 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
     }
 
     @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        MethodAnalyser that = (MethodAnalyser) o;
+        return methodInfo.equals(that.methodInfo);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(methodInfo);
+    }
+
+    @Override
     public AnalyserComponents<String, SharedState> getAnalyserComponents() {
         return analyserComponents;
     }

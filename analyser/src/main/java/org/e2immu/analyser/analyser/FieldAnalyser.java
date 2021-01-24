@@ -115,6 +115,19 @@ public class FieldAnalyser extends AbstractAnalyser {
     }
 
     @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        FieldAnalyser that = (FieldAnalyser) o;
+        return fieldInfo.equals(that.fieldInfo);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(fieldInfo);
+    }
+
+    @Override
     public AnalyserComponents<String, SharedState> getAnalyserComponents() {
         return analyserComponents;
     }
@@ -675,7 +688,10 @@ public class FieldAnalyser extends AbstractAnalyser {
     private AnalysisStatus analyseNotModifiedFunctionalInterface() {
         if (sam != null) {
             int modified = sam.methodAnalysis.getProperty(VariableProperty.MODIFIED);
-
+            if (modified == Level.DELAY) {
+                log(DELAYED, "Field {} of functional interface type: waiting for MODIFIED on SAM", fieldInfo.fullyQualifiedName());
+                return DELAYS;
+            }
             log(NOT_MODIFIED, "Field {} of functional interface type: copying MODIFIED {} from SAM", fieldInfo.fullyQualifiedName(), modified);
             fieldAnalysis.setProperty(VariableProperty.MODIFIED, modified);
             return DONE;

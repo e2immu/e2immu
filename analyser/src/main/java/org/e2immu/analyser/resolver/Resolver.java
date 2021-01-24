@@ -294,7 +294,7 @@ public class Resolver {
         List<WithInspectionAndAnalysis> dependencies;
 
         if (expression != FieldInspectionImpl.EMPTY) {
-            ExpressionContext subContext = expressionContext.newTypeContext("new field dependencies");
+            ExpressionContext subContext = expressionContext.newTypeContext(fieldInfo);
 
             // fieldInfo.type can have concrete types; but the abstract method will not have them filled in
             MethodTypeParameterMap singleAbstractMethod = fieldInfo.type.findSingleAbstractMethodOfInterface(expressionContext.typeContext);
@@ -303,6 +303,8 @@ public class Resolver {
                 log(RESOLVE, "Passing on functional interface method to field initializer of {}: {}", fieldInfo.name, singleAbstractMethod);
             }
             org.e2immu.analyser.model.Expression parsedExpression = subContext.parseExpression(expression, fieldInfo.type, singleAbstractMethod);
+            // here we decide how to resolve the anonymous types created as we go along
+            // the current implementation treats the anonymous types as subtypes in the current type, which is what we want to do
             subContext.streamNewlyCreatedTypes().forEach(anonymousType -> doType(anonymousType, subContext, methodFieldSubTypeGraph));
 
             MethodInfo sam;
@@ -320,8 +322,9 @@ public class Resolver {
                     // no point in creating something that we cannot (yet) deal with...
                     if (parsedExpression instanceof NullConstant || parsedExpression == EmptyExpression.EMPTY_EXPRESSION) {
                         sam = null;
-                    } else if (parsedExpression instanceof Lambda) {
-                        sam = ((Lambda) parsedExpression).implementation.typeInfo.findOverriddenSingleAbstractMethod();
+                    } else if (parsedExpression instanceof Lambda lambda) {
+                        assert lambda.implementation.typeInfo != null; // to keep IntelliJ happy
+                        sam = lambda.implementation.typeInfo.findOverriddenSingleAbstractMethod();
                     } else if (parsedExpression instanceof MethodReference) {
                         sam = fieldInfo.owner.convertMethodReferenceIntoLambda(fieldInfo.type, fieldInfo.owner,
                                 (MethodReference) parsedExpression, expressionContext);
