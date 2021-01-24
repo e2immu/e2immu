@@ -320,7 +320,7 @@ public class TypeContext implements InspectionProvider {
         if (typeInfo.packageNameOrEnclosingType.isRight()) {
             // if I'm in a static subtype, I can only access the static methods of the enclosing type
             ParameterizedType enclosingType = typeInfo.packageNameOrEnclosingType.getRight().asParameterizedType(this);
-            boolean onlyStatic = staticOnly || typeInfo.isStatic();
+            boolean onlyStatic = staticOnly || typeInspection.isStatic();
             recursivelyResolveOverloadedMethods(enclosingType, methodName, parametersPresented, decrementWhenNotStatic,
                     joinMaps(typeMap, enclosingType), result, visited, onlyStatic);
         }

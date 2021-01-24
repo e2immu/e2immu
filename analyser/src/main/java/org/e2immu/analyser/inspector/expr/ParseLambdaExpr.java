@@ -99,7 +99,9 @@ public class ParseLambdaExpr {
 
         boolean isExpression = lambdaExpr.getExpressionBody().isPresent();
         if (isExpression) {
-            Expression expr = lambdaExpr.getExpressionBody().map(newExpressionContext::parseExpression).orElse(EmptyExpression.EMPTY_EXPRESSION);
+            Expression expr = lambdaExpr.getExpressionBody()
+                    .map(e -> newExpressionContext.parseExpression(e, singleAbstractMethod.getConcreteReturnType(), null))
+                    .orElse(EmptyExpression.EMPTY_EXPRESSION);
             if (expr instanceof UnevaluatedMethodCall) {
                 log(LAMBDA, "Body results in unevaluated method call, so I can't be evaluated either");
                 return partiallyParse(lambdaExpr);

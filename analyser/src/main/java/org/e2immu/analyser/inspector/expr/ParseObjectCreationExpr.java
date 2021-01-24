@@ -23,6 +23,7 @@ import org.e2immu.analyser.inspector.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.NewObject;
 import org.e2immu.analyser.model.expression.UnevaluatedMethodCall;
+import org.e2immu.analyser.model.expression.UnevaluatedObjectCreation;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 
 import java.util.ArrayList;
@@ -43,7 +44,12 @@ public class ParseObjectCreationExpr {
         if (diamond == Diamond.YES) {
             ParameterizedType diamondType = ParameterizedTypeFactory.from(typeContext, objectCreationExpr.getType());
             ParameterizedType formalType = diamondType.typeInfo.asParameterizedType(expressionContext.typeContext);
-
+            if(impliedParameterizedType == null) {
+                // we cannot infer (this can happen, when we're choosing a method candidate among many candidates)
+                // e.g. map.put(key, new LinkedList<>()) -> we first need to know which "put" method to choose
+                // then there'll be a re-evaluation with an implied parameter of "V"
+                return new UnevaluatedObjectCreation(formalType);
+            }
             parameterizedType = formalType.inferDiamondNewObjectCreation(expressionContext.typeContext, impliedParameterizedType);
         } else {
             parameterizedType = ParameterizedTypeFactory.from(typeContext, objectCreationExpr.getType());

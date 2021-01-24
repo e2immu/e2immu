@@ -92,6 +92,11 @@ public class MethodTypeParameterMap {
         return concreteTypes.get(typeParameter);
     }
 
+
+    public ParameterizedType applyMap(ParameterizedType formalParameterType) {
+        return apply(concreteTypes, formalParameterType);
+    }
+
     // also used for fields
 
     // [Type java.util.function.Function<E, ?>], concrete type java.util.stream.Stream<R>, mapExpansion

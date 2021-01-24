@@ -34,7 +34,7 @@ import org.junit.Test;
 import java.io.IOException;
 import java.util.List;
 
-public class TestSMapList extends CommonTestRunner {
+public class Test_Own_01_SMapList extends CommonTestRunner {
 
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
         if ("list".equals(d.methodInfo().name) && "list".equals(d.variableName()) && "3".equals(d.statementId())) {

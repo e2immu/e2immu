@@ -207,6 +207,10 @@ public class ParameterizedType {
         return ParameterizedTypePrinter.DETAILED.print(InspectionProvider.DEFAULT, this, false, Diamond.SHOW_ALL, false);
     }
 
+    public String detailedString(InspectionProvider inspectionProvider) {
+        return ParameterizedTypePrinter.DETAILED.print(inspectionProvider, this, false, Diamond.SHOW_ALL, false);
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
