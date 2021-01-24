@@ -104,7 +104,7 @@ public class TypeAnalyser extends AbstractAnalyser {
 
         if (!typeInfo.isInterface()) {
             builder.add("analyseOnlyMarkEventuallyE1Immutable", this::analyseOnlyMarkEventuallyE1Immutable)
-                    .add("analyseEffectivelyE1Immutable", (iteration) -> analyseEffectivelyE1Immutable())
+                    //     .add("analyseEffectivelyE1Immutable", (iteration) -> analyseEffectivelyE1Immutable())
                     .add("analyseIndependent", (iteration) -> analyseIndependent())
                     .add("analyseEffectivelyEventuallyE2Immutable", (iteration) -> analyseEffectivelyEventuallyE2Immutable())
                     .add("analyseContainer", (iteration) -> analyseContainer())
@@ -421,7 +421,6 @@ public class TypeAnalyser extends AbstractAnalyser {
         // copy into approved preconditions
         tempApproved.forEach(typeAnalysis.approvedPreconditions::put);
         typeAnalysis.approvedPreconditions.freeze();
-        typeAnalysis.setProperty(VariableProperty.IMMUTABLE, MultiLevel.EVENTUAL);
         log(MARK, "Approved preconditions {} in {}, type is now @E1Immutable(after=)", tempApproved.values(), typeInfo.fullyQualifiedName);
         return DONE;
     }
@@ -532,20 +531,7 @@ public class TypeAnalyser extends AbstractAnalyser {
         int typeE1Immutable = MultiLevel.value(typeAnalysis.getProperty(VariableProperty.IMMUTABLE), MultiLevel.E1IMMUTABLE);
         if (typeE1Immutable != MultiLevel.DELAY) return DONE; // we have a decision already
 
-        AnalysisStatus parentOrEnclosing = parentOrEnclosingMustHaveTheSameProperty(VariableProperty.IMMUTABLE,
-                i -> convertMultiLevelEffectiveToDelayTrue(MultiLevel.value(i, MultiLevel.E1IMMUTABLE)), MultiLevel.FALSE);
-        if (parentOrEnclosing == DELAYS || parentOrEnclosing == DONE) return parentOrEnclosing;
 
-        for (FieldAnalyser fieldAnalyser : myFieldAnalysers) {
-            int effectivelyFinal = fieldAnalyser.fieldAnalysis.getProperty(VariableProperty.FINAL);
-            if (effectivelyFinal == Level.DELAY) return DELAYS; // cannot decide
-            if (effectivelyFinal == Level.FALSE) {
-                log(E1IMMUTABLE, "Type {} cannot be @E1Immutable, field {} is not effectively final",
-                        typeInfo.fullyQualifiedName, fieldAnalyser.fieldInfo.name);
-                typeAnalysis.setProperty(VariableProperty.IMMUTABLE, MultiLevel.MUTABLE);
-                return DONE;
-            }
-        }
         log(E1IMMUTABLE, "Improve IMMUTABLE property of type {} to @E1Immutable", typeInfo.fullyQualifiedName);
         typeAnalysis.setProperty(VariableProperty.IMMUTABLE, MultiLevel.EFFECTIVELY_E1IMMUTABLE);
         return DONE;
@@ -675,7 +661,38 @@ public class TypeAnalyser extends AbstractAnalyser {
         return PROGRESS;
     }
 
+    /*
+    FIXME for now we exclude
+
+        AnalysisStatus parentOrEnclosing = parentOrEnclosingMustHaveTheSameProperty(VariableProperty.IMMUTABLE,
+              i -> convertMultiLevelEffectiveToDelayTrue(MultiLevel.value(i, MultiLevel.E1IMMUTABLE)), MultiLevel.FALSE);
+        if (parentOrEnclosing == DELAYS || parentOrEnclosing == DONE) return parentOrEnclosing;
+
+
+     */
+
+
+    private int effectivelyE1Immutable() {
+        for (FieldAnalyser fieldAnalyser : myFieldAnalysers) {
+            int effectivelyFinal = fieldAnalyser.fieldAnalysis.getProperty(VariableProperty.FINAL);
+            if (effectivelyFinal == Level.DELAY) {
+                log(DELAYED, "Delay on type {}, field {} effectively final not known yet",
+                        typeInfo.fullyQualifiedName, fieldAnalyser.fieldInfo.name);
+                return Level.DELAY; // cannot decide
+            }
+            if (effectivelyFinal == Level.FALSE) {
+                log(E1IMMUTABLE, "Type {} cannot be @E1Immutable, field {} is not effectively final",
+                        typeInfo.fullyQualifiedName, fieldAnalyser.fieldInfo.name);
+                return Level.FALSE;
+            }
+        }
+        return Level.TRUE;
+    }
+
     /**
+     * Important to set a value for both E1 immutable and E2 immutable (there is a system to say
+     * "it is level 1, but delay on level 2", but WE ARE NOT USING THAT ANYMORE !!)
+     * <p>
      * Rules as of 30 July 2020: Definition on top of @E1Immutable
      * <p>
      * RULE 1: All fields must be @NotModified.
@@ -688,20 +705,40 @@ public class TypeAnalyser extends AbstractAnalyser {
      */
     private AnalysisStatus analyseEffectivelyEventuallyE2Immutable() {
         int typeImmutable = typeAnalysis.getProperty(VariableProperty.IMMUTABLE);
-        int typeE2Immutable = MultiLevel.value(typeImmutable, MultiLevel.E2IMMUTABLE);
-        if (typeE2Immutable != MultiLevel.DELAY) return DONE; // we have a decision already
-        int typeE1Immutable = MultiLevel.value(typeImmutable, MultiLevel.E1IMMUTABLE);
-        if (typeE1Immutable < MultiLevel.EVENTUAL) {
-            log(E2IMMUTABLE, "Type {} is not (yet) @E2Immutable, because it is not (yet) (eventually) @E1Immutable", typeInfo.fullyQualifiedName);
+        if (typeImmutable != Level.DELAY) return DONE; // we have a decision already
+
+        // effectively E1
+        int e1 = effectivelyE1Immutable();
+        if (e1 == Level.DELAY) {
             return DELAYS;
         }
-        int no = MultiLevel.compose(typeE1Immutable, MultiLevel.FALSE);
 
-        AnalysisStatus parentOrEnclosing = parentOrEnclosingMustHaveTheSameProperty(VariableProperty.IMMUTABLE,
-                i -> convertMultiLevelEventualToDelayTrue(MultiLevel.value(i, MultiLevel.E2IMMUTABLE)), no);
-        if (parentOrEnclosing == DONE || parentOrEnclosing == DELAYS) return parentOrEnclosing;
+        int whenE2Fails;
+        int e1Component;
+        boolean eventual;
+        if (e1 == Level.FALSE) {
+            if (!typeAnalysis.approvedPreconditions.isFrozen()) {
+                log(DELAYED, "Type {} is not effectively level 1 immutable, waiting for" +
+                        " preconditions to find out if it is eventually level 1 immutable", typeInfo.fullyQualifiedName);
+                return DELAYS;
+            }
+            boolean isEventuallyE1 = !typeAnalysis.approvedPreconditions.isEmpty();
+            if (!isEventuallyE1) {
+                log(E1IMMUTABLE, "Type {} is not eventually level 1 immutable", typeInfo.fullyQualifiedName);
+                typeAnalysis.setProperty(VariableProperty.IMMUTABLE, MultiLevel.MUTABLE);
+                return DONE;
+            }
+            whenE2Fails = MultiLevel.compose(MultiLevel.EVENTUALLY_E1IMMUTABLE, MultiLevel.FALSE);
+            e1Component = MultiLevel.EVENTUAL;
+            eventual = true;
+        } else {
+            whenE2Fails = MultiLevel.compose(MultiLevel.EFFECTIVELY_E1IMMUTABLE, MultiLevel.FALSE);
+            e1Component = MultiLevel.EFFECTIVE;
+            eventual = false;
+        }
 
-        boolean eventual = typeAnalysis.isEventual();
+        // E2
+
         boolean haveToEnforcePrivateAndIndependenceRules = false;
 
         for (FieldAnalyser fieldAnalyser : myFieldAnalysers) {
@@ -710,7 +747,7 @@ public class TypeAnalyser extends AbstractAnalyser {
             String fieldFQN = fieldInfo.fullyQualifiedName();
 
             if (fieldAnalysis.isOfImplicitlyImmutableDataType() == null) {
-                log(DELAYED, "Field {} not yet known if @SupportData, delaying @E2Immutable on type", fieldFQN);
+                log(DELAYED, "Field {} not yet known if implicitly immutable, delaying @E2Immutable on type", fieldFQN);
                 return DELAYS;
             }
             // RULE 1: ALL FIELDS MUST BE NOT MODIFIED
@@ -745,7 +782,7 @@ public class TypeAnalyser extends AbstractAnalyser {
                 if (!eventual && modified == Level.TRUE) {
                     log(E2IMMUTABLE, "{} is not an E2Immutable class, because field {} is not primitive, not @E2Immutable, and its content is modified",
                             typeInfo.fullyQualifiedName, fieldInfo.name);
-                    typeAnalysis.setProperty(VariableProperty.IMMUTABLE, no);
+                    typeAnalysis.setProperty(VariableProperty.IMMUTABLE, whenE2Fails);
                     return DONE;
                 }
 
@@ -755,7 +792,7 @@ public class TypeAnalyser extends AbstractAnalyser {
                         log(E2IMMUTABLE, "{} is not an E2Immutable class, because field {} is not primitive, " +
                                         "not @E2Immutable, not implicitly immutable, and also exposed (not private)",
                                 typeInfo.fullyQualifiedName, fieldInfo.name);
-                        typeAnalysis.setProperty(VariableProperty.IMMUTABLE, no);
+                        typeAnalysis.setProperty(VariableProperty.IMMUTABLE, whenE2Fails);
                         return DONE;
                     }
                 } else {
@@ -774,9 +811,10 @@ public class TypeAnalyser extends AbstractAnalyser {
                     return DELAYS; //not decided
                 }
                 if (independent == Level.FALSE) {
+                    // FIXME break delay if the fields are self-references??
                     log(E2IMMUTABLE, "{} is not an E2Immutable class, because constructor is not @Independent",
                             typeInfo.fullyQualifiedName, constructor.methodInfo.name);
-                    typeAnalysis.setProperty(VariableProperty.IMMUTABLE, no);
+                    typeAnalysis.setProperty(VariableProperty.IMMUTABLE, whenE2Fails);
                     return DONE;
                 }
             }
@@ -798,14 +836,19 @@ public class TypeAnalyser extends AbstractAnalyser {
                         // rule 5, continued: if not primitive, not E2Immutable, then the result must be Independent of the support types
                         int independent = methodAnalyser.methodAnalysis.getProperty(VariableProperty.INDEPENDENT);
                         if (independent == Level.DELAY) {
-                            log(DELAYED, "Cannot decide yet if {} is an E2Immutable class; not enough info on whether the method {} is @Independent",
-                                    typeInfo.fullyQualifiedName, methodAnalyser.methodInfo.name);
-                            return DELAYS; //not decided
+                            if (typeContainsMyselfAndE2ImmutableComponents(methodAnalyser.methodInfo.returnType())) {
+                                log(E2IMMUTABLE, "Cannot decide if method {} is independent, but given that its return type is a self reference, don't care",
+                                        methodAnalyser.methodInfo.fullyQualifiedName);
+                            } else {
+                                log(DELAYED, "Cannot decide yet if {} is an E2Immutable class; not enough info on whether the method {} is @Independent",
+                                        typeInfo.fullyQualifiedName, methodAnalyser.methodInfo.name);
+                                return DELAYS; //not decided
+                            }
                         }
                         if (independent == MultiLevel.FALSE) {
                             log(E2IMMUTABLE, "{} is not an E2Immutable class, because method {}'s return type is not primitive, not E2Immutable, not independent",
                                     typeInfo.fullyQualifiedName, methodAnalyser.methodInfo.name);
-                            typeAnalysis.setProperty(VariableProperty.IMMUTABLE, no);
+                            typeAnalysis.setProperty(VariableProperty.IMMUTABLE, whenE2Fails);
                             return DONE;
                         }
                     }
@@ -814,9 +857,15 @@ public class TypeAnalyser extends AbstractAnalyser {
         }
 
         log(E2IMMUTABLE, "Improve @Immutable of type {} to @E2Immutable", typeInfo.fullyQualifiedName);
-        int e2Immutable = eventual ? MultiLevel.EVENTUAL : MultiLevel.EFFECTIVE;
-        typeAnalysis.setProperty(VariableProperty.IMMUTABLE, MultiLevel.compose(typeE1Immutable, e2Immutable));
+        int e2Component = eventual ? MultiLevel.EVENTUAL : MultiLevel.EFFECTIVE;
+        typeAnalysis.setProperty(VariableProperty.IMMUTABLE, MultiLevel.compose(e1Component, e2Component));
         return DONE;
+    }
+
+    private boolean typeContainsMyselfAndE2ImmutableComponents(ParameterizedType parameterizedType) {
+        if (parameterizedType.typeInfo == typeInfo) return true;
+        return false;
+        // FIXME make more complicated
     }
 
     private static int convertMultiLevelEventualToDelayTrue(int i) {
@@ -831,7 +880,7 @@ public class TypeAnalyser extends AbstractAnalyser {
 
         int e2Immutable = MultiLevel.value(typeAnalysis.getProperty(VariableProperty.IMMUTABLE), MultiLevel.E2IMMUTABLE);
         if (e2Immutable == MultiLevel.DELAY) {
-            log(DELAYED, "Don't know yet about @E2Immutable on {}, delaying", typeInfo.fullyQualifiedName);
+            log(DELAYED, "Extension class: don't know yet about @E2Immutable on {}, delaying", typeInfo.fullyQualifiedName);
             return DELAYS;
         }
         if (e2Immutable < MultiLevel.EVENTUAL) {
@@ -878,7 +927,7 @@ public class TypeAnalyser extends AbstractAnalyser {
 
         int e2Immutable = MultiLevel.value(typeAnalysis.getProperty(VariableProperty.IMMUTABLE), MultiLevel.E2IMMUTABLE);
         if (e2Immutable == MultiLevel.DELAY) {
-            log(DELAYED, "Don't know yet about @E2Immutable on {}, delaying", typeInfo.fullyQualifiedName);
+            log(DELAYED, "Utility class: Don't know yet about @E2Immutable on {}, delaying", typeInfo.fullyQualifiedName);
             return DELAYS;
         }
         if (e2Immutable < MultiLevel.EVENTUAL) {

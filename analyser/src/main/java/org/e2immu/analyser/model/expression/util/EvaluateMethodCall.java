@@ -203,7 +203,7 @@ public class EvaluateMethodCall {
         } else {
             return null;
         }
-        if (iv.expression() instanceof VariableExpression ve) {
+        if (iv.expression() instanceof VariableExpression ve && newObject.constructor() != null) {
             Variable variable = ve.variable();
             if (variable instanceof FieldReference) {
                 FieldInfo fieldInfo = ((FieldReference) variable).fieldInfo;

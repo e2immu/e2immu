@@ -147,6 +147,26 @@ public abstract class CommonTestRunner {
         classNames.forEach(className -> builder.addRestrictSourceToPackages("org.e2immu.analyser.util." + className));
 
         Configuration configuration = new Configuration.Builder()
+                .addDebugLogTargets(List.of(ANALYSER,
+                        TRANSFORM,
+                        LAMBDA,
+                        DELAYED,
+                        FINAL,
+                        LINKED_VARIABLES,
+                        INDEPENDENT,
+                        E2IMMUTABLE,
+                        ANNOTATION_EXPRESSION,
+                        CONSTANT,
+                        CONTAINER,
+                        E1IMMUTABLE,
+                        SIDE_EFFECT,
+                        UTILITY_CLASS,
+                        NOT_NULL,
+                        NOT_MODIFIED,
+                        PATTERN,
+                        MARK
+
+                ).stream().map(Enum::toString).collect(Collectors.joining(",")))
                 .setDebugConfiguration(debugConfiguration)
                 .setInputConfiguration(builder.build())
                 .build();

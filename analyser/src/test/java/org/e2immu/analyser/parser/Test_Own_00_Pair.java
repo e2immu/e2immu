@@ -20,6 +20,8 @@
 package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.config.DebugConfiguration;
+import org.e2immu.analyser.config.FieldAnalyserVisitor;
+import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -27,10 +29,18 @@ import java.util.List;
 
 public class Test_Own_00_Pair extends CommonTestRunner {
 
-
     @Test
     public void test() throws IOException {
+
+        FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+            if ("v".equals(d.fieldInfo().name)) {
+                if (d.iteration() == 0) Assert.assertNull(d.fieldAnalysis().isOfImplicitlyImmutableDataType());
+                else Assert.assertTrue(d.fieldAnalysis().isOfImplicitlyImmutableDataType());
+            }
+        };
+
         testUtilClass(List.of("Pair"), 0, 0, new DebugConfiguration.Builder()
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build());
     }
 

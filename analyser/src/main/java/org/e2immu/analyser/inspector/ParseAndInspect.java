@@ -78,7 +78,7 @@ public record ParseAndInspect(Resources classPath,
         classPath.expandLeaves(packageName, ".class", (expansion, urls) -> {
             if (!expansion[expansion.length - 1].contains("$")) {
                 String fqn = fqnOfClassFile(packageName, expansion);
-                TypeInfo typeInfo = typeContextOfFile.typeMapBuilder.getOrCreateFromPath(fqn, TRIGGER_BYTECODE_INSPECTION);
+                TypeInfo typeInfo = importType(fqn); //typeContextOfFile.typeMapBuilder.getOrCreateFromPath(fqn, TRIGGER_BYTECODE_INSPECTION);
                 typeContextOfFile.addToContext(typeInfo, false);
             }
         });
