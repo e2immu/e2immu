@@ -23,7 +23,7 @@ import org.e2immu.annotation.NotModified;
 import java.util.HashSet;
 import java.util.Set;
 
-public class ModifiedThis {
+public class Modification_12 {
 
     static class ParentClass {
         @Modified

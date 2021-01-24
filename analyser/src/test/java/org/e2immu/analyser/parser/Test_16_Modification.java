@@ -6,9 +6,12 @@ import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.EmptyExpression;
+import org.e2immu.analyser.model.expression.MethodCall;
 import org.e2immu.analyser.model.expression.NewObject;
 import org.e2immu.analyser.model.expression.VariableExpression;
+import org.e2immu.analyser.model.statement.ExpressionAsStatement;
 import org.e2immu.analyser.model.variable.FieldReference;
+import org.e2immu.analyser.model.variable.This;
 import org.e2immu.annotation.AnnotationMode;
 import org.junit.Assert;
 import org.junit.Test;
@@ -675,4 +678,77 @@ public class Test_16_Modification extends CommonTestRunner {
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build());
     }
+
+
+    @Test
+    public void test_12() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("clear".equals(d.methodInfo().name) && "ParentClass".equals(d.methodInfo().typeInfo.simpleName) && "ParentClass.this.set".equals(d.variableName())) {
+                Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.MODIFIED));
+            }
+            if ("clearAndLog".equals(d.methodInfo().name) && "ParentClass".equals(d.methodInfo().typeInfo.simpleName) && "0".equals(d.statementId())) {
+                Assert.assertEquals("ParentClass.this", d.variableName());
+                Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.MODIFIED));
+            }
+            if ("clearAndLog".equals(d.methodInfo().name) && "ChildClass".equals(d.methodInfo().typeInfo.simpleName) && "0".equals(d.statementId())) {
+                Assert.assertEquals("ChildClass.super", d.variableName());
+                if (d.iteration() > 0) Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.MODIFIED));
+            }
+            if ("clear".equals(d.methodInfo().name) && "InnerOfChild".equals(d.methodInfo().typeInfo.simpleName)) {
+                Assert.assertEquals("ChildClass.super", d.variableName());
+                if (d.iteration() > 0) Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.MODIFIED));
+            }
+        };
+
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("clear".equals(d.methodInfo().name) && "InnerOfChild".equals(d.methodInfo().typeInfo.simpleName)) {
+                Expression scope = ((MethodCall) ((ExpressionAsStatement) d.statementAnalysis().statement).expression).object;
+                VariableExpression variableExpression = (VariableExpression) scope;
+                This t = (This) variableExpression.variable();
+                Assert.assertTrue(t.explicitlyWriteType);
+                Assert.assertTrue(t.writeSuper);
+            }
+        };
+
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            String name = d.methodInfo().name;
+            if ("clear".equals(name) && "ParentClass".equals(d.methodInfo().typeInfo.simpleName) && d.iteration() > 0) {
+                Assert.assertEquals(Level.TRUE, d.methodAnalysis().getProperty(VariableProperty.MODIFIED));
+            }
+            if ("clearAndAdd".equals(name) && "ChildClass".equals(d.methodInfo().typeInfo.simpleName) && d.iteration() > 0) {
+                Assert.assertEquals(Level.TRUE, d.methodAnalysis().getProperty(VariableProperty.MODIFIED));
+            }
+            if ("clear".equals(name) && "InnerOfChild".equals(d.methodInfo().typeInfo.simpleName)) {
+                if (d.iteration() > 0) {
+                    Assert.assertEquals(Level.TRUE, d.getThisAsVariable().getProperty(VariableProperty.MODIFIED));
+                    //     Assert.assertEquals(Level.TRUE, methodInfo.methodAnalysis.get().getProperty(VariableProperty.MODIFIED));
+                }
+            }
+        };
+
+
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            TypeInfo typeInfo = d.typeInfo();
+            if ("ParentClass".equals(typeInfo.simpleName)) {
+                Assert.assertEquals("ModifiedThis", typeInfo.packageNameOrEnclosingType.getRight().simpleName);
+            }
+            if ("ChildClass".equals(typeInfo.simpleName)) {
+                Assert.assertEquals("ModifiedThis", typeInfo.packageNameOrEnclosingType.getRight().simpleName);
+            }
+            if ("InnerOfChild".equals(typeInfo.simpleName)) {
+                Assert.assertEquals("ChildClass", typeInfo.packageNameOrEnclosingType.getRight().simpleName);
+            }
+            if ("ModifiedThis".equals(typeInfo.simpleName)) {
+                Assert.assertEquals("org.e2immu.analyser.testexample", typeInfo.packageNameOrEnclosingType.getLeft());
+            }
+        };
+
+        testClass("Modification_12", 0, 0, new DebugConfiguration.Builder()
+                .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .build());
+    }
+
 }
