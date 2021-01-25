@@ -320,9 +320,16 @@ public class Test_01_Loops extends CommonTestRunner {
                 }
             }
         };
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if("method".equals(d.methodInfo().name) && "1.0.0".equals(d.statementId())) {
+                Assert.assertSame(CONDITIONALLY, d.statementAnalysis().flowData.getGuaranteedToBeReachedInMethod());
+            }
+        };
+
         testClass("Loops_2", 0, 0, new DebugConfiguration.Builder()
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build());
     }
 

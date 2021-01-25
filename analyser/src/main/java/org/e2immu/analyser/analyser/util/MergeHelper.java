@@ -22,6 +22,7 @@ package org.e2immu.analyser.analyser.util;
 import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.VariableInfo;
+import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.expression.And;
 import org.e2immu.analyser.model.expression.NewObject;
@@ -168,6 +169,6 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfo vi) 
     }
 
     public Expression noConclusion() {
-        return NewObject.genericMergeResult(evaluationContext, vi.variable(), vi.getObjectFlow());
+        return NewObject.genericMergeResult(evaluationContext.getPrimitives(), vi);
     }
 }

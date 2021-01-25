@@ -384,11 +384,14 @@ class VariableInfoImpl implements VariableInfo {
 
         if (reduced.size() == 1) {
             StatementAnalysis.ConditionAndVariableInfo e = reduced.get(0);
+            if(atLeastOneBlockExecuted) {
+                return e.variableInfo().getValue();
+            }
             Expression result = mergeHelper.one(e.variableInfo(), stateOfDestination, e.condition());
             if (result != null) return result;
         }
 
-        if (reduced.size() == 2) {
+        if (reduced.size() == 2 && atLeastOneBlockExecuted) {
             StatementAnalysis.ConditionAndVariableInfo e = reduced.get(0);
             Expression negated = Negation.negate(evaluationContext, e.condition());
             StatementAnalysis.ConditionAndVariableInfo e2 = reduced.get(1);

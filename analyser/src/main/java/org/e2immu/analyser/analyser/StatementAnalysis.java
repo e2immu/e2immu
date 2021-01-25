@@ -588,10 +588,11 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                                             boolean alwaysEscapes) {
     }
 
-    public record ConditionAndVariableInfo(Expression condition, VariableInfo variableInfo, boolean alwaysEscapes) {
+    public record ConditionAndVariableInfo(Expression condition, VariableInfo variableInfo, boolean alwaysEscapes,
+                                           VariableInLoop variableInLoop) {
         // for testing
         public ConditionAndVariableInfo(Expression condition, VariableInfo variableInfo) {
-            this(condition, variableInfo, false);
+            this(condition, variableInfo, false, VariableInLoop.NOT_IN_LOOP);
         }
     }
 
@@ -632,10 +633,21 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                 }
                 List<ConditionAndVariableInfo> toMerge = lastStatements.stream()
                         .filter(e2 -> e2.lastStatement.statementAnalysis.variables.isSet(fqn))
-                        .map(e2 -> new ConditionAndVariableInfo(e2.condition,
-                                e2.lastStatement.statementAnalysis.variables.get(fqn).current(), e2.alwaysEscapes))
+                        .map(e2 -> {
+                            VariableInfoContainer vic2 = e2.lastStatement.statementAnalysis.variables.get(fqn);
+                            return new ConditionAndVariableInfo(e2.condition,
+                                    vic2.current(), e2.alwaysEscapes, vic2.getVariableInLoop());
+                        })
                         .collect(Collectors.toUnmodifiableList());
-                destination.merge(evaluationContext, stateOfConditionManagerBeforeExecution, atLeastOneBlockExecuted, toMerge);
+
+                boolean ignoreCurrent;
+                if (toMerge.size() == 1 && toMerge.get(0).variableInLoop.assignmentId() != null
+                        && toMerge.get(0).variableInLoop.assignmentId().startsWith(index) && !atLeastOneBlockExecuted) {
+                    ignoreCurrent = true; // the
+                } else {
+                    ignoreCurrent = atLeastOneBlockExecuted;
+                }
+                destination.merge(evaluationContext, stateOfConditionManagerBeforeExecution, ignoreCurrent, toMerge);
             }
         });
     }

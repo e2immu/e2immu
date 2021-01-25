@@ -89,7 +89,7 @@ public record NewObject(MethodInfo constructor,
 
     // never null, never more interesting.
     public static NewObject forCatchOrThis(Primitives primitives, ParameterizedType parameterizedType) {
-        Diamond diamond = parameterizedType.parameters.isEmpty() ? Diamond.NO: Diamond.SHOW_ALL;
+        Diamond diamond = parameterizedType.parameters.isEmpty() ? Diamond.NO : Diamond.SHOW_ALL;
         return new NewObject(null, parameterizedType, diamond, List.of(), MultiLevel.EFFECTIVELY_NOT_NULL, null, null,
                 new BooleanConstant(primitives, true), ObjectFlow.NO_FLOW);
     }
@@ -139,10 +139,10 @@ public record NewObject(MethodInfo constructor,
     }
 
     // null-status derived from variable in evaluation context
-    public static NewObject genericMergeResult(EvaluationContext evaluationContext, Variable variable, ObjectFlow objectFlow) {
-        int notNull = evaluationContext.getProperty(variable, VariableProperty.NOT_NULL);
-        return new NewObject(null, variable.parameterizedType(), Diamond.SHOW_ALL, List.of(), notNull, null, null,
-                new BooleanConstant(evaluationContext.getPrimitives(), true), objectFlow);
+    public static NewObject genericMergeResult(Primitives primitives, VariableInfo variableInfo) {
+        return new NewObject(null, variableInfo.variable().parameterizedType(),
+                Diamond.SHOW_ALL, List.of(), variableInfo.getProperty(VariableProperty.NOT_NULL), null, null,
+                new BooleanConstant(primitives, true), variableInfo.getObjectFlow());
     }
 
     public static NewObject genericArrayAccess(EvaluationContext evaluationContext, Expression array, Variable variable, ObjectFlow objectFlow) {
@@ -328,7 +328,8 @@ public record NewObject(MethodInfo constructor,
         switch (variableProperty) {
             case NOT_NULL: {
                 TypeInfo bestType = parameterizedType.bestTypeInfo();
-                if (bestType != null && Primitives.isPrimitiveExcludingVoid(bestType)) return MultiLevel.EFFECTIVELY_NOT_NULL;
+                if (bestType != null && Primitives.isPrimitiveExcludingVoid(bestType))
+                    return MultiLevel.EFFECTIVELY_NOT_NULL;
                 return minimalNotNull;
             }
             case MODIFIED:
@@ -343,7 +344,7 @@ public record NewObject(MethodInfo constructor,
                 TypeInfo bestType = parameterizedType.bestTypeInfo();
                 if (bestType != null && Primitives.isPrimitiveExcludingVoid(bestType)) return variableProperty.best;
                 return bestType == null ? variableProperty.falseValue :
-                                evaluationContext.getAnalyserContext().getTypeAnalysis(bestType).getProperty(variableProperty);
+                        evaluationContext.getAnalyserContext().getTypeAnalysis(bestType).getProperty(variableProperty);
             }
             default:
         }

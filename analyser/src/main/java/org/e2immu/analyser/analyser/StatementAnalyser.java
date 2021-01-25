@@ -1864,8 +1864,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                         .filter(e -> statementAnalysis.index.equals(e.getValue().getStatementIndexOfThisShadowVariable()))
                         .collect(Collectors.toUnmodifiableMap(
                                 e -> new VariableExpression(e.getValue().current().variable()),
-                                e -> NewObject.genericMergeResult(this, e.getValue().current().variable(),
-                                        e.getValue().current().getObjectFlow())));
+                                e -> NewObject.genericMergeResult(getPrimitives(), e.getValue().current())));
                 return mergeValue.reEvaluate(this, map).value();
             }
             return mergeValue;
