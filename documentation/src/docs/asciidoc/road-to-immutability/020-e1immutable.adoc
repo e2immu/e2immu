@@ -6,8 +6,8 @@ Let us start with a definition:
 *Definition*: We say a field is *effectively final* when it either has the modifier `final`, or it is not assigned to in methods that can be transitively called from non-private (non-constructor) methods.
 ****
 
-The code analyser annotates with `@Final` in the latter case; there is no point in cluttering with an annotation when the modifier is already there.
-It annotates fields that are not effectively final with `@Variable`.
+The code analyser annotates with {final} in the latter case; there is no point in cluttering with an annotation when the modifier is already there.
+It annotates fields that are not effectively final with {variable}.
 
 This definition allows effectively final fields to be assigned in methods accessible only from the constructor:
 
@@ -129,8 +129,9 @@ We use this as the basis for the first level of immutability:
 *Definition*: We call a type *effectively level 1 immutable* when all its fields are effectively final.
 ****
 
-The code analyser annotates level 1 immutable types with `@E1Immutable`.
-Types that are not `@E1Immutable` because they have at least one `@Variable` field, are annotated `@Mutable`.
+The code analyser annotates level 1 immutable types with {e1immutable}.
+Types that are not {e1immutable} because they have at least one {variable} field, are annotated either {mutableModifiesArguments} or {container},
+depending on properties of the methods' parameters to be explained later.
 
 As above with effective finality, the term _effective_ is present to make a distinction between formal immutability, and immutability that the code analyser computes.
 It will also serve to distinguish from _eventual_ immutability, where (in this case) the finality will be achieved only after the code reaches a certain state.

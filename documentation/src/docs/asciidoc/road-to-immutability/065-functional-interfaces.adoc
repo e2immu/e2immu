@@ -372,7 +372,7 @@ The method `safeVisit1` exposes the support data to the outside world, with a gu
 This would again violate the tentative independence rule imagined above; however, it seems a perfectly safe thing to do: the analyser will guarantee that the consumer does not modify the whole support data's object graph.
 
 In the third case, we first observe that `forEach` does not modify `data` because it is not a modifying method.
-As explained in <<linking-exposed>>, we observe that the `forEach` method does not link `data` to `consumer`.
+As explained in <<linking-part2>>, we observe that the `forEach` method does not link `data` to `consumer`.
 However, because of the {exposed} annotation, it exposes elements of type `T` to the outside world.
 This is compatible with level 2 immutability rules for fields that are not support data.
 

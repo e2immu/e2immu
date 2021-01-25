@@ -37,7 +37,7 @@ class Polygon {
     }
 
     @Container(builds=Polygon.class)
-    static class PolygonBuilder {
+    static class Builder {
         private List<Point> points = new ArrayList<>();
 
         public void addPoint(Point point) {
@@ -52,7 +52,7 @@ class Polygon {
 ----
 <1> The private constructor combined with the construction of an immutable copy in the `build` method guarantees level 2 immutability.
 
-If your code can live with two different types (`PolygonBuilder`, `Polygon`) to represent polygons in their different stages (mutable, immutable), the builder paradigm is great.
+If your code can live with two different types (`Polygon.Builder`, `Polygon`) to represent polygons in their different stages (mutable, immutable), the builder paradigm is great.
 If, on the other hand, you want to hold polygons in a type that spans both stages of the polygon lifecycle, it becomes difficult to do this with an eye on immutability.
 The <<firstthen>> type, as detailed further, can assist in this situation: it holds an initial object (the _first_) until a state change occurs, and it is forced to hold a second object (the _then_).
 Once it is in the final state, it cannot change anymore.
@@ -62,8 +62,8 @@ It is _eventually immutable_:
 ----
 class PolygonManager {
     // initially, the polygon is in builder phase
-    public final FirstThen<Polygon.PolygonBuilder, Polygon> polygon =
-        new FirstThen<>(new Polygon.PolygonBuilder());
+    public final FirstThen<Polygon.Builder, Polygon> polygon =
+        new FirstThen<>(new Polygon.Builder());
 
     // ...
 
@@ -159,8 +159,8 @@ At this point the project intends to implement this form of eventuality for immu
 So how does the analyser know whether the state change has happened?
 The answer lies in computing _object flows_: traces of how and in which order the code accesses an object's methods, and of how these objects travel via assignments and through method calls.
 
-A typical _origin_ of an object flow is a new object creation expression, which takes place in either a method, or a field assignment.
-In the following example statement, the expression creates a `StringBuilder` object, accesses the `append` method repeatedly, and then discards the `StringBuilder` object (in favour of a `String`):
+A typical _origin_ of an object flow is an object creation expression, which takes place in either a method, or a field assignment.
+In the following example statement, the expression creates a `StringBuilder` object, accesses the `append` method repeatedly, and then discards the `StringBuilder` object in favour of an immutable `String`:
 
 [source,java]
 ----
@@ -251,7 +251,7 @@ Basically, we propose to mark with the end state, qualifying with the parameter 
 |===
 | property | not present | eventually | effectively
 | finality of field | {variable} | `@Final(after="mark")` | {final}
-| modification of field | {modified} | `@NotModified(after="mark")` | {nm}
+| non-modification of field | {modified} | `@NotModified(after="mark")` | {nm}
 |===
 
 Since in an IDE it is not too easy to have multiple visual markers, it seems best to use the same visuals as the end state.

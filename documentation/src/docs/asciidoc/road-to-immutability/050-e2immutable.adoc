@@ -24,7 +24,6 @@ Our friend the `Pair` satisfies this first rule:
 
 [source,java]
 ----
-@E1Container
 public class Pair<K,V> {
     public final K k;
     public final V v;
@@ -78,11 +77,14 @@ class Point {
     }
 }
 
+@E1Container
 class Line {
     @Final
+    @Modified
     private Point point1;
 
     @Final
+    @Modified
     private Point point2;
 
     public Line(Point point1, Point point2) {
@@ -119,7 +121,7 @@ The rest of the definition of level 2 immutability is essentially about expressi
 After construction, a level 2 immutable type will still hold a fixed number of objects, and the type will not change their content, nor exchange them for other objects, nor allow others to exchange them.
 
 We will introduce two additional rules to the definition of level 2 immutability.
-They will only have to be satisfied by _some_ fields; requiring them for all fields results in too strong a definition, and we have seen higher up that there are situations where the first rule is sufficient.
+They will only be of relevance for _some_ fields; requiring them for all fields results in too strong a definition, and we have seen higher up that there are situations where the first rule is sufficient.
 Rather than specifying which fields need to follow the additional rules, it is easier to say which fields are exempt from them:
 
 . fields that are of level 2 immutable type themselves;
@@ -128,10 +130,15 @@ Rather than specifying which fields need to follow the additional rules, it is e
 For all modification purposes we can replace unbound type parameters with `java.lang.Object`, which is level 2 immutable.
 Therefore, the requirement of level 2 immutability suffices.
 
+Constructor parameters of unbound type parameter, or method return types of unbound type parameter are always independent,
+in the same way that level 2 immutable types are: inside the class, there's no way of modifying them.
+
 We now add rules 2 and 3 to the definition, and obtain:
 
 ****
 *Definition: level 2 immutability*:
+
+(*Rule 0*: the type is level 1 immutable: all fields are effectively final)
 
 *Rule 1*: all fields are {nm}.
 
@@ -319,6 +326,26 @@ class Example2 {
 === Dynamic type annotations
 
 When it is clear a method returns an immutable set, but the formal type is `java.util.Set`, the {e2immutable} annotation can 'travel':
+
+
+[source,java]
+----
+@E2Container
+class SetBasedContainer6<T> {
+    @E2Container
+    public final Set<T> data;
+
+    public SetBasedContainer4(Set<T> ts) {
+        this.data = ImmutableSet.copyOf(ts);
+    }
+
+    @E2Container
+    public Set<T> getSet() {
+        return data;
+    }
+}
+----
+Whilst `Set` in general is not {e2immutable}, the `data` field itself is.
 
 The computations that the analyser needs to track dynamic type annotations, are similar to those it needs to compute eventual immutability.
 We introduce them in the next chapter.

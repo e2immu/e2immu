@@ -4,7 +4,7 @@
 === Indirect modifications
 
 Time for more fine print on modifications.
-We need to revisit the situation of non-modifying methods with modifying parameters.
+We need to revisit the situation of seemingly non-modifying methods with modifying parameters.
 Up to now, a method is only modifying when it assigns to a field, calls a modifying method on one of the fields, or directly calls a modifying method on `this`.
 However, there could be indirect modifications, as in:
 
@@ -54,11 +54,11 @@ public class ModificationGraphChecks {
 ----
 <1> `useC2` does not directly modify `i`, but `incrementAndGetWithI` does so indirectly.
 
-This observation forces us to tighten the definition of a non-modifying method: on top of the definition given above, we have to ensure that none of the modifying methods called on a parameter which is {modified}, none of the modifying methods c, recursively, does not call one of 'our' modifying methods.
-These rules are mostly, but not easily, computable when all code is visible.
+This observation forces us to tighten the definition of a non-modifying method: on top of the definition given above, we have to ensure that none of the modifying methods called on a parameter which is {modified}, call one of 'our' modifying methods.
+These rules are mostly, but not easily, enforceable when all code is visible.
 
 An additional interface can help to remove the circular dependency between the types.
-This has the advantage of simplicity, both for the programmer and the analyser, which at this point doesn't deal will with circular dependencies.
+This has the advantage of simplicity, both for the programmer and the analyser, which at this point doesn't handle circular dependencies too well.
 It imposes more annotation work on the programmer, however, because the interface's methods need annotating.
 
 [#params-functional-interface]

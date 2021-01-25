@@ -25,7 +25,7 @@ We say the field `set` links to the parameter `xs` of the constructor.
 In this example, this is an expensive way of saying that there is an assignment from one to the other.
 However, linking can become more complicated.
 
-The {e2immu} analyser will add modification annotations as follows:
+The {e2immu} analyser will add modification annotations to `LinkExample1` as follows:
 
 .Example 7, field linked to constructor parameter, with annotations
 [source,java]
@@ -45,7 +45,8 @@ class LinkExample1<X> {
 }
 ----
 
-As noted above, the parameter `x` of `WithSet.add` is trivially `@NotModified`  because unbound parameter types have no modifying methods that can be called on them.
+As noted above, the parameter `x` of `LinkExample1.add` is trivially {nm} because unbound parameter types have no modifying methods that can be called on them.
+Because of the modification on `xs`, `LinkExample1` cannot be marked {container}.
 
 Linking looks at the underlying object, and not at the variable.
 Consider the following alternative `add` method:
@@ -68,14 +69,14 @@ Intuitively, linking means that modifying the source object implies that the lin
 Linking does not work on objects that cannot be modified, like primitives or deeply immutable objects such as `java.lang.String`.
 ****
 
-We will discuss linking formally in <<linking-exposed>>.
+We will discuss linking formally in <<linking-part2>>.
 For now, assume that a field links to another field, or to a parameter, if there is a possibility that both represent the same object.
 
 The opposite of linking is independence.
 While the code analyser will not annotate linking, it will annotate independence with `@Independent` on methods and constructors, and, in one specific case, to parameters.
 
 ****
-*Definition*: A method returning a real value (not `void`, not `this`) is *independent* when the object returned does not link to any of the fields of the type. #nor to any parameter#
+*Definition*: A method returning a real value (not `void`, not `this`) is *independent* when the object returned does not link to any of the fields of the type.
 ****
 
 The definition for independence on a constructor is very similar:
@@ -86,7 +87,7 @@ The definition for independence on a constructor is very similar:
 
 It follows immediately that:
 
-* empty constructors of top-level types and static sub-types (but not necessarily inner classes, sub types-that are not static) are always independent
+* empty constructors of top-level types and static sub-types (but not necessarily inner classes, sub-types that are not static) are always independent
 * methods that return primitives or deeply immutable objects are independent, since these objects cannot be modified
 
 Examples follow soon, once immutability has been defined in more detail.
