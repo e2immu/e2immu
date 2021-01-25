@@ -24,8 +24,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 // here, SimpleContainer cannot be replaced by T or Object, but there are no fields linked to parameters
-@E1Container
-@Independent
+@E2Container
 public class E2Immutable_7 {
 
     @Independent
@@ -50,7 +49,7 @@ public class E2Immutable_7 {
         map7 = new HashMap<>(map7Param); // not linked
     }
 
-    @Dependent
+    @Independent
     public SimpleContainer get7(String input) {
         return map7.get(input);
     }

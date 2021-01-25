@@ -699,9 +699,9 @@ public class TypeAnalyser extends AbstractAnalyser {
      * <p>
      * RULE 1: All fields must be @NotModified.
      * <p>
-     * RULE 2: All @SupportData fields must be private, or their types must be level 2 immutable
+     * RULE 2: All fields must be private, or their types must be level 2 immutable or implicitly immutable (replaceable by Object)
      * <p>
-     * RULE 3: All methods and constructors must be independent of the @SupportData fields
+     * RULE 3: All methods and constructors must be independent of the non-level2 non implicitly immutable fields
      *
      * @return true if a change was made to typeAnalysis
      */
@@ -827,7 +827,7 @@ public class TypeAnalyser extends AbstractAnalyser {
                             constructor.methodInfo.distinguishingName());
                     return DELAYS; //not decided
                 }
-                if (independent == Level.FALSE) {
+                if (independent == MultiLevel.FALSE) {
                     // FIXME break delay if the fields are self-references??
                     log(E2IMMUTABLE, "{} is not an E2Immutable class, because constructor is not @Independent",
                             typeInfo.fullyQualifiedName, constructor.methodInfo.name);

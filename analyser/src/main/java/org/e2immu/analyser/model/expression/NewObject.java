@@ -328,7 +328,7 @@ public record NewObject(MethodInfo constructor,
         switch (variableProperty) {
             case NOT_NULL: {
                 TypeInfo bestType = parameterizedType.bestTypeInfo();
-                if (Primitives.isPrimitiveExcludingVoid(bestType)) return MultiLevel.EFFECTIVELY_NOT_NULL;
+                if (bestType != null && Primitives.isPrimitiveExcludingVoid(bestType)) return MultiLevel.EFFECTIVELY_NOT_NULL;
                 return minimalNotNull;
             }
             case MODIFIED:
@@ -341,7 +341,7 @@ public record NewObject(MethodInfo constructor,
             case IMMUTABLE:
             case CONTAINER: {
                 TypeInfo bestType = parameterizedType.bestTypeInfo();
-                if (Primitives.isPrimitiveExcludingVoid(bestType)) return variableProperty.best;
+                if (bestType != null && Primitives.isPrimitiveExcludingVoid(bestType)) return variableProperty.best;
                 return bestType == null ? variableProperty.falseValue :
                                 evaluationContext.getAnalyserContext().getTypeAnalysis(bestType).getProperty(variableProperty);
             }
@@ -416,7 +416,7 @@ public record NewObject(MethodInfo constructor,
 
     private String text() {
         TypeInfo bestType = parameterizedType.bestTypeInfo();
-        if (Primitives.isPrimitiveExcludingVoid(bestType)) return "";
+        if (bestType != null && Primitives.isPrimitiveExcludingVoid(bestType)) return "";
         if (minimalNotNull == Level.DELAY) return "nullable? ";
         if (minimalNotNull < MultiLevel.EFFECTIVELY_NOT_NULL) return "nullable ";
         return "";

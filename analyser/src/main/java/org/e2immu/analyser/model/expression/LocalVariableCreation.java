@@ -36,6 +36,7 @@ import org.e2immu.annotation.NotNull;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Predicate;
 
 public class LocalVariableCreation implements Expression {
 
@@ -161,5 +162,12 @@ public class LocalVariableCreation implements Expression {
     @Override
     public List<Variable> variables() {
         return List.of(localVariableReference);
+    }
+
+    @Override
+    public void visit(Predicate<Expression> predicate) {
+        if (predicate.test(this)) {
+            expression.visit(predicate);
+        }
     }
 }

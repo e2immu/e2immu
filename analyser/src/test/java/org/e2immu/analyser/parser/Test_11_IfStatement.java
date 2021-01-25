@@ -167,7 +167,7 @@ public class Test_11_IfStatement extends CommonTestRunner {
             if ("get3".equals(d.methodInfo().name) && "i3".equals(d.variableName())) {
                 String expectValue = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "map.get(label3)";
                 Assert.assertEquals(expectValue, d.currentValue().toString());
-                String expectLinked = d.iteration() <= 1 ? LinkedVariables.DELAY_STRING : "this.map";
+                String expectLinked = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "";
                 Assert.assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
             }
         };

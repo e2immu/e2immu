@@ -831,7 +831,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             LocalVariableReference newLvr = createLocalCopyOfLoopVariable(vic, newFqn);
 
             VariableInfoContainer newVic = VariableInfoContainerImpl.newVariable(newLvr, VariableInfoContainer.NOT_A_VARIABLE_FIELD,
-                    new VariableInLoop(loopIndex, VariableInLoop.VariableType.LOOP_COPY), navigationData.hasSubBlocks());
+                    new VariableInLoop(loopIndex, index(), VariableInLoop.VariableType.LOOP_COPY), navigationData.hasSubBlocks());
             String assigned = index() + VariableInfoContainer.Level.INITIAL;
             String read = index() + VariableInfoContainer.Level.EVALUATION;
             newVic.ensureEvaluation(assigned, read, VariableInfoContainer.NOT_A_VARIABLE_FIELD, Set.of());
@@ -978,7 +978,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
 
                     lvr = new LocalVariableReference(analyserContext, lvc.localVariable, List.of());
                     VariableInLoop variableInLoop = statement() instanceof LoopStatement ?
-                            new VariableInLoop(index(), VariableInLoop.VariableType.LOOP) : VariableInLoop.NOT_IN_LOOP;
+                            new VariableInLoop(index(), null, VariableInLoop.VariableType.LOOP) : VariableInLoop.NOT_IN_LOOP;
                     vic = VariableInfoContainerImpl.newVariable(lvr, VariableInfoContainer.NOT_A_VARIABLE_FIELD,
                             variableInLoop, statementAnalysis.navigationData.hasSubBlocks());
 
@@ -1058,7 +1058,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                         NewObject.localVariableInLoop(statementAnalysis.primitives, newLvr.parameterizedType()),
                         vic.current().getProperties(),
                         new LinkedVariables(Set.of(vic.current().variable())),
-                        new VariableInLoop(index(), VariableInLoop.VariableType.LOOP_COPY),
+                        new VariableInLoop(index(), null, VariableInLoop.VariableType.LOOP_COPY),
                         true);
                 statementAnalysis.variables.put(newFqn, newVic);
             }

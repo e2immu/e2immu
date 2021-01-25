@@ -29,12 +29,10 @@ import org.e2immu.analyser.pattern.PatternMatcher;
 import org.e2immu.analyser.util.Either;
 import org.e2immu.analyser.util.Logger;
 
-import java.util.LinkedHashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.ANALYSER;
@@ -311,6 +309,9 @@ public class ShallowTypeAnalyser implements AnalyserContext {
 
         TypeAnalyser.findAspects(typeAnalysisBuilder, typeInfo);
         typeAnalysisBuilder.approvedPreconditions.freeze();
+        Set<ParameterizedType> typeParametersAsParameterizedTypes = typeInspection.typeParameters().stream()
+                .map(tp -> new ParameterizedType(tp, 0, ParameterizedType.WildCard.NONE)).collect(Collectors.toSet());
+        typeAnalysisBuilder.implicitlyImmutableDataTypes.set(typeParametersAsParameterizedTypes);
         TypeAnalysis typeAnalysis = typeAnalysisBuilder.build();
         typeInfo.typeAnalysis.set(typeAnalysis);
 

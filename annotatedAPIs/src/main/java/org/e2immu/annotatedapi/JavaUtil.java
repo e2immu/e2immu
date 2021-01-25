@@ -286,6 +286,20 @@ public class JavaUtil extends AnnotatedAPI {
         }
     }
 
+
+    @Container
+    static class LinkedList$<E> {
+
+        boolean LinkedList$Modification$Size(int post) { return post == 0; }
+        public LinkedList$() {
+        }
+
+        boolean LinkedList$Modification$Size(int post, Collection<? extends  E> c) { return post == c.size(); }
+        @Independent
+        public LinkedList$(@NotNull1 Collection<? extends E> c) {
+        }
+    }
+
     @Container
     static class HashSet$<E> {
 
@@ -428,12 +442,23 @@ public class JavaUtil extends AnnotatedAPI {
         Set<Map.Entry<K, V>> entrySet() { return null; }
 
         @NotModified
+        //@Independent implicit!
         V get(Object key) { return null; }
 
         @NotNull1
         @NotModified
         Collection<V> values() { return null; }
+
+        @Container
+        static class Entry<K, V> {
+            @NotModified
+            K getKey() { return null; }
+
+            @NotModified
+            V getValue() { return null; }
+        }
     }
+
 
     @Container
     static class HashMap$<K, V> {

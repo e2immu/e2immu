@@ -210,7 +210,7 @@ public class FieldAnalyser extends AbstractAnalyser {
     }
 
     private AnalysisStatus makeInternalObjectFlowsPermanent(EvaluationResult evaluationResult) {
-        assert !fieldAnalysis.internalObjectFlows.isSet();
+        if(fieldAnalysis.internalObjectFlows.isSet()) return DONE;
         Set<ObjectFlow> internalObjectFlows = evaluationResult.getObjectFlowStream().collect(Collectors.toUnmodifiableSet());
         boolean noDelays = internalObjectFlows.stream().noneMatch(ObjectFlow::isDelayed);
         if (noDelays) {

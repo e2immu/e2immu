@@ -114,13 +114,13 @@ public class Primitives {
     public final ParameterizedType byteParameterizedType = byteTypeInfo.asSimpleParameterizedType();
 
     public static boolean isByte(TypeInfo typeInfo) {
-        return "byte".equals(typeInfo.fullyQualifiedName);
+        return typeInfo != null && "byte".equals(typeInfo.fullyQualifiedName);
     }
 
     public final TypeInfo boxedByteTypeInfo = new TypeInfo(JAVA_LANG, "Byte");
 
     public static boolean isBoxedByte(TypeInfo typeInfo) {
-        return "java.lang.Byte".equals(typeInfo.fullyQualifiedName);
+        return typeInfo != null && "java.lang.Byte".equals(typeInfo.fullyQualifiedName);
     }
 
     public final TypeInfo doubleTypeInfo = new TypeInfo(JAVA_PRIMITIVE, "double");
@@ -341,6 +341,7 @@ public class Primitives {
     }
 
     public static boolean isPrimitiveExcludingVoid(TypeInfo typeInfo) {
+        if(typeInfo == null) return false;
         return isByte(typeInfo) || isShort(typeInfo) || isInt(typeInfo) || isLong(typeInfo) ||
                 isChar(typeInfo) || isFloat(typeInfo) || isDouble(typeInfo) || isBoolean(typeInfo);
     }

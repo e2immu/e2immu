@@ -721,18 +721,35 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             result.addAll(cd.variables());
         }
 
-        // RULE 3: E2IMMU object cannot link
+        // RULE 3: E2IMMU object cannot link, neither can implicitly immutable types
+
+        int objectE2Immutable = MultiLevel.value(evaluationContext.getProperty(object, VariableProperty.IMMUTABLE), MultiLevel.E2IMMUTABLE);
+        if (objectE2Immutable >= MultiLevel.EVENTUAL_AFTER) {
+            return new LinkedVariables(result);
+        }
+
+        // ignore object if return type is implicitly immutable in the type of the method
+        // in Map<K,V>, V get(K key) has a return type V which is implicitly immutable in Map
+        TypeAnalysis typeAnalysis = evaluationContext.getAnalyserContext().getTypeAnalysis(methodInfo.typeInfo);
+        Set<ParameterizedType> implicitlyImmutable = typeAnalysis.getImplicitlyImmutableDataTypes();
+        if(implicitlyImmutable != null && implicitlyImmutable.contains(methodInfo.returnType())) {
+            return new LinkedVariables(result);
+        }
+
         // RULE 4: independent method: no link to object
 
         int independent = methodAnalysis.getProperty(VariableProperty.INDEPENDENT);
-        int objectE2Immutable = MultiLevel.value(evaluationContext.getProperty(object, VariableProperty.IMMUTABLE), MultiLevel.E2IMMUTABLE);
-        if (independent == Level.DELAY || objectE2Immutable == MultiLevel.DELAY) return LinkedVariables.DELAY;
-        boolean objectOfSameType = methodInfo.typeInfo == evaluationContext.getCurrentType();
-        if (objectOfSameType || (objectE2Immutable < MultiLevel.EVENTUAL_AFTER && independent == MultiLevel.FALSE)) {
-            LinkedVariables b = evaluationContext.linkedVariables(object);
-            if (b == LinkedVariables.DELAY) return LinkedVariables.DELAY;
-            result.addAll(b.variables());
+        if (independent == MultiLevel.EFFECTIVE) {
+            return new LinkedVariables(result); // no link to object
         }
+
+
+        // FIXME objects of the same type
+        if (independent == Level.DELAY || objectE2Immutable == MultiLevel.DELAY ||
+                typeAnalysis.getImplicitlyImmutableDataTypes() == null) return LinkedVariables.DELAY;
+        LinkedVariables b = evaluationContext.linkedVariables(object);
+        if (b == LinkedVariables.DELAY) return LinkedVariables.DELAY;
+        result.addAll(b.variables());
 
         return new LinkedVariables(result);
     }

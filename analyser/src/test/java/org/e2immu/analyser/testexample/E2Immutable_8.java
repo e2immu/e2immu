@@ -23,9 +23,9 @@ import org.e2immu.annotation.*;
 import java.util.HashMap;
 import java.util.Map;
 
-// Constructor and getter are dependent
+// Constructor is dependent
 @E1Container
-@Independent(absent = true)
+@Independent
 public class E2Immutable_8 {
 
     @Independent
@@ -50,7 +50,7 @@ public class E2Immutable_8 {
         map8 = map8Param; // linked
     }
 
-    @Dependent
+    @Independent
     public SimpleContainer get8(String input) {
         return map8.get(input);
     }

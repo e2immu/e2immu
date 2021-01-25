@@ -395,7 +395,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             // however, the loop may turn out to be completely empty, in which case the initial value is kept
             // so we must keep the initial value
             newVic = VariableInfoContainerImpl.existingLocalVariableIntoLoop(vic,
-                    new VariableInLoop(index, VariableInLoop.VariableType.IN_LOOP_DEFINED_OUTSIDE), previousIsParent);
+                    new VariableInLoop(index, null, VariableInLoop.VariableType.IN_LOOP_DEFINED_OUTSIDE), previousIsParent);
         } else if (indexOfPrevious != null && indexOfPrevious.equals(vic.getStatementIndexOfThisLoopOrShadowVariable())) {
             // this is the very specific situation that the previous statement introduced a loop variable (or a shadow copy)
             // this loop variable should not go beyond the loop statement
@@ -439,10 +439,14 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
        loop variables at the statement are not copied to the next one
        Some fields only become visible in a later iteration (see e.g. Enum_3 test, field inside constant result
        of array initialiser) -- so we don't explicitly restrict to local variables
+
+       we also exclude local copies from places where they do not belong, e.g., if a loop variable (loop at 1)
+       is modified in 1.0.1.0.1, it creates a var$1$1_0_1_0_1-E; this variable has no reason of existence in
+       the other branch 1.0.1.1.0
      */
     private void explicitlyPropagateVariables(StatementAnalysis copyFrom, boolean copyIsParent) {
-        copyFrom.variables.stream().filter(e -> copyIsParent ||
-                !copyFrom.index.equals(e.getValue().getStatementIndexOfThisLoopOrShadowVariable()))
+        copyFrom.variables.stream().filter(e -> copyIsParent && notLocalLoopCopyOutOfComfortZone(e.getValue()) ||
+                !copyIsParent && !copyFrom.index.equals(e.getValue().getStatementIndexOfThisLoopOrShadowVariable()))
                 .forEach(e -> {
                     String fqn = e.getKey();
                     VariableInfoContainer vicFrom = e.getValue();
@@ -452,6 +456,12 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                         variables.put(fqn, newVic);
                     }
                 });
+    }
+
+    private boolean notLocalLoopCopyOutOfComfortZone(VariableInfoContainer vic) {
+        if (vic.getVariableInLoop().variableType() != VariableInLoop.VariableType.LOOP_COPY) return true;
+        String assignmentId = vic.getVariableInLoop().assignmentId(); // 2nd dollar
+        return assignmentId == null || !assignmentId.startsWith(parent.index);
     }
 
     private void init1PlusStartOfMethodDoParametersAndThis(AnalyserContext analyserContext, MethodInfo currentMethod) {
@@ -608,7 +618,6 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         variableStream.filter(vic -> !index.equals(vic.getValue().getStatementIndexOfThisLoopOrShadowVariable())).forEach(e -> {
             String fqn = e.getKey();
             VariableInfoContainer vic = e.getValue();
-            VariableInfo current = vic.current();
 
             // the variable stream comes from multiple blocks; we ensure that merging takes place once only
             // this goes into a list instead of a map, because the condition can be overall NO_VALUE (both if and !if = else)
@@ -617,7 +626,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                 VariableInfoContainer destination;
                 if (!variables.isSet(fqn)) {
                     Variable variable = e.getValue().current().variable();
-                    destination = createVariable(evaluationContext, variable, statementTime);
+                    destination = createVariable(evaluationContext, variable, statementTime, vic.getVariableInLoop());
                 } else {
                     destination = vic;
                 }

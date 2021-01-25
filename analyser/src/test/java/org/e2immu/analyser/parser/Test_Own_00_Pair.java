@@ -19,8 +19,13 @@
 
 package org.e2immu.analyser.parser;
 
+import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.config.FieldAnalyserVisitor;
+import org.e2immu.analyser.config.MethodAnalyserVisitor;
+import org.e2immu.analyser.config.TypeAnalyserVisitor;
+import org.e2immu.analyser.model.Level;
+import org.e2immu.analyser.model.MultiLevel;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -39,8 +44,23 @@ public class Test_Own_00_Pair extends CommonTestRunner {
             }
         };
 
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("getV".equals(d.methodInfo().name)) {
+                int expectIndependent = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVE;
+                Assert.assertEquals(expectIndependent, d.methodAnalysis().getProperty(VariableProperty.INDEPENDENT));
+            }
+        };
+
+        // fields k and v are non-private, non @E2Immutable (even though the field's type is implicitly immutable)
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            int expectIndependent = d.iteration() == 0 ? Level.DELAY : MultiLevel.FALSE;
+            Assert.assertEquals(expectIndependent, d.typeAnalysis().getProperty(VariableProperty.INDEPENDENT));
+        };
+
         testUtilClass(List.of("Pair"), 0, 0, new DebugConfiguration.Builder()
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
                 .build());
     }
 
