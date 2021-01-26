@@ -31,6 +31,8 @@ import org.junit.Test;
 import java.io.IOException;
 import java.util.List;
 
+import static org.e2immu.analyser.analyser.FlowData.Execution.*;
+
 public class Test_Own_01_SMapList extends CommonTestRunner {
 
     EvaluationResultVisitor evaluationResultVisitor = d -> {
@@ -97,10 +99,10 @@ public class Test_Own_01_SMapList extends CommonTestRunner {
                 }
                 // merge of the two above
                 if ("1.0.1".equals(d.statementId())) {
-                    String expectValue = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "instance type boolean";
+                    String expectValue = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "null==dest.get(e$1.getKey())?change$1||null==dest.get(e$1.getKey()):dest.get(e$1.getKey()).addAll(e$1.getValue())";
+                    Assert.assertEquals(expectValue, d.currentValue().toString());
                     int expectNotNull = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
                     Assert.assertEquals(expectNotNull, d.getProperty(VariableProperty.NOT_NULL));
-                    Assert.assertEquals(expectValue, d.currentValue().toString());
                     String expectLinked = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "change$1$1_0_1_1_0_0_0-E,change$1$1_0_1_0_1-E";
                     Assert.assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
                 }
@@ -146,7 +148,9 @@ public class Test_Own_01_SMapList extends CommonTestRunner {
                 Assert.assertSame(FlowData.Execution.ALWAYS, d.statementAnalysis().flowData.getGuaranteedToBeReachedInMethod());
             }
             if ("1.0.0".equals(d.statementId()) || "1.0.1".equals(d.statementId())) {
-                Assert.assertSame(FlowData.Execution.CONDITIONALLY, d.statementAnalysis().flowData.getGuaranteedToBeReachedInMethod());
+                FlowData.Execution expect = d.iteration() == 0 ? DELAYED_EXECUTION : CONDITIONALLY;
+
+                Assert.assertSame(expect, d.statementAnalysis().flowData.getGuaranteedToBeReachedInMethod());
             }
         }
     };

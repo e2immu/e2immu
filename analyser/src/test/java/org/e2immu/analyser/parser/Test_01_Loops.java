@@ -321,8 +321,9 @@ public class Test_01_Loops extends CommonTestRunner {
             }
         };
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
-            if("method".equals(d.methodInfo().name) && "1.0.0".equals(d.statementId())) {
-                Assert.assertSame(CONDITIONALLY, d.statementAnalysis().flowData.getGuaranteedToBeReachedInMethod());
+            if ("method".equals(d.methodInfo().name) && "1.0.0".equals(d.statementId())) {
+                FlowData.Execution expect = d.iteration() == 0 ? DELAYED_EXECUTION : ALWAYS;
+                Assert.assertSame(expect, d.statementAnalysis().flowData.getGuaranteedToBeReachedInMethod());
             }
         };
 

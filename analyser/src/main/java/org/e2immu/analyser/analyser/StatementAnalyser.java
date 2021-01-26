@@ -504,7 +504,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             statementAnalysis.ensure(Message.newMessage(getLocation(), Message.UNREACHABLE_STATEMENT));
             return DONE_ALL; // means: don't run any of the other steps!!
         }
-        return localConditionManager.isDelayed() ? DELAYS : DONE;
+        return localConditionManager.isDelayed() || execution == DELAYED_EXECUTION ? DELAYS : DONE;
     }
 
     private Boolean isEscapeAlwaysExecutedInCurrentBlock() {
