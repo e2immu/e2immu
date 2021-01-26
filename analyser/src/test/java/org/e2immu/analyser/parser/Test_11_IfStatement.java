@@ -193,4 +193,37 @@ public class Test_11_IfStatement extends CommonTestRunner {
                 .build());
     }
 
+
+    @Test
+    public void test5() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("get3".equals(d.methodInfo().name) && "i3".equals(d.variableName())) {
+                String expectValue = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "map.get(label3)";
+                Assert.assertEquals(expectValue, d.currentValue().toString());
+                String expectLinked = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "";
+                Assert.assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
+            }
+        };
+
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("get1".equals(d.methodInfo().name) && d.iteration() > 0) {
+                Assert.assertEquals("null==map.get(label1)?defaultValue1:map.get(label1)",
+                        d.methodAnalysis().getSingleReturnValue().toString());
+            }
+            if ("get2".equals(d.methodInfo().name) && d.iteration() >= 2) {
+                Assert.assertEquals("null==map.get(label2)?defaultValue2:map.get(label2)",
+                        d.methodAnalysis().getSingleReturnValue().toString());
+            }
+            if ("get3".equals(d.methodInfo().name) && d.iteration() >= 2) {
+                Assert.assertEquals("null==map.get(label3)?defaultValue3:map.get(label3)",
+                        d.methodAnalysis().getSingleReturnValue().toString());
+            }
+        };
+
+        testClass("IfStatement_5", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .build());
+    }
+
 }

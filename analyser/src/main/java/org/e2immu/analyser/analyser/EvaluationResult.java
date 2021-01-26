@@ -265,7 +265,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                 Message message = Message.newMessage(evaluationContext.getLocation(), Message.POTENTIAL_NULL_POINTER_EXCEPTION,
                         "Variable: " + variable.simpleName());
                 messages.add(message);
-            } else if (notNull == MultiLevel.DELAY) {
+            } else if (notNull < notNullRequired) {
                 // we only need to mark this in case of doubt (if we already know, we should not mark)
                 setProperty(variable, VariableProperty.NOT_NULL, notNullRequired);
                 if (value instanceof VariableExpression redirect) {

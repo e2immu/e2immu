@@ -236,6 +236,8 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
         if (!methodInfo.isConstructor) {
             if (!methodInfo.isVoid()) {
                 check(NotNull.class, e2.notNull);
+                check(NotNull1.class, e2.notNull1);
+                check(NotNull2.class, e2.notNull2);
                 check(Fluent.class, e2.fluent);
                 check(Identity.class, e2.identity);
                 check(E1Immutable.class, e2.e1Immutable);
@@ -248,11 +250,12 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
 
                 // checks for dynamic properties of functional interface types
                 check(NotModified1.class, e2.notModified1);
+
+                check(Nullable.class, e2.nullable);
             }
             check(NotModified.class, e2.notModified);
 
             // opposites
-            check(Nullable.class, e2.nullable);
             check(Modified.class, e2.modified);
         }
         // opposites

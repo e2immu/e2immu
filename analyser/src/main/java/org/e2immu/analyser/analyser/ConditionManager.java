@@ -231,6 +231,11 @@ public record ConditionManager(Expression condition, Expression state, Condition
         return filterResult.accepted().getOrDefault(variable, filter.getDefaultRest());
     }
 
+    public boolean isTrueInAbsoluteStateOrPrecondition(EvaluationContext evaluationContext, Expression expression) {
+        Expression absoluteState = absoluteState(evaluationContext);
+        return absoluteState.equals(expression); // FIXME need much better: no change in And
+    }
+
 
     public static record EvaluationContextImpl(Primitives primitives) implements EvaluationContext {
 

@@ -20,10 +20,7 @@ package org.e2immu.annotatedapi;
 import org.e2immu.annotation.*;
 
 import java.util.*;
-import java.util.function.Consumer;
-import java.util.function.IntFunction;
-import java.util.function.Supplier;
-import java.util.function.ToIntFunction;
+import java.util.function.*;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -427,6 +424,9 @@ public class JavaUtil extends AnnotatedAPI {
         @Modified
         void clear() { }
 
+        @NotNull
+        V computeIfAbsent(@NotNull K key, @NotNull1 Function<? super K, ? extends V> mappingFunction) { return null; }
+
         boolean containsKey$Value$Size(int i, Object key, boolean retVal) { return i != 0 && retVal; }
         @NotModified
         boolean containsKey(@NotNull Object key) { return true; }
@@ -452,9 +452,11 @@ public class JavaUtil extends AnnotatedAPI {
         @Container
         static class Entry<K, V> {
             @NotModified
+            @NotNull
             K getKey() { return null; }
 
             @NotModified
+            @NotNull
             V getValue() { return null; }
         }
     }

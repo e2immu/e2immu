@@ -33,7 +33,7 @@ public class ComGoogleCommonCollect {
     static abstract class ImmutableCollection$<E> extends AbstractCollection<E> {
 
         int asList$Transfer$Size(int size) { return size; }
-        @NotNull
+        @NotNull1
         @Independent
         @NotModified
         ImmutableList<E> asList() { return null;  }
@@ -41,7 +41,7 @@ public class ComGoogleCommonCollect {
         @Container(builds = ImmutableCollection.class)
         public static class Builder<E> {
 
-            @NotNull
+            @NotNull1
             @Independent
             @NotModified
             public ImmutableCollection<E> build() { return null; }
@@ -55,14 +55,20 @@ public class ComGoogleCommonCollect {
         @Container(builds = ImmutableList.class)
         public static class Builder<E> {
 
-            @NotNull
+            @NotNull1
             @Independent
             @NotModified
             public ImmutableList<E> build() { return null; }
+
+            @Fluent
+            public Builder<E> addAll(@NotNull1 Iterable<? extends E> c) { return null; }
+
+            @Fluent
+            public Builder<E> addAll(@NotNull1 Iterator<? extends E> c) { return null; }
         }
 
         int copyOf$Transfer$Size(int size) { return size; }
-        @NotNull
+        @NotNull1
         @E2Container
         static <E> ImmutableList<E> copyOf(@NotNull Iterable<? extends E> iterable) { return null; }
     }
@@ -75,14 +81,14 @@ public class ComGoogleCommonCollect {
         public static class Builder<E> {
 
             // we cannot transfer size, as the builder has no size method! int build$Transfer$Size(int size) { return size; }
-            @NotNull
+            @NotNull1
             @Independent
             @NotModified
             public ImmutableSet<E> build() { return null; }
         }
 
         int copyOf$Transfer$Size(int size) { return size; }
-        @NotNull
+        @NotNull1
         @E2Container
         static <E> ImmutableSet<E> copyOf(@NotNull Collection<? extends E> collection) { return null; }
     }
@@ -100,6 +106,12 @@ public class ComGoogleCommonCollect {
             @Independent
             @NotModified
             public ImmutableMap<K, V> build() { return null; }
+
+            @Fluent
+            public Builder<K, V> putAll(@NotNull1 Map<? extends K, ? extends V> map) { return null; }
+
+            @Fluent
+            public Builder<K, V> put(@NotNull K key, @NotNull V value) { return null; }
         }
 
         int copyOf$Transfer$Size(int size) { return size; }

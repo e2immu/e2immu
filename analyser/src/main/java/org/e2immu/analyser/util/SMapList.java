@@ -83,8 +83,8 @@ public class SMapList {
         if (bs == null) {
             throw new IllegalArgumentException(NULL_VALUE);
         }
-        List<B> set = map.computeIfAbsent(a, k -> new LinkedList<>());
-        return set.addAll(bs);
+        List<B> list = map.computeIfAbsent(a, k -> new LinkedList<>());
+        return list.addAll(bs);
     }
 
     @NotNull1
@@ -102,8 +102,9 @@ public class SMapList {
         return list;
     }
 
-    @NotNull
-    public static <A, B> Map<A, List<B>> immutable(@NotModified Map<A, List<B>> map) {
+    @NotNull1
+    @E2Container
+    public static <A, B> Map<A, List<B>> immutable(@NotModified @NotNull1(contract = true) Map<A, List<B>> map) {
         Map<A, ImmutableList<B>> tmp = new HashMap<>();
         for (Entry<A, List<B>> e : map.entrySet()) {
             ImmutableList<B> is = new ImmutableList.Builder<B>().addAll(e.getValue()).build();

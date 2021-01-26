@@ -1746,6 +1746,11 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 return statementAnalysis.getPropertyOfCurrent(variable, variableProperty);
             }
 
+            if (VariableProperty.NOT_NULL == variableProperty &&
+                    conditionManager.isTrueInAbsoluteStateOrPrecondition(this, value)) {
+                return MultiLevel.EFFECTIVELY_NOT_NULL;
+            }
+
             // redirect to Value.getProperty()
             // this is the only usage of this method; all other evaluation of a Value in an evaluation context
             // must go via the current method

@@ -53,7 +53,7 @@ public class Modification_11 {
     @E1Immutable // final fields, not all parameters @NotModified
     static class C1 {
         @Linked(to = {"C1:setC"})
-        @NotNull1
+        @NotNull
         @Modified
         final Set<String> set; // linked to set1
 
@@ -62,7 +62,7 @@ public class Modification_11 {
             this.set = Objects.requireNonNull(setC);
         }
 
-        @NotNull1
+        @NotNull
         @NotModified // do not change the fields
         @Linked(to = {"C1.setC"})
         @Independent(absent = true)

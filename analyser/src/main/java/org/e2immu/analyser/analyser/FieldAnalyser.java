@@ -724,6 +724,8 @@ public class FieldAnalyser extends AbstractAnalyser {
 
         check(NotModified.class, e2.notModified);
         check(NotNull.class, e2.notNull);
+        check(NotNull1.class, e2.notNull1);
+        check(NotNull2.class, e2.notNull2);
         check(Final.class, e2.effectivelyFinal);
 
         // dynamic type annotations

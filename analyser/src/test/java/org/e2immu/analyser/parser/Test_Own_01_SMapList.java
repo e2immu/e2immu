@@ -31,7 +31,8 @@ import org.junit.Test;
 import java.io.IOException;
 import java.util.List;
 
-import static org.e2immu.analyser.analyser.FlowData.Execution.*;
+import static org.e2immu.analyser.analyser.FlowData.Execution.CONDITIONALLY;
+import static org.e2immu.analyser.analyser.FlowData.Execution.DELAYED_EXECUTION;
 
 public class Test_Own_01_SMapList extends CommonTestRunner {
 
@@ -52,14 +53,27 @@ public class Test_Own_01_SMapList extends CommonTestRunner {
     };
 
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-        if ("list".equals(d.methodInfo().name) && "list".equals(d.variableName()) && "3".equals(d.statementId())) {
-            Assert.assertEquals("map.get(a)", d.currentValue().toString());
+        if ("list".equals(d.methodInfo().name)) {
+            final String RET_VAR = "org.e2immu.analyser.util.SMapList.list(Map<A, List<B>>,A)";
+            if (RET_VAR.equals(d.variableName())) {
+                if ("2".equals(d.statementId())) {
+                    // note the absence of null!=a
+                    Assert.assertEquals("null==map.get(a)?List.of():<return value>", d.currentValue().toString());
+                }
+            }
 
-            // NOTE: this is in contradiction with the state, but here we test the fact that get can return null
-            Assert.assertEquals(MultiLevel.NULLABLE, d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL));
+            if ("list".equals(d.variableName())) {
+                Assert.assertEquals("map.get(a)", d.currentValue().toString());
+
+                // NOTE: this is in contradiction with the state, but here we test the fact that get can return null
+                Assert.assertEquals(MultiLevel.NULLABLE, d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL));
+            }
         }
-        if ("add".equals(d.methodInfo().name) && "bs".equals(d.variableName()) && "3".equals(d.statementId())) {
-            Assert.assertEquals(Level.FALSE, d.getProperty(VariableProperty.MODIFIED));
+        if ("add".equals(d.methodInfo().name) && d.variable() instanceof ParameterInfo bs && "bs".equals(bs.simpleName())) {
+            if ("3".equals(d.statementId())) {
+                Assert.assertEquals(Level.FALSE, d.getProperty(VariableProperty.MODIFIED));
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL));
+            }
         }
 
         if ("addAll".equals(d.methodInfo().name)) {
@@ -140,8 +154,17 @@ public class Test_Own_01_SMapList extends CommonTestRunner {
     };
 
     StatementAnalyserVisitor statementAnalyserVisitor = d -> {
-        if ("3".equals(d.statementId()) && "list".equals(d.methodInfo().name)) {
-            Assert.assertEquals("null!=map.get(a)&&null!=a", d.state().toString());
+        if ("list".equals(d.methodInfo().name)) {
+            if ("0".equals(d.statementId()) || "1".equals(d.statementId())) {
+                Assert.assertEquals("null!=a", d.state().toString());
+            }
+            if ("2.0.0".equals(d.statementId())) {
+                Assert.assertEquals("null==map.get(a)", d.condition().toString());
+                Assert.assertEquals("null==map.get(a)&&null!=a", d.absoluteState().toString());
+            }
+            if ("3".equals(d.statementId())) {
+                Assert.assertEquals("null!=map.get(a)&&null!=a", d.state().toString());
+            }
         }
         if ("addAll".equals(d.methodInfo().name)) {
             if ("0".equals(d.statementId()) || "1".equals(d.statementId())) {
@@ -152,6 +175,10 @@ public class Test_Own_01_SMapList extends CommonTestRunner {
 
                 Assert.assertSame(expect, d.statementAnalysis().flowData.getGuaranteedToBeReachedInMethod());
             }
+            if ("1.0.1.1.0".equals(d.statementId())) {
+                String expectCondition = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "null!=dest.get(e$1.getKey())";
+                Assert.assertEquals(expectCondition, d.condition().toString());
+            }
         }
     };
 
@@ -160,21 +187,19 @@ public class Test_Own_01_SMapList extends CommonTestRunner {
 
         if ("list".equals(name)) {
             VariableInfo returnValue1 = d.getReturnAsVariable();
-            if (d.iteration() == 0) {
-                //          Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, returnValue1.getProperty(VariableProperty.NOT_NULL));
 
-                // the end result
-                //          Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.methodAnalysis().getProperty(VariableProperty.NOT_NULL));
-            } else {
-                //     Assert.assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL, returnValue1.getProperty(VariableProperty.NOT_NULL));
+            // FIXME null==map.get(a)  heeft geen null!=a, terwijl de state er wel heeft... inconsistentie
+            Assert.assertEquals("null!=map.get(a)&&null!=a?map.get(a):null==map.get(a)?List.of():<return value>", d.getReturnAsVariable().getValue().toString());
 
-                // the end result
-                //     Assert.assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL, d.methodAnalysis().getProperty(VariableProperty.NOT_NULL));
-            }
+            int retValNotNull = returnValue1.getProperty(VariableProperty.NOT_NULL);
+            int propertyNotNull = d.methodAnalysis().getProperty(VariableProperty.NOT_NULL);
+            // FIXME
+            Assert.assertTrue(retValNotNull >= 0);
         }
         if ("copy".equals(name)) {
             VariableInfo returnValue = d.getReturnAsVariable();
-            //      Assert.assertEquals(MultiLevel.MUTABLE, returnValue.getProperty(VariableProperty.IMMUTABLE));
+            int expectImmutable = d.iteration() == 0 ? Level.DELAY : MultiLevel.MUTABLE;
+            Assert.assertEquals(expectImmutable, returnValue.getProperty(VariableProperty.IMMUTABLE));
         }
         if ("add".equals(name) && d.methodInfo().methodInspection.get().getParameters().size() == 3) {
             ParameterInfo parameterInfo = d.methodInfo().methodInspection.get().getParameters().get(2);
