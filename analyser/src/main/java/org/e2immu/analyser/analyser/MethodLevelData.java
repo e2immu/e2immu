@@ -19,6 +19,7 @@ package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.And;
+import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.This;
@@ -67,6 +68,10 @@ public class MethodLevelData {
 
     public Expression getCombinedPrecondition() {
         return combinedPrecondition.getOrElse(null);
+    }
+
+    public Expression getCombinedPreconditionOrDelay() {
+        return combinedPrecondition.getOrElse(EmptyExpression.NO_VALUE);
     }
 
     public void addCircularCallOrUndeclaredFunctionalInterface() {

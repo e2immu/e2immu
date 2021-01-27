@@ -20,6 +20,7 @@ package org.e2immu.analyser.analyser;
 import com.google.common.collect.ImmutableMap;
 import org.e2immu.analyser.config.CompanionAnalyserVisitor;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.expression.BooleanConstant;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.expression.MethodCall;
 import org.e2immu.analyser.model.expression.VariableExpression;
@@ -28,6 +29,7 @@ import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
+import org.e2immu.analyser.parser.Primitives;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -172,6 +174,11 @@ public class CompanionAnalyser {
         }
 
         @Override
+        public Primitives getPrimitives() {
+            return analyserContext.getPrimitives();
+        }
+
+        @Override
         public AnalyserContext getAnalyserContext() {
             return analyserContext;
         }
@@ -193,7 +200,8 @@ public class CompanionAnalyser {
 
         @Override
         public EvaluationContext child(Expression condition) {
-            ConditionManager cm = conditionManager.newAtStartOfNewBlock(getPrimitives(), condition);
+            ConditionManager cm = conditionManager.newAtStartOfNewBlock(getPrimitives(), condition,
+                    new BooleanConstant(getPrimitives(), true));
             return new EvaluationContextImpl(iteration, cm);
         }
 

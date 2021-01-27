@@ -146,16 +146,25 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                 .build(), new AnalyserConfiguration.Builder().setSkipTransformations(true).build());
     }
 
+    /*
+    The escape is purely based on parameters that should not be null. This condition does not go into the precondition,
+    it simply forces a @NotNull on the parameter.
+     */
     @Test
     public void test1() throws IOException {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
-            if ("method2".equals(d.methodInfo().name) && "0.0.0".equals(d.statementId())) {
-                Assert.assertEquals("null==a||null==b", d.absoluteState().toString());
-                Assert.assertEquals("null==a||null==b", d.condition().toString());
-            }
-            if ("method2".equals(d.methodInfo().name) && "0".equals(d.statementId())) {
-                Assert.assertEquals("null!=a&&null!=b", d.state().toString());
-                Assert.assertEquals("true", d.condition().toString());
+            if ("method2".equals(d.methodInfo().name)) {
+                if ("0.0.0".equals(d.statementId())) {
+                    Assert.assertEquals("null==a||null==b", d.absoluteState().toString());
+                    Assert.assertEquals("null==a||null==b", d.condition().toString());
+                    Assert.assertEquals("true", d.statementAnalysis().stateData.getPrecondition().toString());
+                }
+                if ("0".equals(d.statementId()) || "1".equals(d.statementId())) {
+                    Assert.assertEquals("true", d.state().toString());
+                    Assert.assertEquals("true", d.condition().toString());
+                    Assert.assertEquals("true", d.statementAnalysis().stateData.getPrecondition().toString());
+                    Assert.assertEquals("true", d.statementAnalysis().methodLevelData.getCombinedPrecondition().toString());
+                }
             }
         };
         testClass("ConditionalChecks_1", 0, 0, new DebugConfiguration.Builder()
@@ -185,7 +194,7 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                 if (d.iteration() == 0) {
                     if ("0".equals(d.statementId())) {
                         Assert.assertEquals("true", d.condition().toString());
-                        Assert.assertEquals("null!=a", d.state().toString());
+                        Assert.assertEquals("true", d.state().toString()); //->precondition, in this case, parameter not null
                         Assert.assertTrue(d.statementAnalysis().stateData.statementContributesToPrecondition.isSet());
                         // goes into not-null on parameters
                         Assert.assertEquals("true", d.statementAnalysis().methodLevelData.getCombinedPrecondition().toString());
@@ -200,13 +209,13 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                     }
                     if ("1".equals(d.statementId())) {
                         Assert.assertEquals("true", d.condition().toString());
-                        Assert.assertEquals("null!=a&&null!=b", d.state().toString());
+                        Assert.assertEquals("true", d.state().toString()); // in both parameters by now
                         Assert.assertTrue(d.statementAnalysis().stateData.statementContributesToPrecondition.isSet());
                         Assert.assertEquals("true", d.statementAnalysis().methodLevelData.getCombinedPrecondition().toString());
                     }
                     if ("1.0.0".equals(d.statementId())) {
                         Assert.assertEquals("null==b", d.condition().toString());
-                        Assert.assertEquals("null!=a&&null==b", d.absoluteState().toString());
+                        Assert.assertEquals("null==b", d.absoluteState().toString()); // null!=a in parameter @NotNull
                         Assert.assertTrue(d.haveSetProperty(VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL));
                         Assert.assertEquals("true", d.statementAnalysis().stateData.getPrecondition().toString());
                         Assert.assertFalse(d.statementAnalysis().stateData.statementContributesToPrecondition.isSet());
@@ -521,7 +530,8 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                     Assert.assertEquals("p>=3", d.absoluteState().toString());
                 }
                 if ("3".equals(d.statementId())) {
-                    Assert.assertEquals("(p>=3||p<=2)&&(p>=3||q>=5)&&(p<=2||q<=-1)&&(q>=5||q<=-1)", d.state().toString());
+                    // FIXME (p>=3||p<=2)&&(p>=3||q>=5)&&(p<=2||q<=-1)&&(q>=5||q<=-1) should be in the precondition now
+                    Assert.assertEquals("true", d.state().toString());
                 }
             }
         };

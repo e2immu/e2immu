@@ -210,7 +210,7 @@ public class FieldAnalyser extends AbstractAnalyser {
     }
 
     private AnalysisStatus makeInternalObjectFlowsPermanent(EvaluationResult evaluationResult) {
-        if(fieldAnalysis.internalObjectFlows.isSet()) return DONE;
+        if (fieldAnalysis.internalObjectFlows.isSet()) return DONE;
         Set<ObjectFlow> internalObjectFlows = evaluationResult.getObjectFlowStream().collect(Collectors.toUnmodifiableSet());
         boolean noDelays = internalObjectFlows.stream().noneMatch(ObjectFlow::isDelayed);
         if (noDelays) {
@@ -801,7 +801,8 @@ public class FieldAnalyser extends AbstractAnalyser {
 
         @Override
         public EvaluationContext child(Expression condition) {
-            ConditionManager cm = conditionManager.newAtStartOfNewBlock(getPrimitives(), condition);
+            ConditionManager cm = conditionManager.newAtStartOfNewBlock(getPrimitives(), condition,
+                    new BooleanConstant(getPrimitives(), true));
             return FieldAnalyser.this.new EvaluationContextImpl(iteration, cm, closure);
         }
 

@@ -176,6 +176,12 @@ public class FlowData {
         return interruptsFlow.isSet();
     }
 
+    /*
+    at some point we need to make a distinction between different
+     */
+    public boolean escapesViaException() {
+        return interruptsFlow.isSet() && interruptsFlow.get().containsKey(ESCAPE);
+    }
 
     public enum Execution {
         DEFAULT(3), // only local data transfer from SwitchEntry or IfElseStatement

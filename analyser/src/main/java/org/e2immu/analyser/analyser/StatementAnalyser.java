@@ -62,7 +62,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
     public final NavigationData<StatementAnalyser> navigationData = new NavigationData<>();
 
     // shared state over the different analysers
-    private ConditionManager localConditionManager;
+    //private ConditionManager localConditionManager;
     private AnalysisStatus analysisStatus;
     private AnalyserComponents<String, SharedState> analyserComponents;
 
@@ -298,8 +298,11 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         return analyserComponents;
     }
 
-    record SharedState(EvaluationContext evaluationContext, StatementAnalyserResult.Builder builder,
-                       StatementAnalysis previous, ForwardAnalysisInfo forwardAnalysisInfo) {
+    record SharedState(EvaluationContext evaluationContext,
+                       StatementAnalyserResult.Builder builder,
+                       StatementAnalysis previous,
+                       ForwardAnalysisInfo forwardAnalysisInfo,
+                       ConditionManager localConditionManager) {
     }
 
     /**
@@ -316,12 +319,11 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                                                            ForwardAnalysisInfo forwardAnalysisInfo) {
         try {
             if (analysisStatus == null) {
-                assert localConditionManager == null : "expected null localConditionManager";
+                //assert localConditionManager == null : "expected null localConditionManager";
                 assert analyserComponents == null : "expected null analyser components";
 
                 analyserComponents = new AnalyserComponents.Builder<String, SharedState>()
-                        .add("checkUnreachableStatement", sharedState -> checkUnreachableStatement(previous,
-                                sharedState.forwardAnalysisInfo.execution()))
+                        .add("checkUnreachableStatement", this::checkUnreachableStatement)
                         .add("initialiseOrUpdateVariables", this::initialiseOrUpdateVariables)
                         .add("analyseTypesInStatement", this::analyseTypesInStatement)
                         .add("evaluationOfMainExpression", this::evaluationOfMainExpression)
@@ -333,7 +335,6 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                         .add(ANALYSE_METHOD_LEVEL_DATA, sharedState -> statementAnalysis.methodLevelData.analyse(sharedState, statementAnalysis,
                                 previous == null ? null : previous.methodLevelData,
                                 statementAnalysis.stateData))
-
                         .add("checkUnusedReturnValue", sharedState -> checkUnusedReturnValueOfMethodCall())
                         .add("checkUselessAssignments", sharedState -> checkUselessAssignments())
                         .add("checkUnusedLocalVariables", sharedState -> checkUnusedLocalVariables())
@@ -343,11 +344,13 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
 
 
             boolean startOfNewBlock = previous == null;
-            localConditionManager = startOfNewBlock ? forwardAnalysisInfo.conditionManager() : previous.stateData.getConditionManager();
+            ConditionManager localConditionManager = startOfNewBlock ? forwardAnalysisInfo.conditionManager() :
+                    previous.stateData.getConditionManagerForNextStatement()
+                            .withPrecondition(previous.methodLevelData.getCombinedPreconditionOrDelay());
 
             StatementAnalyserResult.Builder builder = new StatementAnalyserResult.Builder();
             EvaluationContext evaluationContext = new EvaluationContextImpl(iteration, localConditionManager, closure);
-            SharedState sharedState = new SharedState(evaluationContext, builder, previous, forwardAnalysisInfo);
+            SharedState sharedState = new SharedState(evaluationContext, builder, previous, forwardAnalysisInfo, localConditionManager);
             AnalysisStatus overallStatus = analyserComponents.run(sharedState);
 
             StatementAnalyserResult result = sharedState.builder()
@@ -424,9 +427,10 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                             myMethodAnalyser.methodInfo,
                             statementAnalysis,
                             statementAnalysis.index,
-                            statementAnalysis.stateData.getConditionManager().condition(),
-                            statementAnalysis.stateData.getConditionManager().state(),
-                            statementAnalysis.stateData.getConditionManager().absoluteState(sharedState.evaluationContext),
+                            statementAnalysis.stateData.getConditionManagerForNextStatement().condition(),
+                            statementAnalysis.stateData.getConditionManagerForNextStatement().state(),
+                            statementAnalysis.stateData.getConditionManagerForNextStatement().absoluteState(sharedState.evaluationContext),
+                            sharedState.localConditionManager(),
                             analyserComponents.getStatusesAsMap()));
         }
     }
@@ -492,19 +496,19 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
 
     // executed only once per statement, at the very beginning of the loop
     // we're assuming that the flowData are computed correctly
-    private AnalysisStatus checkUnreachableStatement(StatementAnalysis previous,
-                                                     FlowData.Execution execution) {
+    private AnalysisStatus checkUnreachableStatement(SharedState sharedState) {
         // if the previous statement was not reachable, we won't reach this one either
-        if (previous != null && previous.flowData.getGuaranteedToBeReachedInMethod() == NEVER) {
+        if (sharedState.previous != null && sharedState.previous.flowData.getGuaranteedToBeReachedInMethod() == NEVER) {
             statementAnalysis.flowData.setGuaranteedToBeReached(NEVER);
             return DONE_ALL;
         }
-        if (statementAnalysis.flowData.computeGuaranteedToBeReachedReturnUnreachable(previous, execution, localConditionManager.state()) &&
-                !statementAnalysis.inErrorState(Message.UNREACHABLE_STATEMENT)) {
+        FlowData.Execution execution = sharedState.forwardAnalysisInfo().execution();
+        if (statementAnalysis.flowData.computeGuaranteedToBeReachedReturnUnreachable(sharedState.previous, execution,
+                sharedState.localConditionManager.state()) && !statementAnalysis.inErrorState(Message.UNREACHABLE_STATEMENT)) {
             statementAnalysis.ensure(Message.newMessage(getLocation(), Message.UNREACHABLE_STATEMENT));
             return DONE_ALL; // means: don't run any of the other steps!!
         }
-        return localConditionManager.isDelayed() || execution == DELAYED_EXECUTION ? DELAYS : DONE;
+        return sharedState.localConditionManager.isDelayed() || execution == DELAYED_EXECUTION ? DELAYS : DONE;
     }
 
     private Boolean isEscapeAlwaysExecutedInCurrentBlock() {
@@ -551,7 +555,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             assert vi != vi1 : "There should already be a different EVALUATION object";
 
             Expression valueToWrite = changeData.markAssignment() ?
-                    maybeValueNeedsState(sharedState.evaluationContext, vic, vi1, bestValue(changeData, vi1)) :
+                    maybeValueNeedsState(sharedState, vic, vi1, bestValue(changeData, vi1)) :
                     changeData.value();
 
             // we explicitly check for NO_VALUE, because "<no return value>" is legal!
@@ -777,12 +781,13 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
 
     Q: what is the best place for this piece of code? EvalResult?? This here seems too late
      */
-    private Expression maybeValueNeedsState(EvaluationContext evaluationContext, VariableInfoContainer vic, VariableInfo vi1, Expression value) {
+    private Expression maybeValueNeedsState(SharedState sharedState, VariableInfoContainer vic, VariableInfo vi1, Expression value) {
         if (value == NO_VALUE ||
                 vic.getVariableInLoop().variableType() != VariableInLoop.VariableType.IN_LOOP_DEFINED_OUTSIDE) {
             // not applicable
             return value;
         }
+        ConditionManager localConditionManager = sharedState.localConditionManager;
         if (localConditionManager.isDelayed()) return NO_VALUE;
         Expression state;
         if (!localConditionManager.state().isBoolValueTrue()) {
@@ -794,8 +799,9 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         }
         if (state != null) {
             // do not take vi1 itself, but "the" local copy of the variable
-            Expression valueOfVariablePreAssignment = evaluationContext.currentValue(vi1.variable(), statementAnalysis.statementTime(VariableInfoContainer.Level.INITIAL), true);
-            return EvaluateInlineConditional.conditionalValueConditionResolved(evaluationContext, state, value,
+            Expression valueOfVariablePreAssignment = sharedState.evaluationContext.currentValue(vi1.variable(),
+                    statementAnalysis.statementTime(VariableInfoContainer.Level.INITIAL), true);
+            return EvaluateInlineConditional.conditionalValueConditionResolved(sharedState.evaluationContext, state, value,
                     valueOfVariablePreAssignment, ObjectFlow.NO_FLOW).value();
         }
         return value;
@@ -868,12 +874,12 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             log(DELAYED, "Delaying check precondition of statement {}, interrupt condition unknown", index());
             return DELAYS;
         }
-        if (!statementAnalysis.stateData.conditionManagerIsSet()) {
+        if (statementAnalysis.stateData.conditionManagerIsNotYetSet()) {
             log(DELAYED, "Delaying check precondition of statement {}, no condition manager", index());
             return DELAYS;
         }
         if (escapeAlwaysExecuted) {
-            Set<Variable> nullVariables = statementAnalysis.stateData.getConditionManager()
+            Set<Variable> nullVariables = statementAnalysis.stateData.getConditionManagerForNextStatement()
                     .findIndividualNullInCondition(sharedState.evaluationContext, true);
             for (Variable nullVariable : nullVariables) {
                 log(VARIABLE_PROPERTIES, "Escape with check not null on {}", nullVariable.fullyQualifiedName());
@@ -885,7 +891,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 }
             }
             // escapeCondition should filter out all != null, == null clauses
-            Expression precondition = statementAnalysis.stateData.getConditionManager().precondition(sharedState.evaluationContext);
+            Expression precondition = statementAnalysis.stateData.getConditionManagerForNextStatement().precondition(sharedState.evaluationContext);
             if (precondition == NO_VALUE) {
                 log(DELAYED, "Delaying check precondition of statement {}, escape condition delayed", index());
                 return DELAYS;
@@ -1104,7 +1110,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             }
             if (statementAnalysis.statement instanceof BreakStatement breakStatement) {
                 StatementAnalysis.FindLoopResult correspondingLoop = statementAnalysis.findLoopByLabel(breakStatement);
-                Expression state = localConditionManager.stateUpTo(sharedState.evaluationContext, correspondingLoop.steps());
+                Expression state = sharedState.localConditionManager.stateUpTo(sharedState.evaluationContext, correspondingLoop.steps());
                 correspondingLoop.statementAnalysis().stateData.addStateOfInterrupt(index(), state);
                 if (state == NO_VALUE) return DELAYS;
             } else if (statement() instanceof LocalClassDeclaration localClassDeclaration) {
@@ -1141,7 +1147,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             } else if (value != NO_VALUE && (statementAnalysis.statement instanceof IfElseStatement ||
                     statementAnalysis.statement instanceof SwitchStatement ||
                     statementAnalysis.statement instanceof AssertStatement)) {
-                value = step3_IfElse_Switch_Assert(sharedState.evaluationContext, value);
+                value = step3_IfElse_Switch_Assert(sharedState, value);
             }
 
             if (statusPost == DELAYS) {
@@ -1179,6 +1185,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                     VariableInfoContainer.NOT_YET_READ, VariableInfoContainer.NOT_A_VARIABLE_FIELD, Set.of());
             return DELAYS;
         }
+        ConditionManager localConditionManager = sharedState.localConditionManager;
         Expression newReturnValue;
         if (localConditionManager.isDelayed()) return DELAYS;
         // no state, or no previous return statements
@@ -1223,10 +1230,10 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         }
     }
 
-    private Expression step3_IfElse_Switch_Assert(EvaluationContext evaluationContext, Expression value) {
+    private Expression step3_IfElse_Switch_Assert(SharedState sharedState, Expression value) {
         assert value != null && value != NO_VALUE;
 
-        Expression evaluated = localConditionManager.evaluate(evaluationContext, value);
+        Expression evaluated = sharedState.localConditionManager.evaluate(sharedState.evaluationContext, value);
 
         boolean noEffect = evaluated.isConstant();
 
@@ -1276,7 +1283,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 // switch
                 message = Message.CONDITION_EVALUATES_TO_CONSTANT;
             }
-            statementAnalysis.ensure(Message.newMessage(evaluationContext.getLocation(), message));
+            statementAnalysis.ensure(Message.newMessage(sharedState.evaluationContext.getLocation(), message));
             return evaluated;
         }
         return value;
@@ -1284,7 +1291,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
 
     private AnalysisStatus subBlocks(SharedState sharedState) {
         List<Optional<StatementAnalyser>> startOfBlocks = navigationData.blocks.get();
-        AnalysisStatus analysisStatus = localConditionManager.isDelayed() ? DELAYS : DONE;
+        AnalysisStatus analysisStatus = sharedState.localConditionManager.isDelayed() ? DELAYS : DONE;
 
         if (!startOfBlocks.isEmpty()) {
             analysisStatus = step4_haveSubBlocks(sharedState, startOfBlocks).combine(analysisStatus);
@@ -1292,15 +1299,10 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             if (statementAnalysis.statement instanceof AssertStatement) {
                 if (statementAnalysis.stateData.valueOfExpression.isSet()) {
                     Expression assertion = statementAnalysis.stateData.valueOfExpression.get();
-                    localConditionManager = localConditionManager.newForNextStatement(sharedState.evaluationContext, assertion);
-                    boolean atLeastFieldOrParameterInvolved = assertion.variables().stream()
-                            .anyMatch(v -> v instanceof ParameterInfo || v instanceof FieldReference);
-                    if (atLeastFieldOrParameterInvolved) {
-                        log(VARIABLE_PROPERTIES, "Assertion escape with precondition {}", assertion);
+                    log(VARIABLE_PROPERTIES, "Assertion escape with precondition {}", assertion);
 
-                        statementAnalysis.stateData.setPrecondition(assertion);
-                        statementAnalysis.stateData.statementContributesToPrecondition.set();
-                    }
+                    statementAnalysis.stateData.setPrecondition(assertion);
+                    statementAnalysis.stateData.statementContributesToPrecondition.set();
                 } else {
                     analysisStatus = DELAYS;
                 }
@@ -1309,9 +1311,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 statementAnalysis.flowData.copyTimeAfterSubBlocksFromTimeAfterExecution();
             }
         }
-        if (!localConditionManager.isDelayed() && !statementAnalysis.stateData.conditionManagerIsSet()) {
-            statementAnalysis.stateData.setConditionManager(localConditionManager);
-        }
+        // fallback statement in case the local condition manager for next statement hasn't been set yet
+        statementAnalysis.stateData.ensureLocalConditionManagerForNextStatement(sharedState.localConditionManager);
         return analysisStatus;
     }
 
@@ -1321,8 +1322,13 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                                     Expression condition,
                                     boolean isDefault,
                                     LocalVariableCreation catchVariable) {
-        public boolean escapesAlways() {
-            return execution != NEVER && startOfBlock != null && startOfBlock.statementAnalysis.flowData.interruptStatus() == ALWAYS;
+
+        public boolean escapesAlwaysButNotWithPrecondition() {
+            if (execution != NEVER && startOfBlock != null) {
+                StatementAnalysis lastStatement = startOfBlock.lastStatement().statementAnalysis;
+                return lastStatement.flowData.interruptStatus() == ALWAYS && !lastStatement.flowData.escapesViaException();
+            }
+            return false;
         }
 
         public boolean alwaysExecuted() {
@@ -1379,13 +1385,15 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             }
 
             // need timeAfterSubBlocks set already
-            statementAnalysis.copyBackLocalCopies(evaluationContext, localConditionManager.state(), lastStatements,
+            statementAnalysis.copyBackLocalCopies(evaluationContext, sharedState.localConditionManager.state(), lastStatements,
                     atLeastOneBlockExecuted, maxTime);
 
             // compute the escape situation of the sub-blocks
             Expression addToStateAfterStatement = addToStateAfterStatement(evaluationContext, executions);
             if (!addToStateAfterStatement.isBoolValueTrue()) {
-                localConditionManager = localConditionManager.newForNextStatement(evaluationContext, addToStateAfterStatement);
+                ConditionManager newLocalConditionManeger = sharedState.localConditionManager
+                        .newForNextStatementDoNotChangePrecondition(evaluationContext, addToStateAfterStatement);
+                statementAnalysis.stateData.ensureLocalConditionManagerForNextStatement(newLocalConditionManeger);
                 log(VARIABLE_PROPERTIES, "Continuing beyond default condition with conditional", addToStateAfterStatement);
             }
         } else {
@@ -1393,7 +1401,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             if (statementAnalysis.flowData.timeAfterSubBlocksNotYetSet()) {
                 statementAnalysis.flowData.setTimeAfterSubBlocks(maxTime, index());
             }
-            statementAnalysis.copyBackLocalCopies(evaluationContext, localConditionManager.state(), List.of(), false, maxTime);
+            statementAnalysis.copyBackLocalCopies(evaluationContext, sharedState.localConditionManager.state(), List.of(), false, maxTime);
         }
         return analysisStatus;
     }
@@ -1410,15 +1418,15 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         if (statementAnalysis.statement instanceof IfElseStatement) {
             ExecutionOfBlock e0 = list.get(0);
             if (list.size() == 1) {
-                if (e0.escapesAlways()) {
+                if (e0.escapesAlwaysButNotWithPrecondition()) {
                     return Negation.negate(evaluationContext, list.get(0).condition);
                 }
                 return TRUE;
             }
             if (list.size() == 2) {
                 ExecutionOfBlock e1 = list.get(1);
-                boolean escape1 = e1.escapesAlways();
-                if (e0.escapesAlways()) {
+                boolean escape1 = e1.escapesAlwaysButNotWithPrecondition();
+                if (e0.escapesAlwaysButNotWithPrecondition()) {
                     if (escape1) {
                         // both if and else escape
                         return new BooleanConstant(evaluationContext.getPrimitives(), false);
@@ -1438,7 +1446,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
 
         // make an And of NOTs for all those conditions where the switch entry escapes
         if (statementAnalysis.statement instanceof SwitchStatement) {
-            Expression[] components = list.stream().filter(ExecutionOfBlock::escapesAlways).map(e -> e.condition).toArray(Expression[]::new);
+            Expression[] components = list.stream().filter(ExecutionOfBlock::escapesAlwaysButNotWithPrecondition).map(e -> e.condition).toArray(Expression[]::new);
             if (components.length == 0) return TRUE;
             return new And(evaluationContext.getPrimitives()).append(evaluationContext, components);
         }
@@ -1458,7 +1466,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         }
 
         if (statementAnalysis.statement instanceof SynchronizedStatement && list.get(0).startOfBlock != null) {
-            Expression lastState = list.get(0).startOfBlock.lastStatement().statementAnalysis.stateData.getConditionManager().state();
+            Expression lastState = list.get(0).startOfBlock.lastStatement().statementAnalysis.stateData.getConditionManagerForNextStatement().state();
             return evaluationContext.replaceLocalVariables(lastState);
         }
         return TRUE;
@@ -1478,7 +1486,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         FlowData.Execution firstBlockStatementsExecution = structure.statementExecution().apply(value, evaluationContext);
         FlowData.Execution firstBlockExecution = statementAnalysis.flowData.execution(firstBlockStatementsExecution);
 
-        executions.add(makeExecutionOfPrimaryBlock(firstBlockExecution, startOfBlocks, value));
+        executions.add(makeExecutionOfPrimaryBlock(sharedState.localConditionManager, firstBlockExecution, startOfBlocks, value));
 
         for (int count = 1; count < startOfBlocks.size(); count++) {
             Structure subStatements = structure.subStatements().get(count - 1);
@@ -1507,7 +1515,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             FlowData.Execution execution = statementAnalysis.flowData.execution(statementsExecution);
 
             ConditionManager subCm = execution == NEVER ? null :
-                    localConditionManager.newAtStartOfNewBlock(statementAnalysis.primitives, conditionForSubStatement);
+                    sharedState.localConditionManager.newAtStartOfNewBlockDoNotChangePrecondition(statementAnalysis.primitives, conditionForSubStatement);
             boolean inCatch = statement() instanceof TryStatement && !subStatements.initialisers().isEmpty(); // otherwise, it is finally
             LocalVariableCreation catchVariable = inCatch ? (LocalVariableCreation) subStatements.initialisers().get(0) : null;
             executions.add(new ExecutionOfBlock(execution, startOfBlocks.get(count).orElse(null), subCm,
@@ -1517,7 +1525,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         return executions;
     }
 
-    private ExecutionOfBlock makeExecutionOfPrimaryBlock(FlowData.Execution firstBlockExecution,
+    private ExecutionOfBlock makeExecutionOfPrimaryBlock(ConditionManager localConditionManager,
+                                                         FlowData.Execution firstBlockExecution,
                                                          List<Optional<StatementAnalyser>> startOfBlocks,
                                                          Expression value) {
         Structure structure = statementAnalysis.statement.getStructure();
@@ -1527,7 +1536,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             cm = null;
             condition = null;
         } else if (structure.expressionIsCondition()) {
-            cm = localConditionManager.newAtStartOfNewBlock(statementAnalysis.primitives, value);
+            cm = localConditionManager.newAtStartOfNewBlockDoNotChangePrecondition(statementAnalysis.primitives, value);
             condition = value;
         } else {
             cm = localConditionManager;
@@ -1728,7 +1737,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
 
         @Override
         public EvaluationContext child(Expression condition, boolean disableEvaluationOfMethodCallsUsingCompanionMethods) {
-            return new EvaluationContextImpl(iteration, conditionManager.newAtStartOfNewBlock(getPrimitives(), condition),
+            return new EvaluationContextImpl(iteration,
+                    conditionManager.newAtStartOfNewBlockDoNotChangePrecondition(getPrimitives(), condition),
                     closure,
                     disableEvaluationOfMethodCallsUsingCompanionMethods);
         }
@@ -1746,9 +1756,15 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 return statementAnalysis.getPropertyOfCurrent(variable, variableProperty);
             }
 
-            if (VariableProperty.NOT_NULL == variableProperty &&
-                    conditionManager.isTrueInAbsoluteStateOrPrecondition(this, value)) {
-                return MultiLevel.EFFECTIVELY_NOT_NULL;
+            if (VariableProperty.NOT_NULL == variableProperty) {
+                int directNN = value.getProperty(this, VariableProperty.NOT_NULL);
+                if (directNN >= MultiLevel.EFFECTIVELY_NOT_NULL) return directNN;
+                Expression valueIsNotNull = Negation.negate(this, Equals.equals(this,
+                        value, NullConstant.NULL_CONSTANT, ObjectFlow.NO_FLOW, false));
+                if (conditionManager.isTrueInAbsoluteStateOrPrecondition(this, valueIsNotNull)) {
+                    return MultiLevel.EFFECTIVELY_NOT_NULL;
+                }
+                return MultiLevel.MUTABLE;
             }
 
             // redirect to Value.getProperty()

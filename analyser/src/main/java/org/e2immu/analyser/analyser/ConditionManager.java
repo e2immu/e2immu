@@ -18,14 +18,19 @@ condition = the condition in the parent statement that leads to this block. Defa
 state = the cumulative state in the current block, before execution of the statement (level 1-2, not 3).
 The state is carried over to the next statement unless there is some interrupt in the flow (break, return, throw...)
 
+precondition = the cumulative precondition of the method, as in the previous statement's stateData.precondition
+
 In a recursion of inline conditionals, the state remains true, and the condition equals the condition of each inline.
+Default value: true
 
  */
-public record ConditionManager(Expression condition, Expression state, ConditionManager parent) {
+public record ConditionManager(Expression condition, Expression state, Expression precondition,
+                               ConditionManager parent) {
 
     public ConditionManager {
         checkBooleanOrUnknown(Objects.requireNonNull(condition));
         checkBooleanOrUnknown(Objects.requireNonNull(state));
+        checkBooleanOrUnknown(Objects.requireNonNull(precondition));
     }
 
     /*
@@ -38,21 +43,30 @@ public record ConditionManager(Expression condition, Expression state, Condition
         }
     }
 
-    public static final ConditionManager DELAYED = new ConditionManager(EmptyExpression.NO_VALUE, EmptyExpression.NO_VALUE, null);
+    public static final ConditionManager DELAYED = new ConditionManager(EmptyExpression.NO_VALUE,
+            EmptyExpression.NO_VALUE, EmptyExpression.NO_VALUE, null);
 
     public static ConditionManager initialConditionManager(Primitives primitives) {
-        return new ConditionManager(new BooleanConstant(primitives, true),
-                new BooleanConstant(primitives, true), null);
+        BooleanConstant TRUE = new BooleanConstant(primitives, true);
+        return new ConditionManager(TRUE, TRUE, TRUE, null);
     }
 
-    public ConditionManager newAtStartOfNewBlock(Primitives primitives, Expression condition) {
-        return new ConditionManager(condition, new BooleanConstant(primitives, true), this);
+    public ConditionManager newAtStartOfNewBlock(Primitives primitives, Expression condition, Expression precondition) {
+        return new ConditionManager(condition, new BooleanConstant(primitives, true), precondition, this);
     }
 
-    public ConditionManager newForNextStatement(EvaluationContext evaluationContext, Expression addToState) {
+    public ConditionManager newAtStartOfNewBlockDoNotChangePrecondition(Primitives primitives, Expression condition) {
+        return new ConditionManager(condition, new BooleanConstant(primitives, true), precondition, this);
+    }
+
+    public ConditionManager withPrecondition(Expression combinedPrecondition) {
+        return new ConditionManager(condition, state, combinedPrecondition, parent);
+    }
+
+    public ConditionManager newForNextStatementDoNotChangePrecondition(EvaluationContext evaluationContext, Expression addToState) {
         Objects.requireNonNull(addToState);
         if (addToState.isBoolValueTrue()) return this;
-        return new ConditionManager(condition, combine(evaluationContext, state, addToState), parent);
+        return new ConditionManager(condition, combine(evaluationContext, state, addToState), precondition, parent);
     }
 
     public Expression absoluteState(EvaluationContext evaluationContext) {
@@ -206,7 +220,7 @@ public record ConditionManager(Expression condition, Expression state, Condition
         Filter.FilterResult<ParameterInfo> filterResult = filter.filter(condition, filter.individualNullOrNotNullClauseOnParameter());
         // those parts that have nothing to do with individual clauses
         Expression rest = filterResult.rest();
-        Expression mine = rest.isBoolValueTrue() ? rest:
+        Expression mine = rest.isBoolValueTrue() ? rest :
                 Negation.negate(new EvaluationContextImpl(evaluationContext.getPrimitives()), rest);
 
         if (parent == null) return mine;
@@ -233,9 +247,15 @@ public record ConditionManager(Expression condition, Expression state, Condition
 
     public boolean isTrueInAbsoluteStateOrPrecondition(EvaluationContext evaluationContext, Expression expression) {
         Expression absoluteState = absoluteState(evaluationContext);
-        return absoluteState.equals(expression); // FIXME need much better: no change in And
+        Expression combinedWithPrecondition;
+        if (precondition.isBoolValueTrue()) {
+            combinedWithPrecondition = absoluteState;
+        } else {
+            combinedWithPrecondition = new And(evaluationContext.getPrimitives()).append(evaluationContext, absoluteState, precondition);
+        }
+        Expression withExpression = new And(evaluationContext.getPrimitives()).append(evaluationContext, combinedWithPrecondition, expression);
+        return withExpression.isBoolValueTrue() || withExpression.equals(combinedWithPrecondition);
     }
-
 
     public static record EvaluationContextImpl(Primitives primitives) implements EvaluationContext {
 

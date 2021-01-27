@@ -16,6 +16,7 @@ public interface StatementAnalyserVisitor {
                 Expression condition,
                 Expression state,
                 Expression absoluteState,
+                ConditionManager localConditionManager, // as at the start of the statement
                 Map<String, AnalysisStatus> statusesAsMap) {
 
         // shortcut

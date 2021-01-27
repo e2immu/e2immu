@@ -30,12 +30,25 @@ public class StateData {
 
     /*
      precondition = conditions that cause an escape
-     they are generated in the throws statement
+     they are generated in the throws statement, assert statement
      are copied upwards, and to the next statement
+
+     this variable contains the precondition of one single statement; an aggregate is computed in MethodLevelData
      */
 
     private final SetOnce<Expression> precondition = new SetOnce<>();
-    private final SetOnce<ConditionManager> conditionManager = new SetOnce<>(); // the state as it is after evaluating the statement
+
+    /*
+    contains the change in state (not condition, not precondition) when going from one statement to the next
+    in the same block
+
+    going down into a block changes condition (not state); this is contained into the ForwardInfo
+    this value is set before the complete precondition is computed in method level data; therefore,
+    the local condition manager of a subsequent statement in the same block needs to combine this value
+    and the method level data's combined precondition.
+     */
+    private final SetOnce<ConditionManager> conditionManagerForNextStatement = new SetOnce<>();
+
     public final SetOnce<Expression> valueOfExpression = new SetOnce<>();
     public final FlipSwitch statementContributesToPrecondition = new FlipSwitch();
 
@@ -45,16 +58,18 @@ public class StateData {
         statesOfInterrupts = isLoop ? new SetOnceMapOverwriteNoValue<>() : null;
     }
 
-    public ConditionManager getConditionManager() {
-        return conditionManager.getOrElse(ConditionManager.DELAYED);
+    public ConditionManager getConditionManagerForNextStatement() {
+        return conditionManagerForNextStatement.getOrElse(ConditionManager.DELAYED);
     }
 
-    public void setConditionManager(ConditionManager conditionManager) {
-        this.conditionManager.set(conditionManager);
+    public boolean conditionManagerIsNotYetSet() {
+        return !conditionManagerForNextStatement.isSet();
     }
 
-    public boolean conditionManagerIsSet() {
-        return conditionManager.isSet();
+    public void ensureLocalConditionManagerForNextStatement(ConditionManager conditionManager) {
+        if (!conditionManagerForNextStatement.isSet() && !conditionManager.isDelayed()) {
+            conditionManagerForNextStatement.set(conditionManager);
+        }
     }
 
     public Expression getValueOfExpression() {
