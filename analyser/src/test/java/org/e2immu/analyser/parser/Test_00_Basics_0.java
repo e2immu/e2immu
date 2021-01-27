@@ -33,7 +33,10 @@ import org.junit.Test;
 
 import java.io.IOException;
 
-public class Test_00_Basics_0 extends CommonTestRunner {
+public class
+
+
+Test_00_Basics_0 extends CommonTestRunner {
     private static final String TYPE = "org.e2immu.analyser.testexample.Basics_0";
 
     public Test_00_Basics_0() {

@@ -529,8 +529,9 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                     Assert.assertEquals("p>=3", d.condition().toString());
                     Assert.assertEquals("p>=3", d.absoluteState().toString());
                 }
-                if ("3".equals(d.statementId())) {
-                    // FIXME (p>=3||p<=2)&&(p>=3||q>=5)&&(p<=2||q<=-1)&&(q>=5||q<=-1) should be in the precondition now
+                if ("4".equals(d.statementId())) {
+                    Assert.assertEquals("(p>=3||p<=2)&&(p>=3||q>=5)&&(p<=2||q<=-1)&&(q>=5||q<=-1)",
+                            d.localConditionManager().precondition().toString());
                     Assert.assertEquals("true", d.state().toString());
                 }
             }

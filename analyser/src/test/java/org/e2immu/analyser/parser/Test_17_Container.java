@@ -265,6 +265,7 @@ public class Test_17_Container extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             final String TYPE = "org.e2immu.analyser.testexample.Container_4";
             final String IN = TYPE + ".crossModify(Set<String>,Set<String>):0:in";
+            final String S = TYPE + ".s";
 
             if ("crossModify".equals(d.methodInfo().name) && "0".equals(d.statementId())) {
                 if (IN.equals(d.variableName())) {
@@ -284,6 +285,14 @@ public class Test_17_Container extends CommonTestRunner {
                     String expectLinked = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "modified2";
                     Assert.assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
                 }
+            }
+            if ("m2".equals(d.methodInfo().name) && S.equals(d.variableName())) {
+                int expectNN = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL;
+                Assert.assertEquals(expectNN, d.getProperty(VariableProperty.NOT_NULL));
+            }
+            if("m1".equals(d.methodInfo().name) && S.equals(d.variableName()) && "1".equals(d.statementId())) {
+                int expectNN = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL;
+                Assert.assertEquals(expectNN, d.getProperty(VariableProperty.NOT_NULL));
             }
         };
 

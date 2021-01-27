@@ -60,6 +60,7 @@ public record ConditionManager(Expression condition, Expression state, Expressio
     }
 
     public ConditionManager withPrecondition(Expression combinedPrecondition) {
+        if(combinedPrecondition == EmptyExpression.NO_VALUE) return DELAYED;
         return new ConditionManager(condition, state, combinedPrecondition, parent);
     }
 
@@ -104,16 +105,24 @@ public record ConditionManager(Expression condition, Expression state, Expressio
         if (absoluteState.isUnknown() || value.isUnknown())
             return absoluteState.combineUnknown(value); // allow to go delayed
 
+        Expression combinedWithPrecondition;
+        if (precondition.isBoolValueTrue()) {
+            combinedWithPrecondition = absoluteState;
+        } else {
+            combinedWithPrecondition = new And(evaluationContext.getPrimitives()).append(evaluationContext, absoluteState, precondition);
+        }
+
         // this one solves boolean problems; in a boolean context, there is no difference
         // between the value and the condition
         Expression result = new And(evaluationContext.getPrimitives(), value.getObjectFlow())
-                .append(evaluationContext, absoluteState, value);
-        if (result.equals(absoluteState)) {
+                .append(evaluationContext, combinedWithPrecondition, value);
+        if (result.equals(combinedWithPrecondition)) {
             // constant true: adding the value has no effect at all
             return new BooleanConstant(evaluationContext.getPrimitives(), true);
         }
         return result;
     }
+
 
     private static Expression combine(EvaluationContext evaluationContext, Expression e1, Expression e2) {
         Objects.requireNonNull(e2);
@@ -243,18 +252,6 @@ public record ConditionManager(Expression condition, Expression state, Expressio
         Filter.FilterResult<Variable> filterResult = filter.filter(absoluteState,
                 value -> obtainVariableFilter(filter.getDefaultRest(), variable, value));
         return filterResult.accepted().getOrDefault(variable, filter.getDefaultRest());
-    }
-
-    public boolean isTrueInAbsoluteStateOrPrecondition(EvaluationContext evaluationContext, Expression expression) {
-        Expression absoluteState = absoluteState(evaluationContext);
-        Expression combinedWithPrecondition;
-        if (precondition.isBoolValueTrue()) {
-            combinedWithPrecondition = absoluteState;
-        } else {
-            combinedWithPrecondition = new And(evaluationContext.getPrimitives()).append(evaluationContext, absoluteState, precondition);
-        }
-        Expression withExpression = new And(evaluationContext.getPrimitives()).append(evaluationContext, combinedWithPrecondition, expression);
-        return withExpression.isBoolValueTrue() || withExpression.equals(combinedWithPrecondition);
     }
 
     public static record EvaluationContextImpl(Primitives primitives) implements EvaluationContext {

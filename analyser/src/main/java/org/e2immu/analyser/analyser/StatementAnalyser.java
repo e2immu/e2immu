@@ -1749,11 +1749,11 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             // IMPORTANT: here we do not want to catch VariableValues wrapped in the PropertyWrapper
             if (value instanceof VariableExpression) {
                 Variable variable = ((VariableExpression) value).variable();
+                int v = statementAnalysis.getPropertyOfCurrent(variable, variableProperty);
                 if (VariableProperty.NOT_NULL == variableProperty && notNullAccordingToConditionManager(variable)) {
-                    return MultiLevel.bestNotNull(MultiLevel.EFFECTIVELY_NOT_NULL,
-                            statementAnalysis.getPropertyOfCurrent(variable, variableProperty));
+                    return MultiLevel.bestNotNull(MultiLevel.EFFECTIVELY_NOT_NULL, v);
                 }
-                return statementAnalysis.getPropertyOfCurrent(variable, variableProperty);
+                return v;
             }
 
             if (VariableProperty.NOT_NULL == variableProperty) {
@@ -1761,10 +1761,11 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 if (directNN >= MultiLevel.EFFECTIVELY_NOT_NULL) return directNN;
                 Expression valueIsNotNull = Negation.negate(this, Equals.equals(this,
                         value, NullConstant.NULL_CONSTANT, ObjectFlow.NO_FLOW, false));
-                if (conditionManager.isTrueInAbsoluteStateOrPrecondition(this, valueIsNotNull)) {
-                    return MultiLevel.EFFECTIVELY_NOT_NULL;
+                Expression evaluation = conditionManager.evaluate(this, valueIsNotNull);
+                if (evaluation.isBoolValueTrue()) {
+                    return MultiLevel.bestNotNull(MultiLevel.EFFECTIVELY_NOT_NULL, directNN);
                 }
-                return MultiLevel.MUTABLE;
+                return directNN;
             }
 
             // redirect to Value.getProperty()

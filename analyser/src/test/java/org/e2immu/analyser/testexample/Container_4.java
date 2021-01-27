@@ -27,10 +27,10 @@ import java.util.Set;
 public class Container_4 {
 
     @NotNull1
-    @Linked(to = { "Container_4:p"})
+    @Linked(to = {"Container_4:p"})
     private final Set<String> s;
 
-    public Container_4(@NotNull Set<String> p) {
+    public Container_4(@NotNull1 Set<String> p) {
         this.s = Objects.requireNonNull(p);
     }
 
