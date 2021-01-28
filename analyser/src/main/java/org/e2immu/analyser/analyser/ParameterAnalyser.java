@@ -129,28 +129,33 @@ public class ParameterAnalyser {
         }
 
         Map<FieldInfo, ParameterAnalysis.AssignedOrLinked> map = parameterAnalysis.getAssignedToField();
-        if (checkNotLinkedOrAssigned(map)) return DONE;
+        // FIXME see if really necessary; we're working on not null: if (checkNotLinkedOrAssigned(map)) return DONE;
 
         for (Map.Entry<FieldInfo, ParameterAnalysis.AssignedOrLinked> e : map.entrySet()) {
             FieldInfo fieldInfo = e.getKey();
             Set<VariableProperty> propertiesToCopy = e.getValue() == ASSIGNED ? VariableProperty.FROM_FIELD_TO_PARAMETER :
                     Set.of(VariableProperty.MODIFIED);
-            FieldAnalysis fieldAnalysis = fieldAnalysers.get(fieldInfo).fieldAnalysis;
+            FieldAnalyser fieldAnalyser =  fieldAnalysers.get(fieldInfo);
+            if(fieldAnalyser != null) {
+                FieldAnalysis fieldAnalysis = fieldAnalyser.fieldAnalysis;
 
-            for (VariableProperty variableProperty : propertiesToCopy) {
-                int inField = fieldAnalysis.getProperty(variableProperty);
-                if (inField != Level.DELAY) {
-                    int inParameter = parameterAnalysis.getProperty(variableProperty);
-                    if (inField > inParameter) {
-                        log(ANALYSER, "Copying value {} from field {} to parameter {} for property {}", inField,
-                                fieldInfo.fullyQualifiedName(), parameterInfo.fullyQualifiedName(), variableProperty);
-                        parameterAnalysis.setProperty(variableProperty, inField);
-                        changed = true;
+                for (VariableProperty variableProperty : propertiesToCopy) {
+                    int inField = fieldAnalysis.getProperty(variableProperty);
+                    if (inField != Level.DELAY) {
+                        int inParameter = parameterAnalysis.getProperty(variableProperty);
+                        if (inField > inParameter) {
+                            log(ANALYSER, "Copying value {} from field {} to parameter {} for property {}", inField,
+                                    fieldInfo.fullyQualifiedName(), parameterInfo.fullyQualifiedName(), variableProperty);
+                            parameterAnalysis.setProperty(variableProperty, inField);
+                            changed = true;
+                        }
+                    } else {
+                        log(ANALYSER, "Still delaying copiedFromFieldToParameters because of {}", variableProperty);
+                        delays = true;
                     }
-                } else {
-                    log(ANALYSER, "Still delaying copiedFromFieldToParameters because of {}", variableProperty);
-                    delays = true;
                 }
+            } else {
+               assert e.getValue() == NO;
             }
         }
         if (!delays) {

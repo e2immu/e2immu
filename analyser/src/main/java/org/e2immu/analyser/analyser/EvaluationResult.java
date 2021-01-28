@@ -242,36 +242,42 @@ public record EvaluationResult(EvaluationContext evaluationContext,
         public void variableOccursInNotNullContext(Variable variable, Expression value, int notNullRequired) {
             assert evaluationContext != null;
 
-            if (value == NO_VALUE) {
-                if (variable instanceof ParameterInfo) {
-                    // we will mark this, so that the parameter analyser knows that it should wait
-                    setProperty(variable, VariableProperty.NOT_NULL_DELAYS_RESOLVED, Level.FALSE);
-                }
-                return; // not yet
-            }
             if (variable instanceof This) return; // nothing to be done here
-            if (variable instanceof ParameterInfo) {
-                // the opposite of the previous one
-                setProperty(variable, VariableProperty.NOT_NULL_DELAYS_RESOLVED, Level.TRUE);
-            }
-            if (value instanceof VariableExpression redirect && redirect.variable() instanceof ParameterInfo) {
-                // the opposite of the previous one
-                setProperty(redirect.variable(), VariableProperty.NOT_NULL_DELAYS_RESOLVED, Level.TRUE);
-            }
 
-            // if we already know that the variable is NOT @NotNull, then we'll raise an error
-            int notNull = MultiLevel.value(evaluationContext.getProperty(value, VariableProperty.NOT_NULL), MultiLevel.NOT_NULL);
-            if (notNull == MultiLevel.FALSE) {
+            // if the variable has a value, and this value is NOT @NotNull, then we'll raise an error
+            int notNull = MultiLevel.value(getProperty(value, VariableProperty.NOT_NULL), MultiLevel.NOT_NULL);
+            if (notNull == MultiLevel.FALSE && value != NO_VALUE) {
                 Message message = Message.newMessage(evaluationContext.getLocation(), Message.POTENTIAL_NULL_POINTER_EXCEPTION,
                         "Variable: " + variable.simpleName());
                 messages.add(message);
-            } else if (notNull < notNullRequired) {
+                return;
+            }
+            if (notNull < notNullRequired || value == NO_VALUE) {
                 // we only need to mark this in case of doubt (if we already know, we should not mark)
                 setProperty(variable, VariableProperty.NOT_NULL, notNullRequired);
                 if (value instanceof VariableExpression redirect) {
                     setProperty(redirect.variable(), VariableProperty.NOT_NULL, notNullRequired);
                 }
             }
+        }
+
+        private int getProperty(Expression expression, VariableProperty variableProperty) {
+            if (expression instanceof VariableExpression variableExpression) {
+                return getProperty(variableExpression.variable(), variableProperty);
+            }
+            return evaluationContext.getProperty(expression, variableProperty);
+        }
+
+        /*
+        it is important that the value is read from initial (-C), and not from evaluation (-E)
+         */
+        private int getProperty(Variable variable, VariableProperty variableProperty) {
+            ChangeData changeData = valueChanges.get(variable);
+            if (changeData != null) {
+                Integer inChangeData = changeData.properties.getOrDefault(variableProperty, null);
+                if (inChangeData != null) return inChangeData;
+            }
+            return evaluationContext.getPropertyFromPreviousOrInitial(variable, variableProperty, statementTime);
         }
 
         public void markRead(Variable variable) {
@@ -384,7 +390,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
         }
 
         public void markMethodDelayResolved(Variable variable) {
-            if (evaluationContext == null || !evaluationContext.isPresent(variable) || evaluationContext.getProperty(variable, VariableProperty.METHOD_DELAY) == Level.TRUE) {
+            if (evaluationContext == null || !evaluationContext.isPresent(variable) || getProperty(variable, VariableProperty.METHOD_DELAY) == Level.TRUE) {
                 setProperty(variable, VariableProperty.METHOD_DELAY_RESOLVED, Level.TRUE);
             }
         }
@@ -406,7 +412,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
         public void markContentModified(Variable variable, int modified) {
             assert evaluationContext != null;
             if (evaluationContext.isPresent(variable)) {
-                int ignoreContentModifications = evaluationContext.getProperty(variable, VariableProperty.IGNORE_MODIFICATIONS);
+                int ignoreContentModifications = getProperty(variable, VariableProperty.IGNORE_MODIFICATIONS);
                 if (ignoreContentModifications != Level.TRUE) {
                     log(DEBUG_MODIFY_CONTENT, "Mark method object as content modified {}: {}", modified, variable.fullyQualifiedName());
                     setProperty(variable, VariableProperty.MODIFIED, modified);
@@ -432,7 +438,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             if (currentExpression == NO_VALUE) return; // not yet
             assert evaluationContext != null;
             // if we already know that the variable is NOT @NotNull, then we'll raise an error
-            int notModified1 = evaluationContext.getProperty(currentExpression, VariableProperty.NOT_MODIFIED_1);
+            int notModified1 = getProperty(currentExpression, VariableProperty.NOT_MODIFIED_1);
             if (notModified1 == Level.FALSE) {
                 Message message = Message.newMessage(evaluationContext.getLocation(), Message.MODIFICATION_NOT_ALLOWED, variable.simpleName());
                 messages.add(message);

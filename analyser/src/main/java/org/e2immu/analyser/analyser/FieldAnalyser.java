@@ -248,6 +248,12 @@ public class FieldAnalyser extends AbstractAnalyser {
         return DONE;
     }
 
+    /*
+    not null has been intentionally decoupled from value and linked values
+
+    for methods/constructors with assignment to the variable, we wait for linked variables to be set AND for not null delays.
+    for methods which only read, we only wait for not-null delays to be resolved.
+     */
     private AnalysisStatus analyseNotNull(SharedState sharedState) {
         if (fieldAnalysis.getProperty(VariableProperty.NOT_NULL) != Level.DELAY) return DONE;
 
@@ -262,31 +268,27 @@ public class FieldAnalyser extends AbstractAnalyser {
             fieldAnalysis.setProperty(VariableProperty.NOT_NULL, MultiLevel.NULLABLE);
             return DONE;
         }
+
+        // first, context
+        boolean notNullDelays = allMethodsAndConstructors.stream()
+                .flatMap(m -> m.getFieldAsVariableStream(fieldInfo, true))
+                .anyMatch(vi -> vi.getProperty(VariableProperty.NOT_NULL_DELAYS_RESOLVED) == Level.FALSE);
+        if (notNullDelays) return DELAYS;
+        int bestOverContext = allMethodsAndConstructors.stream()
+                .flatMap(m -> m.getFieldAsVariableStream(fieldInfo, true))
+                .mapToInt(vi -> vi.getProperty(VariableProperty.NOT_NULL)).max().orElse(MultiLevel.NULLABLE);
+
+        // then, values
         if (!fieldAnalysis.values.isSet()) return DELAYS;
 
-        boolean allDelaysResolved = fieldAnalysis.allLinksHaveBeenEstablished.isSet();
         EvaluationContext evaluationContext = new EvaluationContextImpl(sharedState.iteration,
                 ConditionManager.initialConditionManager(analyserContext.getPrimitives()), sharedState.closure);
-
         int worstOverValues = fieldAnalysis.values.get().stream()
                 .mapToInt(expression -> evaluationContext.getProperty(expression, VariableProperty.NOT_NULL))
                 .min().orElse(MultiLevel.NULLABLE);
-        int valueFromAssignment = worstOverValues == Level.DELAY && allDelaysResolved ? MultiLevel.NULLABLE : worstOverValues;
-        if (valueFromAssignment == Level.DELAY) {
-            log(DELAYED, "Delaying property @NotNull on field {}, initialiser delayed", fieldInfo.fullyQualifiedName());
-            return DELAYS;
-        }
 
-        int bestOverContext = allMethodsAndConstructors.stream()
-                .flatMap(m -> m.getFieldAsVariableStream(fieldInfo, true))
-                .mapToInt(vi -> vi.getProperty(VariableProperty.NOT_NULL)).max().orElse(Level.DELAY);
-        int valueFromContext = bestOverContext == Level.DELAY && allDelaysResolved ? MultiLevel.NULLABLE : bestOverContext;
-        if (valueFromContext == Level.DELAY) {
-            log(DELAYED, "Delaying property @NotNull on {}, context property delay", fieldInfo.fullyQualifiedName());
-            return DELAYS;
-        }
-
-        int finalNotNullValue = MultiLevel.bestNotNull(valueFromAssignment, valueFromContext);
+        int finalNotNullValue = MultiLevel.bestNotNull(MultiLevel.NULLABLE,
+                MultiLevel.bestNotNull(worstOverValues, bestOverContext));
         log(NOT_NULL, "Set property @NotNull on field {} to value {}", fieldInfo.fullyQualifiedName(), finalNotNullValue);
 
         fieldAnalysis.setProperty(VariableProperty.NOT_NULL, finalNotNullValue);
@@ -418,6 +420,12 @@ public class FieldAnalyser extends AbstractAnalyser {
         if (res) {
             fieldAnalysis.allLinksHaveBeenEstablished.set();
             return DONE;
+        }
+        if (Logger.isLogEnabled(DELAYED)) {
+            allMethodsAndConstructors.stream()
+                    .filter(m -> !m.getFieldAsVariable(fieldInfo, false).isEmpty())
+                    .forEach(m -> log(DELAYED, "Field {}: links have not been established yet in method {}",
+                            fieldInfo.name, m.methodInfo.name));
         }
         return DELAYS;
     }

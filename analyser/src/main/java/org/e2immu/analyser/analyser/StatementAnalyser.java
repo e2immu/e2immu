@@ -869,6 +869,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
     All the rest does.
      */
     private AnalysisStatus checkNotNullEscapesAndPreconditions(SharedState sharedState) {
+        if(statementAnalysis.statement instanceof AssertStatement) return DONE; // is dealt with in subBlocks
         Boolean escapeAlwaysExecuted = isEscapeAlwaysExecutedInCurrentBlock();
         if (escapeAlwaysExecuted == null) {
             log(DELAYED, "Delaying check precondition of statement {}, interrupt condition unknown", index());
@@ -1823,6 +1824,12 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         public int getProperty(Variable variable, VariableProperty variableProperty) {
             VariableInfo vi = statementAnalysis.findOrThrow(variable);
             return vi.getProperty(variableProperty); // ALWAYS from the map!!!!
+        }
+
+        @Override
+        public int getPropertyFromPreviousOrInitial(Variable variable, VariableProperty variableProperty, int statementTime) {
+            VariableInfo vi = findForReading(variable, statementTime, true);
+            return vi.getProperty(variableProperty);
         }
 
         @Override

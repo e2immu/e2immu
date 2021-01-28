@@ -110,6 +110,8 @@ public class EvaluateParameters {
                     }
                 }
                 int notNull = map.getOrDefault(VariableProperty.NOT_NULL, Level.DELAY);
+                // FIXME introduce not null delay
+
                 minNotNullOverParameters = Math.min(minNotNullOverParameters, notNull);
 
                 ForwardEvaluationInfo forward = new ForwardEvaluationInfo(map, true);

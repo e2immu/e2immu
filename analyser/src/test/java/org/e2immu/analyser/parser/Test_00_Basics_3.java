@@ -96,9 +96,17 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                     if ("0.0.0".equals(d.statementId())) {
                         // because of the modifying method println
                         Assert.assertEquals("instance type PrintStream", d.currentValue().toString());
+                    } else if ("0.1.0".equals(d.statementId())) {
+                        Assert.fail("The variable should not exist here!");
                     } else if ("0".equals(d.statementId())) {
-                        Assert.assertEquals("input1.contains(\"a\")?instance type PrintStream:nullable instance type PrintStream", d.currentValue().toString());
+                        Assert.assertEquals("nullable instance type PrintStream",
+                                d.variableInfoContainer().getPreviousOrInitial().getValue().toString());
+                        Assert.assertEquals("instance type PrintStream", d.currentValue().toString());
                     }
+                }
+                // completely independent of the iterations, we always should have @NotNull because of context
+                if ("0.0.0".equals(d.statementId()) || "0".equals(d.statementId())) {
+                    Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL));
                 }
             }
             if ("setS1".equals(d.methodInfo().name) && S.equals(d.variableName())) {
@@ -128,6 +136,7 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                         String expectedLinked = "org.e2immu.analyser.testexample.Basics_3.s$1";
                         Assert.assertEquals(expectedLinked, d.variableInfo().getLinkedVariables().toString());
                     }
+                    Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL));
                 }
                 if ("0.1.0".equals(d.statementId())) {
                     Assert.assertEquals("\"abc\"", d.currentValue().debugOutput());
@@ -138,9 +147,12 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                         Assert.assertEquals(1, d.variableInfo().getStatementTime());
                         Assert.assertTrue(d.variableInfo().getLinkedVariables().isEmpty());
                     }
+                    Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL));
                 }
                 if ("0".equals(d.statementId())) {
                     Assert.assertEquals("input1.contains(\"a\")?\"xyz\":\"abc\"", d.currentValue().toString());
+                    Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL));
+
                     if (d.iteration() == 0) {
                         Assert.assertEquals(VariableInfoContainer.VARIABLE_FIELD_DELAY, d.variableInfo().getStatementTime());
                     } else {

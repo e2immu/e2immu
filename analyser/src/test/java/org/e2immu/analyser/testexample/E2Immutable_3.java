@@ -31,7 +31,7 @@ public class E2Immutable_3 {
     public final Set<String> strings4;
 
     @Independent
-    public E2Immutable_3(@NotNull @NotModified Set<String> input4) {
+    public E2Immutable_3(@NotNull1 @NotModified Set<String> input4) {
         strings4 = ImmutableSet.copyOf(input4);
     }
 
@@ -45,6 +45,7 @@ public class E2Immutable_3 {
     @Identity
     @Linked(absent = true)
     @Constant(absent = true)
+    @NotNull
     public Set<String> mingle(@NotNull @Modified Set<String> input4) {
         input4.addAll(strings4);
         return input4;

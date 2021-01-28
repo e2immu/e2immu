@@ -459,6 +459,11 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
     }
 
     private boolean notLocalLoopCopyOutOfComfortZone(VariableInfoContainer vic) {
+        if(vic.current().variable() instanceof FieldReference fieldReference) {
+            StatementAnalysis lastStatement = lastStatement();
+            if (lastStatement == null) return false;
+            return lastStatement.variables.isSet(fieldReference.fullyQualifiedName());
+        }
         if (vic.getVariableInLoop().variableType() != VariableInLoop.VariableType.LOOP_COPY) return true;
         String assignmentId = vic.getVariableInLoop().assignmentId(); // 2nd dollar
         return assignmentId == null || !assignmentId.startsWith(parent.index);
@@ -790,6 +795,12 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         if (effectivelyFinal == Level.DELAY && !selfReference) {
             return new ExpressionAndLinkedVariables(EmptyExpression.NO_VALUE, LinkedVariables.DELAY);
         }
+
+        int notNull = fieldAnalysis.getProperty(VariableProperty.NOT_NULL);
+        if(notNull == Level.DELAY) {
+            return new ExpressionAndLinkedVariables(EmptyExpression.NO_VALUE, LinkedVariables.DELAY);
+        }
+
         // when selfReference (as in this.x = other.x during construction), we never delay
 
         boolean variableField = effectivelyFinal == Level.FALSE;

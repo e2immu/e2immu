@@ -14,6 +14,8 @@ public class TestMultiLevel {
         Assert.assertEquals(27, EVENTUALLY_E2IMMUTABLE_BEFORE_MARK);
         Assert.assertEquals(36, EVENTUALLY_E2IMMUTABLE_AFTER_MARK);
         Assert.assertEquals(45, EFFECTIVELY_E2IMMUTABLE);
+
+        Assert.assertEquals(45, EFFECTIVELY_CONTENT_NOT_NULL);
     }
 
     @Test

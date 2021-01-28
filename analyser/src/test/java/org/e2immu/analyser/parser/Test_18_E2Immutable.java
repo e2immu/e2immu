@@ -18,13 +18,14 @@
 package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.LinkedVariables;
+import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analyser.VariableProperty;
-import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.config.EvaluationResultVisitor;
-import org.e2immu.analyser.config.MethodAnalyserVisitor;
-import org.e2immu.analyser.config.StatementAnalyserVariableVisitor;
+import org.e2immu.analyser.config.*;
+import org.e2immu.analyser.model.FieldInfo;
 import org.e2immu.analyser.model.Level;
+import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.expression.EmptyExpression;
+import org.e2immu.analyser.model.variable.FieldReference;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -65,14 +66,62 @@ public class Test_18_E2Immutable extends CommonTestRunner {
     @Test
     public void test_2() throws IOException {
         testClass("E2Immutable_2", 0, 0, new DebugConfiguration.Builder()
-
                 .build());
     }
 
     @Test
     public void test_3() throws IOException {
-        testClass("E2Immutable_3", 0, 0, new DebugConfiguration.Builder()
+        FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+            if ("strings4".equals(d.fieldInfo().name)) {
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL, d.fieldAnalysis().getProperty(VariableProperty.NOT_NULL));
+            }
+        };
 
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+
+            if ("E2Immutable_3".equals(d.methodInfo().name)) {
+                FieldInfo strings4 = d.methodInfo().typeInfo.getFieldByName("strings4", true);
+                VariableInfo vi = d.getFieldAsVariable(strings4);
+                assert vi != null;
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL, vi.getProperty(VariableProperty.NOT_NULL));
+            }
+
+            if ("mingle".equals(d.methodInfo().name)) {
+                if (d.iteration() > 0) {
+                    FieldInfo strings4 = d.methodInfo().typeInfo.getFieldByName("strings4", true);
+                    VariableInfo vi = d.getFieldAsVariable(strings4);
+                    assert vi != null;
+
+                    Assert.assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL, vi.getProperty(VariableProperty.NOT_NULL));
+                }
+                // this method returns the input parameter
+                int expectMethodNN = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
+                Assert.assertEquals(expectMethodNN, d.methodAnalysis().getProperty(VariableProperty.NOT_NULL));
+            }
+            if ("getStrings4".equals(d.methodInfo().name)) {
+                if (d.iteration() > 0) {
+                    FieldInfo strings4 = d.methodInfo().typeInfo.getFieldByName("strings4", true);
+                    VariableInfo vi = d.getFieldAsVariable(strings4);
+                    assert vi != null;
+                }
+                // method not null
+                int expectNN = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL;
+                Assert.assertEquals(expectNN, d.methodAnalysis().getProperty(VariableProperty.NOT_NULL));
+            }
+        };
+
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("E2Immutable_3".equals(d.methodInfo().name) && d.variable() instanceof FieldReference fieldReference &&
+                    "strings4".equals(fieldReference.fieldInfo.name)) {
+                Assert.assertEquals("ImmutableSet.copyOf(input4)", d.currentValue().toString());
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL));
+            }
+        };
+
+        testClass("E2Immutable_3", 0, 0, new DebugConfiguration.Builder()
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 

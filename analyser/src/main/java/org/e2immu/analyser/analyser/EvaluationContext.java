@@ -130,6 +130,10 @@ public interface EvaluationContext {
         throw new UnsupportedOperationException();
     }
 
+    default int getPropertyFromPreviousOrInitial(Variable variable, VariableProperty variableProperty, int statementTime) {
+        throw new UnsupportedOperationException();
+    }
+
     default int summarizeModification(Set<Variable> linkedVariables) {
         boolean hasDelays = false;
         for (Variable variable : linkedVariables) {
