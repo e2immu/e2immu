@@ -196,7 +196,8 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
     }
 
     @Override
-    public void setValue(Expression value, Map<VariableProperty, Integer> propertiesToSet, boolean initialOrEvaluation) {
+    public void setValue(Expression value, LinkedVariables staticallyAssignedVariables,
+                         Map<VariableProperty, Integer> propertiesToSet, boolean initialOrEvaluation) {
         ensureNotFrozen();
         Objects.requireNonNull(value);
         VariableInfoImpl variableInfo = initialOrEvaluation ? previousOrInitial.getRight() : evaluation.get();
@@ -207,6 +208,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
             int inMap = variableInfo.getProperty(vp, org.e2immu.analyser.model.Level.DELAY);
             if (v > inMap) variableInfo.setProperty(vp, v);
         });
+        variableInfo.setStaticallyAssignedVariables(staticallyAssignedVariables);
     }
 
     @Override
@@ -215,6 +217,14 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         Objects.requireNonNull(linkedVariables);
         VariableInfoImpl variableInfo = initialOrEvaluation ? previousOrInitial.getRight() : evaluation.get();
         variableInfo.setLinkedVariables(linkedVariables);
+    }
+
+    @Override
+    public void setStaticallyAssignedVariables(LinkedVariables staticallyAssignedVariables, boolean initialOrEvaluation) {
+        ensureNotFrozen();
+        Objects.requireNonNull(staticallyAssignedVariables);
+        VariableInfoImpl variableInfo = initialOrEvaluation ? previousOrInitial.getRight() : evaluation.get();
+        variableInfo.setStaticallyAssignedVariables(staticallyAssignedVariables);
     }
 
     @Override
@@ -277,7 +287,6 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
     /*
     Copy from one statement to the next, iteration 1+, into 'evaluation'
     The assignment ID marks beforehand when we can expect value changes.
-    The XXX marks when we can expect linked variable changes.
      */
     @Override
     public void copy() {
@@ -302,6 +311,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
             if (previous.linkedVariablesIsSet()) {
                 evaluation.setLinkedVariables(previous.getLinkedVariables());
             }
+            evaluation.setStaticallyAssignedVariables(previous.getStaticallyAssignedVariables());
         }
         if (previous.statementTimeIsSet()) {
             boolean confirmedNotVariableField = previous.getStatementTime() == NOT_A_VARIABLE_FIELD;

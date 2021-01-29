@@ -70,7 +70,7 @@ public class ComGoogleCommonCollect {
         int copyOf$Transfer$Size(int size) { return size; }
         @NotNull1
         @E2Container
-        static <E> ImmutableList<E> copyOf(@NotNull Iterable<? extends E> iterable) { return null; }
+        static <E> ImmutableList<E> copyOf(@NotNull1 Iterable<? extends E> iterable) { return null; }
     }
 
 
@@ -90,7 +90,7 @@ public class ComGoogleCommonCollect {
         int copyOf$Transfer$Size(int size) { return size; }
         @NotNull1
         @E2Container
-        static <E> ImmutableSet<E> copyOf(@NotNull Collection<? extends E> collection) { return null; }
+        static <E> ImmutableSet<E> copyOf(@NotNull1 Collection<? extends E> collection) { return null; }
     }
 
 
@@ -117,7 +117,7 @@ public class ComGoogleCommonCollect {
         int copyOf$Transfer$Size(int size) { return size; }
         @NotNull1
         @E2Container
-        static <K, V> ImmutableMap<K, V> copyOf(@NotNull Map<? extends K, ? extends V> map) { return null; }
+        static <K, V> ImmutableMap<K, V> copyOf(@NotNull1 Map<? extends K, ? extends V> map) { return null; }
     }
 
 }

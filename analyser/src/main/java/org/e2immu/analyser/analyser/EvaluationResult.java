@@ -111,16 +111,19 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                              boolean markAssignment,
                              Set<Integer> readAtStatementTime,
                              LinkedVariables linkedVariables,
+                             LinkedVariables staticallyAssignedVariables,
                              Map<VariableProperty, Integer> properties) {
         public ChangeData {
             Objects.requireNonNull(value);
             Objects.requireNonNull(linkedVariables);
             Objects.requireNonNull(readAtStatementTime);
+            Objects.requireNonNull(staticallyAssignedVariables);
             Objects.requireNonNull(properties);
         }
 
         public ChangeData merge(ChangeData other) {
             LinkedVariables combinedLinkedVariables = linkedVariables.merge(other.linkedVariables);
+            LinkedVariables combinedStaticallyAssignedVariabels = staticallyAssignedVariables.merge(other.staticallyAssignedVariables);
             Set<Integer> combinedReadAtStatementTime = SetUtil.immutableUnion(readAtStatementTime, other.readAtStatementTime);
             Map<VariableProperty, Integer> combinedProperties = VariableInfoImpl.mergeProperties(properties, other.properties);
             return new ChangeData(other.value == EmptyExpression.NO_VALUE ? value : other.value,
@@ -128,6 +131,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                     other.markAssignment || markAssignment,
                     combinedReadAtStatementTime,
                     combinedLinkedVariables,
+                    combinedStaticallyAssignedVariabels,
                     combinedProperties);
         }
 
@@ -255,11 +259,19 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             if (notNull < notNullRequired || value == NO_VALUE) {
                 // we only need to mark this in case of doubt (if we already know, we should not mark)
                 setProperty(variable, VariableProperty.NOT_NULL, notNullRequired);
-                if (value instanceof VariableExpression redirect) {
-                    setProperty(redirect.variable(), VariableProperty.NOT_NULL, notNullRequired);
+                if (value instanceof VariableExpression redirectViaValue) {
+                    setProperty(redirectViaValue.variable(), VariableProperty.NOT_NULL, notNullRequired);
+                } else {
+                    for (Variable staticRedirect : evaluationContext.getStaticallyAssignedVariables(variable, statementTime).variables()) {
+                        setProperty(staticRedirect, VariableProperty.NOT_NULL, notNullRequired);
+                    }
                 }
             }
         }
+
+        // FIXME! if the current state or condition says that the variable is not null, we should not be
+        // demanding a not-null from the context!
+
 
         private int getProperty(Expression expression, VariableProperty variableProperty) {
             if (expression instanceof VariableExpression variableExpression) {
@@ -285,10 +297,11 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             ChangeData newEcd;
             if (ecd == null) {
                 newEcd = new ChangeData(NO_VALUE, false, false, Set.of(statementTime),
-                        LinkedVariables.EMPTY, Map.of());
+                        LinkedVariables.EMPTY, LinkedVariables.EMPTY, Map.of());
             } else {
                 newEcd = new ChangeData(ecd.value, ecd.stateIsDelayed, ecd.markAssignment,
-                        SetUtil.immutableUnion(ecd.readAtStatementTime, Set.of(statementTime)), ecd.linkedVariables, ecd.properties);
+                        SetUtil.immutableUnion(ecd.readAtStatementTime, Set.of(statementTime)), ecd.linkedVariables,
+                        ecd.staticallyAssignedVariables, ecd.properties);
             }
             valueChanges.put(variable, newEcd);
 
@@ -305,7 +318,8 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             return createInternalObjectFlow(new Location(evaluationContext.getCurrentType()), parameterizedType, Origin.LITERAL);
         }
 
-        public ObjectFlow createInternalObjectFlow(Location location, ParameterizedType parameterizedType, Origin origin) {
+        public ObjectFlow createInternalObjectFlow(Location location, ParameterizedType parameterizedType, Origin
+                origin) {
             ObjectFlow objectFlow = new ObjectFlow(location, parameterizedType, origin);
             if (objectFlows == null) objectFlows = new LinkedList<>();
             if (!objectFlows.contains(objectFlow)) {
@@ -354,7 +368,8 @@ public record EvaluationResult(EvaluationContext evaluationContext,
         /*
         Used by MethodCall and EvaluateMethodCall
          */
-        public NewObject currentInstance(Variable variable, ObjectFlow objectFlowForCreation, Expression stateFromPreconditions) {
+        public NewObject currentInstance(Variable variable, ObjectFlow objectFlowForCreation, Expression
+                stateFromPreconditions) {
             ChangeData currentExpression = valueChanges.get(variable);
             if (currentExpression != null && currentExpression.value instanceof NewObject instance) return instance;
             assert evaluationContext != null;
@@ -372,15 +387,17 @@ public record EvaluationResult(EvaluationContext evaluationContext,
 
         // called when a new instance is needed because of a modifying method call, or when a variable doesn't have
         // an instance yet. Not called upon assignment.
-        private void assignInstanceToVariable(Variable variable, NewObject instance, LinkedVariables linkedVariables) {
+        private void assignInstanceToVariable(Variable variable, NewObject instance, LinkedVariables
+                linkedVariables) {
             ChangeData current = valueChanges.get(variable);
             ChangeData newVcd;
             if (current == null) {
                 boolean stateIsDelayed = evaluationContext.getConditionManager().isDelayed();
-                newVcd = new ChangeData(instance, stateIsDelayed, false, Set.of(), linkedVariables, Map.of());
+                newVcd = new ChangeData(instance, stateIsDelayed, false, Set.of(), linkedVariables,
+                        LinkedVariables.EMPTY, Map.of());
             } else {
                 newVcd = new ChangeData(instance, current.stateIsDelayed, current.markAssignment,
-                        current.readAtStatementTime, linkedVariables, current.properties);
+                        current.readAtStatementTime, linkedVariables, current.staticallyAssignedVariables, current.properties);
             }
             valueChanges.put(variable, newVcd);
         }
@@ -453,7 +470,8 @@ public record EvaluationResult(EvaluationContext evaluationContext,
          */
         public Builder assignment(Variable assignmentTarget,
                                   Expression resultOfExpression,
-                                  LinkedVariables linkedVariables) {
+                                  LinkedVariables linkedVariables,
+                                  LinkedVariables staticallyAssignedVariables) {
             assert evaluationContext != null;
             boolean stateIsDelayed = evaluationContext.getConditionManager().isDelayed();
             boolean markAssignment = resultOfExpression != EmptyExpression.EMPTY_EXPRESSION;
@@ -462,10 +480,11 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             ChangeData ecd = valueChanges.get(assignmentTarget);
             if (ecd == null) {
                 newEcd = new ChangeData(stateIsDelayed ? NO_VALUE : resultOfExpression, stateIsDelayed,
-                        markAssignment, Set.of(), linkedVariables, Map.of());
+                        markAssignment, Set.of(), linkedVariables, staticallyAssignedVariables, Map.of());
             } else {
                 newEcd = new ChangeData(stateIsDelayed ? NO_VALUE : resultOfExpression, stateIsDelayed,
-                        ecd.markAssignment || markAssignment, ecd.readAtStatementTime, linkedVariables, ecd.properties);
+                        ecd.markAssignment || markAssignment, ecd.readAtStatementTime, linkedVariables,
+                        staticallyAssignedVariables, ecd.properties);
             }
             valueChanges.put(assignmentTarget, newEcd);
             return this;
@@ -478,16 +497,17 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             ChangeData ecd = valueChanges.get(variable);
             if (ecd == null) {
                 newEcd = new ChangeData(NO_VALUE, false, false, Set.of(),
-                        LinkedVariables.EMPTY, Map.of(property, value));
+                        LinkedVariables.EMPTY, LinkedVariables.EMPTY, Map.of(property, value));
             } else {
                 newEcd = new ChangeData(ecd.value, ecd.stateIsDelayed, ecd.markAssignment,
-                        ecd.readAtStatementTime, ecd.linkedVariables,
+                        ecd.readAtStatementTime, ecd.linkedVariables, ecd.staticallyAssignedVariables,
                         mergeProperties(ecd.properties, Map.of(property, value)));
             }
             valueChanges.put(variable, newEcd);
         }
 
-        private Map<VariableProperty, Integer> mergeProperties(Map<VariableProperty, Integer> m1, Map<VariableProperty, Integer> m2) {
+        private Map<VariableProperty, Integer> mergeProperties
+                (Map<VariableProperty, Integer> m1, Map<VariableProperty, Integer> m2) {
             Map<VariableProperty, Integer> res = new HashMap<>(m1);
             m2.forEach((vp, v) -> res.merge(vp, v, Math::max));
             return ImmutableMap.copyOf(res);
@@ -557,7 +577,8 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                             markRead(variableInfo.variable());
                         }
                         if (variableInfo.getAssignmentId().compareTo(VariableInfoContainer.NOT_YET_READ) > 0) {
-                            assignment(variableInfo.variable(), variableInfo.getValue(), variableInfo.getLinkedVariables());
+                            assignment(variableInfo.variable(), variableInfo.getValue(), variableInfo.getLinkedVariables(),
+                                    variableInfo.getStaticallyAssignedVariables());
                         }
                     });
         }
@@ -567,7 +588,8 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             pta.fieldAnalyserStream().forEach(fa -> markVariablesFromSubFieldInitialisers(fa.fieldAnalysis, pta.primaryType));
         }
 
-        private void markVariablesFromSubFieldInitialisers(FieldAnalysisImpl.Builder fieldAnalysis, TypeInfo subType) {
+        private void markVariablesFromSubFieldInitialisers(FieldAnalysisImpl.Builder fieldAnalysis, TypeInfo
+                subType) {
             assert evaluationContext != null;
             Expression initialValue = fieldAnalysis.getInitialValue();
             if (initialValue == EmptyExpression.EMPTY_EXPRESSION || initialValue == null) return;

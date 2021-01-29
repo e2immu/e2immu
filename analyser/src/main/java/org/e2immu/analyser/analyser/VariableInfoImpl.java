@@ -54,6 +54,8 @@ class VariableInfoImpl implements VariableInfo {
     private final SetOnce<LinkedVariables> linkedVariables = new SetOnce<>();
     private final SetOnce<Integer> statementTime = new SetOnce<>();
 
+    private final SetOnce<LinkedVariables> staticallyAssignedVariables = new SetOnce<>();
+
     // ONLY for testing!
     VariableInfoImpl(Variable variable) {
         this(variable, NOT_YET_ASSIGNED, NOT_YET_READ, NOT_A_VARIABLE_FIELD, Set.of());
@@ -162,6 +164,15 @@ class VariableInfoImpl implements VariableInfo {
         return readAtStatementTimes;
     }
 
+    @Override
+    public LinkedVariables getStaticallyAssignedVariables() {
+        return staticallyAssignedVariables.getOrElse(LinkedVariables.EMPTY);
+    }
+
+    public boolean staticallyAssignedVariablesIsSet() {
+        return staticallyAssignedVariables.isSet();
+    }
+
     // ***************************** NON-INTERFACE CODE: SETTERS ************************
 
     void setProperty(VariableProperty variableProperty, int value) {
@@ -194,6 +205,14 @@ class VariableInfoImpl implements VariableInfo {
         if (value == NO_VALUE) throw new UnsupportedOperationException("Cannot set NO_VALUE");
         if (!this.value.isSet() || !this.value.get().equals(value)) { // crash if different, keep same
             this.value.set(value);
+        }
+    }
+
+    void setStaticallyAssignedVariables(LinkedVariables staticallyAssignedVariables) {
+        assert !staticallyAssignedVariables.variables().contains(this.variable);
+        if (!this.staticallyAssignedVariables.isSet() ||
+                !this.staticallyAssignedVariables.get().equals(staticallyAssignedVariables)) {
+            this.staticallyAssignedVariables.set(staticallyAssignedVariables);
         }
     }
 
@@ -247,6 +266,7 @@ class VariableInfoImpl implements VariableInfo {
         mergeStatementTime(evaluationContext, atLeastOneBlockExecuted, previous.getStatementTime(), mergeSources);
         mergeProperties(atLeastOneBlockExecuted, previous, mergeSources);
         mergeLinkedVariables(atLeastOneBlockExecuted, previous, mergeSources);
+        mergeStaticallyAssignedVariables(atLeastOneBlockExecuted, previous, mergeSources);
     }
 
     private static String mergedId(EvaluationContext evaluationContext,
@@ -308,6 +328,23 @@ class VariableInfoImpl implements VariableInfo {
         setLinkedVariables(new LinkedVariables(merged));
     }
 
+
+    /*
+    Compute and set statically assigned variables: has NO delay!
+     */
+    void mergeStaticallyAssignedVariables(boolean existingValuesWillBeOverwritten,
+                                          VariableInfo existing,
+                                          List<StatementAnalysis.ConditionAndVariableInfo> merge) {
+        Set<Variable> merged = new HashSet<>();
+        if (!existingValuesWillBeOverwritten) {
+            merged.addAll(existing.getStaticallyAssignedVariables().variables());
+        }
+        for (StatementAnalysis.ConditionAndVariableInfo cav : merge) {
+            VariableInfo vi = cav.variableInfo();
+            merged.addAll(vi.getStaticallyAssignedVariables().variables());
+        }
+        setStaticallyAssignedVariables(new LinkedVariables(merged));
+    }
 
     /*
     Compute and set or update in this object, the properties resulting from merging previous and merge sources.
@@ -375,7 +412,7 @@ class VariableInfoImpl implements VariableInfo {
 
         // here is the correct point to remove dead branches
         List<StatementAnalysis.ConditionAndVariableInfo> reduced =
-                mergeSources.stream().filter(cav ->!cav.alwaysEscapes()).collect(Collectors.toUnmodifiableList());
+                mergeSources.stream().filter(cav -> !cav.alwaysEscapes()).collect(Collectors.toUnmodifiableList());
 
         boolean allValuesIdentical = reduced.stream().allMatch(cav -> currentValue.equals(cav.variableInfo().getValue()));
         if (allValuesIdentical) return currentValue;
@@ -384,7 +421,7 @@ class VariableInfoImpl implements VariableInfo {
 
         if (reduced.size() == 1) {
             StatementAnalysis.ConditionAndVariableInfo e = reduced.get(0);
-            if(atLeastOneBlockExecuted) {
+            if (atLeastOneBlockExecuted) {
                 return e.variableInfo().getValue();
             }
             Expression result = mergeHelper.one(e.variableInfo(), stateOfDestination, e.condition());

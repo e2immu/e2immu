@@ -180,7 +180,7 @@ public class ArrayAccess implements Expression {
 
                     // NOTE (?): linked variables of a generic access to a known array -> links to ALL linked variables
                     // of all elements == serious worst case scenario, but maybe completely relevant
-                    builder.assignment(variableTarget, newObject, LinkedVariables.EMPTY);
+                    builder.assignment(variableTarget, newObject, LinkedVariables.EMPTY, LinkedVariables.EMPTY);
                 }
             } else {
                 builder.setExpression(new VariableExpression(dependentVariable));

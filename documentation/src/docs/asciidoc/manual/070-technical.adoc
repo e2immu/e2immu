@@ -310,3 +310,24 @@ Implementation issues:
 We'll work with the evaluated inline-functions; they have a translation mechanism already built in.
 . The system generates preconditions, ensure that they can be tested.
 . From a companion method we have to translate.
+
+==== Nullity of fields
+
+If the field is effectively final, it receives its values from
+
+. its initialiser
+. assignments in the constructor and methods that are exclusively part of the construction phase
+. modifying methods cannot change the value, but they can erase constructor information (`instance type X` instead of `new X(...)`)
+
+If the field is variable, there can be assignments in public methods not part of the assignment phase.
+
+Either way, nullity comes from both methods where an assignment take place, and methods where restrictions are placed on the nullity.
+The latter can take place in modifying and non-modifying methods.
+
+The statement analyser of the first occurrence of a field in a method introduces a value for the field _only when both the field's value and its nullity are known_.
+We need to ensure here that this rule will not be the cause of endless delay loops.
+
+The expected complication is in methods where there is no value yet for the field, but we still expect the nullity of the field variable to be computed.
+The field analyser must be able to grab this nullity independently of the value:
+
+* for each method, it needs to know if nullity computations have not been halted. Typically, this is done in two stages:

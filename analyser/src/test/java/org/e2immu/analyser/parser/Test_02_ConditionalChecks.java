@@ -5,6 +5,7 @@ import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.expression.EmptyExpression;
+import org.e2immu.analyser.model.variable.Variable;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -268,6 +269,7 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                     if (O5.equals(d.variableName())) {
                         int expectNN = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
                         Assert.assertEquals(expectNN, d.getProperty(VariableProperty.NOT_NULL));
+                        Assert.assertEquals(LinkedVariables.EMPTY, d.variableInfo().getStaticallyAssignedVariables());
                     }
                     if (RETURN5.equals(d.variableName())) {
                         Assert.assertEquals("<return value>||o==this", d.currentValue().toString());
@@ -318,8 +320,7 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("method5".equals(d.methodInfo().name)) {
-                int expect = d.iteration() == 0 ? Level.DELAY : MultiLevel.NULLABLE;
-                Assert.assertEquals(expect, d.parameterAnalyses().get(0).getProperty(VariableProperty.NOT_NULL));
+                Assert.assertEquals(MultiLevel.NULLABLE, d.parameterAnalyses().get(0).getProperty(VariableProperty.NOT_NULL));
             }
         };
 
@@ -327,13 +328,17 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
             if ("method5".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
                     Assert.assertEquals("o==this", d.evaluationResult().value().toString());
+                    Assert.assertFalse(d.haveSetProperty(O5, VariableProperty.NOT_NULL));
                 }
                 if ("0.0.0".equals(d.statementId())) {
                     Assert.assertEquals("true", d.evaluationResult().value().toString());
+                    Assert.assertFalse(d.haveSetProperty(O5, VariableProperty.NOT_NULL));
                 }
                 if ("1".equals(d.statementId())) {
                     Assert.assertEquals("null==o||o.getClass()!=this.getClass()", d.evaluationResult().value().toString());
                     Assert.assertTrue(d.haveMarkRead(O5));
+                    Variable o5 = d.evaluationResult().changeData().keySet().stream().filter(v -> v.simpleName().equals("o")).findFirst().orElseThrow();
+                    Assert.assertEquals(LinkedVariables.EMPTY, d.evaluationResult().changeData().get(o5).staticallyAssignedVariables());
                     Assert.assertFalse(d.haveSetProperty(O5, VariableProperty.NOT_NULL));
                 }
                 if ("2".equals(d.statementId())) {

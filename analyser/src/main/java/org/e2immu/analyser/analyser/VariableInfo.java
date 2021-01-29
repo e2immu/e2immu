@@ -71,6 +71,8 @@ public interface VariableInfo {
 
     Stream<Map.Entry<VariableProperty, Integer>> propertyStream();
 
+    LinkedVariables getStaticallyAssignedVariables();
+    
     default boolean objectFlowIsSet() {
         return getObjectFlow() != null;
     }
@@ -114,4 +116,6 @@ public interface VariableInfo {
         boolean read = isRead();
         return assigned && (!read || getReadId().compareTo(getAssignmentId()) < 0);
     }
+
+    boolean staticallyAssignedVariablesIsSet();
 }

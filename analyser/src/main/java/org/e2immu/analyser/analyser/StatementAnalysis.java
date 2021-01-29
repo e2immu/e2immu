@@ -459,7 +459,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
     }
 
     private boolean notLocalLoopCopyOutOfComfortZone(VariableInfoContainer vic) {
-        if(vic.current().variable() instanceof FieldReference fieldReference) {
+        if (vic.current().variable() instanceof FieldReference fieldReference) {
             StatementAnalysis lastStatement = lastStatement();
             if (lastStatement == null) return false;
             return lastStatement.variables.isSet(fieldReference.fullyQualifiedName());
@@ -518,7 +518,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         // copy into initial
         VariableInfo viInitial = vic.best(VariableInfoContainer.Level.INITIAL);
         if (!viInitial.valueIsSet() && !initialValue.expression.isUnknown()) {
-            vic.setValue(initialValue.expression, map, true);
+            vic.setValue(initialValue.expression, LinkedVariables.EMPTY, map, true);
         } else {
             map.forEach((k, v) -> vic.setProperty(k, v, VariableInfoContainer.Level.INITIAL));
         }
@@ -538,7 +538,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         // not assigned in this statement
         if (viEval != viInitial && vic.isNotAssignedInThisStatement()) {
             if (!viEval.valueIsSet() && !initialValue.expression.isUnknown() && !viEval.isRead()) {
-                vic.setValue(initialValue.expression, map, false);
+                vic.setValue(initialValue.expression, viInitial.getStaticallyAssignedVariables(), map, false);
             } else {
                 map.forEach((k, v) -> vic.setProperty(k, v, false, VariableInfoContainer.Level.EVALUATION));
             }
@@ -574,7 +574,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                                 NewObject.localCopyOfVariableField(primitives, fieldReference.parameterizedType(),
                                         fieldAnalysis.getObjectFlow());
                         assert initialValue != EmptyExpression.NO_VALUE && initialValue != null;
-                        lvrVic.setValue(initialValue, propertyMap, true);
+                        lvrVic.setValue(initialValue, LinkedVariables.EMPTY, propertyMap, true);
                         // we link the local copy to the original, so that modifications on the local copy
                         // imply that there is a (potential) modification on the variable field.
                         // the reverse link is also generated
@@ -695,12 +695,13 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
 
         // linked variables travel from the parameters via the statements to the fields
         if (variable instanceof ReturnVariable returnVariable) {
-            vic.setValue(new UnknownExpression(returnVariable.returnType, UnknownExpression.RETURN_VALUE), Map.of(), true);
+            vic.setValue(new UnknownExpression(returnVariable.returnType, UnknownExpression.RETURN_VALUE),
+                    LinkedVariables.EMPTY, Map.of(), true);
             // assignment will be at LEVEL 3
             vic.setLinkedVariables(LinkedVariables.EMPTY, true);
 
         } else if (variable instanceof This) {
-            vic.setValue(NewObject.forCatchOrThis(primitives, variable.parameterizedType()),
+            vic.setValue(NewObject.forCatchOrThis(primitives, variable.parameterizedType()), LinkedVariables.EMPTY,
                     propertyMap(analyserContext, methodAnalysis.getMethodInfo().typeInfo), true);
             vic.setLinkedVariables(LinkedVariables.EMPTY, true);
             vic.setProperty(VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL, false, VariableInfoContainer.Level.INITIAL);
@@ -711,13 +712,13 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             // TODO copy state from known preconditions
             Expression state = new BooleanConstant(primitives, true);
             NewObject instance = NewObject.initialValueOfParameter(parameterInfo.parameterizedType, state, objectFlow);
-            vic.setValue(instance, propertyMap(analyserContext, parameterInfo), true);
+            vic.setValue(instance, LinkedVariables.EMPTY, propertyMap(analyserContext, parameterInfo), true);
             vic.setLinkedVariables(LinkedVariables.EMPTY, true);
 
         } else if (variable instanceof FieldReference fieldReference) {
             ExpressionAndLinkedVariables initialValue = initialValueOfField(evaluationContext, fieldReference, false);
             if (!initialValue.expression.isUnknown()) { // both NO_VALUE and EMPTY_EXPRESSION
-                vic.setValue(initialValue.expression, propertyMap(analyserContext, fieldReference.fieldInfo), true);
+                vic.setValue(initialValue.expression, LinkedVariables.EMPTY, propertyMap(analyserContext, fieldReference.fieldInfo), true);
             }
             // a field's local copy is always created not modified... can only go "up"
             vic.setProperty(MODIFIED, 0, VariableInfoContainer.Level.INITIAL);
@@ -797,7 +798,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         }
 
         int notNull = fieldAnalysis.getProperty(VariableProperty.NOT_NULL);
-        if(notNull == Level.DELAY) {
+        if (notNull == Level.DELAY) {
             return new ExpressionAndLinkedVariables(EmptyExpression.NO_VALUE, LinkedVariables.DELAY);
         }
 

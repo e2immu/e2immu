@@ -257,7 +257,7 @@ public class MethodLevelData {
             vic.ensureEvaluation(VariableInfoContainer.NOT_YET_ASSIGNED,
                     sharedState.statementAnalysis.index + VariableInfoContainer.Level.EVALUATION.label,
                     sharedState.evaluationContext.getInitialStatementTime(), Set.of());
-            if (vi.valueIsSet()) vic.setValue(vi.getValue(), vi.getProperties(), false);
+            if (vi.valueIsSet()) vic.setValue(vi.getValue(), LinkedVariables.EMPTY, vi.getProperties(), false);
             if (vi.linkedVariablesIsSet()) vic.setLinkedVariables(vi.getLinkedVariables(), false);
         }
         vic.setProperty(VariableProperty.MODIFIED, modified, false, VariableInfoContainer.Level.MERGE);

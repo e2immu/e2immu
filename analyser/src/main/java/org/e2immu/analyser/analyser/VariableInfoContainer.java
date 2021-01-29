@@ -54,6 +54,8 @@ public interface VariableInfoContainer {
         return hasEvaluation() && getPreviousOrInitial().getReadId().compareTo(best(Level.EVALUATION).getReadId()) < 0;
     }
 
+    void setStaticallyAssignedVariables(LinkedVariables staticallyAssignedVariables, boolean initialOrEvaluation);
+
     // suffixes in assignment id; these act as the 3 levels for setProperty
     enum Level {
         INITIAL("-C"), // C for creation, but essentially, it should be < E
@@ -104,7 +106,8 @@ public interface VariableInfoContainer {
     boolean isInitial();
 
     // writing operations
-    void setValue(Expression value, Map<VariableProperty, Integer> propertiesToSet, boolean initialOrEvaluation);
+    void setValue(Expression value, LinkedVariables staticallyAssignedVariables,
+                  Map<VariableProperty, Integer> propertiesToSet, boolean initialOrEvaluation);
 
     default void setProperty(VariableProperty variableProperty, int value, Level level) {
         setProperty(variableProperty, value, true, level);

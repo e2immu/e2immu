@@ -563,14 +563,14 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 log(ANALYSER, "Write value {} to variable {}", valueToWrite, variable.fullyQualifiedName());
                 // first do the properties that come with the value; later, we'll write the ones in changeData
                 Map<VariableProperty, Integer> propertiesToSet = sharedState.evaluationContext.getValueProperties(valueToWrite);
-                vic.setValue(valueToWrite, propertiesToSet, false);
+                vic.setValue(valueToWrite, changeData.staticallyAssignedVariables(), propertiesToSet, false);
             }
 
             if (!changeData.markAssignment() && (haveEvaluationResult || !changeData.haveScopeDelay())) {
                 // we're not assigning (and there is no change in instance because of a modifying method)
                 // only then we copy from INIT to EVAL
                 if (vi.getValue() == NO_VALUE && vi1.getValue() != NO_VALUE) {
-                    vic.setValue(vi1.getValue(), vi1.getProperties(), false);
+                    vic.setValue(vi1.getValue(), vi1.getStaticallyAssignedVariables(), vi1.getProperties(), false);
                 } else {
                     vi1.getProperties().forEach((vp, v) ->
                             vic.setProperty(vp, v, false, VariableInfoContainer.Level.EVALUATION));
@@ -593,10 +593,15 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                     // assign the value of the assignment to the local copy created
                     log(ANALYSER, "Write value {} to local copy variable {}", valueToWrite, local.current().variable().fullyQualifiedName());
                     Map<VariableProperty, Integer> propertiesToSet = sharedState.evaluationContext.getValueProperties(valueToWrite);
-                    local.setValue(valueToWrite, propertiesToSet, false);
+                    local.setValue(valueToWrite, changeData.staticallyAssignedVariables(), propertiesToSet, false);
                     local.setLinkedVariables(new LinkedVariables(Set.of(vi.variable())), false);
                     additionalLinks.add(local.current().variable());
                 }
+            }
+
+            // irrespective of status, etc., not sensitive to delays
+            if (changeData.markAssignment()) {
+                vic.setStaticallyAssignedVariables(changeData.staticallyAssignedVariables(), false);
             }
 
             LinkedVariables mergedLinkedVariables = writeMergedLinkedVariables(changeData, variable, vi, vi1, additionalLinks);
@@ -869,7 +874,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
     All the rest does.
      */
     private AnalysisStatus checkNotNullEscapesAndPreconditions(SharedState sharedState) {
-        if(statementAnalysis.statement instanceof AssertStatement) return DONE; // is dealt with in subBlocks
+        if (statementAnalysis.statement instanceof AssertStatement) return DONE; // is dealt with in subBlocks
         Boolean escapeAlwaysExecuted = isEscapeAlwaysExecutedInCurrentBlock();
         if (escapeAlwaysExecuted == null) {
             log(DELAYED, "Delaying check precondition of statement {}, interrupt condition unknown", index());
@@ -1005,8 +1010,9 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                     // otherwise we'll get delays
                     // especially in the case of forEach, the lvc.expression is empty, anyway
                     // an assignment may be difficult. The value is never used, only local copies are
-                    vic.setValue(NewObject.forCatchOrThis(statementAnalysis.primitives, lvr.parameterizedType()), Map.of(), true);
-                    vic.setLinkedVariables(new LinkedVariables(Set.of()), true);
+                    vic.setValue(NewObject.forCatchOrThis(statementAnalysis.primitives, lvr.parameterizedType()),
+                            LinkedVariables.EMPTY, Map.of(), true);
+                    vic.setLinkedVariables(LinkedVariables.EMPTY, true);
                 } else {
                     initialiserToEvaluate = lvc; // == expression
                 }
@@ -1203,7 +1209,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         vic.ensureEvaluation(index() + VariableInfoContainer.Level.EVALUATION.label,
                 VariableInfoContainer.NOT_YET_READ, VariableInfoContainer.NOT_A_VARIABLE_FIELD, Set.of());
         Map<VariableProperty, Integer> properties = sharedState.evaluationContext.getValueProperties(newReturnValue);
-        vic.setValue(newReturnValue, properties, false);
+        vic.setValue(newReturnValue, LinkedVariables.EMPTY, properties, false);
         LinkedVariables newLinkedVariables = sharedState.evaluationContext.linkedVariables(level3EvaluationResult);
         if (newLinkedVariables == LinkedVariables.DELAY) {
             log(DELAYED, "Delaying evaluation because of linked variables of return statement {} in {}",
@@ -1225,7 +1231,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             vic.ensureEvaluation(VariableInfoContainer.NOT_YET_ASSIGNED, //index() + VariableInfoContainer.Level.EVALUATION.label,
                     VariableInfoContainer.NOT_YET_READ, VariableInfoContainer.NOT_A_VARIABLE_FIELD, Set.of());
             VariableInfo initial = vic.getPreviousOrInitial();
-            vic.setValue(initial.getValue(), Map.of(), false);
+            vic.setValue(initial.getValue(), LinkedVariables.EMPTY, Map.of(), false);
             vic.setProperty(VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL, VariableInfoContainer.Level.EVALUATION);
             vic.setLinkedVariables(initial.getLinkedVariables(), false);
         }
@@ -1939,6 +1945,12 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         @Override
         public Stream<Map.Entry<String, VariableInfoContainer>> localVariableStream() {
             return statementAnalysis.variables.stream().filter(e -> e.getValue().current().variable() instanceof LocalVariableReference);
+        }
+
+        @Override
+        public LinkedVariables getStaticallyAssignedVariables(Variable variable, int statementTime) {
+            VariableInfo variableInfo = findForReading(variable, statementTime, true);
+            return variableInfo.getStaticallyAssignedVariables();
         }
     }
 }

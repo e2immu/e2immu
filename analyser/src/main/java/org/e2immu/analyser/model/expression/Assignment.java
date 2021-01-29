@@ -36,6 +36,7 @@ import org.e2immu.annotation.NotNull;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 import static org.e2immu.analyser.model.expression.EmptyExpression.NO_VALUE;
 import static org.e2immu.analyser.util.Logger.LogTarget.LINKED_VARIABLES;
@@ -259,7 +260,14 @@ public class Assignment implements Expression {
         } else {
             linkedVariables = LinkedVariables.DELAY;
         }
-        builder.assignment(at, resultOfExpression, linkedVariables);
+
+        LinkedVariables staticallyAssignedVariables;
+        if(value instanceof VariableExpression variableExpression && variableExpression.variable() instanceof FieldReference) {
+            staticallyAssignedVariables = new LinkedVariables(Set.of(variableExpression.variable()));
+        } else {
+            staticallyAssignedVariables = LinkedVariables.EMPTY;
+        }
+        builder.assignment(at, resultOfExpression, linkedVariables, staticallyAssignedVariables);
 
     }
 

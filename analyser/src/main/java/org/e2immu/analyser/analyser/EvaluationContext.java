@@ -232,4 +232,8 @@ public interface EvaluationContext {
         if (inLocalPTAs != null) return inLocalPTAs;
         return getAnalyserContext().getMethodAnalysis(methodInfo);
     }
+
+    default LinkedVariables getStaticallyAssignedVariables(Variable variable, int statementTime) {
+        return null;
+    }
 }

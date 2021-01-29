@@ -137,7 +137,9 @@ public record VariableExpression(Variable variable,
     }
 
     // code also used by FieldAccess
-    public static EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo, Variable variable) {
+    public static EvaluationResult evaluate(EvaluationContext evaluationContext,
+                                            ForwardEvaluationInfo forwardEvaluationInfo,
+                                            Variable variable) {
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
         Expression currentValue = builder.currentExpression(variable, forwardEvaluationInfo.isNotAssignmentTarget());
         builder.setExpression(currentValue);
@@ -153,7 +155,7 @@ public record VariableExpression(Variable variable,
 
         int notNull = forwardEvaluationInfo.getProperty(VariableProperty.NOT_NULL);
         if (notNull > MultiLevel.NULLABLE) {
-            builder.variableOccursInNotNullContext(variable, currentValue, notNull);
+            builder.variableOccursInNotNullContext(variable, currentValue,  notNull);
         }
         int modified = forwardEvaluationInfo.getProperty(VariableProperty.MODIFIED);
         if (modified != Level.DELAY) {
