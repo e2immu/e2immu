@@ -5,8 +5,6 @@ import org.e2immu.analyser.analyser.VariableInfoContainer;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.expression.EmptyExpression;
-import org.e2immu.analyser.model.expression.NoValue;
 import org.e2immu.analyser.model.expression.PropertyWrapper;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.junit.Assert;
@@ -147,7 +145,7 @@ public class Test_10_Identity extends CommonTestRunner {
 
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("idem3".equals(d.methodInfo().name) && "1.0.0".equals(d.statementId()) && d.iteration() > 0) {
-                Expression value = d.statementAnalysis().stateData.valueOfExpression.get();
+                Expression value = d.statementAnalysis().stateData.getValueOfExpression();
                 Assert.assertTrue(value instanceof PropertyWrapper);
                 Expression valueInside = ((PropertyWrapper) value).expression;
                 Assert.assertTrue(valueInside instanceof PropertyWrapper);
@@ -200,7 +198,7 @@ public class Test_10_Identity extends CommonTestRunner {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("idem4".equals(d.methodInfo().name) && "1".equals(d.statementId())) {
                 // double property wrapper
-                String expect = d.iteration() == 0 ? NoValue.NO_VALUE : "s/*@Immutable,@NotNull*//*@Immutable,@NotNull*/";
+                String expect = d.iteration() == 0 ? "xx" : "s/*@Immutable,@NotNull*//*@Immutable,@NotNull*/";
                 Assert.assertEquals(expect, d.evaluationResult().value().toString());
             }
         };

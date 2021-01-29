@@ -196,12 +196,12 @@ public class FieldAnalyser extends AbstractAnalyser {
                         ConditionManager.initialConditionManager(analyserContext.getPrimitives()), sharedState.closure());
                 EvaluationResult evaluationResult = fieldInitialiser.initialiser().evaluate(evaluationContext, ForwardEvaluationInfo.DEFAULT);
                 Expression initialiserValue = evaluationResult.value();
-                if (initialiserValue.isNotDelayed()) {
+                if (!evaluationResult.someValueWasDelayed()) {
                     fieldAnalysis.initialValue.set(initialiserValue);
                 }
                 AnalysisStatus resultOfObjectFlow = makeInternalObjectFlowsPermanent(evaluationResult);
                 log(FINAL, "Set initialiser of field {} to {}", fieldInfo.fullyQualifiedName(), evaluationResult.value());
-                return resultOfObjectFlow.combine(initialiserValue.isDelayed() ? DELAYS : DONE);
+                return resultOfObjectFlow.combine(evaluationResult.someValueWasDelayed() ? DELAYS : DONE);
             }
         }
         fieldAnalysis.initialValue.set(ConstantExpression.nullValue(analyserContext.getPrimitives(), fieldInfo.type.bestTypeInfo()));
@@ -385,7 +385,7 @@ public class FieldAnalyser extends AbstractAnalyser {
 
         List<Expression> values = new LinkedList<>();
         if (haveInitialiser) {
-            if (fieldAnalysis.getInitialValue().isDelayed()) {
+            if (fieldAnalysis.getInitialValue() == null) {
                 log(DELAYED, "Delaying consistent value for field " + fieldInfo.fullyQualifiedName());
                 return DELAYS;
             }
@@ -396,9 +396,8 @@ public class FieldAnalyser extends AbstractAnalyser {
             for (MethodAnalyser methodAnalyser : myMethodsAndConstructors) {
                 for (VariableInfo vi : methodAnalyser.getFieldAsVariable(fieldInfo, false)) {
                     if (vi.isAssigned()) {
-                        Expression value = vi.getValue();
-                        if (value.isNotDelayed()) {
-                            values.add(value);
+                        if (vi.isNotDelayed()) {
+                            values.add(vi.getValue());
                         } else {
                             log(DELAYED, "Delay consistent value for field {}", fieldInfo.fullyQualifiedName());
                             return DELAYS;
@@ -713,7 +712,7 @@ public class FieldAnalyser extends AbstractAnalyser {
         FieldReference fieldReference = (FieldReference) variable;
         FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalyser(fieldReference.fieldInfo).fieldAnalysis;
         int effectivelyFinal = fieldAnalysis.getProperty(VariableProperty.FINAL);
-        if (effectivelyFinal == Level.DELAY) return NoValue.EMPTY;
+        if (effectivelyFinal == Level.DELAY) return DelayedExpression.forField(fieldInfo);
         ObjectFlow objectFlow = fieldAnalysis.getObjectFlow();
         if (effectivelyFinal == Level.FALSE) {
             return new VariableExpression(variable, objectFlow);
@@ -808,8 +807,9 @@ public class FieldAnalyser extends AbstractAnalyser {
 
         @Override
         public EvaluationContext child(Expression condition) {
+            boolean conditionIsDelayed = isDelayed(condition);
             ConditionManager cm = conditionManager.newAtStartOfNewBlock(getPrimitives(), condition,
-                    new BooleanConstant(getPrimitives(), true));
+                    new BooleanConstant(getPrimitives(), true), conditionIsDelayed);
             return FieldAnalyser.this.new EvaluationContextImpl(iteration, cm, closure);
         }
 

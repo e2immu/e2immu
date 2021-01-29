@@ -22,21 +22,32 @@ import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.analyser.VariableProperty;
-import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.Level;
-import org.e2immu.analyser.model.ParameterizedType;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Text;
+import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.E2Container;
 
 @E2Container
-public record EmptyExpression(String msg) implements Expression {
-    public static final EmptyExpression EMPTY_EXPRESSION = new EmptyExpression("<empty>");
-    public static final EmptyExpression DEFAULT_EXPRESSION = new EmptyExpression("<default>"); // negation of the disjunction of all earlier conditions
-    public static final EmptyExpression FINALLY_EXPRESSION = new EmptyExpression("<finally>"); // always true condition
-    public static final EmptyExpression NO_RETURN_VALUE = new EmptyExpression("<no return value>"); // assigned to void methods
+public record DelayedExpression(String msg, ParameterizedType parameterizedType) implements Expression {
+
+    public static DelayedExpression forMethod(MethodInfo methodInfo) {
+        return new DelayedExpression("<method:" + methodInfo.name + ">", methodInfo.returnType());
+    }
+
+    public static DelayedExpression forRemappedParameter(ParameterInfo parameterInfo) {
+        return new DelayedExpression("<parameter:" + parameterInfo.name + ">", parameterInfo.parameterizedType());
+    }
+
+    public static DelayedExpression forField(FieldInfo fieldInfo) {
+        return new DelayedExpression("<field:" + fieldInfo.fullyQualifiedName() + ">", fieldInfo.type);
+    }
+
+    public static Expression forCondition(Primitives primitives) {
+        return new DelayedExpression("<condition>", primitives.booleanParameterizedType);
+    }
 
     @Override
     public boolean equals(Object obj) {
@@ -50,7 +61,7 @@ public record EmptyExpression(String msg) implements Expression {
 
     @Override
     public ParameterizedType returnType() {
-        throw new UnsupportedOperationException();
+        return parameterizedType;
     }
 
     @Override
@@ -79,7 +90,7 @@ public record EmptyExpression(String msg) implements Expression {
     }
 
     @Override
-    public boolean isUnknown() {
+    public boolean isDelayed(EvaluationContext evaluationContext) {
         return true;
     }
 

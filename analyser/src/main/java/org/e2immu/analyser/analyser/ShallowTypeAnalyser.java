@@ -333,10 +333,10 @@ public class ShallowTypeAnalyser implements AnalyserContext {
         if (fieldAnalysisBuilder.getProperty(VariableProperty.FINAL) == Level.TRUE && fieldInfo.fieldInspection.get().fieldInitialiserIsSet()) {
             Expression initialiser = fieldInfo.fieldInspection.get().getFieldInitialiser().initialiser();
             Expression value;
-            if (initialiser instanceof StringConstant stringConstant) {
-                value = stringConstant;
+            if (initialiser instanceof ConstantExpression<?> constantExpression) {
+                value = constantExpression;
             } else {
-                value = NoValue.EMPTY; // IMPROVE
+                value = EmptyExpression.EMPTY_EXPRESSION; // IMPROVE
             }
             fieldAnalysisBuilder.effectivelyFinalValue.set(value);
         }

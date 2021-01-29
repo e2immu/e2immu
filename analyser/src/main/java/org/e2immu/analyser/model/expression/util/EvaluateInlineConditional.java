@@ -35,7 +35,6 @@ public class EvaluateInlineConditional {
                                                                 Expression ifFalse,
                                                                 ObjectFlow objectFlow) {
         Expression condition = evaluationContext.getConditionManager().evaluate(evaluationContext, conditionBeforeState);
-        if (condition.isDelayed()) return new EvaluationResult.Builder().setExpression(NoValue.EMPTY).build(); // delay
         return conditionalValueConditionResolved(evaluationContext, condition, ifTrue, ifFalse, objectFlow);
     }
 

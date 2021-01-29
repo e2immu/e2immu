@@ -221,7 +221,8 @@ public class FlowData {
      */
     public boolean computeGuaranteedToBeReachedReturnUnreachable(StatementAnalysis previousStatement,
                                                                  Execution blockExecution,
-                                                                 Expression state) {
+                                                                 Expression state,
+                                                                 boolean stateIsDelayed) {
         // some statements that need executing independently of delays
         if (previousStatement == null) {
             // start of a block is always reached in that block
@@ -232,7 +233,7 @@ public class FlowData {
             return false; // no more errors
         }
 
-        if (state.isDelayed()) {
+        if (stateIsDelayed) {
             log(Logger.LogTarget.DELAYED, "Delaying guaranteed to be reached, no value state");
             return false;
         }

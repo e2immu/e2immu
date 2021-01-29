@@ -18,7 +18,6 @@
 package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.expression.NoValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
@@ -155,7 +154,7 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
 
         @Override
         public Expression getInitialValue() {
-            return initialValue.getOrElse(NoValue.EMPTY);
+            return initialValue.getOrElse(null);
         }
 
         @Override

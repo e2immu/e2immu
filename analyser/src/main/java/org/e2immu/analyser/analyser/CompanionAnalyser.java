@@ -94,7 +94,7 @@ public class CompanionAnalyser {
             EvaluationContext evaluationContext = new EvaluationContextImpl(iteration,
                     ConditionManager.initialConditionManager(analyserContext.getPrimitives()));
             EvaluationResult evaluationResult = returnStatement.expression.evaluate(evaluationContext, ForwardEvaluationInfo.DEFAULT);
-            if (evaluationResult.value().isDelayed()) {
+            if (evaluationContext.isDelayed(evaluationResult.value())) {
                 log(DELAYED, "Delaying companion analysis of {} of {}, delay in evaluation",
                         companionMethodName, mainMethod.fullyQualifiedName());
                 visit(iteration, DELAYS, evaluationContext, evaluationResult);
@@ -194,8 +194,9 @@ public class CompanionAnalyser {
 
         @Override
         public EvaluationContext child(Expression condition) {
+            boolean conditionIsDelayed = isDelayed(condition);
             ConditionManager cm = conditionManager.newAtStartOfNewBlock(getPrimitives(), condition,
-                    new BooleanConstant(getPrimitives(), true));
+                    new BooleanConstant(getPrimitives(), true), conditionIsDelayed);
             return new EvaluationContextImpl(iteration, cm);
         }
 
@@ -203,7 +204,7 @@ public class CompanionAnalyser {
         public Expression currentValue(Variable variable, int statementTime, boolean isNotAssignmentTarget) {
             if (variable instanceof ParameterInfo parameterInfo) {
                 Map<String, Expression> remapping = companionAnalysis.remapParameters.getOrElse(null);
-                if (remapping == null) return NoValue.EMPTY;
+                if (remapping == null) return DelayedExpression.forRemappedParameter(parameterInfo);
                 return Objects.requireNonNull(remapping.get(parameterInfo.name));
             }
             return new VariableExpression(variable);

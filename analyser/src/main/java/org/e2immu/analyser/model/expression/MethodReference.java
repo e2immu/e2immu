@@ -152,7 +152,7 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
                     result = new MethodCall(scopeResult.value(), methodInfo, List.of(), objectFlow);
                 }
             } else if (methodInfo.hasStatements()) {
-                result = NoValue.EMPTY; // delay, waiting
+                result = DelayedExpression.forMethod(methodInfo);
             } else {
                 if (scopeResult.value() instanceof NullConstant) {
                     builder.raiseError(Message.NULL_POINTER_EXCEPTION);

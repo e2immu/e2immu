@@ -4,8 +4,6 @@ import org.e2immu.analyser.analyser.LinkedVariables;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.expression.EmptyExpression;
-import org.e2immu.analyser.model.expression.NoValue;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -135,7 +133,7 @@ public class Test_17_Container extends CommonTestRunner {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("addToS".equals(d.methodInfo().name) && "0.0.0".equals(d.statementId())) {
                 if (d.iteration() == 0) {
-                    Assert.assertSame(NoValue.EMPTY, d.condition());
+                    Assert.assertSame("xx", d.condition().toString());
                 } else {
                     Assert.assertEquals("null!=s", d.condition().toString());
                 }
@@ -157,7 +155,7 @@ public class Test_17_Container extends CommonTestRunner {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("add".equals(d.methodInfo().name) && "1.0.0".equals(d.statementId())) {
                 if (d.iteration() == 0) {
-                    Assert.assertSame(NoValue.EMPTY, d.evaluationResult().value());
+                    Assert.assertSame("xx", d.evaluationResult().value().toString());
                 } else {
                     Assert.assertEquals("org.e2immu.analyser.testexample.Container_3.s$0.add(s3)", d.evaluationResult().value().toString());
                 }

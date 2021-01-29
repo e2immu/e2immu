@@ -19,7 +19,6 @@ package org.e2immu.analyser.analyser;
 
 import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.expression.NoValue;
 import org.e2immu.analyser.util.SetOnce;
 
 import java.util.List;
@@ -67,6 +66,7 @@ public class CompanionAnalysisImpl implements CompanionAnalysis {
         public final SetOnce<Map<String, Expression>> remapParameters = new SetOnce<>();
         public final SetOnce<Expression> preAspectVariableValue = new SetOnce<>();
         public final SetOnce<List<Expression>> parameterValues = new SetOnce<>();
+
         public Builder(AnnotationParameters annotationType) {
             this.annotationType = annotationType;
         }
@@ -93,7 +93,7 @@ public class CompanionAnalysisImpl implements CompanionAnalysis {
 
         @Override
         public Expression getPreAspectVariableValue() {
-            return preAspectVariableValue.getOrElse(NoValue.EMPTY);
+            return preAspectVariableValue.getOrElse(null);
         }
     }
 }

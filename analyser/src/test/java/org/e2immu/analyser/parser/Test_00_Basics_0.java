@@ -26,7 +26,6 @@ import org.e2immu.analyser.model.FieldAnalysis;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.TypeInfo;
-import org.e2immu.analyser.model.expression.NoValue;
 import org.e2immu.analyser.model.expression.StringConstant;
 import org.junit.Assert;
 import org.junit.Test;
@@ -46,8 +45,7 @@ Test_00_Basics_0 extends CommonTestRunner {
     // value only comes in second iteration
     EvaluationResultVisitor evaluationResultVisitor = d -> {
         if (d.methodInfo().name.equals("getExplicitlyFinal") && "0".equals(d.statementId())) {
-            String expectValue = d.iteration() == 0 ? NoValue.NO_VALUE : "\"abc\"";
-            Assert.assertEquals(expectValue, d.evaluationResult().value().toString());
+            Assert.assertEquals("\"abc\"", d.evaluationResult().value().toString());
         }
     };
 
@@ -72,7 +70,7 @@ Test_00_Basics_0 extends CommonTestRunner {
                 Assert.assertFalse(d.variableInfo().isAssigned());
                 Assert.assertTrue(d.variableInfo().isRead());
                 if (d.iteration() == 0) {
-                    Assert.assertSame(NoValue.EMPTY, d.currentValue());
+                    Assert.assertTrue( d.currentValueIsDelayed());
                 } else {
                     Assert.assertEquals(new StringConstant(d.evaluationContext().getPrimitives(), "abc"), d.currentValue());
                 }
@@ -85,8 +83,7 @@ Test_00_Basics_0 extends CommonTestRunner {
             }
             // the return value
             Assert.assertEquals((TYPE + ".getExplicitlyFinal()"), d.variableName());
-            String expectValue = d.iteration() == 0 ? NoValue.NO_VALUE : "\"abc\"";
-            Assert.assertEquals(expectValue, d.currentValue().toString());
+            Assert.assertEquals("\"abc\"", d.currentValue().toString());
 
             int expectNotNull = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
             Assert.assertEquals(expectNotNull, d.getProperty(VariableProperty.NOT_NULL));

@@ -3,8 +3,8 @@ package org.e2immu.analyser.analyser.check;
 import org.e2immu.analyser.analyser.AbstractAnalysisBuilder;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.expression.MemberValuePair;
-import org.e2immu.analyser.model.expression.NoValue;
 import org.e2immu.analyser.model.expression.StringConstant;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Messages;
@@ -19,7 +19,7 @@ public record CheckConstant(Primitives primitives, E2ImmuAnnotationExpressions e
 
     public void checkConstantForFields(Messages messages, FieldInfo fieldInfo, FieldAnalysis fieldAnalysis) {
         Expression singleReturnValue = fieldAnalysis.getEffectivelyFinalValue() != null ?
-                fieldAnalysis.getEffectivelyFinalValue() : NoValue.EMPTY;
+                fieldAnalysis.getEffectivelyFinalValue() : EmptyExpression.EMPTY_EXPRESSION;
         checkConstant(messages, (AbstractAnalysisBuilder) fieldAnalysis,
                 singleReturnValue,
                 fieldInfo.fieldInspection.get().getAnnotations(),

@@ -32,7 +32,7 @@ public class Test_09_EvaluatesToConstant extends CommonTestRunner {
                 Assert.assertEquals("param.contains(\"a\")", d.absoluteState().toString());
 
                 if (d.iteration() >= 1) {
-                    Expression value = d.statementAnalysis().stateData.valueOfExpression.get();
+                    Expression value = d.statementAnalysis().stateData.getValueOfExpression();
                     Assert.assertEquals("xzy", value.toString());
                     Assert.assertTrue("Is " + value.getClass(), value instanceof MethodCall);
                 }

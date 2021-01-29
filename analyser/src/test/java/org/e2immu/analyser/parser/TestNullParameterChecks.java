@@ -8,9 +8,7 @@ import org.e2immu.analyser.config.TypeMapVisitor;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.TypeInfo;
-import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.expression.InlinedMethod;
-import org.e2immu.analyser.model.expression.NoValue;
 import org.junit.Assert;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -59,7 +57,7 @@ public class TestNullParameterChecks extends CommonTestRunner {
         if (("method11Lambda".equals(d.methodInfo().name) || "method12Lambda".equals(d.methodInfo().name))
                 && "supplier".equals(d.variableName()) && "0".equals(d.statementId())) {
             if (d.iteration() == 0) {
-                Assert.assertSame(NoValue.EMPTY, d.currentValue());
+                Assert.assertEquals("xx", d.currentValue().toString());
             } else {
                 Assert.assertTrue("Have " + d.currentValue().getClass(), d.currentValue() instanceof InlinedMethod);
                 Assert.assertEquals("inline get on t.trim() + .", d.currentValue().toString());

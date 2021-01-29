@@ -59,8 +59,8 @@ public class EvaluateMethodCall {
         }
 
         // no value (method call on field that does not have effective value yet)
-        if (objectValue.isDelayed()) {
-            return builder.setExpression(NoValue.EMPTY).build(); // this will delay
+        if (evaluationContext.isDelayed(objectValue)) {
+            return builder.setExpression(DelayedExpression.forMethod(methodInfo)).build(); // this will delay
         }
 
         if (ShallowTypeAnalyser.IS_KNOWN_FQN.equals(methodInfo.fullyQualifiedName) &&
@@ -130,14 +130,14 @@ public class EvaluateMethodCall {
         }
 
         // @Identity as method annotation
-        Expression identity = computeIdentity(evaluationContext, methodAnalysis, parameters, objectFlowOfResult);
+        Expression identity = computeIdentity(evaluationContext, methodInfo, methodAnalysis, parameters, objectFlowOfResult);
         if (identity != null) {
             return builder.setExpression(identity).build();
         }
 
         // @Fluent as method annotation
         // fluent methods are modifying
-        Expression fluent = computeFluent(methodAnalysis, objectValue);
+        Expression fluent = computeFluent(methodInfo, methodAnalysis, objectValue);
         if (fluent != null) {
             return builder.setExpression(fluent).build();
         }
@@ -172,7 +172,7 @@ public class EvaluateMethodCall {
         } else if (methodAnalysis.isBeingAnalysed()) {
             // we will, at some point, analyse this method
             log(Logger.LogTarget.DELAYED, "Delaying method value on {}", methodInfo.fullyQualifiedName);
-            return builder.setExpression(NoValue.EMPTY).build();
+            return builder.setExpression(DelayedExpression.forMethod(methodInfo)).build();
         }
 
         // normal method value
@@ -237,7 +237,7 @@ public class EvaluateMethodCall {
             if (nonModifying == null) {
                 log(Logger.LogTarget.DELAYED, "Delaying method value because @Modified delayed on {}",
                         methodInfo.fullyQualifiedName);
-                return NoValue.EMPTY;
+                return DelayedExpression.forMethod(methodInfo);
             }
             if (paramValue.equals(objectValue) && nonModifying) {
                 return new BooleanConstant(evaluationContext.getPrimitives(), true);
@@ -410,12 +410,12 @@ public class EvaluateMethodCall {
         return null;
     }
 
-    private static Expression computeFluent(MethodAnalysis methodAnalysis, Expression scope) {
+    private static Expression computeFluent(MethodInfo methodInfo, MethodAnalysis methodAnalysis, Expression scope) {
         int fluent = methodAnalysis.getProperty(VariableProperty.FLUENT);
         if (fluent == Level.DELAY && methodAnalysis.isBeingAnalysed()) {
             log(Logger.LogTarget.DELAYED, "Delaying method value because @Fluent delayed on {}",
                     methodAnalysis.getMethodInfo().fullyQualifiedName);
-            return NoValue.EMPTY;
+            return DelayedExpression.forMethod(methodInfo);
         }
         if (fluent != Level.TRUE) return null;
         return scope;
@@ -423,6 +423,7 @@ public class EvaluateMethodCall {
 
 
     private static Expression computeIdentity(EvaluationContext evaluationContext,
+                                              MethodInfo methodInfo,
                                               MethodAnalysis methodAnalysis,
                                               List<Expression> parameters,
                                               ObjectFlow objectFlowOfResult) {
@@ -430,7 +431,7 @@ public class EvaluateMethodCall {
         if (identity == Level.DELAY && methodAnalysis.isBeingAnalysed()) {
             log(Logger.LogTarget.DELAYED, "Delaying method value because @Identity delayed on {}",
                     methodAnalysis.getMethodInfo().fullyQualifiedName);
-            return NoValue.EMPTY; // delay
+            return DelayedExpression.forMethod(methodInfo);
         }
         if (identity != Level.TRUE) return null;
 

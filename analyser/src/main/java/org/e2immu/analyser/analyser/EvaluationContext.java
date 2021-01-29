@@ -18,9 +18,7 @@
 package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.expression.NewObject;
-import org.e2immu.analyser.model.expression.NoValue;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.This;
@@ -82,7 +80,7 @@ public interface EvaluationContext {
     }
 
     default Expression currentValue(Variable variable, int statementTime, boolean isNotAssignmentTarget) {
-        return NoValue.EMPTY;
+        throw new UnsupportedOperationException();
     }
 
     default AnalyserContext getAnalyserContext() {
@@ -236,5 +234,17 @@ public interface EvaluationContext {
 
     default LinkedVariables getStaticallyAssignedVariables(Variable variable, int statementTime) {
         return null;
+    }
+
+    default boolean isDelayed(Variable variable) {
+        return false;
+    }
+
+    default boolean isDelayed(Expression expression) {
+        return expression.variables().stream().anyMatch(this::isDelayed);
+    }
+
+    default boolean isNotDelayed(Expression expression) {
+        return expression.variables().stream().noneMatch(this::isDelayed);
     }
 }

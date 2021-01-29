@@ -95,8 +95,6 @@ public class UnaryOperator implements Expression {
     private Expression computeValue(EvaluationContext evaluationContext, Primitives primitives, EvaluationResult evaluationResult) {
         Expression v = evaluationResult.value();
 
-        if (v.isUnknown()) return v;
-
         if (operator == primitives.logicalNotOperatorBool || operator == primitives.unaryMinusOperatorInt) {
             return Negation.negate(evaluationContext, v);
         }
@@ -106,18 +104,18 @@ public class UnaryOperator implements Expression {
         if (operator == primitives.bitWiseNotOperatorInt) {
             if (v instanceof IntConstant ic)
                 return new IntConstant(primitives, ~ic.constant(), v.getObjectFlow());
-            return NoValue.EMPTY;
+            return new UnaryOperator(operator, v, precedence);
         }
         if (operator == primitives.postfixDecrementOperatorInt
                 || operator == primitives.prefixDecrementOperatorInt) {
             if (v instanceof IntConstant ic)
                 return new IntConstant(primitives, ic.constant() - 1, v.getObjectFlow());
-            return NoValue.EMPTY;
+            return new UnaryOperator(operator, v, precedence);
         }
         if (operator == primitives.postfixIncrementOperatorInt || operator == primitives.prefixIncrementOperatorInt) {
             if (v instanceof IntConstant ic)
                 return new IntConstant(primitives, ic.constant() + 1, v.getObjectFlow());
-            return NoValue.EMPTY;
+            return new UnaryOperator(operator, v, precedence);
         }
         throw new UnsupportedOperationException();
     }

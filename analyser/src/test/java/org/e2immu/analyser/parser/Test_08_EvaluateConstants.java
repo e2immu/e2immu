@@ -9,8 +9,6 @@ import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.expression.ConstantExpression;
-import org.e2immu.analyser.model.expression.EmptyExpression;
-import org.e2immu.analyser.model.expression.NoValue;
 import org.e2immu.analyser.model.expression.StringConstant;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.objectflow.ObjectFlow;
@@ -49,7 +47,7 @@ public class Test_08_EvaluateConstants extends CommonTestRunner {
                 int expectNotNull = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
                 Assert.assertEquals(expectNotNull, vi.getProperty(VariableProperty.NOT_NULL));
                 if (d.iteration() == 0) {
-                    Assert.assertSame(NoValue.EMPTY, vi.getValue());
+                    Assert.assertTrue(vi.isDelayed());
                 } else if (d.iteration() == 1) {
                     Assert.assertEquals("effectivelyFinal", vi.getValue().toString());
                     Assert.assertSame(DONE, d.result().analysisStatus);
@@ -97,7 +95,7 @@ public class Test_08_EvaluateConstants extends CommonTestRunner {
 
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("print".equals(d.methodInfo().name) && "0".equals(d.statementId())) {
-                String expect = d.iteration() == 0 ? NoValue.NO_VALUE : "false";
+                String expect = d.iteration() == 0 ? "xx" : "false";
                 Assert.assertEquals(expect, d.evaluationResult().value().toString());
             }
             if ("print2".equals(d.methodInfo().name)) {

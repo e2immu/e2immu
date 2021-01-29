@@ -80,7 +80,7 @@ public class TestLazy extends CommonTestRunner {
         if ("Lazy".equals(d.methodInfo().name)) {
             VariableInfo tv = d.getFieldAsVariable(supplier);
             assert tv != null;
-            Assert.assertTrue(tv.getValue().isNotDelayed());
+            Assert.assertFalse(tv.isDelayed());
 
             ParameterInfo supplierParam = d.methodInfo().methodInspection.get().getParameters().get(0);
             Assert.assertEquals("supplierParam", supplierParam.name);

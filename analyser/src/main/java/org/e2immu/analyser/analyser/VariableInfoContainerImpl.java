@@ -62,7 +62,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         VariableInfo outside = previous.current();
         VariableInfoImpl initial = new VariableInfoImpl(outside.variable(), NOT_YET_ASSIGNED,
                 NOT_YET_READ, NOT_A_VARIABLE_FIELD, Set.of());
-        if (outside.getValue().isNotDelayed()) initial.setValue(outside.getValue());
+        initial.setValue(outside.getValue(), outside.isDelayed());
         if (outside.getLinkedVariables() != LinkedVariables.DELAY)
             initial.setLinkedVariables(outside.getLinkedVariables());
         return new VariableInfoContainerImpl(VariableInLoop.COPY_FROM_ENCLOSING_METHOD,
@@ -93,7 +93,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
                                                              boolean statementHasSubBlocks) {
         VariableInfoImpl initial = new VariableInfoImpl(variable, index + Level.INITIAL,
                 index + Level.EVALUATION, NOT_A_VARIABLE_FIELD, Set.of());
-        initial.setValue(value);
+        initial.setValue(value, false);
         initial.setLinkedVariables(LinkedVariables.EMPTY);
         return new VariableInfoContainerImpl(VariableInLoop.NOT_IN_LOOP,
                 Either.right(initial), statementHasSubBlocks ? new SetOnce<>() : null, null);
@@ -111,7 +111,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
                                                             VariableInLoop variableInLoop,
                                                             boolean statementHasSubBlocks) {
         VariableInfoImpl initial = new VariableInfoImpl(variable, assignedId, readId, VariableInfoContainer.NOT_A_VARIABLE_FIELD, Set.of());
-        initial.setValue(value);
+        initial.setValue(value, false);
         properties.forEach(initial::setProperty);
         initial.setLinkedVariables(linkedVariables);
         return new VariableInfoContainerImpl(variableInLoop, Either.right(initial), statementHasSubBlocks ? new SetOnce<>() : null, null);
@@ -194,14 +194,15 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
     }
 
     @Override
-    public void setValue(Expression value, LinkedVariables staticallyAssignedVariables,
+    public void setValue(Expression value,
+                         boolean valueIsDelayed,
+                         LinkedVariables staticallyAssignedVariables,
                          Map<VariableProperty, Integer> propertiesToSet, boolean initialOrEvaluation) {
         ensureNotFrozen();
         Objects.requireNonNull(value);
         VariableInfoImpl variableInfo = initialOrEvaluation ? previousOrInitial.getRight() : evaluation.get();
-        if (value.isNotDelayed()) {
-            variableInfo.setValue(value);
-        }
+        variableInfo.setValue(value, valueIsDelayed);
+
         propertiesToSet.forEach((vp, v) -> {
             int inMap = variableInfo.getProperty(vp, org.e2immu.analyser.model.Level.DELAY);
             if (v > inMap) variableInfo.setProperty(vp, v);
@@ -301,7 +302,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         boolean notReadInThisStatement = !isReadInThisStatement();
         if (noAssignmentInThisStatement && notReadInThisStatement) {
             if (previous.valueIsSet()) {
-                evaluation.setValue(previous.getValue());
+                evaluation.setValue(previous.getValue(), previous.isDelayed());
             }
             if (previous.objectFlowIsSet()) {
                 evaluation.setObjectFlow(previous.getObjectFlow());

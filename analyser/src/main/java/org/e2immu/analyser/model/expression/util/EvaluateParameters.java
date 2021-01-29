@@ -20,7 +20,6 @@ package org.e2immu.analyser.model.expression.util;
 import com.google.common.collect.ImmutableMap;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.expression.Filter;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.objectflow.ObjectFlow;
@@ -205,7 +204,7 @@ public class EvaluateParameters {
         if (scope instanceof VariableExpression variableExpression) {
             if (variableExpression.variable() instanceof ParameterInfo) return true;
             Expression expression = evaluationContext.currentValue(variableExpression.variable(), statementTime, true);
-            if (expression.isDelayed()) return null;
+            if (evaluationContext.isDelayed(expression)) return null;
             // TODO
             return true;
         }

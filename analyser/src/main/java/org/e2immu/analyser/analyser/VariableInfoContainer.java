@@ -106,8 +106,11 @@ public interface VariableInfoContainer {
     boolean isInitial();
 
     // writing operations
-    void setValue(Expression value, LinkedVariables staticallyAssignedVariables,
-                  Map<VariableProperty, Integer> propertiesToSet, boolean initialOrEvaluation);
+    void setValue(Expression value,
+                  boolean valueIsDelayed,
+                  LinkedVariables staticallyAssignedVariables,
+                  Map<VariableProperty, Integer> propertiesToSet,
+                  boolean initialOrEvaluation);
 
     default void setProperty(VariableProperty variableProperty, int value, Level level) {
         setProperty(variableProperty, value, true, level);

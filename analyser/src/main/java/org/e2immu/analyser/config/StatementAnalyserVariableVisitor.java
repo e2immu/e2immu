@@ -19,6 +19,7 @@ public interface StatementAnalyserVariableVisitor {
                 String variableName,
                 Variable variable,
                 Expression currentValue,
+                boolean currentValueIsDelayed,
                 Map<VariableProperty, Integer> properties,
                 VariableInfo variableInfo,
                 VariableInfoContainer variableInfoContainer) {

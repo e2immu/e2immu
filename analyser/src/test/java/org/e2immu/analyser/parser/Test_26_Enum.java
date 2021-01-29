@@ -23,8 +23,6 @@ import org.e2immu.analyser.analyser.LinkedVariables;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.Level;
-import org.e2immu.analyser.model.expression.EmptyExpression;
-import org.e2immu.analyser.model.expression.NoValue;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -48,12 +46,12 @@ public class Test_26_Enum extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("posInList".equals(d.methodInfo().name) && RET_VAR.equals(d.variableName())) {
                 if ("0.0.0".equals(d.statementId())) {
-                    String expectValue = d.iteration() <= 1 ? NoValue.NO_VALUE :
+                    String expectValue = d.iteration() <= 1 ? "xx" :
                             "instance type Enum_1==this?1+i$0:<return value>";
                     Assert.assertEquals(expectValue, d.currentValue().toString());
                 }
                 if ("0".equals(d.statementId()) || "1".equals(d.statementId())) {
-                    String expectValue = d.iteration() <= 1 ? NoValue.NO_VALUE :
+                    String expectValue = d.iteration() <= 1 ? "xx" :
                             "instance type int<=2?instance type Enum_1==this?1+instance type int:<return value>:<return value>";
                     Assert.assertEquals(expectValue, d.currentValue().toString());
                 }
@@ -82,11 +80,11 @@ public class Test_26_Enum extends CommonTestRunner {
 
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("posInList".equals(d.methodInfo().name) && "2".equals(d.statementId())) {
-                String expectValue = d.iteration() <= 1 ? NoValue.NO_VALUE : "i$2<=2";
+                String expectValue = d.iteration() <= 1 ? "xx" : "i$2<=2";
                 Assert.assertEquals(expectValue, d.evaluationResult().value().toString());
             }
             if ("posInList".equals(d.methodInfo().name) && "2.0.0".equals(d.statementId())) {
-                String expectValue = d.iteration() <= 1 ? NoValue.NO_VALUE : "instance type Enum_3==this";
+                String expectValue = d.iteration() <= 1 ? "xx" : "instance type Enum_3==this";
                 Assert.assertEquals(expectValue, d.evaluationResult().value().toString());
             }
         };
@@ -94,11 +92,11 @@ public class Test_26_Enum extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if (!"posInList".equals(d.methodInfo().name)) return;
             if ("array".equals(d.variableName()) && ("0".equals(d.statementId()) || "1".equals(d.statementId()))) {
-                String expectValue = d.iteration() <= 1 ? NoValue.NO_VALUE : "{ONE,TWO,THREE}";
+                String expectValue = d.iteration() <= 1 ? "xx" : "{ONE,TWO,THREE}";
                 Assert.assertEquals(expectValue, d.currentValue().toString());
             }
             if ("array[i]".equals(d.variableName())) {
-                String expectValue = d.iteration() <= 1 ? NoValue.NO_VALUE : "instance type Enum_3";
+                String expectValue = d.iteration() <= 1 ? "xx" : "instance type Enum_3";
                 Assert.assertEquals(expectValue, d.currentValue().toString());
             }
             if (THIS.equals(d.variableName())) {
@@ -112,7 +110,7 @@ public class Test_26_Enum extends CommonTestRunner {
                             "new Enum_3(3)", d.currentValue().toString());
                 }
                 if ("2.0.0".equals(d.statementId())) {
-                    String expectValue = d.iteration() == 0 ? NoValue.NO_VALUE : "new Enum_3(3)";
+                    String expectValue = d.iteration() == 0 ? "xx" : "new Enum_3(3)";
                     Assert.assertEquals(expectValue, d.currentValue().toString());
                 }
             }
@@ -122,7 +120,7 @@ public class Test_26_Enum extends CommonTestRunner {
                         expectValue, d.variableInfo().getLinkedVariables().toString());
             }
             if ("i$2$2-E".equals(d.variableName())) {
-                String expectValue = d.iteration() <= 1 ? NoValue.NO_VALUE : "1+i$2";
+                String expectValue = d.iteration() <= 1 ? "xx" : "1+i$2";
                 Assert.assertEquals("Statement " + d.statementId() + ", it " + d.iteration(),
                         expectValue, d.currentValue().toString());
                 String expectLinked = d.iteration() <= 1 ? LinkedVariables.DELAY_STRING : "i";
@@ -138,13 +136,13 @@ public class Test_26_Enum extends CommonTestRunner {
                 Assert.assertEquals(d.iteration() > 1, d.statementAnalysis().variables.isSet(THREE));
 
                 if ("2.0.0.0.0".equals(d.statementId())) {
-                    String expectCondition = d.iteration() <= 1 ? NoValue.NO_VALUE : "instance type Enum_3==this";
+                    String expectCondition = d.iteration() <= 1 ? "xx" : "instance type Enum_3==this";
                     Assert.assertEquals(expectCondition, d.condition().toString());
                 }
 
                 if ("2.0.0".equals(d.statementId())) {
                     Assert.assertTrue(d.statementAnalysis().variables.isSet("array[i]"));
-                    String expectCondition = d.iteration() <= 1 ? NoValue.NO_VALUE : "i$2<=2";
+                    String expectCondition = d.iteration() <= 1 ? "xx" : "i$2<=2";
                     Assert.assertEquals(expectCondition, d.condition().toString());
                 }
             }

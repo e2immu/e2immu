@@ -57,8 +57,7 @@ public class Assignment implements Expression {
     // if false, we have i++ if primitive operator is +=, i-- if primitive is -=
     public final Boolean prefixPrimitiveOperator;
 
-    public Assignment(Primitives primitives,
-                      @NotNull Expression target, @NotNull Expression value) {
+    public Assignment(Primitives primitives, @NotNull Expression target, @NotNull Expression value) {
         this(primitives, target, value, null, null);
     }
 
@@ -79,7 +78,6 @@ public class Assignment implements Expression {
         } else if (target instanceof ArrayAccess arrayAccess) {
             variableTarget = arrayAccess.variableTarget;
         } else {
-            TypeInfo owningType = null;
             String name = target.minimalOutput() + "[" + value.minimalOutput() + "]";
             variableTarget = new DependentVariable(name, null, target.returnType(), value.variables(), null);
         }
@@ -252,7 +250,7 @@ public class Assignment implements Expression {
 
         LinkedVariables linkedVariables;
         // connect the value to the assignment target
-        if (resultOfExpression.isNotDelayed()) {
+        if (evaluationContext.isNotDelayed(resultOfExpression)) {
             linkedVariables = evaluationContext.linkedVariables(resultOfExpression);
             assert linkedVariables != null : "Expression " + resultOfExpression + " " + resultOfExpression.getClass();
             log(LINKED_VARIABLES, "In assignment, link {} to [{}]", at.fullyQualifiedName(), linkedVariables);
@@ -261,7 +259,7 @@ public class Assignment implements Expression {
         }
 
         LinkedVariables staticallyAssignedVariables;
-        if(value instanceof VariableExpression variableExpression && variableExpression.variable() instanceof FieldReference) {
+        if (value instanceof VariableExpression variableExpression && variableExpression.variable() instanceof FieldReference) {
             staticallyAssignedVariables = new LinkedVariables(Set.of(variableExpression.variable()));
         } else {
             staticallyAssignedVariables = LinkedVariables.EMPTY;

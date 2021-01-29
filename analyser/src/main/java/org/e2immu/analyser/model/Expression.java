@@ -56,14 +56,6 @@ public interface Expression extends Element, Comparable<Expression> {
         return this;
     }
 
-    default NullState staticNullState() {
-        return NoValue.EMPTY;
-    }
-
-    default NullState overallNullState() {
-        return NoValue.EMPTY;
-    }
-
     // ********************************
 
     int order();
@@ -85,21 +77,13 @@ public interface Expression extends Element, Comparable<Expression> {
         return false;
     }
 
-    default int unknownOrder() {
-        return -1;
-    }
-
-    // only empty expressions and NoValue are unknown!
+    // empty expressions are unknown! They should NOT appear in operations (binary, unary)
     default boolean isUnknown() {
-        return unknownOrder() >= 0;
+        return false;
     }
 
-    default boolean isDelayed() {
-        return this instanceof NoValue;
-    }
-
-    default boolean isNotDelayed() {
-        return !(this instanceof NoValue);
+    default boolean isDelayed(EvaluationContext evaluationContext) {
+        return false;
     }
 
     default boolean isDiscreteType() {
@@ -205,14 +189,6 @@ public interface Expression extends Element, Comparable<Expression> {
 
     default boolean isInitialReturnExpression() {
         return this instanceof UnknownExpression unknownExpression && unknownExpression.msg().equals(UnknownExpression.RETURN_VALUE);
-    }
-
-    default EmptyExpression combineUnknown(Expression other) {
-        int order = unknownOrder();
-        assert order >= 0;
-        int otherOrder = other.unknownOrder();
-        assert otherOrder >= 0;
-        throw new UnsupportedOperationException(); // FIXME
     }
 
     default boolean isBooleanConstant() {

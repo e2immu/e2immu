@@ -24,8 +24,6 @@ import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
-import org.e2immu.analyser.model.expression.EmptyExpression;
-import org.e2immu.analyser.model.expression.NoValue;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -40,11 +38,11 @@ public class Test_Own_01_SMapList extends CommonTestRunner {
     EvaluationResultVisitor evaluationResultVisitor = d -> {
         if ("addAll".equals(d.methodInfo().name)) {
             if ("1.0.0".equals(d.statementId())) {
-                String expectValue = d.iteration() == 0 ? NoValue.NO_VALUE : "dest.get(e$1.getKey())";
+                String expectValue = d.iteration() == 0 ? "xx" : "dest.get(e$1.getKey())";
                 Assert.assertEquals(expectValue, d.evaluationResult().value().toString());
             }
             if ("1.0.1".equals(d.statementId())) {
-                String expectValue = d.iteration() == 0 ? NoValue.NO_VALUE : "null==dest.get(e$1.getKey())";
+                String expectValue = d.iteration() == 0 ? "xx" : "null==dest.get(e$1.getKey())";
                 Assert.assertEquals(expectValue, d.evaluationResult().value().toString());
             }
             if ("1".equals(d.statementId())) {
@@ -79,7 +77,7 @@ public class Test_Own_01_SMapList extends CommonTestRunner {
 
         if ("addAll".equals(d.methodInfo().name)) {
             if ("e".equals(d.variableName()) && "1.0.0".equals(d.statementId())) {
-                String expectValue = d.iteration() == 0 ? NoValue.NO_VALUE : "instance type Entry<A, List<B>>";
+                String expectValue = d.iteration() == 0 ? "xx" : "instance type Entry<A, List<B>>";
                 Assert.assertEquals(expectValue, d.currentValue().toString());
             }
             if (d.variable() instanceof ParameterInfo dest && dest.name.equals("dest")) {
@@ -90,13 +88,13 @@ public class Test_Own_01_SMapList extends CommonTestRunner {
             }
             if ("inDest".equals(d.variableName())) {
                 if ("1.0.0".equals(d.statementId())) {
-                    String expectValue = d.iteration() == 0 ? NoValue.NO_VALUE : "dest.get(e$1.getKey())";
+                    String expectValue = d.iteration() == 0 ? "xx" : "dest.get(e$1.getKey())";
                     Assert.assertEquals(expectValue, d.currentValue().toString());
                 }
             }
             if ("change".equals(d.variableName())) {
                 if ("1.0.1.0.1".equals(d.statementId())) {
-                    String expectValue = d.iteration() == 0 ? NoValue.NO_VALUE : "change$1||null==dest.get(e$1.getKey())";
+                    String expectValue = d.iteration() == 0 ? "xx" : "change$1||null==dest.get(e$1.getKey())";
                     Assert.assertEquals(expectValue, d.currentValue().toString());
                     int expectNotNull = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
                     Assert.assertEquals(expectNotNull, d.getProperty(VariableProperty.NOT_NULL));
@@ -105,7 +103,7 @@ public class Test_Own_01_SMapList extends CommonTestRunner {
                 }
                 // 2nd branch, merge of an if-statement
                 if ("1.0.1.1.0".equals(d.statementId())) {
-                    String expectValue = d.iteration() == 0 ? NoValue.NO_VALUE : "dest.get(e$1.getKey()).addAll(e$1.getValue())";
+                    String expectValue = d.iteration() == 0 ? "xx" : "dest.get(e$1.getKey()).addAll(e$1.getValue())";
                     Assert.assertEquals(expectValue, d.currentValue().toString());
                     int expectNotNull = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
                     Assert.assertEquals(expectNotNull, d.getProperty(VariableProperty.NOT_NULL));
@@ -114,7 +112,7 @@ public class Test_Own_01_SMapList extends CommonTestRunner {
                 }
                 // merge of the two above
                 if ("1.0.1".equals(d.statementId())) {
-                    String expectValue = d.iteration() == 0 ? NoValue.NO_VALUE : "null==dest.get(e$1.getKey())?change$1||null==dest.get(e$1.getKey()):dest.get(e$1.getKey()).addAll(e$1.getValue())";
+                    String expectValue = d.iteration() == 0 ? "xx" : "null==dest.get(e$1.getKey())?change$1||null==dest.get(e$1.getKey()):dest.get(e$1.getKey()).addAll(e$1.getValue())";
                     Assert.assertEquals(expectValue, d.currentValue().toString());
                     int expectNotNull = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
                     Assert.assertEquals(expectNotNull, d.getProperty(VariableProperty.NOT_NULL));
@@ -124,7 +122,7 @@ public class Test_Own_01_SMapList extends CommonTestRunner {
             }
             if ("change$1".equals(d.variableName())) {
                 if ("1.0.1.0.1".equals(d.statementId())) {
-                    String expectValue = d.iteration() == 0 ? NoValue.NO_VALUE : "instance type boolean";
+                    String expectValue = d.iteration() == 0 ? "xx" : "instance type boolean";
                     Assert.assertEquals(expectValue, d.currentValue().toString());
                     String expectLinked = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "change";
                     Assert.assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
@@ -132,7 +130,7 @@ public class Test_Own_01_SMapList extends CommonTestRunner {
             }
             if ("change$1$1_0_1_0_1-E".equals(d.variableName())) {
                 if ("1.0.1.0.1".equals(d.statementId())) {
-                    String expectValue = d.iteration() == 0 ? NoValue.NO_VALUE : "change$1||null==dest.get(e$1.getKey())";
+                    String expectValue = d.iteration() == 0 ? "xx" : "change$1||null==dest.get(e$1.getKey())";
                     Assert.assertEquals(expectValue, d.currentValue().toString());
                     String expectLinked = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "change";
                     Assert.assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
@@ -145,7 +143,7 @@ public class Test_Own_01_SMapList extends CommonTestRunner {
                 }
                 if ("1.0.1".equals(d.statementId())) {
                     Assert.assertSame(VariableInLoop.VariableType.LOOP_COPY, d.variableInfoContainer().getVariableInLoop().variableType());
-                    String expectValue = d.iteration() == 0 ? NoValue.NO_VALUE : "change$1||null==dest.get(e$1.getKey())";
+                    String expectValue = d.iteration() == 0 ? "xx" : "change$1||null==dest.get(e$1.getKey())";
                     Assert.assertEquals(expectValue, d.currentValue().toString());
                     String expectLinked = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "change";
                     Assert.assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
@@ -177,7 +175,7 @@ public class Test_Own_01_SMapList extends CommonTestRunner {
                 Assert.assertSame(expect, d.statementAnalysis().flowData.getGuaranteedToBeReachedInMethod());
             }
             if ("1.0.1.1.0".equals(d.statementId())) {
-                String expectCondition = d.iteration() == 0 ? NoValue.NO_VALUE : "null!=dest.get(e$1.getKey())";
+                String expectCondition = d.iteration() == 0 ? "xx" : "null!=dest.get(e$1.getKey())";
                 Assert.assertEquals(expectCondition, d.condition().toString());
             }
         }

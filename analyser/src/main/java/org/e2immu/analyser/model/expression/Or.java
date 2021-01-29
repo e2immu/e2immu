@@ -144,18 +144,8 @@ public record Or(Primitives primitives,
         }
         if (finalValues.size() == 1) return finalValues.get(0);
 
-        // FINAL STEP: check for unknowns (if there was a TRUE somewhere, we never get here)
-
-        Expression unknown = null;
         for (Expression value : finalValues) {
-            if (value.isUnknown()) {
-                if (unknown == null) unknown = value;
-                else unknown = unknown.combineUnknown(value);
-            }
-        }
-        if (unknown != null) {
-            log(CNF, "Return unknown value in Or, order " + unknown.order());
-            return unknown;
+            if (value.isUnknown()) throw new UnsupportedOperationException();
         }
 
         if (finalValues.isEmpty()) {

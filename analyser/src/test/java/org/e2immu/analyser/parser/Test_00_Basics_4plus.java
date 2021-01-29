@@ -24,8 +24,6 @@ import org.e2immu.analyser.analyser.VariableInfoContainer;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.expression.EmptyExpression;
-import org.e2immu.analyser.model.expression.NoValue;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.Variable;
 import org.junit.Assert;
@@ -49,7 +47,7 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("increment".equals(d.methodInfo().name) && "0".equals(d.statementId())) {
                 if (I.equals(d.variableName())) {
-                    String expect = d.iteration() == 0 ? NoValue.NO_VALUE :
+                    String expect = d.iteration() == 0 ? "xx" :
                             "1+org.e2immu.analyser.testexample.Basics_4.i$0";
                     Assert.assertEquals(expect, d.currentValue().toString());
                 }
@@ -114,7 +112,7 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
                     Assert.assertTrue("Have " + d.statementId(), "2".compareTo(d.statementId()) <= 0);
                 }
                 if ("v1".equals(d.variableName()) && "0".equals(d.statementId())) {
-                    String expect = d.iteration() == 0 ? NoValue.NO_VALUE : FIELD_0;
+                    String expect = d.iteration() == 0 ? "xx" : FIELD_0;
                     Assert.assertEquals(expect, d.currentValue().toString());
                 }
             }
@@ -280,17 +278,17 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
             }
             if (INC3_RETURN_VAR.equals(d.variableName())) {
                 if ("1.0.3".equals(d.statementId())) {
-                    String expect = d.iteration() == 0 ? NoValue.NO_VALUE : "true";
+                    String expect = d.iteration() == 0 ? "xx" : "true";
                     Assert.assertEquals(expect, d.currentValue().toString());
                 }
                 if ("1".equals(d.statementId())) {
-                    String expect = d.iteration() == 0 ? NoValue.NO_VALUE : "true";
+                    String expect = d.iteration() == 0 ? "xx" : "true";
                     Assert.assertEquals(expect, d.currentValue().debugOutput());
                 }
             }
             if ("increment3".equals(d.methodInfo().name) && "j".equals(d.variableName())) {
                 if ("1.0.0".equals(d.statementId())) {
-                    String expect = d.iteration() == 0 ? NoValue.NO_VALUE :
+                    String expect = d.iteration() == 0 ? "xx" :
                             "org.e2immu.analyser.testexample.Basics_7.i$1";
                     Assert.assertEquals(expect, d.currentValue().toString());
                 }
@@ -309,14 +307,14 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
             }
             if ("increment3".equals(d.methodInfo().name) && I.equals(d.variableName())) {
                 if ("0".equals(d.statementId())) {
-                    String expect = d.iteration() == 0 ? NoValue.NO_VALUE : "instance type int";
+                    String expect = d.iteration() == 0 ? "xx" : "instance type int";
                     Assert.assertEquals(expect, d.currentValue().toString());
                     int expectStatementTime = d.iteration() == 0 ? VariableInfoContainer.VARIABLE_FIELD_DELAY : 0;
                     Assert.assertEquals(expectStatementTime, d.variableInfo().getStatementTime());
                     Assert.assertEquals("[0]", d.variableInfo().getReadAtStatementTimes().toString());
                 }
                 if ("1.0.0".equals(d.statementId())) {
-                    String expect = d.iteration() == 0 ? NoValue.NO_VALUE : "instance type int";
+                    String expect = d.iteration() == 0 ? "xx" : "instance type int";
                     Assert.assertEquals(expect, d.currentValue().toString());
                     int expectStatementTime = d.iteration() == 0 ? VariableInfoContainer.VARIABLE_FIELD_DELAY : 1;
                     Assert.assertEquals(expectStatementTime, d.variableInfo().getStatementTime());
@@ -362,7 +360,7 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
                 Assert.assertTrue(d.methodInfo().isSynchronized());
             }
             if ("increment3".equals(d.methodInfo().name)) {
-                String expect = d.iteration() == 0 ? NoValue.NO_VALUE : "true";
+                String expect = d.iteration() == 0 ? "xx" : "true";
                 Assert.assertEquals(expect, d.methodAnalysis().getLastStatement()
                         .variables.get(INC3_RETURN_VAR).current().getValue().debugOutput());
                 if (d.iteration() > 0) {

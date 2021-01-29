@@ -42,7 +42,6 @@ public record MultiExpression(Expression... expressions) {
     public ParameterizedType commonType(Primitives primitives) {
         ParameterizedType commonType = null;
         for (Expression expression : expressions) {
-            if (expression.isDelayed()) return primitives.objectParameterizedType; // DELAYS
             if (expression != NullConstant.NULL_CONSTANT) {
                 ParameterizedType parameterizedType = expression.returnType();
                 if (commonType == null) commonType = parameterizedType;

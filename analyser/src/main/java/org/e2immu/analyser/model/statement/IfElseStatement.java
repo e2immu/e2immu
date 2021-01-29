@@ -25,7 +25,6 @@ import org.e2immu.analyser.analyser.StatementAnalysis;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.output.OutputBuilder;
-import org.e2immu.analyser.output.Space;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.output.Text;
 
@@ -49,7 +48,7 @@ public class IfElseStatement extends StatementWithExpression {
                 .setExpressionIsCondition(true)
                 .setForwardEvaluationInfo(ForwardEvaluationInfo.NOT_NULL)
                 .setBlock(ifBlock)
-                .setStatementExecution((v, ec) -> standardExecution(v));
+                .setStatementExecution(IfElseStatement::standardExecution);
         if (elseBlock != Block.EMPTY_BLOCK) {
             builder.addSubStatement(new Structure.Builder().setExpression(EmptyExpression.DEFAULT_EXPRESSION)
                     .setStatementExecution(StatementExecution.DEFAULT)
@@ -59,8 +58,8 @@ public class IfElseStatement extends StatementWithExpression {
         return builder.build();
     }
 
-    private static FlowData.Execution standardExecution(Expression v) {
-        if(v.isDelayed()) return FlowData.Execution.DELAYED_EXECUTION;
+    private static FlowData.Execution standardExecution(Expression v, EvaluationContext evaluationContext) {
+        if(evaluationContext.isDelayed(v)) return FlowData.Execution.DELAYED_EXECUTION;
         if (v.isBoolValueTrue()) return FlowData.Execution.ALWAYS;
         if (v.isBoolValueFalse()) return FlowData.Execution.NEVER;
         return FlowData.Execution.CONDITIONALLY;

@@ -4,8 +4,6 @@ import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
-import org.e2immu.analyser.model.expression.EmptyExpression;
-import org.e2immu.analyser.model.expression.NoValue;
 import org.e2immu.analyser.model.variable.Variable;
 import org.junit.Assert;
 import org.junit.Test;
@@ -61,14 +59,14 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                     Assert.assertEquals("true", d.statementAnalysis().methodLevelData.combinedPrecondition.get().toString());
                 }
                 if ("2".equals(d.statementId())) {
-                    Assert.assertEquals("a&&!b", d.statementAnalysis().stateData.valueOfExpression.get().toString());
+                    Assert.assertEquals("a&&!b", d.statementAnalysis().stateData.getValueOfExpression().toString());
                     Assert.assertEquals("!a&&b", d.state().toString());
                     Assert.assertEquals(FlowData.Execution.CONDITIONALLY, inBlock);
                     Assert.assertEquals(FlowData.Execution.CONDITIONALLY, inMethod);
                 }
                 // constant condition
                 if ("3".equals(d.statementId())) {
-                    Assert.assertEquals("true", d.statementAnalysis().stateData.valueOfExpression.get().toString());
+                    Assert.assertEquals("true", d.statementAnalysis().stateData.getValueOfExpression().toString());
                     Assert.assertEquals("false", d.state().toString()); // after the statement...
                     Assert.assertEquals("ERROR in M:method1:3: Condition in 'if' or 'switch' statement evaluates to constant",
                             d.haveError(Message.CONDITION_EVALUATES_TO_CONSTANT));
@@ -283,11 +281,11 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                 }
                 if ("3".equals(d.statementId())) {
                     if (CC_I.equals(d.variableName())) {
-                        String expectValue = d.iteration() == 0 ? NoValue.NO_VALUE : "instance type int";
+                        String expectValue = d.iteration() == 0 ? "xx" : "instance type int";
                         Assert.assertEquals(expectValue, d.currentValue().toString());
                     }
                     if (RETURN5.equals(d.variableName())) {
-                        String expectValue = d.iteration() == 0 ? NoValue.NO_VALUE :
+                        String expectValue = d.iteration() == 0 ? "xx" :
                                 "null!=o&&o.getClass()==this.getClass()&&i==o.i&&o!=this";
                         Assert.assertEquals(expectValue, d.currentValue().toString());
                     }
@@ -350,7 +348,7 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                 }
                 if ("3".equals(d.statementId())) {
                     // there will be two iterations, in the second one, i will not have value "NO_VALUE" anymore
-                    String expectValueString = d.iteration() == 0 ? NoValue.NO_VALUE : "i==o.i";
+                    String expectValueString = d.iteration() == 0 ? "xx" : "i==o.i";
                     Assert.assertEquals(expectValueString, d.evaluationResult().value().toString());
                     if (d.iteration() == 0) {
                         // markRead is only done in the first iteration

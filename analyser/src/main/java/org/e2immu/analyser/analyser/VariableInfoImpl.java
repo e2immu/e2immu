@@ -22,7 +22,6 @@ import org.e2immu.analyser.analyser.util.MergeHelper;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.expression.Negation;
-import org.e2immu.analyser.model.expression.NoValue;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
@@ -49,7 +48,8 @@ class VariableInfoImpl implements VariableInfo {
     private final Set<Integer> readAtStatementTimes;
 
     private final IncrementalMap<VariableProperty> properties = new IncrementalMap<>(Level::acceptIncrement);
-    private final SetOnce<Expression> value = new SetOnce<>(); // value from step 3 (initialisers)
+    private final SetOnce<Expression> value = new SetOnce<>(); // may be written exactly once
+    private Expression currentDelayedValue; // may be written multiple times
     private final SetOnce<ObjectFlow> objectFlow = new SetOnce<>();
     private final SetOnce<LinkedVariables> linkedVariables = new SetOnce<>();
     private final SetOnce<Integer> statementTime = new SetOnce<>();
@@ -122,7 +122,7 @@ class VariableInfoImpl implements VariableInfo {
 
     @Override
     public Expression getValue() {
-        return value.getOrElse(NoValue.EMPTY);
+        return value.getOrElse(currentDelayedValue);
     }
 
     @Override
@@ -198,13 +198,16 @@ class VariableInfoImpl implements VariableInfo {
         }
     }
 
-    void setValue(Expression value) {
+    void setValue(Expression value, boolean valueIsDelayed) {
         if (value instanceof VariableExpression variableValue && variableValue.variable() == variable) {
             throw new UnsupportedOperationException("Cannot redirect to myself");
         }
-        if (value.isDelayed()) throw new UnsupportedOperationException("Cannot set NO_VALUE");
-        if (!this.value.isSet() || !this.value.get().equals(value)) { // crash if different, keep same
-            this.value.set(value);
+        if (valueIsDelayed) {
+            currentDelayedValue = value;
+        } else {
+            if (!this.value.isSet() || !this.value.get().equals(value)) { // crash if different, keep same
+                this.value.set(value);
+            }
         }
     }
 
@@ -259,9 +262,7 @@ class VariableInfoImpl implements VariableInfo {
 
         Expression mergedValue = evaluationContext.replaceLocalVariables(
                 previous.mergeValue(evaluationContext, stateOfDestination, atLeastOneBlockExecuted, mergeSources));
-        if (mergedValue.isNotDelayed()) {
-            setValue(mergedValue);
-        }
+        setValue(mergedValue, evaluationContext.isDelayed(mergedValue));
 
         mergeStatementTime(evaluationContext, atLeastOneBlockExecuted, previous.getStatementTime(), mergeSources);
         mergeProperties(atLeastOneBlockExecuted, previous, mergeSources);
@@ -401,9 +402,6 @@ class VariableInfoImpl implements VariableInfo {
                                   List<StatementAnalysis.ConditionAndVariableInfo> mergeSources) {
         Expression currentValue = getValue();
         if (!atLeastOneBlockExecuted && currentValue.isUnknown()) return currentValue;
-
-        boolean haveANoValue = mergeSources.stream().anyMatch(cav -> !cav.variableInfo().valueIsSet() || cav.condition().isDelayed());
-        if (haveANoValue) return NoValue.EMPTY;
 
         if (mergeSources.isEmpty()) {
             if (atLeastOneBlockExecuted) throw new UnsupportedOperationException();

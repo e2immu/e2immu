@@ -18,7 +18,6 @@
 package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 
@@ -47,10 +46,18 @@ public interface VariableInfo {
 
     Expression getValue();
 
+    default boolean isDelayed() {
+        return !valueIsSet();
+    }
+
+    default boolean isNotDelayed() {
+        return valueIsSet();
+    }
+
     Set<Integer> getReadAtStatementTimes();
 
     default boolean valueIsSet() {
-        return getValue().isNotDelayed();
+        return isNotDelayed();
     }
 
     int getProperty(VariableProperty variableProperty);
@@ -72,7 +79,7 @@ public interface VariableInfo {
     Stream<Map.Entry<VariableProperty, Integer>> propertyStream();
 
     LinkedVariables getStaticallyAssignedVariables();
-    
+
     default boolean objectFlowIsSet() {
         return getObjectFlow() != null;
     }

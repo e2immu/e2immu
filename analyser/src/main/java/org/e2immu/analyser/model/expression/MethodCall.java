@@ -121,8 +121,8 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 checkSpecialCasesWhereDifferentMethodsAreEqual(methodInfo, that.methodInfo);
         return sameMethod &&
                 parameterExpressions.equals(that.parameterExpressions) &&
-                object.equals(that.object);// &&
-        // FIXME seems harsh   methodInfo.methodAnalysis.get().getProperty(VariableProperty.MODIFIED) == Level.FALSE;
+                object.equals(that.object);
+        // IMPROVE does modification play a role here?
     }
 
     /*
@@ -288,10 +288,10 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             builder.incrementStatementTime();
         }
 
-        if (parameterValues.stream().anyMatch(Expression::isDelayed)) {
+        if (parameterValues.stream().anyMatch(pv -> evaluationContext.isDelayed(pv))) {
             Logger.log(DELAYED, "Delayed method call because one of the parameter values of {} is delayed: {}",
                     methodInfo.name, parameterValues);
-            builder.setExpression(NoValue.EMPTY);
+            builder.setExpression(DelayedExpression.forMethod(methodInfo));
             // set scope delay
             objectValue.variables().forEach(variable -> builder.setProperty(variable, VariableProperty.SCOPE_DELAY, Level.TRUE));
             object.variables().forEach(variable -> builder.setProperty(variable, VariableProperty.SCOPE_DELAY, Level.TRUE));
@@ -341,6 +341,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         }
 
         Expression result;
+        boolean resultIsDelayed;
         if (!methodInfo.isVoid()) {
             MethodInspection methodInspection = methodInfo.methodInspection.get();
             complianceWithForwardRequirements(builder, methodAnalysis, methodInspection, forwardEvaluationInfo, contentNotNullRequired);
@@ -350,16 +351,19 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             builder.compose(mv);
             if (mv.value() == objectValue && mv.value() instanceof NewObject && modifiedInstance != null) {
                 result = modifiedInstance;
+                resultIsDelayed = false;
             } else {
                 result = mv.value();
+                resultIsDelayed = mv.someValueWasDelayed();
             }
         } else {
             result = EmptyExpression.NO_RETURN_VALUE;
+            resultIsDelayed = false;
         }
         builder.setExpression(result);
 
         // scope delay
-        if (builder.getExpression().isDelayed() || methodDelay == Level.TRUE) {
+        if (resultIsDelayed || methodDelay == Level.TRUE) {
             objectValue.variables().forEach(variable -> builder.setProperty(variable, VariableProperty.SCOPE_DELAY, Level.TRUE));
             object.variables().forEach(variable -> builder.setProperty(variable, VariableProperty.SCOPE_DELAY, Level.TRUE));
         }
@@ -392,7 +396,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         }
         Objects.requireNonNull(newObject, "Modifying method on constant or primitive? Impossible: " + objectValue.getClass());
 
-        if (newObject.state().isDelayed()) return null; // DELAY
+        if (evaluationContext.isDelayed(newObject.state())) return null; // DELAY
 
         AtomicReference<Expression> newState = new AtomicReference<>(newObject.state());
         methodInfo.methodInspection.get().getCompanionMethods().keySet().stream()
@@ -483,11 +487,13 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         Map<Expression, Expression> translationMap = new HashMap<>();
         if (filterResult != null) {
             Expression preAspectVariableValue = companionAnalysis.getPreAspectVariableValue();
-            translationMap.put(preAspectVariableValue, filterResult.accepted().values().stream()
-                    .findFirst()
-                    // it is possible that no pre- information can be found... that's OK as long as it isn't used
-                    // the empty expression will travel all the way
-                    .orElse(EmptyExpression.EMPTY_EXPRESSION));
+            if(preAspectVariableValue != null) {
+                translationMap.put(preAspectVariableValue, filterResult.accepted().values().stream()
+                        .findFirst()
+                        // it is possible that no pre- information can be found... that's OK as long as it isn't used
+                        // the empty expression will travel all the way
+                        .orElse(EmptyExpression.EMPTY_EXPRESSION));
+            }
         }
         // parameters
         ListUtil.joinLists(companionAnalysis.getParameterValues(), parameterValues).forEach(pair -> translationMap.put(pair.k, pair.v));

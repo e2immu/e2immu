@@ -226,17 +226,10 @@ public class InlineConditional implements Expression {
         Expression t = ifTrueResult.value();
         Expression f = ifFalseResult.value();
 
-        EmptyExpression combinedUnknown = null;
-        if (c.isUnknown()) {
-            combinedUnknown = c.combineUnknown(t).combineUnknown(f);
-        } else if (t.isUnknown()) {
-            combinedUnknown = t.combineUnknown(c).combineUnknown(f);
-        } else if (f.isUnknown()) {
-            combinedUnknown = f.combineUnknown(c).combineUnknown(t);
+        if (c.isUnknown() || t.isUnknown() || f.isUnknown()) {
+            throw new UnsupportedOperationException();
         }
-        if (combinedUnknown != null) {
-            return builder.setExpression(combinedUnknown).build();
-        }
+
         // TODO ObjectFlow
         EvaluationResult cv = EvaluateInlineConditional.conditionalValueCurrentState(evaluationContext,
                 c, t, f, ObjectFlow.NO_FLOW);

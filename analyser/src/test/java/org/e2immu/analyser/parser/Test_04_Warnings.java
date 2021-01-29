@@ -1,15 +1,12 @@
 package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.AnalysisStatus;
-import org.e2immu.analyser.analyser.LinkedVariables;
 import org.e2immu.analyser.analyser.VariableInfoContainer;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.inspector.MethodResolution;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.expression.GreaterThanZero;
-import org.e2immu.analyser.model.expression.NoValue;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.testexample.Warnings_1;
@@ -313,7 +310,7 @@ public class Test_04_Warnings extends CommonTestRunner {
                         Assert.fail();
                     }
                     if ("1".equals(d.statementId())) {
-                        String expectValue = d.iteration() == 0 ? NoValue.NO_VALUE : "nullable? instance type String";
+                        String expectValue = d.iteration() == 0 ? "xx" : "nullable? instance type String";
                         Assert.assertEquals(expectValue, d.currentValue().toString());
                     }
                 }

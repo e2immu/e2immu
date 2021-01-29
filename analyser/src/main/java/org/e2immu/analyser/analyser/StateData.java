@@ -18,12 +18,10 @@
 package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.expression.NoValue;
 import org.e2immu.analyser.util.FlipSwitch;
 import org.e2immu.analyser.util.SetOnce;
-import org.e2immu.analyser.util.SetOnceMapOverwriteNoValue;
+import org.e2immu.analyser.util.SetOnceMap;
 
-import java.util.Map;
 import java.util.stream.Stream;
 
 public class StateData {
@@ -37,6 +35,7 @@ public class StateData {
      */
 
     private final SetOnce<Expression> precondition = new SetOnce<>();
+    private Expression currentDelayedPrecondition;
 
     /*
     contains the change in state (not condition, not precondition) when going from one statement to the next
@@ -48,18 +47,31 @@ public class StateData {
     and the method level data's combined precondition.
      */
     private final SetOnce<ConditionManager> conditionManagerForNextStatement = new SetOnce<>();
+    private ConditionManager currentDelayedConditionManagerForNextStatement;
 
-    public final SetOnce<Expression> valueOfExpression = new SetOnce<>();
+    private final SetOnce<Expression> valueOfExpression = new SetOnce<>();
+    private Expression currentDelayedExpression;
+
     public final FlipSwitch statementContributesToPrecondition = new FlipSwitch();
 
-    public final SetOnceMapOverwriteNoValue<String> statesOfInterrupts;
+    static class CurrentDelayedAndFinalExpression {
+        final SetOnce<Expression> expression = new SetOnce<>();
+        Expression currentDelayedExpression;
+
+        public Expression getExpression() {
+            return expression.getOrElse(currentDelayedExpression);
+        }
+    }
+    private final SetOnceMap<String, CurrentDelayedAndFinalExpression> statesOfInterrupts;
 
     public StateData(boolean isLoop) {
-        statesOfInterrupts = isLoop ? new SetOnceMapOverwriteNoValue<>() : null;
+        statesOfInterrupts = isLoop ? new SetOnceMap<>() : null;
     }
 
+    // condition manager
+
     public ConditionManager getConditionManagerForNextStatement() {
-        return conditionManagerForNextStatement.getOrElse(ConditionManager.DELAYED);
+        return conditionManagerForNextStatement.getOrElse(currentDelayedConditionManagerForNextStatement);
     }
 
     public boolean conditionManagerIsNotYetSet() {
@@ -67,35 +79,65 @@ public class StateData {
     }
 
     public void ensureLocalConditionManagerForNextStatement(ConditionManager conditionManager) {
-        if (!conditionManagerForNextStatement.isSet() && !conditionManager.isDelayed()) {
+        if (conditionManager.isDelayed()) {
+            currentDelayedConditionManagerForNextStatement = conditionManager;
+        } else if (!conditionManagerForNextStatement.isSet()) {
             conditionManagerForNextStatement.set(conditionManager);
         }
     }
 
-    public Expression getValueOfExpression() {
-        return valueOfExpression.getOrElse(NoValue.EMPTY);
+    // value of expression
+
+    public void setValueOfExpression(Expression expression, boolean expressionIsDelayed) {
+        if (expressionIsDelayed) {
+            currentDelayedExpression = expression;
+        } else if (!valueOfExpression.isSet() || !valueOfExpression.get().equals(expression)) {
+            valueOfExpression.set(expression);
+        }
     }
 
-    public void addStateOfInterrupt(String index, Expression expression) {
-        statesOfInterrupts.put(index, expression);
+    public Expression getValueOfExpression() {
+        return valueOfExpression.getOrElse(currentDelayedExpression);
+    }
+
+    public boolean valueOfExpressionIsSet() {
+        return valueOfExpression.isSet();
+    }
+
+    // states of interrupt
+
+    public void addStateOfInterrupt(String index, Expression state, boolean stateIsDelayed) {
+        CurrentDelayedAndFinalExpression cd = statesOfInterrupts.getOrCreate(index, i -> new CurrentDelayedAndFinalExpression());
+        if (stateIsDelayed) {
+            cd.currentDelayedExpression = state;
+        } else if (!cd.expression.isSet() || !cd.expression.get().equals(state)) {
+            cd.expression.set(state);
+        }
     }
 
     public Stream<Expression> statesOfInterruptsStream() {
-        return statesOfInterrupts.stream().map(Map.Entry::getValue);
+        return statesOfInterrupts.stream().map(e -> e.getValue().getExpression());
     }
 
-    public void setPrecondition(Expression expression) {
-        assert expression.isNotDelayed();
-        if (!precondition.isSet() || !expression.equals(precondition.get())) {
+    // precondition
+
+    public void setPrecondition(Expression expression, boolean expressionIsDelayed) {
+        if (expressionIsDelayed) {
+            currentDelayedPrecondition = expression;
+        } else if (!precondition.isSet() || !expression.equals(precondition.get())) {
             precondition.set(expression);
         }
     }
 
     public Expression getPrecondition() {
-        return precondition.getOrElse(null);
+        return precondition.getOrElse(currentDelayedPrecondition);
     }
 
     public boolean preconditionIsSet() {
         return precondition.isSet();
+    }
+
+    public boolean preconditionIsEmpty() {
+        return currentDelayedPrecondition == null && !precondition.isSet();
     }
 }

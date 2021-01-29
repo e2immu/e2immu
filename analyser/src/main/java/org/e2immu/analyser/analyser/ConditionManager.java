@@ -25,6 +25,7 @@ Default value: true
 
  */
 public record ConditionManager(Expression condition, Expression state, Expression precondition,
+                               boolean isDelayed,
                                ConditionManager parent) {
 
     public ConditionManager {
@@ -43,31 +44,32 @@ public record ConditionManager(Expression condition, Expression state, Expressio
         }
     }
 
-    public static final ConditionManager DELAYED = new ConditionManager(NoValue.EMPTY,
-            NoValue.EMPTY, NoValue.EMPTY, null);
-
     public static ConditionManager initialConditionManager(Primitives primitives) {
         BooleanConstant TRUE = new BooleanConstant(primitives, true);
-        return new ConditionManager(TRUE, TRUE, TRUE, null);
+        return new ConditionManager(TRUE, TRUE, TRUE, false, null);
     }
 
-    public ConditionManager newAtStartOfNewBlock(Primitives primitives, Expression condition, Expression precondition) {
-        return new ConditionManager(condition, new BooleanConstant(primitives, true), precondition, this);
+    public ConditionManager newAtStartOfNewBlock(Primitives primitives, Expression condition, Expression precondition, boolean conditionOrPreconditionAreDelayed) {
+        return new ConditionManager(condition, new BooleanConstant(primitives, true), precondition,
+                conditionOrPreconditionAreDelayed || isDelayed, this);
     }
 
-    public ConditionManager newAtStartOfNewBlockDoNotChangePrecondition(Primitives primitives, Expression condition) {
-        return new ConditionManager(condition, new BooleanConstant(primitives, true), precondition, this);
+    public ConditionManager newAtStartOfNewBlockDoNotChangePrecondition(Primitives primitives, Expression condition, boolean conditionIsDelayed) {
+        return new ConditionManager(condition, new BooleanConstant(primitives, true), precondition,
+                conditionIsDelayed || isDelayed, this);
     }
 
-    public ConditionManager withPrecondition(Expression combinedPrecondition) {
-        if (combinedPrecondition.isDelayed()) return DELAYED;
-        return new ConditionManager(condition, state, combinedPrecondition, parent);
+    public ConditionManager withPrecondition(Expression combinedPrecondition, boolean combinedPreconditionIsDelayed) {
+        return new ConditionManager(condition, state, combinedPrecondition,
+                parent.isDelayed() || combinedPreconditionIsDelayed, parent);
     }
 
     public ConditionManager newForNextStatementDoNotChangePrecondition(EvaluationContext evaluationContext, Expression addToState) {
         Objects.requireNonNull(addToState);
         if (addToState.isBoolValueTrue()) return this;
-        return new ConditionManager(condition, combine(evaluationContext, state, addToState), precondition, parent);
+        Expression newState = combine(evaluationContext, state, addToState);
+        return new ConditionManager(condition, newState, precondition,
+                parent.isDelayed() || evaluationContext.isDelayed(newState), parent);
     }
 
     public Expression absoluteState(EvaluationContext evaluationContext) {
@@ -102,8 +104,7 @@ public record ConditionManager(Expression condition, Expression state, Expressio
      */
     public Expression evaluate(EvaluationContext evaluationContext, Expression value) {
         Expression absoluteState = absoluteState(evaluationContext);
-        if (absoluteState.isUnknown() || value.isUnknown())
-            return absoluteState.combineUnknown(value); // allow to go delayed
+        if (absoluteState.isUnknown() || value.isUnknown()) throw new UnsupportedOperationException();
 
         Expression combinedWithPrecondition;
         if (precondition.isBoolValueTrue()) {
@@ -126,7 +127,7 @@ public record ConditionManager(Expression condition, Expression state, Expressio
 
     private static Expression combine(EvaluationContext evaluationContext, Expression e1, Expression e2) {
         Objects.requireNonNull(e2);
-        if (e1.isUnknown() || e2.isUnknown()) return e1.combineUnknown(e2); // allow to go delayed
+        if (e1.isUnknown() || e2.isUnknown()) throw new UnsupportedOperationException();
         return new And(evaluationContext.getPrimitives(), e2.getObjectFlow()).append(evaluationContext, e1, e2);
     }
 
@@ -168,12 +169,6 @@ public record ConditionManager(Expression condition, Expression state, Expressio
                 .stream()
                 .filter(e -> requireEqualsNull == (e.getValue().equalsNull()))
                 .map(Map.Entry::getKey).collect(Collectors.toSet());
-    }
-
-    public boolean isDelayed() {
-        if (condition.isDelayed() || state.isDelayed()) return true;
-        if (parent == null) return false;
-        return parent.isDelayed();
     }
 
     private static Filter.FilterResult<Variable> removeVariableFilter(Expression defaultRest,
@@ -222,9 +217,6 @@ public record ConditionManager(Expression condition, Expression state, Expressio
      an AND of negations of the remainder after getting rid of != null, == null clauses.
      */
     public Expression precondition(EvaluationContext evaluationContext) {
-        if (condition.isDelayed()) {
-            return condition;
-        }
         Filter filter = new Filter(evaluationContext, Filter.FilterMode.REJECT);
         Filter.FilterResult<ParameterInfo> filterResult = filter.filter(condition, filter.individualNullOrNotNullClauseOnParameter());
         // those parts that have nothing to do with individual clauses

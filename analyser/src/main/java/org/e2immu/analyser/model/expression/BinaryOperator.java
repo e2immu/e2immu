@@ -166,8 +166,7 @@ public class BinaryOperator implements Expression {
         Expression l = left.value();
         Expression r = right.value();
 
-        if (l.isDelayed() || r.isDelayed()) return NoValue.EMPTY;
-        if (l.isUnknown() || r.isUnknown()) return l.combineUnknown(r);
+        if (l.isUnknown() || r.isUnknown()) throw new UnsupportedOperationException();
 
         if (operator == primitives.equalsOperatorObject) {
             if (l.equals(r)) return new BooleanConstant(primitives, true);
@@ -289,9 +288,6 @@ public class BinaryOperator implements Expression {
         if (r.value().isInstanceOf(BooleanConstant.class)) {
             builder.raiseError(Message.PART_OF_EXPRESSION_EVALUATES_TO_CONSTANT);
             return builder.build();
-        }
-        if (l.value().isDelayed() || r.value().isDelayed()) {
-            return builder.setExpression(NoValue.EMPTY).build();
         }
         ObjectFlow objectFlow = new ObjectFlow(evaluationContext.getLocation(),
                 evaluationContext.getPrimitives().booleanParameterizedType, Origin.RESULT_OF_OPERATOR);

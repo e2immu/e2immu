@@ -19,13 +19,13 @@ package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.And;
-import org.e2immu.analyser.model.expression.EmptyExpression;
-import org.e2immu.analyser.model.expression.NoValue;
+import org.e2immu.analyser.model.expression.DelayedExpression;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
+import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -71,8 +71,8 @@ public class MethodLevelData {
         return combinedPrecondition.getOrElse(null);
     }
 
-    public Expression getCombinedPreconditionOrDelay() {
-        return combinedPrecondition.getOrElse(NoValue.EMPTY);
+    public Expression getCombinedPreconditionOrDelay(Primitives primitives) {
+        return combinedPrecondition.getOrElse(DelayedExpression.forCondition(primitives));
     }
 
     public void addCircularCallOrUndeclaredFunctionalInterface() {
@@ -258,7 +258,7 @@ public class MethodLevelData {
             vic.ensureEvaluation(VariableInfoContainer.NOT_YET_ASSIGNED,
                     sharedState.statementAnalysis.index + VariableInfoContainer.Level.EVALUATION.label,
                     sharedState.evaluationContext.getInitialStatementTime(), Set.of());
-            if (vi.valueIsSet()) vic.setValue(vi.getValue(), LinkedVariables.EMPTY, vi.getProperties(), false);
+             vic.setValue(vi.getValue(), vi.isDelayed(), LinkedVariables.EMPTY, vi.getProperties(), false);
             if (vi.linkedVariablesIsSet()) vic.setLinkedVariables(vi.getLinkedVariables(), false);
         }
         vic.setProperty(VariableProperty.MODIFIED, modified, false, VariableInfoContainer.Level.MERGE);

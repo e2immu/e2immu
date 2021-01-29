@@ -172,7 +172,7 @@ public class Lambda implements Expression {
         Expression result;
 
         if (evaluationContext.getLocalPrimaryTypeAnalysers() == null) {
-            result = NoValue.EMPTY; // delay
+            result = DelayedExpression.forMethod(methodInfo);
         } else {
             MethodAnalysis methodAnalysis = evaluationContext.findMethodAnalysisOfLambda(methodInfo);
             if (methodInfo.hasReturnValue()) {
@@ -181,7 +181,7 @@ public class Lambda implements Expression {
                     InlinedMethod inlineValue = srv.asInstanceOf(InlinedMethod.class);
                     result = Objects.requireNonNullElse(inlineValue, srv);
                 } else {
-                    result = NoValue.EMPTY; // delay
+                    result = DelayedExpression.forMethod(methodInfo);
                 }
             } else {
                 result = EmptyExpression.NO_RETURN_VALUE; // there is no return value (void method)

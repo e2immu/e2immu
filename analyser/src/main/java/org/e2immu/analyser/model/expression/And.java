@@ -65,23 +65,9 @@ public record And(Primitives primitives,
     // we try to maintain a CNF
     public Expression append(EvaluationContext evaluationContext, Expression... values) {
 
-        // STEP 0: combining an unknown with anything else results in unknown
-
-        Expression unknown = null;
-        for (Expression value : values) {
-            if (value.isUnknown()) {
-                if (unknown == null) unknown = value;
-                else unknown = unknown.combineUnknown(value);
-            }
-        }
-        if (unknown != null) {
-            log(CNF, "Return unknown value in And, order " + unknown.order());
-            return unknown;
-        }
-
         // STEP 1: check that all values return boolean!
 
-        if (Arrays.stream(values).anyMatch(v -> v.returnType() == null || Primitives.isNotBooleanOrBoxedBoolean(v.returnType()))) {
+        if (Arrays.stream(values).anyMatch(v -> v.isUnknown() || v.returnType() == null || Primitives.isNotBooleanOrBoxedBoolean(v.returnType()))) {
             throw new UnsupportedOperationException("Internal error, values are " + Arrays.toString(values));
         }
 

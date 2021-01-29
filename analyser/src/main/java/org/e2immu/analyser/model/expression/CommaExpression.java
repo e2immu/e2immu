@@ -45,10 +45,7 @@ public record CommaExpression(List<Expression> expressions) implements Expressio
                 .collect(Collectors.toUnmodifiableList());
         if (expressions.size() == 0) return new BooleanConstant(evaluationContext.getPrimitives(), true);
         if (expressions.size() == 1) return expressions.get(0);
-        List<Expression> unknowns = expressions.stream().filter(Expression::isUnknown).collect(Collectors.toUnmodifiableList());
-        if (!unknowns.isEmpty()) {
-            return unknowns.stream().reduce(EmptyExpression.EMPTY_EXPRESSION, Expression::combineUnknown);
-        }
+        if (expressions.stream().anyMatch(Expression::isUnknown)) throw new UnsupportedOperationException();
         return new CommaExpression(ImmutableList.copyOf(expressions));
     }
 

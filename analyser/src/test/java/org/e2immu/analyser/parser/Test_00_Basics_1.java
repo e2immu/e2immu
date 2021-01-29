@@ -25,8 +25,6 @@ import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterAnalysis;
-import org.e2immu.analyser.model.expression.EmptyExpression;
-import org.e2immu.analyser.model.expression.NoValue;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -63,7 +61,7 @@ public class Test_00_Basics_1 extends CommonTestRunner {
                 } else {
                     Assert.assertEquals("", d.variableInfo().getLinkedVariables().toString());
                 }
-                String expectValue = d.iteration() == 0 ? NoValue.NO_VALUE : "nullable? instance type Set<String>";
+                String expectValue = d.iteration() == 0 ? "xx" : "nullable? instance type Set<String>";
                 Assert.assertEquals(expectValue, d.currentValue().toString());
                 int expectNN = d.iteration() == 0 ? Level.DELAY : MultiLevel.NULLABLE;
               //  Assert.assertEquals(expectNN, d.getProperty(VariableProperty.NOT_NULL));
@@ -75,7 +73,7 @@ public class Test_00_Basics_1 extends CommonTestRunner {
                 } else {
                     Assert.assertEquals("this.f1", d.variableInfo().getLinkedVariables().toString()); // without p0
                 }
-                String expectValue = d.iteration() == 0 ? NoValue.NO_VALUE : "f1";
+                String expectValue = d.iteration() == 0 ? "xx" : "f1";
                 Assert.assertEquals(expectValue, d.currentValue().toString());
                 int expectNN = d.iteration() == 0 ? Level.DELAY : MultiLevel.NULLABLE;
              //   Assert.assertEquals(expectNN, d.getProperty(VariableProperty.NOT_NULL));

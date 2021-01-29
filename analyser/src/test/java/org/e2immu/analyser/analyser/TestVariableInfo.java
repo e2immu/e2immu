@@ -40,7 +40,7 @@ public class TestVariableInfo extends CommonVariableInfo {
     @Test
     public void testNoneNoOverwrite() {
         VariableInfoImpl viB = new VariableInfoImpl(makeLocalIntVar("b"));
-        viB.setValue(four);
+        viB.setValue(four, false);
         viB.setProperty(VariableProperty.NOT_NULL, MultiLevel.MUTABLE);
 
         VariableInfoImpl vii = viB.mergeIntoNewObject(minimalEvaluationContext, TRUE, false, List.of());
@@ -53,7 +53,7 @@ public class TestVariableInfo extends CommonVariableInfo {
     @Test
     public void testNoneOverwrite() {
         VariableInfoImpl viB = new VariableInfoImpl(makeLocalIntVar("b"));
-        viB.setValue(four);
+        viB.setValue(four, false);
         viB.setProperty(VariableProperty.NOT_NULL, MultiLevel.MUTABLE);
 
         VariableInfoImpl overwritten = new VariableInfoImpl(viB.variable());
@@ -68,11 +68,11 @@ public class TestVariableInfo extends CommonVariableInfo {
     @Test
     public void testOneOverwrite() {
         VariableInfoImpl viA = new VariableInfoImpl(makeLocalIntVar("a"));
-        viA.setValue(three);
+        viA.setValue(three, false);
         viA.setProperty(VariableProperty.NOT_NULL, MultiLevel.MUTABLE);
 
         VariableInfoImpl viB = new VariableInfoImpl(makeLocalIntVar("b"));
-        viB.setValue(four);
+        viB.setValue(four, false);
         viB.setProperty(VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
 
         // situation:
@@ -93,14 +93,14 @@ public class TestVariableInfo extends CommonVariableInfo {
     public void testOneCisAIfXThenB() {
         VariableInfoImpl viX = new VariableInfoImpl(makeLocalBooleanVar("x"));
         Expression x = NewObject.forTesting(primitives, viX.variable().parameterizedType());
-        viX.setValue(x);
+        viX.setValue(x, false);
 
         VariableInfoImpl viA = new VariableInfoImpl(makeLocalIntVar("a"));
-        viA.setValue(three);
+        viA.setValue(three, false);
         viA.setProperty(VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
 
         VariableInfoImpl viB = new VariableInfoImpl(makeLocalIntVar("b"));
-        viB.setValue(four);
+        viB.setValue(four, false);
         viB.setProperty(VariableProperty.NOT_NULL, MultiLevel.MUTABLE);
 
         // situation: boolean x = ...; int c = a; if(x) c = b;
@@ -126,14 +126,14 @@ public class TestVariableInfo extends CommonVariableInfo {
         Variable retVar = makeReturnVariable();
         VariableInfoImpl ret = new VariableInfoImpl(retVar);
         ret.setProperty(VariableProperty.NOT_NULL, MultiLevel.MUTABLE);
-        ret.setValue(new UnknownExpression(primitives.booleanParameterizedType, UnknownExpression.RETURN_VALUE));
+        ret.setValue(new UnknownExpression(primitives.booleanParameterizedType, UnknownExpression.RETURN_VALUE), false);
 
         VariableInfoImpl viX = new VariableInfoImpl(makeLocalBooleanVar("x"));
         Expression x = NewObject.forTesting(primitives, viX.variable().parameterizedType());
-        viX.setValue(x);
+        viX.setValue(x, false);
 
         VariableInfoImpl viB = new VariableInfoImpl(makeLocalIntVar("b"));
-        viB.setValue(four);
+        viB.setValue(four, false);
         viB.setProperty(VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
 
         // situation: if(x) return b;
@@ -165,16 +165,16 @@ public class TestVariableInfo extends CommonVariableInfo {
     public void testOneIfXThenReturnIfYThenReturn() {
         Variable retVar = makeReturnVariable();
         VariableInfoImpl ret = new VariableInfoImpl(retVar);
-        ret.setValue(new UnknownExpression(primitives.booleanParameterizedType, UnknownExpression.RETURN_VALUE));
+        ret.setValue(new UnknownExpression(primitives.booleanParameterizedType, UnknownExpression.RETURN_VALUE), false);
         ret.setProperty(VariableProperty.NOT_NULL, MultiLevel.MUTABLE);
 
         VariableInfoImpl viX = new VariableInfoImpl(makeLocalIntVar("x"));
         Expression x = NewObject.forTesting(primitives, viX.variable().parameterizedType());
-        viX.setValue(x);
+        viX.setValue(x, false);
 
         VariableInfoImpl viB = new VariableInfoImpl(makeLocalIntVar("b"));
         Expression xEquals3 = Equals.equals(minimalEvaluationContext, x, three, ObjectFlow.NO_FLOW);
-        viB.setValue(four);
+        viB.setValue(four, false);
         viB.setProperty(VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
 
         // situation: if(x==3) return b;
@@ -194,7 +194,7 @@ public class TestVariableInfo extends CommonVariableInfo {
         VariableInfoImpl viA = new VariableInfoImpl(makeLocalIntVar("a"));
         Expression xEquals4 = Equals.equals(minimalEvaluationContext, x, four, ObjectFlow.NO_FLOW);
         Assert.assertEquals("4==instance type int", xEquals4.debugOutput());
-        viA.setValue(three);
+        viA.setValue(three, false);
         viA.setProperty(VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
 
         Expression state = Negation.negate(minimalEvaluationContext, xEquals3);
@@ -229,17 +229,17 @@ public class TestVariableInfo extends CommonVariableInfo {
     @Test
     public void testOneCisAIfUnclearThenB() {
         VariableInfoImpl viA = new VariableInfoImpl(makeLocalIntVar("a"));
-        viA.setValue(three);
+        viA.setValue(three, false);
         viA.setProperty(VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
 
         VariableInfoImpl viB = new VariableInfoImpl(makeLocalIntVar("b"));
-        viB.setValue(four);
+        viB.setValue(four, false);
         viB.setProperty(VariableProperty.NOT_NULL, MultiLevel.MUTABLE);
 
         // situation: boolean x = ...; int c = a; if(some obscure condition) c = b;
 
         VariableInfoImpl viC = new VariableInfoImpl(makeLocalIntVar("c"));
-        viC.setValue(NewObject.forTesting(primitives, viA.variable().parameterizedType()));
+        viC.setValue(NewObject.forTesting(primitives, viA.variable().parameterizedType()), false);
 
         Expression unknown = new UnknownExpression(primitives.booleanParameterizedType, "no idea");
         List<StatementAnalysis.ConditionAndVariableInfo> uViB = List.of(new StatementAnalysis.ConditionAndVariableInfo(unknown, viB));
@@ -257,14 +257,14 @@ public class TestVariableInfo extends CommonVariableInfo {
     public void testTwoOverwriteCisIfXThenAElseB() {
         VariableInfoImpl viX = new VariableInfoImpl(makeLocalBooleanVar("x"));
         Expression x = NewObject.forTesting(primitives, viX.variable().parameterizedType());
-        viX.setValue(x);
+        viX.setValue(x, false);
 
         VariableInfoImpl viA = new VariableInfoImpl(makeLocalIntVar("a"));
-        viA.setValue(three);
+        viA.setValue(three, false);
         viA.setProperty(VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
 
         VariableInfoImpl viB = new VariableInfoImpl(makeLocalIntVar("b"));
-        viB.setValue(four);
+        viB.setValue(four, false);
         viB.setProperty(VariableProperty.NOT_NULL, MultiLevel.MUTABLE);
 
         // situation: boolean x = ...; int c; if(x) c = a; else c = b;
@@ -285,14 +285,14 @@ public class TestVariableInfo extends CommonVariableInfo {
     public void testTwoOverwriteCisIfXThenAElseA() {
         VariableInfoImpl viX = new VariableInfoImpl(makeLocalBooleanVar("x"));
         Expression x = NewObject.forTesting(primitives, viX.variable().parameterizedType());
-        viX.setValue(x);
+        viX.setValue(x, false);
 
         VariableInfoImpl viA = new VariableInfoImpl(makeLocalIntVar("a"));
-        viA.setValue(three);
+        viA.setValue(three, false);
         viA.setProperty(VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
 
         VariableInfoImpl viB = new VariableInfoImpl(makeLocalIntVar("b"));
-        viB.setValue(three);
+        viB.setValue(three, false);
         viB.setProperty(VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
 
         // situation: boolean x = ...; int c; if(x) c = a; else c = b;

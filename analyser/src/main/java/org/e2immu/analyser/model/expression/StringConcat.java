@@ -51,7 +51,7 @@ public class StringConcat extends BinaryOperator {
             return new StringConstant(primitives, lcv.toString() + rsv.constant(), objectFlow);
         }
         // any unknown lingering
-        if (l.isUnknown() || r.isUnknown()) return l.combineUnknown(r);
+        if (l.isUnknown() || r.isUnknown()) throw new UnsupportedOperationException();
 
         return new StringConcat(primitives, l, r, objectFlow);
     }

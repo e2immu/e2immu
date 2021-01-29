@@ -24,7 +24,6 @@ import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.expression.EmptyExpression;
-import org.e2immu.analyser.model.expression.NoValue;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -57,7 +56,7 @@ public class Test_00_Basics_3 extends CommonTestRunner {
             if ("setS1".equals(d.methodInfo().name)) {
                 if ("0.0.0".equals(d.statementId())) {
                     if (d.iteration() == 0) {
-                        Assert.assertSame(NoValue.EMPTY, d.evaluationResult().value());
+                        Assert.assertTrue(d.evaluationResult().someValueWasDelayed());
                     } else {
                         Assert.assertSame(EmptyExpression.NO_RETURN_VALUE, d.evaluationResult().value());
                     }
@@ -92,7 +91,7 @@ public class Test_00_Basics_3 extends CommonTestRunner {
             }
             if ("setS1".equals(d.methodInfo().name) && OUT.equals(d.variableName())) {
                 if (d.iteration() == 0) {
-                    Assert.assertSame(NoValue.EMPTY, d.currentValue());
+                    Assert.assertTrue(d.currentValueIsDelayed());
                 } else {
                     if ("0.0.0".equals(d.statementId())) {
                         // because of the modifying method println
@@ -115,7 +114,7 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                     Assert.assertSame(d.statementId(), LinkedVariables.DELAY, d.variableInfo().getLinkedVariables());
                 }
                 if ("0.0.0".equals(d.statementId())) {
-                    String expectValue = d.iteration() == 0 ? NoValue.NO_VALUE : "nullable instance type String";
+                    String expectValue = d.iteration() == 0 ? "xx" : "nullable instance type String";
                     Assert.assertEquals(expectValue, d.currentValue().debugOutput());
                     Assert.assertFalse(d.variableInfo().isAssigned());
                     if (d.iteration() == 0) {
