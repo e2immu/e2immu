@@ -219,9 +219,10 @@ public record EvaluationResult(EvaluationContext evaluationContext,
         }
 
         public Builder setExpression(Expression value) {
-            Objects.requireNonNull(value);
+            assert value != null;
+
             this.value = value;
-            someValueWasDelayed |= evaluationContext.isDelayed(value);
+            someValueWasDelayed |= evaluationContext != null && evaluationContext.isDelayed(value) || value instanceof DelayedExpression;
             return this;
         }
 
@@ -241,6 +242,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
 
         public void variableOccursInNotNullContext(Variable variable, Expression value, int notNullRequired) {
             assert evaluationContext != null;
+            assert value != null;
 
             if (variable instanceof This) return; // nothing to be done here
             boolean valueIsDelayed = evaluationContext.isDelayed(value);
@@ -293,7 +295,8 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             ChangeData ecd = valueChanges.get(variable);
             ChangeData newEcd;
             if (ecd == null) {
-                newEcd = new ChangeData(null, false, false, Set.of(statementTime),
+                newEcd = new ChangeData(DelayedExpression.forVariable(variable),
+                        false, false, Set.of(statementTime),
                         LinkedVariables.EMPTY, LinkedVariables.EMPTY, Map.of());
             } else {
                 newEcd = new ChangeData(ecd.value, ecd.stateIsDelayed, ecd.markAssignment,
@@ -477,10 +480,12 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             ChangeData newEcd;
             ChangeData ecd = valueChanges.get(assignmentTarget);
             if (ecd == null) {
-                newEcd = new ChangeData(stateIsDelayed ? null : resultOfExpression, stateIsDelayed,
+                newEcd = new ChangeData(stateIsDelayed ? DelayedExpression.forState(evaluationContext.getPrimitives())
+                        : resultOfExpression, stateIsDelayed,
                         markAssignment, Set.of(), linkedVariables, staticallyAssignedVariables, Map.of());
             } else {
-                newEcd = new ChangeData(stateIsDelayed ? null : resultOfExpression, stateIsDelayed,
+                newEcd = new ChangeData(stateIsDelayed ? DelayedExpression.forState(evaluationContext.getPrimitives())
+                        : resultOfExpression, stateIsDelayed,
                         ecd.markAssignment || markAssignment, ecd.readAtStatementTime, linkedVariables,
                         staticallyAssignedVariables, ecd.properties);
             }
@@ -491,10 +496,11 @@ public record EvaluationResult(EvaluationContext evaluationContext,
         // Used in transformation of parameter lists
         public void setProperty(Variable variable, VariableProperty property, int value) {
             assert evaluationContext != null;
+
             ChangeData newEcd;
             ChangeData ecd = valueChanges.get(variable);
             if (ecd == null) {
-                newEcd = new ChangeData(null, false, false, Set.of(),
+                newEcd = new ChangeData(DelayedExpression.forVariable(variable), false, false, Set.of(),
                         LinkedVariables.EMPTY, LinkedVariables.EMPTY, Map.of(property, value));
             } else {
                 newEcd = new ChangeData(ecd.value, ecd.stateIsDelayed, ecd.markAssignment,

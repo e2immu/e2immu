@@ -18,12 +18,11 @@
 
 package org.e2immu.analyser.model.expression;
 
-import org.e2immu.analyser.analyser.EvaluationContext;
-import org.e2immu.analyser.analyser.EvaluationResult;
-import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
-import org.e2immu.analyser.analyser.VariableProperty;
+import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
+import org.e2immu.analyser.model.variable.FieldReference;
+import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Text;
@@ -34,11 +33,11 @@ import org.e2immu.annotation.E2Container;
 public record DelayedExpression(String msg, ParameterizedType parameterizedType) implements Expression {
 
     public static DelayedExpression forMethod(MethodInfo methodInfo) {
-        return new DelayedExpression("<method:" + methodInfo.name + ">", methodInfo.returnType());
+        return new DelayedExpression("<method:" + methodInfo.fullyQualifiedName + ">", methodInfo.returnType());
     }
 
-    public static DelayedExpression forRemappedParameter(ParameterInfo parameterInfo) {
-        return new DelayedExpression("<parameter:" + parameterInfo.name + ">", parameterInfo.parameterizedType());
+    public static DelayedExpression forParameter(ParameterInfo parameterInfo) {
+        return new DelayedExpression("<parameter:" + parameterInfo.fullyQualifiedName() + ">", parameterInfo.parameterizedType());
     }
 
     public static DelayedExpression forField(FieldInfo fieldInfo) {
@@ -47,6 +46,16 @@ public record DelayedExpression(String msg, ParameterizedType parameterizedType)
 
     public static Expression forCondition(Primitives primitives) {
         return new DelayedExpression("<condition>", primitives.booleanParameterizedType);
+    }
+
+    public static Expression forVariable(Variable variable) {
+        if (variable instanceof FieldReference fieldReference) return forField(fieldReference.fieldInfo);
+        if (variable instanceof ParameterInfo parameterInfo) return forParameter(parameterInfo);
+        return new DelayedExpression("<variable:" + variable.fullyQualifiedName() + ">", variable.parameterizedType());
+    }
+
+    public static Expression forState(Primitives primitives) {
+        return new DelayedExpression("<state>", primitives.booleanParameterizedType);
     }
 
     @Override
@@ -96,6 +105,11 @@ public record DelayedExpression(String msg, ParameterizedType parameterizedType)
 
     @Override
     public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
-        return Level.FALSE;
+        return Level.DELAY;
+    }
+
+    @Override
+    public LinkedVariables linkedVariables(EvaluationContext evaluationContext) {
+        return LinkedVariables.DELAY;
     }
 }

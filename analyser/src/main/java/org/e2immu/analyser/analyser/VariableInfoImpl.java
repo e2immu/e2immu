@@ -21,6 +21,7 @@ import com.google.common.collect.ImmutableMap;
 import org.e2immu.analyser.analyser.util.MergeHelper;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Level;
+import org.e2immu.analyser.model.expression.DelayedExpression;
 import org.e2immu.analyser.model.expression.Negation;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.Variable;
@@ -67,6 +68,7 @@ class VariableInfoImpl implements VariableInfo {
         this.assignmentId = assignmentId;
         this.readId = readId;
         this.readAtStatementTimes = Set.of();
+        currentDelayedValue = DelayedExpression.forVariable(variable);
     }
 
     // normal one for creating an initial or evaluation
@@ -78,6 +80,12 @@ class VariableInfoImpl implements VariableInfo {
             this.statementTime.set(statementTime);
         }
         this.readAtStatementTimes = Objects.requireNonNull(readAtStatementTimes);
+        currentDelayedValue = DelayedExpression.forVariable(variable);
+    }
+
+    @Override
+    public boolean valueIsSet() {
+        return value.isSet();
     }
 
     @Override
@@ -205,6 +213,7 @@ class VariableInfoImpl implements VariableInfo {
         if (valueIsDelayed) {
             currentDelayedValue = value;
         } else {
+            assert !(value instanceof DelayedExpression); // simple safe-guard, others are more difficult to check
             if (!this.value.isSet() || !this.value.get().equals(value)) { // crash if different, keep same
                 this.value.set(value);
             }

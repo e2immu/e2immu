@@ -1193,7 +1193,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             newReturnValue = EvaluateInlineConditional.conditionalValueConditionResolved(sharedState.evaluationContext,
                     localConditionManager.state(), value, currentReturnValue, ObjectFlow.NO_FLOW).getExpression();
         }
-        boolean newReturnValueIsDelayed = sharedState.evaluationContext.isDelayed(returnVariable);
+        boolean newReturnValueIsDelayed = sharedState.evaluationContext.isDelayed(newReturnValue);
         VariableInfoContainer vic = statementAnalysis.findForWriting(returnVariable);
         vic.ensureEvaluation(index() + VariableInfoContainer.Level.EVALUATION.label,
                 VariableInfoContainer.NOT_YET_READ, VariableInfoContainer.NOT_A_VARIABLE_FIELD, Set.of());

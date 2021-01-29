@@ -45,7 +45,8 @@ Test_00_Basics_0 extends CommonTestRunner {
     // value only comes in second iteration
     EvaluationResultVisitor evaluationResultVisitor = d -> {
         if (d.methodInfo().name.equals("getExplicitlyFinal") && "0".equals(d.statementId())) {
-            Assert.assertEquals("\"abc\"", d.evaluationResult().value().toString());
+            String expectValue = d.iteration() == 0 ? "<field:org.e2immu.analyser.testexample.Basics_0.explicitlyFinal>" : "\"abc\"";
+            Assert.assertEquals(expectValue, d.evaluationResult().value().toString());
         }
     };
 
@@ -70,7 +71,7 @@ Test_00_Basics_0 extends CommonTestRunner {
                 Assert.assertFalse(d.variableInfo().isAssigned());
                 Assert.assertTrue(d.variableInfo().isRead());
                 if (d.iteration() == 0) {
-                    Assert.assertTrue( d.currentValueIsDelayed());
+                    Assert.assertTrue(d.currentValueIsDelayed());
                 } else {
                     Assert.assertEquals(new StringConstant(d.evaluationContext().getPrimitives(), "abc"), d.currentValue());
                 }
@@ -83,7 +84,8 @@ Test_00_Basics_0 extends CommonTestRunner {
             }
             // the return value
             Assert.assertEquals((TYPE + ".getExplicitlyFinal()"), d.variableName());
-            Assert.assertEquals("\"abc\"", d.currentValue().toString());
+            String expectReturn = d.iteration() == 0 ? "<field:org.e2immu.analyser.testexample.Basics_0.explicitlyFinal>" : "\"abc\"";
+            Assert.assertEquals(expectReturn, d.currentValue().toString());
 
             int expectNotNull = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
             Assert.assertEquals(expectNotNull, d.getProperty(VariableProperty.NOT_NULL));

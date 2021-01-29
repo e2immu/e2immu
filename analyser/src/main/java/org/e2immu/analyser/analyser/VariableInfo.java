@@ -56,9 +56,7 @@ public interface VariableInfo {
 
     Set<Integer> getReadAtStatementTimes();
 
-    default boolean valueIsSet() {
-        return isNotDelayed();
-    }
+    boolean valueIsSet();
 
     int getProperty(VariableProperty variableProperty);
 
