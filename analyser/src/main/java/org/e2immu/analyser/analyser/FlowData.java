@@ -232,7 +232,7 @@ public class FlowData {
             return false; // no more errors
         }
 
-        if (state == EmptyExpression.NO_VALUE) {
+        if (state.isDelayed()) {
             log(Logger.LogTarget.DELAYED, "Delaying guaranteed to be reached, no value state");
             return false;
         }

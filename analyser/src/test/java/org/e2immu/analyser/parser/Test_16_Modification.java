@@ -5,10 +5,7 @@ import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.expression.EmptyExpression;
-import org.e2immu.analyser.model.expression.MethodCall;
-import org.e2immu.analyser.model.expression.NewObject;
-import org.e2immu.analyser.model.expression.VariableExpression;
+import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.statement.ExpressionAsStatement;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.This;
@@ -40,7 +37,7 @@ public class Test_16_Modification extends CommonTestRunner {
                     Assert.assertEquals(expectModified, d.getProperty(VariableProperty.MODIFIED));
                     String expectLinked = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "";
                     Assert.assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
-                    String expectValue = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "instance type HashSet<String>";
+                    String expectValue = d.iteration() == 0 ? NoValue.NO_VALUE : "instance type HashSet<String>";
                     Assert.assertEquals(expectValue, d.currentValue().debugOutput());
                 }
             }
@@ -116,14 +113,14 @@ public class Test_16_Modification extends CommonTestRunner {
 
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("getFirst".equals(d.methodInfo().name) && "0".equals(d.statementId())) {
-                String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : GET_FIRST_VALUE;
+                String expect = d.iteration() == 0 ? NoValue.NO_VALUE : GET_FIRST_VALUE;
                 Assert.assertEquals(expect, d.evaluationResult().value().toString());
             }
         };
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("org.e2immu.analyser.testexample.Modification_2.Example2ter.getFirst(String)".equals(d.variableName())) {
-                String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : GET_FIRST_VALUE;
+                String expect = d.iteration() == 0 ? NoValue.NO_VALUE : GET_FIRST_VALUE;
 
                 Assert.assertEquals(expect, d.currentValue().toString());
                 Assert.assertNotSame(LinkedVariables.DELAY, d.currentValue().linkedVariables(d.evaluationContext()));
@@ -166,7 +163,7 @@ public class Test_16_Modification extends CommonTestRunner {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("add3".equals(d.methodInfo().name) && "1".equals(d.statementId())) {
                 if (d.iteration() == 0) {
-                    Assert.assertSame(EmptyExpression.NO_VALUE, d.evaluationResult().value());
+                    Assert.assertSame(NoValue.EMPTY, d.evaluationResult().value());
                 } else {
                     Assert.assertEquals("set3.add(v)", d.evaluationResult().value().toString());
                     int v = d.evaluationResult().changeData().entrySet().stream()
@@ -187,7 +184,7 @@ public class Test_16_Modification extends CommonTestRunner {
                     Assert.assertFalse(d.variableInfo().isRead());
 
                     if (d.iteration() == 0) {
-                        Assert.assertSame(EmptyExpression.NO_VALUE, d.currentValue());
+                        Assert.assertSame(NoValue.EMPTY, d.currentValue());
                     } else {
                         Assert.assertTrue(d.variableInfo().getValue() instanceof VariableExpression);
                         VariableExpression variableValue = (VariableExpression) d.currentValue();
@@ -207,7 +204,7 @@ public class Test_16_Modification extends CommonTestRunner {
                     Assert.assertTrue(d.variableInfo().getReadId().compareTo(d.variableInfo().getAssignmentId()) > 0);
                     if (d.iteration() == 0) {
                         // there is a variable info at levels 0 and 3
-                        Assert.assertSame(EmptyExpression.NO_VALUE, d.currentValue());
+                        Assert.assertSame(NoValue.EMPTY, d.currentValue());
                         Assert.assertFalse(d.variableInfoContainer().isInitial());
                     } else {
                         // there is a variable info in level 1, copied from level 1 in statement 0
@@ -228,14 +225,14 @@ public class Test_16_Modification extends CommonTestRunner {
                 if ("0".equals(d.statementId())) {
                     String expectLv = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "";
                     Assert.assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
-                    String expectValue = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : INSTANCE_TYPE_HASH_SET;
+                    String expectValue = d.iteration() == 0 ? NoValue.NO_VALUE : INSTANCE_TYPE_HASH_SET;
                     Assert.assertEquals(expectValue, d.variableInfo().getValue().toString());
                 }
                 if ("1".equals(d.statementId())) {
                     Assert.assertTrue(d.variableInfo().isRead());
                     String expectLv = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "";
                     Assert.assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
-                    String expectValue = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : INSTANCE_TYPE_HASH_SET;
+                    String expectValue = d.iteration() == 0 ? NoValue.NO_VALUE : INSTANCE_TYPE_HASH_SET;
                     Assert.assertEquals(expectValue, d.variableInfo().getValue().toString());
                     int expectModified = d.iteration() <= 1 ? Level.FALSE : Level.TRUE;
                     Assert.assertEquals(expectModified, d.getProperty(VariableProperty.MODIFIED));
@@ -297,7 +294,7 @@ public class Test_16_Modification extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("add4".equals(d.methodInfo().name) && SET4.equals(d.variableName())) {
                 if (d.iteration() == 0) {
-                    Assert.assertSame(EmptyExpression.NO_VALUE, d.currentValue());
+                    Assert.assertSame(NoValue.EMPTY, d.currentValue());
                 } else {
                     if ("0".equals(d.statementId()) || "1".equals(d.statementId())) {
                         Assert.assertEquals("0-E", d.variableInfo().getReadId());
@@ -314,13 +311,13 @@ public class Test_16_Modification extends CommonTestRunner {
                     Assert.assertEquals(Level.DELAY, d.getProperty(VariableProperty.MODIFIED));
                     int expectNN = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
                     Assert.assertEquals(expectNN, d.getProperty(VariableProperty.NOT_NULL));
-                    String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "set4";
+                    String expect = d.iteration() == 0 ? NoValue.NO_VALUE : "set4";
                     Assert.assertEquals(expect, d.currentValue().toString());
                 }
                 if ("1".equals(d.statementId())) {
                     Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.MODIFIED));
                     Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL));
-                    String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "instance type Set<String>";
+                    String expect = d.iteration() == 0 ? NoValue.NO_VALUE : "instance type Set<String>";
                     Assert.assertEquals(expect, d.currentValue().toString());
                 }
             }

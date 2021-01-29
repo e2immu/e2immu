@@ -43,8 +43,8 @@ public record ConditionManager(Expression condition, Expression state, Expressio
         }
     }
 
-    public static final ConditionManager DELAYED = new ConditionManager(EmptyExpression.NO_VALUE,
-            EmptyExpression.NO_VALUE, EmptyExpression.NO_VALUE, null);
+    public static final ConditionManager DELAYED = new ConditionManager(NoValue.EMPTY,
+            NoValue.EMPTY, NoValue.EMPTY, null);
 
     public static ConditionManager initialConditionManager(Primitives primitives) {
         BooleanConstant TRUE = new BooleanConstant(primitives, true);
@@ -60,7 +60,7 @@ public record ConditionManager(Expression condition, Expression state, Expressio
     }
 
     public ConditionManager withPrecondition(Expression combinedPrecondition) {
-        if(combinedPrecondition == EmptyExpression.NO_VALUE) return DELAYED;
+        if (combinedPrecondition.isDelayed()) return DELAYED;
         return new ConditionManager(condition, state, combinedPrecondition, parent);
     }
 
@@ -171,7 +171,7 @@ public record ConditionManager(Expression condition, Expression state, Expressio
     }
 
     public boolean isDelayed() {
-        if (condition == EmptyExpression.NO_VALUE || state == EmptyExpression.NO_VALUE) return true;
+        if (condition.isDelayed() || state.isDelayed()) return true;
         if (parent == null) return false;
         return parent.isDelayed();
     }
@@ -222,7 +222,7 @@ public record ConditionManager(Expression condition, Expression state, Expressio
      an AND of negations of the remainder after getting rid of != null, == null clauses.
      */
     public Expression precondition(EvaluationContext evaluationContext) {
-        if (condition == EmptyExpression.NO_VALUE) {
+        if (condition.isDelayed()) {
             return condition;
         }
         Filter filter = new Filter(evaluationContext, Filter.FilterMode.REJECT);

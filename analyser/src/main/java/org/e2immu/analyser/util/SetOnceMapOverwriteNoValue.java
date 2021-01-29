@@ -31,6 +31,6 @@ public class SetOnceMapOverwriteNoValue<K> extends SetOnceMap<K, Expression> {
     @Override
     public boolean isSet(K k) {
         Expression e = getOtherwiseNull(k);
-        return e != null && e != EmptyExpression.NO_VALUE;
+        return e != null && e.isNotDelayed();
     }
 }

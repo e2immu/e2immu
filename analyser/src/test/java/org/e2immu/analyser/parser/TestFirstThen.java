@@ -24,6 +24,7 @@ import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.EmptyExpression;
+import org.e2immu.analyser.model.expression.NoValue;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -39,14 +40,14 @@ public class TestFirstThen extends CommonTestRunner {
         }
         if ("set".equals(d.methodInfo().name) && "1.0.0".equals(d.statementId())) {
             if (d.iteration() == 0) {
-                Assert.assertSame(EmptyExpression.NO_VALUE, d.state()); // delay
+                Assert.assertSame(NoValue.EMPTY, d.state()); // delay
             } else {
                 Assert.assertEquals("not (null == this.first)", d.state().toString());
                 Assert.assertEquals("not (null == this.first)", d.statementAnalysis().stateData.getPrecondition().toString());
             }
         }
         if ("set".equals(d.methodInfo().name) && d.iteration() == 0 && "1.0.0".compareTo(d.statementId()) <= 0) {
-            Assert.assertSame("StatementId: " + d.statementId(), EmptyExpression.NO_VALUE, d.state()); // delay
+            Assert.assertSame("StatementId: " + d.statementId(), NoValue.EMPTY, d.state()); // delay
         }
     };
 

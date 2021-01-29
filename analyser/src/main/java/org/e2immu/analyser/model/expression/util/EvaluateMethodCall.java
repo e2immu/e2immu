@@ -59,8 +59,8 @@ public class EvaluateMethodCall {
         }
 
         // no value (method call on field that does not have effective value yet)
-        if (objectValue == EmptyExpression.NO_VALUE) {
-            return builder.setExpression(EmptyExpression.NO_VALUE).build(); // this will delay
+        if (objectValue.isDelayed()) {
+            return builder.setExpression(NoValue.EMPTY).build(); // this will delay
         }
 
         if (ShallowTypeAnalyser.IS_KNOWN_FQN.equals(methodInfo.fullyQualifiedName) &&
@@ -172,7 +172,7 @@ public class EvaluateMethodCall {
         } else if (methodAnalysis.isBeingAnalysed()) {
             // we will, at some point, analyse this method
             log(Logger.LogTarget.DELAYED, "Delaying method value on {}", methodInfo.fullyQualifiedName);
-            return builder.setExpression(EmptyExpression.NO_VALUE).build();
+            return builder.setExpression(NoValue.EMPTY).build();
         }
 
         // normal method value
@@ -237,7 +237,7 @@ public class EvaluateMethodCall {
             if (nonModifying == null) {
                 log(Logger.LogTarget.DELAYED, "Delaying method value because @Modified delayed on {}",
                         methodInfo.fullyQualifiedName);
-                return EmptyExpression.NO_VALUE;
+                return NoValue.EMPTY;
             }
             if (paramValue.equals(objectValue) && nonModifying) {
                 return new BooleanConstant(evaluationContext.getPrimitives(), true);
@@ -415,7 +415,7 @@ public class EvaluateMethodCall {
         if (fluent == Level.DELAY && methodAnalysis.isBeingAnalysed()) {
             log(Logger.LogTarget.DELAYED, "Delaying method value because @Fluent delayed on {}",
                     methodAnalysis.getMethodInfo().fullyQualifiedName);
-            return EmptyExpression.NO_VALUE;
+            return NoValue.EMPTY;
         }
         if (fluent != Level.TRUE) return null;
         return scope;
@@ -430,7 +430,7 @@ public class EvaluateMethodCall {
         if (identity == Level.DELAY && methodAnalysis.isBeingAnalysed()) {
             log(Logger.LogTarget.DELAYED, "Delaying method value because @Identity delayed on {}",
                     methodAnalysis.getMethodInfo().fullyQualifiedName);
-            return EmptyExpression.NO_VALUE; // delay
+            return NoValue.EMPTY; // delay
         }
         if (identity != Level.TRUE) return null;
 

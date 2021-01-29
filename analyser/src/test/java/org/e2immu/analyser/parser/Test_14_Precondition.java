@@ -25,7 +25,7 @@ import org.e2immu.analyser.model.FieldInfo;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MethodAnalysis;
 import org.e2immu.analyser.model.MultiLevel;
-import org.e2immu.analyser.model.expression.EmptyExpression;
+import org.e2immu.analyser.model.expression.NoValue;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -91,8 +91,8 @@ public class Test_14_Precondition extends CommonTestRunner {
             if ("setPositive1".equals(d.methodInfo().name)) {
                 if ("0.0.0".equals(d.statementId())) {
                     if (d.iteration() == 0) {
-                        Assert.assertSame(EmptyExpression.NO_VALUE, d.condition());
-                        Assert.assertSame(EmptyExpression.NO_VALUE, d.state());
+                        Assert.assertSame(NoValue.EMPTY, d.condition());
+                        Assert.assertSame(NoValue.EMPTY, d.state());
                         Assert.assertNull(d.statementAnalysis().stateData.getPrecondition());
                         Assert.assertNull(d.statementAnalysis().methodLevelData.getCombinedPrecondition());
                     } else if (d.iteration() == 1) {
@@ -173,7 +173,7 @@ public class Test_14_Precondition extends CommonTestRunner {
             }
             if (RETURN_VAR.equals(d.variableName())) {
                 if ("0".equals(d.statementId())) {
-                    String expectValue = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "<return value>";
+                    String expectValue = d.iteration() == 0 ? NoValue.NO_VALUE : "<return value>";
                     //         Assert.assertEquals(expectValue, d.currentValue().toString());
                 }
                 if ("1".equals(d.statementId())) {
@@ -190,16 +190,16 @@ public class Test_14_Precondition extends CommonTestRunner {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("setInteger".equals(d.methodInfo().name)) {
                 if ("0.0.1".equals(d.statementId())) {
-                    String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() :
+                    String expect = d.iteration() == 0 ? NoValue.NO_VALUE :
                             "null!=org.e2immu.analyser.testexample.Precondition_3.integer$0";
                     Assert.assertEquals(expect, d.evaluationResult().value().toString());
                 }
                 if ("0.0.2".equals(d.statementId())) {
-                    String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "ii";
+                    String expect = d.iteration() == 0 ? NoValue.NO_VALUE : "ii";
                     //      Assert.assertEquals(expect, d.evaluationResult().value().toString());
                 }
                 if ("1".equals(d.statementId())) {
-                    String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "ii";
+                    String expect = d.iteration() == 0 ? NoValue.NO_VALUE : "ii";
                     Assert.assertEquals(expect, d.evaluationResult().value().toString());
                 }
             }
@@ -216,7 +216,7 @@ public class Test_14_Precondition extends CommonTestRunner {
                     Assert.assertEquals("ii<=-1", d.condition().toString());
                 }
                 if ("0.0.1.0.0".equals(d.statementId())) {
-                    String expectValue = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() :
+                    String expectValue = d.iteration() == 0 ? NoValue.NO_VALUE :
                             "null!=org.e2immu.analyser.testexample.Precondition_3.integer$0";
                     Assert.assertEquals(expectValue, d.condition().toString());
                 }
@@ -240,7 +240,7 @@ public class Test_14_Precondition extends CommonTestRunner {
                     VariableInfo variableInfo = d.getFieldAsVariable(integer);
                     Assert.assertTrue(variableInfo.isAssigned());
 
-                    String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "null==integer&&ii>=0";
+                    String expect = d.iteration() == 0 ? NoValue.NO_VALUE : "null==integer&&ii>=0";
                     Assert.assertEquals(expect, d.statementAnalysis().methodLevelData.getCombinedPreconditionOrDelay().toString());
                 }
                 if ("1".equals(d.statementId())) {

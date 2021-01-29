@@ -573,7 +573,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                                 initial.getValue() :
                                 NewObject.localCopyOfVariableField(primitives, fieldReference.parameterizedType(),
                                         fieldAnalysis.getObjectFlow());
-                        assert initialValue != EmptyExpression.NO_VALUE && initialValue != null;
+                        assert initialValue.isNotDelayed() && initialValue != null;
                         lvrVic.setValue(initialValue, LinkedVariables.EMPTY, propertyMap, true);
                         // we link the local copy to the original, so that modifications on the local copy
                         // imply that there is a (potential) modification on the variable field.
@@ -785,7 +785,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
 
         if (inPartOfConstruction() && myOwn) { // field that must be initialised
             Expression initialValue = analyserContext.getFieldAnalysis(fieldReference.fieldInfo).getInitialValue();
-            if (initialValue == EmptyExpression.NO_VALUE || initialValue.isConstant()) {
+            if (initialValue.isDelayed() || initialValue.isConstant()) {
                 return new ExpressionAndLinkedVariables(initialValue, LinkedVariables.EMPTY);
             }
             NewObject newObject = NewObject.initialValueOfFieldPartOfConstruction(evaluationContext, fieldReference, fieldAnalyser.fieldAnalysis.getObjectFlow());
@@ -794,12 +794,12 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
 
         int effectivelyFinal = fieldAnalysis.getProperty(VariableProperty.FINAL);
         if (effectivelyFinal == Level.DELAY && !selfReference) {
-            return new ExpressionAndLinkedVariables(EmptyExpression.NO_VALUE, LinkedVariables.DELAY);
+            return new ExpressionAndLinkedVariables(NoValue.EMPTY, LinkedVariables.DELAY);
         }
 
         int notNull = fieldAnalysis.getProperty(VariableProperty.NOT_NULL);
         if (notNull == Level.DELAY) {
-            return new ExpressionAndLinkedVariables(EmptyExpression.NO_VALUE, LinkedVariables.DELAY);
+            return new ExpressionAndLinkedVariables(NoValue.EMPTY, LinkedVariables.DELAY);
         }
 
         // when selfReference (as in this.x = other.x during construction), we never delay
@@ -809,7 +809,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             Expression efv = fieldAnalysis.getEffectivelyFinalValue();
             if (efv == null) {
                 if (analyserContext.getTypeAnalysis(fieldReference.fieldInfo.owner).isBeingAnalysed() && !selfReference) {
-                    return new ExpressionAndLinkedVariables(EmptyExpression.NO_VALUE, LinkedVariables.DELAY);
+                    return new ExpressionAndLinkedVariables(NoValue.EMPTY, LinkedVariables.DELAY);
                 }
             } else {
                 if (efv.isConstant()) {

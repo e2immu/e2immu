@@ -336,7 +336,7 @@ public class ShallowTypeAnalyser implements AnalyserContext {
             if (initialiser instanceof StringConstant stringConstant) {
                 value = stringConstant;
             } else {
-                value = EmptyExpression.NO_VALUE; // IMPROVE
+                value = NoValue.EMPTY; // IMPROVE
             }
             fieldAnalysisBuilder.effectivelyFinalValue.set(value);
         }

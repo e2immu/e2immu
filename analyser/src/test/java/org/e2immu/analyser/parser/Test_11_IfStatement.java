@@ -7,6 +7,7 @@ import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.expression.InlinedMethod;
+import org.e2immu.analyser.model.expression.NoValue;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -165,7 +166,7 @@ public class Test_11_IfStatement extends CommonTestRunner {
     public void test4() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("get3".equals(d.methodInfo().name) && "i3".equals(d.variableName())) {
-                String expectValue = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "map.get(label3)";
+                String expectValue = d.iteration() == 0 ? NoValue.NO_VALUE : "map.get(label3)";
                 Assert.assertEquals(expectValue, d.currentValue().toString());
                 String expectLinked = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "";
                 Assert.assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
@@ -198,7 +199,7 @@ public class Test_11_IfStatement extends CommonTestRunner {
     public void test5() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("get3".equals(d.methodInfo().name) && "i3".equals(d.variableName())) {
-                String expectValue = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "map.get(label3)";
+                String expectValue = d.iteration() == 0 ? NoValue.NO_VALUE : "map.get(label3)";
                 Assert.assertEquals(expectValue, d.currentValue().toString());
                 String expectLinked = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "";
                 Assert.assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());

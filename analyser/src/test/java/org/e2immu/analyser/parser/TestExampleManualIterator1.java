@@ -5,7 +5,6 @@ import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.annotation.AnnotationMode;
 import org.junit.Assert;
 import org.junit.Test;
@@ -26,7 +25,7 @@ public class TestExampleManualIterator1 extends CommonTestRunner {
         if ("iterator".equals(d.methodInfo().name)) {
             //  Assert.assertEquals(MultiLevel.EFFECTIVE, methodInfo.methodAnalysis.get().getProperty(VariableProperty.INDEPENDENT));
             VariableInfo variableInfo = d.getReturnAsVariable();
-            Assert.assertNotSame(EmptyExpression.NO_VALUE, variableInfo.getValue());
+            Assert.assertTrue(variableInfo.getValue().isNotDelayed());
         }
 
         if (Set.of("hasNext", "next").contains(d.methodInfo().name) && "MyIteratorImpl".equals(d.methodInfo().typeInfo.simpleName)) {

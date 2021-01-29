@@ -46,7 +46,6 @@ import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.AnalysisStatus.*;
 import static org.e2immu.analyser.analyser.FlowData.Execution.*;
-import static org.e2immu.analyser.model.expression.EmptyExpression.NO_VALUE;
 import static org.e2immu.analyser.util.Logger.LogTarget.*;
 import static org.e2immu.analyser.util.Logger.log;
 import static org.e2immu.analyser.util.StringUtil.pad;
@@ -532,7 +531,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
     private AnalysisStatus apply(SharedState sharedState,
                                  EvaluationResult evaluationResult,
                                  StatementAnalysis statementAnalysis) {
-        boolean haveEvaluationResult = evaluationResult.value() != NO_VALUE;
+        boolean haveEvaluationResult = evaluationResult.value().isNotDelayed();
         AnalysisStatus status = haveEvaluationResult ? DONE : DELAYS;
 
         if (evaluationResult.addCircularCallOrUndeclaredFunctionalInterface()) {
@@ -559,7 +558,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                     changeData.value();
 
             // we explicitly check for NO_VALUE, because "<no return value>" is legal!
-            if (haveEvaluationResult && valueToWrite != NO_VALUE) {
+            if (haveEvaluationResult && valueToWrite.isNotDelayed()) {
                 log(ANALYSER, "Write value {} to variable {}", valueToWrite, variable.fullyQualifiedName());
                 // first do the properties that come with the value; later, we'll write the ones in changeData
                 Map<VariableProperty, Integer> propertiesToSet = sharedState.evaluationContext.getValueProperties(valueToWrite);
@@ -569,7 +568,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             if (!changeData.markAssignment() && (haveEvaluationResult || !changeData.haveScopeDelay())) {
                 // we're not assigning (and there is no change in instance because of a modifying method)
                 // only then we copy from INIT to EVAL
-                if (vi.getValue() == NO_VALUE && vi1.getValue() != NO_VALUE) {
+                if (vi.getValue().isDelayed() && vi1.getValue().isNotDelayed()) {
                     vic.setValue(vi1.getValue(), vi1.getStaticallyAssignedVariables(), vi1.getProperties(), false);
                 } else {
                     vi1.getProperties().forEach((vp, v) ->
@@ -577,7 +576,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 }
             }
 
-            if (vi.getValue() == NO_VALUE) {
+            if (vi.getValue().isDelayed()) {
                 log(DELAYED, "Apply of {}, {} is delayed because of unknown value for {}",
                         index(), myMethodAnalyser.methodInfo.fullyQualifiedName, variable);
                 status = DELAYS;
@@ -589,7 +588,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
 
             if (changeData.markAssignment() && vic.isLocalVariableInLoopDefinedOutside()) {
                 VariableInfoContainer local = addToAssignmentsInLoop(vic, variable.fullyQualifiedName());
-                if (local != null && haveEvaluationResult && valueToWrite != NO_VALUE) {
+                if (local != null && haveEvaluationResult && valueToWrite.isNotDelayed()) {
                     // assign the value of the assignment to the local copy created
                     log(ANALYSER, "Write value {} to local copy variable {}", valueToWrite, local.current().variable().fullyQualifiedName());
                     Map<VariableProperty, Integer> propertiesToSet = sharedState.evaluationContext.getValueProperties(valueToWrite);
@@ -605,7 +604,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             }
 
             LinkedVariables mergedLinkedVariables = writeMergedLinkedVariables(changeData, variable, vi, vi1, additionalLinks);
-            if (mergedLinkedVariables != LinkedVariables.DELAY && vi.getValue() != NO_VALUE) {
+            if (mergedLinkedVariables != LinkedVariables.DELAY && vi.getValue().isNotDelayed()) {
                 vic.setLinkedVariables(mergedLinkedVariables, false);
             } else if (vi.getLinkedVariables() == LinkedVariables.DELAY) {
                 status = DELAYS;
@@ -631,7 +630,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         evaluationResult.messages().getMessageStream().forEach(statementAnalysis::ensure);
 
         if (status == DONE && evaluationResult.precondition() != null) {
-            if (evaluationResult.precondition() == NO_VALUE) {
+            if (evaluationResult.precondition().isDelayed()) {
                 log(DELAYED, "Apply of {} in {}, delayed because of precondition", index(),
                         myMethodAnalyser.methodInfo.fullyQualifiedName);
                 status = DELAYS;
@@ -787,13 +786,13 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
     Q: what is the best place for this piece of code? EvalResult?? This here seems too late
      */
     private Expression maybeValueNeedsState(SharedState sharedState, VariableInfoContainer vic, VariableInfo vi1, Expression value) {
-        if (value == NO_VALUE ||
+        if (value.isDelayed() ||
                 vic.getVariableInLoop().variableType() != VariableInLoop.VariableType.IN_LOOP_DEFINED_OUTSIDE) {
             // not applicable
             return value;
         }
         ConditionManager localConditionManager = sharedState.localConditionManager;
-        if (localConditionManager.isDelayed()) return NO_VALUE;
+        if (localConditionManager.isDelayed()) return NoValue.EMPTY;
         Expression state;
         if (!localConditionManager.state().isBoolValueTrue()) {
             state = localConditionManager.state();
@@ -856,17 +855,17 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
     }
 
     private Expression bestValue(EvaluationResult.ChangeData valueChangeData, VariableInfo vi1) {
-        if (valueChangeData != null && valueChangeData.value() != NO_VALUE) {
+        if (valueChangeData != null && valueChangeData.value().isNotDelayed()) {
             return valueChangeData.value();
         }
         if (vi1 != null) {
             Expression e = vi1.getValue();
             if (e.isInitialReturnExpression()) {
-                return NO_VALUE;
+                return NoValue.EMPTY;
             }
             return vi1.getValue();
         }
-        return NO_VALUE;
+        return NoValue.EMPTY;
     }
 
     /*
@@ -898,7 +897,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             }
             // escapeCondition should filter out all != null, == null clauses
             Expression precondition = statementAnalysis.stateData.getConditionManagerForNextStatement().precondition(sharedState.evaluationContext);
-            if (precondition == NO_VALUE) {
+            if (precondition.isDelayed()) {
                 log(DELAYED, "Delaying check precondition of statement {}, escape condition delayed", index());
                 return DELAYS;
             }
@@ -1119,7 +1118,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 StatementAnalysis.FindLoopResult correspondingLoop = statementAnalysis.findLoopByLabel(breakStatement);
                 Expression state = sharedState.localConditionManager.stateUpTo(sharedState.evaluationContext, correspondingLoop.steps());
                 correspondingLoop.statementAnalysis().stateData.addStateOfInterrupt(index(), state);
-                if (state == NO_VALUE) return DELAYS;
+                if (state.isDelayed()) return DELAYS;
             } else if (statement() instanceof LocalClassDeclaration localClassDeclaration) {
                 EvaluationResult.Builder builder = new EvaluationResult.Builder(sharedState.evaluationContext);
                 PrimaryTypeAnalyser primaryTypeAnalyser =
@@ -1151,7 +1150,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 statusPost = step3_Return(sharedState, value).combine(statusPost);
             } else if (statementAnalysis.statement instanceof ForEachStatement) {
                 step3_ForEach(sharedState, value);
-            } else if (value != NO_VALUE && (statementAnalysis.statement instanceof IfElseStatement ||
+            } else if (value.isNotDelayed() && (statementAnalysis.statement instanceof IfElseStatement ||
                     statementAnalysis.statement instanceof SwitchStatement ||
                     statementAnalysis.statement instanceof AssertStatement)) {
                 value = step3_IfElse_Switch_Assert(sharedState, value);
@@ -1159,7 +1158,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
 
             if (statusPost == DELAYS) {
                 log(DELAYED, "Step 3 in statement {}, {} is delayed, value", index(), myMethodAnalyser.methodInfo.fullyQualifiedName);
-            } else if (value != null && value != NO_VALUE) {
+            } else if (value != null && value.isNotDelayed()) {
                 statementAnalysis.stateData.valueOfExpression.set(value);
             }
 
@@ -1185,7 +1184,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         Expression currentReturnValue = statementAnalysis.initialValueOfReturnVariable(returnVariable);
         // do NOT check for delays on currentReturnValue, we need to make the VIC
 
-        if (level3EvaluationResult == NO_VALUE) {
+        if (level3EvaluationResult.isDelayed()) {
             // ensure that the evaluation level is present, even if there is a delay. We must mark assignment!
             VariableInfoContainer vic = findReturnAsVariableForWriting();
             vic.ensureEvaluation(index() + VariableInfoContainer.Level.EVALUATION.label,
@@ -1238,7 +1237,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
     }
 
     private Expression step3_IfElse_Switch_Assert(SharedState sharedState, Expression value) {
-        assert value != null && value != NO_VALUE;
+        assert value != null && value.isNotDelayed();
 
         Expression evaluated = sharedState.localConditionManager.evaluate(sharedState.evaluationContext, value);
 
@@ -1506,7 +1505,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 conditionForSubStatement = defaultCondition(evaluationContext, executions);
                 if (conditionForSubStatement.isBoolValueFalse()) statementsExecution = NEVER;
                 else if (conditionForSubStatement.isBoolValueTrue()) statementsExecution = ALWAYS;
-                else if (conditionForSubStatement == NO_VALUE) statementsExecution = DELAYED_EXECUTION;
+                else if (conditionForSubStatement.isDelayed()) statementsExecution = DELAYED_EXECUTION;
                 else statementsExecution = CONDITIONALLY;
             } else if (statementsExecution == ALWAYS) {
                 conditionForSubStatement = new BooleanConstant(statementAnalysis.primitives, true);
@@ -1894,7 +1893,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
          */
         @Override
         public Expression replaceLocalVariables(Expression mergeValue) {
-            if (statementAnalysis.statement instanceof LoopStatement && mergeValue != NO_VALUE) {
+            if (statementAnalysis.statement instanceof LoopStatement && mergeValue.isNotDelayed()) {
                 Map<Expression, Expression> map = statementAnalysis.variables.stream()
                         .filter(e -> statementAnalysis.index.equals(e.getValue().getStatementIndexOfThisShadowVariable()))
                         .collect(Collectors.toUnmodifiableMap(

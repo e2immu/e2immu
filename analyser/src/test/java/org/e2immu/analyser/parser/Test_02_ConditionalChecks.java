@@ -5,6 +5,7 @@ import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.expression.EmptyExpression;
+import org.e2immu.analyser.model.expression.NoValue;
 import org.e2immu.analyser.model.variable.Variable;
 import org.junit.Assert;
 import org.junit.Test;
@@ -282,11 +283,11 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                 }
                 if ("3".equals(d.statementId())) {
                     if (CC_I.equals(d.variableName())) {
-                        String expectValue = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "instance type int";
+                        String expectValue = d.iteration() == 0 ? NoValue.NO_VALUE : "instance type int";
                         Assert.assertEquals(expectValue, d.currentValue().toString());
                     }
                     if (RETURN5.equals(d.variableName())) {
-                        String expectValue = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() :
+                        String expectValue = d.iteration() == 0 ? NoValue.NO_VALUE :
                                 "null!=o&&o.getClass()==this.getClass()&&i==o.i&&o!=this";
                         Assert.assertEquals(expectValue, d.currentValue().toString());
                     }
@@ -349,7 +350,7 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                 }
                 if ("3".equals(d.statementId())) {
                     // there will be two iterations, in the second one, i will not have value "NO_VALUE" anymore
-                    String expectValueString = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "i==o.i";
+                    String expectValueString = d.iteration() == 0 ? NoValue.NO_VALUE : "i==o.i";
                     Assert.assertEquals(expectValueString, d.evaluationResult().value().toString());
                     if (d.iteration() == 0) {
                         // markRead is only done in the first iteration

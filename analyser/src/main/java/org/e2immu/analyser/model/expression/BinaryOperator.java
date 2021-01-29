@@ -166,7 +166,7 @@ public class BinaryOperator implements Expression {
         Expression l = left.value();
         Expression r = right.value();
 
-        if (l == EmptyExpression.NO_VALUE || r == EmptyExpression.NO_VALUE) return EmptyExpression.NO_VALUE;
+        if (l.isDelayed() || r.isDelayed()) return NoValue.EMPTY;
         if (l.isUnknown() || r.isUnknown()) return l.combineUnknown(r);
 
         if (operator == primitives.equalsOperatorObject) {
@@ -290,8 +290,8 @@ public class BinaryOperator implements Expression {
             builder.raiseError(Message.PART_OF_EXPRESSION_EVALUATES_TO_CONSTANT);
             return builder.build();
         }
-        if (l.value() == EmptyExpression.NO_VALUE || r.value() == EmptyExpression.NO_VALUE) {
-            return builder.setExpression(EmptyExpression.NO_VALUE).build();
+        if (l.value().isDelayed() || r.value().isDelayed()) {
+            return builder.setExpression(NoValue.EMPTY).build();
         }
         ObjectFlow objectFlow = new ObjectFlow(evaluationContext.getLocation(),
                 evaluationContext.getPrimitives().booleanParameterizedType, Origin.RESULT_OF_OPERATOR);

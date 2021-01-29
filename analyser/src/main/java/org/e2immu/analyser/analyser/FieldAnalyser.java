@@ -41,7 +41,6 @@ import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.AnalysisStatus.DELAYS;
 import static org.e2immu.analyser.analyser.AnalysisStatus.DONE;
-import static org.e2immu.analyser.model.expression.EmptyExpression.NO_VALUE;
 import static org.e2immu.analyser.util.Logger.LogTarget.*;
 import static org.e2immu.analyser.util.Logger.log;
 
@@ -197,12 +196,12 @@ public class FieldAnalyser extends AbstractAnalyser {
                         ConditionManager.initialConditionManager(analyserContext.getPrimitives()), sharedState.closure());
                 EvaluationResult evaluationResult = fieldInitialiser.initialiser().evaluate(evaluationContext, ForwardEvaluationInfo.DEFAULT);
                 Expression initialiserValue = evaluationResult.value();
-                if (initialiserValue != NO_VALUE) {
+                if (initialiserValue.isNotDelayed()) {
                     fieldAnalysis.initialValue.set(initialiserValue);
                 }
                 AnalysisStatus resultOfObjectFlow = makeInternalObjectFlowsPermanent(evaluationResult);
                 log(FINAL, "Set initialiser of field {} to {}", fieldInfo.fullyQualifiedName(), evaluationResult.value());
-                return resultOfObjectFlow.combine(initialiserValue == NO_VALUE ? DELAYS : DONE);
+                return resultOfObjectFlow.combine(initialiserValue.isDelayed() ? DELAYS : DONE);
             }
         }
         fieldAnalysis.initialValue.set(ConstantExpression.nullValue(analyserContext.getPrimitives(), fieldInfo.type.bestTypeInfo()));
@@ -386,7 +385,7 @@ public class FieldAnalyser extends AbstractAnalyser {
 
         List<Expression> values = new LinkedList<>();
         if (haveInitialiser) {
-            if (fieldAnalysis.getInitialValue() == NO_VALUE) {
+            if (fieldAnalysis.getInitialValue().isDelayed()) {
                 log(DELAYED, "Delaying consistent value for field " + fieldInfo.fullyQualifiedName());
                 return DELAYS;
             }
@@ -398,7 +397,7 @@ public class FieldAnalyser extends AbstractAnalyser {
                 for (VariableInfo vi : methodAnalyser.getFieldAsVariable(fieldInfo, false)) {
                     if (vi.isAssigned()) {
                         Expression value = vi.getValue();
-                        if (value != NO_VALUE) {
+                        if (value.isNotDelayed()) {
                             values.add(value);
                         } else {
                             log(DELAYED, "Delay consistent value for field {}", fieldInfo.fullyQualifiedName());
@@ -714,7 +713,7 @@ public class FieldAnalyser extends AbstractAnalyser {
         FieldReference fieldReference = (FieldReference) variable;
         FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalyser(fieldReference.fieldInfo).fieldAnalysis;
         int effectivelyFinal = fieldAnalysis.getProperty(VariableProperty.FINAL);
-        if (effectivelyFinal == Level.DELAY) return NO_VALUE;
+        if (effectivelyFinal == Level.DELAY) return NoValue.EMPTY;
         ObjectFlow objectFlow = fieldAnalysis.getObjectFlow();
         if (effectivelyFinal == Level.FALSE) {
             return new VariableExpression(variable, objectFlow);

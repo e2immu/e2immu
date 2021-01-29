@@ -20,6 +20,7 @@ package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.expression.EmptyExpression;
+import org.e2immu.analyser.model.expression.NoValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Primitives;
 
@@ -58,7 +59,7 @@ public interface MethodAnalysis extends Analysis {
      * @return null when not yet decided
      */
     default Expression getSingleReturnValue() {
-        return EmptyExpression.NO_VALUE;
+        return NoValue.EMPTY;
     }
 
     default Set<MethodAnalysis> getOverrides(AnalysisProvider analysisProvider) {

@@ -19,7 +19,7 @@ package org.e2immu.analyser.analyser;
 
 import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.expression.EmptyExpression;
+import org.e2immu.analyser.model.expression.NoValue;
 import org.e2immu.analyser.util.SetOnce;
 
 import java.util.List;
@@ -93,7 +93,7 @@ public class CompanionAnalysisImpl implements CompanionAnalysis {
 
         @Override
         public Expression getPreAspectVariableValue() {
-            return preAspectVariableValue.getOrElse(EmptyExpression.NO_VALUE);
+            return preAspectVariableValue.getOrElse(NoValue.EMPTY);
         }
     }
 }

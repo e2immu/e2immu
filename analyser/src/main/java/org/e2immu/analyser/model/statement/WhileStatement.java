@@ -34,7 +34,7 @@ public class WhileStatement extends LoopStatement {
                           Block block) {
         super(new Structure.Builder()
                 .setStatementExecution((v, ec) -> {
-                    if(v == EmptyExpression.NO_VALUE) return FlowData.Execution.DELAYED_EXECUTION;
+                    if(v.isDelayed()) return FlowData.Execution.DELAYED_EXECUTION;
                     if (v.isBoolValueFalse()) return FlowData.Execution.NEVER;
                     if (v.isBoolValueTrue()) return FlowData.Execution.ALWAYS;
                     return FlowData.Execution.CONDITIONALLY;

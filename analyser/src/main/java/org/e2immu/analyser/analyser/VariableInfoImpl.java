@@ -22,6 +22,7 @@ import org.e2immu.analyser.analyser.util.MergeHelper;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.expression.Negation;
+import org.e2immu.analyser.model.expression.NoValue;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
@@ -35,7 +36,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.VariableInfoContainer.*;
-import static org.e2immu.analyser.model.expression.EmptyExpression.NO_VALUE;
 
 class VariableInfoImpl implements VariableInfo {
 
@@ -122,7 +122,7 @@ class VariableInfoImpl implements VariableInfo {
 
     @Override
     public Expression getValue() {
-        return value.getOrElse(NO_VALUE);
+        return value.getOrElse(NoValue.EMPTY);
     }
 
     @Override
@@ -202,7 +202,7 @@ class VariableInfoImpl implements VariableInfo {
         if (value instanceof VariableExpression variableValue && variableValue.variable() == variable) {
             throw new UnsupportedOperationException("Cannot redirect to myself");
         }
-        if (value == NO_VALUE) throw new UnsupportedOperationException("Cannot set NO_VALUE");
+        if (value.isDelayed()) throw new UnsupportedOperationException("Cannot set NO_VALUE");
         if (!this.value.isSet() || !this.value.get().equals(value)) { // crash if different, keep same
             this.value.set(value);
         }
@@ -259,7 +259,7 @@ class VariableInfoImpl implements VariableInfo {
 
         Expression mergedValue = evaluationContext.replaceLocalVariables(
                 previous.mergeValue(evaluationContext, stateOfDestination, atLeastOneBlockExecuted, mergeSources));
-        if (mergedValue != NO_VALUE) {
+        if (mergedValue.isNotDelayed()) {
             setValue(mergedValue);
         }
 
@@ -402,8 +402,8 @@ class VariableInfoImpl implements VariableInfo {
         Expression currentValue = getValue();
         if (!atLeastOneBlockExecuted && currentValue.isUnknown()) return currentValue;
 
-        boolean haveANoValue = mergeSources.stream().anyMatch(cav -> !cav.variableInfo().valueIsSet() || cav.condition() == NO_VALUE);
-        if (haveANoValue) return NO_VALUE;
+        boolean haveANoValue = mergeSources.stream().anyMatch(cav -> !cav.variableInfo().valueIsSet() || cav.condition().isDelayed());
+        if (haveANoValue) return NoValue.EMPTY;
 
         if (mergeSources.isEmpty()) {
             if (atLeastOneBlockExecuted) throw new UnsupportedOperationException();

@@ -38,7 +38,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
-import static org.e2immu.analyser.model.expression.EmptyExpression.NO_VALUE;
 import static org.e2immu.analyser.util.Logger.LogTarget.LINKED_VARIABLES;
 import static org.e2immu.analyser.util.Logger.LogTarget.VARIABLE_PROPERTIES;
 import static org.e2immu.analyser.util.Logger.log;
@@ -253,7 +252,7 @@ public class Assignment implements Expression {
 
         LinkedVariables linkedVariables;
         // connect the value to the assignment target
-        if (resultOfExpression != NO_VALUE) {
+        if (resultOfExpression.isNotDelayed()) {
             linkedVariables = evaluationContext.linkedVariables(resultOfExpression);
             assert linkedVariables != null : "Expression " + resultOfExpression + " " + resultOfExpression.getClass();
             log(LINKED_VARIABLES, "In assignment, link {} to [{}]", at.fullyQualifiedName(), linkedVariables);

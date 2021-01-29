@@ -29,14 +29,21 @@ import org.e2immu.analyser.parser.Primitives;
 
 public class EvaluateInlineConditional {
 
-    public static EvaluationResult conditionalValueCurrentState(EvaluationContext evaluationContext, Expression conditionBeforeState, Expression ifTrue, Expression ifFalse, ObjectFlow objectFlow) {
+    public static EvaluationResult conditionalValueCurrentState(EvaluationContext evaluationContext,
+                                                                Expression conditionBeforeState,
+                                                                Expression ifTrue,
+                                                                Expression ifFalse,
+                                                                ObjectFlow objectFlow) {
         Expression condition = evaluationContext.getConditionManager().evaluate(evaluationContext, conditionBeforeState);
-        if (condition == EmptyExpression.NO_VALUE) return new EvaluationResult.Builder()
-                .setExpression(EmptyExpression.NO_VALUE).build(); // delay
+        if (condition.isDelayed()) return new EvaluationResult.Builder().setExpression(NoValue.EMPTY).build(); // delay
         return conditionalValueConditionResolved(evaluationContext, condition, ifTrue, ifFalse, objectFlow);
     }
 
-    public static EvaluationResult conditionalValueConditionResolved(EvaluationContext evaluationContext, Expression condition, Expression ifTrue, Expression ifFalse, ObjectFlow objectFlow) {
+    public static EvaluationResult conditionalValueConditionResolved(EvaluationContext evaluationContext,
+                                                                     Expression condition,
+                                                                     Expression ifTrue,
+                                                                     Expression ifFalse,
+                                                                     ObjectFlow objectFlow) {
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
         if (condition instanceof BooleanConstant bc) {
             boolean first = bc.constant();

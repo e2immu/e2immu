@@ -51,7 +51,7 @@ public class ForEachStatement extends LoopStatement {
     }
 
     private static FlowData.Execution computeExecution(Expression expression, EvaluationContext evaluationContext) {
-        if (expression == EmptyExpression.NO_VALUE) return FlowData.Execution.DELAYED_EXECUTION;
+        if (expression.isDelayed()) return FlowData.Execution.DELAYED_EXECUTION;
 
         if (expression instanceof ArrayInitializer arrayInitializer) {
             return arrayInitializer.multiExpression.expressions().length == 0 ? FlowData.Execution.NEVER : FlowData.Execution.ALWAYS;

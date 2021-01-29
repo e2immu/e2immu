@@ -18,6 +18,7 @@
 package org.e2immu.analyser.util;
 
 import org.e2immu.analyser.model.expression.EmptyExpression;
+import org.e2immu.analyser.model.expression.NoValue;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -37,7 +38,7 @@ public class TestSetOnceMapOverwriteNoValue {
             // OK
         }
 
-        map.put("2", EmptyExpression.NO_VALUE);
+        map.put("2", NoValue.EMPTY);
         Assert.assertFalse(map.isSet("2"));
 
         // but it is in the map!

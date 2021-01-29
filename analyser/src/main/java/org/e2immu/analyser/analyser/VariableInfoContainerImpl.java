@@ -29,8 +29,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
-import static org.e2immu.analyser.model.expression.EmptyExpression.NO_VALUE;
-
 public class VariableInfoContainerImpl extends Freezable implements VariableInfoContainer {
 
     private final VariableInLoop variableInLoop;
@@ -64,7 +62,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         VariableInfo outside = previous.current();
         VariableInfoImpl initial = new VariableInfoImpl(outside.variable(), NOT_YET_ASSIGNED,
                 NOT_YET_READ, NOT_A_VARIABLE_FIELD, Set.of());
-        if (outside.getValue() != NO_VALUE) initial.setValue(outside.getValue());
+        if (outside.getValue().isNotDelayed()) initial.setValue(outside.getValue());
         if (outside.getLinkedVariables() != LinkedVariables.DELAY)
             initial.setLinkedVariables(outside.getLinkedVariables());
         return new VariableInfoContainerImpl(VariableInLoop.COPY_FROM_ENCLOSING_METHOD,
@@ -201,7 +199,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         ensureNotFrozen();
         Objects.requireNonNull(value);
         VariableInfoImpl variableInfo = initialOrEvaluation ? previousOrInitial.getRight() : evaluation.get();
-        if (value != NO_VALUE) {
+        if (value.isNotDelayed()) {
             variableInfo.setValue(value);
         }
         propertiesToSet.forEach((vp, v) -> {

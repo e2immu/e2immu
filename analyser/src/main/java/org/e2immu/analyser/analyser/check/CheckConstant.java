@@ -3,9 +3,8 @@ package org.e2immu.analyser.analyser.check;
 import org.e2immu.analyser.analyser.AbstractAnalysisBuilder;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.expression.ConstantExpression;
-import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.expression.MemberValuePair;
+import org.e2immu.analyser.model.expression.NoValue;
 import org.e2immu.analyser.model.expression.StringConstant;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Messages;
@@ -20,7 +19,7 @@ public record CheckConstant(Primitives primitives, E2ImmuAnnotationExpressions e
 
     public void checkConstantForFields(Messages messages, FieldInfo fieldInfo, FieldAnalysis fieldAnalysis) {
         Expression singleReturnValue = fieldAnalysis.getEffectivelyFinalValue() != null ?
-                fieldAnalysis.getEffectivelyFinalValue() : EmptyExpression.NO_VALUE;
+                fieldAnalysis.getEffectivelyFinalValue() : NoValue.EMPTY;
         checkConstant(messages, (AbstractAnalysisBuilder) fieldAnalysis,
                 singleReturnValue,
                 fieldInfo.fieldInspection.get().getAnnotations(),
@@ -41,7 +40,7 @@ public record CheckConstant(Primitives primitives, E2ImmuAnnotationExpressions e
                                List<AnnotationExpression> annotations,
                                Location where) {
         boolean isConstant = analysis.getPropertyAsIs(VariableProperty.CONSTANT) == Level.TRUE;
-        String computedValue = isConstant ? singleReturnValue.minimalOutput(): null;
+        String computedValue = isConstant ? singleReturnValue.minimalOutput() : null;
         Function<AnnotationExpression, String> extractInspected = ae -> {
             String value = ae.extract("value", "");
             return singleReturnValue instanceof StringConstant ? StringUtil.quote(value) : value;

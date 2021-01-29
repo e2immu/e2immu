@@ -22,15 +22,13 @@ package org.e2immu.analyser.analyser.util;
 import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.VariableInfo;
-import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.expression.And;
 import org.e2immu.analyser.model.expression.NewObject;
+import org.e2immu.analyser.model.expression.NoValue;
 import org.e2immu.analyser.model.expression.util.EvaluateInlineConditional;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
-
-import static org.e2immu.analyser.model.expression.EmptyExpression.NO_VALUE;
 
 /*
 Different situations but they need to be dealt with in more or less the same way.
@@ -154,7 +152,7 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfo vi) 
     }
 
     private Expression inlineConditional(Expression condition, Expression ifTrue, Expression ifFalse) {
-        if (condition == NO_VALUE || ifTrue == NO_VALUE || ifFalse == NO_VALUE) return NO_VALUE;
+        if (condition.isDelayed() || ifTrue.isDelayed() || ifFalse.isDelayed()) return NoValue.EMPTY;
 
         return safe(EvaluateInlineConditional.conditionalValueConditionResolved(evaluationContext,
                 condition, ifTrue, ifFalse, ObjectFlow.NO_FLOW));

@@ -20,6 +20,7 @@ package org.e2immu.analyser.analyser;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.expression.NewObject;
+import org.e2immu.analyser.model.expression.NoValue;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.This;
@@ -81,7 +82,7 @@ public interface EvaluationContext {
     }
 
     default Expression currentValue(Variable variable, int statementTime, boolean isNotAssignmentTarget) {
-        return EmptyExpression.NO_VALUE;
+        return NoValue.EMPTY;
     }
 
     default AnalyserContext getAnalyserContext() {

@@ -288,10 +288,10 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             builder.incrementStatementTime();
         }
 
-        if (parameterValues.stream().anyMatch(pv -> pv == EmptyExpression.NO_VALUE)) {
+        if (parameterValues.stream().anyMatch(Expression::isDelayed)) {
             Logger.log(DELAYED, "Delayed method call because one of the parameter values of {} is delayed: {}",
                     methodInfo.name, parameterValues);
-            builder.setExpression(EmptyExpression.NO_VALUE);
+            builder.setExpression(NoValue.EMPTY);
             // set scope delay
             objectValue.variables().forEach(variable -> builder.setProperty(variable, VariableProperty.SCOPE_DELAY, Level.TRUE));
             object.variables().forEach(variable -> builder.setProperty(variable, VariableProperty.SCOPE_DELAY, Level.TRUE));
@@ -359,7 +359,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         builder.setExpression(result);
 
         // scope delay
-        if (builder.getExpression() == EmptyExpression.NO_VALUE || methodDelay == Level.TRUE) {
+        if (builder.getExpression().isDelayed() || methodDelay == Level.TRUE) {
             objectValue.variables().forEach(variable -> builder.setProperty(variable, VariableProperty.SCOPE_DELAY, Level.TRUE));
             object.variables().forEach(variable -> builder.setProperty(variable, VariableProperty.SCOPE_DELAY, Level.TRUE));
         }
@@ -392,7 +392,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         }
         Objects.requireNonNull(newObject, "Modifying method on constant or primitive? Impossible: " + objectValue.getClass());
 
-        if (newObject.state() == EmptyExpression.NO_VALUE) return null; // DELAY
+        if (newObject.state().isDelayed()) return null; // DELAY
 
         AtomicReference<Expression> newState = new AtomicReference<>(newObject.state());
         methodInfo.methodInspection.get().getCompanionMethods().keySet().stream()

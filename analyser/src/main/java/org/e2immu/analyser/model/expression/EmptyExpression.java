@@ -34,7 +34,6 @@ import org.e2immu.annotation.E2Container;
 @E2Container
 public record EmptyExpression(String msg, int order) implements Expression {
     public static final EmptyExpression EMPTY_EXPRESSION = new EmptyExpression("<empty>", 0);
-    public static final EmptyExpression NO_VALUE = new EmptyExpression("<no value>", 1);
 
     public static final EmptyExpression DEFAULT_EXPRESSION = new EmptyExpression("<default>", -1); // negation of the disjunction of all earlier conditions
     public static final EmptyExpression FINALLY_EXPRESSION = new EmptyExpression("<finally>", -1); // always true condition
@@ -82,8 +81,8 @@ public record EmptyExpression(String msg, int order) implements Expression {
     }
 
     @Override
-    public boolean isUnknown() {
-        return true;
+    public int unknownOrder() {
+        return order;
     }
 
     @Override

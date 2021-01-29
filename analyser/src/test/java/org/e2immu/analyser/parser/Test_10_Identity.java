@@ -6,6 +6,7 @@ import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.EmptyExpression;
+import org.e2immu.analyser.model.expression.NoValue;
 import org.e2immu.analyser.model.expression.PropertyWrapper;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.junit.Assert;
@@ -199,7 +200,7 @@ public class Test_10_Identity extends CommonTestRunner {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("idem4".equals(d.methodInfo().name) && "1".equals(d.statementId())) {
                 // double property wrapper
-                String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "s/*@Immutable,@NotNull*//*@Immutable,@NotNull*/";
+                String expect = d.iteration() == 0 ? NoValue.NO_VALUE : "s/*@Immutable,@NotNull*//*@Immutable,@NotNull*/";
                 Assert.assertEquals(expect, d.evaluationResult().value().toString());
             }
         };

@@ -205,7 +205,7 @@ public class EvaluateParameters {
         if (scope instanceof VariableExpression variableExpression) {
             if (variableExpression.variable() instanceof ParameterInfo) return true;
             Expression expression = evaluationContext.currentValue(variableExpression.variable(), statementTime, true);
-            if (expression == EmptyExpression.NO_VALUE) return null; // delay
+            if (expression.isDelayed()) return null;
             // TODO
             return true;
         }

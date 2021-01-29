@@ -27,14 +27,11 @@ import org.e2immu.analyser.model.FieldInfo;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
-import org.e2immu.analyser.model.expression.EmptyExpression;
-import org.e2immu.analyser.model.variable.Variable;
 import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.Set;
 
 /*
 https://github.com/bnaudts/e2immu/issues/15
@@ -83,7 +80,7 @@ public class TestLazy extends CommonTestRunner {
         if ("Lazy".equals(d.methodInfo().name)) {
             VariableInfo tv = d.getFieldAsVariable(supplier);
             assert tv != null;
-            Assert.assertNotSame(tv.getValue(), EmptyExpression.NO_VALUE);
+            Assert.assertTrue(tv.getValue().isNotDelayed());
 
             ParameterInfo supplierParam = d.methodInfo().methodInspection.get().getParameters().get(0);
             Assert.assertEquals("supplierParam", supplierParam.name);

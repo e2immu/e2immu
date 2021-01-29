@@ -50,7 +50,7 @@ public interface VariableInfo {
     Set<Integer> getReadAtStatementTimes();
 
     default boolean valueIsSet() {
-        return getValue() != EmptyExpression.NO_VALUE;
+        return getValue().isNotDelayed();
     }
 
     int getProperty(VariableProperty variableProperty);

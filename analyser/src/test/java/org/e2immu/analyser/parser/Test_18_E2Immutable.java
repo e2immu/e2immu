@@ -25,6 +25,7 @@ import org.e2immu.analyser.model.FieldInfo;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.expression.EmptyExpression;
+import org.e2immu.analyser.model.expression.NoValue;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.junit.Assert;
 import org.junit.Test;
@@ -53,7 +54,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
             if (CONSTRUCTOR2.equals(d.methodInfo().fullyQualifiedName) && LEVEL2.equals(d.variableName())) {
                 if ("1".equals(d.statementId())) {
                     // we never know in the first iteration...
-                    String expectValue = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "2+parent2Param.level2";
+                    String expectValue = d.iteration() == 0 ? NoValue.NO_VALUE : "2+parent2Param.level2";
                     Assert.assertEquals(expectValue, d.currentValue().toString());
                 }
             }
@@ -150,14 +151,14 @@ public class Test_18_E2Immutable extends CommonTestRunner {
     public void test_7() throws IOException {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("accept".equals(d.methodInfo().name) && "$1".equals(d.methodInfo().typeInfo.simpleName)) {
-                String expectValue = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "<no return value>";
+                String expectValue = d.iteration() == 0 ? NoValue.NO_VALUE : "<no return value>";
                 Assert.assertEquals(expectValue, d.evaluationResult().value().toString());
             }
         };
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("getMap7".equals(d.methodInfo().name) && "incremented".equals(d.variableName())) {
-                String expectValue = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "new HashMap<>(map7)/*this.size()==map7.size()*/";
+                String expectValue = d.iteration() == 0 ? NoValue.NO_VALUE : "new HashMap<>(map7)/*this.size()==map7.size()*/";
                 Assert.assertEquals("it " + d.iteration() + ", statement " + d.statementId(), expectValue, d.currentValue().toString());
                 String expectLinked = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "";
                 Assert.assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());

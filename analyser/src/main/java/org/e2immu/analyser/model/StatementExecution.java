@@ -23,12 +23,11 @@ import org.e2immu.analyser.analyser.FlowData;
 import java.util.function.BiFunction;
 
 import static org.e2immu.analyser.analyser.FlowData.Execution.DELAYED_EXECUTION;
-import static org.e2immu.analyser.model.expression.EmptyExpression.NO_VALUE;
 
 @FunctionalInterface
 public interface StatementExecution extends BiFunction<Expression, EvaluationContext, FlowData.Execution> {
     StatementExecution NEVER = (x, y) -> FlowData.Execution.NEVER;
     StatementExecution ALWAYS = (x, y) -> FlowData.Execution.ALWAYS;
-    StatementExecution CONDITIONALLY = (x, y) -> x == NO_VALUE ? DELAYED_EXECUTION : FlowData.Execution.CONDITIONALLY;
+    StatementExecution CONDITIONALLY = (x, y) -> x.isDelayed() ? DELAYED_EXECUTION : FlowData.Execution.CONDITIONALLY;
     StatementExecution DEFAULT = (x, y) -> FlowData.Execution.DEFAULT;
 }

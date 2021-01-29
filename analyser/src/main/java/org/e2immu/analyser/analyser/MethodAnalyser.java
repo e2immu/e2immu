@@ -553,7 +553,7 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
 
         VariableInfo variableInfo = getReturnAsVariable();
         Expression value = variableInfo.getValue();
-        if (value == EmptyExpression.NO_VALUE || value.isInitialReturnExpression()) {
+        if (value.isDelayed() || value.isInitialReturnExpression()) {
 
             // it is possible that none of the return statements are reachable... in which case there should be no delay,
             // and no SRV

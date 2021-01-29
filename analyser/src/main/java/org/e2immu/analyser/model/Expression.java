@@ -22,7 +22,6 @@ import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
-import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
@@ -33,7 +32,6 @@ import org.e2immu.annotation.Nullable;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.Predicate;
 
 @E2Container
@@ -58,6 +56,14 @@ public interface Expression extends Element, Comparable<Expression> {
         return this;
     }
 
+    default NullState staticNullState() {
+        return NoValue.EMPTY;
+    }
+
+    default NullState overallNullState() {
+        return NoValue.EMPTY;
+    }
+
     // ********************************
 
     int order();
@@ -79,9 +85,21 @@ public interface Expression extends Element, Comparable<Expression> {
         return false;
     }
 
-    // only empty expressions are unknown!
+    default int unknownOrder() {
+        return -1;
+    }
+
+    // only empty expressions and NoValue are unknown!
     default boolean isUnknown() {
-        return false;
+        return unknownOrder() >= 0;
+    }
+
+    default boolean isDelayed() {
+        return this instanceof NoValue;
+    }
+
+    default boolean isNotDelayed() {
+        return !(this instanceof NoValue);
     }
 
     default boolean isDiscreteType() {
@@ -190,13 +208,11 @@ public interface Expression extends Element, Comparable<Expression> {
     }
 
     default EmptyExpression combineUnknown(Expression other) {
-        if (this instanceof EmptyExpression e1 && other instanceof EmptyExpression e2) {
-            if (e1.order() < 0 || e2.order() < 0) throw new UnsupportedOperationException();
-            return e1.order() > e2.order() ? e1 : e2;
-        }
-        if (this instanceof EmptyExpression expression) return expression;
-        if (other instanceof EmptyExpression expression) return expression;
-        throw new UnsupportedOperationException();
+        int order = unknownOrder();
+        assert order >= 0;
+        int otherOrder = other.unknownOrder();
+        assert otherOrder >= 0;
+        throw new UnsupportedOperationException(); // FIXME
     }
 
     default boolean isBooleanConstant() {

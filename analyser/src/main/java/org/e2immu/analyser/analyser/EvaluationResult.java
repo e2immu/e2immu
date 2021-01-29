@@ -19,10 +19,7 @@ package org.e2immu.analyser.analyser;
 
 import com.google.common.collect.ImmutableMap;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.expression.And;
-import org.e2immu.analyser.model.expression.EmptyExpression;
-import org.e2immu.analyser.model.expression.NewObject;
-import org.e2immu.analyser.model.expression.VariableExpression;
+import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
@@ -39,7 +36,6 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.stream.Stream;
 
-import static org.e2immu.analyser.model.expression.EmptyExpression.NO_VALUE;
 import static org.e2immu.analyser.util.Logger.LogTarget.DEBUG_MODIFY_CONTENT;
 import static org.e2immu.analyser.util.Logger.LogTarget.OBJECT_FLOW;
 import static org.e2immu.analyser.util.Logger.log;
@@ -126,7 +122,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             LinkedVariables combinedStaticallyAssignedVariabels = staticallyAssignedVariables.merge(other.staticallyAssignedVariables);
             Set<Integer> combinedReadAtStatementTime = SetUtil.immutableUnion(readAtStatementTime, other.readAtStatementTime);
             Map<VariableProperty, Integer> combinedProperties = VariableInfoImpl.mergeProperties(properties, other.properties);
-            return new ChangeData(other.value == EmptyExpression.NO_VALUE ? value : other.value,
+            return new ChangeData(other.value.isDelayed() ? value : other.value,
                     other.stateIsDelayed,
                     other.markAssignment || markAssignment,
                     combinedReadAtStatementTime,
@@ -189,7 +185,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
         }
 
         private void append(boolean ignoreExpression, EvaluationResult evaluationResult) {
-            if (!ignoreExpression && evaluationResult.value != null && (value == null || value != NO_VALUE)) {
+            if (!ignoreExpression && evaluationResult.value != null && (value == null || value.isNotDelayed())) {
                 value = evaluationResult.value;
             }
 
@@ -223,7 +219,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
         // also sets result of expression, but cannot overwrite NO_VALUE
         public Builder setExpression(Expression value) {
             Objects.requireNonNull(value);
-            if (this.value != NO_VALUE) {
+            if (this.value.isNotDelayed()) {
                 this.value = value;
             }
             return this;
@@ -250,13 +246,13 @@ public record EvaluationResult(EvaluationContext evaluationContext,
 
             // if the variable has a value, and this value is NOT @NotNull, then we'll raise an error
             int notNull = MultiLevel.value(getProperty(value, VariableProperty.NOT_NULL), MultiLevel.NOT_NULL);
-            if (notNull == MultiLevel.FALSE && value != NO_VALUE) {
+            if (notNull == MultiLevel.FALSE && value.isNotDelayed()) {
                 Message message = Message.newMessage(evaluationContext.getLocation(), Message.POTENTIAL_NULL_POINTER_EXCEPTION,
                         "Variable: " + variable.simpleName());
                 messages.add(message);
                 return;
             }
-            if (notNull < notNullRequired || value == NO_VALUE) {
+            if (notNull < notNullRequired || value.isDelayed()) {
                 // we only need to mark this in case of doubt (if we already know, we should not mark)
                 setProperty(variable, VariableProperty.NOT_NULL, notNullRequired);
                 if (value instanceof VariableExpression redirectViaValue) {
@@ -296,7 +292,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             ChangeData ecd = valueChanges.get(variable);
             ChangeData newEcd;
             if (ecd == null) {
-                newEcd = new ChangeData(NO_VALUE, false, false, Set.of(statementTime),
+                newEcd = new ChangeData(NoValue.EMPTY, false, false, Set.of(statementTime),
                         LinkedVariables.EMPTY, LinkedVariables.EMPTY, Map.of());
             } else {
                 newEcd = new ChangeData(ecd.value, ecd.stateIsDelayed, ecd.markAssignment,
@@ -358,7 +354,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
          */
         public Expression currentExpression(Variable variable, boolean isNotAssignmentTarget) {
             ChangeData currentExpression = valueChanges.get(variable);
-            if (currentExpression == null || currentExpression.value == NO_VALUE) {
+            if (currentExpression == null || currentExpression.value.isDelayed()) {
                 assert evaluationContext != null;
                 return evaluationContext.currentValue(variable, statementTime, isNotAssignmentTarget);
             }
@@ -452,7 +448,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
         }
 
         public void variableOccursInNotModified1Context(Variable variable, Expression currentExpression) {
-            if (currentExpression == NO_VALUE) return; // not yet
+            if (currentExpression.isDelayed()) return; // not yet
             assert evaluationContext != null;
             // if we already know that the variable is NOT @NotNull, then we'll raise an error
             int notModified1 = getProperty(currentExpression, VariableProperty.NOT_MODIFIED_1);
@@ -479,10 +475,10 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             ChangeData newEcd;
             ChangeData ecd = valueChanges.get(assignmentTarget);
             if (ecd == null) {
-                newEcd = new ChangeData(stateIsDelayed ? NO_VALUE : resultOfExpression, stateIsDelayed,
+                newEcd = new ChangeData(stateIsDelayed ? NoValue.EMPTY : resultOfExpression, stateIsDelayed,
                         markAssignment, Set.of(), linkedVariables, staticallyAssignedVariables, Map.of());
             } else {
-                newEcd = new ChangeData(stateIsDelayed ? NO_VALUE : resultOfExpression, stateIsDelayed,
+                newEcd = new ChangeData(stateIsDelayed ? NoValue.EMPTY : resultOfExpression, stateIsDelayed,
                         ecd.markAssignment || markAssignment, ecd.readAtStatementTime, linkedVariables,
                         staticallyAssignedVariables, ecd.properties);
             }
@@ -496,7 +492,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             ChangeData newEcd;
             ChangeData ecd = valueChanges.get(variable);
             if (ecd == null) {
-                newEcd = new ChangeData(NO_VALUE, false, false, Set.of(),
+                newEcd = new ChangeData(NoValue.EMPTY, false, false, Set.of(),
                         LinkedVariables.EMPTY, LinkedVariables.EMPTY, Map.of(property, value));
             } else {
                 newEcd = new ChangeData(ecd.value, ecd.stateIsDelayed, ecd.markAssignment,

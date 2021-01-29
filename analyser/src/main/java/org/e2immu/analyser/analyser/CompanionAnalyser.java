@@ -20,10 +20,7 @@ package org.e2immu.analyser.analyser;
 import com.google.common.collect.ImmutableMap;
 import org.e2immu.analyser.config.CompanionAnalyserVisitor;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.expression.BooleanConstant;
-import org.e2immu.analyser.model.expression.EmptyExpression;
-import org.e2immu.analyser.model.expression.MethodCall;
-import org.e2immu.analyser.model.expression.VariableExpression;
+import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.This;
@@ -97,14 +94,11 @@ public class CompanionAnalyser {
             EvaluationContext evaluationContext = new EvaluationContextImpl(iteration,
                     ConditionManager.initialConditionManager(analyserContext.getPrimitives()));
             EvaluationResult evaluationResult = returnStatement.expression.evaluate(evaluationContext, ForwardEvaluationInfo.DEFAULT);
-            if (evaluationResult.value() == EmptyExpression.NO_VALUE) {
+            if (evaluationResult.value().isDelayed()) {
                 log(DELAYED, "Delaying companion analysis of {} of {}, delay in evaluation",
                         companionMethodName, mainMethod.fullyQualifiedName());
                 visit(iteration, DELAYS, evaluationContext, evaluationResult);
                 return AnalysisStatus.DELAYS;
-            }
-            if (evaluationResult.value() == null) {
-                throw new RuntimeException("? have null result");
             }
             companionAnalysis.value.set(evaluationResult.value());
 
@@ -209,7 +203,7 @@ public class CompanionAnalyser {
         public Expression currentValue(Variable variable, int statementTime, boolean isNotAssignmentTarget) {
             if (variable instanceof ParameterInfo parameterInfo) {
                 Map<String, Expression> remapping = companionAnalysis.remapParameters.getOrElse(null);
-                if (remapping == null) return EmptyExpression.NO_VALUE;
+                if (remapping == null) return NoValue.EMPTY;
                 return Objects.requireNonNull(remapping.get(parameterInfo.name));
             }
             return new VariableExpression(variable);

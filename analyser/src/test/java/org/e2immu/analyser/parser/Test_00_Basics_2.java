@@ -23,6 +23,7 @@ import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.EmptyExpression;
+import org.e2immu.analyser.model.expression.NoValue;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -74,7 +75,7 @@ public class Test_00_Basics_2 extends CommonTestRunner {
             if (d.iteration() == 0) {
                 Assert.assertEquals("0" + VariableInfoContainer.Level.EVALUATION, d.variableInfo().getReadId());
                 Assert.assertTrue(d.variableInfoContainer().hasEvaluation());
-                Assert.assertSame(EmptyExpression.NO_VALUE, d.currentValue());
+                Assert.assertSame(NoValue.EMPTY, d.currentValue());
             } else {
                 Assert.assertEquals("instance type Collection<String>/*this.contains(org.e2immu.analyser.testexample.Basics_2.string$0)*/",
                         d.currentValue().toString());
@@ -91,7 +92,7 @@ public class Test_00_Basics_2 extends CommonTestRunner {
         }
         if (STRING_FIELD.equals(d.variableName()) && "getString".equals(d.methodInfo().name)) {
             Assert.assertTrue(d.variableInfo().isRead());
-            String expectValue = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "nullable instance type String";
+            String expectValue = d.iteration() == 0 ? NoValue.NO_VALUE : "nullable instance type String";
             Assert.assertEquals(expectValue, d.currentValue().toString());
             int expectNotNull = d.iteration() == 0 ? Level.DELAY : MultiLevel.NULLABLE;
             Assert.assertEquals(expectNotNull, d.getProperty(VariableProperty.NOT_NULL));
@@ -149,7 +150,7 @@ public class Test_00_Basics_2 extends CommonTestRunner {
             Assert.assertTrue(d.evaluationResult().toString(), d.haveMarkRead(THIS));
         }
         if (d.methodInfo().name.equals("add") && "0".equals(d.statementId())) {
-            String expectEvalString = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : METHOD_VALUE_ADD;
+            String expectEvalString = d.iteration() == 0 ? NoValue.NO_VALUE : METHOD_VALUE_ADD;
             Assert.assertEquals(d.evaluationResult().toString(), expectEvalString, d.evaluationResult().value().toString());
         }
     };

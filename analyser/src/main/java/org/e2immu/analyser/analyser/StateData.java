@@ -18,7 +18,7 @@
 package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.expression.EmptyExpression;
+import org.e2immu.analyser.model.expression.NoValue;
 import org.e2immu.analyser.util.FlipSwitch;
 import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.analyser.util.SetOnceMapOverwriteNoValue;
@@ -73,7 +73,7 @@ public class StateData {
     }
 
     public Expression getValueOfExpression() {
-        return valueOfExpression.getOrElse(EmptyExpression.NO_VALUE);
+        return valueOfExpression.getOrElse(NoValue.EMPTY);
     }
 
     public void addStateOfInterrupt(String index, Expression expression) {
@@ -85,7 +85,7 @@ public class StateData {
     }
 
     public void setPrecondition(Expression expression) {
-        assert expression != EmptyExpression.NO_VALUE;
+        assert expression.isNotDelayed();
         if (!precondition.isSet() || !expression.equals(precondition.get())) {
             precondition.set(expression);
         }
