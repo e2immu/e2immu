@@ -422,15 +422,25 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
                     Assert.assertEquals(I0 + "+q", d.currentValue().toString());
                 }
             }
-            if ("test4".equals(d.methodInfo().name) && d.iteration() > 0) {
-                if ("j0".equals(d.variableName()) && "4.0.0.0.0".equals(d.statementId())) {
-                    Assert.assertEquals(I2, d.currentValue().toString());
+            if ("test4".equals(d.methodInfo().name)) {
+                if( "j".equals(d.variableName()) && ("1".equals(d.statementId())
+                        || "2".equals(d.statementId())
+                        || "3".equals(d.statementId())
+                        || "4.0.0.0.0".equals(d.statementId()))) {
+                    Assert.assertEquals("statement "+d.statementId(),
+                            "this.i", d.variableInfo().getStaticallyAssignedVariables().toString());
                 }
-                if (I.equals(d.variableName()) && "4.0.0.0.1".equals(d.statementId())) {
-                    Assert.assertEquals(I2 + "+q", d.currentValue().toString());
-                }
-                if ("k0".equals(d.variableName()) && "4.0.0.0.2".equals(d.statementId())) {
-                    Assert.assertEquals(I2 + "+q", d.currentValue().toString());
+
+                if(d.iteration() > 0){
+                    if ("j0".equals(d.variableName()) && "4.0.0.0.0".equals(d.statementId())) {
+                        Assert.assertEquals(I2, d.currentValue().toString());
+                    }
+                    if (I.equals(d.variableName()) && "4.0.0.0.1".equals(d.statementId())) {
+                        Assert.assertEquals(I2 + "+q", d.currentValue().toString());
+                    }
+                    if ("k0".equals(d.variableName()) && "4.0.0.0.2".equals(d.statementId())) {
+                        Assert.assertEquals(I2 + "+q", d.currentValue().toString());
+                    }
                 }
             }
         };

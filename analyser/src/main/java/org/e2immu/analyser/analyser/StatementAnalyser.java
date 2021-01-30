@@ -580,17 +580,21 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                         additionalLinks.add(local.current().variable());
                     }
                 }
-            } else if (changeData.value() != null) {
-                // a modifying method caused an updated instance value
-                boolean valueIsDelayed = sharedState.evaluationContext.isDelayed(changeData.value());
-                vic.setValue(changeData.value(), valueIsDelayed,
-                        changeData.staticallyAssignedVariables(), changeData.properties(), false);
-            } else if (variable instanceof This || !evaluationResult.someValueWasDelayed() && !changeData.haveDelayesCausedByMethodCalls()) {
-                // we're not assigning (and there is no change in instance because of a modifying method)
-                // only then we copy from INIT to EVAL
-                vic.setValue(vi1.getValue(), vi1.isDelayed(), vi1.getStaticallyAssignedVariables(), vi1.getProperties(), false);
+            } else {
+                if (changeData.value() != null) {
+                    // a modifying method caused an updated instance value
+                    boolean valueIsDelayed = sharedState.evaluationContext.isDelayed(changeData.value());
+                    vic.setValue(changeData.value(), valueIsDelayed,
+                            changeData.staticallyAssignedVariables(), changeData.properties(), false);
+                } else if (variable instanceof This || !evaluationResult.someValueWasDelayed() && !changeData.haveDelayesCausedByMethodCalls()) {
+                    // we're not assigning (and there is no change in instance because of a modifying method)
+                    // only then we copy from INIT to EVAL
+                    vic.setValue(vi1.getValue(), vi1.isDelayed(), vi1.getStaticallyAssignedVariables(), vi1.getProperties(), false);
+                } else {
+                    // not an assignment, so we must copy the statically assigned variables!
+                    vic.setStaticallyAssignedVariables(vi1.getStaticallyAssignedVariables(), false);
+                }
             }
-
             if (vi.isDelayed()) {
                 log(DELAYED, "Apply of {}, {} is delayed because of unknown value for {}",
                         index(), myMethodAnalyser.methodInfo.fullyQualifiedName, variable);
