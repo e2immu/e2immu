@@ -129,6 +129,11 @@ public record VariableExpression(Variable variable,
         return evaluate(evaluationContext, forwardEvaluationInfo, replaceSuperByThis(evaluationContext, variable));
     }
 
+    @Override
+    public boolean isDelayed(EvaluationContext evaluationContext) {
+        return evaluationContext.variableIsDelayed(variable);
+    }
+
     public static Variable replaceSuperByThis(EvaluationContext evaluationContext, Variable variable) {
         if (variable instanceof This tv && tv.typeInfo != evaluationContext.getCurrentType()) {
             return new This(evaluationContext.getAnalyserContext(), evaluationContext.getCurrentType());

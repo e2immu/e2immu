@@ -237,17 +237,16 @@ public interface EvaluationContext {
         return null;
     }
 
-    default boolean isDelayed(Variable variable) {
+    default boolean variableIsDelayed(Variable variable) {
         return false;
     }
 
     default boolean isDelayed(Expression expression) {
-        if(expression instanceof DelayedExpression) return true;
-        return expression.variables().stream().anyMatch(this::isDelayed);
+        if (expression instanceof DelayedExpression) return true;
+        return expression.subElements().stream().anyMatch(e -> e instanceof Expression expr && isDelayed(expr));
     }
 
     default boolean isNotDelayed(Expression expression) {
-        if(expression instanceof DelayedExpression) return false;
-        return expression.variables().stream().noneMatch(this::isDelayed);
+        return !isDelayed(expression);
     }
 }

@@ -1464,7 +1464,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
 
         Expression value = statementAnalysis.stateData.getValueOfExpression();
         boolean valueIsDelayed = statementAnalysis.stateData.valueOfExpressionIsDelayed();
-        assert valueIsDelayed == sharedState.evaluationContext.isDelayed(value); // sanity check
+        assert !sharedState.evaluationContext.isDelayed(value) || valueIsDelayed; // sanity check
         Structure structure = statementAnalysis.statement.getStructure();
         EvaluationContext evaluationContext = sharedState.evaluationContext;
 
@@ -1943,6 +1943,12 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         public LinkedVariables getStaticallyAssignedVariables(Variable variable, int statementTime) {
             VariableInfo variableInfo = findForReading(variable, statementTime, true);
             return variableInfo.getStaticallyAssignedVariables();
+        }
+
+        @Override
+        public boolean variableIsDelayed(Variable variable) {
+            VariableInfo vi =  statementAnalysis.findOrNull(variable, VariableInfoContainer.Level.EVALUATION);
+            return vi == null || vi.isDelayed();
         }
     }
 }
