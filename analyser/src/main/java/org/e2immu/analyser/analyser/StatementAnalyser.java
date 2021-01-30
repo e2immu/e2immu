@@ -568,11 +568,13 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                     changeData.value();
             boolean valueToWriteIsDelayed = sharedState.evaluationContext.isDelayed(valueToWrite);
 
-            // we explicitly check for NO_VALUE, because "<no return value>" is legal!
-               log(ANALYSER, "Write value {} to variable {}", valueToWrite, variable.fullyQualifiedName());
+            if(changeData.markAssignment()) {
+                // we explicitly check for NO_VALUE, because "<no return value>" is legal!
+                log(ANALYSER, "Write value {} to variable {}", valueToWrite, variable.fullyQualifiedName());
                 // first do the properties that come with the value; later, we'll write the ones in changeData
                 Map<VariableProperty, Integer> propertiesToSet = sharedState.evaluationContext.getValueProperties(valueToWrite);
                 vic.setValue(valueToWrite, valueToWriteIsDelayed, changeData.staticallyAssignedVariables(), propertiesToSet, false);
+            }
 
             if (!changeData.markAssignment() && (!evaluationResult.someValueWasDelayed() || !changeData.haveScopeDelay())) {
                 // we're not assigning (and there is no change in instance because of a modifying method)
@@ -904,7 +906,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             }
         }
 
-        if (!statementAnalysis.stateData.preconditionIsEmpty()) {
+        if (statementAnalysis.stateData.preconditionIsEmpty()) {
             // it could have been set from the assert (step4) or apply via a method call
             statementAnalysis.stateData.setPrecondition(new BooleanConstant(statementAnalysis.primitives, true), false);
         }

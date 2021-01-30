@@ -47,6 +47,8 @@ Test_00_Basics_0 extends CommonTestRunner {
         if (d.methodInfo().name.equals("getExplicitlyFinal") && "0".equals(d.statementId())) {
             String expectValue = d.iteration() == 0 ? "<field:org.e2immu.analyser.testexample.Basics_0.explicitlyFinal>" : "\"abc\"";
             Assert.assertEquals(expectValue, d.evaluationResult().value().toString());
+
+            Assert.assertEquals(d.iteration() == 0, d.evaluationResult().someValueWasDelayed());
         }
     };
 
@@ -64,7 +66,15 @@ Test_00_Basics_0 extends CommonTestRunner {
         }
     };
 
-    StatementAnalyserVariableVisitor statementAnalyserVisitor = d -> {
+    StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+        if (d.methodInfo().name.equals("getExplicitlyFinal") && "0".equals(d.statementId())) {
+            Assert.assertTrue(d.condition().isBoolValueTrue());
+            Assert.assertTrue(d.state().isBoolValueTrue());
+            Assert.assertTrue(d.localConditionManager().precondition().isBoolValueTrue());
+        }
+    };
+
+    StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
         if (d.methodInfo().name.equals("getExplicitlyFinal") && "0".equals(d.statementId())) {
             // the field
             if ((TYPE + ".explicitlyFinal").equals(d.variableName())) {
@@ -80,6 +90,7 @@ Test_00_Basics_0 extends CommonTestRunner {
             // this.
             if ((TYPE + ".this").equals(d.variableName())) {
                 Assert.assertTrue(d.variableInfo().isRead());
+                Assert.assertEquals("instance type Basics_0", d.currentValue().toString());
                 return;
             }
             // the return value
@@ -111,7 +122,8 @@ Test_00_Basics_0 extends CommonTestRunner {
     public void test() throws IOException {
         testClass("Basics_0", 0, 0, new DebugConfiguration.Builder()
                 .addAfterFieldAnalyserVisitor(afterFieldAnalyserVisitor)
-                .addStatementAnalyserVariableVisitor(statementAnalyserVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addTypeMapVisitor(typeMapVisitor)
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .build());
