@@ -348,8 +348,10 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 EvaluationContext tmpEvaluationContext = new EvaluationContextImpl(iteration,
                         ConditionManager.initialConditionManager(previous.primitives), closure);
                 boolean combinedPreconditionIsDelayed = tmpEvaluationContext.isDelayed(combinedPrecondition);
-                localConditionManager = previous.stateData.getConditionManagerForNextStatement()
-                        .withPrecondition(combinedPrecondition, combinedPreconditionIsDelayed);
+                ConditionManager previousCm = previous.stateData.getConditionManagerForNextStatement();
+                // can be null in case the statement is unreachable
+                localConditionManager = previousCm == null ? ConditionManager.impossibleConditionManager(statementAnalysis.primitives) :
+                        previousCm.withPrecondition(combinedPrecondition, combinedPreconditionIsDelayed);
             }
 
             StatementAnalyserResult.Builder builder = new StatementAnalyserResult.Builder();
@@ -424,6 +426,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         }
         for (StatementAnalyserVisitor statementAnalyserVisitor :
                 analyserContext.getConfiguration().debugConfiguration.statementAnalyserVisitors) {
+            ConditionManager cm = statementAnalysis.stateData.getConditionManagerForNextStatement();
             statementAnalyserVisitor.visit(
                     new StatementAnalyserVisitor.Data(
                             result,
@@ -432,9 +435,9 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                             myMethodAnalyser.methodInfo,
                             statementAnalysis,
                             statementAnalysis.index,
-                            statementAnalysis.stateData.getConditionManagerForNextStatement().condition(),
-                            statementAnalysis.stateData.getConditionManagerForNextStatement().state(),
-                            statementAnalysis.stateData.getConditionManagerForNextStatement().absoluteState(sharedState.evaluationContext),
+                            cm == null ? null : cm.condition(),
+                            cm == null ? null : cm.state(),
+                            cm == null ? null : cm.absoluteState(sharedState.evaluationContext),
                             sharedState.localConditionManager(),
                             analyserComponents.getStatusesAsMap()));
         }
@@ -1951,7 +1954,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
 
         @Override
         public boolean variableIsDelayed(Variable variable) {
-            VariableInfo vi =  statementAnalysis.findOrNull(variable, VariableInfoContainer.Level.EVALUATION);
+            VariableInfo vi = statementAnalysis.findOrNull(variable, VariableInfoContainer.Level.EVALUATION);
             return vi == null || vi.isDelayed();
         }
     }

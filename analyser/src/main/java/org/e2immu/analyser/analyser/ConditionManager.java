@@ -49,6 +49,11 @@ public record ConditionManager(Expression condition, Expression state, Expressio
         return new ConditionManager(TRUE, TRUE, TRUE, false, null);
     }
 
+    public static ConditionManager impossibleConditionManager(Primitives primitives) {
+        BooleanConstant FALSE = new BooleanConstant(primitives, true);
+        return new ConditionManager(FALSE, FALSE, FALSE, false, null);
+    }
+
     public ConditionManager newAtStartOfNewBlock(Primitives primitives, Expression condition, Expression precondition, boolean conditionOrPreconditionAreDelayed) {
         return new ConditionManager(condition, new BooleanConstant(primitives, true), precondition,
                 conditionOrPreconditionAreDelayed || isDelayed, this);
