@@ -93,8 +93,15 @@ public record EvaluationResult(EvaluationContext evaluationContext,
         return value;
     }
 
-    public boolean isNotNull0(EvaluationContext evaluationContext) {
-        // should we trawl through the modifications?
+    public boolean isNotNull0() {
+        assert evaluationContext != null;
+        if (value instanceof VariableExpression variableExpression) {
+            ChangeData cd = changeData.get(variableExpression.variable());
+            if (cd != null) {
+                Integer inChangeData = cd.properties.getOrDefault(VariableProperty.NOT_NULL, null);
+                if (inChangeData != null && inChangeData >= MultiLevel.EFFECTIVELY_NOT_NULL) return true;
+            }
+        }
         return evaluationContext.isNotNull0(value);
     }
 
@@ -246,30 +253,32 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             if (variable instanceof This) return; // nothing to be done here
             boolean valueIsDelayed = evaluationContext.isDelayed(value);
 
+            int notNull = getProperty(variable, VariableProperty.NOT_NULL);
+            if (notNullRequired == MultiLevel.EFFECTIVELY_NOT_NULL && notNull < notNullRequired) {
+                // we have a second attempt looking at the current condition, absolute state, etc.
+                if (evaluationContext.isNotNull0(value)) {
+                    notNull = MultiLevel.EFFECTIVELY_NOT_NULL;
+                }
+            }
             // if the variable has a value, and this value is NOT @NotNull, then we'll raise an error
-            int notNull = MultiLevel.value(getProperty(value, VariableProperty.NOT_NULL), MultiLevel.NOT_NULL);
             if (notNull == MultiLevel.FALSE && !valueIsDelayed) {
                 Message message = Message.newMessage(evaluationContext.getLocation(), Message.POTENTIAL_NULL_POINTER_EXCEPTION,
                         "Variable: " + variable.simpleName());
                 messages.add(message);
                 return;
             }
-            if (notNull < notNullRequired || valueIsDelayed) {
+            if (notNull < notNullRequired) {
                 // we only need to mark this in case of doubt (if we already know, we should not mark)
                 setProperty(variable, VariableProperty.NOT_NULL, notNullRequired);
                 if (value instanceof VariableExpression redirectViaValue) {
                     setProperty(redirectViaValue.variable(), VariableProperty.NOT_NULL, notNullRequired);
-                } else {
+                } else if (valueIsDelayed) {
                     for (Variable staticRedirect : evaluationContext.getStaticallyAssignedVariables(variable, statementTime).variables()) {
                         setProperty(staticRedirect, VariableProperty.NOT_NULL, notNullRequired);
                     }
                 }
             }
         }
-
-        // FIXME! if the current state or condition says that the variable is not null, we should not be
-        // demanding a not-null from the context!
-
 
         private int getProperty(Expression expression, VariableProperty variableProperty) {
             if (expression instanceof VariableExpression variableExpression) {

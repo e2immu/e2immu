@@ -56,7 +56,7 @@ public abstract class AbstractEvaluationContextImpl implements EvaluationContext
         Expression valueIsNull = new Equals(getPrimitives(), NullConstant.NULL_CONSTANT, value, ObjectFlow.NO_FLOW);
         Expression combined = conditionManager.evaluate(this, valueIsNull);
         if (combined instanceof BooleanConstant boolValue) {
-            return boolValue.constant();
+            return !boolValue.constant();
         }
         return MultiLevel.isEffectivelyNotNull(getProperty(value, VariableProperty.NOT_NULL));
     }

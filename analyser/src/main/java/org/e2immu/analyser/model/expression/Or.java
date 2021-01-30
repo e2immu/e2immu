@@ -21,6 +21,7 @@ import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.analyser.VariableProperty;
+import org.e2immu.analyser.model.Element;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
@@ -252,5 +253,10 @@ public record Or(Primitives primitives,
     @Override
     public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
         return UnknownExpression.primitiveGetProperty(variableProperty);
+    }
+
+    @Override
+    public List<? extends Element> subElements() {
+        return expressions;
     }
 }

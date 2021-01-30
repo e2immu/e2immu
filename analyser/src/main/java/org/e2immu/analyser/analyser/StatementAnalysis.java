@@ -786,7 +786,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         if (inPartOfConstruction() && myOwn) { // field that must be initialised
             Expression initialValue = analyserContext.getFieldAnalysis(fieldReference.fieldInfo).getInitialValue();
             if (initialValue == null) { // initialiser value not yet evaluated
-                return new ExpressionAndLinkedVariables(DelayedExpression.forField(fieldReference.fieldInfo), true, LinkedVariables.EMPTY);
+                return new ExpressionAndLinkedVariables(DelayedExpression.forField(fieldReference), true, LinkedVariables.EMPTY);
             }
             if (initialValue.isConstant()) {
                 return new ExpressionAndLinkedVariables(initialValue, false, LinkedVariables.EMPTY);
@@ -797,12 +797,12 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
 
         int effectivelyFinal = fieldAnalysis.getProperty(VariableProperty.FINAL);
         if (effectivelyFinal == Level.DELAY && !selfReference) {
-            return new ExpressionAndLinkedVariables(DelayedExpression.forField(fieldReference.fieldInfo), true, LinkedVariables.DELAY);
+            return new ExpressionAndLinkedVariables(DelayedExpression.forField(fieldReference), true, LinkedVariables.DELAY);
         }
 
         int notNull = fieldAnalysis.getProperty(VariableProperty.NOT_NULL);
         if (notNull == Level.DELAY) {
-            return new ExpressionAndLinkedVariables(DelayedExpression.forField(fieldReference.fieldInfo), true, LinkedVariables.DELAY);
+            return new ExpressionAndLinkedVariables(DelayedExpression.forField(fieldReference), true, LinkedVariables.DELAY);
         }
 
         // when selfReference (as in this.x = other.x during construction), we never delay
@@ -812,7 +812,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             Expression efv = fieldAnalysis.getEffectivelyFinalValue();
             if (efv == null) {
                 if (analyserContext.getTypeAnalysis(fieldReference.fieldInfo.owner).isBeingAnalysed() && !selfReference) {
-                    return new ExpressionAndLinkedVariables(DelayedExpression.forField(fieldReference.fieldInfo), true, LinkedVariables.DELAY);
+                    return new ExpressionAndLinkedVariables(DelayedExpression.forField(fieldReference), true, LinkedVariables.DELAY);
                 }
             } else {
                 if (efv.isConstant()) {

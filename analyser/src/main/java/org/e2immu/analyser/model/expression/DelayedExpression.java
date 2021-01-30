@@ -40,8 +40,8 @@ public record DelayedExpression(String msg, ParameterizedType parameterizedType)
         return new DelayedExpression("<parameter:" + parameterInfo.fullyQualifiedName() + ">", parameterInfo.parameterizedType());
     }
 
-    public static DelayedExpression forField(FieldInfo fieldInfo) {
-        return new DelayedExpression("<field:" + fieldInfo.fullyQualifiedName() + ">", fieldInfo.type);
+    public static DelayedExpression forField(FieldReference fieldReference) {
+        return new DelayedExpression("<field:" + fieldReference.fullyQualifiedName() + ">", fieldReference.parameterizedType());
     }
 
     public static Expression forCondition(Primitives primitives) {
@@ -49,7 +49,7 @@ public record DelayedExpression(String msg, ParameterizedType parameterizedType)
     }
 
     public static Expression forVariable(Variable variable) {
-        if (variable instanceof FieldReference fieldReference) return forField(fieldReference.fieldInfo);
+        if (variable instanceof FieldReference fieldReference) return forField(fieldReference);
         if (variable instanceof ParameterInfo parameterInfo) return forParameter(parameterInfo);
         return new DelayedExpression("<variable:" + variable.fullyQualifiedName() + ">", variable.parameterizedType());
     }

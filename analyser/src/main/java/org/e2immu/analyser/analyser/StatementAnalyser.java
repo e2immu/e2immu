@@ -1143,7 +1143,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             boolean valueIsDelayed = sharedState.evaluationContext.isDelayed(value) || statusPost == DELAYS;
 
             if (statementAnalysis.statement instanceof ReturnStatement) {
-                statusPost = step3_Return(sharedState, value, valueIsDelayed).combine(statusPost);
+                statusPost = step3_Return(sharedState, value).combine(statusPost);
             } else if (statementAnalysis.statement instanceof ForEachStatement) {
                 step3_ForEach(sharedState, value);
             } else if (!valueIsDelayed && (statementAnalysis.statement instanceof IfElseStatement ||
@@ -1173,7 +1173,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
     after the if, the state is !x, and the return variable has the value x?a:<return>
     we should not immediately overwrite, but take the existing return value into account, and return x?a:b
      */
-    private AnalysisStatus step3_Return(SharedState sharedState, Expression value, boolean valueIsDelayed) {
+    private AnalysisStatus step3_Return(SharedState sharedState, Expression value) {
         ReturnVariable returnVariable = new ReturnVariable(myMethodAnalyser.methodInfo);
         Expression currentReturnValue = statementAnalysis.initialValueOfReturnVariable(returnVariable);
         // do NOT check for delays on currentReturnValue, we need to make the VIC
@@ -1749,14 +1749,27 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                     disableEvaluationOfMethodCallsUsingCompanionMethods);
         }
 
+        // we already do a check for the local condition manager here
+
+        @Override
+        public boolean isNotNull0(Expression value) {
+            // contrary to the getProperty method, we look at the initial value in case of a variable
+            if (value instanceof VariableExpression ve) {
+                VariableInfo variableInfo = findForReading(ve.variable(), getInitialStatementTime(), true);
+                int v = variableInfo.getProperty(VariableProperty.NOT_NULL);
+                if (notNullAccordingToConditionManager(ve.variable()))
+                    return true;
+                return v >= MultiLevel.EFFECTIVELY_NOT_NULL;
+            }
+            return MultiLevel.isEffectivelyNotNull(getProperty(value, VariableProperty.NOT_NULL));
+        }
+
         @Override
         public int getProperty(Expression value, VariableProperty variableProperty) {
-
             // IMPORTANT: here we do not want to catch VariableValues wrapped in the PropertyWrapper
-            if (value instanceof VariableExpression) {
-                Variable variable = ((VariableExpression) value).variable();
-                int v = statementAnalysis.getPropertyOfCurrent(variable, variableProperty);
-                if (VariableProperty.NOT_NULL == variableProperty && notNullAccordingToConditionManager(variable)) {
+            if (value instanceof VariableExpression ve) {
+                int v = statementAnalysis.getPropertyOfCurrent(ve.variable(), variableProperty);
+                if (VariableProperty.NOT_NULL == variableProperty && notNullAccordingToConditionManager(ve.variable())) {
                     return MultiLevel.bestNotNull(MultiLevel.EFFECTIVELY_NOT_NULL, v);
                 }
                 return v;

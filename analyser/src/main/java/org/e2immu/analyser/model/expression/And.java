@@ -22,6 +22,7 @@ import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.analyser.VariableProperty;
+import org.e2immu.analyser.model.Element;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
@@ -497,5 +498,10 @@ public record And(Primitives primitives,
                     expressions.stream().filter(e -> !e.equals(other)).toArray(Expression[]::new)), new BooleanConstant(primitives, true));
         }
         return new CommonComponentResult(new BooleanConstant(primitives, true), this, other);
+    }
+
+    @Override
+    public List<? extends Element> subElements() {
+        return expressions;
     }
 }

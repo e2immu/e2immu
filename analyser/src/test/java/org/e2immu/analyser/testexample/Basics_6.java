@@ -44,7 +44,7 @@ public class Basics_6 {
         String v1 = field;
         String v3 = someMinorMethod(v1); // ; + potential null ptr exception, 4
         String v2 = field;
-        assert v1.equals(v2); // always true... nothing "interrupting"; + potential null ptr exception; 5, 6
+        assert v1.equals(v2); // always true... nothing "interrupting"; + NO potential null ptr exception ANYMORE!!; 5
         return v3;
     }
 
@@ -52,12 +52,12 @@ public class Basics_6 {
         String v1 = field;
         nonPrivateMethod(); // must interrupt, non-private
         String v2 = field;
-        assert v1.equals(v2); // most likely true..."event" in between; + potential null ptr exception 7
+        assert v1.equals(v2); // most likely true..."event" in between; + potential null ptr exception 6
     }
 
     public void test5() {
-        String v1 = field.toLowerCase(); // ; + potential null ptr exception 8
-        String v2 = field.toLowerCase(); // ; + potential null ptr exception 9
+        String v1 = field.toLowerCase(); // ; + potential null ptr exception 7
+        String v2 = field.toLowerCase(); // ; + potential null ptr exception 8
         assert v1.equals(v2); // most likely true... semantics of toLowerCase  -- NO warning anymore for null ptr
     }
 
@@ -65,7 +65,7 @@ public class Basics_6 {
         String v1 = field;
         List<String> twentySeven = new ArrayList<>(27); // some constructors do not interrupt
         String v2 = field;
-        assert v1.equals(v2); // always true, no interruption; ; + potential null ptr exception 10, 11
+        assert v1.equals(v2); // always true, no interruption; ; + potential null ptr exception 9, 10
         return twentySeven;
     }
 

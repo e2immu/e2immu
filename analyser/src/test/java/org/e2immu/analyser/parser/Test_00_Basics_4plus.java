@@ -233,7 +233,7 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
             }
         };
 
-        testClass("Basics_6", 0, 11, new DebugConfiguration.Builder()
+        testClass("Basics_6", 0, 10, new DebugConfiguration.Builder()
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)

@@ -261,6 +261,8 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
         final String I = TYPE + ".i";
         final String CC_I = TYPE + ".i#" + O5;
         final String CONDITIONAL_CHECKS = "conditionalChecks";
+        final String O_I_DELAYED = "<field:org.e2immu.analyser.testexample.ConditionalChecks_4.i#org.e2immu.analyser.testexample.ConditionalChecks_4.method5(Object):0:o>";
+        final String I_DELAYED = "<field:org.e2immu.analyser.testexample.ConditionalChecks_4.i>";
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("method5".equals(d.methodInfo().name)) {
@@ -281,13 +283,15 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                 }
                 if ("3".equals(d.statementId())) {
                     if (CC_I.equals(d.variableName())) {
-                        String expectValue = d.iteration() == 0 ? "xx" : "instance type int";
+                        String expectValue = d.iteration() == 0 ? O_I_DELAYED : "instance type int";
                         Assert.assertEquals(expectValue, d.currentValue().toString());
+                        Assert.assertEquals(d.iteration() == 0, d.currentValueIsDelayed());
                     }
                     if (RETURN5.equals(d.variableName())) {
-                        String expectValue = d.iteration() == 0 ? "xx" :
+                        String expectValue = d.iteration() == 0 ? "null!=o&&o.getClass()==this.getClass()&&o!=this&&" + O_I_DELAYED + "==" + I_DELAYED :
                                 "null!=o&&o.getClass()==this.getClass()&&i==o.i&&o!=this";
                         Assert.assertEquals(expectValue, d.currentValue().toString());
+                        Assert.assertEquals(d.iteration() == 0, d.currentValueIsDelayed());
                     }
                 }
             }
@@ -319,7 +323,7 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("method5".equals(d.methodInfo().name)) {
-                Assert.assertEquals(MultiLevel.NULLABLE, d.parameterAnalyses().get(0).getProperty(VariableProperty.NOT_NULL));
+                //         Assert.assertEquals(MultiLevel.NULLABLE, d.parameterAnalyses().get(0).getProperty(VariableProperty.NOT_NULL));
             }
         };
 
@@ -347,9 +351,10 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                     Assert.assertEquals("o", d.evaluationResult().value().toString());
                 }
                 if ("3".equals(d.statementId())) {
-                    // there will be two iterations, in the second one, i will not have value "NO_VALUE" anymore
-                    String expectValueString = d.iteration() == 0 ? "xx" : "i==o.i";
+                    String expectValueString = d.iteration() == 0 ? O_I_DELAYED + "==" + I_DELAYED : "i==o.i";
                     Assert.assertEquals(expectValueString, d.evaluationResult().value().toString());
+                    Assert.assertEquals(d.iteration() == 0, d.evaluationResult().someValueWasDelayed());
+
                     if (d.iteration() == 0) {
                         // markRead is only done in the first iteration
                         Assert.assertTrue(d.haveMarkRead(CONDITIONAL_CHECKS));

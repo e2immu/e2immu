@@ -172,8 +172,7 @@ public class BinaryOperator implements Expression {
             if (l.equals(r)) return new BooleanConstant(primitives, true);
 
             // HERE are the ==null checks
-            if (l == NullConstant.NULL_CONSTANT && right.isNotNull0(evaluationContext) ||
-                    r == NullConstant.NULL_CONSTANT && left.isNotNull0(evaluationContext)) {
+            if (l == NullConstant.NULL_CONSTANT && right.isNotNull0() || r == NullConstant.NULL_CONSTANT && left.isNotNull0()) {
                 return new BooleanConstant(primitives, false);
             }
             return Equals.equals(evaluationContext, l, r, booleanObjectFlow(primitives, evaluationContext));
@@ -189,8 +188,7 @@ public class BinaryOperator implements Expression {
             if (l.equals(r)) new BooleanConstant(primitives, false);
 
             // HERE are the !=null checks
-            if (l == NullConstant.NULL_CONSTANT && right.isNotNull0(evaluationContext) ||
-                    r == NullConstant.NULL_CONSTANT && left.isNotNull0(evaluationContext)) {
+            if (l == NullConstant.NULL_CONSTANT && right.isNotNull0() || r == NullConstant.NULL_CONSTANT && left.isNotNull0()) {
                 return new BooleanConstant(primitives, true);
             }
             return Negation.negate(evaluationContext,
