@@ -68,37 +68,48 @@ public class Test_00_Basics_2 extends CommonTestRunner {
     };
 
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-        if (COLLECTION.equals(d.variableName()) && "add".equals(d.methodInfo().name) && "0".equals(d.statementId())) {
+        if ("add".equals(d.methodInfo().name)) {
+            if (COLLECTION.equals(d.variableName()) && "0".equals(d.statementId())) {
+                if (d.iteration() == 0) {
+                    Assert.assertEquals("0" + VariableInfoContainer.Level.EVALUATION, d.variableInfo().getReadId());
+                    Assert.assertTrue(d.variableInfoContainer().hasEvaluation());
+                    Assert.assertEquals("<parameter:org.e2immu.analyser.testexample.Basics_2.add(Collection<String>):0:collection>", d.currentValue().toString());
+                    Assert.assertTrue(d.currentValueIsDelayed());
+                } else {
+                    Assert.assertEquals("instance type Collection<String>/*this.contains(org.e2immu.analyser.testexample.Basics_2.string$0)*/",
+                            d.currentValue().toString());
+                }
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL));
 
-            if (d.iteration() == 0) {
-                Assert.assertEquals("0" + VariableInfoContainer.Level.EVALUATION, d.variableInfo().getReadId());
-                Assert.assertTrue(d.variableInfoContainer().hasEvaluation());
-                Assert.assertEquals("x", d.currentValue().toString());
-                Assert.assertTrue(d.currentValueIsDelayed());
-            } else {
-                Assert.assertEquals("instance type Collection<String>/*this.contains(org.e2immu.analyser.testexample.Basics_2.string$0)*/",
-                        d.currentValue().toString());
+                Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.MODIFIED));
             }
-            Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL));
-
-            Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.MODIFIED));
+            if (STRING_FIELD.equals(d.variableName())) {
+                String expectValue = d.iteration() == 0 ? "<field:org.e2immu.analyser.testexample.Basics_2.string>" : "nullable instance type String";
+                Assert.assertEquals(expectValue, d.currentValue().toString());
+                // string occurs in a not-null context, even if its value is delayed
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL));
+            }
         }
-        if (STRING_FIELD.equals(d.variableName()) && "setString".equals(d.methodInfo().name)) {
-            Assert.assertTrue(d.variableInfo().isAssigned());
+        if ("setString".equals(d.methodInfo().name)) {
+            if (STRING_FIELD.equals(d.variableName())) {
+                Assert.assertTrue(d.variableInfo().isAssigned());
+            }
         }
-        if (THIS.equals(d.variableName()) && "getString".equals(d.methodInfo().name)) {
-            Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL));
-        }
-        if (STRING_FIELD.equals(d.variableName()) && "getString".equals(d.methodInfo().name)) {
-            Assert.assertTrue(d.variableInfo().isRead());
-            String expectValue = d.iteration() == 0 ? "xx" : "nullable instance type String";
-            Assert.assertEquals(expectValue, d.currentValue().toString());
-            int expectNotNull = d.iteration() == 0 ? Level.DELAY : MultiLevel.NULLABLE;
-            Assert.assertEquals(expectNotNull, d.getProperty(VariableProperty.NOT_NULL));
-        }
-        if (RETURN_GET_STRING.equals(d.variableName())) {
-            int expectNotNull = d.iteration() == 0 ? Level.DELAY : MultiLevel.NULLABLE;
-            Assert.assertEquals(expectNotNull, d.getProperty(VariableProperty.NOT_NULL));
+        if ("getString".equals(d.methodInfo().name)) {
+            if (THIS.equals(d.variableName())) {
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL));
+            }
+            if (STRING_FIELD.equals(d.variableName())) {
+                Assert.assertTrue(d.variableInfo().isRead());
+                String expectValue = d.iteration() == 0 ? "<field:org.e2immu.analyser.testexample.Basics_2.string>" : "nullable instance type String";
+                Assert.assertEquals(expectValue, d.currentValue().toString());
+                int expectNotNull = d.iteration() == 0 ? Level.DELAY : MultiLevel.NULLABLE;
+                Assert.assertEquals(expectNotNull, d.getProperty(VariableProperty.NOT_NULL));
+            }
+            if (RETURN_GET_STRING.equals(d.variableName())) {
+                int expectNotNull = d.iteration() == 0 ? Level.DELAY : MultiLevel.NULLABLE;
+                Assert.assertEquals(expectNotNull, d.getProperty(VariableProperty.NOT_NULL));
+            }
         }
     };
 
@@ -117,7 +128,7 @@ public class Test_00_Basics_2 extends CommonTestRunner {
                 Assert.assertEquals(expectModified, d.methodAnalysis().getProperty(VariableProperty.MODIFIED));
 
                 // property of the field as variable info in the method
-                Assert.assertEquals(Level.FALSE, fieldModified);
+                Assert.assertEquals(expectModified, fieldModified);
             }
             if ("setString".equals(d.methodInfo().name)) {
                 assert fieldAsVariable != null;
@@ -149,7 +160,7 @@ public class Test_00_Basics_2 extends CommonTestRunner {
             Assert.assertTrue(d.evaluationResult().toString(), d.haveMarkRead(THIS));
         }
         if (d.methodInfo().name.equals("add") && "0".equals(d.statementId())) {
-            String expectEvalString = d.iteration() == 0 ? "xx" : METHOD_VALUE_ADD;
+            String expectEvalString = d.iteration() == 0 ? "<method:java.util.Collection.add(E)>" : METHOD_VALUE_ADD;
             Assert.assertEquals(d.evaluationResult().toString(), expectEvalString, d.evaluationResult().value().toString());
         }
     };

@@ -55,21 +55,24 @@ public class StateData {
     public final FlipSwitch statementContributesToPrecondition = new FlipSwitch();
 
     static class CurrentDelayedAndFinalExpression {
+
         final SetOnce<Expression> expression = new SetOnce<>();
         Expression currentDelayedExpression;
 
         public Expression getExpression() {
             return expression.getOrElse(currentDelayedExpression);
         }
+
     }
+
     private final SetOnceMap<String, CurrentDelayedAndFinalExpression> statesOfInterrupts;
 
     public StateData(boolean isLoop) {
         statesOfInterrupts = isLoop ? new SetOnceMap<>() : null;
     }
 
-    // condition manager
 
+    // condition manager
     public ConditionManager getConditionManagerForNextStatement() {
         return conditionManagerForNextStatement.getOrElse(currentDelayedConditionManagerForNextStatement);
     }
@@ -86,8 +89,8 @@ public class StateData {
         }
     }
 
-    // value of expression
 
+    // value of expression
     public void setValueOfExpression(Expression expression, boolean expressionIsDelayed) {
         if (expressionIsDelayed) {
             currentDelayedExpression = expression;
@@ -102,6 +105,10 @@ public class StateData {
 
     public boolean valueOfExpressionIsSet() {
         return valueOfExpression.isSet();
+    }
+
+    public boolean valueOfExpressionIsDelayed() {
+        return !valueOfExpression.isSet();
     }
 
     // states of interrupt

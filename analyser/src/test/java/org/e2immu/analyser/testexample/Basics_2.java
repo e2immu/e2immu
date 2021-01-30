@@ -4,6 +4,11 @@ import org.e2immu.annotation.*;
 
 import java.util.Collection;
 
+/*
+there is competition between the @NotNull implied on string in the add method,
+and the empty initialiser on the variable field.
+The result must be that string is @Nullable.
+ */
 @MutableModifiesArguments
 public class Basics_2 {
 

@@ -288,7 +288,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             builder.incrementStatementTime();
         }
 
-        if (parameterValues.stream().anyMatch(pv -> evaluationContext.isDelayed(pv))) {
+        if (parameterValues.stream().anyMatch(evaluationContext::isDelayed)) {
             Logger.log(DELAYED, "Delayed method call because one of the parameter values of {} is delayed: {}",
                     methodInfo.name, parameterValues);
             builder.setExpression(DelayedExpression.forMethod(methodInfo));
@@ -380,7 +380,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             Expression object,
             Expression objectValue,
             List<Expression> parameterValues) {
-        if (objectValue.isUnknown()) return null; // don't even try
+        if (evaluationContext.isDelayed(objectValue)) return null; // don't even try
 
         NewObject newObject;
         VariableExpression variableExpression;

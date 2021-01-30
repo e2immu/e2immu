@@ -61,7 +61,7 @@ public record ConditionManager(Expression condition, Expression state, Expressio
 
     public ConditionManager withPrecondition(Expression combinedPrecondition, boolean combinedPreconditionIsDelayed) {
         return new ConditionManager(condition, state, combinedPrecondition,
-                parent.isDelayed() || combinedPreconditionIsDelayed, parent);
+                parent != null && parent.isDelayed() || combinedPreconditionIsDelayed, parent);
     }
 
     public ConditionManager newForNextStatementDoNotChangePrecondition(EvaluationContext evaluationContext, Expression addToState) {
@@ -69,7 +69,7 @@ public record ConditionManager(Expression condition, Expression state, Expressio
         if (addToState.isBoolValueTrue()) return this;
         Expression newState = combine(evaluationContext, state, addToState);
         return new ConditionManager(condition, newState, precondition,
-                parent.isDelayed() || evaluationContext.isDelayed(newState), parent);
+                parent != null && parent.isDelayed() || evaluationContext.isDelayed(newState), parent);
     }
 
     public Expression absoluteState(EvaluationContext evaluationContext) {

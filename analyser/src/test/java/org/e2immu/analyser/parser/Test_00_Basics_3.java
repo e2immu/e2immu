@@ -72,6 +72,7 @@ public class Test_00_Basics_3 extends CommonTestRunner {
             if ("setS1".equals(d.methodInfo().name) && THIS.equals(d.variableName())) {
                 if ("0".equals(d.statementId())) {
                     Assert.assertTrue(d.variableInfoContainer().hasMerge());
+
                     Assert.assertEquals("instance type Basics_3", d.currentValue().toString());
                 }
                 if ("0.0.0".equals(d.statementId())) {
@@ -90,20 +91,23 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                 }
             }
             if ("setS1".equals(d.methodInfo().name) && OUT.equals(d.variableName())) {
-                if (d.iteration() == 0) {
-                    Assert.assertTrue(d.currentValueIsDelayed());
-                } else {
-                    if ("0.0.0".equals(d.statementId())) {
-                        // because of the modifying method println
-                        Assert.assertEquals("instance type PrintStream", d.currentValue().toString());
-                    } else if ("0.1.0".equals(d.statementId())) {
-                        Assert.fail("The variable should not exist here!");
-                    } else if ("0".equals(d.statementId())) {
-                        Assert.assertEquals("nullable instance type PrintStream",
-                                d.variableInfoContainer().getPreviousOrInitial().getValue().toString());
+
+                if ("0.0.0".equals(d.statementId())) {
+                    // because of the modifying method println
+                    if (d.iteration() == 0) {
+                        Assert.assertTrue(d.currentValueIsDelayed());
+                    } else {
                         Assert.assertEquals("instance type PrintStream", d.currentValue().toString());
                     }
+                } else if ("0.1.0".equals(d.statementId())) {
+                    Assert.fail("The variable should not exist here!");
+                } else if ("0".equals(d.statementId())) {
+                    Assert.assertEquals("nullable instance type PrintStream",
+                            d.variableInfoContainer().getPreviousOrInitial().getValue().toString());
+                    String expectValue = d.iteration() == 0 ? "<field:java.lang.System.out>" : "instance type PrintStream";
+                    Assert.assertEquals(expectValue, d.currentValue().toString());
                 }
+
                 // completely independent of the iterations, we always should have @NotNull because of context
                 if ("0.0.0".equals(d.statementId()) || "0".equals(d.statementId())) {
                     Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL));
@@ -114,7 +118,7 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                     Assert.assertSame(d.statementId(), LinkedVariables.DELAY, d.variableInfo().getLinkedVariables());
                 }
                 if ("0.0.0".equals(d.statementId())) {
-                    String expectValue = d.iteration() == 0 ? "xx" : "nullable instance type String";
+                    String expectValue = d.iteration() == 0 ? "<field:org.e2immu.analyser.testexample.Basics_3.s>" : "nullable instance type String";
                     Assert.assertEquals(expectValue, d.currentValue().debugOutput());
                     Assert.assertFalse(d.variableInfo().isAssigned());
                     if (d.iteration() == 0) {
@@ -213,6 +217,9 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                     Assert.assertEquals("true", d.state().toString());
                     Assert.assertEquals("input1.contains(\"a\")", d.condition().toString());
                     Assert.assertEquals("input1.contains(\"a\")", d.absoluteState().toString());
+                    Assert.assertEquals("true", d.localConditionManager().precondition().toString());
+                    Assert.assertFalse(d.localConditionManager().isDelayed());
+                    Assert.assertEquals("true", d.statementAnalysis().stateData.getPrecondition().toString());
                 }
                 if ("0.0.1".equals(d.statementId())) { // first assignment
                     Assert.assertEquals(2, time1);
