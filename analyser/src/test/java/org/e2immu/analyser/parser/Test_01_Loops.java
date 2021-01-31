@@ -56,11 +56,11 @@ public class Test_01_Loops extends CommonTestRunner {
             }
             if ("2.0.1".equals(d.statementId())) {
                 // NOTE: is i$2, and not i$2+1 because the operation is i++, not ++i
-                String expect = d.iteration() == 0 ? "xx" : "i$2";
+                String expect = d.iteration() == 0 ? "<variable:i>" : "i$2";
                 Assert.assertEquals(expect, d.evaluationResult().value().debugOutput());
             }
             if ("2.0.2".equals(d.statementId())) {
-                String expect = d.iteration() == 0 ? "xx" : "1+i$2>=n";
+                String expect = d.iteration() == 0 ? "<variable:i>>=n" : "1+i$2>=n";
                 Assert.assertEquals(expect, d.evaluationResult().value().debugOutput());
             }
         };
@@ -73,7 +73,7 @@ public class Test_01_Loops extends CommonTestRunner {
                 Assert.assertEquals("In " + d.statementId(), expect, inLoop);
 
                 if ("2.0.0".equals(d.statementId())) {
-                    String expectValue = d.iteration() == 0 ? "xx" : "\"abc\"";
+                    String expectValue = d.iteration() == 0 ? "<state>" : "\"abc\"";
                     Assert.assertEquals(expectValue, d.currentValue().toString());
                 }
             }
@@ -98,15 +98,15 @@ public class Test_01_Loops extends CommonTestRunner {
                     Assert.assertEquals("0", d.currentValue().toString());
                 }
                 if ("2".equals(d.statementId())) {
-                    String expect = d.iteration() == 0 ? "xx" : "1+instance type int";
+                    String expect = d.iteration() == 0 ? "<variable:i>" : "1+instance type int";
                     Assert.assertEquals(expect, d.currentValue().debugOutput());
                 }
                 if ("2.0.1".equals(d.statementId())) {
-                    String expect = d.iteration() == 0 ? "xx" : "1+i$2";
+                    String expect = d.iteration() == 0 ? "1+<variable:i>" : "1+i$2";
                     Assert.assertEquals(expect, d.currentValue().debugOutput());
                 }
                 if ("3".equals(d.statementId())) {
-                    String expect = d.iteration() == 0 ? "xx" : "1+instance type int";
+                    String expect = d.iteration() == 0 ? "<variable:i>" : "1+instance type int";
                     Assert.assertEquals(expect, d.currentValue().toString());
                 }
             }
@@ -121,27 +121,42 @@ public class Test_01_Loops extends CommonTestRunner {
                                     d.evaluationContext());
                     Assert.assertSame(ALWAYS, exec);
                 } else Assert.fail();
-                String expectState = d.iteration() == 0 ? "xx" : "1+instance type int>=n";
+                String expectState = d.iteration() == 0 ? "<variable:i>>=n" : "1+instance type int>=n";
                 Assert.assertEquals(expectState, d.state().toString());
 
                 Assert.assertEquals(ALWAYS, d.statementAnalysis().flowData.getGuaranteedToBeReachedInMethod());
                 Assert.assertEquals(ALWAYS, d.statementAnalysis().flowData.getGuaranteedToBeReachedInCurrentBlock());
             }
             if ("2.0.0".equals(d.statementId())) {
+                Assert.assertEquals("true", d.condition().toString());
+                Assert.assertEquals("true", d.state().toString());
+                Assert.assertEquals("true", d.localConditionManager().precondition().toString());
                 if (d.iteration() == 0) {
                     VariableInfoContainer vic = d.statementAnalysis().variables.get("i");
                     Assert.assertEquals("0", vic.current().getValue().toString());
                 }
+                Assert.assertEquals(ALWAYS, d.statementAnalysis().flowData.getGuaranteedToBeReachedInMethod());
+                Assert.assertEquals(ALWAYS, d.statementAnalysis().flowData.getGuaranteedToBeReachedInCurrentBlock());
+            }
+            if("2.0.1".equals(d.statementId())) {
+                Assert.assertEquals("true", d.localConditionManager().precondition().toString());
             }
             if ("2.0.2".equals(d.statementId())) {
-                FlowData.Execution expect = d.iteration() == 0 ? DELAYED_EXECUTION : ALWAYS;
-                Assert.assertEquals(expect, d.statementAnalysis().flowData.getGuaranteedToBeReachedInMethod());
-                Assert.assertEquals(expect, d.statementAnalysis().flowData.getGuaranteedToBeReachedInCurrentBlock());
+                Assert.assertEquals("true", d.condition().toString());
+                String expectState = d.iteration() == 0 ? "n-<variable:i>>=1": "-1-i$2+n>=1";
+                Assert.assertEquals(expectState, d.state().toString());
+                Assert.assertEquals(d.iteration() == 0, d.statementAnalysis().stateData.conditionManagerIsNotYetSet());
+
+                Assert.assertEquals(ALWAYS, d.statementAnalysis().flowData.getGuaranteedToBeReachedInMethod());
+                Assert.assertEquals(ALWAYS, d.statementAnalysis().flowData.getGuaranteedToBeReachedInCurrentBlock());
             }
             // shows that the BREAK statement, always executed in its own block, is dependent on a valid condition
             if ("2.0.2.0.0".equals(d.statementId())) {
-                String expect = d.iteration() == 0 ? "xx" : "1+i$2>=n";
+                String expect = d.iteration() == 0 ? "<variable:i>>=n" : "1+i$2>=n";
                 Assert.assertEquals(expect, d.condition().toString());
+                FlowData.Execution expectExec = d.iteration() == 0 ? DELAYED_EXECUTION : CONDITIONALLY;
+                Assert.assertEquals(expectExec, d.statementAnalysis().flowData.getGuaranteedToBeReachedInMethod());
+                Assert.assertEquals(ALWAYS, d.statementAnalysis().flowData.getGuaranteedToBeReachedInCurrentBlock());
             }
         };
         testClass("Loops_0", 0, 0, new DebugConfiguration.Builder()

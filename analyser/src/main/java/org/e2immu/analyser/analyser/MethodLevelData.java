@@ -19,18 +19,17 @@ package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.And;
-import org.e2immu.analyser.model.expression.DelayedExpression;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
-import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -59,7 +58,8 @@ public class MethodLevelData {
     public final SetOnceMap<MethodInfo, Boolean> copyModificationStatusFrom = new SetOnceMap<>();
 
     // aggregates the preconditions on individual statements
-    public final SetOnce<Expression> combinedPrecondition = new SetOnce<>();
+    private final SetOnce<Expression> combinedPrecondition = new SetOnce<>();
+    private Expression currentDelayedCombinedPrecondition;
 
     // no delays when frozen
     public final AddOnceSet<ObjectFlow> internalObjectFlows = new AddOnceSet<>();
@@ -71,14 +71,26 @@ public class MethodLevelData {
         return combinedPrecondition.getOrElse(null);
     }
 
-    public Expression getCombinedPreconditionOrDelay(Primitives primitives) {
-        return combinedPrecondition.getOrElse(DelayedExpression.forCondition(primitives));
+    public Expression getCombinedPreconditionOrDelay() {
+        return combinedPrecondition.getOrElse(currentDelayedCombinedPrecondition);
+    }
+
+    private void setCombinedPrecondition(Expression expression, boolean isDelayed) {
+        if (isDelayed) {
+            currentDelayedCombinedPrecondition = expression;
+        } else if (!combinedPrecondition.isSet() || !combinedPrecondition.get().equals(expression)) {
+            combinedPrecondition.set(expression);
+        }
     }
 
     public void addCircularCallOrUndeclaredFunctionalInterface() {
         if (!callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod.isSet()) {
             callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod.set(true);
         }
+    }
+
+    public boolean combinedPreconditionIsSet() {
+        return combinedPrecondition.isSet();
     }
 
     record SharedState(StatementAnalyserResult.Builder builder,
@@ -115,28 +127,26 @@ public class MethodLevelData {
     // they are accumulated from the previous statement, and from all child statements
 
     private AnalysisStatus combinePrecondition(SharedState sharedState) {
-        if (sharedState.previous != null && !sharedState.previous.combinedPrecondition.isSet()) {
-            return DELAYS;
-        }
+        boolean delays = sharedState.previous != null && !sharedState.previous.combinedPrecondition.isSet();
+
         List<StatementAnalysis> subBlocks = sharedState.statementAnalysis.lastStatementsOfNonEmptySubBlocks();
-        if (subBlocks.stream().anyMatch(sa -> !sa.methodLevelData.combinedPrecondition.isSet())) {
-            return DELAYS;
-        }
-        if (!sharedState.stateData.preconditionIsSet()) {
-            return DELAYS;
-        }
-        if (!combinedPrecondition.isSet()) {
-            Stream<Expression> fromMyStateData = sharedState.stateData.preconditionIsSet() ?
-                    Stream.of(sharedState.stateData.getPrecondition()) : Stream.of();
-            Stream<Expression> fromPrevious = sharedState.previous != null ?
-                    Stream.of(sharedState.previous.combinedPrecondition.get()) : Stream.of();
-            Stream<Expression> fromBlocks = sharedState.statementAnalysis.lastStatementsOfNonEmptySubBlocks().stream()
-                    .map(sa -> sa.methodLevelData.combinedPrecondition.get());
-            Expression[] all = Stream.concat(fromMyStateData, Stream.concat(fromBlocks, fromPrevious)).toArray(Expression[]::new);
-            Expression and = new And(sharedState.evaluationContext.getPrimitives()).append(sharedState.evaluationContext, all);
-            combinedPrecondition.set(and);
-        }
-        return DONE;
+        delays |= subBlocks.stream().anyMatch(sa -> !sa.methodLevelData.combinedPrecondition.isSet());
+        delays |= sharedState.stateData.preconditionIsDelayed();
+
+        Stream<Expression> fromMyStateData = sharedState.stateData.preconditionIsSet() ?
+                Stream.of(sharedState.stateData.getPrecondition()) : Stream.of();
+        Stream<Expression> fromPrevious = sharedState.previous != null && sharedState.previous.getCombinedPrecondition() != null ?
+                Stream.of(sharedState.previous.getCombinedPrecondition()) : Stream.of();
+        Stream<Expression> fromBlocks = sharedState.statementAnalysis.lastStatementsOfNonEmptySubBlocks().stream()
+                .map(sa -> sa.methodLevelData.getCombinedPrecondition())
+                .filter(Objects::nonNull);
+        Expression[] all = Stream.concat(fromMyStateData, Stream.concat(fromBlocks, fromPrevious)).toArray(Expression[]::new);
+        Expression and = new And(sharedState.evaluationContext.getPrimitives()).append(sharedState.evaluationContext, all);
+
+        delays |= sharedState.evaluationContext.isDelayed(and);
+        setCombinedPrecondition(and, delays);
+
+        return delays ? DELAYS : DONE;
     }
 
     private static final Variable DELAY_VAR = Variable.fake();
@@ -258,7 +268,7 @@ public class MethodLevelData {
             vic.ensureEvaluation(VariableInfoContainer.NOT_YET_ASSIGNED,
                     sharedState.statementAnalysis.index + VariableInfoContainer.Level.EVALUATION.label,
                     sharedState.evaluationContext.getInitialStatementTime(), Set.of());
-             vic.setValue(vi.getValue(), vi.isDelayed(), LinkedVariables.EMPTY, vi.getProperties(), false);
+            vic.setValue(vi.getValue(), vi.isDelayed(), LinkedVariables.EMPTY, vi.getProperties(), false);
             if (vi.linkedVariablesIsSet()) vic.setLinkedVariables(vi.getLinkedVariables(), false);
         }
         vic.setProperty(VariableProperty.MODIFIED, modified, false, VariableInfoContainer.Level.MERGE);

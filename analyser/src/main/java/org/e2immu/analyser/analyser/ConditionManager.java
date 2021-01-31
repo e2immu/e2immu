@@ -24,7 +24,9 @@ In a recursion of inline conditionals, the state remains true, and the condition
 Default value: true
 
  */
-public record ConditionManager(Expression condition, Expression state, Expression precondition,
+public record ConditionManager(Expression condition,
+                               Expression state,
+                               Expression precondition,
                                boolean isDelayed,
                                ConditionManager parent) {
 

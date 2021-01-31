@@ -362,12 +362,12 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
                 .allMatch(vi -> !variableProperty.test(vi) || vi.variable().isStatic());
     }
 
-    // simply copy from last statement
+    // simply copy from last statement, but only when set/delays over
     private AnalysisStatus obtainMostCompletePrecondition() {
         assert !methodAnalysis.precondition.isSet();
         MethodLevelData methodLevelData = methodAnalysis.methodLevelData();
-        if (!methodLevelData.combinedPrecondition.isSet()) return DELAYS;
-        methodAnalysis.precondition.set(methodLevelData.combinedPrecondition.get());
+        if (!methodLevelData.combinedPreconditionIsSet()) return DELAYS;
+        methodAnalysis.precondition.set(methodLevelData.getCombinedPrecondition());
         return DONE;
     }
 

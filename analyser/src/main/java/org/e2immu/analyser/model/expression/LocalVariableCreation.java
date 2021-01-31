@@ -151,8 +151,9 @@ public class LocalVariableCreation implements Expression {
     @Override
     public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
         if (expression == EmptyExpression.EMPTY_EXPRESSION) {
-            // don't do anything, especially do not try to set EMPTY_EXPRESSION as a value...
-            return new EvaluationResult.Builder(evaluationContext).build();
+            return new EvaluationResult.Builder(evaluationContext)
+                    .setExpression(expression)
+                    .build();
         }
         Assignment assignment = new Assignment(evaluationContext.getPrimitives(),
                 new VariableExpression(localVariableReference), expression);

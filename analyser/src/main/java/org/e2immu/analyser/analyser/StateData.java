@@ -81,14 +81,13 @@ public class StateData {
         return !conditionManagerForNextStatement.isSet();
     }
 
-    public void ensureLocalConditionManagerForNextStatement(ConditionManager conditionManager) {
+    public void setLocalConditionManagerForNextStatement(ConditionManager conditionManager) {
         if (conditionManager.isDelayed()) {
             currentDelayedConditionManagerForNextStatement = conditionManager;
-        } else if (!conditionManagerForNextStatement.isSet()) {
+        } else if (!conditionManagerForNextStatement.isSet() || !conditionManager.equals(conditionManagerForNextStatement.get())) {
             conditionManagerForNextStatement.set(conditionManager);
         }
     }
-
 
     // value of expression
     public void setValueOfExpression(Expression expression, boolean expressionIsDelayed) {
@@ -138,6 +137,10 @@ public class StateData {
 
     public Expression getPrecondition() {
         return precondition.getOrElse(currentDelayedPrecondition);
+    }
+
+    public boolean preconditionIsDelayed() {
+        return !precondition.isSet();
     }
 
     public boolean preconditionIsSet() {

@@ -21,6 +21,7 @@ import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.analyser.VariableProperty;
+import org.e2immu.analyser.model.Element;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
@@ -60,6 +61,11 @@ public record GreaterThanZero(ParameterizedType booleanParameterizedType,
                 reValue.getExpression(),
                 new IntConstant(evaluationContext.getPrimitives(), 0, ObjectFlow.NO_FLOW),
                 allowEquals, getObjectFlow())).build();
+    }
+
+    @Override
+    public List<? extends Element> subElements() {
+        return List.of(expression);
     }
 
     @Override

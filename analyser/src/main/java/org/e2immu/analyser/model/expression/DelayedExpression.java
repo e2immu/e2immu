@@ -29,6 +29,8 @@ import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.E2Container;
 
+import java.util.Objects;
+
 @E2Container
 public record DelayedExpression(String msg, ParameterizedType parameterizedType) implements Expression {
 
@@ -44,10 +46,6 @@ public record DelayedExpression(String msg, ParameterizedType parameterizedType)
         return new DelayedExpression("<field:" + fieldReference.fullyQualifiedName() + ">", fieldReference.parameterizedType());
     }
 
-    public static Expression forCondition(Primitives primitives) {
-        return new DelayedExpression("<condition>", primitives.booleanParameterizedType);
-    }
-
     public static Expression forVariable(Variable variable) {
         if (variable instanceof FieldReference fieldReference) return forField(fieldReference);
         if (variable instanceof ParameterInfo parameterInfo) return forParameter(parameterInfo);
@@ -58,9 +56,24 @@ public record DelayedExpression(String msg, ParameterizedType parameterizedType)
         return new DelayedExpression("<state>", primitives.booleanParameterizedType);
     }
 
+    /*
+    variable fields have different values according to statement time, but then, at this point we cannot know yet
+    whether the field will be variable or not.
+    Basics7 shows a case where the local condition manager goes from true to false depending on this equality.
+     */
     @Override
-    public boolean equals(Object obj) {
-        return this == obj;
+    public boolean equals(Object o) {
+        return this == o ;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(msg, parameterizedType);
+    }
+
+    @Override
+    public boolean isNumeric() {
+        return Primitives.isNumeric(parameterizedType.typeInfo);
     }
 
     @Override

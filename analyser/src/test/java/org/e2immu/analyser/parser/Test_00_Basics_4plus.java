@@ -61,7 +61,14 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
     // test here mainly to generate debug information for the output system
     @Test
     public void test5() throws IOException {
+        StatementAnalyserVisitor statementAnalyserVisitor = d-> {
+            if("apply".equals(d.methodInfo().name) && "0.0.0".equals(d.statementId())) {
+                Assert.assertFalse(d.localConditionManager().isDelayed());
+                Assert.assertEquals("null==s", d.condition().toString());
+            }
+        };
         testClass("Basics_5", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build());
     }
 

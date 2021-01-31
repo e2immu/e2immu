@@ -476,6 +476,7 @@ public class TypeAnalyser extends AbstractAnalyser {
                 String index = variableInfo.getAssignmentId().substring(0, variableInfo.getAssignmentId().indexOf(':'));
                 StatementAnalysis statementAnalysis = methodAnalyser.findStatementAnalysis(index);
                 Expression state = statementAnalysis.methodLevelData.getCombinedPrecondition();
+                // state == null means: delay -- is this correct? TODO
                 if (assigned && state != null && isCompatible(evaluationContext, state, precondition)) {
                     log(MARK, "We checked, and found the state {} compatible with the precondition {}", state, precondition);
                     return false;
