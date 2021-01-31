@@ -195,8 +195,8 @@ public class CompanionAnalyser {
         @Override
         public EvaluationContext child(Expression condition) {
             boolean conditionIsDelayed = isDelayed(condition);
-            ConditionManager cm = conditionManager.newAtStartOfNewBlock(getPrimitives(), condition,
-                    new BooleanConstant(getPrimitives(), true), conditionIsDelayed);
+            ConditionManager cm = conditionManager.newAtStartOfNewBlock(getPrimitives(), condition, conditionIsDelayed,
+                    new BooleanConstant(getPrimitives(), true), false);
             return new EvaluationContextImpl(iteration, cm);
         }
 

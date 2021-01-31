@@ -138,12 +138,12 @@ public class Test_01_Loops extends CommonTestRunner {
                 Assert.assertEquals(ALWAYS, d.statementAnalysis().flowData.getGuaranteedToBeReachedInMethod());
                 Assert.assertEquals(ALWAYS, d.statementAnalysis().flowData.getGuaranteedToBeReachedInCurrentBlock());
             }
-            if("2.0.1".equals(d.statementId())) {
+            if ("2.0.1".equals(d.statementId())) {
                 Assert.assertEquals("true", d.localConditionManager().precondition().toString());
             }
             if ("2.0.2".equals(d.statementId())) {
                 Assert.assertEquals("true", d.condition().toString());
-                String expectState = d.iteration() == 0 ? "n-<variable:i>>=1": "-1-i$2+n>=1";
+                String expectState = d.iteration() == 0 ? "n-<variable:i>>=1" : "-1-i$2+n>=1";
                 Assert.assertEquals(expectState, d.state().toString());
                 Assert.assertEquals(d.iteration() == 0, d.statementAnalysis().stateData.conditionManagerIsNotYetSet());
 
@@ -175,15 +175,15 @@ public class Test_01_Loops extends CommonTestRunner {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
                 if ("2.0.0".equals(d.statementId())) {
-                    String expect = d.iteration() == 0 ? "xx" : "1+i$2";
+                    String expect = d.iteration() == 0 ? "1+<variable:i>" : "1+i$2";
                     Assert.assertEquals(expect, d.evaluationResult().value().debugOutput());
                 }
                 if ("2.0.1".equals(d.statementId())) {
-                    String expect = d.iteration() == 0 ? "xx" : "1+i$2>=n";
+                    String expect = d.iteration() == 0 ? "<variable:i>>=n" : "1+i$2>=n";
                     Assert.assertEquals(expect, d.evaluationResult().value().debugOutput());
                 }
                 if ("3".equals(d.statementId())) {
-                    String expect = d.iteration() == 0 ? "xx" : END_RESULT;
+                    String expect = d.iteration() == 0 ? "<state>" : END_RESULT;
                     Assert.assertEquals(expect, d.evaluationResult().value().debugOutput());
                 }
             }
@@ -207,11 +207,11 @@ public class Test_01_Loops extends CommonTestRunner {
                             .statementId(VariableInLoop.VariableType.IN_LOOP_DEFINED_OUTSIDE));
                 }
                 if ("2.0.2".equals(d.statementId())) {
-                    String expectValue = d.iteration() == 0 ? "xx" : "-1-i$2+n>=1?\"abc\":res2$2";
+                    String expectValue = d.iteration() == 0 ? "<state>" : "-1-i$2+n>=1?\"abc\":res2$2";
                     Assert.assertEquals(expectValue, d.variableInfo().getValue().toString());
                 }
                 if ("2".equals(d.statementId())) {
-                    String expectValue = d.iteration() == 0 ? "xx" : END_RESULT;
+                    String expectValue = d.iteration() == 0 ? "<state>" : END_RESULT;
                     Assert.assertEquals(expectValue, d.variableInfo().getValue().toString());
 
                     // first, understanding how this works...
@@ -236,31 +236,36 @@ public class Test_01_Loops extends CommonTestRunner {
             if ("method".equals(d.methodInfo().name)) {
                 FlowData.Execution execution = d.statementAnalysis().flowData.getGuaranteedToBeReachedInCurrentBlock();
                 if ("2.0.0".equals(d.statementId())) {
-                    String condition = d.iteration() == 0 ? "xx" : "true";
-                    Assert.assertEquals(condition, d.condition().debugOutput());
-                    String state = d.iteration() == 0 ? "xx" : "true";
-                    Assert.assertEquals(state, d.absoluteState().debugOutput());
+                    Assert.assertEquals("true", d.condition().debugOutput());
+                    Assert.assertEquals("true", d.absoluteState().debugOutput());
                     Assert.assertSame(ALWAYS, execution);
                 }
-                if ("2.0.1".equals(d.statementId())) {
-                    FlowData.Execution expectExec = d.iteration() == 0 ? DELAYED_EXECUTION : ALWAYS;
-                    Assert.assertSame(expectExec, execution);
+                if ("2.0.1.0.0".equals(d.statementId())) {
+                    String expectCondition = d.iteration() == 0 ? "<variable:i>>=n" : "1+i$2>=n";
+                    Assert.assertEquals(expectCondition, d.condition().debugOutput());
+                    Assert.assertEquals(d.iteration() == 0, d.localConditionManager().isDelayed());
+                }
+                if ("2.0.1".equals(d.statementId())) { // if (i>=n) break;
+                    Assert.assertSame(ALWAYS, execution);
 
                     // both are NO_VALUE in the first iteration, because we're showing the stateData
                     // and not the local condition manager
-                    String expectCondition = d.iteration() == 0 ? "xx" : "true";
-                    Assert.assertEquals(expectCondition, d.condition().debugOutput());
-                    String expectState = d.iteration() == 0 ? "xx" : "-1-i$2+n>=1";
+                    Assert.assertEquals("true", d.condition().debugOutput());
+                    String expectState = d.iteration() == 0 ? "n-<variable:i>>=1" : "-1-i$2+n>=1";
                     Assert.assertEquals(expectState, d.absoluteState().debugOutput());
+                    Assert.assertEquals(d.iteration() == 0, d.conditionManagerForNextStatement().isDelayed());
                 }
-                if ("2.0.2".equals(d.statementId())) {
+                if ("2.0.2".equals(d.statementId())) { // res2 = "abc"
+                    Assert.assertEquals("true", d.condition().debugOutput());
+                    Assert.assertEquals(d.iteration() == 0, d.localConditionManager().isDelayed());
+
+                    String expectState = d.iteration() == 0 ? "n-<variable:i>>=1" : "-1-i$2+n>=1";
+
+                    Assert.assertEquals(expectState, d.localConditionManager().state().toString());
+                    Assert.assertEquals(expectState, d.absoluteState().debugOutput());
+
                     FlowData.Execution expect = d.iteration() == 0 ? DELAYED_EXECUTION : CONDITIONALLY;
                     Assert.assertSame(expect, execution);
-
-                    String expectCondition = d.iteration() == 0 ? "xx" : "true";
-                    Assert.assertEquals(expectCondition, d.condition().debugOutput());
-                    String expectState = d.iteration() == 0 ? "xx" : "-1-i$2+n>=1";
-                    Assert.assertEquals(expectState, d.absoluteState().debugOutput());
                 }
             }
         };
@@ -316,7 +321,7 @@ public class Test_01_Loops extends CommonTestRunner {
             }
             if ("res".equals(d.variableName())) {
                 if ("1.0.0".equals(d.statementId())) {
-                    String expectValue = d.iteration() == 0 ? "xx" : "s$1";
+                    String expectValue = d.iteration() == 0 ? "<variable:s>" : "s$1";
                     Assert.assertEquals(expectValue, d.currentValue().toString());
                     String expectLinked = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "s,s$1,res$1$1_0_0-E";
                     Assert.assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());

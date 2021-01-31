@@ -23,17 +23,24 @@ precondition = the cumulative precondition of the method, as in the previous sta
 In a recursion of inline conditionals, the state remains true, and the condition equals the condition of each inline.
 Default value: true
 
+Concerning delays: only condition and state are recursively combined, precondition is not.
  */
 public record ConditionManager(Expression condition,
+                               boolean conditionIsDelayed,
                                Expression state,
+                               boolean stateIsDelayed,
                                Expression precondition,
-                               boolean isDelayed,
+                               boolean preconditionIsDelayed,
                                ConditionManager parent) {
 
     public ConditionManager {
         checkBooleanOrUnknown(Objects.requireNonNull(condition));
         checkBooleanOrUnknown(Objects.requireNonNull(state));
         checkBooleanOrUnknown(Objects.requireNonNull(precondition));
+    }
+
+    public boolean isDelayed() {
+        return stateIsDelayed || conditionIsDelayed || preconditionIsDelayed;
     }
 
     /*
@@ -48,35 +55,53 @@ public record ConditionManager(Expression condition,
 
     public static ConditionManager initialConditionManager(Primitives primitives) {
         BooleanConstant TRUE = new BooleanConstant(primitives, true);
-        return new ConditionManager(TRUE, TRUE, TRUE, false, null);
+        return new ConditionManager(TRUE, false, TRUE, false, TRUE, false, null);
     }
 
     public static ConditionManager impossibleConditionManager(Primitives primitives) {
         BooleanConstant FALSE = new BooleanConstant(primitives, true);
-        return new ConditionManager(FALSE, FALSE, FALSE, false, null);
+        return new ConditionManager(FALSE, false, FALSE, false, FALSE, false, null);
     }
 
-    public ConditionManager newAtStartOfNewBlock(Primitives primitives, Expression condition, Expression precondition, boolean conditionOrPreconditionAreDelayed) {
-        return new ConditionManager(condition, new BooleanConstant(primitives, true), precondition,
-                conditionOrPreconditionAreDelayed || isDelayed, this);
+    /*
+    adds a new layer (parent this)
+     */
+    public ConditionManager newAtStartOfNewBlock(Primitives primitives,
+                                                 Expression condition,
+                                                 boolean conditionIsDelayed,
+                                                 Expression precondition,
+                                                 boolean preconditionIsDelayed) {
+        return new ConditionManager(condition, conditionIsDelayed,
+                new BooleanConstant(primitives, true), false,
+                precondition, preconditionIsDelayed, this);
     }
 
+    /*
+    adds a new layer (parent this)
+    */
     public ConditionManager newAtStartOfNewBlockDoNotChangePrecondition(Primitives primitives, Expression condition, boolean conditionIsDelayed) {
-        return new ConditionManager(condition, new BooleanConstant(primitives, true), precondition,
-                conditionIsDelayed || isDelayed, this);
+        return new ConditionManager(condition, conditionIsDelayed || this.conditionIsDelayed,
+                new BooleanConstant(primitives, true), stateIsDelayed, precondition, preconditionIsDelayed, this);
     }
 
+    /*
+    stays at the same level (parent parent)
+     */
     public ConditionManager withPrecondition(Expression combinedPrecondition, boolean combinedPreconditionIsDelayed) {
-        return new ConditionManager(condition, state, combinedPrecondition,
-                parent != null && parent.isDelayed() || combinedPreconditionIsDelayed, parent);
+        return new ConditionManager(condition, conditionIsDelayed, state, stateIsDelayed, combinedPrecondition,
+                combinedPreconditionIsDelayed, parent);
     }
 
+    /*
+    stays at the same level (parent parent)
+     */
     public ConditionManager newForNextStatementDoNotChangePrecondition(EvaluationContext evaluationContext, Expression addToState) {
         Objects.requireNonNull(addToState);
         if (addToState.isBoolValueTrue()) return this;
         Expression newState = combine(evaluationContext, state, addToState);
-        return new ConditionManager(condition, newState, precondition,
-                parent != null && parent.isDelayed() || evaluationContext.isDelayed(newState), parent);
+        boolean newStateIsDelayed = evaluationContext.isDelayed(newState);
+        return new ConditionManager(condition, conditionIsDelayed, newState, newStateIsDelayed || stateIsDelayed,
+                precondition, preconditionIsDelayed, parent);
     }
 
     public Expression absoluteState(EvaluationContext evaluationContext) {

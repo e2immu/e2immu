@@ -344,20 +344,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             if (startOfNewBlock) {
                 localConditionManager = forwardAnalysisInfo.conditionManager();
             } else {
-                Expression combinedPrecondition = previous.methodLevelData.getCombinedPreconditionOrDelay();
-                boolean combinedPreconditionIsDelayed;
-                if (combinedPrecondition == null) {
-                    combinedPreconditionIsDelayed = true;
-                    combinedPrecondition = new BooleanConstant(statementAnalysis.primitives, true);
-                } else {
-                    EvaluationContext tmpEvaluationContext = new EvaluationContextImpl(iteration,
-                            ConditionManager.initialConditionManager(previous.primitives), closure);
-                    combinedPreconditionIsDelayed = tmpEvaluationContext.isDelayed(combinedPrecondition);
-                }
-                ConditionManager previousCm = previous.stateData.getConditionManagerForNextStatement();
-                // can be null in case the statement is unreachable
-                localConditionManager = previousCm == null ? ConditionManager.impossibleConditionManager(statementAnalysis.primitives) :
-                        previousCm.withPrecondition(combinedPrecondition, combinedPreconditionIsDelayed);
+                localConditionManager = makeLocalConditionManager(iteration, previous, closure);
             }
 
             StatementAnalyserResult.Builder builder = new StatementAnalyserResult.Builder();
@@ -380,6 +367,25 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             LOGGER.warn("Caught exception while analysing statement {} of {}", index(), myMethodAnalyser.methodInfo.fullyQualifiedName());
             throw rte;
         }
+    }
+
+    private ConditionManager makeLocalConditionManager(int iteration, StatementAnalysis previous, EvaluationContext closure) {
+        Expression combinedPrecondition = previous.methodLevelData.getCombinedPreconditionOrDelay();
+        boolean combinedPreconditionIsDelayed;
+        if (combinedPrecondition == null) {
+            combinedPreconditionIsDelayed = true;
+            combinedPrecondition = new BooleanConstant(statementAnalysis.primitives, true);
+        } else {
+            EvaluationContext tmpEvaluationContext = new EvaluationContextImpl(iteration,
+                    ConditionManager.initialConditionManager(previous.primitives), closure);
+            combinedPreconditionIsDelayed = tmpEvaluationContext.isDelayed(combinedPrecondition);
+        }
+        ConditionManager previousCm = previous.stateData.getConditionManagerForNextStatement();
+        // can be null in case the statement is unreachable
+        if (previousCm == null) {
+            return ConditionManager.impossibleConditionManager(statementAnalysis.primitives);
+        }
+        return previousCm.withPrecondition(combinedPrecondition, combinedPreconditionIsDelayed);
     }
 
     private AnalysisStatus freezeAssignmentInBlock(SharedState sharedState) {
@@ -444,6 +450,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                             cm == null ? null : cm.condition(),
                             cm == null ? null : cm.state(),
                             cm == null ? null : cm.absoluteState(sharedState.evaluationContext),
+                            cm,
                             sharedState.localConditionManager(),
                             analyserComponents.getStatusesAsMap()));
         }
@@ -584,7 +591,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                         // assign the value of the assignment to the local copy created
                         log(ANALYSER, "Write value {} to local copy variable {}", valueToWrite, local.current().variable().fullyQualifiedName());
                         Map<VariableProperty, Integer> props2 = sharedState.evaluationContext.getValueProperties(valueToWrite);
-                        local.setValue(valueToWrite, valueToWriteIsDelayed, changeData.staticallyAssignedVariables(), props2, false);
+                        local.setValue(valueToWrite, false, changeData.staticallyAssignedVariables(), props2, false);
                         local.setLinkedVariables(new LinkedVariables(Set.of(vi.variable())), false);
                         additionalLinks.add(local.current().variable());
                     }
@@ -933,11 +940,6 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             log(VARIABLE_PROPERTIES, "Disable errors on enclosing if-statement {}", sa.index);
             sa.stateData.statementContributesToPrecondition.set();
         }
-    }
-
-    private VariableInfoContainer findReturnAsVariableForWriting() {
-        String fqn = myMethodAnalyser.methodInfo.fullyQualifiedName();
-        return statementAnalysis.findForWriting(fqn);
     }
 
     /*

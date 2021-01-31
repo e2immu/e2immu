@@ -483,10 +483,12 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                                   LinkedVariables staticallyAssignedVariables) {
             assert evaluationContext != null;
             boolean stateIsDelayed = evaluationContext.getConditionManager().isDelayed();
+            boolean resultOfExpressionIsDelayed = evaluationContext.isDelayed(resultOfExpression);
             boolean markAssignment = resultOfExpression != EmptyExpression.EMPTY_EXPRESSION;
 
-            Expression value = stateIsDelayed ? DelayedExpression.forState(evaluationContext.getPrimitives())
-                    : resultOfExpression;
+            // in case both state and result of expression are delayed, we give preference to the result
+            Expression value = stateIsDelayed && !resultOfExpressionIsDelayed
+                    ? DelayedExpression.forState(evaluationContext.getPrimitives()) : resultOfExpression;
 
             ChangeData newEcd;
             ChangeData ecd = valueChanges.get(assignmentTarget);
