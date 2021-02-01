@@ -250,7 +250,7 @@ public class FlowData {
 
         // look at the previous statement in the block, there are no delays
 
-        Execution prev = previousStatement.flowData.guaranteedToBeReachedInCurrentBlock.get();
+        Execution prev = previousStatement.flowData.getGuaranteedToBeReachedInCurrentBlock();
         // ALWAYS = always interrupted, NEVER = never interrupted, CONDITIONALLY = potentially interrupted
         Execution interrupt = previousStatement.flowData.interruptStatus().complement();
         Execution execBasedOnState = state.isBoolValueFalse() ? Execution.NEVER : Execution.ALWAYS;

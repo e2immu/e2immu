@@ -1425,7 +1425,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         if (list.stream().anyMatch(ExecutionOfBlock::alwaysExecuted)) return true;
         // we have a default, and all conditions have code, and are possible
         return list.stream().anyMatch(e -> e.isDefault && e.startOfBlock != null) &&
-                list.stream().allMatch(e -> e.execution == CONDITIONALLY && e.startOfBlock != null);
+                list.stream().allMatch(e -> (e.execution == CONDITIONALLY || e.execution == DELAYED_EXECUTION)
+                        && e.startOfBlock != null);
     }
 
     private Expression addToStateAfterStatement(EvaluationContext evaluationContext, List<ExecutionOfBlock> list) {

@@ -275,7 +275,18 @@ public class FieldAnalyser extends AbstractAnalyser {
         if (notNullDelays) return DELAYS;
         int bestOverContext = allMethodsAndConstructors.stream()
                 .flatMap(m -> m.getFieldAsVariableStream(fieldInfo, true))
-                .mapToInt(vi -> vi.getProperty(VariableProperty.NOT_NULL)).max().orElse(MultiLevel.NULLABLE);
+                .mapToInt(vi -> vi.getProperty(VariableProperty.NOT_NULL))
+                .max().orElse(MultiLevel.NULLABLE);
+
+        if(Logger.isLogEnabled(NOT_NULL)) {
+            allMethodsAndConstructors.forEach(m -> {
+                List<VariableInfo> list = m.getFieldAsVariable(fieldInfo, true);
+                for(VariableInfo vi: list) {
+                    int nn = vi.getProperty(VariableProperty.NOT_NULL);
+                    log(NOT_NULL, "Method {} field {} value {}", m.methodInfo.name, vi.variable().simpleName(), nn);
+                }
+            });
+        }
 
         // then, values
         if (!fieldAnalysis.values.isSet()) return DELAYS;

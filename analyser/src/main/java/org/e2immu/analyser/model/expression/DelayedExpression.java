@@ -56,6 +56,10 @@ public record DelayedExpression(String msg, ParameterizedType parameterizedType)
         return new DelayedExpression("<state>", primitives.booleanParameterizedType);
     }
 
+    public static Expression forNewObject(ParameterizedType parameterizedType) {
+        return new DelayedExpression("<new:" + parameterizedType + ">", parameterizedType);
+    }
+
     /*
     variable fields have different values according to statement time, but then, at this point we cannot know yet
     whether the field will be variable or not.
@@ -63,7 +67,7 @@ public record DelayedExpression(String msg, ParameterizedType parameterizedType)
      */
     @Override
     public boolean equals(Object o) {
-        return this == o ;
+        return this == o;
     }
 
     @Override

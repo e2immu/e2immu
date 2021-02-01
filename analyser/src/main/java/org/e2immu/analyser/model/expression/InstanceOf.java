@@ -34,7 +34,6 @@ import org.e2immu.annotation.NotNull;
 
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 
 
 @E2Container
@@ -130,7 +129,7 @@ public record InstanceOf(Primitives primitives,
     private EvaluationResult localEvaluation(EvaluationResult.Builder builder, EvaluationContext evaluationContext, Expression value) {
         Primitives primitives = evaluationContext.getPrimitives();
 
-        if (value.isUnknown()) {
+        if (value.isUnknown() || value.isDelayed(evaluationContext)) {
             return builder.setExpression(value).build();
         }
         if (value instanceof NullConstant) {
@@ -176,7 +175,13 @@ public record InstanceOf(Primitives primitives,
 
     @Override
     public List<? extends Element> subElements() {
-        return List.of(expression);
+        return expression != null ? List.of(expression) : List.of();
+    }
+
+    @Override
+    public boolean isDelayed(EvaluationContext evaluationContext) {
+        if (variable == null) return false;
+        return evaluationContext.variableIsDelayed(variable);
     }
 
     @Override

@@ -55,22 +55,18 @@ public class Test_05_FinalChecks extends CommonTestRunner {
             if (THIS.equals(d.variableName())) {
                 if ("0".equals(d.statementId())) {
                     Assert.assertEquals("0:M", d.variableInfo().getReadId());
-                    String expectValue = d.iteration() == 0 ? "xx" : "instance type FinalChecks";
-                    Assert.assertEquals(expectValue, d.currentValue().toString());
+                    Assert.assertEquals("instance type FinalChecks", d.currentValue().toString());
                 }
                 if ("1".equals(d.statementId())) {
                     Assert.assertEquals("1-E", d.variableInfo().getReadId());
-                    String expectValue = d.iteration() == 0 ? "xx" : "instance type FinalChecks";
-                    Assert.assertEquals(expectValue, d.currentValue().toString());
+                    Assert.assertEquals("instance type FinalChecks", d.currentValue().toString());
                 }
             }
             if (S1.equals(d.variableName())) {
-                String expectValue = d.iteration() == 0 ? "xx" : "s1+\"abc\"";
+                String expectValue = d.iteration() == 0 ? "s1+<field:org.e2immu.analyser.testexample.FinalChecks.s3>" : "s1+\"abc\"";
                 Assert.assertEquals(expectValue, d.currentValue().toString());
-                int expectNNV = d.iteration() == 0 ? MultiLevel.DELAY : MultiLevel.EFFECTIVE;
-                Assert.assertEquals(expectNNV, MultiLevel.value(d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL), MultiLevel.NOT_NULL));
-                int expectNN = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
-                Assert.assertEquals(expectNN, d.getProperty(VariableProperty.NOT_NULL)); // nothing that points to not null
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL));
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL)); // nothing that points to not null
 
                 if (d.iteration() > 0) {
                     Assert.assertTrue(d.currentValue().isInstanceOf(StringConcat.class));
@@ -78,6 +74,9 @@ public class Test_05_FinalChecks extends CommonTestRunner {
             }
             if (S5.equals(d.variableName())) {
                 if ("0".equals(d.statementId())) {
+                    String expectValue = d.iteration() == 0 ?
+                            "null==<field:org.e2immu.analyser.testexample.FinalChecks.s5>?<state>:<state>": "\"abc\"";
+                    Assert.assertEquals(expectValue, d.currentValue().toString());
                     VariableInfo viC = d.variableInfoContainer().getPreviousOrInitial();
                     int expectC = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_E2IMMUTABLE;
                     Assert.assertEquals(expectC, viC.getProperty(VariableProperty.IMMUTABLE));
@@ -86,7 +85,7 @@ public class Test_05_FinalChecks extends CommonTestRunner {
                     Assert.assertEquals(expectM, viM.getProperty(VariableProperty.IMMUTABLE));
                 }
                 if ("0.0.0".equals(d.statementId())) {
-                    String expect = d.iteration() == 0 ? "xx" : "\"abc\"";
+                    String expect = d.iteration() == 0 ? "<state>" : "\"abc\"";
                     Assert.assertEquals(expect, d.currentValue().toString());
                     VariableInfo viC = d.variableInfoContainer().getPreviousOrInitial();
                     int expectImmutable = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_E2IMMUTABLE;
@@ -139,8 +138,7 @@ public class Test_05_FinalChecks extends CommonTestRunner {
         if ("setS4".equals(methodInfo.name)) {
             // @NotModified decided straight away, @Identity as well
             Assert.assertEquals(Level.FALSE, d.parameterAnalyses().get(0).getProperty(VariableProperty.MODIFIED));
-            int expectNotNull = d.iteration() <= 1 ? Level.DELAY : MultiLevel.NULLABLE;
-            Assert.assertEquals(expectNotNull, d.parameterAnalyses().get(0).getProperty(VariableProperty.NOT_NULL));
+            Assert.assertEquals(Level.DELAY, d.parameterAnalyses().get(0).getProperty(VariableProperty.NOT_NULL));
         }
     };
 
@@ -163,11 +161,11 @@ public class Test_05_FinalChecks extends CommonTestRunner {
                 Assert.assertEquals("[0]", changeData.readAtStatementTime().toString());
 
                 // null==s5 should become true because initially, s5 in the constructor IS null
-                String expect = d.iteration() == 0 ? "xx" : "true";
+                String expect = d.iteration() == 0 ? "null==<field:org.e2immu.analyser.testexample.FinalChecks.s5>" : "true";
                 Assert.assertEquals(expect, d.evaluationResult().value().toString());
             }
             if ("3".equals(d.statementId())) {
-                String expect = d.iteration() == 0 ? "xx" : "s1+\"abc\"";
+                String expect = d.iteration() == 0 ? "s1+<field:org.e2immu.analyser.testexample.FinalChecks.s3>" : "s1+\"abc\"";
                 Assert.assertEquals(expect, d.evaluationResult().value().toString());
             }
         }

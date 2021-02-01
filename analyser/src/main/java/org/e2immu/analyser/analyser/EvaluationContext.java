@@ -243,7 +243,12 @@ public interface EvaluationContext {
 
     default boolean isDelayed(Expression expression) {
         if (expression instanceof DelayedExpression) return true;
-        return expression.subElements().stream().anyMatch(e -> e instanceof Expression expr && isDelayed(expr));
+        try {
+            return expression.subElements().stream().anyMatch(e -> e instanceof Expression expr && isDelayed(expr));
+        } catch (RuntimeException runtimeException) {
+            LOGGER.error("Error computing isDelayed on type "+expression.getClass());
+            throw runtimeException;
+        }
     }
 
     default boolean isNotDelayed(Expression expression) {

@@ -440,7 +440,10 @@ public class Test_16_Modification extends CommonTestRunner {
                 }
 
                 if (EXAMPLE6.equals(d.variableName())) {
-                    Assert.assertEquals("nullable? instance type Modification_6", d.currentValue().toString());
+                    String expectValue = d.iteration() == 0 ?
+                            "<parameter:org.e2immu.analyser.testexample.Modification_6.add6(Modification_6,Set<String>):0:example6>" :
+                            "nullable? instance type Modification_6";
+                    Assert.assertEquals(expectValue, d.currentValue().toString());
                     Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL));
                 }
                 if (EXAMPLE6_SET6.equals(d.variableName())) {
@@ -679,14 +682,32 @@ public class Test_16_Modification extends CommonTestRunner {
 
     @Test
     public void test11() throws IOException {
+        final String TYPE = "org.e2immu.analyser.testexample.Modification_11";
+        final String SET_IN_C1 = TYPE + ".C1.set";
+        final String SET_IN_C1_DELAYED = "<field:org.e2immu.analyser.testexample.Modification_11.C1.set>";
+
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("C1".equals(d.methodInfo().name) && SET_IN_C1.equals(d.variableName())) {
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL));
+            }
+            if ("add".equals(d.methodInfo().name) && SET_IN_C1.equals(d.variableName())) {
+                String expectValue = d.iteration() == 0 ? SET_IN_C1_DELAYED : "instance type Set<String>";
+                Assert.assertEquals(expectValue, d.currentValue().toString());
+                int expectNN = d.iteration() == 0 ? MultiLevel.EFFECTIVELY_NOT_NULL : MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL;
+                Assert.assertEquals(expectNN, d.getProperty(VariableProperty.NOT_NULL));
+            }
+        };
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("set".equals(d.fieldInfo().name)) {
                 Assert.assertEquals("setC", d.fieldAnalysis().getLinkedVariables().toString());
                 Assert.assertEquals("setC/*@NotNull*/", d.fieldAnalysis().getEffectivelyFinalValue().debugOutput());
+                // the field analyser sees addAll being used on set in the method addAllOnC
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL, d.fieldAnalysis().getProperty(VariableProperty.NOT_NULL));
             }
         };
         testClass("Modification_11", 0, 0, new DebugConfiguration.Builder()
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 

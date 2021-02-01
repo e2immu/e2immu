@@ -474,12 +474,13 @@ public record NewObject(MethodInfo constructor,
 
         NewObject initialInstance = NewObject.objectCreation(evaluationContext.getPrimitives(),
                 constructor, parameterizedType, diamond, res.v, objectFlow);
-        NewObject instance;
+        Expression instance;
         if (constructor != null) {
             // check state changes of companion methods
             MethodAnalysis constructorAnalysis = evaluationContext.getAnalyserContext().getMethodAnalysis(constructor);
-            instance = MethodCall.checkCompanionMethodsModifying(res.k, evaluationContext, constructor, constructorAnalysis,
+            NewObject no = MethodCall.checkCompanionMethodsModifying(res.k, evaluationContext, constructor, constructorAnalysis,
                     null, initialInstance, res.v);
+            instance = no == null ? DelayedExpression.forNewObject(parameterizedType): no;
         } else {
             instance = initialInstance;
         }

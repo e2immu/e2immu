@@ -1,6 +1,7 @@
 package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.AnalysisStatus;
+import org.e2immu.analyser.analyser.LinkedVariables;
 import org.e2immu.analyser.analyser.VariableInfoContainer;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
@@ -123,7 +124,8 @@ public class Test_04_Warnings extends CommonTestRunner {
                         Assert.assertEquals("1" + E, d.variableInfo().getReadId());
 
                         // in iteration 0 we don't know if integers will be assigned to
-                        Assert.assertEquals("", d.variableInfo().getLinkedVariables().toString());
+                        String expectLinked = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "";
+                        Assert.assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
                 if ("loopVar".equals(d.variableName())) {
@@ -302,7 +304,10 @@ public class Test_04_Warnings extends CommonTestRunner {
                         Assert.assertEquals("nullable? instance type String", d.currentValue().toString());
                     }
                     if ("1".equals(d.statementId())) {
-                        Assert.assertEquals("nullable? instance type String", d.currentValue().toString());
+                        String expectValue = d.iteration() == 0 ?
+                                "<parameter:org.e2immu.analyser.testexample.Warnings_5.ChildClass.$1.apply(String):0:s>" :
+                                "nullable? instance type String";
+                        Assert.assertEquals(expectValue, d.currentValue().toString());
                     }
                 }
                 if (T.equals(d.variableName())) {
@@ -310,7 +315,9 @@ public class Test_04_Warnings extends CommonTestRunner {
                         Assert.fail();
                     }
                     if ("1".equals(d.statementId())) {
-                        String expectValue = d.iteration() == 0 ? "xx" : "nullable? instance type String";
+                        String expectValue = d.iteration() == 0 ?
+                                "<field:org.e2immu.analyser.testexample.Warnings_5.ChildClass.t>" :
+                                "nullable instance type String";
                         Assert.assertEquals(expectValue, d.currentValue().toString());
                     }
                 }
@@ -341,7 +348,7 @@ public class Test_04_Warnings extends CommonTestRunner {
                 Assert.assertEquals(Level.TRUE, d.methodAnalysis().getProperty(VariableProperty.FLUENT));
             }
             if ("methodMustNotBeStatic4".equals(d.methodInfo().name)) {
-                if(d.iteration() == 0) {
+                if (d.iteration() == 0) {
                     Assert.assertNull(d.methodAnalysis().getSingleReturnValue());
                 } else {
                     Assert.assertEquals("Stream.of(input).map(null==s?\"null\":s+\"something\"+t).findAny().get()", d.methodAnalysis().getSingleReturnValue().toString());
