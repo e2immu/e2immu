@@ -171,7 +171,11 @@ public class ArrayAccess implements Expression {
                 builder.markRead(variableTarget);
                 if (evaluationContext.isPresent(dependentVariable)) {
                     Expression variableValue = builder.currentExpression(dependentVariable, true);
-                    builder.setExpression(variableValue);
+                    if(variableValue == null) {
+                        builder.setExpression(DelayedExpression.forVariable(dependentVariable));
+                    } else {
+                        builder.setExpression(variableValue);
+                    }
                 } else {
                     // the result is not known, lets return an unknown instance
                     NewObject newObject = NewObject.genericArrayAccess(evaluationContext, array.value(),

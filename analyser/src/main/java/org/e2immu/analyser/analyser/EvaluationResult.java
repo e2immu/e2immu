@@ -366,7 +366,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
          */
         public Expression currentExpression(Variable variable, boolean isNotAssignmentTarget) {
             ChangeData currentExpression = valueChanges.get(variable);
-            if (currentExpression == null) {
+            if (currentExpression == null || currentExpression.value == null) {
                 assert evaluationContext != null;
                 return evaluationContext.currentValue(variable, statementTime, isNotAssignmentTarget);
             }

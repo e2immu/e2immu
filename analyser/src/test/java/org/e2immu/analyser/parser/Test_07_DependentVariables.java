@@ -5,6 +5,7 @@ import org.e2immu.analyser.analyser.VariableInfoContainer;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.config.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.config.StatementAnalyserVisitor;
+import org.e2immu.analyser.model.ParameterInfo;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -46,21 +47,26 @@ public class Test_07_DependentVariables extends CommonTestRunner {
                 Assert.assertEquals("31", d.variableInfo().getValue().toString());
             }
             if ("4".equals(d.statementId()) && "array".equals(d.variableName())) {
-                Assert.assertEquals("4"+ VariableInfoContainer.Level.EVALUATION, read);
+                Assert.assertEquals("4" + VariableInfoContainer.Level.EVALUATION, read);
             }
         }
-        if ("method2".equals(d.methodInfo().name) && "3".equals(d.statementId())) {
+        if ("method2".equals(d.methodInfo().name)) {
+            if (A2.equals(d.variableName())) {
+                Assert.assertEquals("instance type int", d.currentValue().toString());
+            }
             if ("b".equals(d.variableName())) {
                 Assert.assertEquals("a", d.variableInfo().getValue().toString());
             }
-            if ("array[a]".equals(d.variableName())) {
-                Assert.fail("This variable should not be produced");
-            }
-            if ("array[b]".equals(d.variableName())) {
-                Assert.fail("This variable should not be produced");
-            }
-            if (("array[" + A2 + "]").equals(d.variableName())) {
-                Assert.assertEquals("12", d.variableInfo().getValue().toString());
+            if ("3".equals(d.statementId())) {
+                if ("array[a]".equals(d.variableName())) {
+                    Assert.fail("This variable should not be produced");
+                }
+                if ("array[b]".equals(d.variableName())) {
+                    Assert.fail("This variable should not be produced");
+                }
+                if (("array[" + A2 + "]").equals(d.variableName())) {
+                    Assert.assertEquals("12", d.variableInfo().getValue().toString());
+                }
             }
         }
     };
