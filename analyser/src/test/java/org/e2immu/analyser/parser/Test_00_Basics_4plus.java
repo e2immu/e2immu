@@ -61,10 +61,12 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
     // test here mainly to generate debug information for the output system
     @Test
     public void test5() throws IOException {
-        StatementAnalyserVisitor statementAnalyserVisitor = d-> {
-            if("apply".equals(d.methodInfo().name) && "0.0.0".equals(d.statementId())) {
-                Assert.assertFalse(d.localConditionManager().isDelayed());
-                Assert.assertEquals("null==s", d.condition().toString());
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("apply".equals(d.methodInfo().name) && "0.0.0".equals(d.statementId())) {
+                Assert.assertEquals(d.iteration() == 0, d.localConditionManager().isDelayed());
+                String expectValue = d.iteration() == 0 ?
+                        "null==<parameter:org.e2immu.analyser.testexample.Basics_5.$1.apply(String):0:s>" : "null==s";
+                Assert.assertEquals(expectValue, d.condition().toString());
             }
         };
         testClass("Basics_5", 0, 0, new DebugConfiguration.Builder()
@@ -430,15 +432,15 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
                 }
             }
             if ("test4".equals(d.methodInfo().name)) {
-                if( "j".equals(d.variableName()) && ("1".equals(d.statementId())
+                if ("j".equals(d.variableName()) && ("1".equals(d.statementId())
                         || "2".equals(d.statementId())
                         || "3".equals(d.statementId())
                         || "4.0.0.0.0".equals(d.statementId()))) {
-                    Assert.assertEquals("statement "+d.statementId(),
+                    Assert.assertEquals("statement " + d.statementId(),
                             "this.i", d.variableInfo().getStaticallyAssignedVariables().toString());
                 }
 
-                if(d.iteration() > 0){
+                if (d.iteration() > 0) {
                     if ("j0".equals(d.variableName()) && "4.0.0.0.0".equals(d.statementId())) {
                         Assert.assertEquals(I2, d.currentValue().toString());
                     }

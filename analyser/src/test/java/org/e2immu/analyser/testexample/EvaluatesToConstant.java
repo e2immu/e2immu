@@ -24,13 +24,15 @@ import org.e2immu.annotation.NotNull;
 
 
 /*
- NOTE: this one relies on String.toLowerCase() being annotated @NotNull
-
  ERROR in M:method2:1: Condition in 'if' or 'switch' statement evaluates to constant
  ERROR in M:method2:1.0.0: Unreachable statement
 
  ERROR in M:method3:1.0.1.0.0: Unreachable statement
  ERROR in M:method3:1.0.1: Condition in 'if' or 'switch' statement evaluates to constant
+
+ As of 20210201, we cannot see the useless assignment to b anymore (while a == null becomes
+ permanently false, the variable b remains read).
+
  ERROR in M:method3:2: Useless assignment: b
  ERROR in M:method3:2: Unused local variable: b
 

@@ -130,12 +130,13 @@ public class ParameterAnalyser {
 
         Map<FieldInfo, ParameterAnalysis.AssignedOrLinked> map = parameterAnalysis.getAssignedToField();
         // FIXME see if really necessary; we're working on not null: if (checkNotLinkedOrAssigned(map)) return DONE;
+        boolean setNotNull = false;
 
         for (Map.Entry<FieldInfo, ParameterAnalysis.AssignedOrLinked> e : map.entrySet()) {
             FieldInfo fieldInfo = e.getKey();
             Set<VariableProperty> propertiesToCopy = e.getValue().propertiesToCopy();
-            FieldAnalyser fieldAnalyser =  fieldAnalysers.get(fieldInfo);
-            if(fieldAnalyser != null) {
+            FieldAnalyser fieldAnalyser = fieldAnalysers.get(fieldInfo);
+            if (fieldAnalyser != null) {
                 FieldAnalysis fieldAnalysis = fieldAnalyser.fieldAnalysis;
 
                 for (VariableProperty variableProperty : propertiesToCopy) {
@@ -152,17 +153,34 @@ public class ParameterAnalyser {
                         log(ANALYSER, "Still delaying copiedFromFieldToParameters because of {}", variableProperty);
                         delays = true;
                     }
+                    setNotNull |= variableProperty == VariableProperty.NOT_NULL;
                 }
             } else {
-               assert e.getValue() == NO;
+                assert e.getValue() == NO;
             }
         }
-        if (!delays) {
-            log(ANALYSER, "No delays anymore on copying from field to parameter");
-            parameterAnalysis.resolveFieldDelays();
-            return DONE;
+
+        if (delays) {
+            return changed ? PROGRESS : DELAYS;
         }
-        return changed ? AnalysisStatus.PROGRESS : AnalysisStatus.DELAYS;
+        // can be executed multiple times
+        parameterAnalysis.resolveFieldDelays();
+
+        // see if we have to break NOT_NULL delays
+        if (!setNotNull) {
+            MethodAnalysis methodAnalysis = analysisProvider.getMethodAnalysis(parameterInfo.owner);
+            VariableInfo vi = methodAnalysis.getLastStatement().getLatestVariableInfo(parameterInfo.fullyQualifiedName());
+            if (vi.getProperty(VariableProperty.NOT_NULL_DELAYS_RESOLVED) == Level.FALSE) {
+                log(ANALYSER, "Delays on not null resolved for {}, delaying", parameterInfo.fullyQualifiedName());
+                return changed ? PROGRESS : DELAYS;
+            }
+            if (vi.getProperty(VariableProperty.NOT_NULL) == Level.DELAY) {
+                parameterAnalysis.setProperty(VariableProperty.NOT_NULL, MultiLevel.NULLABLE);
+            }
+        }
+        log(ANALYSER, "No delays anymore on copying from field to parameter");
+
+        return DONE;
     }
 
     private ParameterAnalysis.AssignedOrLinked determineAssignedOrLinked(FieldAnalysis fieldAnalysis) {

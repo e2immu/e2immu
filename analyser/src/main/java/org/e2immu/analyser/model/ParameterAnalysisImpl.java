@@ -98,7 +98,7 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
         }
 
         public void resolveFieldDelays() {
-            delaysOnFieldsResolved.set();
+            if (!delaysOnFieldsResolved.isSet()) delaysOnFieldsResolved.set();
         }
 
         @Override

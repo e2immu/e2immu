@@ -526,12 +526,16 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         FlowData.Execution execution = sharedState.forwardAnalysisInfo().execution();
         Expression state = sharedState.localConditionManager.state();
         boolean stateIsDelayed = sharedState.evaluationContext.isDelayed(state);
-        if (statementAnalysis.flowData.computeGuaranteedToBeReachedReturnUnreachable(sharedState.previous, execution,
-                state, stateIsDelayed) && !statementAnalysis.inErrorState(Message.UNREACHABLE_STATEMENT)) {
-            statementAnalysis.ensure(Message.newMessage(getLocation(), Message.UNREACHABLE_STATEMENT));
+        boolean localConditionManagerIsDelayed = sharedState.localConditionManager.isDelayed();
+        AnalysisStatus analysisStatus = statementAnalysis.flowData.computeGuaranteedToBeReachedReturnUnreachable
+                (sharedState.previous, execution, state, stateIsDelayed, localConditionManagerIsDelayed);
+        if (analysisStatus == DONE_ALL) {
+            if (!statementAnalysis.inErrorState(Message.UNREACHABLE_STATEMENT)) {
+                statementAnalysis.ensure(Message.newMessage(getLocation(), Message.UNREACHABLE_STATEMENT));
+            }
             return DONE_ALL; // means: don't run any of the other steps!!
         }
-        return sharedState.localConditionManager.isDelayed() || execution == DELAYED_EXECUTION ? DELAYS : DONE;
+        return analysisStatus;
     }
 
     private Boolean isEscapeAlwaysExecutedInCurrentBlock() {
@@ -1599,6 +1603,9 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             log(DELAYED, "Delaying checking useless assignment in {}, because interrupt status unknown", index());
             return DELAYS;
         }
+        FlowData.Execution reached = statementAnalysis.flowData.getGuaranteedToBeReachedInMethod();
+        if (reached == DELAYED_EXECUTION) return DELAYS;
+
         boolean alwaysInterrupts = bestAlwaysInterrupt != InterruptsFlow.NO;
         boolean atEndOfBlock = navigationData.next.get().isEmpty();
         if (atEndOfBlock || alwaysInterrupts) {
@@ -1897,12 +1904,12 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             TypeInfo typeInfo = variable.parameterizedType().bestTypeInfo();
             boolean notSelf = typeInfo != getCurrentType();
             if (notSelf) {
-                VariableInfo variableInfo = statementAnalysis.findOrThrow(variable);
+                VariableInfo variableInfo = statementAnalysis.initialValueForReading(variable, getInitialStatementTime(), true);
                 int immutable = variableInfo.getProperty(VariableProperty.IMMUTABLE);
                 if (immutable == MultiLevel.DELAY) return LinkedVariables.DELAY;
                 if (MultiLevel.isE2Immutable(immutable)) return LinkedVariables.EMPTY;
             }
-            VariableInfo variableInfo = statementAnalysis.findOrThrow(variable);
+            VariableInfo variableInfo = statementAnalysis.initialValueForReading(variable, getInitialStatementTime(), true);
             // we've encountered the variable before
             if (variableInfo.linkedVariablesIsSet()) {
                 return variableInfo.getLinkedVariables().merge(new LinkedVariables(Set.of(variable)));

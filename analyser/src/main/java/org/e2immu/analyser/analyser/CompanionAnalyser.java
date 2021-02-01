@@ -178,6 +178,11 @@ public class CompanionAnalyser {
         }
 
         @Override
+        public int getPropertyFromPreviousOrInitial(Variable variable, VariableProperty variableProperty, int statementTime) {
+            return variableProperty.falseValue; // but no delay, see Equals.checkParameter
+        }
+
+        @Override
         public Location getLocation() {
             return new Location(companionMethod);
         }

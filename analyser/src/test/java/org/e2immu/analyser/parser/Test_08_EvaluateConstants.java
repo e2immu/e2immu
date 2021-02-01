@@ -1,5 +1,6 @@
 package org.e2immu.analyser.parser;
 
+import org.e2immu.analyser.analyser.LinkedVariables;
 import org.e2immu.analyser.analyser.MethodLevelData;
 import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analyser.VariableProperty;
@@ -30,13 +31,14 @@ public class Test_08_EvaluateConstants extends CommonTestRunner {
     public void test_0() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("EvaluateConstants_0".equals(d.methodInfo().name)) {
+                String expectLinked = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "";
                 if ("0.0.0".equals(d.statementId()) && d.variable() instanceof ParameterInfo in) {
                     Assert.assertEquals("in", in.name);
-                    Assert.assertEquals("", d.variableInfo().getLinkedVariables().toString());
+                    Assert.assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
                 }
                 if ("0".equals(d.statementId()) && d.variable() instanceof ParameterInfo in) {
                     Assert.assertEquals("in", in.name);
-                    Assert.assertEquals("", d.variableInfo().getLinkedVariables().toString());
+                    Assert.assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
                 }
             }
         };
@@ -55,7 +57,8 @@ public class Test_08_EvaluateConstants extends CommonTestRunner {
             }
             if ("EvaluateConstants_0".equals(d.methodInfo().name)) {
                 if ("2".equals(d.statementId())) {
-                    Assert.assertTrue(d.toString(), d.statementAnalysis().methodLevelData.linksHaveBeenEstablished.isSet());
+                    Assert.assertEquals(d.iteration() > 0,
+                            d.statementAnalysis().methodLevelData.linksHaveBeenEstablished.isSet());
                 }
             }
         };
@@ -76,8 +79,13 @@ public class Test_08_EvaluateConstants extends CommonTestRunner {
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("effectivelyFinal".equals(d.fieldInfo().name)) {
                 Assert.assertEquals(Level.TRUE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
-                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.fieldAnalysis().getProperty(VariableProperty.NOT_NULL));
-                Assert.assertEquals("in", d.fieldAnalysis().getEffectivelyFinalValue().toString());
+                int expectNN = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
+                Assert.assertEquals(expectNN, d.fieldAnalysis().getProperty(VariableProperty.NOT_NULL));
+                if (d.iteration() == 0) {
+                    Assert.assertNull(d.fieldAnalysis().getEffectivelyFinalValue());
+                } else {
+                    Assert.assertEquals("in", d.fieldAnalysis().getEffectivelyFinalValue().toString());
+                }
             }
         };
 

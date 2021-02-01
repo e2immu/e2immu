@@ -195,7 +195,7 @@ public class Test_16_Modification extends CommonTestRunner {
                         Assert.assertTrue(variableValue.variable() instanceof FieldReference);
                         Assert.assertEquals("set3", d.currentValue().toString());
                     }
-                    if (d.iteration() > 1) {
+                    if (d.iteration() > 0) {
                         Assert.assertEquals("this.set3", d.variableInfo().getLinkedVariables().toString());
                     } else {
                         Assert.assertSame(LinkedVariables.DELAY, d.variableInfo().getLinkedVariables());
@@ -219,7 +219,7 @@ public class Test_16_Modification extends CommonTestRunner {
                         Assert.assertEquals("instance type HashSet<String>", vi1.getValue().toString());
                         Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.MODIFIED));
                     }
-                    if (d.iteration() > 1) {
+                    if (d.iteration() > 0) {
                         Assert.assertEquals("this.set3", d.variableInfo().getLinkedVariables().toString());
                     } else {
                         Assert.assertSame("It: " + d.iteration(), LinkedVariables.DELAY, d.variableInfo().getLinkedVariables());
@@ -240,8 +240,7 @@ public class Test_16_Modification extends CommonTestRunner {
                     Assert.assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
                     String expectValue = d.iteration() == 0 ? SET3_DELAYED : INSTANCE_TYPE_HASH_SET;
                     Assert.assertEquals(expectValue, d.variableInfo().getValue().toString());
-                    int expectModified = d.iteration() == 0 ? Level.DELAY :
-                            d.iteration() == 1 ? Level.FALSE : Level.TRUE;
+                    int expectModified = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
                     Assert.assertEquals(expectModified, d.getProperty(VariableProperty.MODIFIED));
                 }
             }
@@ -349,7 +348,7 @@ public class Test_16_Modification extends CommonTestRunner {
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if (d.fieldInfo().name.equals("set4")) {
                 Assert.assertEquals(Level.TRUE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
-                int expectModified = d.iteration() <= 1 ? Level.DELAY : Level.TRUE;
+                int expectModified = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
                 Assert.assertEquals(expectModified, d.fieldAnalysis().getProperty(VariableProperty.MODIFIED));
                 Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.fieldAnalysis().getProperty(VariableProperty.NOT_NULL));
 
@@ -363,20 +362,17 @@ public class Test_16_Modification extends CommonTestRunner {
             String name = d.methodInfo().name;
             if ("Modification_4".equals(name)) {
                 ParameterAnalysis in4 = d.parameterAnalyses().get(0);
-                int expectModified = d.iteration() <= 2 ? Level.FALSE : Level.TRUE;
-                if (iteration >= 3) {
-                    Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, in4.getProperty(VariableProperty.NOT_NULL));
-                }
+                int expectNN = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
+                Assert.assertEquals(expectNN, in4.getProperty(VariableProperty.NOT_NULL));
+                int expectModified = d.iteration() <= 1 ? Level.FALSE : Level.TRUE;
                 Assert.assertEquals(expectModified, in4.getProperty(VariableProperty.MODIFIED));
             }
             if ("add4".equals(name)) {
+                FieldInfo set4 = d.methodInfo().typeInfo.getFieldByName("set4", true);
                 if (iteration >= 1) {
-                    FieldInfo set4 = d.methodInfo().typeInfo.getFieldByName("set4", true);
                     VariableInfo vi = d.getFieldAsVariable(set4);
                     assert vi != null;
                     Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, vi.getProperty(VariableProperty.NOT_NULL));
-                }
-                if (iteration >= 2) {
                     Assert.assertEquals(Level.TRUE, d.methodAnalysis().getProperty(VariableProperty.MODIFIED));
                 }
             }
@@ -552,10 +548,10 @@ public class Test_16_Modification extends CommonTestRunner {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("add".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
-                    Assert.assertEquals(d.iteration() > 1, d.statementAnalysis().methodLevelData.linksHaveBeenEstablished.isSet());
+                    Assert.assertEquals(d.iteration() > 0, d.statementAnalysis().methodLevelData.linksHaveBeenEstablished.isSet());
                 }
                 if ("2".equals(d.statementId())) {
-                    Assert.assertEquals(d.iteration() >= 2, d.statementAnalysis().methodLevelData.linksHaveBeenEstablished.isSet());
+                    Assert.assertEquals(d.iteration() >= 1, d.statementAnalysis().methodLevelData.linksHaveBeenEstablished.isSet());
                 }
             }
         };
@@ -568,7 +564,7 @@ public class Test_16_Modification extends CommonTestRunner {
                 if ("2".equals(d.statementId())) {
                     Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.MODIFIED));
                 }
-                if (d.iteration() <= 1) {
+                if (d.iteration() == 0) {
                     Assert.assertSame(LinkedVariables.DELAY, d.variableInfo().getLinkedVariables());
                 } else {
                     Assert.assertEquals("this.s2", d.variableInfo().getLinkedVariables().toString());
@@ -601,7 +597,7 @@ public class Test_16_Modification extends CommonTestRunner {
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("s2".equals(d.fieldInfo().name)) {
-                int expectModified = d.iteration() <= 1 ? Level.DELAY : Level.TRUE;
+                int expectModified = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
                 Assert.assertEquals(expectModified, d.fieldAnalysis().getProperty(VariableProperty.MODIFIED));
             }
         };

@@ -138,7 +138,8 @@ public class Test_05_FinalChecks extends CommonTestRunner {
         if ("setS4".equals(methodInfo.name)) {
             // @NotModified decided straight away, @Identity as well
             Assert.assertEquals(Level.FALSE, d.parameterAnalyses().get(0).getProperty(VariableProperty.MODIFIED));
-            Assert.assertEquals(Level.DELAY, d.parameterAnalyses().get(0).getProperty(VariableProperty.NOT_NULL));
+            int expectNotNull = d.iteration() <= 1 ? Level.DELAY: MultiLevel.NULLABLE;
+            Assert.assertEquals(expectNotNull, d.parameterAnalyses().get(0).getProperty(VariableProperty.NOT_NULL));
         }
     };
 

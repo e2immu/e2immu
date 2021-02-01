@@ -20,7 +20,6 @@ package org.e2immu.analyser.analyser;
 import com.google.common.collect.ImmutableMap;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Statement;
-import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.statement.*;
 import org.e2immu.analyser.util.Logger;
 import org.e2immu.analyser.util.SetOnce;
@@ -30,8 +29,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.e2immu.analyser.analyser.AnalysisStatus.DELAYS;
-import static org.e2immu.analyser.analyser.AnalysisStatus.DONE;
+import static org.e2immu.analyser.analyser.AnalysisStatus.*;
 import static org.e2immu.analyser.analyser.InterruptsFlow.*;
 import static org.e2immu.analyser.util.Logger.log;
 
@@ -219,10 +217,14 @@ public class FlowData {
      * @param state             current state of local condition manager, can be delayed
      * @return true when unreachable statement
      */
-    public boolean computeGuaranteedToBeReachedReturnUnreachable(StatementAnalysis previousStatement,
-                                                                 Execution blockExecution,
-                                                                 Expression state,
-                                                                 boolean stateIsDelayed) {
+    public AnalysisStatus computeGuaranteedToBeReachedReturnUnreachable(StatementAnalysis previousStatement,
+                                                                        Execution blockExecution,
+                                                                        Expression state,
+                                                                        boolean stateIsDelayed,
+                                                                        boolean localConditionManagerIsDelayed) {
+        AnalysisStatus delayBasedOnExecutionAndLocalConditionManager =
+                stateIsDelayed || localConditionManagerIsDelayed ? DELAYS : DONE;
+
         // some statements that need executing independently of delays
         if (previousStatement == null) {
             // start of a block is always reached in that block
@@ -230,22 +232,22 @@ public class FlowData {
         } else if (previousStatement.flowData.getGuaranteedToBeReachedInMethod() == Execution.NEVER) {
             setGuaranteedToBeReachedInCurrentBlock(Execution.NEVER);
             setGuaranteedToBeReachedInMethod(Execution.NEVER);
-            return false; // no more errors
+            return delayBasedOnExecutionAndLocalConditionManager; // no more errors
         }
 
         if (stateIsDelayed) {
             log(Logger.LogTarget.DELAYED, "Delaying guaranteed to be reached, no value state");
-            return false;
+            return delayBasedOnExecutionAndLocalConditionManager;
         }
 
         if (guaranteedToBeReachedInMethod.isSet()) {
-            return false; // already done!
+            return delayBasedOnExecutionAndLocalConditionManager; // already done!
         }
 
         if (previousStatement == null) {
             // start of a block, within method
             setGuaranteedToBeReachedInMethod(blockExecution);
-            return false;
+            return delayBasedOnExecutionAndLocalConditionManager;
         }
 
         // look at the previous statement in the block, there are no delays
@@ -258,7 +260,10 @@ public class FlowData {
 
         setGuaranteedToBeReachedInCurrentBlock(executionInCurrentBlock);
         setGuaranteedToBeReachedInMethod(executionInCurrentBlock.worst(blockExecution));
-        return executionInCurrentBlock == Execution.NEVER; // raise error when NEVER by returning true
+
+        if (executionInCurrentBlock == Execution.NEVER) return DONE_ALL;
+        if (delayBasedOnExecutionAndLocalConditionManager == DELAYS) return DELAYS;
+        return executionInCurrentBlock == Execution.DELAYED_EXECUTION ? DELAYS : DONE;
     }
 
     public AnalysisStatus analyse(StatementAnalyser statementAnalyser, StatementAnalysis previousStatement, Execution blockExecution) {
