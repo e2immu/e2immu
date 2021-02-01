@@ -24,6 +24,7 @@ import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Primitives;
 
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.IntStream;
 
 public interface ParameterAnalysis extends Analysis {
@@ -40,10 +41,21 @@ public interface ParameterAnalysis extends Analysis {
     }
 
     enum AssignedOrLinked {
-        ASSIGNED, LINKED, NO, DELAYED;
+        ASSIGNED(VariableProperty.FROM_FIELD_TO_PARAMETER), LINKED(Set.of(VariableProperty.MODIFIED)),
+        NO(Set.of()), DELAYED(null);
+
+        private final Set<VariableProperty> propertiesToCopy;
+
+        AssignedOrLinked(Set<VariableProperty> properties) {
+            propertiesToCopy = properties;
+        }
 
         public boolean isAssignedOrLinked() {
             return this == ASSIGNED || this == LINKED;
+        }
+
+        public Set<VariableProperty> propertiesToCopy() {
+            return propertiesToCopy;
         }
     }
 

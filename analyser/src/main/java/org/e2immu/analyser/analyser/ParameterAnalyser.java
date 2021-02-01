@@ -133,8 +133,7 @@ public class ParameterAnalyser {
 
         for (Map.Entry<FieldInfo, ParameterAnalysis.AssignedOrLinked> e : map.entrySet()) {
             FieldInfo fieldInfo = e.getKey();
-            Set<VariableProperty> propertiesToCopy = e.getValue() == ASSIGNED ? VariableProperty.FROM_FIELD_TO_PARAMETER :
-                    Set.of(VariableProperty.MODIFIED);
+            Set<VariableProperty> propertiesToCopy = e.getValue().propertiesToCopy();
             FieldAnalyser fieldAnalyser =  fieldAnalysers.get(fieldInfo);
             if(fieldAnalyser != null) {
                 FieldAnalysis fieldAnalysis = fieldAnalyser.fieldAnalysis;

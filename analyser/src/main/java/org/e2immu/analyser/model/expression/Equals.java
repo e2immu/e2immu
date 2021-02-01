@@ -54,7 +54,7 @@ public class Equals extends BinaryOperator {
         Primitives primitives = evaluationContext.getPrimitives();
         if (l.equals(r)) return new BooleanConstant(primitives, true, objectFlow);
 
-        if (l.isUnknown() || r.isUnknown()) throw new UnsupportedOperationException();
+        //if (l.isUnknown() || r.isUnknown()) throw new UnsupportedOperationException();
 
         if(checkForNull) {
             if (l instanceof NullConstant && evaluationContext.isNotNull0(r) ||

@@ -583,7 +583,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 log(ANALYSER, "Write value {} to variable {}", valueToWrite, variable.fullyQualifiedName());
                 // first do the properties that come with the value; later, we'll write the ones in changeData
                 Map<VariableProperty, Integer> propertiesToSet = sharedState.evaluationContext.getValueProperties(valueToWrite);
-                vic.setValue(valueToWrite, valueToWriteIsDelayed, changeData.staticallyAssignedVariables(), propertiesToSet, false);
+                vic.setValue(valueToWrite, valueToWriteIsDelayed, changeData.staticallyAssignedVariables(),
+                        propertiesToSet, false);
 
                 if (vic.isLocalVariableInLoopDefinedOutside()) {
                     VariableInfoContainer local = addToAssignmentsInLoop(vic, variable.fullyQualifiedName());
@@ -599,9 +600,12 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             } else {
                 if (changeData.value() != null) {
                     // a modifying method caused an updated instance value
+                    // for statically assigned variables, EMPTY means: take the value of the initial, unless it has no value
+                    LinkedVariables staticallyAssigned = changeData.staticallyAssignedVariables().isEmpty() ?
+                            vi1.staticallyAssignedVariablesIsSet() ? vi1.getStaticallyAssignedVariables() : LinkedVariables.EMPTY :
+                            changeData.staticallyAssignedVariables();
                     boolean valueIsDelayed = sharedState.evaluationContext.isDelayed(changeData.value());
-                    vic.setValue(changeData.value(), valueIsDelayed,
-                            changeData.staticallyAssignedVariables(), changeData.properties(), false);
+                    vic.setValue(changeData.value(), valueIsDelayed, staticallyAssigned, changeData.properties(), false);
                 } else if (variable instanceof This || !evaluationResult.someValueWasDelayed() && !changeData.haveDelayesCausedByMethodCalls()) {
                     // we're not assigning (and there is no change in instance because of a modifying method)
                     // only then we copy from INIT to EVAL
@@ -1222,17 +1226,16 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
 
     // a special case, which allows us to set not null
     private void step3_ForEach(SharedState sharedState, Expression value) {
-        if (sharedState.evaluationContext.getProperty(value, VariableProperty.NOT_NULL) >= MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL) {
-            Structure structure = statementAnalysis.statement.getStructure();
-            LocalVariableCreation lvc = (LocalVariableCreation) structure.initialisers().get(0);
-            VariableInfoContainer vic = statementAnalysis.findForWriting(lvc.localVariable.name());
-            vic.ensureEvaluation(VariableInfoContainer.NOT_YET_ASSIGNED, //index() + VariableInfoContainer.Level.EVALUATION.label,
-                    VariableInfoContainer.NOT_YET_READ, VariableInfoContainer.NOT_A_VARIABLE_FIELD, Set.of());
-            VariableInfo initial = vic.getPreviousOrInitial();
-            vic.setValue(initial.getValue(), initial.isDelayed(), LinkedVariables.EMPTY, Map.of(), false);
-            vic.setProperty(VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL, VariableInfoContainer.Level.EVALUATION);
-            vic.setLinkedVariables(initial.getLinkedVariables(), false);
-        }
+        boolean variableNotNull = sharedState.evaluationContext.getProperty(value, VariableProperty.NOT_NULL) >= MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL;
+        Structure structure = statementAnalysis.statement.getStructure();
+        LocalVariableCreation lvc = (LocalVariableCreation) structure.initialisers().get(0);
+        VariableInfoContainer vic = statementAnalysis.findForWriting(lvc.localVariable.name());
+        vic.ensureEvaluation(VariableInfoContainer.NOT_YET_ASSIGNED, //index() + VariableInfoContainer.Level.EVALUATION.label,
+                VariableInfoContainer.NOT_YET_READ, VariableInfoContainer.NOT_A_VARIABLE_FIELD, Set.of());
+        VariableInfo initial = vic.getPreviousOrInitial();
+        Expression evalValue = NewObject.forForEach(statementAnalysis.primitives, initial.variable().parameterizedType(), variableNotNull);
+        vic.setValue(evalValue, initial.isDelayed(), LinkedVariables.EMPTY, Map.of(), false);
+        vic.setLinkedVariables(initial.getLinkedVariables(), false);
     }
 
     private Expression step3_IfElse_Switch_Assert(SharedState sharedState, Expression value) {

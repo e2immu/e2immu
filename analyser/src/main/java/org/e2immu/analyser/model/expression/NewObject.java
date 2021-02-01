@@ -94,6 +94,13 @@ public record NewObject(MethodInfo constructor,
                 new BooleanConstant(primitives, true), ObjectFlow.NO_FLOW);
     }
 
+    public static NewObject forForEach(Primitives primitives, ParameterizedType parameterizedType, boolean notNull) {
+        Diamond diamond = parameterizedType.parameters.isEmpty() ? Diamond.NO : Diamond.SHOW_ALL;
+        return new NewObject(null, parameterizedType, diamond, List.of(),
+                notNull ? MultiLevel.EFFECTIVELY_NOT_NULL: MultiLevel.NULLABLE, null, null,
+                new BooleanConstant(primitives, true), ObjectFlow.NO_FLOW);
+    }
+
     /*
      local variable, defined outside a loop, will be assigned inside the loop
      don't assume that this instance is non-null straight away; state is also generic at this point

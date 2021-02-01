@@ -61,7 +61,7 @@ public class Sum extends BinaryOperator {
             return IntConstant.intOrDouble(primitives, ln.doubleValue() + rn.doubleValue(), objectFlow);
 
         // any unknown lingering
-        if (l.isUnknown() || r.isUnknown()) throw new UnsupportedOperationException();
+        //if (l.isUnknown() || r.isUnknown()) throw new UnsupportedOperationException();
 
         // a + (b+c)
         if (l instanceof Numeric ln && r instanceof Sum s && s.lhs instanceof Numeric l2) {
