@@ -127,12 +127,9 @@ public record ConditionManager(Expression condition,
     }
 
     /**
-     * Evaluate an expression in the context of the absolute state.
+     * computes a value in the context of the current condition manager.
      *
-     * @param value the expression to be evaluated
-     * @return The boolean constant 'true' if adding the expression to the state does not change the state; an unknown
-     * value if either is unknown, or the combined expression if the expression is not true given the state. The
-     * latter can be the boolean constant 'false' if an inconsistency is reported.
+     * @return a value without the precondition attached
      */
     public Expression evaluate(EvaluationContext evaluationContext, Expression value) {
         Expression absoluteState = absoluteState(evaluationContext);
@@ -147,13 +144,15 @@ public record ConditionManager(Expression condition,
 
         // this one solves boolean problems; in a boolean context, there is no difference
         // between the value and the condition
-        Expression result = new And(evaluationContext.getPrimitives(), value.getObjectFlow())
+        Expression resultWithPrecondition = new And(evaluationContext.getPrimitives(), value.getObjectFlow())
                 .append(evaluationContext, combinedWithPrecondition, value);
-        if (result.equals(combinedWithPrecondition)) {
+        if (resultWithPrecondition.equals(combinedWithPrecondition)) {
             // constant true: adding the value has no effect at all
             return new BooleanConstant(evaluationContext.getPrimitives(), true);
         }
-        return result;
+        // return the result without precondition
+        return new And(evaluationContext.getPrimitives(), value.getObjectFlow())
+                .append(evaluationContext, absoluteState, value);
     }
 
 

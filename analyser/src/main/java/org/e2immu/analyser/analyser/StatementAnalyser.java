@@ -370,7 +370,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
     }
 
     private ConditionManager makeLocalConditionManager(int iteration, StatementAnalysis previous, EvaluationContext closure) {
-        Expression combinedPrecondition = previous.methodLevelData.getCombinedPreconditionOrDelay();
+        Expression combinedPrecondition = previous.methodLevelData.getCombinedPrecondition();
         boolean combinedPreconditionIsDelayed;
         if (combinedPrecondition == null) {
             combinedPreconditionIsDelayed = true;

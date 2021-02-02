@@ -164,10 +164,12 @@ public class Test_11_IfStatement extends CommonTestRunner {
     public void test4() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("get3".equals(d.methodInfo().name) && "i3".equals(d.variableName())) {
-                String expectValue = d.iteration() == 0 ? "xx" : "map.get(label3)";
-                Assert.assertEquals(expectValue, d.currentValue().toString());
-                String expectLinked = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "";
-                Assert.assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
+                if ("0".equals(d.statementId())) {
+                    String expectValue = d.iteration() == 0 ? "<method:java.util.Map.get(Object)>" : "map.get(label3)";
+                    Assert.assertEquals(expectValue, d.currentValue().toString());
+                    String expectLinked = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "";
+                    Assert.assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
+                }
             }
         };
 
@@ -197,13 +199,40 @@ public class Test_11_IfStatement extends CommonTestRunner {
     public void test5() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("get3".equals(d.methodInfo().name) && "i3".equals(d.variableName())) {
-                String expectValue = d.iteration() == 0 ? "xx" : "map.get(label3)";
-                Assert.assertEquals(expectValue, d.currentValue().toString());
-                String expectLinked = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "";
-                Assert.assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
+                if ("0".equals(d.statementId())) {
+                    String expectValue = d.iteration() == 0 ? "<method:java.util.Map.get(Object)>" : "map.get(label3)";
+                    Assert.assertEquals(expectValue, d.currentValue().toString());
+                    String expectLinked = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "";
+                    Assert.assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
+                }
             }
         };
 
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("get1".equals(d.methodInfo().name)) {
+                if ("0.0.0".equals(d.statementId())) {
+                    Assert.assertEquals("\"3\".equals(label1)", d.condition().toString());
+                    Assert.assertEquals("true", d.state().toString());
+                    Assert.assertEquals("!\"3\".equals(label1)", d.statementAnalysis().stateData.getPrecondition().toString());
+                    Assert.assertEquals("!\"3\".equals(label1)", d.statementAnalysis().methodLevelData.getCombinedPrecondition().toString());
+                    Assert.assertEquals("true", d.conditionManagerForNextStatement().precondition().toString());
+                }
+                if ("0".equals(d.statementId())) {
+                    Assert.assertEquals("true", d.condition().toString());
+                    Assert.assertEquals("true", d.state().toString());
+                    Assert.assertEquals("!\"3\".equals(label1)", d.statementAnalysis().methodLevelData.getCombinedPrecondition().toString());
+                    Assert.assertEquals("true", d.statementAnalysis().stateData.getPrecondition().toString());
+                    Assert.assertEquals("true", d.conditionManagerForNextStatement().precondition().toString());
+                }
+                if ("1".equals(d.statementId())) {
+                    Assert.assertEquals("true", d.condition().toString());
+                    Assert.assertEquals("true", d.state().toString());
+                    Assert.assertEquals("!\"3\".equals(label1)", d.localConditionManager().precondition().toString());
+                }
+            }
+        };
+
+        // FIXME 2 ok, 1 and 3 fail
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("get1".equals(d.methodInfo().name) && d.iteration() > 0) {
                 Assert.assertEquals("null==map.get(label1)?defaultValue1:map.get(label1)",
@@ -220,6 +249,7 @@ public class Test_11_IfStatement extends CommonTestRunner {
         };
 
         testClass("IfStatement_5", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());

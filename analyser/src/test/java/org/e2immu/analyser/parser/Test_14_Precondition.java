@@ -172,7 +172,7 @@ public class Test_14_Precondition extends CommonTestRunner {
             if (RETURN_VAR.equals(d.variableName())) {
                 if ("1".equals(d.statementId())) {
                     if (d.iteration() == 0) {
-                        Assert.assertEquals("<no value>", d.currentValue().toString());
+                        Assert.assertEquals("ii>=0?ii:null", d.currentValue().toString());
                     } else {
                         Assert.assertEquals("ii", d.currentValue().toString());
                         Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL));
@@ -184,16 +184,16 @@ public class Test_14_Precondition extends CommonTestRunner {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("setInteger".equals(d.methodInfo().name)) {
                 if ("0.0.1".equals(d.statementId())) {
-                    String expect = d.iteration() == 0 ? "xx" :
+                    String expect = d.iteration() == 0 ? "null!=<field:org.e2immu.analyser.testexample.Precondition_3.integer>" :
                             "null!=org.e2immu.analyser.testexample.Precondition_3.integer$0";
                     Assert.assertEquals(expect, d.evaluationResult().value().toString());
                 }
                 if ("0.0.2".equals(d.statementId())) {
-                    String expect = d.iteration() == 0 ? "xx" : "ii";
+                    String expect = "ii";
                     Assert.assertEquals(expect, d.evaluationResult().value().toString());
                 }
                 if ("1".equals(d.statementId())) {
-                    String expect = d.iteration() == 0 ? "xx" : "ii";
+                    String expect = d.iteration() == 0 ? "ii>=0?ii:null" : "ii";
                     Assert.assertEquals(expect, d.evaluationResult().value().toString());
                 }
             }
@@ -210,7 +210,7 @@ public class Test_14_Precondition extends CommonTestRunner {
                     Assert.assertEquals("ii<=-1", d.condition().toString());
                 }
                 if ("0.0.1.0.0".equals(d.statementId())) {
-                    String expectValue = d.iteration() == 0 ? "xx" :
+                    String expectValue = d.iteration() == 0 ? "null!=<field:org.e2immu.analyser.testexample.Precondition_3.integer>" :
                             "null!=org.e2immu.analyser.testexample.Precondition_3.integer$0";
                     Assert.assertEquals(expectValue, d.condition().toString());
                 }
@@ -234,10 +234,13 @@ public class Test_14_Precondition extends CommonTestRunner {
                     VariableInfo variableInfo = d.getFieldAsVariable(integer);
                     Assert.assertTrue(variableInfo.isAssigned());
 
-                    String expect = d.iteration() == 0 ? "xx" : "null==integer&&ii>=0";
-                    Assert.assertEquals(expect, d.statementAnalysis().methodLevelData.getCombinedPrecondition().toString());
+                    String expect = d.iteration() == 0 ? "true" : "null==integer&&ii>=0";
+                    Assert.assertEquals(expect, d.statementAnalysis().methodLevelData.getCombinedPreconditionOrDelay().toString());
+                    Assert.assertEquals(d.iteration() == 0, d.statementAnalysis().methodLevelData.combinedPreconditionIsDelayed());
                 }
                 if ("1".equals(d.statementId())) {
+                    Assert.assertEquals(d.iteration() == 0, d.localConditionManager().isDelayed());
+
                     Assert.assertTrue(d.statementAnalysis().variables.isSet(INTEGER));
                     VariableInfo variableInfo = d.getFieldAsVariable(integer);
                     Assert.assertTrue(variableInfo.isAssigned());

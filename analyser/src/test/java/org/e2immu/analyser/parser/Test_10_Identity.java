@@ -60,10 +60,18 @@ public class Test_10_Identity extends CommonTestRunner {
                 } else if ("1".equals(d.statementId())) {
                     Assert.assertTrue(d.variableInfo().isRead());
                     Assert.assertEquals("1" + VariableInfoContainer.Level.EVALUATION, d.variableInfo().getReadId());
-                    Assert.assertEquals(Level.FALSE, d.getProperty(VariableProperty.MODIFIED));
+
+                    int expectModified = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
+                    Assert.assertEquals(expectModified, d.getProperty(VariableProperty.MODIFIED));
 
                     // there is an explicit @NotNull on the first parameter of debug
-                    Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL));
+                    int expectNN = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
+                    Assert.assertEquals(expectNN, d.getProperty(VariableProperty.NOT_NULL));
+
+                    String expectValue = d.iteration() == 0 ?
+                            "<parameter:org.e2immu.analyser.testexample.Identity_0.idem(String):0:s>" :
+                            "nullable? instance type String";
+                    Assert.assertEquals(expectValue, d.currentValue().toString());
                 } else Assert.fail();
             }
         };
@@ -90,7 +98,7 @@ public class Test_10_Identity extends CommonTestRunner {
         };
 
         testClass("Identity_0", 0, 0, new DebugConfiguration.Builder()
-                        .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                        //  .addStatementAnalyserVisitor(statementAnalyserVisitor)
                         .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                         .addTypeMapVisitor(typeMapVisitor)
@@ -138,8 +146,10 @@ public class Test_10_Identity extends CommonTestRunner {
                 // there is an explicit @NotNull on the first parameter of debug
                 if ("0".equals(d.statementId())) {
                     Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL));
+                    Assert.assertEquals(Level.FALSE, d.getProperty(VariableProperty.MODIFIED));
+                } else if ("1".equals(d.statementId())) {
+                    Assert.assertEquals(Level.FALSE, d.getProperty(VariableProperty.MODIFIED));
                 }
-                Assert.assertEquals(Level.FALSE, d.getProperty(VariableProperty.MODIFIED));
             }
         };
 
@@ -198,7 +208,8 @@ public class Test_10_Identity extends CommonTestRunner {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("idem4".equals(d.methodInfo().name) && "1".equals(d.statementId())) {
                 // double property wrapper
-                String expect = d.iteration() == 0 ? "xx" : "s/*@Immutable,@NotNull*//*@Immutable,@NotNull*/";
+                String expect = d.iteration() == 0 ? "<method:java.lang.String.equals(Object)>?<method:org.e2immu.analyser.testexample.Identity_3.idem(String)>:<parameter:org.e2immu.analyser.testexample.Identity_3.idem4(String):0:s>"
+                        : "s/*@Immutable,@NotNull*//*@Immutable,@NotNull*/";
                 Assert.assertEquals(expect, d.evaluationResult().value().toString());
             }
         };

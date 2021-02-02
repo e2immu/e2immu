@@ -93,6 +93,10 @@ public class MethodLevelData {
         return combinedPrecondition.isSet();
     }
 
+    public boolean combinedPreconditionIsDelayed() {
+        return !combinedPrecondition.isSet();
+    }
+
     record SharedState(StatementAnalyserResult.Builder builder,
                        EvaluationContext evaluationContext,
                        StatementAnalysis statementAnalysis,
