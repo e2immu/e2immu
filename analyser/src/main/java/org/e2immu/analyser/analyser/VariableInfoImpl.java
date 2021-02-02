@@ -22,6 +22,7 @@ import org.e2immu.analyser.analyser.util.MergeHelper;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.expression.DelayedExpression;
+import org.e2immu.analyser.model.expression.DelayedVariableExpression;
 import org.e2immu.analyser.model.expression.Negation;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.Variable;
@@ -68,7 +69,7 @@ class VariableInfoImpl implements VariableInfo {
         this.assignmentId = assignmentId;
         this.readId = readId;
         this.readAtStatementTimes = Set.of();
-        currentDelayedValue = DelayedExpression.forVariable(variable);
+        currentDelayedValue = DelayedVariableExpression.forVariable(variable);
     }
 
     // normal one for creating an initial or evaluation
@@ -80,7 +81,7 @@ class VariableInfoImpl implements VariableInfo {
             this.statementTime.set(statementTime);
         }
         this.readAtStatementTimes = Objects.requireNonNull(readAtStatementTimes);
-        currentDelayedValue = DelayedExpression.forVariable(variable);
+        currentDelayedValue = DelayedVariableExpression.forVariable(variable);
     }
 
     @Override

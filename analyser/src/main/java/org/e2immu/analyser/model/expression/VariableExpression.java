@@ -37,7 +37,7 @@ import java.util.Objects;
 @E2Container
 public record VariableExpression(Variable variable,
                                  String name,
-                                 ObjectFlow objectFlow) implements Expression {
+                                 ObjectFlow objectFlow) implements Expression, IsVariableExpression {
 
     public VariableExpression(Variable variable) {
         this(variable, ObjectFlow.NO_FLOW);

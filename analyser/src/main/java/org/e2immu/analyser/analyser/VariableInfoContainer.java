@@ -118,6 +118,8 @@ public interface VariableInfoContainer {
 
     void setProperty(VariableProperty variableProperty, int value, boolean failWhenTryingToWriteALowerValue, Level level);
 
+    void increasePropertyOfInitial(VariableProperty variableProperty, int value);
+
     /**
      * set linked variables
      *

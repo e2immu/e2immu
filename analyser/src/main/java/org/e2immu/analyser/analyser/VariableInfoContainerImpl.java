@@ -226,6 +226,16 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         variableInfo.setStaticallyAssignedVariables(staticallyAssignedVariables);
     }
 
+    public void increasePropertyOfInitial(VariableProperty variableProperty, int value) {
+        ensureNotFrozen();
+        Objects.requireNonNull(variableProperty);
+        VariableInfoImpl variableInfo = (VariableInfoImpl) getPreviousOrInitial();
+        int current = variableInfo.getProperty(variableProperty);
+        if (current < value) {
+            variableInfo.setProperty(variableProperty, value);
+        }
+    }
+
     @Override
     public void setProperty(VariableProperty variableProperty,
                             int value,

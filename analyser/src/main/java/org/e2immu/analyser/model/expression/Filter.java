@@ -174,7 +174,7 @@ public class Filter {
     }
 
     private static FieldReference extractFieldReference(Expression value) {
-        return value instanceof VariableExpression variableValue &&
+        return value instanceof IsVariableExpression variableValue &&
                 variableValue.variable() instanceof FieldReference fieldReference ? fieldReference : null;
     }
 
@@ -186,7 +186,7 @@ public class Filter {
             if (value instanceof Equals equalsValue) {
                 boolean lhsIsNull = equalsValue.lhs.isNull();
                 boolean lhsIsNotNull = equalsValue.lhs.isNotNull();
-                if ((lhsIsNull || lhsIsNotNull) && equalsValue.rhs instanceof VariableExpression v) {
+                if ((lhsIsNull || lhsIsNotNull) && equalsValue.rhs instanceof IsVariableExpression v) {
                     return new FilterResult<Variable>(Map.of(v.variable(), value), defaultRest);
                 }
             }
@@ -201,7 +201,7 @@ public class Filter {
             if (value instanceof Equals equalsValue) {
                 boolean lhsIsNull = equalsValue.lhs.isNull();
                 boolean lhsIsNotNull = equalsValue.lhs.isNotNull();
-                if ((lhsIsNull || lhsIsNotNull) && equalsValue.rhs instanceof VariableExpression v && v.variable() instanceof ParameterInfo p) {
+                if ((lhsIsNull || lhsIsNotNull) && equalsValue.rhs instanceof IsVariableExpression v && v.variable() instanceof ParameterInfo p) {
                     return new FilterResult<ParameterInfo>(Map.of(p, value), defaultRest);
                 }
             }
@@ -231,7 +231,7 @@ public class Filter {
 
         private MethodCall compatibleMethodValue(Expression value) {
             if (value instanceof MethodCall methodValue &&
-                    methodValue.object instanceof VariableExpression vv &&
+                    methodValue.object instanceof IsVariableExpression vv &&
                     vv.variable() instanceof This &&
                     compatibleMethod(methodInfo, methodValue.methodInfo)) {
                 return methodValue;

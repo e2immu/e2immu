@@ -32,18 +32,20 @@ import org.e2immu.annotation.E2Container;
 import java.util.Objects;
 
 @E2Container
-public record DelayedExpression(String msg, ParameterizedType parameterizedType) implements Expression {
+public record DelayedVariableExpression(String msg, Variable variable) implements Expression, IsVariableExpression {
 
-    public static DelayedExpression forMethod(MethodInfo methodInfo) {
-        return new DelayedExpression("<method:" + methodInfo.fullyQualifiedName + ">", methodInfo.returnType());
+    public static DelayedVariableExpression forParameter(ParameterInfo parameterInfo) {
+        return new DelayedVariableExpression("<parameter:" + parameterInfo.fullyQualifiedName() + ">", parameterInfo);
     }
 
-    public static Expression forState(Primitives primitives) {
-        return new DelayedExpression("<state>", primitives.booleanParameterizedType);
+    public static DelayedVariableExpression forField(FieldReference fieldReference) {
+        return new DelayedVariableExpression("<field:" + fieldReference.fullyQualifiedName() + ">", fieldReference);
     }
 
-    public static Expression forNewObject(ParameterizedType parameterizedType) {
-        return new DelayedExpression("<new:" + parameterizedType + ">", parameterizedType);
+    public static Expression forVariable(Variable variable) {
+        if (variable instanceof FieldReference fieldReference) return forField(fieldReference);
+        if (variable instanceof ParameterInfo parameterInfo) return forParameter(parameterInfo);
+        return new DelayedVariableExpression("<variable:" + variable.fullyQualifiedName() + ">", variable);
     }
 
     /*
@@ -58,12 +60,12 @@ public record DelayedExpression(String msg, ParameterizedType parameterizedType)
 
     @Override
     public int hashCode() {
-        return Objects.hash(msg, parameterizedType);
+        return Objects.hash(msg, variable.parameterizedType());
     }
 
     @Override
     public boolean isNumeric() {
-        return Primitives.isNumeric(parameterizedType.typeInfo);
+        return Primitives.isNumeric(variable.parameterizedType().typeInfo);
     }
 
     @Override
@@ -73,7 +75,7 @@ public record DelayedExpression(String msg, ParameterizedType parameterizedType)
 
     @Override
     public ParameterizedType returnType() {
-        return parameterizedType;
+        return variable.concreteReturnType();
     }
 
     @Override

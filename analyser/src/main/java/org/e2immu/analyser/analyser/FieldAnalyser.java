@@ -723,7 +723,7 @@ public class FieldAnalyser extends AbstractAnalyser {
         FieldReference fieldReference = (FieldReference) variable;
         FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalyser(fieldReference.fieldInfo).fieldAnalysis;
         int effectivelyFinal = fieldAnalysis.getProperty(VariableProperty.FINAL);
-        if (effectivelyFinal == Level.DELAY) return DelayedExpression.forField(fieldReference);
+        if (effectivelyFinal == Level.DELAY) return DelayedVariableExpression.forField(fieldReference);
         ObjectFlow objectFlow = fieldAnalysis.getObjectFlow();
         if (effectivelyFinal == Level.FALSE) {
             return new VariableExpression(variable, objectFlow);

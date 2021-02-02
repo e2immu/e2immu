@@ -172,7 +172,7 @@ public class ArrayAccess implements Expression {
                 if (evaluationContext.isPresent(dependentVariable)) {
                     Expression variableValue = builder.currentExpression(dependentVariable, true);
                     if(variableValue == null) {
-                        builder.setExpression(DelayedExpression.forVariable(dependentVariable));
+                        builder.setExpression(DelayedVariableExpression.forVariable(dependentVariable));
                     } else {
                         builder.setExpression(variableValue);
                     }

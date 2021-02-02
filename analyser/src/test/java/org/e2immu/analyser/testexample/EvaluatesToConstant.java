@@ -29,10 +29,6 @@ import org.e2immu.annotation.NotNull;
 
  ERROR in M:method3:1.0.1.0.0: Unreachable statement
  ERROR in M:method3:1.0.1: Condition in 'if' or 'switch' statement evaluates to constant
-
- As of 20210201, we cannot see the useless assignment to b anymore (while a == null becomes
- permanently false, the variable b remains read).
-
  ERROR in M:method3:2: Useless assignment: b
  ERROR in M:method3:2: Unused local variable: b
 
@@ -49,7 +45,6 @@ public class EvaluatesToConstant {
     @Constant("c")
     private static String method2(String param) {
         String b = someMethod(param);
-        // ERROR: if statement evaluates to constant
         if (b == null) {
             return "a";
         }
@@ -61,7 +56,6 @@ public class EvaluatesToConstant {
         String b = someMethod(param);
         if (param.contains("a")) {
             String a = someMethod("xzy");
-            // ERROR 12: if statement evaluates to constant
             if (a == null) {
                 return b + "c";
             }

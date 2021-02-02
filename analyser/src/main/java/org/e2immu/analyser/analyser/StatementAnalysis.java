@@ -417,9 +417,13 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
     public void initIteration1Plus(EvaluationContext evaluationContext, MethodInfo currentMethod,
                                    StatementAnalysis previous) {
 
-        if (previous == null && parent == null) {
+        /* the reason we do this for all statements in the method's block is that in a subsequent iteration,
+         the first statements may already be DONE, so the code doesn't reach here!
+         */
+        if (parent == null) {
             init1PlusStartOfMethodDoParametersAndThis(evaluationContext.getAnalyserContext(), currentMethod);
         }
+
         StatementAnalysis copyFrom = previous == null ? parent : previous;
 
         variables.toImmutableMap().values().forEach(vic -> {
@@ -469,6 +473,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         return assignmentId == null || !assignmentId.startsWith(parent.index);
     }
 
+
     private void init1PlusStartOfMethodDoParametersAndThis(AnalyserContext analyserContext, MethodInfo currentMethod) {
         for (ParameterInfo parameterInfo : currentMethod.methodInspection.get().getParameters()) {
             VariableInfo prevIteration = findOrNull(parameterInfo, VariableInfoContainer.Level.INITIAL);
@@ -477,7 +482,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                 ParameterAnalysis parameterAnalysis = analyserContext.getParameterAnalysis(parameterInfo);
                 for (VariableProperty variableProperty : FROM_ANALYSER_TO_PROPERTIES) {
                     int value = parameterAnalysis.getProperty(variableProperty);
-                    vic.setProperty(variableProperty, value, VariableInfoContainer.Level.INITIAL);
+                    vic.increasePropertyOfInitial(variableProperty, value);
                 }
             } else {
                 log(ANALYSER, "Skipping parameter {}, not read, assigned", parameterInfo.fullyQualifiedName());
@@ -488,7 +493,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             This thisVariable = new This(analyserContext, currentMethod.typeInfo);
             VariableInfoContainer vic = findForWriting(thisVariable);
             propertyMap(analyserContext, methodAnalysis.getMethodInfo().typeInfo)
-                    .forEach((vp, v) -> vic.setProperty(vp, v, VariableInfoContainer.Level.INITIAL));
+                    .forEach(vic::increasePropertyOfInitial);
         }
     }
 
@@ -786,7 +791,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         if (inPartOfConstruction() && myOwn) { // field that must be initialised
             Expression initialValue = analyserContext.getFieldAnalysis(fieldReference.fieldInfo).getInitialValue();
             if (initialValue == null) { // initialiser value not yet evaluated
-                return new ExpressionAndLinkedVariables(DelayedExpression.forField(fieldReference), true, LinkedVariables.EMPTY);
+                return new ExpressionAndLinkedVariables(DelayedVariableExpression.forField(fieldReference), true, LinkedVariables.EMPTY);
             }
             if (initialValue.isConstant()) {
                 return new ExpressionAndLinkedVariables(initialValue, false, LinkedVariables.EMPTY);
@@ -797,12 +802,12 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
 
         int effectivelyFinal = fieldAnalysis.getProperty(VariableProperty.FINAL);
         if (effectivelyFinal == Level.DELAY && !selfReference) {
-            return new ExpressionAndLinkedVariables(DelayedExpression.forField(fieldReference), true, LinkedVariables.DELAY);
+            return new ExpressionAndLinkedVariables(DelayedVariableExpression.forField(fieldReference), true, LinkedVariables.DELAY);
         }
 
         int notNull = fieldAnalysis.getProperty(VariableProperty.NOT_NULL);
         if (notNull == Level.DELAY) {
-            return new ExpressionAndLinkedVariables(DelayedExpression.forField(fieldReference), true, LinkedVariables.DELAY);
+            return new ExpressionAndLinkedVariables(DelayedVariableExpression.forField(fieldReference), true, LinkedVariables.DELAY);
         }
 
         // when selfReference (as in this.x = other.x during construction), we never delay
@@ -812,7 +817,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             Expression efv = fieldAnalysis.getEffectivelyFinalValue();
             if (efv == null) {
                 if (analyserContext.getTypeAnalysis(fieldReference.fieldInfo.owner).isBeingAnalysed() && !selfReference) {
-                    return new ExpressionAndLinkedVariables(DelayedExpression.forField(fieldReference), true, LinkedVariables.DELAY);
+                    return new ExpressionAndLinkedVariables(DelayedVariableExpression.forField(fieldReference), true, LinkedVariables.DELAY);
                 }
             } else {
                 if (efv.isConstant()) {

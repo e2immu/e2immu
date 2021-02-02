@@ -257,7 +257,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             if (notNullRequired == MultiLevel.EFFECTIVELY_NOT_NULL && notNull < notNullRequired) {
                 // we have a second attempt looking at the current condition, absolute state, etc.
                 if (evaluationContext.isNotNull0(value)) {
-                    notNull = MultiLevel.EFFECTIVELY_NOT_NULL;
+                    return; // great, no problem, no reason to complain nor increase the property
                 }
             }
             // if the variable has a value, and this value is NOT @NotNull, then we'll raise an error

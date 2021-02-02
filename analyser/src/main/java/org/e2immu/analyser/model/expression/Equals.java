@@ -65,14 +65,6 @@ public class Equals extends BinaryOperator {
                 return new BooleanConstant(primitives, false, objectFlow);
         }
 
-        if (l instanceof NullConstant && r instanceof VariableExpression ve) {
-            Expression e = checkParam(evaluationContext, ve);
-            if (e != null) return e;
-        } else if (r instanceof NullConstant && l instanceof VariableExpression ve) {
-            Expression e = checkParam(evaluationContext, ve);
-            if (e != null) return e;
-        }
-
         if (l instanceof ConstantExpression<?> lc && r instanceof ConstantExpression<?> rc) {
             return ConstantExpression.equalsExpression(primitives, lc, rc);
         }
@@ -100,18 +92,6 @@ public class Equals extends BinaryOperator {
         }
         // recurse
         return Equals.equals(evaluationContext, newLeft, newRight, objectFlow);
-    }
-
-    private static Expression checkParam(EvaluationContext evaluationContext, VariableExpression ve) {
-        if (ve.variable() instanceof ParameterInfo p) {
-            int nn = evaluationContext.getPropertyFromPreviousOrInitial(p, VariableProperty.NOT_NULL, evaluationContext.getInitialStatementTime());
-            if (nn == Level.DELAY) {
-                // null == p, with p not decided on not null, needs a delay
-                return new Equals(evaluationContext.getPrimitives(), NullConstant.NULL_CONSTANT,
-                        DelayedExpression.forParameter(p), ObjectFlow.NO_FLOW);
-            }
-        }
-        return null;
     }
 
     // null == a ? null: b with guaranteed b != null --> a

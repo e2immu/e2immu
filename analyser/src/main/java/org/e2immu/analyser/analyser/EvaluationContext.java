@@ -19,6 +19,7 @@ package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.DelayedExpression;
+import org.e2immu.analyser.model.expression.DelayedVariableExpression;
 import org.e2immu.analyser.model.expression.NewObject;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.FieldReference;
@@ -242,7 +243,7 @@ public interface EvaluationContext {
     }
 
     default boolean isDelayed(Expression expression) {
-        if (expression instanceof DelayedExpression) return true;
+        if (expression instanceof DelayedExpression || expression instanceof DelayedVariableExpression) return true;
         try {
             return expression.subElements().stream().anyMatch(e -> e instanceof Expression expr && isDelayed(expr));
         } catch (RuntimeException runtimeException) {

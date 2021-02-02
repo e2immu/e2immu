@@ -209,7 +209,7 @@ public class CompanionAnalyser {
         public Expression currentValue(Variable variable, int statementTime, boolean isNotAssignmentTarget) {
             if (variable instanceof ParameterInfo parameterInfo) {
                 Map<String, Expression> remapping = companionAnalysis.remapParameters.getOrElse(null);
-                if (remapping == null) return DelayedExpression.forParameter(parameterInfo);
+                if (remapping == null) return DelayedVariableExpression.forParameter(parameterInfo);
                 return Objects.requireNonNull(remapping.get(parameterInfo.name));
             }
             return new VariableExpression(variable);
