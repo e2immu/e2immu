@@ -253,7 +253,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             if (variable instanceof This) return; // nothing to be done here
             boolean valueIsDelayed = evaluationContext.isDelayed(value);
 
-            int notNull = getProperty(variable, VariableProperty.NOT_NULL);
+            int notNull = getPropertyFromInitial(variable, VariableProperty.NOT_NULL);
             if (notNullRequired == MultiLevel.EFFECTIVELY_NOT_NULL && notNull < notNullRequired) {
                 // we have a second attempt looking at the current condition, absolute state, etc.
                 if (evaluationContext.isNotNull0(value)) {
@@ -280,9 +280,9 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             }
         }
 
-        private int getProperty(Expression expression, VariableProperty variableProperty) {
+        private int getPropertyFromInitial(Expression expression, VariableProperty variableProperty) {
             if (expression instanceof VariableExpression variableExpression) {
-                return getProperty(variableExpression.variable(), variableProperty);
+                return getPropertyFromInitial(variableExpression.variable(), variableProperty);
             }
             return evaluationContext.getProperty(expression, variableProperty);
         }
@@ -290,13 +290,26 @@ public record EvaluationResult(EvaluationContext evaluationContext,
         /*
         it is important that the value is read from initial (-C), and not from evaluation (-E)
          */
-        private int getProperty(Variable variable, VariableProperty variableProperty) {
+        private int getPropertyFromInitial(Variable variable, VariableProperty variableProperty) {
             ChangeData changeData = valueChanges.get(variable);
             if (changeData != null) {
                 Integer inChangeData = changeData.properties.getOrDefault(variableProperty, null);
                 if (inChangeData != null) return inChangeData;
             }
             return evaluationContext.getPropertyFromPreviousOrInitial(variable, variableProperty, statementTime);
+        }
+
+        /*
+       For method delay resolved we must get the value of Eval (since that is only relevant in a second iteration,
+       and the delay is set in Eval)
+        */
+        private int getPropertyFromEval(Variable variable, VariableProperty variableProperty) {
+            ChangeData changeData = valueChanges.get(variable);
+            if (changeData != null) {
+                Integer inChangeData = changeData.properties.getOrDefault(variableProperty, null);
+                if (inChangeData != null) return inChangeData;
+            }
+            return evaluationContext.getProperty(variable, variableProperty);
         }
 
         public void markRead(Variable variable) {
@@ -415,7 +428,8 @@ public record EvaluationResult(EvaluationContext evaluationContext,
         }
 
         public void markMethodDelayResolved(Variable variable) {
-            if (evaluationContext == null || !evaluationContext.isPresent(variable) || getProperty(variable, VariableProperty.METHOD_DELAY) == Level.TRUE) {
+            if (evaluationContext == null || !evaluationContext.isPresent(variable) ||
+                    getPropertyFromEval(variable, VariableProperty.METHOD_DELAY) == Level.TRUE) {
                 setProperty(variable, VariableProperty.METHOD_DELAY_RESOLVED, Level.TRUE);
             }
         }
@@ -437,7 +451,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
         public void markContentModified(Variable variable, int modified) {
             assert evaluationContext != null;
             if (evaluationContext.isPresent(variable)) {
-                int ignoreContentModifications = getProperty(variable, VariableProperty.IGNORE_MODIFICATIONS);
+                int ignoreContentModifications = getPropertyFromInitial(variable, VariableProperty.IGNORE_MODIFICATIONS);
                 if (ignoreContentModifications != Level.TRUE) {
                     log(DEBUG_MODIFY_CONTENT, "Mark method object as content modified {}: {}", modified, variable.fullyQualifiedName());
                     setProperty(variable, VariableProperty.MODIFIED, modified);
@@ -464,7 +478,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
 
             if (evaluationContext.isDelayed(currentExpression)) return; // not yet
             // if we already know that the variable is NOT @NotNull, then we'll raise an error
-            int notModified1 = getProperty(currentExpression, VariableProperty.NOT_MODIFIED_1);
+            int notModified1 = getPropertyFromInitial(currentExpression, VariableProperty.NOT_MODIFIED_1);
             if (notModified1 == Level.FALSE) {
                 Message message = Message.newMessage(evaluationContext.getLocation(), Message.MODIFICATION_NOT_ALLOWED, variable.simpleName());
                 messages.add(message);

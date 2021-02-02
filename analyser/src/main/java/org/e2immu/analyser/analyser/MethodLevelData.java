@@ -236,7 +236,7 @@ public class MethodLevelData {
                     fieldModified = Level.FALSE;
                 } else fieldModified = summary;
                 if (fieldModified == Level.DELAY) {
-                    log(DELAYED, "Delay marking {} as @NotModified in {}", linkedVariable.fullyQualifiedName(), sharedState.logLocation);
+                    log(DELAYED, "Delay marking field {} as @NotModified in {}", linkedVariable.fullyQualifiedName(), sharedState.logLocation);
                     analysisStatus.set(DELAYS);
                 } else {
                     log(NOT_MODIFIED, "Mark {} " + (fieldModified == Level.TRUE ? "" : "NOT") + " @Modified in {}",
@@ -250,7 +250,7 @@ public class MethodLevelData {
         if (linkedVariable instanceof ParameterInfo) {
             ParameterAnalysis parameterAnalysis = sharedState.evaluationContext.getAnalyserContext().getParameterAnalysis((ParameterInfo) linkedVariable);
             if (summary == Level.DELAY) {
-                log(DELAYED, "Delay marking {} as @NotModified in {}", linkedVariable.fullyQualifiedName(), sharedState.logLocation);
+                log(DELAYED, "Delay marking param {} as @NotModified in {}", linkedVariable.fullyQualifiedName(), sharedState.logLocation);
                 analysisStatus.set(DELAYS);
             } else {
                 log(NOT_MODIFIED, "MethodLevelData: Mark {} as {} in {}", linkedVariable.fullyQualifiedName(),

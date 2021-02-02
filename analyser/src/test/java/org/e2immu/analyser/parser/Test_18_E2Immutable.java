@@ -52,7 +52,8 @@ public class Test_18_E2Immutable extends CommonTestRunner {
             if (CONSTRUCTOR2.equals(d.methodInfo().fullyQualifiedName) && LEVEL2.equals(d.variableName())) {
                 if ("1".equals(d.statementId())) {
                     // we never know in the first iteration...
-                    String expectValue = d.iteration() == 0 ? "xx" : "2+parent2Param.level2";
+                    String expectValue = d.iteration() == 0 ? "2+<field:org.e2immu.analyser.testexample.E2Immutable_1.level2#org.e2immu.analyser.testexample.E2Immutable_1.E2Immutable_1(E2Immutable_1,String):0:parent2Param>"
+                            : "2+parent2Param.level2";
                     Assert.assertEquals(expectValue, d.currentValue().toString());
                 }
             }
@@ -149,17 +150,24 @@ public class Test_18_E2Immutable extends CommonTestRunner {
     public void test_7() throws IOException {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("accept".equals(d.methodInfo().name) && "$1".equals(d.methodInfo().typeInfo.simpleName)) {
-                String expectValue = d.iteration() == 0 ? "xx" : "<no return value>";
+                String expectValue = d.iteration() == 0 ? "<method:org.e2immu.analyser.testexample.E2Immutable_7.SimpleContainer.setI(int)>" : "<no return value>";
                 Assert.assertEquals(expectValue, d.evaluationResult().value().toString());
             }
         };
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("getMap7".equals(d.methodInfo().name) && "incremented".equals(d.variableName())) {
-                String expectValue = d.iteration() == 0 ? "xx" : "new HashMap<>(map7)/*this.size()==map7.size()*/";
-                Assert.assertEquals("it " + d.iteration() + ", statement " + d.statementId(), expectValue, d.currentValue().toString());
-                String expectLinked = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "";
-                Assert.assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
+                if("0".equals(d.statementId())) {
+                    String expectValue = d.iteration() == 0 ? "<new:Type java.util.HashMap<java.lang.String, org.e2immu.analyser.testexample.E2Immutable_7.SimpleContainer>>"
+                            : "new HashMap<>(map7)/*this.size()==map7.size()*/";
+                    Assert.assertEquals(expectValue, d.currentValue().toString());
+                    String expectLinked = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "";
+                    Assert.assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
+                }
+                if("1".equals(d.statementId())) {
+                    String expectValue = d.iteration()==0 ? "<variable:incremented>": "new HashMap<>(map7)/*this.size()==map7.size()*/";
+                    Assert.assertEquals(expectValue, d.currentValue().toString());
+                }
             }
         };
 
