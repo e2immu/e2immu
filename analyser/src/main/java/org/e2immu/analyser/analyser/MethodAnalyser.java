@@ -551,6 +551,16 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
     private AnalysisStatus computeReturnValue() {
         assert !methodAnalysis.singleReturnValue.isSet();
 
+        // some immediate short-cuts
+        if(methodInfo.typeInfo != methodInspection.getReturnType().typeInfo) {
+            methodAnalysis.setProperty(VariableProperty.FLUENT, Level.FALSE);
+        }
+        if(methodInspection.getParameters().isEmpty() ||
+                !methodInspection.getReturnType().isAssignableFrom(analyserContext,
+                        methodInspection.getParameters().get(0).parameterizedType)) {
+            methodAnalysis.setProperty(VariableProperty.IDENTITY, Level.FALSE);
+        }
+
         VariableInfo variableInfo = getReturnAsVariable();
         Expression value = variableInfo.getValue();
         if (variableInfo.isDelayed() || value.isInitialReturnExpression()) {

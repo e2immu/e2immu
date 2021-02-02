@@ -247,8 +247,8 @@ public class MethodLevelData {
             }
             return;
         }
-        if (linkedVariable instanceof ParameterInfo) {
-            ParameterAnalysis parameterAnalysis = sharedState.evaluationContext.getAnalyserContext().getParameterAnalysis((ParameterInfo) linkedVariable);
+        if (linkedVariable instanceof ParameterInfo pi) {
+            ParameterAnalysis parameterAnalysis = sharedState.evaluationContext.getAnalyserContext().getParameterAnalysis(pi);
             if (summary == Level.DELAY) {
                 log(DELAYED, "Delay marking param {} as @NotModified in {}", linkedVariable.fullyQualifiedName(), sharedState.logLocation);
                 analysisStatus.set(DELAYS);

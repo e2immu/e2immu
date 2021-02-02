@@ -487,7 +487,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         Map<Expression, Expression> translationMap = new HashMap<>();
         if (filterResult != null) {
             Expression preAspectVariableValue = companionAnalysis.getPreAspectVariableValue();
-            if(preAspectVariableValue != null) {
+            if (preAspectVariableValue != null) {
                 translationMap.put(preAspectVariableValue, filterResult.accepted().values().stream()
                         .findFirst()
                         // it is possible that no pre- information can be found... that's OK as long as it isn't used
@@ -717,47 +717,42 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             }
         }
 
-        // RULE 2: E2IMMU parameters cannot link: implemented recursively by rule 1 applied to the parameter!
+        // RULE 2: @Identity links to the 1st parameter, TODO generalised @Identity(param=3) to the 4th...
 
-        Set<Variable> result = new HashSet<>();
-        for (Expression p : parameterExpressions) {
-            // the parameter value is not E2IMMU
-            LinkedVariables cd = evaluationContext.linkedVariables(p);
-            if (cd == LinkedVariables.DELAY) return LinkedVariables.DELAY;
-            result.addAll(cd.variables());
-        }
+        int identity = methodAnalysis.getProperty(VariableProperty.IDENTITY);
+        if (identity == Level.TRUE) return evaluationContext.linkedVariables(parameterExpressions.get(0));
+
+        // rule 2 bis: TODO additional @Linked({ multiple parameters })
 
         // RULE 3: E2IMMU object cannot link, neither can implicitly immutable types
 
         int objectE2Immutable = MultiLevel.value(evaluationContext.getProperty(object, VariableProperty.IMMUTABLE), MultiLevel.E2IMMUTABLE);
         if (objectE2Immutable >= MultiLevel.EVENTUAL_AFTER) {
-            return new LinkedVariables(result);
+            return LinkedVariables.EMPTY;
         }
 
         // ignore object if return type is implicitly immutable in the type of the method
         // in Map<K,V>, V get(K key) has a return type V which is implicitly immutable in Map
         TypeAnalysis typeAnalysis = evaluationContext.getAnalyserContext().getTypeAnalysis(methodInfo.typeInfo);
         Set<ParameterizedType> implicitlyImmutable = typeAnalysis.getImplicitlyImmutableDataTypes();
-        if(implicitlyImmutable != null && implicitlyImmutable.contains(methodInfo.returnType())) {
-            return new LinkedVariables(result);
+        if (implicitlyImmutable != null && implicitlyImmutable.contains(methodInfo.returnType())) {
+            return LinkedVariables.EMPTY;
         }
 
         // RULE 4: independent method: no link to object
 
         int independent = methodAnalysis.getProperty(VariableProperty.INDEPENDENT);
         if (independent == MultiLevel.EFFECTIVE) {
-            return new LinkedVariables(result); // no link to object
+            return LinkedVariables.EMPTY;
         }
 
 
         // FIXME objects of the same type
-        if (independent == Level.DELAY || objectE2Immutable == MultiLevel.DELAY ||
+        if (independent == Level.DELAY || objectE2Immutable == MultiLevel.DELAY || identity == Level.DELAY ||
                 typeAnalysis.getImplicitlyImmutableDataTypes() == null) return LinkedVariables.DELAY;
         LinkedVariables b = evaluationContext.linkedVariables(object);
         if (b == LinkedVariables.DELAY) return LinkedVariables.DELAY;
-        result.addAll(b.variables());
-
-        return new LinkedVariables(result);
+        return new LinkedVariables(b.variables());
     }
 
     @Override

@@ -27,6 +27,7 @@ import java.util.Map.Entry;
 
 // extension class: implies @NotNull on first argument
 @ExtensionClass(of = Map.class)
+@E2Immutable // not container, addAll modifies argument
 public class SMapList {
 
     private static final String NULL_KEY = "Adding null key to map-list";
@@ -38,7 +39,7 @@ public class SMapList {
 
     @NotModified
     @Constant(absent = true)
-    public static <A, B> boolean addAll(@NotModified Map<A, List<B>> src, @NotNull Map<A, List<B>> dest) {
+    public static <A, B> boolean addAll(@NotModified Map<A, List<B>> src, @Modified @NotNull Map<A, List<B>> dest) {
         boolean change = false;
         for (Entry<A, List<B>> e : src.entrySet()) {
             List<B> inDest = dest.get(e.getKey());
@@ -54,7 +55,7 @@ public class SMapList {
         return change;
     }
 
-    public static <A, B> boolean add(Map<A, List<B>> map, @NotNull A a, @NotNull B b) {
+    public static <A, B> boolean add(Map<A, List<B>> map, @NotNull @NotModified A a, @NotModified @NotNull B b) {
         if (a == null) {
             throw new IllegalArgumentException(NULL_KEY);
         }
