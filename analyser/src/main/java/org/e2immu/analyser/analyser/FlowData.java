@@ -223,7 +223,7 @@ public class FlowData {
                                                                         boolean stateIsDelayed,
                                                                         boolean localConditionManagerIsDelayed) {
         AnalysisStatus delayBasedOnExecutionAndLocalConditionManager =
-                stateIsDelayed || localConditionManagerIsDelayed ? DELAYS : DONE;
+                stateIsDelayed || localConditionManagerIsDelayed || blockExecution == Execution.DELAYED_EXECUTION ? DELAYS : DONE;
 
         // some statements that need executing independently of delays
         if (previousStatement == null) {

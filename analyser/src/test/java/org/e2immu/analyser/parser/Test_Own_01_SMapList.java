@@ -93,7 +93,7 @@ public class Test_Own_01_SMapList extends CommonTestRunner {
 
         if ("addAll".equals(d.methodInfo().name)) {
             if ("e".equals(d.variableName()) && "1.0.0".equals(d.statementId())) {
-                String expectValue = d.iteration() == 0 ? "<variable:e>" : "nullable instance type Entry<A, List<B>>";
+                String expectValue = d.iteration() == 0 ? "<variable:e>" : "instance type Entry<A, List<B>>";
                 Assert.assertEquals(expectValue, d.currentValue().toString());
             }
             if (d.variable() instanceof ParameterInfo dest && dest.name.equals("dest")) {

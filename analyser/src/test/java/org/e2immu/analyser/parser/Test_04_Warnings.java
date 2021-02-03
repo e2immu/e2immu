@@ -1,9 +1,6 @@
 package org.e2immu.analyser.parser;
 
-import org.e2immu.analyser.analyser.AnalysisStatus;
-import org.e2immu.analyser.analyser.LinkedVariables;
-import org.e2immu.analyser.analyser.VariableInfoContainer;
-import org.e2immu.analyser.analyser.VariableProperty;
+import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.inspector.MethodResolution;
 import org.e2immu.analyser.model.*;
@@ -63,11 +60,7 @@ public class Test_04_Warnings extends CommonTestRunner {
             AnalysisStatus analysisStatus = d.result().analysisStatus;
             if ("method1".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
-                    //TODO     Assert.assertEquals(d.toString(), AnalysisStatus.DONE, analysisStatus);
                     Assert.assertEquals("true", d.state().toString());
-                }
-                if ("1".equals(d.statementId()) || "1.0.0".equals(d.statementId())) {
-                    //TODO  Assert.assertEquals(d.toString(), AnalysisStatus.DONE, analysisStatus);
                 }
                 if ("1".equals(d.statementId())) {
                     Assert.assertEquals("t.length()>=19", d.absoluteState().toString());
@@ -83,8 +76,6 @@ public class Test_04_Warnings extends CommonTestRunner {
                     if (d.iteration() >= 2) {
                         Assert.assertNotNull(d.haveError(Message.IGNORING_RESULT_OF_METHOD_CALL));
                     }
-                    //TODO      Assert.assertEquals(d.toString(), AnalysisStatus.DONE, analysisStatus);
-
                     Assert.assertEquals("t.length()>=19", d.state().toString());
                 }
             }
@@ -104,8 +95,15 @@ public class Test_04_Warnings extends CommonTestRunner {
 
                 Assert.assertEquals(d.toString(), AnalysisStatus.DONE, analysisStatus);
             }
-            if ("checkForEach".equals(d.methodInfo().name) && "0".equals(d.statementId())) {
-                Assert.assertFalse(d.statementAnalysis().variables.isSet("loopVar")); // created in 1.0.0
+            if ("checkForEach".equals(d.methodInfo().name)) {
+                if ("0".equals(d.statementId())) {
+                    Assert.assertFalse(d.statementAnalysis().variables.isSet("loopVar")); // created in 1.0.0
+                }
+                if ("1.0.0".equals(d.statementId())) {
+                    FlowData.Execution expect = d.iteration() == 0 ? FlowData.Execution.DELAYED_EXECUTION :
+                            FlowData.Execution.ALWAYS;
+                    Assert.assertEquals(expect, d.statementAnalysis().flowData.getGuaranteedToBeReachedInMethod());
+                }
             }
             if ("checkForEach".equals(d.methodInfo().name) && "1".equals(d.statementId())) {
                 Assert.assertEquals("WARN in M:checkForEach:1: Unused loop variable: loopVar", d.haveError(Message.UNUSED_LOOP_VARIABLE));
