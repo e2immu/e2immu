@@ -996,7 +996,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 VariableInfoContainer vic;
                 if (!statementAnalysis.variables.isSet(lvc.localVariable.name())) {
 
-                    // create the local (loop, catch) variable
+                    // create the local (loop) variable
 
                     lvr = new LocalVariableReference(analyserContext, lvc.localVariable, List.of());
                     VariableInLoop variableInLoop = statement() instanceof LoopStatement ?
@@ -1233,13 +1233,11 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         boolean variableNotNull = sharedState.evaluationContext.getProperty(value, VariableProperty.NOT_NULL) >= MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL;
         Structure structure = statementAnalysis.statement.getStructure();
         LocalVariableCreation lvc = (LocalVariableCreation) structure.initialisers().get(0);
-        VariableInfoContainer vic = statementAnalysis.findForWriting(lvc.localVariable.name());
-        vic.ensureEvaluation(VariableInfoContainer.NOT_YET_ASSIGNED, //index() + VariableInfoContainer.Level.EVALUATION.label,
-                VariableInfoContainer.NOT_YET_READ, VariableInfoContainer.NOT_A_VARIABLE_FIELD, Set.of());
-        VariableInfo initial = vic.getPreviousOrInitial();
-        Expression evalValue = NewObject.forForEach(statementAnalysis.primitives, initial.variable().parameterizedType(), variableNotNull);
-        vic.setValue(evalValue, initial.isDelayed(), LinkedVariables.EMPTY, Map.of(), false);
-        vic.setLinkedVariables(initial.getLinkedVariables(), false);
+        String copy = lvc.localVariable.name()+"$"+index();
+        if(statementAnalysis.variables.isSet(copy) && variableNotNull) {
+            VariableInfoContainer vic = statementAnalysis.variables.get(copy);
+            vic.setProperty(VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL, false, VariableInfoContainer.Level.INITIAL );
+        }
     }
 
     private Expression step3_IfElse_Switch_Assert(SharedState sharedState, Expression value) {

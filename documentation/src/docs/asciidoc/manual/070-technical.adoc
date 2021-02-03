@@ -331,3 +331,24 @@ The expected complication is in methods where there is no value yet for the fiel
 The field analyser must be able to grab this nullity independently of the value:
 
 * for each method, it needs to know if nullity computations have not been halted. Typically, this is done in two stages:
+
+
+==== Loop variables overview
+
+Different situations
+
+. variable defined outside a loop
+.. read in the loop, but not assigned in the loop: normal situation
+.. assigned in the loop
+. variable defined in the loop statement. Either can be assigned inside the loop as well.
+.. `for(String s: strings)`
+.. `for(int i=0; i<n; i++)`
+
+`localVariablesAssignedInThisLoop` needs to be frozen before we know the distinction between situations 1 and 2.
+As long as the latest assignment is before the loop, the variable in the loop is represented by `var$loop`.
+Once we're beyond the assignment, it becomes `var$loop$assigmentId`.
+
+We make no distinction between `forEach` and `for`: in both cases, the variable is added to the `localVariablesAssignedInThisLoop` set.
+While we could force the variable to be `final` in the former case, we'll want different versions in case modifying methods are called on them.
+
+In the `forEach` case, we assign a value, once, during the evaluation phase of the loop statement.
