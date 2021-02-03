@@ -463,11 +463,8 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
     }
 
     private boolean notLocalLoopCopyOutOfComfortZone(VariableInfoContainer vic) {
-        if (vic.current().variable() instanceof FieldReference fieldReference) {
-            StatementAnalysis lastStatement = lastStatement();
-            if (lastStatement == null) return false;
-            return lastStatement.variables.isSet(fieldReference.fullyQualifiedName());
-        }
+        // we'd only copy fields if they are used somewhere in the block. BUT there are "hidden" fields
+        // such as local variables with an array initialiser containing fields as a value; conclusion: copy all, but don't merge unless used.
         if (vic.getVariableInLoop().variableType() != VariableInLoop.VariableType.LOOP_COPY) return true;
         String assignmentId = vic.getVariableInLoop().assignmentId(); // 2nd dollar
         return assignmentId == null || !assignmentId.startsWith(parent.index);
@@ -646,8 +643,8 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                             return new ConditionAndVariableInfo(e2.condition,
                                     vic2.current(), e2.alwaysEscapes, vic2.getVariableInLoop());
                         })
+                        .filter(cav -> cav.variableInfo.isRead() || cav.variableInfo.isAssigned())
                         .collect(Collectors.toUnmodifiableList());
-
                 boolean ignoreCurrent;
                 if (toMerge.size() == 1 && toMerge.get(0).variableInLoop.assignmentId() != null
                         && toMerge.get(0).variableInLoop.assignmentId().startsWith(index) && !atLeastOneBlockExecuted) {
@@ -655,7 +652,13 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                 } else {
                     ignoreCurrent = atLeastOneBlockExecuted;
                 }
-                destination.merge(evaluationContext, stateOfConditionManagerBeforeExecution, ignoreCurrent, toMerge);
+                if (toMerge.size() > 0) {
+                    destination.merge(evaluationContext, stateOfConditionManagerBeforeExecution, ignoreCurrent, toMerge);
+                } else if (vic.hasMerge()) {
+                    assert evaluationContext.getIteration() > 0; // or it wouldn't have had a merge
+                    // in previous iterations there was data for us, but now there isn't; copy from I/E into M
+                    vic.copyFromEvalIntoMerge();
+                }
             }
         });
     }

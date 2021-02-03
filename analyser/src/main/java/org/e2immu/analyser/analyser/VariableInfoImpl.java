@@ -414,7 +414,9 @@ class VariableInfoImpl implements VariableInfo {
         if (!atLeastOneBlockExecuted && currentValue.isUnknown()) return currentValue;
 
         if (mergeSources.isEmpty()) {
-            if (atLeastOneBlockExecuted) throw new UnsupportedOperationException();
+            if (atLeastOneBlockExecuted) {
+                throw new UnsupportedOperationException("No merge sources for "+ variable.fullyQualifiedName());
+            }
             return currentValue;
         }
 

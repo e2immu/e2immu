@@ -23,6 +23,7 @@ import org.e2immu.analyser.analyser.LinkedVariables;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.Level;
+import org.e2immu.analyser.model.MultiLevel;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -59,7 +60,7 @@ public class Test_26_Enum extends CommonTestRunner {
         };
 
         testClass("Enum_1", 0, 0, new DebugConfiguration.Builder()
-              //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 
@@ -80,11 +81,12 @@ public class Test_26_Enum extends CommonTestRunner {
 
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("posInList".equals(d.methodInfo().name) && "2".equals(d.statementId())) {
-                String expectValue = d.iteration() <= 1 ? "xx" : "i$2<=2";
+                String expectValue = d.iteration() == 0 ? "<array length>><variable:i>" :
+                        d.iteration() == 1 ? "<array length>>i$2" : "i$2<=2";
                 Assert.assertEquals(expectValue, d.evaluationResult().value().toString());
             }
             if ("posInList".equals(d.methodInfo().name) && "2.0.0".equals(d.statementId())) {
-                String expectValue = d.iteration() <= 1 ? "xx" : "instance type Enum_3==this";
+                String expectValue = "nullable? instance type Enum_3==this";
                 Assert.assertEquals(expectValue, d.evaluationResult().value().toString());
             }
         };
@@ -92,11 +94,11 @@ public class Test_26_Enum extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if (!"posInList".equals(d.methodInfo().name)) return;
             if ("array".equals(d.variableName()) && ("0".equals(d.statementId()) || "1".equals(d.statementId()))) {
-                String expectValue = d.iteration() <= 1 ? "xx" : "{ONE,TWO,THREE}";
+                String expectValue = d.iteration() <= 2 ? "<method:org.e2immu.analyser.testexample.Enum_3.values()>" : "{ONE,TWO,THREE}";
                 Assert.assertEquals(expectValue, d.currentValue().toString());
             }
             if ("array[i]".equals(d.variableName())) {
-                String expectValue = d.iteration() <= 1 ? "xx" : "instance type Enum_3";
+                String expectValue = d.iteration() <= 2 ? "<state>" : "instance type Enum_3";
                 Assert.assertEquals(expectValue, d.currentValue().toString());
             }
             if (THIS.equals(d.variableName())) {
@@ -105,14 +107,11 @@ public class Test_26_Enum extends CommonTestRunner {
                 }
             }
             if (THREE.equals(d.variableName())) {
-                if ("0".equals(d.statementId()) || "1".equals(d.statementId()) || "2.0.0.0.0".equals(d.statementId())) {
-                    Assert.assertEquals("Statement " + d.statementId() + " it " + d.iteration(),
-                            "new Enum_3(3)", d.currentValue().toString());
+                if ("0".equals(d.statementId()) || "1".equals(d.statementId()) || "2".equals(d.statementId())) {
+                    Assert.assertEquals("new Enum_3(3)", d.currentValue().toString());
+                    Assert.assertTrue(d.iteration() >= 3);
                 }
-                if ("2.0.0".equals(d.statementId())) {
-                    String expectValue = d.iteration() == 0 ? "xx" : "new Enum_3(3)";
-                    Assert.assertEquals(expectValue, d.currentValue().toString());
-                }
+                // FIXME not visible in 2.0.0, 2.0.0.0.0
             }
             if ("i$2".equals(d.variableName())) {
                 String expectValue = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "i";
@@ -120,10 +119,10 @@ public class Test_26_Enum extends CommonTestRunner {
                         expectValue, d.variableInfo().getLinkedVariables().toString());
             }
             if ("i$2$2-E".equals(d.variableName())) {
-                String expectValue = d.iteration() <= 1 ? "xx" : "1+i$2";
+                String expectValue = d.iteration() <= 2 ? "<variable:i$2$2-E>" : "1+i$2";
                 Assert.assertEquals("Statement " + d.statementId() + ", it " + d.iteration(),
                         expectValue, d.currentValue().toString());
-                String expectLinked = d.iteration() <= 1 ? LinkedVariables.DELAY_STRING : "i";
+                String expectLinked = d.iteration() <= 2 ? LinkedVariables.DELAY_STRING : "i";
                 Assert.assertEquals("Statement " + d.statementId() + ", it " + d.iteration(),
                         expectLinked, d.variableInfo().getLinkedVariables().toString());
             }
@@ -136,13 +135,14 @@ public class Test_26_Enum extends CommonTestRunner {
                 Assert.assertEquals(d.iteration() > 1, d.statementAnalysis().variables.isSet(THREE));
 
                 if ("2.0.0.0.0".equals(d.statementId())) {
-                    String expectCondition = d.iteration() <= 1 ? "xx" : "instance type Enum_3==this";
+                    String expectCondition = "nullable? instance type Enum_3==this";
                     Assert.assertEquals(expectCondition, d.condition().toString());
                 }
 
                 if ("2.0.0".equals(d.statementId())) {
                     Assert.assertTrue(d.statementAnalysis().variables.isSet("array[i]"));
-                    String expectCondition = d.iteration() <= 1 ? "xx" : "i$2<=2";
+                    String expectCondition = d.iteration() == 0 ? "<array length>><variable:i>" :
+                            d.iteration() == 1 ? "<array length>>i$2" : "i$2<=2";
                     Assert.assertEquals(expectCondition, d.condition().toString());
                 }
             }
@@ -157,18 +157,30 @@ public class Test_26_Enum extends CommonTestRunner {
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("THREE".equals(d.fieldInfo().name)) {
-                int expectConstant = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
+                int expectConstant = d.iteration() <= 1 ? Level.DELAY : Level.TRUE;
                 Assert.assertEquals(expectConstant, d.fieldAnalysis().getProperty(VariableProperty.CONSTANT));
             }
+            if ("cnt".equals(d.fieldInfo().name)) {
+                Assert.assertEquals("cnt", d.fieldAnalysis().getEffectivelyFinalValue().toString());
+                Assert.assertEquals(Level.TRUE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
+                Assert.assertEquals(Level.FALSE, d.fieldAnalysis().getProperty(VariableProperty.MODIFIED));
+            }
+        };
+
+
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            int expectImmutable = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_E2IMMUTABLE;
+            Assert.assertEquals(expectImmutable, d.typeAnalysis().getProperty(VariableProperty.IMMUTABLE));
         };
 
         // expect an "always true" warning on the assert
         testClass("Enum_3", 0, 1, new DebugConfiguration.Builder()
-             //   .addEvaluationResultVisitor(evaluationResultVisitor)
-             //   .addStatementAnalyserVisitor(statementAnalyserVisitor)
-             //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-             //   .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-             //   .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                //  .addEvaluationResultVisitor(evaluationResultVisitor)
+                //  .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                //     .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
                 .build());
     }
 

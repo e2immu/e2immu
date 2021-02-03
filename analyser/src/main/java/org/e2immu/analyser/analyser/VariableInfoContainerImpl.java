@@ -328,7 +328,17 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
                 evaluation.setStatementTime(previous.getStatementTime());
             }
         }
+    }
 
+    @Override
+    public void copyFromEvalIntoMerge() {
+        assert hasMerge();
+
+        VariableInfo eval = best(Level.EVALUATION);
+        VariableInfoImpl mergeImpl = merge.get();
+        mergeImpl.setValue(eval.getValue(), eval.isDelayed());
+        mergeImpl.setLinkedVariables(eval.getLinkedVariables());
+        eval.propertyStream().forEach(e -> mergeImpl.setProperty(e.getKey(), e.getValue()));
     }
 
     @Override
