@@ -492,8 +492,9 @@ public class Resolver {
         methodGraph.visit((from, toList) -> {
             try {
                 if (from instanceof MethodInfo methodInfo) {
-                    Set<WithInspectionAndAnalysis> dependencies = methodGraph.dependenciesOnlyTerminals(from);
-                    Set<MethodInfo> methodsReached = dependencies.stream().filter(w -> w instanceof MethodInfo).map(w -> (MethodInfo) w).collect(Collectors.toSet());
+                    Set<WithInspectionAndAnalysis> dependencies = methodGraph.dependenciesWithoutStartingPoint(from);
+                    Set<MethodInfo> methodsReached = dependencies.stream()
+                            .filter(w -> w instanceof MethodInfo).map(w -> (MethodInfo) w).collect(Collectors.toSet());
 
                     MethodResolution.Builder methodResolutionBuilder = new MethodResolution.Builder();
                     methodResolutionBuilder.methodsOfOwnClassReached.set(methodsReached);

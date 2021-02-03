@@ -22,15 +22,10 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Primitives;
-import org.e2immu.analyser.util.AddOnceSet;
-import org.e2immu.analyser.util.SetOnce;
-import org.e2immu.analyser.util.SetOnceMap;
+import org.e2immu.analyser.util.*;
 import org.e2immu.annotation.AnnotationMode;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 
 public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
 
@@ -98,6 +93,11 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
         return implicitlyImmutableDataTypes;
     }
 
+    public static class CycleInfo {
+        public final AddOnceSet<MethodInfo> nonModified = new AddOnceSet<>();
+        public final FlipSwitch modified = new FlipSwitch();
+    }
+
     public static class Builder extends AbstractAnalysisBuilder implements TypeAnalysis {
         public final TypeInfo typeInfo;
         public final AddOnceSet<ObjectFlow> constantObjectFlows = new AddOnceSet<>();
@@ -108,6 +108,8 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
 
         public final SetOnceMap<String, MethodInfo> aspects = new SetOnceMap<>();
         public final SetOnce<List<Expression>> invariants = new SetOnce<>();
+
+        public final SetOnceMap<Set<MethodInfo>, CycleInfo> nonModifiedCountForMethodCallCycle = new SetOnceMap<>();
 
         public Builder(Primitives primitives, TypeInfo typeInfo) {
             super(primitives, typeInfo.simpleName);

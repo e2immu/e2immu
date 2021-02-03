@@ -18,31 +18,39 @@
 
 package org.e2immu.analyser.testexample;
 
+import org.e2immu.annotation.Modified;
 import org.e2immu.annotation.NotModified;
 
-public class CyclicReferences_3 {
+public class CyclicReferences_4 {
+    private static int count = 0;
 
-    @NotModified
+    @Modified
     public static boolean methodC(String paramC) {
         if ("b".equals(paramC)) return methodD(paramC);
         return "a".equals(paramC);
     }
 
-    @NotModified
+    @Modified
     public static boolean methodD(String paramD) {
         if ("a".equals(paramD)) return methodE(paramD);
         return "b".equals(paramD);
     }
 
-    @NotModified
+    @Modified
     public static boolean methodE(String paramE) {
         if ("b".equals(paramE)) return methodF(paramE);
         return "a".equals(paramE);
     }
 
-    @NotModified
+    @Modified
     public static boolean methodF(String paramF) {
         if ("a".equals(paramF)) return methodC(paramF);
+        count++;
         return "b".equals(paramF);
+    }
+
+    @NotModified
+    public static int getCount() {
+        return count;
     }
 }

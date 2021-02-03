@@ -152,10 +152,10 @@ public class MethodInfo implements WithInspectionAndAnalysis {
         UpgradableBooleanMap<TypeInfo> annotationTypes =
                 inspection.getAnnotations().stream().flatMap(ae -> ae.typesReferenced().stream()).collect(UpgradableBooleanMap.collector());
         UpgradableBooleanMap<TypeInfo> analysedAnnotationTypes =
-                hasBeenAnalysed()? methodAnalysis.get().getAnnotationStream()
+                hasBeenAnalysed() ? methodAnalysis.get().getAnnotationStream()
                         .filter(e -> e.getValue().isVisible())
                         .flatMap(e -> e.getKey().typesReferenced().stream())
-                        .collect(UpgradableBooleanMap.collector()): UpgradableBooleanMap.of();
+                        .collect(UpgradableBooleanMap.collector()) : UpgradableBooleanMap.of();
         UpgradableBooleanMap<TypeInfo> exceptionTypes =
                 inspection.getExceptionTypes().stream().flatMap(et -> et.typesReferenced(true).stream()).collect(UpgradableBooleanMap.collector());
         UpgradableBooleanMap<TypeInfo> bodyTypes = hasBeenInspected() ?
@@ -306,7 +306,7 @@ public class MethodInfo implements WithInspectionAndAnalysis {
     }
 
     public boolean isAbstract() {
-        if(typeInfo.typeInspection.get().isInterface()) {
+        if (typeInfo.typeInspection.get().isInterface()) {
             return !methodInspection.get().getModifiers().contains(MethodModifier.DEFAULT);
         }
         return methodInspection.get().getModifiers().contains(MethodModifier.ABSTRACT);
@@ -394,5 +394,10 @@ public class MethodInfo implements WithInspectionAndAnalysis {
 
     public boolean hasStatements() {
         return methodInspection.get().getMethodBody().structure.statements().size() > 0;
+    }
+
+    public boolean partOfCallCycle() {
+        Set<MethodInfo> reached = methodResolution.get().methodsOfOwnClassReached();
+        return reached.size() > 1 && reached.contains(this);
     }
 }

@@ -152,27 +152,29 @@ public class EvaluateMethodCall {
             return builder.compose(reInline).setExpression(reInline.value()).build();
         }
 
-        // singleReturnValue implies non-modifying
-        if (methodAnalysis.isBeingAnalysed() && methodAnalysis.getSingleReturnValue() != null) {
-            // if this method was identity?
-            Expression srv = methodAnalysis.getSingleReturnValue();
-            if (srv.isInstanceOf(InlinedMethod.class)) {
-                InlinedMethod iv = srv.asInstanceOf(InlinedMethod.class);
+        if(methodAnalysis.isBeingAnalysed()) {
+            // singleReturnValue implies non-modifying
+            if (methodAnalysis.getSingleReturnValue() != null) {
+                // if this method was identity?
+                Expression srv = methodAnalysis.getSingleReturnValue();
+                if (srv.isInstanceOf(InlinedMethod.class)) {
+                    InlinedMethod iv = srv.asInstanceOf(InlinedMethod.class);
 
-                EvaluationResult shortCut = tryEvaluationShortCut(evaluationContext, builder, objectValue, iv);
-                if (shortCut != null) return shortCut;
+                    EvaluationResult shortCut = tryEvaluationShortCut(evaluationContext, builder, objectValue, iv);
+                    if (shortCut != null) return shortCut;
 
-                Map<Expression, Expression> translationMap = EvaluateParameters.translationMap(methodInfo, parameters);
-                EvaluationResult reSrv = srv.reEvaluate(evaluationContext, translationMap);
-                return builder.compose(reSrv).setExpression(reSrv.value()).build();
+                    Map<Expression, Expression> translationMap = EvaluateParameters.translationMap(methodInfo, parameters);
+                    EvaluationResult reSrv = srv.reEvaluate(evaluationContext, translationMap);
+                    return builder.compose(reSrv).setExpression(reSrv.value()).build();
+                }
+                if (srv.isConstant()) {
+                    return builder.setExpression(srv).build();
+                }
+            } else if (!methodInfo.partOfCallCycle()) {
+                // we will, at some point, analyse this method, but in case of cycles, this is a bit risky
+                log(Logger.LogTarget.DELAYED, "Delaying method value on {}", methodInfo.fullyQualifiedName);
+                return builder.setExpression(DelayedExpression.forMethod(methodInfo)).build();
             }
-            if (srv.isConstant()) {
-                return builder.setExpression(srv).build();
-            }
-        } else if (methodAnalysis.isBeingAnalysed()) {
-            // we will, at some point, analyse this method
-            log(Logger.LogTarget.DELAYED, "Delaying method value on {}", methodInfo.fullyQualifiedName);
-            return builder.setExpression(DelayedExpression.forMethod(methodInfo)).build();
         }
 
         // normal method value

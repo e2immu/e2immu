@@ -145,6 +145,7 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
                     .add("obtainMostCompletePrecondition", (sharedState) -> obtainMostCompletePrecondition())
                     .add("makeInternalObjectFlowsPermanent", this::makeInternalObjectFlowsPermanent)
                     .add("computeModified", (sharedState) -> methodInfo.isConstructor ? DONE : computeModified())
+                    .add("computeModifiedCycles", (sharedState -> methodInfo.isConstructor ? DONE : computeModifiedInternalCycles()))
                     .add("computeReturnValue", (sharedState) -> methodInfo.noReturnValue() ? DONE : computeReturnValue())
                     .add("detectMissingStaticModifier", (iteration) -> methodInfo.isConstructor ? DONE : detectMissingStaticModifier())
                     .add("computeOnlyMarkPrepWork", (sharedState) -> methodInfo.isConstructor ? DONE : computeOnlyMarkPrepWork(sharedState))
@@ -552,10 +553,10 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
         assert !methodAnalysis.singleReturnValue.isSet();
 
         // some immediate short-cuts
-        if(methodInfo.typeInfo != methodInspection.getReturnType().typeInfo) {
+        if (methodInfo.typeInfo != methodInspection.getReturnType().typeInfo) {
             methodAnalysis.setProperty(VariableProperty.FLUENT, Level.FALSE);
         }
-        if(methodInspection.getParameters().isEmpty() ||
+        if (methodInspection.getParameters().isEmpty() ||
                 !methodInspection.getReturnType().isAssignableFrom(analyserContext,
                         methodInspection.getParameters().get(0).parameterizedType)) {
             methodAnalysis.setProperty(VariableProperty.IDENTITY, Level.FALSE);
@@ -706,6 +707,45 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
             return true; // go deeper
         });
         return applicability.get();
+    }
+
+    private AnalysisStatus computeModifiedInternalCycles() {
+        Set<MethodInfo> cycle = methodInfo.methodResolution.get().methodsOfOwnClassReached();
+        boolean isCycle = methodInfo.partOfCallCycle();
+        if (!isCycle) return DONE;
+        int modified = methodAnalysis.getProperty(VariableProperty.MODIFIED);
+        TypeAnalysisImpl.Builder builder = (TypeAnalysisImpl.Builder) typeAnalysis;
+        TypeAnalysisImpl.CycleInfo cycleInfo = builder.nonModifiedCountForMethodCallCycle.getOrCreate(cycle, x -> new TypeAnalysisImpl.CycleInfo());
+
+        // we decide for the group
+        if (modified == Level.TRUE) {
+            if (!cycleInfo.modified.isSet()) cycleInfo.modified.set();
+            methodAnalysis.setProperty(VariableProperty.MODIFIED, Level.TRUE);
+            return DONE;
+        }
+
+        // others have decided for us
+        if (cycleInfo.modified.isSet()) {
+            methodAnalysis.setProperty(VariableProperty.MODIFIED, Level.TRUE);
+            return DONE;
+        }
+
+        if (modified == Level.FALSE) {
+            if (!cycleInfo.nonModified.contains(methodInfo)) cycleInfo.nonModified.add(methodInfo);
+
+            if (cycleInfo.nonModified.size() == cycle.size()) {
+                methodAnalysis.setProperty(VariableProperty.MODIFIED, Level.FALSE);
+                return DONE;
+            }
+        }
+        // we all agree
+        if (cycleInfo.nonModified.size() == cycle.size()) {
+            methodAnalysis.setProperty(VariableProperty.MODIFIED, Level.FALSE);
+            return DONE;
+        }
+        // wait
+
+        return DELAYS;
     }
 
     private AnalysisStatus computeModified() {

@@ -19,7 +19,6 @@
 
 package org.e2immu.analyser.parser;
 
-import org.e2immu.analyser.analyser.LinkedVariables;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.config.EvaluationResultVisitor;
@@ -27,7 +26,6 @@ import org.e2immu.analyser.config.MethodAnalyserVisitor;
 import org.e2immu.analyser.config.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.ParameterInfo;
-import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -55,7 +53,7 @@ public class Test_20_CyclicReferences extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("findTailRecursion".equals(d.methodInfo().name) && d.variable() instanceof ParameterInfo p && p.name.equals("list")) {
                 Assert.assertEquals("statement " + d.statementId() + ", iteration " + d.iteration(),
-                        "nullable? instance type List<String>" , d.currentValue().toString());
+                        "nullable? instance type List<String>", d.currentValue().toString());
 
                 Assert.assertEquals("", d.variableInfo().getLinkedVariables().toString());
             }
@@ -76,11 +74,24 @@ public class Test_20_CyclicReferences extends CommonTestRunner {
 
     @Test
     public void test_2() throws IOException {
-        testClass("CyclicReferences_2", 0, 0, new DebugConfiguration.Builder().build());
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("methodB".equals(d.methodInfo().name) || "methodA".equals(d.methodInfo().name)) {
+                Assert.assertTrue(d.methodInfo().methodResolution.get().methodsOfOwnClassReached().contains(d.methodInfo()));
+            }
+        };
+
+        testClass("CyclicReferences_2", 0, 0, new DebugConfiguration.Builder()
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .build());
     }
 
     @Test
     public void test_3() throws IOException {
         testClass("CyclicReferences_3", 0, 0, new DebugConfiguration.Builder().build());
+    }
+
+    @Test
+    public void test_4() throws IOException {
+        testClass("CyclicReferences_4", 0, 0, new DebugConfiguration.Builder().build());
     }
 }

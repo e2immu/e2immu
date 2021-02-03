@@ -62,37 +62,44 @@ public class DependencyGraph<T> extends Freezable {
     @Independent
     public Set<T> dependencies(@NotNull T t) {
         Set<T> result = new HashSet<>();
-        Set<T> doNotVisitDoNotAdd = new HashSet<>();
-        recursivelyComputeDependencies(t, result, doNotVisitDoNotAdd, false);
-        return result;
-    }
-
-    // return all transitive dependencies, only return terminals
-    @Independent
-    public Set<T> dependenciesOnlyTerminals(@NotNull T t) {
-        Set<T> result = new HashSet<>();
-        Set<T> doNotVisitDoNotAdd = new HashSet<>();
-        recursivelyComputeDependencies(t, result, doNotVisitDoNotAdd, true);
+        recursivelyComputeDependencies(t, result);
         return result;
     }
 
     @NotModified
-    private void recursivelyComputeDependencies(@NotNull T t, @NotNull Set<T> result, @NotNull Set<T> doNotVisitDoNotAdd, boolean onlyTerminals) {
+    private void recursivelyComputeDependencies(@NotNull T t, @NotNull Set<T> result) {
         Objects.requireNonNull(t);
         Node<T> node = nodeMap.get(t);
-        if (onlyTerminals) {
-            if (node == null || node.dependsOn == null || node.dependsOn.isEmpty()) {
-                result.add(t);
-                return;
-            }
-        } else {
-            result.add(t);
-        }
-        doNotVisitDoNotAdd.add(t);
+
+        result.add(t);
+
         if (node != null && node.dependsOn != null) {
             node.dependsOn.forEach(d -> {
-                if (!doNotVisitDoNotAdd.contains(d)) {
-                    recursivelyComputeDependencies(d, result, doNotVisitDoNotAdd, onlyTerminals);
+                if (!result.contains(d)) {
+                    recursivelyComputeDependencies(d, result);
+                }
+            });
+        }
+    }
+
+    @Independent
+    public Set<T> dependenciesWithoutStartingPoint(@NotNull T t) {
+        Set<T> result = new HashSet<>();
+        recursivelyComputeDependenciesWithoutStartingPoint(t, result);
+        return result;
+    }
+
+
+    @NotModified
+    private void recursivelyComputeDependenciesWithoutStartingPoint(@NotNull T t, @NotNull Set<T> result) {
+        Objects.requireNonNull(t);
+        Node<T> node = nodeMap.get(t);
+
+        if (node != null && node.dependsOn != null) {
+            node.dependsOn.forEach(d -> {
+                if (!result.contains(d)) {
+                    result.add(d);
+                    recursivelyComputeDependenciesWithoutStartingPoint(d, result);
                 }
             });
         }
@@ -130,7 +137,8 @@ public class DependencyGraph<T> extends Freezable {
 
     @Independent
     public List<T> sorted() {
-        return sorted(t -> {});
+        return sorted(t -> {
+        });
     }
 
     @Independent
@@ -161,15 +169,5 @@ public class DependencyGraph<T> extends Freezable {
             }
         }
         return result;
-    }
-
-    public boolean equalTransitiveTerminals(@NotNull DependencyGraph<T> other) {
-        if (nodeMap.size() != other.nodeMap.size()) return false;
-        for (T node : nodeMap.keySet()) {
-            Set<T> dependencies = dependenciesOnlyTerminals(node);
-            Set<T> otherDependencies = other.dependenciesOnlyTerminals(node);
-            if (!dependencies.equals(otherDependencies)) return false;
-        }
-        return true;
     }
 }

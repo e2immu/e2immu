@@ -216,8 +216,8 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
 
-        // potential circular reference?
         boolean alwaysModifying;
+        boolean neverModifying;
         boolean delayUndeclared;
         boolean recursiveCall;
 
@@ -228,6 +228,9 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             boolean circularCallOutsidePrimaryType = methodPrimaryType != currentPrimaryType &&
                     currentPrimaryType.typeResolution.get().circularDependencies().contains(methodPrimaryType) &&
                     !ShallowTypeAnalyser.IS_FACT_FQN.equals(methodInfo.fullyQualifiedName());
+
+            // internal circular dependency (as opposed to one outside the primary type)
+            neverModifying = methodInfo.partOfCallCycle();
 
             boolean undeclaredFunctionalInterface;
             if (methodInfo.isSingleAbstractMethod()) {
@@ -246,6 +249,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         } else {
             alwaysModifying = false;
             delayUndeclared = false;
+            neverModifying = false;
             recursiveCall = false;
         }
 
@@ -257,7 +261,8 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             throw e;
         }
         // is the method modifying, do we need to wait?
-        int modified = alwaysModifying ? Level.TRUE : recursiveCall ? Level.FALSE : methodAnalysis.getProperty(VariableProperty.MODIFIED);
+        int modified = alwaysModifying ? Level.TRUE : recursiveCall || neverModifying ? Level.FALSE
+                : methodAnalysis.getProperty(VariableProperty.MODIFIED);
         int methodDelay = Level.fromBool(modified == Level.DELAY || delayUndeclared);
 
         // effectively not null is the default, but when we're in a not null situation, we can demand effectively content not null
@@ -454,13 +459,6 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 // we clear the constructor and its arguments after calling a modifying method on the object
                 newObject.copyAfterModifyingMethodOnConstructor(newState.get());
 
-        // update the object of the modifying call
-        /*
-        if (objectValue instanceof VariableExpression variableValue) {
-            LinkedVariables linkedVariables = variablesLinkedToScopeVariableInModifyingMethod(evaluationContext, methodInfo, parameterValues);
-            builder.modifyingMethodAccess(variableValue.variable(), modifiedInstance, linkedVariables);
-        }
-         */
         LinkedVariables linkedVariables = variablesLinkedToScopeVariableInModifyingMethod(evaluationContext, methodInfo, parameterValues);
         if (object instanceof VariableExpression variableValue && !(variableValue.variable() instanceof This)) {
             builder.modifyingMethodAccess(variableValue.variable(), modifiedInstance, linkedVariables);
@@ -747,7 +745,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         }
 
 
-        // FIXME objects of the same type
+        // TODO objects of the same type
         if (independent == Level.DELAY || objectE2Immutable == MultiLevel.DELAY || identity == Level.DELAY ||
                 typeAnalysis.getImplicitlyImmutableDataTypes() == null) return LinkedVariables.DELAY;
         LinkedVariables b = evaluationContext.linkedVariables(object);
