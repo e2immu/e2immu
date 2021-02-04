@@ -1126,6 +1126,9 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 statementAnalysis.methodLevelData.internalObjectFlows.freeze();
             }
             if (statementAnalysis.statement instanceof BreakStatement breakStatement) {
+                if(statementAnalysis.parent.statement instanceof SwitchStatement) {
+                    return analysisStatus;
+                }
                 StatementAnalysis.FindLoopResult correspondingLoop = statementAnalysis.findLoopByLabel(breakStatement);
                 Expression state = sharedState.localConditionManager.stateUpTo(sharedState.evaluationContext, correspondingLoop.steps());
                 boolean stateIsDelayed = sharedState.evaluationContext.isDelayed(state);
@@ -1164,9 +1167,10 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             } else if (statementAnalysis.statement instanceof ForEachStatement) {
                 step3_ForEach(sharedState, value);
             } else if (!valueIsDelayed && (statementAnalysis.statement instanceof IfElseStatement ||
-                    statementAnalysis.statement instanceof SwitchStatement ||
                     statementAnalysis.statement instanceof AssertStatement)) {
-                value = step3_IfElse_Switch_Assert(sharedState, value);
+                value = step3_IfElse_Assert(sharedState, value);
+            } else if (!valueIsDelayed && statementAnalysis.statement instanceof SwitchStatement switchStatement) {
+                step3_Switch(sharedState, value, switchStatement);
             }
 
             // the value can be delayed even if it is "true", for example (Basics_3)
@@ -1233,14 +1237,41 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         boolean variableNotNull = sharedState.evaluationContext.getProperty(value, VariableProperty.NOT_NULL) >= MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL;
         Structure structure = statementAnalysis.statement.getStructure();
         LocalVariableCreation lvc = (LocalVariableCreation) structure.initialisers().get(0);
-        String copy = lvc.localVariable.name()+"$"+index();
-        if(statementAnalysis.variables.isSet(copy) && variableNotNull) {
+        String copy = lvc.localVariable.name() + "$" + index();
+        if (statementAnalysis.variables.isSet(copy) && variableNotNull) {
             VariableInfoContainer vic = statementAnalysis.variables.get(copy);
-            vic.setProperty(VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL, false, VariableInfoContainer.Level.INITIAL );
+            vic.setProperty(VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL, false, VariableInfoContainer.Level.INITIAL);
         }
     }
 
-    private Expression step3_IfElse_Switch_Assert(SharedState sharedState, Expression value) {
+    /*
+    goal: raise errors, exclude branches, etc.
+     */
+    private void step3_Switch(SharedState sharedState, Expression switchExpression, SwitchStatement switchStatement) {
+        assert switchExpression != null;
+        List<String> never = new ArrayList<>();
+        List<String> always = new ArrayList<>();
+        for (SwitchEntry switchEntry : switchStatement.switchEntries) {
+            for (Expression label : switchEntry.labels) {
+                Expression labelEqualsSwitchExpression = Equals.equals(sharedState.evaluationContext,
+                        label, switchExpression, ObjectFlow.NO_FLOW);
+                Expression evaluated = sharedState.localConditionManager.evaluate(sharedState.evaluationContext, labelEqualsSwitchExpression);
+                if (evaluated.isBoolValueTrue()) {
+                    always.add(label.toString());
+                } else if (evaluated.isBoolValueFalse()) {
+                    never.add(label.toString());
+                }
+            }
+            // we could have any combination of the three variables
+        }
+        if (!never.isEmpty() || !always.isEmpty()) {
+            String msg = !always.isEmpty() ? "Is always reached: " + String.join("; ", always) :
+                    "Is never reached: " + String.join("; ", never);
+            statementAnalysis.ensure(Message.newMessage(getLocation(), Message.TRIVIAL_CASES_IN_SWITCH, msg));
+        }
+    }
+
+    private Expression step3_IfElse_Assert(SharedState sharedState, Expression value) {
         assert value != null;
 
         Expression evaluated = sharedState.localConditionManager.evaluate(sharedState.evaluationContext, value);
@@ -1289,10 +1320,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                                 Message.UNREACHABLE_STATEMENT));
                     });
                 }
-            } else {
-                // switch
-                message = Message.CONDITION_EVALUATES_TO_CONSTANT;
-            }
+            } else throw new UnsupportedOperationException();
             statementAnalysis.ensure(Message.newMessage(sharedState.evaluationContext.getLocation(), message));
             return evaluated;
         }

@@ -29,6 +29,7 @@ import java.util.Objects;
 @E2Container
 public class Message {
 
+
     public enum Severity {
         INFO,
         WARN,
@@ -92,6 +93,7 @@ public class Message {
     public static final String WRONG_LINKS = "Contradicting linked variable information";
 
     public static final String USELESS_LOCAL_CLASS_DECLARATION ="Unused local class declaration (no statements follow)";
+    public static final String TRIVIAL_CASES_IN_SWITCH = "Trivial cases in switch";
 
     @NotNull1
     @E2Container

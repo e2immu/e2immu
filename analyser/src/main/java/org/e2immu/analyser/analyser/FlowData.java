@@ -279,12 +279,13 @@ public class FlowData {
             setInterruptsFlow(Map.of(ESCAPE, Execution.ALWAYS));
             return DONE.combine(analysisStatus);
         }
-        if (statement instanceof BreakStatement) {
-            setInterruptsFlow(Map.of(InterruptsFlow.createBreak(((BreakStatement) statement).label), Execution.ALWAYS));
+        if (statement instanceof BreakStatement breakStatement &&
+                !(statementAnalyser.parent().statement instanceof SwitchStatement)) {
+            setInterruptsFlow(Map.of(InterruptsFlow.createBreak(breakStatement.label), Execution.ALWAYS));
             return DONE.combine(analysisStatus);
         }
-        if (statement instanceof ContinueStatement) {
-            setInterruptsFlow(Map.of(InterruptsFlow.createContinue(((ContinueStatement) statement).label), Execution.ALWAYS));
+        if (statement instanceof ContinueStatement continueStatement) {
+            setInterruptsFlow(Map.of(InterruptsFlow.createContinue(continueStatement.label), Execution.ALWAYS));
             return DONE.combine(analysisStatus);
         }
         // in case there is no explicit return statement at the end of the method...
