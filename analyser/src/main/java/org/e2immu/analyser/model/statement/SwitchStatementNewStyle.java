@@ -12,15 +12,14 @@ import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.util.ListUtil;
-import org.e2immu.analyser.util.StringUtil;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class SwitchStatement extends StatementWithExpression {
+public class SwitchStatementNewStyle extends StatementWithExpression {
     public final List<SwitchEntry> switchEntries;
 
-    public SwitchStatement(Expression selector, List<SwitchEntry> switchEntries) {
+    public SwitchStatementNewStyle(Expression selector, List<SwitchEntry> switchEntries) {
         super(codeOrganization(selector, switchEntries), selector);
         this.switchEntries = ImmutableList.copyOf(switchEntries);
     }
@@ -35,7 +34,7 @@ public class SwitchStatement extends StatementWithExpression {
 
     @Override
     public Statement translate(TranslationMap translationMap) {
-        return new SwitchStatement(translationMap.translateExpression(expression),
+        return new SwitchStatementNewStyle(translationMap.translateExpression(expression),
                 switchEntries.stream().map(se -> (SwitchEntry) se.translate(translationMap)).collect(Collectors.toList()));
     }
 

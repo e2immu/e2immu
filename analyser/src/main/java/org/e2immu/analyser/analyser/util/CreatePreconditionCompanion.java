@@ -67,7 +67,7 @@ public record CreatePreconditionCompanion(InspectionProvider inspectionProvider,
         builder.readyToComputeFQN(inspectionProvider); // so we can grab the parameters
 
         Expression expression = parseEvaluatedExpression(value, aspect, mainInspection, builder.getParameters());
-        Block block = new Block.BlockBuilder().addStatement(new ReturnStatement(false, expression)).build();
+        Block block = new Block.BlockBuilder().addStatement(new ReturnStatement(expression)).build();
         builder.setInspectedBlock(block);
         builder.addModifier(MethodModifier.PRIVATE);
         if (mainInspection.isStatic()) builder.addModifier(MethodModifier.STATIC);

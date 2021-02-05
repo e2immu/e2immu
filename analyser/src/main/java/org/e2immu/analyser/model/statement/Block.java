@@ -32,6 +32,7 @@ import org.e2immu.annotation.NotNull;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
@@ -70,6 +71,10 @@ public class Block extends StatementWithStructure {
             if (statements.isEmpty()) return Block.EMPTY_BLOCK;
             // NOTE: we don't do labels on empty blocks. that's pretty useless anyway
             return new Block(new ImmutableList.Builder<Statement>().addAll(statements).build(), label);
+        }
+
+        public int size() {
+            return statements.size();
         }
     }
 
@@ -121,6 +126,56 @@ public class Block extends StatementWithStructure {
             }
             if (!notFirst) notFirst = true;
             else outputBuilder.add(guideGenerator.mid());
+            outputBuilder.add(sa.statement.output(sa));
+            sa = sa.navigationData.next.isSet() ? sa.navigationData.next.get().orElse(null) : null;
+        }
+    }
+
+    /*
+    more complicated version of the above method, meant for old-style switch statements
+    explicitly duplicated the code, so that we can study the simple version diving into the more complicated one!
+     */
+    public static void outputSwitchOldStyle(OutputBuilder outputBuilder,
+                                            Guide.GuideGenerator guideGenerator,
+                                            StatementAnalysis statementAnalysis,
+                                            Map<String, List<SwitchStatementOldStyle.SwitchLabel>> idToLabels) {
+        Guide.GuideGenerator statementGg = null;
+        StatementAnalysis sa = statementAnalysis;
+        boolean notFirst = false;
+        boolean notFirstInCase = false;
+        while (sa != null) {
+            if (idToLabels.containsKey(sa.index)) {
+                if (statementGg != null) {
+                    statementGg.end();
+                }
+                if (!notFirst) notFirst = true;
+                else outputBuilder.add(guideGenerator.mid());
+                for (SwitchStatementOldStyle.SwitchLabel switchLabel : idToLabels.get(sa.index)) {
+                    outputBuilder.add(switchLabel.output());
+                    guideGenerator.mid();
+                }
+                statementGg = Guide.generatorForBlock();
+                statementGg.start();
+                notFirstInCase = false;
+            }
+            assert statementGg != null;
+            if (sa.navigationData.replacement.isSet()) {
+                if (!notFirstInCase) notFirstInCase = true;
+                else outputBuilder.add(statementGg.mid());
+                outputBuilder.add(Symbol.LEFT_BLOCK_COMMENT)
+                        .add(new Text("code will be replaced"))
+                        .add(statementGg.mid())
+                        .add(sa.statement.output(sa));
+
+                StatementAnalysis moreReplaced = sa.navigationData.next.isSet() ? sa.navigationData.next.get().orElse(null) : null;
+                if (moreReplaced != null) {
+                    statementsString(outputBuilder, statementGg, moreReplaced, true); // recursion!
+                }
+                outputBuilder.add(statementGg.mid()).add(Symbol.RIGHT_BLOCK_COMMENT);
+                sa = sa.navigationData.replacement.get();
+            }
+            if (!notFirstInCase) notFirstInCase = true;
+            else outputBuilder.add(statementGg.mid());
             outputBuilder.add(sa.statement.output(sa));
             sa = sa.navigationData.next.isSet() ? sa.navigationData.next.get().orElse(null) : null;
         }

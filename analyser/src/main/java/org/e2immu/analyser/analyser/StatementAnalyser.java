@@ -1126,7 +1126,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 statementAnalysis.methodLevelData.internalObjectFlows.freeze();
             }
             if (statementAnalysis.statement instanceof BreakStatement breakStatement) {
-                if(statementAnalysis.parent.statement instanceof SwitchStatement) {
+                if(statementAnalysis.parent.statement instanceof SwitchStatementNewStyle) {
                     return analysisStatus;
                 }
                 StatementAnalysis.FindLoopResult correspondingLoop = statementAnalysis.findLoopByLabel(breakStatement);
@@ -1169,7 +1169,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             } else if (!valueIsDelayed && (statementAnalysis.statement instanceof IfElseStatement ||
                     statementAnalysis.statement instanceof AssertStatement)) {
                 value = step3_IfElse_Assert(sharedState, value);
-            } else if (!valueIsDelayed && statementAnalysis.statement instanceof SwitchStatement switchStatement) {
+            } else if (!valueIsDelayed && statementAnalysis.statement instanceof SwitchStatementNewStyle switchStatement) {
                 step3_Switch(sharedState, value, switchStatement);
             }
 
@@ -1247,7 +1247,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
     /*
     goal: raise errors, exclude branches, etc.
      */
-    private void step3_Switch(SharedState sharedState, Expression switchExpression, SwitchStatement switchStatement) {
+    private void step3_Switch(SharedState sharedState, Expression switchExpression, SwitchStatementNewStyle switchStatement) {
         assert switchExpression != null;
         List<String> never = new ArrayList<>();
         List<String> always = new ArrayList<>();
@@ -1491,7 +1491,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         // a switch statement has no primary block, only subStructures, one per SwitchEntry
 
         // make an And of NOTs for all those conditions where the switch entry escapes
-        if (statementAnalysis.statement instanceof SwitchStatement) {
+        if (statementAnalysis.statement instanceof SwitchStatementNewStyle) {
             Expression[] components = list.stream().filter(ExecutionOfBlock::escapesAlwaysButNotWithPrecondition).map(e -> e.condition).toArray(Expression[]::new);
             if (components.length == 0) return TRUE;
             return new And(evaluationContext.getPrimitives()).append(evaluationContext, components);

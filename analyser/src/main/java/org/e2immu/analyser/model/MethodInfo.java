@@ -26,7 +26,7 @@ import org.e2immu.analyser.model.expression.MethodCall;
 import org.e2immu.analyser.model.expression.NewObject;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ForEachStatement;
-import org.e2immu.analyser.model.statement.SwitchStatement;
+import org.e2immu.analyser.model.statement.SwitchStatementNewStyle;
 import org.e2immu.analyser.output.*;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.SetOnce;
@@ -351,7 +351,7 @@ public class MethodInfo implements WithInspectionAndAnalysis {
             }
 
             // switch(e) -> type of e cannot be replaced
-            if (element instanceof SwitchStatement switchStatement) {
+            if (element instanceof SwitchStatementNewStyle switchStatement) {
                 result.add(switchStatement.expression.returnType());
             }
         };

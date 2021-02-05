@@ -268,22 +268,25 @@ public class FlowData {
 
     public AnalysisStatus analyse(StatementAnalyser statementAnalyser, StatementAnalysis previousStatement, Execution blockExecution) {
         AnalysisStatus analysisStatus = setBlockExecution(blockExecution);
-
         Statement statement = statementAnalyser.statement();
-        // without a block
-        if (statement instanceof ReturnStatement) {
-            setInterruptsFlow(Map.of(RETURN, Execution.ALWAYS));
-            return DONE.combine(analysisStatus);
+        boolean oldStyleSwitch  = statementAnalyser.parent() != null &&
+                statementAnalyser.parent().statement instanceof SwitchStatementOldStyle;
+
+        if(!oldStyleSwitch) {
+            if (statement instanceof ReturnStatement) {
+                setInterruptsFlow(Map.of(RETURN, Execution.ALWAYS));
+                return DONE.combine(analysisStatus);
+            }
+            if (statement instanceof ThrowStatement) {
+                setInterruptsFlow(Map.of(ESCAPE, Execution.ALWAYS));
+                return DONE.combine(analysisStatus);
+            }
+            if (statement instanceof BreakStatement breakStatement) {
+                setInterruptsFlow(Map.of(InterruptsFlow.createBreak(breakStatement.label), Execution.ALWAYS));
+                return DONE.combine(analysisStatus);
+            }
         }
-        if (statement instanceof ThrowStatement) {
-            setInterruptsFlow(Map.of(ESCAPE, Execution.ALWAYS));
-            return DONE.combine(analysisStatus);
-        }
-        if (statement instanceof BreakStatement breakStatement &&
-                !(statementAnalyser.parent().statement instanceof SwitchStatement)) {
-            setInterruptsFlow(Map.of(InterruptsFlow.createBreak(breakStatement.label), Execution.ALWAYS));
-            return DONE.combine(analysisStatus);
-        }
+
         if (statement instanceof ContinueStatement continueStatement) {
             setInterruptsFlow(Map.of(InterruptsFlow.createContinue(continueStatement.label), Execution.ALWAYS));
             return DONE.combine(analysisStatus);

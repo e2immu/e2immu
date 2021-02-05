@@ -23,7 +23,10 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.BinaryOperator;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.expression.Precedence;
-import org.e2immu.analyser.output.*;
+import org.e2immu.analyser.output.Guide;
+import org.e2immu.analyser.output.OutputBuilder;
+import org.e2immu.analyser.output.Symbol;
+import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.ListUtil;
 
@@ -45,21 +48,13 @@ public abstract class SwitchEntry extends StatementWithStructure {
         this.primitives = primitives;
     }
 
-    protected void appendLabels(OutputBuilder outputBuilder, boolean java12Style, Guide.GuideGenerator guideGenerator) {
+    protected void appendLabels(OutputBuilder outputBuilder, Guide.GuideGenerator guideGenerator) {
         if (labels.isEmpty()) {
             outputBuilder.add(guideGenerator.mid()).add(new Text("default")).add(Symbol.COLON_LABEL);
-        } else if (java12Style) {
+        } else {
             outputBuilder.add(guideGenerator.mid())
                     .add(labels.stream().map(Expression::output).collect(OutputBuilder.joining(Symbol.COMMA)))
                     .add(Symbol.LAMBDA);
-        } else {
-            for (Expression label : labels) {
-                outputBuilder.add(guideGenerator.mid())
-                        .add(new Text("case"))
-                        .add(Space.ONE)
-                        .add(label.output())
-                        .add(Symbol.COLON_LABEL);
-            }
         }
     }
 
@@ -100,25 +95,21 @@ public abstract class SwitchEntry extends StatementWithStructure {
     //****************************************************************************************************************
 
     public static class StatementsEntry extends SwitchEntry {
-        public final boolean java12Style;
 
         public StatementsEntry(
                 Primitives primitives,
                 Expression switchVariableAsExpression,
-                boolean java12Style,
                 List<Expression> labels,
                 List<Statement> statements) {
             super(primitives, new Structure.Builder()
                     .setExpression(generateConditionExpression(primitives, labels, switchVariableAsExpression))
                     .setStatements(statements == null ? List.of() : statements)
                     .build(), switchVariableAsExpression, labels);
-            this.java12Style = java12Style;
         }
 
         @Override
         public Statement translate(TranslationMap translationMap) {
             return new StatementsEntry(primitives, translationMap.translateExpression(switchVariableAsExpression),
-                    java12Style,
                     labels.stream().map(translationMap::translateExpression).collect(Collectors.toList()),
                     structure.statements().stream()
                             .flatMap(st -> translationMap.translateStatement(st).stream()).collect(Collectors.toList()));
@@ -137,7 +128,7 @@ public abstract class SwitchEntry extends StatementWithStructure {
         @Override
         public OutputBuilder output(Guide.GuideGenerator guideGenerator, StatementAnalysis statementAnalysis) {
             OutputBuilder outputBuilder = new OutputBuilder();
-            appendLabels(outputBuilder, java12Style, guideGenerator);
+            appendLabels(outputBuilder, guideGenerator);
 
             Guide.GuideGenerator ggStatements = Guide.defaultGuideGenerator();
             outputBuilder.add(ggStatements.start());
@@ -184,7 +175,7 @@ public abstract class SwitchEntry extends StatementWithStructure {
         @Override
         public OutputBuilder output(Guide.GuideGenerator guideGenerator, StatementAnalysis statementAnalysis) {
             OutputBuilder outputBuilder = new OutputBuilder();
-            appendLabels(outputBuilder, true, guideGenerator);
+            appendLabels(outputBuilder, guideGenerator);
             outputBuilder.add(structure.block().output(statementAnalysis));
             return outputBuilder;
         }

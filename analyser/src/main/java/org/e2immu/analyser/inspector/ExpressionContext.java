@@ -61,6 +61,7 @@ public class ExpressionContext {
     public final AnonymousTypeCounters anonymousTypeCounters;
     public final MethodInfo enclosingMethod;
     public final FieldInfo enclosingField; // terminology ~ assigning field, field that we're assigning to
+    public final ParameterizedType typeOfEnclosingSwitchExpression;
 
     private final List<TypeInfo> newlyCreatedTypes = new LinkedList<>();
 
@@ -76,18 +77,19 @@ public class ExpressionContext {
                                                                @NotNull @NotModified TypeContext typeContext,
                                                                @NotNull @NotModified AnonymousTypeCounters anonymousTypeCounters) {
         log(CONTEXT, "Creating a new expression context for {}", typeInfo.fullyQualifiedName);
-        return new ExpressionContext(Objects.requireNonNull(typeInfo), null, null, typeInfo,
+        return new ExpressionContext(Objects.requireNonNull(typeInfo), null, null,
+                null, typeInfo,
                 Objects.requireNonNull(typeContext),
                 VariableContext.initialVariableContext(null, new HashMap<>()),
                 Objects.requireNonNull(anonymousTypeCounters));
     }
 
-    public static ExpressionContext forBodyParsing(@NotNull @NotModified TypeInfo enclosingType,
-                                                   @NotNull @NotModified TypeInfo primaryType,
-                                                   @NotNull @NotModified ExpressionContext expressionContextOfType) {
+    public static ExpressionContext forTypeBodyParsing(@NotNull @NotModified TypeInfo enclosingType,
+                                                       @NotNull @NotModified TypeInfo primaryType,
+                                                       @NotNull @NotModified ExpressionContext expressionContextOfType) {
         Map<String, FieldReference> staticallyImportedFields = expressionContextOfType.typeContext.staticFieldImports();
         log(CONTEXT, "Creating a new expression context for {}", enclosingType.fullyQualifiedName);
-        return new ExpressionContext(Objects.requireNonNull(enclosingType), null, null,
+        return new ExpressionContext(Objects.requireNonNull(enclosingType), null, null, null,
                 Objects.requireNonNull(primaryType),
                 Objects.requireNonNull(expressionContextOfType.typeContext),
                 VariableContext.initialVariableContext(expressionContextOfType.variableContext, staticallyImportedFields),
@@ -97,6 +99,7 @@ public class ExpressionContext {
     private ExpressionContext(TypeInfo enclosingType,
                               MethodInfo enclosingMethod,
                               FieldInfo enclosingField,
+                              ParameterizedType typeOfEnclosingSwitchExpression,
                               TypeInfo primaryType,
                               TypeContext typeContext,
                               VariableContext variableContext,
@@ -108,42 +111,49 @@ public class ExpressionContext {
         this.enclosingField = enclosingField;
         this.anonymousTypeCounters = anonymousTypeCounters;
         this.variableContext = variableContext;
+        this.typeOfEnclosingSwitchExpression = typeOfEnclosingSwitchExpression;
     }
 
     public ExpressionContext newVariableContext(MethodInfo methodInfo) {
         log(CONTEXT, "Creating a new variable context for method {}", methodInfo.fullyQualifiedName);
-        return new ExpressionContext(enclosingType, methodInfo, null, primaryType, typeContext,
+        return new ExpressionContext(enclosingType, methodInfo, null, null, primaryType, typeContext,
                 VariableContext.dependentVariableContext(variableContext), anonymousTypeCounters);
     }
 
     public ExpressionContext newVariableContext(@NotNull String reason) {
         log(CONTEXT, "Creating a new variable context for {}", reason);
-        return new ExpressionContext(enclosingType, enclosingMethod, enclosingField, primaryType,
-                typeContext, VariableContext.dependentVariableContext(variableContext),
+        return new ExpressionContext(enclosingType, enclosingMethod, enclosingField, typeOfEnclosingSwitchExpression,
+                primaryType, typeContext, VariableContext.dependentVariableContext(variableContext),
                 anonymousTypeCounters);
     }
 
     public ExpressionContext newVariableContext(@NotNull VariableContext newVariableContext, String reason) {
         log(CONTEXT, "Creating a new variable context for {}", reason);
-        return new ExpressionContext(enclosingType, enclosingMethod, enclosingField,
+        return new ExpressionContext(enclosingType, enclosingMethod, enclosingField, typeOfEnclosingSwitchExpression,
                 primaryType, typeContext, newVariableContext, anonymousTypeCounters);
     }
 
     public ExpressionContext newSubType(@NotNull TypeInfo subType) {
         log(CONTEXT, "Creating a new type context for subtype {}", subType.simpleName);
-        return new ExpressionContext(subType, null, null, primaryType,
+        return new ExpressionContext(subType, null, null, null, primaryType,
                 new TypeContext(typeContext), variableContext, anonymousTypeCounters);
     }
 
     public ExpressionContext newTypeContext(String reason) {
         log(CONTEXT, "Creating a new type context for {}", reason);
-        return new ExpressionContext(enclosingType, enclosingMethod, enclosingField, primaryType,
+        return new ExpressionContext(enclosingType, enclosingMethod, enclosingField, typeOfEnclosingSwitchExpression, primaryType,
+                new TypeContext(typeContext), variableContext, anonymousTypeCounters);
+    }
+
+    public ExpressionContext newTypeContext(ParameterizedType typeOfEnclosingSwitchExpression) {
+        log(CONTEXT, "Creating a new type context for switch expression, with type {}", typeOfEnclosingSwitchExpression);
+        return new ExpressionContext(enclosingType, enclosingMethod, enclosingField, typeOfEnclosingSwitchExpression, primaryType,
                 new TypeContext(typeContext), variableContext, anonymousTypeCounters);
     }
 
     public ExpressionContext newTypeContext(FieldInfo fieldInfo) {
         log(CONTEXT, "Creating a new type context for initialiser of field {}", fieldInfo.fullyQualifiedName());
-        return new ExpressionContext(enclosingType, null, fieldInfo, primaryType,
+        return new ExpressionContext(enclosingType, null, fieldInfo, null, primaryType,
                 new TypeContext(typeContext), variableContext, anonymousTypeCounters);
     }
 
@@ -179,12 +189,12 @@ public class ExpressionContext {
 
             org.e2immu.analyser.model.Statement newStatement;
             if (statement.isReturnStmt()) {
-                newStatement = new ReturnStatement(false, ((ReturnStmt) statement).getExpression()
+                newStatement = new ReturnStatement(((ReturnStmt) statement).getExpression()
                         .map(e -> parseExpression(e, typeOfEnclosingMethodOrField(), null)).orElse(EmptyExpression.EMPTY_EXPRESSION));
             } else if (statement.isYieldStmt()) {
-                newStatement = new ReturnStatement(true, ((ReturnStmt) statement).getExpression()
-                        // IMPROVE: type of enclosing switch expression
-                        .map(this::parseExpression).orElse(EmptyExpression.EMPTY_EXPRESSION));
+                Expression expr = parseExpression(((YieldStmt) statement).getExpression(),
+                        Objects.requireNonNull(typeOfEnclosingSwitchExpression), null);
+                newStatement = new YieldStatement(expr);
             } else if (statement.isExpressionStmt()) {
                 Expression expression = parseExpression(((ExpressionStmt) statement).getExpression());
                 newStatement = new ExpressionAsStatement(expression);
@@ -260,11 +270,48 @@ public class ExpressionContext {
         } else {
             newExpressionContext = this;
         }
+        if (switchStmt.getEntries().isEmpty()) {
+            return new SwitchStatementNewStyle(selector, List.of());
+        }
+        if (switchStmt.getEntries().stream().anyMatch(e ->
+                e.getType() == com.github.javaparser.ast.stmt.SwitchEntry.Type.STATEMENT_GROUP)) {
+            return switchStatementOldStyle(selector, switchStmt);
+        }
         List<SwitchEntry> entries = switchStmt.getEntries()
                 .stream()
                 .map(entry -> newExpressionContext.switchEntry(selector, entry))
                 .collect(Collectors.toList());
-        return new SwitchStatement(selector, entries);
+        return new SwitchStatementNewStyle(selector, entries);
+    }
+
+    /*
+    we group all statements, and make a list of switch labels
+     */
+    private org.e2immu.analyser.model.Statement switchStatementOldStyle(Expression selector, SwitchStmt switchStmt) {
+        List<SwitchStatementOldStyle.SwitchLabel> labels = new ArrayList<>();
+        Block.BlockBuilder blockBuilder = new Block.BlockBuilder();
+        for (com.github.javaparser.ast.stmt.SwitchEntry switchEntry : switchStmt.getEntries()) {
+            boolean first = true;
+            for (Statement statement : switchEntry.getStatements()) {
+                int from = blockBuilder.size();
+                parseStatement(blockBuilder, statement, null);
+                if (first) {
+                    first = false;
+                    if (switchEntry.getLabels().isEmpty()) {
+                        // default
+                        labels.add(new SwitchStatementOldStyle.SwitchLabel(EmptyExpression.DEFAULT_EXPRESSION, from));
+                    } else {
+                        // case X: case Y:
+                        for (com.github.javaparser.ast.expr.Expression labelExpr : switchEntry.getLabels()) {
+                            Expression parsedLabel = parseExpression(labelExpr, selector.returnType(), null);
+                            var switchLabel = new SwitchStatementOldStyle.SwitchLabel(parsedLabel, from);
+                            labels.add(switchLabel);
+                        }
+                    }
+                }
+            }
+        }
+        return new SwitchStatementOldStyle(selector, blockBuilder.build(), labels);
     }
 
     public TypeInfo selectorIsEnumType(@NotNull Expression selector) {
@@ -278,14 +325,15 @@ public class ExpressionContext {
     public SwitchEntry switchEntry(Expression switchVariableAsExpression, @NotNull com.github.javaparser.ast.stmt.SwitchEntry switchEntry) {
         List<Expression> labels = switchEntry.getLabels().stream().map(this::parseExpression).collect(Collectors.toList());
         switch (switchEntry.getType()) {
-            case EXPRESSION, THROWS_STATEMENT, STATEMENT_GROUP -> {
+            case STATEMENT_GROUP -> throw new UnsupportedOperationException("In other method");
+
+            case EXPRESSION, THROWS_STATEMENT -> {
                 Block.BlockBuilder blockBuilder = new Block.BlockBuilder();
                 for (Statement statement : switchEntry.getStatements()) {
                     parseStatement(blockBuilder, statement, null);
                 }
-                boolean java12Style = switchEntry.getType() != com.github.javaparser.ast.stmt.SwitchEntry.Type.STATEMENT_GROUP;
                 return new SwitchEntry.StatementsEntry(typeContext.getPrimitives(),
-                        switchVariableAsExpression, java12Style, labels, blockBuilder.build().structure.statements());
+                        switchVariableAsExpression, labels, blockBuilder.build().structure.statements());
             }
             case BLOCK -> {
                 Block block = parseBlockOrStatement(switchEntry.getStatements().get(0));
@@ -628,6 +676,8 @@ public class ExpressionContext {
                 ParameterizedType type = ParameterizedTypeFactory.from(typeContext, instanceOfExpr.getType());
                 return new InstanceOf(typeContext.getPrimitives(), type, e, null, e.getObjectFlow());
             }
+            // new switch expression isn't there yet in JavaParser...
+
             throw new UnsupportedOperationException("Unknown expression type " + expression +
                     " class " + expression.getClass() + " at " + expression.getBegin());
         } catch (RuntimeException rte) {

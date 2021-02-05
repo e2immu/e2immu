@@ -241,10 +241,9 @@ public class TestTypeInfoStream {
                 .addAnnotation(new AnnotationExpressionImpl(testEquivalent, List.of(new StringConstant(primitives, "hello"))))
                 .setInspectedBlock(
                         new Block.BlockBuilder().addStatement(
-                                new ReturnStatement(false,
-                                        new BinaryOperator(primitives,
-                                                new VariableExpression(x), primitives.plusOperatorInt, new VariableExpression(y), Precedence.ADDITIVE
-                                        ))
+                                new ReturnStatement(new BinaryOperator(primitives,
+                                        new VariableExpression(x), primitives.plusOperatorInt, new VariableExpression(y), Precedence.ADDITIVE
+                                ))
                         ).build())
                 .build(IP).getMethodInfo();
 

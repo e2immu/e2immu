@@ -81,7 +81,7 @@ public class MethodInspector {
         if (fullInspection) {
             addModifiers(builder, amd.getModifiers());
             Expression expression = amd.getDefaultValue().map(expressionContext::parseExpression).orElse(EmptyExpression.EMPTY_EXPRESSION);
-            Block body = new Block.BlockBuilder().addStatement(new ReturnStatement(false, expression)).build();
+            Block body = new Block.BlockBuilder().addStatement(new ReturnStatement(expression)).build();
             builder.setInspectedBlock(body);
             ParameterizedType returnType = ParameterizedTypeFactory.from(expressionContext.typeContext, amd.getType());
             builder.setReturnType(returnType);

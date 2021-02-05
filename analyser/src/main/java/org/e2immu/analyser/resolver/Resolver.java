@@ -230,7 +230,7 @@ public class Resolver {
 
             log(RESOLVE, "Resolving type {}", typeInfo.fullyQualifiedName);
             TypeInfo primaryType = typeInfo.primaryType();
-            ExpressionContext expressionContextForBody = ExpressionContext.forBodyParsing(typeInfo, primaryType, expressionContextOfType);
+            ExpressionContext expressionContextForBody = ExpressionContext.forTypeBodyParsing(typeInfo, primaryType, expressionContextOfType);
             TypeContext typeContext = expressionContextForBody.typeContext;
             typeContext.addToContext(typeInfo);
             typeInspection.typeParameters().forEach(typeContext::addToContext);

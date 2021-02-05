@@ -266,7 +266,7 @@ public class TypeInspector {
                         fieldInfo, null))).collect(Collectors.toUnmodifiableList()),
                 typeInfo.asParameterizedType(expressionContext.typeContext));
         ParameterizedType valuesReturnType = new ParameterizedType(typeInfo, 1);
-        ReturnStatement returnNewArray = new ReturnStatement(false, NewObject.withArrayInitialiser(null,
+        ReturnStatement returnNewArray = new ReturnStatement(NewObject.withArrayInitialiser(null,
                 valuesReturnType, List.of(), arrayInitializer, new BooleanConstant(primitives, true), ObjectFlow.NO_FLOW));
         Block valuesBlock = new Block.BlockBuilder().addStatement(returnNewArray).build();
         MethodInspectionImpl.Builder valuesBuilder = new MethodInspectionImpl.Builder(typeInfo, "values")

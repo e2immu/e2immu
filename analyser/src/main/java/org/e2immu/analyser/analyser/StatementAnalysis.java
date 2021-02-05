@@ -297,7 +297,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
 
     public StatementAnalysis enclosingConditionalStatement() {
         if (parent == null) throw new UnsupportedOperationException();
-        if (parent.statement instanceof IfElseStatement || parent.statement instanceof SwitchStatement ||
+        if (parent.statement instanceof IfElseStatement || parent.statement instanceof SwitchStatementNewStyle ||
                 parent.statement instanceof SwitchEntry || parent.statement instanceof TryStatement) {
             return parent;
         }

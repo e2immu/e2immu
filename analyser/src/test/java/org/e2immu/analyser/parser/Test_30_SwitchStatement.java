@@ -33,16 +33,16 @@ public class Test_30_SwitchStatement extends CommonTestRunner {
     @Test
     public void test_2() throws IOException {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
-            if ("method3".equals(d.methodInfo().name) && "0.2.0".equals(d.statementId())) {
+            if ("method".equals(d.methodInfo().name) && "0.2.0".equals(d.statementId())) {
                 Assert.assertNotNull(d.haveError(Message.CONDITION_EVALUATES_TO_CONSTANT));
             }
-            if ("method3".equals(d.methodInfo().name) && "0.2.0.0.0".equals(d.statementId())) {
+            if ("method".equals(d.methodInfo().name) && "0.2.0.0.0".equals(d.statementId())) {
                 Assert.assertNotNull(d.haveError(Message.CONDITION_EVALUATES_TO_CONSTANT));
             }
         };
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
-            if ("method3".equals(d.methodInfo().name)) {
+            if ("method".equals(d.methodInfo().name)) {
                 Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.methodAnalysis().getProperty(VariableProperty.NOT_NULL));
             }
         };

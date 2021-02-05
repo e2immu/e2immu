@@ -110,7 +110,7 @@ public class ParseLambdaExpr {
             if (Primitives.isVoid(inferredReturnType)) {
                 block = new Block.BlockBuilder().addStatement(new ExpressionAsStatement(expr)).build();
             } else {
-                block = new Block.BlockBuilder().addStatement(new ReturnStatement(false, expr)).build();
+                block = new Block.BlockBuilder().addStatement(new ReturnStatement(expr)).build();
             }
         } else {
             block = newExpressionContext.parseBlockOrStatement(lambdaExpr.getBody());
