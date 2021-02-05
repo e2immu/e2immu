@@ -19,12 +19,17 @@ package org.e2immu.analyser.inspector;
 
 import com.github.javaparser.ast.visitor.GenericVisitor;
 import com.github.javaparser.ast.visitor.VoidVisitor;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.AnnotationExpression;
+import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.FieldInspection;
+import org.e2immu.analyser.model.FieldModifier;
 import org.e2immu.annotation.NotNull;
 
-import java.util.*;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 
 public class FieldInspectionImpl extends InspectionImpl implements FieldInspection {
 
@@ -40,6 +45,7 @@ public class FieldInspectionImpl extends InspectionImpl implements FieldInspecti
         }
     };
 
+    private final boolean synthetic;
     private final Set<FieldModifier> modifiers;
     private final FieldInspection.FieldInitialiser fieldInitialiser;
     private final FieldModifier access;
@@ -47,12 +53,19 @@ public class FieldInspectionImpl extends InspectionImpl implements FieldInspecti
     private FieldInspectionImpl(@NotNull Set<FieldModifier> modifiers,
                                 @NotNull FieldInspection.FieldInitialiser fieldInitialiser,
                                 @NotNull List<AnnotationExpression> annotations,
-                                @NotNull FieldModifier access) {
+                                @NotNull FieldModifier access,
+                                boolean synthetic) {
         super(annotations);
         Objects.requireNonNull(modifiers);
         this.fieldInitialiser = fieldInitialiser;
         this.modifiers = modifiers;
         this.access = Objects.requireNonNull(access);
+        this.synthetic = synthetic;
+    }
+
+    @Override
+    public boolean isSynthetic() {
+        return synthetic;
     }
 
     @Override
@@ -75,6 +88,7 @@ public class FieldInspectionImpl extends InspectionImpl implements FieldInspecti
         private com.github.javaparser.ast.expr.Expression initialiserExpression;
         private Expression inspectedInitialiserExpression;
         private FieldInspection.FieldInitialiser fieldInitialiser;
+        private boolean isSynthetic;
 
         public com.github.javaparser.ast.expr.Expression getInitialiserExpression() {
             return initialiserExpression;
@@ -109,13 +123,17 @@ public class FieldInspectionImpl extends InspectionImpl implements FieldInspecti
             this.fieldInitialiser = fieldInitialiser;
         }
 
+        public void setSynthetic(boolean synthetic) {
+            isSynthetic = synthetic;
+        }
+
         @NotNull
         public FieldInspectionImpl build() {
             return new FieldInspectionImpl(getModifiers(),
                     fieldInitialiser != null ? fieldInitialiser :
                             inspectedInitialiserExpression == null ? null : new FieldInspection.FieldInitialiser
                                     (inspectedInitialiserExpression, null, false),
-                    getAnnotations(), getAccess());
+                    getAnnotations(), getAccess(), isSynthetic);
         }
 
         @Override

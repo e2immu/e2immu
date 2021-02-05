@@ -589,11 +589,15 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         messageStream.forEach(this::ensure);
     }
 
-    public record ConditionAndLastStatement(Expression condition, StatementAnalyser lastStatement,
+    public record ConditionAndLastStatement(Expression condition,
+                                            String firstStatementIndexForOldStyleSwitch,
+                                            StatementAnalyser lastStatement,
                                             boolean alwaysEscapes) {
     }
 
-    public record ConditionAndVariableInfo(Expression condition, VariableInfo variableInfo, boolean alwaysEscapes,
+    public record ConditionAndVariableInfo(Expression condition,
+                                           VariableInfo variableInfo,
+                                           boolean alwaysEscapes,
                                            VariableInLoop variableInLoop) {
         // for testing
         public ConditionAndVariableInfo(Expression condition, VariableInfo variableInfo) {

@@ -1126,7 +1126,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 statementAnalysis.methodLevelData.internalObjectFlows.freeze();
             }
             if (statementAnalysis.statement instanceof BreakStatement breakStatement) {
-                if(statementAnalysis.parent.statement instanceof SwitchStatementNewStyle) {
+                if (statementAnalysis.parent.statement instanceof SwitchStatementNewStyle) {
                     return analysisStatus;
                 }
                 StatementAnalysis.FindLoopResult correspondingLoop = statementAnalysis.findLoopByLabel(breakStatement);
@@ -1409,17 +1409,25 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             boolean atLeastOneBlockExecuted = atLeastOneBlockExecuted(executions);
 
             // note that isEscapeAlwaysExecuted cannot be delayed (otherwise, it wasn't ALWAYS?)
-            List<StatementAnalysis.ConditionAndLastStatement> lastStatements = executions.stream()
-                    .filter(ex -> ex.startOfBlock != null && !ex.startOfBlock.statementAnalysis.flowData.isUnreachable())
-                    .map(ex -> new StatementAnalysis.ConditionAndLastStatement(ex.condition, ex.startOfBlock.lastStatement(),
-                            ex.startOfBlock.lastStatement().isEscapeAlwaysExecutedInCurrentBlock() == Boolean.TRUE))
-                    .collect(Collectors.toUnmodifiableList());
-
-            int maxTime = lastStatements.stream()
-                    .map(StatementAnalysis.ConditionAndLastStatement::lastStatement)
-                    .mapToInt(sa -> sa.statementAnalysis.flowData.getTimeAfterSubBlocks())
-                    .max().orElseThrow();
-
+            List<StatementAnalysis.ConditionAndLastStatement> lastStatements;
+            int maxTime;
+            if (statementAnalysis.statement instanceof SwitchStatementOldStyle switchStatementOldStyle) {
+                lastStatements = composeLastStatements(evaluationContext, switchStatementOldStyle, executions.get(0).startOfBlock);
+                maxTime = executions.get(0).startOfBlock == null ? statementAnalysis.flowData.getTimeAfterEvaluation() :
+                        executions.get(0).startOfBlock.lastStatement().statementAnalysis.flowData.getTimeAfterSubBlocks();
+            } else {
+                lastStatements = executions.stream()
+                        .filter(ex -> ex.startOfBlock != null && !ex.startOfBlock.statementAnalysis.flowData.isUnreachable())
+                        .map(ex -> new StatementAnalysis.ConditionAndLastStatement(ex.condition,
+                                ex.startOfBlock.index(),
+                                ex.startOfBlock.lastStatement(),
+                                ex.startOfBlock.lastStatement().isEscapeAlwaysExecutedInCurrentBlock() == Boolean.TRUE))
+                        .collect(Collectors.toUnmodifiableList());
+                maxTime = lastStatements.stream()
+                        .map(StatementAnalysis.ConditionAndLastStatement::lastStatement)
+                        .mapToInt(sa -> sa.statementAnalysis.flowData.getTimeAfterSubBlocks())
+                        .max().orElseThrow();
+            }
             if (statementAnalysis.flowData.timeAfterSubBlocksNotYetSet()) {
                 statementAnalysis.flowData.setTimeAfterSubBlocks(maxTime, index());
             }
@@ -1451,7 +1459,46 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         return analysisStatus;
     }
 
+    /*
+    an old-style switch statement is analysed as a single block where return and break statements at the level
+    below the statement have no hard interrupt value (see flow data).
+    the aggregation of results (merging), however, is computed based on the case statements and the break/return statements.
+
+    This method does the splitting in different groups of statements.
+     */
+
+    private List<StatementAnalysis.ConditionAndLastStatement> composeLastStatements(
+            EvaluationContext evaluationContext,
+            SwitchStatementOldStyle switchStatementOldStyle,
+            StatementAnalyser startOfBlock) {
+        Map<String, Expression> startingPointToLabels = switchStatementOldStyle
+                .startingPointToLabels(evaluationContext, startOfBlock.statementAnalysis);
+        return startingPointToLabels.entrySet().stream().map(e -> {
+            StatementAnalyser lastStatement = lastStatementOfSwitchOldStyle(e.getKey());
+            boolean alwaysEscapes = statementAnalysis.flowData.escapesViaException();
+            return new StatementAnalysis.ConditionAndLastStatement(e.getValue(), e.getKey(), lastStatement, alwaysEscapes);
+        }).collect(Collectors.toUnmodifiableList());
+    }
+
+    // IMPROVE we need to use interrupts (so that returns and breaks in if's also work!)
+    private StatementAnalyser lastStatementOfSwitchOldStyle(String startAt) {
+        StatementAnalyser sa = this;
+        while (true) {
+            if (sa.index().compareTo(startAt) >= 0 &&
+                    (statementAnalysis.statement instanceof ReturnStatement || statementAnalysis.statement instanceof BreakStatement))
+                return sa;
+            if (sa.navigationData.next.get().isPresent()) {
+                sa = sa.navigationData.next.get().get();
+            } else {
+                return sa;
+            }
+        }
+    }
+
     private boolean atLeastOneBlockExecuted(List<ExecutionOfBlock> list) {
+        if(statementAnalysis.statement instanceof SwitchStatementOldStyle switchStatementOldStyle) {
+            return switchStatementOldStyle.atLeastOneBlockExecuted();
+        }
         if (list.stream().anyMatch(ExecutionOfBlock::alwaysExecuted)) return true;
         // we have a default, and all conditions have code, and are possible
         return list.stream().anyMatch(e -> e.isDefault && e.startOfBlock != null) &&
@@ -1491,12 +1538,12 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         // a switch statement has no primary block, only subStructures, one per SwitchEntry
 
         // make an And of NOTs for all those conditions where the switch entry escapes
-        if (statementAnalysis.statement instanceof SwitchStatementNewStyle) {
+        if (statementAnalysis.statement instanceof SwitchStatementNewStyle ||
+                statementAnalysis.statement instanceof SwitchStatementOldStyle) {
             Expression[] components = list.stream().filter(ExecutionOfBlock::escapesAlwaysButNotWithPrecondition).map(e -> e.condition).toArray(Expression[]::new);
             if (components.length == 0) return TRUE;
             return new And(evaluationContext.getPrimitives()).append(evaluationContext, components);
         }
-        // TODO SwitchExpressions?
 
         /*
         loop statements: result should be !condition || <any exit of exactly this loop, no return> ...

@@ -23,6 +23,8 @@ import java.util.List;
 
 public interface Inspection {
 
+    default boolean isSynthetic() { return false; }
+
     List<AnnotationExpression> getAnnotations();
 
     boolean hasAnnotation(AnnotationExpression annotationExpression);

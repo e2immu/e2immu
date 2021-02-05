@@ -1,9 +1,13 @@
 package org.e2immu.analyser.model.statement;
 
+import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.analyser.StatementAnalysis;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.EmptyExpression;
+import org.e2immu.analyser.model.expression.Equals;
+import org.e2immu.analyser.model.expression.Or;
+import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.output.*;
 import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.analyser.util.SMapList;
@@ -90,6 +94,25 @@ public class SwitchStatementOldStyle extends StatementWithExpression {
             statementCnt++;
         } while (sa != null && labelIndex < switchLabels.size());
         return res;
+    }
+
+    public Map<String, Expression> startingPointToLabels(EvaluationContext evaluationContext, StatementAnalysis firstStatement) {
+        return switchLabelMap(firstStatement).entrySet().stream().collect(Collectors.toUnmodifiableMap(Map.Entry::getKey,
+                e -> new Or(evaluationContext.getPrimitives()).append(evaluationContext,
+                        e.getValue().stream()
+                                .map(switchLabel ->
+                                        switchLabel.expression == EmptyExpression.DEFAULT_EXPRESSION ? switchLabel.expression :
+                                                Equals.equals(evaluationContext, expression, switchLabel.expression, ObjectFlow.NO_FLOW))
+                                .collect(Collectors.toList()))));
+    }
+
+    public boolean atLeastOneBlockExecuted() {
+        if (switchLabels.isEmpty()) return false;
+        if (switchLabels.get(switchLabels.size() - 1).expression == EmptyExpression.DEFAULT_EXPRESSION) return true;
+        if (expression.returnType().typeInfo.typeInspection.get().typeNature() == TypeNature.ENUM) {
+            return switchLabels.size() == expression.returnType().typeInfo.countEnumConstants();
+        }
+        return false;
     }
 
     @Override

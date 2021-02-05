@@ -36,10 +36,14 @@ public record Guide(int index, Position position,
             this.msg = msg;
         }
 
-    }
 
+    }
     public static GuideGenerator generatorForBlock() {
         return new GuideGenerator(1, true, true, true, true);
+    }
+
+    public static GuideGenerator generatorForEnumDefinitions() {
+        return new GuideGenerator(0, false, false, true, true);
     }
 
     public static GuideGenerator defaultGuideGenerator() {

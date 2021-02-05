@@ -37,8 +37,6 @@ import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.TypeMapImpl;
-import org.e2immu.annotation.NotModified;
-import org.e2immu.annotation.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -221,6 +219,7 @@ public class TypeInspector {
             FieldInfo fieldInfo = new FieldInfo(typeInfo.asSimpleParameterizedType(),
                     enumConstantDeclaration.getNameAsString(), typeInfo);
             FieldInspectionImpl.Builder fieldBuilder = new FieldInspectionImpl.Builder();
+            fieldBuilder.setSynthetic(true);
             fieldBuilder.addModifier(FieldModifier.FINAL);
             fieldBuilder.addModifier(FieldModifier.PUBLIC);
             fieldBuilder.addModifier(FieldModifier.STATIC);
@@ -240,6 +239,7 @@ public class TypeInspector {
         AnnotationExpression notModifiedContract = E2ImmuAnnotationExpressions.createContract(primitives, e2.notModified);
 
         MethodInspectionImpl.Builder nameBuilder = new MethodInspectionImpl.Builder(typeInfo, "name")
+                .setSynthetic(true)
                 .setReturnType(primitives.stringParameterizedType)
                 .addModifier(MethodModifier.PUBLIC)
                 .addAnnotation(notNullContract)
@@ -249,6 +249,7 @@ public class TypeInspector {
         builder.addMethod(nameBuilder.getMethodInfo());
 
         MethodInspectionImpl.Builder valueOfBuilder = new MethodInspectionImpl.Builder(typeInfo, "valueOf")
+                .setSynthetic(true)
                 .setReturnType(typeInfo.asParameterizedType(expressionContext.typeContext))
                 .setStatic(true)
                 .addModifier(MethodModifier.PUBLIC)
@@ -270,6 +271,7 @@ public class TypeInspector {
                 valuesReturnType, List.of(), arrayInitializer, new BooleanConstant(primitives, true), ObjectFlow.NO_FLOW));
         Block valuesBlock = new Block.BlockBuilder().addStatement(returnNewArray).build();
         MethodInspectionImpl.Builder valuesBuilder = new MethodInspectionImpl.Builder(typeInfo, "values")
+                .setSynthetic(true)
                 .setReturnType(valuesReturnType)
                 .setStatic(true)
                 .addModifier(MethodModifier.PUBLIC)
@@ -512,9 +514,10 @@ public class TypeInspector {
 
     private MethodInfo createEmptyConstructor(TypeContext typeContext, boolean makePrivate) {
         MethodInspectionImpl.Builder builder = new MethodInspectionImpl.Builder(typeInfo);
-        builder.setInspectedBlock(Block.EMPTY_BLOCK);
-        builder.addModifier(makePrivate ? MethodModifier.PRIVATE : MethodModifier.PUBLIC);
-        builder.readyToComputeFQN(typeContext);
+        builder.setInspectedBlock(Block.EMPTY_BLOCK)
+                .setSynthetic(true)
+                .addModifier(makePrivate ? MethodModifier.PRIVATE : MethodModifier.PUBLIC)
+                .readyToComputeFQN(typeContext);
         typeContext.typeMapBuilder.registerMethodInspection(builder);
         return builder.getMethodInfo();
     }

@@ -23,10 +23,7 @@ import org.e2immu.analyser.inspector.ExpressionContext;
 import org.e2immu.analyser.inspector.MethodInspectionImpl;
 import org.e2immu.analyser.inspector.MethodTypeParameterMap;
 import org.e2immu.analyser.inspector.TypeInspectionImpl;
-import org.e2immu.analyser.model.expression.MethodCall;
-import org.e2immu.analyser.model.expression.MethodReference;
-import org.e2immu.analyser.model.expression.TypeExpression;
-import org.e2immu.analyser.model.expression.VariableExpression;
+import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ExpressionAsStatement;
 import org.e2immu.analyser.model.statement.ReturnStatement;
@@ -201,11 +198,17 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         }
 
         Guide.GuideGenerator guideGenerator = Guide.generatorForBlock();
-        OutputBuilder main = Stream.concat(Stream.concat(Stream.concat(
-                fields.stream().map(FieldInfo::output),
+        OutputBuilder main = Stream.concat(Stream.concat(Stream.concat(Stream.concat(
+                enumConstantStream(),
+                fields.stream()
+                        .filter(f -> !f.fieldInspection.get().isSynthetic())
+                        .map(FieldInfo::output)),
                 subTypes.stream().map(TypeInfo::output)),
-                constructors.stream().map(c -> c.output(guideGenerator))),
-                methods.stream().map(m -> m.output(guideGenerator))).collect(OutputBuilder.joining(Space.NONE,
+                constructors.stream()
+                        .filter(c -> !c.methodInspection.get().isSynthetic()).map(c -> c.output(guideGenerator))),
+                methods.stream()
+                        .filter(m -> !m.methodInspection.get().isSynthetic())
+                        .map(m -> m.output(guideGenerator))).collect(OutputBuilder.joining(Space.NONE,
                 Symbol.LEFT_BRACE, Symbol.RIGHT_BRACE, guideGenerator));
         afterAnnotations.add(main);
 
@@ -214,6 +217,44 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         return packageAndImports.add(Stream.concat(annotationStream, Stream.of(afterAnnotations))
                 .collect(OutputBuilder.joining(Space.ONE_REQUIRED_EASY_SPLIT,
                         Guide.generatorForAnnotationList())));
+    }
+
+    private Stream<OutputBuilder> enumConstantStream() {
+        if (typeInspection.get().typeNature() == TypeNature.ENUM) {
+            Guide.GuideGenerator gg = Guide.generatorForEnumDefinitions();
+            OutputBuilder outputBuilder = new OutputBuilder().add(gg.start());
+            boolean first = true;
+            for (FieldInfo fieldInfo : typeInspection.get().fields()) {
+                if (fieldInfo.fieldInspection.get().isSynthetic()) {
+                    if (first) {
+                        first = false;
+                    } else {
+                        outputBuilder.add(Symbol.COMMA).add(gg.mid());
+                    }
+                    outputBuilder.add(new Text(fieldInfo.name));
+                    Expression initialiser = fieldInfo.fieldInspection.get().getFieldInitialiser().initialiser();
+                    if (initialiser instanceof NewObject newObject) {
+                        if (!newObject.parameterExpressions().isEmpty()) {
+                            Guide.GuideGenerator args = Guide.defaultGuideGenerator();
+                            outputBuilder.add(Symbol.LEFT_PARENTHESIS).add(args.start());
+                            boolean firstParam = true;
+                            for (Expression expression : newObject.parameterExpressions()) {
+                                if (firstParam) {
+                                    firstParam = false;
+                                } else {
+                                    outputBuilder.add(Symbol.COMMA).add(args.mid());
+                                }
+                                outputBuilder.add(expression.output());
+                            }
+                            outputBuilder.add(args.end()).add(Symbol.RIGHT_PARENTHESIS);
+                        }
+                    } else throw new UnsupportedOperationException(initialiser.getClass().toString());
+                }
+            }
+            outputBuilder.add(gg.end()).add(Symbol.SEMICOLON);
+            return Stream.of(outputBuilder);
+        }
+        return Stream.of();
     }
 
     private Set<String> imports(TypeInspection typeInspection) {
@@ -593,5 +634,10 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
                 (v1, v2) -> {
                     throw new UnsupportedOperationException();
                 }, LinkedHashMap::new));
+    }
+
+    public int countEnumConstants() {
+        assert typeInspection.get().typeNature() == TypeNature.ENUM;
+        return (int) typeInspection.get().fields().stream().filter(fieldInfo -> fieldInfo.fieldInspection.get().isSynthetic()).count();
     }
 }
