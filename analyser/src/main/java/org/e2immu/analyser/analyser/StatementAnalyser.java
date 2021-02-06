@@ -184,19 +184,24 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
 
             StatementAnalyser previousStatement = previousAndFirst.previous;
             StatementAnalyser statementAnalyser = previousAndFirst.first;
+            Expression switchCondition = new BooleanConstant(statementAnalysis.primitives, true);
             do {
                 boolean wasReplacement;
+                EvaluationContext evaluationContext = new EvaluationContextImpl(iteration, forwardAnalysisInfo.conditionManager(), closure);
                 if (analyserContext.getConfiguration().analyserConfiguration.skipTransformations) {
                     wasReplacement = false;
                 } else {
-                    EvaluationContext evaluationContext = new EvaluationContextImpl(iteration, forwardAnalysisInfo.conditionManager(), closure);
                     // first attempt at detecting a transformation
                     wasReplacement = checkForPatterns(evaluationContext);
                     statementAnalyser = statementAnalyser.followReplacements();
                 }
                 StatementAnalysis previousStatementAnalysis = previousStatement == null ? null : previousStatement.statementAnalysis;
+                switchCondition = statementAnalyser.conditionInSwitchStatement(forwardAnalysisInfo, evaluationContext, previousStatement, switchCondition);
+                ForwardAnalysisInfo statementInfo = forwardAnalysisInfo.otherConditionManager(forwardAnalysisInfo.conditionManager()
+                        .withCondition(evaluationContext, switchCondition, forwardAnalysisInfo.switchSelectorIsDelayed()));
+
                 StatementAnalyserResult result = statementAnalyser.analyseSingleStatement(iteration, closure,
-                        wasReplacement, previousStatementAnalysis, forwardAnalysisInfo);
+                        wasReplacement, previousStatementAnalysis, statementInfo);
                 builder.add(result);
                 previousStatement = statementAnalyser;
 
@@ -207,6 +212,41 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             LOGGER.warn("Caught exception while analysing block {} of: {}", index(), myMethodAnalyser.methodInfo.fullyQualifiedName());
             throw rte;
         }
+    }
+
+    /*
+    this is the statement to be executed (with an ID that can match one of the elements in the map
+     */
+    private Expression conditionInSwitchStatement(ForwardAnalysisInfo base,
+                                                  EvaluationContext evaluationContext,
+                                                  StatementAnalyser previousStatement,
+                                                  Expression previous) {
+        if (base.switchIdToLabels() != null) {
+            Statement statement = previousStatement == null ? null : previousStatement.statement();
+            Expression startFrom;
+            if (statement instanceof BreakStatement || statement instanceof ReturnStatement) {
+                // clear all
+                startFrom = new BooleanConstant(statementAnalysis.primitives, true);
+            } else {
+                startFrom = previous;
+            }
+            Expression label = base.switchIdToLabels().get(index());
+            if (label != null) {
+                Expression toAdd;
+                if (label == EmptyExpression.DEFAULT_EXPRESSION) {
+                    toAdd = Negation.negate(evaluationContext,
+                            new Or(evaluationContext.getPrimitives()).append(evaluationContext,
+                                    base.switchIdToLabels().values().stream()
+                                            .filter(e -> e != EmptyExpression.DEFAULT_EXPRESSION).toArray(Expression[]::new)));
+                } else {
+                    toAdd = label;
+                }
+                if (startFrom.isBoolValueTrue()) return toAdd;
+                return new And(evaluationContext.getPrimitives()).append(evaluationContext, startFrom, toAdd);
+            }
+            return startFrom;
+        }
+        return previous;
     }
 
     @Override
@@ -344,7 +384,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             if (startOfNewBlock) {
                 localConditionManager = forwardAnalysisInfo.conditionManager();
             } else {
-                localConditionManager = makeLocalConditionManager(iteration, previous, closure);
+                localConditionManager = makeLocalConditionManager(iteration, previous, forwardAnalysisInfo.conditionManager().condition(),
+                        forwardAnalysisInfo.switchSelectorIsDelayed(), closure);
             }
 
             StatementAnalyserResult.Builder builder = new StatementAnalyserResult.Builder();
@@ -369,7 +410,16 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         }
     }
 
-    private ConditionManager makeLocalConditionManager(int iteration, StatementAnalysis previous, EvaluationContext closure) {
+    /*
+    three aspects:
+    1- precondition, comes via MethodLevelData; is cumulative
+    2- state, comes via conditionManagerForNextStatement
+    3- condition, can be updated in case of SwitchOldStyle
+     */
+    private ConditionManager makeLocalConditionManager(int iteration, StatementAnalysis previous,
+                                                       Expression condition,
+                                                       boolean conditionIsDelayed,
+                                                       EvaluationContext closure) {
         Expression combinedPrecondition = previous.methodLevelData.getCombinedPrecondition();
         boolean combinedPreconditionIsDelayed;
         if (combinedPrecondition == null) {
@@ -385,7 +435,12 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         if (previousCm == null) {
             return ConditionManager.impossibleConditionManager(statementAnalysis.primitives);
         }
-        return previousCm.withPrecondition(combinedPrecondition, combinedPreconditionIsDelayed);
+        if (previousCm.condition().equals(condition)) {
+            return previousCm.withPrecondition(combinedPrecondition, combinedPreconditionIsDelayed);
+        }
+        // swap condition for the one from forwardAnalysisInfo
+        return new ConditionManager(condition, conditionIsDelayed, previousCm.state(), previousCm.stateIsDelayed(), combinedPrecondition,
+                combinedPreconditionIsDelayed, previousCm.parent());
     }
 
     private AnalysisStatus freezeAssignmentInBlock(SharedState sharedState) {
@@ -1386,9 +1441,18 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         for (ExecutionOfBlock executionOfBlock : executions) {
             if (executionOfBlock.startOfBlock != null) {
                 if (executionOfBlock.execution != NEVER) {
+                    ForwardAnalysisInfo forward;
+                    if (statement() instanceof SwitchStatementOldStyle switchStatement) {
+                        forward = new ForwardAnalysisInfo(executionOfBlock.execution,
+                                executionOfBlock.conditionManager, executionOfBlock.catchVariable,
+                                switchStatement.startingPointToLabels(evaluationContext, executionOfBlock.startOfBlock.statementAnalysis),
+                                statementAnalysis.stateData.getValueOfExpression(), statementAnalysis.stateData.valueOfExpressionIsDelayed());
+                    } else {
+                        forward = new ForwardAnalysisInfo(executionOfBlock.execution,
+                                executionOfBlock.conditionManager, executionOfBlock.catchVariable, null, null, false);
+                    }
                     StatementAnalyserResult result = executionOfBlock.startOfBlock.analyseAllStatementsInBlock(evaluationContext.getIteration(),
-                            new ForwardAnalysisInfo(executionOfBlock.execution, executionOfBlock.conditionManager, executionOfBlock.catchVariable),
-                            evaluationContext.getClosure());
+                            forward, evaluationContext.getClosure());
                     sharedState.builder.add(result);
                     analysisStatus = analysisStatus.combine(result.analysisStatus);
                     blocksExecuted++;
@@ -1418,7 +1482,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             } else {
                 lastStatements = executions.stream()
                         .filter(ex -> ex.startOfBlock != null && !ex.startOfBlock.statementAnalysis.flowData.isUnreachable())
-                        .map(ex -> new StatementAnalysis.ConditionAndLastStatement(ex.condition,
+                        .map(ex -> new StatementAnalysis.ConditionAndLastStatement(ex.condition, // FIXME turn into statement's condition value
                                 ex.startOfBlock.index(),
                                 ex.startOfBlock.lastStatement(),
                                 ex.startOfBlock.lastStatement().isEscapeAlwaysExecutedInCurrentBlock() == Boolean.TRUE))
@@ -1480,7 +1544,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         }).collect(Collectors.toUnmodifiableList());
     }
 
-    // IMPROVE we need to use interrupts (so that returns and breaks in if's also work!)
+    // IMPROVE we need to use interrupts (so that returns and breaks in if's also work!) -- code also at beginning of method!!
     private StatementAnalyser lastStatementOfSwitchOldStyle(String startAt) {
         StatementAnalyser sa = this;
         while (true) {
@@ -1496,7 +1560,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
     }
 
     private boolean atLeastOneBlockExecuted(List<ExecutionOfBlock> list) {
-        if(statementAnalysis.statement instanceof SwitchStatementOldStyle switchStatementOldStyle) {
+        if (statementAnalysis.statement instanceof SwitchStatementOldStyle switchStatementOldStyle) {
             return switchStatementOldStyle.atLeastOneBlockExecuted();
         }
         if (list.stream().anyMatch(ExecutionOfBlock::alwaysExecuted)) return true;

@@ -2,10 +2,7 @@ package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.FlowData;
 import org.e2immu.analyser.analyser.VariableProperty;
-import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.config.MethodAnalyserVisitor;
-import org.e2immu.analyser.config.StatementAnalyserVariableVisitor;
-import org.e2immu.analyser.config.StatementAnalyserVisitor;
+import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
 import org.junit.Assert;
@@ -32,11 +29,17 @@ public class Test_30_SwitchStatement extends CommonTestRunner {
 
     @Test
     public void test_2() throws IOException {
-        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
-            if ("method".equals(d.methodInfo().name) && "0.2.0".equals(d.statementId())) {
-                Assert.assertNotNull(d.haveError(Message.CONDITION_EVALUATES_TO_CONSTANT));
+        EvaluationResultVisitor evaluationResultVisitor = d -> {
+            if ("method".equals(d.methodInfo().name) && "0.0.2".equals(d.statementId())) {
+                // this point comes before we check the value against the condition manager
+                Assert.assertEquals("'a'!=c&&'b'!=c", d.evaluationResult()
+                        .evaluationContext().getConditionManager().condition().toString());
+                Assert.assertEquals("'a'==c||'b'==c", d.evaluationResult().value().toString());
             }
-            if ("method".equals(d.methodInfo().name) && "0.2.0.0.0".equals(d.statementId())) {
+        };
+
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("method".equals(d.methodInfo().name) && "0.0.2".equals(d.statementId())) {
                 Assert.assertNotNull(d.haveError(Message.CONDITION_EVALUATES_TO_CONSTANT));
             }
         };
@@ -48,6 +51,7 @@ public class Test_30_SwitchStatement extends CommonTestRunner {
         };
 
         testClass("SwitchStatement_2", 2, 0, new DebugConfiguration.Builder()
+                .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
@@ -55,8 +59,8 @@ public class Test_30_SwitchStatement extends CommonTestRunner {
 
     @Test
     public void test_3() throws IOException {
-        MethodAnalyserVisitor methodAnalyserVisitor = d-> {
-            if("method".equals(d.methodInfo().name)) {
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("method".equals(d.methodInfo().name)) {
                 Assert.assertEquals("b", d.methodAnalysis().getSingleReturnValue().toString());
             }
         };

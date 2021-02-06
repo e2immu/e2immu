@@ -179,6 +179,9 @@ public class Block extends StatementWithStructure {
             outputBuilder.add(sa.statement.output(sa));
             sa = sa.navigationData.next.isSet() ? sa.navigationData.next.get().orElse(null) : null;
         }
+        if(statementGg != null) {
+            outputBuilder.add(statementGg.end());
+        }
     }
 
     public ParameterizedType mostSpecificReturnType(InspectionProvider inspectionProvider) {

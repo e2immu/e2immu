@@ -77,6 +77,14 @@ public record ConditionManager(Expression condition,
     }
 
     /*
+    we guarantee a parent so that the condition counts!
+     */
+    public ConditionManager withCondition(EvaluationContext evaluationContext, Expression switchCondition, boolean switchExpressionIsDelayed) {
+        return new ConditionManager(combine(evaluationContext, condition, switchCondition), conditionIsDelayed || switchExpressionIsDelayed,
+                state, stateIsDelayed, precondition, preconditionIsDelayed, this);
+    }
+
+    /*
     adds a new layer (parent this)
     */
     public ConditionManager newAtStartOfNewBlockDoNotChangePrecondition(Primitives primitives, Expression condition, boolean conditionIsDelayed) {
