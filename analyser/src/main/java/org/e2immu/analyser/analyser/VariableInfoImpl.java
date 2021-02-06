@@ -415,7 +415,7 @@ class VariableInfoImpl implements VariableInfo {
 
         if (mergeSources.isEmpty()) {
             if (atLeastOneBlockExecuted) {
-                throw new UnsupportedOperationException("No merge sources for "+ variable.fullyQualifiedName());
+                throw new UnsupportedOperationException("No merge sources for " + variable.fullyQualifiedName());
             }
             return currentValue;
         }
@@ -426,6 +426,8 @@ class VariableInfoImpl implements VariableInfo {
 
         boolean allValuesIdentical = reduced.stream().allMatch(cav -> currentValue.equals(cav.variableInfo().getValue()));
         if (allValuesIdentical) return currentValue;
+        boolean allReducedIdentical = atLeastOneBlockExecuted && reduced.stream().skip(1).allMatch(cav -> reduced.get(0).variableInfo().getValue().equals(cav.variableInfo().getValue()));
+        if (allReducedIdentical) return reduced.get(0).variableInfo().getValue();
 
         MergeHelper mergeHelper = new MergeHelper(evaluationContext, this);
 
