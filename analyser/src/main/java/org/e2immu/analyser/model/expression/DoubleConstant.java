@@ -52,6 +52,11 @@ public record DoubleConstant(Primitives primitives,
     }
 
     @Override
+    public int internalCompareTo(Expression v) {
+        return (int)Math.signum(constant - ((DoubleConstant) v).constant);
+    }
+
+    @Override
     public ObjectFlow getObjectFlow() {
         return objectFlow;
     }

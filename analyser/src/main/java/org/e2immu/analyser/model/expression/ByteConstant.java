@@ -75,6 +75,11 @@ public record ByteConstant(Primitives primitives,
     }
 
     @Override
+    public int internalCompareTo(Expression v) {
+        return constant - ((ByteConstant) v).constant;
+    }
+
+    @Override
     public ObjectFlow getObjectFlow() {
         return objectFlow;
     }

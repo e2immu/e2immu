@@ -65,6 +65,11 @@ public record ShortConstant(Primitives primitives,
     }
 
     @Override
+    public int internalCompareTo(Expression v) {
+        return constant - ((ShortConstant) v).constant;
+    }
+
+    @Override
     public ObjectFlow getObjectFlow() {
         return objectFlow;
     }

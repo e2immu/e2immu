@@ -19,6 +19,7 @@
 package org.e2immu.analyser.model.expression;
 
 
+import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.objectflow.ObjectFlow;
@@ -76,6 +77,11 @@ public record CharConstant(Primitives primitives,
             default -> constant >= 32 && constant <= 127 ? Character.toString(constant) :
                     "\\u" + Integer.toString(constant, 16);
         };
+    }
+
+    @Override
+    public int internalCompareTo(Expression v) {
+        return constant - ((CharConstant) v).constant;
     }
 
     @Override

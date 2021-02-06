@@ -67,6 +67,11 @@ public record IntConstant(Primitives primitives,
     }
 
     @Override
+    public int internalCompareTo(Expression v) {
+        return constant - ((IntConstant) v).constant;
+    }
+
+    @Override
     public int hashCode() {
         return Objects.hash(constant);
     }

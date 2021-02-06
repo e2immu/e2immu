@@ -86,6 +86,13 @@ public record BooleanConstant(Primitives primitives,
     }
 
     @Override
+    public int internalCompareTo(Expression v) {
+        BooleanConstant bc = (BooleanConstant) v;
+        if (constant == bc.constant) return 0;
+        return constant ? -1 : 1;
+    }
+
+    @Override
     public ObjectFlow getObjectFlow() {
         return objectFlow;
     }

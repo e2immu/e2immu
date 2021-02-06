@@ -64,6 +64,11 @@ public record FloatConstant(Primitives primitives,
     }
 
     @Override
+    public int internalCompareTo(Expression v) {
+        return (int)Math.signum(constant - ((FloatConstant) v).constant);
+    }
+
+    @Override
     public ObjectFlow getObjectFlow() {
         return objectFlow;
     }

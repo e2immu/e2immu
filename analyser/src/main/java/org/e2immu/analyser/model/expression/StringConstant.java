@@ -20,6 +20,7 @@ package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.model.Diamond;
+import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
@@ -65,6 +66,11 @@ public record StringConstant(Primitives primitives,
     @Override
     public int order() {
         return ExpressionComparator.ORDER_CONSTANT_STRING;
+    }
+
+    @Override
+    public int internalCompareTo(Expression v) {
+        return constant.compareTo(((StringConstant) v).constant);
     }
 
     @Override

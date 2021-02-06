@@ -64,6 +64,11 @@ public record LongConstant(Primitives primitives,
     }
 
     @Override
+    public int internalCompareTo(Expression v) {
+        return (int)Math.signum(constant - ((LongConstant) v).constant);
+    }
+
+    @Override
     public ObjectFlow getObjectFlow() {
         return objectFlow;
     }
