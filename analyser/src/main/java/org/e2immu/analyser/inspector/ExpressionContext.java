@@ -275,7 +275,7 @@ public class ExpressionContext {
         }
         if (switchStmt.getEntries().stream().anyMatch(e ->
                 e.getType() == com.github.javaparser.ast.stmt.SwitchEntry.Type.STATEMENT_GROUP)) {
-            return switchStatementOldStyle(selector, switchStmt);
+            return switchStatementOldStyle(newExpressionContext, selector, switchStmt);
         }
         List<SwitchEntry> entries = switchStmt.getEntries()
                 .stream()
@@ -287,7 +287,9 @@ public class ExpressionContext {
     /*
     we group all statements, and make a list of switch labels
      */
-    private org.e2immu.analyser.model.Statement switchStatementOldStyle(Expression selector, SwitchStmt switchStmt) {
+    private org.e2immu.analyser.model.Statement switchStatementOldStyle(ExpressionContext expressionContextWithEnums,
+                                                                        Expression selector,
+                                                                        SwitchStmt switchStmt) {
         List<SwitchStatementOldStyle.SwitchLabel> labels = new ArrayList<>();
         Block.BlockBuilder blockBuilder = new Block.BlockBuilder();
         for (com.github.javaparser.ast.stmt.SwitchEntry switchEntry : switchStmt.getEntries()) {
@@ -303,7 +305,7 @@ public class ExpressionContext {
                     } else {
                         // case X: case Y:
                         for (com.github.javaparser.ast.expr.Expression labelExpr : switchEntry.getLabels()) {
-                            Expression parsedLabel = parseExpression(labelExpr, selector.returnType(), null);
+                            Expression parsedLabel = expressionContextWithEnums.parseExpression(labelExpr, selector.returnType(), null);
                             var switchLabel = new SwitchStatementOldStyle.SwitchLabel(parsedLabel, from);
                             labels.add(switchLabel);
                         }

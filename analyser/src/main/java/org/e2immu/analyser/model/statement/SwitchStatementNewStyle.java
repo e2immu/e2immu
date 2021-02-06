@@ -15,13 +15,19 @@ import org.e2immu.analyser.util.ListUtil;
 
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
-public class SwitchStatementNewStyle extends StatementWithExpression {
+public class SwitchStatementNewStyle extends StatementWithExpression implements SwitchStatement {
     public final List<SwitchEntry> switchEntries;
 
     public SwitchStatementNewStyle(Expression selector, List<SwitchEntry> switchEntries) {
         super(codeOrganization(selector, switchEntries), selector);
         this.switchEntries = ImmutableList.copyOf(switchEntries);
+    }
+
+    @Override
+    public Stream<Expression> labels() {
+        return switchEntries.stream().flatMap(e -> e.labels.stream());
     }
 
     private static Structure codeOrganization(Expression expression, List<SwitchEntry> switchEntries) {
@@ -53,7 +59,6 @@ public class SwitchStatementNewStyle extends StatementWithExpression {
         return outputBuilder.add(guideGenerator.end()).add(Symbol.RIGHT_BRACE);
     }
 
-    @Override
     public List<? extends Element> subElements() {
         return ListUtil.immutableConcat(List.of(expression), switchEntries);
     }

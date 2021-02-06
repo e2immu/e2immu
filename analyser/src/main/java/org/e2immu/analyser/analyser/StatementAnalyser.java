@@ -1224,7 +1224,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             } else if (!valueIsDelayed && (statementAnalysis.statement instanceof IfElseStatement ||
                     statementAnalysis.statement instanceof AssertStatement)) {
                 value = step3_IfElse_Assert(sharedState, value);
-            } else if (!valueIsDelayed && statementAnalysis.statement instanceof SwitchStatementNewStyle switchStatement) {
+            } else if (!valueIsDelayed && statementAnalysis.statement instanceof SwitchStatement switchStatement) {
                 step3_Switch(sharedState, value, switchStatement);
             }
 
@@ -1302,23 +1302,22 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
     /*
     goal: raise errors, exclude branches, etc.
      */
-    private void step3_Switch(SharedState sharedState, Expression switchExpression, SwitchStatementNewStyle switchStatement) {
+    private void step3_Switch(SharedState sharedState, Expression switchExpression, SwitchStatement switchStatement) {
         assert switchExpression != null;
         List<String> never = new ArrayList<>();
         List<String> always = new ArrayList<>();
-        for (SwitchEntry switchEntry : switchStatement.switchEntries) {
-            for (Expression label : switchEntry.labels) {
-                Expression labelEqualsSwitchExpression = Equals.equals(sharedState.evaluationContext,
-                        label, switchExpression, ObjectFlow.NO_FLOW);
-                Expression evaluated = sharedState.localConditionManager.evaluate(sharedState.evaluationContext, labelEqualsSwitchExpression);
-                if (evaluated.isBoolValueTrue()) {
-                    always.add(label.toString());
-                } else if (evaluated.isBoolValueFalse()) {
-                    never.add(label.toString());
-                }
+        switchStatement.labels().forEach(label -> {
+            Expression labelEqualsSwitchExpression = Equals.equals(sharedState.evaluationContext,
+                    label, switchExpression, ObjectFlow.NO_FLOW);
+            Expression evaluated = sharedState.localConditionManager.evaluate(sharedState.evaluationContext, labelEqualsSwitchExpression);
+            if (evaluated.isBoolValueTrue()) {
+                always.add(label.toString());
+            } else if (evaluated.isBoolValueFalse()) {
+                never.add(label.toString());
             }
-            // we could have any combination of the three variables
-        }
+        });
+        // we could have any combination of the three variables
+
         if (!never.isEmpty() || !always.isEmpty()) {
             String msg = !always.isEmpty() ? "Is always reached: " + String.join("; ", always) :
                     "Is never reached: " + String.join("; ", never);
@@ -1603,9 +1602,9 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         // a switch statement has no primary block, only subStructures, one per SwitchEntry
 
         // make an And of NOTs for all those conditions where the switch entry escapes
-        if (statementAnalysis.statement instanceof SwitchStatementNewStyle ||
-                statementAnalysis.statement instanceof SwitchStatementOldStyle) {
-            Expression[] components = list.stream().filter(ExecutionOfBlock::escapesAlwaysButNotWithPrecondition).map(e -> e.condition).toArray(Expression[]::new);
+        if (statementAnalysis.statement instanceof SwitchStatement) {
+            Expression[] components = list.stream().filter(ExecutionOfBlock::escapesAlwaysButNotWithPrecondition)
+                    .map(e -> e.condition).toArray(Expression[]::new);
             if (components.length == 0) return TRUE;
             return new And(evaluationContext.getPrimitives()).append(evaluationContext, components);
         }

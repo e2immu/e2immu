@@ -6,7 +6,6 @@ import org.e2immu.annotation.NotNull;
 public class SwitchStatement_6 {
 
     @NotNull
-    @Constant("a")
     public static String method(char c) {
         String res;
         char d = 'a';

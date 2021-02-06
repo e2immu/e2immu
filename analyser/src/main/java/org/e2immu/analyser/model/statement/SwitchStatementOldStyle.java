@@ -16,8 +16,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
-public class SwitchStatementOldStyle extends StatementWithExpression {
+public class SwitchStatementOldStyle extends StatementWithExpression implements SwitchStatement {
 
     public record SwitchLabel(Expression expression, int from) implements Comparable<SwitchLabel> {
 
@@ -54,6 +55,11 @@ public class SwitchStatementOldStyle extends StatementWithExpression {
                 .setBlock(block).build(), selector);
         this.switchLabels = switchLabels.stream().sorted().collect(Collectors.toUnmodifiableList());
         labelExpressions = this.switchLabels.stream().map(SwitchLabel::expression).collect(Collectors.toUnmodifiableList());
+    }
+
+    @Override
+    public Stream<Expression> labels() {
+        return labelExpressions.stream();
     }
 
     @Override

@@ -471,10 +471,21 @@ public class BinaryOperator implements Expression {
 
     @Override
     public int internalCompareTo(Expression v) {
+        BinaryOperator b;
+        if (v instanceof InlineConditional inlineConditional &&
+                inlineConditional.condition instanceof BinaryOperator binaryOperator) {
+            b = binaryOperator;
+        } else if (v instanceof BinaryOperator binaryOperator) {
+            b = binaryOperator;
+        } else {
+            int c = lhs.compareTo(v);
+            if (c == 0) c = rhs.compareTo(v);
+            return c;
+        }
         // comparing 2 or values...compare lhs
-        int c = lhs.compareTo(((BinaryOperator) v).lhs);
+        int c = lhs.compareTo(b.lhs);
         if (c == 0) {
-            c = rhs.compareTo(((BinaryOperator) v).rhs);
+            c = rhs.compareTo(b.rhs);
         }
         return c;
     }

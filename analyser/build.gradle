@@ -58,7 +58,7 @@ dependencies {
 
     implementation group: 'com.google.guava', name: 'guava', version: '28.1-jre'      // Apache License 2.0
     implementation group: 'org.slf4j', name: 'slf4j-api', version: '1.7.25'           // MIT X-11 License
-    implementation group: 'com.github.javaparser', name: 'javaparser-symbol-solver-core', version: '3.15.7'
+    implementation group: 'com.github.javaparser', name: 'javaparser-core', version: '3.18.0'
     // LGPL or Apache License 2.0
     implementation group: 'org.ow2.asm', name: 'asm', version: '9.0'                  // 3-clause BSD permissive license
     implementation group: 'commons-io', name: 'commons-io', version: '2.6'            // Apache License 2.0
