@@ -146,7 +146,7 @@ public class Block extends StatementWithStructure {
         while (sa != null) {
             if (idToLabels.containsKey(sa.index)) {
                 if (statementGg != null) {
-                    statementGg.end();
+                    outputBuilder.add(statementGg.end());
                 }
                 if (!notFirst) notFirst = true;
                 else outputBuilder.add(guideGenerator.mid());
@@ -155,7 +155,7 @@ public class Block extends StatementWithStructure {
                     guideGenerator.mid();
                 }
                 statementGg = Guide.generatorForBlock();
-                statementGg.start();
+                outputBuilder.add(statementGg.start());
                 notFirstInCase = false;
             }
             assert statementGg != null;
@@ -179,7 +179,7 @@ public class Block extends StatementWithStructure {
             outputBuilder.add(sa.statement.output(sa));
             sa = sa.navigationData.next.isSet() ? sa.navigationData.next.get().orElse(null) : null;
         }
-        if(statementGg != null) {
+        if (statementGg != null) {
             outputBuilder.add(statementGg.end());
         }
     }
