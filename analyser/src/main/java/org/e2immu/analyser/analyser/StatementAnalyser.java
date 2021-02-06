@@ -1474,7 +1474,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         Map<String, Expression> startingPointToLabels = switchStatementOldStyle
                 .startingPointToLabels(evaluationContext, startOfBlock.statementAnalysis);
         return startingPointToLabels.entrySet().stream().map(e -> {
-            StatementAnalyser lastStatement = lastStatementOfSwitchOldStyle(e.getKey());
+            StatementAnalyser lastStatement = startOfBlock.lastStatementOfSwitchOldStyle(e.getKey());
             boolean alwaysEscapes = statementAnalysis.flowData.escapesViaException();
             return new StatementAnalysis.ConditionAndLastStatement(e.getValue(), e.getKey(), lastStatement, alwaysEscapes);
         }).collect(Collectors.toUnmodifiableList());

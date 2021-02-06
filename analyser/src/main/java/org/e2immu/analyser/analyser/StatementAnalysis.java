@@ -598,10 +598,11 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
     public record ConditionAndVariableInfo(Expression condition,
                                            VariableInfo variableInfo,
                                            boolean alwaysEscapes,
-                                           VariableInLoop variableInLoop) {
+                                           VariableInLoop variableInLoop,
+                                           String firstStatementIndexForOldStyleSwitch) {
         // for testing
         public ConditionAndVariableInfo(Expression condition, VariableInfo variableInfo) {
-            this(condition, variableInfo, false, VariableInLoop.NOT_IN_LOOP);
+            this(condition, variableInfo, false, VariableInLoop.NOT_IN_LOOP, null);
         }
     }
 
@@ -640,14 +641,16 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                 } else {
                     destination = vic;
                 }
+                boolean inSwitchStatementOldStyle = statement instanceof SwitchStatementOldStyle;
+
                 List<ConditionAndVariableInfo> toMerge = lastStatements.stream()
                         .filter(e2 -> e2.lastStatement.statementAnalysis.variables.isSet(fqn))
                         .map(e2 -> {
                             VariableInfoContainer vic2 = e2.lastStatement.statementAnalysis.variables.get(fqn);
                             return new ConditionAndVariableInfo(e2.condition,
-                                    vic2.current(), e2.alwaysEscapes, vic2.getVariableInLoop());
+                                    vic2.current(), e2.alwaysEscapes, vic2.getVariableInLoop(), e2.firstStatementIndexForOldStyleSwitch);
                         })
-                        .filter(cav -> cav.variableInfo.isRead() || cav.variableInfo.isAssigned())
+                        .filter(cav -> acceptVariableForMerging(cav, inSwitchStatementOldStyle))
                         .collect(Collectors.toUnmodifiableList());
                 boolean ignoreCurrent;
                 if (toMerge.size() == 1 && toMerge.get(0).variableInLoop.assignmentId() != null
@@ -665,6 +668,14 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                 }
             }
         });
+    }
+
+    private static boolean acceptVariableForMerging(ConditionAndVariableInfo cav, boolean inSwitchStatementOldStyle) {
+        if (inSwitchStatementOldStyle) {
+            assert cav.firstStatementIndexForOldStyleSwitch != null;
+            return cav.firstStatementIndexForOldStyleSwitch.compareTo(cav.variableInfo.getAssignmentId()) <= 0;
+        }
+        return cav.variableInfo.isRead() || cav.variableInfo.isAssigned();
     }
 
     // return a stream of all variables that need merging up
