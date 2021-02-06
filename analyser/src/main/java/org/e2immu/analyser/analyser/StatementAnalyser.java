@@ -1181,7 +1181,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 statementAnalysis.methodLevelData.internalObjectFlows.freeze();
             }
             if (statementAnalysis.statement instanceof BreakStatement breakStatement) {
-                if (statementAnalysis.parent.statement instanceof SwitchStatementNewStyle) {
+                if (statementAnalysis.parent.statement instanceof SwitchStatementOldStyle) {
                     return analysisStatus;
                 }
                 StatementAnalysis.FindLoopResult correspondingLoop = statementAnalysis.findLoopByLabel(breakStatement);
@@ -1549,7 +1549,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         StatementAnalyser sa = this;
         while (true) {
             if (sa.index().compareTo(startAt) >= 0 &&
-                    (statementAnalysis.statement instanceof ReturnStatement || statementAnalysis.statement instanceof BreakStatement))
+                    (sa.statementAnalysis.statement instanceof ReturnStatement ||
+                            sa.statementAnalysis.statement instanceof BreakStatement))
                 return sa;
             if (sa.navigationData.next.get().isPresent()) {
                 sa = sa.navigationData.next.get().get();
