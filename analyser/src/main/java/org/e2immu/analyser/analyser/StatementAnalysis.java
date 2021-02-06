@@ -670,10 +670,15 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         });
     }
 
-    private static boolean acceptVariableForMerging(ConditionAndVariableInfo cav, boolean inSwitchStatementOldStyle) {
+    private boolean acceptVariableForMerging(ConditionAndVariableInfo cav, boolean inSwitchStatementOldStyle) {
         if (inSwitchStatementOldStyle) {
             assert cav.firstStatementIndexForOldStyleSwitch != null;
-            return cav.firstStatementIndexForOldStyleSwitch.compareTo(cav.variableInfo.getAssignmentId()) <= 0;
+            // if the variable is assigned in the block, it has to be assigned after the first index
+            // "the block" is the switch statement; otherwise,
+            if (cav.variableInfo.getAssignmentId().compareTo(index) > 0) {
+                return cav.firstStatementIndexForOldStyleSwitch.compareTo(cav.variableInfo.getAssignmentId()) <= 0;
+            }
+            return cav.firstStatementIndexForOldStyleSwitch.compareTo(cav.variableInfo.getReadId()) <= 0;
         }
         return cav.variableInfo.isRead() || cav.variableInfo.isAssigned();
     }
