@@ -21,10 +21,7 @@ package org.e2immu.analyser.model.expression;
 import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
-import org.e2immu.analyser.model.Element;
-import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.ParameterizedType;
-import org.e2immu.analyser.model.TranslationMap;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
@@ -95,8 +92,8 @@ public record ArrayLength(Primitives primitives,
     }
 
     @Override
-    public OutputBuilder output() {
-        return new OutputBuilder().add(outputInParenthesis(precedence(), scope)).add(Symbol.DOT).add(new Text("length"));
+    public OutputBuilder output(Qualification qualification) {
+        return new OutputBuilder().add(outputInParenthesis(qualification, precedence(), scope)).add(Symbol.DOT).add(new Text("length"));
     }
 
     @Override

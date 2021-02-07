@@ -116,11 +116,11 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         return typeInspection.isSet();
     }
 
-    public OutputBuilder output() {
-        return output(true);
+    public OutputBuilder output(Qualification qualification) {
+        return output(qualification, true);
     }
 
-    public OutputBuilder output(boolean doTypeDeclaration) {
+    public OutputBuilder output(Qualification qualification, boolean doTypeDeclaration) {
         String typeNature;
         Set<String> imports = isPrimaryType() ? imports(typeInspection.get()) : Set.of();
         String[] typeModifiers;
@@ -189,37 +189,37 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
                 afterAnnotations.add(Symbol.RIGHT_ANGLE_BRACKET);
             }
             if (parentClass != null) {
-                afterAnnotations.add(Space.ONE).add(new Text("extends")).add(Space.ONE).add(parentClass.output());
+                afterAnnotations.add(Space.ONE).add(new Text("extends")).add(Space.ONE).add(parentClass.output(qualification));
             }
             if (!interfaces.isEmpty()) {
                 afterAnnotations.add(Space.ONE).add(new Text(isInterface ? "extends" : "implements")).add(Space.ONE);
-                afterAnnotations.add(interfaces.stream().map(ParameterizedType::output).collect(OutputBuilder.joining(Symbol.COMMA)));
+                afterAnnotations.add(interfaces.stream().map(pi -> pi.output(qualification)).collect(OutputBuilder.joining(Symbol.COMMA)));
             }
         }
 
         Guide.GuideGenerator guideGenerator = Guide.generatorForBlock();
         OutputBuilder main = Stream.concat(Stream.concat(Stream.concat(Stream.concat(
-                enumConstantStream(),
+                enumConstantStream(qualification),
                 fields.stream()
                         .filter(f -> !f.fieldInspection.get().isSynthetic())
-                        .map(FieldInfo::output)),
-                subTypes.stream().map(TypeInfo::output)),
+                        .map(f -> f.output(qualification))),
+                subTypes.stream().map(ti -> ti.output(qualification))),
                 constructors.stream()
-                        .filter(c -> !c.methodInspection.get().isSynthetic()).map(c -> c.output(guideGenerator))),
+                        .filter(c -> !c.methodInspection.get().isSynthetic()).map(c -> c.output(qualification, guideGenerator))),
                 methods.stream()
                         .filter(m -> !m.methodInspection.get().isSynthetic())
-                        .map(m -> m.output(guideGenerator))).collect(OutputBuilder.joining(Space.NONE,
+                        .map(m -> m.output(qualification, guideGenerator))).collect(OutputBuilder.joining(Space.NONE,
                 Symbol.LEFT_BRACE, Symbol.RIGHT_BRACE, guideGenerator));
         afterAnnotations.add(main);
 
         // annotations and the rest of the type are at the same level
-        Stream<OutputBuilder> annotationStream = buildAnnotationOutput();
+        Stream<OutputBuilder> annotationStream = buildAnnotationOutput(qualification);
         return packageAndImports.add(Stream.concat(annotationStream, Stream.of(afterAnnotations))
                 .collect(OutputBuilder.joining(Space.ONE_REQUIRED_EASY_SPLIT,
                         Guide.generatorForAnnotationList())));
     }
 
-    private Stream<OutputBuilder> enumConstantStream() {
+    private Stream<OutputBuilder> enumConstantStream(Qualification qualification) {
         if (typeInspection.get().typeNature() == TypeNature.ENUM) {
             Guide.GuideGenerator gg = Guide.generatorForEnumDefinitions();
             OutputBuilder outputBuilder = new OutputBuilder().add(gg.start());
@@ -244,7 +244,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
                                 } else {
                                     outputBuilder.add(Symbol.COMMA).add(args.mid());
                                 }
-                                outputBuilder.add(expression.output());
+                                outputBuilder.add(expression.output(qualification));
                             }
                             outputBuilder.add(args.end()).add(Symbol.RIGHT_PARENTHESIS);
                         }

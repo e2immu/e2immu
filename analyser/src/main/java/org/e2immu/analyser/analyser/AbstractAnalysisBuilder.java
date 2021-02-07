@@ -82,7 +82,7 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
     @Override
     public AnnotationCheck getAnnotation(AnnotationExpression annotationExpression) {
         if (!annotationChecks.isSet(annotationExpression)) {
-            throw new UnsupportedOperationException("Cannot find annotation " + annotationExpression.output());
+            throw new UnsupportedOperationException("Cannot find annotation " + annotationExpression.output(Qualification.EMPTY));
         }
         return annotationChecks.get(annotationExpression);
     }

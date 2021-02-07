@@ -39,10 +39,10 @@ public class ReturnStatement extends StatementWithExpression {
     }
 
     @Override
-    public OutputBuilder output(StatementAnalysis statementAnalysis) {
+    public OutputBuilder output(Qualification qualification, StatementAnalysis statementAnalysis) {
         OutputBuilder outputBuilder = new OutputBuilder().add(new Text("return"));
         if (expression != EmptyExpression.EMPTY_EXPRESSION) {
-            outputBuilder.add(Space.ONE).add(expression.output());
+            outputBuilder.add(Space.ONE).add(expression.output(qualification));
         }
         outputBuilder.add(Symbol.SEMICOLON).addIfNotNull(messageComment(statementAnalysis));
         return outputBuilder;

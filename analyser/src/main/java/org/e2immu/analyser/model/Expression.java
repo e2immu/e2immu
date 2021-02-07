@@ -176,11 +176,11 @@ public interface Expression extends Element, Comparable<Expression> {
         return null;
     }
 
-    default OutputBuilder outputInParenthesis(Precedence precedence, Expression expression) {
+    default OutputBuilder outputInParenthesis(Qualification qualification, Precedence precedence, Expression expression) {
         if (precedence.greaterThan(expression.precedence())) {
-            return new OutputBuilder().add(Symbol.LEFT_PARENTHESIS).add(expression.output()).add(Symbol.RIGHT_PARENTHESIS);
+            return new OutputBuilder().add(Symbol.LEFT_PARENTHESIS).add(expression.output(qualification)).add(Symbol.RIGHT_PARENTHESIS);
         }
-        return expression.output();
+        return expression.output(qualification);
     }
 
     default boolean hasBeenEvaluated() {

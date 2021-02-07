@@ -25,6 +25,7 @@ import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.Element;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.ParameterizedType;
+import org.e2immu.analyser.model.Qualification;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
@@ -403,10 +404,10 @@ public record And(Primitives primitives,
         return true;
     }
 
-    public OutputBuilder output() {
+    public OutputBuilder output(Qualification qualification) {
         Precedence precedence = precedence();
         return new OutputBuilder()
-                .add(expressions.stream().map(e -> e.outputInParenthesis(precedence, e))
+                .add(expressions.stream().map(e -> e.outputInParenthesis(qualification, precedence, e))
                         .collect(OutputBuilder.joining(Symbol.LOGICAL_AND)));
     }
 

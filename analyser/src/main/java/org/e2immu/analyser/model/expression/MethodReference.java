@@ -76,9 +76,9 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
     }
 
     @Override
-    public OutputBuilder output() {
+    public OutputBuilder output(Qualification qualification) {
         String methodName = methodInfo.isConstructor ? "new" : methodInfo.name;
-        return new OutputBuilder().add(scope.output()).add(Symbol.DOUBLE_COLON).add(new Text(methodName));
+        return new OutputBuilder().add(scope.output(qualification)).add(Symbol.DOUBLE_COLON).add(new Text(methodName));
     }
 
     @Override

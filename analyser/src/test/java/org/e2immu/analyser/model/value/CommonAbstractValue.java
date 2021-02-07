@@ -138,8 +138,8 @@ public abstract class CommonAbstractValue {
             }
 
             @Override
-            public OutputBuilder output() {
-                return new OutputBuilder().add(new VariableName(name, null, VariableName.Nature.LOCAL));
+            public OutputBuilder output(Qualification qualification) {
+                return new OutputBuilder().add(new VariableName(name));
             }
 
             @Override

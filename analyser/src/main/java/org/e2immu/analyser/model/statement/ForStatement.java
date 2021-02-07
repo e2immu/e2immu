@@ -41,20 +41,20 @@ public class ForStatement extends LoopStatement {
     }
 
     @Override
-    public OutputBuilder output(StatementAnalysis statementAnalysis) {
+    public OutputBuilder output(Qualification qualification, StatementAnalysis statementAnalysis) {
         OutputBuilder outputBuilder = new OutputBuilder();
         if (label != null) {
             outputBuilder.add(new Text(label)).add(Symbol.COLON_LABEL);
         }
         return outputBuilder.add(new Text("for"))
                 .add(Symbol.LEFT_PARENTHESIS)
-                .add(structure.initialisers().stream().map(Expression::output).collect(OutputBuilder.joining(Symbol.COMMA)))
+                .add(structure.initialisers().stream().map(expression1 -> expression1.output(qualification)).collect(OutputBuilder.joining(Symbol.COMMA)))
                 .add(Symbol.SEMICOLON)
-                .add(structure.expression().output())
+                .add(structure.expression().output(qualification))
                 .add(Symbol.SEMICOLON)
-                .add(structure.updaters().stream().map(Expression::output).collect(OutputBuilder.joining(Symbol.COMMA)))
+                .add(structure.updaters().stream().map(expression2 -> expression2.output(qualification)).collect(OutputBuilder.joining(Symbol.COMMA)))
                 .add(Symbol.RIGHT_PARENTHESIS)
-                .add(structure.block().output(StatementAnalysis.startOfBlock(statementAnalysis, 0)));
+                .add(structure.block().output(qualification, StatementAnalysis.startOfBlock(statementAnalysis, 0)));
     }
 
     @Override

@@ -6,7 +6,7 @@ import org.e2immu.annotation.Container;
  * the goal is to show that there is no Eventual Level 2 container, because there are no preconditions on j
  */
 @Container
-public class EventuallyE1Immutable2 {
+public class EventuallyE1Immutable_1 {
 
     private int i;
     private int j;

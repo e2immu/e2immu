@@ -18,10 +18,7 @@
 package org.e2immu.analyser.model.variable;
 
 import org.e2immu.analyser.analyser.EvaluationContext;
-import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.ParameterizedType;
-import org.e2immu.analyser.model.SideEffect;
-import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Text;
 import org.e2immu.annotation.NotNull;
@@ -78,7 +75,7 @@ public class DependentVariable extends VariableWithConcreteReturnType {
     }
 
     @Override
-    public OutputBuilder output() {
+    public OutputBuilder output(Qualification qualification) {
         return new OutputBuilder().add(new Text(name)); // TODO this can/should be more complex
     }
 

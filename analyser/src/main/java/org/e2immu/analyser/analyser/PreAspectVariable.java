@@ -68,7 +68,7 @@ public record PreAspectVariable(ParameterizedType returnType,
     }
 
     @Override
-    public OutputBuilder output() {
+    public OutputBuilder output(Qualification qualification) {
         return new OutputBuilder().add(new Text("pre"));
     }
 }

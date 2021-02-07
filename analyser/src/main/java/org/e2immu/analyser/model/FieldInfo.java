@@ -112,8 +112,8 @@ public class FieldInfo implements WithInspectionAndAnalysis {
         return owner.primaryType();
     }
 
-    public OutputBuilder output() {
-        Stream<OutputBuilder> annotationStream = buildAnnotationOutput();
+    public OutputBuilder output(Qualification qualification) {
+        Stream<OutputBuilder> annotationStream = buildAnnotationOutput(qualification);
 
         OutputBuilder outputBuilder = new OutputBuilder();
         if (fieldInspection.isSet()) {
@@ -124,13 +124,13 @@ public class FieldInfo implements WithInspectionAndAnalysis {
             if (!inspection.getModifiers().isEmpty()) outputBuilder.add(Space.ONE);
         }
         outputBuilder
-                .add(type.output())
+                .add(type.output(qualification))
                 .add(Space.ONE)
                 .add(new Text(name));
         if (fieldInspection.isSet() && fieldInspection.get().fieldInitialiserIsSet()) {
             Expression expression = fieldInspection.get().getFieldInitialiser().initialiser();
             if (expression != EmptyExpression.EMPTY_EXPRESSION) {
-                outputBuilder.add(Symbol.assignment("=")).add(expression.output());
+                outputBuilder.add(Symbol.assignment("=")).add(expression.output(qualification));
             }
         }
         outputBuilder.add(Symbol.SEMICOLON);

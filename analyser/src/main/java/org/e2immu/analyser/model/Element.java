@@ -90,14 +90,14 @@ public interface Element {
         return subElements().stream().flatMap(e -> e.variables().stream()).collect(Collectors.toList());
     }
 
-    OutputBuilder output();
+    OutputBuilder output(Qualification qualification);
 
     default String minimalOutput() {
-        return output().toString();
+        return output(Qualification.EMPTY).toString();
     }
 
     default String debugOutput() {
-        return output().debug();
+        return output(Qualification.EMPTY).debug();
     }
 
     default TypeInfo definesType() {

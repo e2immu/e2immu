@@ -79,7 +79,7 @@ public class Block extends StatementWithStructure {
     }
 
     @Override
-    public OutputBuilder output(StatementAnalysis statementAnalysis) {
+    public OutputBuilder output(Qualification qualification, StatementAnalysis statementAnalysis) {
         OutputBuilder outputBuilder = new OutputBuilder();
         if (label != null) {
             outputBuilder.add(Space.ONE).add(new Text(label)).add(Symbol.COLON_LABEL);
@@ -88,24 +88,24 @@ public class Block extends StatementWithStructure {
         if (statementAnalysis == null) {
             if (!structure.statements().isEmpty()) {
                 outputBuilder.add(structure.statements().stream()
-                        .map(s -> s.output(null))
+                        .map(s -> s.output(qualification, null))
                         .collect(OutputBuilder.joining(Space.NONE, Guide.generatorForBlock())));
             }
         } else {
             Guide.GuideGenerator guideGenerator = Guide.generatorForBlock();
             outputBuilder.add(guideGenerator.start());
-            statementsString(outputBuilder, guideGenerator, statementAnalysis);
+            statementsString(qualification, outputBuilder, guideGenerator, statementAnalysis);
             outputBuilder.add(guideGenerator.end());
         }
         outputBuilder.add(Symbol.RIGHT_BRACE);
         return outputBuilder;
     }
 
-    public static void statementsString(OutputBuilder outputBuilder, Guide.GuideGenerator guideGenerator, StatementAnalysis statementAnalysis) {
-        statementsString(outputBuilder, guideGenerator, statementAnalysis, false);
+    public static void statementsString(Qualification qualification, OutputBuilder outputBuilder, Guide.GuideGenerator guideGenerator, StatementAnalysis statementAnalysis) {
+        statementsString(qualification, outputBuilder, guideGenerator, statementAnalysis, false);
     }
 
-    private static void statementsString(OutputBuilder outputBuilder, Guide.GuideGenerator guideGenerator, StatementAnalysis statementAnalysis, boolean isNotFirst) {
+    private static void statementsString(Qualification qualification, OutputBuilder outputBuilder, Guide.GuideGenerator guideGenerator, StatementAnalysis statementAnalysis, boolean isNotFirst) {
         StatementAnalysis sa = statementAnalysis;
         boolean notFirst = isNotFirst;
         while (sa != null) {
@@ -115,18 +115,18 @@ public class Block extends StatementWithStructure {
                 outputBuilder.add(Symbol.LEFT_BLOCK_COMMENT)
                         .add(new Text("code will be replaced"))
                         .add(guideGenerator.mid())
-                        .add(sa.statement.output(sa));
+                        .add(sa.output(qualification));
 
                 StatementAnalysis moreReplaced = sa.navigationData.next.isSet() ? sa.navigationData.next.get().orElse(null) : null;
                 if (moreReplaced != null) {
-                    statementsString(outputBuilder, guideGenerator, moreReplaced, true); // recursion!
+                    statementsString(qualification, outputBuilder, guideGenerator, moreReplaced, true); // recursion!
                 }
                 outputBuilder.add(guideGenerator.mid()).add(Symbol.RIGHT_BLOCK_COMMENT);
                 sa = sa.navigationData.replacement.get();
             }
             if (!notFirst) notFirst = true;
             else outputBuilder.add(guideGenerator.mid());
-            outputBuilder.add(sa.statement.output(sa));
+            outputBuilder.add(sa.output(qualification));
             sa = sa.navigationData.next.isSet() ? sa.navigationData.next.get().orElse(null) : null;
         }
     }
@@ -135,7 +135,8 @@ public class Block extends StatementWithStructure {
     more complicated version of the above method, meant for old-style switch statements
     explicitly duplicated the code, so that we can study the simple version diving into the more complicated one!
      */
-    public static void outputSwitchOldStyle(OutputBuilder outputBuilder,
+    public static void outputSwitchOldStyle(Qualification qualification,
+                                            OutputBuilder outputBuilder,
                                             Guide.GuideGenerator guideGenerator,
                                             StatementAnalysis statementAnalysis,
                                             Map<String, List<SwitchStatementOldStyle.SwitchLabel>> idToLabels) {
@@ -151,7 +152,7 @@ public class Block extends StatementWithStructure {
                 if (!notFirst) notFirst = true;
                 else outputBuilder.add(guideGenerator.mid());
                 for (SwitchStatementOldStyle.SwitchLabel switchLabel : idToLabels.get(sa.index)) {
-                    outputBuilder.add(switchLabel.output());
+                    outputBuilder.add(switchLabel.output(qualification));
                     guideGenerator.mid();
                 }
                 statementGg = Guide.generatorForBlock();
@@ -165,18 +166,18 @@ public class Block extends StatementWithStructure {
                 outputBuilder.add(Symbol.LEFT_BLOCK_COMMENT)
                         .add(new Text("code will be replaced"))
                         .add(statementGg.mid())
-                        .add(sa.statement.output(sa));
+                        .add(sa.statement.output(qualification, sa));
 
                 StatementAnalysis moreReplaced = sa.navigationData.next.isSet() ? sa.navigationData.next.get().orElse(null) : null;
                 if (moreReplaced != null) {
-                    statementsString(outputBuilder, statementGg, moreReplaced, true); // recursion!
+                    statementsString(qualification, outputBuilder, statementGg, moreReplaced, true); // recursion!
                 }
                 outputBuilder.add(statementGg.mid()).add(Symbol.RIGHT_BLOCK_COMMENT);
                 sa = sa.navigationData.replacement.get();
             }
             if (!notFirstInCase) notFirstInCase = true;
             else outputBuilder.add(statementGg.mid());
-            outputBuilder.add(sa.statement.output(sa));
+            outputBuilder.add(sa.statement.output(qualification, sa));
             sa = sa.navigationData.next.isSet() ? sa.navigationData.next.get().orElse(null) : null;
         }
         if (statementGg != null) {

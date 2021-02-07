@@ -22,7 +22,6 @@ import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.analyser.StatementAnalysis;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.output.*;
-import org.e2immu.analyser.util.StringUtil;
 
 import java.util.List;
 
@@ -44,12 +43,12 @@ public class SynchronizedStatement extends StatementWithExpression {
     }
 
     @Override
-    public OutputBuilder output(StatementAnalysis statementAnalysis) {
+    public OutputBuilder output(Qualification qualification, StatementAnalysis statementAnalysis) {
         return new OutputBuilder().add(new Text("synchronized"))
                 .add(Symbol.LEFT_PARENTHESIS)
-                .add(structure.expression().output())
+                .add(structure.expression().output(qualification))
                 .add(Symbol.RIGHT_PARENTHESIS)
-                .add(structure.block().output(StatementAnalysis.startOfBlock(statementAnalysis, 0)));
+                .add(structure.block().output(qualification, StatementAnalysis.startOfBlock(statementAnalysis, 0)));
     }
 
     @Override

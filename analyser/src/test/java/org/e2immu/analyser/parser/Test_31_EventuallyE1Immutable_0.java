@@ -24,11 +24,24 @@ import org.junit.Test;
 
 import java.io.IOException;
 
-public class TestEventuallyE1Immutable1 extends CommonTestRunner {
+public class Test_31_EventuallyE1Immutable_0 extends CommonTestRunner {
 
     @Test
-    public void test() throws IOException {
-        testClass("EventuallyE1Immutable1", 0, 0, new DebugConfiguration.Builder()
+    public void test_0() throws IOException {
+        testClass("EventuallyE1Immutable_0", 0, 0, new DebugConfiguration.Builder()
+                .build());
+    }
+
+    @Test
+    public void test_1() throws IOException {
+        testClass("EventuallyE1Immutable_1", 0, 0, new DebugConfiguration.Builder()
+                .build());
+    }
+
+
+    @Test
+    public void test_2() throws IOException {
+        testClass("EventuallyE1Immutable_2_M", 0, 0, new DebugConfiguration.Builder()
                 .build());
     }
 }

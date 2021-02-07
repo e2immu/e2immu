@@ -104,12 +104,12 @@ public class InlineConditional implements Expression {
     }
 
     @Override
-    public OutputBuilder output() {
-        return new OutputBuilder().add(outputInParenthesis(precedence(), condition))
+    public OutputBuilder output(Qualification qualification) {
+        return new OutputBuilder().add(outputInParenthesis(qualification, precedence(), condition))
                 .add(Symbol.QUESTION_MARK)
-                .add(outputInParenthesis(precedence(), ifTrue))
+                .add(outputInParenthesis(qualification, precedence(), ifTrue))
                 .add(Symbol.COLON)
-                .add(outputInParenthesis(precedence(), ifFalse));
+                .add(outputInParenthesis(qualification, precedence(), ifFalse));
     }
 
     private static final int NO_PATTERN = -2;

@@ -117,28 +117,28 @@ public class Lambda implements Expression {
     }
 
     @Override
-    public OutputBuilder output() {
+    public OutputBuilder output(Qualification qualification) {
         OutputBuilder outputBuilder = new OutputBuilder();
         if (parameters.isEmpty()) {
             outputBuilder.add(Symbol.OPEN_CLOSE_PARENTHESIS);
         } else if (parameters.size() == 1) {
-            outputBuilder.add(parameters.get(0).output());
+            outputBuilder.add(parameters.get(0).output(qualification));
         } else {
             outputBuilder.add(Symbol.LEFT_PARENTHESIS)
-                    .add(parameters.stream().map(ParameterInfo::output).collect(OutputBuilder.joining(Symbol.COMMA)))
+                    .add(parameters.stream().map(pi -> pi.output(qualification)).collect(OutputBuilder.joining(Symbol.COMMA)))
                     .add(Symbol.RIGHT_PARENTHESIS);
         }
         outputBuilder.add(Symbol.LAMBDA);
 
         Expression singleExpression = singleExpression();
         if (singleExpression != null) {
-            outputBuilder.add(outputInParenthesis(precedence(), singleExpression));
+            outputBuilder.add(outputInParenthesis(qualification, precedence(), singleExpression));
         } else {
             Guide.GuideGenerator guideGenerator = Guide.generatorForBlock();
             outputBuilder.add(Symbol.LEFT_BRACE);
             outputBuilder.add(guideGenerator.start());
             StatementAnalysis firstStatement = methodInfo.methodAnalysis.get().getFirstStatement().followReplacements();
-            Block.statementsString(outputBuilder, guideGenerator, firstStatement);
+            Block.statementsString(qualification, outputBuilder, guideGenerator, firstStatement);
             outputBuilder.add(guideGenerator.end());
             outputBuilder.add(Symbol.RIGHT_BRACE);
         }

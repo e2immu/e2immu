@@ -20,6 +20,7 @@ package org.e2immu.analyser.model.expression;
 import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.Qualification;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.output.OutputBuilder;
@@ -115,13 +116,13 @@ public class Sum extends BinaryOperator {
 
 
     @Override
-    public OutputBuilder output() {
-        OutputBuilder outputBuilder = new OutputBuilder().add(outputInParenthesis(precedence(), lhs));
+    public OutputBuilder output(Qualification qualification) {
+        OutputBuilder outputBuilder = new OutputBuilder().add(outputInParenthesis(qualification, precedence(), lhs));
         boolean ignoreOperator = rhs instanceof Negation || rhs instanceof Sum sum2 && (sum2.lhs instanceof Negation);
         if (!ignoreOperator) {
             outputBuilder.add(Symbol.binaryOperator(operator.name));
         }
-        return outputBuilder.add(outputInParenthesis(precedence(), rhs));
+        return outputBuilder.add(outputInParenthesis(qualification, precedence(), rhs));
     }
 
 }

@@ -85,10 +85,11 @@ public class ArrayInitializer implements Expression {
         return minimalOutput();
     }
 
-    public OutputBuilder output() {
+    public OutputBuilder output(Qualification qualification) {
         return new OutputBuilder()
                 .add(Symbol.LEFT_BRACE)
-                .add(multiExpression.stream().map(Element::output).collect(OutputBuilder.joining(Symbol.COMMA)))
+                .add(multiExpression.stream().map(expression -> expression.output(qualification))
+                        .collect(OutputBuilder.joining(Symbol.COMMA)))
                 .add(Symbol.RIGHT_BRACE);
     }
 

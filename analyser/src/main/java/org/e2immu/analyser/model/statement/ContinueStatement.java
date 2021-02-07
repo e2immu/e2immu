@@ -1,6 +1,7 @@
 package org.e2immu.analyser.model.statement;
 
 import org.e2immu.analyser.analyser.StatementAnalysis;
+import org.e2immu.analyser.model.Qualification;
 import org.e2immu.analyser.output.*;
 
 public class ContinueStatement extends BreakOrContinueStatement {
@@ -10,7 +11,7 @@ public class ContinueStatement extends BreakOrContinueStatement {
     }
 
     @Override
-    public OutputBuilder output(StatementAnalysis statementAnalysis) {
+    public OutputBuilder output(Qualification qualification, StatementAnalysis statementAnalysis) {
         OutputBuilder outputBuilder = new OutputBuilder().add(new Text("continue"));
         if (label != null) {
             outputBuilder.add(Space.ONE).add(new Text(label));

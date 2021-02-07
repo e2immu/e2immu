@@ -27,6 +27,7 @@ import org.e2immu.analyser.objectflow.Access;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.objectflow.access.MethodAccess;
+import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Message;
@@ -587,6 +588,21 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
 
     public void ensureMessages(Stream<Message> messageStream) {
         messageStream.forEach(this::ensure);
+    }
+
+    /*
+    output the statement, but take into account the list of variables, there may be name clashes to be resolved
+
+     */
+    public OutputBuilder output(Qualification qualification) {
+        return statement.output(qualification, this);
+    }
+
+    private Set<String> findNameClashesBetweenLocalVariablesAndFields() {
+        Set<String> local = new HashSet<>(variableStream().filter(vi -> vi.variable().isLocal()).map(VariableInfo::name).collect(Collectors.toUnmodifiableSet()));
+        Set<String> fields = variableStream().filter(vi -> vi.variable() instanceof FieldReference).map(vi -> ((FieldReference) (vi.variable())).fieldInfo.name).collect(Collectors.toUnmodifiableSet());
+        local.retainAll(fields);
+        return local;
     }
 
     public record ConditionAndLastStatement(Expression condition,

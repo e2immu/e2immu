@@ -18,6 +18,7 @@
 package org.e2immu.analyser.analyser;
 
 import com.google.common.collect.ImmutableSet;
+import org.e2immu.analyser.model.Qualification;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.OutputBuilder;
@@ -54,7 +55,8 @@ public record LinkedVariables(Set<Variable> variables) {
         if (this == EMPTY) return "";
         if (this == DELAY) return DELAY_STRING;
 
-        return variables.stream().map(Variable::output).collect(OutputBuilder.joining(Symbol.COMMA)).debug();
+        return variables.stream().map(v -> v.output(Qualification.EMPTY))
+                .collect(OutputBuilder.joining(Symbol.COMMA)).debug();
     }
 
     public LinkedVariables removeAllButLocalCopiesOf(Variable variable) {

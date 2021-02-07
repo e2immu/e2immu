@@ -22,12 +22,8 @@ import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.FlowData;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.analyser.StatementAnalysis;
-import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.Statement;
-import org.e2immu.analyser.model.TranslationMap;
-import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.ArrayInitializer;
-import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.expression.LocalVariableCreation;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Space;
@@ -82,7 +78,7 @@ public class ForEachStatement extends LoopStatement {
 
 
     @Override
-    public OutputBuilder output(StatementAnalysis statementAnalysis) {
+    public OutputBuilder output(Qualification qualification, StatementAnalysis statementAnalysis) {
         OutputBuilder outputBuilder = new OutputBuilder();
         if (label != null) {
             outputBuilder.add(new Text(label)).add(Symbol.COLON_LABEL);
@@ -90,12 +86,12 @@ public class ForEachStatement extends LoopStatement {
         LocalVariableCreation lvc = (LocalVariableCreation) structure.initialisers().get(0);
         return outputBuilder.add(new Text("for"))
                 .add(Symbol.LEFT_PARENTHESIS)
-                .add(lvc.localVariable.parameterizedType().output())
+                .add(lvc.localVariable.parameterizedType().output(qualification))
                 .add(Space.ONE)
                 .add(new Text(lvc.localVariable.name()))
                 .add(Symbol.COLON)
-                .add(structure.expression().output())
+                .add(structure.expression().output(qualification))
                 .add(Symbol.RIGHT_PARENTHESIS)
-                .add(structure.block().output(StatementAnalysis.startOfBlock(statementAnalysis, 0)));
+                .add(structure.block().output(qualification, StatementAnalysis.startOfBlock(statementAnalysis, 0)));
     }
 }

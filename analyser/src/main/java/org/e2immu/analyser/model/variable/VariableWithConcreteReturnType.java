@@ -18,6 +18,7 @@
 package org.e2immu.analyser.model.variable;
 
 import org.e2immu.analyser.model.ParameterizedType;
+import org.e2immu.analyser.model.Qualification;
 import org.e2immu.annotation.NotNull;
 
 import java.util.Objects;
@@ -39,6 +40,6 @@ public abstract class VariableWithConcreteReturnType implements Variable {
 
     @Override
     public String toString() {
-        return output().toString();
+        return output(Qualification.EMPTY).toString();
     }
 }

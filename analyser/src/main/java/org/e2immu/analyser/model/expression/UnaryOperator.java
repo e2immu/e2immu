@@ -156,13 +156,13 @@ public class UnaryOperator implements Expression {
     }
 
     @Override
-    public OutputBuilder output() {
+    public OutputBuilder output(Qualification qualification) {
         if (Primitives.isPostfix(operator)) {
-            return new OutputBuilder().add(outputInParenthesis(precedence, expression))
+            return new OutputBuilder().add(outputInParenthesis(qualification, precedence, expression))
                     .add(Symbol.plusPlusSuffix(operator.name));
         }
         return new OutputBuilder().add(Symbol.plusPlusPrefix(operator.name))
-                .add(outputInParenthesis(precedence, expression));
+                .add(outputInParenthesis(qualification, precedence, expression));
     }
 
     @Override

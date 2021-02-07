@@ -21,10 +21,7 @@ package org.e2immu.analyser.model.expression;
 import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
-import org.e2immu.analyser.model.Element;
-import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.ParameterizedType;
-import org.e2immu.analyser.model.TranslationMap;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.output.OutputBuilder;
@@ -75,9 +72,9 @@ public record MemberValuePair(String name, Expression value) implements Expressi
     }
 
     @Override
-    public OutputBuilder output() {
-        if (VALUE.equals(name)) return new OutputBuilder().add(value.output());
-        return new OutputBuilder().add(new Text(name)).add(Symbol.assignment("=")).add(value.output());
+    public OutputBuilder output(Qualification qualification) {
+        if (VALUE.equals(name)) return new OutputBuilder().add(value.output(qualification));
+        return new OutputBuilder().add(new Text(name)).add(Symbol.assignment("=")).add(value.output(qualification));
     }
 
     @Override

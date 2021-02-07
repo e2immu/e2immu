@@ -45,8 +45,8 @@ public class LocalClassDeclaration extends StatementWithStructure {
     }
 
     @Override
-    public OutputBuilder output(StatementAnalysis statementAnalysis) {
-        return typeInfo.output();
+    public OutputBuilder output(Qualification qualification, StatementAnalysis statementAnalysis) {
+        return typeInfo.output(qualification);
     }
 
     @Override

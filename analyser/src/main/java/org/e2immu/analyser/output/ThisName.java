@@ -17,38 +17,25 @@
 
 package org.e2immu.analyser.output;
 
-import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.util.StringUtil;
 
-public record TypeName(String simpleName, String fullyQualifiedName,
-                       String distinguishingName) implements Qualifier {
-
-    public TypeName(TypeInfo typeInfo) {
-        this(typeInfo.simpleName, typeInfo.fullyQualifiedName, typeInfo.fullyQualifiedName);
-    }
+public record ThisName(boolean isSuper, Qualifier qualifier, boolean qualifierRequired) implements Qualifier {
 
     @Override
     public String minimal() {
-        return simpleName;
-    }
-
-    @Override
-    public String debug() {
-        return fullyQualifiedName;
-    }
-
-    @Override
-    public int length(FormattingOptions options) {
-        return simpleName.length(); // TODO
+        String thisOrSuper = isSuper ? "super" : "this";
+        return qualifierRequired ? qualifier.minimal() + "." + thisOrSuper : thisOrSuper;
     }
 
     @Override
     public String write(FormattingOptions options) {
-        return simpleName;
+        String thisOrSuper = isSuper ? "super" : "this";
+        return qualifierRequired ? qualifier.write(options) + "." + thisOrSuper : thisOrSuper;
     }
 
     @Override
     public String generateJavaForDebugging() {
-        return ".add(new TypeName(" + StringUtil.quote(simpleName) + ",\"\",\"\"))";
+        String q = qualifier == null ? "null" : StringUtil.quote(qualifier.minimal());
+        return ".add(new ThisName(" + isSuper + ", " + q + ", " + qualifierRequired + "))";
     }
 }

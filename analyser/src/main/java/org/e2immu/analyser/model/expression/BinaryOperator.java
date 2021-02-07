@@ -448,10 +448,10 @@ public class BinaryOperator implements Expression {
     }
 
     @Override
-    public OutputBuilder output() {
-        return new OutputBuilder().add(outputInParenthesis(precedence(), lhs))
+    public OutputBuilder output(Qualification qualification) {
+        return new OutputBuilder().add(outputInParenthesis(qualification, precedence(), lhs))
                 .add(Symbol.binaryOperator(operator.name))
-                .add(outputInParenthesis(precedence(), rhs));
+                .add(outputInParenthesis(qualification, precedence(), rhs));
     }
 
     @Override

@@ -114,9 +114,9 @@ public class ArrayAccess implements Expression {
     }
 
     @Override
-    public OutputBuilder output() {
-        return new OutputBuilder().add(outputInParenthesis(precedence(), expression))
-                .add(Symbol.LEFT_BRACKET).add(index.output()).add(Symbol.RIGHT_BRACKET);
+    public OutputBuilder output(Qualification qualification) {
+        return new OutputBuilder().add(outputInParenthesis(qualification, precedence(), expression))
+                .add(Symbol.LEFT_BRACKET).add(index.output(qualification)).add(Symbol.RIGHT_BRACKET);
     }
 
     @Override

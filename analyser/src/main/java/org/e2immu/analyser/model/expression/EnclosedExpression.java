@@ -21,10 +21,7 @@ package org.e2immu.analyser.model.expression;
 import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
-import org.e2immu.analyser.model.Element;
-import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.ParameterizedType;
-import org.e2immu.analyser.model.TranslationMap;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
@@ -80,8 +77,8 @@ public record EnclosedExpression(Expression inner) implements Expression {
     }
 
     @Override
-    public OutputBuilder output() {
-        return new OutputBuilder().add(Symbol.LEFT_PARENTHESIS).add(inner.output()).add(Symbol.RIGHT_PARENTHESIS);
+    public OutputBuilder output(Qualification qualification) {
+        return new OutputBuilder().add(Symbol.LEFT_PARENTHESIS).add(inner.output(qualification)).add(Symbol.RIGHT_PARENTHESIS);
     }
 
     @Override

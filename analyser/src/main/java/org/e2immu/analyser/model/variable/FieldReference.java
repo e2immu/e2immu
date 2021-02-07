@@ -18,13 +18,8 @@
 package org.e2immu.analyser.model.variable;
 
 import org.e2immu.analyser.analyser.EvaluationContext;
-import org.e2immu.analyser.model.FieldInfo;
-import org.e2immu.analyser.model.ParameterizedType;
-import org.e2immu.analyser.model.SideEffect;
-import org.e2immu.analyser.model.TypeInfo;
-import org.e2immu.analyser.output.OutputBuilder;
-import org.e2immu.analyser.output.Symbol;
-import org.e2immu.analyser.output.VariableName;
+import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.output.*;
 import org.e2immu.analyser.parser.InspectionProvider;
 
 import java.util.Objects;
@@ -93,19 +88,25 @@ public class FieldReference extends VariableWithConcreteReturnType {
     }
 
     @Override
-    public OutputBuilder output() {
+    public OutputBuilder output(Qualification qualification) {
         if (scope == null) {
-            return new OutputBuilder().add(new VariableName(fieldInfo.name, fieldInfo.owner, VariableName.Nature.STATIC));
+            // static!
+            return new OutputBuilder().add(new VariableName(fieldInfo.name, new TypeName(fieldInfo.owner),
+                    qualification.qualifierRequired(this) ? VariableName.Required.YES : VariableName.Required.NO));
         }
         if (scope instanceof This thisVar) {
-            return new OutputBuilder().add(new VariableName(fieldInfo.name, thisVar.typeInfo, VariableName.Nature.INSTANCE));
+            return new OutputBuilder().add(new VariableName(fieldInfo.name, new ThisName(thisVar.writeSuper, new TypeName(thisVar.typeInfo),
+                    qualification.qualifierRequired(thisVar)),
+                    qualification.qualifierRequired(this) ? VariableName.Required.YES : VariableName.Required.NO));
         }
-        return new OutputBuilder().add(scope.output()).add(Symbol.DOT).add(new VariableName(simpleName(), null, VariableName.Nature.LOCAL));
+        // real variable
+        return new OutputBuilder().add(scope.output(qualification)).add(Symbol.DOT)
+                .add(new VariableName(simpleName(), null, VariableName.Required.NEVER));
     }
 
     @Override
     public String toString() {
-        return output().toString();
+        return output(Qualification.EMPTY).toString();
     }
 
     @Override
@@ -116,9 +117,5 @@ public class FieldReference extends VariableWithConcreteReturnType {
     @Override
     public SideEffect sideEffect(EvaluationContext evaluationContext) {
         return isStatic() ? SideEffect.STATIC_ONLY : SideEffect.NONE_CONTEXT;
-    }
-
-    public boolean isThisScope() {
-        return scope instanceof This thisVariable && thisVariable.typeInfo == fieldInfo.owner;
     }
 }

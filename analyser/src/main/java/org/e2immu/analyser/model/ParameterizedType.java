@@ -161,7 +161,7 @@ public class ParameterizedType {
         return new ParameterizedType(this.typeInfo, arrays - 1, wildCard, parameters, typeParameter);
     }
 
-    public OutputBuilder output() {
+    public OutputBuilder output(Qualification qualification) {
         // FIXME split into multiple parts
         return new OutputBuilder().add(new Text(print()));
     }

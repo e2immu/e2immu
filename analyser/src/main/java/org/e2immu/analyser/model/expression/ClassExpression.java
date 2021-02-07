@@ -18,10 +18,7 @@
 
 package org.e2immu.analyser.model.expression;
 
-import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.ParameterizedType;
-import org.e2immu.analyser.model.TranslationMap;
-import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.output.OutputBuilder;
@@ -94,8 +91,8 @@ public record ClassExpression(Primitives primitives,
     }
 
     @Override
-    public OutputBuilder output() {
-        return new OutputBuilder().add(parameterizedType.output()).add(Symbol.DOT).add(new Text("class"));
+    public OutputBuilder output(Qualification qualification) {
+        return new OutputBuilder().add(parameterizedType.output(qualification)).add(Symbol.DOT).add(new Text("class"));
     }
 
     @Override

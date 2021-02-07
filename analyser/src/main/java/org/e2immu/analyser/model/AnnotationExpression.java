@@ -43,5 +43,5 @@ public interface AnnotationExpression {
 
     AnnotationParameters e2ImmuAnnotationParameters();
 
-    OutputBuilder output();
+    OutputBuilder output(Qualification qualification);
 }

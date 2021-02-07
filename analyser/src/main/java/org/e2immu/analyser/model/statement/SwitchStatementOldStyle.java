@@ -31,14 +31,14 @@ public class SwitchStatementOldStyle extends StatementWithExpression implements 
             return from - o.from;
         }
 
-        public OutputBuilder output() {
+        public OutputBuilder output(Qualification qualification) {
             OutputBuilder outputBuilder = new OutputBuilder();
             if (expression == EmptyExpression.DEFAULT_EXPRESSION) {
                 outputBuilder.add(new Text("default"));
             } else {
                 outputBuilder.add(new Text("case"))
                         .add(Space.ONE)
-                        .add(expression.output());
+                        .add(expression.output(qualification));
             }
             return outputBuilder.add(Symbol.COLON_LABEL);
         }
@@ -70,16 +70,16 @@ public class SwitchStatementOldStyle extends StatementWithExpression implements 
     }
 
     @Override
-    public OutputBuilder output(StatementAnalysis statementAnalysis) {
+    public OutputBuilder output(Qualification qualification, StatementAnalysis statementAnalysis) {
         OutputBuilder outputBuilder = new OutputBuilder().add(new Text("switch"))
-                .add(Symbol.LEFT_PARENTHESIS).add(expression.output()).add(Symbol.RIGHT_PARENTHESIS);
+                .add(Symbol.LEFT_PARENTHESIS).add(expression.output(qualification)).add(Symbol.RIGHT_PARENTHESIS);
         outputBuilder.add(Symbol.LEFT_BRACE);
         if (statementAnalysis.navigationData.hasSubBlocks() &&
                 statementAnalysis.navigationData.blocks.get().get(0).isPresent()) {
             Guide.GuideGenerator guideGenerator = Guide.generatorForBlock();
             outputBuilder.add(guideGenerator.start());
             StatementAnalysis firstStatement = statementAnalysis.navigationData.blocks.get().get(0).orElseThrow();
-            Block.outputSwitchOldStyle(outputBuilder, guideGenerator, firstStatement, switchLabelMap(firstStatement));
+            Block.outputSwitchOldStyle(qualification, outputBuilder, guideGenerator, firstStatement, switchLabelMap(firstStatement));
             outputBuilder.add(guideGenerator.end());
         }
         return outputBuilder.add(Symbol.RIGHT_BRACE);

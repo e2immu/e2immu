@@ -3,10 +3,7 @@ package org.e2immu.analyser.model.statement;
 import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.analyser.StatementAnalysis;
-import org.e2immu.analyser.model.Element;
-import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.Statement;
-import org.e2immu.analyser.model.TranslationMap;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.output.Guide;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
@@ -45,15 +42,15 @@ public class SwitchStatementNewStyle extends StatementWithExpression implements 
     }
 
     @Override
-    public OutputBuilder output(StatementAnalysis statementAnalysis) {
+    public OutputBuilder output(Qualification qualification, StatementAnalysis statementAnalysis) {
         OutputBuilder outputBuilder = new OutputBuilder().add(new Text("switch"))
-                .add(Symbol.LEFT_PARENTHESIS).add(expression.output()).add(Symbol.RIGHT_PARENTHESIS)
+                .add(Symbol.LEFT_PARENTHESIS).add(expression.output(qualification)).add(Symbol.RIGHT_PARENTHESIS)
                 .add(Symbol.LEFT_BRACE);
         Guide.GuideGenerator guideGenerator = Guide.generatorForBlock();
         outputBuilder.add(guideGenerator.start());
         int i = 0;
         for (SwitchEntry switchEntry : switchEntries) {
-            outputBuilder.add(switchEntry.output(guideGenerator, StatementAnalysis.startOfBlock(statementAnalysis, i)));
+            outputBuilder.add(switchEntry.output(qualification, guideGenerator, StatementAnalysis.startOfBlock(statementAnalysis, i)));
             i++;
         }
         return outputBuilder.add(guideGenerator.end()).add(Symbol.RIGHT_BRACE);

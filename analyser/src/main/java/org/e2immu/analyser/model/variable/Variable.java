@@ -19,6 +19,7 @@ package org.e2immu.analyser.model.variable;
 
 import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.model.ParameterizedType;
+import org.e2immu.analyser.model.Qualification;
 import org.e2immu.analyser.model.SideEffect;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.output.OutputBuilder;
@@ -64,7 +65,7 @@ public interface Variable {
         return false;
     }
 
-    OutputBuilder output();
+    OutputBuilder output(Qualification qualification);
 
     static Variable fake() {
         return new Variable() {
@@ -99,7 +100,7 @@ public interface Variable {
             }
 
             @Override
-            public OutputBuilder output() {
+            public OutputBuilder output(Qualification qualification) {
                 return new OutputBuilder().add(new Text("fake variable"));
             }
 

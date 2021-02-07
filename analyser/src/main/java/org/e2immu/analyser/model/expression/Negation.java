@@ -23,6 +23,7 @@ import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.ParameterizedType;
+import org.e2immu.analyser.model.Qualification;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.output.OutputBuilder;
@@ -119,15 +120,15 @@ public class Negation extends UnaryOperator implements ExpressionWrapper {
     }
 
     @Override
-    public OutputBuilder output() {
+    public OutputBuilder output(Qualification qualification) {
         // we intercept a few standard cases... too ugly otherwise
         if (expression instanceof Equals equals) {
-            return new OutputBuilder().add(outputInParenthesis(equals.precedence(), equals.lhs))
+            return new OutputBuilder().add(outputInParenthesis(qualification, equals.precedence(), equals.lhs))
                     .add(Symbol.NOT_EQUALS)
-                    .add(outputInParenthesis(equals.precedence(), equals.rhs));
+                    .add(outputInParenthesis(qualification, equals.precedence(), equals.rhs));
         }
         return new OutputBuilder().add(expression.isNumeric() ? Symbol.UNARY_MINUS : Symbol.UNARY_BOOLEAN_NOT)
-                .add(outputInParenthesis(precedence(), expression));
+                .add(outputInParenthesis(qualification, precedence(), expression));
     }
 
     @Override

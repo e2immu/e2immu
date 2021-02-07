@@ -17,41 +17,51 @@
 
 package org.e2immu.analyser.output;
 
-import org.e2immu.analyser.model.WithInspectionAndAnalysis;
 import org.e2immu.analyser.util.StringUtil;
 
-public record VariableName(String simpleName, WithInspectionAndAnalysis owner, Nature nature) implements OutputElement {
+public record VariableName(String name, Qualifier qualifier, Required qualifierRequired) implements Qualifier {
 
-    public enum Nature {
-        STATIC, INSTANCE, LOCAL
+    // for tests
+    public VariableName(String name) {
+        this(name, null, Required.NEVER);
+    }
+
+    public enum Required {
+        YES, NO, NEVER
     }
 
     @Override
     public String minimal() {
-        return simpleName;
+        return qualifierRequired == Required.YES ? qualifier.minimal() + "." + name : name;
     }
 
     @Override
     public String debug() {
-        return switch (nature) {
-            case LOCAL -> simpleName;
-            case INSTANCE -> "this." + simpleName;
-            case STATIC -> owner.fullyQualifiedName() + "." + simpleName;
-        };
+        if (qualifier != null) {
+            return qualifier.debug() + "." + name;
+        }
+        return name;
     }
 
     @Override
     public int length(FormattingOptions options) {
-        return options.debug() ? debug().length() : simpleName.length();
+        return options.debug() ? debug().length() : minimal().length();
     }
 
     @Override
     public String write(FormattingOptions options) {
-        return simpleName;
+        if (options.allFieldsRequireThis() && qualifierRequired != Required.NEVER && qualifier instanceof ThisName) {
+            return qualifier().write(options) + "." + name;
+        }
+        if (options.allStaticFieldsRequireType() && qualifierRequired != Required.NEVER && qualifier instanceof TypeName) {
+            return qualifier().write(options) + "." + name;
+        }
+        return minimal();
     }
 
     @Override
     public String generateJavaForDebugging() {
-        return ".add(new VariableName(" + StringUtil.quote(simpleName) + ", owner, Nature." + nature + "))";
+        String q = qualifier == null ? "null" : StringUtil.quote(qualifier.minimal());
+        return ".add(new VariableName(" + StringUtil.quote(name) + ", " + q + ", " + qualifierRequired + "))";
     }
 }

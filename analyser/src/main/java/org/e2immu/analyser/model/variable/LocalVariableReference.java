@@ -73,12 +73,12 @@ public class LocalVariableReference extends VariableWithConcreteReturnType {
 
     @Override
     public String toString() {
-        return output().toString();
+        return output(Qualification.EMPTY).toString();
     }
 
     @Override
-    public OutputBuilder output() {
-        return new OutputBuilder().add(new VariableName(simpleName(), null, VariableName.Nature.LOCAL));
+    public OutputBuilder output(Qualification qualification) {
+        return new OutputBuilder().add(new VariableName(simpleName(), null, VariableName.Required.NEVER));
     }
 
     @Override

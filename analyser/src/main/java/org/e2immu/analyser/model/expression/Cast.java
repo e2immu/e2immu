@@ -85,9 +85,9 @@ public record Cast(Expression expression,
     }
 
     @Override
-    public OutputBuilder output() {
-        return new OutputBuilder().add(Symbol.LEFT_PARENTHESIS).add(parameterizedType.output()).add(Symbol.RIGHT_PARENTHESIS)
-                .add(outputInParenthesis(precedence(), expression));
+    public OutputBuilder output(Qualification qualification) {
+        return new OutputBuilder().add(Symbol.LEFT_PARENTHESIS).add(parameterizedType.output(qualification)).add(Symbol.RIGHT_PARENTHESIS)
+                .add(outputInParenthesis(qualification, precedence(), expression));
     }
 
     @Override

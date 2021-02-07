@@ -23,6 +23,7 @@ import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.ParameterizedType;
+import org.e2immu.analyser.model.Qualification;
 import org.e2immu.analyser.model.TranslationMap;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.output.OutputBuilder;
@@ -50,8 +51,8 @@ public record CommaExpression(List<Expression> expressions) implements Expressio
     }
 
     @Override
-    public OutputBuilder output() {
-        return expressions.stream().map(Expression::output).collect(OutputBuilder.joining(Symbol.COMMA));
+    public OutputBuilder output(Qualification qualification) {
+        return expressions.stream().map(expression -> expression.output(qualification)).collect(OutputBuilder.joining(Symbol.COMMA));
     }
 
     @Override

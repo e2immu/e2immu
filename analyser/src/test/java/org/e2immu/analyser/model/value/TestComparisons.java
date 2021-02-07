@@ -211,9 +211,9 @@ public class TestComparisons extends CommonAbstractValue {
         Expression jGt5 = GreaterThanZero.greater(minimalEvaluationContext, j, newInt(5), true);
 
         Expression or1 = newOrAppend(iLt0, jGt5);
-        Assert.assertEquals("i<=-1||j>=5", or1.toString());
+        Assert.assertEquals("j>=5||i<=-1", or1.toString());
         Expression or2 = newOrAppend(iLeM1, jGt5);
-        Assert.assertEquals("i<=-1||j>=5", or2.toString());
+        Assert.assertEquals("j>=5||i<=-1", or2.toString());
 
         Assert.assertEquals(or1, or2);
 

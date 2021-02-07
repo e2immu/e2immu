@@ -25,6 +25,7 @@ import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.LinkedVariables;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.inspector.TypeContext;
+import org.e2immu.analyser.model.Qualification;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.Formatter;
 import org.e2immu.analyser.output.FormattingOptions;
@@ -178,7 +179,7 @@ public abstract class CommonTestRunner {
         Parser parser = new Parser(configuration);
         List<SortedType> types = parser.run();
         for (SortedType sortedType : types) {
-            OutputBuilder outputBuilder = sortedType.primaryType().output();
+            OutputBuilder outputBuilder = sortedType.primaryType().output(Qualification.EMPTY); // FIXME
             Formatter formatter = new Formatter(FormattingOptions.DEFAULT);
             LOGGER.info("Stream:\n{}\n", formatter.write(outputBuilder));
             //LOGGER.info("\n----\nOutput builder:\n{}", outputBuilder.generateJavaForDebugging());

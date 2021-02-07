@@ -20,12 +20,8 @@ package org.e2immu.analyser.model.statement;
 
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.analyser.StatementAnalysis;
-import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.Statement;
-import org.e2immu.analyser.model.StatementExecution;
-import org.e2immu.analyser.model.TranslationMap;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.output.OutputBuilder;
-import org.e2immu.analyser.output.Space;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.output.Text;
 
@@ -50,12 +46,12 @@ public class DoStatement extends LoopStatement {
 
 
     @Override
-    public OutputBuilder output(StatementAnalysis statementAnalysis) {
+    public OutputBuilder output(Qualification qualification, StatementAnalysis statementAnalysis) {
         return new OutputBuilder().add(new Text("do"))
-                .add(structure.block().output(StatementAnalysis.startOfBlock(statementAnalysis, 0)))
+                .add(structure.block().output(qualification, StatementAnalysis.startOfBlock(statementAnalysis, 0)))
                 .add(new Text("while"))
                 .add(Symbol.LEFT_PARENTHESIS)
-                .add(structure.expression().output())
+                .add(structure.expression().output(qualification))
                 .add(Symbol.RIGHT_PARENTHESIS);
     }
 }

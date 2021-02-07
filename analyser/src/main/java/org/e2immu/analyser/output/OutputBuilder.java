@@ -19,15 +19,12 @@ package org.e2immu.analyser.output;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.BiConsumer;
-import java.util.function.BinaryOperator;
-import java.util.function.Function;
-import java.util.function.Supplier;
+import java.util.function.*;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 public class OutputBuilder {
-    List<OutputElement> list = new LinkedList<>();
+    final List<OutputElement> list = new LinkedList<>();
 
     public OutputBuilder addIfNotNull(OutputBuilder outputBuilder) {
         if (outputBuilder != null) {
@@ -144,5 +141,9 @@ public class OutputBuilder {
 
     public String generateJavaForDebugging() {
         return list.stream().map(OutputElement::generateJavaForDebugging).collect(Collectors.joining("\n"));
+    }
+
+    public void replace(UnaryOperator<OutputElement> replacer) {
+        list.replaceAll(replacer);
     }
 }

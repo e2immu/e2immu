@@ -51,7 +51,7 @@ public class NullConstant implements ConstantExpression<Object> {
     }
 
     @Override
-    public OutputBuilder output() {
+    public OutputBuilder output(Qualification qualification) {
         return new OutputBuilder().add(new Text("null"));
     }
 

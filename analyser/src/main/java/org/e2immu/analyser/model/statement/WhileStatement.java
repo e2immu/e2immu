@@ -22,7 +22,6 @@ import org.e2immu.analyser.analyser.FlowData;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.analyser.StatementAnalysis;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.output.Text;
@@ -53,11 +52,11 @@ public class WhileStatement extends LoopStatement {
 
 
     @Override
-    public OutputBuilder output(StatementAnalysis statementAnalysis) {
+    public OutputBuilder output(Qualification qualification, StatementAnalysis statementAnalysis) {
         return new OutputBuilder().add(new Text("while"))
                 .add(Symbol.LEFT_PARENTHESIS)
-                .add(structure.expression().output())
+                .add(structure.expression().output(qualification))
                 .add(Symbol.RIGHT_PARENTHESIS)
-                .add(structure.block().output(StatementAnalysis.startOfBlock(statementAnalysis, 0)));
+                .add(structure.block().output(qualification, StatementAnalysis.startOfBlock(statementAnalysis, 0)));
     }
 }

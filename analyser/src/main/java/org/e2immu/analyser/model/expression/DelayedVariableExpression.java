@@ -79,7 +79,7 @@ public record DelayedVariableExpression(String msg, Variable variable) implement
     }
 
     @Override
-    public OutputBuilder output() {
+    public OutputBuilder output(Qualification qualification) {
         return new OutputBuilder().add(new Text(msg, msg));
     }
 

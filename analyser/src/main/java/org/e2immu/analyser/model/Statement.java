@@ -35,16 +35,16 @@ public interface Statement extends Element {
         return this;
     }
 
-    OutputBuilder output(StatementAnalysis statementAnalysis);
+    OutputBuilder output(Qualification qualification, StatementAnalysis statementAnalysis);
 
     @Override
-    default OutputBuilder output() {
+    default OutputBuilder output(Qualification qualification) {
         throw new UnsupportedOperationException("Use other output method");
     }
 
     @Override
     default String minimalOutput() {
-        return output(null).toString();
+        return output(Qualification.EMPTY, null).toString();
     }
 
     default OutputBuilder messageComment(StatementAnalysis statementAnalysis) {

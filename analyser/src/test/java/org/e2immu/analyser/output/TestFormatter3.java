@@ -32,7 +32,7 @@ public class TestFormatter3 {
         Guide.GuideGenerator gg24 = Guide.generatorForBlock();
 
         Guide.GuideGenerator gg25 = Guide.defaultGuideGenerator(); // fluent method call sequence
-        Guide.GuideGenerator gg28 = Guide.generatorForBlock(); // opening of lambda FIXME NEVER CLOSED
+        Guide.GuideGenerator gg28 = Guide.generatorForBlock(); // opening of lambda
         Guide.GuideGenerator gg29 = Guide.generatorForBlock();
 
         return new OutputBuilder().add(new Text("package"))
@@ -109,19 +109,19 @@ public class TestFormatter3 {
                 .add(Symbol.DOT)
                 .add(new Text("of"))
                 .add(Symbol.LEFT_PARENTHESIS)
-                .add(new VariableName("input", null, VariableName.Nature.LOCAL))
+                .add(new VariableName("input"))
                 .add(Symbol.RIGHT_PARENTHESIS)
                 .add(gg25.mid()) // priority=false, startNL=false, endNL=false
                 .add(Symbol.DOT)
                 .add(new Text("map"))
                 .add(Symbol.LEFT_PARENTHESIS)
-                .add(new VariableName("s", null, VariableName.Nature.LOCAL))
+                .add(new VariableName("s"))
                 .add(Symbol.binaryOperator("->"))
                 .add(Symbol.LEFT_BRACE)
                 .add(gg28.start()) // priority=false, startNL=false, endNL=false
                 .add(new Text("if"))
                 .add(Symbol.LEFT_PARENTHESIS)
-                .add(new VariableName("s", null, VariableName.Nature.LOCAL))
+                .add(new VariableName("s"))
                 .add(Symbol.binaryOperator("=="))
                 .add(new Text("null"))
                 .add(Symbol.RIGHT_PARENTHESIS)
@@ -136,7 +136,7 @@ public class TestFormatter3 {
                 .add(gg28.mid()) // priority=false, startNL=false, endNL=false
                 .add(new Text("return"))
                 .add(Space.ONE)
-                .add(new VariableName("s", null, VariableName.Nature.LOCAL))
+                .add(new VariableName("s"))
                 .add(Symbol.binaryOperator("+"))
                 .add(new Text("\"something\""))
                 .add(Symbol.SEMICOLON)

@@ -3,7 +3,7 @@ package org.e2immu.analyser.testexample;
 import org.e2immu.annotation.*;
 
 @E1Container(after = "string")
-public class EventuallyE1Immutable1 {
+public class EventuallyE1Immutable_0 {
 
     @Container
     public static class TwoIntegers {
@@ -32,7 +32,7 @@ public class EventuallyE1Immutable1 {
     public final TwoIntegers input;
     private String string;
 
-    public EventuallyE1Immutable1(@NotModified TwoIntegers input) {
+    public EventuallyE1Immutable_0(@NotModified TwoIntegers input) {
         if (input == null) throw new NullPointerException();
         this.input = input;
     }

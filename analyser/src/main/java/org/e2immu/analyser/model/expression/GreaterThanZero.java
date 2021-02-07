@@ -24,6 +24,7 @@ import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.Element;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.ParameterizedType;
+import org.e2immu.analyser.model.Qualification;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
@@ -224,7 +225,7 @@ public record GreaterThanZero(ParameterizedType booleanParameterizedType,
     }
 
     @Override
-    public OutputBuilder output() {
+    public OutputBuilder output(Qualification qualification) {
         Symbol gt = Symbol.binaryOperator(allowEquals ? ">=" : ">");
         Symbol lt = Symbol.binaryOperator(allowEquals ? "<=" : "<");
         if (expression instanceof Sum sum) {
@@ -232,32 +233,37 @@ public record GreaterThanZero(ParameterizedType booleanParameterizedType,
                 if (ln.doubleValue() < 0) {
                     // -1 -a >= 0 will be written as a <= -1
                     if (sum.rhs instanceof Negation neg) {
-                        return new OutputBuilder().add(outputInParenthesis(precedence(), neg.expression)).add(lt).add(sum.lhs.output());
+                        return new OutputBuilder().add(outputInParenthesis(qualification, precedence(), neg.expression))
+                                .add(lt).add(sum.lhs.output(qualification));
                     }
                     // -1 + a >= 0 will be written as a >= 1
                     Text negNumber = new Text(Text.formatNumber(-ln.doubleValue(), ln.getClass()));
-                    return new OutputBuilder().add(outputInParenthesis(precedence(), sum.rhs)).add(gt).add(negNumber);
+                    return new OutputBuilder().add(outputInParenthesis(qualification, precedence(), sum.rhs))
+                            .add(gt).add(negNumber);
                 } else if (sum.rhs instanceof Negation neg) {
                     // 1 + -a >= 0 will be written as a <= 1
-                    return new OutputBuilder().add(outputInParenthesis(precedence(), neg.expression)).add(lt).add(sum.lhs.output());
+                    return new OutputBuilder().add(outputInParenthesis(qualification, precedence(), neg.expression))
+                            .add(lt).add(sum.lhs.output(qualification));
                 }
             }
             // according to sorting, the rhs cannot be numeric
 
             // -x + a >= 0 will be written as a >= x
             if (sum.lhs instanceof Negation neg && !(sum.rhs instanceof Negation)) {
-                return new OutputBuilder().add(outputInParenthesis(precedence(), sum.rhs))
-                        .add(gt).add(outputInParenthesis(precedence(), neg.expression));
+                return new OutputBuilder().add(outputInParenthesis(qualification, precedence(), sum.rhs))
+                        .add(gt).add(outputInParenthesis(qualification, precedence(), neg.expression));
             }
             // a + -x >= 0 will be written as a >= x
             if (sum.rhs instanceof Negation neg && !(sum.lhs instanceof Negation)) {
-                return new OutputBuilder().add(outputInParenthesis(precedence(), sum.lhs))
-                        .add(gt).add(outputInParenthesis(precedence(), neg.expression));
+                return new OutputBuilder().add(outputInParenthesis(qualification, precedence(), sum.lhs))
+                        .add(gt).add(outputInParenthesis(qualification, precedence(), neg.expression));
             }
         } else if (expression instanceof Negation neg) {
-            return new OutputBuilder().add(outputInParenthesis(precedence(), neg.expression)).add(lt).add(new Text("0"));
+            return new OutputBuilder().add(outputInParenthesis(qualification, precedence(), neg.expression))
+                    .add(lt).add(new Text("0"));
         }
-        return new OutputBuilder().add(outputInParenthesis(precedence(), expression)).add(gt).add(new Text("0"));
+        return new OutputBuilder().add(outputInParenthesis(qualification, precedence(), expression))
+                .add(gt).add(new Text("0"));
     }
 
     @Override

@@ -59,7 +59,7 @@ public class IfElseStatement extends StatementWithExpression {
     }
 
     private static FlowData.Execution standardExecution(Expression v, EvaluationContext evaluationContext) {
-        if(evaluationContext.isDelayed(v)) return FlowData.Execution.DELAYED_EXECUTION;
+        if (evaluationContext.isDelayed(v)) return FlowData.Execution.DELAYED_EXECUTION;
         if (v.isBoolValueTrue()) return FlowData.Execution.ALWAYS;
         if (v.isBoolValueFalse()) return FlowData.Execution.NEVER;
         return FlowData.Execution.CONDITIONALLY;
@@ -74,16 +74,16 @@ public class IfElseStatement extends StatementWithExpression {
     }
 
     @Override
-    public OutputBuilder output(StatementAnalysis statementAnalysis) {
+    public OutputBuilder output(Qualification qualification, StatementAnalysis statementAnalysis) {
         OutputBuilder outputBuilder = new OutputBuilder().add(new Text("if"))
                 .add(Symbol.LEFT_PARENTHESIS)
-                .add(structure.expression().output())
+                .add(structure.expression().output(qualification))
                 .add(Symbol.RIGHT_PARENTHESIS)
                 .addIfNotNull(messageComment(statementAnalysis))
-                .add(structure.block().output(StatementAnalysis.startOfBlock(statementAnalysis, 0)));
+                .add(structure.block().output(qualification, StatementAnalysis.startOfBlock(statementAnalysis, 0)));
         if (elseBlock != Block.EMPTY_BLOCK) {
             outputBuilder.add(new Text("else"))
-                    .add(elseBlock.output(StatementAnalysis.startOfBlock(statementAnalysis, 1)));
+                    .add(elseBlock.output(qualification, StatementAnalysis.startOfBlock(statementAnalysis, 1)));
         }
         return outputBuilder;
     }

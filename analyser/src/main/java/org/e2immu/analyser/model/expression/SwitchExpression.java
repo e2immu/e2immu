@@ -22,6 +22,7 @@ import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.ParameterizedType;
+import org.e2immu.analyser.model.Qualification;
 import org.e2immu.analyser.model.statement.SwitchEntry;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.output.*;
@@ -54,12 +55,12 @@ public record SwitchExpression(Expression selector,
     }
 
     @Override
-    public OutputBuilder output() {
+    public OutputBuilder output(Qualification qualification) {
         return new OutputBuilder().add(new Text("switch"))
                 .add(Symbol.LEFT_PARENTHESIS)
-                .add(selector.output())
+                .add(selector.output(qualification))
                 .add(Symbol.RIGHT_PARENTHESIS)
-                .add(switchEntries.stream().map(SwitchEntry::output)
+                .add(switchEntries.stream().map(switchEntry -> switchEntry.output(qualification))
                         .collect(OutputBuilder.joining(Space.ONE_IS_NICE_EASY_SPLIT, Symbol.LEFT_BRACE,
                                 Symbol.RIGHT_BRACE, Guide.generatorForBlock())));
     }

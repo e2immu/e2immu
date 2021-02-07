@@ -148,12 +148,12 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     }
 
     @Override
-    public OutputBuilder output() {
-        return output(null);
+    public OutputBuilder output(Qualification qualification) {
+        return output(qualification, null);
     }
 
     // will come directly here only from this method (chaining of method calls produces a guide)
-    public OutputBuilder output(Guide.GuideGenerator guideGenerator) {
+    public OutputBuilder output(Qualification qualification, Guide.GuideGenerator guideGenerator) {
         OutputBuilder outputBuilder = new OutputBuilder();
         boolean last = false;
         Guide.GuideGenerator gg = null;
@@ -166,11 +166,11 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 } else {
                     gg = guideGenerator;
                 }
-                outputBuilder.add(methodCall.output(gg)); // recursive call
+                outputBuilder.add(methodCall.output(qualification, gg)); // recursive call
                 outputBuilder.add(gg.mid());
             } else {
                 // next level is NOT a gg; if gg != null we're at the start of the chain
-                outputBuilder.add(outputInParenthesis(precedence(), object));
+                outputBuilder.add(outputInParenthesis(qualification, precedence(), object));
                 if (guideGenerator != null) outputBuilder.add(guideGenerator.start());
             }
             outputBuilder.add(Symbol.DOT);
@@ -181,7 +181,9 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         } else {
             outputBuilder
                     .add(Symbol.LEFT_PARENTHESIS)
-                    .add(parameterExpressions.stream().map(Expression::output).collect(OutputBuilder.joining(Symbol.COMMA)))
+                    .add(parameterExpressions.stream()
+                            .map(expression -> expression.output(qualification))
+                            .collect(OutputBuilder.joining(Symbol.COMMA)))
                     .add(Symbol.RIGHT_PARENTHESIS);
         }
         if (last) {

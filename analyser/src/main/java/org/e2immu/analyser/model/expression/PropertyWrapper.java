@@ -21,6 +21,7 @@ import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.ParameterizedType;
+import org.e2immu.analyser.model.Qualification;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.output.OutputBuilder;
@@ -116,8 +117,8 @@ public class PropertyWrapper implements Expression, ExpressionWrapper {
     }
 
     @Override
-    public OutputBuilder output() {
-        return new OutputBuilder().add(expression.output())
+    public OutputBuilder output(Qualification qualification) {
+        return new OutputBuilder().add(expression.output(qualification))
                 .add(Symbol.LEFT_BLOCK_COMMENT)
                 .add(new Text(properties.entrySet().stream().filter(e -> e.getValue() > e.getKey().falseValue)
                         .map(e -> e.getKey().toString()).sorted().collect(Collectors.joining(","))))

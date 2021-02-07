@@ -90,8 +90,8 @@ public record FieldAccess(Expression expression, Variable variable) implements E
     }
 
     @Override
-    public OutputBuilder output() {
-        return new OutputBuilder().add(variable.output());
+    public OutputBuilder output(Qualification qualification) {
+        return new OutputBuilder().add(variable.output(qualification));
     }
 
     @Override

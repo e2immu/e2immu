@@ -22,22 +22,24 @@ public record FormattingOptions(int lengthOfLine,
                                 int tabsForLineSplit,
                                 boolean binaryOperatorsAtEndOfLine,
                                 boolean debug,
-                                boolean compact) {
+                                boolean compact,
+                                boolean allFieldsRequireThis,
+                                boolean allStaticFieldsRequireType) {
 
-    public static final FormattingOptions DEFAULT = new FormattingOptions(120,
-            4, 2, true, false, false);
+    public static final FormattingOptions DEFAULT = new Builder().build();
 
     public static class Builder {
 
-        int lengthOfLine;
-        int spacesInTab;
-        int tabsForLineSplit;
-        boolean binaryOperatorsAtEndOfLine;
+        int lengthOfLine = 120;
+        int spacesInTab = 4;
+        int tabsForLineSplit = 2;
+        boolean binaryOperatorsAtEndOfLine = true;
         boolean debug;
         boolean compact;
+        boolean allFieldsRequireThis;
+        boolean allStaticFieldsRequireType;
 
         public Builder() {
-            this(DEFAULT);
         }
 
         public Builder(FormattingOptions options) {
@@ -82,8 +84,19 @@ public record FormattingOptions(int lengthOfLine,
             return this;
         }
 
+        public Builder setAllFieldsRequireThis(boolean allFieldsRequireThis) {
+            this.allFieldsRequireThis = allFieldsRequireThis;
+            return this;
+        }
+
+        public Builder setAllStaticFieldsRequireType(boolean allStaticFieldsRequireType) {
+            this.allStaticFieldsRequireType = allStaticFieldsRequireType;
+            return this;
+        }
+
         public FormattingOptions build() {
-            return new FormattingOptions(lengthOfLine, spacesInTab, tabsForLineSplit, binaryOperatorsAtEndOfLine, debug, compact);
+            return new FormattingOptions(lengthOfLine, spacesInTab, tabsForLineSplit, binaryOperatorsAtEndOfLine, debug, compact,
+                    allFieldsRequireThis, allStaticFieldsRequireType);
         }
     }
 }

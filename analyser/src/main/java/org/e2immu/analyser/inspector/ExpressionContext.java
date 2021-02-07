@@ -482,7 +482,7 @@ public class ExpressionContext {
             }
             if (expression.isIntegerLiteralExpr()) {
                 IntegerLiteralExpr integerLiteralExpr = (IntegerLiteralExpr) expression;
-                return new IntConstant(typeContext.getPrimitives(), integerLiteralExpr.asInt());
+                return new IntConstant(typeContext.getPrimitives(), (Integer) integerLiteralExpr.asNumber());
             }
             if (expression.isBooleanLiteralExpr()) {
                 BooleanLiteralExpr booleanLiteralExpr = (BooleanLiteralExpr) expression;

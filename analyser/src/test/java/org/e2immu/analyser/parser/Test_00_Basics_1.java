@@ -93,7 +93,7 @@ public class Test_00_Basics_1 extends CommonTestRunner {
     FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
         if ("f1".equals(d.fieldInfo().name)) {
             Assert.assertEquals(Level.TRUE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
-            Assert.assertEquals("p0", d.fieldAnalysis().getEffectivelyFinalValue().output().debug());
+            Assert.assertEquals("p0", d.fieldAnalysis().getEffectivelyFinalValue().debugOutput());
             Assert.assertEquals("p0", d.fieldAnalysis().getLinkedVariables().toString());
             if (d.iteration() == 0) {
                 Assert.assertEquals(Level.DELAY, d.fieldAnalysis().getProperty(VariableProperty.MODIFIED));

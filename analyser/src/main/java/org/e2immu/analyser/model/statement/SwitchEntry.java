@@ -48,12 +48,12 @@ public abstract class SwitchEntry extends StatementWithStructure {
         this.primitives = primitives;
     }
 
-    protected void appendLabels(OutputBuilder outputBuilder, Guide.GuideGenerator guideGenerator) {
+    protected void appendLabels(OutputBuilder outputBuilder, Qualification qualification, Guide.GuideGenerator guideGenerator) {
         if (labels.isEmpty()) {
             outputBuilder.add(guideGenerator.mid()).add(new Text("default")).add(Symbol.COLON_LABEL);
         } else {
             outputBuilder.add(guideGenerator.mid())
-                    .add(labels.stream().map(Expression::output).collect(OutputBuilder.joining(Symbol.COMMA)))
+                    .add(labels.stream().map(expression -> expression.output(qualification)).collect(OutputBuilder.joining(Symbol.COMMA)))
                     .add(Symbol.LAMBDA);
         }
     }
@@ -84,7 +84,7 @@ public abstract class SwitchEntry extends StatementWithStructure {
         return primitive ? primitives.equalsOperatorInt : primitives.equalsOperatorObject;
     }
 
-    abstract OutputBuilder output(Guide.GuideGenerator guideGenerator, StatementAnalysis statementAnalysis);
+    abstract OutputBuilder output(Qualification qualification, Guide.GuideGenerator guideGenerator, StatementAnalysis statementAnalysis);
 
     public FlowData.Execution statementExecution(Expression value, EvaluationContext evaluationContext) {
         if (switchVariableAsExpression == EmptyExpression.DEFAULT_EXPRESSION) return FlowData.Execution.DEFAULT;
@@ -116,23 +116,23 @@ public abstract class SwitchEntry extends StatementWithStructure {
         }
 
         @Override
-        public OutputBuilder output() {
+        public OutputBuilder output(Qualification qualification) {
             throw new UnsupportedOperationException(); // need to use a different method!
         }
 
         @Override
-        public OutputBuilder output(StatementAnalysis statementAnalysis) {
+        public OutputBuilder output(Qualification qualification, StatementAnalysis statementAnalysis) {
             throw new UnsupportedOperationException(); // need to use a different method!
         }
 
         @Override
-        public OutputBuilder output(Guide.GuideGenerator guideGenerator, StatementAnalysis statementAnalysis) {
+        public OutputBuilder output(Qualification qualification, Guide.GuideGenerator guideGenerator, StatementAnalysis statementAnalysis) {
             OutputBuilder outputBuilder = new OutputBuilder();
-            appendLabels(outputBuilder, guideGenerator);
+            appendLabels(outputBuilder, qualification, guideGenerator);
 
             Guide.GuideGenerator ggStatements = Guide.defaultGuideGenerator();
             outputBuilder.add(ggStatements.start());
-            Block.statementsString(outputBuilder, ggStatements, statementAnalysis);
+            Block.statementsString(qualification, outputBuilder, ggStatements, statementAnalysis);
             outputBuilder.add(ggStatements.end());
 
             return outputBuilder;
@@ -163,20 +163,20 @@ public abstract class SwitchEntry extends StatementWithStructure {
         }
 
         @Override
-        public OutputBuilder output() {
+        public OutputBuilder output(Qualification qualification) {
             throw new UnsupportedOperationException(); // need to use a different method!
         }
 
         @Override
-        public OutputBuilder output(StatementAnalysis statementAnalysis) {
+        public OutputBuilder output(Qualification qualification, StatementAnalysis statementAnalysis) {
             throw new UnsupportedOperationException(); // need to use a different method!
         }
 
         @Override
-        public OutputBuilder output(Guide.GuideGenerator guideGenerator, StatementAnalysis statementAnalysis) {
+        public OutputBuilder output(Qualification qualification, Guide.GuideGenerator guideGenerator, StatementAnalysis statementAnalysis) {
             OutputBuilder outputBuilder = new OutputBuilder();
-            appendLabels(outputBuilder, guideGenerator);
-            outputBuilder.add(structure.block().output(statementAnalysis));
+            appendLabels(outputBuilder, qualification, guideGenerator);
+            outputBuilder.add(structure.block().output(qualification, statementAnalysis));
             return outputBuilder;
         }
 

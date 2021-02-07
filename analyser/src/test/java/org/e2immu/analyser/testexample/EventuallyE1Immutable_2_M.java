@@ -25,7 +25,7 @@ import java.util.Set;
 /* direct COPY-PASTE into the manual, @E1Container annotation */
 
 @E1Container(after = "j")
-class ExampleManualEventuallyE1Container {
+class EventuallyE1Immutable_2_M {
 
     @Modified
     private final Set<Integer> integers = new HashSet<>();

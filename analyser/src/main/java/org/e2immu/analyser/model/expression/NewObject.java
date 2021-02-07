@@ -392,7 +392,7 @@ public record NewObject(MethodInfo constructor,
     }
 
     @Override
-    public OutputBuilder output() {
+    public OutputBuilder output(Qualification qualification) {
         OutputBuilder outputBuilder = new OutputBuilder();
         if (constructor != null) {
             outputBuilder.add(new Text("new")).add(Space.ONE).add(parameterizedType.output(false, diamond));
@@ -402,29 +402,30 @@ public record NewObject(MethodInfo constructor,
                 } else {
                     outputBuilder
                             .add(Symbol.LEFT_PARENTHESIS)
-                            .add(parameterExpressions.stream().map(Expression::output).collect(OutputBuilder.joining(Symbol.COMMA)))
+                            .add(parameterExpressions.stream().map(expression -> expression.output(qualification))
+                                    .collect(OutputBuilder.joining(Symbol.COMMA)))
                             .add(Symbol.RIGHT_PARENTHESIS);
                 }
             }
         } else {
             Text text = new Text(text() + "instance type");
-            outputBuilder.add(text).add(Space.ONE).add(parameterizedType.output());
+            outputBuilder.add(text).add(Space.ONE).add(parameterizedType.output(qualification));
         }
         if (anonymousClass != null) {
-            outputBuilder.add(anonymousClass.output());
+            outputBuilder.add(anonymousClass.output(qualification));
         }
         if (arrayInitializer != null) {
-            outputBuilder.add(arrayInitializer.output());
+            outputBuilder.add(arrayInitializer.output(qualification));
         }
         if (!state.isBoolValueTrue()) {
-            outputBuilder.add(Symbol.LEFT_BLOCK_COMMENT).add(state.output()).add(Symbol.RIGHT_BLOCK_COMMENT);
+            outputBuilder.add(Symbol.LEFT_BLOCK_COMMENT).add(state.output(qualification)).add(Symbol.RIGHT_BLOCK_COMMENT);
         }
         return outputBuilder;
     }
 
     private String text() {
         TypeInfo bestType = parameterizedType.bestTypeInfo();
-        if (bestType != null && Primitives.isPrimitiveExcludingVoid(bestType)) return "";
+        if (Primitives.isPrimitiveExcludingVoid(bestType)) return "";
         if (minimalNotNull == Level.DELAY) return "nullable? ";
         if (minimalNotNull < MultiLevel.EFFECTIVELY_NOT_NULL) return "nullable ";
         return "";

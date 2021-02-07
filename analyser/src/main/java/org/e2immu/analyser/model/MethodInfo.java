@@ -172,11 +172,11 @@ public class MethodInfo implements WithInspectionAndAnalysis {
     }
 
     // IMPORTANT: do not write the first MID to methodGG, because that one is written by the joiner
-    public OutputBuilder output(Guide.GuideGenerator methodGG) {
+    public OutputBuilder output(Qualification qualification, Guide.GuideGenerator methodGG) {
         OutputBuilder mainAndCompanions = new OutputBuilder();
         MethodInspection inspection = methodInspection.get();
 
-        boolean nonEmpty = outputCompanions(inspection, mainAndCompanions, methodGG);
+        boolean nonEmpty = outputCompanions(inspection, mainAndCompanions, qualification, methodGG);
 
         OutputBuilder afterAnnotations = new OutputBuilder();
 
@@ -192,30 +192,30 @@ public class MethodInfo implements WithInspectionAndAnalysis {
         }
 
         if (!isConstructor) {
-            afterAnnotations.add(inspection.getReturnType().output()).add(Space.ONE);
+            afterAnnotations.add(inspection.getReturnType().output(qualification)).add(Space.ONE);
         }
         afterAnnotations.add(new Text(name));
         if (inspection.getParameters().isEmpty()) {
             afterAnnotations.add(Symbol.OPEN_CLOSE_PARENTHESIS);
         } else {
             afterAnnotations.add(inspection.getParameters().stream()
-                    .map(ParameterInfo::outputDeclaration)
+                    .map(pi -> pi.outputDeclaration(qualification))
                     .collect(OutputBuilder.joining(Symbol.COMMA, Symbol.LEFT_PARENTHESIS, Symbol.RIGHT_PARENTHESIS,
                             Guide.generatorForParameterDeclaration())));
         }
         if (!inspection.getExceptionTypes().isEmpty()) {
             afterAnnotations.add(Space.ONE_REQUIRED_EASY_SPLIT).add(new Text("throws")).add(Space.ONE)
                     .add(inspection.getExceptionTypes().stream()
-                            .map(ParameterizedType::output).collect(OutputBuilder.joining(Symbol.COMMA)));
+                            .map(pi -> pi.output(qualification)).collect(OutputBuilder.joining(Symbol.COMMA)));
         }
         if (hasBeenInspected()) {
             StatementAnalysis firstStatement = methodAnalysis.isSet() ? methodAnalysis.get().getFirstStatement() : null;
-            afterAnnotations.add(inspection.getMethodBody().output(firstStatement));
+            afterAnnotations.add(inspection.getMethodBody().output(qualification, firstStatement));
         } else {
             afterAnnotations.add(Space.ONE).add(Symbol.LEFT_BRACE).add(Symbol.RIGHT_BRACE);
         }
 
-        Stream<OutputBuilder> annotationStream = buildAnnotationOutput();
+        Stream<OutputBuilder> annotationStream = buildAnnotationOutput(qualification);
         OutputBuilder mainMethod = Stream.concat(annotationStream, Stream.of(afterAnnotations))
                 .collect(OutputBuilder.joining(Space.ONE_REQUIRED_EASY_SPLIT, Guide.generatorForAnnotationList()));
 
@@ -223,11 +223,11 @@ public class MethodInfo implements WithInspectionAndAnalysis {
         return mainAndCompanions.add(mainMethod);
     }
 
-    private boolean outputCompanions(MethodInspection methodInspection, OutputBuilder outputBuilder, Guide.GuideGenerator methodGG) {
-        methodInspection.getCompanionMethods().values().forEach(companion -> outputBuilder.add(companion.output(methodGG)));
+    private boolean outputCompanions(MethodInspection methodInspection, OutputBuilder outputBuilder, Qualification qualification, Guide.GuideGenerator methodGG) {
+        methodInspection.getCompanionMethods().values().forEach(companion -> outputBuilder.add(companion.output(qualification, methodGG)));
         boolean nonEmpty = !methodInspection.getCompanionMethods().isEmpty();
         if (methodAnalysis.isSet()) {
-            methodAnalysis.get().getComputedCompanions().values().forEach(companion -> outputBuilder.add(companion.output(methodGG)));
+            methodAnalysis.get().getComputedCompanions().values().forEach(companion -> outputBuilder.add(companion.output(qualification, methodGG)));
             nonEmpty |= !methodAnalysis.get().getComputedCompanions().isEmpty();
         }
         return nonEmpty;

@@ -90,7 +90,7 @@ public interface WithInspectionAndAnalysis {
 
     boolean hasBeenAnalysed();
 
-    default Stream<OutputBuilder> buildAnnotationOutput() {
+    default Stream<OutputBuilder> buildAnnotationOutput(Qualification qualification) {
         Set<AnnotationExpression> annotationDuplicateChecks = new HashSet<>();
         List<AnnotationExpression> annotations = new LinkedList<>();
         List<OutputBuilder> perAnnotation = new ArrayList<>();
@@ -115,7 +115,7 @@ public interface WithInspectionAndAnalysis {
             for (AnnotationExpression annotation : annotations) {
                 Analysis.AnnotationCheck annotationCheck = getAnalysis().getAnnotation(annotation);
                 if (annotationCheck != Analysis.AnnotationCheck.ABSENT) {
-                    OutputBuilder outputBuilder = new OutputBuilder().add(annotation.output());
+                    OutputBuilder outputBuilder = new OutputBuilder().add(annotation.output(qualification));
                     if (annotationCheck.writeComment()) {
                         outputBuilder.add(Symbol.LEFT_BLOCK_COMMENT).add(new Text(annotationCheck.toString()))
                                 .add(Symbol.RIGHT_BLOCK_COMMENT);

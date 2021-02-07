@@ -152,19 +152,19 @@ public class Assignment implements Expression {
     }
 
     @Override
-    public OutputBuilder output() {
+    public OutputBuilder output(Qualification qualification) {
         if (prefixPrimitiveOperator != null) {
             String operator = assignmentOperator == primitives.assignPlusOperatorInt ? "++" : "--";
             if (prefixPrimitiveOperator) {
-                return new OutputBuilder().add(Symbol.plusPlusPrefix(operator)).add(outputInParenthesis(precedence(), target));
+                return new OutputBuilder().add(Symbol.plusPlusPrefix(operator)).add(outputInParenthesis(qualification, precedence(), target));
             }
-            return new OutputBuilder().add(outputInParenthesis(precedence(), target)).add(Symbol.plusPlusSuffix(operator));
+            return new OutputBuilder().add(outputInParenthesis(qualification, precedence(), target)).add(Symbol.plusPlusSuffix(operator));
         }
         //  != null && primitiveOperator != primitives.assignOperatorInt ? "=" + primitiveOperator.name : "=";
         String operator = assignmentOperator == null ? "=" : assignmentOperator.name;
-        return new OutputBuilder().add(outputInParenthesis(precedence(), target))
+        return new OutputBuilder().add(outputInParenthesis(qualification, precedence(), target))
                 .add(Symbol.assignment(operator))
-                .add(outputInParenthesis(precedence(), value));
+                .add(outputInParenthesis(qualification, precedence(), value));
     }
 
     @Override

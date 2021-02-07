@@ -21,9 +21,6 @@ package org.e2immu.analyser.model.statement;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.EmptyExpression;
-import org.e2immu.analyser.model.expression.MethodCall;
-import org.e2immu.analyser.model.expression.VariableExpression;
-import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Space;
 import org.e2immu.analyser.output.Symbol;
@@ -39,10 +36,10 @@ public class YieldStatement extends StatementWithExpression {
     }
 
     @Override
-    public OutputBuilder output(StatementAnalysis statementAnalysis) {
+    public OutputBuilder output(Qualification qualification, StatementAnalysis statementAnalysis) {
         OutputBuilder outputBuilder = new OutputBuilder().add(new Text("yield"));
         if (expression != EmptyExpression.EMPTY_EXPRESSION) {
-            outputBuilder.add(Space.ONE).add(expression.output());
+            outputBuilder.add(Space.ONE).add(expression.output(qualification));
         }
         outputBuilder.add(Symbol.SEMICOLON).addIfNotNull(messageComment(statementAnalysis));
         return outputBuilder;

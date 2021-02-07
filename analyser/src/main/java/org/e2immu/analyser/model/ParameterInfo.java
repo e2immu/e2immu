@@ -142,12 +142,12 @@ public class ParameterInfo implements Variable, WithInspectionAndAnalysis, Compa
     }
 
     // for now not using the shared method; directly adding the annotations
-    public OutputBuilder outputDeclaration() {
+    public OutputBuilder outputDeclaration(Qualification qualification) {
         OutputBuilder outputBuilder = new OutputBuilder();
         ParameterInspection parameterInspection = this.parameterInspection.get();
         Set<TypeInfo> annotationsSeen = new HashSet<>();
         for (AnnotationExpression annotation : parameterInspection.getAnnotations()) {
-            outputBuilder.add(annotation.output());
+            outputBuilder.add(annotation.output(qualification));
             if (parameterAnalysis.isSet()) {
                 outputBuilder.add(parameterAnalysis.get().peekIntoAnnotations(annotation, annotationsSeen));
             }
@@ -158,7 +158,7 @@ public class ParameterInfo implements Variable, WithInspectionAndAnalysis, Compa
                 boolean present = entry.getValue().isPresent();
                 AnnotationExpression annotation = entry.getKey();
                 if (present && !annotationsSeen.contains(annotation.typeInfo())) {
-                    outputBuilder.add(annotation.output());
+                    outputBuilder.add(annotation.output(qualification));
                     outputBuilder.add(Space.ONE);
                 }
             });
@@ -209,8 +209,8 @@ public class ParameterInfo implements Variable, WithInspectionAndAnalysis, Compa
 
     // as variable
     @Override
-    public OutputBuilder output() {
-        return new OutputBuilder().add(new VariableName(name, owner, VariableName.Nature.LOCAL));
+    public OutputBuilder output(Qualification qualification) {
+        return new OutputBuilder().add(new VariableName(name, null, VariableName.Required.NEVER));
     }
 
     @Override
