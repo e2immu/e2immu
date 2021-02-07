@@ -27,9 +27,12 @@ import org.e2immu.analyser.model.expression.NewObject;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ForEachStatement;
 import org.e2immu.analyser.model.statement.SwitchStatementNewStyle;
+import org.e2immu.analyser.model.variable.LocalVariableReference;
+import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.*;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.SetOnce;
+import org.e2immu.analyser.util.SetUtil;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.Container;
 import org.e2immu.annotation.E2Immutable;
@@ -37,6 +40,7 @@ import org.e2immu.annotation.NotNull;
 
 import java.util.*;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Container
@@ -209,8 +213,16 @@ public class MethodInfo implements WithInspectionAndAnalysis {
                             .map(pi -> pi.output(qualification)).collect(OutputBuilder.joining(Symbol.COMMA)));
         }
         if (hasBeenInspected()) {
+            Set<String> localNamesFromBody = inspection.getMethodBody().variables().stream()
+                    .filter(v -> v instanceof LocalVariableReference || v instanceof ParameterInfo)
+                    .map(Variable::simpleName).collect(Collectors.toSet());
+            Set<String> parameterNames = inspection.getParameters().stream()
+                    .map(ParameterInfo::simpleName).collect(Collectors.toSet());
+            Set<String> localNames = SetUtil.immutableUnion(localNamesFromBody, parameterNames);
+
+            Qualification bodyQualification = makeBodyQualification(qualification, localNames);
             StatementAnalysis firstStatement = methodAnalysis.isSet() ? methodAnalysis.get().getFirstStatement() : null;
-            afterAnnotations.add(inspection.getMethodBody().output(qualification, firstStatement));
+            afterAnnotations.add(inspection.getMethodBody().output(bodyQualification, firstStatement));
         } else {
             afterAnnotations.add(Space.ONE).add(Symbol.LEFT_BRACE).add(Symbol.RIGHT_BRACE);
         }
@@ -221,6 +233,13 @@ public class MethodInfo implements WithInspectionAndAnalysis {
 
         if (nonEmpty) mainAndCompanions.add(methodGG.mid());
         return mainAndCompanions.add(mainMethod);
+    }
+
+    private Qualification makeBodyQualification(Qualification qualification, Set<String> localNames) {
+        QualificationImpl res = new QualificationImpl(qualification);
+        methodInspection.get().getMethodInfo().typeInfo.typeInspection.get().fields().stream()
+                .filter(fieldInfo -> localNames.contains(fieldInfo.name)).forEach(res::addField);
+        return res;
     }
 
     private boolean outputCompanions(MethodInspection methodInspection, OutputBuilder outputBuilder, Qualification qualification, Guide.GuideGenerator methodGG) {

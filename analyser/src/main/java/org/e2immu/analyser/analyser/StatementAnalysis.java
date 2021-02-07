@@ -598,13 +598,6 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         return statement.output(qualification, this);
     }
 
-    private Set<String> findNameClashesBetweenLocalVariablesAndFields() {
-        Set<String> local = new HashSet<>(variableStream().filter(vi -> vi.variable().isLocal()).map(VariableInfo::name).collect(Collectors.toUnmodifiableSet()));
-        Set<String> fields = variableStream().filter(vi -> vi.variable() instanceof FieldReference).map(vi -> ((FieldReference) (vi.variable())).fieldInfo.name).collect(Collectors.toUnmodifiableSet());
-        local.retainAll(fields);
-        return local;
-    }
-
     public record ConditionAndLastStatement(Expression condition,
                                             String firstStatementIndexForOldStyleSwitch,
                                             StatementAnalyser lastStatement,

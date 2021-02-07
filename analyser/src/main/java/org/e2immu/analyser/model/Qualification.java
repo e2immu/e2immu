@@ -19,6 +19,8 @@ package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.model.variable.Variable;
 
+import java.util.stream.Stream;
+
 /*
 provides sufficient information to determine whether a variable or type name has to qualified
 in the current context.
@@ -32,7 +34,14 @@ public interface Qualification {
         public boolean qualifierRequired(Variable variable) {
             return false;
         }
+
+        @Override
+        public Stream<FieldInfo> fieldsStream() {
+            return Stream.of();
+        }
     };
 
     boolean qualifierRequired(Variable variable);
+
+    Stream<FieldInfo> fieldsStream();
 }
