@@ -46,7 +46,7 @@ public interface TypeParameter extends NamedType {
         List<ParameterizedType> typeBounds = getTypeBounds();
         if (typeBounds.isEmpty()) return getName();
         return getName() + " extends " + getTypeBounds()
-                .stream().map(pt -> pt.print(inspectionProvider, false, Diamond.SHOW_ALL, visitedTypeParameters, false))
+                .stream().map(pt -> pt.printInTypeParameter(inspectionProvider, false, Diamond.SHOW_ALL, visitedTypeParameters, false))
                 .collect(Collectors.joining(" & "));
     }
 

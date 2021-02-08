@@ -164,7 +164,7 @@ public class ParameterInfo implements Variable, WithInspectionAndAnalysis, Compa
             });
         }
         if (parameterizedType != ParameterizedType.NO_TYPE_GIVEN_IN_LAMBDA) {
-            outputBuilder.add(parameterizedType.output(parameterInspection.isVarArgs(), Diamond.SHOW_ALL));
+            outputBuilder.add(parameterizedType.output(qualification, parameterInspection.isVarArgs(), Diamond.SHOW_ALL));
             outputBuilder.add(Space.ONE);
         }
         outputBuilder.add(new Text(name));

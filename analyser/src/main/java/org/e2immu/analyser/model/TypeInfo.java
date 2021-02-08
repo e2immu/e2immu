@@ -236,7 +236,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
 
     private void addThisToQualification(QualificationImpl insideType) {
         insideType.addThis(new This(InspectionProvider.DEFAULT, this));
-        if(!Primitives.isJavaLangObject(typeInspection.get().parentClass())) {
+        if (!Primitives.isJavaLangObject(typeInspection.get().parentClass())) {
             insideType.addThis(new This(InspectionProvider.DEFAULT, typeInspection.get().parentClass().typeInfo,
                     false, true));
         }
@@ -294,29 +294,39 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
     private record ResultOfImportComputation(Set<String> imports, QualificationImpl qualification) {
     }
 
+    private static class PerPackage {
+        List<TypeInfo> types = new LinkedList<>();
+        boolean allowStar = true;
+    }
+
     private ResultOfImportComputation imports(TypeInspection typeInspection) {
         Set<TypeInfo> typesReferenced = typeInspection.typesReferenced().stream().filter(Map.Entry::getValue)
                 .map(Map.Entry::getKey)
                 .filter(Primitives::allowInImport)
                 .collect(Collectors.toSet());
-        Map<String, List<TypeInfo>> perPackage = new HashMap<>();
+        Map<String, PerPackage> typesPerPackage = new HashMap<>();
         String myPackage = packageName();
+        QualificationImpl qualification = new QualificationImpl();
         typesReferenced.forEach(typeInfo -> {
             String packageName = typeInfo.packageName();
             if (packageName != null && !myPackage.equals(packageName)) {
-                SMapList.add(perPackage, packageName, typeInfo);
+                boolean doImport = qualification.addTypeReturnImport(typeInfo);
+                PerPackage perPackage = typesPerPackage.computeIfAbsent(packageName, p -> new PerPackage());
+                if (doImport) {
+                    perPackage.types.add(typeInfo);
+                } else {
+                    perPackage.allowStar = false; // because we don't want to play with complicated ordering
+                }
             }
         });
-        QualificationImpl qualification = new QualificationImpl();
-        // FIXME add those types with name clashes (no import possible)
         // IMPROVE static fields and methods
         Set<String> imports = new TreeSet<>();
-        for (Map.Entry<String, List<TypeInfo>> e : perPackage.entrySet()) {
-            List<TypeInfo> list = e.getValue();
-            if (list.size() >= 4) {
+        for (Map.Entry<String, PerPackage> e : typesPerPackage.entrySet()) {
+            PerPackage perPackage = e.getValue();
+            if (perPackage.types.size() >= 4 && perPackage.allowStar) {
                 imports.add(e.getKey() + ".*");
             } else {
-                for (TypeInfo typeInfo : list) {
+                for (TypeInfo typeInfo : perPackage.types) {
                     imports.add(typeInfo.fullyQualifiedName);
                 }
             }

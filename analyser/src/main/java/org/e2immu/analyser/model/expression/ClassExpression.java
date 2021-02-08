@@ -33,7 +33,6 @@ import java.util.Objects;
 
 /**
  * Represents an expression like String.class
- *
  */
 @E2Container
 public record ClassExpression(Primitives primitives,
@@ -67,7 +66,7 @@ public record ClassExpression(Primitives primitives,
 
     @Override
     public int internalCompareTo(Expression v) {
-        return parameterizedType.print().compareTo(((ClassExpression) v).parameterizedType.print());
+        return parameterizedType.detailedString().compareTo(((ClassExpression) v).parameterizedType.detailedString());
     }
 
     @Override

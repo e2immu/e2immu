@@ -42,6 +42,7 @@ public class QualificationImpl implements Qualification {
     private final Set<MethodInfo> unqualifiedMethods = new HashSet<>();
     private final Set<This> unqualifiedThis = new HashSet<>();
     private final Map<TypeInfo, TypeName.Required> typesNotImported;
+    private final Set<String> simpleTypeNames;
     private final QualificationImpl parent;
     private final QualificationImpl top;
 
@@ -49,12 +50,14 @@ public class QualificationImpl implements Qualification {
         parent = null;
         top = this;
         typesNotImported = new HashMap<>();
+        simpleTypeNames = new HashSet<>();
     }
 
     public QualificationImpl(Qualification parent) {
         this.parent = (QualificationImpl) parent;
         top = ((QualificationImpl) parent).top;
         typesNotImported = null;
+        simpleTypeNames = null;
     }
 
     @Override
@@ -105,9 +108,17 @@ public class QualificationImpl implements Qualification {
         return top.typesNotImported.getOrDefault(typeInfo, TypeName.Required.SIMPLE);
     }
 
-    public void addType(TypeInfo typeInfo, TypeName.Required required) {
+    public boolean addTypeReturnImport(TypeInfo typeInfo) {
         assert parent == null; // only add these at the top level
         assert typesNotImported != null; // to keep IntelliJ happy
-        typesNotImported.put(typeInfo, required);
+        assert simpleTypeNames != null;
+        // IMPROVE also code for subtypes!
+        if(simpleTypeNames.contains(typeInfo.simpleName)) {
+            typesNotImported.put(typeInfo, TypeName.Required.FQN);
+            return false;
+        } else {
+            simpleTypeNames.add(typeInfo.simpleName);
+            return true;
+        }
     }
 }

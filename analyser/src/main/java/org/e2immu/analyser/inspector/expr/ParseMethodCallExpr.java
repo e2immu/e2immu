@@ -95,7 +95,7 @@ public record ParseMethodCallExpr(InspectionProvider inspectionProvider) {
         }
         log(METHOD_CALL, "End parsing method call {}, return types of method parameters [{}], concrete type {}, mapExpansion {}",
                 methodCallExpr, StringUtil.join(newParameterExpressions, Expression::returnType),
-                method.getConcreteReturnType().detailedString(inspectionProvider), mapExpansion);
+                method.getConcreteReturnType().detailedStringLogDuringInspection(inspectionProvider), mapExpansion);
 
         MethodInfo methodInfo = method.methodInspection.getMethodInfo();
         Expression computedScope;

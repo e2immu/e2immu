@@ -162,13 +162,16 @@ public class ParameterizedType {
     }
 
     public OutputBuilder output(Qualification qualification) {
-        // FIXME split into multiple parts
         return new OutputBuilder().add(new Text(print()));
     }
 
-    public OutputBuilder output(boolean varArgs, Diamond diamond) {
+    public OutputBuilder output(Qualification qualification, boolean varArgs, Diamond diamond) {
         // FIXME
         return new OutputBuilder().add(new Text(print(varArgs, diamond)));
+    }
+
+    private String print(boolean varargs, Diamond diamond) {
+        return ParameterizedTypePrinter.DEFAULT.print(InspectionProvider.DEFAULT, this, varargs, diamond, false);
     }
 
     @Override
@@ -176,19 +179,28 @@ public class ParameterizedType {
         return (isType() ? "Type " : isTypeParameter() ? "Type param " : "") + detailedString();
     }
 
+    /*
+    used in MethodItem (XML)
+     */
     public String print() {
         return ParameterizedTypePrinter.DEFAULT.print(InspectionProvider.DEFAULT, this, false, Diamond.SHOW_ALL, false);
     }
 
-    public String print(boolean varargs, Diamond diamond) {
-        return ParameterizedTypePrinter.DEFAULT.print(InspectionProvider.DEFAULT, this, varargs, diamond, false);
-    }
-
-    public String print(InspectionProvider inspectionProvider, boolean varargs, Diamond diamond) {
+    /*
+    used to compute a method's FQN
+     */
+    public String printForMethodFQN(InspectionProvider inspectionProvider, boolean varargs, Diamond diamond) {
         return ParameterizedTypePrinter.DEFAULT.print(inspectionProvider, this, varargs, diamond, false);
     }
 
-    public String print(InspectionProvider inspectionProvider, boolean varargs, Diamond diamond, Set<TypeParameter> visitedTypeParameters, boolean keepItSimple) {
+    /*
+    part of the recursive system of type parameters
+     */
+    public String printInTypeParameter(InspectionProvider inspectionProvider,
+                                       boolean varargs,
+                                       Diamond diamond,
+                                       Set<TypeParameter> visitedTypeParameters,
+                                       boolean keepItSimple) {
         return ParameterizedTypePrinter.DEFAULT.print(inspectionProvider, this, varargs, diamond, false, keepItSimple, visitedTypeParameters);
     }
 
@@ -203,11 +215,17 @@ public class ParameterizedType {
         return ParameterizedTypePrinter.DISTINGUISHING.print(inspectionProvider, this, varArgs, Diamond.SHOW_ALL, false);
     }
 
+    /*
+    used in ASM, comparators, unevaluated method call
+     */
     public String detailedString() {
         return ParameterizedTypePrinter.DETAILED.print(InspectionProvider.DEFAULT, this, false, Diamond.SHOW_ALL, false);
     }
 
-    public String detailedString(InspectionProvider inspectionProvider) {
+    /*
+    for logging purposes only
+     */
+    public String detailedStringLogDuringInspection(InspectionProvider inspectionProvider) {
         return ParameterizedTypePrinter.DETAILED.print(inspectionProvider, this, false, Diamond.SHOW_ALL, false);
     }
 

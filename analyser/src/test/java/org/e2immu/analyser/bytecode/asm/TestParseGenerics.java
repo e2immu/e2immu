@@ -59,15 +59,15 @@ public class TestParseGenerics {
     @Test
     public void testNormalTypeParameter() {
         TypeInfo typeInfo = typeContext.getFullyQualified(Spliterator.class);
-        Assert.assertEquals("Spliterator<T>", typeInfo.asParameterizedType(typeContext).print(typeContext, false, Diamond.SHOW_ALL));
-        Assert.assertEquals("Spliterator<>", typeInfo.asParameterizedType(typeContext).print(typeContext, false, Diamond.YES));
-        Assert.assertEquals("Spliterator", typeInfo.asParameterizedType(typeContext).print(typeContext, false, Diamond.NO));
+        Assert.assertEquals("Spliterator<T>", typeInfo.asParameterizedType(typeContext).printForMethodFQN(typeContext, false, Diamond.SHOW_ALL));
+        Assert.assertEquals("Spliterator<>", typeInfo.asParameterizedType(typeContext).printForMethodFQN(typeContext, false, Diamond.YES));
+        Assert.assertEquals("Spliterator", typeInfo.asParameterizedType(typeContext).printForMethodFQN(typeContext, false, Diamond.NO));
     }
 
     @Test
     public void testWildcard() {
         TypeInfo typeInfo = typeContext.getFullyQualified(Collection.class);
-        Assert.assertEquals("Collection<E>", typeInfo.asParameterizedType(typeContext).print(typeContext, false, Diamond.SHOW_ALL));
+        Assert.assertEquals("Collection<E>", typeInfo.asParameterizedType(typeContext).printForMethodFQN(typeContext, false, Diamond.SHOW_ALL));
         TypeInspection typeInspection = typeContext.getTypeInspection(typeInfo);
         MethodInfo containsAll = typeInspection.methods().stream().filter(m -> m.name.equals("containsAll")).findFirst().orElseThrow();
         Assert.assertEquals("java.util.Collection.containsAll(Collection<?>)", containsAll.fullyQualifiedName);
@@ -102,11 +102,11 @@ public class TestParseGenerics {
 
         Set<TypeParameter> visited = new HashSet<>();
         visited.add(K);
-        Assert.assertEquals("Enum<K>", typeBoundK.print(newTypeContext, false, Diamond.SHOW_ALL, visited, true));
+        Assert.assertEquals("Enum<K>", typeBoundK.printInTypeParameter(newTypeContext, false, Diamond.SHOW_ALL, visited, true));
         Assert.assertSame(K, typeBoundK.parameters.get(0).typeParameter);
 
         Assert.assertEquals("EnumMap<K extends Enum<K>, V>", typeInfo.asParameterizedType(typeContext)
-                .print(typeContext, false, Diamond.SHOW_ALL));
+                .printForMethodFQN(typeContext, false, Diamond.SHOW_ALL));
     }
 
     @Test
@@ -115,7 +115,7 @@ public class TestParseGenerics {
         TypeInspection typeInspection = typeContext.getTypeInspection(sortedSet);
         MethodInfo comparator = typeInspection.methods().stream().filter(m -> m.name.equals("comparator")).findFirst().orElseThrow();
         MethodInspection comparatorInspection = typeContext.getMethodInspection(comparator);
-        Assert.assertEquals("Comparator<? super E>", comparatorInspection.getReturnType().print(typeContext, false, Diamond.SHOW_ALL));
+        Assert.assertEquals("Comparator<? super E>", comparatorInspection.getReturnType().printForMethodFQN(typeContext, false, Diamond.SHOW_ALL));
     }
 
     /*
@@ -139,7 +139,7 @@ public class TestParseGenerics {
         Assert.assertEquals("T_SPLITR extends Spliterator.OfPrimitive<T, T_CONS, T_SPLITR>", splitr.print(typeContext, visited));
 
         Assert.assertEquals("OfPrimitive<T, T_CONS, T_SPLITR extends Spliterator.OfPrimitive<T, T_CONS, T_SPLITR>>",
-                pt.print(typeContext, false, Diamond.SHOW_ALL));
+                pt.printForMethodFQN(typeContext, false, Diamond.SHOW_ALL));
     }
 
     @Test

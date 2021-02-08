@@ -335,7 +335,7 @@ public record NewObject(MethodInfo constructor,
         switch (variableProperty) {
             case NOT_NULL: {
                 TypeInfo bestType = parameterizedType.bestTypeInfo();
-                if (bestType != null && Primitives.isPrimitiveExcludingVoid(bestType))
+                if (Primitives.isPrimitiveExcludingVoid(bestType))
                     return MultiLevel.EFFECTIVELY_NOT_NULL;
                 return minimalNotNull;
             }
@@ -349,7 +349,7 @@ public record NewObject(MethodInfo constructor,
             case IMMUTABLE:
             case CONTAINER: {
                 TypeInfo bestType = parameterizedType.bestTypeInfo();
-                if (bestType != null && Primitives.isPrimitiveExcludingVoid(bestType)) return variableProperty.best;
+                if (Primitives.isPrimitiveExcludingVoid(bestType)) return variableProperty.best;
                 return bestType == null ? variableProperty.falseValue :
                         evaluationContext.getAnalyserContext().getTypeAnalysis(bestType).getProperty(variableProperty);
             }
@@ -395,7 +395,7 @@ public record NewObject(MethodInfo constructor,
     public OutputBuilder output(Qualification qualification) {
         OutputBuilder outputBuilder = new OutputBuilder();
         if (constructor != null) {
-            outputBuilder.add(new Text("new")).add(Space.ONE).add(parameterizedType.output(false, diamond));
+            outputBuilder.add(new Text("new")).add(Space.ONE).add(parameterizedType.output(qualification, false, diamond));
             if (arrayInitializer == null) {
                 if (parameterExpressions.isEmpty()) {
                     outputBuilder.add(Symbol.OPEN_CLOSE_PARENTHESIS);

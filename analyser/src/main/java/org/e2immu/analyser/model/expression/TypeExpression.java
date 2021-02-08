@@ -74,7 +74,7 @@ public class TypeExpression implements Expression {
 
     @Override
     public OutputBuilder output(Qualification qualification) {
-        return new OutputBuilder().add(parameterizedType.output(false, diamond));
+        return new OutputBuilder().add(parameterizedType.output(qualification, false, diamond));
     }
 
     @Override
