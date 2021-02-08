@@ -1481,7 +1481,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             } else {
                 lastStatements = executions.stream()
                         .filter(ex -> ex.startOfBlock != null && !ex.startOfBlock.statementAnalysis.flowData.isUnreachable())
-                        .map(ex -> new StatementAnalysis.ConditionAndLastStatement(ex.condition, // FIXME turn into statement's condition value
+                        .map(ex -> new StatementAnalysis.ConditionAndLastStatement(ex.condition,
                                 ex.startOfBlock.index(),
                                 ex.startOfBlock.lastStatement(),
                                 ex.startOfBlock.lastStatement().isEscapeAlwaysExecutedInCurrentBlock() == Boolean.TRUE))

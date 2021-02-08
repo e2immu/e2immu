@@ -30,20 +30,24 @@ import java.util.stream.Collectors;
 // this( )
 public class ExplicitConstructorInvocation extends StatementWithStructure {
 
-    public ExplicitConstructorInvocation(List<Expression> parameterExpressions) {
+    public final boolean isSuper;
+
+    public ExplicitConstructorInvocation(boolean isSuper, List<Expression> parameterExpressions) {
         super(new Structure.Builder().setUpdaters(parameterExpressions).build());
+        this.isSuper = isSuper;
     }
 
     @Override
     public Statement translate(TranslationMap translationMap) {
-        return new ExplicitConstructorInvocation(structure.updaters().stream()
+        return new ExplicitConstructorInvocation(isSuper, structure.updaters().stream()
                 .map(translationMap::translateExpression)
                 .collect(Collectors.toList()));
     }
 
     @Override
     public OutputBuilder output(Qualification qualification, StatementAnalysis statementAnalysis) {
-        OutputBuilder outputBuilder = new OutputBuilder().add(new Text("this"));
+        String name = isSuper ? "super" : "this";
+        OutputBuilder outputBuilder = new OutputBuilder().add(new Text(name));
         if (structure.updaters().isEmpty()) {
             outputBuilder.add(Symbol.OPEN_CLOSE_PARENTHESIS);
         } else {

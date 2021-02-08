@@ -88,7 +88,7 @@ public class TestInspectAnnotatedAPIs {
         TypeInfo optional = parser.getTypeContext().typeMapBuilder.get("java.util.Optional");
         Assert.assertNotNull(optional);
         Assert.assertEquals(Level.TRUE, MultiLevel.value(optional.typeAnalysis.get().getProperty(VariableProperty.CONTAINER), 0));
-        LOGGER.info("Source of Optional: " + optional.output(Qualification.EMPTY).toString());
+        LOGGER.info("Source of Optional: " + optional.output().toString());
     }
 
 }

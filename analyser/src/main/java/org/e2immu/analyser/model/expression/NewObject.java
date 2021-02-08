@@ -412,7 +412,7 @@ public record NewObject(MethodInfo constructor,
             outputBuilder.add(text).add(Space.ONE).add(parameterizedType.output(qualification));
         }
         if (anonymousClass != null) {
-            outputBuilder.add(anonymousClass.output(qualification));
+            outputBuilder.add(anonymousClass.output(qualification, true));
         }
         if (arrayInitializer != null) {
             outputBuilder.add(arrayInitializer.output(qualification));

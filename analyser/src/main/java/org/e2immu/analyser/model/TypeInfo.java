@@ -27,6 +27,7 @@ import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ExpressionAsStatement;
 import org.e2immu.analyser.model.statement.ReturnStatement;
+import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.output.*;
 import org.e2immu.analyser.parser.InspectionProvider;
@@ -116,13 +117,23 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         return typeInspection.isSet();
     }
 
-    public OutputBuilder output(Qualification qualification) {
-        return output(qualification, true);
+    public OutputBuilder output() {
+        assert isPrimaryType();
+        return output(null, true);
     }
 
     public OutputBuilder output(Qualification qualification, boolean doTypeDeclaration) {
         String typeNature;
-        Set<String> imports = isPrimaryType() ? imports(typeInspection.get()) : Set.of();
+        Set<String> imports;
+        QualificationImpl insideType;
+        if (isPrimaryType() && hasBeenInspected()) {
+            ResultOfImportComputation res = imports(typeInspection.get());
+            imports = res.imports;
+            insideType = res.qualification;
+        } else {
+            imports = Set.of();
+            insideType = hasBeenInspected() ? new QualificationImpl(qualification) : new QualificationImpl();
+        }
         String[] typeModifiers;
         List<FieldInfo> fields;
         List<MethodInfo> constructors;
@@ -132,7 +143,6 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         List<TypeParameter> typeParameters;
         ParameterizedType parentClass;
         boolean isInterface;
-        Qualification insideType;
 
         if (hasBeenInspected()) {
             TypeInspection typeInspection = this.typeInspection.get();
@@ -148,9 +158,8 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
             interfaces = typeInspection.interfacesImplemented();
 
             // add the methods that we can call without having to qualify (method() instead of super.method())
-            QualificationImpl qImpl = new QualificationImpl(qualification);
-            addMethodsToQualification(qImpl);
-            insideType = qImpl;
+            addMethodsToQualification(insideType);
+            addThisToQualification(insideType);
         } else {
             typeNature = "class"; // we really have no idea what it is
             typeModifiers = new String[]{"abstract"};
@@ -162,7 +171,6 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
             interfaces = List.of();
             parentClass = null;
             isInterface = false;
-            insideType = qualification;
         }
 
         // PACKAGE AND IMPORTS
@@ -210,7 +218,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
                 fields.stream()
                         .filter(f -> !f.fieldInspection.get().isSynthetic())
                         .map(f -> f.output(insideType))),
-                subTypes.stream().map(ti -> ti.output(insideType))),
+                subTypes.stream().map(ti -> ti.output(insideType, true))),
                 constructors.stream()
                         .filter(c -> !c.methodInspection.get().isSynthetic()).map(c -> c.output(insideType, guideGenerator))),
                 methods.stream()
@@ -224,6 +232,14 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         return packageAndImports.add(Stream.concat(annotationStream, Stream.of(afterAnnotations))
                 .collect(OutputBuilder.joining(Space.ONE_REQUIRED_EASY_SPLIT,
                         Guide.generatorForAnnotationList())));
+    }
+
+    private void addThisToQualification(QualificationImpl insideType) {
+        insideType.addThis(new This(InspectionProvider.DEFAULT, this));
+        if(!Primitives.isJavaLangObject(typeInspection.get().parentClass())) {
+            insideType.addThis(new This(InspectionProvider.DEFAULT, typeInspection.get().parentClass().typeInfo,
+                    false, true));
+        }
     }
 
     private void addMethodsToQualification(QualificationImpl qImpl) {
@@ -275,7 +291,10 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         return Stream.of();
     }
 
-    private Set<String> imports(TypeInspection typeInspection) {
+    private record ResultOfImportComputation(Set<String> imports, QualificationImpl qualification) {
+    }
+
+    private ResultOfImportComputation imports(TypeInspection typeInspection) {
         Set<TypeInfo> typesReferenced = typeInspection.typesReferenced().stream().filter(Map.Entry::getValue)
                 .map(Map.Entry::getKey)
                 .filter(Primitives::allowInImport)
@@ -288,18 +307,21 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
                 SMapList.add(perPackage, packageName, typeInfo);
             }
         });
-        Set<String> result = new TreeSet<>();
+        QualificationImpl qualification = new QualificationImpl();
+        // FIXME add those types with name clashes (no import possible)
+        // IMPROVE static fields and methods
+        Set<String> imports = new TreeSet<>();
         for (Map.Entry<String, List<TypeInfo>> e : perPackage.entrySet()) {
             List<TypeInfo> list = e.getValue();
             if (list.size() >= 4) {
-                result.add(e.getKey() + ".*");
+                imports.add(e.getKey() + ".*");
             } else {
                 for (TypeInfo typeInfo : list) {
-                    result.add(typeInfo.fullyQualifiedName);
+                    imports.add(typeInfo.fullyQualifiedName);
                 }
             }
         }
-        return result;
+        return new ResultOfImportComputation(imports, qualification);
     }
 
     @Override
@@ -664,5 +686,15 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
             return simpleName;
         }
         return packageNameOrEnclosingType.getRight().fromPrimaryTypeDownwards() + "." + simpleName;
+    }
+
+    public List<FieldInfo> visibleFields() {
+        TypeInspection inspection = typeInspection.get();
+        List<FieldInfo> locally = inspection.fields();
+        List<FieldInfo> fromParent = Primitives.isJavaLangObject(this) ? List.of() :
+                inspection.parentClass().typeInfo.visibleFields();
+        List<FieldInfo> fromInterfaces = inspection.interfacesImplemented().stream()
+                .flatMap(i -> i.typeInfo.visibleFields().stream()).collect(Collectors.toUnmodifiableList());
+        return ListUtil.immutableConcat(locally, fromParent, fromInterfaces);
     }
 }

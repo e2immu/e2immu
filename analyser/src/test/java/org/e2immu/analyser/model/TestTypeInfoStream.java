@@ -258,7 +258,7 @@ public class TestTypeInfoStream {
                 .build();
         testTypeInfo.typeInspection.set(testTypeInspection);
 
-        String stream = testTypeInfo.output(Qualification.EMPTY).toString();
+        String stream = testTypeInfo.output().toString();
         LOGGER.info("stream is\n\n{}", stream);
 
         Assert.assertTrue(stream.contains("import org.slf4j.Logger"));

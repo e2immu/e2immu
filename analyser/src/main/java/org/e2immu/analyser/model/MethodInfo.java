@@ -213,14 +213,7 @@ public class MethodInfo implements WithInspectionAndAnalysis {
                             .map(pi -> pi.output(qualification)).collect(OutputBuilder.joining(Symbol.COMMA)));
         }
         if (hasBeenInspected()) {
-            Set<String> localNamesFromBody = inspection.getMethodBody().variables().stream()
-                    .filter(v -> v instanceof LocalVariableReference || v instanceof ParameterInfo)
-                    .map(Variable::simpleName).collect(Collectors.toSet());
-            Set<String> parameterNames = inspection.getParameters().stream()
-                    .map(ParameterInfo::simpleName).collect(Collectors.toSet());
-            Set<String> localNames = SetUtil.immutableUnion(localNamesFromBody, parameterNames);
-
-            Qualification bodyQualification = makeBodyQualification(qualification, localNames);
+            Qualification bodyQualification = makeBodyQualification(qualification, inspection);
             StatementAnalysis firstStatement = methodAnalysis.isSet() ? methodAnalysis.get().getFirstStatement() : null;
             afterAnnotations.add(inspection.getMethodBody().output(bodyQualification, firstStatement));
         } else {
@@ -235,10 +228,19 @@ public class MethodInfo implements WithInspectionAndAnalysis {
         return mainAndCompanions.add(mainMethod);
     }
 
-    private Qualification makeBodyQualification(Qualification qualification, Set<String> localNames) {
+    private Qualification makeBodyQualification(Qualification qualification, MethodInspection inspection) {
+        Set<String> localNamesFromBody = inspection.getMethodBody().variables().stream()
+                .filter(v -> v instanceof LocalVariableReference || v instanceof ParameterInfo)
+                .map(Variable::simpleName).collect(Collectors.toSet());
+        Set<String> parameterNames = inspection.getParameters().stream()
+                .map(ParameterInfo::simpleName).collect(Collectors.toSet());
+        Set<String> localNames = SetUtil.immutableUnion(localNamesFromBody, parameterNames);
+
+        List<FieldInfo> visibleFields = typeInfo.visibleFields();
         QualificationImpl res = new QualificationImpl(qualification);
-        methodInspection.get().getMethodInfo().typeInfo.typeInspection.get().fields().stream()
-                .filter(fieldInfo -> localNames.contains(fieldInfo.name)).forEach(res::addField);
+        visibleFields.stream().filter(fieldInfo -> !localNames.contains(fieldInfo.name)).forEach(res::addField);
+
+
         return res;
     }
 

@@ -18,6 +18,7 @@
 package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.model.variable.FieldReference;
+import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.TypeName;
 
@@ -25,63 +26,88 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Stream;
+
+/*
+In each type, the method list and the this list get filled.
+In each method, the fields list gets filled.
+The typesNotImported are computed once per primary type.
+For this reason, a hierarchical implementations seems most efficient.
+
+The this list is not read recursively but only from the nearest level
+where there is data.
+ */
 
 public class QualificationImpl implements Qualification {
-    private final Set<FieldInfo> fieldsShadowedByLocalName = new HashSet<>();
+    private final Set<FieldInfo> unqualifiedFields = new HashSet<>();
     private final Set<MethodInfo> unqualifiedMethods = new HashSet<>();
-    private final Map<TypeInfo, TypeName.Required> typesNotImported = new HashMap<>();
+    private final Set<This> unqualifiedThis = new HashSet<>();
+    private final Map<TypeInfo, TypeName.Required> typesNotImported;
+    private final QualificationImpl parent;
+    private final QualificationImpl top;
+
+    public QualificationImpl() {
+        parent = null;
+        top = this;
+        typesNotImported = new HashMap<>();
+    }
 
     public QualificationImpl(Qualification parent) {
-        parent.fieldStream().forEach(fieldsShadowedByLocalName::add);
-        parent.methodStream().forEach(unqualifiedMethods::add);
-        parent.typeStream().forEach(e -> typesNotImported.put(e.getKey(), e.getValue()));
+        this.parent = (QualificationImpl) parent;
+        top = ((QualificationImpl) parent).top;
+        typesNotImported = null;
     }
 
     @Override
     public boolean qualifierRequired(Variable variable) {
         if (variable instanceof FieldReference fieldReference) {
-            return fieldsShadowedByLocalName.contains(fieldReference.fieldInfo);
+            if (unqualifiedFields.contains(fieldReference.fieldInfo)) return false;
+            return parent == null || parent.qualifierRequired(variable);
+        }
+        if (variable instanceof This thisVar) {
+            QualificationImpl levelWithData = this;
+            while (levelWithData.unqualifiedThis.isEmpty()) {
+                levelWithData = levelWithData.parent;
+                assert levelWithData != null : "Forgot to add this info at the type level?";
+            }
+            return !levelWithData.unqualifiedThis.contains(thisVar);
         }
         return false;
     }
 
-    @Override
-    public Stream<FieldInfo> fieldStream() {
-        return fieldsShadowedByLocalName.stream();
+    public void addField(FieldInfo fieldInfo) {
+        boolean newName = unqualifiedFields.stream().noneMatch(fi -> fi.name.equals(fieldInfo.name));
+        if (newName) {
+            unqualifiedFields.add(fieldInfo);
+        } // else: we'll have to qualify, because the name has already been taken
     }
 
-    public void addField(FieldInfo fieldInfo) {
-        fieldsShadowedByLocalName.add(fieldInfo);
+    public void addThis(This thisVar) {
+        unqualifiedThis.add(thisVar);
     }
 
     @Override
     public boolean qualifierRequired(MethodInfo methodInfo) {
-        return !unqualifiedMethods.contains(methodInfo);
-    }
-
-    @Override
-    public Stream<MethodInfo> methodStream() {
-        return unqualifiedMethods.stream();
+        if (unqualifiedMethods.contains(methodInfo)) return false;
+        return parent == null || parent.qualifierRequired(methodInfo);
     }
 
     public void addMethodUnlessOverride(MethodInfo methodInfo) {
-        // TODO check override
-        unqualifiedMethods.add(methodInfo);
+        boolean newMethod = unqualifiedMethods.stream().noneMatch(mi ->
+                mi.methodResolution.get().overrides().contains(methodInfo));
+        if (newMethod) {
+            unqualifiedMethods.add(methodInfo);
+        }
     }
-
 
     @Override
     public TypeName.Required qualifierRequired(TypeInfo typeInfo) {
-        return typesNotImported.getOrDefault(typeInfo, TypeName.Required.SIMPLE);
-    }
-
-    @Override
-    public Stream<Map.Entry<TypeInfo, TypeName.Required>> typeStream() {
-        return typesNotImported.entrySet().stream();
+        assert top.typesNotImported != null; // to keep IntelliJ happy
+        return top.typesNotImported.getOrDefault(typeInfo, TypeName.Required.SIMPLE);
     }
 
     public void addType(TypeInfo typeInfo, TypeName.Required required) {
+        assert parent == null; // only add these at the top level
+        assert typesNotImported != null; // to keep IntelliJ happy
         typesNotImported.put(typeInfo, required);
     }
 }

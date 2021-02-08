@@ -20,9 +20,6 @@ package org.e2immu.analyser.model;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.TypeName;
 
-import java.util.Map;
-import java.util.stream.Stream;
-
 /*
 provides sufficient information to determine whether a variable or type name has to qualified
 in the current context.
@@ -38,40 +35,20 @@ public interface Qualification {
         }
 
         @Override
-        public Stream<FieldInfo> fieldStream() {
-            return Stream.empty();
-        }
-
-        @Override
         public boolean qualifierRequired(MethodInfo methodInfo) {
             return true;
-        }
-
-        @Override
-        public Stream<MethodInfo> methodStream() {
-            return Stream.empty();
         }
 
         @Override
         public TypeName.Required qualifierRequired(TypeInfo typeInfo) {
             return TypeName.Required.SIMPLE;
         }
-
-        @Override
-        public Stream<Map.Entry<TypeInfo, TypeName.Required>> typeStream() {
-            return Stream.empty();
-        }
     };
 
+    /* for FieldReference and This */
     boolean qualifierRequired(Variable variable);
-
-    Stream<FieldInfo> fieldStream();
 
     boolean qualifierRequired(MethodInfo methodInfo);
 
-    Stream<MethodInfo> methodStream();
-
     TypeName.Required qualifierRequired(TypeInfo typeInfo);
-
-    Stream<Map.Entry<TypeInfo, TypeName.Required>> typeStream();
 }
