@@ -1341,10 +1341,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 blocks.get(0).ifPresent(firstStatement -> {
                     boolean isTrue = evaluated.isBoolValueTrue();
                     if (!isTrue) {
-                        // important: we register the error on the IfElse rather than the first statement in the block, because that one
-                        // really is excluded from all analysis
-                        statementAnalysis.ensure(Message.newMessage(new Location(myMethodAnalyser.methodInfo, firstStatement.index),
-                                Message.UNREACHABLE_STATEMENT));
+                        firstStatement.ensure(Message.newMessage(new Location(myMethodAnalyser.methodInfo,
+                                firstStatement.index), Message.UNREACHABLE_STATEMENT));
                     }
                     // guaranteed to be reached in block is always ALWAYS because it is the first statement
                     firstStatement.flowData.setGuaranteedToBeReachedInMethod(isTrue ? ALWAYS : NEVER);
@@ -1353,10 +1351,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                     blocks.get(1).ifPresent(firstStatement -> {
                         boolean isTrue = evaluated.isBoolValueTrue();
                         if (isTrue) {
-                            // important: we register the error on the IfElse rather than the first statement in the block, because that one
-                            // really is excluded from all analysis
-                            statementAnalysis.ensure(Message.newMessage(new Location(myMethodAnalyser.methodInfo, firstStatement.index),
-                                    Message.UNREACHABLE_STATEMENT));
+                            firstStatement.ensure(Message.newMessage(new Location(myMethodAnalyser.methodInfo,
+                                    firstStatement.index), Message.UNREACHABLE_STATEMENT));
                         }
                         firstStatement.flowData.setGuaranteedToBeReachedInMethod(isTrue ? NEVER : ALWAYS);
                     });
@@ -1463,6 +1459,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                     if (statement() instanceof LoopStatement) {
                         statementAnalysis.ensure(Message.newMessage(getLocation(), Message.EMPTY_LOOP));
                     }
+
+                    sharedState.builder.addMessages(executionOfBlock.startOfBlock.statementAnalysis.messages.stream());
                 }
             }
         }

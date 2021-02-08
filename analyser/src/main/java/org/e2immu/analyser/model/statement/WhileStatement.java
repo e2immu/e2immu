@@ -57,6 +57,7 @@ public class WhileStatement extends LoopStatement {
                 .add(Symbol.LEFT_PARENTHESIS)
                 .add(structure.expression().output(qualification))
                 .add(Symbol.RIGHT_PARENTHESIS)
+                .addIfNotNull(messageComment(statementAnalysis))
                 .add(structure.block().output(qualification, StatementAnalysis.startOfBlock(statementAnalysis, 0)));
     }
 }

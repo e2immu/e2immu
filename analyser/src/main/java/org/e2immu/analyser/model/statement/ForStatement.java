@@ -54,6 +54,7 @@ public class ForStatement extends LoopStatement {
                 .add(Symbol.SEMICOLON)
                 .add(structure.updaters().stream().map(expression2 -> expression2.output(qualification)).collect(OutputBuilder.joining(Symbol.COMMA)))
                 .add(Symbol.RIGHT_PARENTHESIS)
+                .addIfNotNull(messageComment(statementAnalysis))
                 .add(structure.block().output(qualification, StatementAnalysis.startOfBlock(statementAnalysis, 0)));
     }
 

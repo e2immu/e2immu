@@ -128,7 +128,9 @@ public class TryStatement extends StatementWithStructure {
                     .add(resources.stream().map(expression -> expression.output(qualification)).collect(OutputBuilder.joining(Symbol.SEMICOLON)))
                     .add(Symbol.RIGHT_PARENTHESIS);
         }
-        outputBuilder.add(structure.block().output(qualification, StatementAnalysis.startOfBlock(statementAnalysis, 0)));
+        outputBuilder
+                .addIfNotNull(messageComment(statementAnalysis))
+                .add(structure.block().output(qualification, StatementAnalysis.startOfBlock(statementAnalysis, 0)));
         int i = 1;
         for (Pair<CatchParameter, Block> pair : catchClauses) {
             outputBuilder.add(new Text("catch"))

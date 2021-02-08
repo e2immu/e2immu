@@ -16,7 +16,7 @@ public class BreakStatement extends BreakOrContinueStatement {
         if (label != null) {
             outputBuilder.add(Space.ONE).add(new Text(label));
         }
-        outputBuilder.add(Symbol.SEMICOLON);
+        outputBuilder.add(Symbol.SEMICOLON).addIfNotNull(messageComment(statementAnalysis));
         return outputBuilder;
     }
 }

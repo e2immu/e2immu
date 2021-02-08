@@ -52,10 +52,12 @@ public class ExplicitConstructorInvocation extends StatementWithStructure {
             outputBuilder.add(Symbol.OPEN_CLOSE_PARENTHESIS);
         } else {
             outputBuilder.add(Symbol.LEFT_PARENTHESIS)
-                    .add(structure.updaters().stream().map(expression -> expression.output(qualification)).collect(OutputBuilder.joining(Symbol.COMMA)))
+                    .add(structure.updaters().stream()
+                            .map(expression -> expression.output(qualification))
+                            .collect(OutputBuilder.joining(Symbol.COMMA)))
                     .add(Symbol.RIGHT_PARENTHESIS);
         }
-        return outputBuilder.add(Symbol.SEMICOLON);
+        return outputBuilder.add(Symbol.SEMICOLON).addIfNotNull(messageComment(statementAnalysis));
     }
 
     @Override

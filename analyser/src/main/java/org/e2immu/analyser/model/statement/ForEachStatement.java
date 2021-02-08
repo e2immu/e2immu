@@ -92,6 +92,7 @@ public class ForEachStatement extends LoopStatement {
                 .add(Symbol.COLON)
                 .add(structure.expression().output(qualification))
                 .add(Symbol.RIGHT_PARENTHESIS)
+                .addIfNotNull(messageComment(statementAnalysis))
                 .add(structure.block().output(qualification, StatementAnalysis.startOfBlock(statementAnalysis, 0)));
     }
 }
