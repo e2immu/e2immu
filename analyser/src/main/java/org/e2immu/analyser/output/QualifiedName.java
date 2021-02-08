@@ -19,15 +19,18 @@ package org.e2immu.analyser.output;
 
 import org.e2immu.analyser.util.StringUtil;
 
-public record VariableName(String name, Qualifier qualifier, Required qualifierRequired) implements Qualifier {
+public record QualifiedName(String name, Qualifier qualifier, Required qualifierRequired) implements Qualifier {
 
     // for tests
-    public VariableName(String name) {
+    public QualifiedName(String name) {
         this(name, null, Required.NEVER);
     }
 
     public enum Required {
-        YES, NO, NEVER
+        YES, // always write
+        NO_FIELD, // don't write unless a field-related option says so
+        NO_METHOD, // don't write unless a method-related option says so
+        NEVER // never write
     }
 
     @Override
@@ -50,10 +53,10 @@ public record VariableName(String name, Qualifier qualifier, Required qualifierR
 
     @Override
     public String write(FormattingOptions options) {
-        if (options.allFieldsRequireThis() && qualifierRequired != Required.NEVER && qualifier instanceof ThisName) {
+        if (options.allFieldsRequireThis() && qualifierRequired == Required.NO_FIELD && qualifier instanceof ThisName) {
             return qualifier().write(options) + "." + name;
         }
-        if (options.allStaticFieldsRequireType() && qualifierRequired != Required.NEVER && qualifier instanceof TypeName) {
+        if (options.allStaticFieldsRequireType() && qualifierRequired != Required.NO_FIELD && qualifier instanceof TypeName) {
             return qualifier().write(options) + "." + name;
         }
         return minimal();
@@ -62,6 +65,6 @@ public record VariableName(String name, Qualifier qualifier, Required qualifierR
     @Override
     public String generateJavaForDebugging() {
         String q = qualifier == null ? "null" : StringUtil.quote(qualifier.minimal());
-        return ".add(new VariableName(" + StringUtil.quote(name) + ", " + q + ", " + qualifierRequired + "))";
+        return ".add(new QualifiedName(" + StringUtil.quote(name) + ", " + q + ", " + qualifierRequired + "))";
     }
 }

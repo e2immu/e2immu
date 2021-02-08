@@ -23,7 +23,7 @@ import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Space;
 import org.e2immu.analyser.output.Text;
-import org.e2immu.analyser.output.VariableName;
+import org.e2immu.analyser.output.QualifiedName;
 import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.Container;
@@ -210,7 +210,7 @@ public class ParameterInfo implements Variable, WithInspectionAndAnalysis, Compa
     // as variable
     @Override
     public OutputBuilder output(Qualification qualification) {
-        return new OutputBuilder().add(new VariableName(name, null, VariableName.Required.NEVER));
+        return new OutputBuilder().add(new QualifiedName(name, null, QualifiedName.Required.NEVER));
     }
 
     @Override

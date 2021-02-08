@@ -20,7 +20,7 @@ package org.e2immu.analyser.model.variable;
 import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.output.OutputBuilder;
-import org.e2immu.analyser.output.VariableName;
+import org.e2immu.analyser.output.QualifiedName;
 import org.e2immu.analyser.parser.InspectionProvider;
 
 import java.util.List;
@@ -78,7 +78,7 @@ public class LocalVariableReference extends VariableWithConcreteReturnType {
 
     @Override
     public OutputBuilder output(Qualification qualification) {
-        return new OutputBuilder().add(new VariableName(simpleName(), null, VariableName.Required.NEVER));
+        return new OutputBuilder().add(new QualifiedName(simpleName(), null, QualifiedName.Required.NEVER));
     }
 
     @Override

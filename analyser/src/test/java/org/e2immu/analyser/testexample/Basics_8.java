@@ -51,7 +51,7 @@ public class Basics_8 {
     synchronized boolean test3(int q) {
         int j = i; // some value
         i = i + q; // some value + q
-        int k = i;
+        final int k = i;
         return k == j + q;
     }
 

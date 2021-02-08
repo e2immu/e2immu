@@ -100,11 +100,19 @@ public class LocalVariableCreation implements Expression {
     @Override
     public OutputBuilder output(Qualification qualification) {
         OutputBuilder outputBuilder = new OutputBuilder()
-                .add(localVariable.annotations().stream().map(ae -> ae.output(qualification)).collect(OutputBuilder.joining(Symbol.COMMA)))
-                .add(localVariable.annotations().isEmpty() ? Space.NONE : Space.ONE)
-                .add(Arrays.stream(LocalVariableModifier.toJava(localVariable.modifiers())).map(s -> new OutputBuilder().add(new Text(s)))
-                        .collect(OutputBuilder.joining(Space.ONE)))
-                .add(localVariable.modifiers().isEmpty() ? Space.NONE : Space.ONE)
+                .add(localVariable.annotations().stream()
+                        .map(ae -> ae.output(qualification)).collect(OutputBuilder.joining(Symbol.COMMA)));
+        if (!outputBuilder.isEmpty()) {
+            outputBuilder.add(Space.ONE);
+        }
+        OutputBuilder mods = new OutputBuilder()
+                .add(Arrays.stream(LocalVariableModifier.toJava(localVariable.modifiers()))
+                        .map(s -> new OutputBuilder().add(new Text(s)))
+                        .collect(OutputBuilder.joining(Space.ONE)));
+        if (!mods.isEmpty()) {
+            mods.add(Space.ONE);
+        }
+        outputBuilder.add(mods)
                 .add(localVariable.parameterizedType().output(qualification))
                 .add(Space.ONE)
                 .add(new Text(localVariable.name()));

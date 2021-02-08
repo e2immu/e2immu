@@ -77,10 +77,12 @@ public record AnnotationExpressionImpl(TypeInfo typeInfo,
 
     @Override
     public OutputBuilder output(Qualification qualification) {
-        OutputBuilder outputBuilder = new OutputBuilder().add(Symbol.AT).add(new TypeName(typeInfo));
+        OutputBuilder outputBuilder = new OutputBuilder().add(Symbol.AT)
+                .add(new TypeName(typeInfo, qualification.qualifierRequired(typeInfo)));
         if (!expressions.isEmpty()) {
             outputBuilder.add(Symbol.LEFT_PARENTHESIS)
-                    .add(expressions.stream().map(expression -> expression.output(qualification)).collect(OutputBuilder.joining(Symbol.COMMA)))
+                    .add(expressions.stream().map(expression -> expression.output(qualification))
+                            .collect(OutputBuilder.joining(Symbol.COMMA)))
                     .add(Symbol.RIGHT_PARENTHESIS);
         }
         return outputBuilder;

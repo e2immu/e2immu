@@ -114,14 +114,7 @@ public record ParameterizedTypePrinter(boolean fullyQualified, boolean numericTy
             return typeInfo.simpleName;
         }
         // join up to primary type...
-        return recursivelyUpToPrimaryType(typeInfo);
-    }
-
-    private static String recursivelyUpToPrimaryType(TypeInfo typeInfo) {
-        if (typeInfo.packageNameOrEnclosingType.isLeft()) {
-            return typeInfo.simpleName;
-        }
-        return recursivelyUpToPrimaryType(typeInfo.packageNameOrEnclosingType.getRight()) + "." + typeInfo.simpleName;
+        return typeInfo.fromPrimaryTypeDownwards();
     }
 
     // if a type is a sub-type, the type parameters may belong to any of the intermediate types

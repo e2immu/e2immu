@@ -117,7 +117,7 @@ public class OutputBuilder {
         };
     }
 
-    private boolean isEmpty() {
+    public boolean isEmpty() {
         return list.isEmpty();
     }
 

@@ -132,6 +132,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         List<TypeParameter> typeParameters;
         ParameterizedType parentClass;
         boolean isInterface;
+        Qualification insideType;
 
         if (hasBeenInspected()) {
             TypeInspection typeInspection = this.typeInspection.get();
@@ -145,6 +146,11 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
             typeParameters = typeInspection.typeParameters();
             parentClass = parentIsNotJavaLangObject() ? typeInspection.parentClass() : null;
             interfaces = typeInspection.interfacesImplemented();
+
+            // add the methods that we can call without having to qualify (method() instead of super.method())
+            QualificationImpl qImpl = new QualificationImpl(qualification);
+            addMethodsToQualification(qImpl);
+            insideType = qImpl;
         } else {
             typeNature = "class"; // we really have no idea what it is
             typeModifiers = new String[]{"abstract"};
@@ -156,6 +162,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
             interfaces = List.of();
             parentClass = null;
             isInterface = false;
+            insideType = qualification;
         }
 
         // PACKAGE AND IMPORTS
@@ -189,34 +196,45 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
                 afterAnnotations.add(Symbol.RIGHT_ANGLE_BRACKET);
             }
             if (parentClass != null) {
-                afterAnnotations.add(Space.ONE).add(new Text("extends")).add(Space.ONE).add(parentClass.output(qualification));
+                afterAnnotations.add(Space.ONE).add(new Text("extends")).add(Space.ONE).add(parentClass.output(insideType));
             }
             if (!interfaces.isEmpty()) {
                 afterAnnotations.add(Space.ONE).add(new Text(isInterface ? "extends" : "implements")).add(Space.ONE);
-                afterAnnotations.add(interfaces.stream().map(pi -> pi.output(qualification)).collect(OutputBuilder.joining(Symbol.COMMA)));
+                afterAnnotations.add(interfaces.stream().map(pi -> pi.output(insideType)).collect(OutputBuilder.joining(Symbol.COMMA)));
             }
         }
 
         Guide.GuideGenerator guideGenerator = Guide.generatorForBlock();
         OutputBuilder main = Stream.concat(Stream.concat(Stream.concat(Stream.concat(
-                enumConstantStream(qualification),
+                enumConstantStream(insideType),
                 fields.stream()
                         .filter(f -> !f.fieldInspection.get().isSynthetic())
-                        .map(f -> f.output(qualification))),
-                subTypes.stream().map(ti -> ti.output(qualification))),
+                        .map(f -> f.output(insideType))),
+                subTypes.stream().map(ti -> ti.output(insideType))),
                 constructors.stream()
-                        .filter(c -> !c.methodInspection.get().isSynthetic()).map(c -> c.output(qualification, guideGenerator))),
+                        .filter(c -> !c.methodInspection.get().isSynthetic()).map(c -> c.output(insideType, guideGenerator))),
                 methods.stream()
                         .filter(m -> !m.methodInspection.get().isSynthetic())
-                        .map(m -> m.output(qualification, guideGenerator))).collect(OutputBuilder.joining(Space.NONE,
+                        .map(m -> m.output(insideType, guideGenerator))).collect(OutputBuilder.joining(Space.NONE,
                 Symbol.LEFT_BRACE, Symbol.RIGHT_BRACE, guideGenerator));
         afterAnnotations.add(main);
 
         // annotations and the rest of the type are at the same level
-        Stream<OutputBuilder> annotationStream = buildAnnotationOutput(qualification);
+        Stream<OutputBuilder> annotationStream = buildAnnotationOutput(insideType);
         return packageAndImports.add(Stream.concat(annotationStream, Stream.of(afterAnnotations))
                 .collect(OutputBuilder.joining(Space.ONE_REQUIRED_EASY_SPLIT,
                         Guide.generatorForAnnotationList())));
+    }
+
+    private void addMethodsToQualification(QualificationImpl qImpl) {
+        TypeInspection ti = typeInspection.get();
+        ti.methods().forEach(qImpl::addMethodUnlessOverride);
+        if (!Primitives.isJavaLangObject(this)) {
+            ti.parentClass().typeInfo.addMethodsToQualification(qImpl);
+        }
+        for (ParameterizedType interfaceType : ti.interfacesImplemented()) {
+            interfaceType.typeInfo.addMethodsToQualification(qImpl);
+        }
     }
 
     private Stream<OutputBuilder> enumConstantStream(Qualification qualification) {
@@ -639,5 +657,12 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
     public int countEnumConstants() {
         assert typeInspection.get().typeNature() == TypeNature.ENUM;
         return (int) typeInspection.get().fields().stream().filter(fieldInfo -> fieldInfo.fieldInspection.get().isSynthetic()).count();
+    }
+
+    public String fromPrimaryTypeDownwards() {
+        if (packageNameOrEnclosingType.isLeft()) {
+            return simpleName;
+        }
+        return packageNameOrEnclosingType.getRight().fromPrimaryTypeDownwards() + "." + simpleName;
     }
 }

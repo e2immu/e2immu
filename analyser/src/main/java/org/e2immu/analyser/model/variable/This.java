@@ -86,7 +86,9 @@ public class This implements Variable {
 
     @Override
     public OutputBuilder output(Qualification qualification) {
-        return new OutputBuilder().add(new ThisName(writeSuper, new TypeName(typeInfo), qualification.qualifierRequired(this)));
+        return new OutputBuilder().add(new ThisName(writeSuper,
+                new TypeName(typeInfo, qualification.qualifierRequired(typeInfo)),
+                qualification.qualifierRequired(this)));
     }
 
     @Override

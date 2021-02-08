@@ -20,16 +20,33 @@ package org.e2immu.analyser.output;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.util.StringUtil;
 
-public record TypeName(String simpleName, String fullyQualifiedName,
-                       String distinguishingName) implements Qualifier {
+public record TypeName(String simpleName,
+                       String fullyQualifiedName,
+                       String fromPrimaryTypeDownwards,
+                       Required required) implements Qualifier {
 
-    public TypeName(TypeInfo typeInfo) {
-        this(typeInfo.simpleName, typeInfo.fullyQualifiedName, typeInfo.fullyQualifiedName);
+    public enum Required {
+        FQN, QUALIFIED_FROM_PRIMARY_TYPE, SIMPLE
+    }
+
+    // for tests
+    public TypeName(String simpleName) {
+        this(simpleName, simpleName, simpleName, Required.SIMPLE);
+    }
+
+    public TypeName(TypeInfo typeInfo, Required requiresQualifier) {
+        this(typeInfo.simpleName, typeInfo.fullyQualifiedName,
+                typeInfo.isPrimaryType() ? typeInfo.simpleName : typeInfo.fromPrimaryTypeDownwards(),
+                requiresQualifier);
     }
 
     @Override
     public String minimal() {
-        return simpleName;
+        return switch (required) {
+            case SIMPLE -> simpleName;
+            case FQN -> fullyQualifiedName;
+            case QUALIFIED_FROM_PRIMARY_TYPE -> fromPrimaryTypeDownwards;
+        };
     }
 
     @Override
@@ -39,16 +56,16 @@ public record TypeName(String simpleName, String fullyQualifiedName,
 
     @Override
     public int length(FormattingOptions options) {
-        return simpleName.length(); // TODO
+        return minimal().length();
     }
 
     @Override
     public String write(FormattingOptions options) {
-        return simpleName;
+        return minimal();
     }
 
     @Override
     public String generateJavaForDebugging() {
-        return ".add(new TypeName(" + StringUtil.quote(simpleName) + ",\"\",\"\"))";
+        return ".add(new TypeName(" + StringUtil.quote(simpleName) + "))";
     }
 }

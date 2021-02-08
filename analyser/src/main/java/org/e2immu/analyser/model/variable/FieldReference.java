@@ -24,6 +24,8 @@ import org.e2immu.analyser.parser.InspectionProvider;
 
 import java.util.Objects;
 
+import static org.e2immu.analyser.output.QualifiedName.Required.*;
+
 public class FieldReference extends VariableWithConcreteReturnType {
     public final FieldInfo fieldInfo;
 
@@ -91,17 +93,20 @@ public class FieldReference extends VariableWithConcreteReturnType {
     public OutputBuilder output(Qualification qualification) {
         if (scope == null) {
             // static!
-            return new OutputBuilder().add(new VariableName(fieldInfo.name, new TypeName(fieldInfo.owner),
-                    qualification.qualifierRequired(this) ? VariableName.Required.YES : VariableName.Required.NO));
+            return new OutputBuilder().add(new QualifiedName(fieldInfo.name,
+                    new TypeName(fieldInfo.owner, qualification.qualifierRequired(fieldInfo.owner)),
+                    qualification.qualifierRequired(this) ? YES : NO_FIELD));
         }
         if (scope instanceof This thisVar) {
-            return new OutputBuilder().add(new VariableName(fieldInfo.name, new ThisName(thisVar.writeSuper, new TypeName(thisVar.typeInfo),
-                    qualification.qualifierRequired(thisVar)),
-                    qualification.qualifierRequired(this) ? VariableName.Required.YES : VariableName.Required.NO));
+            ThisName thisName = new ThisName(thisVar.writeSuper,
+                    new TypeName(thisVar.typeInfo, qualification.qualifierRequired(thisVar.typeInfo)),
+                    qualification.qualifierRequired(thisVar));
+            return new OutputBuilder().add(new QualifiedName(fieldInfo.name, thisName,
+                    qualification.qualifierRequired(this) ? YES : NO_FIELD));
         }
         // real variable
         return new OutputBuilder().add(scope.output(qualification)).add(Symbol.DOT)
-                .add(new VariableName(simpleName(), null, VariableName.Required.NEVER));
+                .add(new QualifiedName(simpleName(), null, NEVER));
     }
 
     @Override

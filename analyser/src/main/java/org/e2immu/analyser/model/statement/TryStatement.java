@@ -92,7 +92,8 @@ public class TryStatement extends StatementWithStructure {
         public OutputBuilder output(Qualification qualification) {
             return new OutputBuilder()
                     .add(unionOfTypes.stream()
-                            .map(pt -> new OutputBuilder().add(new TypeName(pt.typeInfo)))
+                            .map(pt -> new OutputBuilder().add(new TypeName(pt.typeInfo,
+                                    qualification.qualifierRequired(pt.typeInfo))))
                             .collect(OutputBuilder.joining(Symbol.PIPE)))
                     .add(Space.ONE).add(new Text(localVariableCreation.localVariable.name()));
         }

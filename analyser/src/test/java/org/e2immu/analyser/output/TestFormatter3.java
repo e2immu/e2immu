@@ -57,11 +57,11 @@ public class TestFormatter3 {
                 .add(Space.NEWLINE)
                 .add(gg31.start()) // priority=false, startNL=false, endNL=false
                 .add(Symbol.AT)
-                .add(new TypeName("E2Container", "", ""))
+                .add(new TypeName("E2Container"))
                 .add(Space.ONE_REQUIRED_EASY_SPLIT)
                 .add(gg31.mid()) // priority=false, startNL=false, endNL=false
                 .add(Symbol.AT)
-                .add(new TypeName("ExtensionClass", "", ""))
+                .add(new TypeName("ExtensionClass"))
                 .add(Space.ONE_REQUIRED_EASY_SPLIT)
                 .add(gg31.mid()) // priority=false, startNL=false, endNL=false
                 .add(new Text("public"))
@@ -73,11 +73,11 @@ public class TestFormatter3 {
                 .add(gg21.start()) // priority=true, startNL=true, endNL=true
                 .add(gg30.start()) // priority=false, startNL=false, endNL=false
                 .add(Symbol.AT)
-                .add(new TypeName("NotModified", "", ""))
+                .add(new TypeName("NotModified"))
                 .add(Space.ONE_REQUIRED_EASY_SPLIT)
                 .add(gg30.mid()) // priority=false, startNL=false, endNL=false
                 .add(Symbol.AT)
-                .add(new TypeName("NotNull", "", ""))
+                .add(new TypeName("NotNull"))
                 .add(Space.ONE_REQUIRED_EASY_SPLIT)
                 .add(gg30.mid()) // priority=false, startNL=false, endNL=false
                 .add(gg22.start()) // priority=false, startNL=false, endNL=false
@@ -93,7 +93,7 @@ public class TestFormatter3 {
                 .add(Symbol.LEFT_PARENTHESIS)
                 .add(gg23.start()) // priority=false, startNL=true, endNL=false
                 .add(Symbol.AT)
-                .add(new TypeName("NotNull", "", ""))
+                .add(new TypeName("NotNull"))
                 .add(Space.ONE)
                 .add(new Text("String"))
                 .add(Space.ONE)
@@ -109,19 +109,19 @@ public class TestFormatter3 {
                 .add(Symbol.DOT)
                 .add(new Text("of"))
                 .add(Symbol.LEFT_PARENTHESIS)
-                .add(new VariableName("input"))
+                .add(new QualifiedName("input"))
                 .add(Symbol.RIGHT_PARENTHESIS)
                 .add(gg25.mid()) // priority=false, startNL=false, endNL=false
                 .add(Symbol.DOT)
                 .add(new Text("map"))
                 .add(Symbol.LEFT_PARENTHESIS)
-                .add(new VariableName("s"))
+                .add(new QualifiedName("s"))
                 .add(Symbol.binaryOperator("->"))
                 .add(Symbol.LEFT_BRACE)
                 .add(gg28.start()) // priority=false, startNL=false, endNL=false
                 .add(new Text("if"))
                 .add(Symbol.LEFT_PARENTHESIS)
-                .add(new VariableName("s"))
+                .add(new QualifiedName("s"))
                 .add(Symbol.binaryOperator("=="))
                 .add(new Text("null"))
                 .add(Symbol.RIGHT_PARENTHESIS)
@@ -136,7 +136,7 @@ public class TestFormatter3 {
                 .add(gg28.mid()) // priority=false, startNL=false, endNL=false
                 .add(new Text("return"))
                 .add(Space.ONE)
-                .add(new VariableName("s"))
+                .add(new QualifiedName("s"))
                 .add(Symbol.binaryOperator("+"))
                 .add(new Text("\"something\""))
                 .add(Symbol.SEMICOLON)

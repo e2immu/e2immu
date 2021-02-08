@@ -27,7 +27,7 @@ import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.output.OutputBuilder;
-import org.e2immu.analyser.output.VariableName;
+import org.e2immu.analyser.output.QualifiedName;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.TypeMapImpl;
@@ -139,7 +139,7 @@ public abstract class CommonAbstractValue {
 
             @Override
             public OutputBuilder output(Qualification qualification) {
-                return new OutputBuilder().add(new VariableName(name));
+                return new OutputBuilder().add(new QualifiedName(name));
             }
 
             @Override

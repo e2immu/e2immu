@@ -28,10 +28,7 @@ import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.objectflow.access.MethodAccess;
-import org.e2immu.analyser.output.Guide;
-import org.e2immu.analyser.output.OutputBuilder;
-import org.e2immu.analyser.output.Symbol;
-import org.e2immu.analyser.output.Text;
+import org.e2immu.analyser.output.*;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.ListUtil;
@@ -46,6 +43,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+import static org.e2immu.analyser.output.QualifiedName.Required.NO_METHOD;
+import static org.e2immu.analyser.output.QualifiedName.Required.YES;
 import static org.e2immu.analyser.util.Logger.LogTarget.DELAYED;
 
 
@@ -156,6 +155,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     public OutputBuilder output(Qualification qualification, Guide.GuideGenerator guideGenerator) {
         OutputBuilder outputBuilder = new OutputBuilder();
         boolean last = false;
+        boolean start = false;
         Guide.GuideGenerator gg = null;
         if (object != null) {
             if (object instanceof MethodCall methodCall) {
@@ -168,14 +168,34 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 }
                 outputBuilder.add(methodCall.output(qualification, gg)); // recursive call
                 outputBuilder.add(gg.mid());
+                outputBuilder.add(Symbol.DOT);
+                outputBuilder.add(new Text(methodInfo.name));
+            } else if (object instanceof TypeExpression typeExpression) {
+                /*
+                we may or may not need to write the type here.
+                 */
+                assert methodInfo.methodInspection.get().isStatic();
+                TypeInfo typeInfo = typeExpression.parameterizedType.typeInfo;
+                TypeName typeName = new TypeName(typeInfo, qualification.qualifierRequired(typeInfo));
+                outputBuilder.add(new QualifiedName(methodInfo.name, typeName,
+                        qualification.qualifierRequired(methodInfo) ? YES : NO_METHOD));
+                if(guideGenerator != null) start = true;
+            } else if (object instanceof VariableExpression ve && ve.variable() instanceof This thisVar) {
+                assert !methodInfo.methodInspection.get().isStatic();
+                TypeName typeName = new TypeName(thisVar.typeInfo, qualification.qualifierRequired(thisVar.typeInfo));
+                ThisName thisName = new ThisName(thisVar.writeSuper, typeName, qualification.qualifierRequired(thisVar));
+                outputBuilder.add(new QualifiedName(methodInfo.name, thisName,
+                        qualification.qualifierRequired(methodInfo) ? YES : NO_METHOD));
+                if(guideGenerator != null) start = true;
             } else {
                 // next level is NOT a gg; if gg != null we're at the start of the chain
                 outputBuilder.add(outputInParenthesis(qualification, precedence(), object));
                 if (guideGenerator != null) outputBuilder.add(guideGenerator.start());
+                outputBuilder.add(Symbol.DOT);
+                outputBuilder.add(new Text(methodInfo.name));
             }
-            outputBuilder.add(Symbol.DOT);
         }
-        outputBuilder.add(new Text(methodInfo.name));
+
         if (parameterExpressions.isEmpty()) {
             outputBuilder.add(Symbol.OPEN_CLOSE_PARENTHESIS);
         } else {
@@ -185,6 +205,9 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                             .map(expression -> expression.output(qualification))
                             .collect(OutputBuilder.joining(Symbol.COMMA)))
                     .add(Symbol.RIGHT_PARENTHESIS);
+        }
+        if(start) {
+            outputBuilder.add(guideGenerator.start());
         }
         if (last) {
             outputBuilder.add(gg.end());

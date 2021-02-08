@@ -111,7 +111,7 @@ public record InstanceOf(Primitives primitives,
 
     @Override
     public List<Variable> variables() {
-        return List.of(variable);
+        return expression != null ? expression.variables(): List.of(variable);
     }
 
     @Override
