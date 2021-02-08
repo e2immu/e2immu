@@ -38,19 +38,11 @@ public interface TypeParameter extends NamedType {
 
     List<ParameterizedType> getTypeBounds();
 
-    default String print() {
-        return print(InspectionProvider.DEFAULT, new HashSet<>());
+    default OutputBuilder output(Qualification qualification) {
+        return output(InspectionProvider.DEFAULT, qualification, new HashSet<>());
     }
 
-    default String print(InspectionProvider inspectionProvider, Set<TypeParameter> visitedTypeParameters) {
-        List<ParameterizedType> typeBounds = getTypeBounds();
-        if (typeBounds.isEmpty()) return getName();
-        return getName() + " extends " + getTypeBounds()
-                .stream().map(pt -> pt.printInTypeParameter(inspectionProvider, false, Diamond.SHOW_ALL, visitedTypeParameters, false))
-                .collect(Collectors.joining(" & "));
-    }
-
-    OutputBuilder output();
+    OutputBuilder output(InspectionProvider inspectionProvider, Qualification qualification, Set<TypeParameter> visitedTypeParameters);
 
     @Override
     default String simpleName() {

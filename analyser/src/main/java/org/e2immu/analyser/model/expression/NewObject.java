@@ -97,7 +97,7 @@ public record NewObject(MethodInfo constructor,
     public static NewObject forForEach(Primitives primitives, ParameterizedType parameterizedType, boolean notNull) {
         Diamond diamond = parameterizedType.parameters.isEmpty() ? Diamond.NO : Diamond.SHOW_ALL;
         return new NewObject(null, parameterizedType, diamond, List.of(),
-                notNull ? MultiLevel.EFFECTIVELY_NOT_NULL: MultiLevel.NULLABLE, null, null,
+                notNull ? MultiLevel.EFFECTIVELY_NOT_NULL : MultiLevel.NULLABLE, null, null,
                 new BooleanConstant(primitives, true), ObjectFlow.NO_FLOW);
     }
 
@@ -408,8 +408,8 @@ public record NewObject(MethodInfo constructor,
                 }
             }
         } else {
-            Text text = new Text(text() + "instance type");
-            outputBuilder.add(text).add(Space.ONE).add(parameterizedType.output(qualification));
+            Text text = new Text(text() + "instance type " + parameterizedType.printSimple());
+            outputBuilder.add(text);
         }
         if (anonymousClass != null) {
             outputBuilder.add(anonymousClass.output(qualification, true));
@@ -481,7 +481,7 @@ public record NewObject(MethodInfo constructor,
             MethodAnalysis constructorAnalysis = evaluationContext.getAnalyserContext().getMethodAnalysis(constructor);
             NewObject no = MethodCall.checkCompanionMethodsModifying(res.k, evaluationContext, constructor, constructorAnalysis,
                     null, initialInstance, res.v);
-            instance = no == null ? DelayedExpression.forNewObject(parameterizedType): no;
+            instance = no == null ? DelayedExpression.forNewObject(parameterizedType) : no;
         } else {
             instance = initialInstance;
         }

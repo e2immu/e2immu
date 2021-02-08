@@ -6,6 +6,7 @@ import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.expression.InlinedMethod;
+import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -35,9 +36,10 @@ public class Test_11_IfStatement extends CommonTestRunner {
             }
         };
 
-        final String RETURN = "org.e2immu.analyser.testexample.IfStatement_0.method1(String)";
+        final String RETURN = "org.e2immu.analyser.testexample.IfStatement_0.method1(java.lang.String)";
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-            if (RETURN.equals(d.variableName())) {
+            if (d.variable() instanceof ReturnVariable retVar) {
+                Assert.assertEquals(RETURN, retVar.fqn);
                 if ("0".equals(d.statementId())) {
                     Assert.assertEquals("null==a?\"b\":<return value>", d.currentValue().toString());
                 }
@@ -65,9 +67,10 @@ public class Test_11_IfStatement extends CommonTestRunner {
             }
         };
 
-        final String RETURN = "org.e2immu.analyser.testexample.IfStatement_1.method2(String)";
+        final String RETURN = "org.e2immu.analyser.testexample.IfStatement_1.method2(java.lang.String)";
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-            if (RETURN.equals(d.variableName())) {
+            if (d.variable() instanceof ReturnVariable retVar) {
+                Assert.assertEquals(RETURN, retVar.fqn);
                 if ("0.0.0".equals(d.statementId())) {
                     Assert.assertEquals("\"b\"", d.currentValue().toString());
                 }
@@ -102,9 +105,10 @@ public class Test_11_IfStatement extends CommonTestRunner {
             }
         };
 
-        final String RETURN = "org.e2immu.analyser.testexample.IfStatement_2.method3(String)";
+        final String RETURN = "org.e2immu.analyser.testexample.IfStatement_2.method3(java.lang.String)";
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-            if (RETURN.equals(d.variableName())) {
+            if (d.variable() instanceof ReturnVariable retVar) {
+                Assert.assertEquals(RETURN, retVar.fqn);
                 if ("0.0.0".equals(d.statementId())) {
                     Assert.assertEquals("c", d.currentValue().toString());
                 }
@@ -165,7 +169,7 @@ public class Test_11_IfStatement extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("get3".equals(d.methodInfo().name) && "i3".equals(d.variableName())) {
                 if ("0".equals(d.statementId())) {
-                    String expectValue = d.iteration() == 0 ? "<method:java.util.Map.get(Object)>" : "map.get(label3)";
+                    String expectValue = d.iteration() == 0 ? "<method:java.util.Map.get(java.lang.Object)>" : "map.get(label3)";
                     Assert.assertEquals(expectValue, d.currentValue().toString());
                     String expectLinked = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "";
                     Assert.assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
@@ -232,7 +236,6 @@ public class Test_11_IfStatement extends CommonTestRunner {
             }
         };
 
-        // FIXME 2 ok, 1 and 3 fail
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("get1".equals(d.methodInfo().name) && d.iteration() > 0) {
                 Assert.assertEquals("null==map.get(label1)?defaultValue1:map.get(label1)",

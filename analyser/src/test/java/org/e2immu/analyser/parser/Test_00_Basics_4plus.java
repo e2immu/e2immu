@@ -23,9 +23,11 @@ import org.e2immu.analyser.analyser.LinkedVariables;
 import org.e2immu.analyser.analyser.VariableInfoContainer;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
+import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.Variable;
+import org.e2immu.analyser.testexample.Basics_6;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -240,13 +242,20 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
             }
         };
 
-        testClass("Basics_6", 0, 10, new DebugConfiguration.Builder()
+        TypeContext typeContext = testClass("Basics_6", 0, 10, new DebugConfiguration.Builder()
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addTypeMapVisitor(typeMapVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
+        TypeInfo b6 = typeContext.getFullyQualified(Basics_6.class);
+        MethodInfo test1 = b6.findUniqueMethod("test1", 0);
+        Assert.assertEquals(0, test1.methodAnalysis.get().getComputedCompanions().size());
+        MethodInfo test4 = b6.findUniqueMethod("test4", 0);
+        Assert.assertEquals(0, test4.methodAnalysis.get().getComputedCompanions().size());
+        MethodInfo test5 = b6.findUniqueMethod("test5", 0);
+        Assert.assertEquals(0, test5.methodAnalysis.get().getComputedCompanions().size());
     }
 
 

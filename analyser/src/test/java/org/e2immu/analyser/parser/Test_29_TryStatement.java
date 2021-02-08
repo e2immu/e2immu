@@ -24,7 +24,7 @@ public class Test_29_TryStatement extends CommonTestRunner {
     @Test
     public void test_0() throws IOException {
         final String TYPE = "org.e2immu.analyser.testexample.TryStatement_0";
-        final String METHOD_FQN = TYPE + ".method(String)";
+        final String METHOD_FQN = TYPE + ".method(java.lang.String)";
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("method".equals(d.methodInfo().name) && METHOD_FQN.equals(d.variableName())) {

@@ -2099,7 +2099,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 translated = precondition;
             } else {
                 // we need an evaluation context that simply translates, but does not interpret stuff
-                EvaluationContext evaluationContext = new ConditionManager.EvaluationContextImpl(getPrimitives());
+                EvaluationContext evaluationContext = new ConditionManager.EvaluationContextImpl(getAnalyserContext());
                 translated = precondition.reEvaluate(evaluationContext, translationMap).getExpression();
             }
             if (translated.variables().stream()

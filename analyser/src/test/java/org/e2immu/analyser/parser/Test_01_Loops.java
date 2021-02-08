@@ -170,7 +170,7 @@ public class Test_01_Loops extends CommonTestRunner {
     public void test1() throws IOException {
         // weirdly written but there is no dedicated logic in place
         final String END_RESULT = "-1-(instance type int)+n>=1?\"abc\":nullable? instance type String";
-        final String END_RESULT_NO_OPERATIONS = "instance type int>=0?\"abc\":instance type String/**/";
+        final String END_RESULT_NO_OPERATIONS = "instance type int>=0?\"abc\":instance type String";
 
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {

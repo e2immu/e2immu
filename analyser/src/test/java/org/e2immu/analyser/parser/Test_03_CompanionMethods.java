@@ -19,11 +19,16 @@
 
 package org.e2immu.analyser.parser;
 
-import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.AnalysisStatus;
+import org.e2immu.analyser.analyser.CompanionAnalysis;
+import org.e2immu.analyser.analyser.EvaluationResult;
+import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
+import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.statement.ReturnStatement;
+import org.e2immu.analyser.testexample.BasicCompanionMethods_6;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -314,9 +319,17 @@ public class Test_03_CompanionMethods extends CommonTestRunner {
             }
         };
 
-        testClass("BasicCompanionMethods_6", 0, 0, new DebugConfiguration.Builder()
+        TypeContext typeContext = testClass("BasicCompanionMethods_6", 0, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
+        TypeInfo bc6 = typeContext.getFullyQualified(BasicCompanionMethods_6.class);
+        MethodInfo test = bc6.findUniqueMethod("test", 1);
+
+        MethodAnalysis methodAnalysis = test.methodAnalysis.get();
+        Assert.assertEquals(1, methodAnalysis.getComputedCompanions().size());
+        Assert.assertEquals("return !set.contains(\"a\");", methodAnalysis.getComputedCompanions().values()
+                .stream().findFirst().orElseThrow()
+                .methodInspection.get().getMethodBody().structure.statements().get(0).minimalOutput());
     }
 
 
@@ -333,6 +346,11 @@ public class Test_03_CompanionMethods extends CommonTestRunner {
             TypeInfo set = typeMap.get(Set.class);
             MethodInfo setClear = set.findUniqueMethod("clear", 0);
             Assert.assertEquals(Level.TRUE, setClear.methodAnalysis.get().getProperty(VariableProperty.MODIFIED));
+
+            TypeInfo annotatedAPI = typeMap.get("org.e2immu.annotatedapi.AnnotatedAPI");
+            Assert.assertNotNull(annotatedAPI);
+            MethodInfo isKnown = annotatedAPI.findUniqueMethod("isKnown", 1);
+            Assert.assertTrue(isKnown.methodInspection.get().isStatic());
         };
 
         final String PARAM = "org.e2immu.analyser.testexample.BasicCompanionMethods_7.test(Set<java.lang.String>):0:strings";
@@ -347,7 +365,7 @@ public class Test_03_CompanionMethods extends CommonTestRunner {
                             d.currentValue().toString());
                 }
                 if ("4".equals(d.statementId())) {
-                    Assert.assertEquals("instance type HashSet<String>/*this.isKnown(true)&&0==this.size()*/",
+                    Assert.assertEquals("instance type HashSet<String>/*AnnotatedAPI.isKnown(true)&&0==this.size()*/",
                             d.currentValue().toString());
                 }
             }
@@ -372,7 +390,7 @@ public class Test_03_CompanionMethods extends CommonTestRunner {
                 Assert.assertEquals(2, matcher.group(0).length());
 
                 if ("00".equals(d.statementId())) {
-                    Assert.assertEquals("new HashSet<>()/*this.isKnown(true)&&0==this.size()*/",
+                    Assert.assertEquals("new HashSet<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/",
                             d.currentValue().toString());
                 }
             }

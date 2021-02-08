@@ -26,6 +26,7 @@ public record Text(String text, String debug) implements OutputElement {
 
     public Text(String text) {
         this(text, text);
+        assert text != null && !text.isBlank();
     }
 
 

@@ -49,12 +49,11 @@ public record Symbol(String symbol, Space left, Space right, String constant) im
     public static final Symbol RIGHT_BRACE = new Symbol("}", ONE_IS_NICE_SPLIT_BEGIN_END, ONE_IS_NICE_EASY_SPLIT, "RIGHT_BRACE");
 
     public static final Symbol LEFT_BRACKET = new Symbol("[", NONE, NO_SPACE_SPLIT_ALLOWED, "LEFT_BRACKET");
-    public static final Symbol RIGHT_BRACKET = new Symbol("]", NONE, ONE_IS_NICE_EASY_SPLIT, "RIGHT_BRACKET");
+    public static final Symbol RIGHT_BRACKET = new Symbol("]", NONE, RELAXED_NO_SPACE_SPLIT_ALLOWED, "RIGHT_BRACKET");
 
     public static final Symbol LEFT_ANGLE_BRACKET = new Symbol("<", NONE, NONE, "LEFT_ANGLE_BRACKET");
-    public static final Symbol RIGHT_ANGLE_BRACKET = new Symbol(">", NONE, NONE, "RIGHT_ANGLE_BRACKET");
-    public static final Symbol DIAMOND = new Symbol("<>", NONE, NONE, "DIAMOND");
-
+    public static final Symbol RIGHT_ANGLE_BRACKET = new Symbol(">", NONE, ONE_IS_NICE_EASY_SPLIT, "RIGHT_ANGLE_BRACKET");
+    public static final Symbol AND_TYPES = binaryOperator("&");
 
     public static final Symbol LOGICAL_AND = binaryOperator("&&");
     public static final Symbol LOGICAL_OR = binaryOperator("||");

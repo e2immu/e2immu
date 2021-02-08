@@ -28,7 +28,10 @@ import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.output.Text;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -118,11 +121,15 @@ public class PropertyWrapper implements Expression, ExpressionWrapper {
 
     @Override
     public OutputBuilder output(Qualification qualification) {
-        return new OutputBuilder().add(expression.output(qualification))
-                .add(Symbol.LEFT_BLOCK_COMMENT)
-                .add(new Text(properties.entrySet().stream().filter(e -> e.getValue() > e.getKey().falseValue)
-                        .map(e -> e.getKey().toString()).sorted().collect(Collectors.joining(","))))
-                .add(Symbol.RIGHT_BLOCK_COMMENT);
+        String propertyString = properties.entrySet().stream().filter(e -> e.getValue() > e.getKey().falseValue)
+                .map(e -> e.getKey().toString()).sorted().collect(Collectors.joining(","));
+        OutputBuilder outputBuilder = new OutputBuilder().add(expression.output(qualification));
+        if (!propertyString.isBlank()) {
+            outputBuilder.add(Symbol.LEFT_BLOCK_COMMENT)
+                    .add(new Text(propertyString))
+                    .add(Symbol.RIGHT_BLOCK_COMMENT);
+        }
+        return outputBuilder;
     }
 
     @Override

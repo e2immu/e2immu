@@ -24,6 +24,7 @@ import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
+import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -37,23 +38,24 @@ public class Test_Own_01_SMapList extends CommonTestRunner {
     EvaluationResultVisitor evaluationResultVisitor = d -> {
         if ("addAll".equals(d.methodInfo().name)) {
             if ("1.0.0".equals(d.statementId())) {
-                String expectValue = d.iteration() == 0 ? "<method:java.util.Map.get(Object)>" : "dest.get(e$1.getKey())";
+                String expectValue = d.iteration() == 0 ? "<method:java.util.Map.get(java.lang.Object)>" : "dest.get(e$1.getKey())";
                 Assert.assertEquals(expectValue, d.evaluationResult().value().toString());
             }
             if ("1.0.1".equals(d.statementId())) {
-                String expectValue = d.iteration() == 0 ? "null==<method:java.util.Map.get(Object)>" : "null==dest.get(e$1.getKey())";
+                String expectValue = d.iteration() == 0 ? "null==<method:java.util.Map.get(java.lang.Object)>" : "null==dest.get(e$1.getKey())";
                 Assert.assertEquals(expectValue, d.evaluationResult().value().toString());
             }
             if ("1".equals(d.statementId())) {
-                Assert.assertEquals("instance type Set<Map.Entry<K, V>>", d.evaluationResult().value().toString());
+                Assert.assertEquals("instance type Set<Entry<K,V>>", d.evaluationResult().value().toString());
             }
         }
     };
 
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
         if ("list".equals(d.methodInfo().name)) {
-            final String RET_VAR = "org.e2immu.analyser.util.SMapList.list(Map<A, List<B>>,A)";
-            if (RET_VAR.equals(d.variableName())) {
+            final String RET_VAR = "org.e2immu.analyser.util.SMapList.list(java.util.Map<A,java.util.List<B>>,A)";
+            if (d.variable() instanceof ReturnVariable retVar) {
+                Assert.assertEquals(RET_VAR, retVar.fqn);
                 if ("2".equals(d.statementId())) {
                     // note the absence of null!=a
                     Assert.assertEquals("null==map.get(a)?List.of():<return value>", d.currentValue().toString());
@@ -93,18 +95,18 @@ public class Test_Own_01_SMapList extends CommonTestRunner {
 
         if ("addAll".equals(d.methodInfo().name)) {
             if ("e".equals(d.variableName()) && "1.0.0".equals(d.statementId())) {
-                String expectValue = d.iteration() == 0 ? "<variable:e>" : "instance type Entry<A, List<B>>";
+                String expectValue = d.iteration() == 0 ? "<variable:e>" : "instance type Entry<A,List<B>>";
                 Assert.assertEquals(expectValue, d.currentValue().toString());
             }
             if (d.variable() instanceof ParameterInfo dest && dest.name.equals("dest")) {
                 if ("0".equals(d.statementId())) {
-                    Assert.assertEquals("nullable? instance type Map<A, List<B>>", d.currentValue().toString());
+                    Assert.assertEquals("nullable? instance type Map<A,List<B>>", d.currentValue().toString());
                     Assert.assertEquals("", d.variableInfo().getLinkedVariables().toString());
                 }
             }
             if ("inDest".equals(d.variableName())) {
                 if ("1.0.0".equals(d.statementId())) {
-                    String expectValue = d.iteration() == 0 ? "<method:java.util.Map.get(Object)>" : "dest.get(e$1.getKey())";
+                    String expectValue = d.iteration() == 0 ? "<method:java.util.Map.get(java.lang.Object)>" : "dest.get(e$1.getKey())";
                     Assert.assertEquals(expectValue, d.currentValue().toString());
                 }
             }
@@ -119,7 +121,7 @@ public class Test_Own_01_SMapList extends CommonTestRunner {
                 }
                 // 2nd branch, merge of an if-statement
                 if ("1.0.1.1.0".equals(d.statementId())) {
-                    String expectValue = d.iteration() == 0 ? "<method:java.util.List.addAll(Collection<? extends E>)>&&<state>"
+                    String expectValue = d.iteration() == 0 ? "<method:java.util.List.addAll(java.util.Collection<? extends E>)>&&<state>"
                             : "dest.get(e$1.getKey()).addAll(e$1.getValue())";
                     Assert.assertEquals(expectValue, d.currentValue().toString());
                     int expectNotNull = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
@@ -129,7 +131,7 @@ public class Test_Own_01_SMapList extends CommonTestRunner {
                 }
                 // merge of the two above
                 if ("1.0.1".equals(d.statementId())) {
-                    String expectValue = d.iteration() == 0 ? "null==<method:java.util.Map.get(Object)>?<state>:<method:java.util.List.addAll(Collection<? extends E>)>&&<state>"
+                    String expectValue = d.iteration() == 0 ? "null==<method:java.util.Map.get(java.lang.Object)>?<state>:<method:java.util.List.addAll(java.util.Collection<? extends E>)>&&<state>"
                             : "null==dest.get(e$1.getKey())?change$1||null==dest.get(e$1.getKey()):dest.get(e$1.getKey()).addAll(e$1.getValue())";
                     Assert.assertEquals(expectValue, d.currentValue().toString());
                     int expectNotNull = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
@@ -195,7 +197,8 @@ public class Test_Own_01_SMapList extends CommonTestRunner {
                 Assert.assertSame(CONDITIONALLY, d.statementAnalysis().flowData.getGuaranteedToBeReachedInMethod());
             }
             if ("1.0.1.1.0".equals(d.statementId())) {
-                String expectCondition = d.iteration() == 0 ? "null!=<method:java.util.Map.get(Object)>" : "null!=dest.get(e$1.getKey())";
+                String expectCondition = d.iteration() == 0 ? "null!=<method:java.util.Map.get(java.lang.Object)>"
+                        : "null!=dest.get(e$1.getKey())";
                 Assert.assertEquals(expectCondition, d.condition().toString());
             }
         }

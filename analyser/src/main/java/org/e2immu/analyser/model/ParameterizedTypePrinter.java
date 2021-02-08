@@ -17,16 +17,12 @@
 
 package org.e2immu.analyser.model;
 
+import org.e2immu.analyser.output.*;
 import org.e2immu.analyser.parser.InspectionProvider;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
-public record ParameterizedTypePrinter(boolean fullyQualified, boolean numericTypeParameters) {
-
-    public static final ParameterizedTypePrinter DISTINGUISHING = new ParameterizedTypePrinter(true, true);
-    public static final ParameterizedTypePrinter DEFAULT = new ParameterizedTypePrinter(false, false);
-    public static final ParameterizedTypePrinter DETAILED = new ParameterizedTypePrinter(true, false);
+public class ParameterizedTypePrinter {
 
     /**
      * It is important not too use the inspection provider too eagerly. During bootstrap of the java.lang classes,
@@ -38,56 +34,60 @@ public record ParameterizedTypePrinter(boolean fullyQualified, boolean numericTy
      * @param withoutArrays      don't print []
      * @return printed result
      */
-    public String print(InspectionProvider inspectionProvider,
-                        ParameterizedType parameterizedType,
-                        boolean varargs,
-                        Diamond diamond,
-                        boolean withoutArrays) {
-        return print(inspectionProvider, parameterizedType, varargs, diamond, withoutArrays, true, new HashSet<>());
+    public static OutputBuilder print(InspectionProvider inspectionProvider,
+                                      Qualification qualification,
+                                      ParameterizedType parameterizedType,
+                                      boolean varargs,
+                                      Diamond diamond,
+                                      boolean withoutArrays) {
+        return print(inspectionProvider, qualification, parameterizedType, varargs, diamond, withoutArrays, new HashSet<>());
     }
 
-    public String print(InspectionProvider inspectionProvider,
-                        ParameterizedType parameterizedType,
-                        boolean varargs,
-                        Diamond diamond,
-                        boolean withoutArrays,
-                        boolean keepItSimple,
-                        Set<TypeParameter> visitedTypeParameters) {
-        StringBuilder sb = new StringBuilder();
+    public static OutputBuilder print(InspectionProvider inspectionProvider,
+                                      Qualification qualification,
+                                      ParameterizedType parameterizedType,
+                                      boolean varargs,
+                                      Diamond diamond,
+                                      boolean withoutArrays,
+                                      Set<TypeParameter> visitedTypeParameters) {
+        OutputBuilder outputBuilder = new OutputBuilder();
         switch (parameterizedType.wildCard) {
             case UNBOUND:
-                sb.append("?");
+                outputBuilder.add(new Text("?"));
                 break;
             case EXTENDS:
-                sb.append("? extends ");
+                outputBuilder.add(new Text("?")).add(Space.ONE).add(new Text("extends")).add(Space.ONE);
                 break;
             case SUPER:
-                sb.append("? super ");
+                outputBuilder.add(new Text("?")).add(Space.ONE).add(new Text("super")).add(Space.ONE);
                 break;
             case NONE:
         }
         TypeParameter tp = parameterizedType.typeParameter;
         if (tp != null) {
-            if (numericTypeParameters) {
-                sb.append(tp.isMethodTypeParameter() ? "M" : "T").append(tp.getIndex());
+            if (qualification.useNumericTypeParameters()) {
+                outputBuilder.add(new Text((tp.isMethodTypeParameter() ? "M" : "T") + tp.getIndex()));
             } else {
                 if (visitedTypeParameters.add(tp)) {
-                    sb.append(tp.print(inspectionProvider, visitedTypeParameters));
+                    outputBuilder.add(tp.output(inspectionProvider, qualification, visitedTypeParameters));
                 } else {
-                    sb.append(tp.simpleName());
+                    outputBuilder.add(new Text(tp.simpleName()));
                 }
             }
         } else if (parameterizedType.typeInfo != null) {
             if (parameterizedType.parameters.isEmpty()) {
-                sb.append(typeName(parameterizedType.typeInfo, keepItSimple, false));
+                outputBuilder.add(new TypeName(parameterizedType.typeInfo, qualification.qualifierRequired(parameterizedType.typeInfo)));
             } else {
+                OutputBuilder sub;
                 if (parameterizedType.typeInfo.isPrimaryType() ||
                         inspectionProvider.getTypeInspection(parameterizedType.typeInfo).isStatic()) { // shortcut
-                    sb.append(singleType(inspectionProvider, parameterizedType.typeInfo, diamond, keepItSimple, false,
-                            parameterizedType.parameters, visitedTypeParameters));
+                    sub = singleType(inspectionProvider, qualification, parameterizedType.typeInfo, diamond, false,
+                            parameterizedType.parameters, visitedTypeParameters);
                 } else {
-                    sb.append(distributeTypeParameters(inspectionProvider, parameterizedType, visitedTypeParameters, diamond, keepItSimple));
+                    sub = distributeTypeParameters(inspectionProvider, qualification, parameterizedType,
+                            visitedTypeParameters, diamond);
                 }
+                outputBuilder.add(sub);
             }
         }
         if (!withoutArrays) {
@@ -95,35 +95,21 @@ public record ParameterizedTypePrinter(boolean fullyQualified, boolean numericTy
                 if (parameterizedType.arrays == 0) {
                     throw new UnsupportedOperationException("Varargs parameterized types must have arrays>0!");
                 }
-                sb.append("[]".repeat(parameterizedType.arrays - 1)).append("...");
-            } else {
-                sb.append("[]".repeat(parameterizedType.arrays));
+                outputBuilder.add(new Text(("[]".repeat(parameterizedType.arrays - 1) + "...")));
+            } else if (parameterizedType.arrays > 0) {
+                outputBuilder.add(new Text("[]".repeat(parameterizedType.arrays)));
             }
         }
-        return sb.toString();
-    }
-
-    private String typeName(TypeInfo typeInfo, boolean keepItSimple, boolean forceSimple) {
-        if (forceSimple) {
-            return typeInfo.simpleName;
-        }
-        if (fullyQualified) {
-            return typeInfo.fullyQualifiedName;
-        }
-        if (keepItSimple) {
-            return typeInfo.simpleName;
-        }
-        // join up to primary type...
-        return typeInfo.fromPrimaryTypeDownwards();
+        return outputBuilder;
     }
 
     // if a type is a sub-type, the type parameters may belong to any of the intermediate types
     // we should write them there
-    private String distributeTypeParameters(InspectionProvider inspectionProvider,
-                                            ParameterizedType parameterizedType,
-                                            Set<TypeParameter> visitedTypeParameters,
-                                            Diamond diamond,
-                                            boolean keepItSimple) {
+    private static OutputBuilder distributeTypeParameters(InspectionProvider inspectionProvider,
+                                                          Qualification qualification,
+                                                          ParameterizedType parameterizedType,
+                                                          Set<TypeParameter> visitedTypeParameters,
+                                                          Diamond diamond) {
         TypeInfo typeInfo = parameterizedType.typeInfo;
         assert typeInfo != null;
         List<TypeAndParameters> taps = new LinkedList<>();
@@ -148,30 +134,36 @@ public record ParameterizedTypePrinter(boolean fullyQualified, boolean numericTy
             taps.add(0, new TypeAndParameters(typeInfo, next == null, typesForTypeInfo));
             typeInfo = next;
         }
-        return taps.stream().map(tap -> singleType(inspectionProvider,
-                tap.typeInfo, diamond, keepItSimple, !tap.isPrimaryType, tap.typeParameters, visitedTypeParameters))
-                .collect(Collectors.joining("."));
+        return taps.stream().map(tap -> singleType(inspectionProvider, qualification,
+                tap.typeInfo, diamond, !tap.isPrimaryType, tap.typeParameters, visitedTypeParameters))
+                .collect(OutputBuilder.joining(Symbol.DOT));
     }
 
     static record TypeAndParameters(TypeInfo typeInfo, boolean isPrimaryType, List<ParameterizedType> typeParameters) {
     }
 
-    private String singleType(InspectionProvider inspectionProvider,
-                              TypeInfo typeInfo,
-                              Diamond diamond,
-                              boolean keepItSimple,
-                              boolean forceSimple,
-                              List<ParameterizedType> typeParameters,
-                              Set<TypeParameter> visitedTypeParameters) {
-        StringBuilder sb = new StringBuilder(typeName(typeInfo, keepItSimple, forceSimple));
-        if (!typeParameters.isEmpty() && diamond != Diamond.NO) {
-            sb.append("<");
-            if (diamond == Diamond.SHOW_ALL) {
-                sb.append(typeParameters.stream().map(tp -> print(inspectionProvider, tp, false, Diamond.SHOW_ALL, false, false,
-                        visitedTypeParameters)).collect(Collectors.joining(", ")));
-            }
-            sb.append(">");
+    private static OutputBuilder singleType(InspectionProvider inspectionProvider,
+                                            Qualification qualification,
+                                            TypeInfo typeInfo,
+                                            Diamond diamond,
+                                            boolean forceSimple, // when constructing an qualified with distributed type parameters
+                                            List<ParameterizedType> typeParameters,
+                                            Set<TypeParameter> visitedTypeParameters) {
+        OutputBuilder outputBuilder = new OutputBuilder();
+        if (forceSimple) {
+            outputBuilder.add(new Text(typeInfo.simpleName));
+        } else {
+            outputBuilder.add(new TypeName(typeInfo, qualification.qualifierRequired(typeInfo)));
         }
-        return sb.toString();
+        if (!typeParameters.isEmpty() && diamond != Diamond.NO) {
+            outputBuilder.add(Symbol.LEFT_ANGLE_BRACKET);
+            if (diamond == Diamond.SHOW_ALL) {
+                outputBuilder.add(typeParameters.stream().map(tp -> print(inspectionProvider, qualification,
+                        tp, false, Diamond.SHOW_ALL, false, visitedTypeParameters))
+                        .collect(OutputBuilder.joining(Symbol.COMMA)));
+            }
+            outputBuilder.add(Symbol.RIGHT_ANGLE_BRACKET);
+        }
+        return outputBuilder;
     }
 }

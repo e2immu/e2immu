@@ -28,27 +28,45 @@ E.g., even in minimal output mode, a field 'i' will need to be referred to as 't
 is a local variable or parameter named 'i'.
  */
 public interface Qualification {
-    Qualification EMPTY = new Qualification() {
-        @Override
-        public boolean qualifierRequired(Variable variable) {
-            return false;
-        }
 
-        @Override
-        public boolean qualifierRequired(MethodInfo methodInfo) {
-            return true;
-        }
+    /*
+    used for logging
+     */
+    Qualification EMPTY = typeInfo -> TypeName.Required.SIMPLE;
+
+    /*
+    used to generate names of parameterized types
+     */
+    Qualification DISTINGUISHING_NAME = new Qualification() {
 
         @Override
         public TypeName.Required qualifierRequired(TypeInfo typeInfo) {
-            return TypeName.Required.SIMPLE;
+            return TypeName.Required.FQN;
+        }
+
+        @Override
+        public boolean useNumericTypeParameters() {
+            return true;
         }
     };
 
-    /* for FieldReference and This */
-    boolean qualifierRequired(Variable variable);
+    /*
+    used to generate names of parameterized types
+    */
+    Qualification FULLY_QUALIFIED_NAME = typeInfo -> TypeName.Required.FQN;
 
-    boolean qualifierRequired(MethodInfo methodInfo);
+    default boolean useNumericTypeParameters() {
+        return false;
+    }
+
+    /* for FieldReference and This */
+    default boolean qualifierRequired(Variable variable) {
+        return false;
+    }
+
+    default boolean qualifierRequired(MethodInfo methodInfo) {
+        return true;
+    }
 
     TypeName.Required qualifierRequired(TypeInfo typeInfo);
 }

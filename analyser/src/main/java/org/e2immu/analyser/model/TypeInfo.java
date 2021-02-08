@@ -134,6 +134,8 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
             imports = Set.of();
             insideType = hasBeenInspected() ? new QualificationImpl(qualification) : new QualificationImpl();
         }
+        assert insideType != null;
+
         String[] typeModifiers;
         List<FieldInfo> fields;
         List<MethodInfo> constructors;
@@ -200,7 +202,8 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
 
             if (!typeParameters.isEmpty()) {
                 afterAnnotations.add(Symbol.LEFT_ANGLE_BRACKET);
-                afterAnnotations.add(typeParameters.stream().map(TypeParameter::output).collect(OutputBuilder.joining(Symbol.COMMA)));
+                afterAnnotations.add(typeParameters.stream().map(tp -> tp.output(insideType))
+                        .collect(OutputBuilder.joining(Symbol.COMMA)));
                 afterAnnotations.add(Symbol.RIGHT_ANGLE_BRACKET);
             }
             if (parentClass != null) {

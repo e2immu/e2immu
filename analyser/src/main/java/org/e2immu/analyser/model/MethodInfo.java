@@ -191,7 +191,8 @@ public class MethodInfo implements WithInspectionAndAnalysis {
 
         if (!inspection.getTypeParameters().isEmpty()) {
             afterAnnotations.add(Symbol.LEFT_ANGLE_BRACKET);
-            afterAnnotations.add(inspection.getTypeParameters().stream().map(TypeParameter::output).collect(OutputBuilder.joining(Symbol.COMMA)));
+            afterAnnotations.add(inspection.getTypeParameters().stream().map(tp -> tp.output(qualification))
+                    .collect(OutputBuilder.joining(Symbol.COMMA)));
             afterAnnotations.add(Symbol.RIGHT_ANGLE_BRACKET).add(Space.ONE);
         }
 

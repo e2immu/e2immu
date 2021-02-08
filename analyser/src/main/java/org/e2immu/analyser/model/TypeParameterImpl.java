@@ -22,13 +22,17 @@ import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.inspector.ParameterizedTypeFactory;
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.output.OutputBuilder;
+import org.e2immu.analyser.output.Space;
+import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.output.Text;
+import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.util.Either;
 import org.e2immu.analyser.util.SetOnce;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.INSPECT;
 import static org.e2immu.analyser.util.Logger.log;
@@ -90,8 +94,20 @@ public class TypeParameterImpl implements TypeParameter {
     }
 
     @Override
-    public OutputBuilder output() {
-        return new OutputBuilder().add(new Text(name));
+    public OutputBuilder output(InspectionProvider inspectionProvider,
+                                Qualification qualification,
+                                Set<TypeParameter> visitedTypeParameters) {
+        List<ParameterizedType> typeBounds = getTypeBounds();
+        OutputBuilder outputBuilder = new OutputBuilder().add(new Text(getName()));
+        if (!typeBounds.isEmpty()) {
+            outputBuilder.add(Space.ONE).add(new Text("extends")).add(Space.ONE);
+            outputBuilder.add(getTypeBounds()
+                    .stream()
+                    .map(pt -> ParameterizedTypePrinter.print(inspectionProvider, qualification, pt, false,
+                            Diamond.SHOW_ALL, false, visitedTypeParameters))
+                    .collect(OutputBuilder.joining(Symbol.AND_TYPES)));
+        }
+        return outputBuilder;
     }
 
     @Override

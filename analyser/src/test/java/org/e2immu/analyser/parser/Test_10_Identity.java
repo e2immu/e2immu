@@ -24,7 +24,7 @@ public class Test_10_Identity extends CommonTestRunner {
     TypeMapVisitor typeMapVisitor = typeMap -> {
         TypeInfo logger = typeMap.get(Logger.class);
         MethodInfo debug = logger.typeInspection.get().methodStream(TypeInspection.Methods.THIS_TYPE_ONLY)
-                .filter(m -> "org.slf4j.Logger.debug(String,Object...)".equals(m.fullyQualifiedName))
+                .filter(m -> "org.slf4j.Logger.debug(java.lang.String,java.lang.Object...)".equals(m.fullyQualifiedName))
                 .findFirst().orElseThrow();
         Assert.assertEquals(Level.FALSE, debug.methodAnalysis.get().getProperty(VariableProperty.MODIFIED));
 
@@ -208,7 +208,7 @@ public class Test_10_Identity extends CommonTestRunner {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("idem4".equals(d.methodInfo().name) && "1".equals(d.statementId())) {
                 // double property wrapper
-                String expect = d.iteration() == 0 ? "<method:java.lang.String.equals(Object)>?<method:org.e2immu.analyser.testexample.Identity_3.idem(String)>:<parameter:org.e2immu.analyser.testexample.Identity_3.idem4(String):0:s>"
+                String expect = d.iteration() == 0 ? "<method:java.lang.String.equals(java.lang.Object)>?<method:org.e2immu.analyser.testexample.Identity_3.idem(java.lang.String)>:<parameter:org.e2immu.analyser.testexample.Identity_3.idem4(java.lang.String):0:s>"
                         : "s/*@Immutable,@NotNull*//*@Immutable,@NotNull*/";
                 Assert.assertEquals(expect, d.evaluationResult().value().toString());
             }

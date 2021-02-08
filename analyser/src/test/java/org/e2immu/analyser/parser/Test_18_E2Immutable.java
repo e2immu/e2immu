@@ -158,7 +158,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("getMap7".equals(d.methodInfo().name) && "incremented".equals(d.variableName())) {
                 if("0".equals(d.statementId())) {
-                    String expectValue = d.iteration() == 0 ? "<new:Type java.util.HashMap<java.lang.String, org.e2immu.analyser.testexample.E2Immutable_7.SimpleContainer>>"
+                    String expectValue = d.iteration() == 0 ? "<new:Type java.util.HashMap<java.lang.String,org.e2immu.analyser.testexample.E2Immutable_7.SimpleContainer>>"
                             : "new HashMap<>(map7)/*this.size()==map7.size()*/";
                     Assert.assertEquals(expectValue, d.currentValue().toString());
                     String expectLinked = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "";

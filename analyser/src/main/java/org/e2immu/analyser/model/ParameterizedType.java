@@ -24,7 +24,6 @@ import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.inspector.MethodTypeParameterMap;
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.output.OutputBuilder;
-import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
@@ -162,16 +161,13 @@ public class ParameterizedType {
     }
 
     public OutputBuilder output(Qualification qualification) {
-        return new OutputBuilder().add(new Text(print()));
+        return ParameterizedTypePrinter.print(InspectionProvider.DEFAULT, qualification, this,
+                false, Diamond.SHOW_ALL, false);
     }
 
     public OutputBuilder output(Qualification qualification, boolean varArgs, Diamond diamond) {
-        // FIXME
-        return new OutputBuilder().add(new Text(print(varArgs, diamond)));
-    }
-
-    private String print(boolean varargs, Diamond diamond) {
-        return ParameterizedTypePrinter.DEFAULT.print(InspectionProvider.DEFAULT, this, varargs, diamond, false);
+        return ParameterizedTypePrinter.print(InspectionProvider.DEFAULT, qualification, this, varArgs, diamond,
+                false);
     }
 
     @Override
@@ -183,25 +179,24 @@ public class ParameterizedType {
     used in MethodItem (XML)
      */
     public String print() {
-        return ParameterizedTypePrinter.DEFAULT.print(InspectionProvider.DEFAULT, this, false, Diamond.SHOW_ALL, false);
+        return ParameterizedTypePrinter.print(InspectionProvider.DEFAULT, Qualification.FULLY_QUALIFIED_NAME,
+                this, false, Diamond.SHOW_ALL, false).toString();
+    }
+
+    /*
+    Used in NewObject, kept simple for debugging; will never reach real output
+     */
+    public String printSimple() {
+        return ParameterizedTypePrinter.print(InspectionProvider.DEFAULT, Qualification.EMPTY,
+                this, false, Diamond.SHOW_ALL, false).toString();
     }
 
     /*
     used to compute a method's FQN
      */
     public String printForMethodFQN(InspectionProvider inspectionProvider, boolean varargs, Diamond diamond) {
-        return ParameterizedTypePrinter.DEFAULT.print(inspectionProvider, this, varargs, diamond, false);
-    }
-
-    /*
-    part of the recursive system of type parameters
-     */
-    public String printInTypeParameter(InspectionProvider inspectionProvider,
-                                       boolean varargs,
-                                       Diamond diamond,
-                                       Set<TypeParameter> visitedTypeParameters,
-                                       boolean keepItSimple) {
-        return ParameterizedTypePrinter.DEFAULT.print(inspectionProvider, this, varargs, diamond, false, keepItSimple, visitedTypeParameters);
+        return ParameterizedTypePrinter.print(inspectionProvider, Qualification.FULLY_QUALIFIED_NAME,
+                this, varargs, diamond, false).toString();
     }
 
     /**
@@ -212,21 +207,24 @@ public class ParameterizedType {
      * Tn or Mn, with n the index, and T for type, M for method
      */
     public String distinguishingName(InspectionProvider inspectionProvider, boolean varArgs) {
-        return ParameterizedTypePrinter.DISTINGUISHING.print(inspectionProvider, this, varArgs, Diamond.SHOW_ALL, false);
+        return ParameterizedTypePrinter.print(inspectionProvider, Qualification.DISTINGUISHING_NAME,
+                this, varArgs, Diamond.SHOW_ALL, false).toString();
     }
 
     /*
     used in ASM, comparators, unevaluated method call
      */
     public String detailedString() {
-        return ParameterizedTypePrinter.DETAILED.print(InspectionProvider.DEFAULT, this, false, Diamond.SHOW_ALL, false);
+        return ParameterizedTypePrinter.print(InspectionProvider.DEFAULT, Qualification.FULLY_QUALIFIED_NAME,
+                this, false, Diamond.SHOW_ALL, false).toString();
     }
 
     /*
     for logging purposes only
      */
     public String detailedStringLogDuringInspection(InspectionProvider inspectionProvider) {
-        return ParameterizedTypePrinter.DETAILED.print(inspectionProvider, this, false, Diamond.SHOW_ALL, false);
+        return ParameterizedTypePrinter.print(inspectionProvider, Qualification.FULLY_QUALIFIED_NAME,
+                this, false, Diamond.SHOW_ALL, false).toString();
     }
 
     @Override

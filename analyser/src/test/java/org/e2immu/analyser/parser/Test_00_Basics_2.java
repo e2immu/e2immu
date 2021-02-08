@@ -33,13 +33,13 @@ import java.util.Set;
 public class Test_00_Basics_2 extends CommonTestRunner {
 
     private static final String TYPE = "org.e2immu.analyser.testexample.Basics_2";
-    private static final String STRING_PARAMETER = TYPE + ".setString(String):0:string";
+    private static final String STRING_PARAMETER = TYPE + ".setString(java.lang.String):0:string";
     private static final String STRING_FIELD = TYPE + ".string";
     private static final String THIS = TYPE + ".this";
-    private static final String COLLECTION = TYPE + ".add(Collection<String>):0:collection";
+    private static final String COLLECTION = TYPE + ".add(java.util.Collection<java.lang.String>):0:collection";
     private static final String METHOD_VALUE_ADD = "collection.add(org.e2immu.analyser.testexample.Basics_2.string$0)";
     private static final String RETURN_GET_STRING = TYPE + ".getString()";
-    private static final String ADD = TYPE + ".add(Collection<String>)";
+    private static final String ADD = TYPE + ".add(java.util.Collection<java.lang.String>)";
 
     public Test_00_Basics_2() {
         super(true);
@@ -73,7 +73,7 @@ public class Test_00_Basics_2 extends CommonTestRunner {
                 if (d.iteration() == 0) {
                     Assert.assertEquals("0" + VariableInfoContainer.Level.EVALUATION, d.variableInfo().getReadId());
                     Assert.assertTrue(d.variableInfoContainer().hasEvaluation());
-                    Assert.assertEquals("<parameter:org.e2immu.analyser.testexample.Basics_2.add(Collection<String>):0:collection>", d.currentValue().toString());
+                    Assert.assertEquals("<parameter:org.e2immu.analyser.testexample.Basics_2.add(java.util.Collection<java.lang.String>):0:collection>", d.currentValue().toString());
                     Assert.assertTrue(d.currentValueIsDelayed());
                 } else {
                     Assert.assertEquals("instance type Collection<String>/*this.contains(org.e2immu.analyser.testexample.Basics_2.string$0)*/",

@@ -249,9 +249,7 @@ public class Test_04_Warnings extends CommonTestRunner {
             if ("testDeadCode".equals(d.methodInfo().name)) {
                 if ("1".equals(d.statementId())) {
                     Assert.assertNotNull(d.haveError(Message.CONDITION_EVALUATES_TO_CONSTANT));
-                    Assert.assertNotNull(d.haveError(Message.UNREACHABLE_STATEMENT)); // copied up
                 }
-                // this one does not render a dead-code error, because its parent already has an error raised
                 if ("1.0.0".equals(d.statementId())) {
                     Assert.assertNotNull(d.haveError(Message.UNREACHABLE_STATEMENT));
                 }
@@ -303,7 +301,7 @@ public class Test_04_Warnings extends CommonTestRunner {
                     }
                     if ("1".equals(d.statementId())) {
                         String expectValue = d.iteration() == 0 ?
-                                "<parameter:org.e2immu.analyser.testexample.Warnings_5.ChildClass.$1.apply(String):0:s>" :
+                                "<parameter:org.e2immu.analyser.testexample.Warnings_5.ChildClass.$1.apply(java.lang.String):0:s>" :
                                 "nullable? instance type String";
                         Assert.assertEquals(expectValue, d.currentValue().toString());
                     }

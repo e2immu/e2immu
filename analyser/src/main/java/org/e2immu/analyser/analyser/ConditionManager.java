@@ -261,7 +261,7 @@ public record ConditionManager(Expression condition,
         // those parts that have nothing to do with individual clauses
         Expression rest = filterResult.rest();
         Expression mine = rest.isBoolValueTrue() ? rest :
-                Negation.negate(new EvaluationContextImpl(evaluationContext.getPrimitives()), rest);
+                Negation.negate(new EvaluationContextImpl(evaluationContext.getAnalyserContext()), rest);
 
         if (parent == null) return mine;
         Expression fromParent = parent.precondition(evaluationContext);
@@ -285,11 +285,16 @@ public record ConditionManager(Expression condition,
         return filterResult.accepted().getOrDefault(variable, filter.getDefaultRest());
     }
 
-    public static record EvaluationContextImpl(Primitives primitives) implements EvaluationContext {
+    public static record EvaluationContextImpl(AnalyserContext analyserContext) implements EvaluationContext {
+
+        @Override
+        public AnalyserContext getAnalyserContext() {
+            return analyserContext;
+        }
 
         @Override
         public Primitives getPrimitives() {
-            return primitives;
+            return analyserContext.getPrimitives();
         }
 
         @Override

@@ -66,8 +66,7 @@ public class EvaluateMethodCall {
         if (ShallowTypeAnalyser.IS_KNOWN_FQN.equals(methodInfo.fullyQualifiedName) &&
                 !evaluationContext.getAnalyserContext().inAnnotatedAPIAnalysis() &&
                 parameters.get(0) instanceof BooleanConstant boolValue) {
-            Expression object = new VariableExpression(new This(evaluationContext.getAnalyserContext(), methodInfo.typeInfo));
-            Expression clause = new MethodCall(object, methodInfo,
+            Expression clause = new MethodCall(objectValue, methodInfo,
                     List.of(new BooleanConstant(evaluationContext.getPrimitives(), true)), objectFlowOfResult);
             if (boolValue.constant()) {
                 Filter filter = new Filter(evaluationContext, Filter.FilterMode.ACCEPT);
