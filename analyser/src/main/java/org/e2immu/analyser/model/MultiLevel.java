@@ -40,7 +40,7 @@ public class MultiLevel {
     public static final int EVENTUALLY_NOT_NULL = compose(EVENTUAL);
 
     public static final int EVENTUALLY_E2IMMUTABLE = compose(EVENTUAL, EVENTUAL);
-    public static final int EVENTUALLY_E1IMMUTABLE = compose(EVENTUAL);
+    public static final int EVENTUALLY_E1IMMUTABLE = compose(EVENTUAL, FALSE);
 
     public static final int EVENTUALLY_CONTENT2_NOT_NULL_AFTER_MARK = compose(EVENTUAL_AFTER, EVENTUAL_AFTER, EVENTUAL_AFTER);
     public static final int EVENTUALLY_CONTENT_NOT_NULL_AFTER_MARK = compose(EVENTUAL_AFTER, EVENTUAL_AFTER);

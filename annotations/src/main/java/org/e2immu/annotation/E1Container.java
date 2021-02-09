@@ -46,5 +46,8 @@ public @interface E1Container {
      * This is a short-hand for adding <code>@Only(framework=true) @Mark("framework")</code> on all modifying methods,
      * and setting <code>after="framework"</code> on this annotation.
      */
-    boolean framework() default false;
+    /*
+     IMPROVE
+     boolean framework() default false;
+     */
 }

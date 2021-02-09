@@ -89,7 +89,7 @@ public interface MethodAnalysis extends Analysis {
      * @return null when the method has no MarkAndOnly
      */
     default MarkAndOnly getMarkAndOnly() {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     // ************* object flow

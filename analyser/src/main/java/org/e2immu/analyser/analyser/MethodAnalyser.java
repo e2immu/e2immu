@@ -22,7 +22,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.analyser.check.CheckConstant;
-import org.e2immu.analyser.analyser.check.CheckOnly;
+import org.e2immu.analyser.analyser.check.CheckMarkOnly;
 import org.e2immu.analyser.analyser.check.CheckPrecondition;
 import org.e2immu.analyser.config.MethodAnalyserVisitor;
 import org.e2immu.analyser.inspector.MethodResolution;
@@ -264,8 +264,8 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
 
         CheckPrecondition.checkPrecondition(messages, methodInfo, methodAnalysis, companionAnalyses);
 
-        CheckOnly.checkOnly(messages, methodInfo, methodAnalysis);
-        CheckOnly.checkMark(messages, methodInfo, methodAnalysis);
+        CheckMarkOnly.checkOnly(messages, methodInfo, methodAnalysis);
+        CheckMarkOnly.checkMark(messages, methodInfo, methodAnalysis);
 
         getParameterAnalysers().forEach(ParameterAnalyser::check);
 
@@ -507,7 +507,14 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
 
         TypeInfo typeInfo = methodInfo.typeInfo;
         while (true) {
-            boolean haveNonFinalFields = myFieldAnalysers.values().stream().anyMatch(fa -> fa.fieldAnalysis.getProperty(VariableProperty.FINAL) == Level.FALSE);
+            boolean haveDelayOnFinalFields = myFieldAnalysers.values()
+                    .stream().anyMatch(fa -> fa.fieldAnalysis.getProperty(VariableProperty.FINAL) == Level.DELAY);
+            if (haveDelayOnFinalFields) {
+                log(DELAYED, "Delaying @Mark/@Only in {} until we know about @Final of fields", methodInfo.fullyQualifiedName);
+                return DELAYS;
+            }
+            boolean haveNonFinalFields = myFieldAnalysers.values()
+                    .stream().anyMatch(fa -> fa.fieldAnalysis.getProperty(VariableProperty.FINAL) == Level.FALSE);
             if (haveNonFinalFields) {
                 break;
             }

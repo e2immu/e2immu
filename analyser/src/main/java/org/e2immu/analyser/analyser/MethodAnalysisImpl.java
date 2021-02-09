@@ -276,7 +276,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
                     getObjectFlow(),
                     ImmutableSet.copyOf(internalObjectFlows.getOrElse(Set.of())),
                     ImmutableList.copyOf(preconditionForMarkAndOnly.getOrElse(List.of())),
-                    markAndOnly.getOrElse(null),
+                    getMarkAndOnly(),
                     complainedAboutMissingStaticModifier.getOrElse(false),
                     complainedAboutApprovedPreconditions.getOrElse(false),
                     getPrecondition(),
@@ -417,12 +417,12 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
 
         @Override
         public List<Expression> getPreconditionForMarkAndOnly() {
-            return null;
+            return preconditionForMarkAndOnly.getOrElse(null);
         }
 
         @Override
         public MarkAndOnly getMarkAndOnly() {
-            return null;
+            return markAndOnly.getOrElse(null);
         }
 
         @Override

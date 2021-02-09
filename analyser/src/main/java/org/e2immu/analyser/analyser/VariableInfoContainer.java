@@ -76,6 +76,15 @@ public interface VariableInfoContainer {
     }
 
     /*
+    method is here so we know we need to search for - and :
+     */
+    static String statementId(String assignmentId) {
+        assert assignmentId.endsWith(Level.INITIAL.label) || assignmentId.endsWith(Level.EVALUATION.label)
+                || assignmentId.endsWith(Level.MERGE.label);
+        return assignmentId.substring(0, assignmentId.length() - 2);
+    }
+
+    /*
     explicit freezing (DONE at the end of statement analyser): forbid any future writing
      */
     void freeze();

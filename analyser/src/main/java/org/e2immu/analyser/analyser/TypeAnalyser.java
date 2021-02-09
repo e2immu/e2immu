@@ -20,6 +20,7 @@ package org.e2immu.analyser.analyser;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import org.e2immu.analyser.analyser.check.CheckEventual;
 import org.e2immu.analyser.config.TypeAnalyserVisitor;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.And;
@@ -207,13 +208,14 @@ public class TypeAnalyser extends AbstractAnalyser {
         log(ANALYSER, "\n******\nAnnotation validation on type {}\n******", typeInfo.fullyQualifiedName);
 
         check(typeInfo, UtilityClass.class, e2.utilityClass);
-        check(typeInfo, E1Immutable.class, e2.e1Immutable);
-        check(typeInfo, E1Container.class, e2.e1Container);
         check(typeInfo, ExtensionClass.class, e2.extensionClass);
-        check(typeInfo, Container.class, e2.container);
-        check(typeInfo, E2Immutable.class, e2.e2Immutable);
-        check(typeInfo, E2Container.class, e2.e2Container);
         check(typeInfo, Independent.class, e2.independent);
+        check(typeInfo, Container.class, e2.container);
+
+        CheckEventual.check(messages, typeInfo, E1Immutable.class, e2.e1Immutable, typeAnalysis);
+        CheckEventual.check(messages, typeInfo, E1Container.class, e2.e1Container, typeAnalysis);
+        CheckEventual.check(messages, typeInfo, E2Immutable.class, e2.e2Immutable, typeAnalysis);
+        CheckEventual.check(messages, typeInfo, E2Container.class, e2.e2Container, typeAnalysis);
 
         // opposites
         check(typeInfo, MutableModifiesArguments.class, e2.mutableModifiesArguments);
@@ -437,7 +439,10 @@ public class TypeAnalyser extends AbstractAnalyser {
         return DONE;
     }
 
-    private void handlePrecondition(@NotModified MethodAnalyser methodAnalyser, Expression precondition, Map<String, Expression> tempApproved, int iteration) {
+    private void handlePrecondition(MethodAnalyser methodAnalyser,
+                                    Expression precondition,
+                                    Map<String, Expression> tempApproved,
+                                    int iteration) {
         EvaluationContext evaluationContext = new EvaluationContextImpl(iteration,
                 ConditionManager.initialConditionManager(analyserContext.getPrimitives()), null);
         Expression negated = Negation.negate(evaluationContext, precondition);
@@ -470,18 +475,20 @@ public class TypeAnalyser extends AbstractAnalyser {
             // fieldSummaries are set after the first iteration
             return methodAnalyser.getFieldAsVariableStream(fieldInfo, false).anyMatch(variableInfo -> {
                 boolean assigned = variableInfo.isAssigned();
-                log(MARK, "Field {} is assigned in {}? {}", variable.fullyQualifiedName(),
-                        methodAnalyser.methodInfo.distinguishingName(), assigned);
+                if (!assigned) return false;
 
-                String index = variableInfo.getAssignmentId().substring(0, variableInfo.getAssignmentId().indexOf(':'));
+                String index = VariableInfoContainer.statementId(variableInfo.getAssignmentId());
+                log(MARK, "Field {} is assigned in {}, {}", variable.fullyQualifiedName(),
+                        methodAnalyser.methodInfo.distinguishingName(), index);
+
                 StatementAnalysis statementAnalysis = methodAnalyser.findStatementAnalysis(index);
-                Expression state = statementAnalysis.methodLevelData.getCombinedPrecondition();
-                // state == null means: delay -- is this correct? TODO
-                if (assigned && state != null && isCompatible(evaluationContext, state, precondition)) {
+                Expression state = statementAnalysis.stateData.getConditionManagerForNextStatement().state();
+
+                if (isCompatible(evaluationContext, state, precondition)) {
                     log(MARK, "We checked, and found the state {} compatible with the precondition {}", state, precondition);
                     return false;
                 }
-                return assigned;
+                return true;
             });
         }
         return false;
@@ -731,11 +738,11 @@ public class TypeAnalyser extends AbstractAnalyser {
                 typeAnalysis.setProperty(VariableProperty.IMMUTABLE, MultiLevel.MUTABLE);
                 return DONE;
             }
-            myWhenE2Fails = MultiLevel.compose(MultiLevel.EVENTUALLY_E1IMMUTABLE, MultiLevel.FALSE);
+            myWhenE2Fails = MultiLevel.compose(MultiLevel.EVENTUAL, MultiLevel.FALSE);
             e1Component = MultiLevel.EVENTUAL;
             eventual = true;
         } else {
-            myWhenE2Fails = MultiLevel.compose(MultiLevel.EFFECTIVELY_E1IMMUTABLE, MultiLevel.FALSE);
+            myWhenE2Fails = MultiLevel.compose(MultiLevel.EFFECTIVE, MultiLevel.FALSE);
             e1Component = MultiLevel.EFFECTIVE;
             eventual = false;
         }

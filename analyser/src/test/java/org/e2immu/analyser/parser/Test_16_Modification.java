@@ -828,4 +828,15 @@ public class Test_16_Modification extends CommonTestRunner {
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
+    @Test
+    public void test14() throws IOException {
+        testClass("Modification_14", 0, 0, new DebugConfiguration.Builder()
+                .build());
+    }
+
+    @Test
+    public void test15() throws IOException {
+        testClass("Modification_15", 0, 1, new DebugConfiguration.Builder()
+                .build());
+    }
 }

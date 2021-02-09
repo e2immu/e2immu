@@ -2,12 +2,13 @@ package org.e2immu.analyser.testexample;
 
 import org.e2immu.annotation.*;
 
+/*
+copy of EventuallyE1Immutable_0, with an additional setter which modifies input but obviously does
+not assign it (it is final).
+ */
 @E1Container(after = "string")
-public class EventuallyE1Immutable_0 {
+public class EventuallyE1Immutable_3 {
 
-    /* the presence of a field of the TwoIntegers type ensures that EventuallyE1Immutable_0 is not
-    level 2 immutable.
-     */
     @Container
     public static class TwoIntegers {
         private int i;
@@ -31,11 +32,11 @@ public class EventuallyE1Immutable_0 {
     }
 
     @NotNull
-    @NotModified
+    @Modified
     public final TwoIntegers input;
     private String string;
 
-    public EventuallyE1Immutable_0(@NotModified TwoIntegers input) {
+    public EventuallyE1Immutable_3(@Modified TwoIntegers input) {
         if (input == null) throw new NullPointerException();
         this.input = input;
     }
@@ -63,5 +64,10 @@ public class EventuallyE1Immutable_0 {
     @NotModified
     public int getI() {
         return input.i;
+    }
+
+    @Modified
+    public void setI(int i) {
+        input.setI(i);
     }
 }

@@ -51,7 +51,7 @@ public record CheckLinks(Primitives primitives, E2ImmuAnnotationExpressions e2) 
                 new Location(fieldInfo));
     }
 
-    // also used by @Constant in CheckConstant
+    // also used by @Constant in CheckConstant, by @E1Immutable, @E2Immutable etc. in CheckEventual
     public static void checkAnnotationWithValue(Messages messages,
                                                 AbstractAnalysisBuilder analysis,
                                                 String annotationFqn,
@@ -92,13 +92,12 @@ public record CheckLinks(Primitives primitives, E2ImmuAnnotationExpressions e2) 
             }
             return;
         }
-        if (computedValue == null) {
+        if (computedValue == null || inAnalysis == null) {
             messages.add(Message.newMessage(where, Message.ANNOTATION_ABSENT, annotationSimpleName));
             analysis.annotationChecks.put(new AnnotationExpressionImpl(annotationTypeInfo, List.of()),
                     Analysis.AnnotationCheck.MISSING);
             return;
         }
-        assert inAnalysis != null;
 
         String requiredValue = extractInspected.apply(optAnnotationInInspection.get());
 

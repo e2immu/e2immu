@@ -712,7 +712,10 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
 
         if (status == DONE && evaluationResult.precondition() != null) {
             boolean preconditionIsDelayed = sharedState.evaluationContext.isDelayed(evaluationResult.precondition());
-            statementAnalysis.stateData.setPrecondition(evaluationResult.precondition(), preconditionIsDelayed);
+            Expression translated = sharedState.evaluationContext.acceptAndTranslatePrecondition(evaluationResult.precondition());
+            if (translated != null) {
+                statementAnalysis.stateData.setPrecondition(translated, preconditionIsDelayed);
+            }
         }
         if (status == DONE && !statementAnalysis.methodLevelData.internalObjectFlows.isFrozen()) {
             boolean delays = false;
@@ -1309,7 +1312,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         switchStatement.labels().forEach(label -> {
             Expression labelEqualsSwitchExpression = Equals.equals(sharedState.evaluationContext,
                     label, switchExpression, ObjectFlow.NO_FLOW);
-            Expression evaluated = sharedState.localConditionManager.evaluate(sharedState.evaluationContext, labelEqualsSwitchExpression);
+            Expression evaluated = sharedState.localConditionManager.evaluate(sharedState.evaluationContext,
+                    labelEqualsSwitchExpression);
             if (evaluated.isBoolValueTrue()) {
                 always.add(label.toString());
             } else if (evaluated.isBoolValueFalse()) {
@@ -1388,7 +1392,10 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         if (statementAnalysis.statement instanceof AssertStatement) {
             Expression assertion = statementAnalysis.stateData.getValueOfExpression();
             boolean expressionIsDelayed = statementAnalysis.stateData.valueOfExpressionIsDelayed();
-            statementAnalysis.stateData.setPrecondition(assertion, expressionIsDelayed);
+            Expression translated = Objects.requireNonNullElse(
+                    sharedState.evaluationContext.acceptAndTranslatePrecondition(assertion),
+                    new BooleanConstant(statementAnalysis.primitives, true));
+            statementAnalysis.stateData.setPrecondition(translated, expressionIsDelayed);
 
             if (!expressionIsDelayed) {
                 log(VARIABLE_PROPERTIES, "Assertion escape with precondition {}", assertion);
@@ -1397,11 +1404,19 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 analysisStatus = DELAYS;
             }
         }
+
         if (statementAnalysis.flowData.timeAfterSubBlocksNotYetSet()) {
             statementAnalysis.flowData.copyTimeAfterSubBlocksFromTimeAfterExecution();
         }
 
-        statementAnalysis.stateData.setLocalConditionManagerForNextStatement(sharedState.localConditionManager);
+        Expression addToState = addToStateBecauseOfAssignmentsToFields(sharedState.evaluationContext);
+        if (!addToState.isBoolValueTrue()) {
+            ConditionManager newLocalConditionManager = sharedState.localConditionManager
+                    .newWithAdditionalInfo(sharedState.evaluationContext, addToState);
+            statementAnalysis.stateData.setLocalConditionManagerForNextStatement(newLocalConditionManager);
+        } else {
+            statementAnalysis.stateData.setLocalConditionManagerForNextStatement(sharedState.localConditionManager);
+        }
         return analysisStatus;
     }
 
@@ -1520,6 +1535,22 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         return analysisStatus;
     }
 
+    /*
+    Introduced to facilitate the detection of non-null assignments to fields for eventual e1/e2 computations.
+    There's little system behind this at the moment. Any change has an effect on a great number of assertions
+    in tests.
+     */
+    private Expression addToStateBecauseOfAssignmentsToFields(EvaluationContext evaluationContext) {
+        Stream<FieldReference> fields = statementAnalysis.variableStream()
+                .filter(vi -> vi.variable() instanceof FieldReference
+                        && vi.isAssigned()
+                        && index().equals(VariableInfoContainer.statementId(vi.getAssignmentId())))
+                .map(vi -> (FieldReference) vi.variable());
+        return new And(evaluationContext.getPrimitives()).append(evaluationContext,
+                fields.map(f -> Negation.negate(evaluationContext, Equals.equals(evaluationContext,
+                        NullConstant.NULL_CONSTANT, new VariableExpression(f), ObjectFlow.NO_FLOW)))
+                        .toArray(Expression[]::new));
+    }
     /*
     an old-style switch statement is analysed as a single block where return and break statements at the level
     below the statement have no hard interrupt value (see flow data).

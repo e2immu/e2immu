@@ -16,6 +16,8 @@ public class TestMultiLevel {
         Assert.assertEquals(45, EFFECTIVELY_E2IMMUTABLE);
 
         Assert.assertEquals(45, EFFECTIVELY_CONTENT_NOT_NULL);
+        Assert.assertEquals(10, compose(EVENTUAL, FALSE));
+        Assert.assertEquals(10, EVENTUALLY_E1IMMUTABLE);
     }
 
     @Test
