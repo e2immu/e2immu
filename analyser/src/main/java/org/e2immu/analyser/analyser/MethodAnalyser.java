@@ -465,9 +465,13 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
             if (modified == Level.FALSE) {
                 log(MARK, "Method {} is @NotModified, so it'll be @Only rather than @Mark", methodInfo.distinguishingName());
             } else {
-                // for the before methods, we need to check again if we were mark or only
-                mark = mark || (!after && TypeAnalyser.assignmentIncompatibleWithPrecondition(sharedState.evaluationContext,
-                        precondition, this));
+                if (!mark && !after) {
+                    Boolean incompatible = TypeAnalyser.assignmentIncompatibleWithPrecondition(precondition, this);
+                    if (incompatible == null) {
+                        return DELAYS;
+                    }
+                    mark = incompatible;
+                }
             }
         }
         if (after == null) {
@@ -1073,8 +1077,8 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
         return lastStatement.getLatestVariableInfo(methodInfo.fullyQualifiedName());
     }
 
-    public StatementAnalysis findStatementAnalysis(String index) {
-        return firstStatementAnalyser.statementAnalysis.navigateTo(index);
+    public StatementAnalyser findStatementAnalyser(String index) {
+        return firstStatementAnalyser.navigateTo(index);
     }
 
     private class EvaluationContextImpl extends AbstractEvaluationContextImpl implements EvaluationContext {

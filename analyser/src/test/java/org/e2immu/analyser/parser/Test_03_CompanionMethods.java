@@ -326,10 +326,8 @@ public class Test_03_CompanionMethods extends CommonTestRunner {
         MethodInfo test = bc6.findUniqueMethod("test", 1);
 
         MethodAnalysis methodAnalysis = test.methodAnalysis.get();
-        Assert.assertEquals(1, methodAnalysis.getComputedCompanions().size());
-        Assert.assertEquals("return !set.contains(\"a\");", methodAnalysis.getComputedCompanions().values()
-                .stream().findFirst().orElseThrow()
-                .methodInspection.get().getMethodBody().structure.statements().get(0).minimalOutput());
+        Assert.assertEquals(0, methodAnalysis.getComputedCompanions().size());
+        // See Precondition_4 for a similar example with precondition
     }
 
 

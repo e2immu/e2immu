@@ -21,10 +21,10 @@ package org.e2immu.analyser.parser;
 import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
-import org.e2immu.analyser.model.FieldInfo;
-import org.e2immu.analyser.model.Level;
-import org.e2immu.analyser.model.MethodAnalysis;
-import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.inspector.TypeContext;
+import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.testexample.BasicCompanionMethods_6;
+import org.e2immu.analyser.testexample.Precondition_4;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -33,7 +33,7 @@ import java.io.IOException;
 public class Test_14_Precondition extends CommonTestRunner {
 
     public Test_14_Precondition() {
-        super(false);
+        super(true);
     }
 
     // either
@@ -261,5 +261,18 @@ public class Test_14_Precondition extends CommonTestRunner {
                 .build());
     }
 
+    @Test
+    public void test_4() throws IOException {
+      TypeContext typeContext = testClass("Precondition_4", 0, 0, new DebugConfiguration.Builder()
+                .build());
+        TypeInfo pc4 = typeContext.getFullyQualified(Precondition_4.class);
+        MethodInfo test = pc4.findUniqueMethod("test", 1);
+
+        MethodAnalysis methodAnalysis = test.methodAnalysis.get();
+        Assert.assertEquals(1, methodAnalysis.getComputedCompanions().size());
+        Assert.assertEquals("return !strings.contains(\"a\");", methodAnalysis.getComputedCompanions().values()
+                .stream().findFirst().orElseThrow()
+                .methodInspection.get().getMethodBody().structure.statements().get(0).minimalOutput());
+    }
 
 }

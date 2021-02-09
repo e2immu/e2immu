@@ -20,7 +20,6 @@ package org.e2immu.analyser.analyser.check;
 import org.e2immu.analyser.analyser.TypeAnalysisImpl;
 import org.e2immu.analyser.model.AnnotationExpression;
 import org.e2immu.analyser.model.Location;
-import org.e2immu.analyser.model.TypeAnalysis;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.parser.Messages;
 
@@ -37,13 +36,13 @@ public class CheckEventual {
                              AnnotationExpression annotationExpression,
                              TypeAnalysisImpl.Builder typeAnalysis) {
 
-        Function<AnnotationExpression, String> extractInspected = ae -> ae.extract("after", "");
-        String mark = typeAnalysis.isEventual() ? typeAnalysis.allLabelsRequiredForImmutable(): "";
+        Function<AnnotationExpression, String> extractInspected = ae -> ae.extract("after", null);
+        String mark = typeAnalysis.isEventual() ? typeAnalysis.allLabelsRequiredForImmutable() : null;
 
         CheckLinks.checkAnnotationWithValue(messages,
                 typeAnalysis,
                 annotation.getName(),
-                annotation.getSimpleName(),
+                "@" + annotation.getSimpleName(),
                 annotationExpression.typeInfo(),
                 extractInspected,
                 mark,

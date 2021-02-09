@@ -33,10 +33,7 @@ import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.resolver.Resolver;
-import org.e2immu.analyser.util.AddOnceSet;
-import org.e2immu.analyser.util.SetOnce;
-import org.e2immu.analyser.util.SetOnceMap;
-import org.e2immu.analyser.util.SetUtil;
+import org.e2immu.analyser.util.*;
 import org.e2immu.annotation.AnnotationMode;
 import org.e2immu.annotation.Container;
 import org.e2immu.annotation.NotNull;
@@ -275,21 +272,6 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
 
     public boolean containsMessage(String messageString) {
         return messages.stream().anyMatch(message -> message.message.contains(messageString) && message.location.equals(location()));
-    }
-
-    public StatementAnalysis navigateTo(String index) {
-        if (this.index.equals(index)) return this;
-        if (index.startsWith(this.index)) {
-            // go into sub-block
-            int n = this.index.length();
-            int blockIndex = Integer.parseInt(index.substring(n + 1, index.indexOf('.', n + 1)));
-            return navigationData.blocks.get().get(blockIndex)
-                    .orElseThrow(() -> new UnsupportedOperationException("Looking for " + index + ", block " + blockIndex));
-        }
-        if (this.index.compareTo(index) < 0 && navigationData.next.get().isPresent()) {
-            return navigationData.next.get().get().navigateTo(index);
-        }
-        throw new UnsupportedOperationException("? have index " + this.index + ", looking for " + index);
     }
 
     /*
@@ -1211,5 +1193,35 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
 
     public Stream<VariableInfo> safeVariableStream() {
         return variables.toImmutableMap().values().stream().map(VariableInfoContainer::current);
+    }
+
+    // this is a safe constant (delay == -1)
+    private static final int EXACTLY_NULL = 0;
+
+    public Expression notNullValuesAsExpression(EvaluationContext evaluationContext) {
+        return new And(evaluationContext.getPrimitives()).append(evaluationContext, variableStream()
+                .filter(vi -> vi.variable() instanceof FieldReference
+                        && vi.isAssigned()
+                        && index().equals(VariableInfoContainer.statementId(vi.getAssignmentId())))
+                .map(vi -> {
+                    if (vi.variable() instanceof FieldReference fieldReference) {
+                        if (vi.getValue() instanceof NullConstant) {
+                            return new Pair<>(vi, EXACTLY_NULL);
+                        }
+                        int notNull = evaluationContext.getProperty(fieldReference, VariableProperty.NOT_NULL);
+                        return new Pair<>(vi, notNull);
+                    }
+                    return null;
+                })
+                .filter(e -> e != null && (e.v == EXACTLY_NULL || e.v >= MultiLevel.EFFECTIVELY_NOT_NULL))
+                .map(e -> {
+                    Expression equals = Equals.equals(evaluationContext, new VariableExpression(e.k.variable()),
+                            NullConstant.NULL_CONSTANT, ObjectFlow.NO_FLOW);
+                    if (e.v >= MultiLevel.EFFECTIVELY_NOT_NULL) {
+                        return Negation.negate(evaluationContext, equals);
+                    }
+                    return equals;
+                })
+                .toArray(Expression[]::new));
     }
 }

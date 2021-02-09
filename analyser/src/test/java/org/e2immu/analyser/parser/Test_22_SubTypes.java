@@ -108,7 +108,7 @@ public class Test_22_SubTypes extends CommonTestRunner {
             Assert.assertSame(toString, overrides.stream().findFirst().orElseThrow());
         };
 
-        testClass("SubTypes_2", 2, 1, new DebugConfiguration.Builder()
+        testClass("SubTypes_2", 3, 0, new DebugConfiguration.Builder()
                 .addTypeMapVisitor(typeMapVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
@@ -121,7 +121,7 @@ public class Test_22_SubTypes extends CommonTestRunner {
 
     @Test
     public void test_4() throws IOException {
-        testClass("SubTypes_4", 0, 2, new DebugConfiguration.Builder().build());
+        testClass("SubTypes_4", 2, 0, new DebugConfiguration.Builder().build());
     }
 
     @Test

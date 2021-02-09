@@ -92,7 +92,7 @@ public record CheckLinks(Primitives primitives, E2ImmuAnnotationExpressions e2) 
             }
             return;
         }
-        if (computedValue == null || inAnalysis == null) {
+        if (inAnalysis == null) {
             messages.add(Message.newMessage(where, Message.ANNOTATION_ABSENT, annotationSimpleName));
             analysis.annotationChecks.put(new AnnotationExpressionImpl(annotationTypeInfo, List.of()),
                     Analysis.AnnotationCheck.MISSING);
@@ -100,8 +100,8 @@ public record CheckLinks(Primitives primitives, E2ImmuAnnotationExpressions e2) 
         }
 
         String requiredValue = extractInspected.apply(optAnnotationInInspection.get());
-
-        if (!computedValue.equals(requiredValue)) {
+        if ((computedValue == null) != (requiredValue == null) ||
+                computedValue != null && !computedValue.equals(requiredValue)) {
             messages.add(Message.newMessage(where, Message.WRONG_ANNOTATION_PARAMETER,
                     "Annotation " + annotationSimpleName + ", required " +
                             requiredValue + ", found " + computedValue));

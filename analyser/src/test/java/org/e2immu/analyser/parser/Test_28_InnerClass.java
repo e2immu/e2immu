@@ -44,7 +44,7 @@ public class Test_28_InnerClass extends CommonTestRunner {
         };
 
 
-        testClass("InnerClass_0", 3, 1, new DebugConfiguration.Builder()
+        testClass("InnerClass_0", 4, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)

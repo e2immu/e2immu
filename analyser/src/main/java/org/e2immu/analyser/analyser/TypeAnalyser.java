@@ -422,7 +422,11 @@ public class TypeAnalyser extends AbstractAnalyser {
             if (modified == Level.TRUE) {
                 List<Expression> preconditions = methodAnalyser.methodAnalysis.preconditionForMarkAndOnly.get();
                 for (Expression precondition : preconditions) {
-                    handlePrecondition(methodAnalyser, precondition, tempApproved, iteration);
+                    boolean delay = handlePrecondition(methodAnalyser, precondition, tempApproved, iteration);
+                    if (delay) {
+                        log(MARK, "Delaying approved preconditions (no incompatible found yet) in {}", typeInfo.fullyQualifiedName);
+                        return DELAYS;
+                    }
                 }
             }
         }
@@ -439,17 +443,18 @@ public class TypeAnalyser extends AbstractAnalyser {
         return DONE;
     }
 
-    private void handlePrecondition(MethodAnalyser methodAnalyser,
-                                    Expression precondition,
-                                    Map<String, Expression> tempApproved,
-                                    int iteration) {
+    private boolean handlePrecondition(MethodAnalyser methodAnalyser,
+                                       Expression precondition,
+                                       Map<String, Expression> tempApproved,
+                                       int iteration) {
         EvaluationContext evaluationContext = new EvaluationContextImpl(iteration,
                 ConditionManager.initialConditionManager(analyserContext.getPrimitives()), null);
         Expression negated = Negation.negate(evaluationContext, precondition);
         String label = labelOfPreconditionForMarkAndOnly(precondition);
         Expression inMap = tempApproved.get(label);
 
-        boolean isMark = assignmentIncompatibleWithPrecondition(evaluationContext, precondition, methodAnalyser);
+        Boolean isMark = assignmentIncompatibleWithPrecondition(precondition, methodAnalyser);
+        if (isMark == null) return true; // delays
         if (isMark) {
             if (inMap == null) {
                 tempApproved.put(label, precondition);
@@ -464,32 +469,43 @@ public class TypeAnalyser extends AbstractAnalyser {
         } else if (!inMap.equals(precondition) && !inMap.equals(negated)) {
             messages.add(Message.newMessage(new Location(methodAnalyser.methodInfo), Message.DUPLICATE_MARK_LABEL, "Label: " + label));
         }
+        return false; // no delay
     }
 
-    public static boolean assignmentIncompatibleWithPrecondition(EvaluationContext evaluationContext,
-                                                                 Expression precondition,
+    /*
+    null indicates delay.
+     */
+    public static Boolean assignmentIncompatibleWithPrecondition(Expression precondition,
                                                                  MethodAnalyser methodAnalyser) {
         Set<Variable> variables = new HashSet<>(precondition.variables());
         for (Variable variable : variables) {
             FieldInfo fieldInfo = ((FieldReference) variable).fieldInfo;
-            // fieldSummaries are set after the first iteration
-            return methodAnalyser.getFieldAsVariableStream(fieldInfo, false).anyMatch(variableInfo -> {
+
+            for (VariableInfo variableInfo : methodAnalyser.getFieldAsVariable(fieldInfo, false)) {
                 boolean assigned = variableInfo.isAssigned();
-                if (!assigned) return false;
+                if (assigned) {
 
-                String index = VariableInfoContainer.statementId(variableInfo.getAssignmentId());
-                log(MARK, "Field {} is assigned in {}, {}", variable.fullyQualifiedName(),
-                        methodAnalyser.methodInfo.distinguishingName(), index);
+                    String index = VariableInfoContainer.statementId(variableInfo.getAssignmentId());
+                    log(MARK, "Field {} is assigned in {}, {}", variable.fullyQualifiedName(),
+                            methodAnalyser.methodInfo.distinguishingName(), index);
 
-                StatementAnalysis statementAnalysis = methodAnalyser.findStatementAnalysis(index);
-                Expression state = statementAnalysis.stateData.getConditionManagerForNextStatement().state();
+                    StatementAnalyser statementAnalyser = methodAnalyser.findStatementAnalyser(index);
+                    StatementAnalysis statementAnalysis = statementAnalyser.statementAnalysis;
+                    EvaluationContext evaluationContext = statementAnalyser.newEvaluationContextForOutside();
 
-                if (isCompatible(evaluationContext, state, precondition)) {
-                    log(MARK, "We checked, and found the state {} compatible with the precondition {}", state, precondition);
-                    return false;
+                    Expression state = statementAnalysis.stateData.getConditionManagerForNextStatement().state();
+                    Expression notNull = statementAnalysis.notNullValuesAsExpression(evaluationContext);
+                    Expression combined = new And(evaluationContext.getPrimitives()).append(evaluationContext, state, notNull);
+
+                    if (isCompatible(evaluationContext, combined, precondition)) {
+                        if (statementAnalysis.stateData.conditionManagerIsNotYetSet()) {
+                            return null; // DELAYS
+                        }
+                        return false;
+                    }
+                    return true;
                 }
-                return true;
-            });
+            }
         }
         return false;
     }

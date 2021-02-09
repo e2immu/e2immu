@@ -1409,15 +1409,24 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             statementAnalysis.flowData.copyTimeAfterSubBlocksFromTimeAfterExecution();
         }
 
-        Expression addToState = addToStateBecauseOfAssignmentsToFields(sharedState.evaluationContext);
-        if (!addToState.isBoolValueTrue()) {
-            ConditionManager newLocalConditionManager = sharedState.localConditionManager
-                    .newWithAdditionalInfo(sharedState.evaluationContext, addToState);
-            statementAnalysis.stateData.setLocalConditionManagerForNextStatement(newLocalConditionManager);
-        } else {
-            statementAnalysis.stateData.setLocalConditionManagerForNextStatement(sharedState.localConditionManager);
-        }
+        statementAnalysis.stateData.setLocalConditionManagerForNextStatement(sharedState.localConditionManager);
         return analysisStatus;
+    }
+
+    public StatementAnalyser navigateTo(String index) {
+        String myIndex = index();
+        if (myIndex.equals(index)) return this;
+        if (index.startsWith(myIndex)) {
+            // go into sub-block
+            int n = myIndex.length();
+            int blockIndex = Integer.parseInt(index.substring(n + 1, index.indexOf('.', n + 1)));
+            return navigationData.blocks.get().get(blockIndex)
+                    .orElseThrow(() -> new UnsupportedOperationException("Looking for " + index + ", block " + blockIndex));
+        }
+        if (myIndex.compareTo(index) < 0 && navigationData.next.get().isPresent()) {
+            return navigationData.next.get().get().navigateTo(index);
+        }
+        throw new UnsupportedOperationException("? have index " + myIndex + ", looking for " + index);
     }
 
     private record ExecutionOfBlock(FlowData.Execution execution,
@@ -1535,22 +1544,6 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         return analysisStatus;
     }
 
-    /*
-    Introduced to facilitate the detection of non-null assignments to fields for eventual e1/e2 computations.
-    There's little system behind this at the moment. Any change has an effect on a great number of assertions
-    in tests.
-     */
-    private Expression addToStateBecauseOfAssignmentsToFields(EvaluationContext evaluationContext) {
-        Stream<FieldReference> fields = statementAnalysis.variableStream()
-                .filter(vi -> vi.variable() instanceof FieldReference
-                        && vi.isAssigned()
-                        && index().equals(VariableInfoContainer.statementId(vi.getAssignmentId())))
-                .map(vi -> (FieldReference) vi.variable());
-        return new And(evaluationContext.getPrimitives()).append(evaluationContext,
-                fields.map(f -> Negation.negate(evaluationContext, Equals.equals(evaluationContext,
-                        NullConstant.NULL_CONSTANT, new VariableExpression(f), ObjectFlow.NO_FLOW)))
-                        .toArray(Expression[]::new));
-    }
     /*
     an old-style switch statement is analysed as a single block where return and break statements at the level
     below the statement have no hard interrupt value (see flow data).
@@ -1865,6 +1858,10 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 .filter(sa -> !sa.statementAnalysis.flowData.isUnreachable())
                 .map(StatementAnalyser::lastStatement)
                 .collect(Collectors.toList());
+    }
+
+    public EvaluationContext newEvaluationContextForOutside() {
+        return new EvaluationContextImpl(0, ConditionManager.initialConditionManager(statementAnalysis.primitives), null);
     }
 
     private class EvaluationContextImpl extends AbstractEvaluationContextImpl {

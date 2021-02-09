@@ -44,6 +44,9 @@ public class EventuallyE1Immutable_0 {
         return string;
     }
 
+    /*
+    this order of testing this.string and string currently causes a delay on @NotNull
+     */
     @Mark("string")
     public void setString(@NotNull String string) {
         if (this.string != null) throw new UnsupportedOperationException();
@@ -51,8 +54,8 @@ public class EventuallyE1Immutable_0 {
         this.string = string;
     }
 
-    // variant, with the preconditions switched
-    // result should be the same
+    /* variant, with the preconditions switched. Result should be the same, but is necessary to test.
+     */
     @Mark("string")
     public void setString2(@NotNull String string2) {
         if (string2 == null) throw new NullPointerException();

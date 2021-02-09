@@ -56,7 +56,7 @@ public class Message {
 
     public static final String PARAMETER_SHOULD_NOT_BE_ASSIGNED_TO = "Parameter should not be assigned to";
     public static final String METHOD_SHOULD_BE_MARKED_STATIC = "Method should be marked static";
-    public static final String ADVISE_AGAINST_ASSIGNMENT_TO_FIELD_OUTSIDE_TYPE = "Assigning to field outside the type";
+    public static final String ASSIGNMENT_TO_FIELD_OUTSIDE_TYPE = "Assigning to field outside the type";
 
     public static final String PRECONDITION_ABSENT = "Precondition missing";
     public static final String ANNOTATION_ABSENT = "Annotation missing";
@@ -102,7 +102,8 @@ public class Message {
     static {
         ImmutableMap.Builder<String, Severity> map = new ImmutableMap.Builder<>();
 
-        map.put(ADVISE_AGAINST_ASSIGNMENT_TO_FIELD_OUTSIDE_TYPE, Severity.WARN);
+        // the following is an error because it "covers" for a gap in the definition of modification (See Modified_15)
+        map.put(ASSIGNMENT_TO_FIELD_OUTSIDE_TYPE, Severity.ERROR);
         map.put(UNUSED_PARAMETER, Severity.WARN);
         map.put(UNUSED_LOOP_VARIABLE, Severity.WARN);
 

@@ -22,9 +22,12 @@ package org.e2immu.analyser.parser;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.config.MethodAnalyserVisitor;
+import org.e2immu.analyser.config.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.config.TypeAnalyserVisitor;
+import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MethodAnalysis;
 import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.model.variable.FieldReference;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -34,6 +37,15 @@ public class Test_31_EventuallyE1Immutable_0 extends CommonTestRunner {
 
     @Test
     public void test_0() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("setString".equals(d.methodInfo().name) || "setString2".equals(d.methodInfo().name)) {
+                if ("2".equals(d.statementId()) && d.variable() instanceof FieldReference fr && "string".equals(fr.fieldInfo.name)) {
+                    int notNull = d.getProperty(VariableProperty.NOT_NULL);
+                    Assert.assertNotEquals(MultiLevel.NULLABLE, notNull);
+                }
+            }
+        };
+
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("setString".equals(d.methodInfo().name) || "setString2".equals(d.methodInfo().name)) {
                 if (d.iteration() == 0) {
@@ -42,7 +54,7 @@ public class Test_31_EventuallyE1Immutable_0 extends CommonTestRunner {
                     Assert.assertEquals(1, d.methodAnalysis().getPreconditionForMarkAndOnly().size());
                     Assert.assertEquals("null==string",
                             d.methodAnalysis().getPreconditionForMarkAndOnly().get(0).toString());
-                    if(d.iteration()>1) {
+                    if (d.iteration() > 1) {
                         MethodAnalysis.MarkAndOnly markAndOnly = d.methodAnalysis().getMarkAndOnly();
                         Assert.assertNotNull(markAndOnly);
                         Assert.assertEquals("string", markAndOnly.markLabel());
@@ -54,13 +66,14 @@ public class Test_31_EventuallyE1Immutable_0 extends CommonTestRunner {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("EventuallyE1Immutable_0".equals(d.typeInfo().simpleName) && d.iteration() > 0) {
                 Assert.assertEquals(1, d.typeAnalysis().getApprovedPreconditions().size());
-                if(d.iteration()>1) {
+                if (d.iteration() > 1) {
                     Assert.assertEquals(MultiLevel.EVENTUALLY_E1IMMUTABLE, d.typeAnalysis().getProperty(VariableProperty.IMMUTABLE));
                 }
             }
         };
 
         testClass("EventuallyE1Immutable_0", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
                 .build());
