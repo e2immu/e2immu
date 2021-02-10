@@ -45,7 +45,7 @@ public class Test_08_EvaluateConstants extends CommonTestRunner {
             if ("getEffectivelyFinal".equals(d.methodInfo().name)) {
                 VariableInfo vi = d.getReturnAsVariable();
                 int expectNotNull = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
-                Assert.assertEquals(expectNotNull, vi.getProperty(VariableProperty.NOT_NULL));
+                Assert.assertEquals(expectNotNull, vi.getProperty(VariableProperty.NOT_NULL_VARIABLE));
                 if (d.iteration() == 0) {
                     Assert.assertTrue(vi.isDelayed());
                 } else if (d.iteration() == 1) {
@@ -68,7 +68,8 @@ public class Test_08_EvaluateConstants extends CommonTestRunner {
                 } else {
                     Assert.assertEquals("/* inline getEffectivelyFinal */this.effectivelyFinal",
                             srv.debugOutput());
-                    Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.methodAnalysis().getProperty(VariableProperty.NOT_NULL));
+                    Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL,
+                            d.methodAnalysis().getProperty(VariableProperty.NOT_NULL_EXPRESSION));
                 }
             }
         };
@@ -76,7 +77,8 @@ public class Test_08_EvaluateConstants extends CommonTestRunner {
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("effectivelyFinal".equals(d.fieldInfo().name)) {
                 Assert.assertEquals(Level.TRUE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
-                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.fieldAnalysis().getProperty(VariableProperty.NOT_NULL));
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.fieldAnalysis()
+                        .getProperty(VariableProperty.EXTERNAL_NOT_NULL));
                 Assert.assertEquals("in", d.fieldAnalysis().getEffectivelyFinalValue().toString());
             }
         };
@@ -153,7 +155,7 @@ public class Test_08_EvaluateConstants extends CommonTestRunner {
                 Expression srv = d.methodAnalysis().getSingleReturnValue();
                 if (d.iteration() > 0) {
                     Assert.assertEquals("false", srv.toString());
-                    int modified = d.methodAnalysis().getProperty(VariableProperty.MODIFIED);
+                    int modified = d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD);
                     Assert.assertEquals(Level.FALSE, modified);
                 }
             }

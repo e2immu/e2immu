@@ -51,10 +51,10 @@ public class TestSetOnceMap extends CommonTestRunner {
             VariableInfo tv = d.getReturnAsVariable();
 
             Assert.assertNotNull(tv);
-            Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, tv.getProperty(VariableProperty.NOT_NULL));
+            Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, tv.getProperty(VariableProperty.NOT_NULL_VARIABLE));
             Assert.assertTrue(tv.getValue() instanceof PropertyWrapper);
             Assert.assertEquals(MultiLevel.EFFECTIVE, MultiLevel.value(
-                    d.methodAnalysis().getProperty(VariableProperty.NOT_NULL), MultiLevel.NOT_NULL));
+                    d.methodAnalysis().getProperty(VariableProperty.NOT_NULL_EXPRESSION), MultiLevel.NOT_NULL));
 
             // independent, because does not return a support data type
             int independent = d.methodAnalysis().getProperty(VariableProperty.INDEPENDENT);
@@ -116,12 +116,12 @@ public class TestSetOnceMap extends CommonTestRunner {
         TypeInfo map = typeMap.get(Map.class);
         MethodInfo put = map.findUniqueMethod("put", 2);
         for (ParameterInfo parameterInfo : put.methodInspection.get().getParameters()) {
-            Assert.assertEquals(Level.FALSE, parameterInfo.parameterAnalysis.get().getProperty(VariableProperty.MODIFIED));
+            Assert.assertEquals(Level.FALSE, parameterInfo.parameterAnalysis.get().getProperty(VariableProperty.MODIFIED_VARIABLE));
         }
         TypeInfo objects = typeMap.get(Objects.class);
         MethodInfo rnn = objects.findUniqueMethod("requireNonNull", 1);
         ParameterInfo p = rnn.methodInspection.get().getParameters().get(0);
-        Assert.assertEquals(Level.FALSE, p.parameterAnalysis.get().getProperty(VariableProperty.MODIFIED));
+        Assert.assertEquals(Level.FALSE, p.parameterAnalysis.get().getProperty(VariableProperty.MODIFIED_VARIABLE));
     };
 
     @Test

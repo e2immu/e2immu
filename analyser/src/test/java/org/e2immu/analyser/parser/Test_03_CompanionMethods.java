@@ -84,12 +84,12 @@ public class Test_03_CompanionMethods extends CommonTestRunner {
         TypeMapVisitor typeMapVisitor = typeMap -> {
             TypeInfo collection = typeMap.get(Collection.class);
             MethodInfo size = collection.findUniqueMethod("size", 0);
-            int modified = size.methodAnalysis.get().getProperty(VariableProperty.MODIFIED);
+            int modified = size.methodAnalysis.get().getProperty(VariableProperty.MODIFIED_METHOD);
             Assert.assertEquals(Level.FALSE, modified);
 
             TypeInfo list = typeMap.get(List.class);
             MethodInfo listSize = list.findUniqueMethod("size", 0);
-            Assert.assertEquals(Level.FALSE, listSize.methodAnalysis.get().getProperty(VariableProperty.MODIFIED));
+            Assert.assertEquals(Level.FALSE, listSize.methodAnalysis.get().getProperty(VariableProperty.MODIFIED_METHOD));
         };
 
         // two errors: two unused parameters
@@ -339,11 +339,11 @@ public class Test_03_CompanionMethods extends CommonTestRunner {
             CompanionAnalysis clearCompanion = clear.methodAnalysis.get().getCompanionAnalyses()
                     .get(new CompanionMethodName("clear", CompanionMethodName.Action.CLEAR, "Size"));
             Assert.assertNotNull(clearCompanion);
-            Assert.assertEquals(Level.TRUE, clear.methodAnalysis.get().getProperty(VariableProperty.MODIFIED));
+            Assert.assertEquals(Level.TRUE, clear.methodAnalysis.get().getProperty(VariableProperty.MODIFIED_METHOD));
 
             TypeInfo set = typeMap.get(Set.class);
             MethodInfo setClear = set.findUniqueMethod("clear", 0);
-            Assert.assertEquals(Level.TRUE, setClear.methodAnalysis.get().getProperty(VariableProperty.MODIFIED));
+            Assert.assertEquals(Level.TRUE, setClear.methodAnalysis.get().getProperty(VariableProperty.MODIFIED_METHOD));
 
             TypeInfo annotatedAPI = typeMap.get("org.e2immu.annotatedapi.AnnotatedAPI");
             Assert.assertNotNull(annotatedAPI);

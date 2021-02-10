@@ -54,7 +54,8 @@ public class Test_09_EvaluatesToConstant extends CommonTestRunner {
         if ("someMethod".equals(d.methodInfo().name)) {
             VariableInfo variableInfo = d.getReturnAsVariable();
             Assert.assertEquals("null==a?\"x\":a", variableInfo.getValue().toString());
-            Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, variableInfo.getProperty(VariableProperty.NOT_NULL));
+            Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL,
+                    variableInfo.getProperty(VariableProperty.NOT_NULL_VARIABLE));
         }
     };
 
@@ -62,7 +63,8 @@ public class Test_09_EvaluatesToConstant extends CommonTestRunner {
 
         if ("method2".equals(d.methodInfo().name) && "b".equals(d.variableName()) && "0".equals(d.statementId())) {
             Assert.assertEquals("null==param?\"x\":param", d.currentValue().toString());
-            Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.currentValue().getProperty(d.evaluationContext(), VariableProperty.NOT_NULL));
+            Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL,
+                    d.currentValue().getProperty(d.evaluationContext(), VariableProperty.NOT_NULL_VARIABLE));
             Assert.assertEquals("", d.variableInfo().getLinkedVariables().toString());
         }
 
@@ -102,9 +104,10 @@ public class Test_09_EvaluatesToConstant extends CommonTestRunner {
 
     MethodAnalyserVisitor methodAnalyserVisitor = d -> {
         if ("someMethod".equals(d.methodInfo().name)) {
-            Assert.assertEquals(Level.FALSE, d.methodAnalysis().getProperty(VariableProperty.MODIFIED));
+            Assert.assertEquals(Level.FALSE, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
             Assert.assertEquals("null==a?\"x\":a", d.methodAnalysis().getSingleReturnValue().toString());
-            Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.methodAnalysis().getProperty(VariableProperty.NOT_NULL));
+            Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL,
+                    d.methodAnalysis().getProperty(VariableProperty.NOT_NULL_EXPRESSION));
         }
     };
 

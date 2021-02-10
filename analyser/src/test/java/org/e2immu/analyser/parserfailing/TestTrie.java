@@ -43,16 +43,16 @@ public class TestTrie extends CommonTestRunner {
         if ("add".equals(d.methodInfo().name) && "newTrieNode".equals(d.variableName())) {
             if (Set.of("1.0.1.0.2", "1.0.1.0.1").contains(d.statementId())) {
                 Assert.assertTrue(d.currentValue() instanceof VariableExpression);
-                Assert.assertEquals(Level.TRUE, (int) d.properties().get(VariableProperty.NOT_NULL));
+                Assert.assertEquals(Level.TRUE, (int) d.properties().get(VariableProperty.NOT_NULL_VARIABLE));
             }
         }
         if ("goTo".equals(d.methodInfo().name) && "1.0.1".equals(d.statementId()) && "node".equals(d.variableName())) {
-            Assert.assertFalse(d.hasProperty(VariableProperty.NOT_NULL));
-            Assert.assertEquals(Level.FALSE, d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL));
+            Assert.assertFalse(d.hasProperty(VariableProperty.CONTEXT_NOT_NULL));
+            Assert.assertEquals(Level.FALSE, d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL_EXPRESSION));
         }
 
         if ("get".equals(d.methodInfo().name) && "0".equals(d.statementId()) && "node".equals(d.variableName())) {
-            Assert.assertFalse(d.hasProperty(VariableProperty.MODIFIED));
+            Assert.assertFalse(d.hasProperty(VariableProperty.CONTEXT_MODIFIED));
         }
     };
 

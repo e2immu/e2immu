@@ -78,7 +78,7 @@ public class CompanionAnalyser {
                 visit(iteration, DONE, null, null);
                 return DONE;
             }
-            int modifyingMainMethod = analyserContext.getMethodAnalysis(mainMethod).getProperty(VariableProperty.MODIFIED);
+            int modifyingMainMethod = analyserContext.getMethodAnalysis(mainMethod).getProperty(VariableProperty.MODIFIED_METHOD);
             if (modifyingMainMethod == Level.DELAY) {
                 // even though the method itself is annotated by contract (it has no code), method analysis may be delayed because
                 // its companion methods need processing

@@ -44,7 +44,7 @@ public class TestFreezableSet1 extends CommonTestRunner {
     };
 
     MethodAnalyserVisitor methodAnalyserVisitor = d -> {
-        int modified = d.methodAnalysis().getProperty(VariableProperty.MODIFIED);
+        int modified = d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD);
         MethodAnalysis methodAnalysis = d.methodAnalysis();
         String name = d.methodInfo().name;
         if (d.iteration() > 0) {

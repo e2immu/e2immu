@@ -721,7 +721,8 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             vic.setValue(NewObject.forCatchOrThis(primitives, variable.parameterizedType()), false, LinkedVariables.EMPTY,
                     propertyMap(analyserContext, methodAnalysis.getMethodInfo().typeInfo), true);
             vic.setLinkedVariables(LinkedVariables.EMPTY, true);
-            vic.setProperty(VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL, false, VariableInfoContainer.Level.INITIAL);
+            vic.setProperty(EXTERNAL_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL, false, VariableInfoContainer.Level.INITIAL);
+            vic.setProperty(CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL, false, VariableInfoContainer.Level.INITIAL);
             vic.setProperty(VariableProperty.METHOD_CALLED, Level.FALSE, false, VariableInfoContainer.Level.INITIAL);
 
         } else if ((variable instanceof ParameterInfo parameterInfo)) {
@@ -738,8 +739,6 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                 vic.setValue(initialValue.expression, initialValue.expressionIsDelayed,
                         LinkedVariables.EMPTY, propertyMap(analyserContext, fieldReference.fieldInfo), true);
             }
-            // a field's local copy is always created not modified... can only go "up"
-            vic.setProperty(MODIFIED, 0, VariableInfoContainer.Level.INITIAL);
             if (initialValue.linkedVariables != LinkedVariables.DELAY) {
                 vic.setLinkedVariables(initialValue.linkedVariables, true);
             }
@@ -819,7 +818,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             return new ExpressionAndLinkedVariables(DelayedVariableExpression.forField(fieldReference), true, LinkedVariables.DELAY);
         }
 
-        int notNull = fieldAnalysis.getProperty(VariableProperty.NOT_NULL);
+        int notNull = fieldAnalysis.getProperty(EXTERNAL_NOT_NULL);
         if (notNull == Level.DELAY) {
             return new ExpressionAndLinkedVariables(DelayedVariableExpression.forField(fieldReference), true, LinkedVariables.DELAY);
         }
@@ -847,7 +846,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         NewObject newObject;
         if (fieldAnalyser == null) {
             // not a local field
-            int minimalNotNull = analyserContext.getFieldAnalysis(fieldReference.fieldInfo).getProperty(VariableProperty.NOT_NULL);
+            int minimalNotNull = analyserContext.getFieldAnalysis(fieldReference.fieldInfo).getProperty(EXTERNAL_NOT_NULL);
             newObject = NewObject.initialValueOfExternalField(primitives, fieldReference.parameterizedType(), minimalNotNull, ObjectFlow.NO_FLOW);
         } else {
             newObject = NewObject.initialValueOfField(primitives, fieldReference.parameterizedType(), fieldAnalyser.fieldAnalysis.getObjectFlow());
@@ -1208,7 +1207,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                         if (vi.getValue() instanceof NullConstant) {
                             return new Pair<>(vi, EXACTLY_NULL);
                         }
-                        int notNull = evaluationContext.getProperty(fieldReference, VariableProperty.NOT_NULL);
+                        int notNull = evaluationContext.getProperty(fieldReference, NOT_NULL_VARIABLE);
                         return new Pair<>(vi, notNull);
                     }
                     return null;

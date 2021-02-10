@@ -41,8 +41,10 @@ public interface ParameterAnalysis extends Analysis {
     }
 
     enum AssignedOrLinked {
-        ASSIGNED(VariableProperty.FROM_FIELD_TO_PARAMETER), LINKED(Set.of(VariableProperty.MODIFIED)),
-        NO(Set.of()), DELAYED(null);
+        ASSIGNED(Set.of(VariableProperty.EXTERNAL_NOT_NULL, VariableProperty.MODIFIED_OUTSIDE_METHOD)),
+        LINKED(Set.of(VariableProperty.MODIFIED_OUTSIDE_METHOD)),
+        NO(Set.of()),
+        DELAYED(null);
 
         private final Set<VariableProperty> propertiesToCopy;
 
@@ -104,18 +106,24 @@ public interface ParameterAnalysis extends Analysis {
                                      ObjectFlow objectFlow,
                                      VariableProperty variableProperty) {
         switch (variableProperty) {
+            case MODIFIED_VARIABLE:
+            case NOT_NULL_VARIABLE:
+                break; // go to internal, which will construct both constituents
+
             case IDENTITY:
                 return parameterInfo.index == 0 ? Level.TRUE : Level.FALSE;
 
-            case MODIFIED: {
+            case CONTEXT_MODIFIED:
+            case MODIFIED_OUTSIDE_METHOD: {
                 // if the parameter is level 2 immutable, it cannot be modified
-                Boolean e2immu = parameterInfo.parameterizedType.isAtLeastEventuallyE2Immutable(analysisProvider);
-                if (e2immu == Boolean.TRUE) return Level.FALSE;
+                if (parameterInfo.parameterizedType.isAtLeastEventuallyE2Immutable(analysisProvider) == Boolean.TRUE) {
+                    return Level.FALSE;
+                }
                 if (parameterInfo.parameterizedType.isFunctionalInterface()) {
                     return Level.FALSE; // by definition, see manual
                 }
-                if (!parameterInfo.owner.isPrivate() &&
-                        analysisProvider.getTypeAnalysis(parameterInfo.owner.typeInfo).getProperty(VariableProperty.CONTAINER) == Level.TRUE) {
+                if (!parameterInfo.owner.isPrivate() && analysisProvider.getTypeAnalysis(parameterInfo.owner.typeInfo)
+                        .getProperty(VariableProperty.CONTAINER) == Level.TRUE) {
                     return Level.FALSE;
                 }
                 // now we rely on the computed value
@@ -150,11 +158,15 @@ public interface ParameterAnalysis extends Analysis {
                 return Math.max(immutableFromType, MultiLevel.delayToFalse(internalGetProperty(VariableProperty.IMMUTABLE)));
             }
 
-            case NOT_NULL: {
+            case CONTEXT_NOT_NULL: {
                 TypeInfo bestType = parameterInfo.parameterizedType.bestTypeInfo();
-                if (bestType != null && Primitives.isPrimitiveExcludingVoid(bestType))
-                    return MultiLevel.EFFECTIVELY_NOT_NULL;
-                return getParameterPropertyCheckOverrides(analysisProvider, parameterInfo, variableProperty);
+                if (Primitives.isPrimitiveExcludingVoid(bestType)) return MultiLevel.EFFECTIVELY_NOT_NULL;
+                break;
+            }
+            case EXTERNAL_NOT_NULL: {
+                TypeInfo bestType = parameterInfo.parameterizedType.bestTypeInfo();
+                if (Primitives.isPrimitiveExcludingVoid(bestType)) return MultiLevel.EFFECTIVELY_NOT_NULL;
+                return getParameterPropertyCheckOverrides(analysisProvider, parameterInfo, VariableProperty.NOT_NULL_VARIABLE);
             }
 
             case NOT_MODIFIED_1:

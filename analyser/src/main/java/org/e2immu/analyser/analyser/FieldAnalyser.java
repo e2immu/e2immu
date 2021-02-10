@@ -235,12 +235,13 @@ public class FieldAnalyser extends AbstractAnalyser {
         assert fieldAnalysis.getProperty(VariableProperty.NOT_MODIFIED_1) == Level.DELAY;
 
         boolean someParameterModificationUnknown = sam.getParameterAnalysers().stream().anyMatch(p ->
-                p.parameterAnalysis.getProperty(VariableProperty.MODIFIED) == Level.DELAY);
+                p.parameterAnalysis.getProperty(VariableProperty.MODIFIED_VARIABLE) == Level.DELAY);
         if (someParameterModificationUnknown) {
-            log(NOT_MODIFIED, "Delaying @NotModified1 on {}, some parameters have no @Modified status", fieldInfo.fullyQualifiedName());
+            log(NOT_MODIFIED, "Delaying @NotModified1 on {}, some parameters have no @Modified status yet",
+                    fieldInfo.fullyQualifiedName());
         }
         boolean allParametersNotModified = sam.getParameterAnalysers().stream().allMatch(p ->
-                p.parameterAnalysis.getProperty(VariableProperty.MODIFIED) == Level.FALSE);
+                p.parameterAnalysis.getProperty(VariableProperty.MODIFIED_VARIABLE) == Level.FALSE);
 
         log(NOT_MODIFIED, "Set @NotModified1 on {} to {}", fieldInfo.fullyQualifiedName(), allParametersNotModified);
         fieldAnalysis.setProperty(VariableProperty.NOT_MODIFIED_1, Level.fromBool(allParametersNotModified));
@@ -254,7 +255,7 @@ public class FieldAnalyser extends AbstractAnalyser {
     for methods which only read, we only wait for not-null delays to be resolved.
      */
     private AnalysisStatus analyseNotNull(SharedState sharedState) {
-        if (fieldAnalysis.getProperty(VariableProperty.NOT_NULL) != Level.DELAY) return DONE;
+        if (fieldAnalysis.getProperty(VariableProperty.EXTERNAL_NOT_NULL) != Level.DELAY) return DONE;
 
         int isFinal = fieldAnalysis.getProperty(VariableProperty.FINAL);
         if (isFinal == Level.DELAY) {
@@ -264,26 +265,27 @@ public class FieldAnalyser extends AbstractAnalyser {
         if (isFinal == Level.FALSE && (!haveInitialiser || fieldCanBeWrittenFromOutsideThisType)) {
             log(NOT_NULL, "Field {} cannot be @NotNull: it is not @Final, or has no initialiser, "
                     + " or it can be assigned to from outside this class", fieldInfo.fullyQualifiedName());
-            fieldAnalysis.setProperty(VariableProperty.NOT_NULL, MultiLevel.NULLABLE);
+            fieldAnalysis.setProperty(VariableProperty.EXTERNAL_NOT_NULL, MultiLevel.NULLABLE);
             return DONE;
         }
 
         // first, context
-        boolean notNullDelays = allMethodsAndConstructors.stream()
+        boolean contextNotNullDelays = allMethodsAndConstructors.stream()
                 .flatMap(m -> m.getFieldAsVariableStream(fieldInfo, true))
-                .anyMatch(vi -> vi.getProperty(VariableProperty.NOT_NULL_DELAYS_RESOLVED) == Level.FALSE);
-        if (notNullDelays) return DELAYS;
+                .anyMatch(vi -> vi.getProperty(VariableProperty.CONTEXT_NOT_NULL_DELAY) == Level.TRUE &&
+                        vi.getProperty(VariableProperty.CONTEXT_NOT_NULL_DELAY_RESOLVED) != Level.TRUE);
+        if (contextNotNullDelays) return DELAYS;
         int bestOverContext = allMethodsAndConstructors.stream()
                 .flatMap(m -> m.getFieldAsVariableStream(fieldInfo, true))
-                .mapToInt(vi -> vi.getProperty(VariableProperty.NOT_NULL))
+                .mapToInt(vi -> vi.getProperty(VariableProperty.CONTEXT_NOT_NULL))
                 .max().orElse(MultiLevel.NULLABLE);
 
         if(Logger.isLogEnabled(NOT_NULL)) {
             allMethodsAndConstructors.forEach(m -> {
                 List<VariableInfo> list = m.getFieldAsVariable(fieldInfo, true);
                 for(VariableInfo vi: list) {
-                    int nn = vi.getProperty(VariableProperty.NOT_NULL);
-                    log(NOT_NULL, "Method {} field {} value {}", m.methodInfo.name, vi.variable().simpleName(), nn);
+                    int nn = vi.getProperty(VariableProperty.CONTEXT_NOT_NULL);
+                    log(NOT_NULL, "Method {} field {} context not null {}", m.methodInfo.name, vi.variable().simpleName(), nn);
                 }
             });
         }
@@ -294,14 +296,14 @@ public class FieldAnalyser extends AbstractAnalyser {
         EvaluationContext evaluationContext = new EvaluationContextImpl(sharedState.iteration,
                 ConditionManager.initialConditionManager(analyserContext.getPrimitives()), sharedState.closure);
         int worstOverValues = fieldAnalysis.values.get().stream()
-                .mapToInt(expression -> evaluationContext.getProperty(expression, VariableProperty.NOT_NULL))
+                .mapToInt(expression -> evaluationContext.getProperty(expression, VariableProperty.NOT_NULL_EXPRESSION))
                 .min().orElse(MultiLevel.NULLABLE);
 
         int finalNotNullValue = MultiLevel.bestNotNull(MultiLevel.NULLABLE,
                 MultiLevel.bestNotNull(worstOverValues, bestOverContext));
         log(NOT_NULL, "Set property @NotNull on field {} to value {}", fieldInfo.fullyQualifiedName(), finalNotNullValue);
 
-        fieldAnalysis.setProperty(VariableProperty.NOT_NULL, finalNotNullValue);
+        fieldAnalysis.setProperty(VariableProperty.EXTERNAL_NOT_NULL, finalNotNullValue);
         return DONE;
     }
 
@@ -640,12 +642,12 @@ public class FieldAnalyser extends AbstractAnalyser {
     }
 
     private AnalysisStatus analyseModified() {
-        assert fieldAnalysis.getProperty(VariableProperty.MODIFIED) == Level.DELAY;
+        assert fieldAnalysis.getProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD) == Level.DELAY;
 
         int effectivelyFinal = fieldAnalysis.getProperty(VariableProperty.FINAL);
         if (effectivelyFinal == Level.DELAY) return DELAYS;
         if (effectivelyFinal == Level.FALSE) {
-            fieldAnalysis.setProperty(VariableProperty.MODIFIED, Level.TRUE);
+            fieldAnalysis.setProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD, Level.TRUE);
             log(NOT_MODIFIED, "Field {} is @Modified, because it is @Variable", fieldInfo.fullyQualifiedName());
             return DONE;
         }
@@ -660,12 +662,12 @@ public class FieldAnalyser extends AbstractAnalyser {
         int immutable = fieldAnalysis.getProperty(VariableProperty.IMMUTABLE);
         if (MultiLevel.isE2Immutable(immutable)) {
             log(NOT_MODIFIED, "Field {} is @NotModified, since it is @Final and @E2Immutable", fieldInfo.fullyQualifiedName());
-            fieldAnalysis.setProperty(VariableProperty.MODIFIED, Level.FALSE);
+            fieldAnalysis.setProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD, Level.FALSE);
             return DONE;
         }
 
         // we only consider methods, not constructors!
-        boolean allContentModificationsDefined = allMethodsAndConstructors.stream()
+        boolean allContextModificationsDefined = allMethodsAndConstructors.stream()
                 .filter(m -> !m.methodInfo.isConstructor)
                 .allMatch(m -> {
                     List<VariableInfo> variableInfoList = m.getFieldAsVariable(fieldInfo, true);
@@ -674,14 +676,14 @@ public class FieldAnalyser extends AbstractAnalyser {
                             m.methodLevelData().linksHaveBeenEstablished.isSet();
                 });
 
-        if (allContentModificationsDefined) {
+        if (allContextModificationsDefined) {
             boolean modified = fieldCanBeWrittenFromOutsideThisType ||
                     allMethodsAndConstructors.stream()
                             .filter(m -> !m.methodInfo.isConstructor)
                             .flatMap(m -> m.getFieldAsVariableStream(fieldInfo, true))
                             .filter(VariableInfo::isRead)
-                            .anyMatch(vi -> vi.getProperty(VariableProperty.MODIFIED) == Level.TRUE);
-            fieldAnalysis.setProperty(VariableProperty.MODIFIED, Level.fromBool(modified));
+                            .anyMatch(vi -> vi.getProperty(VariableProperty.CONTEXT_MODIFIED) == Level.TRUE);
+            fieldAnalysis.setProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD, Level.fromBool(modified));
             log(NOT_MODIFIED, "Mark field {} as {}", fieldInfo.fullyQualifiedName(), modified ? "@Modified" : "@NotModified");
             return DONE;
         }
@@ -704,17 +706,17 @@ public class FieldAnalyser extends AbstractAnalyser {
      */
     private AnalysisStatus analyseNotModifiedFunctionalInterface() {
         if (sam != null) {
-            int modified = sam.methodAnalysis.getProperty(VariableProperty.MODIFIED);
+            int modified = sam.methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD);
             if (modified == Level.DELAY) {
                 log(DELAYED, "Field {} of functional interface type: waiting for MODIFIED on SAM", fieldInfo.fullyQualifiedName());
                 return DELAYS;
             }
             log(NOT_MODIFIED, "Field {} of functional interface type: copying MODIFIED {} from SAM", fieldInfo.fullyQualifiedName(), modified);
-            fieldAnalysis.setProperty(VariableProperty.MODIFIED, modified);
+            fieldAnalysis.setProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD, modified);
             return DONE;
         }
         log(NOT_MODIFIED, "Field {} of functional interface type: undeclared, so not modified", fieldInfo.fullyQualifiedName());
-        fieldAnalysis.setProperty(VariableProperty.MODIFIED, Level.FALSE);
+        fieldAnalysis.setProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD, Level.FALSE);
         return DONE;
     }
 

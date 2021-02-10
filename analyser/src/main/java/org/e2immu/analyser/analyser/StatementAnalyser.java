@@ -43,6 +43,8 @@ import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.AnalysisStatus.*;
 import static org.e2immu.analyser.analyser.FlowData.Execution.*;
+import static org.e2immu.analyser.analyser.VariableProperty.NOT_NULL_EXPRESSION;
+import static org.e2immu.analyser.analyser.VariableProperty.NOT_NULL_VARIABLE;
 import static org.e2immu.analyser.util.Logger.LogTarget.*;
 import static org.e2immu.analyser.util.Logger.log;
 import static org.e2immu.analyser.util.StringUtil.pad;
@@ -698,13 +700,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             for (Map.Entry<VariableProperty, Integer> e : changeData.properties().entrySet()) {
                 VariableProperty property = e.getKey();
                 int pv = e.getValue();
-
                 vic.setProperty(property, pv, false, VariableInfoContainer.Level.EVALUATION);
-                if (property == VariableProperty.NOT_NULL && variable instanceof ParameterInfo parameterInfo) {
-                    log(VARIABLE_PROPERTIES, "Propagating not-null value of {} to {}", pv, variable.fullyQualifiedName());
-                    ParameterAnalysisImpl.Builder parameterAnalysis = myMethodAnalyser.getParameterAnalyser(parameterInfo).parameterAnalysis;
-                    sharedState.builder.add(parameterAnalysis.new SetProperty(VariableProperty.NOT_NULL, pv));
-                }
             }
         }
 
@@ -965,12 +961,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                     .findIndividualNullInCondition(sharedState.evaluationContext, true);
             for (Variable nullVariable : nullVariables) {
                 log(VARIABLE_PROPERTIES, "Escape with check not null on {}", nullVariable.fullyQualifiedName());
-                if (nullVariable instanceof ParameterInfo parameterInfo) {
-                    ParameterAnalysisImpl.Builder parameterAnalysis = myMethodAnalyser.getParameterAnalyser(parameterInfo).parameterAnalysis;
-                    sharedState.builder.add(parameterAnalysis.new SetProperty(VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL));
-
-                    disableErrorsOnIfStatement();
-                }
+                VariableInfoContainer vic = statementAnalysis.findForWriting(nullVariable);
+                vic.setProperty(VariableProperty.CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL, false, VariableInfoContainer.Level.EVALUATION);
             }
             // escapeCondition should filter out all != null, == null clauses
             Expression precondition = statementAnalysis.stateData.getConditionManagerForNextStatement().precondition(sharedState.evaluationContext);
@@ -1274,7 +1266,14 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         vic.ensureEvaluation(index() + VariableInfoContainer.Level.EVALUATION.label,
                 VariableInfoContainer.NOT_YET_READ, VariableInfoContainer.NOT_A_VARIABLE_FIELD, Set.of());
         Map<VariableProperty, Integer> properties = sharedState.evaluationContext.getValueProperties(newReturnValue);
-        vic.setValue(newReturnValue, newReturnValueIsDelayed, LinkedVariables.EMPTY, properties, false);
+        Map<VariableProperty, Integer> toWrite;
+        if (newReturnValueIsDelayed) {
+            toWrite = properties.entrySet().stream()
+                    .filter(e -> e.getValue() == e.getKey().best).collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, Map.Entry::getValue));
+        } else {
+            toWrite = properties;
+        }
+        vic.setValue(newReturnValue, newReturnValueIsDelayed, LinkedVariables.EMPTY, toWrite, false);
         if (newReturnValueIsDelayed) {
             log(DELAYED, "Delaying evaluation because return statement {} in {}", index(),
                     myMethodAnalyser.methodInfo.fullyQualifiedName);
@@ -1292,13 +1291,14 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
 
     // a special case, which allows us to set not null
     private void step3_ForEach(SharedState sharedState, Expression value) {
-        boolean variableNotNull = sharedState.evaluationContext.getProperty(value, VariableProperty.NOT_NULL) >= MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL;
+        boolean variableNotNull = sharedState.evaluationContext
+                .getProperty(value, NOT_NULL_EXPRESSION) >= MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL;
         Structure structure = statementAnalysis.statement.getStructure();
         LocalVariableCreation lvc = (LocalVariableCreation) structure.initialisers().get(0);
         String copy = lvc.localVariable.name() + "$" + index();
         if (statementAnalysis.variables.isSet(copy) && variableNotNull) {
             VariableInfoContainer vic = statementAnalysis.variables.get(copy);
-            vic.setProperty(VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL, false, VariableInfoContainer.Level.INITIAL);
+            vic.setProperty(VariableProperty.CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL, false, VariableInfoContainer.Level.INITIAL);
         }
     }
 
@@ -1836,7 +1836,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             int identity = methodAnalysis.getProperty(VariableProperty.IDENTITY);
             if (identity == Level.DELAY) return DELAYS;
             if (identity == Level.TRUE) return DONE;
-            int modified = methodAnalysis.getProperty(VariableProperty.MODIFIED);
+            int modified = methodAnalysis.getProperty(VariableProperty.CONTEXT_MODIFIED);
             if (modified == Level.DELAY) return DELAYS;
             if (modified == Level.FALSE) {
                 statementAnalysis.ensure(Message.newMessage(getLocation(), Message.IGNORING_RESULT_OF_METHOD_CALL,
@@ -1949,27 +1949,29 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             // contrary to the getProperty method, we look at the initial value in case of a variable
             if (value instanceof VariableExpression ve) {
                 VariableInfo variableInfo = findForReading(ve.variable(), getInitialStatementTime(), true);
-                int v = variableInfo.getProperty(VariableProperty.NOT_NULL);
+                int v = variableInfo.getProperty(NOT_NULL_VARIABLE);
                 if (notNullAccordingToConditionManager(ve.variable()))
                     return true;
                 return v >= MultiLevel.EFFECTIVELY_NOT_NULL;
             }
-            return MultiLevel.isEffectivelyNotNull(getProperty(value, VariableProperty.NOT_NULL));
+            return MultiLevel.isEffectivelyNotNull(getProperty(value, NOT_NULL_VARIABLE));
         }
 
         @Override
         public int getProperty(Expression value, VariableProperty variableProperty) {
             // IMPORTANT: here we do not want to catch VariableValues wrapped in the PropertyWrapper
             if (value instanceof VariableExpression ve) {
-                int v = statementAnalysis.getPropertyOfCurrent(ve.variable(), variableProperty);
-                if (VariableProperty.NOT_NULL == variableProperty && notNullAccordingToConditionManager(ve.variable())) {
+                VariableProperty property = variableProperty == NOT_NULL_EXPRESSION ? NOT_NULL_VARIABLE : variableProperty;
+
+                int v = statementAnalysis.getPropertyOfCurrent(ve.variable(), property);
+                if (NOT_NULL_EXPRESSION == variableProperty && notNullAccordingToConditionManager(ve.variable())) {
                     return MultiLevel.bestNotNull(MultiLevel.EFFECTIVELY_NOT_NULL, v);
                 }
                 return v;
             }
 
-            if (VariableProperty.NOT_NULL == variableProperty) {
-                int directNN = value.getProperty(this, VariableProperty.NOT_NULL);
+            if (NOT_NULL_EXPRESSION == variableProperty) {
+                int directNN = value.getProperty(this, NOT_NULL_VARIABLE);
                 if (directNN >= MultiLevel.EFFECTIVELY_NOT_NULL) return directNN;
                 Expression valueIsNotNull = Negation.negate(this, Equals.equals(this,
                         value, NullConstant.NULL_CONSTANT, ObjectFlow.NO_FLOW, false));

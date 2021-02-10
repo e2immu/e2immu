@@ -59,9 +59,9 @@ public record UnknownExpression(ParameterizedType parameterizedType, String msg)
                 return MultiLevel.EFFECTIVELY_E2IMMUTABLE;
             case CONTAINER:
                 return Level.TRUE;
-            case NOT_NULL:
+            case NOT_NULL_EXPRESSION:
                 return MultiLevel.EFFECTIVELY_NOT_NULL;
-            case MODIFIED:
+            case CONTEXT_MODIFIED:
             case METHOD_DELAY:
             case IDENTITY:
                 return Level.FALSE;

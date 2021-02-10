@@ -134,7 +134,7 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("method1".equals(d.methodInfo().name)) {
                 Assert.assertEquals("true", d.methodAnalysis().getPrecondition().toString());
-                Assert.assertEquals(Level.FALSE, d.methodAnalysis().getProperty(VariableProperty.MODIFIED));
+                Assert.assertEquals(Level.FALSE, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
                 Assert.assertEquals(RETURN_1_VALUE, d.methodAnalysis().getSingleReturnValue().toString());
             }
         };
@@ -183,8 +183,8 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("method3".equals(d.methodInfo().name)) {
                 int expectNN = MultiLevel.EFFECTIVELY_NOT_NULL;
-                Assert.assertEquals(expectNN, d.parameterAnalyses().get(0).getProperty(VariableProperty.NOT_NULL));
-                Assert.assertEquals(expectNN, d.parameterAnalyses().get(1).getProperty(VariableProperty.NOT_NULL));
+                Assert.assertEquals(expectNN, d.parameterAnalyses().get(0).getProperty(VariableProperty.NOT_NULL_VARIABLE));
+                Assert.assertEquals(expectNN, d.parameterAnalyses().get(1).getProperty(VariableProperty.NOT_NULL_VARIABLE));
 
                 Assert.assertEquals(0, d.methodAnalysis().getCompanionAnalyses().size());
                 Assert.assertEquals(0, d.methodAnalysis().getComputedCompanions().size());
@@ -205,7 +205,7 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                     if ("0.0.0".equals(d.statementId())) {
                         Assert.assertEquals("null==a", d.condition().toString());
                         Assert.assertEquals("null==a", d.absoluteState().toString());
-                        Assert.assertTrue(d.haveSetProperty(VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL));
+                        Assert.assertTrue(d.haveSetProperty(VariableProperty.CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL));
                         Assert.assertFalse(d.statementAnalysis().stateData.statementContributesToPrecondition.isSet());
                         // not-null does not contribute to the precondition
                         Assert.assertEquals("true", d.statementAnalysis().stateData.getPrecondition().toString());
@@ -219,7 +219,7 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                     if ("1.0.0".equals(d.statementId())) {
                         Assert.assertEquals("null==b", d.condition().toString());
                         Assert.assertEquals("null==b", d.absoluteState().toString()); // null!=a in parameter @NotNull
-                        Assert.assertTrue(d.haveSetProperty(VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL));
+                        Assert.assertTrue(d.haveSetProperty(VariableProperty.CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL));
                         Assert.assertEquals("true", d.statementAnalysis().stateData.getPrecondition().toString());
                         Assert.assertFalse(d.statementAnalysis().stateData.statementContributesToPrecondition.isSet());
                     }
@@ -273,7 +273,7 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                 if ("0".equals(d.statementId())) {
                     if (O5.equals(d.variableName())) {
                         int expectNN = d.iteration() == 0 ? Level.DELAY : MultiLevel.MUTABLE;
-                        Assert.assertEquals(expectNN, d.getProperty(VariableProperty.NOT_NULL));
+                        Assert.assertEquals(expectNN, d.getProperty(VariableProperty.NOT_NULL_VARIABLE));
                         Assert.assertEquals(LinkedVariables.EMPTY, d.variableInfo().getStaticallyAssignedVariables());
                         Assert.assertEquals("nullable? instance type Object", d.currentValue().toString());
                         Assert.assertEquals("", d.variableInfo().getLinkedVariables().toString());
@@ -344,7 +344,7 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("method5".equals(d.methodInfo().name)) {
                 int expectNN = d.iteration()==0 ? Level.DELAY: MultiLevel.NULLABLE;
-                Assert.assertEquals(MultiLevel.NULLABLE, d.parameterAnalyses().get(0).getProperty(VariableProperty.NOT_NULL));
+                Assert.assertEquals(MultiLevel.NULLABLE, d.parameterAnalyses().get(0).getProperty(VariableProperty.NOT_NULL_VARIABLE));
             }
         };
 
@@ -352,14 +352,14 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
             if ("method5".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
                     Assert.assertEquals("o==this", d.evaluationResult().value().toString());
-                    Assert.assertFalse(d.haveSetProperty(O5, VariableProperty.NOT_NULL));
+                    Assert.assertFalse(d.haveSetProperty(O5, VariableProperty.CONTEXT_NOT_NULL));
                 }
                 if ("0.0.0".equals(d.statementId())) {
                     Assert.assertEquals("true", d.evaluationResult().value().toString());
-                    Assert.assertFalse(d.haveSetProperty(O5, VariableProperty.NOT_NULL));
+                    Assert.assertFalse(d.haveSetProperty(O5, VariableProperty.CONTEXT_NOT_NULL));
                 }
                 if ("1".equals(d.statementId())) {
-                    Assert.assertFalse(d.haveSetProperty(O5, VariableProperty.NOT_NULL));
+                    Assert.assertFalse(d.haveSetProperty(O5, VariableProperty.CONTEXT_NOT_NULL));
                     String expectValue = d.iteration() == 0 ?
                             "null==<parameter:org.e2immu.analyser.testexample.ConditionalChecks_4.method5(Object):0:o>||o.getClass()!=this.getClass()" :
                             "null==o||o.getClass()!=this.getClass()";
@@ -369,7 +369,7 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                     Assert.assertEquals(LinkedVariables.EMPTY, d.evaluationResult().changeData().get(o5).staticallyAssignedVariables());
                 }
                 if ("2".equals(d.statementId())) {
-                    Assert.assertFalse(d.haveSetProperty(O5, VariableProperty.NOT_NULL));
+                    Assert.assertFalse(d.haveSetProperty(O5, VariableProperty.CONTEXT_NOT_NULL));
                     Assert.assertTrue(d.haveValueChange(CONDITIONAL_CHECKS));
                     String o = d.iteration() == 0 ? O : "o";
                     Assert.assertEquals(o, d.findValueChange(CONDITIONAL_CHECKS).value().toString());
@@ -387,17 +387,17 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                         Assert.assertTrue(d.haveMarkRead(I));
                         //  Assert.assertTrue(d.haveMarkRead(I + "#" + O5));
                     }
-                    Assert.assertFalse(d.haveSetProperty(O5, VariableProperty.NOT_NULL));
-                    Assert.assertTrue(d.haveSetProperty(CONDITIONAL_CHECKS, VariableProperty.NOT_NULL));
+                    Assert.assertFalse(d.haveSetProperty(O5, VariableProperty.CONTEXT_NOT_NULL));
+                    Assert.assertTrue(d.haveSetProperty(CONDITIONAL_CHECKS, VariableProperty.CONTEXT_NOT_NULL));
                 }
             }
         };
 
         testClass("ConditionalChecks_4", 0, 0, new DebugConfiguration.Builder()
-              //  .addStatementAnalyserVisitor(statementAnalyserVisitor)
-              //  .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-              //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-              //  .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addEvaluationResultVisitor(evaluationResultVisitor)
                 .build(), new AnalyserConfiguration.Builder().setSkipTransformations(true).build());
     }
 

@@ -38,16 +38,16 @@ public class Test_05_FinalChecks extends CommonTestRunner {
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
         if ("setS4".equals(d.methodInfo().name) && S4.equals(d.variableName())) {
             int expectNotNull = d.iteration() <= 2 ? Level.DELAY : MultiLevel.NULLABLE;
-            Assert.assertEquals(expectNotNull, d.getProperty(VariableProperty.NOT_NULL)); // nothing that points to not null
+            Assert.assertEquals(expectNotNull, d.getProperty(VariableProperty.NOT_NULL_VARIABLE)); // nothing that points to not null
         }
         if (d.methodInfo().name.equals("setS4") && P4.equals(d.variableName())) {
             if ("0".equals(d.statementId())) {
-                Assert.assertFalse(d.hasProperty(VariableProperty.MODIFIED)); // no method was called on parameter s4
-                Assert.assertEquals(Level.DELAY, d.getProperty(VariableProperty.NOT_NULL_DELAYS_RESOLVED)); // p4 never came in a not-null context
+                Assert.assertFalse(d.hasProperty(VariableProperty.MODIFIED_VARIABLE)); // no method was called on parameter s4
+                Assert.assertEquals(Level.DELAY, d.getProperty(VariableProperty.CONTEXT_NOT_NULL_DELAY_RESOLVED)); // p4 never came in a not-null context
 
                 Assert.assertTrue(d.variableInfo().isRead());
                 int expectNotNull = d.iteration() <= 2 ? Level.DELAY : MultiLevel.NULLABLE;
-                Assert.assertEquals(expectNotNull, d.getProperty(VariableProperty.NOT_NULL)); // nothing that points to not null
+                Assert.assertEquals(expectNotNull, d.getProperty(VariableProperty.NOT_NULL_VARIABLE)); // nothing that points to not null
             } else Assert.fail();
         }
 
@@ -65,8 +65,8 @@ public class Test_05_FinalChecks extends CommonTestRunner {
             if (S1.equals(d.variableName())) {
                 String expectValue = d.iteration() == 0 ? "s1+<field:org.e2immu.analyser.testexample.FinalChecks.s3>" : "s1+\"abc\"";
                 Assert.assertEquals(expectValue, d.currentValue().toString());
-                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL));
-                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL)); // nothing that points to not null
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL_EXPRESSION));
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL_VARIABLE)); // nothing that points to not null
 
                 if (d.iteration() > 0) {
                     Assert.assertTrue(d.currentValue().isInstanceOf(StringConcat.class));
@@ -137,15 +137,15 @@ public class Test_05_FinalChecks extends CommonTestRunner {
 
         if ("setS4".equals(methodInfo.name)) {
             // @NotModified decided straight away, @Identity as well
-            Assert.assertEquals(Level.FALSE, d.parameterAnalyses().get(0).getProperty(VariableProperty.MODIFIED));
+            Assert.assertEquals(Level.FALSE, d.parameterAnalyses().get(0).getProperty(VariableProperty.MODIFIED_METHOD));
             int expectNotNull = d.iteration() <= 1 ? Level.DELAY: MultiLevel.NULLABLE;
-            Assert.assertEquals(expectNotNull, d.parameterAnalyses().get(0).getProperty(VariableProperty.NOT_NULL));
+            Assert.assertEquals(expectNotNull, d.parameterAnalyses().get(0).getProperty(VariableProperty.NOT_NULL_EXPRESSION));
         }
     };
 
     FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
         if ("s4".equals(d.fieldInfo().name)) {
-            Assert.assertEquals(MultiLevel.NULLABLE, d.fieldAnalysis().getProperty(VariableProperty.NOT_NULL));
+            Assert.assertEquals(MultiLevel.NULLABLE, d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_NOT_NULL));
         }
         if ("s5".equals(d.fieldInfo().name)) {
             Assert.assertEquals(Level.TRUE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));

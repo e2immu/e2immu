@@ -158,15 +158,15 @@ public record VariableExpression(Variable variable,
             builder.markRead(fieldReference.scope);
         }
 
-        int notNull = forwardEvaluationInfo.getProperty(VariableProperty.NOT_NULL);
+        int notNull = forwardEvaluationInfo.getProperty(VariableProperty.CONTEXT_NOT_NULL);
         if (notNull > MultiLevel.NULLABLE) {
             builder.variableOccursInNotNullContext(variable, currentValue, notNull);
         }
-        int modified = forwardEvaluationInfo.getProperty(VariableProperty.MODIFIED);
+        int modified = forwardEvaluationInfo.getProperty(VariableProperty.CONTEXT_MODIFIED);
         if (modified != Level.DELAY) {
-            builder.markContentModified(variable, modified);
+            builder.markContextModified(variable, modified);
             if (variable instanceof FieldReference fieldReference && fieldReference.scope instanceof This thisVar) {
-                builder.markContentModified(replaceSuperByThis(evaluationContext, thisVar), modified);
+                builder.markContextModified(replaceSuperByThis(evaluationContext, thisVar), modified);
             }
         }
 

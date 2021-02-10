@@ -31,12 +31,11 @@ public class TestNullParameterChecks extends CommonTestRunner {
             if ("s".equals(d.variableName())) {
                 LOGGER.info("Properties of s it iteration {} are {}, value {}", d.iteration(), d.properties(), d.currentValue());
                 Assert.assertTrue(d.variableInfo().isRead());
-                Assert.assertEquals(Level.FALSE, d.getProperty(VariableProperty.MODIFIED)); //FALSE at level 1
+                Assert.assertEquals(Level.FALSE, d.getProperty(VariableProperty.MODIFIED_VARIABLE)); //FALSE at level 1
                 return;
             }
             if ("NullParameterChecks.this.s".equals(d.variableName())) {
                 Assert.assertTrue(d.variableInfo().isAssigned());
-                Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.LAST_ASSIGNMENT_GUARANTEED_TO_BE_REACHED));
                 Assert.assertTrue(d.variableInfo().getAssignmentId().compareTo(d.variableInfo().getReadId()) > 0);
                 return;
             }
@@ -46,7 +45,7 @@ public class TestNullParameterChecks extends CommonTestRunner {
             if ("0".equals(d.statementId())) {
                 if ("s".equals(d.variableName())) {
                     // we should know straight away (without delay) that the strip method on String is "safe"
-                    Assert.assertEquals(Level.FALSE, d.getProperty(VariableProperty.MODIFIED));
+                    Assert.assertEquals(Level.FALSE, d.getProperty(VariableProperty.MODIFIED_VARIABLE));
                     Assert.assertTrue(d.variableInfo().isRead());
                 } else if ("NullParameterChecks.this.s".equals(d.variableName())) {
                     // we do NOT have assigned 2x here, because the if-statement blocks are not guaranteed to be executed
@@ -62,7 +61,8 @@ public class TestNullParameterChecks extends CommonTestRunner {
                 Assert.assertTrue("Have " + d.currentValue().getClass(), d.currentValue() instanceof InlinedMethod);
                 Assert.assertEquals("inline get on t.trim() + .", d.currentValue().toString());
                 InlinedMethod inlineValue = (InlinedMethod) d.currentValue();
-                Assert.assertEquals(Level.FALSE, inlineValue.methodInfo().methodAnalysis.get().getProperty(VariableProperty.MODIFIED));
+                Assert.assertEquals(Level.FALSE, inlineValue.methodInfo().methodAnalysis.get()
+                        .getProperty(VariableProperty.MODIFIED_METHOD));
             }
         }
 
@@ -81,7 +81,7 @@ public class TestNullParameterChecks extends CommonTestRunner {
                 .methods().stream().filter(mi -> "requireNonNull".equals(mi.name) &&
                         1 == mi.methodInspection.get().getParameters().size()).findFirst().orElseThrow();
         Assert.assertEquals(Level.TRUE, requireNonNull.methodAnalysis.get().getProperty(VariableProperty.IDENTITY));
-        Assert.assertEquals(Level.FALSE, requireNonNull.methodAnalysis.get().getProperty(VariableProperty.MODIFIED));
+        Assert.assertEquals(Level.FALSE, requireNonNull.methodAnalysis.get().getProperty(VariableProperty.MODIFIED_METHOD));
 
     };
 

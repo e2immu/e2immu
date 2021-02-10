@@ -114,7 +114,7 @@ public class TypeAnalyser extends AbstractAnalyser {
         }
         analyserComponents = builder.build();
 
-        messages.addAll(typeAnalysis.fromAnnotationsIntoProperties(typeInfo.isInterface(), typeInspection.getAnnotations(),
+        messages.addAll(typeAnalysis.fromAnnotationsIntoProperties(false, typeInfo.isInterface(), typeInspection.getAnnotations(),
                 analyserContext.getE2ImmuAnnotationExpressions()));
     }
 
@@ -397,18 +397,19 @@ public class TypeAnalyser extends AbstractAnalyser {
             return DONE;
         }
         boolean someModifiedNotSet = myMethodAnalysersExcludingSAMs.stream()
-                .anyMatch(methodAnalyser -> methodAnalyser.methodAnalysis.getProperty(VariableProperty.MODIFIED) == Level.DELAY);
+                .anyMatch(methodAnalyser -> methodAnalyser.methodAnalysis
+                        .getProperty(VariableProperty.MODIFIED_METHOD) == Level.DELAY);
         if (someModifiedNotSet) return DELAYS;
 
         boolean allPreconditionsOnModifyingMethodsSet = myMethodAnalysersExcludingSAMs.stream()
-                .filter(methodAnalyser -> methodAnalyser.methodAnalysis.getProperty(VariableProperty.MODIFIED) == Level.TRUE)
+                .filter(methodAnalyser -> methodAnalyser.methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD) == Level.TRUE)
                 .allMatch(methodAnalyser -> methodAnalyser.methodAnalysis.preconditionForMarkAndOnly.isSet());
         if (!allPreconditionsOnModifyingMethodsSet) {
             log(DELAYED, "Not all precondition preps on modifying methods have been set in {}, delaying", typeInfo.fullyQualifiedName);
             return DELAYS;
         }
         boolean someInvalidPreconditionsOnModifyingMethods = myMethodAnalysersExcludingSAMs.stream().anyMatch(methodAnalyser ->
-                methodAnalyser.methodAnalysis.getProperty(VariableProperty.MODIFIED) == Level.TRUE &&
+                methodAnalyser.methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD) == Level.TRUE &&
                         methodAnalyser.methodAnalysis.preconditionForMarkAndOnly.get().isEmpty());
         if (someInvalidPreconditionsOnModifyingMethods) {
             log(MARK, "Not all modifying methods have a valid precondition in {}", typeInfo.fullyQualifiedName);
@@ -418,7 +419,7 @@ public class TypeAnalyser extends AbstractAnalyser {
 
         Map<String, Expression> tempApproved = new HashMap<>();
         for (MethodAnalyser methodAnalyser : myMethodAnalysersExcludingSAMs) {
-            int modified = methodAnalyser.methodAnalysis.getProperty(VariableProperty.MODIFIED);
+            int modified = methodAnalyser.methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD);
             if (modified == Level.TRUE) {
                 List<Expression> preconditions = methodAnalyser.methodAnalysis.preconditionForMarkAndOnly.get();
                 for (Expression precondition : preconditions) {
@@ -545,7 +546,7 @@ public class TypeAnalyser extends AbstractAnalyser {
         for (MethodAnalyser methodAnalyser : myMethodAndConstructorAnalysersExcludingSAMs) {
             if (!methodAnalyser.methodInfo.isPrivate()) {
                 for (ParameterAnalyser parameterAnalyser : methodAnalyser.getParameterAnalysers()) {
-                    int modified = parameterAnalyser.parameterAnalysis.getProperty(VariableProperty.MODIFIED);
+                    int modified = parameterAnalyser.parameterAnalysis.getProperty(VariableProperty.MODIFIED_VARIABLE);
                     if (modified == Level.DELAY && methodAnalyser.hasCode()) return DELAYS; // cannot yet decide
                     if (modified == Level.TRUE) {
                         log(CONTAINER, "{} is not a @Container: the content of {} is modified in {}",
@@ -602,12 +603,16 @@ public class TypeAnalyser extends AbstractAnalyser {
 
         // RULE 1
 
-        boolean modificationStatusUnknown = fieldsLinkedToParameters.stream().anyMatch(fieldAnalyser -> fieldAnalyser.fieldAnalysis.getProperty(VariableProperty.MODIFIED) == Level.DELAY);
+        boolean modificationStatusUnknown = fieldsLinkedToParameters.stream()
+                .anyMatch(fieldAnalyser -> fieldAnalyser.fieldAnalysis
+                        .getProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD) == Level.DELAY);
         if (modificationStatusUnknown) {
             log(DELAYED, "Delay independence of type {}, modification status of linked fields not yet set", typeInfo.fullyQualifiedName);
             return DELAYS;
         }
-        boolean someModified = fieldsLinkedToParameters.stream().anyMatch(fieldAnalyser -> fieldAnalyser.fieldAnalysis.getProperty(VariableProperty.MODIFIED) == Level.TRUE);
+        boolean someModified = fieldsLinkedToParameters.stream()
+                .anyMatch(fieldAnalyser -> fieldAnalyser.fieldAnalysis
+                        .getProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD) == Level.TRUE);
         if (someModified) {
             log(INDEPENDENT, "Type {} cannot be @Independent, some fields linked to parameters are modified", typeInfo.fullyQualifiedName);
             typeAnalysis.setProperty(VariableProperty.INDEPENDENT, MultiLevel.FALSE);
@@ -813,7 +818,7 @@ public class TypeAnalyser extends AbstractAnalyser {
                 boolean fieldRequiresRules = !fieldAnalysis.isOfImplicitlyImmutableDataType();
                 haveToEnforcePrivateAndIndependenceRules |= fieldRequiresRules;
 
-                int modified = fieldAnalysis.getProperty(VariableProperty.MODIFIED);
+                int modified = fieldAnalysis.getProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD);
 
                 // we check on !eventual, because in the eventual case, there are no modifying methods callable anymore
                 if (!eventual && modified == Level.DELAY) {
@@ -862,7 +867,7 @@ public class TypeAnalyser extends AbstractAnalyser {
 
             for (MethodAnalyser methodAnalyser : myMethodAnalysers) {
                 if (methodAnalyser.methodInfo.isVoid()) continue; // we're looking at return types
-                int modified = methodAnalyser.methodAnalysis.getProperty(VariableProperty.MODIFIED);
+                int modified = methodAnalyser.methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD);
                 // in the eventual case, we only need to look at the non-modifying methods
                 // calling a modifying method will result in an error
                 if (modified == Level.FALSE || !typeAnalysis.isEventual()) {

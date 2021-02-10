@@ -29,10 +29,10 @@ public class TestFunctionalInterfaceModified1 extends CommonTestRunner {
 
         if("getAndAdd".equals(fieldInfo.name)) {
             MethodInfo sam = fieldInfo.fieldInspection.get().getFieldInitialiser().implementationOfSingleAbstractMethod();
-            int modified = sam.methodAnalysis.get().getProperty(VariableProperty.MODIFIED);
+            int modified = sam.methodAnalysis.get().getProperty(VariableProperty.MODIFIED_METHOD);
             Assert.assertEquals(Level.TRUE, modified); // STEP 1 CHECKED
             if (iteration > 0) {
-                int modifiedOnField = d.fieldAnalysis().getProperty(VariableProperty.MODIFIED);
+                int modifiedOnField = d.fieldAnalysis().getProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD);
                 Assert.assertEquals(Level.TRUE, modifiedOnField); // STEP 2
             }
         }
@@ -48,9 +48,9 @@ public class TestFunctionalInterfaceModified1 extends CommonTestRunner {
             MethodInfo get = fieldInfo.fieldInspection.get().getFieldInitialiser().implementationOfSingleAbstractMethod();
             Assert.assertEquals("get", get.name);
             if (iteration > 0) {
-                int getMethodModified = get.methodAnalysis.get().getProperty(VariableProperty.MODIFIED);
+                int getMethodModified = get.methodAnalysis.get().getProperty(VariableProperty.MODIFIED_METHOD);
                 Assert.assertEquals(Level.TRUE, getMethodModified); // STEP 1 CHECKED
-                int fieldModified = d.fieldAnalysis().getProperty(VariableProperty.MODIFIED);
+                int fieldModified = d.fieldAnalysis().getProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD);
                 Assert.assertEquals(Level.TRUE, fieldModified); // STEP 2
             }
         }

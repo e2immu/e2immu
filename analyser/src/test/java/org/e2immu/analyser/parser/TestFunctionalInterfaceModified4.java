@@ -22,7 +22,7 @@ public class TestFunctionalInterfaceModified4 extends CommonTestRunner {
 
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
         if ("visit3".equals(d.methodInfo().name) && "FunctionalInterfaceModified4.this.ts".equals(d.variableName())) {
-            Assert.assertEquals(Level.FALSE, d.getProperty(VariableProperty.MODIFIED));
+            Assert.assertEquals(Level.FALSE, d.getProperty(VariableProperty.MODIFIED_VARIABLE));
             // if(d.iteration>0) Assert.assertEquals(Level.FALSE, (int) d.properties().get(VariableProperty.METHOD_DELAY));
         }
     };
@@ -30,13 +30,13 @@ public class TestFunctionalInterfaceModified4 extends CommonTestRunner {
     MethodAnalyserVisitor methodAnalyserVisitor = d -> {
         int iteration = d.iteration();
         String name = d.methodInfo().name;
-        int modified = d.methodAnalysis().getProperty(VariableProperty.MODIFIED);
+        int modified = d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD);
 
         if ("doTheVisiting".equals(name)) {
             Assert.assertEquals(Level.FALSE, modified);
             ParameterInfo set = d.methodInfo().methodInspection.get().getParameters().get(1);
             Assert.assertEquals("set", set.name);
-            Assert.assertEquals(Level.FALSE, set.parameterAnalysis.get().getProperty(VariableProperty.MODIFIED));
+            Assert.assertEquals(Level.FALSE, set.parameterAnalysis.get().getProperty(VariableProperty.MODIFIED_VARIABLE));
             //    Assert.assertEquals(Level.IS_A_SIZE, set.parameterAnalysis.get().getProperty(VariableProperty.SIZE));
         }
         if ("visit2".equals(name) && iteration > 0) {
@@ -51,7 +51,7 @@ public class TestFunctionalInterfaceModified4 extends CommonTestRunner {
             assert vi != null;
             Assert.assertTrue(vi.isRead());
             if (iteration > 1) {
-                Assert.assertEquals(Level.FALSE, vi.getProperty(VariableProperty.MODIFIED));
+                Assert.assertEquals(Level.FALSE, vi.getProperty(VariableProperty.MODIFIED_VARIABLE));
             }
             MethodInfo doTheVisiting = d.methodInfo().typeInfo.findUniqueMethod("doTheVisiting", 2);
             Assert.assertTrue(d.methodAnalysis().methodLevelData().copyModificationStatusFrom.isSet(doTheVisiting));

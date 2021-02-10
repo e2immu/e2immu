@@ -154,7 +154,8 @@ public class Test_04_Warnings extends CommonTestRunner {
                         Assert.assertEquals("0" + E, assigned); // integers=, NOT integers[i]=
                         Assert.assertEquals("2" + E, read);
                         Assert.assertEquals("{1,2,3}", d.currentValue().toString());
-                        Assert.assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL, d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL)); // because in scope side
+                        Assert.assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL,
+                                d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL_VARIABLE)); // because in scope side
                     } else if ("i".equals(d.variableName())) {
                         Assert.assertEquals("1" + E, assigned);
                         Assert.assertEquals("2" + E, read);
@@ -212,7 +213,7 @@ public class Test_04_Warnings extends CommonTestRunner {
         TypeMapVisitor typeMapVisitor = typeMap -> {
             TypeInfo system = typeMap.get(System.class);
             FieldInfo out = system.getFieldByName("out", true);
-            int notNull = out.fieldAnalysis.get().getProperty(VariableProperty.NOT_NULL);
+            int notNull = out.fieldAnalysis.get().getProperty(VariableProperty.NOT_NULL_VARIABLE);
             Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, notNull);
             Assert.assertEquals(Level.TRUE, out.fieldAnalysis.get().getProperty(VariableProperty.IGNORE_MODIFICATIONS));
 
@@ -286,7 +287,8 @@ public class Test_04_Warnings extends CommonTestRunner {
             TypeInfo stream = typeMap.get(Stream.class);
             Assert.assertNotNull(stream);
             MethodInfo of = stream.typeInspection.get().methods().stream().filter(m -> m.name.equals("of")).findAny().orElseThrow();
-            Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, of.methodAnalysis.get().getProperty(VariableProperty.NOT_NULL));
+            Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL,
+                    of.methodAnalysis.get().getProperty(VariableProperty.NOT_NULL_EXPRESSION));
         };
         final String T = "org.e2immu.analyser.testexample.Warnings_5.ChildClass.t";
 
@@ -335,11 +337,12 @@ public class Test_04_Warnings extends CommonTestRunner {
             if ("methodMustNotBeStatic3".equals(d.methodInfo().name)) {
                 ParameterAnalysis parameterAnalysis = d.parameterAnalyses().get(0);
 
-                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.methodAnalysis().getProperty(VariableProperty.NOT_NULL));
-                Assert.assertEquals(MultiLevel.NULLABLE, parameterAnalysis.getProperty(VariableProperty.NOT_NULL));
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL,
+                        d.methodAnalysis().getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                Assert.assertEquals(MultiLevel.NULLABLE, parameterAnalysis.getProperty(VariableProperty.NOT_NULL_VARIABLE));
 
-                Assert.assertEquals(Level.FALSE, d.methodAnalysis().getProperty(VariableProperty.MODIFIED));
-                Assert.assertEquals(Level.FALSE, parameterAnalysis.getProperty(VariableProperty.MODIFIED));
+                Assert.assertEquals(Level.FALSE, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
+                Assert.assertEquals(Level.FALSE, parameterAnalysis.getProperty(VariableProperty.MODIFIED_VARIABLE));
 
                 Assert.assertEquals(Level.TRUE, d.methodAnalysis().getProperty(VariableProperty.FLUENT));
             }
@@ -352,7 +355,7 @@ public class Test_04_Warnings extends CommonTestRunner {
             }
             if ("methodMustNotBeStatic5".equals(d.methodInfo().name)) {
                 Assert.assertEquals("this", d.methodAnalysis().getSingleReturnValue().toString());
-                Assert.assertEquals(Level.FALSE, d.methodAnalysis().getProperty(VariableProperty.MODIFIED));
+                Assert.assertEquals(Level.FALSE, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
                 Assert.assertEquals(Level.TRUE, d.methodAnalysis().getProperty(VariableProperty.FLUENT));
             }
         };

@@ -46,7 +46,9 @@ public class SetOnceMap<K, V> extends Freezable {
         Objects.requireNonNull(k);
         Objects.requireNonNull(v);
         ensureNotFrozen();
-        if (isSet(k)) throw new UnsupportedOperationException("Already decided on " + k);
+        if (isSet(k)) {
+            throw new UnsupportedOperationException("Already decided on " + k + ": have " + get(k) + ", want to write " + v);
+        }
         map.put(k, v);
     }
 
@@ -71,10 +73,6 @@ public class SetOnceMap<K, V> extends Freezable {
 
     public boolean isEmpty() {
         return map.isEmpty();
-    }
-
-    public void visit(BiConsumer<K, V> consumer) {
-        map.forEach(consumer);
     }
 
     public Stream<Map.Entry<K, V>> stream() {
@@ -106,9 +104,5 @@ public class SetOnceMap<K, V> extends Freezable {
         V vv = generator.apply(k);
         map.put(k, vv);
         return vv;
-    }
-
-    public void addAll(SetOnceMap<K, V> other) {
-        other.stream().forEach(e -> put(e.getKey(), e.getValue()));
     }
 }

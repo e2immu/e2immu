@@ -22,6 +22,7 @@ import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.EvaluateParameters;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
+import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;
@@ -124,9 +125,9 @@ public record NewObject(MethodInfo constructor,
                 state, objectFlow);
     }
 
-    public static NewObject initialValueOfFieldPartOfConstruction(EvaluationContext evaluationContext, Variable variable, ObjectFlow objectFlow) {
-        int notNull = evaluationContext.getProperty(variable, VariableProperty.NOT_NULL);
-        return new NewObject(null, variable.parameterizedType(), Diamond.SHOW_ALL, List.of(), notNull, null, null,
+    public static NewObject initialValueOfFieldPartOfConstruction(EvaluationContext evaluationContext, FieldReference fieldReference, ObjectFlow objectFlow) {
+        int notNull = evaluationContext.getProperty(fieldReference, VariableProperty.EXTERNAL_NOT_NULL);
+        return new NewObject(null, fieldReference.parameterizedType(), Diamond.SHOW_ALL, List.of(), notNull, null, null,
                 new BooleanConstant(evaluationContext.getPrimitives(), true), objectFlow);
     }
 
@@ -148,12 +149,12 @@ public record NewObject(MethodInfo constructor,
     // null-status derived from variable in evaluation context
     public static NewObject genericMergeResult(Primitives primitives, VariableInfo variableInfo) {
         return new NewObject(null, variableInfo.variable().parameterizedType(),
-                Diamond.SHOW_ALL, List.of(), variableInfo.getProperty(VariableProperty.NOT_NULL), null, null,
+                Diamond.SHOW_ALL, List.of(), variableInfo.getProperty(VariableProperty.NOT_NULL_VARIABLE), null, null,
                 new BooleanConstant(primitives, true), variableInfo.getObjectFlow());
     }
 
     public static NewObject genericArrayAccess(EvaluationContext evaluationContext, Expression array, Variable variable, ObjectFlow objectFlow) {
-        int notNull = evaluationContext.getProperty(array, VariableProperty.NOT_NULL);
+        int notNull = evaluationContext.getProperty(array, VariableProperty.NOT_NULL_VARIABLE);
         return new NewObject(null, variable.parameterizedType(), Diamond.SHOW_ALL, List.of(), notNull, null, null,
                 new BooleanConstant(evaluationContext.getPrimitives(), true), objectFlow);
     }
@@ -333,13 +334,13 @@ public record NewObject(MethodInfo constructor,
     @Override
     public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
         switch (variableProperty) {
-            case NOT_NULL: {
+            case NOT_NULL_EXPRESSION: {
                 TypeInfo bestType = parameterizedType.bestTypeInfo();
                 if (Primitives.isPrimitiveExcludingVoid(bestType))
                     return MultiLevel.EFFECTIVELY_NOT_NULL;
                 return minimalNotNull;
             }
-            case MODIFIED:
+            case CONTEXT_MODIFIED:
             case NOT_MODIFIED_1:
             case METHOD_DELAY:
             case IDENTITY:

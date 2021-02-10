@@ -44,7 +44,7 @@ public class TestIndependentFunctionalParameterChecks extends CommonTestRunner {
 
     MethodAnalyserVisitor methodAnalyserVisitor = d -> {
         if ("stream".equals(d.methodInfo().name)) {
-            int notNull = d.methodAnalysis().getProperty(VariableProperty.NOT_NULL);
+            int notNull = d.methodAnalysis().getProperty(VariableProperty.NOT_NULL_EXPRESSION);
             if (d.iteration() == 0) {
                 Assert.assertEquals(Level.DELAY, notNull);
             } else {

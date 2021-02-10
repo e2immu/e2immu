@@ -145,9 +145,9 @@ public class ExpandableAnalyserContextImpl implements AnalyserContext {
     }
 
     public void addAll(ExpandableAnalyserContextImpl previous) {
-        methodAnalysers.addAll(previous.methodAnalysers);
-        typeAnalysers.addAll(previous.typeAnalysers);
-        fieldAnalysers.addAll(previous.fieldAnalysers);
-        parameterAnalysers.addAll(previous.parameterAnalysers);
+        methodAnalysers.putAll(previous.methodAnalysers);
+        typeAnalysers.putAll(previous.typeAnalysers);
+        fieldAnalysers.putAll(previous.fieldAnalysers);
+        parameterAnalysers.putAll(previous.parameterAnalysers);
     }
 }

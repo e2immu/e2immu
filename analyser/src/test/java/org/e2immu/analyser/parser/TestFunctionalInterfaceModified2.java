@@ -22,10 +22,10 @@ public class TestFunctionalInterfaceModified2 extends CommonTestRunner {
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
         if ("0".equals(d.statementId()) && "acceptMyCounter1".equals(d.methodInfo().name)) {
             if ("consumer".equals(d.variableName())) {
-                Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.MODIFIED));
+                Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.MODIFIED_VARIABLE));
             }
             if ("FunctionalInterfaceModified2.this.myCounter1".equals(d.variableName())) {
-                Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.MODIFIED));
+                Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.MODIFIED_VARIABLE));
             }
         }
     };
@@ -46,9 +46,9 @@ public class TestFunctionalInterfaceModified2 extends CommonTestRunner {
     TypeMapVisitor typeMapVisitor = typeMap -> {
         TypeInfo consumer = typeMap.get(Consumer.class);
         MethodInfo accept = consumer.findUniqueMethod("accept", 1);
-        Assert.assertEquals(Level.TRUE, accept.methodAnalysis.get().getProperty(VariableProperty.MODIFIED));
+        Assert.assertEquals(Level.TRUE, accept.methodAnalysis.get().getProperty(VariableProperty.MODIFIED_METHOD));
         ParameterInfo t = accept.methodInspection.get().getParameters().get(0);
-        Assert.assertEquals(Level.TRUE, t.parameterAnalysis.get().getProperty(VariableProperty.MODIFIED));
+        Assert.assertEquals(Level.TRUE, t.parameterAnalysis.get().getProperty(VariableProperty.MODIFIED_VARIABLE));
     };
 
     @Test

@@ -98,8 +98,9 @@ public class Test_22_SubTypes extends CommonTestRunner {
         TypeMapVisitor typeMapVisitor = typeMap -> {
             TypeInfo object = typeMap.get(Object.class);
             MethodInfo toString = object.findUniqueMethod("toString", 0);
-            Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, toString.methodAnalysis.get().getProperty(VariableProperty.NOT_NULL));
-            Assert.assertEquals(Level.FALSE, toString.methodAnalysis.get().getProperty(VariableProperty.MODIFIED));
+            Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL,
+                    toString.methodAnalysis.get().getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+            Assert.assertEquals(Level.FALSE, toString.methodAnalysis.get().getProperty(VariableProperty.MODIFIED_METHOD));
 
             TypeInfo nonStatic2 = typeMap.get("org.e2immu.analyser.testexample.SubTypes_2.NonStaticSubType2");
             MethodInfo toString2 = nonStatic2.findUniqueMethod("toString", 0);

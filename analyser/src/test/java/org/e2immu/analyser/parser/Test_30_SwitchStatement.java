@@ -46,7 +46,8 @@ public class Test_30_SwitchStatement extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
-                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.methodAnalysis().getProperty(VariableProperty.NOT_NULL));
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL,
+                        d.methodAnalysis().getProperty(VariableProperty.NOT_NULL_EXPRESSION));
             }
         };
 
@@ -87,7 +88,7 @@ public class Test_30_SwitchStatement extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("method".equals(d.methodInfo().name) && "3".equals(d.statementId()) && "res".equals(d.variableName())) {
                 Assert.assertEquals("nullable? instance type String", d.currentValue().toString());
-                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL));
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
             }
         };
 
@@ -103,7 +104,8 @@ public class Test_30_SwitchStatement extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("method".equals(d.methodInfo().name) && d.iteration() > 0) {
                 Assert.assertEquals(Level.FALSE, d.methodAnalysis().getProperty(VariableProperty.CONSTANT));
-                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.methodAnalysis().getProperty(VariableProperty.NOT_NULL));
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL,
+                        d.methodAnalysis().getProperty(VariableProperty.NOT_NULL_EXPRESSION));
             }
         };
 

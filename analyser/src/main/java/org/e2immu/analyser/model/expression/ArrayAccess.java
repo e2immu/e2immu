@@ -191,7 +191,7 @@ public class ArrayAccess implements Expression {
             }
         }
 
-        int notNullRequired = forwardEvaluationInfo.getProperty(VariableProperty.NOT_NULL);
+        int notNullRequired = forwardEvaluationInfo.getProperty(VariableProperty.CONTEXT_NOT_NULL);
         if (notNullRequired > MultiLevel.NULLABLE && builder.getExpression() instanceof VariableExpression e) {
             builder.variableOccursInNotNullContext(e.variable(), builder.getExpression(), notNullRequired);
         }

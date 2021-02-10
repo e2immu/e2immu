@@ -26,6 +26,7 @@ import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.VariableExpression;
+import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.testexample.Basics_6;
 import org.junit.Assert;
@@ -123,6 +124,14 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
                 if ("v1".equals(d.variableName()) && "0".equals(d.statementId())) {
                     String expect = d.iteration() == 0 ? "<field:org.e2immu.analyser.testexample.Basics_6.field>" : FIELD_0;
                     Assert.assertEquals(expect, d.currentValue().toString());
+                }
+            }
+            if ("test3".equals(d.methodInfo().name) && d.variable() instanceof ReturnVariable) {
+                if ("4".equals(d.statementId())) {
+                    String expectValue = d.iteration() == 0 ? "<method:org.e2immu.analyser.testexample.Basics_6.someMinorMethod(java.lang.String)>" : "v3";
+                    Assert.assertEquals(expectValue, d.currentValue().toString());
+                    int expectNotNull = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
+                    Assert.assertEquals(expectNotNull, d.getProperty(VariableProperty.NOT_NULL_VARIABLE));
                 }
             }
         };
@@ -223,7 +232,7 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
 
             TypeInfo string = typeMap.get(String.class);
             MethodInfo equals = string.findUniqueMethod("equals", 1);
-            Assert.assertEquals(Level.FALSE, equals.methodAnalysis.get().getProperty(VariableProperty.MODIFIED));
+            Assert.assertEquals(Level.FALSE, equals.methodAnalysis.get().getProperty(VariableProperty.MODIFIED_METHOD));
 
             MethodInfo toLowerCase = string.findUniqueMethod("toLowerCase", 0);
             Assert.assertFalse(toLowerCase.methodResolution.get().allowsInterrupts());

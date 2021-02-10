@@ -60,9 +60,9 @@ public interface ConstantExpression<T> extends Expression {
                 return Level.TRUE;
             case IMMUTABLE:
                 return MultiLevel.EFFECTIVELY_E2IMMUTABLE;
-            case NOT_NULL:
+            case NOT_NULL_EXPRESSION:
                 return MultiLevel.EFFECTIVELY_NOT_NULL;
-            case MODIFIED:
+            case MODIFIED_METHOD:
             case NOT_MODIFIED_1:
             case METHOD_DELAY:
             case IGNORE_MODIFICATIONS:

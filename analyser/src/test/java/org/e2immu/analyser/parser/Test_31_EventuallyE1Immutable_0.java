@@ -40,7 +40,7 @@ public class Test_31_EventuallyE1Immutable_0 extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("setString".equals(d.methodInfo().name) || "setString2".equals(d.methodInfo().name)) {
                 if ("2".equals(d.statementId()) && d.variable() instanceof FieldReference fr && "string".equals(fr.fieldInfo.name)) {
-                    int notNull = d.getProperty(VariableProperty.NOT_NULL);
+                    int notNull = d.getProperty(VariableProperty.NOT_NULL_VARIABLE);
                     Assert.assertNotEquals(MultiLevel.NULLABLE, notNull);
                 }
             }

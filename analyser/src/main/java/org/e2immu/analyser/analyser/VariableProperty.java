@@ -25,9 +25,6 @@ import org.e2immu.annotation.AnnotationMode;
 import java.util.Set;
 
 public enum VariableProperty {
-    // in a block, are we guaranteed to reach the last assignment?
-    // we focus on last assignment because that is what the 'currentValue' holds
-    LAST_ASSIGNMENT_GUARANTEED_TO_BE_REACHED("reached"),
 
     // single simple purpose: on `this` to see if local methods have been called
     METHOD_CALLED("method called"),
@@ -41,18 +38,50 @@ public enum VariableProperty {
 
     // purpose: goes to false when a parameter occurs in a not_null context, but there is a delay
     // goes to true when that delay has been resolved
-    NOT_NULL_DELAYS_RESOLVED("notnull delay resolved"),
+    CONTEXT_NOT_NULL("not null in context", MultiLevel.NULLABLE, MultiLevel.EFFECTIVELY_CONTENT2_NOT_NULL,
+            MultiLevel.NULLABLE, MultiLevel.EFFECTIVELY_NOT_NULL, new VariableProperty[0]),
+    CONTEXT_NOT_NULL_DELAY("not null in context delay"),
+    CONTEXT_NOT_NULL_DELAY_RESOLVED("not null in context delay resolved"),
+
+    /*
+    in fields, external not null is the truth
+    in statements in a method, external not null needs combined with context not null (not null variable)
+    the method result is stored in not null expression
+
+     */
+
+    // or: not null from a value/assignment
+    EXTERNAL_NOT_NULL("not null from outside method", MultiLevel.NULLABLE, MultiLevel.EFFECTIVELY_CONTENT2_NOT_NULL,
+            MultiLevel.NULLABLE, MultiLevel.EFFECTIVELY_NOT_NULL, new VariableProperty[0]),
+    EXTERNAL_NOT_NULL_DELAY("not null from outside method delay"),
+    EXTERNAL_NOT_NULL_DELAY_RESOLVED("not null from outside method delay resolved"),
+
+    CONTEXT_MODIFIED("modified in context"),
+    MODIFIED_OUTSIDE_METHOD("modified outside method"),
 
     // the ones corresponding to annotations
 
-    NOT_NULL("@NotNull", true,
-            MultiLevel.NULLABLE, MultiLevel.EFFECTIVELY_CONTENT2_NOT_NULL, MultiLevel.NULLABLE, MultiLevel.EFFECTIVELY_NOT_NULL),
+    NOT_NULL_VARIABLE("@NotNull variable", MultiLevel.NULLABLE, MultiLevel.EFFECTIVELY_CONTENT2_NOT_NULL,
+            MultiLevel.NULLABLE, MultiLevel.EFFECTIVELY_NOT_NULL,
+            new VariableProperty[]{EXTERNAL_NOT_NULL, CONTEXT_NOT_NULL}),
+    NOT_NULL_EXPRESSION("@NotNull", MultiLevel.NULLABLE, MultiLevel.EFFECTIVELY_CONTENT2_NOT_NULL,
+            MultiLevel.NULLABLE, MultiLevel.EFFECTIVELY_NOT_NULL, new VariableProperty[0]),
 
-    FINAL("@Final", false, Level.FALSE, Level.TRUE, Level.FALSE, Level.TRUE),
-    CONTAINER("@Container", false, Level.FALSE, Level.TRUE, Level.FALSE, Level.TRUE),
-    IMMUTABLE("@Immutable", true, MultiLevel.MUTABLE, MultiLevel.EFFECTIVELY_E2IMMUTABLE, MultiLevel.MUTABLE, MultiLevel.MUTABLE),
-    MODIFIED("@Modified", true, Level.FALSE, Level.TRUE, Level.TRUE, Level.FALSE),
-    INDEPENDENT("@Independent", false, MultiLevel.FALSE, MultiLevel.EFFECTIVE, MultiLevel.FALSE, MultiLevel.EFFECTIVE),
+    FINAL("@Final", Level.FALSE, Level.TRUE, Level.FALSE, Level.TRUE, new VariableProperty[0]),
+
+    CONTAINER("@Container", Level.FALSE, Level.TRUE, Level.FALSE, Level.TRUE, new VariableProperty[0]),
+
+    IMMUTABLE("@Immutable", MultiLevel.MUTABLE, MultiLevel.EFFECTIVELY_E2IMMUTABLE, MultiLevel.MUTABLE,
+            MultiLevel.MUTABLE, new VariableProperty[0]),
+
+    MODIFIED_VARIABLE("@Modified variable", Level.FALSE, Level.TRUE, Level.TRUE, Level.FALSE,
+            new VariableProperty[]{MODIFIED_OUTSIDE_METHOD, CONTEXT_MODIFIED}),
+    MODIFIED_METHOD("@Modified method", Level.FALSE, Level.TRUE, Level.TRUE, Level.FALSE,
+            new VariableProperty[0]),
+
+    INDEPENDENT("@Independent", MultiLevel.FALSE, MultiLevel.EFFECTIVE, MultiLevel.FALSE, MultiLevel.EFFECTIVE,
+            new VariableProperty[0]),
+
     CONSTANT("@Constant"),
     EXTENSION_CLASS("@ExtensionClass"),
     FLUENT("@Fluent"),
@@ -66,23 +95,28 @@ public enum VariableProperty {
     UTILITY_CLASS("@UtilityClass");
 
     public final String name;
-    public final boolean canImprove;
     public final int best;
     public final int falseValue;
     private final int valueWhenAbsentInDefensiveMode;
     private final int valueWhenAbsentInOffensiveMode;
+    public final VariableProperty[] combinationOf;
 
     VariableProperty(String name) {
-        this(name, false, Level.FALSE, Level.TRUE, Level.FALSE, Level.FALSE);
+        this(name, Level.FALSE, Level.TRUE, Level.FALSE, Level.FALSE, new VariableProperty[0]);
     }
 
-    VariableProperty(String name, boolean canImprove, int falseValue, int best, int valueWhenAbsentInDefensiveMode, int valueWhenAbsentInOffensiveMode) {
+    VariableProperty(String name,
+                     int falseValue,
+                     int best,
+                     int valueWhenAbsentInDefensiveMode,
+                     int valueWhenAbsentInOffensiveMode,
+                     VariableProperty[] combinationOf) {
         this.name = name;
-        this.canImprove = canImprove;
         this.best = best;
         this.falseValue = falseValue;
         this.valueWhenAbsentInDefensiveMode = valueWhenAbsentInDefensiveMode;
         this.valueWhenAbsentInOffensiveMode = valueWhenAbsentInOffensiveMode;
+        this.combinationOf = combinationOf;
     }
 
     @Override
@@ -96,12 +130,10 @@ public enum VariableProperty {
         throw new UnsupportedOperationException();
     }
 
-    public final static Set<VariableProperty> FORWARD_PROPERTIES_ON_PARAMETERS = Set.of(NOT_NULL, MODIFIED, NOT_MODIFIED_1); // TODO add SIZE
-    public final static Set<VariableProperty> FROM_FIELD_TO_PARAMETER = Set.of(NOT_NULL, MODIFIED);
-    public final static Set<VariableProperty> PROPERTIES_IN_METHOD_RESULT_WRAPPER = Set.of(NOT_NULL, IMMUTABLE);
+    public final static Set<VariableProperty> PROPERTIES_IN_METHOD_RESULT_WRAPPER = Set.of(NOT_NULL_EXPRESSION, IMMUTABLE);
     public final static Set<VariableProperty> READ_FROM_RETURN_VALUE_PROPERTIES = Set.of(IDENTITY, IMMUTABLE, CONTAINER, NOT_NULL);
     public final static Set<VariableProperty> METHOD_PROPERTIES_IN_INLINE_SAM = Set.of(MODIFIED, INDEPENDENT);
-    public static final Set<VariableProperty> CHECK_WORSE_THAN_PARENT = Set.of(NOT_NULL, MODIFIED);
+    public static final Set<VariableProperty> CHECK_WORSE_THAN_PARENT = Set.of(NOT_NULL_VARIABLE, MODIFIED_VARIABLE);
     public static final Set<VariableProperty> FROM_ANALYSER_TO_PROPERTIES = Set.of(IDENTITY, FINAL, NOT_NULL, IMMUTABLE, CONTAINER, NOT_MODIFIED_1);
     public static final Set<VariableProperty> VALUE_PROPERTIES = Set.of(IDENTITY, IMMUTABLE, CONTAINER, NOT_NULL);
 

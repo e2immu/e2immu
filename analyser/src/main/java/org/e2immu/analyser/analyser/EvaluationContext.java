@@ -135,10 +135,10 @@ public interface EvaluationContext {
         throw new UnsupportedOperationException();
     }
 
-    default int summarizeModification(Set<Variable> linkedVariables) {
+    default int summarizeContextModification(Set<Variable> linkedVariables) {
         boolean hasDelays = false;
         for (Variable variable : linkedVariables) {
-            int modified = getProperty(variable, VariableProperty.MODIFIED);
+            int modified = getProperty(variable, VariableProperty.CONTEXT_MODIFIED);
             if (modified == Level.TRUE) return Level.TRUE;
             int methodDelay = getProperty(variable, VariableProperty.METHOD_DELAY);
             int methodDelayResolved = getProperty(variable, VariableProperty.METHOD_DELAY_RESOLVED);

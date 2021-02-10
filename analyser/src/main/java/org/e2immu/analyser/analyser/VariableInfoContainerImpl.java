@@ -250,11 +250,12 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         };
 
         int current = variableInfo.getProperty(variableProperty);
-        if (current < value) {
+        if (current == org.e2immu.analyser.model.Level.DELAY) {
             variableInfo.setProperty(variableProperty, value);
-        } else if (current != value && failWhenTryingToWriteALowerValue) {
-            throw new UnsupportedOperationException("Trying to write a lower value " + value +
-                    ", already have " + current + ", property " + variableProperty);
+        } else if (current != value && (current < value || failWhenTryingToWriteALowerValue)) {
+            throw new UnsupportedOperationException("Trying to write a different value " + value +
+                    ", already have " + current + ", property " + variableProperty +
+                    ", variable " + current().variable().fullyQualifiedName());
         }
     }
 
@@ -295,7 +296,9 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
 
     /*
     Copy from one statement to the next, iteration 1+, into 'evaluation'
-    The assignment ID marks beforehand when we can expect value changes.
+    when reading and assigning don't do it. This occurs when another variable
+    holds this variable as a value. And evaluation level is created, even though
+    the variable is not read/assigned in the main expression.
      */
     @Override
     public void copy() {
@@ -304,13 +307,15 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
 
         assert this.evaluation.isSet();
 
-        previous.propertyStream().forEach(e ->
-                setProperty(e.getKey(), e.getValue(), false, Level.EVALUATION));
-
         VariableInfoImpl evaluation = this.evaluation.get();
         boolean noAssignmentInThisStatement = isNotAssignedInThisStatement();
         boolean notReadInThisStatement = !isReadInThisStatement();
         if (noAssignmentInThisStatement && notReadInThisStatement) {
+            previous.propertyStream()
+                    .filter(e -> e.getKey() != VariableProperty.CONTEXT_MODIFIED)
+                    .forEach(e ->
+                            setProperty(e.getKey(), e.getValue(), false, Level.EVALUATION));
+
             if (previous.valueIsSet()) {
                 evaluation.setValue(previous.getValue(), previous.isDelayed());
             }

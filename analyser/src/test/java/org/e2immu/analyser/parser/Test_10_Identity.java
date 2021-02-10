@@ -26,12 +26,12 @@ public class Test_10_Identity extends CommonTestRunner {
         MethodInfo debug = logger.typeInspection.get().methodStream(TypeInspection.Methods.THIS_TYPE_ONLY)
                 .filter(m -> "org.slf4j.Logger.debug(java.lang.String,java.lang.Object...)".equals(m.fullyQualifiedName))
                 .findFirst().orElseThrow();
-        Assert.assertEquals(Level.FALSE, debug.methodAnalysis.get().getProperty(VariableProperty.MODIFIED));
+        Assert.assertEquals(Level.FALSE, debug.methodAnalysis.get().getProperty(VariableProperty.MODIFIED_METHOD));
 
         MethodInfo debug1 = logger.findUniqueMethod("debug", 1);
-        Assert.assertEquals(Level.FALSE, debug1.methodAnalysis.get().getProperty(VariableProperty.MODIFIED));
+        Assert.assertEquals(Level.FALSE, debug1.methodAnalysis.get().getProperty(VariableProperty.MODIFIED_METHOD));
         Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, debug1.methodInspection.get().getParameters().get(0)
-                .parameterAnalysis.get().getProperty(VariableProperty.NOT_NULL));
+                .parameterAnalysis.get().getProperty(VariableProperty.NOT_NULL_VARIABLE));
     };
 
     @Test
@@ -48,25 +48,25 @@ public class Test_10_Identity extends CommonTestRunner {
             if (d.methodInfo().name.equals("idem") && IDEM_S.equals(d.variableName())) {
                 if ("0".equals(d.statementId())) {
                     // strings are @NM, @E2Container by definition/API annotations
-                    Assert.assertEquals(Level.FALSE, d.getProperty(VariableProperty.MODIFIED));
+                    Assert.assertEquals(Level.FALSE, d.getProperty(VariableProperty.MODIFIED_VARIABLE));
                     Assert.assertTrue(d.variableInfo().isRead());
                     if (d.iteration() > 0) {
                         Assert.assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, d.getProperty(VariableProperty.IMMUTABLE));
                         Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.CONTAINER));
 
                         // there is an explicit @NotNull on the first parameter of debug
-                        Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL));
+                        Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL_VARIABLE));
                     } // else: nothing much happening in the first iteration, because LOGGER is still unknown!
                 } else if ("1".equals(d.statementId())) {
                     Assert.assertTrue(d.variableInfo().isRead());
                     Assert.assertEquals("1" + VariableInfoContainer.Level.EVALUATION, d.variableInfo().getReadId());
 
                     int expectModified = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
-                    Assert.assertEquals(expectModified, d.getProperty(VariableProperty.MODIFIED));
+                    Assert.assertEquals(expectModified, d.getProperty(VariableProperty.MODIFIED_VARIABLE));
 
                     // there is an explicit @NotNull on the first parameter of debug
                     int expectNN = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
-                    Assert.assertEquals(expectNN, d.getProperty(VariableProperty.NOT_NULL));
+                    Assert.assertEquals(expectNN, d.getProperty(VariableProperty.NOT_NULL_VARIABLE));
 
                     String expectValue = d.iteration() == 0 ?
                             "<parameter:org.e2immu.analyser.testexample.Identity_0.idem(String):0:s>" :
@@ -88,9 +88,9 @@ public class Test_10_Identity extends CommonTestRunner {
             if (d.iteration() > 0) {
                 if ("idem".equals(d.methodInfo().name)) {
                     VariableInfo vi = d.getReturnAsVariable();
-                    Assert.assertFalse(vi.hasProperty(VariableProperty.MODIFIED));
+                    Assert.assertFalse(vi.hasProperty(VariableProperty.MODIFIED_VARIABLE));
 
-                    Assert.assertEquals(Level.FALSE, methodAnalysis.getProperty(VariableProperty.MODIFIED));
+                    Assert.assertEquals(Level.FALSE, methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD));
                     Assert.assertEquals(Level.TRUE, methodAnalysis.getProperty(VariableProperty.IDENTITY));
                     Assert.assertEquals("s", d.methodAnalysis().getSingleReturnValue().toString());
                 }
@@ -121,7 +121,7 @@ public class Test_10_Identity extends CommonTestRunner {
             MethodAnalysis methodAnalysis = d.methodAnalysis();
             if (d.iteration() > 0) {
                 if ("idem2".equals(d.methodInfo().name)) {
-                    Assert.assertEquals(Level.FALSE, methodAnalysis.getProperty(VariableProperty.MODIFIED));
+                    Assert.assertEquals(Level.FALSE, methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD));
                     Assert.assertEquals(Level.TRUE, methodAnalysis.getProperty(VariableProperty.IDENTITY));
                     Assert.assertEquals("s/*@Immutable,@NotNull*/", d.methodAnalysis().getSingleReturnValue().toString());
                 }
@@ -145,10 +145,10 @@ public class Test_10_Identity extends CommonTestRunner {
             if (d.methodInfo().name.equals("idem3") && IDEM3_S.equals(d.variableName())) {
                 // there is an explicit @NotNull on the first parameter of debug
                 if ("0".equals(d.statementId())) {
-                    Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL));
-                    Assert.assertEquals(Level.FALSE, d.getProperty(VariableProperty.MODIFIED));
+                    Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL_VARIABLE));
+                    Assert.assertEquals(Level.FALSE, d.getProperty(VariableProperty.MODIFIED_VARIABLE));
                 } else if ("1".equals(d.statementId())) {
-                    Assert.assertEquals(Level.FALSE, d.getProperty(VariableProperty.MODIFIED));
+                    Assert.assertEquals(Level.FALSE, d.getProperty(VariableProperty.MODIFIED_VARIABLE));
                 }
             }
         };
@@ -163,7 +163,7 @@ public class Test_10_Identity extends CommonTestRunner {
                 Assert.assertTrue(valueInside2 instanceof VariableExpression);
                 // check that isInstanceOf bypasses the wrappers
                 Assert.assertTrue(value.isInstanceOf(VariableExpression.class));
-                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(value, VariableProperty.NOT_NULL));
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(value, VariableProperty.NOT_NULL_VARIABLE));
             }
         };
 
@@ -172,25 +172,26 @@ public class Test_10_Identity extends CommonTestRunner {
             if (d.iteration() > 0) {
                 if ("idem3".equals(d.methodInfo().name)) {
                     Assert.assertEquals(Level.TRUE, methodAnalysis.getProperty(VariableProperty.IDENTITY));
-                    Assert.assertEquals(Level.FALSE, methodAnalysis.getProperty(VariableProperty.MODIFIED));
+                    Assert.assertEquals(Level.FALSE, methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD));
 
                     VariableInfo vi = d.getReturnAsVariable();
-                    Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, vi.getProperty(VariableProperty.NOT_NULL));
+                    Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, vi.getProperty(VariableProperty.NOT_NULL_VARIABLE));
 
                     Assert.assertEquals("s/*@Immutable,@NotNull*//*@Immutable,@NotNull*/",
                             d.methodAnalysis().getSingleReturnValue().toString());
 
                     // combining both, we obtain:
-                    Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, methodAnalysis.getProperty(VariableProperty.NOT_NULL));
+                    Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL,
+                            methodAnalysis.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
                 }
             }
             if ("idem2".equals(d.methodInfo().name)) {
                 ParameterAnalysis p0 = d.parameterAnalyses().get(0);
-                Assert.assertEquals(Level.FALSE, p0.getProperty(VariableProperty.MODIFIED));
+                Assert.assertEquals(Level.FALSE, p0.getProperty(VariableProperty.MODIFIED_VARIABLE));
             }
             if ("idem".equals(d.methodInfo().name)) {
                 ParameterAnalysis p0 = d.parameterAnalyses().get(0);
-                Assert.assertEquals(Level.FALSE, p0.getProperty(VariableProperty.MODIFIED));
+                Assert.assertEquals(Level.FALSE, p0.getProperty(VariableProperty.MODIFIED_VARIABLE));
             }
         };
 
@@ -218,7 +219,7 @@ public class Test_10_Identity extends CommonTestRunner {
             MethodAnalysis methodAnalysis = d.methodAnalysis();
             if (d.iteration() > 0) {
                 if ("idem4".equals(d.methodInfo().name)) {
-                    Assert.assertEquals(Level.FALSE, methodAnalysis.getProperty(VariableProperty.MODIFIED));
+                    Assert.assertEquals(Level.FALSE, methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD));
                     Assert.assertEquals(Level.TRUE, methodAnalysis.getProperty(VariableProperty.IDENTITY));
                 }
             }

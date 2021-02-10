@@ -73,7 +73,8 @@ public class Test_18_E2Immutable extends CommonTestRunner {
     public void test_3() throws IOException {
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("strings4".equals(d.fieldInfo().name)) {
-                Assert.assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL, d.fieldAnalysis().getProperty(VariableProperty.NOT_NULL));
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL,
+                        d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_NOT_NULL));
             }
         };
 
@@ -83,7 +84,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
                 FieldInfo strings4 = d.methodInfo().typeInfo.getFieldByName("strings4", true);
                 VariableInfo vi = d.getFieldAsVariable(strings4);
                 assert vi != null;
-                Assert.assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL, vi.getProperty(VariableProperty.NOT_NULL));
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL, vi.getProperty(VariableProperty.NOT_NULL_VARIABLE));
             }
 
             if ("mingle".equals(d.methodInfo().name)) {
@@ -92,11 +93,12 @@ public class Test_18_E2Immutable extends CommonTestRunner {
                     VariableInfo vi = d.getFieldAsVariable(strings4);
                     assert vi != null;
 
-                    Assert.assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL, vi.getProperty(VariableProperty.NOT_NULL));
+                    Assert.assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL,
+                            vi.getProperty(VariableProperty.NOT_NULL_VARIABLE));
                 }
                 // this method returns the input parameter
                 int expectMethodNN = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
-                Assert.assertEquals(expectMethodNN, d.methodAnalysis().getProperty(VariableProperty.NOT_NULL));
+                Assert.assertEquals(expectMethodNN, d.methodAnalysis().getProperty(VariableProperty.NOT_NULL_EXPRESSION));
             }
             if ("getStrings4".equals(d.methodInfo().name)) {
                 if (d.iteration() > 0) {
@@ -106,7 +108,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
                 }
                 // method not null
                 int expectNN = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL;
-                Assert.assertEquals(expectNN, d.methodAnalysis().getProperty(VariableProperty.NOT_NULL));
+                Assert.assertEquals(expectNN, d.methodAnalysis().getProperty(VariableProperty.NOT_NULL_EXPRESSION));
             }
         };
 
@@ -114,7 +116,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
             if ("E2Immutable_3".equals(d.methodInfo().name) && d.variable() instanceof FieldReference fieldReference &&
                     "strings4".equals(fieldReference.fieldInfo.name)) {
                 Assert.assertEquals("ImmutableSet.copyOf(input4)", d.currentValue().toString());
-                Assert.assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL));
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL_VARIABLE));
             }
         };
 
@@ -173,11 +175,11 @@ public class Test_18_E2Immutable extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("setI".equals(d.methodInfo().name)) {
-                Assert.assertEquals(Level.TRUE, d.methodAnalysis().getProperty(VariableProperty.MODIFIED));
+                Assert.assertEquals(Level.TRUE, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
             }
             if ("getI".equals(d.methodInfo().name)) {
                 int expectModified = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
-                Assert.assertEquals(expectModified, d.methodAnalysis().getProperty(VariableProperty.MODIFIED));
+                Assert.assertEquals(expectModified, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
                 if (d.iteration() == 0) {
                     Assert.assertNull(d.methodAnalysis().getSingleReturnValue());
                 } else {

@@ -106,7 +106,7 @@ public class TestObjectFlowFreezableSet extends CommonTestRunner {
             // now after set7.freeze():
             if ("1".equals(d.statementId())) {
                 Assert.assertEquals("[mark]", objectFlow.marks().toString());
-                Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.MODIFIED));
+                Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.MODIFIED_VARIABLE));
             }
         }
     };
@@ -181,7 +181,8 @@ public class TestObjectFlowFreezableSet extends CommonTestRunner {
     TypeMapVisitor typeMapVisitor = typeMap -> {
         TypeInfo collection = typeMap.get(Collection.class);
         MethodInfo stream = collection.findUniqueMethod("stream", 0);
-        Assert.assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL, stream.methodAnalysis.get().getProperty(VariableProperty.NOT_NULL));
+        Assert.assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL,
+                stream.methodAnalysis.get().getProperty(VariableProperty.NOT_NULL_EXPRESSION));
     };
 
     @Test

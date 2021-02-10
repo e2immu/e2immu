@@ -136,7 +136,7 @@ public interface MethodAnalysis extends Analysis {
     default int getMethodProperty(AnalysisProvider analysisProvider, MethodInfo methodInfo, VariableProperty variableProperty) {
         ParameterizedType returnType = methodInfo.returnType();
         switch (variableProperty) {
-            case MODIFIED:
+            case MODIFIED_METHOD:
                 // all methods in java.lang.String are @NotModified, but we do not bother writing that down
                 // we explicitly check on EFFECTIVE, because in an eventually E2IMMU we want the methods to remain @Modified
                 TypeAnalysis typeAnalysis = analysisProvider.getTypeAnalysis(methodInfo.typeInfo);
@@ -144,7 +144,7 @@ public interface MethodAnalysis extends Analysis {
                         typeAnalysis.getProperty(VariableProperty.IMMUTABLE) == MultiLevel.EFFECTIVELY_E2IMMUTABLE) {
                     return Level.FALSE;
                 }
-                return getPropertyCheckOverrides(analysisProvider, VariableProperty.MODIFIED);
+                return getPropertyCheckOverrides(analysisProvider, VariableProperty.MODIFIED_METHOD);
 
             case FLUENT:
             case IDENTITY:
@@ -153,11 +153,11 @@ public interface MethodAnalysis extends Analysis {
                 // TODO if we have an array constructor created on-the-fly, it should be EFFECTIVELY INDEPENDENT
                 return getPropertyCheckOverrides(analysisProvider, variableProperty);
 
-            case NOT_NULL:
+            case NOT_NULL_EXPRESSION:
                 if (Primitives.isPrimitiveExcludingVoid(returnType)) return MultiLevel.EFFECTIVELY_NOT_NULL;
                 int fluent = getProperty(VariableProperty.FLUENT);
                 if (fluent == Level.TRUE) return MultiLevel.EFFECTIVELY_NOT_NULL;
-                return getPropertyCheckOverrides(analysisProvider, VariableProperty.NOT_NULL);
+                return getPropertyCheckOverrides(analysisProvider, VariableProperty.NOT_NULL_EXPRESSION);
 
             case IMMUTABLE:
                 assert returnType != ParameterizedType.RETURN_TYPE_OF_CONSTRUCTOR : "void method";

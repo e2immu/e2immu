@@ -55,7 +55,7 @@ public class ArrayInitializer implements Expression {
     }
 
     private ParameterizedType best(ParameterizedType formalCommonType, ParameterizedType commonType) {
-        return formalCommonType; // TODO make better
+        return formalCommonType; // IMPROVE
     }
 
     @Override
@@ -131,7 +131,7 @@ public class ArrayInitializer implements Expression {
 
     @Override
     public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
-        if (VariableProperty.NOT_NULL == variableProperty) {
+        if (VariableProperty.NOT_NULL_EXPRESSION == variableProperty) {
             int notNull = multiExpression.getProperty(evaluationContext, variableProperty);
             return MultiLevel.shift(MultiLevel.EFFECTIVE, notNull); // default = @NotNull level 0
         }

@@ -38,7 +38,7 @@ public class TestInlineAndSizeChecks extends CommonTestRunner {
         TypeInfo stringTypeInfo = typeMap.get(String.class);
         Assert.assertSame(stringTypeInfo, typeMap.getPrimitives().stringTypeInfo);
         MethodInfo length = stringTypeInfo.findUniqueMethod("length", 0);
-        int modified = length.methodAnalysis.get().getProperty(VariableProperty.MODIFIED);
+        int modified = length.methodAnalysis.get().getProperty(VariableProperty.MODIFIED_METHOD);
         Assert.assertEquals(0, modified);
     };
 

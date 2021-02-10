@@ -242,7 +242,7 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
                                                     E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
             int effectivelyFinal = getProperty(VariableProperty.FINAL);
             int ownerImmutable = typeAnalysisOfOwner.getProperty(VariableProperty.IMMUTABLE);
-            int modified = getProperty(VariableProperty.MODIFIED);
+            int modified = getProperty(VariableProperty.MODIFIED_VARIABLE);
 
             // @Final(after=), @Final, @Variable
             if (effectivelyFinal == Level.FALSE && MultiLevel.isEventuallyE1Immutable(ownerImmutable)) {
@@ -273,7 +273,7 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
             doNotModified1(e2ImmuAnnotationExpressions);
 
             // @NotNull
-            doNotNull(e2ImmuAnnotationExpressions);
+            doNotNull(e2ImmuAnnotationExpressions, getProperty(VariableProperty.EXTERNAL_NOT_NULL));
 
             // dynamic type annotations: @E1Immutable, @E1Container, @E2Immutable, @E2Container
             int typeImmutable = typeImmutable();

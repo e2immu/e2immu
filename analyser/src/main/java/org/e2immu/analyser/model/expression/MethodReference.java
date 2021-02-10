@@ -132,8 +132,8 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
             // normal method call, very similar to MethodCall.evaluate
             MethodAnalysis methodAnalysis = evaluationContext.getAnalyserContext().getMethodAnalysis(methodInfo);
             // check the not-null aspect
-            int notNull = MultiLevel.value(methodAnalysis.getProperty(VariableProperty.NOT_NULL), MultiLevel.NOT_NULL);
-            int forwardNotNull = MultiLevel.value(forwardEvaluationInfo.getProperty(VariableProperty.NOT_NULL), MultiLevel.NOT_NULL);
+            int notNull = MultiLevel.value(methodAnalysis.getProperty(VariableProperty.NOT_NULL_EXPRESSION), MultiLevel.NOT_NULL);
+            int forwardNotNull = MultiLevel.value(forwardEvaluationInfo.getProperty(VariableProperty.CONTEXT_NOT_NULL), MultiLevel.NOT_NULL);
 
             if (forwardNotNull == MultiLevel.EFFECTIVE && notNull == MultiLevel.FALSE) {
                 // we're in a @NotNul context, and the method is decidedly NOT @NotNull...

@@ -199,12 +199,12 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
         this.myFieldAnalysers = myFieldAnalysers.build();
 
         // copy CONTRACT annotations into the properties
-        methodAnalysis.fromAnnotationsIntoProperties(false, methodInspection.getAnnotations(),
+        methodAnalysis.fromAnnotationsIntoProperties(false, false, methodInspection.getAnnotations(),
                 analyserContext.getE2ImmuAnnotationExpressions());
 
         parameterAnalysers.forEach(pa -> {
             Collection<AnnotationExpression> annotations = pa.parameterInfo.getInspection().getAnnotations();
-            pa.parameterAnalysis.fromAnnotationsIntoProperties(false, annotations,
+            pa.parameterAnalysis.fromAnnotationsIntoProperties(true, false, annotations,
                     analyserContext.getE2ImmuAnnotationExpressions());
 
             pa.initialize(analyserContext.fieldAnalyserStream());
@@ -277,9 +277,11 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
             int valueFromOverrides = methodAnalysis.valueFromOverrides(analyserContext, variableProperty);
             int value = methodAnalysis.getProperty(variableProperty);
             if (valueFromOverrides != Level.DELAY && value != Level.DELAY) {
-                boolean complain = variableProperty == VariableProperty.MODIFIED ? value > valueFromOverrides : value < valueFromOverrides;
+                boolean complain = variableProperty == VariableProperty.MODIFIED_VARIABLE ?
+                        value > valueFromOverrides : value < valueFromOverrides;
                 if (complain) {
-                    messages.add(Message.newMessage(new Location(methodInfo), Message.WORSE_THAN_OVERRIDDEN_METHOD, variableProperty.name));
+                    messages.add(Message.newMessage(new Location(methodInfo),
+                            Message.WORSE_THAN_OVERRIDDEN_METHOD, variableProperty.name));
                 }
             }
         }
@@ -421,7 +423,7 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
             log(DELAYED, "No approved preconditions for {}, so no @Mark, @Only", methodInfo.distinguishingName());
             return DONE;
         }
-        int modified = methodAnalysis.getProperty(VariableProperty.MODIFIED);
+        int modified = methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD);
         if (modified == Level.DELAY) {
             log(DELAYED, "Delaying @Only, @Mark, don't know @Modified status in {}", methodInfo.distinguishingName());
             return DELAYS;
@@ -583,7 +585,7 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
                 methodAnalysis.singleReturnValue.set(new UnknownExpression(methodInfo.returnType(), "does not return a value"));
                 methodAnalysis.setProperty(VariableProperty.IDENTITY, Level.FALSE);
                 methodAnalysis.setProperty(VariableProperty.FLUENT, Level.FALSE);
-                methodAnalysis.setProperty(VariableProperty.NOT_NULL, VariableProperty.NOT_NULL.best);
+                methodAnalysis.setProperty(VariableProperty.NOT_NULL_EXPRESSION, VariableProperty.NOT_NULL_EXPRESSION.best);
                 methodAnalysis.setProperty(VariableProperty.IMMUTABLE, VariableProperty.IMMUTABLE.best);
                 methodAnalysis.setProperty(VariableProperty.CONTAINER, VariableProperty.CONTAINER.best);
                 return DONE;
@@ -611,7 +613,7 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
         if (value.isConstant()) {
             immutable = MultiLevel.EFFECTIVELY_E2IMMUTABLE;
         } else {
-            int modified = methodAnalysis.getProperty(VariableProperty.MODIFIED);
+            int modified = methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD);
             if (modified == Level.DELAY) {
                 log(DELAYED, "Delaying return value of {}, waiting for MODIFIED (we may try to inline!)", methodInfo.distinguishingName);
                 return DELAYS;
@@ -724,20 +726,20 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
         Set<MethodInfo> cycle = methodInfo.methodResolution.get().methodsOfOwnClassReached();
         boolean isCycle = methodInfo.partOfCallCycle();
         if (!isCycle) return DONE;
-        int modified = methodAnalysis.getProperty(VariableProperty.MODIFIED);
+        int modified = methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD);
         TypeAnalysisImpl.Builder builder = (TypeAnalysisImpl.Builder) typeAnalysis;
         TypeAnalysisImpl.CycleInfo cycleInfo = builder.nonModifiedCountForMethodCallCycle.getOrCreate(cycle, x -> new TypeAnalysisImpl.CycleInfo());
 
         // we decide for the group
         if (modified == Level.TRUE) {
             if (!cycleInfo.modified.isSet()) cycleInfo.modified.set();
-            methodAnalysis.setProperty(VariableProperty.MODIFIED, Level.TRUE);
+            methodAnalysis.setProperty(VariableProperty.MODIFIED_METHOD, Level.TRUE);
             return DONE;
         }
 
         // others have decided for us
         if (cycleInfo.modified.isSet()) {
-            methodAnalysis.setProperty(VariableProperty.MODIFIED, Level.TRUE);
+            methodAnalysis.setProperty(VariableProperty.MODIFIED_METHOD, Level.TRUE);
             return DONE;
         }
 
@@ -745,13 +747,13 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
             if (!cycleInfo.nonModified.contains(methodInfo)) cycleInfo.nonModified.add(methodInfo);
 
             if (cycleInfo.nonModified.size() == cycle.size()) {
-                methodAnalysis.setProperty(VariableProperty.MODIFIED, Level.FALSE);
+                methodAnalysis.setProperty(VariableProperty.MODIFIED_METHOD, Level.FALSE);
                 return DONE;
             }
         }
         // we all agree
         if (cycleInfo.nonModified.size() == cycle.size()) {
-            methodAnalysis.setProperty(VariableProperty.MODIFIED, Level.FALSE);
+            methodAnalysis.setProperty(VariableProperty.MODIFIED_METHOD, Level.FALSE);
             return DONE;
         }
         // wait
@@ -760,7 +762,7 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
     }
 
     private AnalysisStatus computeModified() {
-        if (methodAnalysis.getProperty(VariableProperty.MODIFIED) != Level.DELAY) return DONE;
+        if (methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD) != Level.DELAY) return DONE;
         MethodLevelData methodLevelData = methodAnalysis.methodLevelData();
 
         // first step, check field assignments
@@ -769,7 +771,7 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
                 .anyMatch(VariableInfo::isAssigned);
         if (fieldAssignments) {
             log(NOT_MODIFIED, "Method {} is @Modified: fields are being assigned", methodInfo.distinguishingName());
-            methodAnalysis.setProperty(VariableProperty.MODIFIED, Level.TRUE);
+            methodAnalysis.setProperty(VariableProperty.MODIFIED_METHOD, Level.TRUE);
             return DONE;
         }
 
@@ -783,12 +785,12 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
         }
         boolean isModified = methodAnalysis.getLastStatement().variableStream()
                 .filter(vi -> vi.variable() instanceof FieldReference)
-                .anyMatch(vi -> vi.getProperty(VariableProperty.MODIFIED) == Level.TRUE);
+                .anyMatch(vi -> vi.getProperty(VariableProperty.CONTEXT_MODIFIED) == Level.TRUE);
         if (isModified && isLogEnabled(NOT_MODIFIED)) {
             List<String> fieldsWithContentModifications =
                     methodAnalysis.getLastStatement().variableStream()
                             .filter(vi -> vi.variable() instanceof FieldReference)
-                            .filter(vi -> vi.getProperty(VariableProperty.MODIFIED) == Level.TRUE)
+                            .filter(vi -> vi.getProperty(VariableProperty.CONTEXT_MODIFIED) == Level.TRUE)
                             .map(VariableInfo::name).collect(Collectors.toList());
             log(NOT_MODIFIED, "Method {} cannot be @NotModified: some fields have content modifications: {}",
                     methodInfo.fullyQualifiedName(), fieldsWithContentModifications);
@@ -797,7 +799,7 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
             boolean localMethodsCalled = getThisAsVariable().getProperty(VariableProperty.METHOD_CALLED) == Level.TRUE;
             // IMPORTANT: localMethodsCalled only works on "this"; it does not work for static methods (See IdentityChecks)
             if (localMethodsCalled) {
-                int thisModified = getThisAsVariable().getProperty(VariableProperty.MODIFIED);
+                int thisModified = getThisAsVariable().getProperty(VariableProperty.CONTEXT_MODIFIED);
 
                 if (thisModified == Level.DELAY) {
                     log(DELAYED, "In {}: other local methods are called, but no idea if they are @NotModified yet, delaying",
@@ -828,7 +830,8 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
             }
         }
         if (!isModified) {
-            OptionalInt maxModified = methodLevelData.copyModificationStatusFrom.stream().mapToInt(mi -> mi.getKey().methodAnalysis.get().getProperty(VariableProperty.MODIFIED)).max();
+            OptionalInt maxModified = methodLevelData.copyModificationStatusFrom.stream()
+                    .mapToInt(mi -> mi.getKey().methodAnalysis.get().getProperty(VariableProperty.MODIFIED_METHOD)).max();
             if (maxModified.isPresent()) {
                 int mm = maxModified.getAsInt();
                 if (mm == Level.DELAY) {
@@ -839,7 +842,7 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
             }
         }
         // (we could call non-@NM methods on parameters or local variables, but that does not influence this annotation)
-        methodAnalysis.setProperty(VariableProperty.MODIFIED, isModified ? Level.TRUE : Level.FALSE);
+        methodAnalysis.setProperty(VariableProperty.MODIFIED_METHOD, isModified ? Level.TRUE : Level.FALSE);
         return DONE;
     }
 
@@ -858,7 +861,7 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
                 .filter(mi ->
                         analyserContext.getMethodAnalysis(mi).methodLevelData().getCallsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod() == null ||
                                 (analyserContext.getMethodAnalysis(mi).methodLevelData().getCallsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod() && (
-                                        analyserContext.getMethodAnalysis(mi).getProperty(VariableProperty.MODIFIED) == Level.DELAY ||
+                                        analyserContext.getMethodAnalysis(mi).getProperty(VariableProperty.MODIFIED_METHOD) == Level.DELAY ||
                                                 mi.returnType().isImplicitlyOrAtLeastEventuallyE2Immutable(analyserContext) == null ||
                                                 analyserContext.getMethodAnalysis(mi).getProperty(VariableProperty.INDEPENDENT) == Level.DELAY)))
                 .findFirst();
@@ -869,7 +872,7 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
         }
         return methodInfo.typeInfo.typeInspection.get()
                 .methodStream(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM)
-                .anyMatch(mi -> analyserContext.getMethodAnalysis(mi).getProperty(VariableProperty.MODIFIED) == Level.TRUE ||
+                .anyMatch(mi -> analyserContext.getMethodAnalysis(mi).getProperty(VariableProperty.MODIFIED_METHOD) == Level.TRUE ||
                         !mi.returnType().isImplicitlyOrAtLeastEventuallyE2Immutable(analyserContext) &&
                                 analyserContext.getMethodAnalysis(mi).getProperty(VariableProperty.INDEPENDENT) == Level.FALSE);
     }
@@ -880,7 +883,7 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
 
         if (!methodInfo.isConstructor) {
             // we only compute @Independent/@Dependent on methods when the method is @NotModified
-            int modified = methodAnalysis.getProperty(VariableProperty.MODIFIED);
+            int modified = methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD);
             if (modified == Level.DELAY) return DELAYS;
             if (modified == Level.TRUE) {
                 methodAnalysis.setProperty(VariableProperty.INDEPENDENT, MultiLevel.FALSE);

@@ -163,7 +163,7 @@ public class Test_26_Enum extends CommonTestRunner {
             if ("cnt".equals(d.fieldInfo().name)) {
                 Assert.assertEquals("cnt", d.fieldAnalysis().getEffectivelyFinalValue().toString());
                 Assert.assertEquals(Level.TRUE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
-                Assert.assertEquals(Level.FALSE, d.fieldAnalysis().getProperty(VariableProperty.MODIFIED));
+                Assert.assertEquals(Level.FALSE, d.fieldAnalysis().getProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD));
             }
         };
 

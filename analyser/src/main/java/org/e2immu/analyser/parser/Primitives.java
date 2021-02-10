@@ -312,7 +312,8 @@ public class Primitives {
             builder.properties.put(VariableProperty.CONTAINER, Level.TRUE);
             builder.properties.put(VariableProperty.IMMUTABLE, MultiLevel.EFFECTIVELY_E2IMMUTABLE);
             builder.approvedPreconditions.freeze(); // cannot change these anymore; will never be eventual
-            builder.properties.put(VariableProperty.MODIFIED, Level.FALSE);
+            builder.properties.put(VariableProperty.MODIFIED_OUTSIDE_METHOD, Level.FALSE);
+            builder.properties.put(VariableProperty.CONTEXT_MODIFIED, Level.FALSE);
             builder.implicitlyImmutableDataTypes.set(Set.of());
         }
 
@@ -337,7 +338,7 @@ public class Primitives {
     }
 
     public static boolean isPrimitiveExcludingVoid(ParameterizedType parameterizedType) {
-        return parameterizedType.typeInfo != null && isPrimitiveExcludingVoid(parameterizedType.typeInfo);
+        return isPrimitiveExcludingVoid(parameterizedType.typeInfo);
     }
 
     public static boolean isPrimitiveExcludingVoid(TypeInfo typeInfo) {

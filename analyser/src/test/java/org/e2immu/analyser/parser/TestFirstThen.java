@@ -61,7 +61,7 @@ public class TestFirstThen extends CommonTestRunner {
         }
         if ("equals".equals(d.methodInfo().name) && "o".equals(d.variableName())) {
             if ("2".equals(d.statementId())) {
-                Assert.assertEquals(Level.FALSE, d.getProperty(VariableProperty.MODIFIED));
+                Assert.assertEquals(Level.FALSE, d.getProperty(VariableProperty.MODIFIED_VARIABLE));
             }
         }
     };
@@ -90,12 +90,12 @@ public class TestFirstThen extends CommonTestRunner {
             Assert.assertEquals(Level.DELAY, vi.getProperty(VariableProperty.METHOD_CALLED));
 
             if (d.iteration() > 0) {
-                Assert.assertEquals(Level.FALSE, d.methodAnalysis().getProperty(VariableProperty.MODIFIED));
+                Assert.assertEquals(Level.FALSE, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
             }
         }
         if ("equals".equals(name)) {
             ParameterInfo o = d.methodInfo().methodInspection.get().getParameters().get(0);
-            Assert.assertEquals(Level.FALSE, o.parameterAnalysis.get().getProperty(VariableProperty.MODIFIED));
+            Assert.assertEquals(Level.FALSE, o.parameterAnalysis.get().getProperty(VariableProperty.MODIFIED_VARIABLE));
         }
     };
 
@@ -103,7 +103,7 @@ public class TestFirstThen extends CommonTestRunner {
         TypeInfo objects = typeMap.get(Objects.class);
         MethodInfo hash = objects.typeInspection.get().methods().stream().filter(m -> m.name.equals("hash")).findFirst().orElseThrow();
         ParameterInfo objectsParam = hash.methodInspection.get().getParameters().get(0);
-        Assert.assertEquals(Level.FALSE, objectsParam.parameterAnalysis.get().getProperty(VariableProperty.MODIFIED));
+        Assert.assertEquals(Level.FALSE, objectsParam.parameterAnalysis.get().getProperty(VariableProperty.MODIFIED_VARIABLE));
     };
 
     @Test

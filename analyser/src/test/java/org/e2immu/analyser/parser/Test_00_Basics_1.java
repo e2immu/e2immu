@@ -96,27 +96,27 @@ public class Test_00_Basics_1 extends CommonTestRunner {
             Assert.assertEquals("p0", d.fieldAnalysis().getEffectivelyFinalValue().debugOutput());
             Assert.assertEquals("p0", d.fieldAnalysis().getLinkedVariables().toString());
             if (d.iteration() == 0) {
-                Assert.assertEquals(Level.DELAY, d.fieldAnalysis().getProperty(VariableProperty.MODIFIED));
+                Assert.assertEquals(Level.DELAY, d.fieldAnalysis().getProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD));
             } else {
-                Assert.assertEquals(Level.FALSE, d.fieldAnalysis().getProperty(VariableProperty.MODIFIED));
+                Assert.assertEquals(Level.FALSE, d.fieldAnalysis().getProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD));
             }
             int expectNN = d.iteration() == 0 ? Level.DELAY : MultiLevel.NULLABLE;
-            Assert.assertEquals(expectNN, d.fieldAnalysis().getProperty(VariableProperty.NOT_NULL));
+            Assert.assertEquals(expectNN, d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_NOT_NULL));
         }
     };
 
     MethodAnalyserVisitor methodAnalyserVisitor = d -> {
         if (BASICS_1.equals(d.methodInfo().name)) {
             ParameterAnalysis p0 = d.parameterAnalyses().get(0);
-            Assert.assertEquals(Level.FALSE, p0.getProperty(VariableProperty.MODIFIED));
+            Assert.assertEquals(Level.FALSE, p0.getProperty(VariableProperty.MODIFIED_VARIABLE));
             int expectNN = d.iteration() <= 1 ? Level.DELAY : MultiLevel.NULLABLE;
-            Assert.assertEquals(expectNN, p0.getProperty(VariableProperty.NOT_NULL));
+            Assert.assertEquals(expectNN, p0.getProperty(VariableProperty.NOT_NULL_VARIABLE));
         }
         if ("getF1".equals(d.methodInfo().name)) {
             int expectMod = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
-            Assert.assertEquals(expectMod, d.methodAnalysis().getProperty(VariableProperty.MODIFIED));
+            Assert.assertEquals(expectMod, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
             int expectNN = d.iteration() == 0 ? Level.DELAY : MultiLevel.NULLABLE;
-            Assert.assertEquals(expectNN, d.methodAnalysis().getProperty(VariableProperty.NOT_NULL));
+            Assert.assertEquals(expectNN, d.methodAnalysis().getProperty(VariableProperty.NOT_NULL_EXPRESSION));
         }
     };
 
@@ -124,10 +124,10 @@ public class Test_00_Basics_1 extends CommonTestRunner {
     public void test() throws IOException {
         // two warnings: two unused parameters
         testClass(BASICS_1, 0, 2, new DebugConfiguration.Builder()
-             //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-             //   .addStatementAnalyserVisitor(statementAnalyserVisitor)
-             //   .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-             //   .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 

@@ -40,7 +40,7 @@ public class TestModificationGraph extends CommonTestRunner {
 
     FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
         if ("c1".equals(d.fieldInfo().name)) {
-            int modified = d.fieldAnalysis().getProperty(VariableProperty.MODIFIED);
+            int modified = d.fieldAnalysis().getProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD);
             int expect = d.iteration() < 2 ? Level.DELAY : Level.TRUE;
             Assert.assertEquals(expect, modified);
         }

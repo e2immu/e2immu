@@ -24,14 +24,14 @@ public class Test_06_FinalNotNullChecks extends CommonTestRunner {
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
         if ("debug".equals(d.methodInfo().name) && INPUT.equals(d.variableName())) {
             int expectNN = d.iteration() == 0 ? Level.DELAY: MultiLevel.EFFECTIVELY_NOT_NULL;
-            Assert.assertEquals(expectNN, d.getProperty(VariableProperty.NOT_NULL));
+            Assert.assertEquals(expectNN, d.getProperty(VariableProperty.NOT_NULL_VARIABLE));
             int expectFinal = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
             Assert.assertEquals(expectFinal, d.getProperty(VariableProperty.FINAL));
             String expectValue = d.iteration() == 0 ? INPUT_DELAYED : "instance type String";
             Assert.assertEquals(expectValue, d.currentValue().toString());
         }
         if("toString".equals(d.methodInfo().name) && INPUT.equals(d.variableName())) {
-            Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL));
+            Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL_VARIABLE));
             int expectFinal = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
             Assert.assertEquals(expectFinal, d.getProperty(VariableProperty.FINAL));
             String expectValue = d.iteration() == 0 ? INPUT_DELAYED : "instance type String";
@@ -39,15 +39,15 @@ public class Test_06_FinalNotNullChecks extends CommonTestRunner {
         }
         if ("FinalNotNullChecks".equals(d.methodInfo().name)) {
             if (PARAM.equals(d.variableName())) {
-                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL));
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL_VARIABLE));
                 if (d.iteration() == 0) {
                     // only during the 1st iteration there is no @NotNull on the parameter, so there is a restriction
-                    Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL));
+                    Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL_VARIABLE));
                 }
             }
             // the variable has the value of param, which has received a @NotNull
             if (INPUT.equals(d.variableName())) {
-                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL));
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL_VARIABLE));
                 String expectInitial = d.iteration() == 0 ? INPUT_DELAYED : "nullable? instance type String";
                 Assert.assertEquals(expectInitial, d.variableInfoContainer().getPreviousOrInitial().getValue().toString());
 
@@ -61,7 +61,7 @@ public class Test_06_FinalNotNullChecks extends CommonTestRunner {
     StatementAnalyserVisitor statementAnalyserVisitor = d -> {
         if ("FinalNotNullChecks".equals(d.methodInfo().name)) {
             FieldInfo input = d.methodInfo().typeInfo.getFieldByName("input", true);
-            int notNull = d.getFieldAsVariable(input).getValue().getProperty(d.evaluationContext(), VariableProperty.NOT_NULL);
+            int notNull = d.getFieldAsVariable(input).getValue().getProperty(d.evaluationContext(), VariableProperty.CONTEXT_NOT_NULL);
             Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, notNull);
         }
         if (("debug".equals(d.methodInfo().name) || "toString".equals(d.methodInfo().name))) {
@@ -70,7 +70,7 @@ public class Test_06_FinalNotNullChecks extends CommonTestRunner {
                 Assert.assertEquals(INPUT_DELAYED, d.getFieldAsVariable(input).getValue().toString());
                 Assert.assertEquals(AnalysisStatus.PROGRESS, d.result().analysisStatus);
             } else {
-                int notNull = d.getFieldAsVariable(input).getProperty(VariableProperty.NOT_NULL);
+                int notNull = d.getFieldAsVariable(input).getProperty(VariableProperty.CONTEXT_NOT_NULL);
                 Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, notNull);
                 Assert.assertEquals("instance type String", d.getFieldAsVariable(input).getValue().toString());
             }
@@ -81,15 +81,17 @@ public class Test_06_FinalNotNullChecks extends CommonTestRunner {
         TypeInfo objects = typeMap.get(Objects.class);
         MethodInfo requireNonNull = objects.typeInspection.get().methods().stream().filter(mi -> mi.name.equals("requireNonNull") &&
                 1 == mi.methodInspection.get().getParameters().size()).findFirst().orElseThrow();
-        Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, requireNonNull.methodAnalysis.get().getProperty(VariableProperty.NOT_NULL));
+        Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL,
+                requireNonNull.methodAnalysis.get().getProperty(VariableProperty.NOT_NULL_EXPRESSION));
         Assert.assertEquals(Level.TRUE, requireNonNull.methodAnalysis.get().getProperty(VariableProperty.IDENTITY));
         ParameterInfo parameterInfo = requireNonNull.methodInspection.get().getParameters().get(0);
-        Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, parameterInfo.parameterAnalysis.get().getProperty(VariableProperty.NOT_NULL));
+        Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL,
+                parameterInfo.parameterAnalysis.get().getProperty(VariableProperty.NOT_NULL_VARIABLE));
     };
 
     FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
         Assert.assertEquals("input", d.fieldInfo().name);
-        Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.fieldAnalysis().getProperty(VariableProperty.NOT_NULL));
+        Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_NOT_NULL));
         Assert.assertEquals(Level.TRUE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
         Assert.assertEquals("param/*@NotNull*/", d.fieldAnalysis().getEffectivelyFinalValue().toString());
     };
@@ -99,9 +101,10 @@ public class Test_06_FinalNotNullChecks extends CommonTestRunner {
             FieldInfo input = d.methodInfo().typeInfo.getFieldByName("input", true);
             VariableInfo vi = d.getFieldAsVariable(input);
             assert vi != null;
-            Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.parameterAnalyses().get(0).getProperty(VariableProperty.NOT_NULL));
+            Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.parameterAnalyses().get(0)
+                    .getProperty(VariableProperty.NOT_NULL_VARIABLE));
             Expression inputValue = vi.getValue();
-            int notNull = inputValue.getProperty(d.evaluationContext(), VariableProperty.NOT_NULL);
+            int notNull = inputValue.getProperty(d.evaluationContext(), VariableProperty.NOT_NULL_EXPRESSION);
             Assert.assertEquals("param/*@NotNull*/", inputValue.toString());
             Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, notNull);
         }
@@ -112,7 +115,7 @@ public class Test_06_FinalNotNullChecks extends CommonTestRunner {
             String expectValue = d.iteration() == 0 ? INPUT_DELAYED : "instance type String";
             Assert.assertEquals(expectValue, vi.getValue().toString());
             int expectNN = d.iteration() == 0 ? Level.DELAY: MultiLevel.EFFECTIVELY_NOT_NULL;
-            Assert.assertEquals(expectNN, vi.getProperty(VariableProperty.NOT_NULL));
+            Assert.assertEquals(expectNN, vi.getProperty(VariableProperty.NOT_NULL_VARIABLE));
         }
         if(d.methodInfo().name.equals("toString")) {
             FieldInfo input = d.methodInfo().typeInfo.getFieldByName("input", true);
@@ -120,7 +123,7 @@ public class Test_06_FinalNotNullChecks extends CommonTestRunner {
             assert vi != null;
             String expectValue = d.iteration() == 0 ? INPUT_DELAYED : "instance type String";
             Assert.assertEquals(expectValue, vi.getValue().toString());
-            Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, vi.getProperty(VariableProperty.NOT_NULL));
+            Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, vi.getProperty(VariableProperty.NOT_NULL_VARIABLE));
         }
     };
 

@@ -293,9 +293,13 @@ public class MethodInfo implements WithInspectionAndAnalysis {
     }
 
     public int atLeastOneParameterModified() {
-        return methodInspection.get().getParameters().stream()
-                .mapToInt(parameterInfo -> parameterInfo.parameterAnalysis.get().getProperty(VariableProperty.MODIFIED))
-                .max().orElse(Level.FALSE);
+        int max = Level.FALSE;
+        for (ParameterInfo parameterInfo : methodInspection.get().getParameters()) {
+            int modified = parameterInfo.parameterAnalysis.get().getProperty(VariableProperty.MODIFIED_VARIABLE);
+            if (modified == Level.DELAY) return modified;
+            max = Math.max(max, modified);
+        }
+        return max;
     }
 
     @Override

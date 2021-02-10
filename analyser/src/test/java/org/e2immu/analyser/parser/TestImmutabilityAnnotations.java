@@ -38,21 +38,23 @@ public class TestImmutabilityAnnotations extends CommonTestRunner {
     TypeMapVisitor typeMapVisitor = typeMap -> {
         TypeInfo set = typeMap.get(Set.class);
         MethodInfo setOf2 = set.findUniqueMethod("of", 2);
-        Assert.assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL, setOf2.methodAnalysis.get().getProperty(VariableProperty.NOT_NULL));
+        Assert.assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL,
+                setOf2.methodAnalysis.get().getProperty(VariableProperty.NOT_NULL_EXPRESSION));
 
         TypeInfo list = typeMap.get(List.class);
         MethodInfo listOf2 = list.findUniqueMethod("of", 2);
-        Assert.assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL, listOf2.methodAnalysis.get().getProperty(VariableProperty.NOT_NULL));
+        Assert.assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL,
+                listOf2.methodAnalysis.get().getProperty(VariableProperty.NOT_NULL_EXPRESSION));
     };
 
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
         if ("generateBefore".equals(d.methodInfo().name) && "0".equals(d.statementId()) && "list".equals(d.variableName())) {
             Assert.assertEquals("java.util.List.of(a, b)", d.currentValue().toString());
-            int notNull = d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL);
+            int notNull = d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL_EXPRESSION);
             Assert.assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL, notNull);
         }
         if ("setFirst".equals(d.methodInfo().name) && "ManyTs.this.ts2".equals(d.variableName())) {
-            Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.MODIFIED));
+            Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.MODIFIED_VARIABLE));
         }
     };
 
@@ -61,14 +63,15 @@ public class TestImmutabilityAnnotations extends CommonTestRunner {
             FieldInfo ts2 = d.methodInfo().typeInfo.getFieldByName("ts2", true);
             VariableInfo tv = d.getFieldAsVariable(ts2);
             if (d.iteration() > 0) {
-                Assert.assertEquals(Level.TRUE, tv.getProperty(VariableProperty.MODIFIED));
+                assert tv != null;
+                Assert.assertEquals(Level.TRUE, tv.getProperty(VariableProperty.MODIFIED_VARIABLE));
             }
         }
     };
 
     FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
         if ("ts2".equals(d.fieldInfo().name) && d.iteration() > 1) {
-            Assert.assertEquals(Level.TRUE, d.fieldAnalysis().getProperty(VariableProperty.MODIFIED));
+            Assert.assertEquals(Level.TRUE, d.fieldAnalysis().getProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD));
         }
     };
 

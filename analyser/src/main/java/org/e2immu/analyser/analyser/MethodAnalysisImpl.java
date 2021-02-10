@@ -328,7 +328,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
 
         @Override
         public void transferPropertiesToAnnotations(AnalysisProvider analysisProvider, E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
-            int modified = getProperty(VariableProperty.MODIFIED);
+            int modified = getProperty(VariableProperty.MODIFIED_METHOD);
 
             // @Precondition
             if (precondition.isSet()) {
@@ -369,7 +369,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
             }
 
             // @NotNull
-            doNotNull(e2ImmuAnnotationExpressions);
+            doNotNull(e2ImmuAnnotationExpressions, getProperty(VariableProperty.NOT_NULL_EXPRESSION));
 
             // dynamic type annotations for functional interface types: @NotModified1
             doNotModified1(e2ImmuAnnotationExpressions);
@@ -441,7 +441,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
         public void minimalInfoForEmptyMethod() {
             preconditionForMarkAndOnly.set(List.of());
             if (!methodInfo.isAbstract()) {
-                setProperty(VariableProperty.MODIFIED, Level.FALSE);
+                setProperty(VariableProperty.MODIFIED_METHOD, Level.FALSE);
                 setProperty(VariableProperty.INDEPENDENT, MultiLevel.EFFECTIVE);
                 setProperty(VariableProperty.FLUENT, Level.FALSE);
                 setProperty(VariableProperty.IDENTITY, Level.FALSE);

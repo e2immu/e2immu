@@ -26,24 +26,6 @@ public class Level {
     // be careful, assumes the same level everywhere
     public static final IntBinaryOperator OR = (i, j) -> i == DELAY || j == DELAY ? DELAY : Math.max(i, j);
 
-    /**
-     * We maintain a map with overwrite protection. This function is one of such protections.
-     *
-     * @param from current value
-     * @param to   newly proposed value
-     * @return whether this increment is allowed or not
-     */
-    public static boolean acceptIncrement(int from, int to) {
-        assert from >= DELAY;
-        assert to >= DELAY;
-
-//        if (from > to) return false; // we must go up
-//        if (from == DELAY) return true; // we can always go up from delay
-//        return (from % 2) == 1; // we must start from an odd value, even values are cast in stone
-
-        return from <= to;
-    }
-
     public static boolean better(int i, int than) {
         return i > than;
     }

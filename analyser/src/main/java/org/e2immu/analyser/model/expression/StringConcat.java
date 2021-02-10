@@ -61,7 +61,7 @@ public class StringConcat extends BinaryOperator {
         return switch (variableProperty) {
             case CONTAINER -> Level.TRUE;
             case IMMUTABLE -> MultiLevel.EFFECTIVELY_E2IMMUTABLE;
-            case NOT_NULL -> MultiLevel.EFFECTIVELY_NOT_NULL;
+            case NOT_NULL_EXPRESSION -> MultiLevel.EFFECTIVELY_NOT_NULL;
             default -> Level.FALSE;
         };
     }

@@ -131,7 +131,7 @@ public class InlineConditional implements Expression {
     (4) (-3) + a.size() >= 0 ? a : x
      */
     private int lookForPatterns(EvaluationContext evaluationContext, VariableProperty variableProperty) {
-        if (variableProperty == VariableProperty.NOT_NULL) {
+        if (variableProperty == VariableProperty.NOT_NULL_EXPRESSION) {
             Expression c = condition;
             boolean not = false;
             if (c.isInstanceOf(Negation.class)) {

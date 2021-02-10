@@ -21,7 +21,6 @@ package org.e2immu.analyser.model;
 import org.e2immu.analyser.analyser.AnalysisProvider;
 import org.e2immu.analyser.analyser.LinkedVariables;
 import org.e2immu.analyser.analyser.VariableProperty;
-import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Primitives;
 
@@ -58,11 +57,6 @@ public interface FieldAnalysis extends Analysis {
                                  TypeInfo bestType,
                                  VariableProperty variableProperty) {
         switch (variableProperty) {
-            //case FINAL:
-                //int immutableOwner = analysisProvider.getTypeAnalysis(fieldInfo.owner).getProperty(VariableProperty.IMMUTABLE);
-                //if (MultiLevel.isEffectivelyE1Immutable(immutableOwner)) return Level.TRUE;
-                //break;
-
             case IMMUTABLE:
                 // dynamic type annotation not relevant here
                 if (bestType != null && bestType.typeInspection.get().isFunctionalInterface()) {
@@ -78,7 +72,9 @@ public interface FieldAnalysis extends Analysis {
             case CONTAINER:
                 return bestType == null ? Level.TRUE : analysisProvider.getTypeAnalysis(bestType).getProperty(VariableProperty.CONTAINER);
 
-            case NOT_NULL:
+            case EXTERNAL_NOT_NULL:
+            case CONTEXT_NOT_NULL:
+            case NOT_NULL_VARIABLE:
                 if (Primitives.isPrimitiveExcludingVoid(fieldInfo.type)) return MultiLevel.EFFECTIVELY_NOT_NULL;
                 break;
 

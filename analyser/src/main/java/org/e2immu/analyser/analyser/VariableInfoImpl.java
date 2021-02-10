@@ -27,8 +27,9 @@ import org.e2immu.analyser.model.expression.Negation;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
-import org.e2immu.analyser.util.IncrementalMap;
 import org.e2immu.analyser.util.SetOnce;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.function.Function;
@@ -39,6 +40,7 @@ import java.util.stream.Stream;
 import static org.e2immu.analyser.analyser.VariableInfoContainer.*;
 
 class VariableInfoImpl implements VariableInfo {
+    private static final Logger LOGGER = LoggerFactory.getLogger(VariableInfoImpl.class);
 
     private final Variable variable;
     private final String assignmentId;
@@ -49,7 +51,7 @@ class VariableInfoImpl implements VariableInfo {
     // ONLY set to values in iteration 0's evaluation
     private final Set<Integer> readAtStatementTimes;
 
-    private final IncrementalMap<VariableProperty> properties = new IncrementalMap<>(Level::acceptIncrement);
+    private final VariableProperties properties = new VariableProperties();
     private final SetOnce<Expression> value = new SetOnce<>(); // may be written exactly once
     private Expression currentDelayedValue; // may be written multiple times
     private final SetOnce<ObjectFlow> objectFlow = new SetOnce<>();
@@ -185,7 +187,12 @@ class VariableInfoImpl implements VariableInfo {
     // ***************************** NON-INTERFACE CODE: SETTERS ************************
 
     void setProperty(VariableProperty variableProperty, int value) {
-        properties.put(variableProperty, value);
+        try {
+            properties.put(variableProperty, value);
+        } catch (RuntimeException e) {
+            LOGGER.error("Error setting property {} of {} to {}", variableProperty, variable.fullyQualifiedName(), value);
+            throw e;
+        }
     }
 
     void setObjectFlow(ObjectFlow objectFlow) {
@@ -238,11 +245,13 @@ class VariableInfoImpl implements VariableInfo {
     // this copying has to have taken place earlier; for each of the variable properties below:
 
     private static final List<MergeOp> MERGE = List.of(
-            new MergeOp(VariableProperty.NOT_NULL, Math::min, Integer.MAX_VALUE),
+            new MergeOp(VariableProperty.EXTERNAL_NOT_NULL, Math::min, Integer.MAX_VALUE),
+            new MergeOp(VariableProperty.CONTEXT_NOT_NULL, Math::min, Integer.MAX_VALUE),
             new MergeOp(VariableProperty.IMMUTABLE, Math::min, Integer.MAX_VALUE),
             new MergeOp(VariableProperty.CONTAINER, Math::min, Integer.MAX_VALUE),
             new MergeOp(VariableProperty.IDENTITY, Math::min, Integer.MAX_VALUE),
-            new MergeOp(VariableProperty.MODIFIED, Math::max, Level.DELAY)
+            new MergeOp(VariableProperty.CONTEXT_MODIFIED, Math::max, Level.DELAY),
+            new MergeOp(VariableProperty.MODIFIED_OUTSIDE_METHOD, Math::max, Level.DELAY)
     );
 
     /*

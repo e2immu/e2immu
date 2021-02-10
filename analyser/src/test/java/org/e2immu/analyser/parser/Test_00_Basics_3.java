@@ -100,7 +100,9 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                         Assert.assertEquals("instance type PrintStream", d.currentValue().toString());
                     }
                 } else if ("0.1.0".equals(d.statementId())) {
-               //     Assert.fail("The variable should not exist here!");
+                    // we allow the variable to exist here, but should it be read here? FIXME
+                    Assert.assertTrue(d.iteration() > 0);
+                    Assert.assertEquals(VariableInfoContainer.NOT_YET_READ, d.variableInfo().getReadId());
                 } else if ("0".equals(d.statementId())) {
                     Assert.assertEquals("nullable instance type PrintStream",
                             d.variableInfoContainer().getPreviousOrInitial().getValue().toString());
@@ -110,7 +112,7 @@ public class Test_00_Basics_3 extends CommonTestRunner {
 
                 // completely independent of the iterations, we always should have @NotNull because of context
                 if ("0.0.0".equals(d.statementId()) || "0".equals(d.statementId())) {
-                    Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL));
+                    Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
                 }
             }
             if ("setS1".equals(d.methodInfo().name) && S.equals(d.variableName())) {
@@ -140,7 +142,8 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                         String expectedLinked = "org.e2immu.analyser.testexample.Basics_3.s$1";
                         Assert.assertEquals(expectedLinked, d.variableInfo().getLinkedVariables().toString());
                     }
-                    Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL));
+                    // not null of assignment
+                    Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
                 }
                 if ("0.1.0".equals(d.statementId())) {
                     Assert.assertEquals("\"abc\"", d.currentValue().debugOutput());
@@ -151,11 +154,11 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                         Assert.assertEquals(1, d.variableInfo().getStatementTime());
                         Assert.assertTrue(d.variableInfo().getLinkedVariables().isEmpty());
                     }
-                    Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL));
+                    Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
                 }
                 if ("0".equals(d.statementId())) {
                     Assert.assertEquals("input1.contains(\"a\")?\"xyz\":\"abc\"", d.currentValue().toString());
-                    Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL));
+                    Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
 
                     if (d.iteration() == 0) {
                         Assert.assertEquals(VariableInfoContainer.VARIABLE_FIELD_DELAY, d.variableInfo().getStatementTime());
@@ -258,7 +261,7 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                 if (d.iteration() > 1) {
                     Assert.assertTrue(d.fieldAnalysis().getLinkedVariables().isEmpty());
                 }
-                Assert.assertEquals(MultiLevel.NULLABLE, d.fieldAnalysis().getProperty(VariableProperty.NOT_NULL));
+                Assert.assertEquals(MultiLevel.NULLABLE, d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_NOT_NULL));
                 Assert.assertEquals(Level.FALSE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
                 Assert.assertNull(d.fieldAnalysis().getEffectivelyFinalValue());
             }

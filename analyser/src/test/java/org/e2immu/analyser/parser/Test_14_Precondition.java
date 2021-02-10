@@ -175,7 +175,8 @@ public class Test_14_Precondition extends CommonTestRunner {
                         Assert.assertEquals("ii>=0?ii:null", d.currentValue().toString());
                     } else {
                         Assert.assertEquals("ii", d.currentValue().toString());
-                        Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL));
+                        Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL,
+                                d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL_VARIABLE));
                     }
                 }
             }

@@ -37,10 +37,10 @@ public class TestExampleManualIterator1 extends CommonTestRunner {
 
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
         if ("hasNext".equals(d.methodInfo().name) && "MyIteratorImpl.this.list".equals(d.variableName())) {
-            Assert.assertEquals(Level.FALSE, d.getProperty(VariableProperty.MODIFIED));
+            Assert.assertEquals(Level.FALSE, d.getProperty(VariableProperty.MODIFIED_VARIABLE));
         }
         if ("iterator".equals(d.methodInfo().name) && "ExampleManualIterator1.this.list".equals(d.variableName()) && d.iteration() > 1) {
-            Assert.assertEquals(Level.FALSE, d.getProperty(VariableProperty.MODIFIED));
+            Assert.assertEquals(Level.FALSE, d.getProperty(VariableProperty.MODIFIED_VARIABLE));
         }
     };
 
@@ -49,7 +49,8 @@ public class TestExampleManualIterator1 extends CommonTestRunner {
         if ("MyConsumer".equals(typeInfo.simpleName)) {
             MethodInfo accept = typeInfo.findUniqueMethod("accept", 1);
             ParameterInfo param0 = accept.methodInspection.get().getParameters().get(0);
-            Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, param0.parameterAnalysis.get().getProperty(VariableProperty.NOT_NULL));
+            Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL,
+                    param0.parameterAnalysis.get().getProperty(VariableProperty.NOT_NULL_VARIABLE));
         }
         if ("MyIterator".equals(typeInfo.simpleName)) {
             //MethodInfo hasNext = typeInfo.findUniqueMethod("hasNext", 0);
@@ -75,14 +76,14 @@ public class TestExampleManualIterator1 extends CommonTestRunner {
         TypeInfo list = typeMap.get(List.class);
         Assert.assertSame(AnnotationMode.DEFENSIVE, list.typeInspection.get().annotationMode());
         MethodInfo size = list.findUniqueMethod("size", 0);
-        Assert.assertEquals(Level.FALSE, size.methodAnalysis.get().getProperty(VariableProperty.MODIFIED));
+        Assert.assertEquals(Level.FALSE, size.methodAnalysis.get().getProperty(VariableProperty.MODIFIED_METHOD));
     };
 
     FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
         FieldInfo fieldInfo = d.fieldInfo();
         int iteration = d.iteration();
         if ("list".equals(fieldInfo.name) && "MyIteratorImpl".equals(fieldInfo.owner.simpleName)) {
-            int modified = d.fieldAnalysis().getProperty(VariableProperty.MODIFIED);
+            int modified = d.fieldAnalysis().getProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD);
             int expect = iteration <= 1 ? Level.DELAY : Level.FALSE;
             Assert.assertEquals(expect, modified);
 
@@ -97,14 +98,14 @@ public class TestExampleManualIterator1 extends CommonTestRunner {
                 VariableInfo constructorTv = constructorMa.getLastStatement().getLatestVariableInfo(fieldInfo.fullyQualifiedName());
 
                 Assert.assertTrue(constructorTv.isRead());
-                Assert.assertEquals(Level.TRUE, constructorTv.getProperty(VariableProperty.MODIFIED));
+                Assert.assertEquals(Level.TRUE, constructorTv.getProperty(VariableProperty.MODIFIED_VARIABLE));
 
                 MethodInfo visit = fieldInfo.owner.findUniqueMethod("visit", 1);
                 MethodAnalysis visitMa = d.evaluationContext().getAnalyserContext().getMethodAnalysis(visit);
                 VariableInfo visitTv = visitMa.getLastStatement().getLatestVariableInfo(fieldInfo.fullyQualifiedName());
 
                 Assert.assertTrue(visitTv.isRead());
-                Assert.assertEquals(Level.FALSE, visitTv.getProperty(VariableProperty.MODIFIED));
+                Assert.assertEquals(Level.FALSE, visitTv.getProperty(VariableProperty.MODIFIED_VARIABLE));
 
                 MethodInfo iterator = fieldInfo.owner.findUniqueMethod("iterator", 0);
                 MethodAnalysis iteratorMa = d.evaluationContext().getAnalyserContext().getMethodAnalysis(iterator);
@@ -113,7 +114,7 @@ public class TestExampleManualIterator1 extends CommonTestRunner {
                 Assert.assertTrue(iteratorTv.isRead());
 
                 if (iteration > 1) {
-                    Assert.assertEquals(Level.FALSE, iteratorTv.getProperty(VariableProperty.MODIFIED));
+                    Assert.assertEquals(Level.FALSE, iteratorTv.getProperty(VariableProperty.MODIFIED_VARIABLE));
                 }
             }
         }

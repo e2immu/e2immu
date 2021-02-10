@@ -98,7 +98,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
         if (value instanceof VariableExpression variableExpression) {
             ChangeData cd = changeData.get(variableExpression.variable());
             if (cd != null) {
-                Integer inChangeData = cd.properties.getOrDefault(VariableProperty.NOT_NULL, null);
+                Integer inChangeData = cd.properties.getOrDefault(VariableProperty.CONTEXT_NOT_NULL, null);
                 if (inChangeData != null && inChangeData >= MultiLevel.EFFECTIVELY_NOT_NULL) return true;
             }
         }
@@ -253,7 +253,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             if (variable instanceof This) return; // nothing to be done here
             boolean valueIsDelayed = evaluationContext.isDelayed(value);
 
-            int notNull = getPropertyFromInitial(variable, VariableProperty.NOT_NULL);
+            int notNull = getPropertyFromInitial(variable, VariableProperty.CONTEXT_NOT_NULL);
             if (notNullRequired == MultiLevel.EFFECTIVELY_NOT_NULL && notNull < notNullRequired) {
                 // we have a second attempt looking at the current condition, absolute state, etc.
                 if (evaluationContext.isNotNull0(value)) {
@@ -269,12 +269,12 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             }
             if (notNull < notNullRequired) {
                 // we only need to mark this in case of doubt (if we already know, we should not mark)
-                setProperty(variable, VariableProperty.NOT_NULL, notNullRequired);
+                setProperty(variable, VariableProperty.CONTEXT_NOT_NULL, notNullRequired);
                 if (value instanceof VariableExpression redirectViaValue) {
-                    setProperty(redirectViaValue.variable(), VariableProperty.NOT_NULL, notNullRequired);
+                    setProperty(redirectViaValue.variable(), VariableProperty.CONTEXT_NOT_NULL, notNullRequired);
                 } else if (valueIsDelayed) {
                     for (Variable staticRedirect : evaluationContext.getStaticallyAssignedVariables(variable, statementTime).variables()) {
-                        setProperty(staticRedirect, VariableProperty.NOT_NULL, notNullRequired);
+                        setProperty(staticRedirect, VariableProperty.CONTEXT_NOT_NULL, notNullRequired);
                     }
                 }
             }
@@ -448,13 +448,13 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             }
         }
 
-        public void markContentModified(Variable variable, int modified) {
+        public void markContextModified(Variable variable, int modified) {
             assert evaluationContext != null;
             if (evaluationContext.isPresent(variable)) {
                 int ignoreContentModifications = getPropertyFromInitial(variable, VariableProperty.IGNORE_MODIFICATIONS);
                 if (ignoreContentModifications != Level.TRUE) {
-                    log(DEBUG_MODIFY_CONTENT, "Mark method object as content modified {}: {}", modified, variable.fullyQualifiedName());
-                    setProperty(variable, VariableProperty.MODIFIED, modified);
+                    log(DEBUG_MODIFY_CONTENT, "Mark method object as context modified {}: {}", modified, variable.fullyQualifiedName());
+                    setProperty(variable, VariableProperty.CONTEXT_MODIFIED, modified);
 
                     /*
                     The following code is not allowed, see Container_3: it typically causes a MarkRead in an iteration>0
@@ -466,10 +466,10 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                     }
                     */
                 } else {
-                    log(DEBUG_MODIFY_CONTENT, "Skip marking method object as content modified: {}", variable.fullyQualifiedName());
+                    log(DEBUG_MODIFY_CONTENT, "Skip marking method object as context modified: {}", variable.fullyQualifiedName());
                 }
             } else {
-                log(DEBUG_MODIFY_CONTENT, "Not yet marking {} as content modified, not present", variable.fullyQualifiedName());
+                log(DEBUG_MODIFY_CONTENT, "Not yet marking {} as context modified, not present", variable.fullyQualifiedName());
             }
         }
 

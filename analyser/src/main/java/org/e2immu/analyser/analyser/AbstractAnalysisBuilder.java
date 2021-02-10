@@ -25,7 +25,6 @@ import org.e2immu.analyser.model.expression.StringConstant;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Messages;
 import org.e2immu.analyser.parser.Primitives;
-import org.e2immu.analyser.util.IncrementalMap;
 import org.e2immu.analyser.util.SetOnceMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,7 +39,7 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
     public final SetOnceMap<AnnotationExpression, Boolean> annotations = new SetOnceMap<>();
     public final SetOnceMap<AnnotationExpression, AnnotationCheck> annotationChecks = new SetOnceMap<>();
 
-    public final IncrementalMap<VariableProperty> properties = new IncrementalMap<>(Level::acceptIncrement);
+    public final VariableProperties properties = new VariableProperties();
     public final String simpleName; // for debugging purposes
     public final Primitives primitives;
 
@@ -62,10 +61,19 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
     }
 
     public void setProperty(VariableProperty variableProperty, int i) {
-        if (variableProperty.canImprove) {
-            properties.improve(variableProperty, i);
-        } else if (!properties.isSet(variableProperty)) {
-            properties.put(variableProperty, i);
+        if (!properties.isSet(variableProperty)) {
+            if (i != Level.DELAY) properties.put(variableProperty, i);
+        } else {
+            int current = properties.get(variableProperty);
+            if (i != current) {
+                throw new UnsupportedOperationException("Trying to overwrite property " + variableProperty + " with value " + i + ", current value " + current);
+            }
+        }
+    }
+
+    public void incrementProperty(VariableProperty variableProperty, int i) {
+        if (!properties.isSet(variableProperty)) {
+            if (i != Level.DELAY) properties.put(variableProperty, i);
         } else {
             int current = properties.get(variableProperty);
             if (i != current) {
@@ -90,10 +98,9 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
     public abstract void transferPropertiesToAnnotations(AnalysisProvider analysisProvider,
                                                          E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions);
 
-    protected void doNotNull(E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
+    protected void doNotNull(E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions, int notNull) {
 
         // not null
-        int notNull = getProperty(VariableProperty.NOT_NULL);
         if (notNull >= MultiLevel.EVENTUALLY_CONTENT2_NOT_NULL) {
             annotations.put(e2ImmuAnnotationExpressions.notNull2, true);
             annotations.put(e2ImmuAnnotationExpressions.nullable, false);
@@ -170,6 +177,7 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
     }
 
     public Messages fromAnnotationsIntoProperties(
+            boolean isVariable,
             boolean acceptVerify,
             Collection<AnnotationExpression> annotations,
             E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
@@ -180,6 +188,8 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
 
         AnnotationExpression only = null;
         AnnotationExpression mark = null;
+
+        VariableProperty modified = isVariable ? VariableProperty.MODIFIED_OUTSIDE_METHOD : VariableProperty.MODIFIED_METHOD;
 
         for (AnnotationExpression annotationExpression : annotations) {
             AnnotationParameters parameters = annotationExpression.e2ImmuAnnotationParameters();
@@ -212,46 +222,46 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
                 } else if (e2ImmuAnnotationExpressions.notNull2.typeInfo() == t) {
                     notNull = MultiLevel.EFFECTIVELY_CONTENT2_NOT_NULL;
                 } else if (e2ImmuAnnotationExpressions.notModified.typeInfo() == t) {
-                    properties.put(VariableProperty.MODIFIED, falseTrue);
+                    setProperty(modified, falseTrue);
                 } else if (e2ImmuAnnotationExpressions.modified.typeInfo() == t) {
-                    properties.put(VariableProperty.MODIFIED, trueFalse);
+                    setProperty(modified, trueFalse);
                 } else if (e2ImmuAnnotationExpressions.effectivelyFinal.typeInfo() == t) {
-                    properties.put(VariableProperty.FINAL, trueFalse);
+                    setProperty(VariableProperty.FINAL, trueFalse);
                 } else if (e2ImmuAnnotationExpressions.variableField.typeInfo() == t) {
-                    properties.put(VariableProperty.FINAL, falseTrue);
+                    setProperty(VariableProperty.FINAL, falseTrue);
                 } else if (e2ImmuAnnotationExpressions.constant.typeInfo() == t) {
-                    properties.put(VariableProperty.CONSTANT, trueFalse);
+                    setProperty(VariableProperty.CONSTANT, trueFalse);
                 } else if (e2ImmuAnnotationExpressions.extensionClass.typeInfo() == t) {
-                    properties.put(VariableProperty.EXTENSION_CLASS, trueFalse);
+                    setProperty(VariableProperty.EXTENSION_CLASS, trueFalse);
                 } else if (e2ImmuAnnotationExpressions.fluent.typeInfo() == t) {
-                    properties.put(VariableProperty.FLUENT, trueFalse);
+                    setProperty(VariableProperty.FLUENT, trueFalse);
                 } else if (e2ImmuAnnotationExpressions.identity.typeInfo() == t) {
-                    properties.put(VariableProperty.IDENTITY, trueFalse);
+                    setProperty(VariableProperty.IDENTITY, trueFalse);
                 } else if (e2ImmuAnnotationExpressions.ignoreModifications.typeInfo() == t) {
-                    properties.put(VariableProperty.IGNORE_MODIFICATIONS, trueFalse);
+                    setProperty(VariableProperty.IGNORE_MODIFICATIONS, trueFalse);
                 } else if (e2ImmuAnnotationExpressions.independent.typeInfo() == t) {
-                    properties.put(VariableProperty.INDEPENDENT, MultiLevel.EFFECTIVE);
+                    setProperty(VariableProperty.INDEPENDENT, MultiLevel.EFFECTIVE);
                 } else if (e2ImmuAnnotationExpressions.dependent.typeInfo() == t) {
-                    properties.put(VariableProperty.INDEPENDENT, MultiLevel.FALSE);
+                    setProperty(VariableProperty.INDEPENDENT, MultiLevel.FALSE);
                 } else if (e2ImmuAnnotationExpressions.mark.typeInfo() == t) {
                     mark = annotationExpression;
                 } else if (e2ImmuAnnotationExpressions.only.typeInfo() == t) {
                     only = annotationExpression;
                 } else if (e2ImmuAnnotationExpressions.singleton.typeInfo() == t) {
-                    properties.put(VariableProperty.SINGLETON, trueFalse);
+                    setProperty(VariableProperty.SINGLETON, trueFalse);
                 } else if (e2ImmuAnnotationExpressions.utilityClass.typeInfo() == t) {
-                    properties.put(VariableProperty.UTILITY_CLASS, trueFalse);
+                    setProperty(VariableProperty.UTILITY_CLASS, trueFalse);
                 } else if (e2ImmuAnnotationExpressions.linked.typeInfo() == t) {
-                    properties.put(VariableProperty.LINKED, trueFalse);
+                    setProperty(VariableProperty.LINKED, trueFalse);
                 } else if (e2ImmuAnnotationExpressions.notModified1.typeInfo() == t) {
-                    properties.put(VariableProperty.NOT_MODIFIED_1, trueFalse);
-                } else if (e2ImmuAnnotationExpressions.allowsInterrupt.typeInfo() == t) {
-                    // nothing to be done here -- already in method resolution
-                } else throw new UnsupportedOperationException("TODO: " + t.fullyQualifiedName);
+                    setProperty(VariableProperty.NOT_MODIFIED_1, trueFalse);
+                } else if (e2ImmuAnnotationExpressions.allowsInterrupt.typeInfo() != t) {
+                    throw new UnsupportedOperationException("TODO: " + t.fullyQualifiedName);
+                }
             }
         }
         if (container) {
-            properties.put(VariableProperty.CONTAINER, Level.TRUE);
+            setProperty(VariableProperty.CONTAINER, Level.TRUE);
         }
         if (immutable >= 0) {
             int value = switch (immutable) {
@@ -259,10 +269,12 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
                 case 1 -> MultiLevel.EFFECTIVELY_E2IMMUTABLE;
                 default -> throw new UnsupportedOperationException();
             };
-            properties.put(VariableProperty.IMMUTABLE, value);
+            setProperty(VariableProperty.IMMUTABLE, value);
         }
         if (notNull >= 0) {
-            properties.put(VariableProperty.NOT_NULL, notNull);
+            VariableProperty property = isVariable ? VariableProperty.EXTERNAL_NOT_NULL :
+                    VariableProperty.NOT_NULL_EXPRESSION;
+            setProperty(property, notNull);
         }
         if (mark != null && only == null) {
             String markValue = mark.extract("value", "");
@@ -272,7 +284,6 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
             String markValue = mark == null ? null : mark.extract("value", "");
             String before = only.extract("before", "");
             String after = only.extract("after", "");
-            //boolean framework = only.extract("framework", false); // TODO! implement
             boolean isAfter = before.isEmpty();
             String onlyMark = isAfter ? after : before;
             if (markValue != null && !onlyMark.equals(markValue)) {

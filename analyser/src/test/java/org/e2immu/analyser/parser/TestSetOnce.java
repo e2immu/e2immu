@@ -41,7 +41,7 @@ public class TestSetOnce extends CommonTestRunner {
     FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
         if ("t".equals(d.fieldInfo().name) && d.iteration() > 0) {
             Assert.assertEquals(Level.FALSE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
-            Assert.assertEquals(MultiLevel.NULLABLE, d.fieldAnalysis().getProperty(VariableProperty.NOT_NULL));
+            Assert.assertEquals(MultiLevel.NULLABLE, d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_NOT_NULL));
 
         }
     };

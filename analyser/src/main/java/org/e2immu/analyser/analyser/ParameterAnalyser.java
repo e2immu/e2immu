@@ -130,6 +130,8 @@ public class ParameterAnalyser {
 
         Map<FieldInfo, ParameterAnalysis.AssignedOrLinked> map = parameterAnalysis.getAssignedToField();
         // FIXME see if really necessary; we're working on not null: if (checkNotLinkedOrAssigned(map)) return DONE;
+
+        // FIXME read CONTEXT_NN, CONTEXT_MOD from last statement
         boolean setNotNull = false;
 
         for (Map.Entry<FieldInfo, ParameterAnalysis.AssignedOrLinked> e : map.entrySet()) {
@@ -170,7 +172,7 @@ public class ParameterAnalyser {
         if (!setNotNull) {
             MethodAnalysis methodAnalysis = analysisProvider.getMethodAnalysis(parameterInfo.owner);
             VariableInfo vi = methodAnalysis.getLastStatement().getLatestVariableInfo(parameterInfo.fullyQualifiedName());
-            if (vi.getProperty(VariableProperty.NOT_NULL_DELAYS_RESOLVED) == Level.FALSE) {
+            if (vi.getProperty(VariableProperty.NOT_NULL_DELAY_RESOLVED) == Level.FALSE) {
                 log(ANALYSER, "Delays on not null resolved for {}, delaying", parameterInfo.fullyQualifiedName());
                 return changed ? PROGRESS : DELAYS;
             }
@@ -205,20 +207,6 @@ public class ParameterAnalyser {
             return DELAYED;
         }
         return linked.variables().contains(parameterInfo) ? LINKED : NO;
-    }
-
-    private boolean checkNotLinkedOrAssigned(Map<FieldInfo, ParameterAnalysis.AssignedOrLinked> map) {
-        if (map.values().stream().allMatch(v -> v == NO)) {
-            StatementAnalysis lastStatementAnalysis = analysisProvider.getMethodAnalysis(parameterInfo.owner).getLastStatement();
-            VariableInfo vi = lastStatementAnalysis.findOrNull(parameterInfo, VariableInfoContainer.Level.MERGE);
-            int notNullDelayResolved = vi.getProperty(VariableProperty.NOT_NULL_DELAYS_RESOLVED);
-            if (notNullDelayResolved != Level.FALSE && parameterAnalysis.getProperty(VariableProperty.NOT_NULL) == Level.DELAY) {
-                parameterAnalysis.setProperty(VariableProperty.NOT_NULL, MultiLevel.MUTABLE);
-            }
-            parameterAnalysis.resolveFieldDelays();
-            return true;
-        }
-        return false;
     }
 
     private boolean checkUnusedParameter() {

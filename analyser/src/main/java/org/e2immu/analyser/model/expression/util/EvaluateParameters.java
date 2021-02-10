@@ -36,6 +36,9 @@ import static org.e2immu.analyser.util.Logger.LogTarget.DELAYED;
 
 public class EvaluateParameters {
     private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(EvaluateParameters.class);
+    private static final Map<VariableProperty, Integer> RECURSIVE_CALL =
+            Map.of(VariableProperty.CONTEXT_MODIFIED, Level.FALSE,
+                    VariableProperty.CONTEXT_NOT_NULL, MultiLevel.NULLABLE);
 
     public static Pair<EvaluationResult.Builder, List<Expression>> transform(List<Expression> parameterExpressions,
                                                                              EvaluationContext evaluationContext,
@@ -69,18 +72,23 @@ public class EvaluateParameters {
                 // NOT_NULL, NOT_MODIFIED
                 Map<VariableProperty, Integer> map;
                 try {
-                    if (evaluationContext.getCurrentMethod() != null && evaluationContext.getCurrentMethod().methodInfo == methodInfo) {
-                        map = new HashMap<>(Map.of(VariableProperty.MODIFIED, Level.FALSE, VariableProperty.NOT_NULL, MultiLevel.NULLABLE));
+                    if (evaluationContext.getCurrentMethod() != null &&
+                            evaluationContext.getCurrentMethod().methodInfo == methodInfo) {
+                        map = new HashMap<>(RECURSIVE_CALL);
                     } else {
-                        map = evaluationContext.getAnalyserContext().getParameterAnalysis(parameterInfo)
-                                .getProperties(VariableProperty.FORWARD_PROPERTIES_ON_PARAMETERS);
+                        // copy from parameter into map used for forwarding
+                        ParameterAnalysis parameterAnalysis = evaluationContext.getAnalyserContext().getParameterAnalysis(parameterInfo);
+                        map = new HashMap<>();
+                        map.put(VariableProperty.CONTEXT_MODIFIED, parameterAnalysis.getProperty(VariableProperty.MODIFIED_VARIABLE));
+                        map.put(VariableProperty.CONTEXT_NOT_NULL, parameterAnalysis.getProperty(VariableProperty.NOT_NULL_VARIABLE));
+                        map.put(VariableProperty.NOT_MODIFIED_1, parameterAnalysis.getProperty(VariableProperty.NOT_MODIFIED_1));
                     }
                 } catch (RuntimeException e) {
                     LOGGER.error("Failed to obtain parameter analysis of {}", parameterInfo.fullyQualifiedName());
                     throw e;
                 }
                 if (notModified1Scope == Level.TRUE) {
-                    map.put(VariableProperty.MODIFIED, Level.FALSE);
+                    map.put(VariableProperty.CONTEXT_NOT_NULL, Level.FALSE);
                 }
 
                 if (map.containsValue(Level.DELAY)) {
@@ -95,7 +103,7 @@ public class EvaluateParameters {
                     if (cannotBeModified == null) {
                         map.put(VariableProperty.METHOD_DELAY, Level.TRUE); // DELAY
                     } else if (cannotBeModified) {
-                        map.put(VariableProperty.MODIFIED, Level.FALSE);
+                        map.put(VariableProperty.CONTEXT_MODIFIED, Level.FALSE);
                     }
                 }
 
@@ -108,8 +116,12 @@ public class EvaluateParameters {
                         methodLevelData.copyModificationStatusFrom.put(methodInfo, true);
                     }
                 }
-                int notNull = map.getOrDefault(VariableProperty.NOT_NULL, Level.DELAY);
-                // FIXME introduce not null delay
+                int notNull = map.getOrDefault(VariableProperty.CONTEXT_NOT_NULL, Level.DELAY);
+                if (notNull == Level.DELAY) {
+                    map.put(VariableProperty.CONTEXT_NOT_NULL_DELAY, Level.TRUE);
+                } else {
+                    map.put(VariableProperty.CONTEXT_NOT_NULL_DELAY_RESOLVED, Level.TRUE);
+                }
 
                 minNotNullOverParameters = Math.min(minNotNullOverParameters, notNull);
 
@@ -119,7 +131,7 @@ public class EvaluateParameters {
                 parameterValue = parameterResult.value();
 
                 ObjectFlow source = parameterValue.getObjectFlow();
-                int modified = map.getOrDefault(VariableProperty.MODIFIED, Level.DELAY);
+                int modified = map.getOrDefault(VariableProperty.CONTEXT_MODIFIED, Level.DELAY);
                 if (modified == Level.DELAY) {
                     Logger.log(DELAYED, "Delaying flow access registration because modification status of {} not known",
                             methodInfo.fullyQualifiedName());
@@ -147,7 +159,7 @@ public class EvaluateParameters {
                 scopeObject != null &&
                 methodInfo.typeInfo.typeInspection.get().isFunctionalInterface() &&
                 (scopeVariable = scopeObject.asInstanceOf(VariableExpression.class)) != null) {
-            builder.setProperty(scopeVariable.variable(), VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL);
+            builder.setProperty(scopeVariable.variable(), VariableProperty.CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL);
         }
 
 
@@ -171,7 +183,7 @@ public class EvaluateParameters {
                 Map<ParameterInfo, Expression> individualNullClauses = filterResult.accepted();
                 for (Map.Entry<ParameterInfo, Expression> nullClauseEntry : individualNullClauses.entrySet()) {
                     if (!nullClauseEntry.getValue().equalsNull()) {
-                        builder.setProperty(nullClauseEntry.getKey(), VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
+                        builder.setProperty(nullClauseEntry.getKey(), VariableProperty.CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
                     }
                 }
 

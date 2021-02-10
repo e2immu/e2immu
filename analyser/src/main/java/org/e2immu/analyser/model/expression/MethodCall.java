@@ -220,7 +220,8 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         List<EvaluationResult> reParams = parameterExpressions.stream().map(v -> v.reEvaluate(evaluationContext, translation)).collect(Collectors.toList());
         EvaluationResult reObject = object.reEvaluate(evaluationContext, translation);
         List<Expression> reParamValues = reParams.stream().map(EvaluationResult::value).collect(Collectors.toList());
-        int modified = evaluationContext.getAnalyserContext().getMethodAnalysis(methodInfo).getProperty(VariableProperty.MODIFIED);
+        int modified = evaluationContext.getAnalyserContext()
+                .getMethodAnalysis(methodInfo).getProperty(VariableProperty.MODIFIED_METHOD);
         EvaluationResult mv = EvaluateMethodCall.methodValue(modified, evaluationContext, methodInfo,
                 evaluationContext.getAnalyserContext().getMethodAnalysis(methodInfo), reObject.value(), reParamValues, getObjectFlow());
         return new EvaluationResult.Builder(evaluationContext).compose(reParams).compose(reObject, mv)
@@ -287,19 +288,19 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         }
         // is the method modifying, do we need to wait?
         int modified = alwaysModifying ? Level.TRUE : recursiveCall || neverModifying ? Level.FALSE
-                : methodAnalysis.getProperty(VariableProperty.MODIFIED);
+                : methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD);
         int methodDelay = Level.fromBool(modified == Level.DELAY || delayUndeclared);
 
         // effectively not null is the default, but when we're in a not null situation, we can demand effectively content not null
-        int notNullForward = notNullRequirementOnScope(forwardEvaluationInfo.getProperty(VariableProperty.NOT_NULL));
+        int notNullForward = notNullRequirementOnScope(forwardEvaluationInfo.getProperty(VariableProperty.CONTEXT_NOT_NULL));
         boolean contentNotNullRequired = notNullForward == MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL;
 
         // scope
         EvaluationResult objectResult = object.evaluate(evaluationContext, new ForwardEvaluationInfo(Map.of(
-                VariableProperty.NOT_NULL, notNullForward,
+                VariableProperty.CONTEXT_NOT_NULL, notNullForward,
                 VariableProperty.METHOD_CALLED, Level.TRUE,
                 VariableProperty.METHOD_DELAY, methodDelay,
-                VariableProperty.MODIFIED, modified), true));
+                VariableProperty.CONTEXT_MODIFIED, modified), true));
 
         // null scope
         Expression objectValue = objectResult.value();
@@ -543,7 +544,8 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         int n = methodInfo.methodInspection.get().getParameters().size();
         for (Expression p : parameterValues) {
             ParameterInfo parameterInfo = methodInfo.methodInspection.get().getParameters().get(Math.min(n - 1, i));
-            int modified = evaluationContext.getAnalyserContext().getParameterAnalysis(parameterInfo).getProperty(VariableProperty.MODIFIED);
+            int modified = evaluationContext.getAnalyserContext()
+                    .getParameterAnalysis(parameterInfo).getProperty(VariableProperty.MODIFIED_VARIABLE);
             if (modified == Level.DELAY) return LinkedVariables.DELAY;
             if (modified == Level.TRUE) {
                 LinkedVariables cd = evaluationContext.linkedVariables(p);
@@ -601,7 +603,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             method = methodInfo;
         }
         MethodAnalysis methodAnalysis = evaluationContext.getAnalyserContext().getMethodAnalysis(method);
-        int modified = methodAnalysis.getProperty(VariableProperty.MODIFIED);
+        int modified = methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD);
         int immutable = evaluationContext.getProperty(objectValue, VariableProperty.IMMUTABLE);
         if (modified == Level.TRUE && immutable >= MultiLevel.EVENTUALLY_E2IMMUTABLE) {
             builder.raiseError(Message.CALLING_MODIFYING_METHOD_ON_E2IMMU,
@@ -615,9 +617,9 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                                                           ForwardEvaluationInfo forwardEvaluationInfo,
                                                           boolean contentNotNullRequired) {
         if (!contentNotNullRequired) {
-            int requiredNotNull = forwardEvaluationInfo.getProperty(VariableProperty.NOT_NULL);
+            int requiredNotNull = forwardEvaluationInfo.getProperty(VariableProperty.CONTEXT_NOT_NULL);
             if (MultiLevel.isEffectivelyNotNull(requiredNotNull)) {
-                int methodNotNull = methodAnalysis.getProperty(VariableProperty.NOT_NULL);
+                int methodNotNull = methodAnalysis.getProperty(VariableProperty.NOT_NULL_EXPRESSION);
                 if (methodNotNull != Level.DELAY) {
                     boolean isNotNull = MultiLevel.isEffectivelyNotNull(methodNotNull);
                     if (!isNotNull) {
@@ -672,7 +674,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
     private SideEffect sideEffectNotTakingEventualIntoAccount(EvaluationContext evaluationContext) {
         MethodAnalysis methodAnalysis = evaluationContext.getAnalyserContext().getMethodAnalysis(methodInfo);
-        int modified = methodAnalysis.getProperty(VariableProperty.MODIFIED);
+        int modified = methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD);
 
         TypeAnalysis typeAnalysis = evaluationContext.getAnalyserContext().getTypeAnalysis(methodInfo.typeInfo);
         int immutable = typeAnalysis.getProperty(VariableProperty.IMMUTABLE);
@@ -713,10 +715,12 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         if (recursiveCall) {
             return variableProperty.best;
         }
-        if (variableProperty == VariableProperty.NOT_NULL) {
-            int fluent = evaluationContext.getAnalyserContext().getMethodAnalysis(methodInfo).getProperty(VariableProperty.FLUENT);
+        if (variableProperty == VariableProperty.NOT_NULL_EXPRESSION) {
+            int fluent = evaluationContext.getAnalyserContext()
+                    .getMethodAnalysis(methodInfo).getProperty(VariableProperty.FLUENT);
             if (fluent == Level.TRUE) return Level.best(MultiLevel.EFFECTIVELY_NOT_NULL,
-                    evaluationContext.getAnalyserContext().getTypeAnalysis(methodInfo.typeInfo).getProperty(VariableProperty.NOT_NULL));
+                    evaluationContext.getAnalyserContext().getTypeAnalysis(methodInfo.typeInfo)
+                            .getProperty(VariableProperty.NOT_NULL_EXPRESSION));
         }
         return evaluationContext.getAnalyserContext().getMethodAnalysis(methodInfo).getProperty(variableProperty);
     }

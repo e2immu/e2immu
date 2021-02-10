@@ -60,7 +60,7 @@ Test_00_Basics_0 extends CommonTestRunner {
             Assert.assertEquals(Level.TRUE, fieldAnalysis.getProperty(VariableProperty.FINAL));
             Assert.assertEquals("\"abc\"", fieldAnalysis.getEffectivelyFinalValue().toString());
             Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(fieldAnalysis.getEffectivelyFinalValue(),
-                    VariableProperty.NOT_NULL));
+                    VariableProperty.EXTERNAL_NOT_NULL));
             Assert.assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, fieldAnalysis.getProperty(VariableProperty.IMMUTABLE));
             Assert.assertTrue(fieldAnalysis.getLinkedVariables().isEmpty());
         }
@@ -99,7 +99,7 @@ Test_00_Basics_0 extends CommonTestRunner {
             Assert.assertEquals(expectReturn, d.currentValue().toString());
 
             int expectNotNull = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
-            Assert.assertEquals(expectNotNull, d.getProperty(VariableProperty.NOT_NULL));
+            Assert.assertEquals(expectNotNull, d.getProperty(VariableProperty.NOT_NULL_VARIABLE));
 
             if (d.iteration() == 0) {
                 Assert.assertSame(LinkedVariables.DELAY, d.variableInfo().getLinkedVariables());

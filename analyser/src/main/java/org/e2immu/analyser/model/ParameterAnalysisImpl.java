@@ -140,7 +140,7 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
 
             // @NotModified, @Modified
             // implicitly @NotModified when E2Immutable, or functional interface
-            int modified = getProperty(VariableProperty.MODIFIED);
+            int modified = getProperty(VariableProperty.MODIFIED_VARIABLE);
             if (!parameterInfo.parameterizedType.isFunctionalInterface() &&
                     parameterInfo.parameterizedType.isAtLeastEventuallyE2Immutable(analysisProvider) != Boolean.TRUE) {
                 AnnotationExpression ae = modified == Level.FALSE ? e2ImmuAnnotationExpressions.notModified :
@@ -152,7 +152,7 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
             doNotModified1(e2ImmuAnnotationExpressions);
 
             // @NotNull, @Size
-            doNotNull(e2ImmuAnnotationExpressions);
+            doNotNull(e2ImmuAnnotationExpressions, getProperty(VariableProperty.NOT_NULL_VARIABLE));
         }
 
         public boolean addAssignedToField(FieldInfo fieldInfo, AssignedOrLinked assignedOrLinked) {
