@@ -630,6 +630,14 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
                 immutable = MultiLevel.MUTABLE; // no idea
             }
         }
+        int notNull = variableInfo.getProperty(VariableProperty.NOT_NULL_VARIABLE);
+        if (notNull != Level.DELAY) {
+            methodAnalysis.setProperty(VariableProperty.NOT_NULL_EXPRESSION, notNull);
+        } else {
+            log(DELAYED, "Delaying return value of {}, waiting for NOT_NULL", methodInfo.fullyQualifiedName);
+            return DELAYS;
+        }
+
         boolean valueIsConstantField;
         if (value instanceof InlinedMethod inlined &&
                 inlined.expression() instanceof VariableExpression ve && ve.variable() instanceof FieldReference fieldReference) {

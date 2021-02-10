@@ -670,7 +670,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 } else if (variable instanceof This || !evaluationResult.someValueWasDelayed() && !changeData.haveDelayesCausedByMethodCalls()) {
                     // we're not assigning (and there is no change in instance because of a modifying method)
                     // only then we copy from INIT to EVAL
-                    vic.setValue(vi1.getValue(), vi1.isDelayed(), vi1.getStaticallyAssignedVariables(), vi1.getProperties(), false);
+                    vic.setValue(vi1.getValue(), vi1.isDelayed(), vi1.getStaticallyAssignedVariables(),
+                            vi1.getProperties().toImmutableMap(), false);
                 } else {
                     // not an assignment, so we must copy the statically assigned variables!
                     vic.setStaticallyAssignedVariables(vi1.getStaticallyAssignedVariables(), false);
@@ -1129,7 +1130,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 VariableInfoContainer newVic = VariableInfoContainerImpl.newLoopVariable(newLvr, assigned,
                         read,
                         NewObject.localVariableInLoop(statementAnalysis.primitives, newLvr.parameterizedType()),
-                        vic.current().getProperties(),
+                        vic.current().getProperties().toImmutableMap(),
                         new LinkedVariables(Set.of(vic.current().variable())),
                         new VariableInLoop(index(), null, VariableInLoop.VariableType.LOOP_COPY),
                         true);
@@ -1274,6 +1275,17 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             toWrite = properties;
         }
         vic.setValue(newReturnValue, newReturnValueIsDelayed, LinkedVariables.EMPTY, toWrite, false);
+
+        vic.setProperty(VariableProperty.CONTEXT_NOT_NULL, MultiLevel.NULLABLE, VariableInfoContainer.Level.EVALUATION);
+
+        int expressionNotNull = toWrite.getOrDefault(NOT_NULL_EXPRESSION, Level.DELAY);
+        if (expressionNotNull != Level.DELAY) {
+            vic.setProperty(VariableProperty.EXTERNAL_NOT_NULL, expressionNotNull, true, VariableInfoContainer.Level.EVALUATION);
+        } else {
+            log(DELAYED, "Delaying evaluation because not null on return statement {} in {}", index(),
+                    myMethodAnalyser.methodInfo.fullyQualifiedName);
+            return DELAYS;
+        }
         if (newReturnValueIsDelayed) {
             log(DELAYED, "Delaying evaluation because return statement {} in {}", index(),
                     myMethodAnalyser.methodInfo.fullyQualifiedName);
@@ -1971,7 +1983,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             }
 
             if (NOT_NULL_EXPRESSION == variableProperty) {
-                int directNN = value.getProperty(this, NOT_NULL_VARIABLE);
+                int directNN = value.getProperty(this, NOT_NULL_EXPRESSION);
                 if (directNN >= MultiLevel.EFFECTIVELY_NOT_NULL) return directNN;
                 Expression valueIsNotNull = Negation.negate(this, Equals.equals(this,
                         value, NullConstant.NULL_CONSTANT, ObjectFlow.NO_FLOW, false));

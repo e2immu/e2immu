@@ -246,7 +246,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
     }
 
     private void addMethodsToQualification(QualificationImpl qImpl) {
-        TypeInspection ti = typeInspection.get();
+        TypeInspection ti = typeInspection.get("Inspection of type " + fullyQualifiedName);
         ti.methods().forEach(qImpl::addMethodUnlessOverride);
         if (!Primitives.isJavaLangObject(this)) {
             ti.parentClass().typeInfo.addMethodsToQualification(qImpl);

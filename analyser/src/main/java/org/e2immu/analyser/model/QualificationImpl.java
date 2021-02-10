@@ -96,7 +96,7 @@ public class QualificationImpl implements Qualification {
 
     public void addMethodUnlessOverride(MethodInfo methodInfo) {
         boolean newMethod = unqualifiedMethods.stream().noneMatch(mi ->
-                mi.methodResolution.get().overrides().contains(methodInfo));
+                mi.methodResolution.get("Method resolution of "+mi.fullyQualifiedName).overrides().contains(methodInfo));
         if (newMethod) {
             unqualifiedMethods.add(methodInfo);
         }

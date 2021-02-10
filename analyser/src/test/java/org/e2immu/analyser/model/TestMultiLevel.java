@@ -35,7 +35,7 @@ public class TestMultiLevel {
         Assert.assertEquals(NOT_NULL_2, level(EFFECTIVELY_CONTENT2_NOT_NULL));
         Assert.assertEquals(E2IMMUTABLE, level(EVENTUALLY_E2IMMUTABLE));
         Assert.assertEquals(E2IMMUTABLE, level(EVENTUALLY_E2IMMUTABLE_BEFORE_MARK));
-        Assert.assertEquals(E1IMMUTABLE, level(EVENTUALLY_E1IMMUTABLE));
+        Assert.assertEquals(E2IMMUTABLE, level(EVENTUALLY_E1IMMUTABLE)); // we know about E2IMMUTABLE: FALSE
     }
 
     @Test

@@ -189,7 +189,7 @@ public class TestParameterizedType {
                 primitives.integerTypeInfo.asSimpleParameterizedType()));
         ParameterizedType functionMapToBoolean = new ParameterizedType(function, List.of(mapStringInteger, primitives.boxedBooleanTypeInfo.asSimpleParameterizedType()));
         Map<NamedType, ParameterizedType> translation = functionMapToBoolean.initialTypeParameterMap(IP);
-        Assert.assertEquals("{T as #0 in org.e2immu.Map=Type org.e2immu.Map<java.lang.String, java.lang.Integer>, " +
+        Assert.assertEquals("{T as #0 in org.e2immu.Map=Type org.e2immu.Map<java.lang.String,java.lang.Integer>, " +
                 "R as #1 in org.e2immu.Map=Type java.lang.Boolean}", translation.toString());
 
         Map<NamedType, ParameterizedType> translation2 = function.asParameterizedType(IP).translateMap(IP, functionMapToBoolean, true);
@@ -223,7 +223,7 @@ public class TestParameterizedType {
                 new ParameterizedType(a.typeInspection.get().typeParameters().get(1), 0, NONE)));
         ParameterizedType scope = new ParameterizedType(a, List.of(primitives.stringParameterizedType, primitives.intParameterizedType));
         ParameterizedType concreteField = field.inferConcreteFieldTypeFromConcreteScope(IP, a.asParameterizedType(IP), scope);
-        Assert.assertEquals("Type org.e2immu.Map<java.lang.String, int>", concreteField.toString());
+        Assert.assertEquals("Type org.e2immu.Map<java.lang.String,int>", concreteField.toString());
 
         /* we simulate
         class A<K, V> { private Map<K, V> field = ... }
@@ -232,7 +232,7 @@ public class TestParameterizedType {
         ParameterizedType scope2 = new ParameterizedType(b, List.of(
                 new ParameterizedType(b.typeInspection.get().typeParameters().get(0), 0, NONE)));
         ParameterizedType concreteField2 = field.inferConcreteFieldTypeFromConcreteScope(IP, a.asParameterizedType(IP), scope2);
-        Assert.assertEquals("Type org.e2immu.Map<java.lang.String, X>", concreteField2.toString());
+        Assert.assertEquals("Type org.e2immu.Map<java.lang.String,X>", concreteField2.toString());
 
          /* we simulate
         class A<K, V> { private Map<K, V> field = ... }
@@ -240,7 +240,7 @@ public class TestParameterizedType {
         */
         ParameterizedType scope3 = c.asParameterizedType(IP);
         ParameterizedType concreteField3 = field.inferConcreteFieldTypeFromConcreteScope(IP, a.asParameterizedType(IP), scope3);
-        Assert.assertEquals("Type org.e2immu.Map<java.lang.String, java.lang.Integer>", concreteField3.toString());
+        Assert.assertEquals("Type org.e2immu.Map<java.lang.String,java.lang.Integer>", concreteField3.toString());
     }
 
     @Test
@@ -269,7 +269,7 @@ public class TestParameterizedType {
         Map<NamedType, ParameterizedType> t1 = hashMapPt.translateMap(IP, mapStringInteger, false);
         Assert.assertEquals("{K as #0 in org.e2immu.HashMap=Type java.lang.String, V as #1 in org.e2immu.HashMap=Type int}", t1.toString());
         ParameterizedType concreteHashMap = hashMapPt.inferDiamondNewObjectCreation(IP, mapStringInteger);
-        Assert.assertEquals("Type org.e2immu.HashMap<java.lang.String, int>", concreteHashMap.toString());
+        Assert.assertEquals("Type org.e2immu.HashMap<java.lang.String,int>", concreteHashMap.toString());
 
         // we simulate Map<String, Integer> map = new StringMap<>(), where we need to obtain the concrete pt of StringMap
         ParameterizedType stringMapPt = stringMap.asParameterizedType(IP);

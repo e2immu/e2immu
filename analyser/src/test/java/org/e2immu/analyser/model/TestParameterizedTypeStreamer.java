@@ -83,7 +83,7 @@ public class TestParameterizedTypeStreamer {
         ParameterizedType clazzTS = new ParameterizedType(clazz, List.of(
                 new ParameterizedType(t, 0, ParameterizedType.WildCard.NONE),
                 new ParameterizedType(s, 0, ParameterizedType.WildCard.NONE)));
-        Assert.assertEquals("a.b.Clazz<T, S>", clazzTS.detailedString());
+        Assert.assertEquals("a.b.Clazz<T,S>", clazzTS.detailedString());
 
         TypeInfo sub = new TypeInfo(clazz, "Sub");
 
@@ -93,7 +93,7 @@ public class TestParameterizedTypeStreamer {
         ParameterizedType clazzTSubS = new ParameterizedType(sub, List.of(
                 new ParameterizedType(t, 0, ParameterizedType.WildCard.NONE),
                 new ParameterizedType(s, 0, ParameterizedType.WildCard.NONE)));
-        Assert.assertEquals("a.b.Clazz<T, S>.Sub", clazzTSubS.detailedString());
+        Assert.assertEquals("a.b.Clazz<T,S>.Sub", clazzTSubS.detailedString());
     }
 
     @Test

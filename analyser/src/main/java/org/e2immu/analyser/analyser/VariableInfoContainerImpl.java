@@ -226,16 +226,6 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         variableInfo.setStaticallyAssignedVariables(staticallyAssignedVariables);
     }
 
-    public void increasePropertyOfInitial(VariableProperty variableProperty, int value) {
-        ensureNotFrozen();
-        Objects.requireNonNull(variableProperty);
-        VariableInfoImpl variableInfo = (VariableInfoImpl) getPreviousOrInitial();
-        int current = variableInfo.getProperty(variableProperty);
-        if (current < value) {
-            variableInfo.setProperty(variableProperty, value);
-        }
-    }
-
     @Override
     public void setProperty(VariableProperty variableProperty,
                             int value,
@@ -251,7 +241,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
 
         int current = variableInfo.getProperty(variableProperty);
         if (current == org.e2immu.analyser.model.Level.DELAY) {
-            variableInfo.setProperty(variableProperty, value);
+            if (value != org.e2immu.analyser.model.Level.DELAY) variableInfo.setProperty(variableProperty, value);
         } else if (current != value && (current < value || failWhenTryingToWriteALowerValue)) {
             throw new UnsupportedOperationException("Trying to write a different value " + value +
                     ", already have " + current + ", property " + variableProperty +

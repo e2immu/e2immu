@@ -317,7 +317,10 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             if (methodAnalysis.getMethodInfo().hasReturnValue()) {
                 Variable retVar = new ReturnVariable(methodAnalysis.getMethodInfo());
                 VariableInfoContainer vic = createVariable(evaluationContext, retVar, 0);
-                READ_FROM_RETURN_VALUE_PROPERTIES.forEach(vp -> vic.setProperty(vp, vp.falseValue, VariableInfoContainer.Level.INITIAL));
+                READ_FROM_RETURN_VALUE_PROPERTIES.forEach(vp ->
+                        vic.setProperty(vp, vp.falseValue, VariableInfoContainer.Level.INITIAL));
+                vic.setProperty(CONTEXT_NOT_NULL, MultiLevel.NULLABLE, VariableInfoContainer.Level.INITIAL);
+                // not null of value
             }
             // if we're at the beginning of the method, we're done.
             if (parent == null) {
@@ -462,7 +465,9 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                 ParameterAnalysis parameterAnalysis = analyserContext.getParameterAnalysis(parameterInfo);
                 for (VariableProperty variableProperty : FROM_ANALYSER_TO_PROPERTIES) {
                     int value = parameterAnalysis.getProperty(variableProperty);
-                    vic.increasePropertyOfInitial(variableProperty, value);
+                    if (value != Level.DELAY) {
+                        vic.setProperty(variableProperty, value, VariableInfoContainer.Level.INITIAL);
+                    }
                 }
             } else {
                 log(ANALYSER, "Skipping parameter {}, not read, assigned", parameterInfo.fullyQualifiedName());
@@ -472,8 +477,9 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         if (!currentMethod.methodInspection.get().isStatic()) {
             This thisVariable = new This(analyserContext, currentMethod.typeInfo);
             VariableInfoContainer vic = findForWriting(thisVariable);
-            propertyMap(analyserContext, methodAnalysis.getMethodInfo().typeInfo)
-                    .forEach(vic::increasePropertyOfInitial);
+            propertyMap(analyserContext, methodAnalysis.getMethodInfo().typeInfo).entrySet().stream()
+                    .filter(e -> e.getValue() != Level.DELAY)
+                    .forEach(e -> vic.setProperty(e.getKey(), e.getValue(), VariableInfoContainer.Level.INITIAL));
         }
     }
 

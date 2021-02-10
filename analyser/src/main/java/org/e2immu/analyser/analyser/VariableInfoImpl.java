@@ -157,8 +157,8 @@ class VariableInfoImpl implements VariableInfo {
     }
 
     @Override
-    public Map<VariableProperty, Integer> getProperties() {
-        return properties.toImmutableMap();
+    public VariableProperties getProperties() {
+        return properties;
     }
 
     @Override

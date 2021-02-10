@@ -1,9 +1,6 @@
 package org.e2immu.analyser.config;
 
-import org.e2immu.analyser.analyser.EvaluationContext;
-import org.e2immu.analyser.analyser.VariableInfo;
-import org.e2immu.analyser.analyser.VariableInfoContainer;
-import org.e2immu.analyser.analyser.VariableProperty;
+import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.variable.Variable;
 
@@ -20,7 +17,7 @@ public interface StatementAnalyserVariableVisitor {
                 Variable variable,
                 Expression currentValue,
                 boolean currentValueIsDelayed,
-                Map<VariableProperty, Integer> properties,
+                VariableProperties properties,
                 VariableInfo variableInfo,
                 VariableInfoContainer variableInfoContainer) {
 
@@ -33,7 +30,7 @@ public interface StatementAnalyserVariableVisitor {
         }
 
         public boolean hasProperty(VariableProperty variableProperty) {
-            return properties.containsKey(variableProperty) && Level.DELAY != properties.get(variableProperty);
+            return properties.isSet(variableProperty);
         }
 
         public int getPropertyOfCurrentValue(VariableProperty variableProperty) {

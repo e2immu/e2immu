@@ -18,10 +18,7 @@
 
 package org.e2immu.analyser.model;
 
-import org.e2immu.analyser.inspector.FieldInspectionImpl;
-import org.e2immu.analyser.inspector.MethodInspectionImpl;
-import org.e2immu.analyser.inspector.ParameterInspectionImpl;
-import org.e2immu.analyser.inspector.TypeInspectionImpl;
+import org.e2immu.analyser.inspector.*;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.statement.*;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
@@ -53,6 +50,8 @@ public class TestTypeInfoStream {
     @Test
     public void test() {
         Primitives primitives = new Primitives();
+        primitives.objectTypeInfo.typeInspection.set(new TypeInspectionImpl.Builder(primitives.objectTypeInfo, BY_HAND).build());
+
         InspectionProvider IP = InspectionProvider.DEFAULT;
         TypeInfo genericContainer = new TypeInfo(MODEL, "GenericContainer");
         TypeParameter genericContainerTypeParameterT = new TypeParameterImpl(genericContainer, "T", 0);
@@ -75,9 +74,12 @@ public class TestTypeInfoStream {
         MethodInfo emptyTestConstructor = new MethodInspectionImpl.Builder(testTypeInfo).build(IP).getMethodInfo();
 
         MethodInfo emptyContainerConstructor = new MethodInspectionImpl.Builder(containerTypeInfo).build(IP).getMethodInfo();
+        emptyContainerConstructor.methodResolution.set(new MethodResolution.Builder().build());
+
         MethodInfo toStringMethodInfo = new MethodInspectionImpl.Builder(testTypeInfo, "toString")
                 .addModifier(MethodModifier.PUBLIC)
                 .setReturnType(primitives.stringParameterizedType).build(IP).getMethodInfo();
+        toStringMethodInfo.methodResolution.set(new MethodResolution.Builder().build());
 
         TypeInfo hashMap = new TypeInfo(JAVA_UTIL, "HashMap");
         TypeInfo exception = new TypeInfo(GENERATED_PACKAGE, "MyException");
@@ -171,6 +173,7 @@ public class TestTypeInfoStream {
                                 )
                                 .build())
                 .build(IP).getMethodInfo();
+        put.methodResolution.set(new MethodResolution.Builder().build());
 
         FieldInfo intFieldInContainer = new FieldInfo(primitives.intParameterizedType, "i", containerTypeInfo);
         intFieldInContainer.fieldInspection.set(new FieldInspectionImpl.Builder()
@@ -246,7 +249,7 @@ public class TestTypeInfoStream {
                                 ))
                         ).build())
                 .build(IP).getMethodInfo();
-
+        intSum.methodResolution.set(new MethodResolution.Builder().build());
         TypeInspection testTypeInspection = new TypeInspectionImpl.Builder(testTypeInfo, BY_HAND)
                 .addTypeModifier(TypeModifier.PUBLIC)
                 .setParentClass(primitives.objectParameterizedType)

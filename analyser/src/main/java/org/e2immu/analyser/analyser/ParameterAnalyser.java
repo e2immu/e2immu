@@ -88,7 +88,8 @@ public class ParameterAnalyser {
                     .max().orElse(Level.DELAY);
             int value = parameterAnalysis.getProperty(variableProperty);
             if (valueFromOverrides != Level.DELAY && value != Level.DELAY) {
-                boolean complain = variableProperty == VariableProperty.MODIFIED ? value > valueFromOverrides : value < valueFromOverrides;
+                boolean complain = variableProperty == VariableProperty.MODIFIED_VARIABLE
+                        ? value > valueFromOverrides : value < valueFromOverrides;
                 if (complain) {
                     messages.add(Message.newMessage(parameterAnalysis.location, Message.WORSE_THAN_OVERRIDDEN_METHOD_PARAMETER,
                             variableProperty.name + ", parameter " + parameterInfo.name));
@@ -155,7 +156,7 @@ public class ParameterAnalyser {
                         log(ANALYSER, "Still delaying copiedFromFieldToParameters because of {}", variableProperty);
                         delays = true;
                     }
-                    setNotNull |= variableProperty == VariableProperty.NOT_NULL;
+                    setNotNull |= variableProperty == VariableProperty.EXTERNAL_NOT_NULL;
                 }
             } else {
                 assert e.getValue() == NO;
@@ -168,16 +169,17 @@ public class ParameterAnalyser {
         // can be executed multiple times
         parameterAnalysis.resolveFieldDelays();
 
-        // see if we have to break NOT_NULL delays
+        // see if we have to break CONTEXT_NOT_NULL delays
         if (!setNotNull) {
             MethodAnalysis methodAnalysis = analysisProvider.getMethodAnalysis(parameterInfo.owner);
             VariableInfo vi = methodAnalysis.getLastStatement().getLatestVariableInfo(parameterInfo.fullyQualifiedName());
-            if (vi.getProperty(VariableProperty.NOT_NULL_DELAY_RESOLVED) == Level.FALSE) {
+            if (vi.getProperty(VariableProperty.CONTEXT_NOT_NULL_DELAY) == Level.TRUE &&
+                    vi.getProperty(VariableProperty.CONTEXT_NOT_NULL_DELAY_RESOLVED) != Level.TRUE) {
                 log(ANALYSER, "Delays on not null resolved for {}, delaying", parameterInfo.fullyQualifiedName());
                 return changed ? PROGRESS : DELAYS;
             }
-            if (vi.getProperty(VariableProperty.NOT_NULL) == Level.DELAY) {
-                parameterAnalysis.setProperty(VariableProperty.NOT_NULL, MultiLevel.NULLABLE);
+            if (vi.getProperty(VariableProperty.CONTEXT_NOT_NULL) == Level.DELAY) {
+                parameterAnalysis.setProperty(VariableProperty.CONTEXT_NOT_NULL, MultiLevel.NULLABLE);
             }
         }
         log(ANALYSER, "No delays anymore on copying from field to parameter");
@@ -215,8 +217,10 @@ public class ParameterAnalyser {
                 lastStatementAnalysis.findOrNull(parameterInfo, VariableInfoContainer.Level.MERGE);
         if (vi == null || !vi.isRead()) {
             // unused variable
-            parameterAnalysis.setProperty(VariableProperty.MODIFIED, Level.FALSE);
-            parameterAnalysis.setProperty(VariableProperty.NOT_NULL, MultiLevel.NULLABLE);
+            parameterAnalysis.setProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD, Level.FALSE);
+            parameterAnalysis.setProperty(VariableProperty.CONTEXT_MODIFIED, Level.FALSE);
+            parameterAnalysis.setProperty(VariableProperty.EXTERNAL_NOT_NULL, MultiLevel.NULLABLE);
+            parameterAnalysis.setProperty(VariableProperty.CONTEXT_NOT_NULL, MultiLevel.NULLABLE);
             parameterAnalysis.setProperty(VariableProperty.NOT_MODIFIED_1, Level.FALSE);
 
             if (lastStatementAnalysis != null && parameterInfo.owner.isNotOverridingAnyOtherMethod()) {

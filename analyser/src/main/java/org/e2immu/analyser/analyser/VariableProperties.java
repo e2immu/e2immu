@@ -70,7 +70,7 @@ public class VariableProperties extends SetOnceMap<VariableProperty, Integer> {
         int max = Level.DELAY;
         for (VariableProperty sub : variableProperty.combinationOf) {
             if (!super.isSet(sub)) return null;
-            int v = super.get(variableProperty);
+            int v = super.get(sub);
             assert v >= 0;
             max = Math.max(max, v);
         }
@@ -85,7 +85,7 @@ public class VariableProperties extends SetOnceMap<VariableProperty, Integer> {
         int max = Level.DELAY;
         for (VariableProperty sub : variableProperty.combinationOf) {
             if (!super.isSet(sub)) return defaultValue;
-            int v = super.get(variableProperty);
+            int v = super.get(sub);
             assert v >= 0;
             max = Math.max(max, v);
         }

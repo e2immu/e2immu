@@ -229,7 +229,7 @@ public abstract class CommonAbstractValue {
 
         @Override
         public int getProperty(Expression value, VariableProperty variableProperty) {
-            if (value instanceof VariableExpression ve && variableProperty == VariableProperty.NOT_NULL) {
+            if (value instanceof VariableExpression ve && variableProperty == VariableProperty.NOT_NULL_EXPRESSION) {
                 if (ve.variable().simpleName().endsWith("n") || ve.variable().simpleName().compareTo("p") >= 0)
                     return MultiLevel.NULLABLE;
                 return MultiLevel.EFFECTIVELY_NOT_NULL;

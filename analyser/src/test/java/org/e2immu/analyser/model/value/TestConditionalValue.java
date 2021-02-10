@@ -63,7 +63,9 @@ public class TestConditionalValue extends CommonAbstractValue {
         TypeInfo annotatedAPI = new TypeInfo("org.e2immu.annotatedapi", "AnnotatedAPI");
         ParameterizedType annotatedAPIPt = new ParameterizedType(annotatedAPI, 0);
         MethodInfo isFact = new MethodInfo(annotatedAPI, "isFact", ShallowTypeAnalyser.IS_FACT_FQN, ShallowTypeAnalyser.IS_FACT_FQN, false);
-        isFact.methodInspection.set(new MethodInspectionImpl.Builder(annotatedAPI).setReturnType(PRIMITIVES.booleanParameterizedType).build(InspectionProvider.DEFAULT));
+        isFact.methodInspection.set(new MethodInspectionImpl.Builder(annotatedAPI)
+                .setStatic(true)
+                .setReturnType(PRIMITIVES.booleanParameterizedType).build(InspectionProvider.DEFAULT));
         Expression isFactA = new MethodCall(new TypeExpression(annotatedAPIPt, Diamond.NO, ObjectFlow.NO_FLOW), isFact, List.of(a), ObjectFlow.NO_FLOW);
         Assert.assertEquals("AnnotatedAPI.isFact(a)", isFactA.toString());
         Expression isFactB = new MethodCall(new TypeExpression(annotatedAPIPt, Diamond.NO, ObjectFlow.NO_FLOW), isFact, List.of(b), ObjectFlow.NO_FLOW);

@@ -131,10 +131,23 @@ public enum VariableProperty {
     }
 
     public final static Set<VariableProperty> PROPERTIES_IN_METHOD_RESULT_WRAPPER = Set.of(NOT_NULL_EXPRESSION, IMMUTABLE);
-    public final static Set<VariableProperty> READ_FROM_RETURN_VALUE_PROPERTIES = Set.of(IDENTITY, IMMUTABLE, CONTAINER, NOT_NULL);
-    public final static Set<VariableProperty> METHOD_PROPERTIES_IN_INLINE_SAM = Set.of(MODIFIED, INDEPENDENT);
+    /*
+    Properties of return variables, initially set to false, finally copied to the method's properties.
+    NotNull is handled separately, because the property changes from NOT_NULL_VARIABLE to NOT_NULL_EXPRESSION
+     */
+    public final static Set<VariableProperty> READ_FROM_RETURN_VALUE_PROPERTIES = Set.of(IDENTITY, IMMUTABLE, CONTAINER); // +NOT_NULL by hand
+    /*
+    an inline method has properties on the method, and properties on the expression. these are on the method.
+     */
+    public final static Set<VariableProperty> METHOD_PROPERTIES_IN_INLINE_SAM = Set.of(MODIFIED_METHOD, INDEPENDENT);
     public static final Set<VariableProperty> CHECK_WORSE_THAN_PARENT = Set.of(NOT_NULL_VARIABLE, MODIFIED_VARIABLE);
-    public static final Set<VariableProperty> FROM_ANALYSER_TO_PROPERTIES = Set.of(IDENTITY, FINAL, NOT_NULL, IMMUTABLE, CONTAINER, NOT_MODIFIED_1);
-    public static final Set<VariableProperty> VALUE_PROPERTIES = Set.of(IDENTITY, IMMUTABLE, CONTAINER, NOT_NULL);
+
+    /*
+    copy from field, parameter, this/type to variable, once a value has been determined.
+     */
+    public static final Set<VariableProperty> FROM_ANALYSER_TO_PROPERTIES
+            = Set.of(IDENTITY, FINAL, EXTERNAL_NOT_NULL, IMMUTABLE, CONTAINER, NOT_MODIFIED_1);
+
+    public static final Set<VariableProperty> VALUE_PROPERTIES = Set.of(IDENTITY, IMMUTABLE, CONTAINER, NOT_NULL_EXPRESSION);
 
 }
