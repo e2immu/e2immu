@@ -44,14 +44,12 @@ public class Message {
     public static final String ASSERT_EVALUATES_TO_CONSTANT_TRUE = "Condition in 'assert' is always true";
 
     public static final String EMPTY_LOOP = "Empty loop";
-    public static final String LOOP_WITHOUT_MODIFICATION = "Loop without modification";
     public static final String UNUSED_LOOP_VARIABLE = "Unused loop variable";
 
     public static final String UNREACHABLE_STATEMENT = "Unreachable statement";
 
     public static final String POTENTIAL_NULL_POINTER_EXCEPTION = "Potential null pointer exception";
     public static final String MODIFICATION_NOT_ALLOWED = "Illegal modification suspected";
-    public static final String POTENTIAL_SIZE_PROBLEM = "Potential size problem";
     public static final String UNNECESSARY_METHOD_CALL = "Unnecessary method call";
 
     public static final String PARAMETER_SHOULD_NOT_BE_ASSIGNED_TO = "Parameter should not be assigned to";
@@ -90,7 +88,6 @@ public class Message {
     public static final String UNUSED_PARAMETER = "Unused parameter";
 
     public static final String CONTRADICTING_ANNOTATIONS = "Contradicting annotations";
-    public static final String WRONG_LINKS = "Contradicting linked variable information";
 
     public static final String USELESS_LOCAL_CLASS_DECLARATION ="Unused local class declaration (no statements follow)";
     public static final String TRIVIAL_CASES_IN_SWITCH = "Trivial cases in switch";
@@ -110,7 +107,6 @@ public class Message {
         map.put(POTENTIAL_NULL_POINTER_EXCEPTION, Severity.WARN);
         map.put(UNNECESSARY_METHOD_CALL, Severity.WARN);
         map.put(IGNORING_RESULT_OF_METHOD_CALL, Severity.WARN);
-        map.put(POTENTIAL_SIZE_PROBLEM, Severity.WARN);
         map.put(CIRCULAR_TYPE_DEPENDENCY, Severity.WARN);
 
         map.put(ASSERT_EVALUATES_TO_CONSTANT_TRUE, Severity.WARN);

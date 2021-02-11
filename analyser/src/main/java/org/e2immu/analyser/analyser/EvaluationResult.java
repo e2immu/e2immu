@@ -251,23 +251,24 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             assert value != null;
 
             if (variable instanceof This) return; // nothing to be done here
-            boolean valueIsDelayed = evaluationContext.isDelayed(value);
 
-            int notNull = getPropertyFromInitial(variable, VariableProperty.CONTEXT_NOT_NULL);
-            if (notNullRequired == MultiLevel.EFFECTIVELY_NOT_NULL && notNull < notNullRequired) {
-                // we have a second attempt looking at the current condition, absolute state, etc.
-                if (evaluationContext.isNotNull0(value)) {
-                    return; // great, no problem, no reason to complain nor increase the property
-                }
+            if (notNullRequired == MultiLevel.EFFECTIVELY_NOT_NULL && evaluationContext.isNotNull0(value)) {
+                return; // great, no problem, no reason to complain nor increase the property
             }
-            // if the variable has a value, and this value is NOT @NotNull, then we'll raise an error
-            if (notNull == MultiLevel.FALSE && !valueIsDelayed) {
+
+            // if the variable has a value, and this value is NOT @NotNull, then we'll raise a warning
+            int externalNotNull = getPropertyFromInitial(variable, VariableProperty.EXTERNAL_NOT_NULL);
+            boolean valueIsDelayed = evaluationContext.isDelayed(value);
+            if (externalNotNull == MultiLevel.FALSE && !valueIsDelayed) {
                 Message message = Message.newMessage(evaluationContext.getLocation(), Message.POTENTIAL_NULL_POINTER_EXCEPTION,
                         "Variable: " + variable.simpleName());
                 messages.add(message);
                 return;
             }
-            if (notNull < notNullRequired) {
+
+            // regardless of what's going on with the external not-null, we set context not null
+            int contextNotNull = getPropertyFromInitial(variable, VariableProperty.CONTEXT_NOT_NULL);
+            if (contextNotNull < notNullRequired) {
                 // we only need to mark this in case of doubt (if we already know, we should not mark)
                 setProperty(variable, VariableProperty.CONTEXT_NOT_NULL, notNullRequired);
                 if (value instanceof VariableExpression redirectViaValue) {
