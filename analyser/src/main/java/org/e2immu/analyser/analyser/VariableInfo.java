@@ -142,4 +142,9 @@ public interface VariableInfo {
             default -> throw new UnsupportedOperationException();
         };
     }
+
+    default boolean contextNotNullDelay() {
+        return getProperty(VariableProperty.CONTEXT_NOT_NULL_DELAY) == Level.TRUE &&
+                getProperty(VariableProperty.CONTEXT_NOT_NULL_DELAY_RESOLVED) != Level.TRUE;
+    }
 }

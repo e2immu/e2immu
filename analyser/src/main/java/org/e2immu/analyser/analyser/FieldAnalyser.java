@@ -255,6 +255,11 @@ public class FieldAnalyser extends AbstractAnalyser {
     for methods which only read, we only wait for not-null delays to be resolved.
      */
     private AnalysisStatus analyseNotNull(SharedState sharedState) {
+        int contract = fieldAnalysis.getProperty(VariableProperty.NOT_NULL_VARIABLE);
+        if (contract != Level.DELAY) {
+            fieldAnalysis.setProperty(VariableProperty.EXTERNAL_NOT_NULL, contract);
+            return DONE;
+        }
         if (fieldAnalysis.getProperty(VariableProperty.EXTERNAL_NOT_NULL) != Level.DELAY) return DONE;
 
         int isFinal = fieldAnalysis.getProperty(VariableProperty.FINAL);
@@ -272,18 +277,17 @@ public class FieldAnalyser extends AbstractAnalyser {
         // first, context
         boolean contextNotNullDelays = allMethodsAndConstructors.stream()
                 .flatMap(m -> m.getFieldAsVariableStream(fieldInfo, true))
-                .anyMatch(vi -> vi.getProperty(VariableProperty.CONTEXT_NOT_NULL_DELAY) == Level.TRUE &&
-                        vi.getProperty(VariableProperty.CONTEXT_NOT_NULL_DELAY_RESOLVED) != Level.TRUE);
+                .anyMatch(VariableInfo::contextNotNullDelay);
         if (contextNotNullDelays) return DELAYS;
         int bestOverContext = allMethodsAndConstructors.stream()
                 .flatMap(m -> m.getFieldAsVariableStream(fieldInfo, true))
                 .mapToInt(vi -> vi.getProperty(VariableProperty.CONTEXT_NOT_NULL))
                 .max().orElse(MultiLevel.NULLABLE);
 
-        if(Logger.isLogEnabled(NOT_NULL)) {
+        if (Logger.isLogEnabled(NOT_NULL)) {
             allMethodsAndConstructors.forEach(m -> {
                 List<VariableInfo> list = m.getFieldAsVariable(fieldInfo, true);
-                for(VariableInfo vi: list) {
+                for (VariableInfo vi : list) {
                     int nn = vi.getProperty(VariableProperty.CONTEXT_NOT_NULL);
                     log(NOT_NULL, "Method {} field {} context not null {}", m.methodInfo.name, vi.variable().simpleName(), nn);
                 }
@@ -642,6 +646,11 @@ public class FieldAnalyser extends AbstractAnalyser {
     }
 
     private AnalysisStatus analyseModified() {
+        int contract = fieldAnalysis.getProperty(VariableProperty.MODIFIED_VARIABLE);
+        if (contract != Level.DELAY) {
+            fieldAnalysis.setProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD, contract);
+            return DONE;
+        }
         assert fieldAnalysis.getProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD) == Level.DELAY;
 
         int effectivelyFinal = fieldAnalysis.getProperty(VariableProperty.FINAL);
@@ -835,7 +844,8 @@ public class FieldAnalyser extends AbstractAnalyser {
         public int getProperty(Expression value, VariableProperty variableProperty) {
             if (value instanceof VariableExpression variableValue) {
                 Variable variable = variableValue.variable();
-                return getProperty(variable, variableProperty);
+                return getProperty(variable, variableProperty == VariableProperty.NOT_NULL_EXPRESSION ?
+                        VariableProperty.EXTERNAL_NOT_NULL : variableProperty);
             }
             return value.getProperty(this, variableProperty);
         }

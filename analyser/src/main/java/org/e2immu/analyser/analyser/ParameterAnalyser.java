@@ -135,6 +135,23 @@ public class ParameterAnalyser {
     private AnalysisStatus analyseFields(SharedState sharedState) {
         boolean changed = false;
         boolean delays = false;
+
+        int contractModified = parameterAnalysis.getProperty(VariableProperty.MODIFIED_VARIABLE);
+        if (contractModified != Level.DELAY && !parameterAnalysis.properties.isSet(VariableProperty.MODIFIED_OUTSIDE_METHOD)) {
+            parameterAnalysis.setProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD, contractModified);
+            changed = true;
+        }
+        int contractNotNull = parameterAnalysis.getProperty(VariableProperty.NOT_NULL_VARIABLE);
+        if (contractNotNull != Level.DELAY && !parameterAnalysis.properties.isSet(VariableProperty.EXTERNAL_NOT_NULL)) {
+            parameterAnalysis.setProperty(VariableProperty.EXTERNAL_NOT_NULL, contractNotNull);
+            changed = true;
+        }
+        if (parameterAnalysis.properties.isSet(VariableProperty.MODIFIED_OUTSIDE_METHOD) &&
+                parameterAnalysis.properties.isSet(VariableProperty.EXTERNAL_NOT_NULL)) {
+            parameterAnalysis.resolveFieldDelays();
+            return DONE;
+        }
+
         // find a field that's linked to me; bail out when not all field's values are set.
         for (FieldInfo fieldInfo : parameterInfo.owner.typeInfo.typeInspection.get().fields()) {
             FieldAnalysis fieldAnalysis = analysisProvider.getFieldAnalysis(fieldInfo);
@@ -145,6 +162,7 @@ public class ParameterAnalyser {
                 changed |= assignedOrLinked.isAssignedOrLinked();
             }
         }
+
         if (delays) {
             return changed ? PROGRESS : DELAYS;
         }
@@ -185,7 +203,8 @@ public class ParameterAnalyser {
             }
         }
 
-        if (delays) {
+        if (delays && !(parameterAnalysis.properties.isSet(VariableProperty.MODIFIED_OUTSIDE_METHOD) &&
+                parameterAnalysis.properties.isSet(VariableProperty.EXTERNAL_NOT_NULL))) {
             return changed ? PROGRESS : DELAYS;
         }
 
