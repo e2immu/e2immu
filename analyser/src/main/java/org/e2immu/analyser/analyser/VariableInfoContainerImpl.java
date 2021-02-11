@@ -234,7 +234,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         ensureNotFrozen();
         Objects.requireNonNull(variableProperty);
         VariableInfoImpl variableInfo = switch (level) {
-            case INITIAL -> previousOrInitial.getRight();
+            case INITIAL -> (VariableInfoImpl) getPreviousOrInitial();// FIXME verify that this is good?
             case EVALUATION -> evaluation.get();
             case MERGE -> this.merge == null || !this.merge.isSet() ? evaluation.get() : this.merge.get();
         };

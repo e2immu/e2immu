@@ -154,6 +154,9 @@ public record VariableExpression(Variable variable,
 
         if (forwardEvaluationInfo.isNotAssignmentTarget()) {
             builder.markRead(variable);
+            if(currentValue instanceof VariableExpression ve) {
+                builder.markRead(ve.variable); // FIXME confirm this is the right solution for variable fields s -> s$0
+            }
         } else if (variable instanceof FieldReference fieldReference) {
             builder.markRead(fieldReference.scope);
         }

@@ -330,8 +330,8 @@ We need to ensure here that this rule will not be the cause of endless delay loo
 The expected complication is in methods where there is no value yet for the field, but we still expect the nullity of the field variable to be computed.
 The field analyser must be able to grab this nullity independently of the value:
 
-* for each method, it needs to know if nullity computations have not been halted. Typically, this is done in two stages:
-
+* for each method, it needs to know if nullity computations have not been halted.
+Typically, this is done in two stages:
 
 ==== Loop variables overview
 
@@ -340,7 +340,8 @@ Different situations
 . variable defined outside a loop
 .. read in the loop, but not assigned in the loop: normal situation
 .. assigned in the loop
-. variable defined in the loop statement. Either can be assigned inside the loop as well.
+. variable defined in the loop statement.
+Either can be assigned inside the loop as well.
 .. `for(String s: strings)`
 .. `for(int i=0; i<n; i++)`
 
@@ -352,3 +353,70 @@ We make no distinction between `forEach` and `for`: in both cases, the variable 
 While we could force the variable to be `final` in the former case, we'll want different versions in case modifying methods are called on them.
 
 In the `forEach` case, we assign a value, once, during the evaluation phase of the loop statement.
+
+==== General property computation
+
+We have decided on a very strict _write once_ system: once a value has been determined, it cannot be changed anymore.
+Properties are written in a heavily controlled map of type `VariableProperties`.
+The value `Level.DELAY` is never written in the map, as it indicates that no value has been determined yet.
+
+In the statement analyser, property values travel from one statement to the next.
+Therefore, the last statement often contains the relevant information for the other analysers to read.
+
+==== Not-null property
+
+Variables in the statement analyser can have not-null induced by the context (parameters in method calls, scope, etc).
+At the same time, fields and parameters can get not-null values from the field and parameter analyser.
+Combining both in a single, non-incremental value turns out to be impossible.
+Therefore, we split, for every variable, non-null in
+
+. `CONTEXT_NOT_NULL`: non-null value induced by context
+. `EXTERNAL_NOT_NULL`: non-null value coming from assignments or from external sources
+.. from the field analyser: fields
+.. from the parameter analyser: parameters
+.. assignments in an expression: for fields, local variables, return variable
+
+The combination of the two is the property called `NOT_NULL_VARIABLE`, which can only be read.
+It is delayed when one of its components is delayed.
+
+While evaluating expressions, we use the property `NOT_NULL_EXPRESSION`.
+
+The method analyser records the return value's not-null in `NOT_NULL_EXPRESSION`, read from the return variable's `NOT_NULL_VARIABLE`.
+The field analyser writes in `EXTERNAL_NOT_NULL`, and reads from the variables' `CONTEXT_NOT_NULL` (when no assignment was made), and the assignment's values' `NOT_NULL_EXPRESSION`.
+
+The parameter analyser maintains the two aspects: context from the statement analyser, and external from the field analyser.
+
+The statement analyser uses the properties `CONTEXT_NOT_NULL_DELAY` and `CONTEXT_NOT_NULL_DELAY_RESOLVED` to control a delay on `CONTEXT_NOT_NULL`, when a method's not-null properties, where the variable occurs as argument, have not been analysed yet.
+
+It is important to record the flow of the properties, and especially the mechanisms to break delays when no information is present.
+
+In the statement analyser:: Let us consider the following cases:
+. the variable occurs in the `ChangeData` of the `apply` of the main expression.
+. the variable does not occur in the `ChangeData`, but is still involved (say the local copy of a variable field `s$0`)
+
+In the field analyser::
+
+In the parameter analyser::
+Once a context not-null is known in the statement analyser's last statement, the parameter's value can be set.
+Important: this is one-way traffic!
+The first statement does NOT copy this value into the 'INITIAL'.
+Once a value can come from a field, the parameter analyser will copy it.
+
+==== Modification property
+
+The property indicating modification of a variable has been split in the same way as the not-null property:
+
+. variables in statements use `CONTEXT_MODIFIED` and `MODIFIED_OUTSIDE_METHOD`, summarized in `MODIFIED_VARIABLE`.
+. the method's modification status is in `MODIFIED_METHOD`
+. a field's modification is in `MODIFIED_OUTSIDE_METHOD`
+
+. modification of `this` is recorded in `METHOD_CALLED`
+
+The statement analyser uses the properties `METHOD_DELAY` and `METHOD_DELAY_RESOLVED` to control a delay on `CONTEXT_MODIFIED`, when a method's modification properties, where the variable occurs as argument or scope, have not been analysed yet.
+
+Again let us record the flow of properties and delay-breaking mechanisms:
+
+In the statement analyser::
+
+In the parameter analyser::
+Entirely the same as for the not-null.

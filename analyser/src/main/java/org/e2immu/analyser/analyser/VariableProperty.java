@@ -146,7 +146,7 @@ public enum VariableProperty {
     copy from field, parameter, this/type to variable, once a value has been determined.
      */
     public static final Set<VariableProperty> FROM_ANALYSER_TO_PROPERTIES
-            = Set.of(IDENTITY, FINAL, EXTERNAL_NOT_NULL, IMMUTABLE, CONTAINER, NOT_MODIFIED_1);
+            = Set.of(IDENTITY, FINAL, EXTERNAL_NOT_NULL, MODIFIED_OUTSIDE_METHOD, IMMUTABLE, CONTAINER, NOT_MODIFIED_1);
 
     public static final Set<VariableProperty> VALUE_PROPERTIES = Set.of(IDENTITY, IMMUTABLE, CONTAINER, NOT_NULL_EXPRESSION);
 

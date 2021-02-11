@@ -18,6 +18,7 @@
 package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 
@@ -123,4 +124,9 @@ public interface VariableInfo {
     }
 
     boolean staticallyAssignedVariablesIsSet();
+
+    default boolean noContextNotNullDelay() {
+        if (getProperty(VariableProperty.CONTEXT_NOT_NULL_DELAY) == Level.DELAY) return true;
+        return getProperty(VariableProperty.CONTEXT_NOT_NULL_DELAY_RESOLVED) == Level.TRUE;
+    }
 }

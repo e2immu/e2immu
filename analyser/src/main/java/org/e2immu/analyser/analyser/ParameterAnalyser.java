@@ -130,10 +130,7 @@ public class ParameterAnalyser {
         }
 
         Map<FieldInfo, ParameterAnalysis.AssignedOrLinked> map = parameterAnalysis.getAssignedToField();
-        // FIXME see if really necessary; we're working on not null: if (checkNotLinkedOrAssigned(map)) return DONE;
 
-        // FIXME read CONTEXT_NN, CONTEXT_MOD from last statement
-        boolean setNotNull = false;
 
         for (Map.Entry<FieldInfo, ParameterAnalysis.AssignedOrLinked> e : map.entrySet()) {
             FieldInfo fieldInfo = e.getKey();
@@ -156,7 +153,6 @@ public class ParameterAnalyser {
                         log(ANALYSER, "Still delaying copiedFromFieldToParameters because of {}", variableProperty);
                         delays = true;
                     }
-                    setNotNull |= variableProperty == VariableProperty.EXTERNAL_NOT_NULL;
                 }
             } else {
                 assert e.getValue() == NO;
@@ -170,18 +166,24 @@ public class ParameterAnalyser {
         parameterAnalysis.resolveFieldDelays();
 
         // see if we have to break CONTEXT_NOT_NULL delays
-        if (!setNotNull) {
-            MethodAnalysis methodAnalysis = analysisProvider.getMethodAnalysis(parameterInfo.owner);
-            VariableInfo vi = methodAnalysis.getLastStatement().getLatestVariableInfo(parameterInfo.fullyQualifiedName());
-            if (vi.getProperty(VariableProperty.CONTEXT_NOT_NULL_DELAY) == Level.TRUE &&
-                    vi.getProperty(VariableProperty.CONTEXT_NOT_NULL_DELAY_RESOLVED) != Level.TRUE) {
-                log(ANALYSER, "Delays on not null resolved for {}, delaying", parameterInfo.fullyQualifiedName());
-                return changed ? PROGRESS : DELAYS;
-            }
-            if (vi.getProperty(VariableProperty.CONTEXT_NOT_NULL) == Level.DELAY) {
+        MethodAnalysis methodAnalysis = analysisProvider.getMethodAnalysis(parameterInfo.owner);
+        VariableInfo vi = methodAnalysis.getLastStatement().getLatestVariableInfo(parameterInfo.fullyQualifiedName());
+        if (vi.noContextNotNullDelay()) {
+            if (!parameterAnalysis.properties.isSet(VariableProperty.CONTEXT_NOT_NULL)) {
                 parameterAnalysis.setProperty(VariableProperty.CONTEXT_NOT_NULL, MultiLevel.NULLABLE);
             }
+        } else {
+            log(ANALYSER, "Delays on not null resolved for {}, delaying", parameterInfo.fullyQualifiedName());
+            return changed ? PROGRESS : DELAYS;
         }
+
+        // context modified
+
+        // can only be set when no field was linked
+        if (!parameterAnalysis.properties.isSet(VariableProperty.MODIFIED_OUTSIDE_METHOD)) {
+            parameterAnalysis.setProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD, Level.FALSE);
+        }
+
         log(ANALYSER, "No delays anymore on copying from field to parameter");
 
         return DONE;

@@ -647,6 +647,15 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 vic.setValue(valueToWrite, valueToWriteIsDelayed, changeData.staticallyAssignedVariables(),
                         propertiesToSet, false);
 
+                int notNull = propertiesToSet.getOrDefault(NOT_NULL_EXPRESSION, Level.DELAY);
+                if (notNull != Level.DELAY) {
+                    vic.setProperty(VariableProperty.EXTERNAL_NOT_NULL, notNull, VariableInfoContainer.Level.EVALUATION);
+                } else {
+                    log(DELAYED, "External not null delay on {} in {}, {}",
+                            variable.fullyQualifiedName(), index(), myMethodAnalyser.methodInfo.fullyQualifiedName);
+                   // status = DELAYS; FIXME Basics_3 chicken and egg field = parameter
+                }
+
                 if (vic.isLocalVariableInLoopDefinedOutside()) {
                     VariableInfoContainer local = addToAssignmentsInLoop(vic, variable.fullyQualifiedName());
                     if (local != null && !evaluationResult.someValueWasDelayed() && !valueToWriteIsDelayed) {
@@ -702,6 +711,12 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 VariableProperty property = e.getKey();
                 int pv = e.getValue();
                 vic.setProperty(property, pv, false, VariableInfoContainer.Level.EVALUATION);
+            }
+
+            // always break content delays unless explicitly warned about them
+            int contextNotNull = vi.getProperty(VariableProperty.CONTEXT_NOT_NULL);
+            if(contextNotNull == Level.DELAY && vi.noContextNotNullDelay()) {
+                vic.setProperty(VariableProperty.CONTEXT_NOT_NULL, MultiLevel.NULLABLE, VariableInfoContainer.Level.EVALUATION);
             }
         }
 
@@ -1966,7 +1981,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                     return true;
                 return v >= MultiLevel.EFFECTIVELY_NOT_NULL;
             }
-            return MultiLevel.isEffectivelyNotNull(getProperty(value, NOT_NULL_VARIABLE));
+            return MultiLevel.isEffectivelyNotNull(getProperty(value, NOT_NULL_EXPRESSION));
         }
 
         @Override
