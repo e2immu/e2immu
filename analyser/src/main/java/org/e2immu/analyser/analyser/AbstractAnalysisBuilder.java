@@ -189,7 +189,7 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
         AnnotationExpression only = null;
         AnnotationExpression mark = null;
 
-        VariableProperty modified = isVariable ? VariableProperty.MODIFIED_OUTSIDE_METHOD : VariableProperty.MODIFIED_METHOD;
+        VariableProperty modified = isVariable ? VariableProperty.MODIFIED_VARIABLE : VariableProperty.MODIFIED_METHOD;
 
         for (AnnotationExpression annotationExpression : annotations) {
             AnnotationParameters parameters = annotationExpression.e2ImmuAnnotationParameters();
@@ -272,8 +272,7 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
             setProperty(VariableProperty.IMMUTABLE, value);
         }
         if (notNull >= 0) {
-            VariableProperty property = isVariable ? VariableProperty.EXTERNAL_NOT_NULL :
-                    VariableProperty.NOT_NULL_EXPRESSION;
+            VariableProperty property = isVariable ? VariableProperty.NOT_NULL_VARIABLE : VariableProperty.NOT_NULL_EXPRESSION;
             setProperty(property, notNull);
         }
         if (mark != null && only == null) {

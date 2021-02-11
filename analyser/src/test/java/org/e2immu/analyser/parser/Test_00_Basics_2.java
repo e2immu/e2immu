@@ -83,10 +83,14 @@ public class Test_00_Basics_2 extends CommonTestRunner {
                 Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
             }
             if (STRING_FIELD.equals(d.variableName())) {
-                String expectValue = d.iteration() == 0 ? "<field:org.e2immu.analyser.testexample.Basics_2.string>" : "nullable instance type String";
+                String expectValue = d.iteration() == 0 ? "<field:org.e2immu.analyser.testexample.Basics_2.string>" :
+                        "nullable instance type String";
                 Assert.assertEquals(expectValue, d.currentValue().toString());
                 // string occurs in a not-null context, even if its value is delayed
                 Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+                // modification in MLD takes a little longer, because it requires a real value, not a delayed one
+                int expectModified = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
+                Assert.assertEquals(expectModified, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
             }
         }
         if ("setString".equals(d.methodInfo().name)) {
@@ -102,8 +106,7 @@ public class Test_00_Basics_2 extends CommonTestRunner {
                 Assert.assertTrue(d.variableInfo().isRead());
                 String expectValue = d.iteration() == 0 ? "<field:org.e2immu.analyser.testexample.Basics_2.string>" : "nullable instance type String";
                 Assert.assertEquals(expectValue, d.currentValue().toString());
-                int expectNotNull = d.iteration() == 0 ? Level.DELAY : MultiLevel.NULLABLE;
-                Assert.assertEquals(expectNotNull, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+                Assert.assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
             }
             if (RETURN_GET_STRING.equals(d.variableName())) {
                 int expectNotNull = d.iteration() == 0 ? Level.DELAY : MultiLevel.NULLABLE;
@@ -116,8 +119,6 @@ public class Test_00_Basics_2 extends CommonTestRunner {
         if (TYPE.equals(d.methodInfo().typeInfo.fullyQualifiedName)) {
             FieldInfo string = d.methodInfo().typeInfo.getFieldByName("string", true);
             VariableInfo fieldAsVariable = d.getFieldAsVariable(string);
-            int fieldModified = fieldAsVariable == null ? -10 :
-                    fieldAsVariable.getProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD);
 
             if ("getString".equals(d.methodInfo().name)) {
                 int expectNotNull = d.iteration() == 0 ? Level.DELAY : MultiLevel.NULLABLE;
@@ -128,18 +129,25 @@ public class Test_00_Basics_2 extends CommonTestRunner {
                 Assert.assertEquals(expectModified, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
 
                 // property of the field as variable info in the method
-                Assert.assertEquals(expectModified, fieldModified);
+                int expectFieldModified = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
+                Assert.assertEquals(expectFieldModified, fieldAsVariable.getProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD));
+                int expectContextModified = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
+                Assert.assertEquals(expectContextModified, fieldAsVariable.getProperty(VariableProperty.CONTEXT_MODIFIED));
             }
             if ("setString".equals(d.methodInfo().name)) {
                 assert fieldAsVariable != null;
                 Assert.assertTrue(fieldAsVariable.isAssigned());
-                int expectModified = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
-                Assert.assertEquals(expectModified, fieldModified); // Assigned, but not modified
+                int expectFieldModified = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
+                //  Assert.assertEquals(expectFieldModified, fieldAsVariable.getProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD));
+                int expectContextModified = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
+                Assert.assertEquals(expectContextModified, fieldAsVariable.getProperty(VariableProperty.CONTEXT_MODIFIED));
             }
             if ("add".equals(d.methodInfo().name)) {
                 ParameterAnalysis parameterAnalysis = d.parameterAnalyses().get(0);
                 Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL,
-                        parameterAnalysis.getProperty(VariableProperty.NOT_NULL_VARIABLE));
+                        parameterAnalysis.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+                int expectMethodModified = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
+                Assert.assertEquals(expectMethodModified, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
             }
         }
     };
@@ -176,6 +184,8 @@ public class Test_00_Basics_2 extends CommonTestRunner {
         ParameterInfo p0 = add.methodInspection.get().getParameters().get(0);
         Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL,
                 p0.parameterAnalysis.get().getProperty(VariableProperty.NOT_NULL_VARIABLE));
+        Assert.assertEquals(Level.FALSE, p0.parameterAnalysis.get().getProperty(VariableProperty.MODIFIED_VARIABLE));
+        Assert.assertEquals(Level.TRUE, add.methodAnalysis.get().getProperty(VariableProperty.MODIFIED_METHOD));
     };
 
     StatementAnalyserVisitor statementAnalyserVisitor = d -> {

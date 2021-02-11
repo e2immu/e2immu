@@ -26,8 +26,6 @@ public class VariableProperties extends SetOnceMap<VariableProperty, Integer> {
 
     @Override
     public void put(VariableProperty variableProperty, Integer integer) {
-        assert variableProperty.combinationOf.length == 0 :
-                "Not allowed to set the values of combination property " + variableProperty;
         assert integer != null && integer >= 0; // not setting delays
         Integer inMap = super.getOtherwiseNull(variableProperty);
         if (inMap == null) {
@@ -42,6 +40,9 @@ public class VariableProperties extends SetOnceMap<VariableProperty, Integer> {
         if (variableProperty.combinationOf.length == 0) {
             return super.get(variableProperty);
         }
+        Integer combination = super.getOtherwiseNull(variableProperty);
+        if (combination != null) return combination;
+        // if not explicitly set, then computed
         int max = Level.DELAY;
         for (VariableProperty sub : variableProperty.combinationOf) {
             int v = super.get(sub);
@@ -56,8 +57,10 @@ public class VariableProperties extends SetOnceMap<VariableProperty, Integer> {
         if (variableProperty.combinationOf.length == 0) {
             return super.isSet(variableProperty);
         }
-        for (VariableProperty sub : variableProperty.combinationOf) {
-            if (!super.isSet(sub)) return false;
+        if (!super.isSet(variableProperty)) {
+            for (VariableProperty sub : variableProperty.combinationOf) {
+                if (!super.isSet(sub)) return false;
+            }
         }
         return true;
     }
@@ -67,6 +70,9 @@ public class VariableProperties extends SetOnceMap<VariableProperty, Integer> {
         if (variableProperty.combinationOf.length == 0) {
             return super.getOtherwiseNull(variableProperty);
         }
+        Integer combination = super.getOtherwiseNull(variableProperty);
+        if (combination != null) return combination;
+        // if not explicitly set, then computed
         int max = Level.DELAY;
         for (VariableProperty sub : variableProperty.combinationOf) {
             if (!super.isSet(sub)) return null;
@@ -82,6 +88,9 @@ public class VariableProperties extends SetOnceMap<VariableProperty, Integer> {
         if (variableProperty.combinationOf.length == 0) {
             return super.getOrDefault(variableProperty, defaultValue);
         }
+        Integer combination = super.getOtherwiseNull(variableProperty);
+        if (combination != null) return combination;
+        // if not explicitly set, then computed
         int max = Level.DELAY;
         for (VariableProperty sub : variableProperty.combinationOf) {
             if (!super.isSet(sub)) return defaultValue;

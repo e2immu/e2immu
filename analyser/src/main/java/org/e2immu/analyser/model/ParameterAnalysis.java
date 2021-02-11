@@ -112,13 +112,10 @@ public interface ParameterAnalysis extends Analysis {
                                      ObjectFlow objectFlow,
                                      VariableProperty variableProperty) {
         switch (variableProperty) {
-            case MODIFIED_VARIABLE:
-            case NOT_NULL_VARIABLE:
-                break; // go to internal, which will construct both constituents
-
             case IDENTITY:
                 return parameterInfo.index == 0 ? Level.TRUE : Level.FALSE;
 
+            case MODIFIED_VARIABLE:
             case CONTEXT_MODIFIED:
             case MODIFIED_OUTSIDE_METHOD: {
                 // if the parameter is level 2 immutable, it cannot be modified
@@ -163,6 +160,9 @@ public interface ParameterAnalysis extends Analysis {
                 }
                 return Math.max(immutableFromType, MultiLevel.delayToFalse(internalGetProperty(VariableProperty.IMMUTABLE)));
             }
+
+            case NOT_NULL_VARIABLE:
+                break; // go to internal, which will construct both constituents
 
             case CONTEXT_NOT_NULL: {
                 TypeInfo bestType = parameterInfo.parameterizedType.bestTypeInfo();

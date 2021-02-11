@@ -1863,7 +1863,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             int identity = methodAnalysis.getProperty(VariableProperty.IDENTITY);
             if (identity == Level.DELAY) return DELAYS;
             if (identity == Level.TRUE) return DONE;
-            int modified = methodAnalysis.getProperty(VariableProperty.CONTEXT_MODIFIED);
+            int modified = methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD);
             if (modified == Level.DELAY) return DELAYS;
             if (modified == Level.FALSE) {
                 statementAnalysis.ensure(Message.newMessage(getLocation(), Message.IGNORING_RESULT_OF_METHOD_CALL,
