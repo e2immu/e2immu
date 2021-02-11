@@ -391,7 +391,7 @@ The statement analyser uses the properties `CONTEXT_NOT_NULL_DELAY` and `CONTEXT
 It is important to record the flow of the properties, and especially the mechanisms to break delays when no information is present.
 
 In the statement analyser:: Let us consider the following cases:
-. the variable occurs in the `ChangeData` of the `apply` of the main expression.
+. the variable occurs in the `ChangeData` of `apply` of the main expression: any delays are resolved to `NULLABLE`, when no context not-null delay is present
 . the variable does not occur in the `ChangeData`, but is still involved (say the local copy of a variable field `s$0`)
 
 In the field analyser::
@@ -417,6 +417,7 @@ The statement analyser uses the properties `METHOD_DELAY` and `METHOD_DELAY_RESO
 Again let us record the flow of properties and delay-breaking mechanisms:
 
 In the statement analyser::
+. should normally be broken in `MethodLevelData`, compute modification.
 
 In the parameter analyser::
 Entirely the same as for the not-null.

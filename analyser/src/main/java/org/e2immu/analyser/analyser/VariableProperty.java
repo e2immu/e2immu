@@ -150,4 +150,6 @@ public enum VariableProperty {
 
     public static final Set<VariableProperty> VALUE_PROPERTIES = Set.of(IDENTITY, IMMUTABLE, CONTAINER, NOT_NULL_EXPRESSION);
 
+    public static final VariableProperty[] CONTEXT_PROPERTIES = {VariableProperty.CONTEXT_NOT_NULL, VariableProperty.CONTEXT_MODIFIED};
+
 }

@@ -23,6 +23,8 @@ import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.model.ParameterAnalysis;
+import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.junit.Assert;
 import org.junit.Test;
@@ -67,14 +69,17 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                     Assert.assertEquals("true", d.evaluationResult().value().debugOutput());
                 }
             }
-            if("getS".equals(d.methodInfo().name)) {
-                if(d.iteration()>0) {
+            if ("getS".equals(d.methodInfo().name)) {
+                if (d.iteration() > 0) {
                     Assert.assertEquals(S_0, d.evaluationResult().value().toString());
                 }
             }
         };
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("setS1".equals(d.methodInfo().name) && d.variable() instanceof ParameterInfo pi && "input1".equals(pi.name)) {
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+            }
             if ("setS1".equals(d.methodInfo().name) && THIS.equals(d.variableName())) {
                 if ("0".equals(d.statementId())) {
                     Assert.assertTrue(d.variableInfoContainer().hasMerge());
@@ -206,9 +211,9 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                     int expectContentModified = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
                     Assert.assertEquals(expectContentModified, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
                     Assert.assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
-                    int expectNotNull = d.iteration() == 0  ? Level.DELAY: MultiLevel.NULLABLE;
-              //      Assert.assertEquals(expectNotNull, d.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
-              //      Assert.assertEquals(expectNotNull, d.getProperty(VariableProperty.NOT_NULL_VARIABLE));
+                    int expectNotNull = d.iteration() == 0 ? Level.DELAY : MultiLevel.NULLABLE;
+                    //      Assert.assertEquals(expectNotNull, d.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
+                    //      Assert.assertEquals(expectNotNull, d.getProperty(VariableProperty.NOT_NULL_VARIABLE));
                 }
             }
             if ("getS".equals(d.methodInfo().name)) {
@@ -317,11 +322,21 @@ public class Test_00_Basics_3 extends CommonTestRunner {
             }
         };
 
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if("setS1".equals(d.methodInfo().name)) {
+                ParameterAnalysis p0 = d.parameterAnalyses().get(0);
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, p0.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+                int expectExternalNotNull = d.iteration() <= 1 ? Level.DELAY: MultiLevel.NULLABLE;
+                Assert.assertEquals(expectExternalNotNull, p0.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
+            }
+        };
+
         testClass("Basics_3", 0, 2, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 

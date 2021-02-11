@@ -129,4 +129,17 @@ public interface VariableInfo {
         if (getProperty(VariableProperty.CONTEXT_NOT_NULL_DELAY) == Level.DELAY) return true;
         return getProperty(VariableProperty.CONTEXT_NOT_NULL_DELAY_RESOLVED) == Level.TRUE;
     }
+
+    default boolean noMethodDelay() {
+        if (getProperty(VariableProperty.METHOD_DELAY) == Level.DELAY) return true;
+        return getProperty(VariableProperty.METHOD_DELAY_RESOLVED) == Level.TRUE;
+    }
+
+    default boolean noContextDelay(VariableProperty variableProperty) {
+        return switch (variableProperty) {
+            case CONTEXT_MODIFIED -> noMethodDelay();
+            case CONTEXT_NOT_NULL -> noContextNotNullDelay();
+            default -> throw new UnsupportedOperationException();
+        };
+    }
 }

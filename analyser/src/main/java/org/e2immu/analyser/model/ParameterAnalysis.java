@@ -41,15 +41,17 @@ public interface ParameterAnalysis extends Analysis {
     }
 
     enum AssignedOrLinked {
-        ASSIGNED(Set.of(VariableProperty.EXTERNAL_NOT_NULL, VariableProperty.MODIFIED_OUTSIDE_METHOD)),
-        LINKED(Set.of(VariableProperty.MODIFIED_OUTSIDE_METHOD)),
-        NO(Set.of()),
-        DELAYED(null);
+        ASSIGNED(Set.of(VariableProperty.EXTERNAL_NOT_NULL, VariableProperty.MODIFIED_OUTSIDE_METHOD), Set.of()),
+        LINKED(Set.of(VariableProperty.MODIFIED_OUTSIDE_METHOD), Set.of(VariableProperty.EXTERNAL_NOT_NULL)),
+        NO(Set.of(), Set.of(VariableProperty.EXTERNAL_NOT_NULL, VariableProperty.MODIFIED_OUTSIDE_METHOD)),
+        DELAYED(null, null);
 
         private final Set<VariableProperty> propertiesToCopy;
+        private final Set<VariableProperty> propertiesToSetToFalse;
 
-        AssignedOrLinked(Set<VariableProperty> properties) {
-            propertiesToCopy = properties;
+        AssignedOrLinked(Set<VariableProperty> propertiesToCopy, Set<VariableProperty> propertiesToSetToFalse) {
+            this.propertiesToCopy = propertiesToCopy;
+            this.propertiesToSetToFalse = propertiesToSetToFalse;
         }
 
         public boolean isAssignedOrLinked() {
@@ -58,6 +60,10 @@ public interface ParameterAnalysis extends Analysis {
 
         public Set<VariableProperty> propertiesToCopy() {
             return propertiesToCopy;
+        }
+
+        public Set<VariableProperty> propertiesToSetToFalse() {
+            return propertiesToSetToFalse;
         }
     }
 
@@ -166,7 +172,7 @@ public interface ParameterAnalysis extends Analysis {
             case EXTERNAL_NOT_NULL: {
                 TypeInfo bestType = parameterInfo.parameterizedType.bestTypeInfo();
                 if (Primitives.isPrimitiveExcludingVoid(bestType)) return MultiLevel.EFFECTIVELY_NOT_NULL;
-                return getParameterPropertyCheckOverrides(analysisProvider, parameterInfo, VariableProperty.NOT_NULL_VARIABLE);
+                return getParameterPropertyCheckOverrides(analysisProvider, parameterInfo, VariableProperty.EXTERNAL_NOT_NULL);
             }
 
             case NOT_MODIFIED_1:
