@@ -147,7 +147,7 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
                 if ("4".equals(d.statementId())) {
                     String expectValue = d.iteration() == 0 ? "<method:org.e2immu.analyser.testexample.Basics_6.someMinorMethod(java.lang.String)>" : "v3";
                     Assert.assertEquals(expectValue, d.currentValue().toString());
-                    int expectNotNull = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
+                    int expectNotNull = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
                     Assert.assertEquals(expectNotNull, d.getProperty(VariableProperty.NOT_NULL_VARIABLE));
                 }
             }

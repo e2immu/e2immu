@@ -170,8 +170,7 @@ public class ParameterAnalyser {
 
         Map<FieldInfo, ParameterAnalysis.AssignedOrLinked> map = parameterAnalysis.getAssignedToField();
 
-        Set<VariableProperty> propertiesSetToFalse = map.isEmpty() ?
-                new HashSet<>(ParameterAnalysis.AssignedOrLinked.PROPERTIES): new HashSet<>();
+        Set<VariableProperty> propertiesDelayed = new HashSet<>();
         for (Map.Entry<FieldInfo, ParameterAnalysis.AssignedOrLinked> e : map.entrySet()) {
             FieldInfo fieldInfo = e.getKey();
             Set<VariableProperty> propertiesToCopy = e.getValue().propertiesToCopy();
@@ -187,6 +186,7 @@ public class ParameterAnalyser {
                         parameterAnalysis.setProperty(variableProperty, inField);
                         changed = true;
                     } else {
+                        propertiesDelayed.add(variableProperty);
                         log(ANALYSER, "Still delaying copiedFromFieldToParameters because of {}", variableProperty);
                         delays = true;
                     }
@@ -194,20 +194,20 @@ public class ParameterAnalyser {
             } else {
                 assert e.getValue() == NO;
             }
-            propertiesSetToFalse.addAll(e.getValue().propertiesToSetToFalse());
         }
 
-        for (VariableProperty variableProperty : propertiesSetToFalse) {
-            if (!parameterAnalysis.properties.isSet(variableProperty)) {
+        for (VariableProperty variableProperty : PROPERTIES) {
+            if (!parameterAnalysis.properties.isSet(variableProperty)  && !propertiesDelayed.contains(variableProperty)) {
                 parameterAnalysis.setProperty(variableProperty, variableProperty.falseValue);
                 log(ANALYSER, "Wrote false to parameter {} for property {}", parameterInfo.fullyQualifiedName(),
                         variableProperty);
                 changed = true;
             }
         }
-
-        if (delays && !(parameterAnalysis.properties.isSet(VariableProperty.MODIFIED_OUTSIDE_METHOD) &&
-                parameterAnalysis.properties.isSet(VariableProperty.NOT_NULL_EXPRESSION))) {
+        assert delays || parameterAnalysis.properties.isSet(VariableProperty.MODIFIED_OUTSIDE_METHOD) &&
+                parameterAnalysis.properties.isSet(VariableProperty.NOT_NULL_EXPRESSION);
+        
+        if (delays) {
             return changed ? PROGRESS : DELAYS;
         }
 

@@ -72,8 +72,11 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                 }
             }
             if ("getS".equals(d.methodInfo().name)) {
+                String expectValue = d.iteration() == 0 ? "<field:org.e2immu.analyser.testexample.Basics_3.s>" : S_0;
+                Assert.assertEquals(expectValue, d.evaluationResult().value().toString());
                 if (d.iteration() > 0) {
-                    Assert.assertEquals(S_0, d.evaluationResult().value().toString());
+                    EvaluationResult.ChangeData cd = d.findValueChange(S_0);
+                    //  Assert.assertEquals(MultiLevel.NULLABLE, cd.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
                 }
             }
         };
@@ -228,7 +231,7 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                     Assert.assertEquals(expectLinkedVars, d.variableInfo().getLinkedVariables().toString());
 
                     int expectExternalNN = d.iteration() == 0 ? Level.DELAY : MultiLevel.NULLABLE;
-                    Assert.assertEquals(expectExternalNN, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                    Assert.assertEquals(expectExternalNN, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION)); // FIXME variable
                     Assert.assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
                     Assert.assertEquals(expectExternalNN, d.getProperty(VariableProperty.NOT_NULL_VARIABLE));
 
@@ -248,10 +251,13 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                     Assert.assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
                     Assert.assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.NOT_NULL_VARIABLE));
                 }
-                if(d.variable() instanceof ReturnVariable) {
+                if (d.variable() instanceof ReturnVariable) {
                     Assert.assertEquals(GET_S_RET_VAR, d.variableName());
+                    String expectValue = d.iteration() == 0 ? "<field:org.e2immu.analyser.testexample.Basics_3.s>" : S_0;
+                    Assert.assertEquals(expectValue, d.currentValue().toString());
+
                     // copied from S
-                    int expectExternalNN = d.iteration() <= 1 ? Level.DELAY : MultiLevel.NULLABLE;
+                    int expectExternalNN = d.iteration() == 0 ? Level.DELAY : MultiLevel.NULLABLE;
                     Assert.assertEquals(expectExternalNN, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
                     Assert.assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
                     Assert.assertEquals(expectExternalNN, d.getProperty(VariableProperty.NOT_NULL_VARIABLE));

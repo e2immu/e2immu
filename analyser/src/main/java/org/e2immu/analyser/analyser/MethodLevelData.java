@@ -209,8 +209,9 @@ public class MethodLevelData {
 
                         // this loop is critical, see Container_3, do not remove it again :-)
                         for (Variable linkedVariable : variablesBaseLinksTo) {
-                            assignToLinkedVariable(sharedState, analysisStatus, progress, summary, linkedVariable)
-                                    .forEach((k, v) -> modifiedValuesToSet.merge(k, v, Math::max));
+                            if (assignToLinkedVariable(sharedState, progress, summary, linkedVariable, modifiedValuesToSet)) {
+                                analysisStatus.set(DELAYS);
+                            }
                         }
                     }
                 });
@@ -222,13 +223,11 @@ public class MethodLevelData {
         return analysisStatus.get() == DELAYS ? (progress.get() ? PROGRESS : DELAYS) : DONE;
     }
 
-    // IMPROVE this code needs rewriting
-    private Map<VariableInfoContainer, Integer> assignToLinkedVariable(SharedState sharedState,
-                                                                       AtomicReference<AnalysisStatus> analysisStatus,
-                                                                       AtomicBoolean progress,
-                                                                       int summary,
-                                                                       Variable linkedVariable) {
-        Map<VariableInfoContainer, Integer> modifiedValuesToSet = new HashMap<>();
+    private boolean assignToLinkedVariable(SharedState sharedState,
+                                           AtomicBoolean progress,
+                                           int summary,
+                                           Variable linkedVariable,
+                                           Map<VariableInfoContainer, Integer> modifiedValuesToSet) {
 
         VariableInfoContainer vic = sharedState.statementAnalysis.variables.get(linkedVariable.fullyQualifiedName());
         VariableInfo vi = vic.current();
@@ -241,17 +240,16 @@ public class MethodLevelData {
             } else newModified = summary;
             if (newModified == Level.DELAY) {
                 log(DELAYED, "Delay marking field {} as @NotModified in {}", linkedVariable.fullyQualifiedName(), sharedState.logLocation);
-                analysisStatus.set(DELAYS);
-            } else {
-                log(NOT_MODIFIED, "Mark {} " + (newModified == Level.TRUE ? "" : "NOT") + " @Modified in {}",
-                        linkedVariable.fullyQualifiedName(), sharedState.logLocation);
-                ensureEvaluation(sharedState, vic, vi);
-                modifiedValuesToSet.put(vic, newModified);
-                progress.set(true);
+                return true;
             }
-        }
 
-        return modifiedValuesToSet;
+            log(NOT_MODIFIED, "Mark {} " + (newModified == Level.TRUE ? "" : "NOT") + " @Modified in {}",
+                    linkedVariable.fullyQualifiedName(), sharedState.logLocation);
+            ensureEvaluation(sharedState, vic, vi);
+            modifiedValuesToSet.merge(vic, newModified, Math::max);
+            progress.set(true);
+        }
+        return false;
     }
 
     private void ensureEvaluation(SharedState sharedState, VariableInfoContainer vic, VariableInfo vi) {

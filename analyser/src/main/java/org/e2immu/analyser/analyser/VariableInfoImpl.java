@@ -21,12 +21,14 @@ import com.google.common.collect.ImmutableMap;
 import org.e2immu.analyser.analyser.util.MergeHelper;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Level;
+import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.expression.DelayedExpression;
 import org.e2immu.analyser.model.expression.DelayedVariableExpression;
 import org.e2immu.analyser.model.expression.Negation;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
+import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.SetOnce;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -394,7 +396,8 @@ class VariableInfoImpl implements VariableInfo {
         }
     }
 
-    public static Map<VariableProperty, Integer> mergeProperties(Map<VariableProperty, Integer> m1, Map<VariableProperty, Integer> m2) {
+    public static Map<VariableProperty, Integer> mergeProperties
+            (Map<VariableProperty, Integer> m1, Map<VariableProperty, Integer> m2) {
         if (m2.isEmpty()) return m1;
         if (m1.isEmpty()) return m2;
         ImmutableMap.Builder<VariableProperty, Integer> map = new ImmutableMap.Builder<>();
