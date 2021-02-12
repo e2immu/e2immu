@@ -183,9 +183,14 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("method3".equals(d.methodInfo().name)) {
-                int expectNN = MultiLevel.EFFECTIVELY_NOT_NULL;
-                Assert.assertEquals(expectNN, d.parameterAnalyses().get(0).getProperty(VariableProperty.NOT_NULL_VARIABLE));
-                Assert.assertEquals(expectNN, d.parameterAnalyses().get(1).getProperty(VariableProperty.NOT_NULL_VARIABLE));
+                for(int param: new int[] { 0, 1}) {
+                    Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL,
+                            d.parameterAnalyses().get(param).getProperty(VariableProperty.CONTEXT_NOT_NULL));
+                    Assert.assertEquals(MultiLevel.NULLABLE,
+                            d.parameterAnalyses().get(param).getProperty(VariableProperty.EXTERNAL_NOT_NULL));
+                    Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL,
+                            d.parameterAnalyses().get(param).getProperty(VariableProperty.NOT_NULL_VARIABLE));
+                }
 
                 Assert.assertEquals(0, d.methodAnalysis().getCompanionAnalyses().size());
                 Assert.assertEquals(0, d.methodAnalysis().getComputedCompanions().size());

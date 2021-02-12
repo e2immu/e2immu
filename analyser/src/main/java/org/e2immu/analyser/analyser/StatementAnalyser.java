@@ -1000,20 +1000,13 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             for (Variable nullVariable : nullVariables) {
                 log(VARIABLE_PROPERTIES, "Escape with check not null on {}", nullVariable.fullyQualifiedName());
 
-                // part 1
+                // move from condition (x!=null) to property
                 VariableInfoContainer vic = statementAnalysis.findForWriting(nullVariable);
                 if (!vic.hasEvaluation()) {
                     VariableInfo initial = vic.getPreviousOrInitial();
                     vic.ensureEvaluation(initial.getAssignmentId(), initial.getReadId(), initial.getStatementTime(), initial.getReadAtStatementTimes());
                 }
                 vic.setProperty(CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL, false, EVALUATION);
-
-                // part 2: need to get additional info to the parameter analyser
-                // FIXME this prevents the parameter from becoming @NN1 (3rd property? ESCAPE_CONTEXT?)
-               // if (nullVariable instanceof ParameterInfo parameterInfo) {
-                //    ParameterAnalysisImpl.Builder builder = (ParameterAnalysisImpl.Builder) analyserContext.getParameterAnalysis(parameterInfo);
-                //    sharedState.builder.add(builder.new SetProperty(NOT_NULL_VARIABLE, MultiLevel.EFFECTIVELY_NOT_NULL));
-                //}
             }
             // escapeCondition should filter out all != null, == null clauses
             Expression precondition = statementAnalysis.stateData.getConditionManagerForNextStatement().precondition(sharedState.evaluationContext);

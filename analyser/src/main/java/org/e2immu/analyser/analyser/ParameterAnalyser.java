@@ -27,6 +27,7 @@ import org.e2immu.annotation.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -169,7 +170,8 @@ public class ParameterAnalyser {
 
         Map<FieldInfo, ParameterAnalysis.AssignedOrLinked> map = parameterAnalysis.getAssignedToField();
 
-
+        Set<VariableProperty> propertiesSetToFalse = map.isEmpty() ?
+                new HashSet<>(ParameterAnalysis.AssignedOrLinked.PROPERTIES): new HashSet<>();
         for (Map.Entry<FieldInfo, ParameterAnalysis.AssignedOrLinked> e : map.entrySet()) {
             FieldInfo fieldInfo = e.getKey();
             Set<VariableProperty> propertiesToCopy = e.getValue().propertiesToCopy();
@@ -192,14 +194,15 @@ public class ParameterAnalyser {
             } else {
                 assert e.getValue() == NO;
             }
-            Set<VariableProperty> propertiesToSetToFalse = e.getValue().propertiesToSetToFalse();
-            for (VariableProperty variableProperty : propertiesToSetToFalse) {
-                if (!parameterAnalysis.properties.isSet(variableProperty)) {
-                    parameterAnalysis.setProperty(variableProperty, variableProperty.falseValue);
-                    log(ANALYSER, "Wrote false to parameter {} for property {}", parameterInfo.fullyQualifiedName(),
-                            variableProperty);
-                    changed = true;
-                }
+            propertiesSetToFalse.addAll(e.getValue().propertiesToSetToFalse());
+        }
+
+        for (VariableProperty variableProperty : propertiesSetToFalse) {
+            if (!parameterAnalysis.properties.isSet(variableProperty)) {
+                parameterAnalysis.setProperty(variableProperty, variableProperty.falseValue);
+                log(ANALYSER, "Wrote false to parameter {} for property {}", parameterInfo.fullyQualifiedName(),
+                        variableProperty);
+                changed = true;
             }
         }
 

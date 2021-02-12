@@ -246,7 +246,7 @@ class VariableInfoImpl implements VariableInfo {
 
     private static final List<MergeOp> MERGE = List.of(
             new MergeOp(VariableProperty.EXTERNAL_NOT_NULL, Math::min, Integer.MAX_VALUE),
-            new MergeOp(VariableProperty.CONTEXT_NOT_NULL, Math::min, Integer.MAX_VALUE),
+            new MergeOp(VariableProperty.CONTEXT_NOT_NULL, Math::max, Level.DELAY),
             new MergeOp(VariableProperty.IMMUTABLE, Math::min, Integer.MAX_VALUE),
             new MergeOp(VariableProperty.CONTAINER, Math::min, Integer.MAX_VALUE),
             new MergeOp(VariableProperty.IDENTITY, Math::min, Integer.MAX_VALUE),
