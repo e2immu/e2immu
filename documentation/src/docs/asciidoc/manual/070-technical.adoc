@@ -371,7 +371,7 @@ Combining both in a single, non-incremental value turns out to be impossible.
 Therefore, we split, for every variable, non-null in
 
 . `CONTEXT_NOT_NULL`: non-null value induced by context
-. `EXTERNAL_NOT_NULL`: non-null value coming from assignments or from external sources
+. `NOT_NULL_EXPRESSION`: non-null value coming from assignments or from external sources
 .. from the field analyser: fields
 .. from the parameter analyser: parameters
 .. assignments in an expression: for fields, local variables, return variable
@@ -382,7 +382,7 @@ It is delayed when one of its components is delayed.
 While evaluating expressions, we use the property `NOT_NULL_EXPRESSION`.
 
 The method analyser records the return value's not-null in `NOT_NULL_EXPRESSION`, read from the return variable's `NOT_NULL_VARIABLE`.
-The field analyser writes in `EXTERNAL_NOT_NULL`, and reads from the variables' `CONTEXT_NOT_NULL` (when no assignment was made), and the assignment's values' `NOT_NULL_EXPRESSION`.
+The field analyser writes in `NOT_NULL_EXPRESSION`, and reads from the variables' `CONTEXT_NOT_NULL` (when no assignment was made), and the assignment's values' `NOT_NULL_EXPRESSION`.
 
 The parameter analyser maintains the two aspects: context from the statement analyser, and external from the field analyser.
 

@@ -27,7 +27,7 @@ import java.util.Set;
 @E1Container
 public class Modification_1 {
 
-    // IMPORTANT: the @NotModified shows that Example2 does not modify it. It can be modified from the outside.
+    // IMPORTANT: the @NotModified shows that Modification_1 does not modify it. It can be modified from the outside.
     // this is part of the Level 2 immutability rules.
     @NotModified
     public final Set<String> set2 = new HashSet<>();

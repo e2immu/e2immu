@@ -155,7 +155,7 @@ public class Test_04_Warnings extends CommonTestRunner {
                         Assert.assertEquals("2" + E, read);
                         Assert.assertEquals("{1,2,3}", d.currentValue().toString());
                         Assert.assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL,
-                                d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL_VARIABLE)); // because in scope side
+                                d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL_EXPRESSION)); // because in scope side
                     } else if ("i".equals(d.variableName())) {
                         Assert.assertEquals("1" + E, assigned);
                         Assert.assertEquals("2" + E, read);

@@ -109,7 +109,7 @@ public class Test_00_Basics_2 extends CommonTestRunner {
                 Assert.assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
             }
             if (RETURN_GET_STRING.equals(d.variableName())) {
-                int expectNotNull = d.iteration() == 0 ? Level.DELAY : MultiLevel.NULLABLE;
+                int expectNotNull = d.iteration() <= 1 ? Level.DELAY : MultiLevel.NULLABLE;
                 Assert.assertEquals(expectNotNull, d.getProperty(VariableProperty.NOT_NULL_VARIABLE));
             }
         }
@@ -121,7 +121,7 @@ public class Test_00_Basics_2 extends CommonTestRunner {
             VariableInfo fieldAsVariable = d.getFieldAsVariable(string);
 
             if ("getString".equals(d.methodInfo().name)) {
-                int expectNotNull = d.iteration() == 0 ? Level.DELAY : MultiLevel.NULLABLE;
+                int expectNotNull = d.iteration() <= 1 ? Level.DELAY : MultiLevel.NULLABLE;
                 Assert.assertEquals(expectNotNull, d.methodAnalysis().getProperty(VariableProperty.NOT_NULL_EXPRESSION));
                 assert fieldAsVariable != null;
                 Assert.assertTrue(fieldAsVariable.isRead());

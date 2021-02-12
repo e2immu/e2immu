@@ -714,6 +714,16 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 boolean isPrimitive = Primitives.isPrimitiveExcludingVoid(variable.parameterizedType());
                 vic.setProperty(CONTEXT_NOT_NULL, isPrimitive ? MultiLevel.EFFECTIVELY_NOT_NULL : MultiLevel.NULLABLE, EVALUATION);
             }
+            // the method analyser must have both context not null and not null expression
+            // we need to revisit until we have a value (Basics_1, e.g.)
+            if (variable instanceof ReturnVariable) {
+                int expressionNotNull = vi.getProperty(NOT_NULL_EXPRESSION);
+                if (expressionNotNull == Level.DELAY) {
+                    log(DELAYED, "Apply of {}, {} is delayed because of assignment on return value without not null",
+                            index(), myMethodAnalyser.methodInfo.fullyQualifiedName);
+                    status = DELAYS;
+                }
+            }
         }
 
         evaluationResult.messages().getMessageStream().forEach(statementAnalysis::ensure);

@@ -251,7 +251,7 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                 if(d.variable() instanceof ReturnVariable) {
                     Assert.assertEquals(GET_S_RET_VAR, d.variableName());
                     // copied from S
-                    int expectExternalNN = d.iteration() == 0 ? Level.DELAY : MultiLevel.NULLABLE;
+                    int expectExternalNN = d.iteration() <= 1 ? Level.DELAY : MultiLevel.NULLABLE;
                     Assert.assertEquals(expectExternalNN, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
                     Assert.assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
                     Assert.assertEquals(expectExternalNN, d.getProperty(VariableProperty.NOT_NULL_VARIABLE));
