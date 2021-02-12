@@ -61,6 +61,7 @@ public interface ConstantExpression<T> extends Expression {
             case IMMUTABLE:
                 return MultiLevel.EFFECTIVELY_E2IMMUTABLE;
             case NOT_NULL_EXPRESSION:
+            case NOT_NULL_VARIABLE:
                 return MultiLevel.EFFECTIVELY_NOT_NULL;
             case MODIFIED_METHOD:
             case NOT_MODIFIED_1:

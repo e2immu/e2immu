@@ -1,6 +1,5 @@
 package org.e2immu.analyser.parser;
 
-import org.e2immu.analyser.analyser.LinkedVariables;
 import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
@@ -63,8 +62,8 @@ public class Test_09_EvaluatesToConstant extends CommonTestRunner {
 
         if ("method2".equals(d.methodInfo().name) && "b".equals(d.variableName()) && "0".equals(d.statementId())) {
             Assert.assertEquals("null==param?\"x\":param", d.currentValue().toString());
-            Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL,
-                    d.currentValue().getProperty(d.evaluationContext(), VariableProperty.NOT_NULL_VARIABLE));
+            int expectNotNull = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
+            Assert.assertEquals(expectNotNull, d.currentValue().getProperty(d.evaluationContext(), VariableProperty.NOT_NULL_VARIABLE));
             Assert.assertEquals("", d.variableInfo().getLinkedVariables().toString());
         }
 

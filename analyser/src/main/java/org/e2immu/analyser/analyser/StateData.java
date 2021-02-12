@@ -52,8 +52,6 @@ public class StateData {
     private final SetOnce<Expression> valueOfExpression = new SetOnce<>();
     private Expression currentDelayedExpression;
 
-    public final FlipSwitch statementContributesToPrecondition = new FlipSwitch();
-
     static class CurrentDelayedAndFinalExpression {
 
         final SetOnce<Expression> expression = new SetOnce<>();

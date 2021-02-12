@@ -315,7 +315,7 @@ public class Test_04_Warnings extends CommonTestRunner {
                     if ("1".equals(d.statementId())) {
                         String expectValue = d.iteration() == 0 ?
                                 "<field:org.e2immu.analyser.testexample.Warnings_5.ChildClass.t>" :
-                                "nullable instance type String";
+                                "nullable? instance type String";
                         Assert.assertEquals(expectValue, d.currentValue().toString());
                     }
                 }

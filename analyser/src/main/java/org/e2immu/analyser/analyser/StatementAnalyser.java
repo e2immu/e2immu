@@ -999,8 +999,21 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                     .findIndividualNullInCondition(sharedState.evaluationContext, true);
             for (Variable nullVariable : nullVariables) {
                 log(VARIABLE_PROPERTIES, "Escape with check not null on {}", nullVariable.fullyQualifiedName());
+
+                // part 1
                 VariableInfoContainer vic = statementAnalysis.findForWriting(nullVariable);
+                if (!vic.hasEvaluation()) {
+                    VariableInfo initial = vic.getPreviousOrInitial();
+                    vic.ensureEvaluation(initial.getAssignmentId(), initial.getReadId(), initial.getStatementTime(), initial.getReadAtStatementTimes());
+                }
                 vic.setProperty(CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL, false, EVALUATION);
+
+                // part 2: need to get additional info to the parameter analyser
+                // FIXME this prevents the parameter from becoming @NN1 (3rd property? ESCAPE_CONTEXT?)
+                if (nullVariable instanceof ParameterInfo parameterInfo) {
+                    ParameterAnalysisImpl.Builder builder = (ParameterAnalysisImpl.Builder) analyserContext.getParameterAnalysis(parameterInfo);
+                    sharedState.builder.add(builder.new SetProperty(NOT_NULL_VARIABLE, MultiLevel.EFFECTIVELY_NOT_NULL));
+                }
             }
             // escapeCondition should filter out all != null, == null clauses
             Expression precondition = statementAnalysis.stateData.getConditionManagerForNextStatement().precondition(sharedState.evaluationContext);
@@ -1009,7 +1022,6 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             if (translated != null) {
                 log(VARIABLE_PROPERTIES, "Escape with precondition {}", translated);
                 statementAnalysis.stateData.setPrecondition(translated, preconditionIsDelayed);
-                disableErrorsOnIfStatement();
                 return DONE;
             }
         }
@@ -1019,23 +1031,6 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             statementAnalysis.stateData.setPrecondition(new BooleanConstant(statementAnalysis.primitives, true), false);
         }
         return DONE;
-    }
-
-    /*
-    Method to help avoiding errors in the following situation:
-
-    if(parameter == null) throw new NullPointerException();
-
-    This will cause a @NotNull on the parameter, which in turn renders parameter == null equal to "false", which causes errors.
-    The switch avoids raising this error
-
-     */
-    private void disableErrorsOnIfStatement() {
-        StatementAnalysis sa = statementAnalysis.enclosingConditionalStatement();
-        if (!sa.stateData.statementContributesToPrecondition.isSet()) {
-            log(VARIABLE_PROPERTIES, "Disable errors on enclosing if-statement {}", sa.index);
-            sa.stateData.statementContributesToPrecondition.set();
-        }
     }
 
     /*
@@ -1383,9 +1378,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
 
         Expression evaluated = sharedState.localConditionManager.evaluate(sharedState.evaluationContext, value);
 
-        boolean noEffect = evaluated.isConstant();
-
-        if (noEffect && !statementAnalysis.stateData.statementContributesToPrecondition.isSet()) {
+        if (evaluated.isConstant()) {
             String message;
             List<Optional<StatementAnalysis>> blocks = statementAnalysis.navigationData.blocks.get();
             if (statementAnalysis.statement instanceof IfElseStatement) {
@@ -1446,10 +1439,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                     new BooleanConstant(statementAnalysis.primitives, true));
             statementAnalysis.stateData.setPrecondition(translated, expressionIsDelayed);
 
-            if (!expressionIsDelayed) {
-                log(VARIABLE_PROPERTIES, "Assertion escape with precondition {}", assertion);
-                statementAnalysis.stateData.statementContributesToPrecondition.set();
-            } else {
+            if (expressionIsDelayed) {
                 analysisStatus = DELAYS;
             }
         }
