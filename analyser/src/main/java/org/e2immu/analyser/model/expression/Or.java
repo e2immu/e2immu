@@ -206,7 +206,13 @@ public record Or(Primitives primitives,
 
     @Override
     public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
-        return null;
+        EvaluationResult[] clauseResults = expressions.stream()
+                .map(v -> v.evaluate(evaluationContext, forwardEvaluationInfo)).toArray(EvaluationResult[]::new);
+        Expression[] clauses = Arrays.stream(clauseResults).map(EvaluationResult::value).toArray(Expression[]::new);
+        return new EvaluationResult.Builder()
+                .compose(clauseResults)
+                .setExpression(new Or(primitives, objectFlow).append(evaluationContext, clauses))
+                .build();
     }
 
     @Override

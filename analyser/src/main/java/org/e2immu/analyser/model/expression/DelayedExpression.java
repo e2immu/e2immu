@@ -86,7 +86,7 @@ public record DelayedExpression(String msg, ParameterizedType parameterizedType)
 
     @Override
     public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
-        return new EvaluationResult.Builder(evaluationContext).build();
+        return new EvaluationResult.Builder(evaluationContext).setExpression(this).build();
     }
 
     @Override

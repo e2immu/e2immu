@@ -421,9 +421,30 @@ public record And(Primitives primitives,
         return Precedence.LOGICAL_AND;
     }
 
+    /*
+    this implementation gradually adds the clauses to the evaluation context, so that when we feed in
+
+    a!=null && a.method()
+
+    then a will not receive a CONTEXT_NOT_NULL==EFFECTIVELY_NOT_NULL, because it is not null in the context.
+    For this to work, it is crucial that the clauses are presented in the correct order!
+     */
     @Override
     public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
-        return null;
+        List<EvaluationResult> clauseResults = new ArrayList<>(expressions.size());
+        EvaluationContext context = evaluationContext;
+        List<Expression> sortedExpressions = new ArrayList<>(expressions);
+        Collections.sort(sortedExpressions);
+        for (Expression expression : sortedExpressions) {
+            EvaluationResult result = expression.evaluate(context, forwardEvaluationInfo);
+            clauseResults.add(result);
+            context = context.child(result.value());
+        }
+        Expression[] clauses = clauseResults.stream().map(EvaluationResult::value).toArray(Expression[]::new);
+        return new EvaluationResult.Builder()
+                .compose(clauseResults)
+                .setExpression(new And(primitives, objectFlow).append(evaluationContext, clauses))
+                .build();
     }
 
     @Override

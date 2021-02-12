@@ -101,6 +101,14 @@ public record ConditionManager(Expression condition,
     }
 
     /*
+    stays at the same level
+     */
+    public ConditionManager withoutState(Primitives primitives) {
+        return new ConditionManager(condition, conditionIsDelayed, new BooleanConstant(primitives, true), false, precondition,
+                preconditionIsDelayed, parent);
+    }
+
+    /*
     stays at the same level (parent parent)
      */
     public ConditionManager newForNextStatementDoNotChangePrecondition(EvaluationContext evaluationContext, Expression addToState) {

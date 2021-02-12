@@ -183,7 +183,7 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("method3".equals(d.methodInfo().name)) {
-                for(int param: new int[] { 0, 1}) {
+                for (int param : new int[]{0, 1}) {
                     Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL,
                             d.parameterAnalyses().get(param).getProperty(VariableProperty.CONTEXT_NOT_NULL));
                     Assert.assertEquals(MultiLevel.NULLABLE,
@@ -268,12 +268,12 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
     @Test
     public void test4() throws IOException {
         final String TYPE = "org.e2immu.analyser.testexample.ConditionalChecks_4";
-        final String RETURN5 = TYPE + ".method5(Object)";
+        final String RETURN5 = TYPE + ".method5(java.lang.Object)";
         final String O5 = RETURN5 + ":0:o";
         final String I = TYPE + ".i";
         final String CC_I = TYPE + ".i#" + O5;
         final String CONDITIONAL_CHECKS = "conditionalChecks";
-        final String O_I_DELAYED = "<field:org.e2immu.analyser.testexample.ConditionalChecks_4.i#org.e2immu.analyser.testexample.ConditionalChecks_4.method5(Object):0:o>";
+        final String O_I_DELAYED = "<field:org.e2immu.analyser.testexample.ConditionalChecks_4.i#org.e2immu.analyser.testexample.ConditionalChecks_4.method5(java.lang.Object):0:o>";
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("method5".equals(d.methodInfo().name)) {
@@ -289,9 +289,19 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                         Assert.assertEquals("<return value>||o==this", d.currentValue().toString());
                     }
                 }
+                if ("1".equals(d.statementId())) {
+                    if (RETURN5.equals(d.variableName())) {
+                        Assert.assertEquals("null!=o&&o.getClass()==this.getClass()&&(<return value>||o==this)",
+                                d.currentValue().toString());
+                    }
+                }
                 if ("2".equals(d.statementId())) {
                     if (CONDITIONAL_CHECKS.equals(d.variableName())) {//d.iteration() == 0 ? O :
                         Assert.assertEquals("o", d.currentValue().toString());
+                        Assert.assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+                    }
+                    if(O5.equals(d.variableName())) {
+                        Assert.assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
                     }
                 }
                 if ("3".equals(d.statementId())) {
@@ -302,7 +312,7 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                     }
                     if (RETURN5.equals(d.variableName())) {
                         String expectValue = d.iteration() == 0 ?
-                                "null!=<parameter:org.e2immu.analyser.testexample.ConditionalChecks_4.method5(Object):0:o>&&o.getClass()==this.getClass()&&o!=this&&<field:org.e2immu.analyser.testexample.ConditionalChecks_4.i#conditionalChecks>==<field:org.e2immu.analyser.testexample.ConditionalChecks_4.i>" :
+                                "null!=o&&o.getClass()==this.getClass()&&o!=this&&<field:org.e2immu.analyser.testexample.ConditionalChecks_4.i#org.e2immu.analyser.testexample.ConditionalChecks_4.method5(java.lang.Object):0:o>==<field:org.e2immu.analyser.testexample.ConditionalChecks_4.i>" :
                                 "null!=o&&o.getClass()==this.getClass()&&i==o.i&&o!=this";
                         Assert.assertEquals(expectValue, d.currentValue().toString());
                         Assert.assertEquals(d.iteration() == 0, d.currentValueIsDelayed());
@@ -353,19 +363,21 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                 if ("1".equals(d.statementId())) {
                     Assert.assertFalse(d.haveSetProperty(O5, VariableProperty.CONTEXT_NOT_NULL));
                     Assert.assertEquals("null==o||o.getClass()!=this.getClass()", d.evaluationResult().value().toString());
-                    Assert.assertFalse(d.haveMarkRead(O5));
+                    Assert.assertTrue(d.haveMarkRead(O5));
                     Variable o5 = d.evaluationResult().changeData().keySet().stream().filter(v -> v.simpleName().equals("o")).findFirst().orElseThrow();
                     Assert.assertEquals(LinkedVariables.EMPTY, d.evaluationResult().changeData().get(o5).staticallyAssignedVariables());
                 }
                 if ("2".equals(d.statementId())) {
                     Assert.assertFalse(d.haveSetProperty(O5, VariableProperty.CONTEXT_NOT_NULL));
+                    Assert.assertFalse(d.haveSetProperty(CONDITIONAL_CHECKS, VariableProperty.CONTEXT_NOT_NULL));
                     Assert.assertTrue(d.haveValueChange(CONDITIONAL_CHECKS));
                     Assert.assertEquals("o", d.findValueChange(CONDITIONAL_CHECKS).value().toString());
                     Assert.assertEquals("o", d.evaluationResult().value().toString());
                 }
                 if ("3".equals(d.statementId())) {
-                    String expectValueString = d.iteration() == 0 ? "<field:org.e2immu.analyser.testexample.ConditionalChecks_4.i#org.e2immu.analyser.testexample.ConditionalChecks_4.method5(java.lang.Object):0:o>==<field:org.e2immu.analyser.testexample.ConditionalChecks_4.i>"
-                            : "i==o.i";
+                    String expectValueString = d.iteration() == 0
+                            ? "null!=o&&o.getClass()==this.getClass()&&o!=this&&<field:org.e2immu.analyser.testexample.ConditionalChecks_4.i#org.e2immu.analyser.testexample.ConditionalChecks_4.method5(java.lang.Object):0:o>==<field:org.e2immu.analyser.testexample.ConditionalChecks_4.i>"
+                            : "null!=o&&o.getClass()==this.getClass()&&i==o.i&&o!=this";
                     Assert.assertEquals(expectValueString, d.evaluationResult().value().toString());
                     Assert.assertEquals(d.iteration() == 0, d.evaluationResult().someValueWasDelayed());
 
@@ -373,7 +385,7 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                         // markRead is only done in the first iteration
                         Assert.assertTrue(d.haveMarkRead(CONDITIONAL_CHECKS));
                         Assert.assertTrue(d.haveMarkRead(I));
-                        Assert.assertFalse(d.haveMarkRead(I + "#" + O5));
+                        Assert.assertTrue(d.haveMarkRead(I + "#" + O5));
                     }
                     Assert.assertFalse(d.haveSetProperty(O5, VariableProperty.CONTEXT_NOT_NULL));
                     Assert.assertFalse(d.haveSetProperty(CONDITIONAL_CHECKS, VariableProperty.CONTEXT_NOT_NULL));

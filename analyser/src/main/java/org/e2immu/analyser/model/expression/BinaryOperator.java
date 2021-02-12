@@ -24,6 +24,7 @@ import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;
@@ -116,7 +117,7 @@ public class BinaryOperator implements Expression {
 
     @Override
     public int order() {
-        throw new UnsupportedOperationException("Unevaluated expression");
+        return ExpressionComparator.ORDER_BINARY_OPERATOR; // not yet evaluated
     }
 
     @Override
@@ -165,8 +166,6 @@ public class BinaryOperator implements Expression {
                                       EvaluationContext evaluationContext) {
         Expression l = left.value();
         Expression r = right.value();
-
-        if (l.isUnknown() || r.isUnknown()) throw new UnsupportedOperationException();
 
         if (operator == primitives.equalsOperatorObject) {
             if (l.equals(r)) return new BooleanConstant(primitives, true);

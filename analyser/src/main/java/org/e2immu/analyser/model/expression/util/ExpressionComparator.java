@@ -62,6 +62,9 @@ public class ExpressionComparator implements Comparator<Expression> {
     public static final int ORDER_OR = 85;
     public static final int ORDER_AND = 86;
 
+    // must be later than any other binary operator
+    public static final int ORDER_BINARY_OPERATOR = 87;
+
     // irrelevant, normally
     public static final int ORDER_MVP = 90;
 

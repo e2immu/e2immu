@@ -1240,10 +1240,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                     new CommaExpression(expressionsFromInitAndUpdate);
             EvaluationResult result;
             if (statementAnalysis.statement instanceof ReturnStatement) {
-                Assignment assignment = new Assignment(statementAnalysis.primitives,
-                        new VariableExpression(new ReturnVariable(myMethodAnalyser.methodInfo)), toEvaluate);
-                EvaluationContext evaluationContext = sharedState.evaluationContext;
-                result = assignment.evaluate(evaluationContext, structure.forwardEvaluationInfo());
+                result = createAndEvaluateReturnStatement(sharedState);
             } else {
                 result = toEvaluate.evaluate(sharedState.evaluationContext, structure.forwardEvaluationInfo());
             }
@@ -1281,67 +1278,47 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
     }
 
     /*
-    modify the value of the return variable according to the evaluation result and the current state
+      modify the value of the return variable according to the evaluation result and the current state
 
-    consider
-    if(x) return a;
-    return b;
+      consider
+      if(x) return a;
+      return b;
 
-    after the if, the state is !x, and the return variable has the value x?a:<return>
-    we should not immediately overwrite, but take the existing return value into account, and return x?a:b
-     */
-    private AnalysisStatus step3_Return(SharedState sharedState, Expression value) {
+      after the if, the state is !x, and the return variable has the value x?a:<return>
+      we should not immediately overwrite, but take the existing return value into account, and return x?a:b
+
+      See Eg. Warnings_5, ConditionalChecks_4
+   */
+
+    private EvaluationResult createAndEvaluateReturnStatement(SharedState sharedState) {
+        Structure structure = statementAnalysis.statement.getStructure();
         ConditionManager localConditionManager = sharedState.localConditionManager;
-        boolean delayed = localConditionManager.isDelayed();
-
         ReturnVariable returnVariable = new ReturnVariable(myMethodAnalyser.methodInfo);
         Expression currentReturnValue = statementAnalysis.initialValueOfReturnVariable(returnVariable);
 
-        Expression newReturnValue;
+        EvaluationContext evaluationContext;
+        Expression toEvaluate;
         if (localConditionManager.state().isBoolValueTrue() || currentReturnValue instanceof UnknownExpression) {
-            newReturnValue = value;
-        } else if (myMethodAnalyser.methodInfo.returnType().equals(statementAnalysis.primitives.booleanParameterizedType)) {
-            newReturnValue = new And(statementAnalysis.primitives).append(sharedState.evaluationContext, localConditionManager.state(),
-                    value);
+            // default situation
+            toEvaluate = structure.expression();
+            evaluationContext = sharedState.evaluationContext;
         } else {
-            newReturnValue = EvaluateInlineConditional.conditionalValueConditionResolved(sharedState.evaluationContext,
-                    localConditionManager.state(), value, currentReturnValue, ObjectFlow.NO_FLOW).getExpression();
+            evaluationContext = new EvaluationContextImpl(sharedState.evaluationContext.getIteration(),
+                    localConditionManager.withoutState(statementAnalysis.primitives), sharedState.evaluationContext.getClosure());
+            if (myMethodAnalyser.methodInfo.returnType().equals(statementAnalysis.primitives.booleanParameterizedType)) {
+                // state, boolean; evaluation of And will add clauses to the context one by one
+                toEvaluate = new And(statementAnalysis.primitives).append(evaluationContext, localConditionManager.state(),
+                        structure.expression());
+            } else {
+                // state, not boolean
+                toEvaluate = EvaluateInlineConditional.conditionalValueConditionResolved(evaluationContext,
+                        localConditionManager.state(), structure.expression(), currentReturnValue, ObjectFlow.NO_FLOW)
+                        .getExpression();
+            }
         }
-        boolean newReturnValueIsDelayed = sharedState.evaluationContext.isDelayed(newReturnValue) || delayed;
-        VariableInfoContainer vic = statementAnalysis.findForWriting(returnVariable);
-        vic.ensureEvaluation(index() + EVALUATION.label,
-                VariableInfoContainer.NOT_YET_READ, VariableInfoContainer.NOT_A_VARIABLE_FIELD, Set.of());
-        Map<VariableProperty, Integer> properties = sharedState.evaluationContext.getValueProperties(newReturnValue);
-        Map<VariableProperty, Integer> toWrite;
-        if (newReturnValueIsDelayed) {
-            toWrite = properties.entrySet().stream()
-                    .filter(e -> e.getValue() == e.getKey().best).collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, Map.Entry::getValue));
-        } else {
-            toWrite = properties;
-        }
-        vic.setValue(newReturnValue, newReturnValueIsDelayed, LinkedVariables.EMPTY, toWrite, false);
-
-        vic.setProperty(CONTEXT_NOT_NULL, MultiLevel.NULLABLE, EVALUATION);
-
-        int expressionNotNull = toWrite.getOrDefault(NOT_NULL_EXPRESSION, Level.DELAY);
-        if (expressionNotNull == Level.DELAY) {
-            log(DELAYED, "Delaying evaluation because not null on return statement {} in {}", index(),
-                    myMethodAnalyser.methodInfo.fullyQualifiedName);
-            return DELAYS;
-        }
-        if (newReturnValueIsDelayed) {
-            log(DELAYED, "Delaying evaluation because return statement {} in {}", index(),
-                    myMethodAnalyser.methodInfo.fullyQualifiedName);
-            return DELAYS;
-        }
-        LinkedVariables newLinkedVariables = sharedState.evaluationContext.linkedVariables(value);
-        if (newLinkedVariables == LinkedVariables.DELAY) {
-            log(DELAYED, "Delaying evaluation because of linked variables of return statement {} in {}",
-                    index(), myMethodAnalyser.methodInfo.fullyQualifiedName);
-            return DELAYS;
-        }
-        vic.setLinkedVariables(newLinkedVariables, false);
-        return DONE;
+        Assignment assignment = new Assignment(statementAnalysis.primitives,
+                new VariableExpression(new ReturnVariable(myMethodAnalyser.methodInfo)), toEvaluate);
+        return assignment.evaluate(evaluationContext, structure.forwardEvaluationInfo());
     }
 
     // a special case, which allows us to set not null
