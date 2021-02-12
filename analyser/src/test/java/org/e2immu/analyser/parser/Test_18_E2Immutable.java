@@ -74,7 +74,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("strings4".equals(d.fieldInfo().name)) {
                 Assert.assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL,
-                        d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_NOT_NULL));
+                        d.fieldAnalysis().getProperty(VariableProperty.NOT_NULL_EXPRESSION));
             }
         };
 

@@ -649,12 +649,6 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 vic.setValue(valueToWrite, valueToWriteIsDelayed, changeData.staticallyAssignedVariables(),
                         merged, false);
 
-                // move from expression to external_not_null
-                int notNull = valueProperties.getOrDefault(NOT_NULL_EXPRESSION, Level.DELAY);
-                if (notNull != Level.DELAY) {
-                    vic.setProperty(EXTERNAL_NOT_NULL, notNull, EVALUATION);
-                }
-
                 if (vic.isLocalVariableInLoopDefinedOutside()) {
                     VariableInfoContainer local = addToAssignmentsInLoop(vic, variable.fullyQualifiedName());
                     if (local != null && !evaluationResult.someValueWasDelayed() && !valueToWriteIsDelayed) {
@@ -1227,7 +1221,15 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             // Too dangerous to use CommaExpression.comma, because it filters out constants etc.!
             Expression toEvaluate = expressionsFromInitAndUpdate.size() == 1 ? expressionsFromInitAndUpdate.get(0) :
                     new CommaExpression(expressionsFromInitAndUpdate);
-            EvaluationResult result = toEvaluate.evaluate(sharedState.evaluationContext, structure.forwardEvaluationInfo());
+            EvaluationResult result;
+            if (statementAnalysis.statement instanceof ReturnStatement) {
+                Assignment assignment = new Assignment(statementAnalysis.primitives,
+                        new VariableExpression(new ReturnVariable(myMethodAnalyser.methodInfo)), toEvaluate);
+                EvaluationContext evaluationContext = sharedState.evaluationContext;
+                result = assignment.evaluate(evaluationContext, structure.forwardEvaluationInfo());
+            } else {
+                result = toEvaluate.evaluate(sharedState.evaluationContext, structure.forwardEvaluationInfo());
+            }
             if (statementAnalysis.flowData.timeAfterExecutionNotYetSet()) {
                 statementAnalysis.flowData.setTimeAfterEvaluation(result.statementTime(), index());
             }
@@ -1238,9 +1240,10 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             assert value != null; // EmptyExpression in case there really is no value
             boolean valueIsDelayed = sharedState.evaluationContext.isDelayed(value) || statusPost == DELAYS;
 
-            if (statementAnalysis.statement instanceof ReturnStatement) {
-                statusPost = step3_Return(sharedState, value).combine(statusPost);
-            } else if (statementAnalysis.statement instanceof ForEachStatement) {
+            //if (statementAnalysis.statement instanceof ReturnStatement) {
+            //    statusPost = step3_Return(sharedState, value).combine(statusPost);
+            //} else
+            if (statementAnalysis.statement instanceof ForEachStatement) {
                 step3_ForEach(sharedState, value);
             } else if (!valueIsDelayed && (statementAnalysis.statement instanceof IfElseStatement ||
                     statementAnalysis.statement instanceof AssertStatement)) {
@@ -1304,9 +1307,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         vic.setProperty(CONTEXT_NOT_NULL, MultiLevel.NULLABLE, EVALUATION);
 
         int expressionNotNull = toWrite.getOrDefault(NOT_NULL_EXPRESSION, Level.DELAY);
-        if (expressionNotNull != Level.DELAY) {
-            vic.setProperty(EXTERNAL_NOT_NULL, expressionNotNull, true, EVALUATION);
-        } else {
+        if (expressionNotNull == Level.DELAY) {
             log(DELAYED, "Delaying evaluation because not null on return statement {} in {}", index(),
                     myMethodAnalyser.methodInfo.fullyQualifiedName);
             return DELAYS;

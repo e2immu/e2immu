@@ -87,7 +87,7 @@ public interface Analysis {
     default int getPropertyVerifyContracted(VariableProperty variableProperty) {
         int v = getProperty(variableProperty);
         // special code to catch contracted values
-        if (variableProperty == EXTERNAL_NOT_NULL) {
+        if (variableProperty == NOT_NULL_EXPRESSION) {
             return MultiLevel.bestNotNull(v, getProperty(NOT_NULL_VARIABLE));
         }
         if (variableProperty == MODIFIED_OUTSIDE_METHOD) {

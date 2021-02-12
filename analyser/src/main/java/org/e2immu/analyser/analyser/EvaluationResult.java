@@ -265,10 +265,10 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             }
 
             // if the variable has a value, and this value is NOT @NotNull, then we'll raise a warning
-            int externalNotNull = getPropertyFromInitial(variable, VariableProperty.EXTERNAL_NOT_NULL);
+            int notNullExpression = getPropertyFromInitial(variable, VariableProperty.NOT_NULL_EXPRESSION);
             int contextNotNull = getPropertyFromInitial(variable, VariableProperty.CONTEXT_NOT_NULL);
             boolean valueIsDelayed = evaluationContext.isDelayed(value);
-            if (externalNotNull == MultiLevel.FALSE && !valueIsDelayed
+            if (notNullExpression == MultiLevel.FALSE && !valueIsDelayed
                     // complain, but complain only once
                     && contextNotNull < MultiLevel.EFFECTIVELY_NOT_NULL) {
                 Message message = Message.newMessage(evaluationContext.getLocation(), Message.POTENTIAL_NULL_POINTER_EXCEPTION,

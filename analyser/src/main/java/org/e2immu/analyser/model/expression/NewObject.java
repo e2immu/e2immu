@@ -126,7 +126,7 @@ public record NewObject(MethodInfo constructor,
     }
 
     public static NewObject initialValueOfFieldPartOfConstruction(EvaluationContext evaluationContext, FieldReference fieldReference, ObjectFlow objectFlow) {
-        int notNull = evaluationContext.getProperty(fieldReference, VariableProperty.EXTERNAL_NOT_NULL);
+        int notNull = evaluationContext.getProperty(fieldReference, VariableProperty.NOT_NULL_EXPRESSION);
         return new NewObject(null, fieldReference.parameterizedType(), Diamond.SHOW_ALL, List.of(), notNull, null, null,
                 new BooleanConstant(evaluationContext.getPrimitives(), true), objectFlow);
     }

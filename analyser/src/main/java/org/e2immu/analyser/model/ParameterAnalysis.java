@@ -27,7 +27,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.IntStream;
 
-import static org.e2immu.analyser.analyser.VariableProperty.EXTERNAL_NOT_NULL;
+import static org.e2immu.analyser.analyser.VariableProperty.NOT_NULL_EXPRESSION;
 import static org.e2immu.analyser.analyser.VariableProperty.MODIFIED_OUTSIDE_METHOD;
 
 public interface ParameterAnalysis extends Analysis {
@@ -45,12 +45,12 @@ public interface ParameterAnalysis extends Analysis {
 
 
     enum AssignedOrLinked {
-        ASSIGNED(Set.of(EXTERNAL_NOT_NULL, MODIFIED_OUTSIDE_METHOD), Set.of()),
-        LINKED(Set.of(MODIFIED_OUTSIDE_METHOD), Set.of(EXTERNAL_NOT_NULL)),
-        NO(Set.of(), Set.of(EXTERNAL_NOT_NULL, MODIFIED_OUTSIDE_METHOD)),
+        ASSIGNED(Set.of(NOT_NULL_EXPRESSION, MODIFIED_OUTSIDE_METHOD), Set.of()),
+        LINKED(Set.of(MODIFIED_OUTSIDE_METHOD), Set.of(NOT_NULL_EXPRESSION)),
+        NO(Set.of(), Set.of(NOT_NULL_EXPRESSION, MODIFIED_OUTSIDE_METHOD)),
         DELAYED(null, null);
 
-        public static final Set<VariableProperty> PROPERTIES = Set.of(EXTERNAL_NOT_NULL, MODIFIED_OUTSIDE_METHOD);
+        public static final Set<VariableProperty> PROPERTIES = Set.of(NOT_NULL_EXPRESSION, MODIFIED_OUTSIDE_METHOD);
         private final Set<VariableProperty> propertiesToCopy;
         private final Set<VariableProperty> propertiesToSetToFalse;
 
@@ -174,10 +174,10 @@ public interface ParameterAnalysis extends Analysis {
                 if (Primitives.isPrimitiveExcludingVoid(bestType)) return MultiLevel.EFFECTIVELY_NOT_NULL;
                 break;
             }
-            case EXTERNAL_NOT_NULL: {
+            case NOT_NULL_EXPRESSION: {
                 TypeInfo bestType = parameterInfo.parameterizedType.bestTypeInfo();
                 if (Primitives.isPrimitiveExcludingVoid(bestType)) return MultiLevel.EFFECTIVELY_NOT_NULL;
-                return getParameterPropertyCheckOverrides(analysisProvider, parameterInfo, EXTERNAL_NOT_NULL);
+                return getParameterPropertyCheckOverrides(analysisProvider, parameterInfo, NOT_NULL_EXPRESSION);
             }
 
             case NOT_MODIFIED_1:

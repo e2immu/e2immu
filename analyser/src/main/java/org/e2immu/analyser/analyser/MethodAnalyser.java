@@ -1103,13 +1103,11 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
 
         @Override
         public int getProperty(Variable variable, VariableProperty variableProperty) {
-            VariableProperty vp = variableProperty == VariableProperty.NOT_NULL_EXPRESSION
-                    ? VariableProperty.EXTERNAL_NOT_NULL : variableProperty;
             if (variable instanceof FieldReference fieldReference) {
-                return getAnalyserContext().getFieldAnalysis(fieldReference.fieldInfo).getProperty(vp);
+                return getAnalyserContext().getFieldAnalysis(fieldReference.fieldInfo).getProperty(variableProperty);
             }
             if (variable instanceof ParameterInfo parameterInfo) {
-                return getAnalyserContext().getParameterAnalysis(parameterInfo).getProperty(vp);
+                return getAnalyserContext().getParameterAnalysis(parameterInfo).getProperty(variableProperty);
             }
             throw new UnsupportedOperationException();
         }

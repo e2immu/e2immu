@@ -111,7 +111,7 @@ public class ShallowTypeAnalyser implements AnalyserContext {
         ParameterInfo parameterInfo = methodInfo.methodInspection.get().getParameters().get(0);
         ParameterAnalysisImpl.Builder parameterAnalysis = new ParameterAnalysisImpl.Builder(getPrimitives(), this, parameterInfo);
         parameterAnalysis.setProperty(VariableProperty.IDENTITY, Level.FALSE);
-        parameterAnalysis.setProperty(VariableProperty.EXTERNAL_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
+        parameterAnalysis.setProperty(VariableProperty.NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL);
         parameterAnalysis.setProperty(VariableProperty.CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
         parameterAnalysis.setProperty(VariableProperty.CONTEXT_MODIFIED, Level.FALSE);
         parameterAnalysis.setProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD, Level.FALSE);
@@ -123,7 +123,7 @@ public class ShallowTypeAnalyser implements AnalyserContext {
         builder.setProperty(VariableProperty.CONTEXT_MODIFIED, Level.FALSE);
         builder.setProperty(VariableProperty.INDEPENDENT, Level.TRUE);
         builder.setProperty(VariableProperty.CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
-        builder.setProperty(VariableProperty.EXTERNAL_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
+        builder.setProperty(VariableProperty.NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL);
         builder.setProperty(VariableProperty.IMMUTABLE, MultiLevel.MUTABLE);
         builder.setProperty(VariableProperty.CONTAINER, Level.FALSE);
         builder.companionAnalyses.freeze();
@@ -139,7 +139,7 @@ public class ShallowTypeAnalyser implements AnalyserContext {
         ParameterInfo parameterInfo = methodInfo.methodInspection.get().getParameters().get(0);
         ParameterAnalysisImpl.Builder parameterAnalysis = new ParameterAnalysisImpl.Builder(getPrimitives(), this, parameterInfo);
         parameterAnalysis.setProperty(VariableProperty.IDENTITY, Level.FALSE);
-        parameterAnalysis.setProperty(VariableProperty.EXTERNAL_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
+        parameterAnalysis.setProperty(VariableProperty.NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL);
         parameterAnalysis.setProperty(VariableProperty.CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
         parameterAnalysis.setProperty(VariableProperty.CONTEXT_MODIFIED, Level.FALSE);
         parameterAnalysis.setProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD, Level.FALSE);
@@ -151,7 +151,7 @@ public class ShallowTypeAnalyser implements AnalyserContext {
         builder.setProperty(VariableProperty.CONTEXT_MODIFIED, Level.FALSE);
         builder.setProperty(VariableProperty.INDEPENDENT, Level.TRUE);
         builder.setProperty(VariableProperty.CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
-        builder.setProperty(VariableProperty.EXTERNAL_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
+        builder.setProperty(VariableProperty.NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL);
         builder.setProperty(VariableProperty.IMMUTABLE, MultiLevel.EFFECTIVELY_E2IMMUTABLE);
         builder.setProperty(VariableProperty.CONTAINER, Level.FALSE);
         builder.companionAnalyses.freeze();

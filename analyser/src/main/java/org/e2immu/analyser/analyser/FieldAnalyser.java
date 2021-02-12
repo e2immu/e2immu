@@ -257,10 +257,10 @@ public class FieldAnalyser extends AbstractAnalyser {
     private AnalysisStatus analyseNotNull(SharedState sharedState) {
         int contract = fieldAnalysis.getProperty(VariableProperty.NOT_NULL_VARIABLE);
         if (contract != Level.DELAY) {
-            fieldAnalysis.setProperty(VariableProperty.EXTERNAL_NOT_NULL, contract);
+            fieldAnalysis.setProperty(VariableProperty.NOT_NULL_EXPRESSION, contract);
             return DONE;
         }
-        if (fieldAnalysis.getProperty(VariableProperty.EXTERNAL_NOT_NULL) != Level.DELAY) return DONE;
+        if (fieldAnalysis.getProperty(VariableProperty.NOT_NULL_EXPRESSION) != Level.DELAY) return DONE;
 
         int isFinal = fieldAnalysis.getProperty(VariableProperty.FINAL);
         if (isFinal == Level.DELAY) {
@@ -270,7 +270,7 @@ public class FieldAnalyser extends AbstractAnalyser {
         if (isFinal == Level.FALSE && (!haveInitialiser || fieldCanBeWrittenFromOutsideThisType)) {
             log(NOT_NULL, "Field {} cannot be @NotNull: it is not @Final, or has no initialiser, "
                     + " or it can be assigned to from outside this class", fieldInfo.fullyQualifiedName());
-            fieldAnalysis.setProperty(VariableProperty.EXTERNAL_NOT_NULL, MultiLevel.NULLABLE);
+            fieldAnalysis.setProperty(VariableProperty.NOT_NULL_EXPRESSION, MultiLevel.NULLABLE);
             return DONE;
         }
 
@@ -307,7 +307,7 @@ public class FieldAnalyser extends AbstractAnalyser {
                 MultiLevel.bestNotNull(worstOverValues, bestOverContext));
         log(NOT_NULL, "Set property @NotNull on field {} to value {}", fieldInfo.fullyQualifiedName(), finalNotNullValue);
 
-        fieldAnalysis.setProperty(VariableProperty.EXTERNAL_NOT_NULL, finalNotNullValue);
+        fieldAnalysis.setProperty(VariableProperty.NOT_NULL_EXPRESSION, finalNotNullValue);
         return DONE;
     }
 
@@ -845,7 +845,7 @@ public class FieldAnalyser extends AbstractAnalyser {
             if (value instanceof VariableExpression variableValue) {
                 Variable variable = variableValue.variable();
                 return getProperty(variable, variableProperty == VariableProperty.NOT_NULL_EXPRESSION ?
-                        VariableProperty.EXTERNAL_NOT_NULL : variableProperty);
+                        VariableProperty.NOT_NULL_EXPRESSION : variableProperty);
             }
             return value.getProperty(this, variableProperty);
         }

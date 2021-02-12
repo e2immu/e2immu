@@ -18,9 +18,6 @@ public class Test_10_Identity extends CommonTestRunner {
         super(true);
     }
 
-    private static final String IDEM = "org.e2immu.analyser.testexample.Identity_0.idem(String)";
-    private static final String IDEM_S = IDEM + ":0:s";
-
     TypeMapVisitor typeMapVisitor = typeMap -> {
         TypeInfo logger = typeMap.get(Logger.class);
         MethodInfo debug = logger.typeInspection.get().methodStream(TypeInspection.Methods.THIS_TYPE_ONLY)
@@ -38,38 +35,37 @@ public class Test_10_Identity extends CommonTestRunner {
     public void test_0() throws IOException {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("idem".equals(d.methodInfo().name) && "1".equals(d.statementId())) {
-                boolean expect = d.iteration() > 0;
-                Assert.assertEquals(expect,
+                Assert.assertEquals(d.iteration() > 0,
                         d.statementAnalysis().methodAnalysis.methodLevelData().linksHaveBeenEstablished.isSet());
             }
         };
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-            if (d.methodInfo().name.equals("idem") && IDEM_S.equals(d.variableName())) {
+            if (d.methodInfo().name.equals("idem") && d.variable() instanceof ParameterInfo s && "s".equals(s.name)) {
                 if ("0".equals(d.statementId())) {
-                    // strings are @NM, @E2Container by definition/API annotations
-                    Assert.assertEquals(Level.FALSE, d.getProperty(VariableProperty.MODIFIED_VARIABLE));
+
+                    Assert.assertEquals(Level.FALSE, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
                     Assert.assertTrue(d.variableInfo().isRead());
                     if (d.iteration() > 0) {
                         Assert.assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, d.getProperty(VariableProperty.IMMUTABLE));
                         Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.CONTAINER));
 
                         // there is an explicit @NotNull on the first parameter of debug
-                        Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL_VARIABLE));
                     } // else: nothing much happening in the first iteration, because LOGGER is still unknown!
+
+                    Assert.assertEquals(Level.DELAY, d.getProperty(VariableProperty.CONTEXT_NOT_NULL_DELAY));
+                    Assert.assertEquals(Level.DELAY, d.getProperty(VariableProperty.CONTEXT_NOT_NULL_DELAY_RESOLVED));
+                    Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+
                 } else if ("1".equals(d.statementId())) {
                     Assert.assertTrue(d.variableInfo().isRead());
                     Assert.assertEquals("1" + VariableInfoContainer.Level.EVALUATION, d.variableInfo().getReadId());
 
-                    int expectModified = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
-                    Assert.assertEquals(expectModified, d.getProperty(VariableProperty.MODIFIED_VARIABLE));
-
-                    // there is an explicit @NotNull on the first parameter of debug
-                    int expectNN = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
-                    Assert.assertEquals(expectNN, d.getProperty(VariableProperty.NOT_NULL_VARIABLE));
+                    Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+                    Assert.assertEquals(Level.FALSE, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
 
                     String expectValue = d.iteration() == 0 ?
-                            "<parameter:org.e2immu.analyser.testexample.Identity_0.idem(String):0:s>" :
+                            "<parameter:org.e2immu.analyser.testexample.Identity_0.idem(java.lang.String):0:s>" :
                             "nullable? instance type String";
                     Assert.assertEquals(expectValue, d.currentValue().toString());
                 } else Assert.fail();
@@ -81,7 +77,6 @@ public class Test_10_Identity extends CommonTestRunner {
                 Assert.assertTrue(d.fieldAnalysis().getLinkedVariables().isEmpty());
             }
         };
-
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             MethodAnalysis methodAnalysis = d.methodAnalysis();
@@ -98,7 +93,7 @@ public class Test_10_Identity extends CommonTestRunner {
         };
 
         testClass("Identity_0", 0, 0, new DebugConfiguration.Builder()
-                        //  .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                        .addStatementAnalyserVisitor(statementAnalyserVisitor)
                         .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                         .addTypeMapVisitor(typeMapVisitor)
@@ -138,11 +133,8 @@ public class Test_10_Identity extends CommonTestRunner {
 
     @Test
     public void test_2() throws IOException {
-        final String IDEM3 = "org.e2immu.analyser.testexample.Identity_2.idem3(String)";
-        final String IDEM3_S = IDEM3 + ":0:s";
-
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-            if (d.methodInfo().name.equals("idem3") && IDEM3_S.equals(d.variableName())) {
+            if (d.methodInfo().name.equals("idem3") && d.variable() instanceof ParameterInfo s && "s".equals(s.name)) {
                 // there is an explicit @NotNull on the first parameter of debug
                 if ("0".equals(d.statementId())) {
                     Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL_VARIABLE));

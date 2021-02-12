@@ -727,7 +727,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             vic.setValue(NewObject.forCatchOrThis(primitives, variable.parameterizedType()), false, LinkedVariables.EMPTY,
                     propertyMap(analyserContext, methodAnalysis.getMethodInfo().typeInfo), true);
             vic.setLinkedVariables(LinkedVariables.EMPTY, true);
-            vic.setProperty(EXTERNAL_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL, false, VariableInfoContainer.Level.INITIAL);
+            vic.setProperty(NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL, false, VariableInfoContainer.Level.INITIAL);
             vic.setProperty(CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL, false, VariableInfoContainer.Level.INITIAL);
 
         } else if ((variable instanceof ParameterInfo parameterInfo)) {
@@ -823,7 +823,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             return new ExpressionAndLinkedVariables(DelayedVariableExpression.forField(fieldReference), true, LinkedVariables.DELAY);
         }
 
-        int notNull = fieldAnalysis.getProperty(EXTERNAL_NOT_NULL);
+        int notNull = fieldAnalysis.getProperty(NOT_NULL_EXPRESSION);
         if (notNull == Level.DELAY) {
             return new ExpressionAndLinkedVariables(DelayedVariableExpression.forField(fieldReference), true, LinkedVariables.DELAY);
         }

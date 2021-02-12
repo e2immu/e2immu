@@ -256,7 +256,7 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
             Assert.assertEquals(Level.TRUE, out.fieldAnalysis.get().getProperty(VariableProperty.FINAL));
             Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, out.fieldAnalysis.get().getProperty(VariableProperty.NOT_NULL_VARIABLE));
             // only the contract one is set!
-            Assert.assertEquals(MultiLevel.NULLABLE, out.fieldAnalysis.get().getProperty(VariableProperty.EXTERNAL_NOT_NULL));
+            Assert.assertEquals(MultiLevel.NULLABLE, out.fieldAnalysis.get().getProperty(VariableProperty.NOT_NULL_EXPRESSION));
 
             TypeInfo string = typeMap.get(String.class);
             MethodInfo equals = string.findUniqueMethod("equals", 1);

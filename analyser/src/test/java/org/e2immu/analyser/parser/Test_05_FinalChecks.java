@@ -145,7 +145,7 @@ public class Test_05_FinalChecks extends CommonTestRunner {
 
     FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
         if ("s4".equals(d.fieldInfo().name)) {
-            Assert.assertEquals(MultiLevel.NULLABLE, d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_NOT_NULL));
+            Assert.assertEquals(MultiLevel.NULLABLE, d.fieldAnalysis().getProperty(VariableProperty.NOT_NULL_EXPRESSION));
         }
         if ("s5".equals(d.fieldInfo().name)) {
             Assert.assertEquals(Level.TRUE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));

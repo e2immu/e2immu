@@ -352,7 +352,7 @@ public class Test_16_Modification extends CommonTestRunner {
                 int expectModified = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
                 Assert.assertEquals(expectModified, d.fieldAnalysis().getProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD));
                 Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL,
-                        d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_NOT_NULL));
+                        d.fieldAnalysis().getProperty(VariableProperty.NOT_NULL_EXPRESSION));
 
                 Assert.assertEquals("in4", d.fieldAnalysis().getEffectivelyFinalValue().toString());
                 Assert.assertEquals("in4", d.fieldAnalysis().getLinkedVariables().toString());
@@ -476,7 +476,7 @@ public class Test_16_Modification extends CommonTestRunner {
                 }
                 if (iteration >= 2) {
                     Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL,
-                            d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_NOT_NULL));
+                            d.fieldAnalysis().getProperty(VariableProperty.NOT_NULL_EXPRESSION));
                     int modified = d.fieldAnalysis().getProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD);
                     Assert.assertEquals(Level.TRUE, modified);
                 }
@@ -706,7 +706,7 @@ public class Test_16_Modification extends CommonTestRunner {
                 Assert.assertEquals("setC/*@NotNull*/", d.fieldAnalysis().getEffectivelyFinalValue().debugOutput());
                 // the field analyser sees addAll being used on set in the method addAllOnC
                 Assert.assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL,
-                        d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_NOT_NULL));
+                        d.fieldAnalysis().getProperty(VariableProperty.NOT_NULL_EXPRESSION));
             }
         };
         testClass("Modification_11", 0, 0, new DebugConfiguration.Builder()

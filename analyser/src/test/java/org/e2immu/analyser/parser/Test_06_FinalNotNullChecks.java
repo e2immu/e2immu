@@ -105,7 +105,7 @@ public class Test_06_FinalNotNullChecks extends CommonTestRunner {
 
     FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
         Assert.assertEquals("input", d.fieldInfo().name);
-        Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_NOT_NULL));
+        Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.fieldAnalysis().getProperty(VariableProperty.NOT_NULL_EXPRESSION));
         Assert.assertEquals(Level.TRUE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
         Assert.assertEquals("param/*@NotNull*/", d.fieldAnalysis().getEffectivelyFinalValue().toString());
     };

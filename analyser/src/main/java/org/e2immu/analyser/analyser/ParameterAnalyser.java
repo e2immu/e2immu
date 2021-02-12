@@ -143,12 +143,12 @@ public class ParameterAnalyser {
             changed = true;
         }
         int contractNotNull = parameterAnalysis.getProperty(VariableProperty.NOT_NULL_VARIABLE);
-        if (contractNotNull != Level.DELAY && !parameterAnalysis.properties.isSet(VariableProperty.EXTERNAL_NOT_NULL)) {
-            parameterAnalysis.setProperty(VariableProperty.EXTERNAL_NOT_NULL, contractNotNull);
+        if (contractNotNull != Level.DELAY && !parameterAnalysis.properties.isSet(VariableProperty.NOT_NULL_EXPRESSION)) {
+            parameterAnalysis.setProperty(VariableProperty.NOT_NULL_EXPRESSION, contractNotNull);
             changed = true;
         }
         if (parameterAnalysis.properties.isSet(VariableProperty.MODIFIED_OUTSIDE_METHOD) &&
-                parameterAnalysis.properties.isSet(VariableProperty.EXTERNAL_NOT_NULL)) {
+                parameterAnalysis.properties.isSet(VariableProperty.NOT_NULL_EXPRESSION)) {
             parameterAnalysis.resolveFieldDelays();
             return DONE;
         }
@@ -207,7 +207,7 @@ public class ParameterAnalyser {
         }
 
         if (delays && !(parameterAnalysis.properties.isSet(VariableProperty.MODIFIED_OUTSIDE_METHOD) &&
-                parameterAnalysis.properties.isSet(VariableProperty.EXTERNAL_NOT_NULL))) {
+                parameterAnalysis.properties.isSet(VariableProperty.NOT_NULL_EXPRESSION))) {
             return changed ? PROGRESS : DELAYS;
         }
 
@@ -276,7 +276,7 @@ public class ParameterAnalyser {
             // unused variable
             parameterAnalysis.setProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD, Level.FALSE);
             parameterAnalysis.setProperty(VariableProperty.CONTEXT_MODIFIED, Level.FALSE);
-            parameterAnalysis.setProperty(VariableProperty.EXTERNAL_NOT_NULL, MultiLevel.NULLABLE);
+            parameterAnalysis.setProperty(VariableProperty.NOT_NULL_EXPRESSION, MultiLevel.NULLABLE);
             parameterAnalysis.setProperty(VariableProperty.CONTEXT_NOT_NULL, MultiLevel.NULLABLE);
             parameterAnalysis.setProperty(VariableProperty.NOT_MODIFIED_1, Level.FALSE);
 

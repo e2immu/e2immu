@@ -72,7 +72,7 @@ public interface FieldAnalysis extends Analysis {
             case CONTAINER:
                 return bestType == null ? Level.TRUE : analysisProvider.getTypeAnalysis(bestType).getProperty(VariableProperty.CONTAINER);
 
-            case EXTERNAL_NOT_NULL:
+            case NOT_NULL_EXPRESSION:
             case CONTEXT_NOT_NULL:
             case NOT_NULL_VARIABLE:
                 if (Primitives.isPrimitiveExcludingVoid(fieldInfo.type)) return MultiLevel.EFFECTIVELY_NOT_NULL;

@@ -273,7 +273,7 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
             doNotModified1(e2ImmuAnnotationExpressions);
 
             // @NotNull
-            doNotNull(e2ImmuAnnotationExpressions, getProperty(VariableProperty.EXTERNAL_NOT_NULL));
+            doNotNull(e2ImmuAnnotationExpressions, getProperty(VariableProperty.NOT_NULL_EXPRESSION));
 
             // dynamic type annotations: @E1Immutable, @E1Container, @E2Immutable, @E2Container
             int typeImmutable = typeImmutable();

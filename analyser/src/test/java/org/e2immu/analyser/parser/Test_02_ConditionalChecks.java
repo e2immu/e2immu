@@ -187,7 +187,7 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                     Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL,
                             d.parameterAnalyses().get(param).getProperty(VariableProperty.CONTEXT_NOT_NULL));
                     Assert.assertEquals(MultiLevel.NULLABLE,
-                            d.parameterAnalyses().get(param).getProperty(VariableProperty.EXTERNAL_NOT_NULL));
+                            d.parameterAnalyses().get(param).getProperty(VariableProperty.NOT_NULL_EXPRESSION));
                     Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL,
                             d.parameterAnalyses().get(param).getProperty(VariableProperty.NOT_NULL_VARIABLE));
                 }

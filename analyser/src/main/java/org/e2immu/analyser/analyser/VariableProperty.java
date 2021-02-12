@@ -50,22 +50,17 @@ public enum VariableProperty {
 
      */
 
-    // or: not null from a value/assignment
-    EXTERNAL_NOT_NULL("not null from outside method", MultiLevel.NULLABLE, MultiLevel.EFFECTIVELY_CONTENT2_NOT_NULL,
-            MultiLevel.NULLABLE, MultiLevel.EFFECTIVELY_NOT_NULL, new VariableProperty[0]),
-    EXTERNAL_NOT_NULL_DELAY("not null from outside method delay"),
-    EXTERNAL_NOT_NULL_DELAY_RESOLVED("not null from outside method delay resolved"),
-
     CONTEXT_MODIFIED("modified in context"),
     MODIFIED_OUTSIDE_METHOD("modified outside method"),
 
     // the ones corresponding to annotations
 
-    NOT_NULL_VARIABLE("@NotNull variable", MultiLevel.NULLABLE, MultiLevel.EFFECTIVELY_CONTENT2_NOT_NULL,
-            MultiLevel.NULLABLE, MultiLevel.EFFECTIVELY_NOT_NULL,
-            new VariableProperty[]{EXTERNAL_NOT_NULL, CONTEXT_NOT_NULL}),
     NOT_NULL_EXPRESSION("@NotNull", MultiLevel.NULLABLE, MultiLevel.EFFECTIVELY_CONTENT2_NOT_NULL,
             MultiLevel.NULLABLE, MultiLevel.EFFECTIVELY_NOT_NULL, new VariableProperty[0]),
+
+    NOT_NULL_VARIABLE("@NotNull variable", MultiLevel.NULLABLE, MultiLevel.EFFECTIVELY_CONTENT2_NOT_NULL,
+            MultiLevel.NULLABLE, MultiLevel.EFFECTIVELY_NOT_NULL,
+            new VariableProperty[]{NOT_NULL_EXPRESSION, CONTEXT_NOT_NULL}),
 
     FINAL("@Final", Level.FALSE, Level.TRUE, Level.FALSE, Level.TRUE, new VariableProperty[0]),
 
@@ -146,7 +141,7 @@ public enum VariableProperty {
     copy from field, parameter, this/type to variable, once a value has been determined.
      */
     public static final Set<VariableProperty> FROM_ANALYSER_TO_PROPERTIES
-            = Set.of(IDENTITY, FINAL, EXTERNAL_NOT_NULL, MODIFIED_OUTSIDE_METHOD, IMMUTABLE, CONTAINER, NOT_MODIFIED_1);
+            = Set.of(IDENTITY, FINAL, NOT_NULL_EXPRESSION, MODIFIED_OUTSIDE_METHOD, IMMUTABLE, CONTAINER, NOT_MODIFIED_1);
 
     public static final Set<VariableProperty> VALUE_PROPERTIES = Set.of(IDENTITY, IMMUTABLE, CONTAINER, NOT_NULL_EXPRESSION);
 
