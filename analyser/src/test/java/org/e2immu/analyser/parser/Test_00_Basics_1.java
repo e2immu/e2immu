@@ -62,7 +62,7 @@ public class Test_00_Basics_1 extends CommonTestRunner {
                     Assert.assertEquals("", d.variableInfo().getLinkedVariables().toString());
                 }
                 String expectValue = d.iteration() == 0 ? "<field:org.e2immu.analyser.testexample.Basics_1.f1>"
-                        : "nullable instance type Set<String>";
+                        : "nullable? instance type Set<String>";
                 Assert.assertEquals(expectValue, d.currentValue().toString());
                 int expectNN = d.iteration() == 0 ? Level.DELAY : MultiLevel.NULLABLE;
                 Assert.assertEquals(expectNN, d.getProperty(VariableProperty.EXTERNAL_NOT_NULL));

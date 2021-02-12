@@ -729,7 +729,6 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             vic.setLinkedVariables(LinkedVariables.EMPTY, true);
             vic.setProperty(EXTERNAL_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL, false, VariableInfoContainer.Level.INITIAL);
             vic.setProperty(CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL, false, VariableInfoContainer.Level.INITIAL);
-            vic.setProperty(VariableProperty.METHOD_CALLED, Level.FALSE, false, VariableInfoContainer.Level.INITIAL);
 
         } else if ((variable instanceof ParameterInfo parameterInfo)) {
             ObjectFlow objectFlow = createObjectFlowForNewVariable(analyserContext, variable);
@@ -776,10 +775,10 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             f = typeAnalysis::getProperty;
         } else if (object instanceof ParameterInfo parameterInfo) {
             ParameterAnalysis parameterAnalysis = analyserContext.getParameterAnalysis(parameterInfo);
-            f = parameterAnalysis::getProperty;
+            f = parameterAnalysis::getPropertyVerifyContracted;
         } else if (object instanceof FieldInfo fieldInfo) {
             FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(fieldInfo);
-            f = fieldAnalysis::getProperty;
+            f = fieldAnalysis::getPropertyVerifyContracted;
         } else throw new UnsupportedOperationException();
         return VariableProperty.FROM_ANALYSER_TO_PROPERTIES.stream()
                 .collect(Collectors.toUnmodifiableMap(vp -> vp, f));
@@ -852,7 +851,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         NewObject newObject;
         if (fieldAnalyser == null) {
             // not a local field
-            int minimalNotNull = analyserContext.getFieldAnalysis(fieldReference.fieldInfo).getProperty(EXTERNAL_NOT_NULL);
+            int minimalNotNull = analyserContext.getFieldAnalysis(fieldReference.fieldInfo).getProperty(NOT_NULL_VARIABLE);
             newObject = NewObject.initialValueOfExternalField(primitives, fieldReference.parameterizedType(), minimalNotNull, ObjectFlow.NO_FLOW);
         } else {
             newObject = NewObject.initialValueOfField(primitives, fieldReference.parameterizedType(), fieldAnalyser.fieldAnalysis.getObjectFlow());

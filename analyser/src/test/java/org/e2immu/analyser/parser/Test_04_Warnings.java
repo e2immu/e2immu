@@ -294,7 +294,7 @@ public class Test_04_Warnings extends CommonTestRunner {
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("methodMustNotBeStatic5".equals(d.methodInfo().name) && d.variable() instanceof ParameterInfo) {
-                Assert.assertEquals(Level.DELAY, d.getProperty(VariableProperty.METHOD_DELAY));
+                Assert.assertEquals(Level.DELAY, d.getProperty(VariableProperty.CONTEXT_MODIFIED_DELAY));
             }
             if ("apply".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo p && "s".equals(p.name)) {

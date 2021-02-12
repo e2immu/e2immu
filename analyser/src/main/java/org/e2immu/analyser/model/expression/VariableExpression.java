@@ -154,7 +154,7 @@ public record VariableExpression(Variable variable,
 
         if (forwardEvaluationInfo.isNotAssignmentTarget()) {
             builder.markRead(variable);
-            if(currentValue instanceof VariableExpression ve) {
+            if (currentValue instanceof VariableExpression ve) {
                 builder.markRead(ve.variable); // FIXME confirm this is the right solution for variable fields s -> s$0
             }
         } else if (variable instanceof FieldReference fieldReference) {
@@ -180,20 +180,19 @@ public record VariableExpression(Variable variable,
 
         int methodCalled = forwardEvaluationInfo.getProperty(VariableProperty.METHOD_CALLED);
         if (methodCalled == Level.TRUE) {
-            builder.markMethodCalled(variable, methodCalled);
+            builder.markMethodCalled(variable);
         }
 
-        int methodDelay = forwardEvaluationInfo.getProperty(VariableProperty.METHOD_DELAY);
-        if (methodDelay == Level.TRUE) {
-            builder.markMethodDelay(variable);
-        } else if (methodDelay == Level.FALSE) {
-            builder.markMethodDelayResolved(variable);
+        int contextModifiedDelay = forwardEvaluationInfo.getProperty(VariableProperty.CONTEXT_MODIFIED_DELAY);
+        if (contextModifiedDelay == Level.TRUE) {
+            builder.markContextModifiedDelay(variable);
         }
 
-        int methodDelayResolved = forwardEvaluationInfo.getProperty(VariableProperty.METHOD_DELAY_RESOLVED);
-        if (methodDelayResolved == Level.TRUE) {
-            builder.markMethodDelayResolved(variable);
+        int contextNotNullDelay = forwardEvaluationInfo.getProperty(VariableProperty.CONTEXT_NOT_NULL_DELAY);
+        if (contextNotNullDelay == Level.TRUE) {
+            builder.markContextNotNullDelay(variable);
         }
+
         return builder.build();
     }
 

@@ -131,7 +131,8 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                     Assert.assertSame(d.statementId(), LinkedVariables.DELAY, d.variableInfo().getLinkedVariables());
                 }
                 if ("0.0.0".equals(d.statementId())) {
-                    String expectValue = d.iteration() == 0 ? "<field:org.e2immu.analyser.testexample.Basics_3.s>" : "nullable instance type String";
+                    String expectValue = d.iteration() == 0 ? "<field:org.e2immu.analyser.testexample.Basics_3.s>"
+                            : "nullable? instance type String";
                     Assert.assertEquals(expectValue, d.currentValue().debugOutput());
                     Assert.assertFalse(d.variableInfo().isAssigned());
                     if (d.iteration() == 0) {
@@ -219,7 +220,7 @@ public class Test_00_Basics_3 extends CommonTestRunner {
             if ("getS".equals(d.methodInfo().name)) {
                 if (S.equals(d.variableName())) {
                     String expectS = d.iteration() == 0 ? "<field:org.e2immu.analyser.testexample.Basics_3.s>"
-                            : "nullable instance type String";
+                            : "nullable? instance type String";
                     Assert.assertEquals(expectS, d.currentValue().toString());
                     String expectLinkedVars = d.iteration() == 0 ? LinkedVariables.DELAY_STRING :
                             "org.e2immu.analyser.testexample.Basics_3.s$0";

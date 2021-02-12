@@ -289,7 +289,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         // is the method modifying, do we need to wait?
         int modified = alwaysModifying ? Level.TRUE : recursiveCall || neverModifying ? Level.FALSE
                 : methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD);
-        int methodDelay = Level.fromBool(modified == Level.DELAY || delayUndeclared);
+        int contextModifiedDelay = Level.fromBool(modified == Level.DELAY || delayUndeclared);
 
         // effectively not null is the default, but when we're in a not null situation, we can demand effectively content not null
         int notNullForward = notNullRequirementOnScope(forwardEvaluationInfo.getProperty(VariableProperty.CONTEXT_NOT_NULL));
@@ -299,7 +299,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         EvaluationResult objectResult = object.evaluate(evaluationContext, new ForwardEvaluationInfo(Map.of(
                 VariableProperty.CONTEXT_NOT_NULL, notNullForward,
                 VariableProperty.METHOD_CALLED, Level.TRUE,
-                VariableProperty.METHOD_DELAY, methodDelay,
+                VariableProperty.CONTEXT_MODIFIED_DELAY, contextModifiedDelay,
                 VariableProperty.CONTEXT_MODIFIED, modified), true));
 
         // null scope
@@ -394,7 +394,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         builder.setExpression(result);
 
         // scope delay
-        if (resultIsDelayed || methodDelay == Level.TRUE) {
+        if (resultIsDelayed || contextModifiedDelay == Level.TRUE) {
             objectValue.variables().forEach(variable -> builder.setProperty(variable, VariableProperty.SCOPE_DELAY, Level.TRUE));
             object.variables().forEach(variable -> builder.setProperty(variable, VariableProperty.SCOPE_DELAY, Level.TRUE));
         }

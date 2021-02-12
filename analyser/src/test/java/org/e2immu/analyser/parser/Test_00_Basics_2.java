@@ -84,7 +84,7 @@ public class Test_00_Basics_2 extends CommonTestRunner {
             }
             if (STRING_FIELD.equals(d.variableName())) {
                 String expectValue = d.iteration() == 0 ? "<field:org.e2immu.analyser.testexample.Basics_2.string>" :
-                        "nullable instance type String";
+                        "nullable? instance type String";
                 Assert.assertEquals(expectValue, d.currentValue().toString());
                 // string occurs in a not-null context, even if its value is delayed
                 Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
@@ -104,7 +104,7 @@ public class Test_00_Basics_2 extends CommonTestRunner {
             }
             if (STRING_FIELD.equals(d.variableName())) {
                 Assert.assertTrue(d.variableInfo().isRead());
-                String expectValue = d.iteration() == 0 ? "<field:org.e2immu.analyser.testexample.Basics_2.string>" : "nullable instance type String";
+                String expectValue = d.iteration() == 0 ? "<field:org.e2immu.analyser.testexample.Basics_2.string>" : "nullable? instance type String";
                 Assert.assertEquals(expectValue, d.currentValue().toString());
                 Assert.assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
             }

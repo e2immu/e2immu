@@ -342,7 +342,7 @@ public record NewObject(MethodInfo constructor,
             }
             case CONTEXT_MODIFIED:
             case NOT_MODIFIED_1:
-            case METHOD_DELAY:
+            case CONTEXT_MODIFIED_DELAY:
             case IDENTITY:
             case IGNORE_MODIFICATIONS:
                 return Level.FALSE;

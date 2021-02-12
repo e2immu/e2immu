@@ -91,17 +91,21 @@ public class EvaluateParameters {
                     map.put(VariableProperty.CONTEXT_NOT_NULL, Level.FALSE);
                 }
 
-                if (map.containsValue(Level.DELAY)) {
-                    map.put(VariableProperty.METHOD_DELAY, Level.TRUE);
-                } else {
-                    map.put(VariableProperty.METHOD_DELAY_RESOLVED, Level.TRUE);
+                int contextNotModified = map.getOrDefault(VariableProperty.CONTEXT_MODIFIED, Level.DELAY);
+                if (contextNotModified == Level.DELAY) {
+                    map.put(VariableProperty.CONTEXT_MODIFIED_DELAY, Level.TRUE);
                 }
+                int contextNotNull = map.getOrDefault(VariableProperty.CONTEXT_NOT_NULL, Level.DELAY);
+                if (contextNotNull == Level.DELAY) {
+                    map.put(VariableProperty.CONTEXT_NOT_NULL_DELAY, Level.TRUE);
+                }
+
                 if (notModified1Scope != Level.TRUE && methodInfo.isSingleAbstractMethod()) {
                     // we compute on the parameter expression, not the value (chicken and egg)
                     Boolean cannotBeModified = parameterExpression.returnType()
                             .isImplicitlyOrAtLeastEventuallyE2Immutable(evaluationContext.getAnalyserContext());
                     if (cannotBeModified == null) {
-                        map.put(VariableProperty.METHOD_DELAY, Level.TRUE); // DELAY
+                        map.put(VariableProperty.CONTEXT_MODIFIED_DELAY, Level.TRUE); // DELAY
                     } else if (cannotBeModified) {
                         map.put(VariableProperty.CONTEXT_MODIFIED, Level.FALSE);
                     }
@@ -116,14 +120,8 @@ public class EvaluateParameters {
                         methodLevelData.copyModificationStatusFrom.put(methodInfo, true);
                     }
                 }
-                int notNull = map.getOrDefault(VariableProperty.CONTEXT_NOT_NULL, Level.DELAY);
-                if (notNull == Level.DELAY) {
-                    map.put(VariableProperty.CONTEXT_NOT_NULL_DELAY, Level.TRUE);
-                } else {
-                    map.put(VariableProperty.CONTEXT_NOT_NULL_DELAY_RESOLVED, Level.TRUE);
-                }
 
-                minNotNullOverParameters = Math.min(minNotNullOverParameters, notNull);
+                minNotNullOverParameters = Math.min(minNotNullOverParameters, contextNotNull);
 
                 ForwardEvaluationInfo forward = new ForwardEvaluationInfo(map, true);
                 parameterResult = parameterExpression.evaluate(evaluationContext, forward);

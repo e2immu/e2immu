@@ -77,6 +77,18 @@ public interface VariableInfo {
 
     Stream<Map.Entry<VariableProperty, Integer>> propertyStream();
 
+    /*
+    After the assignment a = b, the variable 'b' is statically assigned to 'a'.
+    Statically indicates that the assignment is taken at the level of statements, rather than the level of values:
+    if b == 3, then a == 3, and the relation between a and b is immediately lost.
+    Similarly, if b == c, then at value level a == c, while at 'static level', a == b == c.
+
+    This notion was introduced to speed up the decision on context-not-null, which is crucial for obtaining a value of a field:
+    If b is a field, then its value is delayed in the first iteration; but if a comes in a non-null context, we can add that
+    non-null value to b as well; see Modification_3.
+
+    This static assignment system is the non-null equivalent for linked variables and modification.
+     */
     LinkedVariables getStaticallyAssignedVariables();
 
     default boolean objectFlowIsSet() {
@@ -130,14 +142,14 @@ public interface VariableInfo {
         return getProperty(VariableProperty.CONTEXT_NOT_NULL_DELAY_RESOLVED) == Level.TRUE;
     }
 
-    default boolean noMethodDelay() {
-        if (getProperty(VariableProperty.METHOD_DELAY) == Level.DELAY) return true;
-        return getProperty(VariableProperty.METHOD_DELAY_RESOLVED) == Level.TRUE;
+    default boolean noContextModifiedDelay() {
+        if (getProperty(VariableProperty.CONTEXT_MODIFIED_DELAY) == Level.DELAY) return true;
+        return getProperty(VariableProperty.CONTEXT_MODIFIED_DELAY_RESOLVED) == Level.TRUE;
     }
 
     default boolean noContextDelay(VariableProperty variableProperty) {
         return switch (variableProperty) {
-            case CONTEXT_MODIFIED -> noMethodDelay();
+            case CONTEXT_MODIFIED -> noContextModifiedDelay();
             case CONTEXT_NOT_NULL -> noContextNotNullDelay();
             default -> throw new UnsupportedOperationException();
         };

@@ -325,16 +325,16 @@ public class Test_17_Container extends CommonTestRunner {
                 Assert.assertEquals("nullable? instance type Collection<String>", d.currentValue().toString());
                 Assert.assertEquals("", d.variableInfo().getLinkedVariables().toString());
                 if ("0".equals(d.statementId())) {
-                    Assert.assertEquals(Level.DELAY, d.getProperty(VariableProperty.METHOD_DELAY));
-                    Assert.assertEquals(Level.DELAY, d.getProperty(VariableProperty.METHOD_DELAY_RESOLVED));
+                    Assert.assertEquals(Level.DELAY, d.getProperty(VariableProperty.CONTEXT_MODIFIED_DELAY));
+                    Assert.assertEquals(Level.DELAY, d.getProperty(VariableProperty.CONTEXT_MODIFIED_DELAY_RESOLVED));
                 }
                 if ("1".equals(d.statementId())) {
                     int expectModified = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
                     Assert.assertEquals(expectModified, d.getProperty(VariableProperty.MODIFIED_VARIABLE));
 
-                    Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.METHOD_DELAY));
+                    Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.CONTEXT_MODIFIED_DELAY));
                     int expectDelayResolved = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
-                    Assert.assertEquals(expectDelayResolved, d.getProperty(VariableProperty.METHOD_DELAY_RESOLVED));
+                    Assert.assertEquals(expectDelayResolved, d.getProperty(VariableProperty.CONTEXT_MODIFIED_DELAY_RESOLVED));
                 }
             }
             if ("addAll5".equals(d.methodInfo().name) && d.variable() instanceof FieldReference fr

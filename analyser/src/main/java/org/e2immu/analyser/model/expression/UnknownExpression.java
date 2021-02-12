@@ -62,7 +62,7 @@ public record UnknownExpression(ParameterizedType parameterizedType, String msg)
             case NOT_NULL_EXPRESSION:
                 return MultiLevel.EFFECTIVELY_NOT_NULL;
             case CONTEXT_MODIFIED:
-            case METHOD_DELAY:
+            case CONTEXT_MODIFIED_DELAY:
             case IDENTITY:
                 return Level.FALSE;
         }

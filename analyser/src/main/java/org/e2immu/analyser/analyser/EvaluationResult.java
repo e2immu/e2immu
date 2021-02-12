@@ -138,13 +138,20 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                     combinedProperties);
         }
 
-        public boolean haveMethodDelay() {
-            return properties.getOrDefault(VariableProperty.METHOD_DELAY, Level.DELAY) == Level.TRUE
-                    && properties.getOrDefault(VariableProperty.METHOD_DELAY_RESOLVED, Level.DELAY) < Level.TRUE;
+        public boolean haveContextMethodDelay() {
+            return properties.getOrDefault(VariableProperty.CONTEXT_MODIFIED_DELAY, Level.DELAY) == Level.TRUE;
         }
 
-        public boolean haveDelayesCausedByMethodCalls() {
+        public boolean haveContextNotNullDelay() {
+            return properties.getOrDefault(VariableProperty.CONTEXT_NOT_NULL_DELAY, Level.DELAY) == Level.TRUE;
+        }
+
+        public boolean haveDelaysCausedByMethodCalls() {
             return properties.getOrDefault(VariableProperty.SCOPE_DELAY, Level.DELAY) == Level.TRUE;
+        }
+
+        public int getProperty(VariableProperty variableProperty) {
+            return properties.getOrDefault(variableProperty, Level.DELAY);
         }
     }
 
@@ -249,6 +256,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
         public void variableOccursInNotNullContext(Variable variable, Expression value, int notNullRequired) {
             assert evaluationContext != null;
             assert value != null;
+            assert notNullRequired > MultiLevel.NULLABLE;
 
             if (variable instanceof This) return; // nothing to be done here
 
@@ -258,25 +266,23 @@ public record EvaluationResult(EvaluationContext evaluationContext,
 
             // if the variable has a value, and this value is NOT @NotNull, then we'll raise a warning
             int externalNotNull = getPropertyFromInitial(variable, VariableProperty.EXTERNAL_NOT_NULL);
+            int contextNotNull = getPropertyFromInitial(variable, VariableProperty.CONTEXT_NOT_NULL);
             boolean valueIsDelayed = evaluationContext.isDelayed(value);
-            if (externalNotNull == MultiLevel.FALSE && !valueIsDelayed) {
+            if (externalNotNull == MultiLevel.FALSE && !valueIsDelayed
+                    // complain, but complain only once
+                    && contextNotNull < MultiLevel.EFFECTIVELY_NOT_NULL) {
                 Message message = Message.newMessage(evaluationContext.getLocation(), Message.POTENTIAL_NULL_POINTER_EXCEPTION,
                         "Variable: " + variable.simpleName());
                 messages.add(message);
-                return;
             }
 
             // regardless of what's going on with the external not-null, we set context not null
-            int contextNotNull = getPropertyFromInitial(variable, VariableProperty.CONTEXT_NOT_NULL);
-            if (contextNotNull < notNullRequired) {
-                // we only need to mark this in case of doubt (if we already know, we should not mark)
-                setProperty(variable, VariableProperty.CONTEXT_NOT_NULL, notNullRequired);
-                if (value instanceof VariableExpression redirectViaValue) {
-                    setProperty(redirectViaValue.variable(), VariableProperty.CONTEXT_NOT_NULL, notNullRequired);
-                } else if (valueIsDelayed) {
-                    for (Variable staticRedirect : evaluationContext.getStaticallyAssignedVariables(variable, statementTime).variables()) {
-                        setProperty(staticRedirect, VariableProperty.CONTEXT_NOT_NULL, notNullRequired);
-                    }
+            setProperty(variable, VariableProperty.CONTEXT_NOT_NULL, notNullRequired);
+            if (value instanceof VariableExpression redirectViaValue) {
+                setProperty(redirectViaValue.variable(), VariableProperty.CONTEXT_NOT_NULL, notNullRequired);
+            } else if (valueIsDelayed) {
+                for (Variable staticRedirect : evaluationContext.getStaticallyAssignedVariables(variable, statementTime).variables()) {
+                    setProperty(staticRedirect, VariableProperty.CONTEXT_NOT_NULL, notNullRequired);
                 }
             }
         }
@@ -424,18 +430,15 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             valueChanges.put(variable, newVcd);
         }
 
-        public void markMethodDelay(Variable variable) {
-            setProperty(variable, VariableProperty.METHOD_DELAY, Level.TRUE);
+        public void markContextModifiedDelay(Variable variable) {
+            setProperty(variable, VariableProperty.CONTEXT_MODIFIED_DELAY, Level.TRUE);
         }
 
-        public void markMethodDelayResolved(Variable variable) {
-            if (evaluationContext == null || !evaluationContext.isPresent(variable) ||
-                    getPropertyFromEval(variable, VariableProperty.METHOD_DELAY) == Level.TRUE) {
-                setProperty(variable, VariableProperty.METHOD_DELAY_RESOLVED, Level.TRUE);
-            }
+        public void markContextNotNullDelay(Variable variable) {
+            setProperty(variable, VariableProperty.CONTEXT_NOT_NULL_DELAY, Level.TRUE);
         }
 
-        public void markMethodCalled(Variable variable, int methodCalled) {
+        public void markMethodCalled(Variable variable) {
             assert evaluationContext != null;
 
             Variable v;
@@ -445,7 +448,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                 v = new This(evaluationContext.getAnalyserContext(), evaluationContext.getCurrentType());
             } else v = null;
             if (v != null) {
-                setProperty(v, VariableProperty.METHOD_CALLED, methodCalled);
+                setProperty(v, VariableProperty.METHOD_CALLED, Level.TRUE);
             }
         }
 

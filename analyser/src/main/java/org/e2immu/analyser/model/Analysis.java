@@ -29,6 +29,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 
+import static org.e2immu.analyser.analyser.VariableProperty.*;
+import static org.e2immu.analyser.analyser.VariableProperty.MODIFIED_VARIABLE;
+
 public interface Analysis {
 
     default Stream<Map.Entry<AnnotationExpression, AnnotationCheck>> getAnnotationStream() {
@@ -79,6 +82,18 @@ public interface Analysis {
 
     default int getProperty(VariableProperty variableProperty) {
         return Level.DELAY;
+    }
+
+    default int getPropertyVerifyContracted(VariableProperty variableProperty) {
+        int v = getProperty(variableProperty);
+        // special code to catch contracted values
+        if (variableProperty == EXTERNAL_NOT_NULL) {
+            return MultiLevel.bestNotNull(v, getProperty(NOT_NULL_VARIABLE));
+        }
+        if (variableProperty == MODIFIED_OUTSIDE_METHOD) {
+            return MultiLevel.bestNotNull(v, getProperty(MODIFIED_VARIABLE));
+        }
+        return v;
     }
 
     Location location();

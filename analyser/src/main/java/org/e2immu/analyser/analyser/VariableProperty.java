@@ -30,9 +30,9 @@ public enum VariableProperty {
     METHOD_CALLED("method called"),
 
     // purpose: goes to true when all methods involved in the computation have been "evaluated"
-    METHOD_DELAY("method delay"),
+    CONTEXT_MODIFIED_DELAY("method delay"),
     // continuation of METHOD_DELAY from variable properties into field summaries
-    METHOD_DELAY_RESOLVED("method delay resolved"),
+    CONTEXT_MODIFIED_DELAY_RESOLVED("method delay resolved"),
 
     SCOPE_DELAY("scope delay"),
 

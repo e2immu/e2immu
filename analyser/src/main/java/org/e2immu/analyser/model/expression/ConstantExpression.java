@@ -64,7 +64,7 @@ public interface ConstantExpression<T> extends Expression {
                 return MultiLevel.EFFECTIVELY_NOT_NULL;
             case MODIFIED_METHOD:
             case NOT_MODIFIED_1:
-            case METHOD_DELAY:
+            case CONTEXT_MODIFIED_DELAY:
             case IGNORE_MODIFICATIONS:
             case IDENTITY:
                 return Level.FALSE;
