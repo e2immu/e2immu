@@ -303,11 +303,11 @@ public class TypeAnalyser extends AbstractAnalyser {
         for (MethodAnalyser methodAnalyser : myMethodAnalysers) {
             if (methodAnalyser.hasCode()) {
                 MethodLevelData methodLevelData = methodAnalyser.methodLevelData();
-                if (!methodLevelData.internalObjectFlows.isFrozen()) {
+                if (methodLevelData.internalObjectFlowNotYetFrozen()) {
                     log(DELAYED, "Delay the freezing of internal object flows in type {}", typeInfo.fullyQualifiedName);
                     return DELAYS;
                 }
-                methodLevelData.internalObjectFlows.stream().filter(of -> of.origin == Origin.LITERAL).forEach(of -> {
+                methodLevelData.getInternalObjectFlowStream().filter(of -> of.origin == Origin.LITERAL).forEach(of -> {
                     ObjectFlow inType = ensureConstantObjectFlow(of);
                     of.moveAllInto(inType);
                 });

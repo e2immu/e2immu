@@ -376,21 +376,22 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
         assert !methodAnalysis.internalObjectFlows.isSet();
         MethodLevelData methodLevelData = methodAnalysis.methodLevelData();
 
-        boolean delays = !methodLevelData.internalObjectFlows.isFrozen();
+        boolean delays = methodLevelData.internalObjectFlowNotYetFrozen();
         if (delays) {
             log(DELAYED, "Delaying internal object flows of method {}, delay in MethodLevelData",
                     methodInfo.distinguishingName());
             return DELAYS;
         }
 
-        Set<ObjectFlow> internalObjectFlowsWithoutParametersAndLiterals = ImmutableSet.copyOf(methodLevelData.internalObjectFlows.stream()
-                .filter(of -> of.origin != Origin.PARAMETER && of.origin != Origin.LITERAL)
-                .collect(Collectors.toSet()));
+        Set<ObjectFlow> internalObjectFlowsWithoutParametersAndLiterals = ImmutableSet.copyOf
+                (methodLevelData.getInternalObjectFlowStream()
+                        .filter(of -> of.origin != Origin.PARAMETER && of.origin != Origin.LITERAL)
+                        .collect(Collectors.toSet()));
 
         internalObjectFlowsWithoutParametersAndLiterals.forEach(of -> of.finalize(null));
         methodAnalysis.internalObjectFlows.set(internalObjectFlowsWithoutParametersAndLiterals);
 
-        methodLevelData.internalObjectFlows.stream().filter(of -> of.origin == Origin.PARAMETER).forEach(of -> {
+        methodLevelData.getInternalObjectFlowStream().filter(of -> of.origin == Origin.PARAMETER).forEach(of -> {
             ParameterAnalysisImpl.Builder parameterAnalysis = getParameterAnalyser(((ParameterInfo) of.location.info)).parameterAnalysis;
             if (!parameterAnalysis.objectFlow.isSet()) {
                 of.finalize(parameterAnalysis.objectFlow.getFirst());

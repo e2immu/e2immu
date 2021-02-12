@@ -1,5 +1,6 @@
 package org.e2immu.analyser.parser;
 
+import org.e2immu.analyser.analyser.LinkedVariables;
 import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analyser.VariableInfoContainer;
 import org.e2immu.analyser.analyser.VariableProperty;
@@ -68,6 +69,8 @@ public class Test_10_Identity extends CommonTestRunner {
                             "<parameter:org.e2immu.analyser.testexample.Identity_0.idem(java.lang.String):0:s>" :
                             "nullable? instance type String";
                     Assert.assertEquals(expectValue, d.currentValue().toString());
+                    String expectLinked = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "";
+                    Assert.assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
                 } else Assert.fail();
             }
         };
@@ -85,9 +88,9 @@ public class Test_10_Identity extends CommonTestRunner {
                     VariableInfo vi = d.getReturnAsVariable();
                     Assert.assertFalse(vi.hasProperty(VariableProperty.MODIFIED_VARIABLE));
 
+                    Assert.assertEquals("s", d.methodAnalysis().getSingleReturnValue().toString());
                     Assert.assertEquals(Level.FALSE, methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD));
                     Assert.assertEquals(Level.TRUE, methodAnalysis.getProperty(VariableProperty.IDENTITY));
-                    Assert.assertEquals("s", d.methodAnalysis().getSingleReturnValue().toString());
                 }
             }
         };
@@ -133,6 +136,7 @@ public class Test_10_Identity extends CommonTestRunner {
 
     @Test
     public void test_2() throws IOException {
+
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if (d.methodInfo().name.equals("idem3") && d.variable() instanceof ParameterInfo s && "s".equals(s.name)) {
                 // there is an explicit @NotNull on the first parameter of debug

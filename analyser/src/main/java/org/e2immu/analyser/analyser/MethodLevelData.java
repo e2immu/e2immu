@@ -61,7 +61,7 @@ public class MethodLevelData {
     private Expression currentDelayedCombinedPrecondition;
 
     // no delays when frozen
-    public final AddOnceSet<ObjectFlow> internalObjectFlows = new AddOnceSet<>();
+    private final AddOnceSet<ObjectFlow> internalObjectFlows = new AddOnceSet<>();
 
     // not for local processing, but so that we know in the method and field analyser that this process has been completed
     public final FlipSwitch linksHaveBeenEstablished = new FlipSwitch();
@@ -85,6 +85,24 @@ public class MethodLevelData {
     public void addCircularCallOrUndeclaredFunctionalInterface() {
         if (!callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod.isSet()) {
             callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod.set(true);
+        }
+    }
+
+    public Stream<ObjectFlow> getInternalObjectFlowStream() {
+        return internalObjectFlows.stream();
+    }
+
+    public boolean internalObjectFlowNotYetFrozen() {
+        return !internalObjectFlows.isFrozen();
+    }
+
+    public void freezeInternalObjectFlows() {
+        internalObjectFlows.freeze();
+    }
+
+    public void ensureInternalObjectFlow(ObjectFlow objectFlow) {
+        if (!internalObjectFlows.contains(objectFlow)) {
+            internalObjectFlows.add(objectFlow);
         }
     }
 

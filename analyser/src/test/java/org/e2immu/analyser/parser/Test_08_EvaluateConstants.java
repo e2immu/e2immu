@@ -146,7 +146,7 @@ public class Test_08_EvaluateConstants extends CommonTestRunner {
                 if ("0".equals(d.statementId()) && d.iteration() > 0) {
                     Assert.assertNotNull(d.haveError(Message.INLINE_CONDITION_EVALUATES_TO_CONSTANT));
                     Assert.assertSame(DONE, d.result().analysisStatus);
-                    Assert.assertTrue(methodLevelData.internalObjectFlows.isFrozen()); // by apply
+                    Assert.assertFalse(methodLevelData.internalObjectFlowNotYetFrozen()); // by apply
                 }
             }
         };
@@ -169,7 +169,7 @@ public class Test_08_EvaluateConstants extends CommonTestRunner {
             }
             if ("print2".equals(d.methodInfo().name) && d.iteration() > 2) {
                 MethodLevelData methodLevelData = d.methodAnalysis().methodLevelData();
-                Assert.assertTrue(methodLevelData.internalObjectFlows.isFrozen());
+                Assert.assertFalse(methodLevelData.internalObjectFlowNotYetFrozen());
                 Expression srv = d.methodAnalysis().getSingleReturnValue();
                 Assert.assertTrue(srv instanceof StringConstant); // inline conditional works as advertised
             }

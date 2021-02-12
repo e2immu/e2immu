@@ -44,8 +44,8 @@ public class Test_29_TryStatement extends CommonTestRunner {
                     Expression value1 = d.statementAnalysis().variables.get(METHOD_FQN).current().getValue();
                     Assert.assertTrue("Got " + value1.getClass(), value1 instanceof ConstantExpression);
                 }
-                Assert.assertTrue("Statement " + d.statementId() + ", it " + d.iteration(),
-                        d.statementAnalysis().methodLevelData.internalObjectFlows.isFrozen());
+                Assert.assertFalse("Statement " + d.statementId() + ", it " + d.iteration(),
+                        d.statementAnalysis().methodLevelData.internalObjectFlowNotYetFrozen());
             }
         };
 

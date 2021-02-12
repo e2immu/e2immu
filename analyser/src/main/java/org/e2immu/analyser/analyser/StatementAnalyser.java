@@ -644,7 +644,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 log(ANALYSER, "Write value {} to variable {}", valueToWrite, variable.fullyQualifiedName());
                 // first do the properties that come with the value; later, we'll write the ones in changeData
                 Map<VariableProperty, Integer> valueProperties = sharedState.evaluationContext.getValueProperties(valueToWrite);
-                Map<VariableProperty, Integer> merged = mergeProperties(valueProperties, changeData.properties());
+                Map<VariableProperty, Integer> merged = mergeValueAndChange(valueProperties, changeData.properties());
 
                 vic.setValue(valueToWrite, valueToWriteIsDelayed, changeData.staticallyAssignedVariables(),
                         merged, false);
@@ -655,7 +655,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                         // assign the value of the assignment to the local copy created
                         log(ANALYSER, "Write value {} to local copy variable {}", valueToWrite, local.current().variable().fullyQualifiedName());
                         Map<VariableProperty, Integer> props2 = sharedState.evaluationContext.getValueProperties(valueToWrite);
-                        Map<VariableProperty, Integer> merged2 = mergeProperties(props2, changeData.properties());
+                        Map<VariableProperty, Integer> merged2 = mergeValueAndChange(props2, changeData.properties());
 
                         local.setValue(valueToWrite, false, changeData.staticallyAssignedVariables(), merged2, false);
                         local.setLinkedVariables(new LinkedVariables(Set.of(vi.variable())), false);
@@ -663,6 +663,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                     }
                 }
             } else {
+
                 if (changeData.value() != null) {
                     // a modifying method caused an updated instance value
                     // for statically assigned variables, EMPTY means: take the value of the initial, unless it has no value
@@ -675,17 +676,13 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                     // we're not assigning (and there is no change in instance because of a modifying method)
                     // only then we copy from INIT to EVAL
                     // so we must integrate set properties
-                    Map<VariableProperty, Integer> merged = mergeProperties(vi1.getProperties().toImmutableMap(), changeData.properties());
-
+                    Map<VariableProperty, Integer> merged = mergePreviousAndChange(vi1.getProperties().toImmutableMap(), changeData.properties());
                     vic.setValue(vi1.getValue(), vi1.isDelayed(), vi1.getStaticallyAssignedVariables(), merged, false);
                 } else {
+                    // delayed situation;
                     // not an assignment, so we must copy the statically assigned variables!
                     vic.setStaticallyAssignedVariables(vi1.getStaticallyAssignedVariables(), false);
-                    for (Map.Entry<VariableProperty, Integer> e : changeData.properties().entrySet()) {
-                        VariableProperty property = e.getKey();
-                        int pv = e.getValue();
-                        vic.setProperty(property, pv, false, EVALUATION);
-                    }
+                    changeData.properties().forEach((k, v) -> vic.setProperty(k, v, false, EVALUATION));
                 }
             }
             if (vi.isDelayed()) {
@@ -740,13 +737,13 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 statementAnalysis.stateData.setPrecondition(translated, preconditionIsDelayed);
             }
         }
-        if (status == DONE && !statementAnalysis.methodLevelData.internalObjectFlows.isFrozen()) {
+        if (status == DONE && statementAnalysis.methodLevelData.internalObjectFlowNotYetFrozen()) {
             boolean delays = false;
             for (ObjectFlow objectFlow : evaluationResult.getObjectFlowStream().collect(Collectors.toSet())) {
                 if (objectFlow.isDelayed()) {
                     delays = true;
-                } else if (!statementAnalysis.methodLevelData.internalObjectFlows.contains(objectFlow)) {
-                    statementAnalysis.methodLevelData.internalObjectFlows.add(objectFlow);
+                } else {
+                    statementAnalysis.methodLevelData.ensureInternalObjectFlow(objectFlow);
                 }
             }
             if (delays) {
@@ -754,7 +751,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                         index(), myMethodAnalyser.methodInfo.fullyQualifiedName);
                 status = DELAYS;
             } else {
-                statementAnalysis.methodLevelData.internalObjectFlows.freeze();
+                statementAnalysis.methodLevelData.freezeInternalObjectFlows();
             }
         }
 
@@ -768,9 +765,30 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         return status;
     }
 
-    private static Map<VariableProperty, Integer> mergeProperties(Map<VariableProperty, Integer> low, Map<VariableProperty, Integer> high) {
-        Map<VariableProperty, Integer> res = new HashMap<>(low);
-        high.forEach(res::put);
+    /*
+    some properties are cumulative, and must take the previous values into account, unless an assignment takes place.
+
+    especially the DELAY/DELAY_RESOLVED ones do not need to be carried over from previous to the next!
+     */
+    private static Map<VariableProperty, Integer> mergeValueAndChange(Map<VariableProperty, Integer> value,
+                                                                      Map<VariableProperty, Integer> changeData) {
+        Map<VariableProperty, Integer> res = new HashMap<>(value);
+        changeData.forEach(res::put);
+        return res;
+    }
+
+    private static Map<VariableProperty, Integer> mergePreviousAndChange(Map<VariableProperty, Integer> previous,
+                                                                         Map<VariableProperty, Integer> changeData) {
+        Map<VariableProperty, Integer> res = new HashMap<>(changeData);
+        previous.forEach((k, v) -> {
+            switch (k) {
+                case CONTEXT_NOT_NULL, CONTEXT_MODIFIED -> res.merge(k, v, Math::max);
+                case CONTAINER, IMMUTABLE, NOT_NULL_EXPRESSION, MODIFIED_OUTSIDE_METHOD, IDENTITY, FLUENT -> res.merge(k, v, Math::min);
+                default -> {
+                    // not merging _DELAY, _DELAY_RESOLVED etc.
+                }
+            }
+        });
         return res;
     }
 
@@ -1209,8 +1227,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             if (statementAnalysis.flowData.timeAfterExecutionNotYetSet()) {
                 statementAnalysis.flowData.copyTimeAfterExecutionFromInitialTime();
             }
-            if (!statementAnalysis.methodLevelData.internalObjectFlows.isFrozen()) {
-                statementAnalysis.methodLevelData.internalObjectFlows.freeze();
+            if (!statementAnalysis.methodLevelData.internalObjectFlowNotYetFrozen()) {
+                statementAnalysis.methodLevelData.freezeInternalObjectFlows();
             }
             if (statementAnalysis.statement instanceof BreakStatement breakStatement) {
                 if (statementAnalysis.parent.statement instanceof SwitchStatementOldStyle) {
