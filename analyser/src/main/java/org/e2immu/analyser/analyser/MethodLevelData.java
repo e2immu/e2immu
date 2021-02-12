@@ -17,9 +17,10 @@
 
 package org.e2immu.analyser.analyser;
 
-import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.Level;
+import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.expression.And;
-import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
@@ -221,53 +222,35 @@ public class MethodLevelData {
         return analysisStatus.get() == DELAYS ? (progress.get() ? PROGRESS : DELAYS) : DONE;
     }
 
+    // IMPROVE this code needs rewriting
     private Map<VariableInfoContainer, Integer> assignToLinkedVariable(SharedState sharedState,
                                                                        AtomicReference<AnalysisStatus> analysisStatus,
                                                                        AtomicBoolean progress,
                                                                        int summary,
                                                                        Variable linkedVariable) {
         Map<VariableInfoContainer, Integer> modifiedValuesToSet = new HashMap<>();
-        if (linkedVariable instanceof FieldReference fieldReference) {
-            // NOTE: not redirecting to "raw" field, via fieldReference.fieldInfo.fullyQualifiedName
-            VariableInfoContainer vic = sharedState.statementAnalysis.variables.get(fieldReference.fullyQualifiedName());
-            VariableInfo vi = vic.current();
-            int modified = vi.getProperty(VariableProperty.CONTEXT_MODIFIED);
-            // the second condition is there because fields start with modified 0 in a method
-            if (modified == Level.DELAY || modified < summary) {
-                // break the delay in case the variable is not even read
-                int fieldModified;
-                if (summary == Level.DELAY && !vi.isRead()) {
-                    fieldModified = Level.FALSE;
-                } else fieldModified = summary;
-                if (fieldModified == Level.DELAY) {
-                    log(DELAYED, "Delay marking field {} as @NotModified in {}", linkedVariable.fullyQualifiedName(), sharedState.logLocation);
-                    analysisStatus.set(DELAYS);
-                } else {
-                    log(NOT_MODIFIED, "Mark {} " + (fieldModified == Level.TRUE ? "" : "NOT") + " @Modified in {}",
-                            linkedVariable.fullyQualifiedName(), sharedState.logLocation);
-                    ensureEvaluation(sharedState, vic, vi);
-                    modifiedValuesToSet.put(vic, fieldModified);
-                    progress.set(true);
-                }
-            }
-        }
-        if (linkedVariable instanceof ParameterInfo pi) {
-            ParameterAnalysis parameterAnalysis = sharedState.evaluationContext.getAnalyserContext().getParameterAnalysis(pi);
-            if (summary == Level.DELAY) {
-                log(DELAYED, "Delay marking param {} as @NotModified in {}", linkedVariable.fullyQualifiedName(), sharedState.logLocation);
+
+        VariableInfoContainer vic = sharedState.statementAnalysis.variables.get(linkedVariable.fullyQualifiedName());
+        VariableInfo vi = vic.current();
+        int modified = vi.getProperty(VariableProperty.CONTEXT_MODIFIED);
+        if (modified == Level.DELAY || modified < summary) {
+            // break the delay in case the variable is not even read
+            int newModified;
+            if (summary == Level.DELAY && !vi.isRead()) {
+                newModified = Level.FALSE;
+            } else newModified = summary;
+            if (newModified == Level.DELAY) {
+                log(DELAYED, "Delay marking field {} as @NotModified in {}", linkedVariable.fullyQualifiedName(), sharedState.logLocation);
                 analysisStatus.set(DELAYS);
             } else {
-                log(NOT_MODIFIED, "MethodLevelData: Mark {} as {} in {}", linkedVariable.fullyQualifiedName(),
-                        summary == Level.TRUE ? "@Modified" : "@NotModified", sharedState.logLocation);
-                int currentModified = parameterAnalysis.getProperty(VariableProperty.CONTEXT_MODIFIED);
-                if (currentModified < summary) {
-                    // we can safely cast here to the builder
-                    ParameterAnalysisImpl.Builder builder = (ParameterAnalysisImpl.Builder) parameterAnalysis;
-                    sharedState.builder.add(builder.new SetProperty(VariableProperty.CONTEXT_MODIFIED, summary));
-                    progress.set(true);
-                }
+                log(NOT_MODIFIED, "Mark {} " + (newModified == Level.TRUE ? "" : "NOT") + " @Modified in {}",
+                        linkedVariable.fullyQualifiedName(), sharedState.logLocation);
+                ensureEvaluation(sharedState, vic, vi);
+                modifiedValuesToSet.put(vic, newModified);
+                progress.set(true);
             }
         }
+
         return modifiedValuesToSet;
     }
 

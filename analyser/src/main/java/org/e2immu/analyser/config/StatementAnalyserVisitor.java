@@ -48,11 +48,6 @@ public interface StatementAnalyserVisitor {
                     '}';
         }
 
-        public boolean haveSetProperty(VariableProperty variableProperty, int value) {
-            return result.getModifications().anyMatch(m -> m instanceof AbstractAnalysisBuilder.SetProperty setProperty &&
-                    setProperty.value == value && setProperty.variableProperty == variableProperty);
-        }
-
         public VariableInfo getFieldAsVariable(FieldInfo fieldInfo) {
             return statementAnalysis.getLatestVariableInfo(fieldInfo.fullyQualifiedName());
         }

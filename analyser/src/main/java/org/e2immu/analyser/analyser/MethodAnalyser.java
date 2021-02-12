@@ -135,8 +135,6 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
                 StatementAnalyserResult result = firstStatementAnalyser.analyseAllStatementsInBlock(sharedState.evaluationContext.getIteration(),
                         ForwardAnalysisInfo.startOfMethod(analyserContext.getPrimitives()),
                         sharedState.evaluationContext.getClosure());
-                // apply all modifications
-                result.getModifications().forEach(Runnable::run);
                 this.messages.addAll(result.messages);
                 return result.analysisStatus;
             };

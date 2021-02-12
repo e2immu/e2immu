@@ -308,25 +308,6 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
         return res;
     }
 
-
-    public interface Modification extends Runnable {
-    }
-
-    public class SetProperty implements Modification {
-        public final VariableProperty variableProperty;
-        public int value;
-
-        public SetProperty(VariableProperty variableProperty, int value) {
-            this.value = value;
-            this.variableProperty = variableProperty;
-        }
-
-        @Override
-        public void run() {
-            setProperty(variableProperty, value);
-        }
-    }
-
     @Override
     public boolean isBeingAnalysed() {
         return true;

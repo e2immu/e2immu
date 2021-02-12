@@ -4,6 +4,7 @@ import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.variable.Variable;
 import org.junit.Assert;
 import org.junit.Test;
@@ -135,7 +136,7 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
             if ("method1".equals(d.methodInfo().name)) {
                 Assert.assertEquals("true", d.methodAnalysis().getPrecondition().toString());
                 Assert.assertEquals(Level.FALSE, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
-           //     Assert.assertEquals(RETURN_1_VALUE, d.methodAnalysis().getSingleReturnValue().toString());
+                //     Assert.assertEquals(RETURN_1_VALUE, d.methodAnalysis().getSingleReturnValue().toString());
             }
         };
 
@@ -210,7 +211,7 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                     if ("1".equals(d.statementId())) {
                         Assert.assertEquals("true", d.condition().toString());
                         Assert.assertEquals("true", d.state().toString()); // in both parameters by now
-                  //      Assert.assertTrue(d.statementAnalysis().stateData.statementContributesToPrecondition.isSet());
+                        //      Assert.assertTrue(d.statementAnalysis().stateData.statementContributesToPrecondition.isSet());
                         Assert.assertEquals("true", d.statementAnalysis().methodLevelData.getCombinedPrecondition().toString());
                     }
                     if ("1.0.0".equals(d.statementId())) {
@@ -232,6 +233,14 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                 }
                 if ("2".equals(d.statementId())) {
                     Assert.assertEquals(A3 + " + " + B3, d.currentValue().toString());
+                }
+            }
+            if (d.variable() instanceof ParameterInfo a && "a".equals(a.name)) {
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+            }
+            if (d.variable() instanceof ParameterInfo b && "b".equals(b.name)) {
+                if ("1".equals(d.statementId()) || "2".equals(d.statementId())) {
+                    Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
                 }
             }
         };
