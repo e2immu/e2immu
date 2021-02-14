@@ -191,6 +191,9 @@ public record VariableExpression(Variable variable,
         int contextNotNullDelay = forwardEvaluationInfo.getProperty(VariableProperty.CONTEXT_NOT_NULL_DELAY);
         if (contextNotNullDelay == Level.TRUE) {
             builder.markContextNotNullDelay(variable);
+            if (currentValue instanceof VariableExpression ve) {
+                builder.markContextNotNullDelay(ve.variable); // FIXME confirm this is the right solution for variable fields s -> s$0
+            }
         }
 
         return builder.build();

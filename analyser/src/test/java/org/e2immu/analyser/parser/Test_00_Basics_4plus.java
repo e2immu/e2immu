@@ -139,8 +139,8 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
                     }
                 }
             }
-            if("test3".equals(d.methodInfo().name) && FIELD_0.equals(d.variableName())) {
-                Assert.assertEquals(d.iteration() == 0, d.variableInfo().contextNotNullDelay());
+            if ("test3".equals(d.methodInfo().name) && FIELD_0.equals(d.variableName()) && "1".equals(d.statementId())) {
+                Assert.assertEquals(d.iteration() <= 1, d.variableInfo().contextNotNullDelay());
             }
 
             if ("test3".equals(d.methodInfo().name) && d.variable() instanceof ReturnVariable) {
@@ -274,7 +274,7 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
             if ("someMinorMethod".equals(d.methodInfo().name)) {
                 Assert.assertFalse(d.methodInfo().methodResolution.get().allowsInterrupts());
                 ParameterAnalysis p0 = d.parameterAnalyses().get(0);
-                int expectNotNull = d.iteration() <= 1 ? Level.DELAY: MultiLevel.EFFECTIVELY_NOT_NULL;
+                int expectNotNull = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
                 Assert.assertEquals(expectNotNull, p0.getProperty(VariableProperty.NOT_NULL_VARIABLE));
             }
             if ("nonPrivateMethod".equals(d.methodInfo().name)) {
@@ -291,9 +291,16 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
 
                 Assert.assertEquals(d.iteration() > 0, d.haveValueChange(FIELD_0));
             }
+            if ("test3".equals(d.methodInfo().name) && "1".equals(d.statementId()) && d.iteration() > 0) {
+                EvaluationResult.ChangeData cdField0 = d.findValueChange(FIELD_0);
+                int expectDelay = d.iteration() == 1 ? Level.TRUE : Level.DELAY;
+                Assert.assertEquals(expectDelay, cdField0.getProperty(VariableProperty.CONTEXT_NOT_NULL_DELAY));
+                int expectNotNull = d.iteration() == 1 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
+                Assert.assertEquals(expectNotNull, cdField0.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+            }
         };
 
-        TypeContext typeContext = testClass("Basics_6", 0, 10, new DebugConfiguration.Builder()
+        TypeContext typeContext = testClass("Basics_6", 0, 11, new DebugConfiguration.Builder()
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)

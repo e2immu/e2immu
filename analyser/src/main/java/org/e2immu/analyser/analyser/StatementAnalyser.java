@@ -663,6 +663,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                     }
                 }
             } else {
+                Map<VariableProperty, Integer> merged = mergePreviousAndChange(vi1.getProperties().toImmutableMap(), changeData.properties());
 
                 if (changeData.value() != null) {
                     // a modifying method caused an updated instance value
@@ -671,18 +672,17 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                             vi1.staticallyAssignedVariablesIsSet() ? vi1.getStaticallyAssignedVariables() : LinkedVariables.EMPTY :
                             changeData.staticallyAssignedVariables();
                     boolean valueIsDelayed = sharedState.evaluationContext.isDelayed(changeData.value());
-                    vic.setValue(changeData.value(), valueIsDelayed, staticallyAssigned, changeData.properties(), false);
+                    vic.setValue(changeData.value(), valueIsDelayed, staticallyAssigned, merged, false);
                 } else if (variable instanceof This || !evaluationResult.someValueWasDelayed() && !changeData.haveDelaysCausedByMethodCalls()) {
                     // we're not assigning (and there is no change in instance because of a modifying method)
                     // only then we copy from INIT to EVAL
                     // so we must integrate set properties
-                    Map<VariableProperty, Integer> merged = mergePreviousAndChange(vi1.getProperties().toImmutableMap(), changeData.properties());
                     vic.setValue(vi1.getValue(), vi1.isDelayed(), vi1.getStaticallyAssignedVariables(), merged, false);
                 } else {
                     // delayed situation;
                     // not an assignment, so we must copy the statically assigned variables!
                     vic.setStaticallyAssignedVariables(vi1.getStaticallyAssignedVariables(), false);
-                    changeData.properties().forEach((k, v) -> vic.setProperty(k, v, false, EVALUATION));
+                    merged.forEach((k, v) -> vic.setProperty(k, v, false, EVALUATION));
                 }
             }
             if (vi.isDelayed()) {
@@ -779,13 +779,32 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
 
     private static Map<VariableProperty, Integer> mergePreviousAndChange(Map<VariableProperty, Integer> previous,
                                                                          Map<VariableProperty, Integer> changeData) {
+        Set<VariableProperty> both = new HashSet<>(previous.keySet());
+        both.addAll(changeData.keySet());
         Map<VariableProperty, Integer> res = new HashMap<>(changeData);
-        previous.forEach((k, v) -> {
+        both.forEach(k -> {
+            int prev = previous.getOrDefault(k, Level.DELAY);
+            int change = changeData.getOrDefault(k, Level.DELAY);
             switch (k) {
-                case CONTEXT_NOT_NULL, CONTEXT_MODIFIED -> res.merge(k, v, Math::max);
-                case CONTAINER, IMMUTABLE, NOT_NULL_EXPRESSION, MODIFIED_OUTSIDE_METHOD, IDENTITY, FLUENT -> res.merge(k, v, Math::min);
+                case CONTEXT_NOT_NULL -> {
+                    if (changeData.getOrDefault(CONTEXT_NOT_NULL_DELAY, Level.DELAY) != Level.TRUE) {
+                        int best = Math.max(prev, change);
+                        if (best != Level.DELAY) res.put(k, best);
+                    }
+                }
+                case CONTEXT_MODIFIED -> {
+                    if (changeData.getOrDefault(CONTEXT_MODIFIED_DELAY, Level.DELAY) != Level.TRUE) {
+                        int best = Math.max(prev, change);
+                        if (best != Level.DELAY) res.put(k, best);
+                    }
+                }
+                // value properties are copied from previous, because there is NO assignment!
+                case CONTAINER, IMMUTABLE, NOT_NULL_EXPRESSION, MODIFIED_OUTSIDE_METHOD, IDENTITY, FLUENT -> {
+                    if(prev != Level.DELAY) res.put(k, prev);
+                }
+                // all other are copied from change data
                 default -> {
-                    // not merging _DELAY, _DELAY_RESOLVED etc.
+                    if(change != Level.DELAY) res.put(k, change);
                 }
             }
         });
