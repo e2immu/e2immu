@@ -621,9 +621,13 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         if (evaluationResult.addCircularCallOrUndeclaredFunctionalInterface()) {
             statementAnalysis.methodLevelData.addCircularCallOrUndeclaredFunctionalInterface();
         }
-
-        for (Map.Entry<Variable, EvaluationResult.ChangeData> entry : evaluationResult.changeData().entrySet()) {
-
+        List<Map.Entry<Variable, EvaluationResult.ChangeData>> sortedEntries = new ArrayList<>(evaluationResult.changeData().entrySet());
+        sortedEntries.sort((e1, e2) -> {
+            if (e1.getValue().markAssignment() && !e2.getValue().markAssignment()) return 1;
+            if (e2.getValue().markAssignment() && !e1.getValue().markAssignment()) return -1;
+            return e1.getKey().fullyQualifiedName().compareTo(e2.getKey().fullyQualifiedName());
+        });
+        for (Map.Entry<Variable, EvaluationResult.ChangeData> entry : sortedEntries) {
             Variable variable = entry.getKey();
             EvaluationResult.ChangeData changeData = entry.getValue();
 
@@ -705,10 +709,10 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             if (resolveDelays(changeData, vi, vic, CONTEXT_NOT_NULL_DELAY, CONTEXT_NOT_NULL_DELAY_RESOLVED)) {
                 status = DELAYS;
             } else {
+                int breakValue = allowBreakingContextNotNull(vi);
                 int contextNotNull = vi.getProperty(CONTEXT_NOT_NULL);
-                if (contextNotNull == Level.DELAY) {
-                    boolean isPrimitive = Primitives.isPrimitiveExcludingVoid(variable.parameterizedType());
-                    vic.setProperty(CONTEXT_NOT_NULL, isPrimitive ? MultiLevel.EFFECTIVELY_NOT_NULL : MultiLevel.NULLABLE, EVALUATION);
+                if (contextNotNull == Level.DELAY && breakValue != Level.DELAY) {
+                    vic.setProperty(CONTEXT_NOT_NULL, breakValue, EVALUATION);
                 }
             }
             if (resolveDelays(changeData, vi, vic, CONTEXT_MODIFIED_DELAY, CONTEXT_MODIFIED_DELAY_RESOLVED))
@@ -765,6 +769,17 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         return status;
     }
 
+    private int allowBreakingContextNotNull(VariableInfo vi) {
+        if (vi.getValue() instanceof IsVariableExpression ve) {
+            VariableInfo initial = statementAnalysis.findOrNull(ve.variable(), EVALUATION);
+            return initial.noContextNotNullDelay() ? initial.getProperty(CONTEXT_NOT_NULL) : Level.DELAY;
+        }
+        if (Primitives.isPrimitiveExcludingVoid(vi.variable().parameterizedType())) {
+            return MultiLevel.EFFECTIVELY_NOT_NULL;
+        }
+        return MultiLevel.NULLABLE;
+    }
+
     /*
     some properties are cumulative, and must take the previous values into account, unless an assignment takes place.
 
@@ -800,11 +815,11 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 }
                 // value properties are copied from previous, because there is NO assignment!
                 case CONTAINER, IMMUTABLE, NOT_NULL_EXPRESSION, MODIFIED_OUTSIDE_METHOD, IDENTITY, FLUENT -> {
-                    if(prev != Level.DELAY) res.put(k, prev);
+                    if (prev != Level.DELAY) res.put(k, prev);
                 }
                 // all other are copied from change data
                 default -> {
-                    if(change != Level.DELAY) res.put(k, change);
+                    if (change != Level.DELAY) res.put(k, change);
                 }
             }
         });

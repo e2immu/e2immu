@@ -8,6 +8,7 @@ import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.PropertyWrapper;
 import org.e2immu.analyser.model.expression.VariableExpression;
+import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.junit.Assert;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -71,7 +72,17 @@ public class Test_10_Identity extends CommonTestRunner {
                     Assert.assertEquals(expectValue, d.currentValue().toString());
                     String expectLinked = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "";
                     Assert.assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
+
+                    int expectNotNullExpression = d.iteration() <= 1 ? Level.DELAY : MultiLevel.NULLABLE;
+                    Assert.assertEquals(expectNotNullExpression, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
                 } else Assert.fail();
+            }
+            if (d.methodInfo().name.equals("idem") && d.variable() instanceof ReturnVariable) {
+                if ("1".equals(d.statementId())) {
+                    Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+                    int expectNotNullExpression = d.iteration() <= 1 ? Level.DELAY : MultiLevel.NULLABLE;
+                    Assert.assertEquals(expectNotNullExpression, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                }
             }
         };
 
@@ -88,9 +99,13 @@ public class Test_10_Identity extends CommonTestRunner {
                     VariableInfo vi = d.getReturnAsVariable();
                     Assert.assertFalse(vi.hasProperty(VariableProperty.MODIFIED_VARIABLE));
 
-                    Assert.assertEquals("s", d.methodAnalysis().getSingleReturnValue().toString());
-                    Assert.assertEquals(Level.FALSE, methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD));
-                    Assert.assertEquals(Level.TRUE, methodAnalysis.getProperty(VariableProperty.IDENTITY));
+                    if (d.iteration() > 1) {
+                        Assert.assertEquals("s", d.methodAnalysis().getSingleReturnValue().toString());
+                        Assert.assertEquals(Level.FALSE, methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD));
+                        Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL,
+                                methodAnalysis.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                        Assert.assertEquals(Level.TRUE, methodAnalysis.getProperty(VariableProperty.IDENTITY));
+                    }
                 }
             }
         };
