@@ -338,7 +338,7 @@ public class Primitives {
     }
 
     public static boolean isPrimitiveExcludingVoid(ParameterizedType parameterizedType) {
-        return isPrimitiveExcludingVoid(parameterizedType.typeInfo);
+        return parameterizedType.arrays == 0 && isPrimitiveExcludingVoid(parameterizedType.typeInfo);
     }
 
     public static boolean isPrimitiveExcludingVoid(TypeInfo typeInfo) {
@@ -462,7 +462,7 @@ public class Primitives {
 
     public static boolean isDiscrete(ParameterizedType parameterizedType) {
         TypeInfo typeInfo = parameterizedType.typeInfo;
-        if (parameterizedType.typeInfo == null) return false;
+        if (parameterizedType.arrays != 0 || parameterizedType.typeInfo == null) return false;
         return isInt(typeInfo) || isInteger(typeInfo) ||
                 isLong(typeInfo) || isBoxedLong(typeInfo) ||
                 isShort(typeInfo) || isBoxedShort(typeInfo) ||

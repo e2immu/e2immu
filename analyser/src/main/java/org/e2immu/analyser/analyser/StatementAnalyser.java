@@ -2053,6 +2053,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             }
 
             if (NOT_NULL_EXPRESSION == variableProperty) {
+                if (Primitives.isPrimitiveExcludingVoid(value.returnType())) return MultiLevel.EFFECTIVELY_NOT_NULL;
                 int directNN = value.getProperty(this, NOT_NULL_EXPRESSION);
                 if (directNN >= MultiLevel.EFFECTIVELY_NOT_NULL) return directNN;
                 Expression valueIsNotNull = Negation.negate(this, Equals.equals(this,

@@ -99,10 +99,12 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                 // return 1;
                 if ("0.0.0".equals(d.statementId())) {
                     Assert.assertEquals("1", d.currentValue().toString());
+                    Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
                 }
                 // after if(a&&b) return 1
                 if ("0".equals(d.statementId())) {
                     Assert.assertEquals("a&&b?1:<return value>", d.currentValue().toString());
+                    Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
                 }
                 if ("1.0.0".equals(d.statementId())) {
                     Assert.assertEquals("2", d.currentValue().toString());
@@ -125,6 +127,8 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                     // nothing is possible anymore
                     // we do NOT expect a regression to the ReturnVariable
                     Assert.assertEquals(RETURN_1_VALUE, d.currentValue().toString());
+                    Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+                    Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
                 }
                 if ("4".equals(d.statementId())) {
                     Assert.fail("not reached!");
@@ -134,9 +138,10 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("method1".equals(d.methodInfo().name)) {
+                Assert.assertEquals("3", d.methodAnalysis().getLastStatement().index);
                 Assert.assertEquals("true", d.methodAnalysis().getPrecondition().toString());
                 Assert.assertEquals(Level.FALSE, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
-                //     Assert.assertEquals(RETURN_1_VALUE, d.methodAnalysis().getSingleReturnValue().toString());
+                Assert.assertEquals(RETURN_1_VALUE, d.methodAnalysis().getSingleReturnValue().toString());
             }
         };
 
@@ -300,7 +305,7 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                         Assert.assertEquals("o", d.currentValue().toString());
                         Assert.assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
                     }
-                    if(O5.equals(d.variableName())) {
+                    if (O5.equals(d.variableName())) {
                         Assert.assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
                     }
                 }

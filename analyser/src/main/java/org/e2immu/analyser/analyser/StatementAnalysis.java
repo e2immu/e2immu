@@ -319,7 +319,10 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                 VariableInfoContainer vic = createVariable(evaluationContext, retVar, 0);
                 READ_FROM_RETURN_VALUE_PROPERTIES.forEach(vp ->
                         vic.setProperty(vp, vp.falseValue, VariableInfoContainer.Level.INITIAL));
-                vic.setProperty(CONTEXT_NOT_NULL, MultiLevel.NULLABLE, VariableInfoContainer.Level.INITIAL);
+                int notNull = Primitives.isPrimitiveExcludingVoid(methodAnalysis.getMethodInfo().returnType()) ?
+                        MultiLevel.EFFECTIVELY_NOT_NULL: MultiLevel.NULLABLE;
+                vic.setProperty(CONTEXT_NOT_NULL, notNull, VariableInfoContainer.Level.INITIAL);
+                vic.setProperty(NOT_NULL_EXPRESSION, notNull, VariableInfoContainer.Level.INITIAL);
                 // not null of value
             }
             // if we're at the beginning of the method, we're done.
