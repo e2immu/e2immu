@@ -130,13 +130,13 @@ public class ArrayInitializer implements Expression {
     }
 
     @Override
-    public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
+    public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty, boolean duringEvaluation) {
         if (VariableProperty.NOT_NULL_EXPRESSION == variableProperty) {
-            int notNull = multiExpression.getProperty(evaluationContext, variableProperty);
+            int notNull = multiExpression.getProperty(evaluationContext, variableProperty, duringEvaluation);
             return MultiLevel.shift(MultiLevel.EFFECTIVE, notNull); // default = @NotNull level 0
         }
         // default is to refer to each of the components
-        return multiExpression.getProperty(evaluationContext, variableProperty);
+        return multiExpression.getProperty(evaluationContext, variableProperty, duringEvaluation);
     }
 
     @Override

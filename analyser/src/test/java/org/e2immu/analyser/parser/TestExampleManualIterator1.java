@@ -50,7 +50,7 @@ public class TestExampleManualIterator1 extends CommonTestRunner {
             MethodInfo accept = typeInfo.findUniqueMethod("accept", 1);
             ParameterInfo param0 = accept.methodInspection.get().getParameters().get(0);
             Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL,
-                    param0.parameterAnalysis.get().getProperty(VariableProperty.NOT_NULL_VARIABLE));
+                    param0.parameterAnalysis.get().getProperty(VariableProperty.NOT_NULL_EXPRESSION));
         }
         if ("MyIterator".equals(typeInfo.simpleName)) {
             //MethodInfo hasNext = typeInfo.findUniqueMethod("hasNext", 0);

@@ -54,14 +54,13 @@ public interface ConstantExpression<T> extends Expression {
     }
 
     @Override
-    default int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
+    default int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty, boolean duringEvaluation) {
         switch (variableProperty) {
             case CONTAINER:
                 return Level.TRUE;
             case IMMUTABLE:
                 return MultiLevel.EFFECTIVELY_E2IMMUTABLE;
             case NOT_NULL_EXPRESSION:
-            case NOT_NULL_VARIABLE:
                 return MultiLevel.EFFECTIVELY_NOT_NULL;
             case MODIFIED_METHOD:
             case NOT_MODIFIED_1:

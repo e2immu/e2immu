@@ -23,7 +23,7 @@ public class Test_28_InnerClass extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("InnerClass_0".equals(d.methodInfo().name) && "0.0.0".equals(d.statementId()) && "outerField".equals(d.variableName())) {
                 Assert.assertTrue(d.variable() instanceof ParameterInfo);
-                int notNull = d.properties().getOrDefault(VariableProperty.NOT_NULL_VARIABLE, Level.DELAY);
+                int notNull = d.properties().getOrDefault(VariableProperty.NOT_NULL_EXPRESSION, Level.DELAY);
                 Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, notNull);
             }
         };

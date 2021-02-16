@@ -26,6 +26,8 @@ import org.e2immu.analyser.parser.Primitives;
 
 import java.util.Set;
 
+import static org.e2immu.analyser.analyser.VariableProperty.*;
+
 public interface FieldAnalysis extends Analysis {
 
     /**
@@ -74,7 +76,10 @@ public interface FieldAnalysis extends Analysis {
 
             case NOT_NULL_EXPRESSION:
             case CONTEXT_NOT_NULL:
-            case NOT_NULL_VARIABLE:
+            case NOT_NULL_PARAMETER:
+                throw new UnsupportedOperationException("Property "+variableProperty);
+
+            case EXTERNAL_NOT_NULL:
                 if (Primitives.isPrimitiveExcludingVoid(fieldInfo.type)) return MultiLevel.EFFECTIVELY_NOT_NULL;
                 break;
 
@@ -89,4 +94,16 @@ public interface FieldAnalysis extends Analysis {
     }
 
     Expression getInitialValue();
+
+    default int getPropertyVerifyContracted(VariableProperty variableProperty) {
+        int v = getProperty(variableProperty);
+        // special code to catch contracted values
+        if (variableProperty == NOT_NULL_EXPRESSION) {
+            return MultiLevel.bestNotNull(v, getProperty(EXTERNAL_NOT_NULL));
+        }
+        if (variableProperty == MODIFIED_OUTSIDE_METHOD) {
+            return MultiLevel.bestNotNull(v, getProperty(MODIFIED_VARIABLE));
+        }
+        return v;
+    }
 }

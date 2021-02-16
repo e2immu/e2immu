@@ -23,7 +23,7 @@ public interface FieldAnalyserVisitor {
                 Map<String, AnalysisStatus> statuses) {
 
         public int getProperty(Expression value, VariableProperty variableProperty) {
-            return evaluationContext.getProperty(value, variableProperty);
+            return evaluationContext.getProperty(value, variableProperty, false);
         }
 
         public String haveError(String message) {

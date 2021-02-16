@@ -69,7 +69,7 @@ public record VariableExpression(Variable variable,
     }
 
     @Override
-    public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
+    public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty, boolean duringEvaluation) {
         throw new UnsupportedOperationException();
     }
 

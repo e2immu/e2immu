@@ -45,7 +45,7 @@ public class TestEither extends CommonTestRunner {
         if ("getLeftOrElse".equals(d.methodInfo().name) && "orElse".equals(d.variableName()) && "1".equals(d.statementId())) {
             Assert.assertEquals("orElse", d.currentValue().toString());
             Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL,
-                    d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL_VARIABLE));
+                    d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL_EXPRESSION));
         }
     };
 

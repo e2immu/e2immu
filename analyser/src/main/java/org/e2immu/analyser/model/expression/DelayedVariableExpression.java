@@ -32,20 +32,24 @@ import org.e2immu.annotation.E2Container;
 import java.util.Objects;
 
 @E2Container
-public record DelayedVariableExpression(String msg, Variable variable) implements Expression, IsVariableExpression {
+public record DelayedVariableExpression(String msg, String debug,
+                                        Variable variable) implements Expression, IsVariableExpression {
 
     public static DelayedVariableExpression forParameter(ParameterInfo parameterInfo) {
-        return new DelayedVariableExpression("<parameter:" + parameterInfo.fullyQualifiedName() + ">", parameterInfo);
+        return new DelayedVariableExpression("<p:" + parameterInfo.name + ">",
+                "<parameter:" + parameterInfo.fullyQualifiedName() + ">", parameterInfo);
     }
 
     public static DelayedVariableExpression forField(FieldReference fieldReference) {
-        return new DelayedVariableExpression("<field:" + fieldReference.fullyQualifiedName() + ">", fieldReference);
+        return new DelayedVariableExpression("<f:" + fieldReference.fieldInfo.name + ">",
+                "<field:" + fieldReference.fullyQualifiedName() + ">", fieldReference);
     }
 
     public static Expression forVariable(Variable variable) {
         if (variable instanceof FieldReference fieldReference) return forField(fieldReference);
         if (variable instanceof ParameterInfo parameterInfo) return forParameter(parameterInfo);
-        return new DelayedVariableExpression("<variable:" + variable.fullyQualifiedName() + ">", variable);
+        return new DelayedVariableExpression("<v:" + variable.simpleName() + ">",
+                "<variable:" + variable.fullyQualifiedName() + ">", variable);
     }
 
     /*
@@ -80,7 +84,7 @@ public record DelayedVariableExpression(String msg, Variable variable) implement
 
     @Override
     public OutputBuilder output(Qualification qualification) {
-        return new OutputBuilder().add(new Text(msg, msg));
+        return new OutputBuilder().add(new Text(msg, debug));
     }
 
     @Override
@@ -109,7 +113,7 @@ public record DelayedVariableExpression(String msg, Variable variable) implement
     }
 
     @Override
-    public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
+    public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty, boolean duringEvaluation) {
         return Level.DELAY;
     }
 

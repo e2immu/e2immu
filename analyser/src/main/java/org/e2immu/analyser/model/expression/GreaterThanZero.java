@@ -220,7 +220,7 @@ public record GreaterThanZero(ParameterizedType booleanParameterizedType,
     }
 
     @Override
-    public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
+    public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty, boolean duringEvaluation) {
         return UnknownExpression.primitiveGetProperty(variableProperty);
     }
 

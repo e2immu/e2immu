@@ -238,6 +238,14 @@ class VariableInfoImpl implements VariableInfo {
         }
     }
 
+    /*
+    things to set for a new variable
+     */
+    public void newVariable() {
+        setProperty(VariableProperty.CONTEXT_NOT_NULL_DELAY_RESOLVED, org.e2immu.analyser.model.Level.TRUE);
+        setProperty(VariableProperty.CONTEXT_MODIFIED_DELAY_RESOLVED, org.e2immu.analyser.model.Level.TRUE);
+    }
+
     // ***************************** MERGE RELATED CODE *********************************
 
     private record MergeOp(VariableProperty variableProperty, IntBinaryOperator operator, int initial) {
@@ -249,6 +257,8 @@ class VariableInfoImpl implements VariableInfo {
     private static final List<MergeOp> MERGE = List.of(
             new MergeOp(VariableProperty.NOT_NULL_EXPRESSION, Math::min, Integer.MAX_VALUE),
             new MergeOp(VariableProperty.CONTEXT_NOT_NULL, Math::max, Level.DELAY),
+            new MergeOp(VariableProperty.CONTEXT_NOT_NULL_DELAY_RESOLVED, Math::max, Level.DELAY),
+            new MergeOp(VariableProperty.CONTEXT_MODIFIED_DELAY_RESOLVED, Math::max, Level.DELAY),
             new MergeOp(VariableProperty.IMMUTABLE, Math::min, Integer.MAX_VALUE),
             new MergeOp(VariableProperty.CONTAINER, Math::min, Integer.MAX_VALUE),
             new MergeOp(VariableProperty.IDENTITY, Math::min, Integer.MAX_VALUE),

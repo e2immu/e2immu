@@ -115,10 +115,10 @@ public class InlineConditional implements Expression {
     private static final int NO_PATTERN = -2;
 
     @Override
-    public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
+    public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty, boolean duringEvaluation) {
         int inCondition = lookForPatterns(evaluationContext, variableProperty);
         if (inCondition != NO_PATTERN) return inCondition;
-        return new MultiExpression(condition, ifTrue, ifFalse).getProperty(evaluationContext, variableProperty);
+        return new MultiExpression(condition, ifTrue, ifFalse).getProperty(evaluationContext, variableProperty, duringEvaluation);
     }
 
     /*
@@ -144,11 +144,11 @@ public class InlineConditional implements Expression {
                 Expression rhs = equalsValue.rhs;
                 if (ifTrue.equals(rhs)) {
                     // null == a ? a : something;  null != a ? a : something
-                    return not ? evaluationContext.getProperty(ifFalse, variableProperty) : MultiLevel.NULLABLE;
+                    return not ? evaluationContext.getProperty(ifFalse, variableProperty, true) : MultiLevel.NULLABLE;
                 }
                 if (ifFalse.equals(rhs)) {
                     // null == a ? something: a
-                    return not ? MultiLevel.NULLABLE : evaluationContext.getProperty(ifTrue, variableProperty);
+                    return not ? MultiLevel.NULLABLE : evaluationContext.getProperty(ifTrue, variableProperty, true);
                 }
             }
         }

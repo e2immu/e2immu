@@ -100,7 +100,7 @@ public class Test_00_Basics_2 extends CommonTestRunner {
         }
         if ("getString".equals(d.methodInfo().name)) {
             if (THIS.equals(d.variableName())) {
-                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL_VARIABLE));
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
             }
             if (STRING_FIELD.equals(d.variableName())) {
                 Assert.assertTrue(d.variableInfo().isRead());
@@ -111,7 +111,7 @@ public class Test_00_Basics_2 extends CommonTestRunner {
             }
             if (RETURN_GET_STRING.equals(d.variableName())) {
                 int expectNotNull = d.iteration() == 0 ? Level.DELAY : MultiLevel.NULLABLE;
-                Assert.assertEquals(expectNotNull, d.getProperty(VariableProperty.NOT_NULL_VARIABLE));
+                Assert.assertEquals(expectNotNull, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
             }
         }
     };
@@ -184,7 +184,7 @@ public class Test_00_Basics_2 extends CommonTestRunner {
         MethodInfo add = collection.findUniqueMethod("add", 1);
         ParameterInfo p0 = add.methodInspection.get().getParameters().get(0);
         Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL,
-                p0.parameterAnalysis.get().getProperty(VariableProperty.NOT_NULL_VARIABLE));
+                p0.parameterAnalysis.get().getProperty(VariableProperty.NOT_NULL_EXPRESSION));
         Assert.assertEquals(Level.FALSE, p0.parameterAnalysis.get().getProperty(VariableProperty.MODIFIED_VARIABLE));
         Assert.assertEquals(Level.TRUE, add.methodAnalysis.get().getProperty(VariableProperty.MODIFIED_METHOD));
     };

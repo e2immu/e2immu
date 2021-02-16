@@ -98,7 +98,7 @@ public class TestLazy extends CommonTestRunner {
 
             VariableInfo ret = d.getReturnAsVariable();
             if (d.iteration() >= 1) {
-                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, ret.getProperty(VariableProperty.NOT_NULL_VARIABLE));
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, ret.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
 
                 Assert.assertTrue(methodLevelData.linksHaveBeenEstablished.isSet());
                 LinkedVariables linkedToT = d.methodAnalysis().getLastStatement().getLatestVariableInfo(t.fullyQualifiedName())

@@ -228,13 +228,13 @@ public abstract class CommonAbstractValue {
         }
 
         @Override
-        public int getProperty(Expression value, VariableProperty variableProperty) {
+        public int getProperty(Expression value, VariableProperty variableProperty, boolean duringEvaluation) {
             if (value instanceof VariableExpression ve && variableProperty == VariableProperty.NOT_NULL_EXPRESSION) {
                 if (ve.variable().simpleName().endsWith("n") || ve.variable().simpleName().compareTo("p") >= 0)
                     return MultiLevel.NULLABLE;
                 return MultiLevel.EFFECTIVELY_NOT_NULL;
             }
-            return value.getProperty(minimalEvaluationContext, variableProperty);
+            return value.getProperty(minimalEvaluationContext, variableProperty, true);
         }
     }
 

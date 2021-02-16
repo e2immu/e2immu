@@ -43,7 +43,7 @@ public class TestTrie extends CommonTestRunner {
         if ("add".equals(d.methodInfo().name) && "newTrieNode".equals(d.variableName())) {
             if (Set.of("1.0.1.0.2", "1.0.1.0.1").contains(d.statementId())) {
                 Assert.assertTrue(d.currentValue() instanceof VariableExpression);
-                Assert.assertEquals(Level.TRUE, (int) d.properties().get(VariableProperty.NOT_NULL_VARIABLE));
+                Assert.assertEquals(Level.TRUE, (int) d.properties().get(VariableProperty.NOT_NULL_EXPRESSION));
             }
         }
         if ("goTo".equals(d.methodInfo().name) && "1.0.1".equals(d.statementId()) && "node".equals(d.variableName())) {

@@ -47,7 +47,7 @@ public class Test_08_EvaluateConstants extends CommonTestRunner {
             if ("getEffectivelyFinal".equals(d.methodInfo().name)) {
                 VariableInfo vi = d.getReturnAsVariable();
                 int expectNotNull = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
-                Assert.assertEquals(expectNotNull, vi.getProperty(VariableProperty.NOT_NULL_VARIABLE));
+                Assert.assertEquals(expectNotNull, vi.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
                 if (d.iteration() == 0) {
                     Assert.assertTrue(vi.isDelayed());
                 } else if (d.iteration() == 1) {

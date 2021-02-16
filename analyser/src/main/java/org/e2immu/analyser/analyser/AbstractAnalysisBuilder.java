@@ -177,6 +177,7 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
     }
 
     public Messages fromAnnotationsIntoProperties(
+            VariableProperty notNullProperty,
             boolean isVariable,
             boolean acceptVerify,
             Collection<AnnotationExpression> annotations,
@@ -272,8 +273,7 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
             setProperty(VariableProperty.IMMUTABLE, value);
         }
         if (notNull >= 0) {
-            VariableProperty property = isVariable ? VariableProperty.NOT_NULL_VARIABLE : VariableProperty.NOT_NULL_EXPRESSION;
-            setProperty(property, notNull);
+            setProperty(notNullProperty, notNull);
         }
         if (mark != null && only == null) {
             String markValue = mark.extract("value", "");

@@ -70,7 +70,7 @@ public class NullConstant implements ConstantExpression<Object> {
     }
 
     @Override
-    public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
+    public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty, boolean duringEvaluation) {
         return switch (variableProperty) {
             case NOT_NULL_EXPRESSION -> MultiLevel.NULLABLE;
             case CONTEXT_MODIFIED, CONTEXT_MODIFIED_DELAY, IGNORE_MODIFICATIONS, NOT_MODIFIED_1, IDENTITY -> FALSE;

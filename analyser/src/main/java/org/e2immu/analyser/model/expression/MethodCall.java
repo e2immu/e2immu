@@ -309,7 +309,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         }
 
         // process parameters
-        int notModified1Scope = evaluationContext.getProperty(objectValue, VariableProperty.NOT_MODIFIED_1);
+        int notModified1Scope = evaluationContext.getProperty(objectValue, VariableProperty.NOT_MODIFIED_1, false);
         Pair<EvaluationResult.Builder, List<Expression>> res = EvaluateParameters.transform(parameterExpressions, evaluationContext, methodInfo, notModified1Scope, objectValue);
         List<Expression> parameterValues = res.v;
         builder.compose(objectResult, res.k.build());
@@ -604,7 +604,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         }
         MethodAnalysis methodAnalysis = evaluationContext.getAnalyserContext().getMethodAnalysis(method);
         int modified = methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD);
-        int immutable = evaluationContext.getProperty(objectValue, VariableProperty.IMMUTABLE);
+        int immutable = evaluationContext.getProperty(objectValue, VariableProperty.IMMUTABLE, false);
         if (modified == Level.TRUE && immutable >= MultiLevel.EVENTUALLY_E2IMMUTABLE) {
             builder.raiseError(Message.CALLING_MODIFYING_METHOD_ON_E2IMMU,
                     "Method: " + methodInfo.distinguishingName() + ", Type: " + objectValue.returnType());
@@ -710,7 +710,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     }
 
     @Override
-    public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
+    public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty, boolean duringEvaluation) {
         boolean recursiveCall = evaluationContext.getCurrentMethod() != null && methodInfo == evaluationContext.getCurrentMethod().methodInfo;
         if (recursiveCall) {
             return variableProperty.best;
@@ -753,7 +753,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
         // RULE 3: E2IMMU object cannot link, neither can implicitly immutable types
 
-        int objectE2Immutable = MultiLevel.value(evaluationContext.getProperty(object, VariableProperty.IMMUTABLE), MultiLevel.E2IMMUTABLE);
+        int objectE2Immutable = MultiLevel.value(evaluationContext.getProperty(object, VariableProperty.IMMUTABLE, false), MultiLevel.E2IMMUTABLE);
         if (objectE2Immutable >= MultiLevel.EVENTUAL_AFTER) {
             return LinkedVariables.EMPTY;
         }

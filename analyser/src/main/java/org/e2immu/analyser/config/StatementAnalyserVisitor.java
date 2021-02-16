@@ -30,7 +30,7 @@ public interface StatementAnalyserVisitor {
                     .orElse(null);
         }
         public int getProperty(Expression value, VariableProperty variableProperty) {
-            return evaluationContext.getProperty(value, variableProperty);
+            return evaluationContext.getProperty(value, variableProperty, false);
         }
 
         @Override

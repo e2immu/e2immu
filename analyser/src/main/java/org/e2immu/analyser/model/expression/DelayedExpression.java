@@ -30,18 +30,20 @@ import org.e2immu.annotation.E2Container;
 import java.util.Objects;
 
 @E2Container
-public record DelayedExpression(String msg, ParameterizedType parameterizedType) implements Expression {
+public record DelayedExpression(String msg, String debug, ParameterizedType parameterizedType) implements Expression {
 
     public static DelayedExpression forMethod(MethodInfo methodInfo) {
-        return new DelayedExpression("<method:" + methodInfo.fullyQualifiedName + ">", methodInfo.returnType());
+        return new DelayedExpression("<m:" + methodInfo.name + ">",
+                "<method:" + methodInfo.fullyQualifiedName + ">", methodInfo.returnType());
     }
 
     public static Expression forState(Primitives primitives) {
-        return new DelayedExpression("<state>", primitives.booleanParameterizedType);
+        return new DelayedExpression("<state>", "<state>", primitives.booleanParameterizedType);
     }
 
     public static Expression forNewObject(ParameterizedType parameterizedType) {
-        return new DelayedExpression("<new:" + parameterizedType + ">", parameterizedType);
+        return new DelayedExpression("<new:" + parameterizedType + ">",
+                "<new:" + parameterizedType.detailedString() + ">", parameterizedType);
     }
 
     /*
@@ -76,7 +78,7 @@ public record DelayedExpression(String msg, ParameterizedType parameterizedType)
 
     @Override
     public OutputBuilder output(Qualification qualification) {
-        return new OutputBuilder().add(new Text(msg, msg));
+        return new OutputBuilder().add(new Text(msg, debug));
     }
 
     @Override
@@ -105,7 +107,7 @@ public record DelayedExpression(String msg, ParameterizedType parameterizedType)
     }
 
     @Override
-    public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
+    public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty, boolean duringEvaluation) {
         return Level.DELAY;
     }
 

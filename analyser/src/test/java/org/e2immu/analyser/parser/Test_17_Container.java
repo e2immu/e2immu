@@ -29,7 +29,7 @@ public class Test_17_Container extends CommonTestRunner {
             if ("setS".equals(d.methodInfo().name)) {
                 if (P.equals(d.variableName()) && "0".equals(d.statementId())) {
                     int expect = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
-                    Assert.assertEquals(expect, d.getProperty(VariableProperty.NOT_NULL_VARIABLE));
+                    Assert.assertEquals(expect, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
                 }
                 if (P.equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {
@@ -44,18 +44,18 @@ public class Test_17_Container extends CommonTestRunner {
 
                         Assert.assertEquals("nullable? instance type Set<String>", d.currentValue().toString());
                         Assert.assertEquals(Level.DELAY, d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL_EXPRESSION));
-                        Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL_VARIABLE));
+                        Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
                     }
                 }
                 if (S.equals(d.variableName()) && "1".equals(d.statementId())) {
                     Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL,
-                            d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL_VARIABLE));
+                            d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL_EXPRESSION));
                 }
                 if (S0.equals(d.variableName()) && "1".equals(d.statementId())) {
                     Assert.assertTrue(d.iteration() > 0);
                     Assert.assertEquals("p", d.currentValue().toString());
                     Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL,
-                            d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL_VARIABLE));
+                            d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL_EXPRESSION));
                 }
             }
         };
@@ -290,10 +290,10 @@ public class Test_17_Container extends CommonTestRunner {
                 }
             }
             if ("m2".equals(d.methodInfo().name) && S.equals(d.variableName())) {
-                Assert.assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL_VARIABLE));
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
             }
             if ("m1".equals(d.methodInfo().name) && S.equals(d.variableName()) && "1".equals(d.statementId())) {
-                Assert.assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL_VARIABLE));
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
             }
         };
 

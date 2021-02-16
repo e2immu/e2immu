@@ -158,6 +158,13 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
      */
     @Test
     public void test1() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if (d.variable() instanceof ParameterInfo a && "a".equals(a.name) && ("0".equals(d.statementId()) || "1".equals(d.statementId()))) {
+                Assert.assertEquals("Statement " + d.statementId(),
+                        Level.TRUE, d.getProperty(VariableProperty.CONTEXT_NOT_NULL_DELAY_RESOLVED));
+            }
+        };
+
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("method2".equals(d.methodInfo().name)) {
                 if ("0.0.0".equals(d.statementId())) {
@@ -176,6 +183,7 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
             }
         };
         testClass("ConditionalChecks_1", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build(), new AnalyserConfiguration.Builder().setSkipTransformations(true).build());
     }
@@ -194,7 +202,7 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                     Assert.assertEquals(MultiLevel.NULLABLE,
                             d.parameterAnalyses().get(param).getProperty(VariableProperty.NOT_NULL_EXPRESSION));
                     Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL,
-                            d.parameterAnalyses().get(param).getProperty(VariableProperty.NOT_NULL_VARIABLE));
+                            d.parameterAnalyses().get(param).getProperty(VariableProperty.NOT_NULL_EXPRESSION));
                 }
 
                 Assert.assertEquals(0, d.methodAnalysis().getCompanionAnalyses().size());
@@ -285,7 +293,7 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                 if ("0".equals(d.statementId())) {
                     if (O5.equals(d.variableName())) {
                         int expectNN = d.iteration() == 0 ? Level.DELAY : MultiLevel.MUTABLE;
-                        Assert.assertEquals(expectNN, d.getProperty(VariableProperty.NOT_NULL_VARIABLE));
+                        Assert.assertEquals(expectNN, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
                         Assert.assertEquals(LinkedVariables.EMPTY, d.variableInfo().getStaticallyAssignedVariables());
                         Assert.assertEquals("nullable? instance type Object", d.currentValue().toString());
                         Assert.assertEquals("", d.variableInfo().getLinkedVariables().toString());
@@ -351,7 +359,7 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("method5".equals(d.methodInfo().name)) {
                 int expectNN = d.iteration() == 0 ? Level.DELAY : MultiLevel.NULLABLE;
-                Assert.assertEquals(expectNN, d.parameterAnalyses().get(0).getProperty(VariableProperty.NOT_NULL_VARIABLE));
+                Assert.assertEquals(expectNN, d.parameterAnalyses().get(0).getProperty(VariableProperty.NOT_NULL_EXPRESSION));
             }
         };
 

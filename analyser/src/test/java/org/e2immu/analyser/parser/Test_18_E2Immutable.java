@@ -84,7 +84,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
                 FieldInfo strings4 = d.methodInfo().typeInfo.getFieldByName("strings4", true);
                 VariableInfo vi = d.getFieldAsVariable(strings4);
                 assert vi != null;
-                Assert.assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL, vi.getProperty(VariableProperty.NOT_NULL_VARIABLE));
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL, vi.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
             }
 
             if ("mingle".equals(d.methodInfo().name)) {
@@ -94,7 +94,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
                     assert vi != null;
 
                     Assert.assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL,
-                            vi.getProperty(VariableProperty.NOT_NULL_VARIABLE));
+                            vi.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
                 }
                 // this method returns the input parameter
                 int expectMethodNN = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
@@ -116,7 +116,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
             if ("E2Immutable_3".equals(d.methodInfo().name) && d.variable() instanceof FieldReference fieldReference &&
                     "strings4".equals(fieldReference.fieldInfo.name)) {
                 Assert.assertEquals("ImmutableSet.copyOf(input4)", d.currentValue().toString());
-                Assert.assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL_VARIABLE));
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
             }
         };
 

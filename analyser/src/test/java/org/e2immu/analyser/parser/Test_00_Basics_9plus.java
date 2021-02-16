@@ -25,6 +25,7 @@ import org.e2immu.analyser.config.EvaluationResultVisitor;
 import org.e2immu.analyser.config.FieldAnalyserVisitor;
 import org.e2immu.analyser.config.MethodAnalyserVisitor;
 import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.model.ParameterAnalysis;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -40,14 +41,23 @@ public class Test_00_Basics_9plus extends CommonTestRunner {
     public void test_9() throws IOException {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("setContainsValueHelper".equals(d.methodInfo().name)) {
-                Assert.assertEquals("Basics_9.isFact(containsE)?containsE:!Basics_9.isKnown(true)&&retVal&&size>=1", d.evaluationResult().value().toString());
+                String expectValue = d.iteration() == 0 ?
+                        "<m:isFact>?<p:containsE>:!Basics_9.isKnown(true)&&<p:retVal>&&<p:size>>=1" :
+                        "Basics_9.isFact(containsE)?containsE:!Basics_9.isKnown(true)&&retVal&&size>=1";
+                Assert.assertEquals(expectValue, d.evaluationResult().value().toString());
                 Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL,
-                        d.evaluationResult().evaluationContext().getProperty(d.evaluationResult().value(), VariableProperty.NOT_NULL_EXPRESSION));
+                        d.evaluationResult().evaluationContext().getProperty(d.evaluationResult().value(),
+                                VariableProperty.NOT_NULL_EXPRESSION, false));
             }
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("isFact".equals(d.methodInfo().name) || "isKnown".equals(d.methodInfo().name)) {
-                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.methodAnalysis().getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL,
+                        d.methodAnalysis().getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                ParameterAnalysis p0 = d.parameterAnalyses().get(0);
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, p0.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
+                Assert.assertEquals("Method: " + d.methodInfo().name,
+                        MultiLevel.EFFECTIVELY_NOT_NULL, p0.getProperty(VariableProperty.NOT_NULL_PARAMETER));
             }
         };
         testClass("Basics_9", 0, 2, new DebugConfiguration.Builder()

@@ -213,7 +213,7 @@ public class Test_04_Warnings extends CommonTestRunner {
         TypeMapVisitor typeMapVisitor = typeMap -> {
             TypeInfo system = typeMap.get(System.class);
             FieldInfo out = system.getFieldByName("out", true);
-            int notNull = out.fieldAnalysis.get().getProperty(VariableProperty.NOT_NULL_VARIABLE);
+            int notNull = out.fieldAnalysis.get().getProperty(VariableProperty.NOT_NULL_EXPRESSION);
             Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, notNull);
             Assert.assertEquals(Level.TRUE, out.fieldAnalysis.get().getProperty(VariableProperty.IGNORE_MODIFICATIONS));
 
@@ -339,7 +339,7 @@ public class Test_04_Warnings extends CommonTestRunner {
 
                 Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL,
                         d.methodAnalysis().getProperty(VariableProperty.NOT_NULL_EXPRESSION));
-                Assert.assertEquals(MultiLevel.NULLABLE, parameterAnalysis.getProperty(VariableProperty.NOT_NULL_VARIABLE));
+                Assert.assertEquals(MultiLevel.NULLABLE, parameterAnalysis.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
 
                 Assert.assertEquals(Level.FALSE, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
                 Assert.assertEquals(Level.FALSE, parameterAnalysis.getProperty(VariableProperty.MODIFIED_VARIABLE));

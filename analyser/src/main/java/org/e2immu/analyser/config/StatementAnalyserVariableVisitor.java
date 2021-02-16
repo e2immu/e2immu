@@ -4,7 +4,6 @@ import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.variable.Variable;
 
-import java.util.Map;
 import java.util.Objects;
 
 public interface StatementAnalyserVariableVisitor {
@@ -34,7 +33,7 @@ public interface StatementAnalyserVariableVisitor {
         }
 
         public int getPropertyOfCurrentValue(VariableProperty variableProperty) {
-            return evaluationContext.getProperty(currentValue, variableProperty);
+            return evaluationContext.getProperty(currentValue, variableProperty, false);
         }
 
         @Override

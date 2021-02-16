@@ -25,6 +25,7 @@ import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterAnalysis;
+import org.e2immu.analyser.model.ParameterInfo;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -42,17 +43,31 @@ public class Test_00_Basics_1 extends CommonTestRunner {
     }
 
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-        if (BASICS_1.equals(d.methodInfo().name) && "0".equals(d.statementId())) {
+        if (BASICS_1.equals(d.methodInfo().name)) {
             if ("s1".equals(d.variableName())) {
-                Assert.assertEquals("p0", d.variableInfo().getLinkedVariables().toString());
+                if ("0".equals(d.statementId())) {
+                    Assert.assertEquals("p0", d.currentValue().toString());
+                    Assert.assertEquals("p0", d.variableInfo().getLinkedVariables().toString());
+                }
             }
-        }
-        if (BASICS_1.equals(d.methodInfo().name) && "1".equals(d.statementId())) {
             if (FIELD1.equals(d.variableName())) {
-                Assert.assertTrue(d.variableInfo().isAssigned());
-                Assert.assertEquals("p0", d.variableInfo().getLinkedVariables().toString());
+                if ("1".equals(d.statementId())) {
+                    Assert.assertTrue(d.variableInfo().isAssigned());
+                    Assert.assertEquals("p0", d.variableInfo().getLinkedVariables().toString());
+                }
+            }
+            if (d.variable() instanceof ParameterInfo p0 && "p0".equals(p0.name)) {
+                String expectValue = "nullable instance type Set<String>";
+                Assert.assertEquals(expectValue, d.currentValue().toString());
+                if ("0".equals(d.statementId())) {
+                    Assert.assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+                }
+                if ("1".equals(d.statementId())) {
+                    Assert.assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+                }
             }
         }
+
         if ("getF1".equals(d.methodInfo().name)) {
             if (FIELD1.equals(d.variableName())) {
                 Assert.assertTrue(d.variableInfo().isRead());
@@ -61,8 +76,7 @@ public class Test_00_Basics_1 extends CommonTestRunner {
                 } else {
                     Assert.assertEquals("", d.variableInfo().getLinkedVariables().toString());
                 }
-                String expectValue = d.iteration() == 0 ? "<field:org.e2immu.analyser.testexample.Basics_1.f1>"
-                        : "nullable? instance type Set<String>";
+                String expectValue = d.iteration() == 0 ? "<f:f1>" : "nullable instance type Set<String>";
                 Assert.assertEquals(expectValue, d.currentValue().toString());
                 int expectNN = d.iteration() == 0 ? Level.DELAY : MultiLevel.NULLABLE;
                 Assert.assertEquals(expectNN, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
@@ -74,7 +88,7 @@ public class Test_00_Basics_1 extends CommonTestRunner {
                 } else {
                     Assert.assertEquals("this.f1", d.variableInfo().getLinkedVariables().toString()); // without p0
                 }
-                String expectValue = d.iteration() == 0 ? "<field:org.e2immu.analyser.testexample.Basics_1.f1>" : "f1";
+                String expectValue = d.iteration() == 0 ? "<f:f1>" : "f1";
                 Assert.assertEquals(expectValue, d.currentValue().toString());
                 int expectNN = d.iteration() == 0 ? Level.DELAY : MultiLevel.NULLABLE;
                 Assert.assertEquals(expectNN, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
@@ -94,24 +108,30 @@ public class Test_00_Basics_1 extends CommonTestRunner {
     FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
         if ("f1".equals(d.fieldInfo().name)) {
             Assert.assertEquals(Level.TRUE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
-            Assert.assertEquals("p0", d.fieldAnalysis().getEffectivelyFinalValue().debugOutput());
-            Assert.assertEquals("p0", d.fieldAnalysis().getLinkedVariables().toString());
+            if (d.iteration() > 0) {
+                Assert.assertEquals("p0", d.fieldAnalysis().getEffectivelyFinalValue().debugOutput());
+                Assert.assertEquals("p0", d.fieldAnalysis().getLinkedVariables().toString());
+            }
             int expectModified = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
             Assert.assertEquals(expectModified, d.fieldAnalysis().getProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD));
-            Assert.assertEquals(MultiLevel.NULLABLE, d.fieldAnalysis().getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+            Assert.assertEquals(MultiLevel.NULLABLE, d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_NOT_NULL));
         }
     };
 
     MethodAnalyserVisitor methodAnalyserVisitor = d -> {
         if (BASICS_1.equals(d.methodInfo().name)) {
             ParameterAnalysis p0 = d.parameterAnalyses().get(0);
-            Assert.assertEquals(Level.FALSE, p0.getProperty(VariableProperty.CONTEXT_MODIFIED));
+            int expectContextModified = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
+            Assert.assertEquals(expectContextModified, p0.getProperty(VariableProperty.CONTEXT_MODIFIED));
             int expectModified = d.iteration() <= 1 ? Level.DELAY : Level.FALSE;
             Assert.assertEquals(expectModified, p0.getProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD));
             Assert.assertEquals(expectModified, p0.getProperty(VariableProperty.MODIFIED_VARIABLE));
 
+            int expectContextNotNull = d.iteration() == 0 ? Level.DELAY: MultiLevel.NULLABLE;
+            Assert.assertEquals(expectContextNotNull, p0.getProperty(VariableProperty.CONTEXT_NOT_NULL));
             int expectNN = d.iteration() == 0 ? Level.DELAY : MultiLevel.NULLABLE;
-            Assert.assertEquals(expectNN, p0.getProperty(VariableProperty.NOT_NULL_VARIABLE));
+            Assert.assertEquals(expectNN, p0.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
+            Assert.assertEquals(expectNN, p0.getProperty(VariableProperty.NOT_NULL_PARAMETER));
         }
         if ("getF1".equals(d.methodInfo().name)) {
             int expectMod = d.iteration() == 0 ? Level.DELAY : Level.FALSE;

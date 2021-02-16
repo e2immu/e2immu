@@ -45,7 +45,7 @@ public class Test_11_IfStatement extends CommonTestRunner {
                 }
                 if ("1".equals(d.statementId())) {
                     Assert.assertEquals("null==a?\"b\":a", d.currentValue().toString());
-                    Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL_VARIABLE));
+                    Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
                 }
             }
         };

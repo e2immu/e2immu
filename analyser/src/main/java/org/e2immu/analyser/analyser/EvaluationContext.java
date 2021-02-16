@@ -37,6 +37,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static org.e2immu.analyser.analyser.VariableProperty.*;
+
 /**
  * Defaults because of tests
  */
@@ -104,7 +106,7 @@ public interface EvaluationContext {
         return expression.getObjectFlow();
     }
 
-    default int getProperty(Expression value, VariableProperty variableProperty) {
+    default int getProperty(Expression value, VariableProperty variableProperty, boolean duringEvaluation) {
         if (value instanceof VariableExpression variableValue) {
             Variable variable = variableValue.variable();
             if (variable instanceof ParameterInfo parameterInfo) {
@@ -117,11 +119,11 @@ public interface EvaluationContext {
                 return getAnalyserContext().getTypeAnalysis(thisVariable.typeInfo).getProperty(variableProperty);
             }
             if (variable instanceof PreAspectVariable pre) {
-                return pre.valueForProperties().getProperty(this, variableProperty);
+                return pre.valueForProperties().getProperty(this, variableProperty, true);
             }
             throw new UnsupportedOperationException("Variable value of type " + variable.getClass());
         }
-        return value.getProperty(this, variableProperty); // will work in many cases
+        return value.getProperty(this, variableProperty, true); // will work in many cases
     }
 
     /*
@@ -171,8 +173,10 @@ public interface EvaluationContext {
         return LinkedVariables.EMPTY;
     }
 
+    Set<VariableProperty> VALUE_PROPERTIES = Set.of(IDENTITY, IMMUTABLE, CONTAINER, NOT_NULL_EXPRESSION);
+
     default Map<VariableProperty, Integer> getValueProperties(Expression value) {
-        return VariableProperty.VALUE_PROPERTIES.stream().collect(Collectors.toMap(vp -> vp, vp -> getProperty(value, vp)));
+        return VALUE_PROPERTIES.stream().collect(Collectors.toMap(vp -> vp, vp -> getProperty(value, vp, false)));
     }
 
     /*

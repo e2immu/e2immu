@@ -80,7 +80,7 @@ public class EvaluateParameters {
                         ParameterAnalysis parameterAnalysis = evaluationContext.getAnalyserContext().getParameterAnalysis(parameterInfo);
                         map = new HashMap<>();
                         map.put(VariableProperty.CONTEXT_MODIFIED, parameterAnalysis.getProperty(VariableProperty.MODIFIED_VARIABLE));
-                        map.put(VariableProperty.CONTEXT_NOT_NULL, parameterAnalysis.getProperty(VariableProperty.NOT_NULL_VARIABLE));
+                        map.put(VariableProperty.CONTEXT_NOT_NULL, parameterAnalysis.getProperty(VariableProperty.NOT_NULL_PARAMETER));
                         map.put(VariableProperty.NOT_MODIFIED_1, parameterAnalysis.getProperty(VariableProperty.NOT_MODIFIED_1));
                     }
                 } catch (RuntimeException e) {

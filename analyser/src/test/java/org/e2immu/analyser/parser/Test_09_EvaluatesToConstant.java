@@ -54,7 +54,7 @@ public class Test_09_EvaluatesToConstant extends CommonTestRunner {
             VariableInfo variableInfo = d.getReturnAsVariable();
             Assert.assertEquals("null==a?\"x\":a", variableInfo.getValue().toString());
             Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL,
-                    variableInfo.getProperty(VariableProperty.NOT_NULL_VARIABLE));
+                    variableInfo.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
         }
     };
 
@@ -63,7 +63,7 @@ public class Test_09_EvaluatesToConstant extends CommonTestRunner {
         if ("method2".equals(d.methodInfo().name) && "b".equals(d.variableName()) && "0".equals(d.statementId())) {
             Assert.assertEquals("null==param?\"x\":param", d.currentValue().toString());
             int expectNotNull = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
-            Assert.assertEquals(expectNotNull, d.currentValue().getProperty(d.evaluationContext(), VariableProperty.NOT_NULL_VARIABLE));
+            Assert.assertEquals(expectNotNull, d.currentValue().getProperty(d.evaluationContext(), VariableProperty.NOT_NULL_EXPRESSION, true));
             Assert.assertEquals("", d.variableInfo().getLinkedVariables().toString());
         }
 

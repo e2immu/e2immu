@@ -27,8 +27,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.IntStream;
 
-import static org.e2immu.analyser.analyser.VariableProperty.NOT_NULL_EXPRESSION;
-import static org.e2immu.analyser.analyser.VariableProperty.MODIFIED_OUTSIDE_METHOD;
+import static org.e2immu.analyser.analyser.VariableProperty.*;
 
 public interface ParameterAnalysis extends Analysis {
 
@@ -45,18 +44,16 @@ public interface ParameterAnalysis extends Analysis {
 
 
     enum AssignedOrLinked {
-        ASSIGNED(Set.of(NOT_NULL_EXPRESSION, MODIFIED_OUTSIDE_METHOD), Set.of()),
-        LINKED(Set.of(MODIFIED_OUTSIDE_METHOD), Set.of(NOT_NULL_EXPRESSION)),
-        NO(Set.of(), Set.of(NOT_NULL_EXPRESSION, MODIFIED_OUTSIDE_METHOD)),
-        DELAYED(null, null);
+        ASSIGNED(Set.of(EXTERNAL_NOT_NULL, MODIFIED_OUTSIDE_METHOD)),
+        LINKED(Set.of(MODIFIED_OUTSIDE_METHOD)),
+        NO(Set.of()),
+        DELAYED(null);
 
-        public static final Set<VariableProperty> PROPERTIES = Set.of(NOT_NULL_EXPRESSION, MODIFIED_OUTSIDE_METHOD);
+        public static final Set<VariableProperty> PROPERTIES = Set.of(EXTERNAL_NOT_NULL, MODIFIED_OUTSIDE_METHOD);
         private final Set<VariableProperty> propertiesToCopy;
-        private final Set<VariableProperty> propertiesToSetToFalse;
 
-        AssignedOrLinked(Set<VariableProperty> propertiesToCopy, Set<VariableProperty> propertiesToSetToFalse) {
+        AssignedOrLinked(Set<VariableProperty> propertiesToCopy) {
             this.propertiesToCopy = propertiesToCopy;
-            this.propertiesToSetToFalse = propertiesToSetToFalse;
         }
 
         public boolean isAssignedOrLinked() {
@@ -65,10 +62,6 @@ public interface ParameterAnalysis extends Analysis {
 
         public Set<VariableProperty> propertiesToCopy() {
             return propertiesToCopy;
-        }
-
-        public Set<VariableProperty> propertiesToSetToFalse() {
-            return propertiesToSetToFalse;
         }
     }
 
@@ -166,7 +159,10 @@ public interface ParameterAnalysis extends Analysis {
                 return Math.max(immutableFromType, MultiLevel.delayToFalse(internalGetProperty(VariableProperty.IMMUTABLE)));
             }
 
-            case NOT_NULL_VARIABLE:
+            case NOT_NULL_EXPRESSION:
+                return MultiLevel.NULLABLE;
+
+            case NOT_NULL_PARAMETER:
                 break; // go to internal, which will construct both constituents
 
             case CONTEXT_NOT_NULL: {
@@ -174,10 +170,10 @@ public interface ParameterAnalysis extends Analysis {
                 if (Primitives.isPrimitiveExcludingVoid(bestType)) return MultiLevel.EFFECTIVELY_NOT_NULL;
                 break;
             }
-            case NOT_NULL_EXPRESSION: {
+            case EXTERNAL_NOT_NULL: {
                 TypeInfo bestType = parameterInfo.parameterizedType.bestTypeInfo();
                 if (Primitives.isPrimitiveExcludingVoid(bestType)) return MultiLevel.EFFECTIVELY_NOT_NULL;
-                return getParameterPropertyCheckOverrides(analysisProvider, parameterInfo, NOT_NULL_EXPRESSION);
+                return getParameterPropertyCheckOverrides(analysisProvider, parameterInfo, EXTERNAL_NOT_NULL);
             }
 
             case NOT_MODIFIED_1:
@@ -189,6 +185,19 @@ public interface ParameterAnalysis extends Analysis {
             default:
         }
         return internalGetProperty(variableProperty);
+    }
+
+
+    default int getPropertyVerifyContracted(VariableProperty variableProperty) {
+        int v = getProperty(variableProperty);
+        // special code to catch contracted values
+        if (variableProperty == EXTERNAL_NOT_NULL || variableProperty == NOT_NULL_EXPRESSION) {
+            return MultiLevel.bestNotNull(v, getProperty(NOT_NULL_PARAMETER));
+        }
+        if (variableProperty == MODIFIED_OUTSIDE_METHOD) {
+            return MultiLevel.bestNotNull(v, getProperty(MODIFIED_VARIABLE));
+        }
+        return v;
     }
 
 }

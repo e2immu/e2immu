@@ -218,7 +218,7 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                     Assert.assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
                     int expectNotNull = d.iteration() == 0 ? Level.DELAY : MultiLevel.NULLABLE;
                     //      Assert.assertEquals(expectNotNull, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
-                    //      Assert.assertEquals(expectNotNull, d.getProperty(VariableProperty.NOT_NULL_VARIABLE));
+                    //      Assert.assertEquals(expectNotNull, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
                 }
             }
             if ("getS".equals(d.methodInfo().name)) {
@@ -233,7 +233,7 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                     int expectNotNull = d.iteration() == 0 ? Level.DELAY : MultiLevel.NULLABLE;
                     Assert.assertEquals(expectNotNull, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
                     Assert.assertEquals(expectNotNull, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
-                    Assert.assertEquals(expectNotNull, d.getProperty(VariableProperty.NOT_NULL_VARIABLE));
+                    Assert.assertEquals(expectNotNull, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
 
                     int expectModifiedOutside = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
                     Assert.assertEquals(expectModifiedOutside, d.getProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD));
@@ -249,7 +249,7 @@ public class Test_00_Basics_3 extends CommonTestRunner {
 
                     Assert.assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
                     Assert.assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
-                    Assert.assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.NOT_NULL_VARIABLE));
+                    Assert.assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
                 }
                 if (d.variable() instanceof ReturnVariable) {
                     Assert.assertEquals(GET_S_RET_VAR, d.variableName());
@@ -260,7 +260,7 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                     int expectNotNull = d.iteration() == 0 ? Level.DELAY : MultiLevel.NULLABLE;
                     Assert.assertEquals(expectNotNull, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
                     Assert.assertEquals(expectNotNull, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
-                    Assert.assertEquals(expectNotNull, d.getProperty(VariableProperty.NOT_NULL_VARIABLE));
+                    Assert.assertEquals(expectNotNull, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
                 }
             }
         };

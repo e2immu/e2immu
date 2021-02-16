@@ -274,7 +274,8 @@ public class ShallowTypeAnalyser implements AnalyserContext {
                             }
                         }
                     });
-                    builder.fromAnnotationsIntoProperties(false, true, methodInfo.methodInspection.get().getAnnotations(),
+                    builder.fromAnnotationsIntoProperties(VariableProperty.NOT_NULL_EXPRESSION,
+                            false, true, methodInfo.methodInspection.get().getAnnotations(),
                             e2ImmuAnnotationExpressions);
                 } else {
                     MethodAnalyser methodAnalyser = either.getLeft();
@@ -313,7 +314,8 @@ public class ShallowTypeAnalyser implements AnalyserContext {
                                              TypeAnalysisImpl.Builder typeAnalysisBuilder,
                                              E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
         TypeInspection typeInspection = typeInfo.typeInspection.get();
-        messages.addAll(typeAnalysisBuilder.fromAnnotationsIntoProperties(false, true, typeInspection.getAnnotations(), e2ImmuAnnotationExpressions));
+        messages.addAll(typeAnalysisBuilder.fromAnnotationsIntoProperties(null,
+                false, true, typeInspection.getAnnotations(), e2ImmuAnnotationExpressions));
 
         TypeAnalyser.findAspects(typeAnalysisBuilder, typeInfo);
         typeAnalysisBuilder.approvedPreconditions.freeze();
@@ -331,7 +333,7 @@ public class ShallowTypeAnalyser implements AnalyserContext {
         FieldAnalysisImpl.Builder fieldAnalysisBuilder = new FieldAnalysisImpl.Builder(primitives, AnalysisProvider.DEFAULT_PROVIDER,
                 fieldInfo, fieldInfo.owner.typeAnalysis.get());
 
-        messages.addAll(fieldAnalysisBuilder.fromAnnotationsIntoProperties(true, true,
+        messages.addAll(fieldAnalysisBuilder.fromAnnotationsIntoProperties(VariableProperty.EXTERNAL_NOT_NULL, true, true,
                 fieldInfo.fieldInspection.get().getAnnotations(), e2ImmuAnnotationExpressions));
 
         // the following code is here to save some @Final annotations in annotated APIs where there already is a `final` keyword.

@@ -32,7 +32,11 @@ import org.e2immu.analyser.output.Text;
 
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.Predicate;
+
+import static org.e2immu.analyser.analyser.VariableProperty.INDEPENDENT;
+import static org.e2immu.analyser.analyser.VariableProperty.MODIFIED_METHOD;
 
 /*
  can only be created as the single result value of a method
@@ -110,12 +114,17 @@ public record InlinedMethod(MethodInfo methodInfo, Expression expression,
         return methodInfo.distinguishingName().compareTo(mv.methodInfo.distinguishingName());
     }
 
+    /*
+    an inline method has properties on the method, and properties on the expression. these are on the method.
+    */
+    private final static Set<VariableProperty> METHOD_PROPERTIES_IN_INLINE_SAM = Set.of(MODIFIED_METHOD, INDEPENDENT);
+
     @Override
-    public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
-        if (VariableProperty.METHOD_PROPERTIES_IN_INLINE_SAM.contains(variableProperty)) {
+    public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty, boolean duringEvaluation) {
+        if (METHOD_PROPERTIES_IN_INLINE_SAM.contains(variableProperty)) {
             return evaluationContext.getAnalyserContext().getMethodAnalysis(methodInfo).getProperty(variableProperty);
         }
-        return evaluationContext.getProperty(expression, variableProperty);
+        return evaluationContext.getProperty(expression, variableProperty, duringEvaluation);
     }
 
     @Override

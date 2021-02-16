@@ -62,6 +62,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         VariableInfo outside = previous.current();
         VariableInfoImpl initial = new VariableInfoImpl(outside.variable(), NOT_YET_ASSIGNED,
                 NOT_YET_READ, NOT_A_VARIABLE_FIELD, Set.of());
+        initial.newVariable();
         initial.setValue(outside.getValue(), outside.isDelayed());
         if (outside.getLinkedVariables() != LinkedVariables.DELAY)
             initial.setLinkedVariables(outside.getLinkedVariables());
@@ -80,6 +81,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
                                                         VariableInLoop variableInLoop,
                                                         boolean statementHasSubBlocks) {
         VariableInfoImpl initial = new VariableInfoImpl(variable, NOT_YET_ASSIGNED, NOT_YET_READ, statementTime, Set.of());
+        initial.newVariable();
         return new VariableInfoContainerImpl(variableInLoop, Either.right(initial), statementHasSubBlocks ? new SetOnce<>() : null, null);
     }
 
@@ -93,6 +95,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
                                                              boolean statementHasSubBlocks) {
         VariableInfoImpl initial = new VariableInfoImpl(variable, index + Level.INITIAL,
                 index + Level.EVALUATION, NOT_A_VARIABLE_FIELD, Set.of());
+        initial.newVariable();
         initial.setValue(value, false);
         initial.setLinkedVariables(LinkedVariables.EMPTY);
         return new VariableInfoContainerImpl(VariableInLoop.NOT_IN_LOOP,
@@ -111,6 +114,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
                                                             VariableInLoop variableInLoop,
                                                             boolean statementHasSubBlocks) {
         VariableInfoImpl initial = new VariableInfoImpl(variable, assignedId, readId, VariableInfoContainer.NOT_A_VARIABLE_FIELD, Set.of());
+        initial.newVariable();
         initial.setValue(value, false);
         properties.forEach(initial::setProperty);
         initial.setLinkedVariables(linkedVariables);
@@ -234,7 +238,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         ensureNotFrozen();
         Objects.requireNonNull(variableProperty);
         VariableInfoImpl variableInfo = switch (level) {
-            case INITIAL -> (VariableInfoImpl) getPreviousOrInitial();// FIXME verify that this is good?
+            case INITIAL -> (VariableInfoImpl) getPreviousOrInitial();
             case EVALUATION -> evaluation.get();
             case MERGE -> this.merge == null || !this.merge.isSet() ? evaluation.get() : this.merge.get();
         };

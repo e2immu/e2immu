@@ -148,7 +148,7 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
                     String expectValue = d.iteration() == 0 ? "<method:org.e2immu.analyser.testexample.Basics_6.someMinorMethod(java.lang.String)>" : "v3";
                     Assert.assertEquals(expectValue, d.currentValue().toString());
                     int expectNotNull = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
-                    Assert.assertEquals(expectNotNull, d.getProperty(VariableProperty.NOT_NULL_VARIABLE));
+                    Assert.assertEquals(expectNotNull, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
                 }
             }
             if ("test5".equals(d.methodInfo().name) && FIELD.equals(d.variableName())) {
@@ -254,7 +254,7 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
             TypeInfo system = typeMap.get(System.class);
             FieldInfo out = system.getFieldByName("out", true);
             Assert.assertEquals(Level.TRUE, out.fieldAnalysis.get().getProperty(VariableProperty.FINAL));
-            Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, out.fieldAnalysis.get().getProperty(VariableProperty.NOT_NULL_VARIABLE));
+            Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, out.fieldAnalysis.get().getProperty(VariableProperty.NOT_NULL_EXPRESSION));
             // only the contract one is set!
             Assert.assertEquals(MultiLevel.NULLABLE, out.fieldAnalysis.get().getProperty(VariableProperty.NOT_NULL_EXPRESSION));
 
@@ -275,7 +275,7 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
                 Assert.assertFalse(d.methodInfo().methodResolution.get().allowsInterrupts());
                 ParameterAnalysis p0 = d.parameterAnalyses().get(0);
                 int expectNotNull = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
-                Assert.assertEquals(expectNotNull, p0.getProperty(VariableProperty.NOT_NULL_VARIABLE));
+                Assert.assertEquals(expectNotNull, p0.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
             }
             if ("nonPrivateMethod".equals(d.methodInfo().name)) {
                 Assert.assertTrue(d.methodInfo().methodResolution.get().allowsInterrupts());

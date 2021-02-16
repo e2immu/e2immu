@@ -691,4 +691,7 @@ public class ParameterizedType {
         return best.equals(otherBest) && arrays == other.arrays;
     }
 
+    public int defaultNotNull() {
+        return Primitives.isPrimitiveExcludingVoid(this) ? MultiLevel.EFFECTIVELY_NOT_NULL : MultiLevel.NULLABLE;
+    }
 }

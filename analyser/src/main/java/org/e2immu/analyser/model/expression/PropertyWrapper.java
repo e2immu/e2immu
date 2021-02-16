@@ -75,7 +75,7 @@ public class PropertyWrapper implements Expression, ExpressionWrapper {
                                              Map<VariableProperty, Integer> properties, ObjectFlow objectFlow) {
         Map<VariableProperty, Integer> newMap = new HashMap<>();
         for (Map.Entry<VariableProperty, Integer> entry : properties.entrySet()) {
-            int newPropertyValue = evaluationContext.getProperty(value, entry.getKey());
+            int newPropertyValue = evaluationContext.getProperty(value, entry.getKey(), false);
             if (newPropertyValue < entry.getValue()) {
                 newMap.put(entry.getKey(), entry.getValue());
             }
@@ -143,10 +143,10 @@ public class PropertyWrapper implements Expression, ExpressionWrapper {
     }
 
     @Override
-    public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
+    public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty, boolean duringEvaluation) {
         int inMap = properties.getOrDefault(variableProperty, Level.DELAY);
         if (inMap != Level.DELAY) return inMap;
-        return evaluationContext.getProperty(expression, variableProperty);
+        return evaluationContext.getProperty(expression, variableProperty, duringEvaluation);
     }
 
     @Override

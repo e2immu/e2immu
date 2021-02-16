@@ -31,6 +31,8 @@ import org.e2immu.analyser.util.Logger;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static org.e2immu.analyser.analyser.VariableProperty.IMMUTABLE;
+import static org.e2immu.analyser.analyser.VariableProperty.NOT_NULL_EXPRESSION;
 import static org.e2immu.analyser.util.Logger.log;
 
 public class EvaluateMethodCall {
@@ -151,7 +153,7 @@ public class EvaluateMethodCall {
             return builder.compose(reInline).setExpression(reInline.value()).build();
         }
 
-        if(methodAnalysis.isBeingAnalysed()) {
+        if (methodAnalysis.isBeingAnalysed()) {
             // singleReturnValue implies non-modifying
             if (methodAnalysis.getSingleReturnValue() != null) {
                 // if this method was identity?
@@ -249,7 +251,7 @@ public class EvaluateMethodCall {
 
     private static Boolean nonModifying(EvaluationContext evaluationContext, Expression expression) {
         if (expression instanceof MethodCall) {
-            int modified = evaluationContext.getProperty(expression, VariableProperty.MODIFIED_METHOD);
+            int modified = evaluationContext.getProperty(expression, VariableProperty.MODIFIED_METHOD, false);
             if (modified == Level.DELAY) {
                 return null;
             }
@@ -423,6 +425,8 @@ public class EvaluateMethodCall {
     }
 
 
+    private final static VariableProperty[] PROPERTIES_IN_METHOD_RESULT_WRAPPER = {NOT_NULL_EXPRESSION, IMMUTABLE};
+
     private static Expression computeIdentity(EvaluationContext evaluationContext,
                                               MethodInfo methodInfo,
                                               MethodAnalysis methodAnalysis,
@@ -437,7 +441,7 @@ public class EvaluateMethodCall {
         if (identity != Level.TRUE) return null;
 
         Map<VariableProperty, Integer> map = new HashMap<>();
-        for (VariableProperty property : VariableProperty.PROPERTIES_IN_METHOD_RESULT_WRAPPER) {
+        for (VariableProperty property : PROPERTIES_IN_METHOD_RESULT_WRAPPER) {
             int v = methodAnalysis.getProperty(property);
             if (v != Level.DELAY) map.put(property, v);
         }

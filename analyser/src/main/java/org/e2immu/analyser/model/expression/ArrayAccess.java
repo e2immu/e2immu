@@ -104,7 +104,7 @@ public class ArrayAccess implements Expression {
     }
 
     @Override
-    public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
+    public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty, boolean duringEvaluation) {
         throw new UnsupportedOperationException("Not yet evaluated");
     }
 

@@ -65,7 +65,7 @@ public record ContractMark(String mark) implements Expression {
     }
 
     @Override
-    public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
+    public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty, boolean duringEvaluation) {
         return Level.FALSE;
     }
 

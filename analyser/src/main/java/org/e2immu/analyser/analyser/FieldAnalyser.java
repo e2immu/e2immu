@@ -255,12 +255,7 @@ public class FieldAnalyser extends AbstractAnalyser {
     for methods which only read, we only wait for not-null delays to be resolved.
      */
     private AnalysisStatus analyseNotNull(SharedState sharedState) {
-        int contract = fieldAnalysis.getProperty(VariableProperty.NOT_NULL_VARIABLE);
-        if (contract != Level.DELAY) {
-            fieldAnalysis.setProperty(VariableProperty.NOT_NULL_EXPRESSION, contract);
-            return DONE;
-        }
-        if (fieldAnalysis.getProperty(VariableProperty.NOT_NULL_EXPRESSION) != Level.DELAY) return DONE;
+        if (fieldAnalysis.getProperty(VariableProperty.EXTERNAL_NOT_NULL) != Level.DELAY) return DONE;
 
         int isFinal = fieldAnalysis.getProperty(VariableProperty.FINAL);
         if (isFinal == Level.DELAY) {
@@ -270,7 +265,7 @@ public class FieldAnalyser extends AbstractAnalyser {
         if (isFinal == Level.FALSE && (!haveInitialiser || fieldCanBeWrittenFromOutsideThisType)) {
             log(NOT_NULL, "Field {} cannot be @NotNull: it is not @Final, or has no initialiser, "
                     + " or it can be assigned to from outside this class", fieldInfo.fullyQualifiedName());
-            fieldAnalysis.setProperty(VariableProperty.NOT_NULL_EXPRESSION, MultiLevel.NULLABLE);
+            fieldAnalysis.setProperty(VariableProperty.EXTERNAL_NOT_NULL, MultiLevel.NULLABLE);
             return DONE;
         }
 
@@ -300,14 +295,14 @@ public class FieldAnalyser extends AbstractAnalyser {
         EvaluationContext evaluationContext = new EvaluationContextImpl(sharedState.iteration,
                 ConditionManager.initialConditionManager(analyserContext.getPrimitives()), sharedState.closure);
         int worstOverValues = fieldAnalysis.values.get().stream()
-                .mapToInt(expression -> evaluationContext.getProperty(expression, VariableProperty.NOT_NULL_EXPRESSION))
+                .mapToInt(expression -> evaluationContext.getProperty(expression, VariableProperty.NOT_NULL_EXPRESSION, false))
                 .min().orElse(MultiLevel.NULLABLE);
 
         int finalNotNullValue = MultiLevel.bestNotNull(MultiLevel.NULLABLE,
                 MultiLevel.bestNotNull(worstOverValues, bestOverContext));
         log(NOT_NULL, "Set property @NotNull on field {} to value {}", fieldInfo.fullyQualifiedName(), finalNotNullValue);
 
-        fieldAnalysis.setProperty(VariableProperty.NOT_NULL_EXPRESSION, finalNotNullValue);
+        fieldAnalysis.setProperty(VariableProperty.EXTERNAL_NOT_NULL, finalNotNullValue);
         return DONE;
     }
 
@@ -382,7 +377,7 @@ public class FieldAnalyser extends AbstractAnalyser {
         EvaluationContext evaluationContext = new EvaluationContextImpl(sharedState.iteration,
                 ConditionManager.initialConditionManager(analyserContext.getPrimitives()), sharedState.closure);
         int valueFromAssignment = fieldAnalysis.values.get().stream()
-                .mapToInt(expression -> evaluationContext.getProperty(expression, VariableProperty.IMMUTABLE))
+                .mapToInt(expression -> evaluationContext.getProperty(expression, VariableProperty.IMMUTABLE, false))
                 .min()
                 .orElse(MultiLevel.MUTABLE);
         int breakDelays = valueFromAssignment == Level.DELAY && allDelaysResolved ?
@@ -538,7 +533,7 @@ public class FieldAnalyser extends AbstractAnalyser {
                 if (!parameter.isConstant()) {
                     EvaluationContext evaluationContext = new EvaluationContextImpl(0, // IMPROVE
                             ConditionManager.initialConditionManager(fieldAnalysis.primitives), null);
-                    int immutable = evaluationContext.getProperty(parameter, VariableProperty.IMMUTABLE);
+                    int immutable = evaluationContext.getProperty(parameter, VariableProperty.IMMUTABLE, false);
                     if (immutable == Level.DELAY) return null;
                     if (!MultiLevel.isEffectivelyNotNull(immutable)) return false;
                     Boolean recursively = recursivelyConstant(parameter);
@@ -841,25 +836,29 @@ public class FieldAnalyser extends AbstractAnalyser {
         }
 
         @Override
-        public int getProperty(Expression value, VariableProperty variableProperty) {
+        public int getProperty(Expression value, VariableProperty variableProperty, boolean duringEvaluation) {
             if (value instanceof VariableExpression variableValue) {
                 Variable variable = variableValue.variable();
-                return getProperty(variable, variableProperty == VariableProperty.NOT_NULL_EXPRESSION ?
-                        VariableProperty.NOT_NULL_EXPRESSION : variableProperty);
+                return getProperty(variable, variableProperty == VariableProperty.NOT_NULL_EXPRESSION  ?
+                        VariableProperty.EXTERNAL_NOT_NULL : variableProperty);
             }
-            return value.getProperty(this, variableProperty);
+            return value.getProperty(this, variableProperty, true);
         }
 
         @Override
         public int getProperty(Variable variable, VariableProperty variableProperty) {
             if (variable instanceof FieldReference fieldReference) {
-                return getAnalyserContext().getFieldAnalysis(fieldReference.fieldInfo).getProperty(variableProperty);
+                VariableProperty vp = variableProperty == VariableProperty.NOT_NULL_EXPRESSION
+                        ? VariableProperty.EXTERNAL_NOT_NULL : variableProperty;
+                return getAnalyserContext().getFieldAnalysis(fieldReference.fieldInfo).getProperty(vp);
             }
             if (variable instanceof This thisVariable) {
                 return getAnalyserContext().getTypeAnalysis(thisVariable.typeInfo).getProperty(variableProperty);
             }
             if (variable instanceof ParameterInfo parameterInfo) {
-                return getAnalyserContext().getParameterAnalysis(parameterInfo).getProperty(variableProperty);
+                VariableProperty vp = variableProperty == VariableProperty.NOT_NULL_EXPRESSION
+                        ? VariableProperty.NOT_NULL_PARAMETER : variableProperty;
+                return getAnalyserContext().getParameterAnalysis(parameterInfo).getProperty(vp);
             }
             throw new UnsupportedOperationException("?? variable of " + variable.getClass());
         }

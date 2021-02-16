@@ -217,17 +217,17 @@ public class Test_01_Loops extends CommonTestRunner {
                     // first, understanding how this works...
                     Primitives primitives = d.evaluationContext().getCurrentStatement().statementAnalysis.primitives;
                     NewObject string1 = NewObject.forTesting(primitives, primitives.stringParameterizedType);
-                    Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, string1.getProperty(d.evaluationContext(), VariableProperty.NOT_NULL_EXPRESSION));
+                    Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, string1.getProperty(d.evaluationContext(), VariableProperty.NOT_NULL_EXPRESSION, true));
                     Map<VariableProperty, Integer> map = Map.of(VariableProperty.NOT_NULL_EXPRESSION, MultiLevel.NULLABLE);
                     Expression string1Wrapped = PropertyWrapper.propertyWrapperForceProperties(string1, map);
-                    Assert.assertEquals(MultiLevel.NULLABLE, string1Wrapped.getProperty(d.evaluationContext(), VariableProperty.NOT_NULL_EXPRESSION));
+                    Assert.assertEquals(MultiLevel.NULLABLE, string1Wrapped.getProperty(d.evaluationContext(), VariableProperty.NOT_NULL_EXPRESSION, true));
                     Expression inline = EvaluateInlineConditional.conditionalValueConditionResolved(d.evaluationContext(),
                             GreaterThanZero.greater(d.evaluationContext(), NewObject.forTesting(primitives, primitives.intParameterizedType),
                                     new IntConstant(primitives, 0), true),
                             new StringConstant(primitives, "abc"),
                             string1Wrapped, ObjectFlow.NO_FLOW).value();
                     Assert.assertEquals(END_RESULT_NO_OPERATIONS, inline.toString());
-                    Assert.assertEquals(MultiLevel.NULLABLE, inline.getProperty(d.evaluationContext(), VariableProperty.NOT_NULL_EXPRESSION));
+                    Assert.assertEquals(MultiLevel.NULLABLE, inline.getProperty(d.evaluationContext(), VariableProperty.NOT_NULL_EXPRESSION, true));
                 }
             }
         };
@@ -284,7 +284,7 @@ public class Test_01_Loops extends CommonTestRunner {
             if ("1".equals(d.statementId())) {
                 Assert.assertEquals("{\"a\",\"b\",\"c\"}", d.evaluationResult().value().toString());
                 Assert.assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL, d.evaluationResult().value()
-                        .getProperty(d.evaluationResult().evaluationContext(), VariableProperty.NOT_NULL_EXPRESSION));
+                        .getProperty(d.evaluationResult().evaluationContext(), VariableProperty.NOT_NULL_EXPRESSION, true));
             }
             if ("1.0.0".equals(d.statementId()) && d.iteration() > 0) {
                 Assert.assertEquals("s$1", d.evaluationResult().value().toString());
@@ -299,10 +299,10 @@ public class Test_01_Loops extends CommonTestRunner {
                     if (d.iteration() == 0) {
                         Assert.assertEquals("<variable:s>", d.currentValue().toString());
                         Assert.assertEquals(LinkedVariables.DELAY_STRING, d.variableInfo().getLinkedVariables().toString());
-                        Assert.assertEquals(Level.DELAY, d.getProperty(VariableProperty.NOT_NULL_VARIABLE));
+                        Assert.assertEquals(Level.DELAY, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
                     } else {
                         // the ENN has been set on s$1, not on s
-                        Assert.assertEquals(Level.DELAY, d.getProperty(VariableProperty.NOT_NULL_VARIABLE));
+                        Assert.assertEquals(Level.DELAY, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
                         Assert.assertEquals("instance type String", d.currentValue().toString());
                         Assert.assertEquals("", d.variableInfo().getLinkedVariables().toString());
                     }
@@ -312,7 +312,7 @@ public class Test_01_Loops extends CommonTestRunner {
                 Assert.assertTrue(d.iteration() > 0);
                 if ("1.0.0".equals(d.statementId())) {
                     Assert.assertEquals("nullable? instance type String", d.currentValue().toString());
-                    Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL_VARIABLE));
+                    Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
                     Assert.assertEquals("s", d.variableInfo().getLinkedVariables().toString());
                 }
             }
@@ -324,7 +324,7 @@ public class Test_01_Loops extends CommonTestRunner {
                 String expectLinked = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "res";
                 Assert.assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
                 int expectNN = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
-                Assert.assertEquals(expectNN, d.getProperty(VariableProperty.NOT_NULL_VARIABLE));
+                Assert.assertEquals(expectNN, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
             }
             if ("res".equals(d.variableName())) {
                 if ("1.0.0".equals(d.statementId())) {
@@ -335,7 +335,7 @@ public class Test_01_Loops extends CommonTestRunner {
                 }
                 if ("2".equals(d.statementId())) {
                     int expectNn = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
-                    Assert.assertEquals(expectNn, d.getProperty(VariableProperty.NOT_NULL_VARIABLE));
+                    Assert.assertEquals(expectNn, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
                     String expect = d.iteration() == 0 ? "<variable:res>" : "instance type String";
                     Assert.assertEquals(expect, d.currentValue().toString());
                 }

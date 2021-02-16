@@ -45,7 +45,7 @@ public enum VariableProperty {
 
     /*
     in fields, external not null is the truth
-    in statements in a method, external not null needs combined with context not null (not null variable)
+    in statements in a method, external not null needs combined with context not null (not null variable) and not null expression
     the method result is stored in not null expression
 
      */
@@ -53,14 +53,16 @@ public enum VariableProperty {
     CONTEXT_MODIFIED("modified in context"),
     MODIFIED_OUTSIDE_METHOD("modified outside method"),
 
-    // the ones corresponding to annotations
+    EXTERNAL_NOT_NULL("external @NotNull", MultiLevel.NULLABLE, MultiLevel.EFFECTIVELY_CONTENT2_NOT_NULL,
+            MultiLevel.NULLABLE, MultiLevel.EFFECTIVELY_NOT_NULL, new VariableProperty[0]),
 
     NOT_NULL_EXPRESSION("@NotNull", MultiLevel.NULLABLE, MultiLevel.EFFECTIVELY_CONTENT2_NOT_NULL,
             MultiLevel.NULLABLE, MultiLevel.EFFECTIVELY_NOT_NULL, new VariableProperty[0]),
 
-    NOT_NULL_VARIABLE("@NotNull variable", MultiLevel.NULLABLE, MultiLevel.EFFECTIVELY_CONTENT2_NOT_NULL,
+    // in parameter analyser, combination
+    NOT_NULL_PARAMETER("@NotNull parameter", MultiLevel.NULLABLE, MultiLevel.EFFECTIVELY_CONTENT2_NOT_NULL,
             MultiLevel.NULLABLE, MultiLevel.EFFECTIVELY_NOT_NULL,
-            new VariableProperty[]{NOT_NULL_EXPRESSION, CONTEXT_NOT_NULL}),
+            new VariableProperty[]{EXTERNAL_NOT_NULL, CONTEXT_NOT_NULL}),
 
     FINAL("@Final", Level.FALSE, Level.TRUE, Level.FALSE, Level.TRUE, new VariableProperty[0]),
 
@@ -125,26 +127,18 @@ public enum VariableProperty {
         throw new UnsupportedOperationException();
     }
 
-    public final static Set<VariableProperty> PROPERTIES_IN_METHOD_RESULT_WRAPPER = Set.of(NOT_NULL_EXPRESSION, IMMUTABLE);
     /*
     Properties of return variables, initially set to false, finally copied to the method's properties.
-    NotNull is handled separately, because the property changes from NOT_NULL_VARIABLE to NOT_NULL_EXPRESSION
+    NotNull is handled separately, because the property changes from NOT_NULL_EXPRESSION to NOT_NULL_EXPRESSION
      */
     public final static Set<VariableProperty> READ_FROM_RETURN_VALUE_PROPERTIES = Set.of(IDENTITY, IMMUTABLE, CONTAINER); // +NOT_NULL by hand
-    /*
-    an inline method has properties on the method, and properties on the expression. these are on the method.
-     */
-    public final static Set<VariableProperty> METHOD_PROPERTIES_IN_INLINE_SAM = Set.of(MODIFIED_METHOD, INDEPENDENT);
-    public static final Set<VariableProperty> CHECK_WORSE_THAN_PARENT = Set.of(NOT_NULL_VARIABLE, MODIFIED_VARIABLE);
+
+    public static final Set<VariableProperty> CHECK_WORSE_THAN_PARENT = Set.of(NOT_NULL_PARAMETER, MODIFIED_VARIABLE);
 
     /*
     copy from field, parameter, this/type to variable, once a value has been determined.
      */
     public static final Set<VariableProperty> FROM_ANALYSER_TO_PROPERTIES
-            = Set.of(IDENTITY, FINAL, NOT_NULL_EXPRESSION, MODIFIED_OUTSIDE_METHOD, IMMUTABLE, CONTAINER, NOT_MODIFIED_1);
-
-    public static final Set<VariableProperty> VALUE_PROPERTIES = Set.of(IDENTITY, IMMUTABLE, CONTAINER, NOT_NULL_EXPRESSION);
-
-    public static final VariableProperty[] CONTEXT_PROPERTIES = {VariableProperty.CONTEXT_NOT_NULL, VariableProperty.CONTEXT_MODIFIED};
+            = Set.of(IDENTITY, FINAL, EXTERNAL_NOT_NULL, MODIFIED_OUTSIDE_METHOD, IMMUTABLE, CONTAINER, NOT_MODIFIED_1);
 
 }

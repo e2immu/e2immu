@@ -93,6 +93,12 @@ public record EvaluationResult(EvaluationContext evaluationContext,
         return value;
     }
 
+    /*
+    This version of the method redirects to the original, after checking with immediate CNN on variables.
+    Example: 'a.x() && a != null' will simplify to 'a.x()', as 'a' will have CNN=5 after evaluating the first part
+    of the expression.
+     */
+
     public boolean isNotNull0() {
         assert evaluationContext != null;
         if (value instanceof VariableExpression variableExpression) {
@@ -140,10 +146,6 @@ public record EvaluationResult(EvaluationContext evaluationContext,
 
         public boolean haveContextMethodDelay() {
             return properties.getOrDefault(VariableProperty.CONTEXT_MODIFIED_DELAY, Level.DELAY) == Level.TRUE;
-        }
-
-        public boolean haveContextNotNullDelay() {
-            return properties.getOrDefault(VariableProperty.CONTEXT_NOT_NULL_DELAY, Level.DELAY) == Level.TRUE;
         }
 
         public boolean haveDelaysCausedByMethodCalls() {
@@ -253,6 +255,13 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                     addCircularCallOrUndeclaredFunctionalInterface);
         }
 
+        /**
+         * Primary method to generate Context Not Null on a variable.
+         *
+         * @param variable        the variable which occurs in the not null context
+         * @param value           the variable's value. This can be a variable expression again (redirect).
+         * @param notNullRequired the minimal not null requirement; must be > NULLABLE.
+         */
         public void variableOccursInNotNullContext(Variable variable, Expression value, int notNullRequired) {
             assert evaluationContext != null;
             assert value != null;
@@ -264,26 +273,33 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                 return; // great, no problem, no reason to complain nor increase the property
             }
 
-            // if the variable has a value, and this value is NOT @NotNull, then we'll raise a warning
-            int notNullExpression = getPropertyFromInitial(variable, VariableProperty.NOT_NULL_EXPRESSION);
-            int contextNotNull = getPropertyFromInitial(variable, VariableProperty.CONTEXT_NOT_NULL);
-            boolean valueIsDelayed = evaluationContext.isDelayed(value);
-            if (notNullExpression == MultiLevel.FALSE && !valueIsDelayed
-                    // complain, but complain only once
-                    && contextNotNull < MultiLevel.EFFECTIVELY_NOT_NULL) {
-                Message message = Message.newMessage(evaluationContext.getLocation(), Message.POTENTIAL_NULL_POINTER_EXCEPTION,
-                        "Variable: " + variable.simpleName());
-                messages.add(message);
+            int notNullValue = value.getProperty(evaluationContext, VariableProperty.NOT_NULL_EXPRESSION, true);
+            if (notNullValue <= MultiLevel.NULLABLE) { // also do delayed values
+                // so intrinsically we can have null.
+                // if context not null is already high enough, don't complain
+                int contextNotNull = getPropertyFromInitial(variable, VariableProperty.CONTEXT_NOT_NULL);
+                int externalNotNull = getPropertyFromInitial(variable, VariableProperty.EXTERNAL_NOT_NULL);
+                // the NewObject situation with a real externalNotNull < contextNotNull allows for a message on parameters
+                int notNullForException = value instanceof NewObject &&
+                        externalNotNull < contextNotNull && externalNotNull != Level.DELAY
+                        ? externalNotNull : contextNotNull;
+                boolean valueIsDelayed = evaluationContext.isDelayed(value);
+                // TODO external not null delays to be implemented.
+                if (notNullForException == MultiLevel.FALSE && !valueIsDelayed) {
+                    Message message = Message.newMessage(evaluationContext.getLocation(), Message.POTENTIAL_NULL_POINTER_EXCEPTION,
+                            "Variable: " + variable.simpleName());
+                    messages.add(message);
+                }
             }
 
             // regardless of what's going on with the external not-null, we set context not null
             setProperty(variable, VariableProperty.CONTEXT_NOT_NULL, notNullRequired);
             if (value instanceof VariableExpression redirectViaValue) {
                 setProperty(redirectViaValue.variable(), VariableProperty.CONTEXT_NOT_NULL, notNullRequired);
-            } else if (valueIsDelayed) {
-                for (Variable staticRedirect : evaluationContext.getStaticallyAssignedVariables(variable, statementTime).variables()) {
-                    setProperty(staticRedirect, VariableProperty.CONTEXT_NOT_NULL, notNullRequired);
-                }
+            }
+            // the static redirects may overlap with the dynamic redirect, but don't have to
+            for (Variable staticRedirect : evaluationContext.getStaticallyAssignedVariables(variable, statementTime).variables()) {
+                setProperty(staticRedirect, VariableProperty.CONTEXT_NOT_NULL, notNullRequired);
             }
         }
 
@@ -291,7 +307,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             if (expression instanceof VariableExpression variableExpression) {
                 return getPropertyFromInitial(variableExpression.variable(), variableProperty);
             }
-            return evaluationContext.getProperty(expression, variableProperty);
+            return evaluationContext.getProperty(expression, variableProperty, true);
         }
 
         /*

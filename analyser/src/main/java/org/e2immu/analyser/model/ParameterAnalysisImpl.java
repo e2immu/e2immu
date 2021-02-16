@@ -152,7 +152,7 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
             doNotModified1(e2ImmuAnnotationExpressions);
 
             // @NotNull, @Size
-            doNotNull(e2ImmuAnnotationExpressions, getProperty(VariableProperty.NOT_NULL_VARIABLE));
+            doNotNull(e2ImmuAnnotationExpressions, getProperty(VariableProperty.NOT_NULL_PARAMETER));
         }
 
         public boolean addAssignedToField(FieldInfo fieldInfo, AssignedOrLinked assignedOrLinked) {

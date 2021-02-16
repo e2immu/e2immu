@@ -587,9 +587,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         AnalysisStatus analysisStatus = statementAnalysis.flowData.computeGuaranteedToBeReachedReturnUnreachable
                 (sharedState.previous, execution, state, stateIsDelayed, localConditionManagerIsDelayed);
         if (analysisStatus == DONE_ALL) {
-            if (!statementAnalysis.inErrorState(Message.UNREACHABLE_STATEMENT)) {
-                statementAnalysis.ensure(Message.newMessage(getLocation(), Message.UNREACHABLE_STATEMENT));
-            }
+            statementAnalysis.ensure(Message.newMessage(getLocation(), Message.UNREACHABLE_STATEMENT));
             return DONE_ALL; // means: don't run any of the other steps!!
         }
         return analysisStatus;
@@ -715,8 +713,9 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                     vic.setProperty(CONTEXT_NOT_NULL, breakValue, EVALUATION);
                 }
             }
-            if (resolveDelays(changeData, vi, vic, CONTEXT_MODIFIED_DELAY, CONTEXT_MODIFIED_DELAY_RESOLVED))
+            if (resolveDelays(changeData, vi, vic, CONTEXT_MODIFIED_DELAY, CONTEXT_MODIFIED_DELAY_RESOLVED)) {
                 status = DELAYS;
+            }
 
             // always break content delays unless explicitly warned about them
 
@@ -774,10 +773,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             VariableInfo initial = statementAnalysis.findOrNull(ve.variable(), EVALUATION);
             return initial.noContextNotNullDelay() ? initial.getProperty(CONTEXT_NOT_NULL) : Level.DELAY;
         }
-        if (Primitives.isPrimitiveExcludingVoid(vi.variable().parameterizedType())) {
-            return MultiLevel.EFFECTIVELY_NOT_NULL;
-        }
-        return MultiLevel.NULLABLE;
+        return vi.variable().parameterizedType().defaultNotNull();
     }
 
     /*
@@ -802,7 +798,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             int change = changeData.getOrDefault(k, Level.DELAY);
             switch (k) {
                 case CONTEXT_NOT_NULL -> {
-                    if (changeData.getOrDefault(CONTEXT_NOT_NULL_DELAY, Level.DELAY) != Level.TRUE) {
+                    if (changeData.getOrDefault(CONTEXT_NOT_NULL_DELAY, Level.DELAY) != Level.TRUE &&
+                            previous.getOrDefault(CONTEXT_NOT_NULL_DELAY_RESOLVED, Level.DELAY) == Level.TRUE) {
                         int best = Math.max(prev, change);
                         if (best != Level.DELAY) res.put(k, best);
                     }
@@ -823,6 +820,9 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 }
             }
         });
+        if (previous.getOrDefault(CONTEXT_NOT_NULL_DELAY_RESOLVED, Level.DELAY) != Level.TRUE) {
+            res.put(CONTEXT_NOT_NULL_DELAY, Level.TRUE); // we'll have to wait for prev, we cannot break yet
+        }
         return res;
     }
 
@@ -837,6 +837,9 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         int delayedVi = vi.getProperty(delay);
         // so if we combine those two, we can write that delays have been resolved
         if (delayedVi == Level.TRUE && delayedChange == Level.DELAY) {
+            vic.setProperty(delayResolved, Level.TRUE, EVALUATION);
+        }
+        if (delayedChange != Level.TRUE) {
             vic.setProperty(delayResolved, Level.TRUE, EVALUATION);
         }
         return delayedChange == Level.TRUE;
@@ -1306,9 +1309,6 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             assert value != null; // EmptyExpression in case there really is no value
             boolean valueIsDelayed = sharedState.evaluationContext.isDelayed(value) || statusPost == DELAYS;
 
-            //if (statementAnalysis.statement instanceof ReturnStatement) {
-            //    statusPost = step3_Return(sharedState, value).combine(statusPost);
-            //} else
             if (statementAnalysis.statement instanceof ForEachStatement) {
                 step3_ForEach(sharedState, value);
             } else if (!valueIsDelayed && (statementAnalysis.statement instanceof IfElseStatement ||
@@ -1376,7 +1376,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
     // a special case, which allows us to set not null
     private void step3_ForEach(SharedState sharedState, Expression value) {
         boolean variableNotNull = sharedState.evaluationContext
-                .getProperty(value, NOT_NULL_EXPRESSION) >= MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL;
+                .getProperty(value, NOT_NULL_EXPRESSION, false) >= MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL;
         Structure structure = statementAnalysis.statement.getStructure();
         LocalVariableCreation lvc = (LocalVariableCreation) structure.initialisers().get(0);
         String copy = lvc.localVariable.name() + "$" + index();
@@ -2021,40 +2021,48 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                     disableEvaluationOfMethodCallsUsingCompanionMethods);
         }
 
-        // we already do a check for the local condition manager here
+        /*
+        differs sufficiently from the regular getProperty, in that it fast tracks as soon as one of the not nulls
+        reaches EFFECTIVELY_NOT_NULL, and that it always reads from the initial value of variables.
+         */
 
         @Override
         public boolean isNotNull0(Expression value) {
-            // contrary to the getProperty method, we look at the initial value in case of a variable
-            if (value instanceof VariableExpression ve) {
+            if (value instanceof IsVariableExpression ve) {
                 VariableInfo variableInfo = findForReading(ve.variable(), getInitialStatementTime(), true);
-                int v = variableInfo.getProperty(NOT_NULL_VARIABLE);
-                if (notNullAccordingToConditionManager(ve.variable()))
-                    return true;
-                return v >= MultiLevel.EFFECTIVELY_NOT_NULL;
+                if (variableInfo.getValue() instanceof IsVariableExpression redirect) {
+                    // there cannot be an infinite loop, as only one redirect is allowed.
+                    return isNotNull0(redirect);
+                }
+                Expression varValue = variableInfo.getValue();
+                int enn = getProperty(varValue, NOT_NULL_EXPRESSION, true);
+                if (enn >= MultiLevel.EFFECTIVELY_NOT_NULL) return true;
+                int cnn = variableInfo.getProperty(CONTEXT_NOT_NULL);
+                if (cnn >= MultiLevel.EFFECTIVELY_NOT_NULL) return true;
+                return notNullAccordingToConditionManager(ve.variable());
             }
-            return MultiLevel.isEffectivelyNotNull(getProperty(value, NOT_NULL_EXPRESSION));
+            return MultiLevel.isEffectivelyNotNull(getProperty(value, NOT_NULL_EXPRESSION, true));
         }
 
         @Override
-        public int getProperty(Expression value, VariableProperty variableProperty) {
+        public int getProperty(Expression value, VariableProperty variableProperty, boolean duringEvaluation) {
             // IMPORTANT: here we do not want to catch VariableValues wrapped in the PropertyWrapper
-            if (value instanceof VariableExpression ve) {
-                if (Primitives.isPrimitiveExcludingVoid(ve.variable().parameterizedType())) {
-                    if (variableProperty == NOT_NULL_VARIABLE || variableProperty == NOT_NULL_EXPRESSION)
-                        return MultiLevel.EFFECTIVELY_NOT_NULL;
-                }
+            if (value instanceof IsVariableExpression ve) {
 
-                int v = statementAnalysis.getPropertyOfCurrent(ve.variable(), variableProperty);
-                if (NOT_NULL_EXPRESSION == variableProperty && notNullAccordingToConditionManager(ve.variable())) {
-                    return MultiLevel.bestNotNull(MultiLevel.EFFECTIVELY_NOT_NULL, v);
+                if (variableProperty == NOT_NULL_EXPRESSION) {
+
                 }
-                return v;
+                // read what's in the property map (all values should be there) at CURRENT level
+                if (duringEvaluation) {
+                    return getPropertyFromPreviousOrInitial(ve.variable(), variableProperty, getInitialStatementTime());
+                }
+                return getProperty(ve.variable(), variableProperty);
             }
 
             if (NOT_NULL_EXPRESSION == variableProperty) {
-                if (Primitives.isPrimitiveExcludingVoid(value.returnType())) return MultiLevel.EFFECTIVELY_NOT_NULL;
-                int directNN = value.getProperty(this, NOT_NULL_EXPRESSION);
+                int directNN = value.getProperty(this, NOT_NULL_EXPRESSION, true);
+                assert !Primitives.isPrimitiveExcludingVoid(value.returnType()) || directNN == MultiLevel.EFFECTIVELY_NOT_NULL;
+
                 if (directNN >= MultiLevel.EFFECTIVELY_NOT_NULL) return directNN;
                 Expression valueIsNotNull = Negation.negate(this, Equals.equals(this,
                         value, NullConstant.NULL_CONSTANT, ObjectFlow.NO_FLOW, false));
@@ -2068,7 +2076,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             // redirect to Value.getProperty()
             // this is the only usage of this method; all other evaluation of a Value in an evaluation context
             // must go via the current method
-            return value.getProperty(this, variableProperty);
+            return value.getProperty(this, variableProperty, true);
 
         }
 

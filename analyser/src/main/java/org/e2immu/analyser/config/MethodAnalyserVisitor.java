@@ -21,7 +21,7 @@ public interface MethodAnalyserVisitor {
                 Supplier<Stream<Message>> messageStream) {
 
         public int getProperty(Expression value, VariableProperty variableProperty) {
-            return evaluationContext.getProperty(value, variableProperty);
+            return evaluationContext.getProperty(value, variableProperty, false);
         }
 
         public VariableInfo getFieldAsVariable(FieldInfo fieldInfo) {

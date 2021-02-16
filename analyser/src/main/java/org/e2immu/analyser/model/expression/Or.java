@@ -258,7 +258,7 @@ public record Or(Primitives primitives,
     }
 
     @Override
-    public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
+    public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty, boolean duringEvaluation) {
         return UnknownExpression.primitiveGetProperty(variableProperty);
     }
 

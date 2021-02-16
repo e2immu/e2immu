@@ -84,18 +84,6 @@ public interface Analysis {
         return Level.DELAY;
     }
 
-    default int getPropertyVerifyContracted(VariableProperty variableProperty) {
-        int v = getProperty(variableProperty);
-        // special code to catch contracted values
-        if (variableProperty == NOT_NULL_EXPRESSION) {
-            return MultiLevel.bestNotNull(v, getProperty(NOT_NULL_VARIABLE));
-        }
-        if (variableProperty == MODIFIED_OUTSIDE_METHOD) {
-            return MultiLevel.bestNotNull(v, getProperty(MODIFIED_VARIABLE));
-        }
-        return v;
-    }
-
     Location location();
 
     default AnnotationMode annotationMode() {

@@ -111,7 +111,7 @@ public class ParameterAnalyser {
         });
     }
 
-    record SharedState() {
+    record SharedState(int iteration) {
     }
 
     public final AnalyserComponents<String, SharedState> analyserComponents = new AnalyserComponents.Builder<String, SharedState>()
@@ -124,9 +124,9 @@ public class ParameterAnalyser {
      * Copy properties from an effectively final field  (FINAL=Level.TRUE) to the parameter that is is assigned to.
      * Does not apply to variable fields.
      */
-    public AnalysisStatus analyse() {
+    public AnalysisStatus analyse(int iteration) {
         try {
-            return analyserComponents.run(new SharedState());
+            return analyserComponents.run(new SharedState(iteration));
         } catch (RuntimeException rte) {
             LOGGER.warn("Caught exception in parameter analyser, {}", new Location(parameterInfo));
             throw rte;
@@ -136,22 +136,26 @@ public class ParameterAnalyser {
     private AnalysisStatus analyseFields(SharedState sharedState) {
         boolean changed = false;
         boolean delays = false;
+        int contracted = 0;
 
         int contractModified = parameterAnalysis.getProperty(VariableProperty.MODIFIED_VARIABLE);
         if (contractModified != Level.DELAY && !parameterAnalysis.properties.isSet(VariableProperty.MODIFIED_OUTSIDE_METHOD)) {
             parameterAnalysis.setProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD, contractModified);
             changed = true;
+            contracted++;
         }
-        int contractNotNull = parameterAnalysis.getProperty(VariableProperty.NOT_NULL_VARIABLE);
-        if (contractNotNull != Level.DELAY && !parameterAnalysis.properties.isSet(VariableProperty.NOT_NULL_EXPRESSION)) {
-            parameterAnalysis.setProperty(VariableProperty.NOT_NULL_EXPRESSION, contractNotNull);
+        int contractNotNull = parameterAnalysis.getProperty(VariableProperty.NOT_NULL_PARAMETER);
+        if (contractNotNull != Level.DELAY && !parameterAnalysis.properties.isSet(VariableProperty.EXTERNAL_NOT_NULL)) {
+            parameterAnalysis.setProperty(VariableProperty.EXTERNAL_NOT_NULL, contractNotNull);
             changed = true;
+            contracted++;
         }
-        if (parameterAnalysis.properties.isSet(VariableProperty.MODIFIED_OUTSIDE_METHOD) &&
-                parameterAnalysis.properties.isSet(VariableProperty.NOT_NULL_EXPRESSION)) {
+        if (contracted == 2) {
             parameterAnalysis.resolveFieldDelays();
             return DONE;
         }
+        // no point, we need to have seen the statement+field analysers first.
+        if(sharedState.iteration == 0) return DELAYS;
 
         // find a field that's linked to me; bail out when not all field's values are set.
         for (FieldInfo fieldInfo : parameterInfo.owner.typeInfo.typeInspection.get().fields()) {
@@ -197,7 +201,7 @@ public class ParameterAnalyser {
         }
 
         for (VariableProperty variableProperty : PROPERTIES) {
-            if (!parameterAnalysis.properties.isSet(variableProperty)  && !propertiesDelayed.contains(variableProperty)) {
+            if (!parameterAnalysis.properties.isSet(variableProperty) && !propertiesDelayed.contains(variableProperty)) {
                 parameterAnalysis.setProperty(variableProperty, variableProperty.falseValue);
                 log(ANALYSER, "Wrote false to parameter {} for property {}", parameterInfo.fullyQualifiedName(),
                         variableProperty);
@@ -205,8 +209,8 @@ public class ParameterAnalyser {
             }
         }
         assert delays || parameterAnalysis.properties.isSet(VariableProperty.MODIFIED_OUTSIDE_METHOD) &&
-                parameterAnalysis.properties.isSet(VariableProperty.NOT_NULL_EXPRESSION);
-        
+                parameterAnalysis.properties.isSet(VariableProperty.EXTERNAL_NOT_NULL);
+
         if (delays) {
             return changed ? PROGRESS : DELAYS;
         }
@@ -240,13 +244,19 @@ public class ParameterAnalyser {
         return linked.variables().contains(parameterInfo) ? LINKED : NO;
     }
 
+    public static final VariableProperty[] CONTEXT_PROPERTIES = {VariableProperty.CONTEXT_NOT_NULL,
+            VariableProperty.CONTEXT_MODIFIED};
+
     private AnalysisStatus analyseContext(SharedState sharedState) {
+        // no point, we need to have seen the statement+field analysers first.
+        if(sharedState.iteration == 0) return DELAYS;
+
         // context not null, context modified
         MethodAnalysis methodAnalysis = analysisProvider.getMethodAnalysis(parameterInfo.owner);
         VariableInfo vi = methodAnalysis.getLastStatement().getLatestVariableInfo(parameterInfo.fullyQualifiedName());
         boolean delayFromContext = false;
         boolean changed = false;
-        for (VariableProperty variableProperty : VariableProperty.CONTEXT_PROPERTIES) {
+        for (VariableProperty variableProperty : CONTEXT_PROPERTIES) {
             if (!parameterAnalysis.properties.isSet(variableProperty)) {
                 if (vi.noContextDelay(variableProperty)) {
                     int value = vi.getProperty(variableProperty, variableProperty.falseValue);
@@ -268,6 +278,9 @@ public class ParameterAnalyser {
     }
 
     private AnalysisStatus checkUnusedParameter(SharedState sharedState) {
+        // no point, we need to have seen the statement+field analysers first.
+        if(sharedState.iteration == 0) return DELAYS;
+
         StatementAnalysis lastStatementAnalysis = analysisProvider.getMethodAnalysis(parameterInfo.owner)
                 .getLastStatement();
         VariableInfo vi = lastStatementAnalysis == null ? null :
@@ -276,7 +289,9 @@ public class ParameterAnalyser {
             // unused variable
             parameterAnalysis.setProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD, Level.FALSE);
             parameterAnalysis.setProperty(VariableProperty.CONTEXT_MODIFIED, Level.FALSE);
-            parameterAnalysis.setProperty(VariableProperty.NOT_NULL_EXPRESSION, MultiLevel.NULLABLE);
+
+            int notNull = parameterInfo.parameterizedType.defaultNotNull();
+            parameterAnalysis.setProperty(VariableProperty.EXTERNAL_NOT_NULL, notNull);
             parameterAnalysis.setProperty(VariableProperty.CONTEXT_NOT_NULL, MultiLevel.NULLABLE);
             parameterAnalysis.setProperty(VariableProperty.NOT_MODIFIED_1, Level.FALSE);
 

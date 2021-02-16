@@ -17,8 +17,9 @@
 
 package org.e2immu.analyser.model.expression;
 
+import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.variable.Variable;
 
-public interface IsVariableExpression {
+public interface IsVariableExpression extends Expression {
     Variable variable();
 }

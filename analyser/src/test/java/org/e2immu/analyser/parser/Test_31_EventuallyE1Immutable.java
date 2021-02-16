@@ -33,14 +33,14 @@ import org.junit.Test;
 
 import java.io.IOException;
 
-public class Test_31_EventuallyE1Immutable_0 extends CommonTestRunner {
+public class Test_31_EventuallyE1Immutable extends CommonTestRunner {
 
     @Test
     public void test_0() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("setString".equals(d.methodInfo().name) || "setString2".equals(d.methodInfo().name)) {
                 if ("2".equals(d.statementId()) && d.variable() instanceof FieldReference fr && "string".equals(fr.fieldInfo.name)) {
-                    int notNull = d.getProperty(VariableProperty.NOT_NULL_VARIABLE);
+                    int notNull = d.getProperty(VariableProperty.NOT_NULL_EXPRESSION);
                     Assert.assertNotEquals(MultiLevel.NULLABLE, notNull);
                 }
             }

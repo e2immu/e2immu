@@ -49,7 +49,7 @@ public record UnknownExpression(ParameterizedType parameterizedType, String msg)
     }
 
     @Override
-    public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
+    public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty, boolean duringEvaluation) {
         return primitiveGetProperty(variableProperty);
     }
 
@@ -60,7 +60,6 @@ public record UnknownExpression(ParameterizedType parameterizedType, String msg)
             case CONTAINER:
                 return Level.TRUE;
             case NOT_NULL_EXPRESSION:
-            case NOT_NULL_VARIABLE:
                 return MultiLevel.EFFECTIVELY_NOT_NULL;
             case CONTEXT_MODIFIED:
             case CONTEXT_MODIFIED_DELAY:

@@ -45,7 +45,7 @@ Test_00_Basics_0 extends CommonTestRunner {
     // value only comes in second iteration
     EvaluationResultVisitor evaluationResultVisitor = d -> {
         if (d.methodInfo().name.equals("getExplicitlyFinal") && "0".equals(d.statementId())) {
-            String expectValue = d.iteration() == 0 ? "<field:org.e2immu.analyser.testexample.Basics_0.explicitlyFinal>" : "\"abc\"";
+            String expectValue = d.iteration() == 0 ? "<f:explicitlyFinal>" : "\"abc\"";
             Assert.assertEquals(expectValue, d.evaluationResult().value().toString());
 
             Assert.assertEquals(d.iteration() == 0, d.evaluationResult().someValueWasDelayed());
@@ -95,11 +95,11 @@ Test_00_Basics_0 extends CommonTestRunner {
             }
             // the return value
             Assert.assertEquals((TYPE + ".getExplicitlyFinal()"), d.variableName());
-            String expectReturn = d.iteration() == 0 ? "<field:org.e2immu.analyser.testexample.Basics_0.explicitlyFinal>" : "\"abc\"";
+            String expectReturn = d.iteration() == 0 ? "<f:explicitlyFinal>" : "\"abc\"";
             Assert.assertEquals(expectReturn, d.currentValue().toString());
 
             int expectNotNull = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
-            Assert.assertEquals(expectNotNull, d.getProperty(VariableProperty.NOT_NULL_VARIABLE));
+            Assert.assertEquals(expectNotNull, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
 
             if (d.iteration() == 0) {
                 Assert.assertSame(LinkedVariables.DELAY, d.variableInfo().getLinkedVariables());

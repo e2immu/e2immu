@@ -38,7 +38,7 @@ public class Test_05_FinalChecks extends CommonTestRunner {
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
         if ("setS4".equals(d.methodInfo().name) && S4.equals(d.variableName())) {
             int expectNotNull = d.iteration() <= 2 ? Level.DELAY : MultiLevel.NULLABLE;
-            Assert.assertEquals(expectNotNull, d.getProperty(VariableProperty.NOT_NULL_VARIABLE)); // nothing that points to not null
+            Assert.assertEquals(expectNotNull, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION)); // nothing that points to not null
         }
         if (d.methodInfo().name.equals("setS4") && P4.equals(d.variableName())) {
             if ("0".equals(d.statementId())) {
@@ -47,7 +47,7 @@ public class Test_05_FinalChecks extends CommonTestRunner {
 
                 Assert.assertTrue(d.variableInfo().isRead());
                 int expectNotNull = d.iteration() <= 2 ? Level.DELAY : MultiLevel.NULLABLE;
-                Assert.assertEquals(expectNotNull, d.getProperty(VariableProperty.NOT_NULL_VARIABLE)); // nothing that points to not null
+                Assert.assertEquals(expectNotNull, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION)); // nothing that points to not null
             } else Assert.fail();
         }
 
@@ -66,7 +66,7 @@ public class Test_05_FinalChecks extends CommonTestRunner {
                 String expectValue = d.iteration() == 0 ? "s1+<field:org.e2immu.analyser.testexample.FinalChecks.s3>" : "s1+\"abc\"";
                 Assert.assertEquals(expectValue, d.currentValue().toString());
                 Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL_EXPRESSION));
-                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL_VARIABLE)); // nothing that points to not null
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION)); // nothing that points to not null
 
                 if (d.iteration() > 0) {
                     Assert.assertTrue(d.currentValue().isInstanceOf(StringConcat.class));

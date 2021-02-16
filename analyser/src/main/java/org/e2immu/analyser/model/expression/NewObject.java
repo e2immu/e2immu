@@ -67,38 +67,36 @@ public record NewObject(MethodInfo constructor,
                                                   Expression state,
                                                   ObjectFlow objectFlow) {
         return new NewObject(arrayCreationConstructor, parameterizedType, Diamond.NO,
-                parameterExpressions, MultiLevel.EFFECTIVELY_NOT_NULL, null, arrayInitializer, state, objectFlow);
+                parameterExpressions, MultiLevel.EFFECTIVELY_NOT_NULL, null, arrayInitializer, state,
+                objectFlow);
     }
 
     /*
     used in MethodCall and Field analyser (in the former to enrich with, in the latter to get rid of, state)
      */
     public NewObject copyWithNewState(Expression newState) {
-        return new NewObject(constructor, parameterizedType, diamond, parameterExpressions, MultiLevel.EFFECTIVELY_NOT_NULL,
+        return new NewObject(constructor, parameterizedType, diamond, parameterExpressions,
+                MultiLevel.EFFECTIVELY_NOT_NULL,
                 anonymousClass, arrayInitializer, newState, objectFlow);
     }
 
     public NewObject copyAfterModifyingMethodOnConstructor(Expression newState) {
-        return new NewObject(null, parameterizedType, diamond, List.of(), MultiLevel.EFFECTIVELY_NOT_NULL, null, null,
+        return new NewObject(null, parameterizedType, diamond, List.of(),
+                MultiLevel.EFFECTIVELY_NOT_NULL, null, null,
                 newState, getObjectFlow());
     }
 
     public static NewObject forTesting(Primitives primitives, ParameterizedType parameterizedType) {
-        return new NewObject(null, parameterizedType, Diamond.SHOW_ALL, List.of(), MultiLevel.EFFECTIVELY_NOT_NULL, null, null,
+        return new NewObject(null, parameterizedType, Diamond.SHOW_ALL, List.of(),
+                MultiLevel.EFFECTIVELY_NOT_NULL, null, null,
                 new BooleanConstant(primitives, true), ObjectFlow.NO_FLOW);
     }
 
     // never null, never more interesting.
     public static NewObject forCatchOrThis(Primitives primitives, ParameterizedType parameterizedType) {
         Diamond diamond = parameterizedType.parameters.isEmpty() ? Diamond.NO : Diamond.SHOW_ALL;
-        return new NewObject(null, parameterizedType, diamond, List.of(), MultiLevel.EFFECTIVELY_NOT_NULL, null, null,
-                new BooleanConstant(primitives, true), ObjectFlow.NO_FLOW);
-    }
-
-    public static NewObject forForEach(Primitives primitives, ParameterizedType parameterizedType, boolean notNull) {
-        Diamond diamond = parameterizedType.parameters.isEmpty() ? Diamond.NO : Diamond.SHOW_ALL;
-        return new NewObject(null, parameterizedType, diamond, List.of(),
-                notNull ? MultiLevel.EFFECTIVELY_NOT_NULL : MultiLevel.NULLABLE, null, null,
+        return new NewObject(null, parameterizedType, diamond, List.of(), MultiLevel.EFFECTIVELY_NOT_NULL,
+                null, null,
                 new BooleanConstant(primitives, true), ObjectFlow.NO_FLOW);
     }
 
@@ -108,32 +106,42 @@ public record NewObject(MethodInfo constructor,
      */
 
     public static NewObject localVariableInLoop(Primitives primitives, ParameterizedType parameterizedType) {
-        return new NewObject(null, parameterizedType, Diamond.SHOW_ALL, List.of(), Level.DELAY, null, null,
+        return new NewObject(null, parameterizedType, Diamond.SHOW_ALL, List.of(),
+                parameterizedType.defaultNotNull(), null, null,
                 new BooleanConstant(primitives, true), ObjectFlow.NO_FLOW);
     }
 
-    public static NewObject localCopyOfVariableField(Primitives primitives, ParameterizedType parameterizedType, ObjectFlow objectFlow) {
-        return new NewObject(null, parameterizedType, Diamond.SHOW_ALL, List.of(), Level.DELAY, null, null,
+    public static NewObject localCopyOfVariableField(Primitives primitives, ParameterizedType parameterizedType,
+                                                     ObjectFlow objectFlow) {
+        return new NewObject(null, parameterizedType, Diamond.SHOW_ALL, List.of(),
+                parameterizedType.defaultNotNull(), null, null,
                 new BooleanConstant(primitives, true), objectFlow);
     }
 
     /*
     not-null always in properties
      */
-    public static NewObject initialValueOfParameter(ParameterizedType parameterizedType, Expression state, ObjectFlow objectFlow) {
-        return new NewObject(null, parameterizedType, Diamond.SHOW_ALL, List.of(), Level.DELAY, null, null,
-                state, objectFlow);
+    public static NewObject initialValueOfParameter(ParameterizedType parameterizedType, Expression state,
+                                                    int contractNotNull, ObjectFlow objectFlow) {
+        return new NewObject(null, parameterizedType, Diamond.SHOW_ALL, List.of(), contractNotNull,
+                null, null, state, objectFlow);
     }
 
-    public static NewObject initialValueOfFieldPartOfConstruction(EvaluationContext evaluationContext, FieldReference fieldReference, ObjectFlow objectFlow) {
+    public static NewObject initialValueOfFieldPartOfConstruction(EvaluationContext evaluationContext,
+                                                                  FieldReference fieldReference,
+                                                                  ObjectFlow objectFlow) {
         int notNull = evaluationContext.getProperty(fieldReference, VariableProperty.NOT_NULL_EXPRESSION);
-        return new NewObject(null, fieldReference.parameterizedType(), Diamond.SHOW_ALL, List.of(), notNull, null, null,
+        return new NewObject(null, fieldReference.parameterizedType(), Diamond.SHOW_ALL, List.of(),
+                notNull, null, null,
                 new BooleanConstant(evaluationContext.getPrimitives(), true), objectFlow);
     }
 
     /* like a local variable in loop*/
-    public static NewObject initialValueOfField(Primitives primitives, ParameterizedType parameterizedType, ObjectFlow objectFlow) {
-        return new NewObject(null, parameterizedType, Diamond.SHOW_ALL, List.of(), Level.DELAY, null, null,
+    public static NewObject initialValueOfField(Primitives primitives,
+                                                ParameterizedType parameterizedType,
+                                                ObjectFlow objectFlow) {
+        return new NewObject(null, parameterizedType, Diamond.SHOW_ALL, List.of(),
+                parameterizedType.defaultNotNull(), null, null,
                 new BooleanConstant(primitives, true), objectFlow);
     }
 
@@ -142,20 +150,26 @@ public record NewObject(MethodInfo constructor,
                                                         ParameterizedType parameterizedType,
                                                         int minimalNotNull,
                                                         ObjectFlow objectFlow) {
-        return new NewObject(null, parameterizedType, Diamond.SHOW_ALL, List.of(), minimalNotNull, null, null,
-                new BooleanConstant(primitives, true), objectFlow);
+        return new NewObject(null, parameterizedType, Diamond.SHOW_ALL, List.of(), minimalNotNull,
+                null, null, new BooleanConstant(primitives, true), objectFlow);
     }
 
     // null-status derived from variable in evaluation context
     public static NewObject genericMergeResult(Primitives primitives, VariableInfo variableInfo) {
+        int notNull = MultiLevel.bestNotNull(variableInfo.getProperty(VariableProperty.NOT_NULL_EXPRESSION),
+                variableInfo.variable().parameterizedType().defaultNotNull());
         return new NewObject(null, variableInfo.variable().parameterizedType(),
-                Diamond.SHOW_ALL, List.of(), variableInfo.getProperty(VariableProperty.NOT_NULL_VARIABLE), null, null,
+                Diamond.SHOW_ALL, List.of(), notNull, null, null,
                 new BooleanConstant(primitives, true), variableInfo.getObjectFlow());
     }
 
-    public static NewObject genericArrayAccess(EvaluationContext evaluationContext, Expression array, Variable variable, ObjectFlow objectFlow) {
-        int notNull = evaluationContext.getProperty(array, VariableProperty.NOT_NULL_VARIABLE);
-        return new NewObject(null, variable.parameterizedType(), Diamond.SHOW_ALL, List.of(), notNull, null, null,
+    public static NewObject genericArrayAccess(EvaluationContext evaluationContext,
+                                               Expression array,
+                                               Variable variable,
+                                               ObjectFlow objectFlow) {
+        int notNull = evaluationContext.getProperty(array, VariableProperty.NOT_NULL_EXPRESSION, true);
+        return new NewObject(null, variable.parameterizedType(), Diamond.SHOW_ALL, List.of(), notNull,
+                null, null,
                 new BooleanConstant(evaluationContext.getPrimitives(), true), objectFlow);
     }
 
@@ -176,8 +190,11 @@ public record NewObject(MethodInfo constructor,
 
     cannot be null, we're applying a method on it.
      */
-    public static NewObject forGetInstance(Primitives primitives, ParameterizedType parameterizedType, ObjectFlow objectFlow) {
-        return new NewObject(null, parameterizedType, Diamond.SHOW_ALL, List.of(), MultiLevel.EFFECTIVELY_NOT_NULL, null, null,
+    public static NewObject forGetInstance(Primitives primitives,
+                                           ParameterizedType parameterizedType,
+                                           ObjectFlow objectFlow) {
+        return new NewObject(null, parameterizedType, Diamond.SHOW_ALL, List.of(),
+                MultiLevel.EFFECTIVELY_NOT_NULL, null, null,
                 new BooleanConstant(primitives, true), objectFlow);
     }
 
@@ -188,8 +205,8 @@ public record NewObject(MethodInfo constructor,
     cannot be null, we're applying a method on it.
     */
     public static NewObject forGetInstance(ParameterizedType parameterizedType, Expression state, ObjectFlow objectFlow) {
-        return new NewObject(null, parameterizedType, Diamond.SHOW_ALL, List.of(), MultiLevel.EFFECTIVELY_NOT_NULL, null, null,
-                state, objectFlow);
+        return new NewObject(null, parameterizedType, Diamond.SHOW_ALL, List.of(),
+                MultiLevel.EFFECTIVELY_NOT_NULL, null, null, state, objectFlow);
     }
 
     /*
@@ -224,6 +241,7 @@ public record NewObject(MethodInfo constructor,
         this.state = Objects.requireNonNull(state);
         this.objectFlow = Objects.requireNonNull(objectFlow);
         this.minimalNotNull = minimalNotNull;
+        assert minimalNotNull != Level.DELAY;
         this.diamond = diamond;
         assert !(constructor != null && minimalNotNull < MultiLevel.EFFECTIVELY_NOT_NULL);
     }
@@ -249,7 +267,8 @@ public record NewObject(MethodInfo constructor,
 
     @Override
     public int hashCode() {
-        return Objects.hash(parameterizedType, parameterExpressions, anonymousClass, constructor, arrayInitializer, state, minimalNotNull);
+        return Objects.hash(parameterizedType, parameterExpressions, anonymousClass, constructor,
+                arrayInitializer, state, minimalNotNull);
     }
 
     @Override
@@ -295,10 +314,12 @@ public record NewObject(MethodInfo constructor,
         // RULE 2, 3
         boolean notSelf = constructor.typeInfo != evaluationContext.getCurrentType();
         if (notSelf) {
-            TypeAnalysis typeAnalysisOfConstructor = evaluationContext.getAnalyserContext().getTypeAnalysis(constructor.typeInfo);
+            TypeAnalysis typeAnalysisOfConstructor = evaluationContext.getAnalyserContext()
+                    .getTypeAnalysis(constructor.typeInfo);
             int immutable = typeAnalysisOfConstructor.getProperty(VariableProperty.IMMUTABLE);
             int typeIndependent = typeAnalysisOfConstructor.getProperty(VariableProperty.INDEPENDENT);
-            MethodAnalysis methodAnalysisOfConstructor = evaluationContext.getAnalyserContext().getMethodAnalysis(constructor);
+            MethodAnalysis methodAnalysisOfConstructor = evaluationContext.getAnalyserContext()
+                    .getMethodAnalysis(constructor);
             int independent = methodAnalysisOfConstructor.getProperty(VariableProperty.INDEPENDENT);
 
             if (MultiLevel.isE2Immutable(immutable) || independent == MultiLevel.EFFECTIVE
@@ -332,7 +353,7 @@ public record NewObject(MethodInfo constructor,
     }
 
     @Override
-    public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
+    public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty, boolean duringEvaluation) {
         switch (variableProperty) {
             case NOT_NULL_EXPRESSION: {
                 TypeInfo bestType = parameterizedType.bestTypeInfo();
@@ -396,7 +417,8 @@ public record NewObject(MethodInfo constructor,
     public OutputBuilder output(Qualification qualification) {
         OutputBuilder outputBuilder = new OutputBuilder();
         if (constructor != null) {
-            outputBuilder.add(new Text("new")).add(Space.ONE).add(parameterizedType.output(qualification, false, diamond));
+            outputBuilder.add(new Text("new")).add(Space.ONE)
+                    .add(parameterizedType.output(qualification, false, diamond));
             if (arrayInitializer == null) {
                 if (parameterExpressions.isEmpty()) {
                     outputBuilder.add(Symbol.OPEN_CLOSE_PARENTHESIS);

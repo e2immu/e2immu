@@ -51,10 +51,11 @@ public record MultiExpression(Expression... expressions) {
         return commonType == null ? primitives.objectParameterizedType : commonType;
     }
 
-    public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
+    public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty, boolean duringEvaluation) {
         return Arrays.stream(expressions)
                 .filter(Expression::isComputeProperties)
-                .mapToInt(value -> evaluationContext.getProperty(value, variableProperty)).min().orElse(Level.DELAY);
+                .mapToInt(value -> evaluationContext.getProperty(value, variableProperty, duringEvaluation))
+                .min().orElse(Level.DELAY);
     }
 
     public Stream<Expression> stream() {

@@ -51,7 +51,7 @@ public class TestSetOnceMap extends CommonTestRunner {
             VariableInfo tv = d.getReturnAsVariable();
 
             Assert.assertNotNull(tv);
-            Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, tv.getProperty(VariableProperty.NOT_NULL_VARIABLE));
+            Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, tv.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
             Assert.assertTrue(tv.getValue() instanceof PropertyWrapper);
             Assert.assertEquals(MultiLevel.EFFECTIVE, MultiLevel.value(
                     d.methodAnalysis().getProperty(VariableProperty.NOT_NULL_EXPRESSION), MultiLevel.NOT_NULL));

@@ -97,7 +97,7 @@ public class BinaryOperator implements Expression {
     }
 
     @Override
-    public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
+    public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty, boolean duringEvaluation) {
         if (hasBeenEvaluated()) {
             return UnknownExpression.primitiveGetProperty(variableProperty);
         }

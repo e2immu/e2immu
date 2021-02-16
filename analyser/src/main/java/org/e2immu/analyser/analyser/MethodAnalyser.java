@@ -127,10 +127,19 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
         AnalyserComponents.Builder<String, SharedState> builder = new AnalyserComponents.Builder<>();
         if (firstStatementAnalyser != null) {
 
+            // order: Companion analyser, Parameter analysers, Statement analysers, Method analyser parts
+            // rest of the order (as determined in PrimaryTypeAnalyser): fields, types
+
             for (CompanionAnalyser companionAnalyser : companionAnalysers.values()) {
                 builder.add(companionAnalyser.companionMethodName.toString(), (sharedState ->
                         companionAnalyser.analyse(sharedState.evaluationContext.getIteration())));
             }
+
+            for (ParameterAnalyser parameterAnalyser : parameterAnalysers) {
+                builder.add("Parameter " + parameterAnalyser.parameterInfo.name,
+                        sharedState -> parameterAnalyser.analyse(sharedState.evaluationContext.getIteration()));
+            }
+
             AnalysisStatus.AnalysisResultSupplier<SharedState> statementAnalyser = (sharedState) -> {
                 StatementAnalyserResult result = firstStatementAnalyser.analyseAllStatementsInBlock(sharedState.evaluationContext.getIteration(),
                         ForwardAnalysisInfo.startOfMethod(analyserContext.getPrimitives()),
@@ -150,9 +159,6 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
                     .add("computeOnlyMarkAnnotate", (sharedState) -> methodInfo.isConstructor ? DONE : computeOnlyMarkAnnotate(sharedState))
                     .add("methodIsIndependent", this::methodIsIndependent);
 
-            for (ParameterAnalyser parameterAnalyser : parameterAnalysers) {
-                builder.add("Parameter " + parameterAnalyser.parameterInfo.name, (sharedState -> parameterAnalyser.analyse()));
-            }
         } else {
             methodAnalysis.minimalInfoForEmptyMethod();
         }
@@ -197,12 +203,12 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
         this.myFieldAnalysers = myFieldAnalysers.build();
 
         // copy CONTRACT annotations into the properties
-        methodAnalysis.fromAnnotationsIntoProperties(false, false, methodInspection.getAnnotations(),
+        methodAnalysis.fromAnnotationsIntoProperties(VariableProperty.NOT_NULL_EXPRESSION, false, false, methodInspection.getAnnotations(),
                 analyserContext.getE2ImmuAnnotationExpressions());
 
         parameterAnalysers.forEach(pa -> {
             Collection<AnnotationExpression> annotations = pa.parameterInfo.getInspection().getAnnotations();
-            pa.parameterAnalysis.fromAnnotationsIntoProperties(true, false, annotations,
+            pa.parameterAnalysis.fromAnnotationsIntoProperties(VariableProperty.NOT_NULL_PARAMETER, true, false, annotations,
                     analyserContext.getE2ImmuAnnotationExpressions());
 
             pa.initialize(analyserContext.fieldAnalyserStream());
@@ -629,7 +635,7 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
                 immutable = MultiLevel.MUTABLE; // no idea
             }
         }
-        int notNull = variableInfo.getProperty(VariableProperty.NOT_NULL_VARIABLE);
+        int notNull = variableInfo.getProperty(VariableProperty.NOT_NULL_EXPRESSION);
         if (notNull != Level.DELAY) {
             methodAnalysis.setProperty(VariableProperty.NOT_NULL_EXPRESSION, notNull);
         } else {
@@ -1105,17 +1111,21 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
         @Override
         public int getProperty(Variable variable, VariableProperty variableProperty) {
             if (variable instanceof FieldReference fieldReference) {
-                return getAnalyserContext().getFieldAnalysis(fieldReference.fieldInfo).getProperty(variableProperty);
+                VariableProperty vp = variableProperty == VariableProperty.NOT_NULL_EXPRESSION
+                        ? VariableProperty.EXTERNAL_NOT_NULL : variableProperty;
+                return getAnalyserContext().getFieldAnalysis(fieldReference.fieldInfo).getProperty(vp);
             }
             if (variable instanceof ParameterInfo parameterInfo) {
-                return getAnalyserContext().getParameterAnalysis(parameterInfo).getProperty(variableProperty);
+                VariableProperty vp = variableProperty == VariableProperty.NOT_NULL_EXPRESSION
+                        ? VariableProperty.NOT_NULL_PARAMETER : variableProperty;
+                return getAnalyserContext().getParameterAnalysis(parameterInfo).getProperty(vp);
             }
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public int getProperty(Expression value, VariableProperty variableProperty) {
-            return value.getProperty(this, variableProperty);
+        public int getProperty(Expression value, VariableProperty variableProperty, boolean duringEvaluation) {
+            return value.getProperty(this, variableProperty, true);
         }
     }
 }

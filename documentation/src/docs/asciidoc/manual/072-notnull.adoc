@@ -1,0 +1,172 @@
+=== Not null
+
+Not null analysis in a write-once analyser is far from trivial.
+In this discussion we use the following properties:
+
+NNE (Not Null Expression):: Is the primary property in the statement analyser, and the not null property of the method analyser's return value.
+There are three categories of expressions with respect to this property:
+
+. those with an intrinsic value:
+A string constant `"abc"` is not null, any primitive is not null, etc.
+A `NewObject` has an NNE value: as a primitive or explicit `new Type()`, it is not null.
+As a generic instance it can be `instance` (not null), or `nullable instance` (nullable).
+Only the `NullConstant` is guaranteed to be null all the time.
+. Only delayed values (`DelayedExpression`, `DelayedVariable`) hold no NNE yet.
+. The NNE of a variable occurring in an expression as a `VariableExpression`:
+If a variable is a redirect, i.e., its value is a variable expression itself, then all properties are forwarded.
+There can only be one level of redirection.
+Now the value of the variable is not a variable expression.
+The NNE of a variable is then defined as the combination of the variable's CNN, CMNN, and its value's NNE.
+If there's a delay on any, the NNE is delayed.
+However, a minimal value can be computed; given the type, this minimal value may actually be the final value.
+
+CNN (Context Not Null):: is assigned to variables that appear as the object of a method, or as argument in a method call which requires not null.
+CNN can be assigned to variables even while these variables hold delayed values (i.e., values without NNE assigned).
+CNN is computed in a strictly cumulative way, as detailed later.
+CNN on non-variables is expressed as CMNN.
+
+CMNN:: Condition Manager Not Null is defined by a boolean clause of the form `var == null` or `var != null` appearing in the condition, state, or precondition of the condition manager during statement analysis.
+Not necessarily only for variables; e.g., the outcome of a method call can directly be tested for not null in an `if` statement.
+CMNN computations largely work with delayed values as well.
+They are delayed as long as the full expression in which they participate, is delayed.
+An expression is delayed as long as it contains a `DelayedVariable` or `DelayedExpression` object.
+
+ENN:: External Not Null.
+The not null value of fields is assigned to this variable.
+The parameter analyser can track values of fields if the field is directly assigned to the parameter in a constructor.
+If this is the case, ENN is used to store the field's not null value.
+While the normal flow is from method's parameters, via statements, to the field, ENN allows for a feedback into the parameter.
+
+NNP:: Not Null Parameter is the combination of CNN and ENN inside the parameter analyser.
+This property is directly computed from CNN and ENN, unless it is directly assigned a value from a contract {nn} annotation.
+
+The return value of a method is the result of one or more assignments to the return variable in the method.
+Either the return variable points to another variable (indirection), and then the NNE of the return variable is identical to the NNE of the assigned variable; or the return variable points to an expression.
+Then the NNE is computed directly on the expression.
+In both situations, the normal methods apply:
+
+[source]
+----
+EvaluationContext.getProperty(Expression,VariableProperty)
+Expression.getProperty(EvaluationContext,VariableProperty)
+----
+
+where the former redirects to the latter unless variables are involved, and the latter redirects to the former for all sub-expressions.
+The method `EvaluationContext.isNotNull0(Expression)` is a shortcut to the first, which converts delays into false values.
+It is used in the evaluation of `Equals` expressions, to transform into the boolean constants true or false in case not null is known.
+
+
+So far we've discussed the computation of NNE in the evaluation context.
+This result is stored in case NNE is computed over a variable, in the property.
+When?
+Why? Problem: there will be a disconnect between the value and the computation at some point.
+Can be assigned rather trivially during every apply session.
+It also gets assigned during a merge, in which case it becomes disconnected from the computation.
+The computation can include a previous NNE value as a fourth component?
+CNN is already properly cumulative; the value only changes at assignments; that leaves conditions etc.; but they should remain the same unless we go out of block when merging.
+
+
+==== CNN delay system in statement analyser
+
+When a variable occurs as the object of a method call, or as argument, it may find itself in a not null context.
+For example, when a variable is the argument of a call to `Set.addAll`, it will have to be content not null.
+A delay to this computation is only possible when the method itself is still under analysis, and no not null values are known yet.
+If this is the case, a `CONTEXT_NOT_NULL_DELAY` flag is raised on the variable during evaluation.
+When applying the evaluation in the presence of this flag, CNN values are held back.
+When the flag is absent, `CONTEXT_NOT_NULL_DELAY_RESOLVED` is written, but only when it has been written in the previous value of the variable as well.
+In this way, a delay in a statement will propagate to all subsequent statements; it will take at least another iteration to write out CNN values.
+
+==== In the parameter analyser
+
+The parameter analyser copies the CNN value of the parameter variable in the last statement of the method.
+If there is no value, and delays have been resolved, then `NULLABLE` is assumed.
+
+In the same way, an ENN value is set to nullable when the parameter is not directly assigned to a field.
+When assigned to a field, the ENN value is copied, and becomes final when the field's ENN is known.
+
+==== From the field and parameter analyser into statements
+
+Parameters are added to the variables from the very first statement in the very first iteration.
+Because of the priority flow from statements to field and method, the parameter immediately gets a `NewObject` value.
+This value has a NNE baked in:
+
+. with a value from a contracted annotation, when present
+. effectively not null when the parameter is of primitive type
+. nullable otherwise.
+
+It is up to CNN to determine the not null situation of non-primitive parameters.
+
+Fields are added to the variable list of the statement where they occur for the first time in the method.
+As long as their value status is not known, their value is delayed.
+Once known if they're variable or final, they get a value, respectively a local copy (a different one each time statement time increases), or a real value in case the field is final.
+Context not null computations go on independently of the value of the variable representing the field.
+A field variable inside the statement analyser has no ENN value: this value is present as NNE in the field's value.
+
+==== ENN and potential not null exception warnings
+
+The ENN value of a parameter comes _after_ the NNE, and typically also CNN value.
+When a parameter occurs in a not null context, ensuring a CNN not null value, it should or should not cause a potential not null exception warning.
+If the ENN value of the parameter is not null, no warning is needed.
+However, when ENN is nullable, even if CNN is not null, a warning is appropriate.
+
+Because ENN is set after the parameter's value (which is determined in the first iteration) we need a dedicated ENN delay system.
+When a parameter occurs in this situation, and ENN is not known yet, `EXTERNAL_NOT_NULL_DELAY` will be raised in the evaluation result.
+This causes the apply method to end with a DELAY status, ensuring that the statement (and subsequent statements) will be evaluated again.
+This marker is not stored, only read from the `ChangeData`.
+
+==== Return value
+
+Let's discuss two cases of assignment to the return value.
+The first is a getter:
+
+. CNN has been broken to be nullable (no method calls, the field does not occur in a not-null context) in the first iteration.
+. the variable's value arrives as soon as the field is known to be final or variable, and a value is injected.
+. the NNE is known as soon as this value arrives.
+This cannot happen in the first iteration.
+
+The method analyser can determine its NNE value as soon as the return variable's NNE is known.
+The field analyser essentially discards the getter from contributing to the not null status of the field.
+
+The second example is the code of `Objects.requireNotNull`, which forces a not null on a parameter.
+The method returns its first parameter, and therefore is marked {identity}:
+
+[source,java]
+----
+@Identity @NotNull
+public static <T> T requireNotNull(@NotNull T t) {
+    if(t == null) throw new NullPointerException();
+    return t;
+}
+----
+
+Statement 0 induces a CNN of not null on the parameter variable `t`, which has a nullable `NewObject` value.
+Because there is no CNN delay, nor a value delay, NNE is not null, which means that method analyser can read the not null NNE value of the return variable.
+ENN is of no consequence because there are no fields: as soon as the parameter analyser kicks in, it is set to nullable.
+Because of the CNN not null of the last statement, the parameter's NNP value becomes not null.
+
+==== Complexities
+
+The following two methods are functionally identical:
+
+[source,java]
+.Excerpt from `EventuallyE1Immutable_0`
+----
+public void setString1(String string1) {
+    if (this.string != null) throw new UnsupportedOperationException();
+    if (string1 == null) throw new NullPointerException();
+    this.string = string1;
+}
+
+public void setString2(String string2) {
+    if (string2 == null) throw new NullPointerException();
+    if (this.string != null) throw new UnsupportedOperationException();
+    this.string = string2;
+}
+----
+
+However, internally the following goes on.
+The first method starts with a delayed condition (`this.string` has a delayed value, which means that `this.string != null` is delayed).
+As a consequence, while the `string1 == null` condition itself is not delayed, the condition manager itself is delayed.
+No immediate not null action is taken on `string1`.
+In the second method, `string2` becomes CNN without delay.
+
