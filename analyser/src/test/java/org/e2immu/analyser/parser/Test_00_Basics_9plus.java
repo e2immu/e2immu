@@ -68,7 +68,7 @@ public class Test_00_Basics_9plus extends CommonTestRunner {
     public void test_10() throws IOException {
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("string".equals(d.fieldInfo().name)) {
-                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.fieldAnalysis().getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_NOT_NULL));
             }
         };
         testClass("Basics_10", 0, 0, new DebugConfiguration.Builder()

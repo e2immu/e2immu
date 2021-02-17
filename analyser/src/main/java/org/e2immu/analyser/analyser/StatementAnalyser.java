@@ -1331,7 +1331,11 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             if (statusPost == DONE) {
                 boolean externalNotNullDelay = statementAnalysis.variables.stream()
                         .anyMatch(e -> e.getValue().best(EVALUATION).externalNotNullDelay());
-                if (externalNotNullDelay) return DELAYS;
+                if (externalNotNullDelay){
+                    log(DELAYED, "Delaying statement {} in {} because of external not null",
+                            index(), myMethodAnalyser.methodInfo.fullyQualifiedName);
+                    return DELAYS;
+                }
             }
             return statusPost;
         } catch (RuntimeException rte) {

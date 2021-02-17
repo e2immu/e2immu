@@ -604,7 +604,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         }
         MethodAnalysis methodAnalysis = evaluationContext.getAnalyserContext().getMethodAnalysis(method);
         int modified = methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD);
-        int immutable = evaluationContext.getProperty(objectValue, VariableProperty.IMMUTABLE, false);
+        int immutable = evaluationContext.getProperty(objectValue, VariableProperty.IMMUTABLE, true);
         if (modified == Level.TRUE && immutable >= MultiLevel.EVENTUALLY_E2IMMUTABLE) {
             builder.raiseError(Message.CALLING_MODIFYING_METHOD_ON_E2IMMU,
                     "Method: " + methodInfo.distinguishingName() + ", Type: " + objectValue.returnType());
@@ -753,7 +753,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
         // RULE 3: E2IMMU object cannot link, neither can implicitly immutable types
 
-        int objectE2Immutable = MultiLevel.value(evaluationContext.getProperty(object, VariableProperty.IMMUTABLE, false), MultiLevel.E2IMMUTABLE);
+        int objectE2Immutable = MultiLevel.value(evaluationContext.getProperty(object, VariableProperty.IMMUTABLE, true), MultiLevel.E2IMMUTABLE);
         if (objectE2Immutable >= MultiLevel.EVENTUAL_AFTER) {
             return LinkedVariables.EMPTY;
         }

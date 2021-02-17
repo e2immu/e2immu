@@ -132,6 +132,9 @@ public class InlineConditional implements Expression {
      */
     private int lookForPatterns(EvaluationContext evaluationContext, VariableProperty variableProperty) {
         if (variableProperty == VariableProperty.NOT_NULL_EXPRESSION) {
+            if (Primitives.isPrimitiveExcludingVoid(returnType())) {
+                return MultiLevel.EFFECTIVELY_NOT_NULL;
+            }
             Expression c = condition;
             boolean not = false;
             if (c.isInstanceOf(Negation.class)) {
