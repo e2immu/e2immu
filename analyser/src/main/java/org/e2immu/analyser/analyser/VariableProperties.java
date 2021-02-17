@@ -17,10 +17,7 @@
 
 package org.e2immu.analyser.analyser;
 
-import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.util.SetOnceMap;
-
-import java.util.function.Function;
 
 public class VariableProperties extends SetOnceMap<VariableProperty, Integer> {
 
@@ -35,77 +32,4 @@ public class VariableProperties extends SetOnceMap<VariableProperty, Integer> {
         }
     }
 
-    @Override
-    public Integer get(VariableProperty variableProperty) {
-        if (variableProperty.combinationOf.length == 0) {
-            return super.get(variableProperty);
-        }
-        Integer combination = super.getOtherwiseNull(variableProperty);
-        if (combination != null) return combination;
-        // if not explicitly set, then computed
-        int max = Level.DELAY;
-        for (VariableProperty sub : variableProperty.combinationOf) {
-            int v = super.get(sub);
-            assert v >= 0;
-            max = Math.max(max, v);
-        }
-        return max;
-    }
-
-    @Override
-    public boolean isSet(VariableProperty variableProperty) {
-        if (variableProperty.combinationOf.length == 0) {
-            return super.isSet(variableProperty);
-        }
-        if (!super.isSet(variableProperty)) {
-            for (VariableProperty sub : variableProperty.combinationOf) {
-                if (!super.isSet(sub)) return false;
-            }
-        }
-        return true;
-    }
-
-    @Override
-    public Integer getOtherwiseNull(VariableProperty variableProperty) {
-        if (variableProperty.combinationOf.length == 0) {
-            return super.getOtherwiseNull(variableProperty);
-        }
-        Integer combination = super.getOtherwiseNull(variableProperty);
-        if (combination != null) return combination;
-        // if not explicitly set, then computed
-        int max = Level.DELAY;
-        for (VariableProperty sub : variableProperty.combinationOf) {
-            if (!super.isSet(sub)) return null;
-            int v = super.get(sub);
-            assert v >= 0;
-            max = Math.max(max, v);
-        }
-        return max;
-    }
-
-    @Override
-    public Integer getOrDefault(VariableProperty variableProperty, Integer defaultValue) {
-        if (variableProperty.combinationOf.length == 0) {
-            return super.getOrDefault(variableProperty, defaultValue);
-        }
-        Integer combination = super.getOtherwiseNull(variableProperty);
-        if (combination != null) return combination;
-        // if not explicitly set, then computed
-        int max = Level.DELAY;
-        for (VariableProperty sub : variableProperty.combinationOf) {
-            if (!super.isSet(sub)) return defaultValue;
-            int v = super.get(sub);
-            assert v >= 0;
-            max = Math.max(max, v);
-        }
-        return max;
-    }
-
-    @Override
-    public Integer getOrCreate(VariableProperty variableProperty, Function<VariableProperty, Integer> generator) {
-        if (variableProperty.combinationOf.length == 0) {
-            return super.getOrCreate(variableProperty, generator);
-        }
-        throw new UnsupportedOperationException();
-    }
 }

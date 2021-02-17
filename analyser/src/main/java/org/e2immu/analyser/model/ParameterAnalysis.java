@@ -175,6 +175,7 @@ public interface ParameterAnalysis extends Analysis {
                 int cnn = getParameterProperty(analysisProvider, parameterInfo, objectFlow, CONTEXT_NOT_NULL);
                 int enn = getParameterProperty(analysisProvider, parameterInfo, objectFlow, EXTERNAL_NOT_NULL);
                 if (cnn == Level.DELAY || enn == Level.DELAY) return Level.DELAY;
+                // note that ENN can be MultiLevel.DELAY, but CNN cannot have that value; it must be at least NULLABLE
                 return MultiLevel.bestNotNull(cnn, enn);
 
             case CONTEXT_NOT_NULL: {

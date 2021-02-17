@@ -39,7 +39,7 @@ public enum VariableProperty {
     // purpose: goes to false when a parameter occurs in a not_null context, but there is a delay
     // goes to true when that delay has been resolved
     CONTEXT_NOT_NULL("not null in context", MultiLevel.NULLABLE, MultiLevel.EFFECTIVELY_CONTENT2_NOT_NULL,
-            MultiLevel.NULLABLE, MultiLevel.EFFECTIVELY_NOT_NULL, new VariableProperty[0]),
+            MultiLevel.NULLABLE, MultiLevel.EFFECTIVELY_NOT_NULL),
     CONTEXT_NOT_NULL_DELAY("not null in context delay"),
     CONTEXT_NOT_NULL_DELAY_RESOLVED("not null in context delay resolved"),
 
@@ -54,34 +54,30 @@ public enum VariableProperty {
     MODIFIED_OUTSIDE_METHOD("modified outside method"),
 
     EXTERNAL_NOT_NULL("external @NotNull", MultiLevel.NULLABLE, MultiLevel.EFFECTIVELY_CONTENT2_NOT_NULL,
-            MultiLevel.NULLABLE, MultiLevel.EFFECTIVELY_NOT_NULL, new VariableProperty[0]),
+            MultiLevel.NULLABLE, MultiLevel.EFFECTIVELY_NOT_NULL),
 
     // only used from EvaluationResult.variableInNotNullContext to StatementAnalyser.apply/evaluation
     EXTERNAL_NOT_NULL_DELAY("external not null delay"),
     EXTERNAL_NOT_NULL_DELAY_RESOLVED("external not null delay resolved"),
 
     NOT_NULL_EXPRESSION("@NotNull", MultiLevel.NULLABLE, MultiLevel.EFFECTIVELY_CONTENT2_NOT_NULL,
-            MultiLevel.NULLABLE, MultiLevel.EFFECTIVELY_NOT_NULL, new VariableProperty[0]),
+            MultiLevel.NULLABLE, MultiLevel.EFFECTIVELY_NOT_NULL),
 
     // in parameter analyser, combination
     NOT_NULL_PARAMETER("@NotNull parameter", MultiLevel.NULLABLE, MultiLevel.EFFECTIVELY_CONTENT2_NOT_NULL,
-            MultiLevel.NULLABLE, MultiLevel.EFFECTIVELY_NOT_NULL,
-            new VariableProperty[]{EXTERNAL_NOT_NULL, CONTEXT_NOT_NULL}),
+            MultiLevel.NULLABLE, MultiLevel.EFFECTIVELY_NOT_NULL),
 
-    FINAL("@Final", Level.FALSE, Level.TRUE, Level.FALSE, Level.TRUE, new VariableProperty[0]),
+    FINAL("@Final", Level.FALSE, Level.TRUE, Level.FALSE, Level.TRUE),
 
-    CONTAINER("@Container", Level.FALSE, Level.TRUE, Level.FALSE, Level.TRUE, new VariableProperty[0]),
+    CONTAINER("@Container", Level.FALSE, Level.TRUE, Level.FALSE, Level.TRUE),
 
     IMMUTABLE("@Immutable", MultiLevel.MUTABLE, MultiLevel.EFFECTIVELY_E2IMMUTABLE, MultiLevel.MUTABLE,
-            MultiLevel.MUTABLE, new VariableProperty[0]),
+            MultiLevel.MUTABLE),
 
-    MODIFIED_VARIABLE("@Modified variable", Level.FALSE, Level.TRUE, Level.TRUE, Level.FALSE,
-            new VariableProperty[]{MODIFIED_OUTSIDE_METHOD, CONTEXT_MODIFIED}),
-    MODIFIED_METHOD("@Modified method", Level.FALSE, Level.TRUE, Level.TRUE, Level.FALSE,
-            new VariableProperty[0]),
+    MODIFIED_VARIABLE("@Modified variable", Level.FALSE, Level.TRUE, Level.TRUE, Level.FALSE),
+    MODIFIED_METHOD("@Modified method", Level.FALSE, Level.TRUE, Level.TRUE, Level.FALSE),
 
-    INDEPENDENT("@Independent", MultiLevel.FALSE, MultiLevel.EFFECTIVE, MultiLevel.FALSE, MultiLevel.EFFECTIVE,
-            new VariableProperty[0]),
+    INDEPENDENT("@Independent", MultiLevel.FALSE, MultiLevel.EFFECTIVE, MultiLevel.FALSE, MultiLevel.EFFECTIVE),
 
     CONSTANT("@Constant"),
     EXTENSION_CLASS("@ExtensionClass"),
@@ -95,29 +91,37 @@ public enum VariableProperty {
     NOT_MODIFIED_1("@NotModified1"),
     UTILITY_CLASS("@UtilityClass");
 
+    /*
+    Properties of return variables, initially set to false, finally copied to the method's properties.
+    NotNull is handled separately, because the property changes from NOT_NULL_EXPRESSION to NOT_NULL_EXPRESSION
+     */
+    public final static Set<VariableProperty> READ_FROM_RETURN_VALUE_PROPERTIES = Set.of(IDENTITY, IMMUTABLE, CONTAINER); // +NOT_NULL by hand
+    public static final Set<VariableProperty> CHECK_WORSE_THAN_PARENT = Set.of(NOT_NULL_PARAMETER, MODIFIED_VARIABLE);
+    /*
+    copy from field, parameter, this/type to variable, once a value has been determined.
+     */
+    public static final Set<VariableProperty> FROM_ANALYSER_TO_PROPERTIES
+            = Set.of(IDENTITY, FINAL, EXTERNAL_NOT_NULL, MODIFIED_OUTSIDE_METHOD, IMMUTABLE, CONTAINER, NOT_MODIFIED_1);
     public final String name;
     public final int best;
     public final int falseValue;
     private final int valueWhenAbsentInDefensiveMode;
     private final int valueWhenAbsentInOffensiveMode;
-    public final VariableProperty[] combinationOf;
 
     VariableProperty(String name) {
-        this(name, Level.FALSE, Level.TRUE, Level.FALSE, Level.FALSE, new VariableProperty[0]);
+        this(name, Level.FALSE, Level.TRUE, Level.FALSE, Level.FALSE);
     }
 
     VariableProperty(String name,
                      int falseValue,
                      int best,
                      int valueWhenAbsentInDefensiveMode,
-                     int valueWhenAbsentInOffensiveMode,
-                     VariableProperty[] combinationOf) {
+                     int valueWhenAbsentInOffensiveMode) {
         this.name = name;
         this.best = best;
         this.falseValue = falseValue;
         this.valueWhenAbsentInDefensiveMode = valueWhenAbsentInDefensiveMode;
         this.valueWhenAbsentInOffensiveMode = valueWhenAbsentInOffensiveMode;
-        this.combinationOf = combinationOf;
     }
 
     @Override
@@ -130,19 +134,5 @@ public enum VariableProperty {
         if (annotationMode == AnnotationMode.OFFENSIVE) return valueWhenAbsentInOffensiveMode;
         throw new UnsupportedOperationException();
     }
-
-    /*
-    Properties of return variables, initially set to false, finally copied to the method's properties.
-    NotNull is handled separately, because the property changes from NOT_NULL_EXPRESSION to NOT_NULL_EXPRESSION
-     */
-    public final static Set<VariableProperty> READ_FROM_RETURN_VALUE_PROPERTIES = Set.of(IDENTITY, IMMUTABLE, CONTAINER); // +NOT_NULL by hand
-
-    public static final Set<VariableProperty> CHECK_WORSE_THAN_PARENT = Set.of(NOT_NULL_PARAMETER, MODIFIED_VARIABLE);
-
-    /*
-    copy from field, parameter, this/type to variable, once a value has been determined.
-     */
-    public static final Set<VariableProperty> FROM_ANALYSER_TO_PROPERTIES
-            = Set.of(IDENTITY, FINAL, EXTERNAL_NOT_NULL, MODIFIED_OUTSIDE_METHOD, IMMUTABLE, CONTAINER, NOT_MODIFIED_1);
 
 }

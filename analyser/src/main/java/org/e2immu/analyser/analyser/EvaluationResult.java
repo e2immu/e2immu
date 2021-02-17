@@ -282,10 +282,17 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                 if (variable instanceof ParameterInfo && externalNotNull == Level.DELAY) {
                     setProperty(variable, VariableProperty.EXTERNAL_NOT_NULL_DELAY, Level.TRUE);
                 } else {
-                    // the NewObject situation with a real externalNotNull < contextNotNull allows for a message on parameters
-                    int notNullForException = value instanceof NewObject &&
-                            externalNotNull < contextNotNull && externalNotNull != Level.DELAY
-                            ? externalNotNull : contextNotNull;
+                    int notNullForException;
+                    if (variable instanceof ParameterInfo &&
+                            externalNotNull != MultiLevel.NULLABLE && contextNotNull == MultiLevel.NULLABLE) {
+                        /* >NULLABLE -> no warning because we externally not null
+                           ==NULLABLE -> must give warning
+                           ==DELAY -> no warning, not connected to field, so context determines the situation
+                         */
+                        notNullForException = externalNotNull;
+                    } else {
+                        notNullForException = contextNotNull;
+                    }
                     boolean valueIsDelayed = evaluationContext.isDelayed(value);
 
                     if (notNullForException == MultiLevel.FALSE && !valueIsDelayed) {

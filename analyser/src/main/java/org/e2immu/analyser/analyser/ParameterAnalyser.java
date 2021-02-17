@@ -155,7 +155,7 @@ public class ParameterAnalyser {
             return DONE;
         }
         // no point, we need to have seen the statement+field analysers first.
-        if(sharedState.iteration == 0) return DELAYS;
+        if (sharedState.iteration == 0) return DELAYS;
 
         // find a field that's linked to me; bail out when not all field's values are set.
         for (FieldInfo fieldInfo : parameterInfo.owner.typeInfo.typeInspection.get().fields()) {
@@ -175,9 +175,11 @@ public class ParameterAnalyser {
         Map<FieldInfo, ParameterAnalysis.AssignedOrLinked> map = parameterAnalysis.getAssignedToField();
 
         Set<VariableProperty> propertiesDelayed = new HashSet<>();
+        boolean notAssignedToField = true;
         for (Map.Entry<FieldInfo, ParameterAnalysis.AssignedOrLinked> e : map.entrySet()) {
             FieldInfo fieldInfo = e.getKey();
             Set<VariableProperty> propertiesToCopy = e.getValue().propertiesToCopy();
+            if (e.getValue() == ASSIGNED) notAssignedToField = false;
             FieldAnalyser fieldAnalyser = fieldAnalysers.get(fieldInfo);
             if (fieldAnalyser != null) {
                 FieldAnalysis fieldAnalysis = fieldAnalyser.fieldAnalysis;
@@ -202,7 +204,13 @@ public class ParameterAnalyser {
 
         for (VariableProperty variableProperty : PROPERTIES) {
             if (!parameterAnalysis.properties.isSet(variableProperty) && !propertiesDelayed.contains(variableProperty)) {
-                parameterAnalysis.setProperty(variableProperty, variableProperty.falseValue);
+                int v;
+                if (variableProperty == VariableProperty.EXTERNAL_NOT_NULL && notAssignedToField) {
+                    v = MultiLevel.DELAY;
+                } else {
+                    v = variableProperty.falseValue;
+                }
+                parameterAnalysis.setProperty(variableProperty, v);
                 log(ANALYSER, "Wrote false to parameter {} for property {}", parameterInfo.fullyQualifiedName(),
                         variableProperty);
                 changed = true;
@@ -249,7 +257,7 @@ public class ParameterAnalyser {
 
     private AnalysisStatus analyseContext(SharedState sharedState) {
         // no point, we need to have seen the statement+field analysers first.
-        if(sharedState.iteration == 0) return DELAYS;
+        if (sharedState.iteration == 0) return DELAYS;
 
         // context not null, context modified
         MethodAnalysis methodAnalysis = analysisProvider.getMethodAnalysis(parameterInfo.owner);
@@ -279,7 +287,7 @@ public class ParameterAnalyser {
 
     private AnalysisStatus checkUnusedParameter(SharedState sharedState) {
         // no point, we need to have seen the statement+field analysers first.
-        if(sharedState.iteration == 0) return DELAYS;
+        if (sharedState.iteration == 0) return DELAYS;
 
         StatementAnalysis lastStatementAnalysis = analysisProvider.getMethodAnalysis(parameterInfo.owner)
                 .getLastStatement();

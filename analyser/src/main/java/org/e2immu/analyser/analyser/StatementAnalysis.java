@@ -570,7 +570,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                         Map<VariableProperty, Integer> combined = new HashMap<>(propertyMap);
                         valueMap.forEach((k, v) -> combined.merge(k, v, Math::max));
                         for(VariableProperty vp: CONTEXT_PROPERTIES) {
-                            combined.put(vp, eval.getProperty(vp));
+                            combined.put(vp, initial.getProperty(vp)); // and not EVAL!
                         }
                         lvrVic.setValue(initialValue, false, LinkedVariables.EMPTY, combined, true);
                         // we link the local copy to the original, so that modifications on the local copy

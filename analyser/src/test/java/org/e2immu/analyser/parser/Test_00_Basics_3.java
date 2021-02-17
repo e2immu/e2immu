@@ -82,7 +82,7 @@ public class Test_00_Basics_3 extends CommonTestRunner {
             if ("setS1".equals(d.methodInfo().name) && d.variable() instanceof ParameterInfo pi && "input1".equals(pi.name)) {
                 // statement independent, as the only occurrence of input1 is in evaluation of "0", before "0.0.0" etc.
                 Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
-                int expectEnn = d.iteration() <= 1 ? Level.DELAY : MultiLevel.NULLABLE;
+                int expectEnn = d.iteration() <= 1 ? Level.DELAY : MultiLevel.DELAY;
                 Assert.assertEquals("Statement "+d.statementId(), expectEnn, d.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
             }
             if ("setS1".equals(d.methodInfo().name) && THIS.equals(d.variableName())) {
@@ -236,8 +236,6 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                     Assert.assertEquals(expectModifiedOutside, d.getProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD));
                     int expectContentModified = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
                     Assert.assertEquals(expectContentModified, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
-                    // summary of the two above
-                    Assert.assertEquals(expectModifiedOutside, d.getProperty(VariableProperty.MODIFIED_VARIABLE));
                 }
                 if (S_0.equals(d.variableName())) {
                     assert d.iteration() > 0;
@@ -336,7 +334,7 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                 ParameterAnalysis p0 = d.parameterAnalyses().get(0);
                 int expectCnn = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
                 Assert.assertEquals(expectCnn, p0.getProperty(VariableProperty.CONTEXT_NOT_NULL));
-                int expectExternalNotNull = d.iteration() <= 1 ? Level.DELAY : MultiLevel.NULLABLE;
+                int expectExternalNotNull = d.iteration() <= 1 ? Level.DELAY : MultiLevel.DELAY;
                 Assert.assertEquals(expectExternalNotNull, p0.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
             }
         };
