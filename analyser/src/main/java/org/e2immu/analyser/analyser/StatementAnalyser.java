@@ -621,6 +621,9 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         }
         List<Map.Entry<Variable, EvaluationResult.ChangeData>> sortedEntries = new ArrayList<>(evaluationResult.changeData().entrySet());
         sortedEntries.sort((e1, e2) -> {
+            // return variables at the end
+            if (e1.getKey() instanceof ReturnVariable) return 1;
+            if (e2.getKey() instanceof ReturnVariable) return -1;
             if (e1.getValue().markAssignment() && !e2.getValue().markAssignment()) return 1;
             if (e2.getValue().markAssignment() && !e1.getValue().markAssignment()) return -1;
             return e1.getKey().fullyQualifiedName().compareTo(e2.getKey().fullyQualifiedName());
@@ -2030,33 +2033,36 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         public boolean isNotNull0(Expression value) {
             if (value instanceof IsVariableExpression ve) {
                 VariableInfo variableInfo = findForReading(ve.variable(), getInitialStatementTime(), true);
-                if (variableInfo.getValue() instanceof IsVariableExpression redirect) {
-                    // there cannot be an infinite loop, as only one redirect is allowed.
-                    return isNotNull0(redirect);
-                }
-                Expression varValue = variableInfo.getValue();
-                int enn = getProperty(varValue, NOT_NULL_EXPRESSION, true);
-                if (enn >= MultiLevel.EFFECTIVELY_NOT_NULL) return true;
                 int cnn = variableInfo.getProperty(CONTEXT_NOT_NULL);
                 if (cnn >= MultiLevel.EFFECTIVELY_NOT_NULL) return true;
+                int nne = variableInfo.getProperty(NOT_NULL_EXPRESSION);
+                if (nne >= MultiLevel.EFFECTIVELY_NOT_NULL) return true;
                 return notNullAccordingToConditionManager(ve.variable());
             }
             return MultiLevel.isEffectivelyNotNull(getProperty(value, NOT_NULL_EXPRESSION, true));
+        }
+
+        private int getVariableProperty(Variable variable, VariableProperty variableProperty, boolean duringEvaluation) {
+            if (duringEvaluation) {
+                return getPropertyFromPreviousOrInitial(variable, variableProperty, getInitialStatementTime());
+            }
+            return getProperty(variable, variableProperty);
         }
 
         @Override
         public int getProperty(Expression value, VariableProperty variableProperty, boolean duringEvaluation) {
             // IMPORTANT: here we do not want to catch VariableValues wrapped in the PropertyWrapper
             if (value instanceof IsVariableExpression ve) {
-
+                // read what's in the property map (all values should be there) at initial or current level
+                int inMap = getVariableProperty(ve.variable(), variableProperty, duringEvaluation);
                 if (variableProperty == NOT_NULL_EXPRESSION) {
-
+                    int cnn = getVariableProperty(ve.variable(), CONTEXT_NOT_NULL, duringEvaluation);
+                    if (cnn == Level.DELAY || inMap == Level.DELAY) return Level.DELAY;
+                    int best = MultiLevel.bestNotNull(inMap, cnn);
+                    boolean cmNn = notNullAccordingToConditionManager(ve.variable());
+                    return MultiLevel.bestNotNull(cmNn ? MultiLevel.EFFECTIVELY_NOT_NULL : MultiLevel.NULLABLE, best);
                 }
-                // read what's in the property map (all values should be there) at CURRENT level
-                if (duringEvaluation) {
-                    return getPropertyFromPreviousOrInitial(ve.variable(), variableProperty, getInitialStatementTime());
-                }
-                return getProperty(ve.variable(), variableProperty);
+                return inMap;
             }
 
             if (NOT_NULL_EXPRESSION == variableProperty) {

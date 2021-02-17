@@ -22,6 +22,7 @@ package org.e2immu.analyser.parser;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -35,10 +36,11 @@ public class Test_00_Basics_2 extends CommonTestRunner {
     private static final String TYPE = "org.e2immu.analyser.testexample.Basics_2";
     private static final String STRING_PARAMETER = TYPE + ".setString(java.lang.String):0:string";
     private static final String STRING_FIELD = TYPE + ".string";
+    private static final String STRING_0 = TYPE + ".string$0";
+
     private static final String THIS = TYPE + ".this";
     private static final String COLLECTION = TYPE + ".add(java.util.Collection<java.lang.String>):0:collection";
-    private static final String METHOD_VALUE_ADD = "collection.add(org.e2immu.analyser.testexample.Basics_2.string$0)";
-    private static final String RETURN_GET_STRING = TYPE + ".getString()";
+    private static final String METHOD_VALUE_ADD = "collection.add(" + STRING_0 + ")";
     private static final String ADD = TYPE + ".add(java.util.Collection<java.lang.String>)";
 
     public Test_00_Basics_2() {
@@ -63,28 +65,29 @@ public class Test_00_Basics_2 extends CommonTestRunner {
         }
         if ("string".equals(d.fieldInfo().name)) {
             Assert.assertEquals(Level.FALSE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
-            Assert.assertEquals(MultiLevel.NULLABLE, d.fieldAnalysis().getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+            Assert.assertEquals(MultiLevel.NULLABLE, d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_NOT_NULL));
         }
     };
 
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
         if ("add".equals(d.methodInfo().name)) {
-            if (COLLECTION.equals(d.variableName()) && "0".equals(d.statementId())) {
+            if (d.variable() instanceof ParameterInfo c && "collection".equals(c.simpleName()) && "0".equals(d.statementId())) {
+                Assert.assertEquals(COLLECTION, d.variableName());
+
                 if (d.iteration() == 0) {
                     Assert.assertEquals("0" + VariableInfoContainer.Level.EVALUATION, d.variableInfo().getReadId());
                     Assert.assertTrue(d.variableInfoContainer().hasEvaluation());
-                    Assert.assertEquals("<parameter:org.e2immu.analyser.testexample.Basics_2.add(java.util.Collection<java.lang.String>):0:collection>", d.currentValue().toString());
+                    Assert.assertEquals("<p:collection>", d.currentValue().toString());
                     Assert.assertTrue(d.currentValueIsDelayed());
                 } else {
-                    Assert.assertEquals("instance type Collection<String>/*this.contains(org.e2immu.analyser.testexample.Basics_2.string$0)*/",
+                    Assert.assertEquals("instance type Collection<String>/*this.contains(" + STRING_0 + ")*/",
                             d.currentValue().toString());
                 }
                 Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
                 Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
             }
             if (STRING_FIELD.equals(d.variableName())) {
-                String expectValue = d.iteration() == 0 ? "<field:org.e2immu.analyser.testexample.Basics_2.string>" :
-                        "nullable? instance type String";
+                String expectValue = d.iteration() == 0 ? "<f:string>" : "nullable instance type String";
                 Assert.assertEquals(expectValue, d.currentValue().toString());
                 // string occurs in a not-null context, even if its value is delayed
                 Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
@@ -104,12 +107,21 @@ public class Test_00_Basics_2 extends CommonTestRunner {
             }
             if (STRING_FIELD.equals(d.variableName())) {
                 Assert.assertTrue(d.variableInfo().isRead());
-                String expectValue = d.iteration() == 0 ? "<field:org.e2immu.analyser.testexample.Basics_2.string>" : "nullable? instance type String";
+                String expectValue = d.iteration() == 0 ? "<f:string>" : "nullable instance type String";
                 Assert.assertEquals(expectValue, d.currentValue().toString());
-                int expectContextNotNull = d.iteration() == 0 ? Level.DELAY: MultiLevel.NULLABLE;
-                Assert.assertEquals(expectContextNotNull, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+                Assert.assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+                int expectNNE = d.iteration() == 0 ? Level.DELAY : MultiLevel.NULLABLE;
+                Assert.assertEquals(expectNNE, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
             }
-            if (RETURN_GET_STRING.equals(d.variableName())) {
+            if (STRING_0.equals(d.variableName())) {
+                Assert.assertTrue(d.iteration() > 0);
+                Assert.assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+                Assert.assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+            }
+            if (d.variable() instanceof ReturnVariable) {
+                String expectValue = d.iteration() == 0 ? "<f:string>" : STRING_0;
+                Assert.assertEquals(expectValue, d.currentValue().toString());
+                Assert.assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
                 int expectNotNull = d.iteration() == 0 ? Level.DELAY : MultiLevel.NULLABLE;
                 Assert.assertEquals(expectNotNull, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
             }
@@ -145,8 +157,8 @@ public class Test_00_Basics_2 extends CommonTestRunner {
             }
             if ("add".equals(d.methodInfo().name)) {
                 ParameterAnalysis parameterAnalysis = d.parameterAnalyses().get(0);
-                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL,
-                        parameterAnalysis.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+                int expectCnn = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
+                Assert.assertEquals(expectCnn, parameterAnalysis.getProperty(VariableProperty.CONTEXT_NOT_NULL));
                 int expectMethodModified = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
                 Assert.assertEquals(expectMethodModified, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
             }
@@ -170,7 +182,7 @@ public class Test_00_Basics_2 extends CommonTestRunner {
             Assert.assertTrue(d.evaluationResult().toString(), d.haveMarkRead(THIS));
         }
         if (d.methodInfo().name.equals("add") && "0".equals(d.statementId())) {
-            String expectEvalString = d.iteration() == 0 ? "<method:java.util.Collection.add(E)>" : METHOD_VALUE_ADD;
+            String expectEvalString = d.iteration() == 0 ? "<m:add>" : METHOD_VALUE_ADD;
             Assert.assertEquals(d.evaluationResult().toString(), expectEvalString, d.evaluationResult().value().toString());
         }
     };
@@ -184,7 +196,7 @@ public class Test_00_Basics_2 extends CommonTestRunner {
         MethodInfo add = collection.findUniqueMethod("add", 1);
         ParameterInfo p0 = add.methodInspection.get().getParameters().get(0);
         Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL,
-                p0.parameterAnalysis.get().getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                p0.parameterAnalysis.get().getProperty(VariableProperty.NOT_NULL_PARAMETER));
         Assert.assertEquals(Level.FALSE, p0.parameterAnalysis.get().getProperty(VariableProperty.MODIFIED_VARIABLE));
         Assert.assertEquals(Level.TRUE, add.methodAnalysis.get().getProperty(VariableProperty.MODIFIED_METHOD));
     };

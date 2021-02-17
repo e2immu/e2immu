@@ -41,10 +41,8 @@ public class Test_00_Basics_9plus extends CommonTestRunner {
     public void test_9() throws IOException {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("setContainsValueHelper".equals(d.methodInfo().name)) {
-                String expectValue = d.iteration() == 0 ?
-                        "<m:isFact>?<p:containsE>:!Basics_9.isKnown(true)&&<p:retVal>&&<p:size>>=1" :
-                        "Basics_9.isFact(containsE)?containsE:!Basics_9.isKnown(true)&&retVal&&size>=1";
-                Assert.assertEquals(expectValue, d.evaluationResult().value().toString());
+                Assert.assertEquals("Basics_9.isFact(containsE)?containsE:!Basics_9.isKnown(true)&&retVal&&size>=1",
+                        d.evaluationResult().value().toString());
                 Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL,
                         d.evaluationResult().evaluationContext().getProperty(d.evaluationResult().value(),
                                 VariableProperty.NOT_NULL_EXPRESSION, false));

@@ -106,6 +106,10 @@ public interface EvaluationContext {
         return expression.getObjectFlow();
     }
 
+    /**
+     * @param duringEvaluation true when this method is called during the EVAL process. It then reads variable's properties from the
+     *                         INIT side, rather than current. Current may be MERGE, which is definitely wrong during the EVAL process.
+     */
     default int getProperty(Expression value, VariableProperty variableProperty, boolean duringEvaluation) {
         if (value instanceof VariableExpression variableValue) {
             Variable variable = variableValue.variable();
@@ -175,6 +179,9 @@ public interface EvaluationContext {
 
     Set<VariableProperty> VALUE_PROPERTIES = Set.of(IDENTITY, IMMUTABLE, CONTAINER, NOT_NULL_EXPRESSION);
 
+    /*
+    computed/copied during assignment. Critical that NNE is present!
+     */
     default Map<VariableProperty, Integer> getValueProperties(Expression value) {
         return VALUE_PROPERTIES.stream().collect(Collectors.toMap(vp -> vp, vp -> getProperty(value, vp, false)));
     }

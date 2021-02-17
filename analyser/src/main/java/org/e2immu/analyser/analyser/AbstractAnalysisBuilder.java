@@ -71,17 +71,6 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
         }
     }
 
-    public void incrementProperty(VariableProperty variableProperty, int i) {
-        if (!properties.isSet(variableProperty)) {
-            if (i != Level.DELAY) properties.put(variableProperty, i);
-        } else {
-            int current = properties.get(variableProperty);
-            if (i != current) {
-                throw new UnsupportedOperationException("Trying to overwrite property " + variableProperty + " with value " + i + ", current value " + current);
-            }
-        }
-    }
-
     @Override
     public Stream<Map.Entry<AnnotationExpression, AnnotationCheck>> getAnnotationStream() {
         return annotationChecks.stream();

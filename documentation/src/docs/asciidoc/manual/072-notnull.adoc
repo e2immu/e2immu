@@ -58,13 +58,16 @@ It is used in the evaluation of `Equals` expressions, to transform into the bool
 
 So far we've discussed the computation of NNE in the evaluation context.
 This result is stored in case NNE is computed over a variable, in the property.
-When?
-Why? Problem: there will be a disconnect between the value and the computation at some point.
-Can be assigned rather trivially during every apply session.
-It also gets assigned during a merge, in which case it becomes disconnected from the computation.
-The computation can include a previous NNE value as a fourth component?
-CNN is already properly cumulative; the value only changes at assignments; that leaves conditions etc.; but they should remain the same unless we go out of block when merging.
 
+* basic NNE which is NOT read form the value but assigned in the property; can be upgraded as the end result at an assignment
+* at assignment CNN is taken over
+* the effect of CMNN has been moved into NNE
+
+When does the NNE property have to agree with the NNE computation?
+Definitely after an assignment.
+It may not in the middle of the evaluation of an expression, but that's fine.
+It may not agree after a merge, but that's fine.
+Do we need to change it outside of assignments and merges? looks like a no.
 
 ==== CNN delay system in statement analyser
 

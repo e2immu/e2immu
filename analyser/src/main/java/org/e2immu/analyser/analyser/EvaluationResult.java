@@ -273,7 +273,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                 return; // great, no problem, no reason to complain nor increase the property
             }
 
-            int notNullValue = value.getProperty(evaluationContext, VariableProperty.NOT_NULL_EXPRESSION, true);
+            int notNullValue = evaluationContext.getProperty(value, VariableProperty.NOT_NULL_EXPRESSION, true);
             if (notNullValue <= MultiLevel.NULLABLE) { // also do delayed values
                 // so intrinsically we can have null.
                 // if context not null is already high enough, don't complain

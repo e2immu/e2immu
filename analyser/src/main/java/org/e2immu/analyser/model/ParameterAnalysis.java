@@ -163,7 +163,12 @@ public interface ParameterAnalysis extends Analysis {
                 return MultiLevel.NULLABLE;
 
             case NOT_NULL_PARAMETER:
-                break; // go to internal, which will construct both constituents
+                int nnp = internalGetProperty(NOT_NULL_PARAMETER);
+                if (nnp != Level.DELAY) return nnp;
+                int cnn = getParameterProperty(analysisProvider, parameterInfo, objectFlow, CONTEXT_NOT_NULL);
+                int enn = getParameterProperty(analysisProvider, parameterInfo, objectFlow, EXTERNAL_NOT_NULL);
+                if (cnn == Level.DELAY || enn == Level.DELAY) return Level.DELAY;
+                return MultiLevel.bestNotNull(cnn, enn);
 
             case CONTEXT_NOT_NULL: {
                 TypeInfo bestType = parameterInfo.parameterizedType.bestTypeInfo();
