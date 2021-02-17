@@ -539,6 +539,8 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         }
     }
 
+    private static final VariableProperty[] CONTEXT_PROPERTIES = { CONTEXT_NOT_NULL, CONTEXT_NOT_NULL_DELAY_RESOLVED };
+
     private void ensureLocalCopiesOfConfirmedVariableFields(EvaluationContext evaluationContext, VariableInfoContainer vic) {
         if (vic.hasEvaluation()) {
             VariableInfo eval = vic.best(VariableInfoContainer.Level.EVALUATION);
@@ -564,7 +566,13 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                                 NewObject.localCopyOfVariableField(primitives, fieldReference.parameterizedType(),
                                         fieldAnalysis.getObjectFlow());
                         assert initialValue != null && evaluationContext.isNotDelayed(initialValue);
-                        lvrVic.setValue(initialValue, false, LinkedVariables.EMPTY, propertyMap, true);
+                        Map<VariableProperty, Integer> valueMap = evaluationContext.getValueProperties(initialValue);
+                        Map<VariableProperty, Integer> combined = new HashMap<>(propertyMap);
+                        valueMap.forEach((k, v) -> combined.merge(k, v, Math::max));
+                        for(VariableProperty vp: CONTEXT_PROPERTIES) {
+                            combined.put(vp, eval.getProperty(vp));
+                        }
+                        lvrVic.setValue(initialValue, false, LinkedVariables.EMPTY, combined, true);
                         // we link the local copy to the original, so that modifications on the local copy
                         // imply that there is a (potential) modification on the variable field.
                         // the reverse link is also generated
