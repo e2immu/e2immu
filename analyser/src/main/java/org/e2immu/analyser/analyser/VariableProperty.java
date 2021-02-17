@@ -56,6 +56,10 @@ public enum VariableProperty {
     EXTERNAL_NOT_NULL("external @NotNull", MultiLevel.NULLABLE, MultiLevel.EFFECTIVELY_CONTENT2_NOT_NULL,
             MultiLevel.NULLABLE, MultiLevel.EFFECTIVELY_NOT_NULL, new VariableProperty[0]),
 
+    // only used from EvaluationResult.variableInNotNullContext to StatementAnalyser.apply/evaluation
+    EXTERNAL_NOT_NULL_DELAY("external not null delay"),
+    EXTERNAL_NOT_NULL_DELAY_RESOLVED("external not null delay resolved"),
+
     NOT_NULL_EXPRESSION("@NotNull", MultiLevel.NULLABLE, MultiLevel.EFFECTIVELY_CONTENT2_NOT_NULL,
             MultiLevel.NULLABLE, MultiLevel.EFFECTIVELY_NOT_NULL, new VariableProperty[0]),
 

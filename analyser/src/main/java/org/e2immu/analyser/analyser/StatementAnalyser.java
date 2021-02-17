@@ -720,7 +720,9 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 status = DELAYS;
             }
 
-            // always break content delays unless explicitly warned about them
+            if (variable instanceof ParameterInfo) {
+                resolveDelays(changeData, vi, vic, EXTERNAL_NOT_NULL_DELAY, EXTERNAL_NOT_NULL_DELAY_RESOLVED);
+            }
 
             // the method analyser must have both context not null and not null expression
             // we need to revisit until we have a value (Basics_1, e.g.)
@@ -814,7 +816,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                     }
                 }
                 // value properties are copied from previous, because there is NO assignment!
-                case CONTAINER, IMMUTABLE, NOT_NULL_EXPRESSION, MODIFIED_OUTSIDE_METHOD, IDENTITY, FLUENT -> {
+                case CONTAINER, IMMUTABLE, NOT_NULL_EXPRESSION, MODIFIED_OUTSIDE_METHOD, IDENTITY, FLUENT, EXTERNAL_NOT_NULL -> {
                     if (prev != Level.DELAY) res.put(k, prev);
                 }
                 // all other are copied from change data
@@ -1305,8 +1307,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             if (statementAnalysis.flowData.timeAfterExecutionNotYetSet()) {
                 statementAnalysis.flowData.setTimeAfterEvaluation(result.statementTime(), index());
             }
-
-            AnalysisStatus statusPost = apply(sharedState, result, statementAnalysis).combine(analysisStatus);
+            AnalysisStatus applyResult = apply(sharedState, result, statementAnalysis);
+            AnalysisStatus statusPost = applyResult.combine(analysisStatus);
 
             Expression value = result.value();
             assert value != null; // EmptyExpression in case there really is no value
@@ -1325,6 +1327,12 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             boolean valueIsDelayed2 = sharedState.evaluationContext.isDelayed(value) || statusPost == DELAYS;
             statementAnalysis.stateData.setValueOfExpression(value, valueIsDelayed2);
 
+            // at the very end, so that the stateData can be set without delays, but we still return once again
+            if (statusPost == DONE) {
+                boolean externalNotNullDelay = statementAnalysis.variables.stream()
+                        .anyMatch(e -> e.getValue().best(EVALUATION).externalNotNullDelay());
+                if (externalNotNullDelay) return DELAYS;
+            }
             return statusPost;
         } catch (RuntimeException rte) {
             LOGGER.warn("Failed to evaluate main expression (step 3) in statement {}", statementAnalysis.index);

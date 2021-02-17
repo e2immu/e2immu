@@ -114,6 +114,13 @@ public interface ParameterAnalysis extends Analysis {
                 return parameterInfo.index == 0 ? Level.TRUE : Level.FALSE;
 
             case MODIFIED_VARIABLE:
+                int mv = getPropertyAsIs(MODIFIED_VARIABLE);
+                if (mv != Level.DELAY) return mv;
+                int cm = getParameterProperty(analysisProvider, parameterInfo, objectFlow, CONTEXT_MODIFIED);
+                int mom = getParameterProperty(analysisProvider, parameterInfo, objectFlow, MODIFIED_OUTSIDE_METHOD);
+                if (cm == Level.DELAY || mom == Level.DELAY) return Level.DELAY;
+                return Math.max(cm, mom);
+
             case CONTEXT_MODIFIED:
             case MODIFIED_OUTSIDE_METHOD: {
                 // if the parameter is level 2 immutable, it cannot be modified

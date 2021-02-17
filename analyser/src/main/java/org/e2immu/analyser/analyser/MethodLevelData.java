@@ -272,10 +272,13 @@ public class MethodLevelData {
 
     private void ensureEvaluation(SharedState sharedState, VariableInfoContainer vic, VariableInfo vi) {
         if (!vic.hasMerge() && !vic.hasEvaluation()) {
+            int statementTimeForVariable = sharedState.statementAnalysis.statementTimeForVariable(
+                    sharedState.evaluationContext.getAnalyserContext(),
+                    vi.variable(), sharedState.evaluationContext.getInitialStatementTime());
+
             vic.ensureEvaluation(VariableInfoContainer.NOT_YET_ASSIGNED,
                     VariableInfoContainer.NOT_YET_ASSIGNED,
-                    //    sharedState.statementAnalysis.index + VariableInfoContainer.Level.EVALUATION.label,
-                    sharedState.evaluationContext.getInitialStatementTime(), Set.of());
+                    statementTimeForVariable, Set.of());
             vic.setValue(vi.getValue(), vi.isDelayed(), LinkedVariables.EMPTY, vi.getProperties().toImmutableMap(), false);
             if (vi.linkedVariablesIsSet()) vic.setLinkedVariables(vi.getLinkedVariables(), false);
         }

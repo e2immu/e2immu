@@ -309,7 +309,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         }
 
         // process parameters
-        int notModified1Scope = evaluationContext.getProperty(objectValue, VariableProperty.NOT_MODIFIED_1, false);
+        int notModified1Scope = evaluationContext.getProperty(objectValue, VariableProperty.NOT_MODIFIED_1, true);
         Pair<EvaluationResult.Builder, List<Expression>> res = EvaluateParameters.transform(parameterExpressions, evaluationContext, methodInfo, notModified1Scope, objectValue);
         List<Expression> parameterValues = res.v;
         builder.compose(objectResult, res.k.build());

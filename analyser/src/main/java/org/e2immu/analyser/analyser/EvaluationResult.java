@@ -279,16 +279,20 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                 // if context not null is already high enough, don't complain
                 int contextNotNull = getPropertyFromInitial(variable, VariableProperty.CONTEXT_NOT_NULL);
                 int externalNotNull = getPropertyFromInitial(variable, VariableProperty.EXTERNAL_NOT_NULL);
-                // the NewObject situation with a real externalNotNull < contextNotNull allows for a message on parameters
-                int notNullForException = value instanceof NewObject &&
-                        externalNotNull < contextNotNull && externalNotNull != Level.DELAY
-                        ? externalNotNull : contextNotNull;
-                boolean valueIsDelayed = evaluationContext.isDelayed(value);
-                // TODO external not null delays to be implemented.
-                if (notNullForException == MultiLevel.FALSE && !valueIsDelayed) {
-                    Message message = Message.newMessage(evaluationContext.getLocation(), Message.POTENTIAL_NULL_POINTER_EXCEPTION,
-                            "Variable: " + variable.simpleName());
-                    messages.add(message);
+                if (variable instanceof ParameterInfo && externalNotNull == Level.DELAY) {
+                    setProperty(variable, VariableProperty.EXTERNAL_NOT_NULL_DELAY, Level.TRUE);
+                } else {
+                    // the NewObject situation with a real externalNotNull < contextNotNull allows for a message on parameters
+                    int notNullForException = value instanceof NewObject &&
+                            externalNotNull < contextNotNull && externalNotNull != Level.DELAY
+                            ? externalNotNull : contextNotNull;
+                    boolean valueIsDelayed = evaluationContext.isDelayed(value);
+
+                    if (notNullForException == MultiLevel.FALSE && !valueIsDelayed) {
+                        Message message = Message.newMessage(evaluationContext.getLocation(), Message.POTENTIAL_NULL_POINTER_EXCEPTION,
+                                "Variable: " + variable.simpleName());
+                        messages.add(message);
+                    }
                 }
             }
 

@@ -204,8 +204,13 @@ class VariableInfoImpl implements VariableInfo {
     }
 
     void setStatementTime(int statementTime) {
-        if (!this.statementTime.isSet() || statementTime != this.statementTime.get()) {
-            this.statementTime.set(statementTime);
+        try {
+            if (!this.statementTime.isSet() || statementTime != this.statementTime.get()) {
+                this.statementTime.set(statementTime);
+            }
+        } catch (RuntimeException re) {
+            LOGGER.error("Caught exception while setting statement time of "+variable.fullyQualifiedName());
+            throw re;
         }
     }
 
@@ -258,11 +263,14 @@ class VariableInfoImpl implements VariableInfo {
             new MergeOp(VariableProperty.NOT_NULL_EXPRESSION, Math::min, Integer.MAX_VALUE),
             new MergeOp(VariableProperty.CONTEXT_NOT_NULL, Math::max, Level.DELAY),
             new MergeOp(VariableProperty.CONTEXT_NOT_NULL_DELAY_RESOLVED, Math::max, Level.DELAY),
-            new MergeOp(VariableProperty.CONTEXT_MODIFIED_DELAY_RESOLVED, Math::max, Level.DELAY),
+            new MergeOp(VariableProperty.EXTERNAL_NOT_NULL, Math::max, Level.DELAY),
+            new MergeOp(VariableProperty.EXTERNAL_NOT_NULL_DELAY, Math::max, Level.DELAY),
+            new MergeOp(VariableProperty.EXTERNAL_NOT_NULL_DELAY_RESOLVED, Math::max, Level.DELAY),
             new MergeOp(VariableProperty.IMMUTABLE, Math::min, Integer.MAX_VALUE),
             new MergeOp(VariableProperty.CONTAINER, Math::min, Integer.MAX_VALUE),
             new MergeOp(VariableProperty.IDENTITY, Math::min, Integer.MAX_VALUE),
             new MergeOp(VariableProperty.CONTEXT_MODIFIED, Math::max, Level.DELAY),
+            new MergeOp(VariableProperty.CONTEXT_MODIFIED_DELAY_RESOLVED, Math::max, Level.DELAY),
             new MergeOp(VariableProperty.MODIFIED_OUTSIDE_METHOD, Math::max, Level.DELAY)
     );
 

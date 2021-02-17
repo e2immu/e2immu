@@ -159,4 +159,9 @@ public interface VariableInfo {
         return getProperty(VariableProperty.CONTEXT_NOT_NULL_DELAY) == Level.TRUE &&
                 getProperty(VariableProperty.CONTEXT_NOT_NULL_DELAY_RESOLVED) != Level.TRUE;
     }
+
+    default boolean externalNotNullDelay() {
+        return getProperty(VariableProperty.EXTERNAL_NOT_NULL_DELAY) == Level.TRUE &&
+                getProperty(VariableProperty.EXTERNAL_NOT_NULL_DELAY_RESOLVED) != Level.TRUE;
+    }
 }

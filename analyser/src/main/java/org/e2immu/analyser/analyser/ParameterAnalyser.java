@@ -150,7 +150,7 @@ public class ParameterAnalyser {
             changed = true;
             contracted++;
         }
-        if (contracted == 2) {
+        if (contracted == 2 || parameterInfo.owner.typeInfo.typeInspection.get().fields().isEmpty()) {
             parameterAnalysis.resolveFieldDelays();
             return DONE;
         }
