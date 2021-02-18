@@ -404,6 +404,7 @@ public class FieldAnalyser extends AbstractAnalyser {
             values.add(fieldAnalysis.getInitialValue());
         }
         // collect all the other values, bail out when delays
+        // IMPROVE this method does not take ExplicitConstructorInvocations into account
         if (!(fieldInfo.isExplicitlyFinal() && haveInitialiser)) {
             for (MethodAnalyser methodAnalyser : myMethodsAndConstructors) {
                 for (VariableInfo vi : methodAnalyser.getFieldAsVariable(fieldInfo, false)) {
@@ -414,6 +415,9 @@ public class FieldAnalyser extends AbstractAnalyser {
                             log(DELAYED, "Delay consistent value for field {}", fieldInfo.fullyQualifiedName());
                             return DELAYS;
                         }
+                    } else if (!fieldInfo.isExplicitlyFinal() && methodAnalyser.methodInfo.isConstructor) {
+                        // implicit initial value (null, 0, 0.0d, 0.0f, false, ...)
+                        values.add(ConstantExpression.nullValue(analyserContext.getPrimitives(), fieldInfo.type.bestTypeInfo()));
                     }
                 }
             }
@@ -839,7 +843,7 @@ public class FieldAnalyser extends AbstractAnalyser {
         public int getProperty(Expression value, VariableProperty variableProperty, boolean duringEvaluation) {
             if (value instanceof VariableExpression variableValue) {
                 Variable variable = variableValue.variable();
-                return getProperty(variable, variableProperty == VariableProperty.NOT_NULL_EXPRESSION  ?
+                return getProperty(variable, variableProperty == VariableProperty.NOT_NULL_EXPRESSION ?
                         VariableProperty.EXTERNAL_NOT_NULL : variableProperty);
             }
             return value.getProperty(this, variableProperty, true);

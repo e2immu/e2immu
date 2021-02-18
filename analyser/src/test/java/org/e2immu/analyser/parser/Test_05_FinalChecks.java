@@ -4,6 +4,9 @@ import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.StringConcat;
+import org.e2immu.analyser.model.expression.VariableExpression;
+import org.e2immu.analyser.model.variable.FieldReference;
+import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -28,24 +31,51 @@ public class Test_05_FinalChecks extends CommonTestRunner {
 
     private static final String S1 = TYPE + ".s1";
     private static final String S4 = TYPE + ".s4";
+    private static final String S4_0 = TYPE + ".s4$0";
     private static final String S5 = TYPE + ".s5";
     private static final String THIS = TYPE + ".this";
 
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-        if ("setS4".equals(d.methodInfo().name) && S4.equals(d.variableName())) {
-            Assert.assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
-        }
-        if (d.methodInfo().name.equals("setS4") && d.variable() instanceof ParameterInfo pi && "s4".equals(pi.name)) {
-            if ("0".equals(d.statementId())) {
-                Assert.assertFalse(d.hasProperty(VariableProperty.MODIFIED_VARIABLE)); // no method was called on parameter s4
-                // p4 never came in a not-null context
-                Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.CONTEXT_NOT_NULL_DELAY_RESOLVED));
-                Assert.assertEquals(Level.DELAY, d.getProperty(VariableProperty.CONTEXT_NOT_NULL_DELAY));
+        if ("setS4".equals(d.methodInfo().name)) {
+            if (S4.equals(d.variableName())) {
+                Assert.assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                Assert.assertEquals("s4", d.currentValue().debugOutput());
+                String expectLinked = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "";
+                // first iteration delayed because VARIABLE_FIELD delay
+                Assert.assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
+            }
+            if (d.variable() instanceof ParameterInfo pi && "s4".equals(pi.name)) {
+                if ("0".equals(d.statementId())) {
+                    Assert.assertFalse(d.hasProperty(VariableProperty.MODIFIED_VARIABLE)); // no method was called on parameter s4
+                    Assert.assertEquals("", d.variableInfo().getLinkedVariables().toString());
 
-                Assert.assertTrue(d.variableInfo().isRead());
-                int expectNotNull = d.iteration() <= 2 ? Level.DELAY : MultiLevel.NULLABLE;
-                Assert.assertEquals(expectNotNull, d.getProperty(VariableProperty.NOT_NULL_PARAMETER)); // nothing that points to not null
-            } else Assert.fail();
+                    // p4 never came in a not-null context
+                    Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.CONTEXT_NOT_NULL_DELAY_RESOLVED));
+                    Assert.assertEquals(Level.DELAY, d.getProperty(VariableProperty.CONTEXT_NOT_NULL_DELAY));
+
+                    Assert.assertTrue(d.variableInfo().isRead());
+                    int expectNotNull = d.iteration() <= 2 ? Level.DELAY : MultiLevel.NULLABLE;
+                    Assert.assertEquals(expectNotNull, d.getProperty(VariableProperty.NOT_NULL_PARAMETER)); // nothing that points to not null
+                } else Assert.fail();
+            }
+        }
+        if ("toString".equals(d.methodInfo().name) && FINAL_CHECKS.equals(d.methodInfo().typeInfo.simpleName)) {
+            if (S4_0.equals(d.variableName())) {
+                Assert.assertTrue(d.iteration() > 0);
+                Assert.assertEquals("nullable instance type String", d.currentValue().toString());
+            }
+            if (d.variable() instanceof ReturnVariable) {
+                String expectValue;
+                if (d.iteration() == 0) {
+                    expectValue = "<f:s1>+\" \"+<f:s2>+\" \"+<f:s3>+\" \"+<f:s4>";
+                } else if (d.iteration() == 1) {
+                    expectValue = "<f:s1>+\" \"+<f:s2>+\" \"+s3+\" \"+org.e2immu.analyser.testexample.FinalChecks.s4$0";
+                } else {
+                    expectValue = "s1+\" \"+s2+\" \"+s3+\" \"+org.e2immu.analyser.testexample.FinalChecks.s4$0";
+                }
+                Assert.assertEquals(expectValue, d.currentValue().toString());
+                Assert.assertEquals(d.iteration() > 1, d.variableInfo().valueIsSet());
+            }
         }
 
         if (FINAL_CHECKS_FQN.equals(d.methodInfo().fullyQualifiedName)) {
@@ -141,6 +171,27 @@ public class Test_05_FinalChecks extends CommonTestRunner {
     };
 
     FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+        if ("s1".equals(d.fieldInfo().name)) {
+            if (d.iteration() > 0) {
+                // cannot properly be assigned/linked to one parameter
+                Assert.assertEquals("this.s1", d.fieldAnalysis().getEffectivelyFinalValue().debugOutput());
+                Assert.assertEquals("", d.fieldAnalysis().getLinkedVariables().toString());
+            } else {
+                Assert.assertNull(d.fieldAnalysis().getEffectivelyFinalValue());
+                Assert.assertEquals(LinkedVariables.DELAY_STRING, d.fieldAnalysis().getLinkedVariables().toString());
+            }
+        }
+        if ("s2".equals(d.fieldInfo().name)) {
+            if (d.iteration() > 0) {
+                Assert.assertEquals("this.s2", d.fieldAnalysis().getEffectivelyFinalValue().debugOutput());
+                Assert.assertTrue(d.fieldAnalysis().getEffectivelyFinalValue() instanceof VariableExpression ve &&
+                        ve.variable() instanceof FieldReference);
+                Assert.assertEquals("", d.fieldAnalysis().getLinkedVariables().toString());
+            } else {
+                Assert.assertNull(d.fieldAnalysis().getEffectivelyFinalValue());
+                Assert.assertEquals(LinkedVariables.DELAY_STRING, d.fieldAnalysis().getLinkedVariables().toString());
+            }
+        }
         if ("s4".equals(d.fieldInfo().name)) {
             Assert.assertEquals(MultiLevel.NULLABLE, d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_NOT_NULL));
         }
