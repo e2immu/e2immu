@@ -967,7 +967,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                     // it is possible that the field has been assigned to, so it exists, but the local copy does not yet
                     return new VariableInfoImpl(variable);
                 }
-                return variables.get(localVariableFqn).current();
+                return variables.get(localVariableFqn).getPreviousOrInitial();
             }
             if (vic.isLocalVariableInLoopDefinedOutside()) {
                 StatementAnalysis relevantLoop = mostEnclosingLoop();
