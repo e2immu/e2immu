@@ -4,6 +4,8 @@ import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.StringConcat;
+import org.e2immu.analyser.model.expression.VariableExpression;
+import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.junit.Assert;
 import org.junit.Test;
@@ -183,10 +185,10 @@ public class Test_05_FinalChecks extends CommonTestRunner {
         }
         if ("s2".equals(d.fieldInfo().name)) {
             if (d.iteration() > 0) {
-                //       Assert.assertEquals("this.s2", d.fieldAnalysis().getEffectivelyFinalValue().debugOutput());
-                //       Assert.assertTrue(d.fieldAnalysis().getEffectivelyFinalValue() instanceof VariableExpression ve &&
-                //               ve.variable() instanceof FieldReference);
-                //       Assert.assertEquals("", d.fieldAnalysis().getLinkedVariables().toString());
+                Assert.assertEquals("this.s2", d.fieldAnalysis().getEffectivelyFinalValue().debugOutput());
+                Assert.assertTrue(d.fieldAnalysis().getEffectivelyFinalValue() instanceof VariableExpression ve &&
+                        ve.variable() instanceof FieldReference);
+                Assert.assertEquals("", d.fieldAnalysis().getLinkedVariables().toString());
             } else {
                 Assert.assertNull(d.fieldAnalysis().getEffectivelyFinalValue());
                 Assert.assertEquals(LinkedVariables.DELAY_STRING, d.fieldAnalysis().getLinkedVariables().toString());

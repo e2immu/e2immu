@@ -459,7 +459,6 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             if (prevIteration != null) {
                 VariableInfoContainer vic = findForWriting(parameterInfo);
                 ParameterAnalysis parameterAnalysis = analyserContext.getParameterAnalysis(parameterInfo);
-                assert prevIteration.valueIsSet();
                 for (VariableProperty variableProperty : FROM_ANALYSER_TO_PROPERTIES) {
                     int value = parameterAnalysis.getProperty(variableProperty);
                     if (value != Level.DELAY) {
@@ -529,8 +528,6 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             if (!viEval.valueIsSet() && !initialValue.expression.isUnknown() && !viEval.isRead()) {
                 vic.setValue(initialValue.expression, initialValue.expressionIsDelayed,
                         viInitial.getStaticallyAssignedVariables(), combined, false);
-            } else {
-                combined.forEach((k, v) -> vic.setProperty(k, v, false, VariableInfoContainer.Level.EVALUATION));
             }
             // if the variable has not been read, it is not present in EVAL, so we set a value
             if (!vic.isReadInThisStatement() && !viEval.linkedVariablesIsSet() && initialValue.linkedVariables != LinkedVariables.DELAY) {
@@ -539,7 +536,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         }
     }
 
-    private static final VariableProperty[] CONTEXT_PROPERTIES = { CONTEXT_NOT_NULL, CONTEXT_NOT_NULL_DELAY_RESOLVED };
+    private static final VariableProperty[] CONTEXT_PROPERTIES = {CONTEXT_NOT_NULL, CONTEXT_NOT_NULL_DELAY_RESOLVED};
 
     private void ensureLocalCopiesOfConfirmedVariableFields(EvaluationContext evaluationContext, VariableInfoContainer vic) {
         if (vic.hasEvaluation()) {
@@ -569,7 +566,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                         Map<VariableProperty, Integer> valueMap = evaluationContext.getValueProperties(initialValue);
                         Map<VariableProperty, Integer> combined = new HashMap<>(propertyMap);
                         valueMap.forEach((k, v) -> combined.merge(k, v, Math::max));
-                        for(VariableProperty vp: CONTEXT_PROPERTIES) {
+                        for (VariableProperty vp : CONTEXT_PROPERTIES) {
                             combined.put(vp, initial.getProperty(vp)); // and not EVAL!
                         }
                         lvrVic.setValue(initialValue, false, LinkedVariables.EMPTY, combined, true);
@@ -1253,5 +1250,9 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                     return equals;
                 })
                 .toArray(Expression[]::new));
+    }
+
+    public boolean isLinkedToOtherVariable(Variable variable) {
+        return variables.stream().anyMatch(e -> e.getValue().getPreviousOrInitial().getLinkedVariables().contains(variable));
     }
 }

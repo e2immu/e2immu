@@ -28,14 +28,14 @@ public class Test_06_FinalNotNullChecks extends CommonTestRunner {
         if ("debug".equals(d.methodInfo().name) && INPUT.equals(d.variableName())) {
             int expectNN = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
             Assert.assertEquals(expectNN, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
-            int expectFinal = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
+            int expectFinal = d.iteration() <= 1 ? Level.DELAY : Level.TRUE;
             Assert.assertEquals(expectFinal, d.getProperty(VariableProperty.FINAL));
             String expectValue = d.iteration() == 0 ? INPUT_DELAYED : INPUT_INSTANCE;
             Assert.assertEquals(expectValue, d.currentValue().toString());
         }
         if ("toString".equals(d.methodInfo().name) && INPUT.equals(d.variableName())) {
             Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
-            int expectFinal = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
+            int expectFinal = d.iteration() <= 1 ? Level.DELAY : Level.TRUE;
             Assert.assertEquals(expectFinal, d.getProperty(VariableProperty.FINAL));
             String expectValue = d.iteration() == 0 ? INPUT_DELAYED : INPUT_INSTANCE;
             Assert.assertEquals(expectValue, d.currentValue().toString());

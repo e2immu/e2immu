@@ -67,4 +67,8 @@ public record LinkedVariables(Set<Variable> variables) {
         if (remaining.isEmpty()) return EMPTY;
         return new LinkedVariables(remaining);
     }
+
+    public boolean contains(Variable variable) {
+        return variables.contains(variable);
+    }
 }

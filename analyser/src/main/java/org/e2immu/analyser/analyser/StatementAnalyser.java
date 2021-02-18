@@ -668,7 +668,9 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                     }
                 }
             } else {
-                Map<VariableProperty, Integer> merged = mergePreviousAndChange(vi1.getProperties().toImmutableMap(), changeData.properties());
+                boolean linkedToOtherVariable = statementAnalysis.isLinkedToOtherVariable(variable);
+                Map<VariableProperty, Integer> merged = mergePreviousAndChange(vi1.getProperties().toImmutableMap(),
+                        changeData.properties(), linkedToOtherVariable);
 
                 if (changeData.value() != null) {
                     // a modifying method caused an updated instance value
@@ -794,7 +796,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
     }
 
     private static Map<VariableProperty, Integer> mergePreviousAndChange(Map<VariableProperty, Integer> previous,
-                                                                         Map<VariableProperty, Integer> changeData) {
+                                                                         Map<VariableProperty, Integer> changeData,
+                                                                         boolean linkedToOtherVariable) {
         Set<VariableProperty> both = new HashSet<>(previous.keySet());
         both.addAll(changeData.keySet());
         Map<VariableProperty, Integer> res = new HashMap<>(changeData);
@@ -810,7 +813,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                     }
                 }
                 case CONTEXT_MODIFIED -> {
-                    if (changeData.getOrDefault(CONTEXT_MODIFIED_DELAY, Level.DELAY) != Level.TRUE) {
+                    if (changeData.getOrDefault(CONTEXT_MODIFIED_DELAY, Level.DELAY) != Level.TRUE && !linkedToOtherVariable) {
                         int best = Math.max(prev, change);
                         if (best != Level.DELAY) res.put(k, best);
                     }

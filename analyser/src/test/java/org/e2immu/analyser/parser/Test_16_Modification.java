@@ -1,12 +1,12 @@
 package org.e2immu.analyser.parser;
 
+import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.LinkedVariables;
 import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.MethodCall;
-import org.e2immu.analyser.model.expression.NewObject;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.statement.ExpressionAsStatement;
 import org.e2immu.analyser.model.variable.FieldReference;
@@ -86,7 +86,7 @@ public class Test_16_Modification extends CommonTestRunner {
                 int expect = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
                 Assert.assertEquals(expect, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
             }
-            if ("getFirst".equals(d.methodInfo().name)) {
+            if ("getFirst".equals(d.methodInfo().name) && d.iteration() > 0) {
                 Assert.assertNotNull(d.haveError(Message.UNUSED_PARAMETER));
             }
         };
@@ -112,7 +112,7 @@ public class Test_16_Modification extends CommonTestRunner {
     @Test
     public void test2() throws IOException {
         final String GET_FIRST_VALUE = "set2ter.isEmpty()?\"\":(instance type Stream<E>).findAny().orElseThrow()";
-        final String GET_FIRST_VALUE_DELAYED = "<method:java.util.Set.isEmpty()>?\"\":<method:java.util.Optional.orElseThrow()>";
+        final String GET_FIRST_VALUE_DELAYED = "<m:isEmpty>?\"\":<m:orElseThrow>";
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("getFirst".equals(d.methodInfo().name) && "0".equals(d.statementId())) {
                 String expect = d.iteration() == 0 ? GET_FIRST_VALUE_DELAYED : GET_FIRST_VALUE;
@@ -178,7 +178,7 @@ public class Test_16_Modification extends CommonTestRunner {
             }
         };
         final String INSTANCE_TYPE_HASH_SET = "instance type HashSet<String>";
-        final String SET3_DELAYED = "<field:org.e2immu.analyser.testexample.Modification_3.set3>";
+        final String SET3_DELAYED = "<f:set3>";
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("add3".equals(d.methodInfo().name) && "local3".equals(d.variableName())) {
@@ -297,21 +297,21 @@ public class Test_16_Modification extends CommonTestRunner {
     @Test
     public void test4() throws IOException {
         final String SET4 = "org.e2immu.analyser.testexample.Modification_4.set4";
-        final String SET4_DELAYED = "<field:org.e2immu.analyser.testexample.Modification_4.set4>";
+        final String SET4_DELAYED = "<f:set4>";
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("add4".equals(d.methodInfo().name) && SET4.equals(d.variableName())) {
                 if (d.iteration() == 0) {
                     Assert.assertTrue(d.currentValueIsDelayed());
                 } else {
-                    if ("0".equals(d.statementId()) || "1".equals(d.statementId())) {
-                        Assert.assertEquals("0-E", d.variableInfo().getReadId());
-                        Assert.assertEquals("nullable? instance type Set<String>", d.currentValue().toString());
-                    }
+                    Assert.assertEquals("0-E", d.variableInfo().getReadId());
+                    Assert.assertEquals("instance type Set<String>", d.currentValue().toString());
                 }
                 if ("1".equals(d.statementId())) {
                     // via statical assignments
                     Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+                    int expectCm = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
+                    Assert.assertEquals(expectCm, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
                 }
             }
 
@@ -326,13 +326,13 @@ public class Test_16_Modification extends CommonTestRunner {
                 if ("1".equals(d.statementId())) {
                     Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
                     Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
-                    String expect = d.iteration() == 0 ? "<variable:local4>" : "instance type Set<String>";
+                    String expect = d.iteration() == 0 ? "<v:local4>" : "instance type Set<String>";
                     Assert.assertEquals(expect, d.currentValue().toString());
                 }
             }
             if ("Modification_4".equals(d.methodInfo().name) && SET4.equals(d.variableName()) && "0".equals(d.statementId())) {
                 if (d.iteration() == 0) {
-                    Assert.assertEquals(Level.DELAY, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                    Assert.assertEquals(Level.DELAY, d.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
                 } else {
                     Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.MODIFIED_VARIABLE));
                     Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
@@ -353,7 +353,7 @@ public class Test_16_Modification extends CommonTestRunner {
                 int expectModified = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
                 Assert.assertEquals(expectModified, d.fieldAnalysis().getProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD));
                 Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL,
-                        d.fieldAnalysis().getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                        d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_NOT_NULL));
 
                 Assert.assertEquals("in4", d.fieldAnalysis().getEffectivelyFinalValue().toString());
                 Assert.assertEquals("in4", d.fieldAnalysis().getLinkedVariables().toString());
@@ -366,7 +366,7 @@ public class Test_16_Modification extends CommonTestRunner {
             if ("Modification_4".equals(name)) {
                 ParameterAnalysis in4 = d.parameterAnalyses().get(0);
                 int expectNN = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
-                Assert.assertEquals(expectNN, in4.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                Assert.assertEquals(expectNN, in4.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
                 int expectModified = d.iteration() <= 1 ? Level.DELAY : Level.TRUE;
                 Assert.assertEquals(expectModified, in4.getProperty(VariableProperty.MODIFIED_VARIABLE));
             }
@@ -395,22 +395,20 @@ public class Test_16_Modification extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("Modification_5".equals(d.methodInfo().name) && d.variable() instanceof ParameterInfo p &&
                     "in5".equals(p.name) && "0".equals(d.statementId())) {
-                Assert.assertEquals(Level.FALSE, d.getProperty(VariableProperty.MODIFIED_VARIABLE));
+                Assert.assertEquals(Level.FALSE, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
             }
             if ("Modification_5".equals(d.methodInfo().name) &&
                     "org.e2immu.analyser.testexample.Modification_5.set5".equals(d.variableName()) && "0".equals(d.statementId())) {
-                if (d.iteration() == 0) {
-                    Assert.assertTrue(d.currentValue() instanceof NewObject);
-                } else {
-                    Assert.assertTrue(d.currentValue() instanceof VariableExpression);
-                    Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.FINAL));
-                }
+                Assert.assertEquals(d.iteration() == 0 ? Level.DELAY : Level.TRUE, d.getProperty(VariableProperty.FINAL));
+                String expectValue = d.iteration() == 0 ? "new HashSet<>(in5)/*this.size()==in5.size()*/" : "";
+                Assert.assertEquals(expectValue, d.currentValue().toString());
             }
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("Modification_5".equals(d.methodInfo().name)) {
                 ParameterAnalysis in5 = d.parameterAnalyses().get(0);
-                Assert.assertEquals(Level.FALSE, in5.getProperty(VariableProperty.MODIFIED_METHOD));
+                int expectMom = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
+                Assert.assertEquals(expectMom, in5.getProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD));
             }
         };
 
@@ -499,8 +497,8 @@ public class Test_16_Modification extends CommonTestRunner {
             }
             if ("add6".equals(name)) {
                 ParameterAnalysis values6 = d.parameterAnalyses().get(1);
-                Assert.assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL,
-                        values6.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                int expectNnp = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL;
+                Assert.assertEquals(expectNnp, values6.getProperty(VariableProperty.NOT_NULL_PARAMETER));
 
                 FieldInfo set6 = d.methodInfo().typeInfo.getFieldByName("set6", true);
                 VariableInfo set6VariableInfo = d.getFieldAsVariable(set6);
@@ -512,7 +510,7 @@ public class Test_16_Modification extends CommonTestRunner {
                 VariableInfo vi = vis.get(0);
                 if (d.iteration() > 0) {
                     Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, vi.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
-                    Assert.assertEquals(Level.TRUE, vi.getProperty(VariableProperty.MODIFIED_VARIABLE));
+                    Assert.assertEquals(Level.TRUE, vi.getProperty(VariableProperty.CONTEXT_MODIFIED));
                 }
             }
         };
@@ -522,7 +520,7 @@ public class Test_16_Modification extends CommonTestRunner {
             MethodInfo addAll = set.findUniqueMethod("addAll", 1);
             ParameterInfo p0 = addAll.methodInspection.get().getParameters().get(0);
             Assert.assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL, p0.parameterAnalysis.get()
-                    .getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                    .getProperty(VariableProperty.NOT_NULL_PARAMETER));
         };
 
         testClass("Modification_6", 0, 0, new DebugConfiguration.Builder()
@@ -689,53 +687,85 @@ public class Test_16_Modification extends CommonTestRunner {
     public void test11() throws IOException {
         final String TYPE = "org.e2immu.analyser.testexample.Modification_11";
         final String SET_IN_C1 = TYPE + ".C1.set";
-        final String SET_IN_C1_DELAYED = "<field:org.e2immu.analyser.testexample.Modification_11.C1.set>";
+        final String SET_IN_C1_DELAYED = "<f:set>";
+        final String S2 = TYPE + ".s2";
+
+        EvaluationResultVisitor evaluationResultVisitor = d -> {
+            if ("example1".equals(d.methodInfo().name) && "0".equals(d.statementId())) {
+                EvaluationResult.ChangeData s2 = d.findValueChange(S2);
+                int expectCnn = d.iteration() <= 2 ? Level.TRUE : Level.DELAY;
+                Assert.assertEquals(expectCnn, s2.getProperty(VariableProperty.CONTEXT_NOT_NULL_DELAY));
+            }
+        };
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("C1".equals(d.methodInfo().name) && SET_IN_C1.equals(d.variableName())) {
                 Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
             }
             if ("add".equals(d.methodInfo().name) && SET_IN_C1.equals(d.variableName())) {
-                String expectValue = d.iteration() == 0 ? SET_IN_C1_DELAYED : "instance type Set<String>";
+                String expectValue = d.iteration() <= 2 ? SET_IN_C1_DELAYED : "instance type Set<String>";
                 Assert.assertEquals(expectValue, d.currentValue().toString());
-                int expectNN = d.iteration() == 0 ? MultiLevel.EFFECTIVELY_NOT_NULL : MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL;
+                int expectNN = d.iteration() <= 2 ? Level.DELAY : MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL;
                 Assert.assertEquals(expectNN, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
             }
+            if ("example1".equals(d.methodInfo().name) && "0".equals(d.statementId())) {
+                if (S2.equals(d.variableName())) {
+                    int expectCnnDR = d.iteration() <= 2 ? Level.DELAY : Level.TRUE;
+                    Assert.assertEquals(expectCnnDR, d.getProperty(VariableProperty.CONTEXT_NOT_NULL_DELAY_RESOLVED));
+                    int expectCnn = d.iteration() <= 2 ? Level.DELAY : MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL;
+                    Assert.assertEquals(expectCnn, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+
+                    Assert.assertEquals("", d.variableInfo().getStaticallyAssignedVariables().toString());
+                }
+            }
         };
+
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("set".equals(d.fieldInfo().name)) {
                 Assert.assertEquals("setC", d.fieldAnalysis().getLinkedVariables().toString());
                 Assert.assertEquals("setC/*@NotNull*/", d.fieldAnalysis().getEffectivelyFinalValue().debugOutput());
                 // the field analyser sees addAll being used on set in the method addAllOnC
-                Assert.assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL,
-                        d.fieldAnalysis().getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                int expectEnn = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL;
+                Assert.assertEquals(expectEnn, d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_NOT_NULL));
             }
         };
+
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("C1".equals(d.methodInfo().name)) {
+                ParameterAnalysis p0 = d.parameterAnalyses().get(0);
+                int expectNnp = d.iteration() <= 2 ? Level.DELAY : MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL;
+                Assert.assertEquals(expectNnp, p0.getProperty(VariableProperty.NOT_NULL_PARAMETER));
+            }
+        };
+
         testClass("Modification_11", 0, 0, new DebugConfiguration.Builder()
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addEvaluationResultVisitor(evaluationResultVisitor)
                 .build());
     }
 
 
     @Test
-    public void test_12() throws IOException {
-        final String CHILD_CLASS_SUPER = "org.e2immu.analyser.testexample.Modification_12.ChildClass.super";
-        final String PARENT_CLASS_THIS = "org.e2immu.analyser.testexample.Modification_12.ParentClass.this";
-        final String PARENT_CLASS_SET = "org.e2immu.analyser.testexample.Modification_12.ParentClass.set";
+    public void test12() throws IOException {
+        final String TYPE = "org.e2immu.analyser.testexample.Modification_12";
+        final String CHILD_CLASS_SUPER = TYPE + ".ChildClass.super";
+        final String PARENT_CLASS_THIS = TYPE + ".ParentClass.this";
+        final String PARENT_CLASS_SET = TYPE + ".ParentClass.set";
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("clear".equals(d.methodInfo().name) && "ParentClass".equals(d.methodInfo().typeInfo.simpleName)
                     && PARENT_CLASS_SET.equals(d.variableName())) {
                 int expectModified = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
-                Assert.assertEquals(expectModified, d.getProperty(VariableProperty.MODIFIED_VARIABLE));
+                Assert.assertEquals(expectModified, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
             }
 
             if ("clearAndLog".equals(d.methodInfo().name) && "ParentClass".equals(d.methodInfo().typeInfo.simpleName)
                     && "0".equals(d.statementId()) && d.variable() instanceof This) {
                 Assert.assertEquals(PARENT_CLASS_THIS, d.variableName());
                 int expectModified = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
-                Assert.assertEquals(expectModified, d.getProperty(VariableProperty.MODIFIED_VARIABLE));
+                Assert.assertEquals(expectModified, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
             }
 
             if ("clearAndLog".equals(d.methodInfo().name) && "ChildClass".equals(d.methodInfo().typeInfo.simpleName)
@@ -744,7 +774,7 @@ public class Test_16_Modification extends CommonTestRunner {
                     Assert.assertEquals(CHILD_CLASS_SUPER, d.variableName());
                     int expectModified = d.iteration() <= 1 ? Level.DELAY : Level.TRUE;
                     // we have to wait for clearAndLog in ParentClass, which is analysed AFTER this one
-                    Assert.assertEquals(expectModified, d.getProperty(VariableProperty.MODIFIED_VARIABLE));
+                    Assert.assertEquals(expectModified, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
                 }
             }
 
@@ -790,7 +820,7 @@ public class Test_16_Modification extends CommonTestRunner {
             }
             if ("clear".equals(name) && "InnerOfChild".equals(d.methodInfo().typeInfo.simpleName)) {
                 int expectModified = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
-                Assert.assertEquals(expectModified, d.getThisAsVariable().getProperty(VariableProperty.MODIFIED_VARIABLE));
+                Assert.assertEquals(expectModified, d.getThisAsVariable().getProperty(VariableProperty.CONTEXT_MODIFIED));
             }
         };
 
@@ -825,7 +855,7 @@ public class Test_16_Modification extends CommonTestRunner {
         final String INNER_THIS = "org.e2immu.analyser.testexample.Modification_13.Inner.this";
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("clearIfExceeds".equals(d.methodInfo().name) && INNER_THIS.equals(d.variableName())) {
-                Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.MODIFIED_VARIABLE));
+                Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
             }
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {

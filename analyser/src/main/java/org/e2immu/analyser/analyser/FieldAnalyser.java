@@ -407,18 +407,21 @@ public class FieldAnalyser extends AbstractAnalyser {
         // IMPROVE this method does not take ExplicitConstructorInvocations into account
         if (!(fieldInfo.isExplicitlyFinal() && haveInitialiser)) {
             for (MethodAnalyser methodAnalyser : myMethodsAndConstructors) {
+                boolean added = false;
                 for (VariableInfo vi : methodAnalyser.getFieldAsVariable(fieldInfo, false)) {
                     if (vi.isAssigned()) {
                         if (vi.isNotDelayed()) {
                             values.add(vi.getValue());
+                            added = true;
                         } else {
                             log(DELAYED, "Delay consistent value for field {}", fieldInfo.fullyQualifiedName());
                             return DELAYS;
                         }
-                    } else if (!fieldInfo.isExplicitlyFinal() && methodAnalyser.methodInfo.isConstructor) {
-                        // implicit initial value (null, 0, 0.0d, 0.0f, false, ...)
-                        values.add(ConstantExpression.nullValue(analyserContext.getPrimitives(), fieldInfo.type.bestTypeInfo()));
                     }
+                }
+                if (!added && !fieldInfo.isExplicitlyFinal() && methodAnalyser.methodInfo.isConstructor) {
+                    // implicit initial value (null, 0, 0.0d, 0.0f, false, ...)
+                    values.add(ConstantExpression.nullValue(analyserContext.getPrimitives(), fieldInfo.type.bestTypeInfo()));
                 }
             }
         }
@@ -550,7 +553,8 @@ public class FieldAnalyser extends AbstractAnalyser {
         return false;
     }
 
-    private Expression determineEffectivelyFinalValue(List<Expression> values, boolean downgradeFromNewInstanceWithConstructor) {
+    private Expression determineEffectivelyFinalValue(List<Expression> values,
+                                                      boolean downgradeFromNewInstanceWithConstructor) {
         // suppose there are 2 constructors, and the field gets exactly the same value...
         Set<Expression> set = new HashSet<>(values);
         if (set.size() == 1) {
