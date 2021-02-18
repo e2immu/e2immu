@@ -151,8 +151,10 @@ public class ParameterAnalyser {
             contracted++;
         }
         if (contracted == 2 || parameterInfo.owner.typeInfo.typeInspection.get().fields().isEmpty()) {
-            if (!parameterAnalysis.properties.isSet(VariableProperty.EXTERNAL_NOT_NULL)) {
-                parameterAnalysis.setProperty(VariableProperty.EXTERNAL_NOT_NULL, MultiLevel.DELAY);
+            for (VariableProperty variableProperty : PROPERTIES) {
+                if (!parameterAnalysis.properties.isSet(variableProperty)) {
+                    parameterAnalysis.setProperty(variableProperty, MultiLevel.DELAY);
+                }
             }
             parameterAnalysis.resolveFieldDelays();
             return DONE;

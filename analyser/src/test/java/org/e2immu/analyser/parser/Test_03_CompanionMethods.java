@@ -311,16 +311,37 @@ public class Test_03_CompanionMethods extends CommonTestRunner {
     @Test
     public void test6() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-            if ("test".equals(d.methodInfo().name) && "set".equals(d.variableName())) {
-                if ("0".equals(d.statementId())) {
-                    Assert.assertEquals("new HashSet<>(strings)/*this.size()==strings.size()*/",
-                            d.currentValue().toString());
+            if ("test".equals(d.methodInfo().name)) {
+                if ("set".equals(d.variableName())) {
+                    if ("0".equals(d.statementId())) {
+                        Assert.assertEquals("new HashSet<>(strings)/*this.size()==strings.size()*/",
+                                d.currentValue().toString());
+                    }
                 }
+                if (d.variable() instanceof ParameterInfo pi && "strings".equals(pi.name)) {
+                    if ("2".equals(d.statementId())) {
+                        Assert.assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL,
+                                d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+                        Assert.assertEquals(Level.FALSE, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
+                    }
+                }
+            }
+        };
+
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("test".equals(d.methodInfo().name) && d.iteration() > 0) {
+                ParameterAnalysis param = d.parameterAnalyses().get(0);
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL,
+                        param.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+                Assert.assertEquals(MultiLevel.DELAY, param.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
+                Assert.assertEquals(Level.FALSE, param.getProperty(VariableProperty.CONTEXT_MODIFIED));
+                Assert.assertEquals(MultiLevel.DELAY, param.getProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD));
             }
         };
 
         TypeContext typeContext = testClass("BasicCompanionMethods_6", 0, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
         TypeInfo bc6 = typeContext.getFullyQualified(BasicCompanionMethods_6.class);
         MethodInfo test = bc6.findUniqueMethod("test", 1);
