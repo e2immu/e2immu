@@ -62,14 +62,14 @@ public class Test_09_EvaluatesToConstant extends CommonTestRunner {
 
         if ("method2".equals(d.methodInfo().name) && "b".equals(d.variableName()) && "0".equals(d.statementId())) {
             Assert.assertEquals("null==param?\"x\":param", d.currentValue().toString());
-            int expectNotNull = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
-            Assert.assertEquals(expectNotNull, d.currentValue().getProperty(d.evaluationContext(), VariableProperty.NOT_NULL_EXPRESSION, true));
+            int nne = d.currentValue().getProperty(d.evaluationContext(), VariableProperty.NOT_NULL_EXPRESSION, true);
+            Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, nne);
             Assert.assertEquals("", d.variableInfo().getLinkedVariables().toString());
         }
 
         if ("method3".equals(d.methodInfo().name)) {
             if (d.variable() instanceof ParameterInfo p && "param".equals(p.name)) {
-                Assert.assertEquals("nullable? instance type String", d.currentValue().toString());
+                Assert.assertEquals("nullable instance type String", d.currentValue().toString());
             }
             if ("b".equals(d.variableName()) && "0".equals(d.statementId())) {
                 // this is regardless the statement id, as b is defined in the very first statement

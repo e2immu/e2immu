@@ -80,7 +80,7 @@ public class Test_08_EvaluateConstants extends CommonTestRunner {
             if ("effectivelyFinal".equals(d.fieldInfo().name)) {
                 Assert.assertEquals(Level.TRUE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
                 Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.fieldAnalysis()
-                        .getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                        .getProperty(VariableProperty.EXTERNAL_NOT_NULL));
                 Assert.assertEquals("in", d.fieldAnalysis().getEffectivelyFinalValue().toString());
             }
         };
@@ -99,7 +99,7 @@ public class Test_08_EvaluateConstants extends CommonTestRunner {
 
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("print".equals(d.methodInfo().name) && "0".equals(d.statementId())) {
-                String expect = d.iteration() == 0 ? "<method:org.e2immu.analyser.testexample.EvaluateConstants_1.ee()>" : "false";
+                String expect = d.iteration() == 0 ? "<m:ee>" : "false";
                 Assert.assertEquals(expect, d.evaluationResult().value().toString());
             }
             if ("print2".equals(d.methodInfo().name)) {

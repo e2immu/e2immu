@@ -186,10 +186,10 @@ public class Test_10_Identity extends CommonTestRunner {
             if (d.methodInfo().name.equals("idem3") && d.variable() instanceof ParameterInfo s && "s".equals(s.name)) {
                 // there is an explicit @NotNull on the first parameter of debug
                 if ("0".equals(d.statementId())) {
-                    Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
-                    Assert.assertEquals(Level.FALSE, d.getProperty(VariableProperty.MODIFIED_VARIABLE));
+                    Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+                    Assert.assertEquals(Level.FALSE, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
                 } else if ("1".equals(d.statementId())) {
-                    Assert.assertEquals(Level.FALSE, d.getProperty(VariableProperty.MODIFIED_VARIABLE));
+                    Assert.assertEquals(Level.FALSE, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
                 }
             }
         };
@@ -250,8 +250,7 @@ public class Test_10_Identity extends CommonTestRunner {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("idem4".equals(d.methodInfo().name) && "1".equals(d.statementId())) {
                 // double property wrapper
-                String expect = d.iteration() == 0 ? "<method:java.lang.String.equals(java.lang.Object)>?<method:org.e2immu.analyser.testexample.Identity_3.idem(java.lang.String)>:<parameter:org.e2immu.analyser.testexample.Identity_3.idem4(java.lang.String):0:s>"
-                        : "s/*@Immutable,@NotNull*//*@Immutable,@NotNull*/";
+                String expect = d.iteration() == 0 ? "<m:equals>?<m:idem>:<p:s>" : "s/*@Immutable,@NotNull*//*@Immutable,@NotNull*/";
                 Assert.assertEquals(expect, d.evaluationResult().value().toString());
             }
         };
