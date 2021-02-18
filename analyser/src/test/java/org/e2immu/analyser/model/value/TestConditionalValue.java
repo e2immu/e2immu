@@ -156,4 +156,10 @@ public class TestConditionalValue extends CommonAbstractValue {
         Expression e1 = inline(a, newInt(3), inline(a, newInt(4), newInt(5)));
         Assert.assertEquals("a?3:5", e1.toString());
     }
+
+    @Test
+    public void testLoops4() {
+        Expression e1 = inline(a, newInt(3), inline(negate(a), newInt(4), newInt(5)));
+        Assert.assertEquals("a?3:4", e1.toString());
+    }
 }

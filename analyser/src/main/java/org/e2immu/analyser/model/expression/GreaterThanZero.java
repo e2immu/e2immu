@@ -283,7 +283,7 @@ public record GreaterThanZero(ParameterizedType booleanParameterizedType,
 
     @Override
     public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
-        return null;
+        return new EvaluationResult.Builder().setExpression(this).build();
     }
 
     @Override

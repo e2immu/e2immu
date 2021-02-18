@@ -37,12 +37,16 @@ public record DelayedExpression(String msg, String debug, ParameterizedType para
                 "<method:" + methodInfo.fullyQualifiedName + ">", methodInfo.returnType());
     }
 
-    public static Expression forState(Primitives primitives) {
-        return new DelayedExpression("<state>", "<state>", primitives.booleanParameterizedType);
+    /*
+    expression with delayed state
+     */
+    public static Expression forState(ParameterizedType parameterizedType) {
+        return new DelayedExpression("<s:" + parameterizedType.printSimple() + ">",
+                "<state:" + parameterizedType.detailedString() + ">", parameterizedType);
     }
 
     public static Expression forNewObject(ParameterizedType parameterizedType) {
-        return new DelayedExpression("<new:" + parameterizedType + ">",
+        return new DelayedExpression("<new:" + parameterizedType.printSimple() + ">",
                 "<new:" + parameterizedType.detailedString() + ">", parameterizedType);
     }
 

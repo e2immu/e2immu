@@ -169,7 +169,7 @@ public class Test_11_IfStatement extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("get3".equals(d.methodInfo().name) && "i3".equals(d.variableName())) {
                 if ("0".equals(d.statementId())) {
-                    String expectValue = d.iteration() == 0 ? "<method:java.util.Map.get(java.lang.Object)>" : "map.get(label3)";
+                    String expectValue = d.iteration() == 0 ? "<m:get>" : "map.get(label3)";
                     Assert.assertEquals(expectValue, d.currentValue().toString());
                     String expectLinked = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "";
                     Assert.assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());

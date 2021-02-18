@@ -59,7 +59,10 @@ public record DelayedVariableExpression(String msg, String debug,
      */
     @Override
     public boolean equals(Object o) {
-        return this == o;
+        if (variable instanceof FieldReference) {
+            return this == o;
+        }
+        return o instanceof DelayedVariableExpression dve && dve.variable.equals(variable);
     }
 
     @Override

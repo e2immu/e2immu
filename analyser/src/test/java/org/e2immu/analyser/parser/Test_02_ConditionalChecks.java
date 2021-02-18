@@ -196,15 +196,16 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("method3".equals(d.methodInfo().name)) {
-                for (int param : new int[]{0, 1}) {
-                    Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL,
-                            d.parameterAnalyses().get(param).getProperty(VariableProperty.CONTEXT_NOT_NULL));
-                    Assert.assertEquals(MultiLevel.NULLABLE,
-                            d.parameterAnalyses().get(param).getProperty(VariableProperty.NOT_NULL_EXPRESSION));
-                    Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL,
-                            d.parameterAnalyses().get(param).getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                if(d.iteration()>0) {
+                    for (int param : new int[]{0, 1}) {
+                        Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL,
+                                d.parameterAnalyses().get(param).getProperty(VariableProperty.CONTEXT_NOT_NULL));
+                        Assert.assertEquals(MultiLevel.DELAY,
+                                d.parameterAnalyses().get(param).getProperty(VariableProperty.EXTERNAL_NOT_NULL));
+                        Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL,
+                                d.parameterAnalyses().get(param).getProperty(VariableProperty.NOT_NULL_PARAMETER));
+                    }
                 }
-
                 Assert.assertEquals(0, d.methodAnalysis().getCompanionAnalyses().size());
                 Assert.assertEquals(0, d.methodAnalysis().getComputedCompanions().size());
                 Assert.assertTrue(d.methodAnalysis().getPrecondition().isBoolValueTrue());
@@ -292,10 +293,10 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
             if ("method5".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
                     if (O5.equals(d.variableName())) {
-                        int expectNN = d.iteration() == 0 ? Level.DELAY : MultiLevel.MUTABLE;
-                        Assert.assertEquals(expectNN, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                        Assert.assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                        Assert.assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
                         Assert.assertEquals(LinkedVariables.EMPTY, d.variableInfo().getStaticallyAssignedVariables());
-                        Assert.assertEquals("nullable? instance type Object", d.currentValue().toString());
+                        Assert.assertEquals("nullable instance type Object", d.currentValue().toString());
                         Assert.assertEquals("", d.variableInfo().getLinkedVariables().toString());
                     }
                     if (RETURN5.equals(d.variableName())) {
@@ -320,14 +321,14 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                 if ("3".equals(d.statementId())) {
                     if (CC_I.equals(d.variableName())) {
                         String expectValue = d.iteration() == 0 ? O_I_DELAYED : "instance type int";
-                        Assert.assertEquals(expectValue, d.currentValue().toString());
+                        Assert.assertEquals(expectValue, d.currentValue().debugOutput());
                         Assert.assertEquals(d.iteration() == 0, d.currentValueIsDelayed());
                     }
                     if (RETURN5.equals(d.variableName())) {
                         String expectValue = d.iteration() == 0 ?
                                 "null!=o&&o.getClass()==this.getClass()&&o!=this&&<field:org.e2immu.analyser.testexample.ConditionalChecks_4.i#org.e2immu.analyser.testexample.ConditionalChecks_4.method5(java.lang.Object):0:o>==<field:org.e2immu.analyser.testexample.ConditionalChecks_4.i>" :
-                                "null!=o&&o.getClass()==this.getClass()&&i==o.i&&o!=this";
-                        Assert.assertEquals(expectValue, d.currentValue().toString());
+                                "null!=o&&o.getClass()==this.getClass()&&this.i==o.i&&o!=this";
+                        Assert.assertEquals(expectValue, d.currentValue().debugOutput());
                         Assert.assertEquals(d.iteration() == 0, d.currentValueIsDelayed());
                     }
                 }
@@ -359,7 +360,7 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("method5".equals(d.methodInfo().name)) {
                 int expectNN = d.iteration() == 0 ? Level.DELAY : MultiLevel.NULLABLE;
-                Assert.assertEquals(expectNN, d.parameterAnalyses().get(0).getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                Assert.assertEquals(expectNN, d.parameterAnalyses().get(0).getProperty(VariableProperty.CONTEXT_NOT_NULL));
             }
         };
 
@@ -390,8 +391,8 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                 if ("3".equals(d.statementId())) {
                     String expectValueString = d.iteration() == 0
                             ? "null!=o&&o.getClass()==this.getClass()&&o!=this&&<field:org.e2immu.analyser.testexample.ConditionalChecks_4.i#org.e2immu.analyser.testexample.ConditionalChecks_4.method5(java.lang.Object):0:o>==<field:org.e2immu.analyser.testexample.ConditionalChecks_4.i>"
-                            : "null!=o&&o.getClass()==this.getClass()&&i==o.i&&o!=this";
-                    Assert.assertEquals(expectValueString, d.evaluationResult().value().toString());
+                            : "null!=o&&o.getClass()==this.getClass()&&this.i==o.i&&o!=this";
+                    Assert.assertEquals(expectValueString, d.evaluationResult().value().debugOutput());
                     Assert.assertEquals(d.iteration() == 0, d.evaluationResult().someValueWasDelayed());
 
                     if (d.iteration() == 0) {

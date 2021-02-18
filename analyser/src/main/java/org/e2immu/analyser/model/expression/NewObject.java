@@ -163,6 +163,13 @@ public record NewObject(MethodInfo constructor,
                 new BooleanConstant(primitives, true), variableInfo.getObjectFlow());
     }
 
+    // null-status derived from variable in evaluation context
+    public static NewObject genericMergeResult(Primitives primitives, VariableInfo variableInfo, int notNull) {
+        return new NewObject(null, variableInfo.variable().parameterizedType(),
+                Diamond.SHOW_ALL, List.of(), notNull, null, null,
+                new BooleanConstant(primitives, true), variableInfo.getObjectFlow());
+    }
+
     public static NewObject genericArrayAccess(EvaluationContext evaluationContext,
                                                Expression array,
                                                Variable variable,
@@ -218,8 +225,6 @@ public record NewObject(MethodInfo constructor,
                                            Diamond diamond,
                                            List<Expression> parameterExpressions,
                                            ObjectFlow objectFlow) {
-        assert diamond == Diamond.NO || !parameterizedType.parameters.isEmpty();
-
         return new NewObject(constructor, parameterizedType, diamond, parameterExpressions, MultiLevel.EFFECTIVELY_NOT_NULL,
                 null, null, new BooleanConstant(primitives, true), objectFlow);
     }
@@ -242,7 +247,7 @@ public record NewObject(MethodInfo constructor,
         this.objectFlow = Objects.requireNonNull(objectFlow);
         this.minimalNotNull = minimalNotNull;
         assert minimalNotNull != Level.DELAY;
-        this.diamond = diamond;
+        this.diamond = parameterizedType.parameters.isEmpty() ? Diamond.NO: diamond;
         assert !(constructor != null && minimalNotNull < MultiLevel.EFFECTIVELY_NOT_NULL);
     }
 

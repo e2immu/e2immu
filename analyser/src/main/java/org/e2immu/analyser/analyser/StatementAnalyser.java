@@ -1022,9 +1022,10 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         }
         assert loopIndex != null;
 
-        String newFqn = statementAnalysis.createLocalLoopCopyFQN(vic, vic.best(EVALUATION));
+        VariableInfo vi = vic.best(EVALUATION);
+        String newFqn = statementAnalysis.createLocalLoopCopyFQN(vic, vi);
         if (!statementAnalysis.variables.isSet(newFqn)) {
-            LocalVariableReference newLvr = createLocalCopyOfLoopVariable(vic, newFqn);
+            LocalVariableReference newLvr = createLocalCopyOfLoopVariable(vi.variable(), newFqn);
 
             VariableInfoContainer newVic = VariableInfoContainerImpl.newVariable(newLvr, VariableInfoContainer.NOT_A_VARIABLE_FIELD,
                     new VariableInLoop(loopIndex, index(), VariableInLoop.VariableType.LOOP_COPY), navigationData.hasSubBlocks());
@@ -1202,7 +1203,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         return expressionsToEvaluate;
     }
 
-    private List<Expression> localVariablesInLoop() {
+    private List<Expression> localVariablesInLoop(SharedState sharedState) {
         if (statementAnalysis.localVariablesAssignedInThisLoop == null) {
             return List.of(); // not for us
         }
@@ -1216,18 +1217,20 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             assert statement() instanceof LoopStatement;
 
             VariableInfoContainer vic = statementAnalysis.findForWriting(fqn); // must exist already
-
+            VariableInfo vi = vic.best(EVALUATION); // NOT merge, merge is after the loop
             // assign to local variable that has been created at Level 2 in this statement
             String newFqn = fqn + "$" + index(); // must be compatible with statementAnalysis.createLocalLoopCopyFQN
             if (!statementAnalysis.variables.isSet(newFqn)) {
-                LocalVariableReference newLvr = createLocalCopyOfLoopVariable(vic, newFqn);
+                LocalVariableReference newLvr = createLocalCopyOfLoopVariable(vi.variable(), newFqn);
                 String assigned = index() + VariableInfoContainer.Level.INITIAL;
                 String read = index() + EVALUATION;
+                Expression newValue = NewObject.localVariableInLoop(statementAnalysis.primitives, newLvr.parameterizedType());
+                Map<VariableProperty, Integer> valueProps = sharedState.evaluationContext.getValueProperties(newValue);
                 VariableInfoContainer newVic = VariableInfoContainerImpl.newLoopVariable(newLvr, assigned,
                         read,
-                        NewObject.localVariableInLoop(statementAnalysis.primitives, newLvr.parameterizedType()),
-                        vic.current().getProperties().toImmutableMap(),
-                        new LinkedVariables(Set.of(vic.current().variable())),
+                        newValue,
+                        mergeValueAndLoopVar(valueProps, vi.getProperties().toImmutableMap()),
+                        new LinkedVariables(Set.of(vi.variable())),
                         new VariableInLoop(index(), null, VariableInLoop.VariableType.LOOP_COPY),
                         true);
                 statementAnalysis.variables.put(newFqn, newVic);
@@ -1236,8 +1239,14 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         return expressionsToEvaluate;
     }
 
-    private LocalVariableReference createLocalCopyOfLoopVariable(VariableInfoContainer vic, String newFqn) {
-        Variable loopVariable = vic.current().variable();
+    private static Map<VariableProperty, Integer> mergeValueAndLoopVar(Map<VariableProperty, Integer> value,
+                                                                       Map<VariableProperty, Integer> loopVar) {
+        Map<VariableProperty, Integer> res = new HashMap<>(value);
+        loopVar.forEach(res::put);
+        return res;
+    }
+
+    private LocalVariableReference createLocalCopyOfLoopVariable(Variable loopVariable, String newFqn) {
         LocalVariable localVariable = new LocalVariable.Builder()
                 .addModifier(LocalVariableModifier.FINAL)
                 .setName(newFqn)
@@ -1250,7 +1259,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
 
     private AnalysisStatus evaluationOfMainExpression(SharedState sharedState) {
         List<Expression> expressionsFromInitAndUpdate = initialisersAndUpdaters(sharedState);
-        List<Expression> expressionsFromLocalVariablesInLoop = localVariablesInLoop();
+        List<Expression> expressionsFromLocalVariablesInLoop = localVariablesInLoop(sharedState);
         /*
         if we're in a loop statement and there are delays (localVariablesAssignedInThisLoop not frozen)
         we have to come back!
@@ -1331,7 +1340,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             if (statusPost == DONE) {
                 boolean externalNotNullDelay = statementAnalysis.variables.stream()
                         .anyMatch(e -> e.getValue().best(EVALUATION).externalNotNullDelay());
-                if (externalNotNullDelay){
+                if (externalNotNullDelay) {
                     log(DELAYED, "Delaying statement {} in {} because of external not null",
                             index(), myMethodAnalyser.methodInfo.fullyQualifiedName);
                     return DELAYS;
@@ -1397,6 +1406,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         String copy = lvc.localVariable.name() + "$" + index();
         if (statementAnalysis.variables.isSet(copy) && variableNotNull) {
             VariableInfoContainer vic = statementAnalysis.variables.get(copy);
+            // TODO this probably needs to be written in EVAL (as there may be a CNN in initial already?)
             vic.setProperty(CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL, false, VariableInfoContainer.Level.INITIAL);
         }
     }
@@ -2082,10 +2092,10 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 assert !Primitives.isPrimitiveExcludingVoid(value.returnType()) || directNN == MultiLevel.EFFECTIVELY_NOT_NULL;
 
                 if (directNN >= MultiLevel.EFFECTIVELY_NOT_NULL) return directNN;
-                Expression valueIsNotNull = Negation.negate(this, Equals.equals(this,
-                        value, NullConstant.NULL_CONSTANT, ObjectFlow.NO_FLOW, false));
-                Expression evaluation = conditionManager.evaluate(this, valueIsNotNull);
-                if (evaluation.isBoolValueTrue()) {
+                Expression valueIsNull = Equals.equals(this,
+                        value, NullConstant.NULL_CONSTANT, ObjectFlow.NO_FLOW, false);
+                Expression evaluation = conditionManager.evaluate(this, valueIsNull);
+                if (evaluation.isBoolValueFalse()) {
                     return MultiLevel.bestNotNull(MultiLevel.EFFECTIVELY_NOT_NULL, directNN);
                 }
                 return directNN;
@@ -2211,11 +2221,21 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         @Override
         public Expression replaceLocalVariables(Expression mergeValue) {
             if (statementAnalysis.statement instanceof LoopStatement) {
-                Map<Expression, Expression> map = statementAnalysis.variables.stream()
-                        .filter(e -> statementAnalysis.index.equals(e.getValue().getStatementIndexOfThisShadowVariable()))
-                        .collect(Collectors.toUnmodifiableMap(
-                                e -> new VariableExpression(e.getValue().current().variable()),
-                                e -> NewObject.genericMergeResult(getPrimitives(), e.getValue().current())));
+                Map<Expression, Expression> map = new HashMap<>();
+                statementAnalysis.variables.stream()
+                        .filter(e -> statementAnalysis.index.equals(e.getValue().getStatementIndexOfThisLoopOrShadowVariable()))
+                        .forEach(e -> {
+                            VariableInfo eval = e.getValue().best(EVALUATION);
+                            Variable variable = eval.variable();
+                            int nne = getProperty(eval.getValue(), NOT_NULL_EXPRESSION, true);
+                            if (nne != Level.DELAY) {
+                                Expression newObject = NewObject.genericMergeResult(getPrimitives(), e.getValue().current(), nne);
+                                map.put(new VariableExpression(variable), newObject);
+                            }
+
+                            Expression delayed = DelayedExpression.forNewObject(variable.parameterizedType());
+                            map.put(DelayedVariableExpression.forVariable(e.getValue().current().variable()), delayed);
+                        });
                 return mergeValue.reEvaluate(this, map).value();
             }
             return mergeValue;

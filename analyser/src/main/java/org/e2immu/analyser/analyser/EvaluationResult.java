@@ -533,7 +533,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
 
             // in case both state and result of expression are delayed, we give preference to the result
             Expression value = stateIsDelayed && !resultOfExpressionIsDelayed
-                    ? DelayedExpression.forState(evaluationContext.getPrimitives()) : resultOfExpression;
+                    ? DelayedExpression.forState(resultOfExpression.returnType()) : resultOfExpression;
 
             ChangeData newEcd;
             ChangeData ecd = valueChanges.get(assignmentTarget);

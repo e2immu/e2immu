@@ -24,6 +24,9 @@ import org.e2immu.annotation.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/*
+tests delays, as idem2 needs to wait for idem, and idem has to wait for the field.
+ */
 public class Identity_1 {
     /*
     The @NotNull on the idemX methods relies on LOGGER.debug(@NotNull String s) { .. }
@@ -41,6 +44,7 @@ public class Identity_1 {
 
     @Identity
     @NotModified
+    @NotNull
     public static String idem2(String s, String t) {
         LOGGER.debug(s + " " + t);
         return idem(s);
