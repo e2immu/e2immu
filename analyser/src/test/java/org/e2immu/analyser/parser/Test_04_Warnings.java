@@ -213,7 +213,7 @@ public class Test_04_Warnings extends CommonTestRunner {
         TypeMapVisitor typeMapVisitor = typeMap -> {
             TypeInfo system = typeMap.get(System.class);
             FieldInfo out = system.getFieldByName("out", true);
-            int notNull = out.fieldAnalysis.get().getProperty(VariableProperty.NOT_NULL_EXPRESSION);
+            int notNull = out.fieldAnalysis.get().getProperty(VariableProperty.EXTERNAL_NOT_NULL);
             Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, notNull);
             Assert.assertEquals(Level.TRUE, out.fieldAnalysis.get().getProperty(VariableProperty.IGNORE_MODIFICATIONS));
 
@@ -299,12 +299,11 @@ public class Test_04_Warnings extends CommonTestRunner {
             if ("apply".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo p && "s".equals(p.name)) {
                     if ("0".equals(d.statementId())) {
-                        Assert.assertEquals("nullable? instance type String", d.currentValue().toString());
+                        Assert.assertEquals("nullable instance type String", d.currentValue().toString());
                     }
                     if ("1".equals(d.statementId())) {
                         String expectValue = d.iteration() == 0 ?
-                                "<parameter:org.e2immu.analyser.testexample.Warnings_5.ChildClass.$1.apply(java.lang.String):0:s>" :
-                                "nullable? instance type String";
+                                "<p:s>" : "nullable instance type String";
                         Assert.assertEquals(expectValue, d.currentValue().toString());
                     }
                 }
@@ -313,9 +312,7 @@ public class Test_04_Warnings extends CommonTestRunner {
                         Assert.fail();
                     }
                     if ("1".equals(d.statementId())) {
-                        String expectValue = d.iteration() == 0 ?
-                                "<field:org.e2immu.analyser.testexample.Warnings_5.ChildClass.t>" :
-                                "nullable? instance type String";
+                        String expectValue = d.iteration() == 0 ? "<f:t>" : "nullable instance type String";
                         Assert.assertEquals(expectValue, d.currentValue().toString());
                     }
                 }
@@ -354,9 +351,14 @@ public class Test_04_Warnings extends CommonTestRunner {
                 }
             }
             if ("methodMustNotBeStatic5".equals(d.methodInfo().name)) {
-                Assert.assertEquals("this", d.methodAnalysis().getSingleReturnValue().toString());
+                if (d.iteration() == 0) {
+                    Assert.assertNull(d.methodAnalysis().getSingleReturnValue());
+                } else {
+                    Assert.assertEquals("this", d.methodAnalysis().getSingleReturnValue().toString());
+                }
                 Assert.assertEquals(Level.FALSE, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
-                Assert.assertEquals(Level.TRUE, d.methodAnalysis().getProperty(VariableProperty.FLUENT));
+                int expectFluent = d.iteration()==0 ? Level.DELAY: Level.TRUE;
+                Assert.assertEquals(expectFluent, d.methodAnalysis().getProperty(VariableProperty.FLUENT));
             }
         };
 
