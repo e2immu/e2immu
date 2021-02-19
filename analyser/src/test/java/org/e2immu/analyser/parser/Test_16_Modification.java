@@ -693,7 +693,7 @@ public class Test_16_Modification extends CommonTestRunner {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("example1".equals(d.methodInfo().name) && "0".equals(d.statementId())) {
                 EvaluationResult.ChangeData s2 = d.findValueChange(S2);
-                int expectCnn = d.iteration() <= 2 ? Level.TRUE : Level.DELAY;
+                int expectCnn = d.iteration() <= 1 ? Level.TRUE : Level.DELAY;
                 Assert.assertEquals(expectCnn, s2.getProperty(VariableProperty.CONTEXT_NOT_NULL_DELAY));
             }
         };
@@ -703,19 +703,28 @@ public class Test_16_Modification extends CommonTestRunner {
                 Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
             }
             if ("add".equals(d.methodInfo().name) && SET_IN_C1.equals(d.variableName())) {
-                String expectValue = d.iteration() <= 2 ? SET_IN_C1_DELAYED : "instance type Set<String>";
+                String expectValue = d.iteration() <= 1 ? SET_IN_C1_DELAYED : "instance type Set<String>";
                 Assert.assertEquals(expectValue, d.currentValue().toString());
-                int expectNN = d.iteration() <= 2 ? Level.DELAY : MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL;
+                int expectNN = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL;
                 Assert.assertEquals(expectNN, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
             }
             if ("example1".equals(d.methodInfo().name) && "0".equals(d.statementId())) {
                 if (S2.equals(d.variableName())) {
-                    int expectCnnDR = d.iteration() <= 2 ? Level.DELAY : Level.TRUE;
+                    int expectCnnDR = d.iteration() <= 1 ? Level.DELAY : Level.TRUE;
                     Assert.assertEquals(expectCnnDR, d.getProperty(VariableProperty.CONTEXT_NOT_NULL_DELAY_RESOLVED));
-                    int expectCnn = d.iteration() <= 2 ? Level.DELAY : MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL;
+                    int expectCnn = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL;
                     Assert.assertEquals(expectCnn, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
 
                     Assert.assertEquals("", d.variableInfo().getStaticallyAssignedVariables().toString());
+                }
+            }
+            if ("addAll".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ParameterInfo pi1 && "d".equals(pi1.name)) {
+                    Assert.assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL,
+                            d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+                }
+                if (d.variable() instanceof ParameterInfo pi0 && "c".equals(pi0.name)) {
+                    Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
                 }
             }
         };
@@ -725,7 +734,7 @@ public class Test_16_Modification extends CommonTestRunner {
                 Assert.assertEquals("setC", d.fieldAnalysis().getLinkedVariables().toString());
                 Assert.assertEquals("setC/*@NotNull*/", d.fieldAnalysis().getEffectivelyFinalValue().debugOutput());
                 // the field analyser sees addAll being used on set in the method addAllOnC
-                int expectEnn = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL;
+                int expectEnn = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL;
                 Assert.assertEquals(expectEnn, d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_NOT_NULL));
             }
         };
@@ -733,8 +742,13 @@ public class Test_16_Modification extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("C1".equals(d.methodInfo().name)) {
                 ParameterAnalysis p0 = d.parameterAnalyses().get(0);
-                int expectNnp = d.iteration() <= 2 ? Level.DELAY : MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL;
+                int expectNnp = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL;
                 Assert.assertEquals(expectNnp, p0.getProperty(VariableProperty.NOT_NULL_PARAMETER));
+            }
+            if ("addAll".equals(d.methodInfo().name)) {
+                ParameterAnalysis p1 = d.parameterAnalyses().get(1);
+                int expectNnp = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL;
+                Assert.assertEquals(expectNnp, p1.getProperty(VariableProperty.NOT_NULL_PARAMETER));
             }
         };
 

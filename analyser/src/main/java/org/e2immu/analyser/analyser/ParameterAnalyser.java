@@ -20,6 +20,8 @@ package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.VariableExpression;
+import org.e2immu.analyser.model.variable.FieldReference;
+import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Messages;
@@ -47,13 +49,13 @@ public class ParameterAnalyser {
 
     private Map<FieldInfo, FieldAnalyser> fieldAnalysers;
     private final E2ImmuAnnotationExpressions e2;
-    private final AnalysisProvider analysisProvider;
+    private final AnalyserContext analyserContext;
 
     public ParameterAnalyser(AnalyserContext analyserContext, ParameterInfo parameterInfo) {
         this.e2 = analyserContext.getE2ImmuAnnotationExpressions();
         this.parameterInfo = parameterInfo;
         parameterAnalysis = new ParameterAnalysisImpl.Builder(analyserContext.getPrimitives(), analyserContext, parameterInfo);
-        analysisProvider = analyserContext;
+        this.analyserContext = analyserContext;
     }
 
     public ParameterAnalysis getParameterAnalysis() {
@@ -81,15 +83,15 @@ public class ParameterAnalyser {
     }
 
     public void write() {
-        parameterAnalysis.transferPropertiesToAnnotations(analysisProvider, e2);
+        parameterAnalysis.transferPropertiesToAnnotations(analyserContext, e2);
     }
 
     private void checkWorseThanParent() {
         for (VariableProperty variableProperty : VariableProperty.CHECK_WORSE_THAN_PARENT) {
-            int valueFromOverrides = analysisProvider.getMethodAnalysis(parameterInfo.owner).getOverrides(analysisProvider)
+            int valueFromOverrides = analyserContext.getMethodAnalysis(parameterInfo.owner).getOverrides(analyserContext)
                     .stream()
                     .map(ma -> ma.getMethodInfo().methodInspection.get().getParameters().get(parameterInfo.index))
-                    .mapToInt(pi -> analysisProvider.getParameterAnalysis(pi).getProperty(variableProperty))
+                    .mapToInt(pi -> analyserContext.getParameterAnalysis(pi).getProperty(variableProperty))
                     .max().orElse(Level.DELAY);
             int value = parameterAnalysis.getProperty(variableProperty);
             if (valueFromOverrides != Level.DELAY && value != Level.DELAY) {
@@ -150,21 +152,23 @@ public class ParameterAnalyser {
             changed = true;
             contracted++;
         }
-        if (contracted == 2 || parameterInfo.owner.typeInfo.typeInspection.get().fields().isEmpty()) {
-            for (VariableProperty variableProperty : PROPERTIES) {
-                if (!parameterAnalysis.properties.isSet(variableProperty)) {
-                    parameterAnalysis.setProperty(variableProperty, MultiLevel.DELAY);
-                }
-            }
-            parameterAnalysis.resolveFieldDelays();
+
+        if (contracted == 2 || noAssignableFieldsForMethod()) {
+            noFieldsInvolvedSetToMultiLevelDELAY();
             return DONE;
         }
         // no point, we need to have seen the statement+field analysers first.
         if (sharedState.iteration == 0) return DELAYS;
 
+        StatementAnalysis lastStatementAnalysis = analyserContext.getMethodAnalysis(parameterInfo.owner)
+                .getLastStatement();
+        This thisVar = new This(analyserContext, parameterInfo.owner.typeInfo);
+        Set<FieldInfo> fieldsAssignedInThisMethod = parameterInfo.owner.typeInfo.typeInspection.get().fields().stream()
+                .filter(fieldInfo -> isAssignedIn(lastStatementAnalysis, thisVar, fieldInfo)).collect(Collectors.toSet());
+
         // find a field that's linked to me; bail out when not all field's values are set.
-        for (FieldInfo fieldInfo : parameterInfo.owner.typeInfo.typeInspection.get().fields()) {
-            FieldAnalysis fieldAnalysis = analysisProvider.getFieldAnalysis(fieldInfo);
+        for (FieldInfo fieldInfo : fieldsAssignedInThisMethod) {
+            FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(fieldInfo);
             ParameterAnalysis.AssignedOrLinked assignedOrLinked = determineAssignedOrLinked(fieldAnalysis);
             if (assignedOrLinked == DELAYED) {
                 delays = true;
@@ -233,6 +237,28 @@ public class ParameterAnalyser {
         return DONE;
     }
 
+    private boolean noAssignableFieldsForMethod() {
+        boolean methodIsStatic = parameterInfo.owner.methodInspection.get().isStatic();
+        return parameterInfo.owner.typeInfo.typeInspection.get().fields().stream()
+                .filter(fieldInfo -> !methodIsStatic || fieldInfo.isStatic())
+                .allMatch(fieldInfo -> fieldInfo.isExplicitlyFinal() && !parameterInfo.owner.isConstructor);
+    }
+
+    private void noFieldsInvolvedSetToMultiLevelDELAY() {
+        for (VariableProperty variableProperty : PROPERTIES) {
+            if (!parameterAnalysis.properties.isSet(variableProperty)) {
+                parameterAnalysis.setProperty(variableProperty, MultiLevel.DELAY);
+            }
+        }
+        parameterAnalysis.resolveFieldDelays();
+    }
+
+    private boolean isAssignedIn(StatementAnalysis lastStatementAnalysis, This thisVar, FieldInfo fieldInfo) {
+        VariableInfo vi = lastStatementAnalysis.findOrNull(new FieldReference(analyserContext, fieldInfo, thisVar),
+                VariableInfoContainer.Level.MERGE);
+        return vi != null && vi.isAssigned();
+    }
+
     private ParameterAnalysis.AssignedOrLinked determineAssignedOrLinked(FieldAnalysis fieldAnalysis) {
         int effFinal = fieldAnalysis.getProperty(VariableProperty.FINAL);
         if (effFinal == Level.DELAY) {
@@ -265,7 +291,7 @@ public class ParameterAnalyser {
         if (sharedState.iteration == 0) return DELAYS;
 
         // context not null, context modified
-        MethodAnalysis methodAnalysis = analysisProvider.getMethodAnalysis(parameterInfo.owner);
+        MethodAnalysis methodAnalysis = analyserContext.getMethodAnalysis(parameterInfo.owner);
         VariableInfo vi = methodAnalysis.getLastStatement().getLatestVariableInfo(parameterInfo.fullyQualifiedName());
         boolean delayFromContext = false;
         boolean changed = false;
@@ -294,17 +320,21 @@ public class ParameterAnalyser {
         // no point, we need to have seen the statement+field analysers first.
         if (sharedState.iteration == 0) return DELAYS;
 
-        StatementAnalysis lastStatementAnalysis = analysisProvider.getMethodAnalysis(parameterInfo.owner)
+        StatementAnalysis lastStatementAnalysis = analyserContext.getMethodAnalysis(parameterInfo.owner)
                 .getLastStatement();
         VariableInfo vi = lastStatementAnalysis == null ? null :
                 lastStatementAnalysis.findOrNull(parameterInfo, VariableInfoContainer.Level.MERGE);
         if (vi == null || !vi.isRead()) {
             // unused variable
-            parameterAnalysis.setProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD, Level.FALSE);
+            if (!parameterAnalysis.properties.isSet(VariableProperty.MODIFIED_OUTSIDE_METHOD)) {
+                parameterAnalysis.setProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD, Level.FALSE);
+            }
             parameterAnalysis.setProperty(VariableProperty.CONTEXT_MODIFIED, Level.FALSE);
 
             int notNull = parameterInfo.parameterizedType.defaultNotNull();
-            parameterAnalysis.setProperty(VariableProperty.EXTERNAL_NOT_NULL, notNull);
+            if (!parameterAnalysis.properties.isSet(VariableProperty.EXTERNAL_NOT_NULL)) {
+                parameterAnalysis.setProperty(VariableProperty.EXTERNAL_NOT_NULL, notNull);
+            }
             parameterAnalysis.setProperty(VariableProperty.CONTEXT_NOT_NULL, MultiLevel.NULLABLE);
             parameterAnalysis.setProperty(VariableProperty.NOT_MODIFIED_1, Level.FALSE);
 

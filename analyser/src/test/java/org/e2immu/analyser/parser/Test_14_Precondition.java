@@ -23,7 +23,6 @@ import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.testexample.BasicCompanionMethods_6;
 import org.e2immu.analyser.testexample.Precondition_4;
 import org.junit.Assert;
 import org.junit.Test;
@@ -172,7 +171,8 @@ public class Test_14_Precondition extends CommonTestRunner {
             if (RETURN_VAR.equals(d.variableName())) {
                 if ("1".equals(d.statementId())) {
                     if (d.iteration() == 0) {
-                        Assert.assertEquals("ii>=0?ii:null", d.currentValue().toString());
+                        // <s:int>
+                        Assert.assertEquals("<s:int>", d.currentValue().toString());
                     } else {
                         Assert.assertEquals("ii", d.currentValue().toString());
                         Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL,
@@ -185,7 +185,7 @@ public class Test_14_Precondition extends CommonTestRunner {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("setInteger".equals(d.methodInfo().name)) {
                 if ("0.0.1".equals(d.statementId())) {
-                    String expect = d.iteration() == 0 ? "null!=<field:org.e2immu.analyser.testexample.Precondition_3.integer>" :
+                    String expect = d.iteration() == 0 ? "null!=<f:integer>" :
                             "null!=org.e2immu.analyser.testexample.Precondition_3.integer$0";
                     Assert.assertEquals(expect, d.evaluationResult().value().toString());
                 }
@@ -211,7 +211,7 @@ public class Test_14_Precondition extends CommonTestRunner {
                     Assert.assertEquals("ii<=-1", d.condition().toString());
                 }
                 if ("0.0.1.0.0".equals(d.statementId())) {
-                    String expectValue = d.iteration() == 0 ? "null!=<field:org.e2immu.analyser.testexample.Precondition_3.integer>" :
+                    String expectValue = d.iteration() == 0 ? "null!=<f:integer>" :
                             "null!=org.e2immu.analyser.testexample.Precondition_3.integer$0";
                     Assert.assertEquals(expectValue, d.condition().toString());
                 }
@@ -264,7 +264,7 @@ public class Test_14_Precondition extends CommonTestRunner {
 
     @Test
     public void test_4() throws IOException {
-      TypeContext typeContext = testClass("Precondition_4", 0, 0, new DebugConfiguration.Builder()
+        TypeContext typeContext = testClass("Precondition_4", 0, 0, new DebugConfiguration.Builder()
                 .build());
         TypeInfo pc4 = typeContext.getFullyQualified(Precondition_4.class);
         MethodInfo test = pc4.findUniqueMethod("test", 1);

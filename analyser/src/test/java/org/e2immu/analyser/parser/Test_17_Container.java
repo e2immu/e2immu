@@ -325,7 +325,7 @@ public class Test_17_Container extends CommonTestRunner {
                     Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.CONTEXT_MODIFIED_DELAY_RESOLVED));
                 }
                 if ("1".equals(d.statementId())) {
-                    int expectModified = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
+                    int expectModified = d.iteration() <= 1 ? Level.DELAY : Level.FALSE;
                     Assert.assertEquals(expectModified, d.getProperty(VariableProperty.MODIFIED_VARIABLE));
 
                     Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.CONTEXT_MODIFIED_DELAY));
@@ -335,7 +335,7 @@ public class Test_17_Container extends CommonTestRunner {
             }
             if ("addAll5".equals(d.methodInfo().name) && d.variable() instanceof FieldReference fr
                     && "list".equals(fr.fieldInfo.name)) {
-                Assert.assertEquals(d.iteration() == 0 ? Level.DELAY : Level.TRUE,
+                Assert.assertEquals(d.iteration() <= 1 ? Level.DELAY : Level.TRUE,
                         d.getProperty(VariableProperty.MODIFIED_VARIABLE));
             }
         };
@@ -343,8 +343,8 @@ public class Test_17_Container extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("Container_5".equals(d.methodInfo().name) && d.methodInfo().methodInspection.get().getParameters().size() == 1) {
                 ParameterAnalysis coll5 = d.parameterAnalyses().get(0);
-                Assert.assertEquals(d.iteration() == 0 ? Level.DELAY :
-                        Level.FALSE, coll5.getProperty(VariableProperty.MODIFIED_VARIABLE));
+                Assert.assertEquals(d.iteration() <= 1 ? Level.DELAY : Level.FALSE,
+                        coll5.getProperty(VariableProperty.MODIFIED_VARIABLE));
             }
             if ("addAll5".equals(d.methodInfo().name)) {
                 ParameterAnalysis collection = d.parameterAnalyses().get(0);

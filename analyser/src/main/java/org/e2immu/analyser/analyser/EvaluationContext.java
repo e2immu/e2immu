@@ -114,10 +114,12 @@ public interface EvaluationContext {
         if (value instanceof VariableExpression variableValue) {
             Variable variable = variableValue.variable();
             if (variable instanceof ParameterInfo parameterInfo) {
-                return getAnalyserContext().getParameterAnalysis(parameterInfo).getProperty(variableProperty);
+                VariableProperty vp = variableProperty == NOT_NULL_EXPRESSION ? NOT_NULL_PARAMETER: variableProperty;
+                return getAnalyserContext().getParameterAnalysis(parameterInfo).getProperty(vp);
             }
             if (variable instanceof FieldReference fieldReference) {
-                return getAnalyserContext().getFieldAnalysis(fieldReference.fieldInfo).getProperty(variableProperty);
+                VariableProperty vp = variableProperty == NOT_NULL_EXPRESSION ? EXTERNAL_NOT_NULL: variableProperty;
+                return getAnalyserContext().getFieldAnalysis(fieldReference.fieldInfo).getProperty(vp);
             }
             if (variable instanceof This thisVariable) {
                 return getAnalyserContext().getTypeAnalysis(thisVariable.typeInfo).getProperty(variableProperty);

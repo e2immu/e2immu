@@ -144,16 +144,32 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
                     }
                 }
             }
-            if ("test3".equals(d.methodInfo().name) && FIELD_0.equals(d.variableName()) && "1".equals(d.statementId())) {
-                Assert.assertEquals(d.iteration() <= 1, d.variableInfo().contextNotNullDelay());
-            }
+            if ("test3".equals(d.methodInfo().name)) {
+                if (FIELD_0.equals(d.variableName()) && "1".equals(d.statementId())) {
+                    Assert.assertEquals(d.iteration() == 0, d.variableInfo().contextNotNullDelay());
+                }
+                if (FIELD.equals(d.variableName())) {
+                    if ("0".equals(d.statementId())) {
+                        int expectCnn = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
+                        Assert.assertEquals(expectCnn, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+                    }
+                    if ("1".equals(d.statementId())) {
+                        int expectCnn = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
+                        Assert.assertEquals(expectCnn, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+                    }
+                    if ("2".equals(d.statementId())) {
+                        int expectCnn = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
+                        Assert.assertEquals(expectCnn, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+                    }
+                }
 
-            if ("test3".equals(d.methodInfo().name) && d.variable() instanceof ReturnVariable) {
-                if ("4".equals(d.statementId())) {
-                    String expectValue = d.iteration() == 0 ? "<m:someMinorMethod>" : "v3";
-                    Assert.assertEquals(expectValue, d.currentValue().toString());
-                    int expectNotNull = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
-                    Assert.assertEquals(expectNotNull, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                if (d.variable() instanceof ReturnVariable) {
+                    if ("4".equals(d.statementId())) {
+                        String expectValue = d.iteration() == 0 ? "<m:someMinorMethod>" : "v3";
+                        Assert.assertEquals(expectValue, d.currentValue().toString());
+                        int expectNotNull = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
+                        Assert.assertEquals(expectNotNull, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                    }
                 }
             }
             if ("test5".equals(d.methodInfo().name) && FIELD.equals(d.variableName())) {
@@ -278,8 +294,7 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
             if ("someMinorMethod".equals(d.methodInfo().name)) {
                 Assert.assertFalse(d.methodInfo().methodResolution.get().allowsInterrupts());
                 ParameterAnalysis p0 = d.parameterAnalyses().get(0);
-                int expectExternalNotNull = d.iteration() <= 1 ? Level.DELAY : MultiLevel.DELAY;
-                Assert.assertEquals(expectExternalNotNull, p0.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
+                Assert.assertEquals(MultiLevel.DELAY, p0.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
                 int expectContextNotNull = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
                 Assert.assertEquals(expectContextNotNull, p0.getProperty(VariableProperty.CONTEXT_NOT_NULL));
             }
@@ -299,10 +314,8 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
             }
             if ("test3".equals(d.methodInfo().name) && "1".equals(d.statementId()) && d.iteration() > 0) {
                 EvaluationResult.ChangeData cdField0 = d.findValueChange(FIELD_0);
-                int expectDelay = d.iteration() == 1 ? Level.TRUE : Level.DELAY;
-                Assert.assertEquals(expectDelay, cdField0.getProperty(VariableProperty.CONTEXT_NOT_NULL_DELAY));
-                int expectNotNull = d.iteration() == 1 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
-                Assert.assertEquals(expectNotNull, cdField0.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+                Assert.assertEquals(Level.DELAY, cdField0.getProperty(VariableProperty.CONTEXT_NOT_NULL_DELAY));
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, cdField0.getProperty(VariableProperty.CONTEXT_NOT_NULL));
             }
         };
 
