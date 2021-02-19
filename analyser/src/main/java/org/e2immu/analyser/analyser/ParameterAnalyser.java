@@ -297,7 +297,7 @@ public class ParameterAnalyser {
         boolean changed = false;
         for (VariableProperty variableProperty : CONTEXT_PROPERTIES) {
             if (!parameterAnalysis.properties.isSet(variableProperty)) {
-                if (vi.noContextDelay(variableProperty)) {
+                if (vi.getProperty(variableProperty) != Level.DELAY) {
                     int value = vi.getProperty(variableProperty, variableProperty.falseValue);
                     parameterAnalysis.setProperty(variableProperty, value);
                     log(ANALYSER, "Set {} on parameter {} to {}", variableProperty,

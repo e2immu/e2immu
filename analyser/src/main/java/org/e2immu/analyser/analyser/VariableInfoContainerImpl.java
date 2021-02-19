@@ -81,14 +81,13 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
                                                         VariableInLoop variableInLoop,
                                                         boolean statementHasSubBlocks) {
         VariableInfoImpl initial = new VariableInfoImpl(variable, NOT_YET_ASSIGNED, NOT_YET_READ, statementTime, Set.of());
-        initial.newVariable();
+        // no newVariable, because either setValue is called immediately after this method, or the explicit newVariableWithoutValue()
         return new VariableInfoContainerImpl(variableInLoop, Either.right(initial), statementHasSubBlocks ? new SetOnce<>() : null, null);
     }
 
-
     /*
-    factory method for new catch variables
-     */
+        factory method for new catch variables
+         */
     public static VariableInfoContainerImpl newCatchVariable(Variable variable,
                                                              String index,
                                                              Expression value,
@@ -155,6 +154,14 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
             return VariableInLoop.NOT_IN_LOOP;
         }
         return previous.getVariableInLoop();
+    }
+
+    @Override
+    public void newVariableWithoutValue() {
+        assert !hasMerge();
+        assert !hasEvaluation();
+        assert isInitial();
+        ((VariableInfoImpl) getPreviousOrInitial()).newVariable();
     }
 
     @Override
@@ -275,6 +282,9 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
 
             VariableInfoImpl eval = new VariableInfoImpl(pi.variable(), assignmentId, readId, statementTime, readAtStatementTimes);
             evaluation.set(eval);
+            if (!pi.valueIsSet()) {
+                eval.setValue(pi.getValue(), true);
+            }
         } else if (!evaluation.get().statementTimeIsSet() && statementTime != VariableInfoContainer.VARIABLE_FIELD_DELAY) {
             evaluation.get().setStatementTime(statementTime);
         }
@@ -306,7 +316,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         boolean notReadInThisStatement = !isReadInThisStatement();
         if (noAssignmentInThisStatement && notReadInThisStatement) {
             previous.propertyStream()
-                    .filter(e -> e.getKey() != VariableProperty.CONTEXT_MODIFIED)
+                    .filter(e -> e.getKey() != VariableProperty.CONTEXT_MODIFIED && e.getKey() != VariableProperty.CONTEXT_NOT_NULL)
                     .forEach(e ->
                             setProperty(e.getKey(), e.getValue(), false, Level.EVALUATION));
 
@@ -330,30 +340,41 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
     }
 
     @Override
-    public void copyFromEvalIntoMerge() {
+    public void copyFromEvalIntoMerge(Map<Variable, Integer> contextNotNull, Map<Variable, Integer> contextModified) {
         assert hasMerge();
 
         VariableInfo eval = best(Level.EVALUATION);
         VariableInfoImpl mergeImpl = merge.get();
         mergeImpl.setValue(eval.getValue(), eval.isDelayed());
         mergeImpl.setLinkedVariables(eval.getLinkedVariables());
-        eval.propertyStream().forEach(e -> mergeImpl.setProperty(e.getKey(), e.getValue()));
+        eval.propertyStream()
+                .forEach(e -> {
+                    VariableProperty vp = e.getKey();
+                    int value = e.getValue();
+                    if (vp == VariableProperty.CONTEXT_MODIFIED) contextModified.put(eval.variable(), value);
+                    else if (vp == VariableProperty.CONTEXT_NOT_NULL) contextNotNull.put(eval.variable(), value);
+                    else mergeImpl.setProperty(vp, value);
+                });
     }
 
     @Override
     public void merge(EvaluationContext evaluationContext,
                       Expression stateOfDestination,
                       boolean atLeastOneBlockExecuted,
-                      List<StatementAnalysis.ConditionAndVariableInfo> mergeSources) {
+                      List<StatementAnalysis.ConditionAndVariableInfo> mergeSources,
+                      Map<Variable, Integer> contextNotNull,
+                      Map<Variable, Integer> contextModified) {
         Objects.requireNonNull(mergeSources);
         Objects.requireNonNull(evaluationContext);
         assert merge != null;
 
         VariableInfoImpl existing = currentExcludingMerge();
         if (!merge.isSet()) {
-            merge.set(existing.mergeIntoNewObject(evaluationContext, stateOfDestination, atLeastOneBlockExecuted, mergeSources));
+            merge.set(existing.mergeIntoNewObject(evaluationContext, stateOfDestination, atLeastOneBlockExecuted, mergeSources,
+                    contextNotNull, contextModified));
         } else {
-            merge.get().mergeIntoMe(evaluationContext, stateOfDestination, atLeastOneBlockExecuted, existing, mergeSources);
+            merge.get().mergeIntoMe(evaluationContext, stateOfDestination, atLeastOneBlockExecuted, existing, mergeSources,
+                    contextNotNull, contextModified);
         }
     }
 }

@@ -48,6 +48,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.VariableInfoContainer.Level.INITIAL;
+import static org.e2immu.analyser.analyser.VariableInfoContainer.Level.MERGE;
 import static org.e2immu.analyser.analyser.VariableProperty.*;
 import static org.e2immu.analyser.util.Logger.LogTarget.ANALYSER;
 import static org.e2immu.analyser.util.Logger.LogTarget.OBJECT_FLOW;
@@ -536,7 +537,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         }
     }
 
-    private static final VariableProperty[] CONTEXT_PROPERTIES = {CONTEXT_NOT_NULL, CONTEXT_NOT_NULL_DELAY_RESOLVED};
+    private static final VariableProperty[] CONTEXT_PROPERTIES = {CONTEXT_NOT_NULL, CONTEXT_MODIFIED};
 
     private void ensureLocalCopiesOfConfirmedVariableFields(EvaluationContext evaluationContext, VariableInfoContainer vic) {
         if (vic.hasEvaluation()) {
@@ -625,6 +626,10 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
 
         // we need to make a synthesis of the variable state of fields, local copies, etc.
         // some blocks are guaranteed to be executed, others are only executed conditionally.
+        Map<Variable, Integer> contextNotNull = new HashMap<>();
+        Map<Variable, Integer> contextModified = new HashMap<>();
+
+        // first, per variable
 
         Stream<Map.Entry<String, VariableInfoContainer>> variableStream = makeVariableStream(lastStatements);
         Set<String> merged = new HashSet<>();
@@ -663,14 +668,23 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                     ignoreCurrent = atLeastOneBlockExecuted;
                 }
                 if (toMerge.size() > 0) {
-                    destination.merge(evaluationContext, stateOfConditionManagerBeforeExecution, ignoreCurrent, toMerge);
+                    destination.merge(evaluationContext, stateOfConditionManagerBeforeExecution, ignoreCurrent, toMerge,
+                            contextNotNull, contextModified);
                 } else if (vic.hasMerge()) {
                     assert evaluationContext.getIteration() > 0; // or it wouldn't have had a merge
                     // in previous iterations there was data for us, but now there isn't; copy from I/E into M
-                    vic.copyFromEvalIntoMerge();
+                    vic.copyFromEvalIntoMerge(contextNotNull, contextModified);
                 }
             }
         });
+
+        // then, per cluster of variables
+
+        MethodLevelData.contextProperty(this, evaluationContext, VariableInfo::getStaticallyAssignedVariables,
+                CONTEXT_NOT_NULL, contextNotNull, MERGE);
+
+        MethodLevelData.contextProperty(this, evaluationContext, VariableInfo::getLinkedVariables,
+                CONTEXT_MODIFIED, contextModified, MERGE);
     }
 
     private boolean acceptVariableForMerging(ConditionAndVariableInfo cav, boolean inSwitchStatementOldStyle) {
@@ -725,8 +739,9 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
 
         // linked variables travel from the parameters via the statements to the fields
         if (variable instanceof ReturnVariable returnVariable) {
+            int defaultNotNull = methodAnalysis.getMethodInfo().returnType().defaultNotNull();
             vic.setValue(new UnknownExpression(returnVariable.returnType, UnknownExpression.RETURN_VALUE), false,
-                    LinkedVariables.EMPTY, Map.of(), true);
+                    LinkedVariables.EMPTY, Map.of(CONTEXT_NOT_NULL, defaultNotNull, CONTEXT_MODIFIED, Level.FALSE), true);
             // assignment will be at LEVEL 3
             vic.setLinkedVariables(LinkedVariables.EMPTY, true);
 
@@ -755,6 +770,8 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             if (initialValue.linkedVariables != LinkedVariables.DELAY) {
                 vic.setLinkedVariables(initialValue.linkedVariables, true);
             }
+        } else {
+            vic.newVariableWithoutValue();
         }
         return vic;
     }
@@ -787,7 +804,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
 
     private static final Set<VariableProperty> FROM_ANALYSER_TO_PROPERTIES_AND_CUSTOM
             = Set.of(IDENTITY, FINAL, EXTERNAL_NOT_NULL, MODIFIED_OUTSIDE_METHOD, IMMUTABLE, CONTAINER, NOT_MODIFIED_1,
-            CONTEXT_NOT_NULL, CONTEXT_NOT_NULL_DELAY_RESOLVED);
+            CONTEXT_NOT_NULL, CONTEXT_MODIFIED);
 
     private Map<VariableProperty, Integer> propertyMap(AnalyserContext analyserContext,
                                                        WithInspectionAndAnalysis object,
@@ -806,7 +823,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         return FROM_ANALYSER_TO_PROPERTIES_AND_CUSTOM.stream()
                 .collect(Collectors.toUnmodifiableMap(vp -> vp, vp -> {
                     if (vp == CONTEXT_NOT_NULL) return defaultNotNull;
-                    if (vp == CONTEXT_NOT_NULL_DELAY_RESOLVED) return Level.TRUE;
+                    if (vp == CONTEXT_MODIFIED) return Level.FALSE;
                     return f.apply(vp);
                 }));
     }
@@ -1214,12 +1231,16 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         return variables.stream().map(Map.Entry::getValue).map(VariableInfoContainer::current);
     }
 
+    public Stream<VariableInfo> variableStream(VariableInfoContainer.Level level) {
+        return variables.stream().map(Map.Entry::getValue).map(vic -> vic.best(level));
+    }
+
     public Stream<Map.Entry<String, VariableInfoContainer>> variableEntryStream() {
         return variables.stream();
     }
 
-    public Stream<VariableInfo> safeVariableStream() {
-        return variables.toImmutableMap().values().stream().map(VariableInfoContainer::current);
+    public Stream<VariableInfo> safeVariableStream(VariableInfoContainer.Level level) {
+        return variables.toImmutableMap().values().stream().map(vic -> vic.best(level));
     }
 
     // this is a safe constant (delay == -1)
@@ -1250,6 +1271,11 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                     return equals;
                 })
                 .toArray(Expression[]::new));
+    }
+
+    public boolean isAssignedToOtherVariable(Variable variable) {
+        return variables.stream().anyMatch(e ->
+                e.getValue().getPreviousOrInitial().getStaticallyAssignedVariables().contains(variable));
     }
 
     public boolean isLinkedToOtherVariable(Variable variable) {

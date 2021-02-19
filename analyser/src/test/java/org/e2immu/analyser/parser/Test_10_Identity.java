@@ -55,8 +55,6 @@ public class Test_10_Identity extends CommonTestRunner {
                         // there is an explicit @NotNull on the first parameter of debug
                     } // else: nothing much happening in the first iteration, because LOGGER is still unknown!
 
-                    Assert.assertEquals(Level.DELAY, d.getProperty(VariableProperty.CONTEXT_NOT_NULL_DELAY));
-                    Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.CONTEXT_NOT_NULL_DELAY_RESOLVED));
                     Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
 
                 } else if ("1".equals(d.statementId())) {
@@ -64,7 +62,6 @@ public class Test_10_Identity extends CommonTestRunner {
                     Assert.assertEquals("1" + VariableInfoContainer.Level.EVALUATION, d.variableInfo().getReadId());
 
                     Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
-                    Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.CONTEXT_NOT_NULL_DELAY_RESOLVED));
                     Assert.assertEquals(Level.FALSE, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
 
                     String expectValue = d.iteration() == 0 ? "<p:s>" : "nullable instance type String";
@@ -123,13 +120,11 @@ public class Test_10_Identity extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("idem2".equals(d.methodInfo().name) && d.variable() instanceof ParameterInfo s && "s".equals(s.name)) {
                 if ("0".equals(d.statementId())) {
-                    Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.CONTEXT_NOT_NULL_DELAY_RESOLVED));
+                    Assert.assertTrue(d.getProperty(VariableProperty.CONTEXT_NOT_NULL) != Level.DELAY);
                 }
                 if ("1".equals(d.statementId())) {
                     // because the @NotNull situation of the parameter of idem has not been resolved yet, there cannot be a
                     // delay resolved here
-                    int expectResolved = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
-                    Assert.assertEquals(expectResolved, d.getProperty(VariableProperty.CONTEXT_NOT_NULL_DELAY_RESOLVED));
                     int expectContextNotNull = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
                     Assert.assertEquals(expectContextNotNull, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
                 }

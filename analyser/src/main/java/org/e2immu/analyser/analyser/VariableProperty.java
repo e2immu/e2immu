@@ -32,7 +32,6 @@ public enum VariableProperty {
     // purpose: goes to true when all methods involved in the computation have been "evaluated"
     CONTEXT_MODIFIED_DELAY("method delay"),
     // continuation of METHOD_DELAY from variable properties into field summaries
-    CONTEXT_MODIFIED_DELAY_RESOLVED("method delay resolved"),
 
     SCOPE_DELAY("scope delay"),
 
@@ -41,7 +40,6 @@ public enum VariableProperty {
     CONTEXT_NOT_NULL("not null in context", MultiLevel.NULLABLE, MultiLevel.EFFECTIVELY_CONTENT2_NOT_NULL,
             MultiLevel.NULLABLE, MultiLevel.EFFECTIVELY_NOT_NULL),
     CONTEXT_NOT_NULL_DELAY("not null in context delay"),
-    CONTEXT_NOT_NULL_DELAY_RESOLVED("not null in context delay resolved"),
 
     /*
     in fields, external not null is the truth

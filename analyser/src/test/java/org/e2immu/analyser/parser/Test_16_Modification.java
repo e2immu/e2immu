@@ -710,8 +710,6 @@ public class Test_16_Modification extends CommonTestRunner {
             }
             if ("example1".equals(d.methodInfo().name) && "0".equals(d.statementId())) {
                 if (S2.equals(d.variableName())) {
-                    int expectCnnDR = d.iteration() <= 1 ? Level.DELAY : Level.TRUE;
-                    Assert.assertEquals(expectCnnDR, d.getProperty(VariableProperty.CONTEXT_NOT_NULL_DELAY_RESOLVED));
                     int expectCnn = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL;
                     Assert.assertEquals(expectCnn, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
 

@@ -160,8 +160,8 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
     public void test1() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if (d.variable() instanceof ParameterInfo a && "a".equals(a.name) && ("0".equals(d.statementId()) || "1".equals(d.statementId()))) {
-                Assert.assertEquals("Statement " + d.statementId(),
-                        Level.TRUE, d.getProperty(VariableProperty.CONTEXT_NOT_NULL_DELAY_RESOLVED));
+                Assert.assertTrue("Statement " + d.statementId(),
+                        d.getProperty(VariableProperty.CONTEXT_NOT_NULL) != Level.DELAY);
             }
         };
 
@@ -196,7 +196,7 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("method3".equals(d.methodInfo().name)) {
-                if(d.iteration()>0) {
+                if (d.iteration() > 0) {
                     for (int param : new int[]{0, 1}) {
                         Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL,
                                 d.parameterAnalyses().get(param).getProperty(VariableProperty.CONTEXT_NOT_NULL));

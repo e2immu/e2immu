@@ -50,9 +50,6 @@ public class Test_05_FinalChecks extends CommonTestRunner {
                     Assert.assertEquals("", d.variableInfo().getLinkedVariables().toString());
 
                     // p4 never came in a not-null context
-                    Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.CONTEXT_NOT_NULL_DELAY_RESOLVED));
-                    Assert.assertEquals(Level.DELAY, d.getProperty(VariableProperty.CONTEXT_NOT_NULL_DELAY));
-
                     Assert.assertTrue(d.variableInfo().isRead());
                     int expectNotNull = d.iteration() <= 2 ? Level.DELAY : MultiLevel.NULLABLE;
                     Assert.assertEquals(expectNotNull, d.getProperty(VariableProperty.NOT_NULL_PARAMETER)); // nothing that points to not null

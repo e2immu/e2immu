@@ -21,14 +21,12 @@ import com.google.common.collect.ImmutableMap;
 import org.e2immu.analyser.analyser.util.MergeHelper;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Level;
-import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.expression.DelayedExpression;
 import org.e2immu.analyser.model.expression.DelayedVariableExpression;
 import org.e2immu.analyser.model.expression.Negation;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
-import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.SetOnce;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -209,7 +207,7 @@ class VariableInfoImpl implements VariableInfo {
                 this.statementTime.set(statementTime);
             }
         } catch (RuntimeException re) {
-            LOGGER.error("Caught exception while setting statement time of "+variable.fullyQualifiedName());
+            LOGGER.error("Caught exception while setting statement time of " + variable.fullyQualifiedName());
             throw re;
         }
     }
@@ -247,8 +245,8 @@ class VariableInfoImpl implements VariableInfo {
     things to set for a new variable
      */
     public void newVariable() {
-        setProperty(VariableProperty.CONTEXT_NOT_NULL_DELAY_RESOLVED, org.e2immu.analyser.model.Level.TRUE);
-        setProperty(VariableProperty.CONTEXT_MODIFIED_DELAY_RESOLVED, org.e2immu.analyser.model.Level.TRUE);
+        setProperty(VariableProperty.CONTEXT_NOT_NULL, variable.parameterizedType().defaultNotNull());
+        setProperty(VariableProperty.CONTEXT_MODIFIED, Level.FALSE);
     }
 
     // ***************************** MERGE RELATED CODE *********************************
@@ -262,7 +260,6 @@ class VariableInfoImpl implements VariableInfo {
     private static final List<MergeOp> MERGE = List.of(
             new MergeOp(VariableProperty.NOT_NULL_EXPRESSION, Math::min, Integer.MAX_VALUE),
             new MergeOp(VariableProperty.CONTEXT_NOT_NULL, Math::max, Level.DELAY),
-            new MergeOp(VariableProperty.CONTEXT_NOT_NULL_DELAY_RESOLVED, Math::max, Level.DELAY),
             new MergeOp(VariableProperty.EXTERNAL_NOT_NULL, Math::max, Level.DELAY),
             new MergeOp(VariableProperty.EXTERNAL_NOT_NULL_DELAY, Math::max, Level.DELAY),
             new MergeOp(VariableProperty.EXTERNAL_NOT_NULL_DELAY_RESOLVED, Math::max, Level.DELAY),
@@ -270,9 +267,17 @@ class VariableInfoImpl implements VariableInfo {
             new MergeOp(VariableProperty.CONTAINER, Math::min, Integer.MAX_VALUE),
             new MergeOp(VariableProperty.IDENTITY, Math::min, Integer.MAX_VALUE),
             new MergeOp(VariableProperty.CONTEXT_MODIFIED, Math::max, Level.DELAY),
-            new MergeOp(VariableProperty.CONTEXT_MODIFIED_DELAY_RESOLVED, Math::max, Level.DELAY),
             new MergeOp(VariableProperty.MODIFIED_OUTSIDE_METHOD, Math::max, Level.DELAY)
     );
+
+    // TESTING ONLY!!
+    VariableInfoImpl mergeIntoNewObject(EvaluationContext evaluationContext,
+                                        Expression stateOfDestination,
+                                        boolean atLeastOneBlockExecuted,
+                                        List<StatementAnalysis.ConditionAndVariableInfo> mergeSources) {
+        return mergeIntoNewObject(evaluationContext, stateOfDestination, atLeastOneBlockExecuted, mergeSources, new HashMap<>(),
+                new HashMap<>());
+    }
 
     /*
     Merge this object and merge sources into a newly created VariableInfo object.
@@ -281,12 +286,25 @@ class VariableInfoImpl implements VariableInfo {
     public VariableInfoImpl mergeIntoNewObject(EvaluationContext evaluationContext,
                                                Expression stateOfDestination,
                                                boolean atLeastOneBlockExecuted,
-                                               List<StatementAnalysis.ConditionAndVariableInfo> mergeSources) {
+                                               List<StatementAnalysis.ConditionAndVariableInfo> mergeSources,
+                                               Map<Variable, Integer> contextNotNull,
+                                               Map<Variable, Integer> contextModified) {
         String mergedAssignmentId = mergedId(evaluationContext, getAssignmentId(), VariableInfo::getAssignmentId, mergeSources);
         String mergedReadId = mergedId(evaluationContext, getReadId(), VariableInfo::getReadId, mergeSources);
         VariableInfoImpl newObject = new VariableInfoImpl(variable, mergedAssignmentId, mergedReadId);
-        newObject.mergeIntoMe(evaluationContext, stateOfDestination, atLeastOneBlockExecuted, this, mergeSources);
+        newObject.mergeIntoMe(evaluationContext, stateOfDestination, atLeastOneBlockExecuted, this, mergeSources,
+                contextNotNull, contextModified);
         return newObject;
+    }
+
+    // test only!
+    void mergeIntoMe(EvaluationContext evaluationContext,
+                     Expression stateOfDestination,
+                     boolean atLeastOneBlockExecuted,
+                     VariableInfoImpl previous,
+                     List<StatementAnalysis.ConditionAndVariableInfo> mergeSources) {
+        mergeIntoMe(evaluationContext, stateOfDestination, atLeastOneBlockExecuted, previous, mergeSources,
+                new HashMap<>(), new HashMap<>());
     }
 
     /*
@@ -296,7 +314,9 @@ class VariableInfoImpl implements VariableInfo {
                             Expression stateOfDestination,
                             boolean atLeastOneBlockExecuted,
                             VariableInfoImpl previous,
-                            List<StatementAnalysis.ConditionAndVariableInfo> mergeSources) {
+                            List<StatementAnalysis.ConditionAndVariableInfo> mergeSources,
+                            Map<Variable, Integer> contextNotNull,
+                            Map<Variable, Integer> contextModified) {
         assert atLeastOneBlockExecuted || previous != this;
 
         Expression mergedValue = evaluationContext.replaceLocalVariables(
@@ -304,7 +324,7 @@ class VariableInfoImpl implements VariableInfo {
         setValue(mergedValue, evaluationContext.isDelayed(mergedValue));
 
         mergeStatementTime(evaluationContext, atLeastOneBlockExecuted, previous.getStatementTime(), mergeSources);
-        mergeProperties(atLeastOneBlockExecuted, previous, mergeSources);
+        mergeProperties(atLeastOneBlockExecuted, previous, mergeSources, contextNotNull, contextModified);
         mergeLinkedVariables(atLeastOneBlockExecuted, previous, mergeSources);
         mergeStaticallyAssignedVariables(atLeastOneBlockExecuted, previous, mergeSources);
     }
@@ -386,12 +406,20 @@ class VariableInfoImpl implements VariableInfo {
         setStaticallyAssignedVariables(new LinkedVariables(merged));
     }
 
+    // testing only!!
+    void mergeProperties(boolean existingValuesWillBeOverwritten, VariableInfo previous,
+                         List<StatementAnalysis.ConditionAndVariableInfo> mergeSources) {
+        mergeProperties(existingValuesWillBeOverwritten, previous, mergeSources, new HashMap<>(), new HashMap<>());
+    }
+
     /*
     Compute and set or update in this object, the properties resulting from merging previous and merge sources.
     If existingValuesWillBeOverwritten is true, the previous object is ignored.
      */
     void mergeProperties(boolean existingValuesWillBeOverwritten, VariableInfo previous,
-                         List<StatementAnalysis.ConditionAndVariableInfo> mergeSources) {
+                         List<StatementAnalysis.ConditionAndVariableInfo> mergeSources,
+                         Map<Variable, Integer> contextNotNull,
+                         Map<Variable, Integer> contextModified) {
         VariableInfo[] list = mergeSources.stream()
                 .map(StatementAnalysis.ConditionAndVariableInfo::variableInfo)
                 .filter(vi -> vi.getValue().isComputeProperties())
@@ -412,6 +440,7 @@ class VariableInfoImpl implements VariableInfo {
                 setProperty(mergeOp.variableProperty, commonValue);
             }
         }
+        // FIXME add CNN, CM
     }
 
     public static Map<VariableProperty, Integer> mergeProperties

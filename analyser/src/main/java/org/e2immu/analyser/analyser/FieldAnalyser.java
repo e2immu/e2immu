@@ -272,7 +272,7 @@ public class FieldAnalyser extends AbstractAnalyser {
         // first, context
         boolean contextNotNullDelays = allMethodsAndConstructors.stream()
                 .flatMap(m -> m.getFieldAsVariableStream(fieldInfo, true))
-                .anyMatch(VariableInfo::contextNotNullDelay);
+                .anyMatch(vi -> vi.getProperty(VariableProperty.CONTEXT_NOT_NULL) == Level.DELAY);
         if (contextNotNullDelays) return DELAYS;
         int bestOverContext = allMethodsAndConstructors.stream()
                 .flatMap(m -> m.getFieldAsVariableStream(fieldInfo, true))

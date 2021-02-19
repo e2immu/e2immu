@@ -38,6 +38,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -619,6 +620,11 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         if (evaluationResult.addCircularCallOrUndeclaredFunctionalInterface()) {
             statementAnalysis.methodLevelData.addCircularCallOrUndeclaredFunctionalInterface();
         }
+        Map<Variable, Integer> contextNotNull = new HashMap<>();
+        Map<Variable, Integer> contextModified = new HashMap<>();
+
+        // the first part is per variable
+
         List<Map.Entry<Variable, EvaluationResult.ChangeData>> sortedEntries = new ArrayList<>(evaluationResult.changeData().entrySet());
         sortedEntries.sort((e1, e2) -> {
             // return variables at the end
@@ -668,9 +674,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                     }
                 }
             } else {
-                boolean linkedToOtherVariable = statementAnalysis.isLinkedToOtherVariable(variable);
-                Map<VariableProperty, Integer> merged = mergePreviousAndChange(vi1.getProperties().toImmutableMap(),
-                        changeData.properties(), linkedToOtherVariable);
+                Map<VariableProperty, Integer> merged = mergePreviousAndChange(variable, vi1.getProperties().toImmutableMap(),
+                        changeData.properties(), contextNotNull, contextModified);
 
                 if (changeData.value() != null) {
                     // a modifying method caused an updated instance value
@@ -709,21 +714,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 status = DELAYS;
             }
 
-            if (resolveDelays(changeData, vi, vic, CONTEXT_NOT_NULL_DELAY, CONTEXT_NOT_NULL_DELAY_RESOLVED)) {
-                status = DELAYS;
-            } else {
-                int breakValue = allowBreakingContextNotNull(vi);
-                int contextNotNull = vi.getProperty(CONTEXT_NOT_NULL);
-                if (contextNotNull == Level.DELAY && breakValue != Level.DELAY) {
-                    vic.setProperty(CONTEXT_NOT_NULL, breakValue, EVALUATION);
-                }
-            }
-            if (resolveDelays(changeData, vi, vic, CONTEXT_MODIFIED_DELAY, CONTEXT_MODIFIED_DELAY_RESOLVED)) {
-                status = DELAYS;
-            }
-
             if (variable instanceof ParameterInfo) {
-                resolveDelays(changeData, vi, vic, EXTERNAL_NOT_NULL_DELAY, EXTERNAL_NOT_NULL_DELAY_RESOLVED);
+                resolveExternalNotNullDelays(changeData, vi, vic);
             }
 
             // the method analyser must have both context not null and not null expression
@@ -737,6 +729,18 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 }
             }
         }
+
+        // the second one is across clusters of variables
+
+        addToMap(contextNotNull, CONTEXT_NOT_NULL, x -> x.parameterizedType().defaultNotNull());
+        status = MethodLevelData.contextProperty(statementAnalysis, sharedState.evaluationContext, VariableInfo::getStaticallyAssignedVariables,
+                CONTEXT_NOT_NULL, contextNotNull, EVALUATION).combine(status);
+
+        addToMap(contextModified, CONTEXT_MODIFIED, x -> Level.FALSE);
+        status = MethodLevelData.contextProperty(statementAnalysis, sharedState.evaluationContext, VariableInfo::getLinkedVariables,
+                CONTEXT_MODIFIED, contextModified, EVALUATION).combine(status);
+
+        // odds and ends
 
         evaluationResult.messages().getMessageStream().forEach(statementAnalysis::ensure);
 
@@ -766,6 +770,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         }
 
         // debugging...
+
         for (EvaluationResultVisitor evaluationResultVisitor : analyserContext.getConfiguration()
                 .debugConfiguration.evaluationResultVisitors) {
             evaluationResultVisitor.visit(new EvaluationResultVisitor.Data(evaluationResult.evaluationContext().getIteration(),
@@ -775,12 +780,30 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         return status;
     }
 
-    private int allowBreakingContextNotNull(VariableInfo vi) {
-        if (vi.getValue() instanceof IsVariableExpression ve) {
-            VariableInfo initial = statementAnalysis.findOrNull(ve.variable(), EVALUATION);
-            return initial.noContextNotNullDelay() ? initial.getProperty(CONTEXT_NOT_NULL) : Level.DELAY;
-        }
-        return vi.variable().parameterizedType().defaultNotNull();
+    private void addToMap(Map<Variable, Integer> map, VariableProperty variableProperty, Function<Variable, Integer> falseValue) {
+        statementAnalysis.variables.stream().forEach(e -> {
+            VariableInfoContainer vic = e.getValue();
+            VariableInfo vi1 = vic.getPreviousOrInitial();
+            if (!map.containsKey(vi1.variable())) { // variables that don't occur in contextNotNull
+                int prev = vi1.getProperty(variableProperty);
+                if (prev != Level.DELAY) {
+                    if (vic.hasEvaluation()) {
+                        VariableInfo vi = vic.best(EVALUATION);
+                        int eval = vi.getProperty(variableProperty);
+                        if (eval == Level.DELAY) {
+                            map.put(vi.variable(), falseValue.apply(vi.variable()));
+                        } else {
+                            map.put(vi.variable(), eval);
+                        }
+                    } else {
+                        map.put(vi1.variable(), prev);
+                    }
+                } else {
+                    assert !"0".equals(index()) :
+                            "Impossible, all variables start with non-delay: " + vi1.variable().fullyQualifiedName();
+                }
+            }
+        });
     }
 
     /*
@@ -795,27 +818,31 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         return res;
     }
 
-    private static Map<VariableProperty, Integer> mergePreviousAndChange(Map<VariableProperty, Integer> previous,
-                                                                         Map<VariableProperty, Integer> changeData,
-                                                                         boolean linkedToOtherVariable) {
+    private Map<VariableProperty, Integer> mergePreviousAndChange(Variable variable,
+                                                                  Map<VariableProperty, Integer> previous,
+                                                                  Map<VariableProperty, Integer> changeData,
+                                                                  Map<Variable, Integer> contextNotNull,
+                                                                  Map<Variable, Integer> contextModified) {
         Set<VariableProperty> both = new HashSet<>(previous.keySet());
         both.addAll(changeData.keySet());
         Map<VariableProperty, Integer> res = new HashMap<>(changeData);
+
         both.forEach(k -> {
             int prev = previous.getOrDefault(k, Level.DELAY);
             int change = changeData.getOrDefault(k, Level.DELAY);
             switch (k) {
                 case CONTEXT_NOT_NULL -> {
-                    if (changeData.getOrDefault(CONTEXT_NOT_NULL_DELAY, Level.DELAY) != Level.TRUE &&
-                            previous.getOrDefault(CONTEXT_NOT_NULL_DELAY_RESOLVED, Level.DELAY) == Level.TRUE) {
-                        int best = Math.max(prev, change);
-                        if (best != Level.DELAY) res.put(k, best);
+                    if (changeData.getOrDefault(CONTEXT_NOT_NULL_DELAY, Level.DELAY) != Level.TRUE && prev != Level.DELAY) {
+                        contextNotNull.put(variable, Math.max(variable.parameterizedType().defaultNotNull(), Math.max(prev, change)));
+                    } else {
+                        contextNotNull.put(variable, Level.DELAY);
                     }
                 }
                 case CONTEXT_MODIFIED -> {
-                    if (changeData.getOrDefault(CONTEXT_MODIFIED_DELAY, Level.DELAY) != Level.TRUE && !linkedToOtherVariable) {
-                        int best = Math.max(prev, change);
-                        if (best != Level.DELAY) res.put(k, best);
+                    if (changeData.getOrDefault(CONTEXT_MODIFIED_DELAY, Level.DELAY) != Level.TRUE && prev != Level.DELAY) {
+                        contextModified.put(variable, Math.max(Level.FALSE, Math.max(prev, change)));
+                    } else {
+                        contextModified.put(variable, Level.DELAY);
                     }
                 }
                 // value properties are copied from previous, because there is NO assignment!
@@ -828,29 +855,23 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 }
             }
         });
-        if (previous.getOrDefault(CONTEXT_NOT_NULL_DELAY_RESOLVED, Level.DELAY) != Level.TRUE) {
-            res.put(CONTEXT_NOT_NULL_DELAY, Level.TRUE); // we'll have to wait for prev, we cannot break yet
-        }
         return res;
     }
 
-    private static boolean resolveDelays(EvaluationResult.ChangeData changeData,
-                                         VariableInfo vi,
-                                         VariableInfoContainer vic,
-                                         VariableProperty delay, // CONTEXT_NOT_NULL_DELAY
-                                         VariableProperty delayResolved) { //CONTEXT_NOT_NULL_DELAY_RESOLVED
+    private static void resolveExternalNotNullDelays(EvaluationResult.ChangeData changeData,
+                                                     VariableInfo vi,
+                                                     VariableInfoContainer vic) { //CONTEXT_NOT_NULL_DELAY_RESOLVED
         // if not present in ChangeData, then this iteration, there was no delay!
-        int delayedChange = changeData.getProperty(delay);
+        int delayedChange = changeData.getProperty(EXTERNAL_NOT_NULL_DELAY);
         // if present in vi, there was a delay in the previous iteration
-        int delayedVi = vi.getProperty(delay);
+        int delayedVi = vi.getProperty(EXTERNAL_NOT_NULL_DELAY);
         // so if we combine those two, we can write that delays have been resolved
         if (delayedVi == Level.TRUE && delayedChange == Level.DELAY) {
-            vic.setProperty(delayResolved, Level.TRUE, EVALUATION);
+            vic.setProperty(EXTERNAL_NOT_NULL_DELAY_RESOLVED, Level.TRUE, EVALUATION);
         }
         if (delayedChange != Level.TRUE) {
-            vic.setProperty(delayResolved, Level.TRUE, EVALUATION);
+            vic.setProperty(EXTERNAL_NOT_NULL_DELAY_RESOLVED, Level.TRUE, EVALUATION);
         }
-        return delayedChange == Level.TRUE;
     }
 
     /*
@@ -1032,6 +1053,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
 
             VariableInfoContainer newVic = VariableInfoContainerImpl.newVariable(newLvr, VariableInfoContainer.NOT_A_VARIABLE_FIELD,
                     new VariableInLoop(loopIndex, index(), VariableInLoop.VariableType.LOOP_COPY), navigationData.hasSubBlocks());
+            newVic.newVariableWithoutValue();
             String assigned = index() + VariableInfoContainer.Level.INITIAL;
             String read = index() + EVALUATION;
             newVic.ensureEvaluation(assigned, read, VariableInfoContainer.NOT_A_VARIABLE_FIELD, Set.of());
@@ -1145,6 +1167,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             if (expression instanceof LocalVariableCreation lvc) {
                 LocalVariableReference lvr;
                 VariableInfoContainer vic;
+                boolean newVariable;
                 if (!statementAnalysis.variables.isSet(lvc.localVariable.name())) {
 
                     // create the local (loop) variable
@@ -1154,7 +1177,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                             new VariableInLoop(index(), null, VariableInLoop.VariableType.LOOP) : VariableInLoop.NOT_IN_LOOP;
                     vic = VariableInfoContainerImpl.newVariable(lvr, VariableInfoContainer.NOT_A_VARIABLE_FIELD,
                             variableInLoop, statementAnalysis.navigationData.hasSubBlocks());
-
+                    newVariable = true;
                     if (statement() instanceof LoopStatement) {
                         statementAnalysis.localVariablesAssignedInThisLoop.add(lvr.fullyQualifiedName());
                     }
@@ -1162,6 +1185,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 } else {
                     vic = statementAnalysis.variables.get(lvc.localVariable.name());
                     lvr = (LocalVariableReference) vic.current().variable();
+                    newVariable = false;
                 }
 
                 // what should we evaluate? catch: assign a value which will be read; for(int i=0;...) --> 0 instead of i=0;
@@ -1176,6 +1200,9 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                     vic.setLinkedVariables(LinkedVariables.EMPTY, true);
                 } else {
                     initialiserToEvaluate = lvc; // == expression
+                    if (newVariable) {
+                        vic.newVariableWithoutValue();
+                    }
                 }
             } else initialiserToEvaluate = expression;
 

@@ -137,29 +137,6 @@ public interface VariableInfo {
 
     boolean staticallyAssignedVariablesIsSet();
 
-    default boolean noContextNotNullDelay() {
-        if (getProperty(VariableProperty.CONTEXT_NOT_NULL_DELAY) == Level.DELAY) return true;
-        return getProperty(VariableProperty.CONTEXT_NOT_NULL_DELAY_RESOLVED) == Level.TRUE;
-    }
-
-    default boolean noContextModifiedDelay() {
-        if (getProperty(VariableProperty.CONTEXT_MODIFIED_DELAY) == Level.DELAY) return true;
-        return getProperty(VariableProperty.CONTEXT_MODIFIED_DELAY_RESOLVED) == Level.TRUE;
-    }
-
-    default boolean noContextDelay(VariableProperty variableProperty) {
-        return switch (variableProperty) {
-            case CONTEXT_MODIFIED -> noContextModifiedDelay();
-            case CONTEXT_NOT_NULL -> noContextNotNullDelay();
-            default -> throw new UnsupportedOperationException();
-        };
-    }
-
-    default boolean contextNotNullDelay() {
-        return getProperty(VariableProperty.CONTEXT_NOT_NULL_DELAY) == Level.TRUE &&
-                getProperty(VariableProperty.CONTEXT_NOT_NULL_DELAY_RESOLVED) != Level.TRUE;
-    }
-
     default boolean externalNotNullDelay() {
         return getProperty(VariableProperty.EXTERNAL_NOT_NULL_DELAY) == Level.TRUE &&
                 getProperty(VariableProperty.EXTERNAL_NOT_NULL_DELAY_RESOLVED) != Level.TRUE;

@@ -18,6 +18,7 @@
 package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.annotation.NotNull;
 
@@ -56,7 +57,9 @@ public interface VariableInfoContainer {
 
     void setStaticallyAssignedVariables(LinkedVariables staticallyAssignedVariables, boolean initialOrEvaluation);
 
-    void copyFromEvalIntoMerge();
+    void copyFromEvalIntoMerge(Map<Variable, Integer> contextNotNull, Map<Variable, Integer> contextModified);
+
+    void newVariableWithoutValue();
 
     // suffixes in assignment id; these act as the 3 levels for setProperty
     enum Level {
@@ -153,7 +156,9 @@ public interface VariableInfoContainer {
     void merge(EvaluationContext evaluationContext,
                Expression stateOfDestination,
                boolean atLeastOneBlockExecuted,
-               List<StatementAnalysis.ConditionAndVariableInfo> mergeSources);
+               List<StatementAnalysis.ConditionAndVariableInfo> mergeSources,
+               Map<Variable, Integer> contextNotNull,
+               Map<Variable, Integer> contextModified);
 
     /*
     Statement time is irrelevant for all but variable fields.

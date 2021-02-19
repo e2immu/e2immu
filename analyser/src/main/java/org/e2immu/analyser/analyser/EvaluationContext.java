@@ -114,11 +114,11 @@ public interface EvaluationContext {
         if (value instanceof VariableExpression variableValue) {
             Variable variable = variableValue.variable();
             if (variable instanceof ParameterInfo parameterInfo) {
-                VariableProperty vp = variableProperty == NOT_NULL_EXPRESSION ? NOT_NULL_PARAMETER: variableProperty;
+                VariableProperty vp = variableProperty == NOT_NULL_EXPRESSION ? NOT_NULL_PARAMETER : variableProperty;
                 return getAnalyserContext().getParameterAnalysis(parameterInfo).getProperty(vp);
             }
             if (variable instanceof FieldReference fieldReference) {
-                VariableProperty vp = variableProperty == NOT_NULL_EXPRESSION ? EXTERNAL_NOT_NULL: variableProperty;
+                VariableProperty vp = variableProperty == NOT_NULL_EXPRESSION ? EXTERNAL_NOT_NULL : variableProperty;
                 return getAnalyserContext().getFieldAnalysis(fieldReference.fieldInfo).getProperty(vp);
             }
             if (variable instanceof This thisVariable) {
@@ -141,18 +141,6 @@ public interface EvaluationContext {
 
     default int getPropertyFromPreviousOrInitial(Variable variable, VariableProperty variableProperty, int statementTime) {
         throw new UnsupportedOperationException();
-    }
-
-    default int summarizeContextModification(Set<Variable> linkedVariables) {
-        boolean hasDelays = false;
-        for (Variable variable : linkedVariables) {
-            int modified = getProperty(variable, VariableProperty.CONTEXT_MODIFIED);
-            if (modified == Level.TRUE) return Level.TRUE;
-            int methodDelay = getProperty(variable, VariableProperty.CONTEXT_MODIFIED_DELAY);
-            int methodDelayResolved = getProperty(variable, VariableProperty.CONTEXT_MODIFIED_DELAY_RESOLVED);
-            if (methodDelay == Level.TRUE && methodDelayResolved != Level.TRUE) hasDelays = true;
-        }
-        return hasDelays ? Level.DELAY : Level.FALSE;
     }
 
     // Replacer
@@ -260,7 +248,7 @@ public interface EvaluationContext {
         try {
             return expression.subElements().stream().anyMatch(e -> e instanceof Expression expr && isDelayed(expr));
         } catch (RuntimeException runtimeException) {
-            LOGGER.error("Error computing isDelayed on type "+expression.getClass());
+            LOGGER.error("Error computing isDelayed on type " + expression.getClass());
             throw runtimeException;
         }
     }
