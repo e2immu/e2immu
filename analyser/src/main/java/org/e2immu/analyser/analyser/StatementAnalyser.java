@@ -2138,7 +2138,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
 
         }
 
-        private boolean notNullAccordingToConditionManager(Variable variable) {
+        @Override
+        public boolean notNullAccordingToConditionManager(Variable variable) {
             Set<Variable> notNullVariablesInState = conditionManager.findIndividualNullInState(this, false);
             if (notNullVariablesInState.contains(variable)) return true;
             Set<Variable> notNullVariablesInCondition = conditionManager.findIndividualNullInCondition(this, false);

@@ -437,10 +437,13 @@ class VariableInfoImpl implements VariableInfo {
                 }
             }
             if (commonValue != mergeOp.initial && commonValue > Level.DELAY) {
-                setProperty(mergeOp.variableProperty, commonValue);
+                switch (mergeOp.variableProperty) {
+                    case CONTEXT_NOT_NULL -> contextNotNull.put(previous.variable(), commonValue);
+                    case CONTEXT_MODIFIED -> contextModified.put(previous.variable(), commonValue);
+                    default -> setProperty(mergeOp.variableProperty, commonValue);
+                }
             }
         }
-        // FIXME add CNN, CM
     }
 
     public static Map<VariableProperty, Integer> mergeProperties

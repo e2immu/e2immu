@@ -156,6 +156,8 @@ public interface EvaluationContext {
         return true;
     }
 
+    default boolean notNullAccordingToConditionManager(Variable variable) { return true; }
+
     default LinkedVariables linkedVariables(Expression value) {
         return value.linkedVariables(this);
     }
@@ -173,7 +175,7 @@ public interface EvaluationContext {
     computed/copied during assignment. Critical that NNE is present!
      */
     default Map<VariableProperty, Integer> getValueProperties(Expression value) {
-        return VALUE_PROPERTIES.stream().collect(Collectors.toMap(vp -> vp, vp -> getProperty(value, vp, false)));
+        return VALUE_PROPERTIES.stream().collect(Collectors.toMap(vp -> vp, vp -> getProperty(value, vp, true)));
     }
 
     /*

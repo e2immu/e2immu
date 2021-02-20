@@ -202,7 +202,6 @@ public class MethodLevelData {
 
         // delays in dependency graph
         statementAnalysis.variableStream(level)
-                .filter(variableInfo -> !(variableInfo.variable() instanceof This))
                 .forEach(variableInfo -> {
                     LinkedVariables linkedVariables = connections.apply(variableInfo);
                     if (linkedVariables == LinkedVariables.DELAY) {
@@ -227,8 +226,8 @@ public class MethodLevelData {
         // we make a copy of the values, because in summarizeModification there is the possibility of adding to the map
         Map<VariableInfoContainer, Integer> valuesToSet = new HashMap<>();
 
-        statementAnalysis.safeVariableStream(level)
-                .filter(variableInfo -> !(variableInfo.variable() instanceof This))
+        // NOTE: this used to be safeVariableStream but don't think that is needed anymore
+        statementAnalysis.variableStream(level)
                 .forEach(variableInfo -> {
                     Variable baseVariable = variableInfo.variable();
                     Set<Variable> variablesBaseLinksTo =
@@ -293,7 +292,8 @@ public class MethodLevelData {
                 valuesToSet.put(vic, Level.DELAY);
             }
         } else if (modified != summary && summary != Level.DELAY) {
-            throw new UnsupportedOperationException("? want " + modified + ", have " + summary);
+            throw new UnsupportedOperationException("? want " + modified + ", have "
+                    + summary + " variable " + vi.variable().fullyQualifiedName() + ", prop " + variableProperty);
         }
     }
 

@@ -269,7 +269,8 @@ public record EvaluationResult(EvaluationContext evaluationContext,
 
             if (variable instanceof This) return; // nothing to be done here
 
-            if (notNullRequired == MultiLevel.EFFECTIVELY_NOT_NULL && evaluationContext.isNotNull0(value)) {
+            if (notNullRequired == MultiLevel.EFFECTIVELY_NOT_NULL &&
+                    evaluationContext.notNullAccordingToConditionManager(variable)) {
                 return; // great, no problem, no reason to complain nor increase the property
             }
 
@@ -306,11 +307,8 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             // regardless of what's going on with the external not-null, we set context not null
             setProperty(variable, VariableProperty.CONTEXT_NOT_NULL, notNullRequired);
             if (value instanceof VariableExpression redirectViaValue) {
+                // FIXME check is this necessary?
                 setProperty(redirectViaValue.variable(), VariableProperty.CONTEXT_NOT_NULL, notNullRequired);
-            }
-            // the static redirects may overlap with the dynamic redirect, but don't have to
-            for (Variable staticRedirect : evaluationContext.getStaticallyAssignedVariables(variable, statementTime).variables()) {
-                setProperty(staticRedirect, VariableProperty.CONTEXT_NOT_NULL, notNullRequired);
             }
         }
 

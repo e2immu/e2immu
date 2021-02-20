@@ -569,10 +569,19 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
                         Assert.assertEquals(I2 + "+q", d.currentValue().toString());
                     }
                 }
+                if ("java.lang.System.out".equals(d.variableName())) {
+                    String expectValue = d.iteration() == 0 ? "<f:out>" : "instance type PrintStream";
+                    Assert.assertEquals(expectValue, d.currentValue().toString());
+                    Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+                }
             }
         };
 
         EvaluationResultVisitor evaluationResultVisitor = d -> {
+            if ("test4".equals(d.methodInfo().name) && "0".equals(d.statementId())) {
+                String expectValue = d.iteration() == 0 ? "<m:println>" : "<no return value>";
+                Assert.assertEquals(expectValue, d.evaluationResult().value().toString());
+            }
             if ("test4".equals(d.methodInfo().name) && d.iteration() > 0 && "4.0.0.0.3".equals(d.statementId())) {
                 Assert.assertEquals("true", d.evaluationResult().value().toString());
             }
