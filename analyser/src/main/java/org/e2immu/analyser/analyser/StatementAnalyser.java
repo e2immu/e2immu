@@ -655,7 +655,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 log(ANALYSER, "Write value {} to variable {}", valueToWrite, variable.fullyQualifiedName());
                 // first do the properties that come with the value; later, we'll write the ones in changeData
                 Map<VariableProperty, Integer> valueProperties = sharedState.evaluationContext.getValueProperties(valueToWrite);
-                Map<VariableProperty, Integer> merged = mergeValueAndChange(valueProperties, changeData.properties());
+                Map<VariableProperty, Integer> merged = mergeValueAndChange(variable, valueProperties, changeData.properties(),
+                        contextNotNull, contextModified);
 
                 vic.setValue(valueToWrite, valueToWriteIsDelayed, changeData.staticallyAssignedVariables(),
                         merged, false);
@@ -664,11 +665,14 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                     VariableInfoContainer local = addToAssignmentsInLoop(vic, variable.fullyQualifiedName());
                     if (local != null && !evaluationResult.someValueWasDelayed() && !valueToWriteIsDelayed) {
                         // assign the value of the assignment to the local copy created
-                        log(ANALYSER, "Write value {} to local copy variable {}", valueToWrite, local.current().variable().fullyQualifiedName());
+                        Variable localVar = local.current().variable();
+                        log(ANALYSER, "Write value {} to local copy variable {}", valueToWrite, localVar.fullyQualifiedName());
                         Map<VariableProperty, Integer> props2 = sharedState.evaluationContext.getValueProperties(valueToWrite);
-                        Map<VariableProperty, Integer> merged2 = mergeValueAndChange(props2, changeData.properties());
+                        Map<VariableProperty, Integer> merged2 = mergeValueAndChange(localVar, props2,
+                                changeData.properties(), contextNotNull, contextModified);
 
-                        local.setValue(valueToWrite, false, changeData.staticallyAssignedVariables(), merged2, false);
+                        local.setValue(valueToWrite, false, changeData.staticallyAssignedVariables(), merged2,
+                                false);
                         local.setLinkedVariables(new LinkedVariables(Set.of(vi.variable())), false);
                         additionalLinks.add(local.current().variable());
                     }
@@ -685,7 +689,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                             changeData.staticallyAssignedVariables();
                     boolean valueIsDelayed = sharedState.evaluationContext.isDelayed(changeData.value());
                     vic.setValue(changeData.value(), valueIsDelayed, staticallyAssigned, merged, false);
-                } else if (variable instanceof This || !evaluationResult.someValueWasDelayed() && !changeData.haveDelaysCausedByMethodCalls()) {
+                } else if (variable instanceof This || !evaluationResult.someValueWasDelayed()
+                        && !changeData.haveDelaysCausedByMethodCalls()) {
                     // we're not assigning (and there is no change in instance because of a modifying method)
                     // only then we copy from INIT to EVAL
                     // so we must integrate set properties
@@ -811,10 +816,17 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
 
     especially the DELAY/DELAY_RESOLVED ones do not need to be carried over from previous to the next!
      */
-    private static Map<VariableProperty, Integer> mergeValueAndChange(Map<VariableProperty, Integer> value,
-                                                                      Map<VariableProperty, Integer> changeData) {
+    private static Map<VariableProperty, Integer> mergeValueAndChange(Variable variable,
+                                                                      Map<VariableProperty, Integer> value,
+                                                                      Map<VariableProperty, Integer> changeData,
+                                                                      Map<Variable, Integer> contextNotNull,
+                                                                      Map<Variable, Integer> contextModified) {
         Map<VariableProperty, Integer> res = new HashMap<>(value);
         changeData.forEach(res::put);
+        Integer cnn = res.remove(CONTEXT_NOT_NULL);
+        contextNotNull.put(variable, cnn == null ? Level.DELAY : cnn);
+        Integer cm = res.remove(CONTEXT_MODIFIED);
+        contextModified.put(variable, cm == null ? Level.DELAY : cm);
         return res;
     }
 
@@ -855,6 +867,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 }
             }
         });
+        res.remove(CONTEXT_NOT_NULL);
+        res.remove(CONTEXT_MODIFIED);
         return res;
     }
 

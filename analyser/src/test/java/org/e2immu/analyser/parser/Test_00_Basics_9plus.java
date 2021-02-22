@@ -76,4 +76,15 @@ public class Test_00_Basics_9plus extends CommonTestRunner {
                 .build());
     }
 
+    @Test
+    public void test_11() throws IOException {
+        testClass("Basics_11", 0, 0, new DebugConfiguration.Builder()
+                .build());
+    }
+
+    @Test
+    public void test_12() throws IOException {
+        testClass("Basics_12", 0, 0, new DebugConfiguration.Builder()
+                .build());
+    }
 }
