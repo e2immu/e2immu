@@ -199,6 +199,7 @@ public class MethodLevelData {
                                                  VariableInfoContainer.Level level) {
         final AtomicReference<AnalysisStatus> analysisStatus = new AtomicReference<>(DONE);
         final DependencyGraph<Variable> dependencyGraph = new DependencyGraph<>();
+        final boolean bidirectional = variableProperty == VariableProperty.CONTEXT_NOT_NULL;
 
         // delays in dependency graph
         statementAnalysis.variableStream(level)
@@ -209,17 +210,18 @@ public class MethodLevelData {
                             log(DELAYED, "Delaying {} in MethodLevelData for {} in {}: linked variables not set",
                                     variableInfo, variableInfo.variable().fullyQualifiedName(), evaluationContext.getLocation());
                             analysisStatus.set(DELAYS);
-                            dependencyGraph.addNode(variableInfo.variable(), Set.of(DELAY_VAR));
+                            dependencyGraph.addNode(variableInfo.variable(), Set.of(DELAY_VAR), bidirectional);
                         } else {
                             log(LINKED_VARIABLES, "Local variable {} not yet assigned, so cannot yet be linked ({})",
                                     variableInfo.variable().fullyQualifiedName(), variableProperty);
                         }
                     } else {
-                        dependencyGraph.addNode(variableInfo.variable(), linkedVariables.variables());
+                        dependencyGraph.addNode(variableInfo.variable(), linkedVariables.variables(), bidirectional);
                     }
                 });
         if (analysisStatus.get() == DELAYS) {
-            dependencyGraph.addNode(DELAY_VAR, Set.of()); // to make sure that the delay var is there too
+            // to make sure that the delay var is there too, in the unidirectional case
+            dependencyGraph.addNode(DELAY_VAR, Set.of(), bidirectional);
         }
         final AtomicBoolean progress = new AtomicBoolean();
 

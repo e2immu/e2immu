@@ -124,14 +124,26 @@ public class DependencyGraph<T> extends Freezable {
         nodeMap.values().forEach(n -> consumer.accept(n.t, n.dependsOn));
     }
 
+
     @Only(before = "frozen")
     @Modified
     public void addNode(@NotNull T t, @NotNull Collection<T> dependsOn) {
+        addNode(t, dependsOn, false);
+    }
+
+    @Only(before = "frozen")
+    @Modified
+    public void addNode(@NotNull T t, @NotNull Collection<T> dependsOn, boolean bidirectional) {
         ensureNotFrozen();
         Node<T> node = getOrCreate(t);
         for (T d : dependsOn) {
             if (node.dependsOn == null) node.dependsOn = new LinkedList<>();
             node.dependsOn.add(d);
+            if (bidirectional) {
+                Node<T> n = getOrCreate(d);
+                if (n.dependsOn == null) n.dependsOn = new LinkedList<>();
+                n.dependsOn.add(t);
+            }
         }
     }
 

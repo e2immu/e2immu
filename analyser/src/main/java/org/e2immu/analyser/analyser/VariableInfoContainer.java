@@ -61,6 +61,8 @@ public interface VariableInfoContainer {
 
     void newVariableWithoutValue();
 
+    void writeStaticallyAssignedVariablesToEvaluation(LinkedVariables staticallyAssignedVariables);
+
     // suffixes in assignment id; these act as the 3 levels for setProperty
     enum Level {
         INITIAL("-C"), // C for creation, but essentially, it should be < E

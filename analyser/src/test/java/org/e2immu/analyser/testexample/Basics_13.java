@@ -18,17 +18,18 @@
 package org.e2immu.analyser.testexample;
 
 import org.e2immu.annotation.NotNull;
+import org.e2immu.annotation.Nullable;
 
-public class Basics_12 {
+public class Basics_13 {
 
-    @NotNull
-    public static String test(@NotNull String in) {
-        String a = in;
-        String b = in;
+    @Nullable
+    public static String test(@Nullable String in1, @NotNull String in2) {
+        String a = in1;
+        String b = a;
+        a = in2;
         if (a.startsWith("0")) {
-            return "0";
+            // do nothing for a change
         }
         return b;
     }
-
 }

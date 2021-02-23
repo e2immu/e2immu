@@ -20,12 +20,10 @@
 package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.VariableProperty;
-import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.config.EvaluationResultVisitor;
-import org.e2immu.analyser.config.FieldAnalyserVisitor;
-import org.e2immu.analyser.config.MethodAnalyserVisitor;
+import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterAnalysis;
+import org.e2immu.analyser.model.ParameterInfo;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -85,6 +83,73 @@ public class Test_00_Basics_9plus extends CommonTestRunner {
     @Test
     public void test_12() throws IOException {
         testClass("Basics_12", 0, 0, new DebugConfiguration.Builder()
+                .build());
+    }
+
+    @Test
+    public void test_13() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("test".equals(d.methodInfo().name)) {
+                int nne = d.getProperty(VariableProperty.NOT_NULL_EXPRESSION);
+                int cnn = d.getProperty(VariableProperty.CONTEXT_NOT_NULL);
+                String value = d.currentValue().toString();
+
+                if (d.variable() instanceof ParameterInfo in1 && "in1".equals(in1.name)) {
+                    if ("0".equals(d.statementId())) {
+                        // means: there are no fields, we have no opinion, right from the start ->
+                        Assert.assertEquals(MultiLevel.DELAY, d.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
+                        Assert.assertEquals(MultiLevel.NULLABLE, nne);
+                        Assert.assertEquals(MultiLevel.NULLABLE, cnn);
+                        Assert.assertEquals("nullable instance type String", value);
+                    }
+                    if ("4".equals(d.statementId())) {
+                        Assert.assertEquals(MultiLevel.NULLABLE, cnn);
+                    }
+                }
+                if (d.variable() instanceof ParameterInfo in2 && "in2".equals(in2.name)) {
+                    if ("0".equals(d.statementId())) {
+                        Assert.assertEquals(MultiLevel.DELAY, d.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
+                        Assert.assertEquals(MultiLevel.NULLABLE, nne);
+                        Assert.assertEquals(MultiLevel.NULLABLE, cnn);
+                        Assert.assertEquals("nullable instance type String", value);
+                    }
+                    if ("4".equals(d.statementId())) {
+                        Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, cnn);
+                    }
+                }
+                if ("a".equals(d.variableName())) {
+                    if ("0".equals(d.statementId())) {
+                        Assert.assertEquals("in1", value);
+                        Assert.assertEquals("in1", d.variableInfo().getStaticallyAssignedVariables().toString());
+                        Assert.assertEquals(MultiLevel.NULLABLE, cnn);
+                        Assert.assertEquals(MultiLevel.NULLABLE, nne);
+                    }
+                    if ("2".equals(d.statementId())) {
+                        Assert.assertEquals("in2", d.variableInfo().getStaticallyAssignedVariables().toString());
+                        Assert.assertEquals(MultiLevel.NULLABLE, cnn);
+                    }
+                    if ("3".equals(d.statementId())) {
+                        Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, cnn);
+                    }
+                }
+                if ("b".equals(d.variableName())) {
+                    if ("1".equals(d.statementId())) {
+                        Assert.assertEquals("a", d.variableInfo().getStaticallyAssignedVariables().toString());
+                        Assert.assertEquals(MultiLevel.NULLABLE, cnn);
+                        Assert.assertEquals(MultiLevel.NULLABLE, nne);
+                    }
+                    if ("2".equals(d.statementId())) {
+                        Assert.assertEquals("in1", d.variableInfo().getStaticallyAssignedVariables().toString());
+                        Assert.assertEquals(MultiLevel.NULLABLE, cnn);
+                    }
+                    if ("4".equals(d.statementId())) {
+                        Assert.assertEquals(MultiLevel.NULLABLE, cnn);
+                    }
+                }
+            }
+        };
+        testClass("Basics_13", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 }

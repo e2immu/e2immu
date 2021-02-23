@@ -259,7 +259,7 @@ public class Assignment implements Expression {
         }
 
         LinkedVariables staticallyAssignedVariables;
-        if (value instanceof VariableExpression variableExpression && variableExpression.variable() instanceof FieldReference) {
+        if (value instanceof IsVariableExpression variableExpression) {
             staticallyAssignedVariables = new LinkedVariables(Set.of(variableExpression.variable()));
         } else {
             staticallyAssignedVariables = LinkedVariables.EMPTY;

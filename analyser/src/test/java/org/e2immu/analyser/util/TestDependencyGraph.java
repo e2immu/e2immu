@@ -182,4 +182,16 @@ public class TestDependencyGraph {
         Assert.assertEquals("[a, b]", graph.dependencies('a').toString());
         Assert.assertEquals(1, countCycles.get());
     }
+
+    @Test
+    public void test9Bidirectional() {
+        DependencyGraph<Character> graph = new DependencyGraph<>();
+
+        graph.addNode('a', List.of('b', 'c'), true);
+
+        final String ALL = "[a, b, c]";
+        Assert.assertEquals(ALL, graph.dependencies('a').toString());
+        Assert.assertEquals(ALL, graph.dependencies('b').toString());
+        Assert.assertEquals(ALL, graph.dependencies('c').toString());
+    }
 }

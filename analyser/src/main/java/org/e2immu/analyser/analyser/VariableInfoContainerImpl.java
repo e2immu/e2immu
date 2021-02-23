@@ -291,6 +291,23 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
     }
 
     @Override
+    public void writeStaticallyAssignedVariablesToEvaluation(LinkedVariables staticallyAssignedVariables) {
+        VariableInfo vi1 = getPreviousOrInitial();
+        VariableInfoImpl write;
+        if (!evaluation.isSet()) {
+            write = new VariableInfoImpl(vi1.variable(), vi1.getAssignmentId(), vi1.getReadId(), vi1.getStatementTime(), vi1.getReadAtStatementTimes());
+            if (vi1.linkedVariablesIsSet()) write.setLinkedVariables(vi1.getLinkedVariables());
+            if (vi1.valueIsSet()) write.setValue(vi1.getValue(), true);
+            evaluation.set(write);
+            vi1.propertyStream().filter(e -> e.getKey() != VariableProperty.CONTEXT_NOT_NULL && e.getKey() != VariableProperty.CONTEXT_MODIFIED)
+                    .forEach(e -> write.setProperty(e.getKey(), e.getValue()));
+        } else {
+            write = evaluation.get();
+        }
+        write.setStaticallyAssignedVariables(staticallyAssignedVariables);
+    }
+
+    @Override
     public void setObjectFlow(ObjectFlow objectFlow, boolean initialOrEvaluation) {
         ensureNotFrozen();
         Objects.requireNonNull(objectFlow);
@@ -329,7 +346,10 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
             if (previous.linkedVariablesIsSet()) {
                 evaluation.setLinkedVariables(previous.getLinkedVariables());
             }
-            evaluation.setStaticallyAssignedVariables(previous.getStaticallyAssignedVariables());
+            // can have been modified by a remapping after assignments in StatementAnalyser.apply
+            if(!evaluation.staticallyAssignedVariablesIsSet()) {
+                evaluation.setStaticallyAssignedVariables(previous.getStaticallyAssignedVariables());
+            }
         }
         if (previous.statementTimeIsSet()) {
             boolean confirmedNotVariableField = previous.getStatementTime() == NOT_A_VARIABLE_FIELD;

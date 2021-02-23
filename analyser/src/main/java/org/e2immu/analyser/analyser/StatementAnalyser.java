@@ -622,20 +622,28 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         }
         Map<Variable, Integer> contextNotNull = new HashMap<>();
         Map<Variable, Integer> contextModified = new HashMap<>();
+        Map<Variable, LinkedVariables> remapStaticallyAssignedVariables = new HashMap<>();
+        Map<Variable, VariableInfoContainer> existingVariablesNotVisited = statementAnalysis.variables.stream()
+                .collect(Collectors.toMap(e -> e.getValue().current().variable(), Map.Entry::getValue, (v1, v2) -> v2, HashMap::new));
 
         // the first part is per variable
+        // order is important because we need to re-map statically assigned variables
 
         List<Map.Entry<Variable, EvaluationResult.ChangeData>> sortedEntries = new ArrayList<>(evaluationResult.changeData().entrySet());
         sortedEntries.sort((e1, e2) -> {
             // return variables at the end
             if (e1.getKey() instanceof ReturnVariable) return 1;
             if (e2.getKey() instanceof ReturnVariable) return -1;
-            if (e1.getValue().markAssignment() && !e2.getValue().markAssignment()) return 1;
-            if (e2.getValue().markAssignment() && !e1.getValue().markAssignment()) return -1;
+            // then assignments
+            if (e1.getValue().markAssignment() && !e2.getValue().markAssignment()) return -1;
+            if (e2.getValue().markAssignment() && !e1.getValue().markAssignment()) return 1;
+            // then the "mentions" (markRead, change linked variables, etc.)
             return e1.getKey().fullyQualifiedName().compareTo(e2.getKey().fullyQualifiedName());
         });
+
         for (Map.Entry<Variable, EvaluationResult.ChangeData> entry : sortedEntries) {
             Variable variable = entry.getKey();
+            existingVariablesNotVisited.remove(variable);
             EvaluationResult.ChangeData changeData = entry.getValue();
 
             // make a copy because we might add a variable when linking the local loop copy
@@ -658,6 +666,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 Map<VariableProperty, Integer> merged = mergeValueAndChange(variable, valueProperties, changeData.properties(),
                         contextNotNull, contextModified);
 
+                remapStaticallyAssignedVariables.put(variable, vi1.getStaticallyAssignedVariables());
                 vic.setValue(valueToWrite, valueToWriteIsDelayed, changeData.staticallyAssignedVariables(),
                         merged, false);
 
@@ -670,7 +679,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                         Map<VariableProperty, Integer> props2 = sharedState.evaluationContext.getValueProperties(valueToWrite);
                         Map<VariableProperty, Integer> merged2 = mergeValueAndChange(localVar, props2,
                                 changeData.properties(), contextNotNull, contextModified);
-
+                        remapStaticallyAssignedVariables.put(localVar, local.getPreviousOrInitial().getStaticallyAssignedVariables());
                         local.setValue(valueToWrite, false, changeData.staticallyAssignedVariables(), merged2,
                                 false);
                         local.setLinkedVariables(new LinkedVariables(Set.of(vi.variable())), false);
@@ -684,22 +693,26 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 if (changeData.value() != null) {
                     // a modifying method caused an updated instance value
                     // for statically assigned variables, EMPTY means: take the value of the initial, unless it has no value
-                    LinkedVariables staticallyAssigned = changeData.staticallyAssignedVariables().isEmpty() ?
-                            vi1.staticallyAssignedVariablesIsSet() ? vi1.getStaticallyAssignedVariables() : LinkedVariables.EMPTY :
-                            changeData.staticallyAssignedVariables();
+                    LinkedVariables staticallyAssigned = remap(remapStaticallyAssignedVariables,
+                            changeData.staticallyAssignedVariables().isEmpty() ?
+                                    vi1.staticallyAssignedVariablesIsSet() ? vi1.getStaticallyAssignedVariables() : LinkedVariables.EMPTY :
+                                    changeData.staticallyAssignedVariables());
                     boolean valueIsDelayed = sharedState.evaluationContext.isDelayed(changeData.value());
                     vic.setValue(changeData.value(), valueIsDelayed, staticallyAssigned, merged, false);
-                } else if (variable instanceof This || !evaluationResult.someValueWasDelayed()
-                        && !changeData.haveDelaysCausedByMethodCalls()) {
-                    // we're not assigning (and there is no change in instance because of a modifying method)
-                    // only then we copy from INIT to EVAL
-                    // so we must integrate set properties
-                    vic.setValue(vi1.getValue(), vi1.isDelayed(), vi1.getStaticallyAssignedVariables(), merged, false);
                 } else {
-                    // delayed situation;
-                    // not an assignment, so we must copy the statically assigned variables!
-                    vic.setStaticallyAssignedVariables(vi1.getStaticallyAssignedVariables(), false);
-                    merged.forEach((k, v) -> vic.setProperty(k, v, false, EVALUATION));
+                    LinkedVariables sav = remap(remapStaticallyAssignedVariables, vi1.getStaticallyAssignedVariables());
+                    if (variable instanceof This || !evaluationResult.someValueWasDelayed()
+                            && !changeData.haveDelaysCausedByMethodCalls()) {
+                        // we're not assigning (and there is no change in instance because of a modifying method)
+                        // only then we copy from INIT to EVAL
+                        // so we must integrate set properties
+                        vic.setValue(vi1.getValue(), vi1.isDelayed(), sav, merged, false);
+                    } else {
+                        // delayed situation;
+                        // not an assignment, so we must copy the statically assigned variables!
+                        vic.setStaticallyAssignedVariables(sav, false);
+                        merged.forEach((k, v) -> vic.setProperty(k, v, false, EVALUATION));
+                    }
                 }
             }
             if (vi.isDelayed()) {
@@ -731,6 +744,22 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                     log(DELAYED, "Apply of {}, {} is delayed because of assignment on return value without not null",
                             index(), myMethodAnalyser.methodInfo.fullyQualifiedName);
                     status = DELAYS;
+                }
+            }
+        }
+
+        // remap of statically assigned variables not seen in apply, caused by an assignment
+        // IMPROVE there are some situations where field values are written directly into eval in StatementAnalysis.fromFieldAnalyserIntoInitial
+        if (!remapStaticallyAssignedVariables.isEmpty() && !existingVariablesNotVisited.isEmpty()) {
+            for (Map.Entry<Variable, VariableInfoContainer> e : existingVariablesNotVisited.entrySet()) {
+                VariableInfoContainer vic = e.getValue();
+                Variable variable = e.getKey();
+                if (!(variable instanceof This) && !(variable instanceof ReturnVariable)) {
+                    VariableInfo vi1 = vic.getPreviousOrInitial();
+                    LinkedVariables lv = remap(remapStaticallyAssignedVariables, vi1.getStaticallyAssignedVariables());
+                    if (!lv.equals(vi1.getStaticallyAssignedVariables())) {
+                        vic.writeStaticallyAssignedVariablesToEvaluation(lv);
+                    }
                 }
             }
         }
@@ -785,6 +814,18 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         return status;
     }
 
+    private LinkedVariables remap(Map<Variable, LinkedVariables> remap, LinkedVariables linkedVariables) {
+        if (linkedVariables.isEmpty()) return linkedVariables;
+        Set<Variable> set = new HashSet<>(linkedVariables.variables());
+        remap.forEach((v, lv) -> {
+            if (set.contains(v)) {
+                set.remove(v);
+                set.addAll(lv.variables());
+            }
+        });
+        return new LinkedVariables(set);
+    }
+
     private void addToMap(Map<Variable, Integer> map, VariableProperty variableProperty, Function<Variable, Integer> falseValue) {
         statementAnalysis.variables.stream().forEach(e -> {
             VariableInfoContainer vic = e.getValue();
@@ -812,9 +853,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
     }
 
     /*
-    some properties are cumulative, and must take the previous values into account, unless an assignment takes place.
-
-    especially the DELAY/DELAY_RESOLVED ones do not need to be carried over from previous to the next!
+    Variable is target of assignment. In terms of CNN/CM it should be neutral (rather than delayed), as its current value
+    is not of relevance.
      */
     private static Map<VariableProperty, Integer> mergeValueAndChange(Variable variable,
                                                                       Map<VariableProperty, Integer> value,
@@ -824,9 +864,9 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         Map<VariableProperty, Integer> res = new HashMap<>(value);
         changeData.forEach(res::put);
         Integer cnn = res.remove(CONTEXT_NOT_NULL);
-        contextNotNull.put(variable, cnn == null ? Level.DELAY : cnn);
+        contextNotNull.put(variable, cnn == null ? MultiLevel.NULLABLE : cnn);
         Integer cm = res.remove(CONTEXT_MODIFIED);
-        contextModified.put(variable, cm == null ? Level.DELAY : cm);
+        contextModified.put(variable, cm == null ? Level.FALSE : cm);
         return res;
     }
 
@@ -837,6 +877,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                                                                   Map<Variable, Integer> contextModified) {
         Set<VariableProperty> both = new HashSet<>(previous.keySet());
         both.addAll(changeData.keySet());
+        both.add(CONTEXT_NOT_NULL);
+        both.add(CONTEXT_MODIFIED);
         Map<VariableProperty, Integer> res = new HashMap<>(changeData);
 
         both.forEach(k -> {
