@@ -297,14 +297,42 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         if (!evaluation.isSet()) {
             write = new VariableInfoImpl(vi1.variable(), vi1.getAssignmentId(), vi1.getReadId(), vi1.getStatementTime(), vi1.getReadAtStatementTimes());
             if (vi1.linkedVariablesIsSet()) write.setLinkedVariables(vi1.getLinkedVariables());
-            if (vi1.valueIsSet()) write.setValue(vi1.getValue(), true);
-            evaluation.set(write);
+            if (vi1.valueIsSet()) write.setValue(vi1.getValue(), false);
             vi1.propertyStream().filter(e -> e.getKey() != VariableProperty.CONTEXT_NOT_NULL && e.getKey() != VariableProperty.CONTEXT_MODIFIED)
                     .forEach(e -> write.setProperty(e.getKey(), e.getValue()));
+            evaluation.set(write);
         } else {
             write = evaluation.get();
         }
         write.setStaticallyAssignedVariables(staticallyAssignedVariables);
+    }
+
+    @Override
+    public void prepareEvaluationForWritingContextProperties() {
+        if (!evaluation.isSet()) {
+            VariableInfo vi1 = getPreviousOrInitial();
+            evaluation.set(prepareForWritingContextProperties(vi1));
+        }
+    }
+
+    @Override
+    public void prepareMergeForWritingContextProperties() {
+        if (!merge.isSet()) {
+            VariableInfo vi1 = best(Level.EVALUATION);
+            merge.set(prepareForWritingContextProperties(vi1));
+        }
+    }
+
+    private VariableInfoImpl prepareForWritingContextProperties(VariableInfo vi1) {
+        VariableInfoImpl write = new VariableInfoImpl(vi1.variable(), vi1.getAssignmentId(),
+                vi1.getReadId(), vi1.getStatementTime(), vi1.getReadAtStatementTimes());
+        if (vi1.linkedVariablesIsSet()) write.setLinkedVariables(vi1.getLinkedVariables());
+        if (vi1.valueIsSet()) write.setValue(vi1.getValue(), false);
+        write.setStaticallyAssignedVariables(vi1.getStaticallyAssignedVariables());
+        vi1.propertyStream().filter(e -> e.getKey() != VariableProperty.CONTEXT_NOT_NULL &&
+                e.getKey() != VariableProperty.CONTEXT_MODIFIED)
+                .forEach(e -> write.setProperty(e.getKey(), e.getValue()));
+        return write;
     }
 
     @Override
@@ -347,7 +375,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
                 evaluation.setLinkedVariables(previous.getLinkedVariables());
             }
             // can have been modified by a remapping after assignments in StatementAnalyser.apply
-            if(!evaluation.staticallyAssignedVariablesIsSet()) {
+            if (!evaluation.staticallyAssignedVariablesIsSet()) {
                 evaluation.setStaticallyAssignedVariables(previous.getStaticallyAssignedVariables());
             }
         }

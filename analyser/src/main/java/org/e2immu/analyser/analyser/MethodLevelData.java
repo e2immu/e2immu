@@ -242,7 +242,7 @@ public class MethodLevelData {
                         if (summary == Level.DELAY) analysisStatus.set(DELAYS);
                         // this loop is critical, see Container_3, do not remove it again :-)
                         for (Variable linkedVariable : variablesBaseLinksTo) {
-                            assignToLinkedVariable(statementAnalysis, evaluationContext, progress, summary, linkedVariable,
+                            assignToLinkedVariable(statementAnalysis, progress, summary, linkedVariable,
                                     variableProperty, level, valuesToSet);
                         }
                     }
@@ -273,7 +273,6 @@ public class MethodLevelData {
     }
 
     private static void assignToLinkedVariable(StatementAnalysis statementAnalysis,
-                                               EvaluationContext evaluationContext,
                                                AtomicBoolean progress,
                                                int summary,
                                                Variable linkedVariable,
@@ -281,8 +280,14 @@ public class MethodLevelData {
                                                VariableInfoContainer.Level level,
                                                Map<VariableInfoContainer, Integer> valuesToSet) {
         VariableInfoContainer vic = statementAnalysis.variables.get(linkedVariable.fullyQualifiedName());
-        VariableInfo vi1 = level == VariableInfoContainer.Level.EVALUATION ? vic.getPreviousOrInitial() : vic.current();
-        ensureLevel(statementAnalysis, evaluationContext, vic, vi1, level);
+        if (level.equals(VariableInfoContainer.Level.EVALUATION)) {
+            if (!vic.hasMerge() && !vic.hasEvaluation()) {
+                vic.prepareEvaluationForWritingContextProperties();
+            }
+        } else if (!vic.hasMerge()) {
+            vic.prepareMergeForWritingContextProperties();
+        }
+
         VariableInfo vi = vic.best(level);
         int modified = vi.getProperty(variableProperty);
         if (modified == Level.DELAY) {
@@ -301,26 +306,6 @@ public class MethodLevelData {
         }
     }
 
-    private static void ensureLevel(StatementAnalysis statementAnalysis,
-                                    EvaluationContext evaluationContext,
-                                    VariableInfoContainer vic,
-                                    VariableInfo vi,
-                                    VariableInfoContainer.Level level) {
-        if (level.equals(VariableInfoContainer.Level.EVALUATION)) {
-            if (!vic.hasMerge() && !vic.hasEvaluation()) {
-                int statementTimeForVariable = statementAnalysis.statementTimeForVariable(evaluationContext.getAnalyserContext(),
-                        vi.variable(), evaluationContext.getInitialStatementTime());
-
-                vic.ensureEvaluation(VariableInfoContainer.NOT_YET_ASSIGNED,
-                        VariableInfoContainer.NOT_YET_ASSIGNED,
-                        statementTimeForVariable, Set.of());
-                vic.setValue(vi.getValue(), vi.isDelayed(), LinkedVariables.EMPTY, vi.getProperties().toImmutableMap(), false);
-                if (vi.linkedVariablesIsSet()) vic.setLinkedVariables(vi.getLinkedVariables(), false);
-            }
-        } else {
-            if (!vic.hasMerge()) throw new UnsupportedOperationException("NYI -- but is this possible?");
-        }
-    }
 
     /**
      * Finish odds and ends

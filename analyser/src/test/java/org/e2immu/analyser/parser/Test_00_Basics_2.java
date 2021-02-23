@@ -84,7 +84,8 @@ public class Test_00_Basics_2 extends CommonTestRunner {
                             d.currentValue().toString());
                 }
                 Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
-                Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
+                int expectCm = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
+                Assert.assertEquals(expectCm, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
             }
             if (STRING_FIELD.equals(d.variableName())) {
                 String expectValue = d.iteration() == 0 ? "<f:string>" : "nullable instance type String";

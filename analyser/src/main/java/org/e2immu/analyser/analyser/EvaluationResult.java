@@ -28,7 +28,6 @@ import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.objectflow.access.MethodAccess;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Messages;
-import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.SetUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -280,23 +279,19 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                 // if context not null is already high enough, don't complain
                 int contextNotNull = getPropertyFromInitial(variable, VariableProperty.CONTEXT_NOT_NULL);
                 int externalNotNull = getPropertyFromInitial(variable, VariableProperty.EXTERNAL_NOT_NULL);
-                if (variable instanceof ParameterInfo && externalNotNull == Level.DELAY) {
+                boolean parameterValue = variable instanceof ParameterInfo ||
+                        value instanceof IsVariableExpression ve && ve.variable() instanceof ParameterInfo;
+                if (parameterValue && externalNotNull == Level.DELAY) {
                     setProperty(variable, VariableProperty.EXTERNAL_NOT_NULL_DELAY, Level.TRUE);
                 } else {
-                    int notNullForException;
-                    if (variable instanceof ParameterInfo &&
-                            externalNotNull != MultiLevel.NULLABLE && contextNotNull == MultiLevel.NULLABLE) {
-                        /* >NULLABLE -> no warning because we externally not null
-                           ==NULLABLE -> must give warning
-                           ==DELAY -> no warning, not connected to field, so context determines the situation
-                         */
-                        notNullForException = externalNotNull;
+                    boolean raiseError;
+                    if (parameterValue) {
+                        raiseError = externalNotNull == MultiLevel.NULLABLE && contextNotNull == MultiLevel.NULLABLE;
                     } else {
-                        notNullForException = contextNotNull;
+                        raiseError = !evaluationContext.isDelayed(value) && notNullValue == MultiLevel.NULLABLE
+                                && contextNotNull == MultiLevel.NULLABLE;
                     }
-                    boolean valueIsDelayed = evaluationContext.isDelayed(value);
-
-                    if (notNullForException == MultiLevel.FALSE && !valueIsDelayed) {
+                    if (raiseError) {
                         Message message = Message.newMessage(evaluationContext.getLocation(), Message.POTENTIAL_NULL_POINTER_EXCEPTION,
                                 "Variable: " + variable.simpleName());
                         messages.add(message);
@@ -306,10 +301,6 @@ public record EvaluationResult(EvaluationContext evaluationContext,
 
             // regardless of what's going on with the external not-null, we set context not null
             setProperty(variable, VariableProperty.CONTEXT_NOT_NULL, notNullRequired);
-            if (value instanceof VariableExpression redirectViaValue) {
-                // FIXME check is this necessary?
-                setProperty(redirectViaValue.variable(), VariableProperty.CONTEXT_NOT_NULL, notNullRequired);
-            }
         }
 
         private int getPropertyFromInitial(Expression expression, VariableProperty variableProperty) {
@@ -427,7 +418,8 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             if (currentExpression != null && currentExpression.value instanceof NewObject instance) return instance;
             assert evaluationContext != null;
 
-            NewObject inContext = evaluationContext.currentInstance(variable, statementTime);
+            return evaluationContext.currentInstance(variable, statementTime);
+            /* FIXME can this go? should be OK given Basics
             if (inContext != null) return inContext;
             // there is no instance yet... we'll have to create one, but only if the value can have an instance
             if (Primitives.isPrimitiveExcludingVoid(variable.parameterizedType())) return null;
@@ -436,6 +428,9 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             NewObject instance = NewObject.forGetInstance(variable.parameterizedType(), stateFromPreconditions, objectFlowForCreation);
             assignInstanceToVariable(variable, instance, LinkedVariables.EMPTY);
             return instance;
+
+
+             */
         }
 
         // called when a new instance is needed because of a modifying method call, or when a variable doesn't have

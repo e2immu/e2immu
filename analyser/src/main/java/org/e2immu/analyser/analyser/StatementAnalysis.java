@@ -357,8 +357,8 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         int notNull = Primitives.isPrimitiveExcludingVoid(methodAnalysis.getMethodInfo().returnType()) ?
                 MultiLevel.EFFECTIVELY_NOT_NULL : MultiLevel.NULLABLE;
         vic.setProperty(CONTEXT_NOT_NULL, notNull, INITIAL);
-        vic.setProperty(EXTERNAL_NOT_NULL, notNull, INITIAL);
         vic.setProperty(NOT_NULL_EXPRESSION, notNull, INITIAL);
+        vic.setProperty(EXTERNAL_NOT_NULL, MultiLevel.NOT_INVOLVED, INITIAL);
     }
 
     private void copyVariableFromPreviousInIteration0(Map.Entry<String, VariableInfoContainer> entry,

@@ -663,7 +663,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 log(ANALYSER, "Write value {} to variable {}", valueToWrite, variable.fullyQualifiedName());
                 // first do the properties that come with the value; later, we'll write the ones in changeData
                 Map<VariableProperty, Integer> valueProperties = sharedState.evaluationContext.getValueProperties(valueToWrite);
-                Map<VariableProperty, Integer> merged = mergeValueAndChange(variable, valueProperties, changeData.properties(),
+                Map<VariableProperty, Integer> varProperties = sharedState.evaluationContext.getVariableProperties(valueToWrite);
+                Map<VariableProperty, Integer> merged = mergeAssignment(variable, valueProperties, varProperties, changeData.properties(),
                         contextNotNull, contextModified);
 
                 remapStaticallyAssignedVariables.put(variable, vi1.getStaticallyAssignedVariables());
@@ -676,8 +677,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                         // assign the value of the assignment to the local copy created
                         Variable localVar = local.current().variable();
                         log(ANALYSER, "Write value {} to local copy variable {}", valueToWrite, localVar.fullyQualifiedName());
-                        Map<VariableProperty, Integer> props2 = sharedState.evaluationContext.getValueProperties(valueToWrite);
-                        Map<VariableProperty, Integer> merged2 = mergeValueAndChange(localVar, props2,
+                        Map<VariableProperty, Integer> merged2 = mergeAssignment(localVar, valueProperties, varProperties,
                                 changeData.properties(), contextNotNull, contextModified);
                         remapStaticallyAssignedVariables.put(localVar, local.getPreviousOrInitial().getStaticallyAssignedVariables());
                         local.setValue(valueToWrite, false, changeData.staticallyAssignedVariables(), merged2,
@@ -749,7 +749,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         }
 
         // remap of statically assigned variables not seen in apply, caused by an assignment
-        // IMPROVE there are some situations where field values are written directly into eval in StatementAnalysis.fromFieldAnalyserIntoInitial
+        // IMPROVE there are some situations where field values are written directly into eval
+        // in StatementAnalysis.fromFieldAnalyserIntoInitial
         if (!remapStaticallyAssignedVariables.isEmpty() && !existingVariablesNotVisited.isEmpty()) {
             for (Map.Entry<Variable, VariableInfoContainer> e : existingVariablesNotVisited.entrySet()) {
                 VariableInfoContainer vic = e.getValue();
@@ -855,13 +856,17 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
     /*
     Variable is target of assignment. In terms of CNN/CM it should be neutral (rather than delayed), as its current value
     is not of relevance.
+
+    There is no overlap between valueProps and variableProps
      */
-    private static Map<VariableProperty, Integer> mergeValueAndChange(Variable variable,
-                                                                      Map<VariableProperty, Integer> value,
-                                                                      Map<VariableProperty, Integer> changeData,
-                                                                      Map<Variable, Integer> contextNotNull,
-                                                                      Map<Variable, Integer> contextModified) {
-        Map<VariableProperty, Integer> res = new HashMap<>(value);
+    private static Map<VariableProperty, Integer> mergeAssignment(Variable variable,
+                                                                  Map<VariableProperty, Integer> valueProps,
+                                                                  Map<VariableProperty, Integer> variableProps,
+                                                                  Map<VariableProperty, Integer> changeData,
+                                                                  Map<Variable, Integer> contextNotNull,
+                                                                  Map<Variable, Integer> contextModified) {
+        Map<VariableProperty, Integer> res = new HashMap<>(valueProps);
+        variableProps.forEach(res::put);
         changeData.forEach(res::put);
         Integer cnn = res.remove(CONTEXT_NOT_NULL);
         contextNotNull.put(variable, cnn == null ? MultiLevel.NULLABLE : cnn);

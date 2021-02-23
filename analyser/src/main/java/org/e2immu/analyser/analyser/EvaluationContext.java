@@ -18,10 +18,7 @@
 package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.expression.DelayedExpression;
-import org.e2immu.analyser.model.expression.DelayedVariableExpression;
-import org.e2immu.analyser.model.expression.NewObject;
-import org.e2immu.analyser.model.expression.VariableExpression;
+import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
@@ -178,6 +175,13 @@ public interface EvaluationContext {
         return VALUE_PROPERTIES.stream().collect(Collectors.toMap(vp -> vp, vp -> getProperty(value, vp, true)));
     }
 
+    default Map<VariableProperty, Integer> getVariableProperties(Expression valueToWrite) {
+        if(valueToWrite instanceof IsVariableExpression ve) {
+            return Map.of(EXTERNAL_NOT_NULL, getProperty(ve.variable(), EXTERNAL_NOT_NULL));
+        }
+        return Map.of();
+    }
+
     /*
     This default implementation is the correct one for basic tests and the companion analyser (we cannot use companions in the
     companion analyser, that would be chicken-and-egg).
@@ -258,4 +262,5 @@ public interface EvaluationContext {
     default boolean isNotDelayed(Expression expression) {
         return !isDelayed(expression);
     }
+
 }

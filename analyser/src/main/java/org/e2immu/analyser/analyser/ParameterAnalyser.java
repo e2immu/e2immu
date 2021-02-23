@@ -215,7 +215,7 @@ public class ParameterAnalyser {
             if (!parameterAnalysis.properties.isSet(variableProperty) && !propertiesDelayed.contains(variableProperty)) {
                 int v;
                 if (variableProperty == VariableProperty.EXTERNAL_NOT_NULL && notAssignedToField) {
-                    v = MultiLevel.DELAY;
+                    v = MultiLevel.NOT_INVOLVED;
                 } else {
                     v = variableProperty.falseValue;
                 }
@@ -247,7 +247,7 @@ public class ParameterAnalyser {
     private void noFieldsInvolvedSetToMultiLevelDELAY() {
         for (VariableProperty variableProperty : PROPERTIES) {
             if (!parameterAnalysis.properties.isSet(variableProperty)) {
-                parameterAnalysis.setProperty(variableProperty, MultiLevel.DELAY);
+                parameterAnalysis.setProperty(variableProperty, MultiLevel.NOT_INVOLVED);
             }
         }
         parameterAnalysis.resolveFieldDelays();

@@ -67,6 +67,7 @@ public class MultiLevel {
 
     public static final int MUTABLE = FALSE;
     public static final int NULLABLE = FALSE;
+    public static final int NOT_INVOLVED = DELAY;
 
     public static int valueAtLevel(int value, int level) {
         return value << (level * SHIFT);
