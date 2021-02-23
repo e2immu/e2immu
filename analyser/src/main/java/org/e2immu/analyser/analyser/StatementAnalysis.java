@@ -471,6 +471,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                 log(ANALYSER, "Skipping parameter {}, not read, assigned", parameterInfo.fullyQualifiedName());
             }
         }
+        /*
         // we keep copying in the properties computed on the type into "this"
         if (!currentMethod.methodInspection.get().isStatic()) {
             This thisVariable = new This(analyserContext, currentMethod.typeInfo);
@@ -478,7 +479,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             propertyMap(analyserContext, methodAnalysis.getMethodInfo().typeInfo, MultiLevel.EFFECTIVELY_NOT_NULL).entrySet().stream()
                     .filter(e -> e.getValue() != Level.DELAY)
                     .forEach(e -> vic.setProperty(e.getKey(), e.getValue(), INITIAL));
-        }
+        }*/
     }
 
     private void fromFieldAnalyserIntoInitial(EvaluationContext evaluationContext, VariableInfoContainer vic) {

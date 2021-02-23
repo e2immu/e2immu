@@ -842,7 +842,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                         VariableInfo vi = vic.best(EVALUATION);
                         int eval = vi.getProperty(variableProperty);
                         if (eval == Level.DELAY) {
-                            map.put(vi.variable(), falseValue.apply(vi.variable()));
+                            map.put(vi.variable(), Math.max(prev, falseValue.apply(vi.variable())));
                         } else {
                             map.put(vi.variable(), eval);
                         }

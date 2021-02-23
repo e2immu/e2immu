@@ -4,9 +4,11 @@ import org.e2immu.analyser.analyser.LinkedVariables;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.expression.InlinedMethod;
 import org.e2immu.analyser.model.variable.ReturnVariable;
+import org.e2immu.analyser.model.variable.This;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -38,7 +40,7 @@ public class Test_11_IfStatement extends CommonTestRunner {
 
         final String RETURN = "org.e2immu.analyser.testexample.IfStatement_0.method1(java.lang.String)";
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-            if (d.variable() instanceof ReturnVariable retVar) {
+            if ("method1".equals(d.methodInfo().name) && d.variable() instanceof ReturnVariable retVar) {
                 Assert.assertEquals(RETURN, retVar.fqn);
                 if ("0".equals(d.statementId())) {
                     Assert.assertEquals("null==a?\"b\":<return value>", d.currentValue().toString());
@@ -69,7 +71,7 @@ public class Test_11_IfStatement extends CommonTestRunner {
 
         final String RETURN = "org.e2immu.analyser.testexample.IfStatement_1.method2(java.lang.String)";
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-            if (d.variable() instanceof ReturnVariable retVar) {
+            if ("method2".equals(d.methodInfo().name) && d.variable() instanceof ReturnVariable retVar) {
                 Assert.assertEquals(RETURN, retVar.fqn);
                 if ("0.0.0".equals(d.statementId())) {
                     Assert.assertEquals("\"b\"", d.currentValue().toString());
@@ -107,7 +109,7 @@ public class Test_11_IfStatement extends CommonTestRunner {
 
         final String RETURN = "org.e2immu.analyser.testexample.IfStatement_2.method3(java.lang.String)";
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-            if (d.variable() instanceof ReturnVariable retVar) {
+            if ("method3".equals(d.methodInfo().name) && d.variable() instanceof ReturnVariable retVar) {
                 Assert.assertEquals(RETURN, retVar.fqn);
                 if ("0.0.0".equals(d.statementId())) {
                     Assert.assertEquals("c", d.currentValue().toString());
@@ -174,6 +176,13 @@ public class Test_11_IfStatement extends CommonTestRunner {
                     String expectLinked = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "";
                     Assert.assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
                 }
+            }
+            if ("get2".equals(d.methodInfo().name) && d.variable() instanceof This) {
+                if ("1.0.0".equals(d.statementId())) {
+                    Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
+                }
+                Assert.assertEquals(d.statementId() + ", it " + d.iteration(),
+                        Level.TRUE, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
             }
         };
 
