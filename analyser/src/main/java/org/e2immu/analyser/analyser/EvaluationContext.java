@@ -175,9 +175,9 @@ public interface EvaluationContext {
         return VALUE_PROPERTIES.stream().collect(Collectors.toMap(vp -> vp, vp -> getProperty(value, vp, true)));
     }
 
-    default Map<VariableProperty, Integer> getVariableProperties(Expression valueToWrite) {
+    default Map<VariableProperty, Integer> getVariableProperties(Expression valueToWrite, int statementTime) {
         if(valueToWrite instanceof IsVariableExpression ve) {
-            return Map.of(EXTERNAL_NOT_NULL, getProperty(ve.variable(), EXTERNAL_NOT_NULL));
+            return Map.of(EXTERNAL_NOT_NULL, getPropertyFromPreviousOrInitial(ve.variable(), EXTERNAL_NOT_NULL, statementTime));
         }
         return Map.of();
     }

@@ -143,12 +143,14 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
                     }
                 }
                 if (FIELD_0.equals(d.variableName())) {
+                    assert d.iteration() > 0;
+                    if ("0".equals(d.statementId())) {
+                        Assert.assertEquals("this.field", d.variableInfo().getStaticallyAssignedVariables().toString());
+                    }
                     if ("1".equals(d.statementId())) {
-                        assert d.iteration() > 0;
                         Assert.assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
                     }
                     if ("2".equals(d.statementId())) {
-                        assert d.iteration() > 0;
                         Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
                     }
                 }
@@ -187,7 +189,7 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
 
                 if (d.variable() instanceof ReturnVariable) {
                     if ("4".equals(d.statementId())) {
-                        String expectValue = d.iteration() == 0 ? "<m:someMinorMethod>" : "v3";
+                        String expectValue = d.iteration() == 0 ? "<v:v3>" : "v3";
                         Assert.assertEquals(expectValue, d.currentValue().toString());
                         int expectNotNull = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
                         Assert.assertEquals(expectNotNull, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
@@ -347,7 +349,7 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
                 } else {
                     EvaluationResult.ChangeData cdField0 = d.findValueChange(FIELD_0);
                     Assert.assertEquals(Level.DELAY, cdField0.getProperty(VariableProperty.CONTEXT_NOT_NULL_DELAY));
-                    Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, cdField0.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+                    //    Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, cdField0.getProperty(VariableProperty.CONTEXT_NOT_NULL));
                 }
             }
         };
@@ -381,7 +383,7 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
         final String I1 = I + "$1";
         final String INC3_RETURN_VAR = "org.e2immu.analyser.testexample.Basics_7.increment3()";
         final String I_DELAYED = "<f:i>";
-        final String I_EXPR = "-1+" + I_DELAYED + "==" + I_DELAYED;
+        final String I_EXPR = "<f:i>==<v:j>";
 
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("increment".equals(d.methodInfo().name) && "3".equals(d.statementId())) {

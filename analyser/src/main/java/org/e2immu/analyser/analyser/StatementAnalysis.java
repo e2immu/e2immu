@@ -336,7 +336,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         // for now, other variations on this are not explicitly present at the moment IMPROVE?
         if (!currentMethod.methodInspection.get().isStatic()) {
             This thisVariable = new This(evaluationContext.getAnalyserContext(), currentMethod.typeInfo);
-            createVariable(evaluationContext, thisVariable, 0);
+            createVariable(evaluationContext, thisVariable, 0, VariableInLoop.NOT_IN_LOOP);
         }
 
         // we'll copy local variables from outside this method
@@ -351,7 +351,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
 
     private void createReturnVariableAtBeginningOfEachBlock(EvaluationContext evaluationContext) {
         Variable retVar = new ReturnVariable(methodAnalysis.getMethodInfo());
-        VariableInfoContainer vic = createVariable(evaluationContext, retVar, 0);
+        VariableInfoContainer vic = createVariable(evaluationContext, retVar, 0, VariableInLoop.NOT_IN_LOOP);
         READ_FROM_RETURN_VALUE_PROPERTIES.forEach(vp ->
                 vic.setProperty(vp, vp.falseValue, INITIAL));
         int notNull = Primitives.isPrimitiveExcludingVoid(methodAnalysis.getMethodInfo().returnType()) ?
@@ -359,6 +359,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         vic.setProperty(CONTEXT_NOT_NULL, notNull, INITIAL);
         vic.setProperty(NOT_NULL_EXPRESSION, notNull, INITIAL);
         vic.setProperty(EXTERNAL_NOT_NULL, MultiLevel.NOT_INVOLVED, INITIAL);
+        vic.setProperty(CONTEXT_MODIFIED, Level.FALSE, INITIAL);
     }
 
     private void copyVariableFromPreviousInIteration0(Map.Entry<String, VariableInfoContainer> entry,
@@ -554,12 +555,14 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                 FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(fieldReference.fieldInfo);
                 Map<VariableProperty, Integer> propertyMap = VariableProperty.FROM_ANALYSER_TO_PROPERTIES.stream()
                         .collect(Collectors.toUnmodifiableMap(vp -> vp, fieldAnalysis::getProperty));
+                LinkedVariables assignedToOriginal = new LinkedVariables(Set.of(fieldReference));
 
                 for (int statementTime : eval.getReadAtStatementTimes()) {
                     LocalVariableReference localCopy = variableInfoOfFieldWhenReading(analyserContext,
                             fieldReference, initial, statementTime);
                     if (!variables.isSet(localCopy.fullyQualifiedName())) {
-                        VariableInfoContainer lvrVic = createVariable(evaluationContext, localCopy, statementTime);
+                        VariableInfoContainer lvrVic = createVariable(evaluationContext, localCopy, statementTime,
+                                VariableInLoop.NOT_IN_LOOP);
                         String indexOfStatementTime = flowData.assignmentIdOfStatementTime.get(statementTime);
 
                         Expression initialValue = statementTime == initial.getStatementTime() &&
@@ -572,9 +575,11 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                         Map<VariableProperty, Integer> combined = new HashMap<>(propertyMap);
                         valueMap.forEach((k, v) -> combined.merge(k, v, Math::max));
                         for (VariableProperty vp : CONTEXT_PROPERTIES) {
-                            combined.put(vp, initial.getProperty(vp)); // and not EVAL!
+                            int context = initial.getProperty(vp);
+                            assert context != Level.DELAY;
+                            combined.put(vp, context); // and not EVAL!
                         }
-                        lvrVic.setValue(initialValue, false, LinkedVariables.EMPTY, combined, true);
+                        lvrVic.setValue(initialValue, false, assignedToOriginal, combined, true);
                         // we link the local copy to the original, so that modifications on the local copy
                         // imply that there is a (potential) modification on the variable field.
                         // the reverse link is also generated
@@ -652,6 +657,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                     VariableInfoContainer destination;
                     if (!variables.isSet(fqn)) {
                         destination = createVariable(evaluationContext, variable, statementTime, vic.getVariableInLoop());
+                        if(variable instanceof LocalVariableReference) destination.newVariableWithoutValue();
                     } else {
                         destination = vic;
                     }
@@ -732,10 +738,6 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         );
     }
 
-    public VariableInfoContainer createVariable(EvaluationContext evaluationContext, Variable variable, int statementTime) {
-        return createVariable(evaluationContext, variable, statementTime, VariableInLoop.NOT_IN_LOOP);
-    }
-
     /*
     create a variable, potentially even assign an initial value and a linked variables set.
     everything is written into the INITIAL level, assignmentId and readId are both NOT_YET...
@@ -789,8 +791,6 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             if (initialValue.linkedVariables != LinkedVariables.DELAY) {
                 vic.setLinkedVariables(initialValue.linkedVariables, true);
             }
-        } else {
-            vic.newVariableWithoutValue();
         }
         return vic;
     }

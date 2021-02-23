@@ -623,11 +623,18 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         Map<Variable, Integer> contextNotNull = new HashMap<>();
         Map<Variable, Integer> contextModified = new HashMap<>();
         Map<Variable, LinkedVariables> remapStaticallyAssignedVariables = new HashMap<>();
-        Map<Variable, VariableInfoContainer> existingVariablesNotVisited = statementAnalysis.variables.stream()
-                .collect(Collectors.toMap(e -> e.getValue().current().variable(), Map.Entry::getValue, (v1, v2) -> v2, HashMap::new));
 
         // the first part is per variable
         // order is important because we need to re-map statically assigned variables
+        // but first, we need to ensure that all variables exist, independent of the later ordering
+
+        // make a copy because we might add a variable when linking the local loop copy
+        Map<Variable, Set<Variable>> additionalLinksPerVariable = evaluationResult.changeData().entrySet().stream()
+                .collect(Collectors.toMap(Map.Entry::getKey,
+                        e -> new HashSet<>(ensureVariables(sharedState.evaluationContext, e.getKey(),
+                                e.getValue(), evaluationResult.statementTime()))));
+        Map<Variable, VariableInfoContainer> existingVariablesNotVisited = statementAnalysis.variables.stream()
+                .collect(Collectors.toMap(e -> e.getValue().current().variable(), Map.Entry::getValue, (v1, v2) -> v2, HashMap::new));
 
         List<Map.Entry<Variable, EvaluationResult.ChangeData>> sortedEntries = new ArrayList<>(evaluationResult.changeData().entrySet());
         sortedEntries.sort((e1, e2) -> {
@@ -645,10 +652,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             Variable variable = entry.getKey();
             existingVariablesNotVisited.remove(variable);
             EvaluationResult.ChangeData changeData = entry.getValue();
-
-            // make a copy because we might add a variable when linking the local loop copy
-            Set<Variable> additionalLinks = new HashSet<>(ensureVariables(sharedState.evaluationContext, variable,
-                    changeData, evaluationResult.statementTime()));
+            Set<Variable> additionalLinks = additionalLinksPerVariable.get(variable);
 
             // we're now guaranteed to find the variable
             VariableInfoContainer vic = statementAnalysis.variables.get(variable.fullyQualifiedName());
@@ -663,7 +667,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 log(ANALYSER, "Write value {} to variable {}", valueToWrite, variable.fullyQualifiedName());
                 // first do the properties that come with the value; later, we'll write the ones in changeData
                 Map<VariableProperty, Integer> valueProperties = sharedState.evaluationContext.getValueProperties(valueToWrite);
-                Map<VariableProperty, Integer> varProperties = sharedState.evaluationContext.getVariableProperties(valueToWrite);
+                Map<VariableProperty, Integer> varProperties = sharedState.evaluationContext.getVariableProperties(valueToWrite, vi1.getStatementTime());
                 Map<VariableProperty, Integer> merged = mergeAssignment(variable, valueProperties, varProperties, changeData.properties(),
                         contextNotNull, contextModified);
 
@@ -846,8 +850,10 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                         map.put(vi1.variable(), prev);
                     }
                 } else {
+                    map.put(vi1.variable(), prev);
                     assert !"0".equals(index()) :
-                            "Impossible, all variables start with non-delay: " + vi1.variable().fullyQualifiedName();
+                            "Impossible, all variables start with non-delay: " + vi1.variable().fullyQualifiedName()
+                                    + ", prop " + variableProperty;
                 }
             }
         });
@@ -952,7 +958,9 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                                           int newStatementTime) {
         VariableInfoContainer vic;
         if (!statementAnalysis.variables.isSet(variable.fullyQualifiedName())) {
-            vic = statementAnalysis.createVariable(evaluationContext, variable, statementAnalysis.flowData.getInitialTime());
+            vic = statementAnalysis.createVariable(evaluationContext, variable,
+                    statementAnalysis.flowData.getInitialTime(), VariableInLoop.NOT_IN_LOOP);
+            if (vic instanceof LocalVariableReference) vic.newVariableWithoutValue();
         } else {
             vic = statementAnalysis.variables.get(variable.fullyQualifiedName());
         }
