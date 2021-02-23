@@ -101,7 +101,7 @@ public class Test_01_Loops extends CommonTestRunner {
                     Assert.assertEquals("0", d.currentValue().toString());
                 }
                 if ("2".equals(d.statementId())) {
-                    String expect = d.iteration() == 0 ? "<v:i>" : "1+instance type int";
+                    String expect = d.iteration() == 0 ? "1+<v:i>" : "1+instance type int";
                     Assert.assertEquals(expect, d.currentValue().toString());
                 }
                 if ("2.0.1".equals(d.statementId())) {

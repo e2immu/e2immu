@@ -178,7 +178,9 @@ public class MethodLevelData {
         assert !linksHaveBeenEstablished.isSet();
 
         Optional<VariableInfo> delayed = sharedState.statementAnalysis.variableStream()
-                .filter(variableInfo -> !(variableInfo.variable() instanceof This))
+                .filter(vi -> !(vi.variable() instanceof This))
+                // local variables that have been created, but not yet assigned/read
+                .filter(vi -> !(vi.variable() instanceof LocalVariableReference) || vi.isAssigned() || vi.isRead())
                 .filter(vi -> !vi.linkedVariablesIsSet() || vi.getProperty(VariableProperty.CONTEXT_MODIFIED) == Level.DELAY)
                 .findFirst();
         if (delayed.isPresent()) {

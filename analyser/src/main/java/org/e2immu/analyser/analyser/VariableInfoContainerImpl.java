@@ -18,6 +18,7 @@
 package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.util.Either;
@@ -125,9 +126,10 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
                                                             VariableInLoop variableInLoop,
                                                             boolean statementHasSubBlocks) {
         VariableInfoImpl initial = new VariableInfoImpl(variable, assignedId, readId, VariableInfoContainer.NOT_A_VARIABLE_FIELD, Set.of());
-        initial.newVariable();
         initial.setValue(value, false);
         properties.forEach(initial::setProperty);
+        assert properties.containsKey(VariableProperty.CONTEXT_NOT_NULL);
+        assert properties.containsKey(VariableProperty.CONTEXT_MODIFIED);
         initial.setLinkedVariables(linkedVariables);
         return new VariableInfoContainerImpl(variableInLoop, Either.right(initial), statementHasSubBlocks ? new SetOnce<>() : null, null);
     }
@@ -406,7 +408,9 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         VariableInfo eval = best(Level.EVALUATION);
         VariableInfoImpl mergeImpl = merge.get();
         mergeImpl.setValue(eval.getValue(), eval.isDelayed());
-        mergeImpl.setLinkedVariables(eval.getLinkedVariables());
+        if(eval.linkedVariablesIsSet()) {
+            mergeImpl.setLinkedVariables(eval.getLinkedVariables());
+        }
         eval.propertyStream()
                 .forEach(e -> {
                     VariableProperty vp = e.getKey();
