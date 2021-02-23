@@ -76,6 +76,18 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
     /*
     factory method for new variables
      */
+    public static VariableInfoContainerImpl newLocalCopyOfVariableField(Variable variable,
+                                                        String readId,
+                                                        boolean statementHasSubBlocks) {
+        VariableInfoImpl initial = new VariableInfoImpl(variable, NOT_YET_ASSIGNED, readId, NOT_A_VARIABLE_FIELD, Set.of());
+        // no newVariable, because either setValue is called immediately after this method, or the explicit newVariableWithoutValue()
+        return new VariableInfoContainerImpl(VariableInLoop.NOT_IN_LOOP, Either.right(initial),
+                statementHasSubBlocks ? new SetOnce<>() : null, null);
+    }
+
+    /*
+    factory method for new variables
+     */
     public static VariableInfoContainerImpl newVariable(Variable variable,
                                                         int statementTime,
                                                         VariableInLoop variableInLoop,

@@ -381,6 +381,7 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
         final String I = "org.e2immu.analyser.testexample.Basics_7.i";
         final String I0 = I + "$0";
         final String I1 = I + "$1";
+        final String I101 = I + "$1$1_0_1-E";
         final String INC3_RETURN_VAR = "org.e2immu.analyser.testexample.Basics_7.increment3()";
         final String I_DELAYED = "<f:i>";
         final String I_EXPR = "<f:i>==<v:j>";
@@ -415,48 +416,84 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
                     Assert.assertEquals(I0 + "+q", d.currentValue().toString());
                 }
             }
-            if (INC3_RETURN_VAR.equals(d.variableName())) {
-                if ("1.0.3".equals(d.statementId())) {
-                    String expect = d.iteration() == 0 ? I_EXPR : "true";
-                    Assert.assertEquals(expect, d.currentValue().toString());
+            if ("increment3".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ReturnVariable) {
+                    Assert.assertEquals(INC3_RETURN_VAR, d.variableName());
+                    if ("1.0.3".equals(d.statementId())) {
+                        String expect = d.iteration() == 0 ? I_EXPR : "true";
+                        Assert.assertEquals(expect, d.currentValue().toString());
+                    }
+                    if ("1".equals(d.statementId())) {
+                        String expect = d.iteration() == 0 ? I_EXPR : "true";
+                        Assert.assertEquals(expect, d.currentValue().toString());
+                    }
                 }
-                if ("1".equals(d.statementId())) {
-                    String expect = d.iteration() == 0 ? I_EXPR : "true";
-                    Assert.assertEquals(expect, d.currentValue().toString());
+                if ("j".equals(d.variableName())) {
+                    if ("1.0.0".equals(d.statementId())) {
+                        String expect = d.iteration() == 0 ? I_DELAYED : I1;
+                        Assert.assertEquals(expect, d.currentValue().toString());
+                    }
                 }
-            }
-            if ("increment3".equals(d.methodInfo().name) && "j".equals(d.variableName())) {
-                if ("1.0.0".equals(d.statementId())) {
-                    String expect = d.iteration() == 0 ? I_DELAYED : I1;
-                    Assert.assertEquals(expect, d.currentValue().toString());
+                if (I0.equals(d.variableName())) {
+                    if ("0".equals(d.statementId())) {
+                        Assert.assertTrue(d.iteration() > 0); // does not exist earlier!
+                        Assert.assertEquals("instance type int", d.currentValue().toString());
+                    }
                 }
-            }
-            if ("increment3".equals(d.methodInfo().name) && I0.equals(d.variableName())) {
-                if ("0".equals(d.statementId())) {
-                    Assert.assertTrue(d.iteration() > 0); // does not exist earlier!
-                    Assert.assertEquals("instance type int", d.currentValue().toString());
+                if (I1.equals(d.variableName())) {
+                    if ("1.0.0".equals(d.statementId())) {
+                        Assert.assertTrue(d.iteration() > 0); // does not exist earlier!
+                        Assert.assertEquals("instance type int", d.currentValue().toString());
+                    }
                 }
-            }
-            if ("increment3".equals(d.methodInfo().name) && I1.equals(d.variableName())) {
-                if ("1.0.0".equals(d.statementId())) {
-                    Assert.assertTrue(d.iteration() > 0); // does not exist earlier!
-                    Assert.assertEquals("instance type int", d.currentValue().toString());
+                if (I101.equals(d.variableName())) {
+                    // is primitive
+                    if ("1.0.1".equals(d.statementId())) {
+                        Assert.fail();
+                    }
+                    if ("1.0.2".equals(d.statementId())) {
+                        Assert.assertEquals("1+" + I1, d.currentValue().toString());
+                        Assert.assertEquals(d.statementId(), "this.i", d.variableInfo().getLinkedVariables().toString());
+                        Assert.assertEquals("1.0.2-C", d.variableInfo().getReadId());
+                    }
+                    if ("1.0.3".equals(d.statementId())) {
+                        Assert.assertEquals("1+" + I1, d.currentValue().toString());
+                        Assert.assertEquals(d.statementId(), "this.i", d.variableInfo().getLinkedVariables().toString());
+                        Assert.assertEquals("1.0.3-C", d.variableInfo().getReadId());
+                    }
+                    if ("1".equals(d.statementId())) {
+                        String expectLinked = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "this.i";
+                        Assert.assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
+                    }
                 }
-            }
-            if ("increment3".equals(d.methodInfo().name) && I.equals(d.variableName())) {
-                if ("0".equals(d.statementId())) {
-                    String expect = d.iteration() == 0 ? I_DELAYED : "instance type int";
-                    Assert.assertEquals(expect, d.currentValue().toString());
-                    int expectStatementTime = d.iteration() == 0 ? VariableInfoContainer.VARIABLE_FIELD_DELAY : 0;
-                    Assert.assertEquals(expectStatementTime, d.variableInfo().getStatementTime());
-                    Assert.assertEquals("[0]", d.variableInfo().getReadAtStatementTimes().toString());
-                }
-                if ("1.0.0".equals(d.statementId())) {
-                    String expect = d.iteration() == 0 ? I_DELAYED : "instance type int";
-                    Assert.assertEquals(expect, d.currentValue().toString());
-                    int expectStatementTime = d.iteration() == 0 ? VariableInfoContainer.VARIABLE_FIELD_DELAY : 1;
-                    Assert.assertEquals(expectStatementTime, d.variableInfo().getStatementTime());
-                    Assert.assertEquals("[1]", d.variableInfo().getReadAtStatementTimes().toString());
+                if (I.equals(d.variableName())) {
+                    if ("0".equals(d.statementId())) {
+                        String expect = d.iteration() == 0 ? I_DELAYED : "instance type int";
+                        Assert.assertEquals(expect, d.currentValue().toString());
+                        int expectStatementTime = d.iteration() == 0 ? VariableInfoContainer.VARIABLE_FIELD_DELAY : 0;
+                        Assert.assertEquals(expectStatementTime, d.variableInfo().getStatementTime());
+                        Assert.assertEquals("[0]", d.variableInfo().getReadAtStatementTimes().toString());
+                        String expectLinked = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : I0;
+                        Assert.assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
+                    }
+                    if ("1.0.0".equals(d.statementId())) {
+                        String expect = d.iteration() == 0 ? I_DELAYED : "instance type int";
+                        Assert.assertEquals(expect, d.currentValue().toString());
+                        int expectStatementTime = d.iteration() == 0 ? VariableInfoContainer.VARIABLE_FIELD_DELAY : 1;
+                        Assert.assertEquals(expectStatementTime, d.variableInfo().getStatementTime());
+                        Assert.assertEquals("[1]", d.variableInfo().getReadAtStatementTimes().toString());
+                    }
+                    if ("1.0.2".equals(d.statementId())) {
+                        String expect = d.iteration() == 0 ? "1+<f:i>" : "1+" + I1;
+                        Assert.assertEquals(expect, d.currentValue().toString());
+                        Assert.assertEquals("1.0.2-E", d.variableInfo().getReadId());
+                    }
+                    if ("1".equals(d.statementId())) {
+                        String expect = d.iteration() == 0 ? "1+<f:i>" : "1+" + I1;
+                        Assert.assertEquals(expect, d.currentValue().toString());
+                        String expectLinked = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : I0 + "," + I101 + "," + I1;
+                        Assert.assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
+                    }
                 }
             }
         };
@@ -580,8 +617,14 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
                     }
                 }
                 if ("java.lang.System.out".equals(d.variableName())) {
-                    String expectValue = d.iteration() == 0 ? "<f:out>" : "instance type PrintStream";
-                    Assert.assertEquals(expectValue, d.currentValue().toString());
+                    if("0".equals(d.statementId())) {
+                        String expectValue = d.iteration() == 0 ? "<f:out>" : "instance type PrintStream";
+                        Assert.assertEquals(d.statementId(), expectValue, d.currentValue().toString());
+                    }
+                    if("4".equals(d.statementId())) {
+                        String expectValue = d.iteration() == 0 ? "<f:i>==<v:j>?<f:out>:<f:out>" : "instance type PrintStream";
+                        Assert.assertEquals(d.statementId(), expectValue, d.currentValue().toString());
+                    }
                     Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
                 }
             }

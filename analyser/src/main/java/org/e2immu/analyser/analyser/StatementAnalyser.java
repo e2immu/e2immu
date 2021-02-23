@@ -773,11 +773,11 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
 
         addToMap(contextNotNull, CONTEXT_NOT_NULL, x -> x.parameterizedType().defaultNotNull());
         status = MethodLevelData.contextProperty(statementAnalysis, sharedState.evaluationContext, VariableInfo::getStaticallyAssignedVariables,
-                CONTEXT_NOT_NULL, contextNotNull, EVALUATION).combine(status);
+                CONTEXT_NOT_NULL, contextNotNull, EVALUATION, Set.of()).combine(status);
 
         addToMap(contextModified, CONTEXT_MODIFIED, x -> Level.FALSE);
         status = MethodLevelData.contextProperty(statementAnalysis, sharedState.evaluationContext, VariableInfo::getLinkedVariables,
-                CONTEXT_MODIFIED, contextModified, EVALUATION).combine(status);
+                CONTEXT_MODIFIED, contextModified, EVALUATION, Set.of()).combine(status);
 
         // odds and ends
 

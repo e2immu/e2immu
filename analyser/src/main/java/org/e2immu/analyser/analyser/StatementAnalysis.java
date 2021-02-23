@@ -561,8 +561,9 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                     LocalVariableReference localCopy = variableInfoOfFieldWhenReading(analyserContext,
                             fieldReference, initial, statementTime);
                     if (!variables.isSet(localCopy.fullyQualifiedName())) {
-                        VariableInfoContainer lvrVic = createVariable(evaluationContext, localCopy, statementTime,
-                                VariableInLoop.NOT_IN_LOOP);
+                        VariableInfoContainer lvrVic = VariableInfoContainerImpl.newLocalCopyOfVariableField(localCopy,
+                                index+INITIAL, navigationData.hasSubBlocks());
+                        variables.put(localCopy.fullyQualifiedName(), lvrVic);
                         String indexOfStatementTime = flowData.assignmentIdOfStatementTime.get(statementTime);
 
                         Expression initialValue = statementTime == initial.getStatementTime() &&
@@ -645,6 +646,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
 
         Stream<AcceptForMerging> variableStream = makeVariableStream(lastStatements);
         Set<String> merged = new HashSet<>();
+        Set<Variable> doNotWrite = new HashSet<>();
         variableStream.forEach(e -> {
             VariableInfoContainer vic = e.vic();
             VariableInfo current = vic.current();
@@ -657,7 +659,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                     VariableInfoContainer destination;
                     if (!variables.isSet(fqn)) {
                         destination = createVariable(evaluationContext, variable, statementTime, vic.getVariableInLoop());
-                        if(variable instanceof LocalVariableReference) destination.newVariableWithoutValue();
+                        if (variable instanceof LocalVariableReference) destination.newVariableWithoutValue();
                     } else {
                         destination = vic;
                     }
@@ -694,16 +696,19 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             } else {
                 contextModified.put(variable, current.getProperty(CONTEXT_MODIFIED));
                 contextNotNull.put(variable, current.getProperty(CONTEXT_NOT_NULL));
+                // the !merged check here is because some variables appear 2x, once with a positive accept,
+                // and the second time from inside the block with a negative one
+                if (!merged.contains(fqn)) doNotWrite.add(variable);
             }
         });
 
         // then, per cluster of variables
 
         MethodLevelData.contextProperty(this, evaluationContext, VariableInfo::getStaticallyAssignedVariables,
-                CONTEXT_NOT_NULL, contextNotNull, MERGE);
+                CONTEXT_NOT_NULL, contextNotNull, MERGE, doNotWrite);
 
         MethodLevelData.contextProperty(this, evaluationContext, VariableInfo::getLinkedVariables,
-                CONTEXT_MODIFIED, contextModified, MERGE);
+                CONTEXT_MODIFIED, contextModified, MERGE, doNotWrite);
     }
 
     private boolean acceptVariableForMerging(ConditionAndVariableInfo cav, boolean inSwitchStatementOldStyle) {
@@ -1055,7 +1060,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
     statement times, we simply use this statement time in the name: $st.
     Only when statement time hasn't increased, but assignments have, we use the combination $st$assignment id.
      */
-    public String createLocalFieldCopyFQN(VariableInfo fieldVi, FieldReference fieldReference, int statementTime) {
+    private String createLocalFieldCopyFQN(VariableInfo fieldVi, FieldReference fieldReference, int statementTime) {
         String indexOfStatementTime = flowData.assignmentIdOfStatementTime.get(statementTime);
         String prefix = fieldReference.fullyQualifiedName() + "$" + statementTime;
         if (statementTime == fieldVi.getStatementTime() && fieldVi.getAssignmentId().compareTo(indexOfStatementTime) >= 0) {

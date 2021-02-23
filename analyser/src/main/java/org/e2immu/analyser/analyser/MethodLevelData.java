@@ -177,10 +177,15 @@ public class MethodLevelData {
     private AnalysisStatus linksHaveBeenEstablished(SharedState sharedState) {
         assert !linksHaveBeenEstablished.isSet();
 
-        boolean delays = sharedState.statementAnalysis.variableStream()
+        Optional<VariableInfo> delayed = sharedState.statementAnalysis.variableStream()
                 .filter(variableInfo -> !(variableInfo.variable() instanceof This))
-                .anyMatch(vi -> !vi.linkedVariablesIsSet() || vi.getProperty(VariableProperty.CONTEXT_MODIFIED) == Level.DELAY);
-        if (delays) return DELAYS;
+                .filter(vi -> !vi.linkedVariablesIsSet() || vi.getProperty(VariableProperty.CONTEXT_MODIFIED) == Level.DELAY)
+                .findFirst();
+        if (delayed.isPresent()) {
+            log(DELAYED, "Links have not yet been established for (findFirst) {}, statement {}",
+                    delayed.get().variable().fullyQualifiedName(), sharedState.statementAnalysis.index);
+            return DELAYS;
+        }
         linksHaveBeenEstablished.set();
         return DONE;
     }
@@ -196,7 +201,8 @@ public class MethodLevelData {
                                                  Function<VariableInfo, LinkedVariables> connections,
                                                  VariableProperty variableProperty,
                                                  Map<Variable, Integer> propertyValues,
-                                                 VariableInfoContainer.Level level) {
+                                                 VariableInfoContainer.Level level,
+                                                 Set<Variable> doNotWrite) {
         final AtomicReference<AnalysisStatus> analysisStatus = new AtomicReference<>(DONE);
         final DependencyGraph<Variable> dependencyGraph = new DependencyGraph<>();
         final boolean bidirectional = variableProperty == VariableProperty.CONTEXT_NOT_NULL;
@@ -242,8 +248,10 @@ public class MethodLevelData {
                         if (summary == Level.DELAY) analysisStatus.set(DELAYS);
                         // this loop is critical, see Container_3, do not remove it again :-)
                         for (Variable linkedVariable : variablesBaseLinksTo) {
-                            assignToLinkedVariable(statementAnalysis, progress, summary, linkedVariable,
-                                    variableProperty, level, valuesToSet);
+                            if (!doNotWrite.contains(linkedVariable)) {
+                                assignToLinkedVariable(statementAnalysis, progress, summary, linkedVariable,
+                                        variableProperty, level, valuesToSet);
+                            }
                         }
                     }
                 });
