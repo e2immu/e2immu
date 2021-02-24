@@ -804,13 +804,15 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
 
         evaluationResult.messages().getMessageStream().forEach(statementAnalysis::ensure);
 
-        if (status == DONE && evaluationResult.precondition() != null) {
+        // not checking on DONE anymore because any delay will also have crept into the precondition itself??
+        if (evaluationResult.precondition() != null) {
             boolean preconditionIsDelayed = sharedState.evaluationContext.isDelayed(evaluationResult.precondition());
             Expression translated = sharedState.evaluationContext.acceptAndTranslatePrecondition(evaluationResult.precondition());
             if (translated != null) {
                 statementAnalysis.stateData.setPrecondition(translated, preconditionIsDelayed);
             }
         }
+
         if (status == DONE && statementAnalysis.methodLevelData.internalObjectFlowNotYetFrozen()) {
             boolean delays = false;
             for (ObjectFlow objectFlow : evaluationResult.getObjectFlowStream().collect(Collectors.toSet())) {
@@ -1190,7 +1192,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
 
     /*
     Not-null escapes should not contribute to preconditions.
-    All the rest does.
+    All the rest should.
      */
     private AnalysisStatus checkNotNullEscapesAndPreconditions(SharedState sharedState) {
         if (statementAnalysis.statement instanceof AssertStatement) return DONE; // is dealt with in subBlocks
@@ -1474,8 +1476,11 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             }
 
             // the value can be delayed even if it is "true", for example (Basics_3)
+            // see Precondition_3 for an example where different values arise, because preconditions kick in
             boolean valueIsDelayed2 = sharedState.evaluationContext.isDelayed(value) || statusPost == DELAYS;
-            statementAnalysis.stateData.setValueOfExpression(value, valueIsDelayed2);
+            if(valueIsDelayed2 || statementAnalysis.stateData.valueOfExpressionIsDelayed()) {
+                statementAnalysis.stateData.setValueOfExpression(value, valueIsDelayed2);
+            }
 
             // at the very end, so that the stateData can be set without delays, but we still return once again
             if (statusPost == DONE) {

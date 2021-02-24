@@ -1,9 +1,6 @@
 package org.e2immu.analyser.parser;
 
-import org.e2immu.analyser.analyser.EvaluationResult;
-import org.e2immu.analyser.analyser.LinkedVariables;
-import org.e2immu.analyser.analyser.VariableInfo;
-import org.e2immu.analyser.analyser.VariableProperty;
+import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.MethodCall;
@@ -217,7 +214,7 @@ public class Test_16_Modification extends CommonTestRunner {
                         // problem is that there is one in level 3 already, with a NO_VALUE
                         VariableInfo vi1 = d.variableInfoContainer().current();
                         Assert.assertEquals("instance type HashSet<String>", vi1.getValue().toString());
-                        Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.MODIFIED_VARIABLE));
+                        Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
                     }
                     if (d.iteration() > 0) {
                         Assert.assertEquals("this.set3", d.variableInfo().getLinkedVariables().toString());
@@ -241,7 +238,7 @@ public class Test_16_Modification extends CommonTestRunner {
                     String expectValue = d.iteration() == 0 ? SET3_DELAYED : INSTANCE_TYPE_HASH_SET;
                     Assert.assertEquals(expectValue, d.variableInfo().getValue().toString());
                     int expectModified = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
-                    Assert.assertEquals(expectModified, d.getProperty(VariableProperty.MODIFIED_VARIABLE));
+                    Assert.assertEquals(expectModified, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
                 }
             }
         };
@@ -257,6 +254,7 @@ public class Test_16_Modification extends CommonTestRunner {
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if (d.fieldInfo().name.equals("set3")) {
                 Assert.assertEquals(Level.TRUE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
+                Assert.assertEquals(1, ((FieldAnalysisImpl.Builder) d.fieldAnalysis()).values.get().size());
                 if (d.iteration() > 0) {
                     Assert.assertEquals(INSTANCE_TYPE_HASH_SET, d.fieldAnalysis().getEffectivelyFinalValue().toString());
                     if (d.iteration() > 1) {

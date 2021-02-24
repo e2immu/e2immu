@@ -425,7 +425,8 @@ public class FieldAnalyser extends AbstractAnalyser {
                         }
                     }
                 }
-                if (!added && !fieldInfo.isExplicitlyFinal() && methodAnalyser.methodInfo.isConstructor) {
+                if (!added && !fieldInfo.isExplicitlyFinal() && methodAnalyser.methodInfo.isConstructor  &&
+                        !methodAnalyser.methodInfo.methodInspection.get().isSynthetic()) {
                     // implicit initial value (null, 0, 0.0d, 0.0f, false, ...)
                     values.add(ConstantExpression.nullValue(analyserContext.getPrimitives(), fieldInfo.type.bestTypeInfo()));
                 }
