@@ -712,10 +712,11 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
 
         // then, per cluster of variables
 
-        AnalysisStatus cnnStatus = MethodLevelData.contextProperty(this, evaluationContext,
+        ContextPropertyWriter contextPropertyWriter = new ContextPropertyWriter();
+        AnalysisStatus cnnStatus = contextPropertyWriter.write(this, evaluationContext,
                 VariableInfo::getStaticallyAssignedVariables, CONTEXT_NOT_NULL, contextNotNull, MERGE, doNotWrite);
 
-        AnalysisStatus cmStatus = MethodLevelData.contextProperty(this, evaluationContext,
+        AnalysisStatus cmStatus = contextPropertyWriter.write(this, evaluationContext,
                 VariableInfo::getLinkedVariables, CONTEXT_MODIFIED, contextModified, MERGE, doNotWrite);
 
         return cnnStatus.combine(cmStatus);

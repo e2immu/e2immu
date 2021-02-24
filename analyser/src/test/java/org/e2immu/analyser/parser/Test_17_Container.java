@@ -47,9 +47,15 @@ public class Test_17_Container extends CommonTestRunner {
                         Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
                     }
                 }
-                if (S.equals(d.variableName()) && "1".equals(d.statementId())) {
-                    Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL,
-                            d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL_EXPRESSION));
+                if (S.equals(d.variableName())) {
+                    if ("1".equals(d.statementId())) {
+                        Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL,
+                                d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL_EXPRESSION));
+                    }
+                    if ("0".equals(d.statementId()) || "1".equals(d.statementId())) {
+                        int expectEnn = d.iteration() <= 1 ? Level.DELAY : MultiLevel.NOT_INVOLVED;
+                        Assert.assertEquals(d.statementId(), expectEnn, d.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
+                    }
                 }
                 if (S0.equals(d.variableName()) && "1".equals(d.statementId())) {
                     Assert.assertTrue(d.iteration() > 0);
@@ -62,6 +68,15 @@ public class Test_17_Container extends CommonTestRunner {
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("s".equals(d.fieldInfo().name)) {
                 Assert.assertEquals(MultiLevel.NULLABLE, d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_NOT_NULL));
+                String expectLinked = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "p";
+                Assert.assertEquals(expectLinked, d.fieldAnalysis().getLinkedVariables().toString());
+            }
+        };
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("setS".equals(d.methodInfo().name)) {
+                ParameterAnalysis p = d.parameterAnalyses().get(0);
+                int expectEnn = d.iteration() <= 1 ? Level.DELAY : MultiLevel.NOT_INVOLVED;
+                Assert.assertEquals(expectEnn, p.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
             }
         };
         TypeMapVisitor typeMapVisitor = typeMap -> {
@@ -72,6 +87,7 @@ public class Test_17_Container extends CommonTestRunner {
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addTypeMapVisitor(typeMapVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 

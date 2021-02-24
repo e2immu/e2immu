@@ -691,6 +691,17 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                         additionalLinks.add(local.current().variable());
                     }
                 }
+
+                /* FIXME
+                if (valueToWrite instanceof VariableExpression ve && ((ve.variable() instanceof ParameterInfo) || (ve.variable() instanceof FieldReference))) {
+                    int enn = varProperties.getOrDefault(EXTERNAL_NOT_NULL, Level.DELAY);
+                    if (enn == Level.DELAY) {
+                        log(DELAYED, "Apply of {}, {} is delayed because of external not null assignment, delayed value, to {}",
+                                index(), myMethodAnalyser.methodInfo.fullyQualifiedName, variable);
+                        status = DELAYS;
+                    }
+                }
+                 */
             } else {
                 Map<VariableProperty, Integer> merged = mergePreviousAndChange(variable, vi1.getProperties().toImmutableMap(),
                         changeData.properties(), contextNotNull, contextModified);
@@ -737,9 +748,9 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 status = DELAYS;
             }
 
-            if (variable instanceof ParameterInfo) {
+            // FIXME if (variable instanceof ParameterInfo) {
                 resolveExternalNotNullDelays(changeData, vi, vic);
-            }
+            //}
 
             // the method analyser must have both context not null and not null expression
             // we need to revisit until we have a value (Basics_1, e.g.)
@@ -778,12 +789,14 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             potentiallyUpgradeCnnOfLocalLoopVariableAndCopy(sharedState.evaluationContext,
                     contextNotNull, evaluationResult.value());
         }
-        status = MethodLevelData.contextProperty(statementAnalysis, sharedState.evaluationContext,
+        ContextPropertyWriter contextPropertyWriter = new ContextPropertyWriter();
+        status = contextPropertyWriter.write(statementAnalysis, sharedState.evaluationContext,
                 VariableInfo::getStaticallyAssignedVariables,
                 CONTEXT_NOT_NULL, contextNotNull, EVALUATION, Set.of()).combine(status);
 
         addToMap(contextModified, CONTEXT_MODIFIED, x -> Level.FALSE);
-        status = MethodLevelData.contextProperty(statementAnalysis, sharedState.evaluationContext,
+        // we add the linked variables on top of the statically assigned variables
+        status = contextPropertyWriter.write(statementAnalysis, sharedState.evaluationContext,
                 VariableInfo::getLinkedVariables,
                 CONTEXT_MODIFIED, contextModified, EVALUATION, Set.of()).combine(status);
 
@@ -1466,11 +1479,14 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
 
             // at the very end, so that the stateData can be set without delays, but we still return once again
             if (statusPost == DONE) {
-                boolean externalNotNullDelay = statementAnalysis.variables.stream()
-                        .anyMatch(e -> e.getValue().best(EVALUATION).externalNotNullDelay());
-                if (externalNotNullDelay) {
-                    log(DELAYED, "Delaying statement {} in {} because of external not null",
-                            index(), myMethodAnalyser.methodInfo.fullyQualifiedName);
+                Optional<VariableInfo> externalNotNullDelay = statementAnalysis.variables.stream()
+                        .map(e -> e.getValue().best(EVALUATION))
+                        .filter(VariableInfo::externalNotNullDelay)
+                        .findFirst();
+                if (externalNotNullDelay.isPresent()) {
+                    log(DELAYED, "Delaying statement {} in {} because of external not null, (findFirst) {}",
+                            index(), myMethodAnalyser.methodInfo.fullyQualifiedName,
+                            externalNotNullDelay.get().variable().fullyQualifiedName());
                     return DELAYS;
                 }
             }
