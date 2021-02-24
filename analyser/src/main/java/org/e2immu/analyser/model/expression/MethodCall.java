@@ -416,9 +416,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         NewObject newObject;
         VariableExpression variableExpression;
         if ((variableExpression = objectValue.asInstanceOf(VariableExpression.class)) != null) {
-            newObject = builder.currentInstance(variableExpression.variable(), ObjectFlow.NO_FLOW,
-                    // TODO should we not look up the state?
-                    new BooleanConstant(evaluationContext.getPrimitives(), true));
+            newObject = builder.currentInstance(variableExpression.variable());
         } else if (objectValue instanceof TypeExpression) {
             assert methodInfo.methodInspection.get().isStatic();
             return null; // static method

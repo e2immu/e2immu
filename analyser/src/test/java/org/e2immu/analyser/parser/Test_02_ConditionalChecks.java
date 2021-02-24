@@ -255,6 +255,7 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                 }
             }
             if (d.variable() instanceof ParameterInfo a && "a".equals(a.name)) {
+                if("0".equals(d.statementId()) || "1".equals(d.statementId()))
                 Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
             }
             if (d.variable() instanceof ParameterInfo b && "b".equals(b.name)) {

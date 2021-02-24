@@ -274,7 +274,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             }
 
             int notNullValue = evaluationContext.getProperty(value, VariableProperty.NOT_NULL_EXPRESSION, true);
-            if (notNullValue <= MultiLevel.NULLABLE) { // also do delayed values
+            if (notNullValue < notNullRequired) { // also do delayed values
                 // so intrinsically we can have null.
                 // if context not null is already high enough, don't complain
                 int contextNotNull = getPropertyFromInitial(variable, VariableProperty.CONTEXT_NOT_NULL);
@@ -297,10 +297,9 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                         messages.add(message);
                     }
                 }
+                setProperty(variable, VariableProperty.CONTEXT_NOT_NULL, notNullRequired);
             }
 
-            // regardless of what's going on with the external not-null, we set context not null
-            setProperty(variable, VariableProperty.CONTEXT_NOT_NULL, notNullRequired);
         }
 
         private int getPropertyFromInitial(Expression expression, VariableProperty variableProperty) {
@@ -412,25 +411,12 @@ public record EvaluationResult(EvaluationContext evaluationContext,
         /*
         Used by MethodCall and EvaluateMethodCall
          */
-        public NewObject currentInstance(Variable variable, ObjectFlow objectFlowForCreation, Expression
-                stateFromPreconditions) {
+        public NewObject currentInstance(Variable variable) {
             ChangeData currentExpression = valueChanges.get(variable);
             if (currentExpression != null && currentExpression.value instanceof NewObject instance) return instance;
             assert evaluationContext != null;
 
             return evaluationContext.currentInstance(variable, statementTime);
-            /* FIXME can this go? should be OK given Basics
-            if (inContext != null) return inContext;
-            // there is no instance yet... we'll have to create one, but only if the value can have an instance
-            if (Primitives.isPrimitiveExcludingVoid(variable.parameterizedType())) return null;
-            Expression value = currentExpression(variable, true);
-            if (value.isConstant()) return null;
-            NewObject instance = NewObject.forGetInstance(variable.parameterizedType(), stateFromPreconditions, objectFlowForCreation);
-            assignInstanceToVariable(variable, instance, LinkedVariables.EMPTY);
-            return instance;
-
-
-             */
         }
 
         // called when a new instance is needed because of a modifying method call, or when a variable doesn't have

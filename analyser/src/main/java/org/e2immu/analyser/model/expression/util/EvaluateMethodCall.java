@@ -260,13 +260,12 @@ public class EvaluateMethodCall {
         return true;
     }
 
-    private static NewObject obtainInstance(EvaluationResult.Builder builder, EvaluationContext evaluationContext, Expression objectValue) {
+    private static NewObject obtainInstance(EvaluationResult.Builder builder, Expression objectValue) {
         if (objectValue instanceof NewObject theInstance) {
             return theInstance;
         }
         if (objectValue instanceof VariableExpression variableValue) {
-            return builder.currentInstance(variableValue.variable(), ObjectFlow.NO_FLOW,
-                    new BooleanConstant(evaluationContext.getPrimitives(), true));
+            return builder.currentInstance(variableValue.variable());
         }
         return null;
     }
@@ -277,7 +276,7 @@ public class EvaluateMethodCall {
                                                        MethodInfo methodInfo,
                                                        MethodAnalysis methodAnalysis,
                                                        List<Expression> parameterValues) {
-        NewObject instance = obtainInstance(builder, evaluationContext, objectValue);
+        NewObject instance = obtainInstance(builder, objectValue);
         if (instance == null) {
             return null;
         }
@@ -335,7 +334,7 @@ public class EvaluateMethodCall {
                                                                Expression objectValue, MethodInfo methodInfo,
                                                                MethodAnalysis methodAnalysis,
                                                                List<Expression> parameterValues) {
-        NewObject instance = obtainInstance(builder, evaluationContext, objectValue);
+        NewObject instance = obtainInstance(builder, objectValue);
         if (instance == null) {
             return null;
         }
@@ -376,7 +375,7 @@ public class EvaluateMethodCall {
                                                                                Expression objectValue,
                                                                                List<Expression> parameterValues) {
         // look for a clause that has "this.methodInfo" as a MethodValue
-        NewObject instance = obtainInstance(builder, evaluationContext, objectValue);
+        NewObject instance = obtainInstance(builder, objectValue);
         if (instance == null) {
             return null;
         }
