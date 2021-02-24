@@ -284,7 +284,7 @@ public class MethodLevelData {
 
     private static void assignToLinkedVariable(StatementAnalysis statementAnalysis,
                                                AtomicBoolean progress,
-                                               int summary,
+                                               int newValue,
                                                Variable linkedVariable,
                                                VariableProperty variableProperty,
                                                VariableInfoContainer.Level level,
@@ -299,21 +299,23 @@ public class MethodLevelData {
         }
 
         VariableInfo vi = vic.best(level);
-        int modified = vi.getProperty(variableProperty);
-        if (modified == Level.DELAY) {
+        int current = vi.getProperty(variableProperty);
+        if (current == Level.DELAY) {
             // break the delay in case the variable is not even read
 
-            if (summary != Level.DELAY) {
+            if (newValue != Level.DELAY) {
                 // once delay, always delay
-                valuesToSet.merge(vic, summary, (v1, v2) -> v1 == Level.DELAY ? Level.DELAY : Math.max(v1, v2));
+                valuesToSet.merge(vic, newValue, (v1, v2) -> v1 == Level.DELAY ? Level.DELAY : Math.max(v1, v2));
                 progress.set(true);
             } else {
                 valuesToSet.put(vic, Level.DELAY);
             }
-        } else if (modified != summary && summary != Level.DELAY) {
-            throw new UnsupportedOperationException("? already have " + modified + ", computed "
-                    + summary + " variable " + vi.variable().fullyQualifiedName() + ", prop " + variableProperty);
-        }
+        } else if (current < newValue && newValue != Level.DELAY) {
+            throw new UnsupportedOperationException("? already have " + current + ", computed "
+                    + newValue + " variable " + vi.variable().fullyQualifiedName() + ", prop " + variableProperty);
+        } /* else: it is possible that the previous value was higher: statements at the end of the block
+        can become unreachable, which may lower the context value; see Loops_7
+        */
     }
 
 

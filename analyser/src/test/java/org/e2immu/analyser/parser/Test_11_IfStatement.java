@@ -6,6 +6,7 @@ import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.expression.InlinedMethod;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.This;
@@ -183,6 +184,9 @@ public class Test_11_IfStatement extends CommonTestRunner {
                 }
                 Assert.assertEquals(d.statementId() + ", it " + d.iteration(),
                         Level.TRUE, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
+            }
+            if ("get1".equals(d.methodInfo().name) && d.variable() instanceof ParameterInfo d1 && "defaultValue1".equals(d1.name)) {
+                Assert.assertEquals(MultiLevel.NOT_INVOLVED, d.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
             }
         };
 

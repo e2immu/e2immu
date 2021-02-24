@@ -183,11 +183,6 @@ public interface ParameterAnalysis extends Analysis {
                 if (Primitives.isPrimitiveExcludingVoid(bestType)) return MultiLevel.EFFECTIVELY_NOT_NULL;
                 break;
             }
-            case EXTERNAL_NOT_NULL: {
-                TypeInfo bestType = parameterInfo.parameterizedType.bestTypeInfo();
-                if (Primitives.isPrimitiveExcludingVoid(bestType)) return MultiLevel.EFFECTIVELY_NOT_NULL;
-                return getParameterPropertyCheckOverrides(analysisProvider, parameterInfo, EXTERNAL_NOT_NULL);
-            }
 
             case NOT_MODIFIED_1:
                 if (!parameterInfo.parameterizedType.isFunctionalInterface()) {
@@ -204,7 +199,7 @@ public interface ParameterAnalysis extends Analysis {
     default int getPropertyVerifyContracted(VariableProperty variableProperty) {
         int v = getProperty(variableProperty);
         // special code to catch contracted values
-        if (variableProperty == EXTERNAL_NOT_NULL || variableProperty == NOT_NULL_EXPRESSION) {
+        if (variableProperty == NOT_NULL_EXPRESSION) {
             return MultiLevel.bestNotNull(v, getProperty(NOT_NULL_PARAMETER));
         }
         if (variableProperty == MODIFIED_OUTSIDE_METHOD) {

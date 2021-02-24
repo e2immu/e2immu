@@ -53,7 +53,7 @@ public class Test_00_Basics_9plus extends CommonTestRunner {
                 Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL,
                         d.methodAnalysis().getProperty(VariableProperty.NOT_NULL_EXPRESSION));
                 ParameterAnalysis p0 = d.parameterAnalyses().get(0);
-                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, p0.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
+                Assert.assertEquals(MultiLevel.NOT_INVOLVED, p0.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
                 Assert.assertEquals("Method: " + d.methodInfo().name,
                         MultiLevel.EFFECTIVELY_NOT_NULL, p0.getProperty(VariableProperty.NOT_NULL_PARAMETER));
             }

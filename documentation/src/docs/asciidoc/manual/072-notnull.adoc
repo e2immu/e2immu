@@ -38,6 +38,8 @@ The not null value of fields is assigned to this variable.
 The parameter analyser can track values of fields if the field is directly assigned to the parameter in a constructor.
 If this is the case, ENN is used to store the field's not null value.
 While the normal flow is from method's parameters, via statements, to the field, ENN allows for a feedback into the parameter.
++
+Default value is `MultiLevel.NOT_INVOLVED` which is equal to 0. While CNN and NNE are always effectively not null for primitives, this one does not follow that rule, unless of course the value comes from the field.
 
 NNP:: Not Null Parameter is the combination of CNN and ENN inside the parameter analyser.
 This property is directly computed from CNN and ENN, unless it is directly assigned a value from a contract {nn} annotation.
