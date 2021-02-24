@@ -46,7 +46,6 @@ public class Test_18_E2Immutable extends CommonTestRunner {
     @Test
     public void test_1() throws IOException {
         final String TYPE = "org.e2immu.analyser.testexample.E2Immutable_1";
-        final String CONSTRUCTOR2 = TYPE + ".E2Immutable_1(E2Immutable_1,String)";
         final String LEVEL2 = TYPE + ".level2";
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
@@ -62,7 +61,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
                     }
                 }
                 if (d.variable() instanceof ParameterInfo pi && pi.name.equals("parent2Param")) {
-                    int expectImmu = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_E2IMMUTABLE;
+                    int expectImmu = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EFFECTIVELY_E2IMMUTABLE;
                     Assert.assertEquals(expectImmu, d.getProperty(VariableProperty.IMMUTABLE));
                 }
             }
@@ -176,7 +175,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
                     Assert.assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
                 }
                 if ("1".equals(d.statementId())) {
-                    String expectValue = d.iteration() == 0 ? "<v:incremented>" : "new HashMap<>(map7)/*this.size()==map7.size()*/";
+                    String expectValue = d.iteration() == 0 ? "<new:HashMap<String,SimpleContainer>>" : "new HashMap<>(map7)/*this.size()==map7.size()*/";
                     Assert.assertEquals(expectValue, d.currentValue().toString());
                 }
             }

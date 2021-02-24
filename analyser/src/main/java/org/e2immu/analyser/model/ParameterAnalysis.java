@@ -157,6 +157,7 @@ public interface ParameterAnalysis extends Analysis {
                 if (bestType != null) {
                     TypeAnalysis bestTypeAnalysis = analysisProvider.getTypeAnalysis(bestType);
                     int immutable = bestTypeAnalysis.getProperty(VariableProperty.IMMUTABLE);
+                    if(immutable == Level.DELAY) return internalGetProperty(VariableProperty.IMMUTABLE);
                     boolean objectFlowCondition = parameterInfo.owner.isPrivate() &&
                             objectFlow != null && objectFlow.getPrevious().allMatch(of -> of.conditionsMetForEventual(bestTypeAnalysis));
                     immutableFromType = MultiLevel.eventual(immutable, objectFlowCondition);

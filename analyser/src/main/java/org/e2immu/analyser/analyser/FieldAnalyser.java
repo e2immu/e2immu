@@ -292,16 +292,22 @@ public class FieldAnalyser extends AbstractAnalyser {
         // then, values
         if (!fieldAnalysis.values.isSet()) return DELAYS;
 
-        EvaluationContext evaluationContext = new EvaluationContextImpl(sharedState.iteration,
-                ConditionManager.initialConditionManager(analyserContext.getPrimitives()), sharedState.closure);
-        int worstOverValues = fieldAnalysis.values.get().stream()
-                .mapToInt(expression -> evaluationContext.getProperty(expression, VariableProperty.NOT_NULL_EXPRESSION, false))
-                .min().orElse(MultiLevel.NULLABLE);
+        int start = haveInitialiser ? 1 : 0;
+        boolean hardNull = fieldAnalysis.values.get().stream().skip(start).anyMatch(v -> v instanceof NullConstant);
+        int finalNotNullValue;
+        if (hardNull) {
+            finalNotNullValue = MultiLevel.NULLABLE;
+        } else {
+            EvaluationContext evaluationContext = new EvaluationContextImpl(sharedState.iteration,
+                    ConditionManager.initialConditionManager(analyserContext.getPrimitives()), sharedState.closure);
+            int worstOverValues = fieldAnalysis.values.get().stream()
+                    .mapToInt(expression -> evaluationContext.getProperty(expression, VariableProperty.NOT_NULL_EXPRESSION, false))
+                    .min().orElse(MultiLevel.NULLABLE);
 
-        int finalNotNullValue = MultiLevel.bestNotNull(MultiLevel.NULLABLE,
-                MultiLevel.bestNotNull(worstOverValues, bestOverContext));
-        log(NOT_NULL, "Set property @NotNull on field {} to value {}", fieldInfo.fullyQualifiedName(), finalNotNullValue);
-
+            finalNotNullValue = MultiLevel.bestNotNull(MultiLevel.NULLABLE,
+                    MultiLevel.bestNotNull(worstOverValues, bestOverContext));
+            log(NOT_NULL, "Set property @NotNull on field {} to value {}", fieldInfo.fullyQualifiedName(), finalNotNullValue);
+        }
         fieldAnalysis.setProperty(VariableProperty.EXTERNAL_NOT_NULL, finalNotNullValue);
         return DONE;
     }
