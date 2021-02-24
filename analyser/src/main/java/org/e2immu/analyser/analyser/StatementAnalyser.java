@@ -677,16 +677,17 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
 
                 if (vic.isLocalVariableInLoopDefinedOutside()) {
                     VariableInfoContainer local = addToAssignmentsInLoop(vic, variable.fullyQualifiedName());
-                    if (local != null && !evaluationResult.someValueWasDelayed() && !valueToWriteIsDelayed) {
-                        // assign the value of the assignment to the local copy created
+                    // assign the value of the assignment to the local copy created
+                    if (local != null) {
                         Variable localVar = local.current().variable();
                         log(ANALYSER, "Write value {} to local copy variable {}", valueToWrite, localVar.fullyQualifiedName());
                         Map<VariableProperty, Integer> merged2 = mergeAssignment(localVar, valueProperties, varProperties,
                                 changeData.properties(), contextNotNull, contextModified);
                         remapStaticallyAssignedVariables.put(localVar, local.getPreviousOrInitial().getStaticallyAssignedVariables());
-                        local.setValue(valueToWrite, false, changeData.staticallyAssignedVariables(), merged2,
+                        local.setValue(valueToWrite, valueToWriteIsDelayed, changeData.staticallyAssignedVariables(), merged2,
                                 false);
                         local.setLinkedVariables(new LinkedVariables(Set.of(vi.variable())), false);
+                        // unlike static assigned variables, linked variables are not bi-directional, so the additional link is needed
                         additionalLinks.add(local.current().variable());
                     }
                 }
@@ -759,8 +760,9 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             for (Map.Entry<Variable, VariableInfoContainer> e : existingVariablesNotVisited.entrySet()) {
                 VariableInfoContainer vic = e.getValue();
                 Variable variable = e.getKey();
-                if (!(variable instanceof This) && !(variable instanceof ReturnVariable)) {
-                    VariableInfo vi1 = vic.getPreviousOrInitial();
+                VariableInfo vi1 = vic.getPreviousOrInitial();
+                if (!(variable instanceof This) && !(variable instanceof ReturnVariable) && !vic.isLocalCopy()
+                        && !vi1.isConfirmedVariableField()) {
                     LinkedVariables lv = remap(remapStaticallyAssignedVariables, vi1.getStaticallyAssignedVariables());
                     if (!lv.equals(vi1.getStaticallyAssignedVariables())) {
                         vic.writeStaticallyAssignedVariablesToEvaluation(lv);
@@ -772,11 +774,17 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         // the second one is across clusters of variables
 
         addToMap(contextNotNull, CONTEXT_NOT_NULL, x -> x.parameterizedType().defaultNotNull());
-        status = MethodLevelData.contextProperty(statementAnalysis, sharedState.evaluationContext, VariableInfo::getStaticallyAssignedVariables,
+        if (statement() instanceof ForEachStatement) {
+            potentiallyUpgradeCnnOfLocalLoopVariableAndCopy(sharedState.evaluationContext,
+                    contextNotNull, evaluationResult.value());
+        }
+        status = MethodLevelData.contextProperty(statementAnalysis, sharedState.evaluationContext,
+                VariableInfo::getStaticallyAssignedVariables,
                 CONTEXT_NOT_NULL, contextNotNull, EVALUATION, Set.of()).combine(status);
 
         addToMap(contextModified, CONTEXT_MODIFIED, x -> Level.FALSE);
-        status = MethodLevelData.contextProperty(statementAnalysis, sharedState.evaluationContext, VariableInfo::getLinkedVariables,
+        status = MethodLevelData.contextProperty(statementAnalysis, sharedState.evaluationContext,
+                VariableInfo::getLinkedVariables,
                 CONTEXT_MODIFIED, contextModified, EVALUATION, Set.of()).combine(status);
 
         // odds and ends
@@ -817,6 +825,27 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         }
 
         return status;
+    }
+
+    private void potentiallyUpgradeCnnOfLocalLoopVariableAndCopy(EvaluationContext evaluationContext,
+                                                                 Map<Variable, Integer> contextNotNull,
+                                                                 Expression value) {
+        boolean variableNotNull = evaluationContext.getProperty(value, NOT_NULL_EXPRESSION, false)
+                >= MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL;
+        if (variableNotNull) {
+            Structure structure = statementAnalysis.statement.getStructure();
+            LocalVariableCreation lvc = (LocalVariableCreation) structure.initialisers().get(0);
+            Variable loopVar = lvc.localVariableReference;
+            assert contextNotNull.containsKey(loopVar); // must be present!
+            contextNotNull.put(loopVar, MultiLevel.EFFECTIVELY_NOT_NULL);
+
+            String copy = lvc.localVariable.name() + "$" + index();
+            LocalVariableReference copyVar = createLocalCopyOfLoopVariable(loopVar, copy);
+            if (contextNotNull.containsKey(copyVar)) {
+                // can be delayed to the next iteration
+                contextNotNull.put(copyVar, MultiLevel.EFFECTIVELY_NOT_NULL);
+            }
+        }
     }
 
     private LinkedVariables remap(Map<Variable, LinkedVariables> remap, LinkedVariables linkedVariables) {
@@ -1119,17 +1148,18 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         String newFqn = statementAnalysis.createLocalLoopCopyFQN(vic, vi);
         if (!statementAnalysis.variables.isSet(newFqn)) {
             LocalVariableReference newLvr = createLocalCopyOfLoopVariable(vi.variable(), newFqn);
-
-            VariableInfoContainer newVic = VariableInfoContainerImpl.newVariable(newLvr, VariableInfoContainer.NOT_A_VARIABLE_FIELD,
-                    new VariableInLoop(loopIndex, index(), VariableInLoop.VariableType.LOOP_COPY), navigationData.hasSubBlocks());
-            newVic.newVariableWithoutValue();
+            VariableInLoop variableInLoop = new VariableInLoop(loopIndex, index(), VariableInLoop.VariableType.LOOP_COPY);
+            VariableInfoContainer newVic = VariableInfoContainerImpl.newVariable(newLvr,
+                    VariableInfoContainer.NOT_A_VARIABLE_FIELD, variableInLoop, navigationData.hasSubBlocks());
+            newVic.newVariableWithoutValue(); // at initial level
+            newVic.setStaticallyAssignedVariables(new LinkedVariables(Set.of(vi.variable())), true);
             String assigned = index() + VariableInfoContainer.Level.INITIAL;
             String read = index() + EVALUATION;
             newVic.ensureEvaluation(assigned, read, VariableInfoContainer.NOT_A_VARIABLE_FIELD, Set.of());
 
             statementAnalysis.variables.put(newFqn, newVic);
 
-            // value will be set in main apply
+            // value and properties will be set in main apply
             return newVic;
         }
         return statementAnalysis.variables.get(newFqn);
@@ -1265,7 +1295,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                     // especially in the case of forEach, the lvc.expression is empty, anyway
                     // an assignment may be difficult. The value is never used, only local copies are
                     vic.setValue(NewObject.forCatchOrThis(statementAnalysis.primitives, lvr.parameterizedType()), false,
-                            LinkedVariables.EMPTY, Map.of(), true);
+                            LinkedVariables.EMPTY, Map.of(CONTEXT_MODIFIED, Level.FALSE,
+                                    CONTEXT_NOT_NULL, lvr.parameterizedType().defaultNotNull()), true);
                     vic.setLinkedVariables(LinkedVariables.EMPTY, true);
                 } else {
                     initialiserToEvaluate = lvc; // == expression
@@ -1422,9 +1453,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             assert value != null; // EmptyExpression in case there really is no value
             boolean valueIsDelayed = sharedState.evaluationContext.isDelayed(value) || statusPost == DELAYS;
 
-            if (statementAnalysis.statement instanceof ForEachStatement) {
-                step3_ForEach(sharedState, value);
-            } else if (!valueIsDelayed && (statementAnalysis.statement instanceof IfElseStatement ||
+            if (!valueIsDelayed && (statementAnalysis.statement instanceof IfElseStatement ||
                     statementAnalysis.statement instanceof AssertStatement)) {
                 value = step3_IfElse_Assert(sharedState, value);
             } else if (!valueIsDelayed && statementAnalysis.statement instanceof SwitchStatement switchStatement) {
@@ -1494,20 +1523,6 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         Assignment assignment = new Assignment(statementAnalysis.primitives,
                 new VariableExpression(new ReturnVariable(myMethodAnalyser.methodInfo)), toEvaluate);
         return assignment.evaluate(evaluationContext, structure.forwardEvaluationInfo());
-    }
-
-    // a special case, which allows us to set not null
-    private void step3_ForEach(SharedState sharedState, Expression value) {
-        boolean variableNotNull = sharedState.evaluationContext
-                .getProperty(value, NOT_NULL_EXPRESSION, false) >= MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL;
-        Structure structure = statementAnalysis.statement.getStructure();
-        LocalVariableCreation lvc = (LocalVariableCreation) structure.initialisers().get(0);
-        String copy = lvc.localVariable.name() + "$" + index();
-        if (statementAnalysis.variables.isSet(copy) && variableNotNull) {
-            VariableInfoContainer vic = statementAnalysis.variables.get(copy);
-            // TODO this probably needs to be written in EVAL (as there may be a CNN in initial already?)
-            vic.setProperty(CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL, false, VariableInfoContainer.Level.INITIAL);
-        }
     }
 
     /*

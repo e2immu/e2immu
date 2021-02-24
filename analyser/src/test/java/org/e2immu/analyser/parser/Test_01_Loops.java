@@ -338,9 +338,9 @@ public class Test_01_Loops extends CommonTestRunner {
             if ("res$1$1_0_0-E".equals(d.variableName())) {
                 Assert.assertEquals("1.0.0", d.statementId());
 
-                String expectValue = d.iteration() == 0 ? "<v:res$1$1_0_0-E>" : "s$1";
+                String expectValue = d.iteration() == 0 ? "<v:s>" : "s$1";
                 Assert.assertEquals(expectValue, d.currentValue().toString());
-                String expectLinked = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "res";
+                String expectLinked =  "res";
                 Assert.assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
                 int expectNN = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
                 Assert.assertEquals(expectNN, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
@@ -357,7 +357,7 @@ public class Test_01_Loops extends CommonTestRunner {
                     Assert.assertEquals(expectValue, d.currentValue().toString());
                 }
                 if ("2".equals(d.statementId())) {
-                    String expectValue = d.iteration() == 0 ? "<v:res>" : "nullable instance type String";
+                    String expectValue = d.iteration() == 0 ? "<new:String>" : "nullable instance type String";
                     Assert.assertEquals(expectValue, d.currentValue().toString());
                     int expectNne = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
                     Assert.assertEquals(expectNne, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
@@ -523,7 +523,7 @@ public class Test_01_Loops extends CommonTestRunner {
                     Assert.assertEquals(expect, d.evaluationResult().value().toString());
                 }
                 if ("2".equals(d.statementId())) {
-                    String expect = d.iteration() == 0 ? "(<v:i><=9?<v:i>:1+<v:i>)>=10"
+                    String expect = d.iteration() == 0 ? "(<v:i><=9?1==<v:i>?<v:i>:1+<v:i>:1+<v:i>)>=10"
                             : "instance type int>=9";
                     Assert.assertEquals(expect, d.evaluationResult().value().toString());
                 }
@@ -539,16 +539,16 @@ public class Test_01_Loops extends CommonTestRunner {
                 if ("1.0.0".equals(d.statementId())) {
                     Assert.assertEquals("1", d.variableInfoContainer().getVariableInLoop()
                             .statementId(VariableInLoop.VariableType.IN_LOOP_DEFINED_OUTSIDE));
-                    String expect = d.iteration() == 0 ? "<v:i>" : "1+i$1";
+                    String expect = d.iteration() == 0 ? "1==<v:i>?<v:i>:1+<v:i>" : "1+i$1";
                     Assert.assertEquals(expect, d.currentValue().toString());
                 }
                 if ("1".equals(d.statementId())) {
-                    String expect = d.iteration() == 0 ? "<v:i><=9?<v:i>:1+<v:i>" : "1+instance type int";
+                    String expect = d.iteration() == 0 ? "<v:i><=9?1==<v:i>?<v:i>:1+<v:i>:1+<v:i>" : "1+instance type int";
                     if (d.iteration() > 0) Assert.assertTrue(d.variableInfoContainer().hasMerge());
                     Assert.assertEquals(expect, d.currentValue().toString());
                 }
                 if ("2".equals(d.statementId())) {
-                    String expect = d.iteration() == 0 ? "<v:i>" : "1+instance type int";
+                    String expect = d.iteration() == 0 ? "<v:i><=9?1==<v:i>?<v:i>:1+<v:i>:1+<v:i>" : "1+instance type int";
                     Assert.assertEquals(expect, d.currentValue().toString());
                 }
             }
@@ -612,7 +612,7 @@ public class Test_01_Loops extends CommonTestRunner {
                 Assert.assertEquals(expectInterrupt, d.statementAnalysis().flowData.getInterruptsFlow().toString());
             }
             if ("1.0.2".equals(d.statementId())) {
-                String expect = d.iteration() == 0 ? "1+<v:i>!=<v:i>" : "false";
+                String expect = d.iteration() == 0 ? "1+<v:k>!=<v:i>" : "false";
                 Assert.assertEquals(expect, d.state().toString());
                 if (d.iteration() == 0) {
                     Assert.assertFalse(d.statementAnalysis().flowData.interruptsFlowIsSet());

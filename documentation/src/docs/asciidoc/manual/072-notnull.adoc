@@ -24,6 +24,8 @@ CNN (Context Not Null):: is assigned to variables that appear as the object of a
 CNN can be assigned to variables even while these variables hold delayed values (i.e., values without NNE assigned).
 CNN is computed in a strictly cumulative way, as detailed later.
 CNN on non-variables is expressed as CMNN.
++
+In theory, CNN should never be lower than NNE; however, in a first iteration before final field values are known, CNN can be built up. ENN gets the external value, but is delayed in the first round. NNE becomes the combination of both, and can be higher than CNN.
 
 CMNN:: Condition Manager Not Null is defined by a boolean clause of the form `var == null` or `var != null` appearing in the condition, state, or precondition of the condition manager during statement analysis.
 Not necessarily only for variables; e.g., the outcome of a method call can directly be tested for not null in an `if` statement.

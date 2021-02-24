@@ -74,7 +74,6 @@ public interface VariableInfoContainer {
 
     void prepareMergeForWritingContextProperties();
 
-
     // suffixes in assignment id; these act as the 3 levels for setProperty
     enum Level {
         INITIAL("-C"), // C for creation, but essentially, it should be < E
@@ -207,4 +206,9 @@ public interface VariableInfoContainer {
     default String getStatementIndexOfThisLoopVariable() {
         return getVariableInLoop().statementId(VariableInLoop.VariableType.LOOP);
     }
+
+    default boolean isLocalCopy() {
+        return getStatementIndexOfThisLoopOrShadowVariable() != null;
+    }
+
 }
