@@ -1736,8 +1736,9 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             }
 
             // need timeAfterSubBlocks set already
-            statementAnalysis.copyBackLocalCopies(evaluationContext, sharedState.localConditionManager.state(), lastStatements,
-                    atLeastOneBlockExecuted, maxTime);
+            AnalysisStatus copyStatus = statementAnalysis.copyBackLocalCopies(evaluationContext,
+                    sharedState.localConditionManager.state(), lastStatements, atLeastOneBlockExecuted, maxTime);
+            analysisStatus = analysisStatus.combine(copyStatus);
 
             // compute the escape situation of the sub-blocks
             Expression addToStateAfterStatement = addToStateAfterStatement(evaluationContext, executions);
@@ -1753,7 +1754,9 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             if (statementAnalysis.flowData.timeAfterSubBlocksNotYetSet()) {
                 statementAnalysis.flowData.setTimeAfterSubBlocks(maxTime, index());
             }
-            statementAnalysis.copyBackLocalCopies(evaluationContext, sharedState.localConditionManager.state(), List.of(), false, maxTime);
+            AnalysisStatus copyStatus = statementAnalysis.copyBackLocalCopies(evaluationContext,
+                    sharedState.localConditionManager.state(), List.of(), false, maxTime);
+            analysisStatus = analysisStatus.combine(copyStatus);
         }
 
         if (keepCurrentLocalConditionManager) {

@@ -563,7 +563,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                             fieldReference, initial, statementTime);
                     if (!variables.isSet(localCopy.fullyQualifiedName())) {
                         VariableInfoContainer lvrVic = VariableInfoContainerImpl.newLocalCopyOfVariableField(localCopy,
-                                index+INITIAL, navigationData.hasSubBlocks());
+                                index + INITIAL, navigationData.hasSubBlocks());
                         variables.put(localCopy.fullyQualifiedName(), lvrVic);
                         String indexOfStatementTime = flowData.assignmentIdOfStatementTime.get(statementTime);
 
@@ -632,11 +632,11 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
      * @param atLeastOneBlockExecuted true if we can (potentially) discard the current value
      * @param statementTime           the statement time of subBlocks
      */
-    public void copyBackLocalCopies(EvaluationContext evaluationContext,
-                                    Expression stateOfConditionManagerBeforeExecution,
-                                    List<ConditionAndLastStatement> lastStatements,
-                                    boolean atLeastOneBlockExecuted,
-                                    int statementTime) {
+    public AnalysisStatus copyBackLocalCopies(EvaluationContext evaluationContext,
+                                              Expression stateOfConditionManagerBeforeExecution,
+                                              List<ConditionAndLastStatement> lastStatements,
+                                              boolean atLeastOneBlockExecuted,
+                                              int statementTime) {
 
         // we need to make a synthesis of the variable state of fields, local copies, etc.
         // some blocks are guaranteed to be executed, others are only executed conditionally.
@@ -705,11 +705,13 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
 
         // then, per cluster of variables
 
-        MethodLevelData.contextProperty(this, evaluationContext, VariableInfo::getStaticallyAssignedVariables,
-                CONTEXT_NOT_NULL, contextNotNull, MERGE, doNotWrite);
+        AnalysisStatus cnnStatus = MethodLevelData.contextProperty(this, evaluationContext,
+                VariableInfo::getStaticallyAssignedVariables, CONTEXT_NOT_NULL, contextNotNull, MERGE, doNotWrite);
 
-        MethodLevelData.contextProperty(this, evaluationContext, VariableInfo::getLinkedVariables,
-                CONTEXT_MODIFIED, contextModified, MERGE, doNotWrite);
+        AnalysisStatus cmStatus = MethodLevelData.contextProperty(this, evaluationContext,
+                VariableInfo::getLinkedVariables, CONTEXT_MODIFIED, contextModified, MERGE, doNotWrite);
+
+        return cnnStatus.combine(cmStatus);
     }
 
     private boolean acceptVariableForMerging(ConditionAndVariableInfo cav, boolean inSwitchStatementOldStyle) {

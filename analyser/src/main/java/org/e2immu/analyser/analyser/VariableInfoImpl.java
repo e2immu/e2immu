@@ -436,11 +436,14 @@ class VariableInfoImpl implements VariableInfo {
                     commonValue = mergeOp.operator.applyAsInt(commonValue, value);
                 }
             }
-            if (commonValue != mergeOp.initial && commonValue > Level.DELAY) {
-                switch (mergeOp.variableProperty) {
-                    case CONTEXT_NOT_NULL -> contextNotNull.put(previous.variable(), commonValue);
-                    case CONTEXT_MODIFIED -> contextModified.put(previous.variable(), commonValue);
-                    default -> setProperty(mergeOp.variableProperty, commonValue);
+            // important that we always write to CNN, CM
+            switch (mergeOp.variableProperty) {
+                case CONTEXT_NOT_NULL -> contextNotNull.put(previous.variable(), commonValue);
+                case CONTEXT_MODIFIED -> contextModified.put(previous.variable(), commonValue);
+                default -> {
+                    if (commonValue != mergeOp.initial && commonValue > Level.DELAY) {
+                        setProperty(mergeOp.variableProperty, commonValue);
+                    }
                 }
             }
         }
