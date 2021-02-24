@@ -1202,7 +1202,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                     VariableInfo initial = vic.getPreviousOrInitial();
                     vic.ensureEvaluation(initial.getAssignmentId(), initial.getReadId(), initial.getStatementTime(), initial.getReadAtStatementTimes());
                 }
-                vic.setProperty(CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL, false, EVALUATION);
+                vic.setProperty(CONTEXT_NOT_NULL_FOR_PARENT, MultiLevel.EFFECTIVELY_NOT_NULL, false, EVALUATION);
             }
             // escapeCondition should filter out all != null, == null clauses
             Expression precondition = statementAnalysis.stateData.getConditionManagerForNextStatement().precondition(sharedState.evaluationContext);

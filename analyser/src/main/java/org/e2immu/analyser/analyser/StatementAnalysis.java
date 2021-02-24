@@ -47,8 +47,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static org.e2immu.analyser.analyser.VariableInfoContainer.Level.INITIAL;
-import static org.e2immu.analyser.analyser.VariableInfoContainer.Level.MERGE;
+import static org.e2immu.analyser.analyser.VariableInfoContainer.Level.*;
 import static org.e2immu.analyser.analyser.VariableProperty.*;
 import static org.e2immu.analyser.util.Logger.LogTarget.ANALYSER;
 import static org.e2immu.analyser.util.Logger.LogTarget.OBJECT_FLOW;
@@ -701,6 +700,14 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                 // and the second time from inside the block with a negative one
                 if (!merged.contains(fqn)) doNotWrite.add(variable);
             }
+
+            // CNN_FOR_PARENT overwrite
+            lastStatements.stream().filter(cal -> cal.lastStatement.statementAnalysis.variables.isSet(fqn)).forEach(cal -> {
+                VariableInfoContainer calVic = cal.lastStatement.statementAnalysis.variables.get(fqn);
+                VariableInfo calVi = calVic.best(EVALUATION);
+                int cnn4Parent = calVi.getProperty(CONTEXT_NOT_NULL_FOR_PARENT);
+                if (cnn4Parent != Level.DELAY) contextNotNull.put(calVi.variable(), cnn4Parent);
+            });
         });
 
         // then, per cluster of variables

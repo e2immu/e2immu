@@ -42,6 +42,12 @@ public enum VariableProperty {
     CONTEXT_NOT_NULL_DELAY("not null in context delay"),
 
     /*
+    transfer property from a block that escapes to its parent; see StatementAnalyser.checkNotNullEscapesAndPreconditions
+    and the corresponding code in StatementAnalysis.copyBackLocalCopies
+     */
+    CONTEXT_NOT_NULL_FOR_PARENT("not null in context for parent", MultiLevel.NULLABLE, MultiLevel.EFFECTIVELY_CONTENT2_NOT_NULL,
+            MultiLevel.NULLABLE, MultiLevel.EFFECTIVELY_NOT_NULL),
+    /*
     in fields, external not null is the truth
     in statements in a method, external not null needs combined with context not null (not null variable) and not null expression
     the method result is stored in not null expression

@@ -34,11 +34,11 @@ public class Test_08_EvaluateConstants extends CommonTestRunner {
                 String expectLinked = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "";
                 if ("0.0.0".equals(d.statementId()) && d.variable() instanceof ParameterInfo in) {
                     Assert.assertEquals("in", in.name);
-                    Assert.assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
+                    Assert.assertEquals("", d.variableInfo().getLinkedVariables().toString());
                 }
                 if ("0".equals(d.statementId()) && d.variable() instanceof ParameterInfo in) {
                     Assert.assertEquals("in", in.name);
-                    Assert.assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
+                    Assert.assertEquals("", d.variableInfo().getLinkedVariables().toString());
                 }
             }
         };
@@ -57,7 +57,7 @@ public class Test_08_EvaluateConstants extends CommonTestRunner {
             }
             if ("EvaluateConstants_0".equals(d.methodInfo().name)) {
                 if ("2".equals(d.statementId())) {
-                    Assert.assertEquals(d.iteration() > 0, d.statementAnalysis().methodLevelData.linksHaveBeenEstablished.isSet());
+                    Assert.assertTrue(d.statementAnalysis().methodLevelData.linksHaveBeenEstablished.isSet());
                 }
             }
         };
