@@ -178,7 +178,7 @@ public class ArrayAccess implements Expression {
                     }
                 } else {
                     // the result is not known, lets return an unknown instance
-                    NewObject newObject = NewObject.genericArrayAccess(evaluationContext, array.value(),
+                    Expression newObject = NewObject.genericArrayAccess(evaluationContext, array.value(),
                             dependentVariable, ObjectFlow.NO_FLOW);
                     builder.setExpression(newObject);
 

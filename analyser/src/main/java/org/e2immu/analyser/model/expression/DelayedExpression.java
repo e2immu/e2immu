@@ -50,6 +50,10 @@ public record DelayedExpression(String msg, String debug, ParameterizedType para
                 "<new:" + parameterizedType.detailedString() + ">", parameterizedType);
     }
 
+    public static Expression forArrayLength(Primitives primitives) {
+        return new DelayedExpression("<delayed array length>", "<delayed array length>", primitives.intParameterizedType);
+    }
+
     /*
     variable fields have different values according to statement time, but then, at this point we cannot know yet
     whether the field will be variable or not.

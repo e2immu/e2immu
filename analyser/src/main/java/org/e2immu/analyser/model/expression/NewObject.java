@@ -170,11 +170,12 @@ public record NewObject(MethodInfo constructor,
                 new BooleanConstant(primitives, true), variableInfo.getObjectFlow());
     }
 
-    public static NewObject genericArrayAccess(EvaluationContext evaluationContext,
+    public static Expression genericArrayAccess(EvaluationContext evaluationContext,
                                                Expression array,
                                                Variable variable,
                                                ObjectFlow objectFlow) {
         int notNull = evaluationContext.getProperty(array, VariableProperty.NOT_NULL_EXPRESSION, true);
+        if(notNull == Level.DELAY) return DelayedExpression.forNewObject(variable.parameterizedType());
         return new NewObject(null, variable.parameterizedType(), Diamond.SHOW_ALL, List.of(), notNull,
                 null, null,
                 new BooleanConstant(evaluationContext.getPrimitives(), true), objectFlow);

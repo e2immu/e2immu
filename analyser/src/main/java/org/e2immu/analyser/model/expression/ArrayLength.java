@@ -110,6 +110,8 @@ public record ArrayLength(Primitives primitives,
             Expression size = new IntConstant(evaluationContext.getPrimitives(), arrayInitializer.multiExpression.expressions().length,
                     ObjectFlow.NO_FLOW);
             builder.setExpression(size);
+        } else if (result.value().isDelayed(evaluationContext)) {
+            builder.setExpression(DelayedExpression.forArrayLength(evaluationContext.getPrimitives()));
         } else {
             builder.setExpression(new UnknownExpression(returnType(), "array length"));
         }

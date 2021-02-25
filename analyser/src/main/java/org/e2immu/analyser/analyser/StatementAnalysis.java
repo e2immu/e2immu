@@ -659,7 +659,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                     VariableInfoContainer destination;
                     if (!variables.isSet(fqn)) {
                         destination = createVariable(evaluationContext, variable, statementTime, vic.getVariableInLoop());
-                        if (variable instanceof LocalVariableReference) destination.newVariableWithoutValue();
+                        if (variable.needsNewVariableWithoutValueCall()) destination.newVariableWithoutValue();
                     } else {
                         destination = vic;
                     }

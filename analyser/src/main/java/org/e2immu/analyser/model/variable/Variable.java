@@ -117,4 +117,6 @@ public interface Variable {
     default String nameInLinkedAnnotation() {
         return simpleName();
     }
+
+    default boolean needsNewVariableWithoutValueCall() { return false; };
 }

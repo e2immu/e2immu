@@ -95,4 +95,9 @@ public class LocalVariableReference extends VariableWithConcreteReturnType {
     public boolean isLocal() {
         return true;
     }
+
+    @Override
+    public boolean needsNewVariableWithoutValueCall() {
+        return true;
+    }
 }

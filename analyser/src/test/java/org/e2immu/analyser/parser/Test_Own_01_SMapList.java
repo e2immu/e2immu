@@ -239,10 +239,10 @@ public class Test_Own_01_SMapList extends CommonTestRunner {
     @Test
     public void test() throws IOException {
         testUtilClass(List.of("SMapList"), 0, 0, new DebugConfiguration.Builder()
-                .addEvaluationResultVisitor(evaluationResultVisitor)
-                .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+             //   .addEvaluationResultVisitor(evaluationResultVisitor)
+             //   .addStatementAnalyserVisitor(statementAnalyserVisitor)
+            //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+             //   .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addTypeMapVisitor(typeMapVisitor)
                 .build());
     }

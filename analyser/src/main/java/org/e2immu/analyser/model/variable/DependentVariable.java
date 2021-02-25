@@ -113,4 +113,9 @@ public class DependentVariable extends VariableWithConcreteReturnType {
     public boolean isLocal() {
         return arrayVariable != null && arrayVariable.isLocal();
     }
+
+    @Override
+    public boolean needsNewVariableWithoutValueCall() {
+        return true;
+    }
 }

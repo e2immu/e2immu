@@ -1001,14 +1001,19 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                                           EvaluationResult.ChangeData changeData,
                                           int newStatementTime) {
         VariableInfoContainer vic;
+        VariableInfo initial;
         if (!statementAnalysis.variables.isSet(variable.fullyQualifiedName())) {
             vic = statementAnalysis.createVariable(evaluationContext, variable,
                     statementAnalysis.flowData.getInitialTime(), VariableInLoop.NOT_IN_LOOP);
-            if (vic instanceof LocalVariableReference) vic.newVariableWithoutValue();
+            initial = vic.getPreviousOrInitial();
+            if (initial.variable().needsNewVariableWithoutValueCall()) {
+                vic.newVariableWithoutValue();
+            }
         } else {
             vic = statementAnalysis.variables.get(variable.fullyQualifiedName());
+            initial = vic.getPreviousOrInitial();
         }
-        VariableInfo initial = vic.getPreviousOrInitial();
+
         Set<Variable> additionalLinksForThisVariable;
         if (variable instanceof FieldReference fieldReference &&
                 initial.isConfirmedVariableField() && !changeData.readAtStatementTime().isEmpty()) {
