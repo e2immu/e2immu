@@ -340,7 +340,7 @@ public class Test_01_Loops extends CommonTestRunner {
 
                 String expectValue = d.iteration() == 0 ? "<v:s>" : "s$1";
                 Assert.assertEquals(expectValue, d.currentValue().toString());
-                String expectLinked =  "res";
+                String expectLinked = "res";
                 Assert.assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
                 int expectNN = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
                 Assert.assertEquals(expectNN, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
@@ -552,10 +552,22 @@ public class Test_01_Loops extends CommonTestRunner {
                     Assert.assertEquals(expect, d.currentValue().toString());
                 }
             }
+            if (d.variable() instanceof ReturnVariable && "2".equals(d.statementId())) {
+                String expectReturn = d.iteration() == 0 ? "<v:return method>" :
+                        "instance type int<=9?0==instance type int?5:<return value>:<return value>";
+                Assert.assertEquals(expectReturn, d.currentValue().toString());
+            }
+        };
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("method".equals(d.methodInfo().name) && "2".equals(d.statementId())) {
+                String expectState = d.iteration() == 0 ? "<v:i>>=10" : "instance type int>=10";
+                Assert.assertEquals(expectState, d.state().toString());
+            }
         };
         // expect: warning: always true in assert
         testClass("Loops_5", 0, 1, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .build());
     }

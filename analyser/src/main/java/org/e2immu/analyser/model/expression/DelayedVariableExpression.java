@@ -97,7 +97,7 @@ public record DelayedVariableExpression(String msg, String debug,
 
     @Override
     public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
-        return new EvaluationResult.Builder(evaluationContext).build();
+        return new EvaluationResult.Builder(evaluationContext).setExpression(this).build();
     }
 
     @Override

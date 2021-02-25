@@ -38,11 +38,11 @@ public class Test_Own_01_SMapList extends CommonTestRunner {
     EvaluationResultVisitor evaluationResultVisitor = d -> {
         if ("addAll".equals(d.methodInfo().name)) {
             if ("1.0.0".equals(d.statementId())) {
-                String expectValue = d.iteration() == 0 ? "<method:java.util.Map.get(java.lang.Object)>" : "dest.get(e$1.getKey())";
+                String expectValue = d.iteration() == 0 ? "<m:get>" : "dest.get(e$1.getKey())";
                 Assert.assertEquals(expectValue, d.evaluationResult().value().toString());
             }
             if ("1.0.1".equals(d.statementId())) {
-                String expectValue = d.iteration() == 0 ? "null==<method:java.util.Map.get(java.lang.Object)>" : "null==dest.get(e$1.getKey())";
+                String expectValue = d.iteration() == 0 ? "null==<m:get>" : "null==dest.get(e$1.getKey())";
                 Assert.assertEquals(expectValue, d.evaluationResult().value().toString());
             }
             if ("1".equals(d.statementId())) {
@@ -71,22 +71,21 @@ public class Test_Own_01_SMapList extends CommonTestRunner {
         }
         if ("add".equals(d.methodInfo().name) && d.variable() instanceof ParameterInfo bs && "bs".equals(bs.simpleName())) {
             if ("3".equals(d.statementId())) {
-                Assert.assertEquals(Level.FALSE, d.getProperty(VariableProperty.MODIFIED_VARIABLE));
-                Assert.assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                Assert.assertEquals(Level.FALSE, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
             }
         }
         if ("add".equals(d.methodInfo().name) && d.variable() instanceof ParameterInfo bs && "a".equals(bs.simpleName())) {
             int paramMod = d.evaluationContext().getCurrentMethod()
-                    .parameterAnalyses.get(1).getProperty(VariableProperty.MODIFIED_VARIABLE);
+                    .parameterAnalyses.get(1).getProperty(VariableProperty.CONTEXT_MODIFIED);
 
             if ("0".equals(d.statementId()) || "1".equals(d.statementId())) {
-                int expectMod = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
-                Assert.assertEquals("Statement " + d.statementId() + " it " + d.iteration(), expectMod, paramMod);
-                Assert.assertEquals(Level.DELAY, d.getProperty(VariableProperty.MODIFIED_VARIABLE));
+                int expectCm = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
+                Assert.assertEquals("Statement " + d.statementId() + " it " + d.iteration(), expectCm, paramMod);
             }
             if ("2".equals(d.statementId()) || "3".equals(d.statementId())) {
-                Assert.assertEquals("Statement " + d.statementId() + " it " + d.iteration(), Level.FALSE, paramMod);
-                Assert.assertEquals(Level.FALSE, d.getProperty(VariableProperty.MODIFIED_VARIABLE));
+                int expectCm = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
+                Assert.assertEquals("Statement " + d.statementId() + " it " + d.iteration(), expectCm, paramMod);
             }
         }
         if ("add".equals(d.methodInfo().name) && "list".equals(d.variableName())) {
@@ -96,47 +95,43 @@ public class Test_Own_01_SMapList extends CommonTestRunner {
 
         if ("addAll".equals(d.methodInfo().name)) {
             if ("e".equals(d.variableName()) && "1.0.0".equals(d.statementId())) {
-                String expectValue = d.iteration() == 0 ? "<variable:e>" : "instance type Entry<A,List<B>>";
+                String expectValue = d.iteration() == 0 ? "<v:e>" : "instance type Entry<A,List<B>>";
                 Assert.assertEquals(expectValue, d.currentValue().toString());
             }
             if (d.variable() instanceof ParameterInfo dest && dest.name.equals("dest")) {
                 if ("0".equals(d.statementId())) {
-                    Assert.assertEquals("nullable? instance type Map<A,List<B>>", d.currentValue().toString());
+                    Assert.assertEquals("nullable instance type Map<A,List<B>>", d.currentValue().toString());
                     Assert.assertEquals("", d.variableInfo().getLinkedVariables().toString());
                 }
             }
             if ("inDest".equals(d.variableName())) {
                 if ("1.0.0".equals(d.statementId())) {
-                    String expectValue = d.iteration() == 0 ? "<method:java.util.Map.get(java.lang.Object)>" : "dest.get(e$1.getKey())";
+                    String expectValue = d.iteration() == 0 ? "<m:get>" : "dest.get(e$1.getKey())";
                     Assert.assertEquals(expectValue, d.currentValue().toString());
                 }
             }
             if ("change".equals(d.variableName())) {
                 if ("1.0.1.0.1".equals(d.statementId())) {
-                    String expectValue = d.iteration() == 0 ? "<state>" : "change$1||null==dest.get(e$1.getKey())";
+                    String expectValue = d.iteration() == 0 ? "<s:boolean>" : "change$1||null==dest.get(e$1.getKey())";
                     Assert.assertEquals(expectValue, d.currentValue().toString());
-                    int expectNotNull = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
-                    Assert.assertEquals(expectNotNull, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                    Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
                     String expectLinked = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "change$1$1_0_1_0_1-E";
                     Assert.assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
                 }
                 // 2nd branch, merge of an if-statement
                 if ("1.0.1.1.0".equals(d.statementId())) {
-                    String expectValue = d.iteration() == 0 ? "<method:java.util.List.addAll(java.util.Collection<? extends E>)>&&<state>"
-                            : "dest.get(e$1.getKey()).addAll(e$1.getValue())";
+                    String expectValue = d.iteration() == 0 ? "<m:addAll>&&<s:boolean>" : "dest.get(e$1.getKey()).addAll(e$1.getValue())";
                     Assert.assertEquals(expectValue, d.currentValue().toString());
-                    int expectNotNull = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
-                    Assert.assertEquals(expectNotNull, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                    Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
                     String expectLinked = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "change$1$1_0_1_1_0_0_0-E";
                     Assert.assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
                 }
                 // merge of the two above
                 if ("1.0.1".equals(d.statementId())) {
-                    String expectValue = d.iteration() == 0 ? "null==<method:java.util.Map.get(java.lang.Object)>?<state>:<method:java.util.List.addAll(java.util.Collection<? extends E>)>&&<state>"
+                    String expectValue = d.iteration() == 0 ? "null==<m:get>?<s:boolean>:<m:addAll>&&<s:boolean>"
                             : "null==dest.get(e$1.getKey())?change$1||null==dest.get(e$1.getKey()):dest.get(e$1.getKey()).addAll(e$1.getValue())";
                     Assert.assertEquals(expectValue, d.currentValue().toString());
-                    int expectNotNull = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
-                    Assert.assertEquals(expectNotNull, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                    Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
                     String expectLinked = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "change$1$1_0_1_1_0_0_0-E,change$1$1_0_1_0_1-E";
                     Assert.assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
                 }
@@ -151,23 +146,20 @@ public class Test_Own_01_SMapList extends CommonTestRunner {
             }
             if ("change$1$1_0_1_0_1-E".equals(d.variableName())) {
                 if ("1.0.1.0.1".equals(d.statementId())) {
-                    String expectValue = d.iteration() == 0 ? "<variable:change$1$1_0_1_0_1-E>" : "change$1||null==dest.get(e$1.getKey())";
+                    String expectValue = d.iteration() == 0 ? "<s:boolean>" : "change$1||null==dest.get(e$1.getKey())";
                     Assert.assertEquals(expectValue, d.currentValue().toString());
-                    String expectLinked = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "change";
-                    Assert.assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
+                    Assert.assertEquals("change", d.variableInfo().getLinkedVariables().toString());
                     Assert.assertSame(VariableInLoop.VariableType.LOOP_COPY, d.variableInfoContainer().getVariableInLoop().variableType());
-                    int expectNotNull = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
-                    Assert.assertEquals(expectNotNull, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                    Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
                 }
                 if ("1.0.1.0.0".equals(d.statementId()) || "1.0.1.1.0".equals(d.statementId())) {
                     Assert.fail("The variable should not exist here");
                 }
                 if ("1.0.1".equals(d.statementId())) {
                     Assert.assertSame(VariableInLoop.VariableType.LOOP_COPY, d.variableInfoContainer().getVariableInLoop().variableType());
-                    String expectValue = d.iteration() == 0 ? "<variable:change$1$1_0_1_0_1-E>" : "change$1||null==dest.get(e$1.getKey())";
+                    String expectValue = d.iteration() == 0 ? "<s:boolean>" : "change$1||null==dest.get(e$1.getKey())";
                     Assert.assertEquals(expectValue, d.currentValue().toString());
-                    String expectLinked = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "change";
-                    Assert.assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
+                    Assert.assertEquals("change", d.variableInfo().getLinkedVariables().toString());
                 }
             }
         }
@@ -198,7 +190,7 @@ public class Test_Own_01_SMapList extends CommonTestRunner {
                 Assert.assertSame(CONDITIONALLY, d.statementAnalysis().flowData.getGuaranteedToBeReachedInMethod());
             }
             if ("1.0.1.1.0".equals(d.statementId())) {
-                String expectCondition = d.iteration() == 0 ? "null!=<method:java.util.Map.get(java.lang.Object)>"
+                String expectCondition = d.iteration() == 0 ? "null!=<m:get>"
                         : "null!=dest.get(e$1.getKey())";
                 Assert.assertEquals(expectCondition, d.condition().toString());
             }
@@ -216,20 +208,20 @@ public class Test_Own_01_SMapList extends CommonTestRunner {
         }
         if ("copy".equals(name)) {
             VariableInfo returnValue = d.getReturnAsVariable();
-            int expectImmutable = d.iteration() == 0 ? Level.DELAY : MultiLevel.MUTABLE;
-            Assert.assertEquals(expectImmutable, returnValue.getProperty(VariableProperty.IMMUTABLE));
+            Assert.assertEquals(MultiLevel.MUTABLE, returnValue.getProperty(VariableProperty.IMMUTABLE));
         }
         if ("add".equals(name) && d.methodInfo().methodInspection.get().getParameters().size() == 3) {
             ParameterInfo parameterInfo = d.methodInfo().methodInspection.get().getParameters().get(2);
+            int expectCm = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
             if ("bs".equals(parameterInfo.name)) {
                 int modified = d.parameterAnalyses().get(2).getProperty(VariableProperty.MODIFIED_VARIABLE);
-                Assert.assertEquals(Level.FALSE, modified);
+                Assert.assertEquals(expectCm, modified);
                 int modifiedA = d.parameterAnalyses().get(1).getProperty(VariableProperty.MODIFIED_VARIABLE);
-                Assert.assertEquals(Level.FALSE, modifiedA);
+                Assert.assertEquals(expectCm, modifiedA);
             }
             if ("b".equals(parameterInfo.name)) {
                 int modifiedA = d.parameterAnalyses().get(1).getProperty(VariableProperty.MODIFIED_VARIABLE);
-                Assert.assertEquals(Level.FALSE, modifiedA);
+                Assert.assertEquals(expectCm, modifiedA);
             }
         }
     };
