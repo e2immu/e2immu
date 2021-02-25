@@ -211,9 +211,11 @@ public record NewObject(MethodInfo constructor,
     2nd version, one with known state, used by EvaluationResult.currentInstance
     cannot be null, we're applying a method on it.
     */
-    public static NewObject forGetInstance(ParameterizedType parameterizedType, Expression state, ObjectFlow objectFlow) {
+    public static NewObject forGetInstance(ParameterizedType parameterizedType, Expression state,
+                                           int minimalNotNull,
+                                           ObjectFlow objectFlow) {
         return new NewObject(null, parameterizedType, Diamond.SHOW_ALL, List.of(),
-                MultiLevel.EFFECTIVELY_NOT_NULL, null, null, state, objectFlow);
+               minimalNotNull, null, null, state, objectFlow);
     }
 
     /*

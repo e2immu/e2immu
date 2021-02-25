@@ -21,19 +21,22 @@ package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.config.*;
-import org.e2immu.analyser.model.Level;
-import org.e2immu.analyser.model.MultiLevel;
-import org.e2immu.analyser.model.ParameterInfo;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
 import static org.e2immu.analyser.analyser.FlowData.Execution.CONDITIONALLY;
 
 public class Test_Own_01_SMapList extends CommonTestRunner {
+
+    public Test_Own_01_SMapList() {
+        super(true);
+    }
 
     EvaluationResultVisitor evaluationResultVisitor = d -> {
         if ("addAll".equals(d.methodInfo().name)) {
@@ -226,6 +229,13 @@ public class Test_Own_01_SMapList extends CommonTestRunner {
         }
     };
 
+    TypeMapVisitor typeMapVisitor = typeMap -> {
+        TypeInfo map = typeMap.get(Map.class);
+        MethodInfo entrySet = map.findUniqueMethod("entrySet", 0);
+        Assert.assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL,
+                entrySet.methodAnalysis.get().getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+    };
+
     @Test
     public void test() throws IOException {
         testUtilClass(List.of("SMapList"), 0, 0, new DebugConfiguration.Builder()
@@ -233,6 +243,7 @@ public class Test_Own_01_SMapList extends CommonTestRunner {
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addTypeMapVisitor(typeMapVisitor)
                 .build());
     }
 

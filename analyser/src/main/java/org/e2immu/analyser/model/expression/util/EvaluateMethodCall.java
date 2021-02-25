@@ -363,7 +363,8 @@ public class EvaluateMethodCall {
         if (translationMap.isEmpty()) return null;
         Expression newState = instance.state().reEvaluate(evaluationContext, translationMap).value();
         // TODO object flow
-        return NewObject.forGetInstance(methodInfo.returnType(), newState, ObjectFlow.NO_FLOW);
+        int notNull = Math.max(MultiLevel.EFFECTIVELY_NOT_NULL, methodAnalysis.getProperty(NOT_NULL_EXPRESSION));
+        return NewObject.forGetInstance(methodInfo.returnType(), newState, notNull, ObjectFlow.NO_FLOW);
     }
 
     // example 1: instance type java.util.ArrayList()[0 == java.util.ArrayList.this.size()].size()
