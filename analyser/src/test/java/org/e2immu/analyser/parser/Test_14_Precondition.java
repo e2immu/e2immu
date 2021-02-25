@@ -23,6 +23,8 @@ import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.variable.FieldReference;
+import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.testexample.Precondition_4;
 import org.junit.Assert;
 import org.junit.Test;
@@ -154,7 +156,8 @@ public class Test_14_Precondition extends CommonTestRunner {
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("setInteger".equals(d.methodInfo().name)) {
-                if (INTEGER.equals(d.variableName())) {
+                if (d.variable() instanceof FieldReference fr && "integer".equals(fr.fieldInfo.name)) {
+                    Assert.assertEquals(INTEGER, d.variableName());
                     if ("0.0.1".equals(d.statementId())) {
                         Assert.assertTrue(d.variableInfo().isRead());
                     }
@@ -167,16 +170,18 @@ public class Test_14_Precondition extends CommonTestRunner {
                         Assert.assertTrue(d.variableInfo().isAssigned());
                     }
                 }
-            }
-            if (RETURN_VAR.equals(d.variableName())) {
-                if ("1".equals(d.statementId())) {
-                    if (d.iteration() == 0) {
-                        // <s:int>
-                        Assert.assertEquals("<s:int>", d.currentValue().toString());
-                    } else {
-                        Assert.assertEquals("ii", d.currentValue().toString());
-                        Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL,
-                                d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL_EXPRESSION));
+
+                if (d.variable() instanceof ReturnVariable) {
+                    Assert.assertEquals(RETURN_VAR, d.variableName());
+                    if ("1".equals(d.statementId())) {
+                        if (d.iteration() == 0) {
+                            // <s:int>
+                            Assert.assertEquals("<s:int>", d.currentValue().toString());
+                        } else {
+                            Assert.assertEquals("ii", d.currentValue().toString());
+                            Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL,
+                                    d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL_EXPRESSION));
+                        }
                     }
                 }
             }

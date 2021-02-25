@@ -5,7 +5,7 @@ import org.e2immu.annotation.NotNull;
 
 public class SwitchStatement_7 {
 
-    enum Choices { ONE, TWO, THREE, FOUR };
+    enum Choices { ONE, TWO, THREE, FOUR }
 
     @NotNull
     @Constant(absent = true)

@@ -749,7 +749,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             }
 
             // FIXME if (variable instanceof ParameterInfo) {
-                resolveExternalNotNullDelays(changeData, vi, vic);
+            resolveExternalNotNullDelays(changeData, vi, vic);
             //}
 
             // the method analyser must have both context not null and not null expression
@@ -1423,7 +1423,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             if (statementAnalysis.flowData.timeAfterExecutionNotYetSet()) {
                 statementAnalysis.flowData.copyTimeAfterExecutionFromInitialTime();
             }
-            if (!statementAnalysis.methodLevelData.internalObjectFlowNotYetFrozen()) {
+            if (statementAnalysis.methodLevelData.internalObjectFlowNotYetFrozen()) {
                 statementAnalysis.methodLevelData.freezeInternalObjectFlows();
             }
             if (statementAnalysis.statement instanceof BreakStatement breakStatement) {
@@ -1466,7 +1466,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
 
             Expression value = result.value();
             assert value != null; // EmptyExpression in case there really is no value
-            boolean valueIsDelayed = sharedState.evaluationContext.isDelayed(value) || statusPost == DELAYS;
+            boolean valueIsDelayed = sharedState.evaluationContext.isDelayed(value) || statusPost != DONE;
 
             if (!valueIsDelayed && (statementAnalysis.statement instanceof IfElseStatement ||
                     statementAnalysis.statement instanceof AssertStatement)) {
@@ -1477,10 +1477,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
 
             // the value can be delayed even if it is "true", for example (Basics_3)
             // see Precondition_3 for an example where different values arise, because preconditions kick in
-            boolean valueIsDelayed2 = sharedState.evaluationContext.isDelayed(value) || statusPost == DELAYS;
-            if(valueIsDelayed2 || statementAnalysis.stateData.valueOfExpressionIsDelayed()) {
-                statementAnalysis.stateData.setValueOfExpression(value, valueIsDelayed2);
-            }
+            boolean valueIsDelayed2 = sharedState.evaluationContext.isDelayed(value) || statusPost != DONE;
+            statementAnalysis.stateData.setValueOfExpression(value, valueIsDelayed2);
 
             // at the very end, so that the stateData can be set without delays, but we still return once again
             if (statusPost == DONE) {

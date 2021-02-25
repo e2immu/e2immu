@@ -84,10 +84,10 @@ public class Test_17_Container extends CommonTestRunner {
             Assert.assertEquals(MultiLevel.MUTABLE, set.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE));
         };
         testClass("Container_0", 0, 0, new DebugConfiguration.Builder()
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+            //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+           //     .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addTypeMapVisitor(typeMapVisitor)
-                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+           //     .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 

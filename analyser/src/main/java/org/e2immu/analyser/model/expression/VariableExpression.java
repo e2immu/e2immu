@@ -155,10 +155,10 @@ public record VariableExpression(Variable variable,
         if (forwardEvaluationInfo.isNotAssignmentTarget()) {
             builder.markRead(variable);
             if (currentValue instanceof VariableExpression ve) {
-                builder.markRead(ve.variable); // FIXME confirm this is the right solution for variable fields s -> s$0
+                builder.markRead(ve.variable);
             }
-        } else if (variable instanceof FieldReference fieldReference) {
-            builder.markRead(fieldReference.scope);
+        } else if (variable instanceof FieldReference fieldReference && fieldReference.scope instanceof This thisVar) {
+            builder.markRead(thisVar);
         }
 
         int notNull = forwardEvaluationInfo.getProperty(VariableProperty.CONTEXT_NOT_NULL);
@@ -168,9 +168,7 @@ public record VariableExpression(Variable variable,
         int modified = forwardEvaluationInfo.getProperty(VariableProperty.CONTEXT_MODIFIED);
         if (modified != Level.DELAY) {
             builder.markContextModified(variable, modified);
-            if (variable instanceof FieldReference fieldReference && fieldReference.scope instanceof This thisVar) {
-                builder.markContextModified(replaceSuperByThis(evaluationContext, thisVar), modified);
-            }
+            // do not check for implicit this!! otherwise, any x.y will also affect this.y
         }
 
         int notModified1 = forwardEvaluationInfo.getProperty(VariableProperty.NOT_MODIFIED_1);
@@ -191,9 +189,6 @@ public record VariableExpression(Variable variable,
         int contextNotNullDelay = forwardEvaluationInfo.getProperty(VariableProperty.CONTEXT_NOT_NULL_DELAY);
         if (contextNotNullDelay == Level.TRUE) {
             builder.markContextNotNullDelay(variable);
-            if (currentValue instanceof VariableExpression ve) {
-                builder.markContextNotNullDelay(ve.variable); // FIXME confirm this is the right solution for variable fields s -> s$0
-            }
         }
 
         return builder.build();

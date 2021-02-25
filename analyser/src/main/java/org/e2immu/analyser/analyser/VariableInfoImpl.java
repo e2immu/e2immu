@@ -21,6 +21,7 @@ import com.google.common.collect.ImmutableMap;
 import org.e2immu.analyser.analyser.util.MergeHelper;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Level;
+import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.expression.DelayedExpression;
 import org.e2immu.analyser.model.expression.DelayedVariableExpression;
 import org.e2immu.analyser.model.expression.Negation;
@@ -38,6 +39,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.VariableInfoContainer.*;
+import static org.e2immu.analyser.analyser.VariableProperty.*;
 
 class VariableInfoImpl implements VariableInfo {
     private static final Logger LOGGER = LoggerFactory.getLogger(VariableInfoImpl.class);
@@ -257,17 +259,31 @@ class VariableInfoImpl implements VariableInfo {
     // it is important to note that the properties are NOT read off the value, but from the properties map
     // this copying has to have taken place earlier; for each of the variable properties below:
 
+    private static final IntBinaryOperator MAX = (i1, i2) -> i1 == Level.DELAY || i2 == Level.DELAY
+            ? Level.DELAY : Math.max(i1, i2);
+    private static final IntBinaryOperator MIN = (i1, i2) -> i1 == Level.DELAY || i2 == Level.DELAY
+            ? Level.DELAY : Math.min(i1, i2);
+
+    private static final IntBinaryOperator MAX_CM = (i1, i2) ->
+            i1 == Level.TRUE || i2 == Level.TRUE ? Level.TRUE :
+                    i1 == Level.DELAY || i2 == Level.DELAY ? Level.DELAY : Level.FALSE;
+
     private static final List<MergeOp> MERGE = List.of(
-            new MergeOp(VariableProperty.NOT_NULL_EXPRESSION, Math::min, Integer.MAX_VALUE),
-            new MergeOp(VariableProperty.CONTEXT_NOT_NULL, Math::max, Level.DELAY),
-            new MergeOp(VariableProperty.EXTERNAL_NOT_NULL, Math::max, Level.DELAY),
-            new MergeOp(VariableProperty.EXTERNAL_NOT_NULL_DELAY, Math::max, Level.DELAY),
-            new MergeOp(VariableProperty.EXTERNAL_NOT_NULL_DELAY_RESOLVED, Math::max, Level.DELAY),
-            new MergeOp(VariableProperty.IMMUTABLE, Math::min, Integer.MAX_VALUE),
-            new MergeOp(VariableProperty.CONTAINER, Math::min, Integer.MAX_VALUE),
-            new MergeOp(VariableProperty.IDENTITY, Math::min, Integer.MAX_VALUE),
-            new MergeOp(VariableProperty.CONTEXT_MODIFIED, Math::max, Level.DELAY),
-            new MergeOp(VariableProperty.MODIFIED_OUTSIDE_METHOD, Math::max, Level.DELAY)
+            new MergeOp(SCOPE_DELAY, Math::max, Level.DELAY),
+            new MergeOp(METHOD_CALLED, Math::max, Level.DELAY),
+            new MergeOp(CONTEXT_MODIFIED_DELAY, Math::max, Level.DELAY),
+
+            new MergeOp(NOT_NULL_EXPRESSION, MIN, NOT_NULL_EXPRESSION.best),
+            new MergeOp(CONTEXT_NOT_NULL, MAX, CONTEXT_NOT_NULL.falseValue),
+            new MergeOp(EXTERNAL_NOT_NULL, MAX, MultiLevel.NOT_INVOLVED),
+            new MergeOp(EXTERNAL_NOT_NULL_DELAY, Math::max, Level.DELAY),
+            new MergeOp(EXTERNAL_NOT_NULL_DELAY_RESOLVED, MIN, EXTERNAL_NOT_NULL_DELAY_RESOLVED.best),
+            new MergeOp(IMMUTABLE, MIN, IMMUTABLE.best),
+            new MergeOp(CONTAINER, MIN, CONTAINER.best),
+            new MergeOp(IDENTITY, MIN, IDENTITY.best),
+
+            new MergeOp(CONTEXT_MODIFIED, MAX_CM, CONTEXT_MODIFIED.falseValue),
+            new MergeOp(MODIFIED_OUTSIDE_METHOD, MAX_CM, MODIFIED_OUTSIDE_METHOD.falseValue)
     );
 
     // TESTING ONLY!!
@@ -436,12 +452,12 @@ class VariableInfoImpl implements VariableInfo {
                     commonValue = mergeOp.operator.applyAsInt(commonValue, value);
                 }
             }
-            // important that we always write to CNN, CM
+            // important that we always write to CNN, CM, even if there is a delay
             switch (mergeOp.variableProperty) {
                 case CONTEXT_NOT_NULL -> contextNotNull.put(previous.variable(), commonValue);
                 case CONTEXT_MODIFIED -> contextModified.put(previous.variable(), commonValue);
                 default -> {
-                    if (commonValue != mergeOp.initial && commonValue > Level.DELAY) {
+                    if (commonValue > Level.DELAY) {
                         setProperty(mergeOp.variableProperty, commonValue);
                     }
                 }

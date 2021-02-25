@@ -5,6 +5,7 @@ import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -118,7 +119,21 @@ public class Test_30_SwitchStatement extends CommonTestRunner {
 
     @Test
     public void test_7() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("values".equals(d.methodInfo().name) && "Choices".equals(d.methodInfo().typeInfo.simpleName)) {
+                if (d.variable() instanceof ReturnVariable) {
+                    String expectValue = d.iteration() <= 2 ? "{<f:ONE>,<f:TWO>,<f:THREE>,<f:FOUR>}" : "{ONE,TWO,THREE,FOUR}";
+                    Assert.assertEquals(expectValue, d.currentValue().toString());
+                    Assert.assertEquals(d.iteration() > 2, d.variableInfo().valueIsSet());
+                    int expectNne = d.iteration() <= 2 ? Level.DELAY : MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL;
+                    Assert.assertEquals(expectNne, d.currentValue()
+                            .getProperty(d.evaluationContext(), VariableProperty.NOT_NULL_EXPRESSION, true));
+                    Assert.assertEquals(expectNne, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                }
+            }
+        };
         testClass("SwitchStatement_7", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 

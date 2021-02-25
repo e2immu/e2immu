@@ -1,10 +1,12 @@
 package org.e2immu.analyser.parser;
 
+import org.e2immu.analyser.analyser.LinkedVariables;
 import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.StringConstant;
+import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -37,7 +39,8 @@ public class Test_09_EvaluatesToConstant extends CommonTestRunner {
                 }
             }
             if ("1.0.1".equals(d.statementAnalysis().index)) {
-                Assert.assertEquals("param.contains(\"a\")", d.absoluteState().toString());
+                String expectState = d.iteration() == 0 ? "param.contains(\"a\")&&null!=<s:String>" : "param.contains(\"a\")";
+                Assert.assertEquals(expectState, d.absoluteState().toString());
                 if (d.iteration() >= 1) {
                     Assert.assertNotNull(d.haveError(Message.CONDITION_EVALUATES_TO_CONSTANT));
                 }
@@ -74,15 +77,48 @@ public class Test_09_EvaluatesToConstant extends CommonTestRunner {
         if ("method3".equals(d.methodInfo().name)) {
             if (d.variable() instanceof ParameterInfo p && "param".equals(p.name)) {
                 Assert.assertEquals("nullable instance type String", d.currentValue().toString());
+                if ("0".equals(d.statementId())) {
+                    int expectCnn = d.iteration() == 0 ? Level.DELAY : MultiLevel.NULLABLE;
+                    Assert.assertEquals(expectCnn, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+                }
             }
             if ("b".equals(d.variableName()) && "0".equals(d.statementId())) {
-                // this is regardless the statement id, as b is defined in the very first statement
                 Assert.assertEquals(d.toString(), "null==param?\"x\":param", d.currentValue().toString());
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
             }
             if ("a".equals(d.variableName()) && "1.0.0".equals(d.statementId())) {
-                Assert.assertEquals("\"xzy\"", d.currentValue().toString());
+                // the delay comes from the CNN == -1 value of PARAM, delayed condition in 1
+                String expectValue = d.iteration() == 0 ? "<s:String>" : "\"xzy\"";
+                Assert.assertEquals(expectValue, d.currentValue().toString());
+                int expectNne = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
+                Assert.assertEquals(expectNne, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
             }
-
+            if (d.variable() instanceof ReturnVariable) {
+                if ("0".equals(d.statementId())) {
+                    Assert.assertEquals("", d.variableInfo().getLinkedVariables().toString());
+                    Assert.assertEquals(Level.FALSE, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
+                }
+                if ("1.0.1.0.0".equals(d.statementId())) {
+                    if (d.iteration() == 0) {
+                        Assert.assertEquals(LinkedVariables.DELAY_STRING, d.variableInfo().getLinkedVariables().toString());
+                        Assert.assertEquals(Level.DELAY, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
+                    } else {
+                        Assert.fail(); // unreachable, now that the condition is stable
+                    }
+                }
+                if ("1.0.1".equals(d.statementId())) {
+                    String expectLinked = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "";
+                    Assert.assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
+                    int expectCn = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
+                    Assert.assertEquals(expectCn, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
+                }
+                if ("1".equals(d.statementId())) {
+                    String expectLinked = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "";
+                    Assert.assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
+                    int expectCn = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
+                    Assert.assertEquals(expectCn, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
+                }
+            }
         }
     };
 
@@ -98,6 +134,7 @@ public class Test_09_EvaluatesToConstant extends CommonTestRunner {
         if ("method3".equals(d.methodInfo().name)) {
             if ("1".equals(d.statementId())) {
                 Assert.assertEquals("param.contains(\"a\")", d.evaluationResult().value().toString());
+                Assert.assertFalse(d.evaluationResult().someValueWasDelayed());
             }
             if ("1.0.0".equals(d.statementId())) {
                 Assert.assertEquals("\"xzy\"", d.evaluationResult().value().toString());
@@ -118,9 +155,12 @@ public class Test_09_EvaluatesToConstant extends CommonTestRunner {
         }
     };
 
+    /*
+    whether b is used or not: 6 or 4 warnings; not too important at the moment
+     */
     @Test
     public void test() throws IOException {
-        testClass("EvaluatesToConstant", 6, 0, new DebugConfiguration.Builder()
+        testClass("EvaluatesToConstant", 4, 0, new DebugConfiguration.Builder()
                         .addStatementAnalyserVisitor(statementAnalyserVisitor)
                         .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)

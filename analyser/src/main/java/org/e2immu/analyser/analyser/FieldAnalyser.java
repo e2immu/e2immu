@@ -425,7 +425,7 @@ public class FieldAnalyser extends AbstractAnalyser {
                         }
                     }
                 }
-                if (!added && !fieldInfo.isExplicitlyFinal() && methodAnalyser.methodInfo.isConstructor  &&
+                if (!added && !fieldInfo.isExplicitlyFinal() && methodAnalyser.methodInfo.isConstructor &&
                         !methodAnalyser.methodInfo.methodInspection.get().isSynthetic()) {
                     // implicit initial value (null, 0, 0.0d, 0.0f, false, ...)
                     values.add(ConstantExpression.nullValue(analyserContext.getPrimitives(), fieldInfo.type.bestTypeInfo()));
@@ -685,6 +685,19 @@ public class FieldAnalyser extends AbstractAnalyser {
             return DONE;
         }
 
+        boolean modified = fieldCanBeWrittenFromOutsideThisType ||
+                allMethodsAndConstructors.stream()
+                        .filter(m -> !m.methodInfo.isConstructor)
+                        .flatMap(m -> m.getFieldAsVariableStream(fieldInfo, true))
+                        .filter(VariableInfo::isRead)
+                        .anyMatch(vi -> vi.getProperty(VariableProperty.CONTEXT_MODIFIED) == Level.TRUE);
+
+        if (modified) {
+            fieldAnalysis.setProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD, Level.TRUE);
+            log(NOT_MODIFIED, "Mark field {} as @Modified", fieldInfo.fullyQualifiedName());
+            return DONE;
+        }
+
         // we only consider methods, not constructors!
         boolean allContextModificationsDefined = allMethodsAndConstructors.stream()
                 .filter(m -> !m.methodInfo.isConstructor)
@@ -696,16 +709,11 @@ public class FieldAnalyser extends AbstractAnalyser {
                 });
 
         if (allContextModificationsDefined) {
-            boolean modified = fieldCanBeWrittenFromOutsideThisType ||
-                    allMethodsAndConstructors.stream()
-                            .filter(m -> !m.methodInfo.isConstructor)
-                            .flatMap(m -> m.getFieldAsVariableStream(fieldInfo, true))
-                            .filter(VariableInfo::isRead)
-                            .anyMatch(vi -> vi.getProperty(VariableProperty.CONTEXT_MODIFIED) == Level.TRUE);
-            fieldAnalysis.setProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD, Level.fromBool(modified));
-            log(NOT_MODIFIED, "Mark field {} as {}", fieldInfo.fullyQualifiedName(), modified ? "@Modified" : "@NotModified");
+            fieldAnalysis.setProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD, Level.FALSE);
+            log(NOT_MODIFIED, "Mark field {} as @NotModified", fieldInfo.fullyQualifiedName());
             return DONE;
         }
+
         if (Logger.isLogEnabled(DELAYED)) {
             log(DELAYED, "Cannot yet conclude if field {}'s contents have been modified, not all read or links",
                     fieldInfo.fullyQualifiedName());

@@ -75,7 +75,7 @@ public class Modification_11 {
         }
     }
 
-    @NotModified(absent = true)
+    @Modified
     @Linked(absent = true) // primitive
     public int add(@NotNull String s) {
         Set<String> theSet = s1; // linked to s2, which is linked to set2

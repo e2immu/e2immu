@@ -179,11 +179,8 @@ public class Test_11_IfStatement extends CommonTestRunner {
                 }
             }
             if ("get2".equals(d.methodInfo().name) && d.variable() instanceof This) {
-                if ("1.0.0".equals(d.statementId())) {
-                    Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
-                }
                 Assert.assertEquals(d.statementId() + ", it " + d.iteration(),
-                        Level.TRUE, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
+                        Level.FALSE, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
             }
             if ("get1".equals(d.methodInfo().name) && d.variable() instanceof ParameterInfo d1 && "defaultValue1".equals(d1.name)) {
                 Assert.assertEquals(MultiLevel.NOT_INVOLVED, d.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
