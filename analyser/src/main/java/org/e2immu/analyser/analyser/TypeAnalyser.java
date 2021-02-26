@@ -1029,6 +1029,44 @@ public class TypeAnalyser extends AbstractAnalyser {
         return DONE;
     }
 
+    /*
+    IF there are private and non-private constructors, and there are no factory methods (static
+    or non-static methods calling the private constructors) then we assume that the private constructor
+    "helps" the non-private ones; their values will therefore be ignored.
+
+    The field analysers will repeatedly call this method, which is rather heavy on the computation;
+    therefore the result is cached in the type analysis object.
+     */
+    public boolean ignorePrivateConstructorsForFieldValue() {
+        if (!typeAnalysis.ignorePrivateConstructorsForFieldValues.isSet()) {
+            Set<MethodInfo> privateConstructors = new HashSet<>();
+            boolean haveNonPrivateConstructors = false;
+            for (MethodAnalyser constructorAnalyser : myConstructors) {
+                if (constructorAnalyser.methodInfo.isPrivate()) {
+                    privateConstructors.add(constructorAnalyser.methodInfo);
+                } else {
+                    haveNonPrivateConstructors = true;
+                }
+            }
+            boolean ignore;
+            if (!haveNonPrivateConstructors || privateConstructors.isEmpty()) {
+                ignore = false;
+            } else {
+                // loop over all methods, ensure that there is no dependency on any of the constructors
+                ignore = true;
+                for (MethodAnalyser methodAnalyser : myMethodAnalysers) {
+                    Set<MethodInfo> reached = methodAnalyser.methodInfo.methodResolution.get().methodsOfOwnClassReached();
+                    if (!Collections.disjoint(reached, privateConstructors)) {
+                        ignore = false;
+                        break;
+                    }
+                }
+            }
+            typeAnalysis.ignorePrivateConstructorsForFieldValues.set(ignore);
+        }
+        return typeAnalysis.ignorePrivateConstructorsForFieldValues.get();
+    }
+
     class EvaluationContextImpl extends AbstractEvaluationContextImpl implements EvaluationContext {
 
         protected EvaluationContextImpl(int iteration, ConditionManager conditionManager, EvaluationContext closure) {

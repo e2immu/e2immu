@@ -32,13 +32,25 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
 
     @Test
     public void test_0() throws IOException {
-        testClass("ExplicitConstructorInvocation_0", 0, 0, new DebugConfiguration.Builder()
+        testClass("ExplicitConstructorInvocation_0", 0, 1, new DebugConfiguration.Builder()
                 .build());
     }
 
     @Test
     public void test_1() throws IOException {
-        testClass("ExplicitConstructorInvocation_1", 1, 0, new DebugConfiguration.Builder()
+        testClass("ExplicitConstructorInvocation_1", 0, 0, new DebugConfiguration.Builder()
+                .build());
+    }
+
+    @Test
+    public void test_2() throws IOException {
+        testClass("ExplicitConstructorInvocation_2", 0, 0, new DebugConfiguration.Builder()
+                .build());
+    }
+
+    @Test
+    public void test_3() throws IOException {
+        testClass("ExplicitConstructorInvocation_3", 0, 0, new DebugConfiguration.Builder()
                 .build());
     }
 }

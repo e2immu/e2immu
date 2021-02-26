@@ -613,8 +613,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
     Finally, general modifications are carried out
      */
     private AnalysisStatus apply(SharedState sharedState,
-                                 EvaluationResult evaluationResult,
-                                 StatementAnalysis statementAnalysis) {
+                                 EvaluationResult evaluationResult) {
         AnalysisStatus status = evaluationResult.someValueWasDelayed() ? DELAYS : DONE;
 
         if (evaluationResult.addCircularCallOrUndeclaredFunctionalInterface()) {
@@ -1445,7 +1444,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 PrimaryTypeAnalyser primaryTypeAnalyser =
                         localAnalysers.get().stream().filter(pta -> pta.primaryType == localClassDeclaration.typeInfo).findFirst().orElseThrow();
                 builder.markVariablesFromPrimaryTypeAnalyser(primaryTypeAnalyser);
-                return apply(sharedState, builder.build(), statementAnalysis);
+                return apply(sharedState, builder.build());
             }
             return analysisStatus;
         }
@@ -1466,8 +1465,17 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             if (statementAnalysis.flowData.timeAfterExecutionNotYetSet()) {
                 statementAnalysis.flowData.setTimeAfterEvaluation(result.statementTime(), index());
             }
-            AnalysisStatus applyResult = apply(sharedState, result, statementAnalysis);
+            AnalysisStatus applyResult = apply(sharedState, result);
             AnalysisStatus statusPost = applyResult.combine(analysisStatus);
+
+            if (statementAnalysis.statement instanceof ExplicitConstructorInvocation eci) {
+                Expression assignments = replaceExplicitConstructorInvocation(sharedState, eci, result);
+                if(!assignments.isBooleanConstant()) {
+                    result = assignments.evaluate(sharedState.evaluationContext, structure.forwardEvaluationInfo());
+                    applyResult = apply(sharedState, result);
+                    statusPost = applyResult.combine(analysisStatus);
+                }
+            }
 
             Expression value = result.value();
             assert value != null; // EmptyExpression in case there really is no value
@@ -1503,6 +1511,44 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             LOGGER.warn("Failed to evaluate main expression (step 3) in statement {}", statementAnalysis.index);
             throw rte;
         }
+    }
+
+    private Expression replaceExplicitConstructorInvocation(SharedState sharedState,
+                                                            ExplicitConstructorInvocation eci,
+                                                            EvaluationResult result) {
+         /* structure.updaters contains all the parameter values
+               expressionsToEvaluate should contain assignments for each instance field, as found in the last statement of the
+               explicit method
+             */
+        MethodAnalyser methodAnalyser = analyserContext.getMethodAnalyser(eci.methodInfo);
+        int n = eci.methodInfo.methodInspection.get().getParameters().size();
+        This thisVar = new This(analyserContext, myMethodAnalyser.methodInfo.typeInfo);
+        EvaluationResult.Builder builder = new EvaluationResult.Builder();
+        Map<Expression, Expression> translation = new HashMap<>();
+        if (n > 0) {
+            int i = 0;
+            List<Expression> storedValues = n == 1 ? List.of(result.value()) : result.storedValues();
+            for (Expression parameterExpression : storedValues) {
+                ParameterInfo parameterInfo = eci.methodInfo.methodInspection.get().getParameters().get(i);
+                translation.put(new VariableExpression(parameterInfo), parameterExpression);
+                i++;
+            }
+        }
+        List<Expression> assignments = new ArrayList<>();
+        for (FieldInfo fieldInfo : myMethodAnalyser.methodInfo.typeInfo.visibleFields()) {
+            for (VariableInfo variableInfo : methodAnalyser.getFieldAsVariable(fieldInfo, false)) {
+                if (variableInfo.isAssigned()) {
+                    EvaluationResult translated = variableInfo.getValue()
+                            .reEvaluate(sharedState.evaluationContext, translation);
+                    Assignment assignment = new Assignment(statementAnalysis.primitives,
+                            new VariableExpression(new FieldReference(analyserContext, fieldInfo, thisVar)),
+                            translated.value());
+                    builder.compose(translated);
+                    assignments.add(assignment);
+                }
+            }
+        }
+        return CommaExpression.comma(sharedState.evaluationContext, assignments);
     }
 
     /*

@@ -110,6 +110,7 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
         public final SetOnce<List<Expression>> invariants = new SetOnce<>();
 
         public final SetOnceMap<Set<MethodInfo>, CycleInfo> nonModifiedCountForMethodCallCycle = new SetOnceMap<>();
+        public final SetOnce<Boolean> ignorePrivateConstructorsForFieldValues = new SetOnce<>();
 
         public Builder(Primitives primitives, TypeInfo typeInfo) {
             super(primitives, typeInfo.simpleName);

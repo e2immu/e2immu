@@ -22,10 +22,11 @@ import org.e2immu.annotation.Nullable;
 public class ExplicitConstructorInvocation_0 {
 
     @Nullable
-    private String s;
+    private final String s;
 
     public ExplicitConstructorInvocation_0() {
         this("abc");
+        assert s != null; // should raise warning: always true
     }
 
     public ExplicitConstructorInvocation_0(String sp) {

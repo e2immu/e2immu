@@ -17,32 +17,27 @@
 
 package org.e2immu.analyser.testexample;
 
+import org.e2immu.annotation.Constant;
 import org.e2immu.annotation.Final;
-import org.e2immu.annotation.Nullable;
+import org.e2immu.annotation.NotNull;
 
-public class ExplicitConstructorInvocation_1 {
+public class ExplicitConstructorInvocation_2 {
 
-    @Nullable
+    @Constant("abc")
+    @NotNull
     @Final
     private String s;
 
-    private final int n;
-
-    public ExplicitConstructorInvocation_1() {
-        this("abc", 3);
-        s = "x";
+    public ExplicitConstructorInvocation_2() {
+        this("abc");
     }
 
-    public ExplicitConstructorInvocation_1(String sp, int n) {
+    private ExplicitConstructorInvocation_2(String sp) {
         s = sp;
-        this.n = n;
     }
 
+    @Constant("abc")
     public String getS() {
         return s;
-    }
-
-    public int getN() {
-        return n;
     }
 }

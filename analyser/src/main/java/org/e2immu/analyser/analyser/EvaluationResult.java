@@ -17,6 +17,7 @@
 
 package org.e2immu.analyser.analyser;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
@@ -47,6 +48,7 @@ It contains:
 
 - an increased statement time, caused by calls to those methods that increase time
 - the computed result (value)
+- a sequence of stored result, for CommaExpressions and explicit constructor invocations
 - an assembled precondition, gathered from calls to methods that have preconditions
 - a map of value changes (and linked var, property, ...)
 - a list of error messages
@@ -63,6 +65,7 @@ We track delays in state change
 public record EvaluationResult(EvaluationContext evaluationContext,
                                int statementTime,
                                Expression value,
+                               List<Expression> storedValues,
                                boolean someValueWasDelayed,
                                Messages messages,
                                List<ObjectFlow> objectFlows,
@@ -162,6 +165,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
         private final Messages messages = new Messages();
         private List<ObjectFlow> objectFlows;
         private Expression value;
+        private List<Expression> storedExpressions;
         private int statementTime;
         private final Map<Variable, ChangeData> valueChanges = new HashMap<>();
         private Expression precondition;
@@ -197,6 +201,13 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             for (EvaluationResult evaluationResult : previousResults) {
                 append(false, evaluationResult);
             }
+            return this;
+        }
+
+        public Builder composeStore(EvaluationResult evaluationResult) {
+            if (storedExpressions == null) storedExpressions = new LinkedList<>();
+            storedExpressions.add(evaluationResult.getExpression());
+            append(false, evaluationResult);
             return this;
         }
 
@@ -249,7 +260,9 @@ public record EvaluationResult(EvaluationContext evaluationContext,
         }
 
         public EvaluationResult build() {
-            return new EvaluationResult(evaluationContext, statementTime, value, someValueWasDelayed,
+            return new EvaluationResult(evaluationContext, statementTime, value,
+                    storedExpressions == null ? null : ImmutableList.copyOf(storedExpressions),
+                    someValueWasDelayed,
                     messages, objectFlows == null ? List.of() : objectFlows, valueChanges, precondition,
                     addCircularCallOrUndeclaredFunctionalInterface);
         }

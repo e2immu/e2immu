@@ -428,25 +428,27 @@ public class FieldAnalyser extends AbstractAnalyser {
             values.add(fieldAnalysis.getInitialValue());
         }
         // collect all the other values, bail out when delays
-        // IMPROVE this method does not take ExplicitConstructorInvocations into account
+        boolean ignorePrivateConstructors = myTypeAnalyser.ignorePrivateConstructorsForFieldValue();
 
         boolean occursInAllConstructors = true;
         if (!(fieldInfo.isExplicitlyFinal() && haveInitialiser)) {
             for (MethodAnalyser methodAnalyser : myMethodsAndConstructors) {
-                boolean added = false;
-                for (VariableInfo vi : methodAnalyser.getFieldAsVariable(fieldInfo, false)) {
-                    if (vi.isAssigned()) {
-                        if (vi.isNotDelayed()) {
-                            values.add(vi.getValue());
-                            added = true;
-                        } else {
-                            log(DELAYED, "Delay consistent value for field {}", fieldInfo.fullyQualifiedName());
-                            return DELAYS;
+                if (!methodAnalyser.methodInfo.isPrivate() || !ignorePrivateConstructors) {
+                    boolean added = false;
+                    for (VariableInfo vi : methodAnalyser.getFieldAsVariable(fieldInfo, false)) {
+                        if (vi.isAssigned()) {
+                            if (vi.isNotDelayed()) {
+                                values.add(vi.getValue());
+                                added = true;
+                            } else {
+                                log(DELAYED, "Delay consistent value for field {}", fieldInfo.fullyQualifiedName());
+                                return DELAYS;
+                            }
                         }
                     }
-                }
-                if (!added && methodAnalyser.methodInfo.isConstructor) {
-                    occursInAllConstructors = false;
+                    if (!added && methodAnalyser.methodInfo.isConstructor) {
+                        occursInAllConstructors = false;
+                    }
                 }
             }
         }

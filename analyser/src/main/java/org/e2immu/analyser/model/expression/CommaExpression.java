@@ -70,7 +70,7 @@ public record CommaExpression(List<Expression> expressions) implements Expressio
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
         for (Expression expression : expressions) {
             EvaluationResult result = expression.evaluate(evaluationContext, forwardEvaluationInfo);
-            builder.compose(result);
+            builder.composeStore(result);
         }
         // as we compose, the value of the last result survives, earlier ones are discarded
         return builder.build();
