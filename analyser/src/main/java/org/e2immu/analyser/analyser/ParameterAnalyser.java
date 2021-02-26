@@ -19,6 +19,7 @@
 package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.expression.MultiValue;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.This;
@@ -29,6 +30,7 @@ import org.e2immu.annotation.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -269,9 +271,12 @@ public class ParameterAnalyser {
             if (effectivelyFinal == null) {
                 return DELAYED;
             }
-            VariableExpression variableValue;
-            if ((variableValue = effectivelyFinal.asInstanceOf(VariableExpression.class)) != null
-                    && variableValue.variable() == parameterInfo) {
+            if (effectivelyFinal instanceof VariableExpression ve && ve.variable() == parameterInfo) {
+                return ASSIGNED;
+            }
+            if (effectivelyFinal instanceof MultiValue multiValue &&
+                    Arrays.stream(multiValue.multiExpression.expressions())
+                            .anyMatch(e -> e instanceof VariableExpression ve && ve.variable() == parameterInfo)) {
                 return ASSIGNED;
             }
         }

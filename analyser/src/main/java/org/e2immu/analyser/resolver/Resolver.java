@@ -25,6 +25,7 @@ import org.e2immu.analyser.inspector.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.statement.Block;
+import org.e2immu.analyser.model.statement.ExplicitConstructorInvocation;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.parser.*;
@@ -457,6 +458,8 @@ public class Resolver {
                 } else if (e instanceof NewObject newObject && newObject.constructor() != null &&
                         restrictToType.contains(newObject.constructor().typeInfo)) {
                     methodsAndFields.add(newObject.constructor());
+                } else if(e instanceof ExplicitConstructorInvocation eci) {
+                    methodsAndFields.add(eci.methodInfo);
                 }
             });
         }

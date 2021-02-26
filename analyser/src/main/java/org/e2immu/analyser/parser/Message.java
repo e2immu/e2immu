@@ -40,6 +40,10 @@ public class Message {
     public static final String NULL_POINTER_EXCEPTION = "Null pointer exception";
     public static final String INLINE_CONDITION_EVALUATES_TO_CONSTANT = "Inline conditional evaluates to constant";
     public static final String CONDITION_EVALUATES_TO_CONSTANT = "Condition in 'if' or 'switch' statement evaluates to constant";
+
+    public static final String INLINE_CONDITION_EVALUATES_TO_CONSTANT_ENN = "Inline conditional evaluates to constant (implied via @NotNull on field)";
+    public static final String CONDITION_EVALUATES_TO_CONSTANT_ENN = "Condition in 'if' or 'switch' statement evaluates to constant (implied via @NotNull on field)";
+
     public static final String ASSERT_EVALUATES_TO_CONSTANT_FALSE = "Condition in 'assert' is always false";
     public static final String ASSERT_EVALUATES_TO_CONSTANT_TRUE = "Condition in 'assert' is always true";
 
@@ -110,6 +114,9 @@ public class Message {
         map.put(CIRCULAR_TYPE_DEPENDENCY, Severity.WARN);
 
         map.put(ASSERT_EVALUATES_TO_CONSTANT_TRUE, Severity.WARN);
+
+        map.put(INLINE_CONDITION_EVALUATES_TO_CONSTANT_ENN, Severity.WARN);
+        map.put(CONDITION_EVALUATES_TO_CONSTANT_ENN, Severity.WARN);
 
         SEVERITY_MAP = map.build();
     }

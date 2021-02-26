@@ -31,15 +31,17 @@ import java.util.stream.Collectors;
 public class ExplicitConstructorInvocation extends StatementWithStructure {
 
     public final boolean isSuper;
+    public final MethodInfo methodInfo;
 
-    public ExplicitConstructorInvocation(boolean isSuper, List<Expression> parameterExpressions) {
+    public ExplicitConstructorInvocation(boolean isSuper, MethodInfo methodInfo, List<Expression> parameterExpressions) {
         super(new Structure.Builder().setUpdaters(parameterExpressions).build());
         this.isSuper = isSuper;
+        this.methodInfo = methodInfo;
     }
 
     @Override
     public Statement translate(TranslationMap translationMap) {
-        return new ExplicitConstructorInvocation(isSuper, structure.updaters().stream()
+        return new ExplicitConstructorInvocation(isSuper, methodInfo, structure.updaters().stream()
                 .map(translationMap::translateExpression)
                 .collect(Collectors.toList()));
     }

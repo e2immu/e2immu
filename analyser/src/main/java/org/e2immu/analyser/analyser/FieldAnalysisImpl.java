@@ -18,6 +18,7 @@
 package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.expression.util.MultiExpression;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
@@ -134,7 +135,7 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
         public final SetOnce<Expression> initialValue = new SetOnce<>();
         public Expression stateOfEffectivelyFinalValue;
 
-        public final SetOnce<List<Expression>> values = new SetOnce<>();
+        public final SetOnce<MultiExpression> values = new SetOnce<>();
         public final FlipSwitch allLinksHaveBeenEstablished = new FlipSwitch();
 
         public Builder(Primitives primitives, AnalysisProvider analysisProvider, @NotModified FieldInfo fieldInfo, TypeAnalysis typeAnalysisOfOwner) {

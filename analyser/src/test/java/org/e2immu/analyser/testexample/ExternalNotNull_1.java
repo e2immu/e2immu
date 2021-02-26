@@ -23,7 +23,11 @@ import org.e2immu.annotation.Variable;
 
 import java.util.Objects;
 
-public class ExternalNotNull_0 {
+/*
+tiny variant, which causes additional delays
+See last line of first constructor.
+ */
+public class ExternalNotNull_1 {
 
     @Nullable // upperCaseO has no effect because of the active 'null'
     private final String o;
@@ -42,17 +46,18 @@ public class ExternalNotNull_0 {
     @Nullable
     private final String s;
 
-    ExternalNotNull_0(@NotNull String p1,
-                      @NotNull String r1) {
+    ExternalNotNull_1(@NotNull String p1,  // local CNN
+                      @NotNull String r1) { // local CNN
         o = null;
         p = p1;
         q = null;
         r = Objects.requireNonNull(r1);
         s = null;
+        System.out.println(p.toUpperCase()); // THIS LINE CAUSE(S/D) INFINITE DELAYS
     }
 
-    ExternalNotNull_0(@NotNull String p2,
-                      @NotNull String q2,
+    ExternalNotNull_1(@NotNull String p2, // external NN
+                      @NotNull String q2, // local CNN
                       @NotNull String r2,
                       @Nullable String s2) {
         o = "hello";
@@ -62,10 +67,7 @@ public class ExternalNotNull_0 {
         s = s2;
         System.out.println(q2.toLowerCase());
         if (p == null) {
-            System.out.println("I believe p is null"); // produce a warning!
-        }
-        if (p2 == null) {
-            System.out.println("I believe p2 is null"); // produce a warning!
+            System.out.println("I believe p is null"); // produce a warning?
         }
     }
 

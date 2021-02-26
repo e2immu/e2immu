@@ -24,6 +24,7 @@ import org.e2immu.analyser.analyser.check.CheckLinks;
 import org.e2immu.analyser.config.FieldAnalyserVisitor;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
+import org.e2immu.analyser.model.expression.util.MultiExpression;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.This;
@@ -36,6 +37,7 @@ import org.e2immu.annotation.*;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.function.IntBinaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -248,6 +250,9 @@ public class FieldAnalyser extends AbstractAnalyser {
         return DONE;
     }
 
+    private static final IntBinaryOperator MAX = (i1, i2) -> i1 == Level.DELAY || i2 == Level.DELAY ? Level.DELAY :
+            Math.max(i1, i2);
+
     /*
     not null has been intentionally decoupled from value and linked values
 
@@ -262,54 +267,67 @@ public class FieldAnalyser extends AbstractAnalyser {
             log(DELAYED, "Delaying @NotNull on {} until we know about @Final", fieldInfo.fullyQualifiedName());
             return DELAYS;
         }
-        if (isFinal == Level.FALSE && (!haveInitialiser || fieldCanBeWrittenFromOutsideThisType)) {
-            log(NOT_NULL, "Field {} cannot be @NotNull: it is not @Final, or has no initialiser, "
-                    + " or it can be assigned to from outside this class", fieldInfo.fullyQualifiedName());
+        if (isFinal == Level.FALSE && fieldCanBeWrittenFromOutsideThisType) {
+            log(NOT_NULL, "Field {} cannot be @NotNull: it be assigned to from outside this class",
+                    fieldInfo.fullyQualifiedName());
             fieldAnalysis.setProperty(VariableProperty.EXTERNAL_NOT_NULL, MultiLevel.NULLABLE);
             return DONE;
         }
 
-        // first, context
-        boolean contextNotNullDelays = allMethodsAndConstructors.stream()
-                .flatMap(m -> m.getFieldAsVariableStream(fieldInfo, true))
-                .anyMatch(vi -> vi.getProperty(VariableProperty.CONTEXT_NOT_NULL) == Level.DELAY);
-        if (contextNotNullDelays) return DELAYS;
-        int bestOverContext = allMethodsAndConstructors.stream()
-                .flatMap(m -> m.getFieldAsVariableStream(fieldInfo, true))
-                .mapToInt(vi -> vi.getProperty(VariableProperty.CONTEXT_NOT_NULL))
-                .max().orElse(MultiLevel.NULLABLE);
-
-        if (Logger.isLogEnabled(NOT_NULL)) {
-            allMethodsAndConstructors.forEach(m -> {
-                List<VariableInfo> list = m.getFieldAsVariable(fieldInfo, true);
-                for (VariableInfo vi : list) {
-                    int nn = vi.getProperty(VariableProperty.CONTEXT_NOT_NULL);
-                    log(NOT_NULL, "Method {} field {} context not null {}", m.methodInfo.name, vi.variable().simpleName(), nn);
-                }
-            });
-        }
-
-        // then, values
         if (!fieldAnalysis.values.isSet()) return DELAYS;
+        assert fieldAnalysis.values.get().expressions().length > 0;
 
-        int start = haveInitialiser ? 1 : 0;
-        boolean hardNull = fieldAnalysis.values.get().stream().skip(start).anyMatch(v -> v instanceof NullConstant);
         int finalNotNullValue;
-        if (hardNull) {
-            finalNotNullValue = MultiLevel.NULLABLE;
-        } else {
-            EvaluationContext evaluationContext = new EvaluationContextImpl(sharedState.iteration,
-                    ConditionManager.initialConditionManager(analyserContext.getPrimitives()), sharedState.closure);
-            int worstOverValues = fieldAnalysis.values.get().stream()
-                    .mapToInt(expression -> evaluationContext.getProperty(expression, VariableProperty.NOT_NULL_EXPRESSION, false))
-                    .min().orElse(MultiLevel.NULLABLE);
 
-            finalNotNullValue = MultiLevel.bestNotNull(MultiLevel.NULLABLE,
-                    MultiLevel.bestNotNull(worstOverValues, bestOverContext));
-            log(NOT_NULL, "Set property @NotNull on field {} to value {}", fieldInfo.fullyQualifiedName(), finalNotNullValue);
+        EvaluationContext evaluationContext = new EvaluationContextImpl(sharedState.iteration,
+                ConditionManager.initialConditionManager(analyserContext.getPrimitives()), sharedState.closure);
+
+        boolean onlyAssignedToParameters = fieldAnalysis.values.get().stream()
+                // parameters can be influenced by context not null, all the rest cannot
+                .allMatch(e -> e instanceof VariableExpression ve && ve.variable() instanceof ParameterInfo);
+        if (onlyAssignedToParameters) {
+            int bestOverContext = allMethodsAndConstructors.stream()
+                    .flatMap(m -> m.getFieldAsVariableStream(fieldInfo, true))
+                    .mapToInt(vi -> vi.getProperty(VariableProperty.CONTEXT_NOT_NULL))
+                    .reduce(MultiLevel.NULLABLE, MAX);
+            if (bestOverContext == Level.DELAY) {
+                log(DELAYED, "Delay @NotNull on {}, waiting for CNN", fieldInfo.fullyQualifiedName());
+                return DELAYS;
+            }
+            int worstOverValues = fieldAnalysis.values.get().stream()
+                    .mapToInt(expression -> evaluationContext
+                            .getProperty(expression, VariableProperty.NOT_NULL_EXPRESSION, false))
+                    .min().orElse(MultiLevel.NULLABLE);
+            // IMPORTANT: we do not take delays into account!
+            finalNotNullValue = Math.max(worstOverValues, bestOverContext);
+        } else {
+            boolean hardNull = fieldAnalysis.values.get().stream().anyMatch(e -> e instanceof NullConstant);
+            if (hardNull) {
+                finalNotNullValue = MultiLevel.NULLABLE;
+            } else {
+                int worstOverValuesBreakParameterDelay = fieldAnalysis.values.get().stream()
+                        .mapToInt(expression -> notNullBreakParameterDelay(evaluationContext, expression))
+                        .min().orElse(MultiLevel.NULLABLE);
+                if (worstOverValuesBreakParameterDelay == Level.DELAY) {
+                    log(DELAYED, "Delay @NotNull on {}, waiting for values", fieldInfo.fullyQualifiedName());
+                    return DELAYS;
+                }
+                finalNotNullValue = worstOverValuesBreakParameterDelay;
+            }
         }
+        log(NOT_NULL, "Set property @NotNull on field {} to value {}", fieldInfo.fullyQualifiedName(), finalNotNullValue);
+
         fieldAnalysis.setProperty(VariableProperty.EXTERNAL_NOT_NULL, finalNotNullValue);
         return DONE;
+    }
+
+    private int notNullBreakParameterDelay(EvaluationContext evaluationContext, Expression expression) {
+        int nne = evaluationContext.getProperty(expression, VariableProperty.NOT_NULL_EXPRESSION, false);
+        if (nne != Level.DELAY) return nne;
+        if (expression.variables().stream().allMatch(v -> v instanceof ParameterInfo)) {
+            return MultiLevel.NULLABLE;
+        }
+        return Level.DELAY;
     }
 
     private AnalysisStatus fieldErrors() {
@@ -400,7 +418,7 @@ public class FieldAnalyser extends AbstractAnalyser {
 
     private AnalysisStatus allAssignmentsHaveBeenSet() {
         assert !fieldAnalysis.values.isSet();
-
+        Expression nullValue = ConstantExpression.nullValue(analyserContext.getPrimitives(), fieldInfo.type.bestTypeInfo());
         List<Expression> values = new LinkedList<>();
         if (haveInitialiser) {
             if (fieldAnalysis.getInitialValue() == null) {
@@ -411,6 +429,8 @@ public class FieldAnalyser extends AbstractAnalyser {
         }
         // collect all the other values, bail out when delays
         // IMPROVE this method does not take ExplicitConstructorInvocations into account
+
+        boolean occursInAllConstructors = true;
         if (!(fieldInfo.isExplicitlyFinal() && haveInitialiser)) {
             for (MethodAnalyser methodAnalyser : myMethodsAndConstructors) {
                 boolean added = false;
@@ -425,14 +445,15 @@ public class FieldAnalyser extends AbstractAnalyser {
                         }
                     }
                 }
-                if (!added && !fieldInfo.isExplicitlyFinal() && methodAnalyser.methodInfo.isConstructor &&
-                        !methodAnalyser.methodInfo.methodInspection.get().isSynthetic()) {
-                    // implicit initial value (null, 0, 0.0d, 0.0f, false, ...)
-                    values.add(ConstantExpression.nullValue(analyserContext.getPrimitives(), fieldInfo.type.bestTypeInfo()));
+                if (!added && methodAnalyser.methodInfo.isConstructor) {
+                    occursInAllConstructors = false;
                 }
             }
         }
-        fieldAnalysis.values.set(ImmutableList.copyOf(values));
+        if (!haveInitialiser && !occursInAllConstructors) {
+            values.add(0, nullValue);
+        }
+        fieldAnalysis.values.set(MultiExpression.create(values));
         return DONE;
     }
 
@@ -560,12 +581,14 @@ public class FieldAnalyser extends AbstractAnalyser {
         return false;
     }
 
-    private Expression determineEffectivelyFinalValue(List<Expression> values,
+    private Expression determineEffectivelyFinalValue(MultiExpression values,
                                                       boolean downgradeFromNewInstanceWithConstructor) {
         // suppose there are 2 constructors, and the field gets exactly the same value...
-        Set<Expression> set = new HashSet<>(values);
+        Set<Expression> set = new HashSet<>();
+        Collections.addAll(set, values.expressions());
+
         if (set.size() == 1) {
-            Expression expression = values.get(0);
+            Expression expression = values.expressions()[0];
             BooleanConstant TRUE = new BooleanConstant(analyserContext.getPrimitives(), true);
             if (expression instanceof NewObject newObject) {
                 // now the state of the new object may survive if there are no modifying methods called,
@@ -577,15 +600,18 @@ public class FieldAnalyser extends AbstractAnalyser {
             fieldAnalysis.setStateOfEffectivelyFinalValue(TRUE);
             return expression;
         }
-        This thisVariable = new This(analyserContext, fieldInfo.owner);
-        FieldReference fieldReference = new FieldReference(analyserContext,
-                fieldInfo, fieldInfo.isStatic() ? null : thisVariable);
-
-        return new VariableExpression(fieldReference, ObjectFlow.NO_FLOW);
+        return new MultiValue(fieldAnalysis.primitives, ObjectFlow.NO_FLOW, values, fieldInfo.type);
     }
 
     private AnalysisStatus analyseLinked() {
         assert !fieldAnalysis.linkedVariables.isSet();
+
+        int immutable = fieldAnalysis.getProperty(VariableProperty.IMMUTABLE);
+        if (immutable == MultiLevel.EFFECTIVELY_E2IMMUTABLE) {
+            fieldAnalysis.linkedVariables.set(LinkedVariables.EMPTY);
+            log(LINKED_VARIABLES, "Setting linked variables to empty for field {}, @E2Immutable type");
+            return DONE;
+        }
 
         // we ONLY look at the linked variables of fields that have been assigned to
         boolean allDefined = allMethodsAndConstructors.stream()

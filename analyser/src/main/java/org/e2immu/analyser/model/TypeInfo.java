@@ -602,6 +602,46 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
                 .findFirst().orElseThrow();
     }
 
+
+    public MethodInfo findConstructor(InspectionProvider inspectionProvider, List<Expression> parameterExpressions) {
+        return findConstructor(inspectionProvider, parameterExpressions, true);
+    }
+
+    private MethodInfo findConstructor(InspectionProvider inspectionProvider,
+                                       List<Expression> parameterExpressions,
+                                       boolean allowPrivate) {
+        MethodInfo constructor = typeInspection.get().constructors().stream()
+                .filter(mi -> allowPrivate || !mi.isPrivate())
+                .filter(mi -> compatibleParameters(inspectionProvider, parameterExpressions, mi))
+                .findFirst().orElse(null);
+        if (constructor != null) return constructor;
+        TypeInspection inspection = inspectionProvider.getTypeInspection(this);
+        if (inspection.parentClass() != null) return findConstructor(inspectionProvider, parameterExpressions, false);
+        throw new UnsupportedOperationException("Could not find correct constructor");
+    }
+
+    private boolean compatibleParameters(InspectionProvider inspectionProvider,
+                                         List<Expression> parameterExpressions,
+                                         MethodInfo methodInfo) {
+        MethodInspection inspection = inspectionProvider.getMethodInspection(methodInfo);
+        int nFormal = inspection.getParameters().size();
+        if (nFormal == parameterExpressions.size() || nFormal > 0 && nFormal < parameterExpressions.size()
+                && inspection.getParameters().get(nFormal - 1).parameterInspection.get().isVarArgs()) {
+            int i = 0;
+            for (ParameterInfo parameterInfo : inspection.getParameters()) {
+                Expression expression = parameterExpressions.get(i);
+                ParameterizedType formalType = parameterInfo.parameterizedType;
+                ParameterizedType concreteType = expression.returnType();
+                if (!formalType.isAssignableFrom(inspectionProvider, concreteType)) {
+                    return false;
+                }
+                i++;
+            }
+            return true;
+        }
+        return false;
+    }
+
     public boolean isPrimaryType() {
         return packageNameOrEnclosingType.isLeft();
     }

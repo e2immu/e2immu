@@ -3,6 +3,7 @@ package org.e2immu.analyser.parser;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.expression.MultiValue;
 import org.e2immu.analyser.model.expression.StringConcat;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.FieldReference;
@@ -173,23 +174,20 @@ public class Test_05_FinalChecks extends CommonTestRunner {
         if ("s1".equals(d.fieldInfo().name)) {
             if (d.iteration() > 0) {
                 // cannot properly be assigned/linked to one parameter
-                Assert.assertEquals("this.s1", d.fieldAnalysis().getEffectivelyFinalValue().debugOutput());
-                Assert.assertEquals("", d.fieldAnalysis().getLinkedVariables().toString());
+                Assert.assertEquals("[s1,s1+\"abc\"]", d.fieldAnalysis().getEffectivelyFinalValue().debugOutput());
             } else {
                 Assert.assertNull(d.fieldAnalysis().getEffectivelyFinalValue());
-                Assert.assertEquals(LinkedVariables.DELAY_STRING, d.fieldAnalysis().getLinkedVariables().toString());
             }
+            Assert.assertEquals("", d.fieldAnalysis().getLinkedVariables().toString());
         }
         if ("s2".equals(d.fieldInfo().name)) {
             if (d.iteration() > 0) {
-                Assert.assertEquals("this.s2", d.fieldAnalysis().getEffectivelyFinalValue().debugOutput());
-                Assert.assertTrue(d.fieldAnalysis().getEffectivelyFinalValue() instanceof VariableExpression ve &&
-                        ve.variable() instanceof FieldReference);
-                Assert.assertEquals("", d.fieldAnalysis().getLinkedVariables().toString());
+                Assert.assertEquals("[null,s2]", d.fieldAnalysis().getEffectivelyFinalValue().debugOutput());
+                Assert.assertTrue(d.fieldAnalysis().getEffectivelyFinalValue() instanceof MultiValue);
             } else {
                 Assert.assertNull(d.fieldAnalysis().getEffectivelyFinalValue());
-                Assert.assertEquals(LinkedVariables.DELAY_STRING, d.fieldAnalysis().getLinkedVariables().toString());
             }
+            Assert.assertEquals("", d.fieldAnalysis().getLinkedVariables().toString());
         }
         if ("s4".equals(d.fieldInfo().name)) {
             Assert.assertEquals(MultiLevel.NULLABLE, d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_NOT_NULL));
@@ -223,7 +221,7 @@ public class Test_05_FinalChecks extends CommonTestRunner {
     public void test() throws IOException {
         testClass(FINAL_CHECKS, 5, 0, new DebugConfiguration.Builder()
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+           //     .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addEvaluationResultVisitor(evaluationResultVisitor)

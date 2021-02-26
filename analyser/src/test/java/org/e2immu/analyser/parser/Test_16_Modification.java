@@ -255,7 +255,7 @@ public class Test_16_Modification extends CommonTestRunner {
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if (d.fieldInfo().name.equals("set3")) {
                 Assert.assertEquals(Level.TRUE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
-                Assert.assertEquals(1, ((FieldAnalysisImpl.Builder) d.fieldAnalysis()).values.get().size());
+                Assert.assertEquals(1, ((FieldAnalysisImpl.Builder) d.fieldAnalysis()).values.get().expressions().length);
                 if (d.iteration() > 0) {
                     Assert.assertEquals(INSTANCE_TYPE_HASH_SET, d.fieldAnalysis().getEffectivelyFinalValue().toString());
                     if (d.iteration() > 1) {
