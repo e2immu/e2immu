@@ -611,12 +611,14 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
                                        List<Expression> parameterExpressions,
                                        boolean allowPrivate) {
         MethodInfo constructor = typeInspection.get().constructors().stream()
-                .filter(mi -> allowPrivate || !mi.isPrivate())
+                .filter(mi -> allowPrivate || !mi.isPrivate(inspectionProvider))
                 .filter(mi -> compatibleParameters(inspectionProvider, parameterExpressions, mi))
                 .findFirst().orElse(null);
         if (constructor != null) return constructor;
         TypeInspection inspection = inspectionProvider.getTypeInspection(this);
-        if (inspection.parentClass() != null) return findConstructor(inspectionProvider, parameterExpressions, false);
+        if (inspection.parentClass() != null) {
+            return inspection.parentClass().typeInfo.findConstructor(inspectionProvider, parameterExpressions, false);
+        }
         throw new UnsupportedOperationException("Could not find correct constructor");
     }
 

@@ -56,15 +56,18 @@ public class Assignment implements Expression {
     // if true, we have ++i
     // if false, we have i++ if primitive operator is +=, i-- if primitive is -=
     public final Boolean prefixPrimitiveOperator;
+    public final boolean complainAboutAssignmentOutsideType;
 
     public Assignment(Primitives primitives, @NotNull Expression target, @NotNull Expression value) {
-        this(primitives, target, value, null, null);
+        this(primitives, target, value, null, null, true);
     }
 
     public Assignment(Primitives primitives,
                       @NotNull Expression target, @NotNull Expression value,
                       MethodInfo assignmentOperator,
-                      Boolean prefixPrimitiveOperator) {
+                      Boolean prefixPrimitiveOperator,
+                      boolean complainAboutAssignmentOutsideType) {
+        this.complainAboutAssignmentOutsideType = complainAboutAssignmentOutsideType;
         this.target = Objects.requireNonNull(target);
         this.value = Objects.requireNonNull(value);
         this.assignmentOperator = assignmentOperator; // as in i+=1;
@@ -102,7 +105,8 @@ public class Assignment implements Expression {
     @Override
     public Expression translate(TranslationMap translationMap) {
         return new Assignment(primitives, translationMap.translateExpression(target),
-                translationMap.translateExpression(value), assignmentOperator, prefixPrimitiveOperator);
+                translationMap.translateExpression(value), assignmentOperator, prefixPrimitiveOperator,
+                complainAboutAssignmentOutsideType);
     }
 
     @Override
@@ -230,14 +234,18 @@ public class Assignment implements Expression {
         return builder.setExpression(resultOfExpression).build();
     }
 
-    private void doAssignmentWork(EvaluationResult.Builder builder, EvaluationContext evaluationContext, Variable at, Expression resultOfExpression) {
+    private void doAssignmentWork(EvaluationResult.Builder builder,
+                                  EvaluationContext evaluationContext,
+                                  Variable at,
+                                  Expression resultOfExpression) {
 
         // see if we need to raise an error (writing to fields outside our class, etc.)
         if (at instanceof FieldReference) {
             FieldInfo fieldInfo = ((FieldReference) at).fieldInfo;
 
             // check illegal assignment into nested type
-            if (checkIllAdvisedAssignment(at, fieldInfo, evaluationContext.getCurrentType())) {
+            if (complainAboutAssignmentOutsideType &&
+                    checkIllAdvisedAssignment(at, fieldInfo, evaluationContext.getCurrentType())) {
                 builder.addErrorAssigningToFieldOutsideType(fieldInfo);
             }
 

@@ -30,6 +30,7 @@ import org.e2immu.analyser.model.statement.SwitchStatementNewStyle;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.*;
+import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.analyser.util.SetUtil;
@@ -321,6 +322,10 @@ public class MethodInfo implements WithInspectionAndAnalysis {
 
     public boolean isPrivate() {
         return methodInspection.get().getModifiers().contains(MethodModifier.PRIVATE);
+    }
+
+    public boolean isPrivate(InspectionProvider inspectionProvider) {
+        return inspectionProvider.getMethodInspection(this).getModifiers().contains(MethodModifier.PRIVATE);
     }
 
     public boolean isVoid() {

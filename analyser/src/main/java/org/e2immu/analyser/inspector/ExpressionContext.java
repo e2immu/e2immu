@@ -529,7 +529,8 @@ public class ExpressionContext {
                     boolean isPrefix = primitives.isPrefixOperator(operator);
                     MethodInfo associatedAssignment = primitives.prePostFixToAssignment(operator);
                     return new Assignment(typeContext.getPrimitives(),
-                            exp, new IntConstant(typeContext.getPrimitives(), 1), associatedAssignment, isPrefix);
+                            exp, new IntConstant(typeContext.getPrimitives(), 1), associatedAssignment, isPrefix,
+                            true);
                 }
                 return new UnaryOperator(
                         operator,
@@ -618,7 +619,7 @@ public class ExpressionContext {
                         target.returnType().isType() && Primitives.isPrimitiveExcludingVoid(target.returnType())) {
                     ParameterizedType widestType = typeContext.getPrimitives().widestType(value.returnType(), target.returnType());
                     MethodInfo primitiveOperator = Assignment.operator(typeContext.getPrimitives(), assignExpr.getOperator(), widestType.typeInfo);
-                    return new Assignment(typeContext.getPrimitives(), target, value, primitiveOperator, null);
+                    return new Assignment(typeContext.getPrimitives(), target, value, primitiveOperator, null, true);
                 }
                 return new Assignment(typeContext.getPrimitives(), target, value);
             }

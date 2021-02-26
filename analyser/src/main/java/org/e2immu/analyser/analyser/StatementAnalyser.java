@@ -1470,7 +1470,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
 
             if (statementAnalysis.statement instanceof ExplicitConstructorInvocation eci) {
                 Expression assignments = replaceExplicitConstructorInvocation(sharedState, eci, result);
-                if(!assignments.isBooleanConstant()) {
+                if (!assignments.isBooleanConstant()) {
                     result = assignments.evaluate(sharedState.evaluationContext, structure.forwardEvaluationInfo());
                     applyResult = apply(sharedState, result);
                     statusPost = applyResult.combine(analysisStatus);
@@ -1542,7 +1542,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                             .reEvaluate(sharedState.evaluationContext, translation);
                     Assignment assignment = new Assignment(statementAnalysis.primitives,
                             new VariableExpression(new FieldReference(analyserContext, fieldInfo, thisVar)),
-                            translated.value());
+                            translated.value(), null, null, false);
                     builder.compose(translated);
                     assignments.add(assignment);
                 }
