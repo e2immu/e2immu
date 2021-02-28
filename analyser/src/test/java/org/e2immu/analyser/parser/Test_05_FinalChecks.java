@@ -174,7 +174,7 @@ public class Test_05_FinalChecks extends CommonTestRunner {
         if ("s1".equals(d.fieldInfo().name)) {
             if (d.iteration() > 0) {
                 // cannot properly be assigned/linked to one parameter
-                Assert.assertEquals("[s1,s1+\"abc\"]", d.fieldAnalysis().getEffectivelyFinalValue().debugOutput());
+                Assert.assertEquals("[s1+\"abc\",s1]", d.fieldAnalysis().getEffectivelyFinalValue().debugOutput());
             } else {
                 Assert.assertNull(d.fieldAnalysis().getEffectivelyFinalValue());
             }

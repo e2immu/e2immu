@@ -25,6 +25,7 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Text;
+import org.e2immu.analyser.parser.Primitives;
 
 import java.util.Objects;
 
@@ -50,7 +51,23 @@ public record UnknownExpression(ParameterizedType parameterizedType, String msg)
 
     @Override
     public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty, boolean duringEvaluation) {
-        return primitiveGetProperty(variableProperty);
+        if(Primitives.isPrimitiveExcludingVoid(parameterizedType)) {
+            return primitiveGetProperty(variableProperty);
+        }
+        TypeAnalysis typeAnalysis = evaluationContext.getAnalyserContext().getTypeAnalysis(parameterizedType.typeInfo);
+        switch (variableProperty) {
+            case IMMUTABLE:
+                return typeAnalysis.getProperty(VariableProperty.IMMUTABLE);
+            case CONTAINER:
+                return typeAnalysis.getProperty(VariableProperty.CONTAINER);
+            case NOT_NULL_EXPRESSION:
+                return MultiLevel.NULLABLE;
+            case CONTEXT_MODIFIED:
+            case CONTEXT_MODIFIED_DELAY:
+            case IDENTITY:
+                return Level.FALSE;
+        }
+        throw new UnsupportedOperationException("No info about " + variableProperty + " for primitive");
     }
 
     public static int primitiveGetProperty(VariableProperty variableProperty) {

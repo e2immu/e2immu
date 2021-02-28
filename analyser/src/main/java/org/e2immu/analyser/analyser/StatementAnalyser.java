@@ -691,8 +691,12 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                     }
                 }
 
-                /* FIXME
-                if (valueToWrite instanceof VariableExpression ve && ((ve.variable() instanceof ParameterInfo) || (ve.variable() instanceof FieldReference))) {
+                /*
+                ENN can come AFTER a real value, so we need explicit delays; otherwise, statements may have been DONE
+                and are never revisited
+                 */
+                if (valueToWrite instanceof VariableExpression ve &&
+                        ((ve.variable() instanceof ParameterInfo) || (ve.variable() instanceof FieldReference))) {
                     int enn = varProperties.getOrDefault(EXTERNAL_NOT_NULL, Level.DELAY);
                     if (enn == Level.DELAY) {
                         log(DELAYED, "Apply of {}, {} is delayed because of external not null assignment, delayed value, to {}",
@@ -700,7 +704,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                         status = DELAYS;
                     }
                 }
-                 */
+
             } else {
                 Map<VariableProperty, Integer> merged = mergePreviousAndChange(variable, vi1.getProperties().toImmutableMap(),
                         changeData.properties(), contextNotNull, contextModified);
@@ -747,9 +751,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 status = DELAYS;
             }
 
-            // FIXME if (variable instanceof ParameterInfo) {
             resolveExternalNotNullDelays(changeData, vi, vic);
-            //}
 
             // the method analyser must have both context not null and not null expression
             // we need to revisit until we have a value (Basics_1, e.g.)
@@ -1201,28 +1203,29 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
     private AnalysisStatus checkNotNullEscapesAndPreconditions(SharedState sharedState) {
         if (statementAnalysis.statement instanceof AssertStatement) return DONE; // is dealt with in subBlocks
         Boolean escapeAlwaysExecuted = isEscapeAlwaysExecutedInCurrentBlock();
-        if (escapeAlwaysExecuted == null) {
-            log(DELAYED, "Delaying check precondition of statement {}, interrupt condition unknown", index());
-            return DELAYS;
-        }
-        if (statementAnalysis.stateData.conditionManagerIsNotYetSet()) {
-            log(DELAYED, "Delaying check precondition of statement {}, no condition manager", index());
-            return DELAYS;
-        }
-        if (escapeAlwaysExecuted) {
-            Set<Variable> nullVariables = statementAnalysis.stateData.getConditionManagerForNextStatement()
-                    .findIndividualNullInCondition(sharedState.evaluationContext, true);
-            for (Variable nullVariable : nullVariables) {
-                log(VARIABLE_PROPERTIES, "Escape with check not null on {}", nullVariable.fullyQualifiedName());
+        boolean delays = escapeAlwaysExecuted == null || statementAnalysis.stateData.conditionManagerIsNotYetSet();
 
-                // move from condition (x!=null) to property
-                VariableInfoContainer vic = statementAnalysis.findForWriting(nullVariable);
-                if (!vic.hasEvaluation()) {
-                    VariableInfo initial = vic.getPreviousOrInitial();
-                    vic.ensureEvaluation(initial.getAssignmentId(), initial.getReadId(), initial.getStatementTime(), initial.getReadAtStatementTimes());
-                }
-                vic.setProperty(CONTEXT_NOT_NULL_FOR_PARENT, MultiLevel.EFFECTIVELY_NOT_NULL, false, EVALUATION);
+        Set<Variable> nullVariables = statementAnalysis.stateData.getConditionManagerForNextStatement()
+                .findIndividualNullInCondition(sharedState.evaluationContext, true);
+        for (Variable nullVariable : nullVariables) {
+            log(VARIABLE_PROPERTIES, "Escape with check not null on {}", nullVariable.fullyQualifiedName());
+
+            // move from condition (x!=null) to property
+            VariableInfoContainer vic = statementAnalysis.findForWriting(nullVariable);
+            if (!vic.hasEvaluation()) {
+                VariableInfo initial = vic.getPreviousOrInitial();
+                vic.ensureEvaluation(initial.getAssignmentId(), initial.getReadId(), initial.getStatementTime(), initial.getReadAtStatementTimes());
             }
+            if (delays) {
+                vic.setProperty(CONTEXT_NOT_NULL_FOR_PARENT_DELAY, Level.TRUE, EVALUATION);
+            } else {
+                vic.setProperty(CONTEXT_NOT_NULL_FOR_PARENT_DELAY_RESOLVED, Level.TRUE, EVALUATION);
+                if (escapeAlwaysExecuted) {
+                    vic.setProperty(CONTEXT_NOT_NULL_FOR_PARENT, MultiLevel.EFFECTIVELY_NOT_NULL, EVALUATION);
+                }
+            }
+        }
+        if (!delays && escapeAlwaysExecuted) {
             // escapeCondition should filter out all != null, == null clauses
             Expression precondition = statementAnalysis.stateData.getConditionManagerForNextStatement().precondition(sharedState.evaluationContext);
             boolean preconditionIsDelayed = sharedState.evaluationContext.isDelayed(precondition);
@@ -1234,6 +1237,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             }
         }
 
+        if (delays) return DELAYS;
         if (statementAnalysis.stateData.preconditionIsEmpty()) {
             // it could have been set from the assert (step4) or apply via a method call
             statementAnalysis.stateData.setPrecondition(new BooleanConstant(statementAnalysis.primitives, true), false);
@@ -2278,12 +2282,13 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 int directNN = value.getProperty(this, NOT_NULL_EXPRESSION, true);
                 assert !Primitives.isPrimitiveExcludingVoid(value.returnType()) || directNN == MultiLevel.EFFECTIVELY_NOT_NULL;
 
-                if (directNN >= MultiLevel.EFFECTIVELY_NOT_NULL) return directNN;
-                Expression valueIsNull = Equals.equals(this,
-                        value, NullConstant.NULL_CONSTANT, ObjectFlow.NO_FLOW, false);
-                Expression evaluation = conditionManager.evaluate(this, valueIsNull);
-                if (evaluation.isBoolValueFalse()) {
-                    return MultiLevel.bestNotNull(MultiLevel.EFFECTIVELY_NOT_NULL, directNN);
+                if (directNN == MultiLevel.NULLABLE) {
+                    Expression valueIsNull = Equals.equals(this,
+                            value, NullConstant.NULL_CONSTANT, ObjectFlow.NO_FLOW, false);
+                    Expression evaluation = conditionManager.evaluate(this, valueIsNull);
+                    if (evaluation.isBoolValueFalse()) {
+                        return MultiLevel.bestNotNull(MultiLevel.EFFECTIVELY_NOT_NULL, directNN);
+                    }
                 }
                 return directNN;
             }

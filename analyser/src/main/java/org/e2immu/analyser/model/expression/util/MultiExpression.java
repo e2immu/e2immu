@@ -26,6 +26,7 @@ import org.e2immu.analyser.model.expression.NullConstant;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.analyser.util.Logger;
 
 import java.util.Arrays;
 import java.util.List;
@@ -53,7 +54,7 @@ public record MultiExpression(Expression... expressions) {
 
     public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty, boolean duringEvaluation) {
         return Arrays.stream(expressions)
-                .filter(Expression::isComputeProperties)
+                .filter(Expression::isComputeProperties) // <return value> does NOT contribute!
                 .mapToInt(value -> evaluationContext.getProperty(value, variableProperty, duringEvaluation))
                 .min().orElse(Level.DELAY);
     }

@@ -24,6 +24,7 @@ import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterAnalysis;
+import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.junit.Assert;
 import org.junit.Test;
@@ -162,7 +163,55 @@ public class Test_33_ExternalNotNull extends CommonTestRunner {
 
     @Test
     public void test_1() throws IOException {
+        EvaluationResultVisitor evaluationResultVisitor = d -> {
+            int n = d.methodInfo().methodInspection.get().getParameters().size();
+            if ("5".equals(d.statementId()) && "ExternalNotNull_1".equals(d.methodInfo().name) && n == 2) {
+                Assert.assertEquals("<no return value>", d.evaluationResult().value().toString());
+                Assert.assertEquals(d.iteration() == 0, d.evaluationResult().someValueWasDelayed());
+            }
+        };
+        FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+            int enn = d.fieldAnalysis().getProperty(EXTERNAL_NOT_NULL);
+            int effFinal = d.fieldAnalysis().getProperty(VariableProperty.FINAL);
+
+            if ("p".equals(d.fieldInfo().name)) {
+                Assert.assertEquals(Level.TRUE, effFinal);
+                int expectEnn = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
+                Assert.assertEquals(expectEnn, enn);
+                if (d.iteration() == 0) {
+                    Assert.assertNull(d.fieldAnalysis().getEffectivelyFinalValue());
+                } else {
+                    Assert.assertEquals("[p1,p2]", d.fieldAnalysis().getEffectivelyFinalValue().toString());
+                }
+            }
+        };
+
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            int n = d.methodInfo().methodInspection.get().getParameters().size();
+            if ("ExternalNotNull_1".equals(d.methodInfo().name) && n == 2) {
+                ParameterAnalysis p1 = d.parameterAnalyses().get(0);
+                int expectEnnP1 = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
+                Assert.assertEquals(expectEnnP1, p1.getProperty(EXTERNAL_NOT_NULL));
+            }
+        };
+
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            int n = d.methodInfo().methodInspection.get().getParameters().size();
+            if ("ExternalNotNull_1".equals(d.methodInfo().name) && n == 2) {
+                if (d.variable() instanceof ParameterInfo p1 && "p1".equals(p1.name) && "5".equals(d.statementId())) {
+                    int expectEnn = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
+                    Assert.assertEquals(expectEnn, d.getProperty(EXTERNAL_NOT_NULL));
+                    String expectValue = d.iteration() == 0 ? "<p:p1>" : "nullable instance type String";
+                    Assert.assertEquals(expectValue, d.currentValue().toString());
+                }
+            }
+        };
+
         testClass("ExternalNotNull_1", 0, 4, new DebugConfiguration.Builder()
+                .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build());
     }
 }

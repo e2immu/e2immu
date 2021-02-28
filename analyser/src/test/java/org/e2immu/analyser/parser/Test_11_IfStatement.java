@@ -8,6 +8,7 @@ import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.expression.InlinedMethod;
+import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.This;
 import org.junit.Assert;
@@ -185,6 +186,16 @@ public class Test_11_IfStatement extends CommonTestRunner {
             if ("get1".equals(d.methodInfo().name) && d.variable() instanceof ParameterInfo d1 && "defaultValue1".equals(d1.name)) {
                 Assert.assertEquals(MultiLevel.NOT_INVOLVED, d.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
             }
+            if ("IfStatement_4".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ParameterInfo map && "map".equals(map.name)) {
+                    Assert.assertEquals("nullable instance type Map<String,Integer>", d.currentValue().toString());
+                    Assert.assertEquals(0, d.getProperty(VariableProperty.CONTAINER));
+                }
+                if (d.variable() instanceof FieldReference fr && "map".equals(fr.fieldInfo.name)) {
+                    Assert.assertEquals("map", d.currentValue().toString());
+                    Assert.assertEquals(0, d.getProperty(VariableProperty.CONTAINER));
+                }
+            }
         };
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
@@ -202,9 +213,16 @@ public class Test_11_IfStatement extends CommonTestRunner {
             }
         };
 
+        FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+            if ("map".equals(d.fieldInfo().name)) {
+                Assert.assertEquals(0, d.fieldAnalysis().getProperty(VariableProperty.CONTAINER));
+            }
+        };
+
         testClass("IfStatement_4", 0, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build());
     }
 

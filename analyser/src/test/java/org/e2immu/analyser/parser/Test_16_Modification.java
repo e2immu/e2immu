@@ -331,12 +331,13 @@ public class Test_16_Modification extends CommonTestRunner {
                 }
             }
             if ("Modification_4".equals(d.methodInfo().name) && SET4.equals(d.variableName()) && "0".equals(d.statementId())) {
-                if (d.iteration() == 0) {
-                    Assert.assertEquals(Level.DELAY, d.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
-                } else {
-                    Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.MODIFIED_VARIABLE));
-                    Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
-                }
+                int expectEnn = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
+                Assert.assertEquals(expectEnn, d.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
+
+                int expectMv = d.iteration() <= 1 ? Level.DELAY : Level.TRUE;
+                Assert.assertEquals(expectMv, d.getProperty(VariableProperty.MODIFIED_VARIABLE));
+
+                Assert.assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
                 Assert.assertEquals("in4", d.currentValue().toString());
             }
         };
@@ -755,7 +756,7 @@ public class Test_16_Modification extends CommonTestRunner {
                     }
                     if ("2".equals(d.statementId())) {
                         Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
-                        String expectLinked = d.iteration() <= 2 ? LinkedVariables.DELAY_STRING: "this.s2";
+                        String expectLinked = d.iteration() <= 2 ? LinkedVariables.DELAY_STRING : "this.s2";
                         Assert.assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
                     }
                 }

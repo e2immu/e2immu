@@ -24,6 +24,7 @@ import org.e2immu.analyser.analyser.check.CheckLinks;
 import org.e2immu.analyser.config.FieldAnalyserVisitor;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
+import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.model.expression.util.MultiExpression;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
@@ -455,6 +456,8 @@ public class FieldAnalyser extends AbstractAnalyser {
         if (!haveInitialiser && !occursInAllConstructors) {
             values.add(0, nullValue);
         }
+        // order does not matter for this class, but is handy for testing
+        values.sort(ExpressionComparator.SINGLETON);
         fieldAnalysis.values.set(MultiExpression.create(values));
         return DONE;
     }

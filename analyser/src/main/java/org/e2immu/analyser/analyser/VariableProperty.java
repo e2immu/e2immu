@@ -47,6 +47,9 @@ public enum VariableProperty {
      */
     CONTEXT_NOT_NULL_FOR_PARENT("not null in context for parent", MultiLevel.NULLABLE, MultiLevel.EFFECTIVELY_CONTENT2_NOT_NULL,
             MultiLevel.NULLABLE, MultiLevel.EFFECTIVELY_NOT_NULL),
+    CONTEXT_NOT_NULL_FOR_PARENT_DELAY("cnn4parent delay"),
+    CONTEXT_NOT_NULL_FOR_PARENT_DELAY_RESOLVED("cnn4parent delay resolved"),
+
     /*
     in fields, external not null is the truth
     in statements in a method, external not null needs combined with context not null (not null variable) and not null expression

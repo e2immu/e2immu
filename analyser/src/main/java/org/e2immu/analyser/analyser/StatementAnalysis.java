@@ -705,8 +705,14 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             lastStatements.stream().filter(cal -> cal.lastStatement.statementAnalysis.variables.isSet(fqn)).forEach(cal -> {
                 VariableInfoContainer calVic = cal.lastStatement.statementAnalysis.variables.get(fqn);
                 VariableInfo calVi = calVic.best(EVALUATION);
-                int cnn4Parent = calVi.getProperty(CONTEXT_NOT_NULL_FOR_PARENT);
-                if (cnn4Parent != Level.DELAY) contextNotNull.put(calVi.variable(), cnn4Parent);
+                int cnn4ParentDelay = calVi.getProperty(CONTEXT_NOT_NULL_FOR_PARENT_DELAY);
+                int cnn4ParentDelayResolved = calVi.getProperty(CONTEXT_NOT_NULL_FOR_PARENT_DELAY_RESOLVED);
+                if (cnn4ParentDelay == Level.TRUE && cnn4ParentDelayResolved != Level.TRUE) {
+                    contextNotNull.put(calVi.variable(), Level.DELAY);
+                } else {
+                    int cnn4Parent = calVi.getProperty(CONTEXT_NOT_NULL_FOR_PARENT);
+                    if (cnn4Parent != Level.DELAY) contextNotNull.put(calVi.variable(), cnn4Parent);
+                }
             });
         });
 
