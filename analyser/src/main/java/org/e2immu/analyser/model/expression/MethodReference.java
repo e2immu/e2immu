@@ -122,7 +122,9 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
             Location location = evaluationContext.getLocation(this);
             ObjectFlow objectFlow = builder.createInternalObjectFlow(location, methodInfo.returnType(), Origin.NEW_OBJECT_CREATION);
             MethodAnalysis methodAnalysis = evaluationContext.getAnalyserContext().getMethodAnalysis(methodInfo);
-            NewObject initialInstance = NewObject.objectCreation(evaluationContext.getPrimitives(),
+            NewObject initialInstance = NewObject.objectCreation(
+                    evaluationContext.newObjectIdentifier(),
+                    evaluationContext.getPrimitives(),
                     methodInfo, makeParameterizedTypeFromContext(evaluationContext.getAnalyserContext(),
                             methodInfo.typeInfo, scopeResult.value().returnType()), Diamond.NO, List.of(), objectFlow);
             NewObject instance = MethodCall.checkCompanionMethodsModifying(builder, evaluationContext, methodInfo,

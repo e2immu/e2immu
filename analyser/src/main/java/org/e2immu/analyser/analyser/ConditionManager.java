@@ -309,5 +309,10 @@ public record ConditionManager(Expression condition,
         public boolean isNotNull0(Expression value) {
             return false;
         }
+
+        @Override
+        public String newObjectIdentifier() {
+            throw new UnsupportedOperationException("Should not be called");
+        }
     }
 }

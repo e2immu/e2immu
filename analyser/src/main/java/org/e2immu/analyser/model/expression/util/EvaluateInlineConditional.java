@@ -66,16 +66,30 @@ public class EvaluateInlineConditional {
             if (isKnown != null) return builder.setExpression(isKnown).build();
         }
 
+        // NOTE that x, !x cannot always be detected by the presence of Negation (see GreaterThanZero,
+        // x>=10 and x<=9 for integer x
         InlineConditional secondCv;
-        // x ? (x? a: b): c === x ? a : c
-        if ((secondCv = ifTrue.asInstanceOf(InlineConditional.class)) != null && secondCv.condition.equals(condition)) {
-            return conditionalValueConditionResolved(evaluationContext, condition, secondCv.ifTrue, ifFalse, objectFlow);
+        if ((secondCv = ifTrue.asInstanceOf(InlineConditional.class)) != null) {
+            // x ? (x? a: b): c === x ? a : c
+            if (secondCv.condition.equals(condition)) {
+                return conditionalValueConditionResolved(evaluationContext, condition, secondCv.ifTrue, ifFalse, objectFlow);
+            }
+            // x ? (!x ? a: b): c === x ? b : c
+            if (secondCv.condition.equals(Negation.negate(evaluationContext, condition))) {
+                return conditionalValueConditionResolved(evaluationContext, condition, secondCv.ifFalse, ifFalse, objectFlow);
+            }
         }
         // x? a: (x? b:c) === x?a:c
         InlineConditional secondCv2;
-        // x ? (x? a: b): c === x ? a : c
-        if ((secondCv2 = ifFalse.asInstanceOf(InlineConditional.class)) != null && secondCv2.condition.equals(condition)) {
-            return conditionalValueConditionResolved(evaluationContext, condition, ifTrue, secondCv2.ifFalse, objectFlow);
+        if ((secondCv2 = ifFalse.asInstanceOf(InlineConditional.class)) != null) {
+            // x ? a: (x ? b:c) === x?a:c
+            if (secondCv2.condition.equals(condition)) {
+                return conditionalValueConditionResolved(evaluationContext, condition, ifTrue, secondCv2.ifFalse, objectFlow);
+            }
+            // x ? a: (!x ? b:c) === x?a:b
+            if (secondCv2.condition.equals(Negation.negate(evaluationContext, condition))) {
+                return conditionalValueConditionResolved(evaluationContext, condition, ifTrue, secondCv2.ifTrue, objectFlow);
+            }
         }
 
         Expression edgeCase = edgeCases(evaluationContext, evaluationContext.getPrimitives(), condition, ifTrue, ifFalse);

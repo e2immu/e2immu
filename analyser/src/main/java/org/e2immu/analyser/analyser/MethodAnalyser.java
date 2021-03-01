@@ -1127,5 +1127,10 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
         public int getProperty(Expression value, VariableProperty variableProperty, boolean duringEvaluation) {
             return value.getProperty(this, variableProperty, true);
         }
+
+        @Override
+        public String newObjectIdentifier() {
+            return methodInfo.fullyQualifiedName;
+        }
     }
 }

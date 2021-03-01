@@ -171,14 +171,15 @@ public class ArrayAccess implements Expression {
                 builder.markRead(variableTarget);
                 if (evaluationContext.isPresent(dependentVariable)) {
                     Expression variableValue = builder.currentExpression(dependentVariable, true);
-                    if(variableValue == null) {
+                    if (variableValue == null) {
                         builder.setExpression(DelayedVariableExpression.forVariable(dependentVariable));
                     } else {
                         builder.setExpression(variableValue);
                     }
                 } else {
                     // the result is not known, lets return an unknown instance
-                    Expression newObject = NewObject.genericArrayAccess(evaluationContext, array.value(),
+                    Expression newObject = NewObject.genericArrayAccess(evaluationContext.newObjectIdentifier()
+                                    + "-" + dependentVariable.fullyQualifiedName(), evaluationContext, array.value(),
                             dependentVariable, ObjectFlow.NO_FLOW);
                     builder.setExpression(newObject);
 

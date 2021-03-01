@@ -171,7 +171,8 @@ public class MultiValue implements Expression {
     }
 
     @Override
-    public NewObject getInstance(EvaluationResult evaluationContext) {
-        return NewObject.forGetInstance(primitives, returnType(), getObjectFlow());
+    public NewObject getInstance(EvaluationResult evaluationResult) {
+        return NewObject.forGetInstance(evaluationResult.evaluationContext().newObjectIdentifier(),
+                primitives, returnType(), getObjectFlow());
     }
 }

@@ -158,8 +158,20 @@ public class TestConditionalValue extends CommonAbstractValue {
     }
 
     @Test
-    public void testLoops4() {
+    public void testLoops4_0() {
         Expression e1 = inline(a, newInt(3), inline(negate(a), newInt(4), newInt(5)));
         Assert.assertEquals("a?3:4", e1.toString());
+    }
+
+    @Test
+    public void testLoops4_1() {
+        Expression ge10 = GreaterThanZero.greater(minimalEvaluationContext, i, newInt(10), true);
+        Assert.assertEquals("i>=10", ge10.toString());
+        Expression le9 = GreaterThanZero.less(minimalEvaluationContext, i, newInt(9), true);
+        Assert.assertEquals("i<=9", le9.toString());
+        Expression notLe9 = negate(le9);
+        Assert.assertEquals(ge10, notLe9);
+        Expression notGe10 = negate(ge10);
+        Assert.assertEquals(le9, notGe10);
     }
 }

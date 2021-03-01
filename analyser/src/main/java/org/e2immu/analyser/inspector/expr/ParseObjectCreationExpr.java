@@ -44,7 +44,7 @@ public class ParseObjectCreationExpr {
         if (diamond == Diamond.YES) {
             ParameterizedType diamondType = ParameterizedTypeFactory.from(typeContext, objectCreationExpr.getType());
             ParameterizedType formalType = diamondType.typeInfo.asParameterizedType(expressionContext.typeContext);
-            if(impliedParameterizedType == null) {
+            if (impliedParameterizedType == null) {
                 // we cannot infer (this can happen, when we're choosing a method candidate among many candidates)
                 // e.g. map.put(key, new LinkedList<>()) -> we first need to know which "put" method to choose
                 // then there'll be a re-evaluation with an implied parameter of "V"
@@ -63,7 +63,8 @@ public class ParseObjectCreationExpr {
             typeInspector.inspectAnonymousType(parameterizedType, expressionContext.newVariableContext("anonymous class body"),
                     objectCreationExpr.getAnonymousClassBody().get());
             expressionContext.addNewlyCreatedType(anonymousType);
-            return NewObject.withAnonymousClass(typeContext.getPrimitives(), parameterizedType, anonymousType, diamond);
+            return NewObject.withAnonymousClass(anonymousType.fullyQualifiedName,
+                    typeContext.getPrimitives(), parameterizedType, anonymousType, diamond);
         }
 
         Map<NamedType, ParameterizedType> typeMap = parameterizedType.initialTypeParameterMap(typeContext);
@@ -78,7 +79,7 @@ public class ParseObjectCreationExpr {
                         newParameterExpressions, singleAbstractMethod, new HashMap<>(), "constructor",
                         parameterizedType, objectCreationExpr.getBegin().orElseThrow());
         if (method == null) return new UnevaluatedMethodCall(parameterizedType.detailedString() + "::new");
-        return NewObject.objectCreation(typeContext.getPrimitives(),
+        return NewObject.objectCreation("unevaluated new object", typeContext.getPrimitives(),
                 method.methodInspection.getMethodInfo(), parameterizedType, diamond, newParameterExpressions, ObjectFlow.NO_FLOW);
     }
 }

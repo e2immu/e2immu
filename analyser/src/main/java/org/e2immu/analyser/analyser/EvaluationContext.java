@@ -263,4 +263,5 @@ public interface EvaluationContext {
         return !isDelayed(expression);
     }
 
+    String newObjectIdentifier();
 }

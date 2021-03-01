@@ -942,6 +942,10 @@ public class FieldAnalyser extends AbstractAnalyser {
             return internalObjectFlows.stream();
         }
 
+        @Override
+        public String newObjectIdentifier() {
+            return fieldInfo.fullyQualifiedName();
+        }
     }
 
 }

@@ -168,6 +168,11 @@ public class CompanionAnalyser {
         }
 
         @Override
+        public String newObjectIdentifier() {
+            return companionMethod.fullyQualifiedName;
+        }
+
+        @Override
         public Primitives getPrimitives() {
             return analyserContext.getPrimitives();
         }

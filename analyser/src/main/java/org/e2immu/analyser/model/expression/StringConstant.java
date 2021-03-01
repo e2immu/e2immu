@@ -94,7 +94,8 @@ public record StringConstant(Primitives primitives,
     public NewObject getInstance(EvaluationResult evaluationResult) {
         // TODO static flow
         // TODO apply code from method call to produce a decent state
-        return NewObject.objectCreation(primitives, oneParameterConstructor(), primitives.stringParameterizedType, Diamond.NO,
+        return NewObject.objectCreation("StringConstant-" + constant,
+                primitives, oneParameterConstructor(), primitives.stringParameterizedType, Diamond.NO,
                 List.of(this), ObjectFlow.NO_FLOW);
     }
 

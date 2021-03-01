@@ -151,7 +151,7 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfo vi) 
     }
 
     private Expression inlineConditional(Expression condition, Expression ifTrue, Expression ifFalse) {
-         return safe(EvaluateInlineConditional.conditionalValueConditionResolved(evaluationContext,
+        return safe(EvaluateInlineConditional.conditionalValueConditionResolved(evaluationContext,
                 condition, ifTrue, ifFalse, ObjectFlow.NO_FLOW));
     }
 
@@ -164,6 +164,7 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfo vi) 
     }
 
     public Expression noConclusion() {
-        return NewObject.genericMergeResult(evaluationContext.getPrimitives(), vi);
+        return NewObject.genericMergeResult(evaluationContext.newObjectIdentifier() + "-" +
+                vi.variable().fullyQualifiedName(), evaluationContext.getPrimitives(), vi);
     }
 }

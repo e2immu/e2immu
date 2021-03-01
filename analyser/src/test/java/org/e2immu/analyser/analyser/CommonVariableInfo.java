@@ -97,6 +97,11 @@ public abstract class CommonVariableInfo {
         public ConditionManager getConditionManager() {
             return ConditionManager.initialConditionManager(primitives);
         }
+
+        @Override
+        public String newObjectIdentifier() {
+            return "-";
+        }
     };
 
 }

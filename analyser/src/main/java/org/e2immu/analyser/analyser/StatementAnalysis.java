@@ -559,7 +559,8 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                         Expression initialValue = statementTime == initial.getStatementTime() &&
                                 initial.getAssignmentId().compareTo(indexOfStatementTime) >= 0 ?
                                 initial.getValue() :
-                                NewObject.localCopyOfVariableField(primitives, fieldReference.parameterizedType(),
+                                NewObject.localCopyOfVariableField(index + "-" + localCopy.fullyQualifiedName(),
+                                        primitives, fieldReference.parameterizedType(),
                                         fieldAnalysis.getObjectFlow());
                         assert initialValue != null && evaluationContext.isNotDelayed(initialValue);
                         Map<VariableProperty, Integer> valueMap = evaluationContext.getValueProperties(initialValue);
@@ -774,7 +775,9 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             vic.setLinkedVariables(LinkedVariables.EMPTY, true);
 
         } else if (variable instanceof This) {
-            vic.setValue(NewObject.forCatchOrThis(primitives, variable.parameterizedType()), false, LinkedVariables.EMPTY,
+            vic.setValue(NewObject.forCatchOrThis(
+                    index + "-" + variable.fullyQualifiedName(),
+                    primitives, variable.parameterizedType()), false, LinkedVariables.EMPTY,
                     propertyMap(analyserContext, methodAnalysis.getMethodInfo().typeInfo, MultiLevel.EFFECTIVELY_NOT_NULL), true);
             vic.setLinkedVariables(LinkedVariables.EMPTY, true);
             vic.setProperty(NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL, false, INITIAL);
@@ -807,7 +810,9 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                 parameterInfo.parameterizedType.defaultNotNull());
         ObjectFlow objectFlow = createObjectFlowForNewVariable(analyserContext, parameterInfo);
         Expression state = new BooleanConstant(primitives, true);
-        return NewObject.initialValueOfParameter(parameterInfo.parameterizedType, state, notNull, objectFlow);
+        return NewObject.initialValueOfParameter(
+                index + "-" + parameterInfo.fullyQualifiedName(),
+                parameterInfo.parameterizedType, state, notNull, objectFlow);
     }
 
     public int statementTimeForVariable(AnalyserContext analyserContext, Variable variable, int statementTime) {
@@ -870,6 +875,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         FieldAnalyser fieldAnalyser = analyserContext.getFieldAnalyser(fieldReference.fieldInfo);
 
         boolean myOwn = fieldReference.scope instanceof This thisVariable && thisVariable.typeInfo.equals(methodAnalysis.getMethodInfo().typeInfo);
+        String newObjectIdentifier = index + "-" + fieldReference.fieldInfo.fullyQualifiedName();
 
         if (inPartOfConstruction() && myOwn) { // field that must be initialised
             Expression initialValue = analyserContext.getFieldAnalysis(fieldReference.fieldInfo).getInitialValue();
@@ -879,7 +885,9 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             if (initialValue.isConstant()) {
                 return new ExpressionAndDelay(initialValue, false);
             }
-            NewObject newObject = NewObject.initialValueOfFieldPartOfConstruction(evaluationContext, fieldReference, fieldAnalyser.fieldAnalysis.getObjectFlow());
+            NewObject newObject = NewObject.initialValueOfFieldPartOfConstruction(
+                    newObjectIdentifier,
+                    evaluationContext, fieldReference, fieldAnalyser.fieldAnalysis.getObjectFlow());
             return new ExpressionAndDelay(newObject, false);
         }
 
@@ -917,9 +925,11 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         if (fieldAnalyser == null) {
             // not a local field
             int minimalNotNull = analyserContext.getFieldAnalysis(fieldReference.fieldInfo).getProperty(EXTERNAL_NOT_NULL);
-            newObject = NewObject.initialValueOfExternalField(primitives, fieldReference.parameterizedType(), minimalNotNull, ObjectFlow.NO_FLOW);
+            newObject = NewObject.initialValueOfExternalField(newObjectIdentifier,
+                    primitives, fieldReference.parameterizedType(), minimalNotNull, ObjectFlow.NO_FLOW);
         } else {
-            newObject = NewObject.initialValueOfField(primitives, fieldReference.parameterizedType(), fieldAnalyser.fieldAnalysis.getObjectFlow());
+            newObject = NewObject.initialValueOfField(newObjectIdentifier,
+                    primitives, fieldReference.parameterizedType(), fieldAnalyser.fieldAnalysis.getObjectFlow());
         }
         return new ExpressionAndDelay(newObject, false);
     }

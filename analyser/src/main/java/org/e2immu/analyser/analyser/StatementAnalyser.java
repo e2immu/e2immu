@@ -1264,7 +1264,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             if (!statementAnalysis.variables.isSet(name)) {
                 LocalVariableReference lvr = new LocalVariableReference(analyserContext, catchVariable.localVariable, List.of());
                 VariableInfoContainer vic = VariableInfoContainerImpl.newCatchVariable(lvr, index(),
-                        NewObject.forCatchOrThis(statementAnalysis.primitives, lvr.parameterizedType()),
+                        NewObject.forCatchOrThis(index() + "-" + lvr.fullyQualifiedName(),
+                                statementAnalysis.primitives, lvr.parameterizedType()),
                         statementAnalysis.navigationData.hasSubBlocks());
                 statementAnalysis.variables.put(name, vic);
             }
@@ -1277,7 +1278,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 LocalVariableReference lvr;
                 VariableInfoContainer vic;
                 boolean newVariable;
-                if (!statementAnalysis.variables.isSet(lvc.localVariable.name())) {
+                String name = lvc.localVariable.name();
+                if (!statementAnalysis.variables.isSet(name)) {
 
                     // create the local (loop) variable
 
@@ -1290,9 +1292,9 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                     if (statement() instanceof LoopStatement) {
                         statementAnalysis.localVariablesAssignedInThisLoop.add(lvr.fullyQualifiedName());
                     }
-                    statementAnalysis.variables.put(lvc.localVariable.name(), vic);
+                    statementAnalysis.variables.put(name, vic);
                 } else {
-                    vic = statementAnalysis.variables.get(lvc.localVariable.name());
+                    vic = statementAnalysis.variables.get(name);
                     lvr = (LocalVariableReference) vic.current().variable();
                     newVariable = false;
                 }
@@ -1304,7 +1306,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                     // otherwise we'll get delays
                     // especially in the case of forEach, the lvc.expression is empty, anyway
                     // an assignment may be difficult. The value is never used, only local copies are
-                    vic.setValue(NewObject.forCatchOrThis(statementAnalysis.primitives, lvr.parameterizedType()), false,
+                    vic.setValue(NewObject.forCatchOrThis(index() + "-" + name,
+                            statementAnalysis.primitives, lvr.parameterizedType()), false,
                             LinkedVariables.EMPTY, Map.of(CONTEXT_MODIFIED, Level.FALSE,
                                     CONTEXT_NOT_NULL, lvr.parameterizedType().defaultNotNull()), true);
                     vic.setLinkedVariables(LinkedVariables.EMPTY, true);
@@ -1364,7 +1367,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 LocalVariableReference newLvr = createLocalCopyOfLoopVariable(vi.variable(), newFqn);
                 String assigned = index() + VariableInfoContainer.Level.INITIAL;
                 String read = index() + EVALUATION;
-                Expression newValue = NewObject.localVariableInLoop(statementAnalysis.primitives, newLvr.parameterizedType());
+                Expression newValue = NewObject.localVariableInLoop(index() + "-" + newFqn,
+                        statementAnalysis.primitives, newLvr.parameterizedType());
                 Map<VariableProperty, Integer> valueProps = sharedState.evaluationContext.getValueProperties(newValue);
                 VariableInfoContainer newVic = VariableInfoContainerImpl.newLoopVariable(newLvr, assigned,
                         read,
@@ -1974,7 +1978,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 conditionForSubStatement = null; // will not be executed anyway
                 conditionForSubStatementIsDelayed = false;
             } else if (statement() instanceof TryStatement) { // catch
-                conditionForSubStatement = NewObject.forCatchOrThis(statementAnalysis.primitives, statementAnalysis.primitives.booleanParameterizedType);
+                conditionForSubStatement = NewObject.forCatchOrThis(index() + "-condition",
+                        statementAnalysis.primitives, statementAnalysis.primitives.booleanParameterizedType);
                 conditionForSubStatementIsDelayed = false;
             } else if (statement() instanceof SwitchEntry switchEntry) {
                 Expression constant = switchEntry.switchVariableAsExpression.evaluate(evaluationContext, ForwardEvaluationInfo.DEFAULT).value();
@@ -2158,6 +2163,11 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                                       boolean disableEvaluationOfMethodCallsUsingCompanionMethods) {
             super(iteration, conditionManager, closure);
             this.disableEvaluationOfMethodCallsUsingCompanionMethods = disableEvaluationOfMethodCallsUsingCompanionMethods;
+        }
+
+        @Override
+        public String newObjectIdentifier() {
+            return index();
         }
 
         @Override
@@ -2409,7 +2419,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                             Variable variable = eval.variable();
                             int nne = getProperty(eval.getValue(), NOT_NULL_EXPRESSION, true);
                             if (nne != Level.DELAY) {
-                                Expression newObject = NewObject.genericMergeResult(getPrimitives(), e.getValue().current(), nne);
+                                Expression newObject = NewObject.genericMergeResult(index() + "-" + variable.fullyQualifiedName(),
+                                        getPrimitives(), e.getValue().current(), nne);
                                 map.put(new VariableExpression(variable), newObject);
                             }
 

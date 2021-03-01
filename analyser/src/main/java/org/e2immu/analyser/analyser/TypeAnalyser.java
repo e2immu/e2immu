@@ -1077,5 +1077,10 @@ public class TypeAnalyser extends AbstractAnalyser {
         public AnalyserContext getAnalyserContext() {
             return analyserContext;
         }
+
+        @Override
+        public String newObjectIdentifier() {
+            return typeInfo.fullyQualifiedName;
+        }
     }
 }

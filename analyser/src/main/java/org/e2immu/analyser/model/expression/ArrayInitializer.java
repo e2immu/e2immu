@@ -172,6 +172,7 @@ public class ArrayInitializer implements Expression {
 
     @Override
     public NewObject getInstance(EvaluationResult evaluationContext) {
-        return NewObject.forGetInstance(primitives, returnType(), getObjectFlow());
+        return NewObject.forGetInstance(evaluationContext.evaluationContext().newObjectIdentifier(),
+                primitives, returnType(), getObjectFlow());
     }
 }

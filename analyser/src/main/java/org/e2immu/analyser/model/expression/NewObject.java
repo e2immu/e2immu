@@ -46,27 +46,30 @@ import java.util.stream.Collectors;
  Represents first a newly constructed object, then after applying modifying methods, a "used" object
 
  */
-public record NewObject(MethodInfo constructor,
-                        ParameterizedType parameterizedType,
-                        Diamond diamond,
-                        List<Expression> parameterExpressions,
-                        int minimalNotNull,
-                        TypeInfo anonymousClass,
-                        ArrayInitializer arrayInitializer,
-                        Expression state,
-                        ObjectFlow objectFlow) implements HasParameterExpressions {
+public record NewObject(
+        String identifier, // variable FQN + assignment ID
+        MethodInfo constructor,
+        ParameterizedType parameterizedType,
+        Diamond diamond,
+        List<Expression> parameterExpressions,
+        int minimalNotNull,
+        TypeInfo anonymousClass,
+        ArrayInitializer arrayInitializer,
+        Expression state,
+        ObjectFlow objectFlow) implements HasParameterExpressions {
     // specific construction and copy methods: we explicitly name construction
 
     /*
     specific situation, new X[] { 0, 1, 2 } array initialiser
      */
-    public static Expression withArrayInitialiser(MethodInfo arrayCreationConstructor,
+    public static Expression withArrayInitialiser(String identifier,
+                                                  MethodInfo arrayCreationConstructor,
                                                   ParameterizedType parameterizedType,
                                                   List<Expression> parameterExpressions,
                                                   ArrayInitializer arrayInitializer,
                                                   Expression state,
                                                   ObjectFlow objectFlow) {
-        return new NewObject(arrayCreationConstructor, parameterizedType, Diamond.NO,
+        return new NewObject(identifier, arrayCreationConstructor, parameterizedType, Diamond.NO,
                 parameterExpressions, MultiLevel.EFFECTIVELY_NOT_NULL, null, arrayInitializer, state,
                 objectFlow);
     }
@@ -75,27 +78,28 @@ public record NewObject(MethodInfo constructor,
     used in MethodCall and Field analyser (in the former to enrich with, in the latter to get rid of, state)
      */
     public NewObject copyWithNewState(Expression newState) {
-        return new NewObject(constructor, parameterizedType, diamond, parameterExpressions,
+        return new NewObject(identifier, constructor, parameterizedType, diamond, parameterExpressions,
                 MultiLevel.EFFECTIVELY_NOT_NULL,
                 anonymousClass, arrayInitializer, newState, objectFlow);
     }
 
     public NewObject copyAfterModifyingMethodOnConstructor(Expression newState) {
-        return new NewObject(null, parameterizedType, diamond, List.of(),
+        return new NewObject(identifier, null, parameterizedType, diamond, List.of(),
                 MultiLevel.EFFECTIVELY_NOT_NULL, null, null,
                 newState, getObjectFlow());
     }
 
     public static NewObject forTesting(Primitives primitives, ParameterizedType parameterizedType) {
-        return new NewObject(null, parameterizedType, Diamond.SHOW_ALL, List.of(),
+        return new NewObject("-", null, parameterizedType, Diamond.SHOW_ALL, List.of(),
                 MultiLevel.EFFECTIVELY_NOT_NULL, null, null,
                 new BooleanConstant(primitives, true), ObjectFlow.NO_FLOW);
     }
 
     // never null, never more interesting.
-    public static NewObject forCatchOrThis(Primitives primitives, ParameterizedType parameterizedType) {
+    public static NewObject forCatchOrThis(String identifier,
+                                           Primitives primitives, ParameterizedType parameterizedType) {
         Diamond diamond = parameterizedType.parameters.isEmpty() ? Diamond.NO : Diamond.SHOW_ALL;
-        return new NewObject(null, parameterizedType, diamond, List.of(), MultiLevel.EFFECTIVELY_NOT_NULL,
+        return new NewObject(identifier, null, parameterizedType, diamond, List.of(), MultiLevel.EFFECTIVELY_NOT_NULL,
                 null, null,
                 new BooleanConstant(primitives, true), ObjectFlow.NO_FLOW);
     }
@@ -105,15 +109,17 @@ public record NewObject(MethodInfo constructor,
      don't assume that this instance is non-null straight away; state is also generic at this point
      */
 
-    public static NewObject localVariableInLoop(Primitives primitives, ParameterizedType parameterizedType) {
-        return new NewObject(null, parameterizedType, Diamond.SHOW_ALL, List.of(),
+    public static NewObject localVariableInLoop(String identifier,
+                                                Primitives primitives, ParameterizedType parameterizedType) {
+        return new NewObject(identifier, null, parameterizedType, Diamond.SHOW_ALL, List.of(),
                 parameterizedType.defaultNotNull(), null, null,
                 new BooleanConstant(primitives, true), ObjectFlow.NO_FLOW);
     }
 
-    public static NewObject localCopyOfVariableField(Primitives primitives, ParameterizedType parameterizedType,
+    public static NewObject localCopyOfVariableField(String identifier,
+                                                     Primitives primitives, ParameterizedType parameterizedType,
                                                      ObjectFlow objectFlow) {
-        return new NewObject(null, parameterizedType, Diamond.SHOW_ALL, List.of(),
+        return new NewObject(identifier, null, parameterizedType, Diamond.SHOW_ALL, List.of(),
                 parameterizedType.defaultNotNull(), null, null,
                 new BooleanConstant(primitives, true), objectFlow);
     }
@@ -121,62 +127,69 @@ public record NewObject(MethodInfo constructor,
     /*
     not-null always in properties
      */
-    public static NewObject initialValueOfParameter(ParameterizedType parameterizedType, Expression state,
+    public static NewObject initialValueOfParameter(String identifier,
+                                                    ParameterizedType parameterizedType, Expression state,
                                                     int contractNotNull, ObjectFlow objectFlow) {
-        return new NewObject(null, parameterizedType, Diamond.SHOW_ALL, List.of(), contractNotNull,
+        return new NewObject(identifier, null, parameterizedType, Diamond.SHOW_ALL, List.of(), contractNotNull,
                 null, null, state, objectFlow);
     }
 
-    public static NewObject initialValueOfFieldPartOfConstruction(EvaluationContext evaluationContext,
+    public static NewObject initialValueOfFieldPartOfConstruction(String identifier,
+                                                                  EvaluationContext evaluationContext,
                                                                   FieldReference fieldReference,
                                                                   ObjectFlow objectFlow) {
         int notNull = evaluationContext.getProperty(fieldReference, VariableProperty.NOT_NULL_EXPRESSION);
-        return new NewObject(null, fieldReference.parameterizedType(), Diamond.SHOW_ALL, List.of(),
+        return new NewObject(identifier, null, fieldReference.parameterizedType(), Diamond.SHOW_ALL, List.of(),
                 notNull, null, null,
                 new BooleanConstant(evaluationContext.getPrimitives(), true), objectFlow);
     }
 
     /* like a local variable in loop*/
-    public static NewObject initialValueOfField(Primitives primitives,
+    public static NewObject initialValueOfField(String identifier,
+                                                Primitives primitives,
                                                 ParameterizedType parameterizedType,
                                                 ObjectFlow objectFlow) {
-        return new NewObject(null, parameterizedType, Diamond.SHOW_ALL, List.of(),
+        return new NewObject(identifier, null, parameterizedType, Diamond.SHOW_ALL, List.of(),
                 parameterizedType.defaultNotNull(), null, null,
                 new BooleanConstant(primitives, true), objectFlow);
     }
 
     /* like a local variable in loop*/
-    public static NewObject initialValueOfExternalField(Primitives primitives,
+    public static NewObject initialValueOfExternalField(String identifier,
+                                                        Primitives primitives,
                                                         ParameterizedType parameterizedType,
                                                         int minimalNotNull,
                                                         ObjectFlow objectFlow) {
-        return new NewObject(null, parameterizedType, Diamond.SHOW_ALL, List.of(), minimalNotNull,
+        return new NewObject(identifier, null, parameterizedType, Diamond.SHOW_ALL, List.of(), minimalNotNull,
                 null, null, new BooleanConstant(primitives, true), objectFlow);
     }
 
     // null-status derived from variable in evaluation context
-    public static NewObject genericMergeResult(Primitives primitives, VariableInfo variableInfo) {
+    public static NewObject genericMergeResult(String identifier,
+                                               Primitives primitives, VariableInfo variableInfo) {
         int notNull = MultiLevel.bestNotNull(variableInfo.getProperty(VariableProperty.NOT_NULL_EXPRESSION),
                 variableInfo.variable().parameterizedType().defaultNotNull());
-        return new NewObject(null, variableInfo.variable().parameterizedType(),
+        return new NewObject(identifier, null, variableInfo.variable().parameterizedType(),
                 Diamond.SHOW_ALL, List.of(), notNull, null, null,
                 new BooleanConstant(primitives, true), variableInfo.getObjectFlow());
     }
 
     // null-status derived from variable in evaluation context
-    public static NewObject genericMergeResult(Primitives primitives, VariableInfo variableInfo, int notNull) {
-        return new NewObject(null, variableInfo.variable().parameterizedType(),
+    public static NewObject genericMergeResult(String identifier,
+                                               Primitives primitives, VariableInfo variableInfo, int notNull) {
+        return new NewObject(identifier, null, variableInfo.variable().parameterizedType(),
                 Diamond.SHOW_ALL, List.of(), notNull, null, null,
                 new BooleanConstant(primitives, true), variableInfo.getObjectFlow());
     }
 
-    public static Expression genericArrayAccess(EvaluationContext evaluationContext,
-                                               Expression array,
-                                               Variable variable,
-                                               ObjectFlow objectFlow) {
+    public static Expression genericArrayAccess(String identifier,
+                                                EvaluationContext evaluationContext,
+                                                Expression array,
+                                                Variable variable,
+                                                ObjectFlow objectFlow) {
         int notNull = evaluationContext.getProperty(array, VariableProperty.NOT_NULL_EXPRESSION, true);
-        if(notNull == Level.DELAY) return DelayedExpression.forNewObject(variable.parameterizedType());
-        return new NewObject(null, variable.parameterizedType(), Diamond.SHOW_ALL, List.of(), notNull,
+        if (notNull == Level.DELAY) return DelayedExpression.forNewObject(variable.parameterizedType());
+        return new NewObject(identifier, null, variable.parameterizedType(), Diamond.SHOW_ALL, List.of(), notNull,
                 null, null,
                 new BooleanConstant(evaluationContext.getPrimitives(), true), objectFlow);
     }
@@ -184,11 +197,12 @@ public record NewObject(MethodInfo constructor,
     /*
     When creating an anonymous instance of a class (new SomeType() { })
      */
-    public static NewObject withAnonymousClass(Primitives primitives,
+    public static NewObject withAnonymousClass(String identifier,
+                                               Primitives primitives,
                                                @NotNull ParameterizedType parameterizedType,
                                                @NotNull TypeInfo anonymousClass,
                                                Diamond diamond) {
-        return new NewObject(null, parameterizedType, diamond,
+        return new NewObject(identifier, null, parameterizedType, diamond,
                 List.of(), MultiLevel.EFFECTIVELY_NOT_NULL, anonymousClass, null,
                 new BooleanConstant(primitives, true), ObjectFlow.NO_FLOW);
     }
@@ -198,10 +212,11 @@ public record NewObject(MethodInfo constructor,
 
     cannot be null, we're applying a method on it.
      */
-    public static NewObject forGetInstance(Primitives primitives,
+    public static NewObject forGetInstance(String identifier,
+                                           Primitives primitives,
                                            ParameterizedType parameterizedType,
                                            ObjectFlow objectFlow) {
-        return new NewObject(null, parameterizedType, Diamond.SHOW_ALL, List.of(),
+        return new NewObject(identifier, null, parameterizedType, Diamond.SHOW_ALL, List.of(),
                 MultiLevel.EFFECTIVELY_NOT_NULL, null, null,
                 new BooleanConstant(primitives, true), objectFlow);
     }
@@ -212,27 +227,30 @@ public record NewObject(MethodInfo constructor,
     2nd version, one with known state, used by EvaluationResult.currentInstance
     cannot be null, we're applying a method on it.
     */
-    public static NewObject forGetInstance(ParameterizedType parameterizedType, Expression state,
+    public static NewObject forGetInstance(String identifier,
+                                           ParameterizedType parameterizedType, Expression state,
                                            int minimalNotNull,
                                            ObjectFlow objectFlow) {
-        return new NewObject(null, parameterizedType, Diamond.SHOW_ALL, List.of(),
-               minimalNotNull, null, null, state, objectFlow);
+        return new NewObject(identifier, null, parameterizedType, Diamond.SHOW_ALL, List.of(),
+                minimalNotNull, null, null, state, objectFlow);
     }
 
     /*
     Result of actual object creation expressions (new XX, xx::new, ...)
      */
-    public static NewObject objectCreation(Primitives primitives,
+    public static NewObject objectCreation(String identifier,
+                                           Primitives primitives,
                                            MethodInfo constructor,
                                            ParameterizedType parameterizedType,
                                            Diamond diamond,
                                            List<Expression> parameterExpressions,
                                            ObjectFlow objectFlow) {
-        return new NewObject(constructor, parameterizedType, diamond, parameterExpressions, MultiLevel.EFFECTIVELY_NOT_NULL,
+        return new NewObject(identifier, constructor, parameterizedType, diamond, parameterExpressions, MultiLevel.EFFECTIVELY_NOT_NULL,
                 null, null, new BooleanConstant(primitives, true), objectFlow);
     }
 
-    public NewObject(MethodInfo constructor,
+    public NewObject(String identifier,
+                     MethodInfo constructor,
                      ParameterizedType parameterizedType,
                      Diamond diamond,
                      List<Expression> parameterExpressions,
@@ -241,6 +259,7 @@ public record NewObject(MethodInfo constructor,
                      ArrayInitializer arrayInitializer,
                      Expression state,
                      ObjectFlow objectFlow) {
+        this.identifier = identifier;
         this.parameterizedType = Objects.requireNonNull(parameterizedType);
         this.parameterExpressions = Objects.requireNonNull(parameterExpressions);
         this.constructor = constructor; // can be null after modification (constructor lost)
@@ -250,7 +269,7 @@ public record NewObject(MethodInfo constructor,
         this.objectFlow = Objects.requireNonNull(objectFlow);
         this.minimalNotNull = minimalNotNull;
         assert minimalNotNull != Level.DELAY;
-        this.diamond = parameterizedType.parameters.isEmpty() ? Diamond.NO: diamond;
+        this.diamond = parameterizedType.parameters.isEmpty() ? Diamond.NO : diamond;
         assert !(constructor != null && minimalNotNull < MultiLevel.EFFECTIVELY_NOT_NULL);
     }
 
@@ -264,7 +283,8 @@ public record NewObject(MethodInfo constructor,
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         NewObject newObject = (NewObject) o;
-        return parameterizedType.equals(newObject.parameterizedType) &&
+        return identifier.equals(newObject.identifier) &&
+                parameterizedType.equals(newObject.parameterizedType) &&
                 parameterExpressions.equals(newObject.parameterExpressions) &&
                 Objects.equals(anonymousClass, newObject.anonymousClass) &&
                 Objects.equals(constructor, newObject.constructor) &&
@@ -281,7 +301,8 @@ public record NewObject(MethodInfo constructor,
 
     @Override
     public Expression translate(TranslationMap translationMap) {
-        return new NewObject(constructor,
+        return new NewObject(identifier,
+                constructor,
                 translationMap.translateType(parameterizedType),
                 diamond,
                 parameterExpressions.stream().map(translationMap::translateExpression).collect(Collectors.toList()),
@@ -504,7 +525,7 @@ public record NewObject(MethodInfo constructor,
         Location location = evaluationContext.getLocation(this);
         ObjectFlow objectFlow = res.k.createInternalObjectFlow(location, parameterizedType, Origin.NEW_OBJECT_CREATION);
 
-        NewObject initialInstance = NewObject.objectCreation(evaluationContext.getPrimitives(),
+        NewObject initialInstance = NewObject.objectCreation(identifier, evaluationContext.getPrimitives(),
                 constructor, parameterizedType, diamond, res.v, objectFlow);
         Expression instance;
         if (constructor != null) {

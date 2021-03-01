@@ -236,6 +236,11 @@ public abstract class CommonAbstractValue {
             }
             return value.getProperty(minimalEvaluationContext, variableProperty, true);
         }
+
+        @Override
+        public String newObjectIdentifier() {
+            return "-";
+        }
     }
 
     protected static Expression equals(Expression v1, Expression v2) {
