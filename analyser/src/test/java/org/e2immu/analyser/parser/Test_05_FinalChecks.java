@@ -5,8 +5,6 @@ import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.MultiValue;
 import org.e2immu.analyser.model.expression.StringConcat;
-import org.e2immu.analyser.model.expression.VariableExpression;
-import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.junit.Assert;
 import org.junit.Test;
@@ -41,9 +39,7 @@ public class Test_05_FinalChecks extends CommonTestRunner {
             if (S4.equals(d.variableName())) {
                 Assert.assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
                 Assert.assertEquals("s4", d.currentValue().debugOutput());
-                String expectLinked = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "";
-                // first iteration delayed because VARIABLE_FIELD delay
-                Assert.assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
+                Assert.assertEquals("", d.variableInfo().getLinkedVariables().toString());
             }
             if (d.variable() instanceof ParameterInfo pi && "s4".equals(pi.name)) {
                 if ("0".equals(d.statementId())) {
@@ -69,16 +65,17 @@ public class Test_05_FinalChecks extends CommonTestRunner {
                 if (d.iteration() == 0) {
                     expectValue = "<f:s1>+\" \"+<f:s2>+\" \"+<f:s3>+\" \"+<f:s4>";
                 } else if (d.iteration() == 1) {
-                    expectValue = "<f:s1>+\" \"+<f:s2>+\" \"+s3+\" \"+org.e2immu.analyser.testexample.FinalChecks.s4$0";
+                    expectValue = "<f:s1>+\" \"+<f:s2>+\" \"+\"abc\"+\" \"+org.e2immu.analyser.testexample.FinalChecks.s4$0";
                 } else {
-                    expectValue = "s1+\" \"+s2+\" \"+s3+\" \"+org.e2immu.analyser.testexample.FinalChecks.s4$0";
+                    expectValue = "s1+\" \"+s2+\" \"+\"abc\"+\" \"+org.e2immu.analyser.testexample.FinalChecks.s4$0";
                 }
                 Assert.assertEquals(expectValue, d.currentValue().toString());
                 Assert.assertEquals(d.iteration() > 1, d.variableInfo().valueIsSet());
             }
         }
 
-        if (FINAL_CHECKS_FQN.equals(d.methodInfo().fullyQualifiedName)) {
+        if (FINAL_CHECKS.equals(d.methodInfo().name) && d.methodInfo().methodInspection.get().getParameters().size() == 2) {
+            Assert.assertEquals(FINAL_CHECKS_FQN, d.methodInfo().fullyQualifiedName);
             if (THIS.equals(d.variableName())) {
                 if ("0".equals(d.statementId())) {
                     Assert.assertEquals("0:M", d.variableInfo().getReadId());
@@ -100,6 +97,10 @@ public class Test_05_FinalChecks extends CommonTestRunner {
                 }
             }
             if (S5.equals(d.variableName())) {
+                if ("0.0.0".equals(d.statementId())) {
+                    Assert.assertEquals(Level.DELAY, d.getProperty(VariableProperty.CONTEXT_NOT_NULL_FOR_PARENT_DELAY));
+                }
+
                 if ("0".equals(d.statementId())) {
                     String expectValue = d.iteration() == 0 ? "null==<f:s5>?<s:String>:<s:>" : "\"abc\"";
                     Assert.assertEquals(expectValue, d.currentValue().toString());
@@ -221,7 +222,7 @@ public class Test_05_FinalChecks extends CommonTestRunner {
     public void test() throws IOException {
         testClass(FINAL_CHECKS, 5, 0, new DebugConfiguration.Builder()
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-           //     .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addEvaluationResultVisitor(evaluationResultVisitor)

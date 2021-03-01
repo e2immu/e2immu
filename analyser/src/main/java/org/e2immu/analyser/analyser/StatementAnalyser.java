@@ -1191,40 +1191,41 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         if (statementAnalysis.statement instanceof AssertStatement) return DONE; // is dealt with in subBlocks
         Boolean escapeAlwaysExecuted = isEscapeAlwaysExecutedInCurrentBlock();
         boolean delays = escapeAlwaysExecuted == null || statementAnalysis.stateData.conditionManagerIsNotYetSet();
+        if (escapeAlwaysExecuted != Boolean.FALSE) {
+            Set<Variable> nullVariables = statementAnalysis.stateData.getConditionManagerForNextStatement()
+                    .findIndividualNullInCondition(sharedState.evaluationContext, true);
+            for (Variable nullVariable : nullVariables) {
+                log(VARIABLE_PROPERTIES, "Escape with check not null on {}", nullVariable.fullyQualifiedName());
 
-        Set<Variable> nullVariables = statementAnalysis.stateData.getConditionManagerForNextStatement()
-                .findIndividualNullInCondition(sharedState.evaluationContext, true);
-        for (Variable nullVariable : nullVariables) {
-            log(VARIABLE_PROPERTIES, "Escape with check not null on {}", nullVariable.fullyQualifiedName());
-
-            // move from condition (x!=null) to property
-            VariableInfoContainer vic = statementAnalysis.findForWriting(nullVariable);
-            if (!vic.hasEvaluation()) {
-                VariableInfo initial = vic.getPreviousOrInitial();
-                vic.ensureEvaluation(initial.getAssignmentId(), initial.getReadId(), initial.getStatementTime(), initial.getReadAtStatementTimes());
-            }
-            if (delays) {
-                vic.setProperty(CONTEXT_NOT_NULL_FOR_PARENT_DELAY, Level.TRUE, EVALUATION);
-            } else {
-                vic.setProperty(CONTEXT_NOT_NULL_FOR_PARENT_DELAY_RESOLVED, Level.TRUE, EVALUATION);
-                if (escapeAlwaysExecuted) {
-                    vic.setProperty(CONTEXT_NOT_NULL_FOR_PARENT, MultiLevel.EFFECTIVELY_NOT_NULL, EVALUATION);
+                // move from condition (x!=null) to property
+                VariableInfoContainer vic = statementAnalysis.findForWriting(nullVariable);
+                if (!vic.hasEvaluation()) {
+                    VariableInfo initial = vic.getPreviousOrInitial();
+                    vic.ensureEvaluation(initial.getAssignmentId(), initial.getReadId(), initial.getStatementTime(), initial.getReadAtStatementTimes());
+                }
+                if (delays) {
+                    vic.setProperty(CONTEXT_NOT_NULL_FOR_PARENT_DELAY, Level.TRUE, EVALUATION);
+                } else {
+                    vic.setProperty(CONTEXT_NOT_NULL_FOR_PARENT_DELAY_RESOLVED, Level.TRUE, EVALUATION);
+                    if (escapeAlwaysExecuted) {
+                        vic.setProperty(CONTEXT_NOT_NULL_FOR_PARENT, MultiLevel.EFFECTIVELY_NOT_NULL, EVALUATION);
+                    }
                 }
             }
-        }
-        if (!delays && escapeAlwaysExecuted) {
-            // escapeCondition should filter out all != null, == null clauses
-            Expression precondition = statementAnalysis.stateData.getConditionManagerForNextStatement().precondition(sharedState.evaluationContext);
-            boolean preconditionIsDelayed = sharedState.evaluationContext.isDelayed(precondition);
-            Expression translated = sharedState.evaluationContext.acceptAndTranslatePrecondition(precondition);
-            if (translated != null) {
-                log(VARIABLE_PROPERTIES, "Escape with precondition {}", translated);
-                statementAnalysis.stateData.setPrecondition(translated, preconditionIsDelayed);
-                return DONE;
+            if (!delays && escapeAlwaysExecuted) {
+                // escapeCondition should filter out all != null, == null clauses
+                Expression precondition = statementAnalysis.stateData.getConditionManagerForNextStatement().precondition(sharedState.evaluationContext);
+                boolean preconditionIsDelayed = sharedState.evaluationContext.isDelayed(precondition);
+                Expression translated = sharedState.evaluationContext.acceptAndTranslatePrecondition(precondition);
+                if (translated != null) {
+                    log(VARIABLE_PROPERTIES, "Escape with precondition {}", translated);
+                    statementAnalysis.stateData.setPrecondition(translated, preconditionIsDelayed);
+                    return DONE;
+                }
             }
-        }
 
-        if (delays) return DELAYS;
+            if (delays) return DELAYS;
+        }
         if (statementAnalysis.stateData.preconditionIsEmpty()) {
             // it could have been set from the assert (step4) or apply via a method call
             statementAnalysis.stateData.setPrecondition(new BooleanConstant(statementAnalysis.primitives, true), false);

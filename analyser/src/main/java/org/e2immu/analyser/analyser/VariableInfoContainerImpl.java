@@ -18,7 +18,6 @@
 package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
@@ -79,8 +78,8 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
     factory method for new variables
      */
     public static VariableInfoContainerImpl newLocalCopyOfVariableField(Variable variable,
-                                                        String readId,
-                                                        boolean statementHasSubBlocks) {
+                                                                        String readId,
+                                                                        boolean statementHasSubBlocks) {
         VariableInfoImpl initial = new VariableInfoImpl(variable, NOT_YET_ASSIGNED, readId, NOT_A_VARIABLE_FIELD, Set.of());
         // no newVariable, because either setValue is called immediately after this method, or the explicit newVariableWithoutValue()
         return new VariableInfoContainerImpl(VariableInLoop.NOT_IN_LOOP, Either.right(initial),
@@ -130,15 +129,15 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         initial.setValue(value, false);
         properties.forEach(initial::setProperty);
         int cnn = initial.getProperty(VariableProperty.CONTEXT_NOT_NULL);
-        if(cnn == org.e2immu.analyser.model.Level.DELAY) {
+        if (cnn == org.e2immu.analyser.model.Level.DELAY) {
             initial.setProperty(VariableProperty.CONTEXT_NOT_NULL, MultiLevel.NULLABLE);
         }
         int cm = initial.getProperty(VariableProperty.CONTEXT_MODIFIED);
-        if(cm == org.e2immu.analyser.model.Level.DELAY) {
+        if (cm == org.e2immu.analyser.model.Level.DELAY) {
             initial.setProperty(VariableProperty.CONTEXT_MODIFIED, org.e2immu.analyser.model.Level.FALSE);
         }
         int enn = initial.getProperty(VariableProperty.EXTERNAL_NOT_NULL);
-        if(enn == org.e2immu.analyser.model.Level.DELAY) {
+        if (enn == org.e2immu.analyser.model.Level.DELAY) {
             initial.setProperty(VariableProperty.EXTERNAL_NOT_NULL, MultiLevel.NOT_INVOLVED);
         }
         initial.setStaticallyAssignedVariables(staticallyAssignedVariables);
@@ -418,19 +417,26 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         assert hasMerge();
 
         VariableInfo eval = best(Level.EVALUATION);
+        Variable v = eval.variable();
         VariableInfoImpl mergeImpl = merge.get();
         mergeImpl.setValue(eval.getValue(), eval.isDelayed());
-        if(eval.linkedVariablesIsSet()) {
+        if (eval.linkedVariablesIsSet()) {
             mergeImpl.setLinkedVariables(eval.getLinkedVariables());
         }
         eval.propertyStream()
                 .forEach(e -> {
                     VariableProperty vp = e.getKey();
                     int value = e.getValue();
-                    if (vp == VariableProperty.CONTEXT_MODIFIED) contextModified.put(eval.variable(), value);
-                    else if (vp == VariableProperty.CONTEXT_NOT_NULL) contextNotNull.put(eval.variable(), value);
+                    if (vp == VariableProperty.CONTEXT_MODIFIED) contextModified.put(v, value);
+                    else if (vp == VariableProperty.CONTEXT_NOT_NULL) contextNotNull.put(v, value);
                     else mergeImpl.setProperty(vp, value);
                 });
+        if (!contextModified.containsKey(v)) {
+            contextModified.put(v, org.e2immu.analyser.model.Level.DELAY);
+        }
+        if (!contextNotNull.containsKey(v)) {
+            contextNotNull.put(v, org.e2immu.analyser.model.Level.DELAY);
+        }
     }
 
     @Override

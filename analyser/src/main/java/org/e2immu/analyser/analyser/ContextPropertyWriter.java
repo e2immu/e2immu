@@ -122,13 +122,13 @@ public class ContextPropertyWriter {
         boolean hasDelays = false;
         int max = Level.DELAY;
         for (Variable variable : linkedVariables) {
-            Integer modified = values.get(variable);
-            if (modified == null) {
+            Integer v = values.get(variable);
+            if (v == null) {
                 throw new NullPointerException("Expect " + variable.fullyQualifiedName() + " to be known for "
                         + variableProperty + ", map is " + values);
             }
-            if (modified == Level.DELAY) hasDelays = true;
-            max = Math.max(max, modified);
+            if (v == Level.DELAY) hasDelays = true;
+            max = Math.max(max, v);
         }
         return hasDelays && max < variableProperty.best ? Level.DELAY : max;
     }
