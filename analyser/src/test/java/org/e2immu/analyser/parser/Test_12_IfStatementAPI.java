@@ -31,8 +31,7 @@ public class Test_12_IfStatementAPI extends CommonTestRunner {
                 if ("0".equals(d.statementId())) {
                     String expectValue = d.iteration() == 0 ? "<m:get>" : "map.get(label3)";
                     Assert.assertEquals(expectValue, d.currentValue().toString());
-                    String expectLinked = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "";
-                    Assert.assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
+                    Assert.assertEquals("", d.variableInfo().getLinkedVariables().toString());
                 }
             }
             if ("get2".equals(d.methodInfo().name) && d.variable() instanceof This) {

@@ -100,23 +100,19 @@ public class Test_09_EvaluatesToConstant extends CommonTestRunner {
                 }
                 if ("1.0.1.0.0".equals(d.statementId())) {
                     if (d.iteration() == 0) {
-                        Assert.assertEquals(LinkedVariables.DELAY_STRING, d.variableInfo().getLinkedVariables().toString());
-                        Assert.assertEquals(Level.DELAY, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
+                        Assert.assertEquals("", d.variableInfo().getLinkedVariables().toString());
+                        Assert.assertEquals(Level.FALSE, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
                     } else {
                         Assert.fail(); // unreachable, now that the condition is stable
                     }
                 }
                 if ("1.0.1".equals(d.statementId())) {
-                    String expectLinked = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "";
-                    Assert.assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
-                    int expectCn = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
-                    Assert.assertEquals(expectCn, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
+                    Assert.assertEquals("", d.variableInfo().getLinkedVariables().toString());
+                    Assert.assertEquals(Level.FALSE, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
                 }
                 if ("1".equals(d.statementId())) {
-                    String expectLinked = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "";
-                    Assert.assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
-                    int expectCn = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
-                    Assert.assertEquals(expectCn, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
+                    Assert.assertEquals("", d.variableInfo().getLinkedVariables().toString());
+                    Assert.assertEquals(Level.FALSE, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
                 }
             }
         }

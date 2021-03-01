@@ -45,8 +45,7 @@ public class Test_10_Identity extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if (d.methodInfo().name.equals("idem") && d.variable() instanceof ParameterInfo s && "s".equals(s.name)) {
                 if ("0".equals(d.statementId())) {
-                    int expectCm = d.iteration() == 0 ? Level.DELAY: Level.FALSE;
-                    Assert.assertEquals(expectCm, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
+                    Assert.assertEquals(Level.FALSE, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
                     Assert.assertTrue(d.variableInfo().isRead());
                     if (d.iteration() > 0) {
                         Assert.assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, d.getProperty(VariableProperty.IMMUTABLE));
@@ -62,13 +61,11 @@ public class Test_10_Identity extends CommonTestRunner {
                     Assert.assertEquals("1" + VariableInfoContainer.Level.EVALUATION, d.variableInfo().getReadId());
 
                     Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
-                    int expectCm = d.iteration() == 0 ? Level.DELAY: Level.FALSE;
-                    Assert.assertEquals(expectCm, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
+                    Assert.assertEquals(Level.FALSE, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
 
                     String expectValue = d.iteration() == 0 ? "<p:s>" : "nullable instance type String";
                     Assert.assertEquals(expectValue, d.currentValue().toString());
-                    String expectLinked = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "";
-                    Assert.assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
+                    Assert.assertEquals("", d.variableInfo().getLinkedVariables().toString());
 
                     int expectNotNullExpression = d.iteration() <= 1 ? Level.DELAY : MultiLevel.NULLABLE;
                     Assert.assertEquals(expectNotNullExpression, d.getProperty(VariableProperty.NOT_NULL_PARAMETER));
@@ -183,12 +180,8 @@ public class Test_10_Identity extends CommonTestRunner {
                 // there is an explicit @NotNull on the first parameter of debug
                 if ("0".equals(d.statementId())) {
                     Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
-                    int expectCm = d.iteration() == 0 ? Level.DELAY: Level.FALSE;
-                    Assert.assertEquals(expectCm, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
-                } else if ("1".equals(d.statementId())) {
-                    int expectCm = d.iteration() == 0 ? Level.DELAY: Level.FALSE;
-                    Assert.assertEquals(expectCm, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
                 }
+                Assert.assertEquals(Level.FALSE, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
             }
         };
 
