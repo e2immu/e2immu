@@ -924,7 +924,8 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         NewObject newObject;
         if (fieldAnalyser == null) {
             // not a local field
-            int minimalNotNull = analyserContext.getFieldAnalysis(fieldReference.fieldInfo).getProperty(EXTERNAL_NOT_NULL);
+            int minimalNotNull = Math.max(MultiLevel.NULLABLE,
+                    analyserContext.getFieldAnalysis(fieldReference.fieldInfo).getProperty(EXTERNAL_NOT_NULL));
             newObject = NewObject.initialValueOfExternalField(newObjectIdentifier,
                     primitives, fieldReference.parameterizedType(), minimalNotNull, ObjectFlow.NO_FLOW);
         } else {

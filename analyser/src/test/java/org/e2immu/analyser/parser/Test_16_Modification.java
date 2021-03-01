@@ -255,7 +255,7 @@ public class Test_16_Modification extends CommonTestRunner {
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if (d.fieldInfo().name.equals("set3")) {
                 Assert.assertEquals(Level.TRUE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
-                Assert.assertEquals(1, ((FieldAnalysisImpl.Builder) d.fieldAnalysis()).values.get().expressions().length);
+                Assert.assertEquals(1, ((FieldAnalysisImpl.Builder) d.fieldAnalysis()).getValues().expressions().length);
                 if (d.iteration() > 0) {
                     Assert.assertEquals(INSTANCE_TYPE_HASH_SET, d.fieldAnalysis().getEffectivelyFinalValue().toString());
                     if (d.iteration() > 1) {
@@ -716,29 +716,23 @@ public class Test_16_Modification extends CommonTestRunner {
             }
 
             if ("getSet".equals(d.methodInfo().name) && SET_IN_C1.equals(d.variableName())) {
-                int expectNne = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL;
-                Assert.assertEquals(expectNne, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
-                // not a direct assignment!
-                Assert.assertEquals("", d.variableInfo().getStaticallyAssignedVariables().toString());
-                String expectLinked = d.iteration() <= 1 ? LinkedVariables.DELAY_STRING : "";
-                Assert.assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
                 Assert.assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+                String expectValue = d.iteration() == 0 ? SET_IN_C1_DELAYED : "instance type Set<String>";
+          //      Assert.assertEquals(expectValue, d.currentValue().toString());
             }
 
             if ("add".equals(d.methodInfo().name) && "C1".equals(d.methodInfo().typeInfo.simpleName)) {
                 if (SET_IN_C1.equals(d.variableName())) {
-                    String expectValue = d.iteration() <= 1 ? SET_IN_C1_DELAYED : "instance type Set<String>";
+                    String expectValue = d.iteration() == 0 ? SET_IN_C1_DELAYED : "instance type Set<String>";
                     Assert.assertEquals(expectValue, d.currentValue().toString());
-                    int expectNN = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL;
-                    Assert.assertEquals(expectNN, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
-                    int expectCNN = d.iteration() <= 1 ? Level.DELAY : Level.TRUE;
+                    Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+                    int expectCNN = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
                     Assert.assertEquals(expectCNN, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
-                    String expectLinked = d.iteration() <= 1 ? LinkedVariables.DELAY_STRING : "";
+                    String expectLinked = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "";
                     Assert.assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
                 }
                 if (d.variable() instanceof ParameterInfo s && "string".equals(s.name)) {
-                    String expectLinked = d.iteration() <= 1 ? LinkedVariables.DELAY_STRING : "";
-                    Assert.assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
+                    Assert.assertEquals("", d.variableInfo().getLinkedVariables().toString());
                 }
             }
 
@@ -778,7 +772,7 @@ public class Test_16_Modification extends CommonTestRunner {
 
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("add".equals(d.methodInfo().name) && "C1".equals(d.methodInfo().typeInfo.simpleName)) {
-                Assert.assertEquals(d.iteration() >= 2,
+                Assert.assertEquals(d.iteration() >= 1,
                         d.statementAnalysis().methodLevelData.linksHaveBeenEstablished.isSet());
             }
             if ("example1".equals(d.methodInfo().name) && "2".equals(d.statementId())) {

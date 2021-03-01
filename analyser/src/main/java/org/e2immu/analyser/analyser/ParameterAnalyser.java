@@ -191,8 +191,7 @@ public class ParameterAnalyser {
                 .filter(fieldInfo -> isAssignedIn(lastStatementAnalysis, thisVar, fieldInfo)).collect(Collectors.toSet());
 
         // find a field that's linked to me; bail out when not all field's values are set.
-        for (
-                FieldInfo fieldInfo : fieldsAssignedInThisMethod) {
+        for (FieldInfo fieldInfo : fieldsAssignedInThisMethod) {
             FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(fieldInfo);
             ParameterAnalysis.AssignedOrLinked assignedOrLinked = determineAssignedOrLinked(fieldAnalysis);
             if (assignedOrLinked == DELAYED) {
@@ -296,12 +295,17 @@ public class ParameterAnalyser {
             if (effectivelyFinal == null) {
                 return DELAYED;
             }
-            if (effectivelyFinal instanceof VariableExpression ve && ve.variable() == parameterInfo) {
+            VariableExpression ve;
+            if ((ve = effectivelyFinal.asInstanceOf(VariableExpression.class)) != null && ve.variable() == parameterInfo) {
                 return ASSIGNED;
             }
             if (effectivelyFinal instanceof MultiValue multiValue &&
                     Arrays.stream(multiValue.multiExpression.expressions())
-                            .anyMatch(e -> e instanceof VariableExpression ve && ve.variable() == parameterInfo)) {
+                            .anyMatch(e -> {
+                                VariableExpression ve2;
+                                return (ve2 = e.asInstanceOf(VariableExpression.class)) != null
+                                        && ve2.variable() == parameterInfo;
+                            })) {
                 return ASSIGNED;
             }
         }

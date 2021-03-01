@@ -29,7 +29,6 @@ import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.annotation.AnnotationMode;
 import org.e2immu.annotation.NotModified;
 
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -135,7 +134,9 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
         public final SetOnce<Expression> initialValue = new SetOnce<>();
         public Expression stateOfEffectivelyFinalValue;
 
-        public final SetOnce<MultiExpression> values = new SetOnce<>();
+        private final SetOnce<MultiExpression> values = new SetOnce<>();
+        private MultiExpression delayedValue;
+
         public final FlipSwitch allLinksHaveBeenEstablished = new FlipSwitch();
 
         public Builder(Primitives primitives, AnalysisProvider analysisProvider, @NotModified FieldInfo fieldInfo, TypeAnalysis typeAnalysisOfOwner) {
@@ -309,6 +310,23 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
 
         public void setStateOfEffectivelyFinalValue(Expression stateOfEffectivelyFinalValue) {
             this.stateOfEffectivelyFinalValue = Objects.requireNonNull(stateOfEffectivelyFinalValue);
+        }
+
+        public void setValues(MultiExpression values, boolean delayed) {
+            if (delayed) {
+                this.delayedValue = values;
+            } else {
+                this.values.set(values);
+            }
+        }
+
+        public MultiExpression getValues() {
+            if (this.values.isSet()) return values.get();
+            return delayedValue;
+        }
+
+        public boolean valuesIsSet() {
+            return values.isSet();
         }
     }
 }

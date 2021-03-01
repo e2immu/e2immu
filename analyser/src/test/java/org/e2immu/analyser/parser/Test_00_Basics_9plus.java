@@ -25,6 +25,7 @@ import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterAnalysis;
 import org.e2immu.analyser.model.ParameterInfo;
+import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.junit.Assert;
 import org.junit.Test;
@@ -66,6 +67,20 @@ public class Test_00_Basics_9plus extends CommonTestRunner {
 
     @Test
     public void test_10() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("Basics_10".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof FieldReference fr && "string".equals(fr.fieldInfo.name)) {
+                    Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL,
+                            d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                }
+            }
+        };
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("Basics_10".equals(d.methodInfo().name)) {
+                ParameterAnalysis in = d.parameterAnalyses().get(0);
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, in.getProperty(VariableProperty.NOT_NULL_PARAMETER));
+            }
+        };
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("string".equals(d.fieldInfo().name)) {
                 Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL,
@@ -73,7 +88,9 @@ public class Test_00_Basics_9plus extends CommonTestRunner {
             }
         };
         testClass("Basics_10", 0, 0, new DebugConfiguration.Builder()
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 

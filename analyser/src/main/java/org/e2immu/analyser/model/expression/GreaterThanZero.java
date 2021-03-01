@@ -293,6 +293,9 @@ public record GreaterThanZero(ParameterizedType booleanParameterizedType,
 
     @Override
     public int internalCompareTo(Expression v) {
+        if(v instanceof InlineConditional inline) {
+            return expression.compareTo(inline.condition);
+        }
         return expression.compareTo(((GreaterThanZero) v).expression);
     }
 

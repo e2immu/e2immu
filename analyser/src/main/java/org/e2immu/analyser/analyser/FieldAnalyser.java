@@ -275,17 +275,18 @@ public class FieldAnalyser extends AbstractAnalyser {
             return DONE;
         }
 
-        if (!fieldAnalysis.values.isSet()) return DELAYS;
-        assert fieldAnalysis.values.get().expressions().length > 0;
-
         int finalNotNullValue;
 
         EvaluationContext evaluationContext = new EvaluationContextImpl(sharedState.iteration,
                 ConditionManager.initialConditionManager(analyserContext.getPrimitives()), sharedState.closure);
 
-        boolean onlyAssignedToParameters = fieldAnalysis.values.get().stream()
+        boolean onlyAssignedToParameters = fieldAnalysis.getValues().stream()
                 // parameters can be influenced by context not null, all the rest cannot
-                .allMatch(e -> e instanceof VariableExpression ve && ve.variable() instanceof ParameterInfo);
+                .allMatch(e -> {
+                    VariableExpression ve;
+                    return (ve = e.asInstanceOf(VariableExpression.class)) != null &&
+                            ve.variable() instanceof ParameterInfo;
+                });
         if (onlyAssignedToParameters) {
             int bestOverContext = allMethodsAndConstructors.stream()
                     .flatMap(m -> m.getFieldAsVariableStream(fieldInfo, true))
@@ -295,18 +296,27 @@ public class FieldAnalyser extends AbstractAnalyser {
                 log(DELAYED, "Delay @NotNull on {}, waiting for CNN", fieldInfo.fullyQualifiedName());
                 return DELAYS;
             }
-            int worstOverValues = fieldAnalysis.values.get().stream()
-                    .mapToInt(expression -> evaluationContext
-                            .getProperty(expression, VariableProperty.NOT_NULL_EXPRESSION, false))
-                    .min().orElse(MultiLevel.NULLABLE);
-            // IMPORTANT: we do not take delays into account!
-            finalNotNullValue = Math.max(worstOverValues, bestOverContext);
+            if (bestOverContext < MultiLevel.EFFECTIVELY_NOT_NULL) {
+                if (!fieldAnalysis.valuesIsSet()) return DELAYS;
+                assert fieldAnalysis.getValues().expressions().length > 0;
+
+                int worstOverValues = fieldAnalysis.getValues().stream()
+                        .mapToInt(expression -> evaluationContext
+                                .getProperty(expression, VariableProperty.NOT_NULL_EXPRESSION, false))
+                        .min().orElse(MultiLevel.NULLABLE);
+                // IMPORTANT: we do not take delays into account!
+                finalNotNullValue = Math.max(worstOverValues, bestOverContext);
+            } else {
+                finalNotNullValue = bestOverContext;
+            }
         } else {
-            boolean hardNull = fieldAnalysis.values.get().stream().anyMatch(e -> e instanceof NullConstant);
+            boolean hardNull = fieldAnalysis.getValues().stream().anyMatch(e -> e instanceof NullConstant);
             if (hardNull) {
                 finalNotNullValue = MultiLevel.NULLABLE;
             } else {
-                int worstOverValuesBreakParameterDelay = fieldAnalysis.values.get().stream()
+                if (!fieldAnalysis.valuesIsSet()) return DELAYS;
+                assert fieldAnalysis.getValues().expressions().length > 0;
+                int worstOverValuesBreakParameterDelay = fieldAnalysis.getValues().stream()
                         .mapToInt(expression -> notNullBreakParameterDelay(evaluationContext, expression))
                         .min().orElse(MultiLevel.NULLABLE);
                 if (worstOverValuesBreakParameterDelay == Level.DELAY) {
@@ -393,7 +403,7 @@ public class FieldAnalyser extends AbstractAnalyser {
             return DONE;
         }
 
-        if (!fieldAnalysis.values.isSet()) {
+        if (!fieldAnalysis.valuesIsSet()) {
             return DELAYS;
         }
 
@@ -401,7 +411,7 @@ public class FieldAnalyser extends AbstractAnalyser {
 
         EvaluationContext evaluationContext = new EvaluationContextImpl(sharedState.iteration,
                 ConditionManager.initialConditionManager(analyserContext.getPrimitives()), sharedState.closure);
-        int valueFromAssignment = fieldAnalysis.values.get().stream()
+        int valueFromAssignment = fieldAnalysis.getValues().stream()
                 .mapToInt(expression -> evaluationContext.getProperty(expression, VariableProperty.IMMUTABLE, false))
                 .min()
                 .orElse(MultiLevel.MUTABLE);
@@ -418,15 +428,17 @@ public class FieldAnalyser extends AbstractAnalyser {
     }
 
     private AnalysisStatus allAssignmentsHaveBeenSet() {
-        assert !fieldAnalysis.values.isSet();
+        assert !fieldAnalysis.valuesIsSet();
         Expression nullValue = ConstantExpression.nullValue(analyserContext.getPrimitives(), fieldInfo.type.bestTypeInfo());
         List<Expression> values = new LinkedList<>();
+        boolean delays = false;
         if (haveInitialiser) {
             if (fieldAnalysis.getInitialValue() == null) {
                 log(DELAYED, "Delaying consistent value for field " + fieldInfo.fullyQualifiedName());
-                return DELAYS;
+                delays = true;
+            } else {
+                values.add(fieldAnalysis.getInitialValue());
             }
-            values.add(fieldAnalysis.getInitialValue());
         }
         // collect all the other values, bail out when delays
         boolean ignorePrivateConstructors = myTypeAnalyser.ignorePrivateConstructorsForFieldValue();
@@ -443,7 +455,7 @@ public class FieldAnalyser extends AbstractAnalyser {
                                 added = true;
                             } else {
                                 log(DELAYED, "Delay consistent value for field {}", fieldInfo.fullyQualifiedName());
-                                return DELAYS;
+                                delays = true;
                             }
                         }
                     }
@@ -458,8 +470,8 @@ public class FieldAnalyser extends AbstractAnalyser {
         }
         // order does not matter for this class, but is handy for testing
         values.sort(ExpressionComparator.SINGLETON);
-        fieldAnalysis.values.set(MultiExpression.create(values));
-        return DONE;
+        fieldAnalysis.setValues(MultiExpression.create(values), delays);
+        return delays ? DELAYS : DONE;
     }
 
     private AnalysisStatus allLinksHaveBeenEstablished() {
@@ -500,7 +512,7 @@ public class FieldAnalyser extends AbstractAnalyser {
             fieldAnalysis.setProperty(VariableProperty.CONSTANT, Level.FALSE);
             return DONE;
         }
-        if (!fieldAnalysis.values.isSet()) {
+        if (!fieldAnalysis.valuesIsSet()) {
             log(DELAYED, "Delaying, have no values yet for field " + fieldInfo.fullyQualifiedName());
             return DELAYS;
         }
@@ -518,7 +530,8 @@ public class FieldAnalyser extends AbstractAnalyser {
             log(DELAYED, "Delaying effectively final value because internal object flows not yet known, {}", fieldInfo.fullyQualifiedName());
             //      return DELAYS; TODO see TestFieldNotRead, but for now waiting until we sort out internalObjectFlows
         }
-        Expression effectivelyFinalValue = determineEffectivelyFinalValue(fieldAnalysis.values.get(), downgradeFromNewInstanceWithConstructor);
+        Expression effectivelyFinalValue = determineEffectivelyFinalValue(fieldAnalysis.getValues(),
+                downgradeFromNewInstanceWithConstructor);
 
         ObjectFlow objectFlow = effectivelyFinalValue.getObjectFlow();
         if (objectFlow != ObjectFlow.NO_FLOW && !fieldAnalysis.objectFlow.isSet()) {
