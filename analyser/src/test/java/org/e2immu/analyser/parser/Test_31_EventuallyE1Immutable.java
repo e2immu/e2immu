@@ -19,11 +19,10 @@
 
 package org.e2immu.analyser.parser;
 
+import org.e2immu.analyser.analyser.LinkedVariables;
+import org.e2immu.analyser.analyser.VariableInfoContainer;
 import org.e2immu.analyser.analyser.VariableProperty;
-import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.config.MethodAnalyserVisitor;
-import org.e2immu.analyser.config.StatementAnalyserVariableVisitor;
-import org.e2immu.analyser.config.TypeAnalyserVisitor;
+import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MethodAnalysis;
 import org.e2immu.analyser.model.MultiLevel;
@@ -37,6 +36,25 @@ public class Test_31_EventuallyE1Immutable extends CommonTestRunner {
 
     @Test
     public void test_0() throws IOException {
+        final String TYPE = "org.e2immu.analyser.testexample.EventuallyE1Immutable_0";
+        final String STRING = TYPE + ".string";
+        EvaluationResultVisitor evaluationResultVisitor = d -> {
+            if ("setString".equals(d.methodInfo().name) && "0".equals(d.statementId())) {
+                if (d.iteration() == 0) {
+                    Assert.assertTrue(d.haveMarkRead(STRING));
+                    VariableInfoContainer stringVic = d.statementAnalysis().variables.get(STRING);
+                    Assert.assertEquals(Level.FALSE, stringVic.getPreviousOrInitial().getProperty(VariableProperty.CONTEXT_MODIFIED));
+                    Assert.assertTrue(stringVic.hasEvaluation());
+                    Assert.assertFalse(stringVic.hasMerge());
+                    Assert.assertEquals("", stringVic.getPreviousOrInitial().getLinkedVariables().toString());
+
+                    // delayed because value not yet known
+                    Assert.assertSame(LinkedVariables.DELAY, stringVic.current().getLinkedVariables());
+                    Assert.assertEquals(Level.DELAY, stringVic.current().getProperty(VariableProperty.CONTEXT_MODIFIED));
+                }
+            }
+        };
+
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("setString".equals(d.methodInfo().name) || "setString2".equals(d.methodInfo().name)) {
                 if ("2".equals(d.statementId()) && d.variable() instanceof FieldReference fr && "string".equals(fr.fieldInfo.name)) {
@@ -73,6 +91,7 @@ public class Test_31_EventuallyE1Immutable extends CommonTestRunner {
         };
 
         testClass("EventuallyE1Immutable_0", 0, 0, new DebugConfiguration.Builder()
+                .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)

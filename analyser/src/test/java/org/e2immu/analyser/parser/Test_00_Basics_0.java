@@ -101,11 +101,8 @@ Test_00_Basics_0 extends CommonTestRunner {
             int expectNotNull = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
             Assert.assertEquals(expectNotNull, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
 
-            if (d.iteration() == 0) {
-                Assert.assertSame(LinkedVariables.DELAY, d.variableInfo().getLinkedVariables());
-            } else {
-                Assert.assertTrue(d.variableInfo().getLinkedVariables().isEmpty());
-            }
+            Assert.assertTrue(d.variableInfo().getLinkedVariables().isEmpty());
+
             return;
         }
         Assert.fail("Method name " + d.methodInfo().name + ", iteration " + d.iteration() + ", variable " + d.variableName() +

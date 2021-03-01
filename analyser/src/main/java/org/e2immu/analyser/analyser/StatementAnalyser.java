@@ -628,10 +628,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         // but first, we need to ensure that all variables exist, independent of the later ordering
 
         // make a copy because we might add a variable when linking the local loop copy
-        Map<Variable, Set<Variable>> additionalLinksPerVariable = evaluationResult.changeData().entrySet().stream()
-                .collect(Collectors.toMap(Map.Entry::getKey,
-                        e -> new HashSet<>(ensureVariables(sharedState.evaluationContext, e.getKey(),
-                                e.getValue(), evaluationResult.statementTime()))));
+        evaluationResult.changeData().forEach((v, cd) ->
+                ensureVariables(sharedState.evaluationContext, v, cd, evaluationResult.statementTime()));
         Map<Variable, VariableInfoContainer> existingVariablesNotVisited = statementAnalysis.variables.stream()
                 .collect(Collectors.toMap(e -> e.getValue().current().variable(), Map.Entry::getValue, (v1, v2) -> v2, HashMap::new));
 
@@ -651,7 +649,6 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             Variable variable = entry.getKey();
             existingVariablesNotVisited.remove(variable);
             EvaluationResult.ChangeData changeData = entry.getValue();
-            Set<Variable> additionalLinks = additionalLinksPerVariable.get(variable);
 
             // we're now guaranteed to find the variable
             VariableInfoContainer vic = statementAnalysis.variables.get(variable.fullyQualifiedName());
@@ -685,9 +682,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                         remapStaticallyAssignedVariables.put(localVar, local.getPreviousOrInitial().getStaticallyAssignedVariables());
                         local.setValue(valueToWrite, valueToWriteIsDelayed, changeData.staticallyAssignedVariables(), merged2,
                                 false);
-                        local.setLinkedVariables(new LinkedVariables(Set.of(vi.variable())), false);
-                        // unlike static assigned variables, linked variables are not bi-directional, so the additional link is needed
-                        additionalLinks.add(local.current().variable());
+                        // because of the static assignment we can start empty
+                        local.setLinkedVariables(LinkedVariables.EMPTY, false);
                     }
                 }
 
@@ -744,8 +740,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 status = DELAYS;
             }
 
-            LinkedVariables mergedLinkedVariables = writeMergedLinkedVariables(changeData, variable, vi, vi1, additionalLinks);
-            if (mergedLinkedVariables != LinkedVariables.DELAY && vi.isNotDelayed()) {
+            LinkedVariables mergedLinkedVariables = writeMergedLinkedVariables(changeData, variable, vi, vi1);
+            if (mergedLinkedVariables != LinkedVariables.DELAY && vi.isNotDelayed() || mergedLinkedVariables == EMPTY_OVERRIDE) {
                 vic.setLinkedVariables(mergedLinkedVariables, false);
             } else if (vi.getLinkedVariables() == LinkedVariables.DELAY) {
                 status = DELAYS;
@@ -837,7 +833,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         for (EvaluationResultVisitor evaluationResultVisitor : analyserContext.getConfiguration()
                 .debugConfiguration.evaluationResultVisitors) {
             evaluationResultVisitor.visit(new EvaluationResultVisitor.Data(evaluationResult.evaluationContext().getIteration(),
-                    myMethodAnalyser.methodInfo, statementAnalysis.index, evaluationResult));
+                    myMethodAnalyser.methodInfo, statementAnalysis.index, statementAnalysis, evaluationResult));
         }
 
         return status;
@@ -997,10 +993,10 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
     Local variables, This, Parameters will already exist, minimally in INITIAL level
     Fields (and forms of This (super...)) will not exist in the first iteration; they need creating
      */
-    private Set<Variable> ensureVariables(EvaluationContext evaluationContext,
-                                          Variable variable,
-                                          EvaluationResult.ChangeData changeData,
-                                          int newStatementTime) {
+    private void ensureVariables(EvaluationContext evaluationContext,
+                                 Variable variable,
+                                 EvaluationResult.ChangeData changeData,
+                                 int newStatementTime) {
         VariableInfoContainer vic;
         VariableInfo initial;
         if (!statementAnalysis.variables.isSet(variable.fullyQualifiedName())) {
@@ -1015,14 +1011,11 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             initial = vic.getPreviousOrInitial();
         }
 
-        Set<Variable> additionalLinksForThisVariable;
         if (variable instanceof FieldReference fieldReference &&
                 initial.isConfirmedVariableField() && !changeData.readAtStatementTime().isEmpty()) {
-            // ensure all of the local copies
-            additionalLinksForThisVariable =
-                    ensureLocalCopiesOfVariableField(changeData.readAtStatementTime(), fieldReference, initial);
-        } else {
-            additionalLinksForThisVariable = Set.of();
+            for (int statementTime : changeData.readAtStatementTime()) {
+                statementAnalysis.variableInfoOfFieldWhenReading(analyserContext, fieldReference, initial, statementTime);
+            }
         }
         String id = index() + EVALUATION;
         String assignmentId = changeData.markAssignment() ? id : initial.getAssignmentId();
@@ -1032,27 +1025,22 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         int statementTime = statementAnalysis.statementTimeForVariable(analyserContext, variable, newStatementTime);
 
         vic.ensureEvaluation(assignmentId, readId, statementTime, changeData.readAtStatementTime());
-
-        return additionalLinksForThisVariable;
     }
 
-    private Set<Variable> ensureLocalCopiesOfVariableField(Set<Integer> statementTimes,
-                                                           FieldReference fieldReference,
-                                                           VariableInfo initial) {
-        Set<Variable> set = new HashSet<>();
-        for (int statementTime : statementTimes) {
-            LocalVariableReference localCopy = statementAnalysis.variableInfoOfFieldWhenReading(analyserContext,
-                    fieldReference, initial, statementTime);
-            set.add(localCopy);
-        }
-        return set;
-    }
+    private static final LinkedVariables EMPTY_OVERRIDE = new LinkedVariables(Set.of());
 
     private LinkedVariables writeMergedLinkedVariables(EvaluationResult.ChangeData changeData,
                                                        Variable variable,
                                                        VariableInfo vi,
-                                                       VariableInfo vi1,
-                                                       Set<Variable> additionalLinks) {
+                                                       VariableInfo vi1) {
+        // regardless of what's being delayed or not, if the type is immutable there cannot be links
+        TypeInfo bestType = variable.parameterizedType().bestTypeInfo();
+        if (bestType != null) {
+            int immutable = analyserContext.getTypeAnalysis(bestType).getProperty(IMMUTABLE);
+            if (immutable == MultiLevel.EFFECTIVELY_E2IMMUTABLE) {
+                return EMPTY_OVERRIDE;
+            }
+        }
         if (changeData.linkedVariables() == LinkedVariables.DELAY) {
             log(DELAYED, "Apply of {}, {} is delayed because of linked variables of {}",
                     index(), myMethodAnalyser.methodInfo.fullyQualifiedName,
@@ -1092,8 +1080,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             toAddFromPreviousValue = previousValue;
         }
         // note that the null here is actual presence or absence in a map...
-        LinkedVariables mergedValue = toAddFromPreviousValue.merge(changeData.linkedVariables())
-                .merge(new LinkedVariables(additionalLinks));
+        LinkedVariables mergedValue = toAddFromPreviousValue.merge(changeData.linkedVariables());
         log(ANALYSER, "Set linked variables of {} to {} in {}, {}",
                 variable, mergedValue, index(), myMethodAnalyser.methodInfo.fullyQualifiedName);
 

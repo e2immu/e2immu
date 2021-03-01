@@ -57,7 +57,7 @@ public class Basics_6 {
 
     public void test5() {
         String v1 = field.toLowerCase(); // ; + potential null ptr exception 7
-        String v2 = field.toLowerCase(); // not anymore
+        String v2 = field.toLowerCase(); // ; ditto 8
         assert v1.equals(v2); // most likely true... semantics of toLowerCase  -- NO warning anymore for null ptr
     }
 
@@ -65,7 +65,7 @@ public class Basics_6 {
         String v1 = field;
         List<String> twentySeven = new ArrayList<>(27); // some constructors do not interrupt
         String v2 = field;
-        assert v1.equals(v2); // always true, no interruption; ; + potential null ptr exception 8, 9
+        assert v1.equals(v2); // always true, no interruption; ; + potential null ptr exception 9, 10
         return twentySeven;
     }
 

@@ -26,6 +26,7 @@ import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Messages;
+import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -142,23 +143,44 @@ public class ParameterAnalyser {
         boolean delays = false;
         int contracted = 0;
 
+        TypeInfo bestType = parameterInfo.parameterizedType.bestTypeInfo();
+        if (bestType != null) {
+            int immutable = analyserContext.getTypeAnalysis(bestType).getProperty(VariableProperty.IMMUTABLE);
+            if (immutable == MultiLevel.EFFECTIVELY_E2IMMUTABLE &&
+                    !parameterAnalysis.properties.isSet(VariableProperty.MODIFIED_OUTSIDE_METHOD)) {
+                parameterAnalysis.setProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD, Level.FALSE);
+                changed = true;
+                contracted++;
+            }
+        }
         int contractModified = parameterAnalysis.getProperty(VariableProperty.MODIFIED_VARIABLE);
         if (contractModified != Level.DELAY && !parameterAnalysis.properties.isSet(VariableProperty.MODIFIED_OUTSIDE_METHOD)) {
             parameterAnalysis.setProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD, contractModified);
             changed = true;
             contracted++;
         }
-        int contractNotNull = parameterAnalysis.getProperty(VariableProperty.NOT_NULL_PARAMETER);
-        if (contractNotNull != Level.DELAY && !parameterAnalysis.properties.isSet(VariableProperty.EXTERNAL_NOT_NULL)) {
-            parameterAnalysis.setProperty(VariableProperty.EXTERNAL_NOT_NULL, contractNotNull);
-            changed = true;
-            contracted++;
+
+        if (Primitives.isPrimitiveExcludingVoid(parameterInfo.parameterizedType)) {
+            if (!parameterAnalysis.properties.isSet(VariableProperty.EXTERNAL_NOT_NULL)) {
+                parameterAnalysis.setProperty(VariableProperty.EXTERNAL_NOT_NULL, MultiLevel.NOT_INVOLVED); // not involved
+                contracted++;
+                changed = true;
+            }
+        } else {
+            int contractNotNull = parameterAnalysis.getProperty(VariableProperty.NOT_NULL_PARAMETER);
+            if (contractNotNull != Level.DELAY && !parameterAnalysis.properties.isSet(VariableProperty.EXTERNAL_NOT_NULL)) {
+                parameterAnalysis.setProperty(VariableProperty.EXTERNAL_NOT_NULL, contractNotNull);
+                changed = true;
+                contracted++;
+            }
         }
 
         if (contracted == 2 || noAssignableFieldsForMethod()) {
             noFieldsInvolvedSetToMultiLevelDELAY();
             return DONE;
         }
+
+
         // no point, we need to have seen the statement+field analysers first.
         if (sharedState.iteration == 0) return DELAYS;
 
@@ -169,7 +191,8 @@ public class ParameterAnalyser {
                 .filter(fieldInfo -> isAssignedIn(lastStatementAnalysis, thisVar, fieldInfo)).collect(Collectors.toSet());
 
         // find a field that's linked to me; bail out when not all field's values are set.
-        for (FieldInfo fieldInfo : fieldsAssignedInThisMethod) {
+        for (
+                FieldInfo fieldInfo : fieldsAssignedInThisMethod) {
             FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(fieldInfo);
             ParameterAnalysis.AssignedOrLinked assignedOrLinked = determineAssignedOrLinked(fieldAnalysis);
             if (assignedOrLinked == DELAYED) {
@@ -187,7 +210,8 @@ public class ParameterAnalyser {
 
         Set<VariableProperty> propertiesDelayed = new HashSet<>();
         boolean notAssignedToField = true;
-        for (Map.Entry<FieldInfo, ParameterAnalysis.AssignedOrLinked> e : map.entrySet()) {
+        for (
+                Map.Entry<FieldInfo, ParameterAnalysis.AssignedOrLinked> e : map.entrySet()) {
             FieldInfo fieldInfo = e.getKey();
             Set<VariableProperty> propertiesToCopy = e.getValue().propertiesToCopy();
             if (e.getValue() == ASSIGNED) notAssignedToField = false;
@@ -213,7 +237,8 @@ public class ParameterAnalyser {
             }
         }
 
-        for (VariableProperty variableProperty : PROPERTIES) {
+        for (
+                VariableProperty variableProperty : PROPERTIES) {
             if (!parameterAnalysis.properties.isSet(variableProperty) && !propertiesDelayed.contains(variableProperty)) {
                 int v;
                 if (variableProperty == VariableProperty.EXTERNAL_NOT_NULL && notAssignedToField) {

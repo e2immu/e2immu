@@ -92,9 +92,7 @@ public class Test_00_Basics_2 extends CommonTestRunner {
                 Assert.assertEquals(expectValue, d.currentValue().toString());
                 // string occurs in a not-null context, even if its value is delayed
                 Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
-                // modification in MLD takes a little longer, because it requires a real value, not a delayed one
-                int expectModified = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
-                Assert.assertEquals(expectModified, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
+                Assert.assertEquals(Level.FALSE, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
             }
         }
         if ("setString".equals(d.methodInfo().name)) {
@@ -139,22 +137,19 @@ public class Test_00_Basics_2 extends CommonTestRunner {
                 Assert.assertEquals(expectNotNull, d.methodAnalysis().getProperty(VariableProperty.NOT_NULL_EXPRESSION));
                 assert fieldAsVariable != null;
                 Assert.assertTrue(fieldAsVariable.isRead());
-                int expectModified = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
-                Assert.assertEquals(expectModified, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
+                Assert.assertEquals(Level.FALSE, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
 
                 // property of the field as variable info in the method
                 int expectFieldModified = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
                 Assert.assertEquals(expectFieldModified, fieldAsVariable.getProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD));
-                int expectContextModified = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
-                Assert.assertEquals(expectContextModified, fieldAsVariable.getProperty(VariableProperty.CONTEXT_MODIFIED));
+                Assert.assertEquals(Level.FALSE, fieldAsVariable.getProperty(VariableProperty.CONTEXT_MODIFIED));
             }
             if ("setString".equals(d.methodInfo().name)) {
                 assert fieldAsVariable != null;
                 Assert.assertTrue(fieldAsVariable.isAssigned());
                 int expectFieldModified = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
                 //  Assert.assertEquals(expectFieldModified, fieldAsVariable.getProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD));
-                int expectContextModified = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
-                Assert.assertEquals(expectContextModified, fieldAsVariable.getProperty(VariableProperty.CONTEXT_MODIFIED));
+                Assert.assertEquals(Level.FALSE, fieldAsVariable.getProperty(VariableProperty.CONTEXT_MODIFIED));
             }
             if ("add".equals(d.methodInfo().name)) {
                 ParameterAnalysis parameterAnalysis = d.parameterAnalyses().get(0);

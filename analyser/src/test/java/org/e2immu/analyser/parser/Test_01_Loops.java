@@ -316,14 +316,13 @@ public class Test_01_Loops extends CommonTestRunner {
                             .parameterizedType().typeInfo.fullyQualifiedName);
                     if (d.iteration() == 0) {
                         Assert.assertEquals("<v:s>", d.currentValue().toString());
-                        Assert.assertEquals(LinkedVariables.DELAY_STRING, d.variableInfo().getLinkedVariables().toString());
                         Assert.assertEquals(Level.DELAY, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
                     } else {
                         // the ENN has been set on s$1, not on s
                         Assert.assertEquals(Level.DELAY, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
                         Assert.assertEquals("instance type String", d.currentValue().toString());
-                        Assert.assertEquals("", d.variableInfo().getLinkedVariables().toString());
                     }
+                    Assert.assertEquals("", d.variableInfo().getLinkedVariables().toString());
                 }
             }
             if ("s$1".equals(d.variableName())) {
@@ -332,7 +331,7 @@ public class Test_01_Loops extends CommonTestRunner {
                     Assert.assertEquals("nullable instance type String", d.currentValue().toString());
                     Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
                     Assert.assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
-                    Assert.assertEquals("s", d.variableInfo().getLinkedVariables().toString());
+                    Assert.assertEquals("s", d.variableInfo().getStaticallyAssignedVariables().toString());
                 }
             }
             if ("res$1$1_0_0-E".equals(d.variableName())) {
@@ -340,8 +339,8 @@ public class Test_01_Loops extends CommonTestRunner {
 
                 String expectValue = d.iteration() == 0 ? "<v:s>" : "s$1";
                 Assert.assertEquals(expectValue, d.currentValue().toString());
-                String expectLinked = "res";
-                Assert.assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
+                Assert.assertEquals("s", d.variableInfo().getStaticallyAssignedVariables().toString());
+                Assert.assertEquals("", d.variableInfo().getLinkedVariables().toString());
                 int expectNN = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
                 Assert.assertEquals(expectNN, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
             }
@@ -349,8 +348,7 @@ public class Test_01_Loops extends CommonTestRunner {
                 if ("1.0.0".equals(d.statementId())) {
                     String expectValue = d.iteration() == 0 ? "<v:s>" : "s$1";
                     Assert.assertEquals(expectValue, d.currentValue().toString());
-                    String expectLinked = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "s,s$1,res$1$1_0_0-E";
-                    // FIXME   Assert.assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
+                    Assert.assertEquals("", d.variableInfo().getLinkedVariables().toString());
                 }
                 if ("1".equals(d.statementId())) {
                     String expectValue = d.iteration() == 0 ? "<new:String>" : "nullable instance type String";
@@ -443,11 +441,13 @@ public class Test_01_Loops extends CommonTestRunner {
                 if ("0".equals(d.statementId())) {
                     String expect = d.iteration() == 0 ? "<new:int>>=10" : "instance type int>=10";
                     Assert.assertEquals(expect, d.state().toString());
+                    Assert.assertNull(d.haveError(Message.INLINE_CONDITION_EVALUATES_TO_CONSTANT));
                 }
                 if ("1".equals(d.statementId())) {
                     Assert.assertEquals("true", d.condition().toString());
                     String expectState = d.iteration() == 0 ? "<new:int>>=10" : "instance type int>=10";
                     Assert.assertEquals(expectState, d.state().toString());
+                    Assert.assertNull(d.haveError(Message.INLINE_CONDITION_EVALUATES_TO_CONSTANT));
                 }
             }
 
@@ -457,9 +457,12 @@ public class Test_01_Loops extends CommonTestRunner {
             if ("method".equals(d.methodInfo().name)) {
                 if ("i".equals(d.variableName())) {
                     Assert.assertEquals("0", d.variableInfoContainer().getStatementIndexOfThisLoopVariable());
-
-                    if ("0.0.0".equals(d.statementId())) {
+                    if ("0.0.0.0.0".equals(d.statementId())) {
                         String expect = d.iteration() == 0 ? "<v:i>" : "1+i$0";
+                        Assert.assertEquals(expect, d.currentValue().toString());
+                    }
+                    if ("0.0.0".equals(d.statementId())) {
+                        String expect = d.iteration() == 0 ? "1==<v:i>?<v:i>:1+<v:i>" : "1+i$0";
                         Assert.assertEquals(expect, d.currentValue().toString());
                     }
                     if ("0".equals(d.statementId())) {

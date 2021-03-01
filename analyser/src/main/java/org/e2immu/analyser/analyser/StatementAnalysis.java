@@ -470,15 +470,6 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                 log(ANALYSER, "Skipping parameter {}, not read, assigned", parameterInfo.fullyQualifiedName());
             }
         }
-        /*
-        // we keep copying in the properties computed on the type into "this"
-        if (!currentMethod.methodInspection.get().isStatic()) {
-            This thisVariable = new This(analyserContext, currentMethod.typeInfo);
-            VariableInfoContainer vic = findForWriting(thisVariable);
-            propertyMap(analyserContext, methodAnalysis.getMethodInfo().typeInfo, MultiLevel.EFFECTIVELY_NOT_NULL).entrySet().stream()
-                    .filter(e -> e.getValue() != Level.DELAY)
-                    .forEach(e -> vic.setProperty(e.getKey(), e.getValue(), INITIAL));
-        }*/
     }
 
     private void fromFieldAnalyserIntoInitial(EvaluationContext evaluationContext, VariableInfoContainer vic) {
@@ -501,7 +492,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         boolean selfReference = inPartOfConstruction() && !(fieldReference.scope instanceof This);
 
         // this is the first time we see this field (initial)
-        ExpressionAndLinkedVariables initialValue = initialValueOfField(evaluationContext, fieldReference, selfReference);
+        ExpressionAndDelay initialValue = initialValueOfField(evaluationContext, fieldReference, selfReference);
         Map<VariableProperty, Integer> map = propertyMap(evaluationContext.getAnalyserContext(), fieldReference.fieldInfo,
                 fieldReference.fieldInfo.type.defaultNotNull());
         Map<VariableProperty, Integer> valueMap = evaluationContext.getValueProperties(initialValue.expression);
@@ -512,9 +503,8 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         VariableInfo viInitial = vic.best(INITIAL);
         vic.setValue(initialValue.expression, initialValue.expressionIsDelayed, LinkedVariables.EMPTY, combined, true);
 
-        if (!viInitial.linkedVariablesIsSet() && initialValue.linkedVariables != LinkedVariables.DELAY) {
-            vic.setLinkedVariables(initialValue.linkedVariables, true);
-        }
+        vic.setLinkedVariables(LinkedVariables.EMPTY, true);
+
 
         /* copy into evaluation, but only if there is no assignment and no reading
 
@@ -536,8 +526,8 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                         viInitial.getStaticallyAssignedVariables(), combined, false);
             }
             // if the variable has not been read, it is not present in EVAL, so we set a value
-            if (!vic.isReadInThisStatement() && !viEval.linkedVariablesIsSet() && initialValue.linkedVariables != LinkedVariables.DELAY) {
-                vic.setLinkedVariables(initialValue.linkedVariables, false);
+            if (!vic.isReadInThisStatement() && !viEval.linkedVariablesIsSet()) {
+                vic.setLinkedVariables(LinkedVariables.EMPTY, false);
             }
         }
     }
@@ -576,15 +566,10 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                         Map<VariableProperty, Integer> combined = new HashMap<>(propertyMap);
                         valueMap.forEach((k, v) -> combined.merge(k, v, Math::max));
                         for (VariableProperty vp : CONTEXT_PROPERTIES) {
-                            int context = initial.getProperty(vp);
-                            assert context != Level.DELAY;
-                            combined.put(vp, context); // and not EVAL!
+                            combined.put(vp, vp.falseValue);
                         }
                         lvrVic.setValue(initialValue, false, assignedToOriginal, combined, true);
-                        // we link the local copy to the original, so that modifications on the local copy
-                        // imply that there is a (potential) modification on the variable field.
-                        // the reverse link is also generated
-                        lvrVic.setLinkedVariables(new LinkedVariables(Set.of(fieldReference)), true);
+                        lvrVic.setLinkedVariables(LinkedVariables.EMPTY, true);
                     }
                 }
             }
@@ -803,16 +788,15 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             valueProperties.forEach((k, v) -> vic.setProperty(k, v, false, INITIAL));
 
         } else if (variable instanceof FieldReference fieldReference) {
-            ExpressionAndLinkedVariables initialValue = initialValueOfField(evaluationContext, fieldReference, false);
+            ExpressionAndDelay initialValue = initialValueOfField(evaluationContext, fieldReference, false);
             vic.setValue(initialValue.expression, initialValue.expressionIsDelayed,
                     LinkedVariables.EMPTY, propertyMap(analyserContext, fieldReference.fieldInfo,
                             fieldReference.fieldInfo.type.defaultNotNull()), true);
             Map<VariableProperty, Integer> valueProperties = evaluationContext.getValueProperties(initialValue.expression);
             valueProperties.forEach((k, v) -> vic.setProperty(k, v, false, INITIAL));
 
-            if (initialValue.linkedVariables != LinkedVariables.DELAY) {
-                vic.setLinkedVariables(initialValue.linkedVariables, true);
-            }
+            vic.setLinkedVariables(LinkedVariables.EMPTY, true);
+
         }
         return vic;
     }
@@ -869,12 +853,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                 }));
     }
 
-    record ExpressionAndLinkedVariables(Expression expression,
-                                        boolean expressionIsDelayed,
-                                        LinkedVariables linkedVariables) {
-        ExpressionAndLinkedVariables {
-            assert linkedVariables != null;
-        }
+    record ExpressionAndDelay(Expression expression, boolean expressionIsDelayed) {
     }
 
     private boolean inPartOfConstruction() {
@@ -882,12 +861,12 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                 MethodResolution.CallStatus.PART_OF_CONSTRUCTION;
     }
 
-    private ExpressionAndLinkedVariables initialValueOfField(EvaluationContext evaluationContext,
-                                                             FieldReference fieldReference,
-                                                             boolean selfReference) {
+    private ExpressionAndDelay initialValueOfField(EvaluationContext evaluationContext,
+                                                   FieldReference fieldReference,
+                                                   boolean selfReference) {
         AnalyserContext analyserContext = evaluationContext.getAnalyserContext();
         FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(fieldReference.fieldInfo);
-        LinkedVariables initialLinkedVariables = LinkedVariables.EMPTY; // rather than fieldAnalysis.getLinkedVariables
+        // rather than fieldAnalysis.getLinkedVariables
         FieldAnalyser fieldAnalyser = analyserContext.getFieldAnalyser(fieldReference.fieldInfo);
 
         boolean myOwn = fieldReference.scope instanceof This thisVariable && thisVariable.typeInfo.equals(methodAnalysis.getMethodInfo().typeInfo);
@@ -895,23 +874,23 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         if (inPartOfConstruction() && myOwn) { // field that must be initialised
             Expression initialValue = analyserContext.getFieldAnalysis(fieldReference.fieldInfo).getInitialValue();
             if (initialValue == null) { // initialiser value not yet evaluated
-                return new ExpressionAndLinkedVariables(DelayedVariableExpression.forField(fieldReference), true, LinkedVariables.EMPTY);
+                return new ExpressionAndDelay(DelayedVariableExpression.forField(fieldReference), true);
             }
             if (initialValue.isConstant()) {
-                return new ExpressionAndLinkedVariables(initialValue, false, LinkedVariables.EMPTY);
+                return new ExpressionAndDelay(initialValue, false);
             }
             NewObject newObject = NewObject.initialValueOfFieldPartOfConstruction(evaluationContext, fieldReference, fieldAnalyser.fieldAnalysis.getObjectFlow());
-            return new ExpressionAndLinkedVariables(newObject, false, initialLinkedVariables);
+            return new ExpressionAndDelay(newObject, false);
         }
 
         int effectivelyFinal = fieldAnalysis.getProperty(VariableProperty.FINAL);
         if (effectivelyFinal == Level.DELAY && !selfReference) {
-            return new ExpressionAndLinkedVariables(DelayedVariableExpression.forField(fieldReference), true, LinkedVariables.DELAY);
+            return new ExpressionAndDelay(DelayedVariableExpression.forField(fieldReference), true);
         }
 
         int notNull = fieldAnalysis.getProperty(EXTERNAL_NOT_NULL);
         if (notNull == Level.DELAY) {
-            return new ExpressionAndLinkedVariables(DelayedVariableExpression.forField(fieldReference), true, LinkedVariables.DELAY);
+            return new ExpressionAndDelay(DelayedVariableExpression.forField(fieldReference), true);
         }
 
         // when selfReference (as in this.x = other.x during construction), we never delay
@@ -921,15 +900,15 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             Expression efv = fieldAnalysis.getEffectivelyFinalValue();
             if (efv == null) {
                 if (analyserContext.getTypeAnalysis(fieldReference.fieldInfo.owner).isBeingAnalysed() && !selfReference) {
-                    return new ExpressionAndLinkedVariables(DelayedVariableExpression.forField(fieldReference), true, LinkedVariables.DELAY);
+                    return new ExpressionAndDelay(DelayedVariableExpression.forField(fieldReference), true);
                 }
             } else {
                 if (efv.isConstant()) {
-                    return new ExpressionAndLinkedVariables(efv, false, LinkedVariables.EMPTY);
+                    return new ExpressionAndDelay(efv, false);
                 }
                 NewObject newObject;
                 if ((newObject = efv.asInstanceOf(NewObject.class)) != null) {
-                    return new ExpressionAndLinkedVariables(newObject, false, initialLinkedVariables);
+                    return new ExpressionAndDelay(newObject, false);
                 }
             }
         }
@@ -942,7 +921,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         } else {
             newObject = NewObject.initialValueOfField(primitives, fieldReference.parameterizedType(), fieldAnalyser.fieldAnalysis.getObjectFlow());
         }
-        return new ExpressionAndLinkedVariables(newObject, false, initialLinkedVariables);
+        return new ExpressionAndDelay(newObject, false);
     }
 
     private ObjectFlow createObjectFlowForNewVariable(AnalyserContext analyserContext, Variable variable) {

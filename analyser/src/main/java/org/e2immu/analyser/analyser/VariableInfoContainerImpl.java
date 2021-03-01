@@ -123,7 +123,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
                                                             String readId,
                                                             Expression value,
                                                             Map<VariableProperty, Integer> properties,
-                                                            LinkedVariables linkedVariables,
+                                                            LinkedVariables staticallyAssignedVariables,
                                                             VariableInLoop variableInLoop,
                                                             boolean statementHasSubBlocks) {
         VariableInfoImpl initial = new VariableInfoImpl(variable, assignedId, readId, VariableInfoContainer.NOT_A_VARIABLE_FIELD, Set.of());
@@ -141,7 +141,8 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         if(enn == org.e2immu.analyser.model.Level.DELAY) {
             initial.setProperty(VariableProperty.EXTERNAL_NOT_NULL, MultiLevel.NOT_INVOLVED);
         }
-        initial.setLinkedVariables(linkedVariables);
+        initial.setStaticallyAssignedVariables(staticallyAssignedVariables);
+        initial.setLinkedVariables(LinkedVariables.EMPTY);
         return new VariableInfoContainerImpl(variableInLoop, Either.right(initial), statementHasSubBlocks ? new SetOnce<>() : null, null);
     }
 

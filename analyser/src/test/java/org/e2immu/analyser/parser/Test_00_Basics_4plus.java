@@ -138,8 +138,7 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
                 if ("v1".equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {
                         Assert.assertTrue(d.variableInfoContainer().hasEvaluation());
-                        int expectCm = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
-                        Assert.assertEquals(expectCm, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
+                        Assert.assertEquals(Level.FALSE, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
                     }
                 }
                 if (FIELD_0.equals(d.variableName())) {
@@ -354,7 +353,7 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
             }
         };
 
-        TypeContext typeContext = testClass("Basics_6", 0, 9, new DebugConfiguration.Builder()
+        TypeContext typeContext = testClass("Basics_6", 0, 10, new DebugConfiguration.Builder()
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
@@ -402,6 +401,8 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("Basics_7".equals(d.methodInfo().name) && d.variable() instanceof ParameterInfo p && "p".equals(p.name)) {
+                Assert.assertEquals(MultiLevel.DELAY, d.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
+
                 if ("0.0.0".equals(d.statementId())) {
                     Assert.assertEquals("0.0.0" + VariableInfoContainer.Level.EVALUATION, d.variableInfo().getReadId());
                 }
@@ -436,34 +437,35 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
                 }
                 if (I0.equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {
+                        Assert.assertEquals("this.i", d.variableInfo().getStaticallyAssignedVariables().toString());
+
                         Assert.assertTrue(d.iteration() > 0); // does not exist earlier!
                         Assert.assertEquals("instance type int", d.currentValue().toString());
                     }
                 }
                 if (I1.equals(d.variableName())) {
-                    if ("1.0.0".equals(d.statementId())) {
-                        Assert.assertTrue(d.iteration() > 0); // does not exist earlier!
-                        Assert.assertEquals("instance type int", d.currentValue().toString());
-                    }
+                    // exists from 1.0.0 onwards
+                    Assert.assertTrue(d.iteration() > 0); // does not exist earlier!
+                    Assert.assertEquals("instance type int", d.currentValue().toString());
+                    String expectStaticallyAssigned = d.statementId().equals("1.0.0")  ? "this.i": "";
+                    // after the assignment, i becomes a different value
+                    Assert.assertEquals(d.statementId(), expectStaticallyAssigned,
+                            d.variableInfo().getStaticallyAssignedVariables().toString());
                 }
                 if (I101.equals(d.variableName())) {
+                    Assert.assertEquals("this.i", d.variableInfo().getStaticallyAssignedVariables().toString());
+
                     // is primitive
                     if ("1.0.1".equals(d.statementId())) {
                         Assert.fail();
                     }
                     if ("1.0.2".equals(d.statementId())) {
                         Assert.assertEquals("1+" + I1, d.currentValue().toString());
-                        Assert.assertEquals(d.statementId(), "this.i", d.variableInfo().getLinkedVariables().toString());
                         Assert.assertEquals("1.0.2-C", d.variableInfo().getReadId());
                     }
                     if ("1.0.3".equals(d.statementId())) {
                         Assert.assertEquals("1+" + I1, d.currentValue().toString());
-                        Assert.assertEquals(d.statementId(), "this.i", d.variableInfo().getLinkedVariables().toString());
                         Assert.assertEquals("1.0.3-C", d.variableInfo().getReadId());
-                    }
-                    if ("1".equals(d.statementId())) {
-                        String expectLinked = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "this.i";
-                        Assert.assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
                 if (I.equals(d.variableName())) {
@@ -473,8 +475,7 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
                         int expectStatementTime = d.iteration() == 0 ? VariableInfoContainer.VARIABLE_FIELD_DELAY : 0;
                         Assert.assertEquals(expectStatementTime, d.variableInfo().getStatementTime());
                         Assert.assertEquals("[0]", d.variableInfo().getReadAtStatementTimes().toString());
-                        String expectLinked = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : I0;
-                        Assert.assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
+                        Assert.assertEquals("", d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("1.0.0".equals(d.statementId())) {
                         String expect = d.iteration() == 0 ? I_DELAYED : "instance type int";
@@ -491,8 +492,8 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
                     if ("1".equals(d.statementId())) {
                         String expect = d.iteration() == 0 ? "1+<f:i>" : "1+" + I1;
                         Assert.assertEquals(expect, d.currentValue().toString());
-                        String expectLinked = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : I0 + "," + I101 + "," + I1;
-                        Assert.assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
+                        Assert.assertEquals("", d.variableInfo().getLinkedVariables().toString());
+                        Assert.assertEquals("", d.variableInfo().getStaticallyAssignedVariables().toString());
                     }
                 }
             }
@@ -617,11 +618,11 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
                     }
                 }
                 if ("java.lang.System.out".equals(d.variableName())) {
-                    if("0".equals(d.statementId())) {
+                    if ("0".equals(d.statementId())) {
                         String expectValue = d.iteration() == 0 ? "<f:out>" : "instance type PrintStream";
                         Assert.assertEquals(d.statementId(), expectValue, d.currentValue().toString());
                     }
-                    if("4".equals(d.statementId())) {
+                    if ("4".equals(d.statementId())) {
                         String expectValue = d.iteration() == 0 ? "<f:i>==<v:j>?<f:out>:<f:out>" : "instance type PrintStream";
                         Assert.assertEquals(d.statementId(), expectValue, d.currentValue().toString());
                     }
