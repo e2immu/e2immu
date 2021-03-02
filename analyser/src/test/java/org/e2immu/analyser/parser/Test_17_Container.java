@@ -14,6 +14,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 public class Test_17_Container extends CommonTestRunner {
+
     public Test_17_Container() {
         super(true);
     }
@@ -84,10 +85,10 @@ public class Test_17_Container extends CommonTestRunner {
             Assert.assertEquals(MultiLevel.MUTABLE, set.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE));
         };
         testClass("Container_0", 0, 0, new DebugConfiguration.Builder()
-            //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-           //     .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                //     .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addTypeMapVisitor(typeMapVisitor)
-           //     .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                //     .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 
@@ -185,7 +186,7 @@ public class Test_17_Container extends CommonTestRunner {
                         if (d.iteration() == 0) {
                             Assert.assertSame(LinkedVariables.DELAY, d.variableInfo().getLinkedVariables());
                         } else {
-                            Assert.assertEquals("this.s,org.e2immu.analyser.testexample.Container_3.s$0",
+                            Assert.assertEquals("org.e2immu.analyser.testexample.Container_3.s$0",
                                     d.variableInfo().getLinkedVariables().toString());
                         }
                     }
@@ -197,7 +198,7 @@ public class Test_17_Container extends CommonTestRunner {
                         if (d.iteration() == 0) {
                             Assert.assertSame(LinkedVariables.DELAY, d.variableInfo().getLinkedVariables());
                         } else {
-                            Assert.assertEquals("this.s,org.e2immu.analyser.testexample.Container_3.s$0",
+                            Assert.assertEquals("org.e2immu.analyser.testexample.Container_3.s$0",
                                     d.variableInfo().getLinkedVariables().toString());
                         }
                     }
@@ -210,16 +211,15 @@ public class Test_17_Container extends CommonTestRunner {
                         if (d.iteration() == 0) {
                             Assert.assertSame(LinkedVariables.DELAY, d.variableInfo().getLinkedVariables());
                         } else {
-                            Assert.assertEquals("org.e2immu.analyser.testexample.Container_3.s$0",
-                                    d.variableInfo().getLinkedVariables().toString());
+                            Assert.assertEquals("", d.variableInfo().getLinkedVariables().toString());
+                            Assert.assertEquals("", d.variableInfo().getLinkedVariables().toString());
                         }
                     }
                     if ("1.0.0".equals(d.statementId())) {
                         if (d.iteration() == 0) {
                             Assert.assertSame(LinkedVariables.DELAY, d.variableInfo().getLinkedVariables());
                         } else {
-                            Assert.assertEquals("org.e2immu.analyser.testexample.Container_3.s$0",
-                                    d.variableInfo().getLinkedVariables().toString());
+                            Assert.assertEquals("", d.variableInfo().getLinkedVariables().toString());
                             // set3 -> s$0 -> this.s (-> s$0)
                             Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
                         }
@@ -229,21 +229,20 @@ public class Test_17_Container extends CommonTestRunner {
                         if (d.iteration() == 0) {
                             Assert.assertSame(LinkedVariables.DELAY, d.variableInfo().getLinkedVariables());
                         } else {
-                            Assert.assertEquals("org.e2immu.analyser.testexample.Container_3.s$0",
-                                    d.variableInfo().getLinkedVariables().toString());
+                            Assert.assertEquals("", d.variableInfo().getLinkedVariables().toString());
                             Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
                         }
                     }
                 }
                 if (S_0.equals(d.variableName())) {
                     Assert.assertTrue(d.iteration() > 0);
-                    Assert.assertEquals("this.s", d.variableInfo().getLinkedVariables().toString());
+                    Assert.assertEquals("this.s", d.variableInfo().getStaticallyAssignedVariables().toString());
                     if ("0".equals(d.statementId())) {
                         Assert.assertEquals("nullable instance type Set<String>", d.currentValue().toString());
                     } else if ("1.0.0".equals(d.statementId())) {
                         Assert.assertEquals("nullable instance type Set<String>", d.currentValue().toString());
                     } else if ("1".equals(d.statementId())) {
-                        Assert.assertEquals("nullable instance type Set<String>", d.currentValue().toString());
+                        Assert.assertEquals("null==org.e2immu.analyser.testexample.Container_3.s$0?nullable instance type Set<String>:nullable instance type Set<String>", d.currentValue().toString());
                     }
                 }
             }
@@ -333,9 +332,10 @@ public class Test_17_Container extends CommonTestRunner {
 
     @Test
     public void test_5() throws IOException {
+        final String CONTAINER_5 = "Container_5";
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-            if ("Container_5".equals(d.methodInfo().name) && d.variable() instanceof ParameterInfo p && "coll5".equals(p.name)) {
+            if (CONTAINER_5.equals(d.methodInfo().name) && d.variable() instanceof ParameterInfo p && "coll5".equals(p.name)) {
                 Assert.assertEquals("nullable instance type Collection<String>", d.currentValue().toString());
                 Assert.assertEquals("", d.variableInfo().getLinkedVariables().toString());
                 if ("0".equals(d.statementId())) {
@@ -346,15 +346,35 @@ public class Test_17_Container extends CommonTestRunner {
                     Assert.assertEquals(expectModified, d.getProperty(VariableProperty.MODIFIED_VARIABLE));
                 }
             }
+            int n = d.methodInfo().methodInspection.get().getParameters().size();
+            if (CONTAINER_5.equals(d.methodInfo().name) && n == 0) {
+                if (d.variable() instanceof FieldReference fr && "list".equals(fr.fieldInfo.name)) {
+                    String expectValue = "new ArrayList<>()/*0==this.size()*/";
+                    Assert.assertEquals(expectValue, d.currentValue().toString());
+                }
+            }
+            if (CONTAINER_5.equals(d.methodInfo().name) && n == 1) {
+                if (d.variable() instanceof FieldReference fr && "list".equals(fr.fieldInfo.name)) {
+                    if ("0".equals(d.statementId())) {
+                        String expectValue = "new ArrayList<>()/*0==this.size()*/";
+                        Assert.assertEquals(expectValue, d.currentValue().toString());
+                    }
+                    if ("1".equals(d.statementId())) {
+                        // this is not correct (addAll5 modifies) but the field should hold the modified version anyway
+                        String expectValue = "new ArrayList<>()/*0==this.size()*/";
+                        Assert.assertEquals(expectValue, d.currentValue().toString());
+                    }
+                }
+            }
             if ("addAll5".equals(d.methodInfo().name) && d.variable() instanceof FieldReference fr
                     && "list".equals(fr.fieldInfo.name)) {
-                Assert.assertEquals(d.iteration() <= 1 ? Level.DELAY : Level.TRUE,
+                Assert.assertEquals(d.iteration() <= 2 ? Level.DELAY : Level.TRUE,
                         d.getProperty(VariableProperty.MODIFIED_VARIABLE));
             }
         };
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
-            if ("Container_5".equals(d.methodInfo().name) && d.methodInfo().methodInspection.get().getParameters().size() == 1) {
+            if (CONTAINER_5.equals(d.methodInfo().name) && d.methodInfo().methodInspection.get().getParameters().size() == 1) {
                 ParameterAnalysis coll5 = d.parameterAnalyses().get(0);
                 Assert.assertEquals(d.iteration() <= 2 ? Level.DELAY : Level.FALSE,
                         coll5.getProperty(VariableProperty.MODIFIED_VARIABLE));
@@ -365,6 +385,15 @@ public class Test_17_Container extends CommonTestRunner {
                 Assert.assertEquals(expectModifiedParam, collection.getProperty(VariableProperty.MODIFIED_VARIABLE));
                 int expectModifiedMethod = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
                 Assert.assertEquals(expectModifiedMethod, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
+            }
+        };
+
+        FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+            if ("list".equals(d.fieldInfo().name)) {
+                if (d.iteration() > 0) {
+                    Assert.assertEquals("instance type ArrayList<String>",
+                            d.fieldAnalysis().getEffectivelyFinalValue().toString());
+                }
             }
         };
 
@@ -384,8 +413,9 @@ public class Test_17_Container extends CommonTestRunner {
         };
 
 
-        testClass("Container_5", 0, 0, new DebugConfiguration.Builder()
+        testClass(CONTAINER_5, 0, 0, new DebugConfiguration.Builder()
                 .addTypeMapVisitor(typeMapVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());

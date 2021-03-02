@@ -1441,6 +1441,14 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                         localAnalysers.get().stream().filter(pta -> pta.primaryType == localClassDeclaration.typeInfo).findFirst().orElseThrow();
                 builder.markVariablesFromPrimaryTypeAnalyser(primaryTypeAnalyser);
                 return apply(sharedState, builder.build());
+            } else if (statementAnalysis.statement instanceof ExplicitConstructorInvocation eci) {
+                // empty parameters: this(); or super();
+                Expression assignments = replaceExplicitConstructorInvocation(sharedState, eci, null);
+                if (!assignments.isBooleanConstant()) {
+                    EvaluationResult result = assignments.evaluate(sharedState.evaluationContext, structure.forwardEvaluationInfo());
+                    AnalysisStatus applyResult = apply(sharedState, result);
+                    return applyResult.combine(analysisStatus);
+                }
             }
             return analysisStatus;
         }
@@ -1521,7 +1529,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         This thisVar = new This(analyserContext, myMethodAnalyser.methodInfo.typeInfo);
         EvaluationResult.Builder builder = new EvaluationResult.Builder();
         Map<Expression, Expression> translation = new HashMap<>();
-        if (n > 0) {
+        if (result != null && n > 0) {
             int i = 0;
             List<Expression> storedValues = n == 1 ? List.of(result.value()) : result.storedValues();
             for (Expression parameterExpression : storedValues) {

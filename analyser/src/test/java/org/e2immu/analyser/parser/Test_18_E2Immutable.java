@@ -186,8 +186,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
                 Assert.assertEquals(Level.TRUE, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
             }
             if ("getI".equals(d.methodInfo().name)) {
-                int expectModified = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
-                Assert.assertEquals(expectModified, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
+                Assert.assertEquals(Level.FALSE, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
                 if (d.iteration() == 0) {
                     Assert.assertNull(d.methodAnalysis().getSingleReturnValue());
                 } else {

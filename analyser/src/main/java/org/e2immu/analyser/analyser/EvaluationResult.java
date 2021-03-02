@@ -292,18 +292,20 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                 // if context not null is already high enough, don't complain
                 int contextNotNull = getPropertyFromInitial(variable, VariableProperty.CONTEXT_NOT_NULL);
                 int externalNotNull = getPropertyFromInitial(variable, VariableProperty.EXTERNAL_NOT_NULL);
-                boolean parameterValue = variable instanceof ParameterInfo ||
-                        variable instanceof FieldReference ||
-                        value instanceof IsVariableExpression ve &&
-                                (ve.variable() instanceof ParameterInfo || ve.variable() instanceof FieldReference);
-                if (parameterValue && externalNotNull == Level.DELAY) {
+                boolean fieldNotAssignedToParameter = variable instanceof FieldReference &&
+                        !(value instanceof IsVariableExpression ve && ve.variable() instanceof ParameterInfo);
+                if (fieldNotAssignedToParameter && externalNotNull == Level.DELAY) {
                     setProperty(variable, VariableProperty.EXTERNAL_NOT_NULL_DELAY, Level.TRUE);
                 } else if (!evaluationContext.isDelayed(value)) {
                     boolean raiseError;
-                    if (parameterValue) {
+                    if (fieldNotAssignedToParameter) {
                         raiseError = externalNotNull == MultiLevel.NULLABLE && contextNotNull == MultiLevel.NULLABLE;
                     } else {
-                        raiseError = notNullValue == MultiLevel.NULLABLE && contextNotNull == MultiLevel.NULLABLE;
+                        boolean isNotParameter = !(variable instanceof ParameterInfo) &&
+                                !(value instanceof IsVariableExpression ve && ve.variable() instanceof ParameterInfo);
+
+                        raiseError = isNotParameter &&
+                                notNullValue == MultiLevel.NULLABLE && contextNotNull == MultiLevel.NULLABLE;
                     }
                     if (raiseError) {
                         Message message = Message.newMessage(evaluationContext.getLocation(), Message.POTENTIAL_NULL_POINTER_EXCEPTION,
