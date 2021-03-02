@@ -1035,7 +1035,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                                                        VariableInfo vi1) {
         // regardless of what's being delayed or not, if the type is immutable there cannot be links
         TypeInfo bestType = variable.parameterizedType().bestTypeInfo();
-        if (bestType != null) {
+        if (bestType != null && bestType != myMethodAnalyser.methodInfo.typeInfo)  {
             int immutable = analyserContext.getTypeAnalysis(bestType).getProperty(IMMUTABLE);
             if (immutable == MultiLevel.EFFECTIVELY_E2IMMUTABLE) {
                 return EMPTY_OVERRIDE;
