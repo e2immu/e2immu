@@ -47,10 +47,8 @@ public class Test_31_EventuallyE1Immutable extends CommonTestRunner {
                     Assert.assertTrue(stringVic.hasEvaluation());
                     Assert.assertFalse(stringVic.hasMerge());
                     Assert.assertEquals("", stringVic.getPreviousOrInitial().getLinkedVariables().toString());
-
-                    // delayed because value not yet known
-                    Assert.assertSame(LinkedVariables.DELAY, stringVic.current().getLinkedVariables());
-                    Assert.assertEquals(Level.DELAY, stringVic.current().getProperty(VariableProperty.CONTEXT_MODIFIED));
+                    Assert.assertEquals("", stringVic.current().getLinkedVariables().toString());
+                    Assert.assertEquals(Level.FALSE, stringVic.current().getProperty(VariableProperty.CONTEXT_MODIFIED));
                 }
             }
         };
@@ -72,7 +70,7 @@ public class Test_31_EventuallyE1Immutable extends CommonTestRunner {
                     Assert.assertEquals(1, d.methodAnalysis().getPreconditionForMarkAndOnly().size());
                     Assert.assertEquals("null==string",
                             d.methodAnalysis().getPreconditionForMarkAndOnly().get(0).toString());
-                    if (d.iteration() > 1) {
+                    if (d.iteration() > 3) {
                         MethodAnalysis.MarkAndOnly markAndOnly = d.methodAnalysis().getMarkAndOnly();
                         Assert.assertNotNull(markAndOnly);
                         Assert.assertEquals("string", markAndOnly.markLabel());
@@ -82,9 +80,10 @@ public class Test_31_EventuallyE1Immutable extends CommonTestRunner {
         };
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
-            if ("EventuallyE1Immutable_0".equals(d.typeInfo().simpleName) && d.iteration() > 0) {
-                Assert.assertEquals(1, d.typeAnalysis().getApprovedPreconditions().size());
-                if (d.iteration() > 1) {
+            if ("EventuallyE1Immutable_0".equals(d.typeInfo().simpleName) && d.iteration() > 1) {
+                int expectSize = d.iteration() == 2 ? 0 : 1;
+                Assert.assertEquals(expectSize, d.typeAnalysis().getApprovedPreconditions().size());
+                if (d.iteration() > 2) {
                     Assert.assertEquals(MultiLevel.EVENTUALLY_E1IMMUTABLE, d.typeAnalysis().getProperty(VariableProperty.IMMUTABLE));
                 }
             }
