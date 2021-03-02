@@ -27,6 +27,7 @@ import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.VariableExpression;
+import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.testexample.Basics_6;
@@ -412,6 +413,22 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
                 }
             }
 
+            if ("Basics_7".equals(d.methodInfo().name) && d.variable() instanceof FieldReference fr
+                    && "out".equals(fr.fieldInfo.name)) {
+                if ("0.0.1".equals(d.statementId())) {
+                    String expectValue = d.iteration() == 0 ? "<f:out>" : "instance type PrintStream";
+                    Assert.assertEquals(expectValue, d.currentValue().toString());
+                    Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                    Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
+                }
+                if ("1.0.0".equals(d.statementId())) {
+                    String expectValue = d.iteration() == 0 ? "<f:out>" : "instance type PrintStream";
+                    Assert.assertEquals(expectValue, d.currentValue().toString());
+                    Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                    Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
+                }
+            }
+
             if ("increment".equals(d.methodInfo().name) && I.equals(d.variableName())) {
                 if ("2".equals(d.statementId()) && d.iteration() > 0) {
                     Assert.assertEquals(I0 + "+q", d.currentValue().toString());
@@ -447,7 +464,7 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
                     // exists from 1.0.0 onwards
                     Assert.assertTrue(d.iteration() > 0); // does not exist earlier!
                     Assert.assertEquals("instance type int", d.currentValue().toString());
-                    String expectStaticallyAssigned = d.statementId().equals("1.0.0")  ? "this.i": "";
+                    String expectStaticallyAssigned = d.statementId().equals("1.0.0") ? "this.i" : "";
                     // after the assignment, i becomes a different value
                     Assert.assertEquals(d.statementId(), expectStaticallyAssigned,
                             d.variableInfo().getStaticallyAssignedVariables().toString());
@@ -623,7 +640,7 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
                         Assert.assertEquals(d.statementId(), expectValue, d.currentValue().toString());
                     }
                     if ("4".equals(d.statementId())) {
-                        String expectValue = d.iteration() == 0 ? "<f:i>==<v:j>?<f:out>:<f:out>" : "instance type PrintStream";
+                        String expectValue = d.iteration() == 0 ? "<f:out>" : "instance type PrintStream";
                         Assert.assertEquals(d.statementId(), expectValue, d.currentValue().toString());
                     }
                     Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));

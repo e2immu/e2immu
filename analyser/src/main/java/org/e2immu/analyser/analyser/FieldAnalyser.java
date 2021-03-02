@@ -280,6 +280,14 @@ public class FieldAnalyser extends AbstractAnalyser {
         EvaluationContext evaluationContext = new EvaluationContextImpl(sharedState.iteration,
                 ConditionManager.initialConditionManager(analyserContext.getPrimitives()), sharedState.closure);
 
+        boolean notOnlyAssignedToParameters = fieldAnalysis.getValues().stream()
+                .anyMatch(e -> {
+                    VariableExpression ve;
+                    return !e.isDelayed(evaluationContext) &&
+                            ((ve = e.asInstanceOf(VariableExpression.class)) == null ||
+                                    !(ve.variable() instanceof ParameterInfo));
+                });
+
         boolean onlyAssignedToParameters = fieldAnalysis.getValues().stream()
                 // parameters can be influenced by context not null, all the rest cannot
                 .allMatch(e -> {
@@ -287,6 +295,12 @@ public class FieldAnalyser extends AbstractAnalyser {
                     return (ve = e.asInstanceOf(VariableExpression.class)) != null &&
                             ve.variable() instanceof ParameterInfo;
                 });
+
+        if(!notOnlyAssignedToParameters && !onlyAssignedToParameters) {
+            log(DELAYED, "Delaying @NotNull on {}, waiting for values", fieldInfo.fullyQualifiedName());
+            return DELAYS;
+        }
+
         if (onlyAssignedToParameters) {
             int bestOverContext = allMethodsAndConstructors.stream()
                     .flatMap(m -> m.getFieldAsVariableStream(fieldInfo, true))
@@ -450,10 +464,9 @@ public class FieldAnalyser extends AbstractAnalyser {
                     boolean added = false;
                     for (VariableInfo vi : methodAnalyser.getFieldAsVariable(fieldInfo, false)) {
                         if (vi.isAssigned()) {
-                            if (vi.isNotDelayed()) {
-                                values.add(vi.getValue());
-                                added = true;
-                            } else {
+                            values.add(vi.getValue());
+                            added = true;
+                            if (vi.isDelayed()) {
                                 log(DELAYED, "Delay consistent value for field {}", fieldInfo.fullyQualifiedName());
                                 delays = true;
                             }

@@ -661,8 +661,9 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                             .filter(cav -> acceptVariableForMerging(cav, inSwitchStatementOldStyle))
                             .collect(Collectors.toUnmodifiableList());
                     boolean ignoreCurrent;
-                    if (toMerge.size() == 1 && toMerge.get(0).variableInLoop.assignmentId() != null
-                            && toMerge.get(0).variableInLoop.assignmentId().startsWith(index) && !atLeastOneBlockExecuted) {
+                    if (toMerge.size() == 1 && (toMerge.get(0).variableInLoop.assignmentId() != null
+                            && toMerge.get(0).variableInLoop.assignmentId().startsWith(index) && !atLeastOneBlockExecuted ||
+                            variable instanceof FieldReference fr && onlyOneCopy(evaluationContext, fr))) {
                         ignoreCurrent = true; // the
                     } else {
                         ignoreCurrent = atLeastOneBlockExecuted;
@@ -712,6 +713,12 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                 VariableInfo::getLinkedVariables, CONTEXT_MODIFIED, contextModified, MERGE, doNotWrite);
 
         return cnnStatus.combine(cmStatus);
+    }
+
+    private boolean onlyOneCopy(EvaluationContext evaluationContext, FieldReference fr) {
+        if(fr.fieldInfo.isExplicitlyFinal()) return true;
+        FieldAnalysis fieldAnalysis = evaluationContext.getAnalyserContext().getFieldAnalysis(fr.fieldInfo);
+        return fieldAnalysis.getProperty(FINAL) == Level.TRUE;
     }
 
     private boolean acceptVariableForMerging(ConditionAndVariableInfo cav, boolean inSwitchStatementOldStyle) {

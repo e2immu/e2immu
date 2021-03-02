@@ -717,18 +717,18 @@ public class Test_16_Modification extends CommonTestRunner {
 
             if ("getSet".equals(d.methodInfo().name) && SET_IN_C1.equals(d.variableName())) {
                 Assert.assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
-                String expectValue = d.iteration() == 0 ? SET_IN_C1_DELAYED : "instance type Set<String>";
-          //      Assert.assertEquals(expectValue, d.currentValue().toString());
+                String expectValue = d.iteration() <= 1 ? SET_IN_C1_DELAYED : "instance type Set<String>";
+                Assert.assertEquals(expectValue, d.currentValue().toString());
             }
 
             if ("add".equals(d.methodInfo().name) && "C1".equals(d.methodInfo().typeInfo.simpleName)) {
                 if (SET_IN_C1.equals(d.variableName())) {
-                    String expectValue = d.iteration() == 0 ? SET_IN_C1_DELAYED : "instance type Set<String>";
+                    String expectValue = d.iteration() <= 1 ? SET_IN_C1_DELAYED : "instance type Set<String>";
                     Assert.assertEquals(expectValue, d.currentValue().toString());
                     Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
-                    int expectCNN = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
+                    int expectCNN = d.iteration() <= 1 ? Level.DELAY : Level.TRUE;
                     Assert.assertEquals(expectCNN, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
-                    String expectLinked = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "";
+                    String expectLinked = d.iteration() <= 1 ? LinkedVariables.DELAY_STRING : "";
                     Assert.assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
                 }
                 if (d.variable() instanceof ParameterInfo s && "string".equals(s.name)) {
@@ -768,16 +768,29 @@ public class Test_16_Modification extends CommonTestRunner {
                     Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
                 }
             }
+            if ("Modification_11".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof FieldReference fr && "s2".equals(fr.fieldInfo.name)) {
+                    if ("1".equals(d.statementId())) {
+                        String expectValue = d.iteration() < 2 ? "<m:getSet>" : "set2";
+                        Assert.assertEquals(expectValue, d.currentValue().toString());
+                    }
+                }
+            }
         };
 
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("add".equals(d.methodInfo().name) && "C1".equals(d.methodInfo().typeInfo.simpleName)) {
-                Assert.assertEquals(d.iteration() >= 1,
+                Assert.assertEquals(d.iteration() >= 2,
                         d.statementAnalysis().methodLevelData.linksHaveBeenEstablished.isSet());
             }
-            if ("example1".equals(d.methodInfo().name) && "2".equals(d.statementId())) {
-                Assert.assertEquals(d.iteration() >= 3,
-                        d.statementAnalysis().methodLevelData.linksHaveBeenEstablished.isSet());
+            if ("example1".equals(d.methodInfo().name)) {
+                if ("0".equals(d.statementId())) {
+                    Assert.assertNull("It " + d.iteration(), d.haveError(Message.POTENTIAL_NULL_POINTER_EXCEPTION));
+                }
+                if ("2".equals(d.statementId())) {
+                    Assert.assertEquals(d.iteration() >= 3,
+                            d.statementAnalysis().methodLevelData.linksHaveBeenEstablished.isSet());
+                }
             }
         };
 
@@ -791,6 +804,10 @@ public class Test_16_Modification extends CommonTestRunner {
 
                 int expectMm = d.iteration() <= 1 ? Level.DELAY : Level.TRUE;
                 Assert.assertEquals(expectMm, d.fieldAnalysis().getProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD));
+            }
+            if ("s2".equals(d.fieldInfo().name)) {
+                int expectEnn = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL;
+                Assert.assertEquals(expectEnn, d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_NOT_NULL));
             }
         };
 

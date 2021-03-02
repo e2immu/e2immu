@@ -293,16 +293,17 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                 int contextNotNull = getPropertyFromInitial(variable, VariableProperty.CONTEXT_NOT_NULL);
                 int externalNotNull = getPropertyFromInitial(variable, VariableProperty.EXTERNAL_NOT_NULL);
                 boolean parameterValue = variable instanceof ParameterInfo ||
-                        value instanceof IsVariableExpression ve && ve.variable() instanceof ParameterInfo;
+                        variable instanceof FieldReference ||
+                        value instanceof IsVariableExpression ve &&
+                                (ve.variable() instanceof ParameterInfo || ve.variable() instanceof FieldReference);
                 if (parameterValue && externalNotNull == Level.DELAY) {
                     setProperty(variable, VariableProperty.EXTERNAL_NOT_NULL_DELAY, Level.TRUE);
-                } else {
+                } else if (!evaluationContext.isDelayed(value)) {
                     boolean raiseError;
                     if (parameterValue) {
                         raiseError = externalNotNull == MultiLevel.NULLABLE && contextNotNull == MultiLevel.NULLABLE;
                     } else {
-                        raiseError = !evaluationContext.isDelayed(value) && notNullValue == MultiLevel.NULLABLE
-                                && contextNotNull == MultiLevel.NULLABLE;
+                        raiseError = notNullValue == MultiLevel.NULLABLE && contextNotNull == MultiLevel.NULLABLE;
                     }
                     if (raiseError) {
                         Message message = Message.newMessage(evaluationContext.getLocation(), Message.POTENTIAL_NULL_POINTER_EXCEPTION,

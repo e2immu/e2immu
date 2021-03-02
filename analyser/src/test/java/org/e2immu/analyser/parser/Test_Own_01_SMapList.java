@@ -180,7 +180,7 @@ public class Test_Own_01_SMapList extends CommonTestRunner {
                 if ("1.0.1.0.1".equals(d.statementId())) {
                     String expectValue = d.iteration() == 0 ? "<s:boolean>" : "change$1||null==dest.get(e$1.getKey())";
                     Assert.assertEquals(expectValue, d.currentValue().toString());
-                    Assert.assertEquals("change", d.variableInfo().getLinkedVariables().toString());
+                    Assert.assertEquals("change", d.variableInfo().getStaticallyAssignedVariables().toString());
                     Assert.assertSame(VariableInLoop.VariableType.LOOP_COPY, d.variableInfoContainer().getVariableInLoop().variableType());
                     Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
                 }
@@ -191,7 +191,7 @@ public class Test_Own_01_SMapList extends CommonTestRunner {
                     Assert.assertSame(VariableInLoop.VariableType.LOOP_COPY, d.variableInfoContainer().getVariableInLoop().variableType());
                     String expectValue = d.iteration() == 0 ? "<s:boolean>" : "change$1||null==dest.get(e$1.getKey())";
                     Assert.assertEquals(expectValue, d.currentValue().toString());
-                    Assert.assertEquals("change", d.variableInfo().getLinkedVariables().toString());
+                    Assert.assertEquals("change", d.variableInfo().getStaticallyAssignedVariables().toString());
                 }
             }
         }
