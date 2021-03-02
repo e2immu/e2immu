@@ -26,6 +26,7 @@ import org.e2immu.analyser.config.MethodAnalyserVisitor;
 import org.e2immu.analyser.config.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.ParameterInfo;
+import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -74,6 +75,20 @@ public class Test_20_CyclicReferences extends CommonTestRunner {
 
     @Test
     public void test_2() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("methodB".equals(d.methodInfo().name)) {
+                if(d.variable() instanceof ReturnVariable) {
+                    if ("0.0.0".equals(d.statementId())) {
+                        String expectValue = d.iteration() == 0 ? "<m:methodA>": "\"a\".equals(paramB)&&!\"b\".equals(paramB)";
+                        Assert.assertEquals(expectValue, d.currentValue().toString());
+                    }
+                    if ("1".equals(d.statementId())) {
+                        String expectValue = d.iteration() == 0 ? "<m:equals>&&!<m:equals>" : "!\"a\".equals(paramB)&&\"b\".equals(paramB)";
+                        Assert.assertEquals(expectValue, d.currentValue().toString());
+                    }
+                }
+            }
+        };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("methodB".equals(d.methodInfo().name) || "methodA".equals(d.methodInfo().name)) {
                 Assert.assertTrue(d.methodInfo().methodResolution.get().methodsOfOwnClassReached().contains(d.methodInfo()));
@@ -81,6 +96,7 @@ public class Test_20_CyclicReferences extends CommonTestRunner {
         };
 
         testClass("CyclicReferences_2", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }

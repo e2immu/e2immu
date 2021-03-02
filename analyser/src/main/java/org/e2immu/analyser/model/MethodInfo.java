@@ -428,7 +428,7 @@ public class MethodInfo implements WithInspectionAndAnalysis {
     }
 
     public boolean partOfCallCycle() {
-        Set<MethodInfo> reached = methodResolution.get().methodsOfOwnClassReached();
+        Set<MethodInfo> reached = methodResolution.get("Method "+fullyQualifiedName).methodsOfOwnClassReached();
         return reached.size() > 1 && reached.contains(this);
     }
 }

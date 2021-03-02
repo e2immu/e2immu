@@ -52,6 +52,7 @@ public class EvaluateParameters {
         int minNotNullOverParameters = MultiLevel.EFFECTIVELY_NOT_NULL;
 
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext).compose(parameterResults);
+        boolean partOfCallCycle = methodInfo != null && methodInfo.partOfCallCycle();
 
         for (Expression parameterExpression : parameterExpressions) {
             Expression parameterValue;
@@ -97,7 +98,11 @@ public class EvaluateParameters {
                 }
                 int contextNotNull = map.getOrDefault(VariableProperty.CONTEXT_NOT_NULL, Level.DELAY);
                 if (contextNotNull == Level.DELAY) {
-                    map.put(VariableProperty.CONTEXT_NOT_NULL_DELAY, Level.TRUE);
+                    if(partOfCallCycle) {
+                        map.put(VariableProperty.CONTEXT_NOT_NULL, MultiLevel.NULLABLE); // won't be me to rock the boat
+                    } else {
+                        map.put(VariableProperty.CONTEXT_NOT_NULL_DELAY, Level.TRUE);
+                    }
                 }
 
                 if (notModified1Scope != Level.TRUE && methodInfo.isSingleAbstractMethod()) {

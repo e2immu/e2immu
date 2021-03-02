@@ -736,11 +736,12 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
     }
 
     private AnalysisStatus computeModifiedInternalCycles() {
-        Set<MethodInfo> cycle = methodInfo.methodResolution.get().methodsOfOwnClassReached();
         boolean isCycle = methodInfo.partOfCallCycle();
         if (!isCycle) return DONE;
-        int modified = methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD);
+
+        int modified = methodAnalysis.getProperty(VariableProperty.TEMP_MODIFIED_METHOD);
         TypeAnalysisImpl.Builder builder = (TypeAnalysisImpl.Builder) typeAnalysis;
+        Set<MethodInfo> cycle = methodInfo.methodResolution.get().methodsOfOwnClassReached();
         TypeAnalysisImpl.CycleInfo cycleInfo = builder.nonModifiedCountForMethodCallCycle.getOrCreate(cycle, x -> new TypeAnalysisImpl.CycleInfo());
 
         // we decide for the group
@@ -775,7 +776,10 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
     }
 
     private AnalysisStatus computeModified() {
-        if (methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD) != Level.DELAY) return DONE;
+        boolean isCycle = methodInfo.partOfCallCycle();
+        VariableProperty variableProperty = isCycle ? VariableProperty.TEMP_MODIFIED_METHOD: VariableProperty.MODIFIED_METHOD;
+
+        if (methodAnalysis.getProperty(variableProperty) != Level.DELAY) return DONE;
         MethodLevelData methodLevelData = methodAnalysis.methodLevelData();
 
         // first step, check field assignments
@@ -784,7 +788,7 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
                 .anyMatch(VariableInfo::isAssigned);
         if (fieldAssignments) {
             log(NOT_MODIFIED, "Method {} is @Modified: fields are being assigned", methodInfo.distinguishingName());
-            methodAnalysis.setProperty(VariableProperty.MODIFIED_METHOD, Level.TRUE);
+            methodAnalysis.setProperty(variableProperty, Level.TRUE);
             return DONE;
         }
 
@@ -855,7 +859,7 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
             }
         }
         // (we could call non-@NM methods on parameters or local variables, but that does not influence this annotation)
-        methodAnalysis.setProperty(VariableProperty.MODIFIED_METHOD, isModified ? Level.TRUE : Level.FALSE);
+        methodAnalysis.setProperty(variableProperty, isModified ? Level.TRUE : Level.FALSE);
         return DONE;
     }
 
