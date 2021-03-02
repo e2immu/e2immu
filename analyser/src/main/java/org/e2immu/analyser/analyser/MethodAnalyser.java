@@ -346,8 +346,6 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
     }
 
     private AnalysisStatus detectMissingStaticModifier() {
-        assert !methodAnalysis.complainedAboutMissingStaticModifier.isSet();
-
         if (!methodInfo.methodInspection.get().isStatic() && !methodInfo.typeInfo.isInterface() && !methodInfo.isTestMethod()) {
             // we need to check if there's fields being read/assigned/
             if (absentUnlessStatic(VariableInfo::isRead) &&
@@ -358,12 +356,10 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
                 MethodResolution methodResolution = methodInfo.methodResolution.get();
                 if (methodResolution.staticMethodCallsOnly()) {
                     messages.add(Message.newMessage(new Location(methodInfo), Message.METHOD_SHOULD_BE_MARKED_STATIC));
-                    methodAnalysis.complainedAboutMissingStaticModifier.set(true);
                     return DONE;
                 }
             }
         }
-        methodAnalysis.complainedAboutMissingStaticModifier.set(false);
         return DONE;
     }
 
@@ -423,11 +419,17 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
     private AnalysisStatus computeOnlyMarkAnnotate(SharedState sharedState) {
         assert !methodAnalysis.markAndOnly.isSet();
 
-        SetOnceMap<String, Expression> approvedPreconditions = ((TypeAnalysisImpl.Builder) typeAnalysis).approvedPreconditions;
-        if (!approvedPreconditions.isFrozen()) {
-            log(DELAYED, "No decision on approved preconditions yet for {}", methodInfo.distinguishingName());
+        SetOnceMap<String, Expression> e1 = ((TypeAnalysisImpl.Builder) typeAnalysis).approvedPreconditionsE1;
+        if (!e1.isFrozen()) {
+            log(DELAYED, "No decision on approved E1 preconditions yet for {}", methodInfo.distinguishingName());
             return DELAYS;
         }
+        SetOnceMap<String, Expression> e2 = ((TypeAnalysisImpl.Builder) typeAnalysis).approvedPreconditionsE2;
+        if (!e2.isFrozen()) {
+            log(DELAYED, "No decision on approved E2 preconditions yet for {}", methodInfo.distinguishingName());
+            return DELAYS;
+        }
+        SetOnceMap<String, Expression> approvedPreconditions = !e2.isEmpty() ? e2 : e1;
         if (approvedPreconditions.size() == 0) {
             log(DELAYED, "No approved preconditions for {}, so no @Mark, @Only", methodInfo.distinguishingName());
             return DONE;
@@ -461,13 +463,13 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
                 if (before.toString().equals(negated.toString())) {
                     if (after == null) after = true;
                 } else {
-                    E2ImmuAnnotationExpressions e2 = analyserContext.getE2ImmuAnnotationExpressions();
+                    E2ImmuAnnotationExpressions e2ae = analyserContext.getE2ImmuAnnotationExpressions();
                     log(MARK, "No approved preconditions for {} in {}", precondition, methodInfo.distinguishingName());
-                    if (!methodAnalysis.annotations.isSet(e2.mark)) {
-                        methodAnalysis.annotations.put(e2.mark, false);
+                    if (!methodAnalysis.annotations.isSet(e2ae.mark)) {
+                        methodAnalysis.annotations.put(e2ae.mark, false);
                     }
-                    if (!methodAnalysis.annotations.isSet(e2.only)) {
-                        methodAnalysis.annotations.put(e2.only, false);
+                    if (!methodAnalysis.annotations.isSet(e2ae.only)) {
+                        methodAnalysis.annotations.put(e2ae.only, false);
                     }
                     return DONE;
                 }
@@ -489,10 +491,10 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
 
             // this bit of code is here temporarily as a backup; it is the code in the type analyser that should
             // keep approvedPreconditions empty
-            if (modified == Level.TRUE && !methodAnalysis.complainedAboutApprovedPreconditions.isSet()) {
-                methodAnalysis.complainedAboutApprovedPreconditions.set(true);
-                messages.add(Message.newMessage(new Location(methodInfo), Message.NO_APPROVED_PRECONDITIONS));
-            }
+            //if (modified == Level.TRUE && !methodAnalysis.complainedAboutApprovedPreconditions.isSet()) {
+            //   methodAnalysis.complainedAboutApprovedPreconditions.set(true);
+            //   messages.add(Message.newMessage(new Location(methodInfo), Message.NO_APPROVED_PRECONDITIONS));
+            // }
             return DONE;
         }
 
@@ -500,19 +502,19 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
         MethodAnalysis.MarkAndOnly markAndOnly = new MethodAnalysis.MarkAndOnly(preconditions, jointMarkLabel, mark, after);
         methodAnalysis.markAndOnly.set(markAndOnly);
         log(MARK, "Marking {} with only data {}", methodInfo.distinguishingName(), markAndOnly);
-        E2ImmuAnnotationExpressions e2 = analyserContext.getE2ImmuAnnotationExpressions();
+        E2ImmuAnnotationExpressions e2ae = analyserContext.getE2ImmuAnnotationExpressions();
         if (mark) {
-            AnnotationExpression markAnnotation = new AnnotationExpressionImpl(e2.mark.typeInfo(),
+            AnnotationExpression markAnnotation = new AnnotationExpressionImpl(e2ae.mark.typeInfo(),
                     List.of(new MemberValuePair("value",
                             new StringConstant(analyserContext.getPrimitives(), jointMarkLabel))));
             methodAnalysis.annotations.put(markAnnotation, true);
-            methodAnalysis.annotations.put(e2.only, false);
+            methodAnalysis.annotations.put(e2ae.only, false);
         } else {
-            AnnotationExpression onlyAnnotation = new AnnotationExpressionImpl(e2.only.typeInfo(),
+            AnnotationExpression onlyAnnotation = new AnnotationExpressionImpl(e2ae.only.typeInfo(),
                     List.of(new MemberValuePair(after ? "after" : "before",
                             new StringConstant(analyserContext.getPrimitives(), jointMarkLabel))));
             methodAnalysis.annotations.put(onlyAnnotation, true);
-            methodAnalysis.annotations.put(e2.mark, false);
+            methodAnalysis.annotations.put(e2ae.mark, false);
         }
         return DONE;
     }

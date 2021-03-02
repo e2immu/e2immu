@@ -1,6 +1,9 @@
 package org.e2immu.analyser.parser;
 
-import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.AnalysisStatus;
+import org.e2immu.analyser.analyser.FlowData;
+import org.e2immu.analyser.analyser.VariableInfoContainer;
+import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.inspector.MethodResolution;
 import org.e2immu.analyser.model.*;
@@ -205,7 +208,7 @@ public class Test_04_Warnings extends CommonTestRunner {
             MethodAnalysis methodAnalysis = d.methodAnalysis();
             if ("method1".equals(d.methodInfo().name)) {
                 // ERROR: method should be static
-                Assert.assertTrue(methodAnalysis.getComplainedAboutMissingStaticModifier());
+                Assert.assertNotNull(d.haveError(Message.METHOD_SHOULD_BE_MARKED_STATIC));
             }
         };
 
@@ -356,7 +359,7 @@ public class Test_04_Warnings extends CommonTestRunner {
                     Assert.assertEquals("this", d.methodAnalysis().getSingleReturnValue().toString());
                 }
                 Assert.assertEquals(Level.FALSE, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
-                int expectFluent = d.iteration()==0 ? Level.DELAY: Level.TRUE;
+                int expectFluent = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
                 Assert.assertEquals(expectFluent, d.methodAnalysis().getProperty(VariableProperty.FLUENT));
             }
         };

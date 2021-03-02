@@ -62,4 +62,6 @@ public interface MethodInspection extends Inspection {
     boolean isDefault();
 
     boolean isVarargs();
+
+    boolean isPrivate();
 }

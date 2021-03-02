@@ -101,8 +101,8 @@ public class TestSetOnceMap extends CommonTestRunner {
                     d.typeAnalysis().getImplicitlyImmutableDataTypes().stream().map(ParameterizedType::detailedString).sorted().collect(Collectors.joining(";")));
 
             if (d.iteration() > 1) {
-                Assert.assertEquals(2, d.typeAnalysis().getApprovedPreconditions().size());
-                Assert.assertEquals("frozen,map", d.typeAnalysis().getApprovedPreconditions().keySet().stream()
+                Assert.assertEquals(2, d.typeAnalysis().getApprovedPreconditionsE2().size());
+                Assert.assertEquals("frozen,map", d.typeAnalysis().getApprovedPreconditionsE2().keySet().stream()
                         .sorted()
                         .collect(Collectors.joining(",")));
             }

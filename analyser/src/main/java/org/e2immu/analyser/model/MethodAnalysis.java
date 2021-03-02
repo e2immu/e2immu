@@ -102,14 +102,6 @@ public interface MethodAnalysis extends Analysis {
         return ObjectFlow.NO_FLOW;
     }
 
-    default Boolean getComplainedAboutMissingStaticModifier() {
-        return null;
-    }
-
-    default Boolean getComplainedAboutApprovedPreconditions() {
-        return null;
-    }
-
     default Map<CompanionMethodName, CompanionAnalysis> getCompanionAnalyses() {
         return null;
     }

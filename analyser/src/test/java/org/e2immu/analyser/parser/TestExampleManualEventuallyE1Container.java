@@ -85,8 +85,8 @@ public class TestExampleManualEventuallyE1Container extends CommonTestRunner {
 
     TypeAnalyserVisitor typeAnalyserVisitor = d -> {
         if (d.iteration() > 0) {
-            Assert.assertEquals(1, d.typeAnalysis().getApprovedPreconditions().size());
-            Assert.assertEquals("j=(-this.j) >= 0", d.typeAnalysis().getApprovedPreconditions().entrySet().stream()
+            Assert.assertEquals(1, d.typeAnalysis().getApprovedPreconditionsE1().size());
+            Assert.assertEquals("j=(-this.j) >= 0", d.typeAnalysis().getApprovedPreconditionsE1().entrySet().stream()
                     .map(Object::toString)
                     .collect(Collectors.joining(";")));
         }

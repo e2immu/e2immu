@@ -318,7 +318,9 @@ public class ShallowTypeAnalyser implements AnalyserContext {
                 false, true, typeInspection.getAnnotations(), e2ImmuAnnotationExpressions));
 
         TypeAnalyser.findAspects(typeAnalysisBuilder, typeInfo);
-        typeAnalysisBuilder.approvedPreconditions.freeze();
+        typeAnalysisBuilder.approvedPreconditionsE1.freeze();
+        typeAnalysisBuilder.approvedPreconditionsE2.freeze();
+
         Set<ParameterizedType> typeParametersAsParameterizedTypes = typeInspection.typeParameters().stream()
                 .map(tp -> new ParameterizedType(tp, 0, ParameterizedType.WildCard.NONE)).collect(Collectors.toSet());
         typeAnalysisBuilder.implicitlyImmutableDataTypes.set(typeParametersAsParameterizedTypes);

@@ -179,6 +179,11 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
         return getParameters().get(getParameters().size() - 1).parameterInspection.get().isVarArgs();
     }
 
+    @Override
+    public boolean isPrivate() {
+        return modifiers.contains(MethodModifier.PRIVATE);
+    }
+
     @Container(builds = MethodInspectionImpl.class)
     public static class Builder extends AbstractInspectionBuilder<Builder> implements MethodInspection {
         private final List<ParameterInspectionImpl.Builder> parameters = new ArrayList<>();
@@ -449,6 +454,11 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
         public boolean isVarargs() {
             if (parameters.isEmpty()) return false;
             return parameters.get(parameters.size() - 1).isVarArgs();
+        }
+
+        @Override
+        public boolean isPrivate() {
+            return modifiers.contains(MethodModifier.PRIVATE);
         }
 
         @Override

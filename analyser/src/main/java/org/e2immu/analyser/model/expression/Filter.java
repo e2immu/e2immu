@@ -168,6 +168,12 @@ public class Filter {
                     return new FilterResult<FieldReference>(Map.of(l, value), defaultRest);
                 if (r != null && l == null)
                     return new FilterResult<FieldReference>(Map.of(r, value), defaultRest);
+            } else if (value instanceof GreaterThanZero gt0) {
+                Expression expression = gt0.expression();
+                List<Variable> vars = expression.variables();
+                if (vars.size() == 1 && vars.get(0) instanceof FieldReference fr) {
+                    return new FilterResult<FieldReference>(Map.of(fr, gt0), defaultRest);
+                }
             }
             return null;
         };

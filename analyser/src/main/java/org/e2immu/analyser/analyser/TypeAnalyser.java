@@ -105,6 +105,7 @@ public class TypeAnalyser extends AbstractAnalyser {
 
         if (!typeInfo.isInterface()) {
             builder.add("analyseOnlyMarkEventuallyE1Immutable", this::analyseOnlyMarkEventuallyE1Immutable)
+                    .add("analyseOnlyMarkEventuallyE2Immutable", this::analyseOnlyMarkEventuallyE2Immutable)
                     .add("analyseIndependent", (iteration) -> analyseIndependent())
                     .add("analyseEffectivelyEventuallyE2Immutable", (iteration) -> analyseEffectivelyEventuallyE2Immutable())
                     .add("analyseContainer", (iteration) -> analyseContainer())
@@ -388,13 +389,85 @@ public class TypeAnalyser extends AbstractAnalyser {
     }
 
     /*
-          writes: typeAnalysis.approvedPreconditions, the official marker for eventuality in the type
+     writes: typeAnalysis.approvedPreconditionsL1, the official marker for level 1 eventuality in the type
+
+     when? all assigning methods must have methodAnalysis.preconditionForOnlyData set with value != NO_VALUE
+    */
+    private AnalysisStatus analyseOnlyMarkEventuallyE1Immutable(int iteration) {
+        if (typeAnalysis.approvedPreconditionsE1.isFrozen()) {
+            return DONE;
+        }
+        Set<MethodAnalyser> assigningMethods = determineAssigningMethods();
+
+        boolean allPreconditionsOnAssigningMethodsSet = assigningMethods.stream()
+                .allMatch(methodAnalyser -> methodAnalyser.methodAnalysis.preconditionForMarkAndOnly.isSet());
+        if (!allPreconditionsOnAssigningMethodsSet) {
+            log(DELAYED, "Not all precondition preps on assigning methods have been set in {}, delaying", typeInfo.fullyQualifiedName);
+            return DELAYS;
+        }
+        Optional<MethodAnalyser> oEmpty = assigningMethods.stream()
+                .filter(ma -> ma.methodAnalysis.preconditionForMarkAndOnly.get().isEmpty())
+                .findFirst();
+        if (oEmpty.isPresent()) {
+            log(MARK, "Not all assigning methods have a valid precondition in {}; (findFirst) {}",
+                    typeInfo.fullyQualifiedName, oEmpty.get().methodInfo.fullyQualifiedName);
+            typeAnalysis.approvedPreconditionsE1.freeze();
+            return DONE;
+        }
+
+        Map<String, Expression> tempApproved = new HashMap<>();
+        for (MethodAnalyser methodAnalyser : assigningMethods) {
+            List<Expression> preconditions = methodAnalyser.methodAnalysis.preconditionForMarkAndOnly.get();
+            for (Expression precondition : preconditions) {
+                boolean delay = handlePrecondition(methodAnalyser, precondition, tempApproved, iteration);
+                if (delay) {
+                    log(MARK, "Delaying approved preconditions (no incompatible found yet) in {}", typeInfo.fullyQualifiedName);
+                    return DELAYS;
+                }
+            }
+        }
+        if (tempApproved.isEmpty()) {
+            log(MARK, "No modifying methods in {}", typeInfo.fullyQualifiedName);
+            typeAnalysis.approvedPreconditionsE1.freeze();
+            return DONE;
+        }
+
+        // copy into approved preconditions
+        tempApproved.forEach(typeAnalysis.approvedPreconditionsE1::put);
+        typeAnalysis.approvedPreconditionsE1.freeze();
+        log(MARK, "Approved preconditions {} in {}, type is now @E1Immutable(after=)", tempApproved.values(), typeInfo.fullyQualifiedName);
+        return DONE;
+    }
+
+    /*
+    all non-private methods which assign a field, or can reach a method that assigns a field
+
+    TODO may be slow, we should cache this?
+     */
+    private Set<MethodAnalyser> determineAssigningMethods() {
+        Set<MethodInfo> assigningMethods = myMethodAnalysersExcludingSAMs.stream()
+                .filter(ma -> {
+                    StatementAnalysis statementAnalysis = ma.methodAnalysis.getLastStatement();
+                    return statementAnalysis != null && statementAnalysis.assignsToFields();
+                })
+                .map(ma -> ma.methodInfo)
+                .collect(Collectors.toUnmodifiableSet());
+
+        return myMethodAnalysersExcludingSAMs.stream()
+                .filter(ma -> !ma.methodInspection.isPrivate())
+                .filter(ma -> assigningMethods.contains(ma.methodInfo) ||
+                        !Collections.disjoint(ma.methodInfo.methodResolution.get().methodsOfOwnClassReached(), assigningMethods))
+                .collect(Collectors.toSet());
+    }
+
+    /*
+          writes: typeAnalysis.approvedPreconditionsE2, the official marker for eventuality in the type
 
           when? all modifying methods must have methodAnalysis.preconditionForOnlyData set with value != NO_VALUE
 
          */
-    private AnalysisStatus analyseOnlyMarkEventuallyE1Immutable(int iteration) {
-        if (typeAnalysis.approvedPreconditions.isFrozen()) {
+    private AnalysisStatus analyseOnlyMarkEventuallyE2Immutable(int iteration) {
+        if (typeAnalysis.approvedPreconditionsE2.isFrozen()) {
             return DONE;
         }
         boolean someModifiedNotSet = myMethodAnalysersExcludingSAMs.stream()
@@ -414,7 +487,7 @@ public class TypeAnalyser extends AbstractAnalyser {
                         methodAnalyser.methodAnalysis.preconditionForMarkAndOnly.get().isEmpty());
         if (someInvalidPreconditionsOnModifyingMethods) {
             log(MARK, "Not all modifying methods have a valid precondition in {}", typeInfo.fullyQualifiedName);
-            typeAnalysis.approvedPreconditions.freeze();
+            typeAnalysis.approvedPreconditionsE2.freeze();
             return DONE;
         }
 
@@ -434,13 +507,13 @@ public class TypeAnalyser extends AbstractAnalyser {
         }
         if (tempApproved.isEmpty()) {
             log(MARK, "No modifying methods in {}", typeInfo.fullyQualifiedName);
-            typeAnalysis.approvedPreconditions.freeze();
+            typeAnalysis.approvedPreconditionsE2.freeze();
             return DONE;
         }
 
         // copy into approved preconditions
-        tempApproved.forEach(typeAnalysis.approvedPreconditions::put);
-        typeAnalysis.approvedPreconditions.freeze();
+        tempApproved.forEach(typeAnalysis.approvedPreconditionsE2::put);
+        typeAnalysis.approvedPreconditionsE2.freeze();
         log(MARK, "Approved preconditions {} in {}, type is now @E1Immutable(after=)", tempApproved.values(), typeInfo.fullyQualifiedName);
         return DONE;
     }
@@ -753,12 +826,12 @@ public class TypeAnalyser extends AbstractAnalyser {
         int e1Component;
         boolean eventual;
         if (e1 == Level.FALSE) {
-            if (!typeAnalysis.approvedPreconditions.isFrozen()) {
+            if (!typeAnalysis.approvedPreconditionsE1.isFrozen()) {
                 log(DELAYED, "Type {} is not effectively level 1 immutable, waiting for" +
                         " preconditions to find out if it is eventually level 1 immutable", typeInfo.fullyQualifiedName);
                 return DELAYS;
             }
-            boolean isEventuallyE1 = !typeAnalysis.approvedPreconditions.isEmpty();
+            boolean isEventuallyE1 = !typeAnalysis.approvedPreconditionsE1.isEmpty();
             if (!isEventuallyE1) {
                 log(E1IMMUTABLE, "Type {} is not eventually level 1 immutable", typeInfo.fullyQualifiedName);
                 typeAnalysis.setProperty(VariableProperty.IMMUTABLE, MultiLevel.MUTABLE);
@@ -789,6 +862,12 @@ public class TypeAnalyser extends AbstractAnalyser {
         int whenE2Fails = Math.min(fromParentOrEnclosing, myWhenE2Fails);
 
         // E2
+
+        if (!typeAnalysis.approvedPreconditionsE2.isFrozen()) {
+            log(DELAYED, "Type {} is not effectively level 1 immutable, waiting for" +
+                    " preconditions to find out if it is eventually level 2 immutable", typeInfo.fullyQualifiedName);
+            return DELAYS;
+        }
 
         boolean haveToEnforcePrivateAndIndependenceRules = false;
 

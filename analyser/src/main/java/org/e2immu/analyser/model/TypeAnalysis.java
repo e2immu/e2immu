@@ -30,14 +30,19 @@ public interface TypeAnalysis extends Analysis {
 
     Set<ObjectFlow> getConstantObjectFlows();
 
-    Map<String, Expression> getApprovedPreconditions();
+    Map<String, Expression> getApprovedPreconditionsE1();
+
+    Map<String, Expression> getApprovedPreconditionsE2();
 
     default boolean isEventual() {
-        return !getApprovedPreconditions().isEmpty();
+        return !getApprovedPreconditionsE1().isEmpty() || !getApprovedPreconditionsE2().isEmpty();
     }
 
     default Set<String> marksRequiredForImmutable() {
-        return getApprovedPreconditions().keySet().stream().collect(Collectors.toUnmodifiableSet());
+        if (getApprovedPreconditionsE1().isEmpty()) {
+            return getApprovedPreconditionsE2().keySet().stream().collect(Collectors.toUnmodifiableSet());
+        }
+        return getApprovedPreconditionsE1().keySet().stream().collect(Collectors.toUnmodifiableSet());
     }
 
     default String allLabelsRequiredForImmutable() {

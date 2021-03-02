@@ -6,7 +6,7 @@ import org.e2immu.annotation.*;
 copy of EventuallyE1Immutable_0, with an additional setter which modifies input but obviously does
 not assign it (it is final).
  */
-@E1Container(after = "string")
+@E1Immutable(after = "string")
 public class EventuallyE1Immutable_3 {
 
     @Container

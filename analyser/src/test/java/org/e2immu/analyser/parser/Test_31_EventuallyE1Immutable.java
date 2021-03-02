@@ -19,7 +19,6 @@
 
 package org.e2immu.analyser.parser;
 
-import org.e2immu.analyser.analyser.LinkedVariables;
 import org.e2immu.analyser.analyser.VariableInfoContainer;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
@@ -80,12 +79,11 @@ public class Test_31_EventuallyE1Immutable extends CommonTestRunner {
         };
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
-            if ("EventuallyE1Immutable_0".equals(d.typeInfo().simpleName) && d.iteration() > 1) {
-                int expectSize = d.iteration() == 2 ? 0 : 1;
-                Assert.assertEquals(expectSize, d.typeAnalysis().getApprovedPreconditions().size());
-                if (d.iteration() > 2) {
-                    Assert.assertEquals(MultiLevel.EVENTUALLY_E1IMMUTABLE, d.typeAnalysis().getProperty(VariableProperty.IMMUTABLE));
-                }
+            if ("EventuallyE1Immutable_0".equals(d.typeInfo().simpleName)) {
+                int expectSize = d.iteration() == 0 ? 0 : 1;
+                Assert.assertEquals(expectSize, d.typeAnalysis().getApprovedPreconditionsE1().size());
+                int expectImmu = d.iteration() <= 2 ? Level.DELAY : MultiLevel.EVENTUALLY_E1IMMUTABLE;
+                Assert.assertEquals(expectImmu, d.typeAnalysis().getProperty(VariableProperty.IMMUTABLE));
             }
         };
 
@@ -112,7 +110,36 @@ public class Test_31_EventuallyE1Immutable extends CommonTestRunner {
 
     @Test
     public void test_3() throws IOException {
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("setString".equals(d.methodInfo().name) || "setString2".equals(d.methodInfo().name)) {
+                if (d.iteration() == 0) {
+                    Assert.assertNull(d.methodAnalysis().getPreconditionForMarkAndOnly());
+                } else {
+                    Assert.assertEquals(1, d.methodAnalysis().getPreconditionForMarkAndOnly().size());
+                    Assert.assertEquals("null==string",
+                            d.methodAnalysis().getPreconditionForMarkAndOnly().get(0).toString());
+                    if (d.iteration() > 3) {
+                        MethodAnalysis.MarkAndOnly markAndOnly = d.methodAnalysis().getMarkAndOnly();
+                        Assert.assertNotNull(markAndOnly);
+                        Assert.assertEquals("string", markAndOnly.markLabel());
+                    }
+                }
+            }
+        };
+
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("EventuallyE1Immutable_3".equals(d.typeInfo().simpleName)) {
+                int expectSize = d.iteration() == 0 ? 0 : 1;
+                Assert.assertEquals(expectSize, d.typeAnalysis().getApprovedPreconditionsE1().size());
+                Assert.assertEquals(0, d.typeAnalysis().getApprovedPreconditionsE2().size());
+                int expectImmu = d.iteration() <= 2 ? Level.DELAY : MultiLevel.EVENTUALLY_E1IMMUTABLE;
+                Assert.assertEquals(expectImmu, d.typeAnalysis().getProperty(VariableProperty.IMMUTABLE));
+            }
+        };
+
         testClass("EventuallyE1Immutable_3", 0, 0, new DebugConfiguration.Builder()
+                .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 }

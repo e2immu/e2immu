@@ -52,8 +52,6 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
     public final Set<ObjectFlow> internalObjectFlows;
     public final List<Expression> preconditionForMarkAndOnly;
     public final MarkAndOnly markAndOnly;
-    public final boolean complainedAboutMissingStaticModifier;
-    public final boolean complainedAboutApprovedPreconditions;
     public final Expression precondition;
     public final Expression singleReturnValue;
     public final Map<CompanionMethodName, CompanionAnalysis> companionAnalyses;
@@ -68,8 +66,6 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
                                Set<ObjectFlow> internalObjectFlows,
                                List<Expression> preconditionForMarkAndOnly,
                                MarkAndOnly markAndOnly,
-                               boolean complainedAboutMissingStaticModifier,
-                               boolean complainedAboutApprovedPreconditions,
                                Expression precondition,
                                Map<VariableProperty, Integer> properties,
                                Map<AnnotationExpression, AnnotationCheck> annotations,
@@ -84,8 +80,6 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
         this.internalObjectFlows = internalObjectFlows;
         this.preconditionForMarkAndOnly = preconditionForMarkAndOnly;
         this.markAndOnly = markAndOnly;
-        this.complainedAboutMissingStaticModifier = complainedAboutMissingStaticModifier;
-        this.complainedAboutApprovedPreconditions = complainedAboutApprovedPreconditions;
         this.precondition = Objects.requireNonNull(precondition);
         this.singleReturnValue = singleReturnValue;
         this.companionAnalyses = companionAnalyses;
@@ -153,16 +147,6 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
     }
 
     @Override
-    public Boolean getComplainedAboutMissingStaticModifier() {
-        return complainedAboutMissingStaticModifier;
-    }
-
-    @Override
-    public Boolean getComplainedAboutApprovedPreconditions() {
-        return complainedAboutApprovedPreconditions;
-    }
-
-    @Override
     public Expression getPrecondition() {
         return precondition;
     }
@@ -192,9 +176,6 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
         // the value here (size will be one)
         public final SetOnce<List<Expression>> preconditionForMarkAndOnly = new SetOnce<>();
         public final SetOnce<MarkAndOnly> markAndOnly = new SetOnce<>();
-
-        public final SetOnce<Boolean> complainedAboutMissingStaticModifier = new SetOnce<>();
-        public final SetOnce<Boolean> complainedAboutApprovedPreconditions = new SetOnce<>();
 
         public final SetOnce<Expression> singleReturnValue = new SetOnce<>();
         public final SetOnce<Integer> singleReturnValueImmutable = new SetOnce<>();
@@ -226,16 +207,6 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
         @Override
         public MethodInfo getMethodInfo() {
             return methodInfo;
-        }
-
-        @Override
-        public Boolean getComplainedAboutMissingStaticModifier() {
-            return complainedAboutMissingStaticModifier.getOrElse(null);
-        }
-
-        @Override
-        public Boolean getComplainedAboutApprovedPreconditions() {
-            return complainedAboutApprovedPreconditions.getOrElse(null);
         }
 
         @Override
@@ -277,8 +248,6 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
                     ImmutableSet.copyOf(internalObjectFlows.getOrElse(Set.of())),
                     ImmutableList.copyOf(preconditionForMarkAndOnly.getOrElse(List.of())),
                     getMarkAndOnly(),
-                    complainedAboutMissingStaticModifier.getOrElse(false),
-                    complainedAboutApprovedPreconditions.getOrElse(false),
                     getPrecondition(),
                     properties.toImmutableMap(),
                     annotationChecks.toImmutableMap(),
