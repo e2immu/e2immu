@@ -203,7 +203,8 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
         this.myFieldAnalysers = myFieldAnalysers.build();
 
         // copy CONTRACT annotations into the properties
-        methodAnalysis.fromAnnotationsIntoProperties(VariableProperty.NOT_NULL_EXPRESSION, false, false, methodInspection.getAnnotations(),
+        methodAnalysis.fromAnnotationsIntoProperties(VariableProperty.NOT_NULL_EXPRESSION,
+                false, false, methodInspection.getAnnotations(),
                 analyserContext.getE2ImmuAnnotationExpressions());
 
         parameterAnalysers.forEach(pa -> {
@@ -276,12 +277,15 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
         checkWorseThanOverriddenMethod();
     }
 
+    private static final Set<VariableProperty> CHECK_WORSE_THAN_PARENT = Set.of(VariableProperty.NOT_NULL_EXPRESSION,
+            VariableProperty.MODIFIED_METHOD);
+
     private void checkWorseThanOverriddenMethod() {
-        for (VariableProperty variableProperty : VariableProperty.CHECK_WORSE_THAN_PARENT) {
+        for (VariableProperty variableProperty : CHECK_WORSE_THAN_PARENT) {
             int valueFromOverrides = methodAnalysis.valueFromOverrides(analyserContext, variableProperty);
             int value = methodAnalysis.getProperty(variableProperty);
             if (valueFromOverrides != Level.DELAY && value != Level.DELAY) {
-                boolean complain = variableProperty == VariableProperty.MODIFIED_VARIABLE ?
+                boolean complain = variableProperty == VariableProperty.MODIFIED_METHOD ?
                         value > valueFromOverrides : value < valueFromOverrides;
                 if (complain) {
                     messages.add(Message.newMessage(new Location(methodInfo),
@@ -777,7 +781,7 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
 
     private AnalysisStatus computeModified() {
         boolean isCycle = methodInfo.partOfCallCycle();
-        VariableProperty variableProperty = isCycle ? VariableProperty.TEMP_MODIFIED_METHOD: VariableProperty.MODIFIED_METHOD;
+        VariableProperty variableProperty = isCycle ? VariableProperty.TEMP_MODIFIED_METHOD : VariableProperty.MODIFIED_METHOD;
 
         if (methodAnalysis.getProperty(variableProperty) != Level.DELAY) return DONE;
         MethodLevelData methodLevelData = methodAnalysis.methodLevelData();

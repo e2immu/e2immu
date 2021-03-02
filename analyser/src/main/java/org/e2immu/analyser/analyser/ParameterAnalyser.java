@@ -39,6 +39,8 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.AnalysisStatus.*;
+import static org.e2immu.analyser.analyser.VariableProperty.MODIFIED_OUTSIDE_METHOD;
+import static org.e2immu.analyser.analyser.VariableProperty.NOT_NULL_PARAMETER;
 import static org.e2immu.analyser.model.ParameterAnalysis.AssignedOrLinked.*;
 import static org.e2immu.analyser.util.Logger.LogTarget.ANALYSER;
 import static org.e2immu.analyser.util.Logger.log;
@@ -89,8 +91,10 @@ public class ParameterAnalyser {
         parameterAnalysis.transferPropertiesToAnnotations(analyserContext, e2);
     }
 
+    private static final Set<VariableProperty> CHECK_WORSE_THAN_PARENT = Set.of(NOT_NULL_PARAMETER, MODIFIED_OUTSIDE_METHOD);
+
     private void checkWorseThanParent() {
-        for (VariableProperty variableProperty : VariableProperty.CHECK_WORSE_THAN_PARENT) {
+        for (VariableProperty variableProperty : CHECK_WORSE_THAN_PARENT) {
             int valueFromOverrides = analyserContext.getMethodAnalysis(parameterInfo.owner).getOverrides(analyserContext)
                     .stream()
                     .map(ma -> ma.getMethodInfo().methodInspection.get().getParameters().get(parameterInfo.index))
@@ -314,7 +318,7 @@ public class ParameterAnalyser {
         if (linked == LinkedVariables.DELAY) {
             return DELAYED;
         }
-        return linked.variables().contains(parameterInfo) ? LINKED : NO;
+        return linked.variables().contains(parameterInfo) ? ParameterAnalysis.AssignedOrLinked.LINKED : NO;
     }
 
     public static final VariableProperty[] CONTEXT_PROPERTIES = {VariableProperty.CONTEXT_NOT_NULL,

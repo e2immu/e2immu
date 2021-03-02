@@ -19,7 +19,6 @@
 
 package org.e2immu.analyser.parser;
 
-import org.e2immu.analyser.analyser.LinkedVariables;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.Level;
@@ -48,7 +47,7 @@ public class Test_26_Enum extends CommonTestRunner {
             if ("posInList".equals(d.methodInfo().name)) {
                 if ("Enum_1.values()[i]".equals(d.variableName())) {
                     if ("0.0.0".equals(d.statementId())) {
-                        String expectValue = d.iteration() <=4 ? "this==<new:Enum_1>?<v:Enum_1.values()[i]>:<new:Enum_1>" : "";
+                        String expectValue = d.iteration() <= 4 ? "this==<new:Enum_1>?<v:Enum_1.values()[i]>:<new:Enum_1>" : "";
                         Assert.assertEquals(expectValue, d.currentValue().toString());
                     }
                 }
@@ -79,7 +78,7 @@ public class Test_26_Enum extends CommonTestRunner {
         };
 
         testClass("Enum_1", 0, 0, new DebugConfiguration.Builder()
-           //     .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                //     .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 
@@ -126,10 +125,9 @@ public class Test_26_Enum extends CommonTestRunner {
                 }
             }
             if ("i$2".equals(d.variableName())) {
-                if("2.0.0.0.0".equals(d.statementId())) {
-                    String expectValue = d.iteration() <= 2 ? LinkedVariables.DELAY_STRING : "i";
-                    Assert.assertEquals("Statement " + d.statementId() + ", it " + d.iteration(),
-                            expectValue, d.variableInfo().getLinkedVariables().toString());
+                if ("2.0.0.0.0".equals(d.statementId())) {
+                    Assert.assertEquals("", d.variableInfo().getLinkedVariables().toString());
+                    Assert.assertEquals("", d.variableInfo().getStaticallyAssignedVariables().toString());
                 }
             }
             if ("i$2$2-E".equals(d.variableName())) {
@@ -137,7 +135,7 @@ public class Test_26_Enum extends CommonTestRunner {
                     String expectValue = d.iteration() <= 2 ? "<v:i$2$2-E>" : "1+i$2";
                     Assert.assertEquals("Statement " + d.statementId() + ", it " + d.iteration(),
                             expectValue, d.currentValue().toString());
-                    String expectLinked = "i";
+                    String expectLinked = "";
                     Assert.assertEquals("Statement " + d.statementId() + ", it " + d.iteration(),
                             expectLinked, d.variableInfo().getLinkedVariables().toString());
                 }
@@ -201,6 +199,7 @@ public class Test_26_Enum extends CommonTestRunner {
 
     @Test
     public void test4() throws IOException {
+        // two assert statements should return "true"
         testClass("Enum_4", 0, 2, new DebugConfiguration.Builder()
                 .build());
     }
