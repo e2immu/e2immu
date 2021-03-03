@@ -54,6 +54,10 @@ public record DelayedExpression(String msg, String debug, ParameterizedType para
         return new DelayedExpression("<delayed array length>", "<delayed array length>", primitives.intParameterizedType);
     }
 
+    public static Expression forPrecondition(Primitives primitives) {
+        return new DelayedExpression("<precondition>", "<precondition>", primitives.booleanParameterizedType);
+    }
+
     /*
     variable fields have different values according to statement time, but then, at this point we cannot know yet
     whether the field will be variable or not.

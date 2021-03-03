@@ -63,7 +63,7 @@ public class ParseArrayCreationExpr {
         //constructor.methodInspection.get().getParameters().forEach(p ->
         //        p.setAnalysis(new ParameterAnalysisImpl.Builder(typeContext.getPrimitives(),
         //                AnalysisProvider.DEFAULT_PROVIDER, p).build()));
-        constructor.setAnalysis(MethodAnalysis.createEmpty(constructor));
+        constructor.setAnalysis(MethodAnalysis.createEmpty(constructor, typeContext.getPrimitives()));
         constructor.methodResolution.set(new MethodResolution.Builder().build());
         return constructor;
     }

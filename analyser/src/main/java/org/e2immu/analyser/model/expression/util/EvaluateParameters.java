@@ -98,7 +98,7 @@ public class EvaluateParameters {
                 }
                 int contextNotNull = map.getOrDefault(VariableProperty.CONTEXT_NOT_NULL, Level.DELAY);
                 if (contextNotNull == Level.DELAY) {
-                    if(partOfCallCycle) {
+                    if (partOfCallCycle) {
                         map.put(VariableProperty.CONTEXT_NOT_NULL, MultiLevel.NULLABLE); // won't be me to rock the boat
                     } else {
                         map.put(VariableProperty.CONTEXT_NOT_NULL_DELAY, Level.TRUE);
@@ -169,7 +169,9 @@ public class EvaluateParameters {
         if (methodInfo != null) {
             MethodAnalysis methodAnalysis = evaluationContext.getAnalyserContext().getMethodAnalysis(methodInfo);
             Expression precondition = methodAnalysis.getPrecondition();
-            if (precondition != null && !precondition.isBooleanConstant()) {
+            if (precondition == null) {
+                builder.setDelayOnPrecondition();
+            } else if (!precondition.isBooleanConstant()) {
                 // there is a precondition, and we have a list of values... let's see what we can learn
                 // the precondition is using parameter info's as variables so we'll have to substitute
                 Map<Expression, Expression> translationMap = translationMap(methodInfo, parameterValues);

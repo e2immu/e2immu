@@ -24,14 +24,11 @@ import org.e2immu.annotation.*;
 public class FlipSwitch {
 
     @Final(after = "t")
-    @Nullable // eventually not-null, not implemented yet
-    @Linked(to = {"t"})
-    // volatile guarantees that once the value is set, other threads see the effect immediately
     private volatile boolean t;
 
     private boolean set$Precondition() { return !t; }
     @Mark("t")
-    public void set() { // @NotModified implied
+    public void set() {
         synchronized (this) {
             if (t) {
                 throw new UnsupportedOperationException("Already set");
@@ -45,14 +42,10 @@ public class FlipSwitch {
         return t;
     }
 
-    @Modified
-    @Only(before = "t")
+    private boolean copy$Precondition() { return !t; }
+    @Mark("t") // but conditionally
     public void copy(FlipSwitch other) {
         if (other.isSet()) set();
-    }
-
-    public void copyIfNotSet(FlipSwitch other) {
-        if (!isSet() && other.isSet()) set();
     }
 
     @Override

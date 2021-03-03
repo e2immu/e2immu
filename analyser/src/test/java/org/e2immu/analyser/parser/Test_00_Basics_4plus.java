@@ -330,6 +330,7 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
             }
             if ("nonPrivateMethod".equals(d.methodInfo().name)) {
                 Assert.assertTrue(d.methodInfo().methodResolution.get().allowsInterrupts());
+                Assert.assertTrue(d.methodAnalysis().getPrecondition().isBoolValueTrue());
             }
         };
 

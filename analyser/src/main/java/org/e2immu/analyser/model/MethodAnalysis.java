@@ -20,6 +20,7 @@ package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.objectflow.ObjectFlow;
+import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 
 import java.util.List;
@@ -30,25 +31,12 @@ import java.util.stream.IntStream;
 
 public interface MethodAnalysis extends Analysis {
 
-    static MethodAnalysis createEmpty(MethodInfo methodInfo) {
+    static MethodAnalysis createEmpty(MethodInfo methodInfo, Primitives primitives) {
         List<ParameterAnalysis> parameterAnalyses = methodInfo.methodInspection.get().getParameters().stream()
                 .map(ParameterAnalysis::createEmpty).collect(Collectors.toList());
-        return new MethodAnalysis() {
-            @Override
-            public MethodInfo getMethodInfo() {
-                return methodInfo;
-            }
-
-            @Override
-            public List<ParameterAnalysis> getParameterAnalyses() {
-                return parameterAnalyses;
-            }
-
-            @Override
-            public Location location() {
-                return new Location(methodInfo);
-            }
-        };
+        MethodAnalysisImpl.Builder builder = new MethodAnalysisImpl.Builder(false,
+                primitives, AnalysisProvider.DEFAULT_PROVIDER, methodInfo, parameterAnalyses);
+        return (MethodAnalysis) builder.build();
     }
 
     MethodInfo getMethodInfo();

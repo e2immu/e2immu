@@ -211,7 +211,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
 
         @Override
         public Expression getPrecondition() {
-            return precondition.getOrElse(new BooleanConstant(primitives, true));
+            return precondition.getOrElse(null);
         }
 
         public Builder(boolean isBeingAnalysed,
@@ -248,7 +248,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
                     ImmutableSet.copyOf(internalObjectFlows.getOrElse(Set.of())),
                     ImmutableList.copyOf(preconditionForMarkAndOnly.getOrElse(List.of())),
                     getMarkAndOnly(),
-                    getPrecondition(),
+                    precondition.getOrElse(new BooleanConstant(primitives, true)),
                     properties.toImmutableMap(),
                     annotationChecks.toImmutableMap(),
                     getCompanionAnalyses(),
@@ -407,8 +407,9 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
             computedCompanions.put(companionMethodName, companion);
         }
 
-        public void minimalInfoForEmptyMethod() {
+        public void minimalInfoForEmptyMethod(Primitives primitives) {
             preconditionForMarkAndOnly.set(List.of());
+            precondition.set(new BooleanConstant(primitives, true));
             if (!methodInfo.isAbstract()) {
                 setProperty(VariableProperty.MODIFIED_METHOD, Level.FALSE);
                 setProperty(VariableProperty.INDEPENDENT, MultiLevel.EFFECTIVE);

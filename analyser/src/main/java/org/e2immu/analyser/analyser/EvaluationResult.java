@@ -204,11 +204,10 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             return this;
         }
 
-        public Builder composeStore(EvaluationResult evaluationResult) {
+        public void composeStore(EvaluationResult evaluationResult) {
             if (storedExpressions == null) storedExpressions = new LinkedList<>();
             storedExpressions.add(evaluationResult.getExpression());
             append(false, evaluationResult);
-            return this;
         }
 
         private void append(boolean ignoreExpression, EvaluationResult evaluationResult) {
@@ -335,19 +334,6 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                 if (inChangeData != null) return inChangeData;
             }
             return evaluationContext.getPropertyFromPreviousOrInitial(variable, variableProperty, statementTime);
-        }
-
-        /*
-       For method delay resolved we must get the value of Eval (since that is only relevant in a second iteration,
-       and the delay is set in Eval)
-        */
-        private int getPropertyFromEval(Variable variable, VariableProperty variableProperty) {
-            ChangeData changeData = valueChanges.get(variable);
-            if (changeData != null) {
-                Integer inChangeData = changeData.properties.getOrDefault(variableProperty, null);
-                if (inChangeData != null) return inChangeData;
-            }
-            return evaluationContext.getProperty(variable, variableProperty);
         }
 
         public void markRead(Variable variable) {
@@ -650,6 +636,10 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             initialValue.variables().stream()
                     .filter(variable -> acceptForMarking(variable, subType))
                     .forEach(this::markRead);
+        }
+
+        public void setDelayOnPrecondition() {
+            precondition = DelayedExpression.forPrecondition(evaluationContext.getPrimitives());
         }
     }
 }

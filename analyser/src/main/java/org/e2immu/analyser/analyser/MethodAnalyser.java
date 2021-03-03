@@ -160,7 +160,7 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
                     .add("methodIsIndependent", this::methodIsIndependent);
 
         } else {
-            methodAnalysis.minimalInfoForEmptyMethod();
+            methodAnalysis.minimalInfoForEmptyMethod(methodAnalysis.primitives);
         }
         analyserComponents = builder.build();
     }

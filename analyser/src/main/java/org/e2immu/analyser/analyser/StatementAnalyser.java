@@ -808,6 +808,11 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             if (translated != null) {
                 statementAnalysis.stateData.setPrecondition(translated, preconditionIsDelayed);
             }
+            if(preconditionIsDelayed) {
+                log(DELAYED, "Apply of {}, {} is delayed because of precondition",
+                        index(), myMethodAnalyser.methodInfo.fullyQualifiedName);
+                status = DELAYS;
+            }
         }
 
         if (status == DONE && statementAnalysis.methodLevelData.internalObjectFlowNotYetFrozen()) {
@@ -2275,6 +2280,9 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 // read what's in the property map (all values should be there) at initial or current level
                 int inMap = getVariableProperty(ve.variable(), variableProperty, duringEvaluation);
                 if (variableProperty == NOT_NULL_EXPRESSION) {
+                    if(Primitives.isPrimitiveExcludingVoid(ve.variable().parameterizedType())) {
+                        return MultiLevel.EFFECTIVELY_NOT_NULL;
+                    }
                     int cnn = getVariableProperty(ve.variable(), CONTEXT_NOT_NULL, duringEvaluation);
                     if (cnn == Level.DELAY || inMap == Level.DELAY) return Level.DELAY;
                     int best = MultiLevel.bestNotNull(inMap, cnn);

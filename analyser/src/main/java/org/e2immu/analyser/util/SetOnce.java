@@ -31,9 +31,13 @@ public class SetOnce<T> {
     // volatile guarantees that once the value is set, other threads see the effect immediately
     private volatile T t;
 
-    private boolean set$Precondition(T t ) { return this.t == null; }
+    private boolean set$Precondition(T t) {
+        return this.t == null;
+    }
+
     @Mark("t")
-    public void set(@NotNull T t) { // @NotModified implied
+    @Modified
+    public void set(@NotNull T t) {
         if (t == null) throw new NullPointerException("Null not allowed");
         synchronized (this) {
             if (this.t != null) {
@@ -43,11 +47,13 @@ public class SetOnce<T> {
         }
     }
 
-    private boolean get$Precondition() { return t != null; }
+    private boolean get$Precondition() {
+        return t != null;
+    }
+
     @Only(after = "t")
     @NotNull
     @NotModified
-    @Independent(absent = true) // note: independent of the support data, which is not present!
     public T get() {
         if (t == null) {
             throw new UnsupportedOperationException("Not yet set");
@@ -55,11 +61,13 @@ public class SetOnce<T> {
         return t;
     }
 
-    private boolean get$Precondition(String message) { return t == null; }
+    private boolean get$Precondition(String message) {
+        return t != null;
+    }
+
     @Only(after = "t")
     @NotNull
     @NotModified
-    @Independent(absent = true) // note: independent of the support data, which is not present!
     public T get(String message) {
         if (t == null) {
             throw new UnsupportedOperationException("Not yet set: " + message);
@@ -72,6 +80,7 @@ public class SetOnce<T> {
         return t != null;
     }
 
+    @NotModified
     public T getOrElse(T alternative) {
         if (isSet()) return get();
         return alternative;
@@ -83,15 +92,9 @@ public class SetOnce<T> {
         if (other.isSet()) set(other.get());
     }
 
-    public void copyIfNotSet(SetOnce<T> other) {
-        if (!isSet() && other.isSet()) set(other.get());
-    }
-
     @Override
     public String toString() {
-        return "SetOnce{" +
-                "t=" + t +
-                '}';
+        return "SetOnce{" + "t=" + t + '}';
     }
 
     @Override

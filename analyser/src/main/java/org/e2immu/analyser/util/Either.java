@@ -39,7 +39,7 @@ public class Either<A, B> {
     @Nullable
     private final B right;
 
-    private boolean Either$precondition(A a, B b) { return a==null && b!=null || a!=null && b==null; }
+    private boolean Either$Precondition(A a, B b) { return a==null && b!=null || a!=null && b==null; }
     private Either(@Nullable A a, @Nullable B b) {
         if ((a == null && b == null) || (a != null && b != null)) throw new UnsupportedOperationException();
         left = a;

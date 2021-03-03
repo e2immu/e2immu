@@ -34,7 +34,11 @@ import org.junit.Test;
 import java.io.IOException;
 import java.util.List;
 
-public class TestEither extends CommonTestRunner {
+public class Test_Own_02_Either extends CommonTestRunner {
+
+    public Test_Own_02_Either() {
+        super(true);
+    }
 
     /*  getLeftOrElse:
         A local = left;
