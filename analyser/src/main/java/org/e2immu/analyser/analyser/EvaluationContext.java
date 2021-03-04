@@ -80,6 +80,8 @@ public interface EvaluationContext {
         return child(condition);
     }
 
+    default EvaluationContext childState(Expression state) { throw new UnsupportedOperationException(); }
+
     default Expression currentValue(Variable variable, int statementTime, boolean isNotAssignmentTarget) {
         throw new UnsupportedOperationException();
     }

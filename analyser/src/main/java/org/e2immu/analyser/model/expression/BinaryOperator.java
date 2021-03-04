@@ -278,8 +278,8 @@ public class BinaryOperator implements Expression {
             return builder.compose(l).build();
         }
 
-        Expression condition = and ? l.value() : Negation.negate(evaluationContext, l.value());
-        EvaluationContext child = evaluationContext.child(condition);
+        Expression state = and ? l.value() : Negation.negate(evaluationContext, l.value());
+        EvaluationContext child = evaluationContext.childState(state);
         EvaluationResult r = rhs.evaluate(child, forward);
         builder.compose(l, r);
         if (r.value().isInstanceOf(BooleanConstant.class)) {

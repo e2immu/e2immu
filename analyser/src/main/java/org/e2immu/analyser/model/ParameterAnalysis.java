@@ -141,6 +141,7 @@ public interface ParameterAnalysis extends Analysis {
             // the only way to have a container is for the type to be a container, or for the user to have
             // contract annotated the parameter with @Container
             case CONTAINER: {
+                if(parameterInfo.parameterizedType.isUnboundParameterType()) return Level.TRUE;
                 TypeInfo bestType = parameterInfo.parameterizedType.bestTypeInfo();
                 if (bestType != null)
                     return analysisProvider.getTypeAnalysis(bestType).getProperty(VariableProperty.CONTAINER);

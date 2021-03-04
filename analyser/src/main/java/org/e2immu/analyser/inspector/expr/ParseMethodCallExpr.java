@@ -205,7 +205,7 @@ public record ParseMethodCallExpr(InspectionProvider inspectionProvider) {
                 // the map for evaluation can/will be used for lambda's and method calls; the
                 // implied parameterized type is needed for filling in the diamond operator for new object creations
 
-                ParameterizedType formalParameterType = method.methodInspection.getParameters().get(i).parameterizedType;
+                ParameterizedType formalParameterType = method.methodInspection.formalParameterType(i);
                 ParameterizedType concreteParameterType = determineConcreteParameterType(e, formalParameterType, mapForEvaluation);
 
                 Expression reParsed = expressionContext.parseExpression(expressions.get(i), concreteParameterType, mapForEvaluation);

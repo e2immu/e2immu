@@ -64,4 +64,12 @@ public interface MethodInspection extends Inspection {
     boolean isVarargs();
 
     boolean isPrivate();
+
+    default ParameterizedType formalParameterType(int index) {
+        int formalParams = getParameters().size();
+        if (index < formalParams - 1 || index < formalParams && !isVarargs()) {
+            return getParameters().get(index).parameterizedType;
+        }
+        return getParameters().get(formalParams - 1).parameterizedType.copyWithOneFewerArrays();
+    }
 }

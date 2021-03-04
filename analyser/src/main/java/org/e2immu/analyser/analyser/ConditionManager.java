@@ -93,6 +93,14 @@ public record ConditionManager(Expression condition,
     }
 
     /*
+    adds a new layer (parent this)
+    */
+    public ConditionManager addState(Expression state, boolean stateIsDelayed) {
+        return new ConditionManager(condition, conditionIsDelayed,  state, stateIsDelayed,
+                precondition, preconditionIsDelayed, this);
+    }
+
+    /*
     stays at the same level (parent parent)
      */
     public ConditionManager withPrecondition(Expression combinedPrecondition, boolean combinedPreconditionIsDelayed) {

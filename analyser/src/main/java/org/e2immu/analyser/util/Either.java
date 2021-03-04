@@ -34,12 +34,13 @@ import java.util.Objects;
 @E2Container
 public class Either<A, B> {
 
-    @Nullable
+    // because getLeft and getRight cause exceptions
+    @Nullable(contract = true)
     private final A left;
-    @Nullable
+    @Nullable(contract = true)
     private final B right;
 
-    private boolean Either$Precondition(A a, B b) { return a==null && b!=null || a!=null && b==null; }
+    private static <A, B> boolean Either$Precondition(A a, B b) { return a==null && b!=null || a!=null && b==null; }
     private Either(@Nullable A a, @Nullable B b) {
         if ((a == null && b == null) || (a != null && b != null)) throw new UnsupportedOperationException();
         left = a;

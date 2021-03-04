@@ -2253,6 +2253,11 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                     disableEvaluationOfMethodCallsUsingCompanionMethods);
         }
 
+        public EvaluationContext childState(Expression state) {
+            boolean stateIsDelayed = isDelayed(state);
+            return new EvaluationContextImpl(iteration, conditionManager.addState(state, stateIsDelayed), closure, false);
+        }
+
         /*
         differs sufficiently from the regular getProperty, in that it fast tracks as soon as one of the not nulls
         reaches EFFECTIVELY_NOT_NULL, and that it always reads from the initial value of variables.

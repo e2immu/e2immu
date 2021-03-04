@@ -510,7 +510,7 @@ public class ParameterizedType {
                     if (scoreInterface != NOT_ASSIGNABLE) return IN_HIERARCHY + scoreInterface;
                 }
                 ParameterizedType parentClass = typeInspection.parentClass();
-                if (!Primitives.isJavaLangObject(parentClass)) {
+                if (parentClass != null && !Primitives.isJavaLangObject(parentClass)) {
                     int scoreParent = numericIsAssignableFrom(inspectionProvider, parentClass, true);
                     if (scoreParent != NOT_ASSIGNABLE) return IN_HIERARCHY + scoreParent;
                 }

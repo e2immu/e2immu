@@ -19,7 +19,13 @@
 
 package org.e2immu.analyser.parser;
 
+import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
+import org.e2immu.analyser.config.FieldAnalyserVisitor;
+import org.e2immu.analyser.config.MethodAnalyserVisitor;
+import org.e2immu.analyser.config.TypeAnalyserVisitor;
+import org.e2immu.analyser.model.Level;
+import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -33,8 +39,56 @@ public class Test_Own_04_SetOnce extends CommonTestRunner {
 
     @Test
     public void test() throws IOException {
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("SetOnce".equals(d.typeInfo().simpleName)) {
+                String expectValue = d.iteration() == 0 ? "{}" : "{hh}";
+                Assert.assertEquals(expectValue, d.typeAnalysis().getApprovedPreconditionsE2().toString());
+            }
+        };
+
+        FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+            if ("t".equals(d.fieldInfo().name)) {
+                Assert.assertNull(d.fieldAnalysis().getEffectivelyFinalValue());
+                Assert.assertEquals(Level.FALSE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
+            }
+        };
+
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("set".equals(d.methodInfo().name)) {
+                if (d.iteration() == 0) {
+                    Assert.assertNull(d.methodAnalysis().getPreconditionForMarkAndOnly());
+                } else {
+                    Assert.assertEquals("[null==t]", d.methodAnalysis().getPreconditionForMarkAndOnly().toString());
+                }
+            }
+            if ("get".equals(d.methodInfo().name)) {
+                if (d.iteration() == 0) {
+                    Assert.assertNull(d.methodAnalysis().getPreconditionForMarkAndOnly());
+                } else {
+                    Assert.assertEquals("[null!=t]", d.methodAnalysis().getPreconditionForMarkAndOnly().toString());
+                }
+            }
+            if ("copy".equals(d.methodInfo().name)) {
+                if (d.iteration() == 0) {
+                    Assert.assertNull(d.methodAnalysis().getPreconditionForMarkAndOnly());
+                } else {
+                    Assert.assertEquals("[null==t]", d.methodAnalysis().getPreconditionForMarkAndOnly().toString());
+                }
+            }
+            if("toString".equals(d.methodInfo().name)) {
+                if (d.iteration() == 0) {
+                    Assert.assertNull(d.methodAnalysis().getPreconditionForMarkAndOnly());
+                } else {
+                    Assert.assertEquals("[]", d.methodAnalysis().getPreconditionForMarkAndOnly().toString());
+                }
+            }
+        };
+
         testUtilClass(List.of("SetOnce"), 0, 0, new DebugConfiguration.Builder()
-               .build());
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
+                .build());
     }
 
 }

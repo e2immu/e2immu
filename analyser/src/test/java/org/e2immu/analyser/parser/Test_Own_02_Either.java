@@ -21,13 +21,11 @@ package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analyser.VariableProperty;
-import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.config.MethodAnalyserVisitor;
-import org.e2immu.analyser.config.StatementAnalyserVariableVisitor;
-import org.e2immu.analyser.config.StatementAnalyserVisitor;
-import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.config.*;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.InlineConditional;
+import org.e2immu.analyser.model.variable.FieldReference;
+import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -46,38 +44,98 @@ public class Test_Own_02_Either extends CommonTestRunner {
      */
 
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-        if ("getLeftOrElse".equals(d.methodInfo().name) && "orElse".equals(d.variableName()) && "1".equals(d.statementId())) {
-            Assert.assertEquals("orElse", d.currentValue().toString());
-            Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL,
-                    d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL_EXPRESSION));
+        if ("getLeftOrElse".equals(d.methodInfo().name)) {
+            if (d.variable() instanceof ParameterInfo orElse && "orElse".equals(orElse.name)) {
+                if ("0".equals(d.statementId())) {
+                    Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.CONTAINER));
+                }
+                if ("1".equals(d.statementId())) {
+                    String expectValue = d.iteration() == 0 ? "<p:orElse>" : "nullable instance type A";
+                    Assert.assertEquals(expectValue, d.currentValue().toString());
+                }
+            }
+            if (d.variable() instanceof ReturnVariable) {
+                if ("1".equals(d.statementId())) {
+                    String expectValue = d.iteration() == 0 ? "null==<f:left>?orElse/*@NotNull*/:<f:left>" :
+                            "null==left?orElse/*@NotNull*/:left";
+                    Assert.assertEquals(expectValue, d.currentValue().toString());
+                    Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                }
+            }
+        }
+        if ("Either".equals(d.methodInfo().name)) {
+            if (d.variable() instanceof FieldReference fr && fr.fieldInfo.name.equals("left")) {
+                Assert.assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+                Assert.assertEquals("a", d.currentValue().toString());
+                Assert.assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+            }
+            if (d.variable() instanceof FieldReference fr && fr.fieldInfo.name.equals("right")) {
+                Assert.assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+                Assert.assertEquals("b", d.currentValue().toString());
+                Assert.assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+            }
+            if (d.variable() instanceof ParameterInfo a && "a".equals(a.name)) {
+                Assert.assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+                Assert.assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+            }
+            if (d.variable() instanceof ParameterInfo b && "b".equals(b.name)) {
+                Assert.assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+                Assert.assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+            }
         }
     };
 
-    private static final String EXPRESSION = "((null == a or not (null == b)) and (not (null == a) or null == b))";
+    EvaluationResultVisitor evaluationResultVisitor = d -> {
+        if ("Either".equals(d.methodInfo().name) && "0".equals(d.statementId())) {
+            Assert.assertEquals("(null==a||null!=b)&&(null!=a||null==b)", d.evaluationResult().value().toString());
+        }
+    };
 
     StatementAnalyserVisitor statementAnalyserVisitor = d -> {
-        if ("Either".equals(d.methodInfo().name) && "0.0.0".equals(d.statementId())) {
-            if (0 == d.iteration()) {
-                Assert.assertEquals(EXPRESSION, d.condition().toString());
-            } else if (1 == d.iteration()) {
-                Assert.assertEquals(EXPRESSION, d.state().toString());
-                Assert.assertEquals(EXPRESSION, d.condition().toString());
+        if ("Either".equals(d.methodInfo().name)) {
+            if ("0.0.0".equals(d.statementId())) {
+                Assert.assertEquals("(null==a||null!=b)&&(null!=a||null==b)", d.condition().toString());
+                Assert.assertEquals("true", d.state().toString());
+                Assert.assertEquals("(null==a||null==b)&&(null!=a||null!=b)",
+                        d.statementAnalysis().stateData.getPrecondition().toString());
+            }
+            if ("0".equals(d.statementId())) {
+                Assert.assertEquals("(null==a||null==b)&&(null!=a||null!=b)",
+                        d.statementAnalysis().methodLevelData.getCombinedPrecondition().toString());
             }
         }
     };
 
     MethodAnalyserVisitor methodAnalyserVisitor = d -> {
-        if ("getLeftOrElse".equals(d.methodInfo().name) && d.iteration() > 0) {
+        if ("getLeftOrElse".equals(d.methodInfo().name)) {
             VariableInfo tv = d.getReturnAsVariable();
             Expression retVal = tv.getValue();
             Assert.assertTrue(retVal instanceof InlineConditional);
             InlineConditional conditionalValue = (InlineConditional) retVal;
-            Assert.assertEquals("null == this.left?orElse,@NotNull:this.left", conditionalValue.toString());
+            String expectValue = d.iteration() == 0 ? "null==<f:left>?orElse/*@NotNull*/:<f:left>" :
+                    "null==left?orElse/*@NotNull*/:left";
+            Assert.assertEquals(expectValue, conditionalValue.toString());
             Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(retVal, VariableProperty.NOT_NULL_EXPRESSION));
         }
-        if ("Either".equals(d.methodInfo().name) && d.iteration() > 0) {
-            Assert.assertEquals("((null == a or null == b) and (not (null == a) or not (null == b)))",
+        if ("Either".equals(d.methodInfo().name)) {
+            Assert.assertEquals("(null==a||null==b)&&(null!=a||null!=b)",
                     d.methodAnalysis().getPrecondition().toString());
+            ParameterAnalysis a = d.parameterAnalyses().get(0);
+            int expectNnp = d.iteration()==0 ? Level.DELAY: MultiLevel.NULLABLE;
+            Assert.assertEquals(expectNnp, a.getProperty(VariableProperty.NOT_NULL_PARAMETER));
+            ParameterAnalysis b = d.parameterAnalyses().get(1);
+            Assert.assertEquals(expectNnp, b.getProperty(VariableProperty.NOT_NULL_PARAMETER));
+        }
+    };
+
+    FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+        if ("left".equals(d.fieldInfo().name)) {
+            Assert.assertEquals("a", d.fieldAnalysis().getEffectivelyFinalValue().toString());
+            Assert.assertEquals(MultiLevel.NULLABLE, d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_NOT_NULL));
+        }
+        if ("right".equals(d.fieldInfo().name)) {
+            Assert.assertEquals("b", d.fieldAnalysis().getEffectivelyFinalValue().toString());
+            Assert.assertEquals(MultiLevel.NULLABLE, d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_NOT_NULL));
         }
     };
 
@@ -86,9 +144,11 @@ public class Test_Own_02_Either extends CommonTestRunner {
     @Test
     public void test() throws IOException {
         testUtilClass(List.of("Either"), 0, 2, new DebugConfiguration.Builder()
+                .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build());
     }
 

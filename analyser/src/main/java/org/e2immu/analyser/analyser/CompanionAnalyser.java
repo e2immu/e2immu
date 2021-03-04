@@ -79,7 +79,7 @@ public class CompanionAnalyser {
                 return DONE;
             }
             int modifyingMainMethod = analyserContext.getMethodAnalysis(mainMethod).getProperty(VariableProperty.MODIFIED_METHOD);
-            if (modifyingMainMethod == Level.DELAY) {
+            if (modifyingMainMethod == Level.DELAY && !mainMethod.isConstructor) {
                 // even though the method itself is annotated by contract (it has no code), method analysis may be delayed because
                 // its companion methods need processing
                 log(DELAYED, "Delaying companion analysis of {} of {}, modification of main method delayed",
@@ -207,6 +207,13 @@ public class CompanionAnalyser {
             boolean conditionIsDelayed = isDelayed(condition);
             ConditionManager cm = conditionManager.newAtStartOfNewBlock(getPrimitives(), condition, conditionIsDelayed,
                     new BooleanConstant(getPrimitives(), true), false);
+            return new EvaluationContextImpl(iteration, cm);
+        }
+
+        @Override
+        public EvaluationContext childState(Expression state) {
+            boolean stateIsDelayed = isDelayed(state);
+            ConditionManager cm = conditionManager.addState(state, stateIsDelayed);
             return new EvaluationContextImpl(iteration, cm);
         }
 

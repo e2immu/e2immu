@@ -149,6 +149,10 @@ public class FieldAnalyser extends AbstractAnalyser {
         ImmutableList.Builder<MethodAnalyser> allMethodsAndConstructors = new ImmutableList.Builder<>();
         ImmutableList.Builder<MethodAnalyser> myMethodsAndConstructors = new ImmutableList.Builder<>();
 
+        messages.addAll(fieldAnalysis.fromAnnotationsIntoProperties(VariableProperty.EXTERNAL_NOT_NULL,
+                true, false,
+                fieldInfo.fieldInspection.get().getAnnotations(), analyserContext.getE2ImmuAnnotationExpressions()));
+
         analyserContext.methodAnalyserStream().forEach(analyser -> {
             allMethodsAndConstructors.add(analyser);
             if (analyser.methodInfo.typeInfo == fieldInfo.owner) {
