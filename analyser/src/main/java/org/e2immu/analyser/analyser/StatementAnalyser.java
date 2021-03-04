@@ -806,6 +806,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             boolean preconditionIsDelayed = sharedState.evaluationContext.isDelayed(evaluationResult.precondition());
             Expression translated = sharedState.evaluationContext.acceptAndTranslatePrecondition(evaluationResult.precondition());
             if (translated != null) {
+                // FIXME and if not present in condition or state at the same time
                 statementAnalysis.stateData.setPrecondition(translated, preconditionIsDelayed);
             }
             if (preconditionIsDelayed) {

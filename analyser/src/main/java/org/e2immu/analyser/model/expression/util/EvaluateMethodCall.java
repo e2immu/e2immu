@@ -217,6 +217,9 @@ public class EvaluateMethodCall {
                     List<ParameterAnalysis> parameterAnalyses = evaluationContext
                             .getParameterAnalyses(newObject.constructor()).collect(Collectors.toList());
                     for (ParameterAnalysis parameterAnalysis : parameterAnalyses) {
+                        if(!parameterAnalysis.assignedToFieldIsFrozen()) {
+                            return builder.setExpression(DelayedExpression.forMethod(iv.methodInfo())).build();
+                        }
                         Map<FieldInfo, ParameterAnalysis.AssignedOrLinked> assigned = parameterAnalysis.getAssignedToField();
                         ParameterAnalysis.AssignedOrLinked assignedOrLinked = assigned.get(fieldInfo);
                         if (assignedOrLinked == ParameterAnalysis.AssignedOrLinked.ASSIGNED) {

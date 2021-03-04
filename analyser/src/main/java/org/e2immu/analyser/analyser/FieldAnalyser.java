@@ -300,7 +300,7 @@ public class FieldAnalyser extends AbstractAnalyser {
                             ve.variable() instanceof ParameterInfo;
                 });
 
-        if(!notOnlyAssignedToParameters && !onlyAssignedToParameters) {
+        if (!notOnlyAssignedToParameters && !onlyAssignedToParameters) {
             log(DELAYED, "Delaying @NotNull on {}, waiting for values", fieldInfo.fullyQualifiedName());
             return DELAYS;
         }
@@ -533,13 +533,14 @@ public class FieldAnalyser extends AbstractAnalyser {
             log(DELAYED, "Delaying, have no values yet for field " + fieldInfo.fullyQualifiedName());
             return DELAYS;
         }
+        boolean fieldOfOwnType = fieldInfo.type.typeInfo == fieldInfo.owner;
 
         int immutable = fieldAnalysis.getProperty(VariableProperty.IMMUTABLE);
-        if (immutable == Level.DELAY) {
+        if (immutable == Level.DELAY && !fieldOfOwnType) {
             log(DELAYED, "Waiting with effectively final value  until decision on @E2Immutable for {}", fieldInfo.fullyQualifiedName());
             return DELAYS;
         }
-        boolean downgradeFromNewInstanceWithConstructor = !MultiLevel.isE2Immutable(immutable);
+        boolean downgradeFromNewInstanceWithConstructor = !fieldOfOwnType && !MultiLevel.isE2Immutable(immutable);
 
         // compute and set the combined value
 

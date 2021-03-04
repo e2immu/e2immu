@@ -141,7 +141,7 @@ public interface ParameterAnalysis extends Analysis {
             // the only way to have a container is for the type to be a container, or for the user to have
             // contract annotated the parameter with @Container
             case CONTAINER: {
-                if(parameterInfo.parameterizedType.isUnboundParameterType()) return Level.TRUE;
+                if (parameterInfo.parameterizedType.isUnboundParameterType()) return Level.TRUE;
                 TypeInfo bestType = parameterInfo.parameterizedType.bestTypeInfo();
                 if (bestType != null)
                     return analysisProvider.getTypeAnalysis(bestType).getProperty(VariableProperty.CONTAINER);
@@ -158,7 +158,7 @@ public interface ParameterAnalysis extends Analysis {
                 if (bestType != null) {
                     TypeAnalysis bestTypeAnalysis = analysisProvider.getTypeAnalysis(bestType);
                     int immutable = bestTypeAnalysis.getProperty(VariableProperty.IMMUTABLE);
-                    if(immutable == Level.DELAY) return internalGetProperty(VariableProperty.IMMUTABLE);
+                    if (immutable == Level.DELAY) return internalGetProperty(VariableProperty.IMMUTABLE);
                     boolean objectFlowCondition = parameterInfo.owner.isPrivate() &&
                             objectFlow != null && objectFlow.getPrevious().allMatch(of -> of.conditionsMetForEventual(bestTypeAnalysis));
                     immutableFromType = MultiLevel.eventual(immutable, objectFlowCondition);
@@ -210,4 +210,7 @@ public interface ParameterAnalysis extends Analysis {
         return v;
     }
 
+    default boolean assignedToFieldIsFrozen() {
+        return false;
+    }
 }

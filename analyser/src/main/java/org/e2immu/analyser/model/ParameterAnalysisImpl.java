@@ -162,6 +162,14 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
             }
             return false;
         }
+
+        public void freezeAssignedToField() {
+            assignedToField.freeze();
+        }
+
+        public boolean assignedToFieldIsFrozen() {
+            return assignedToField.isFrozen();
+        }
     }
 
 }
