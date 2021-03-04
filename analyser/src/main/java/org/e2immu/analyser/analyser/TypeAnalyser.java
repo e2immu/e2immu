@@ -582,7 +582,6 @@ public class TypeAnalyser extends AbstractAnalyser {
                     StatementAnalysis statementAnalysis = statementAnalyser.statementAnalysis;
                     EvaluationContext evaluationContext = statementAnalyser.newEvaluationContextForOutside();
 
-                    Expression state = statementAnalysis.stateData.getConditionManagerForNextStatement().state();
 
                     if (Primitives.isNumeric(fieldInfo.type)) {
                         Expression value = variableInfo.getValue();
@@ -591,7 +590,14 @@ public class TypeAnalyser extends AbstractAnalyser {
                                     variableInfo.getValue(), precondition);
                             if (incompatible != null) return incompatible;
                         } else if (value instanceof VariableExpression ve) {
-
+                            // grab some state about this variable
+                            Expression state = statementAnalysis.stateData.getConditionManagerForNextStatement()
+                                    .individualStateInfo(evaluationContext, ve.variable());
+                            if (!state.isBoolValueTrue()) {
+                                Map<Expression, Expression> map = Map.of(new VariableExpression(ve.variable()), new VariableExpression(variable));
+                                Expression stateInTermsOfField = state.reEvaluate(evaluationContext, map).getExpression();
+                                return !isCompatible(evaluationContext, stateInTermsOfField, precondition);
+                            }
                         }
                     } else if (Primitives.isBoolean(fieldInfo.type)) {
                         Boolean incompatible = remapReturnIncompatible(evaluationContext, variable,
@@ -600,6 +606,7 @@ public class TypeAnalyser extends AbstractAnalyser {
                     } else {
                         // normal object null checking for now
                         Expression notNull = statementAnalysis.notNullValuesAsExpression(evaluationContext);
+                        Expression state = statementAnalysis.stateData.getConditionManagerForNextStatement().state();
                         Expression combined = new And(evaluationContext.getPrimitives()).append(evaluationContext, state, notNull);
 
                         if (isCompatible(evaluationContext, combined, precondition)) {

@@ -52,6 +52,7 @@ public class CheckMarkOnly {
                         Message.ONLY_WRONG_MARK_LABEL, "Got before=\"" + before + "\" but computed before=\"" + markAndOnly.markLabel() + "\""));
                 methodAnalysis.annotationChecks.put(annotationExpression, Analysis.AnnotationCheck.WRONG);
             }
+            methodAnalysis.annotationChecks.put(annotationExpression, Analysis.AnnotationCheck.OK);
             return;
         }
         String after = annotationExpression.extract("after", "");

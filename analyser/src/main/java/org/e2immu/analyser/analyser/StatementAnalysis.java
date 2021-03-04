@@ -980,27 +980,6 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
     }
 
     /**
-     * Example: this.j = j; j has a state j<0;
-     *
-     * @param assignmentTarget this.j
-     * @param value            variable value j
-     * @return state, translated to assignment target: this.j < 0
-     */
-    private Expression stateOfValue(Variable assignmentTarget, Expression value, EvaluationContext evaluationContext) {
-        VariableExpression valueWithVariable;
-        ConditionManager conditionManager = evaluationContext.getConditionManager();
-        if ((valueWithVariable = value.asInstanceOf(VariableExpression.class)) != null &&
-                //     conditionManager.haveNonEmptyState() &&
-                !conditionManager.isDelayed()) {
-            Expression state = conditionManager.individualStateInfo(evaluationContext, valueWithVariable.variable());
-            // now translate the state (j < 0) into state of the assignment target (this.j < 0)
-            // TODO for now we're ignoring messages etc. encountered in the re-evaluation
-            return state.reEvaluate(evaluationContext, Map.of(value, new VariableExpression(assignmentTarget, ObjectFlow.NO_FLOW))).value();
-        }
-        return new BooleanConstant(primitives, true);
-    }
-
-    /**
      * Find a variable for reading. Intercepts variable fields and local variables.
      * This is the general method that must be used by the evaluation context, currentInstance, currentValue
      *

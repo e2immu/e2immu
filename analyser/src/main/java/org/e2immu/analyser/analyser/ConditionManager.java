@@ -284,11 +284,20 @@ public record ConditionManager(Expression condition,
         return null;
     }
 
-    // note: very similar to remove, except that here we're interested in the actual value
+    /*
+    any info there is about this variable
+     */
     public Expression individualStateInfo(EvaluationContext evaluationContext, Variable variable) {
         Filter filter = new Filter(evaluationContext, Filter.FilterMode.ACCEPT);
         Expression absoluteState = absoluteState(evaluationContext);
-        Filter.FilterResult<Variable> filterResult = filter.filter(absoluteState,
+        Expression combinedWithPrecondition;
+        if (precondition.isBoolValueTrue()) {
+            combinedWithPrecondition = absoluteState;
+        } else {
+            combinedWithPrecondition = new And(evaluationContext.getPrimitives()).append(evaluationContext, absoluteState, precondition);
+        }
+
+        Filter.FilterResult<Variable> filterResult = filter.filter(combinedWithPrecondition,
                 value -> obtainVariableFilter(filter.getDefaultRest(), variable, value));
         return filterResult.accepted().getOrDefault(variable, filter.getDefaultRest());
     }
