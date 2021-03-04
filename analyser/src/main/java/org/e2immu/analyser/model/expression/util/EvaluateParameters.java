@@ -209,19 +209,6 @@ public class EvaluateParameters {
         return new Pair<>(builder, parameterValues);
     }
 
-    public static Map<Expression, Expression> translationMap(MethodInfo methodInfo, List<Expression> parameters) {
-        ImmutableMap.Builder<Expression, Expression> builder = new ImmutableMap.Builder<>();
-        int i = 0;
-        for (Expression parameterValue : parameters) {
-            ParameterInfo parameterInfo = methodInfo.methodInspection.get().getParameters().get(i);
-            Expression vv = new VariableExpression(parameterInfo, parameterValue.getObjectFlow());
-            builder.put(vv, parameterValue);
-            i++;
-        }
-        return builder.build();
-    }
-
-
     public static Map<Expression, Expression> translationMap(InspectionProvider inspectionProvider,
                                                              MethodInfo methodInfo,
                                                              List<Expression> parameters,

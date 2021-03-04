@@ -720,7 +720,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
     }
 
     private boolean onlyOneCopy(EvaluationContext evaluationContext, FieldReference fr) {
-        if(fr.fieldInfo.isExplicitlyFinal()) return true;
+        if (fr.fieldInfo.isExplicitlyFinal()) return true;
         FieldAnalysis fieldAnalysis = evaluationContext.getAnalyserContext().getFieldAnalysis(fr.fieldInfo);
         return fieldAnalysis.getProperty(FINAL) == Level.TRUE;
     }
@@ -1277,7 +1277,8 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                         if (vi.getValue() instanceof NullConstant) {
                             return new Pair<>(vi, EXACTLY_NULL);
                         }
-                        int notNull = evaluationContext.getProperty(fieldReference, NOT_NULL_EXPRESSION);
+                        int notNull = evaluationContext.getProperty(new VariableExpression(fieldReference),
+                                NOT_NULL_EXPRESSION, false);
                         return new Pair<>(vi, notNull);
                     }
                     return null;

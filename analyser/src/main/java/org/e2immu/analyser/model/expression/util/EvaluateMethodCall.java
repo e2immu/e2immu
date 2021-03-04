@@ -148,7 +148,8 @@ public class EvaluateMethodCall {
         if (methodInfo.typeInfo.typeInspection.get().isFunctionalInterface() &&
                 (inlineValue = objectValue.asInstanceOf(InlinedMethod.class)) != null &&
                 inlineValue.canBeApplied(evaluationContext)) {
-            Map<Expression, Expression> translationMap = EvaluateParameters.translationMap(methodInfo, parameters);
+            Map<Expression, Expression> translationMap = EvaluateParameters.translationMap(evaluationContext.getAnalyserContext(),
+                    methodInfo, parameters, objectValue);
             EvaluationResult reInline = inlineValue.reEvaluate(evaluationContext, translationMap);
             return builder.compose(reInline).setExpression(reInline.value()).build();
         }
@@ -164,7 +165,8 @@ public class EvaluateMethodCall {
                     EvaluationResult shortCut = tryEvaluationShortCut(evaluationContext, builder, objectValue, iv);
                     if (shortCut != null) return shortCut;
 
-                    Map<Expression, Expression> translationMap = EvaluateParameters.translationMap(methodInfo, parameters);
+                    Map<Expression, Expression> translationMap = EvaluateParameters
+                            .translationMap(evaluationContext.getAnalyserContext(), methodInfo, parameters, objectValue);
                     EvaluationResult reSrv = srv.reEvaluate(evaluationContext, translationMap);
                     return builder.compose(reSrv).setExpression(reSrv.value()).build();
                 }
@@ -217,7 +219,7 @@ public class EvaluateMethodCall {
                     List<ParameterAnalysis> parameterAnalyses = evaluationContext
                             .getParameterAnalyses(newObject.constructor()).collect(Collectors.toList());
                     for (ParameterAnalysis parameterAnalysis : parameterAnalyses) {
-                        if(!parameterAnalysis.assignedToFieldIsFrozen()) {
+                        if (!parameterAnalysis.assignedToFieldIsFrozen()) {
                             return builder.setExpression(DelayedExpression.forMethod(iv.methodInfo())).build();
                         }
                         Map<FieldInfo, ParameterAnalysis.AssignedOrLinked> assigned = parameterAnalysis.getAssignedToField();

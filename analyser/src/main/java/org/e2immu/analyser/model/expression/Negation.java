@@ -20,10 +20,7 @@ package org.e2immu.analyser.model.expression;
 import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.VariableProperty;
-import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.MethodInfo;
-import org.e2immu.analyser.model.ParameterizedType;
-import org.e2immu.analyser.model.Qualification;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.output.OutputBuilder;
@@ -58,6 +55,11 @@ public class Negation extends UnaryOperator implements ExpressionWrapper {
         EvaluationResult reValue = expression.reEvaluate(evaluationContext, translation);
         EvaluationResult.Builder builder = new EvaluationResult.Builder().compose(reValue);
         return builder.setExpression(Negation.negate(evaluationContext, reValue.value())).build();
+    }
+
+    @Override
+    public Expression translate(TranslationMap translationMap) {
+        return new Negation(operator, translationMap.translateExpression(expression));
     }
 
     @Override

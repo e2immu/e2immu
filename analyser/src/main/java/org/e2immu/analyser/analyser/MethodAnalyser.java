@@ -31,6 +31,7 @@ import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.analyser.model.variable.FieldReference;
+import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
@@ -46,6 +47,8 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -153,7 +156,7 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
                     .add("makeInternalObjectFlowsPermanent", this::makeInternalObjectFlowsPermanent)
                     .add("computeModified", (sharedState) -> methodInfo.isConstructor ? DONE : computeModified())
                     .add("computeModifiedCycles", (sharedState -> methodInfo.isConstructor ? DONE : computeModifiedInternalCycles()))
-                    .add("computeReturnValue", (sharedState) -> methodInfo.noReturnValue() ? DONE : computeReturnValue())
+                    .add("computeReturnValue", (sharedState) -> methodInfo.noReturnValue() ? DONE : computeReturnValue(sharedState))
                     .add("detectMissingStaticModifier", (iteration) -> methodInfo.isConstructor ? DONE : detectMissingStaticModifier())
                     .add("computeOnlyMarkPrepWork", (sharedState) -> methodInfo.isConstructor ? DONE : computeOnlyMarkPrepWork(sharedState))
                     .add("computeOnlyMarkAnnotate", (sharedState) -> methodInfo.isConstructor ? DONE : computeOnlyMarkAnnotate(sharedState))
@@ -577,7 +580,7 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
 
     // singleReturnValue is associated with @Constant; to be able to grab the actual Value object
     // but we cannot assign this value too early: first, there should be no evaluation anymore with NO_VALUES in them
-    private AnalysisStatus computeReturnValue() {
+    private AnalysisStatus computeReturnValue(SharedState sharedState) {
         assert !methodAnalysis.singleReturnValue.isSet();
 
         // some immediate short-cuts
@@ -634,9 +637,9 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
                 return DELAYS;
             }
             if (modified == Level.FALSE) {
-                InlinedMethod.Applicability applicability = applicability(value);
+                InlinedMethod.Applicability applicability = applicability(sharedState.evaluationContext, value);
                 if (applicability != InlinedMethod.Applicability.NONE) {
-                    value = new InlinedMethod(methodInfo, value, applicability);
+                    value = new InlinedMethod(methodInfo, replaceFields(sharedState.evaluationContext, value), applicability);
                     immutable = methodAnalysis.getProperty(VariableProperty.IMMUTABLE);
                 } else {
                     immutable = MultiLevel.MUTABLE; // no idea
@@ -695,6 +698,41 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
         return DONE;
     }
 
+    private static final Pattern LOCAL_COPY = Pattern.compile("(.+)\\$\\d+");
+
+    /*
+    replace local copies of fields to fields
+     */
+    private Expression replaceFields(EvaluationContext evaluationContext, Expression value) {
+        TranslationMap.TranslationMapBuilder builder = new TranslationMap.TranslationMapBuilder();
+        boolean change = false;
+        for (Variable variable : value.variables()) {
+            if (variable instanceof LocalVariableReference) {
+                FieldInfo fieldInfo = extractFieldFromLocal(evaluationContext, variable.fullyQualifiedName());
+                if (fieldInfo != null) {
+                    This thisVar = new This(evaluationContext.getAnalyserContext(), fieldInfo.owner);
+                    FieldReference fieldReference = new FieldReference(evaluationContext.getAnalyserContext(),
+                            fieldInfo, thisVar);
+                    builder.put(variable, fieldReference);
+                    change = true;
+                }
+            }
+        }
+        if(!change) return value;
+        return value.translate(builder.build());
+    }
+
+    private FieldInfo extractFieldFromLocal(EvaluationContext evaluationContext, String fqnLocalCopy) {
+        Matcher m = LOCAL_COPY.matcher(fqnLocalCopy);
+        if (m.matches()) {
+            String fqn = m.group(1);
+            return evaluationContext.getAnalyserContext()
+                    .getTypeInspection(methodInfo.typeInfo).fields().stream()
+                    .filter(fi -> fi.fullyQualifiedName().equals(fqn)).findFirst().orElse(null);
+        }
+        return null;
+    }
+
     private boolean noReturnStatementReachable() {
         StatementAnalysis firstStatement = methodAnalysis.getFirstStatement();
         return !recursivelyFindReachableReturnStatement(firstStatement);
@@ -722,7 +760,7 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
         return InlinedMethod.Applicability.PACKAGE;
     }
 
-    private InlinedMethod.Applicability applicability(Expression value) {
+    private InlinedMethod.Applicability applicability(EvaluationContext evaluationContext, Expression value) {
         AtomicReference<InlinedMethod.Applicability> applicability = new AtomicReference<>(InlinedMethod.Applicability.EVERYWHERE);
         value.visit(v -> {
             if (v.isUnknown()) {
@@ -732,8 +770,15 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
             if ((valueWithVariable = v.asInstanceOf(VariableExpression.class)) != null) {
                 Variable variable = valueWithVariable.variable();
                 if (variable.isLocal()) {
-                    // TODO make a distinction between a local variable, and a local var outside a lambda
-                    applicability.set(InlinedMethod.Applicability.NONE);
+                    FieldInfo fieldInfo = extractFieldFromLocal(evaluationContext, variable.fullyQualifiedName());
+                    if (fieldInfo != null) {
+                        InlinedMethod.Applicability fieldApplicability = applicabilityField(fieldInfo);
+                        InlinedMethod.Applicability current = applicability.get();
+                        applicability.set(current.mostRestrictive(fieldApplicability));
+                    } else {
+                        // TODO make a distinction between a local variable, and a local var outside a lambda
+                        applicability.set(InlinedMethod.Applicability.NONE);
+                    }
                 } else if (variable instanceof FieldReference) {
                     InlinedMethod.Applicability fieldApplicability = applicabilityField(((FieldReference) variable).fieldInfo);
                     InlinedMethod.Applicability current = applicability.get();

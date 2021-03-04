@@ -26,7 +26,6 @@ import org.e2immu.analyser.model.expression.NullConstant;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
-import org.e2immu.analyser.util.Logger;
 
 import java.util.Arrays;
 import java.util.List;
@@ -65,5 +64,10 @@ public record MultiExpression(Expression... expressions) {
 
     public List<Variable> variables() {
         return stream().flatMap(e -> e.variables().stream()).collect(Collectors.toList());
+    }
+
+    @Override
+    public String toString() {
+        return "[" + Arrays.stream(expressions).map(Object::toString).collect(Collectors.joining(",")) + "]";
     }
 }

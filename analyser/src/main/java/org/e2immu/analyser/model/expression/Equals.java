@@ -19,11 +19,9 @@ package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
-import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.Level;
-import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.ParameterizedType;
+import org.e2immu.analyser.model.TranslationMap;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Primitives;
@@ -38,6 +36,11 @@ public class Equals extends BinaryOperator {
                   Expression lhs, Expression rhs, ObjectFlow objectFlow) {
         super(primitives, lhs, lhs.isNumeric() ? primitives.equalsOperatorInt : primitives.equalsOperatorObject,
                 rhs, Precedence.EQUALITY, objectFlow);
+    }
+
+    @Override
+    public Expression translate(TranslationMap translationMap) {
+        return new Equals(primitives, translationMap.translateExpression(lhs), translationMap.translateExpression(rhs), objectFlow);
     }
 
     @Override

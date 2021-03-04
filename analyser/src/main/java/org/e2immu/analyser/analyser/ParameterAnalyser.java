@@ -157,7 +157,14 @@ public class ParameterAnalyser {
                 }
                 checkLinks = false;
             }
+        } else if(parameterInfo.parameterizedType.isUnboundParameterType()) {
+            if (!parameterAnalysis.properties.isSet(VariableProperty.MODIFIED_OUTSIDE_METHOD)) {
+                parameterAnalysis.setProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD, Level.FALSE);
+                changed = true;
+            }
+            checkLinks = false;
         }
+
         int contractModified = parameterAnalysis.getProperty(VariableProperty.MODIFIED_VARIABLE);
         if (contractModified != Level.DELAY && !parameterAnalysis.properties.isSet(VariableProperty.MODIFIED_OUTSIDE_METHOD)) {
             parameterAnalysis.setProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD, contractModified);
