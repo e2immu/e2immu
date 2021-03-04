@@ -19,6 +19,8 @@
 
 package org.e2immu.analyser.parser;
 
+import org.e2immu.analyser.analyser.VariableInfo;
+import org.e2immu.analyser.analyser.VariableInfoContainer;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.Level;
@@ -285,6 +287,43 @@ public class Test_00_Basics_9plus extends CommonTestRunner {
             }
         };
         testClass("Basics_13", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .build());
+    }
+
+    /*
+    copy of the SetOnce delay problems (20210304)
+     */
+    @Test
+    public void test_14() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            int cnn = d.getProperty(VariableProperty.CONTEXT_NOT_NULL);
+            if ("getT".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof FieldReference t && t.fieldInfo.name.equals("t")) {
+                    if("0".equals(d.statementId())) {
+                        VariableInfo initial = d.variableInfoContainer().getPreviousOrInitial();
+                        Assert.assertEquals(MultiLevel.NULLABLE, initial.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+
+                        VariableInfo eval = d.variableInfoContainer().best(VariableInfoContainer.Level.EVALUATION);
+                        Assert.assertEquals(MultiLevel.NULLABLE, eval.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+                    }
+
+                    String expectValue = d.iteration() == 0 ? "<f:t>" : "nullable instance type T";
+                    Assert.assertEquals(expectValue, d.currentValue().toString());
+
+                    if ("0.0.0".equals(d.statementId())) {
+                        Assert.assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+                    } else {
+                        int expectCnn = MultiLevel.NULLABLE;
+                        Assert.assertEquals("Stmt " + d.statementId() + " it " + d.iteration(), expectCnn, cnn);
+                    }
+                }
+                if ("t$0".equals(d.variableInfo().variable().simpleName())) {
+                    Assert.assertEquals(MultiLevel.NULLABLE, cnn);
+                }
+            }
+        };
+        testClass("Basics_14", 0, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }

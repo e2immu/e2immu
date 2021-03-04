@@ -473,10 +473,14 @@ public class TypeAnalyser extends AbstractAnalyser {
         if (typeAnalysis.approvedPreconditionsE2.isFrozen()) {
             return DONE;
         }
-        boolean someModifiedNotSet = myMethodAnalysersExcludingSAMs.stream()
-                .anyMatch(methodAnalyser -> methodAnalyser.methodAnalysis
-                        .getProperty(VariableProperty.MODIFIED_METHOD) == Level.DELAY);
-        if (someModifiedNotSet) return DELAYS;
+        Optional<MethodAnalyser> optModificationDelay = myMethodAnalysersExcludingSAMs.stream()
+                .filter(methodAnalyser -> methodAnalyser.methodAnalysis
+                        .getProperty(VariableProperty.MODIFIED_METHOD) == Level.DELAY).findFirst();
+        if (optModificationDelay.isPresent()) {
+            log(DELAYED, "Delaying only mark E2, modification delayed of (findFirst) {}",
+                    optModificationDelay.get().methodInfo.fullyQualifiedName);
+            return DELAYS;
+        }
 
         boolean allPreconditionsOnModifyingMethodsSet = myMethodAnalysersExcludingSAMs.stream()
                 .filter(methodAnalyser -> methodAnalyser.methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD) == Level.TRUE)
@@ -517,7 +521,7 @@ public class TypeAnalyser extends AbstractAnalyser {
         // copy into approved preconditions
         tempApproved.forEach(typeAnalysis.approvedPreconditionsE2::put);
         typeAnalysis.approvedPreconditionsE2.freeze();
-        log(MARK, "Approved preconditions {} in {}, type is now @E1Immutable(after=)", tempApproved.values(), typeInfo.fullyQualifiedName);
+        log(MARK, "Approved preconditions {} in {}, type can now be @E2Immutable(after=)", tempApproved.values(), typeInfo.fullyQualifiedName);
         return DONE;
     }
 

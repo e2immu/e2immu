@@ -1203,20 +1203,22 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             Set<Variable> nullVariables = statementAnalysis.stateData.getConditionManagerForNextStatement()
                     .findIndividualNullInCondition(sharedState.evaluationContext, true);
             for (Variable nullVariable : nullVariables) {
-                log(VARIABLE_PROPERTIES, "Escape with check not null on {}", nullVariable.fullyQualifiedName());
+                if(nullVariable instanceof ParameterInfo) {
+                    log(VARIABLE_PROPERTIES, "Escape with check not null on {}", nullVariable.fullyQualifiedName());
 
-                // move from condition (x!=null) to property
-                VariableInfoContainer vic = statementAnalysis.findForWriting(nullVariable);
-                if (!vic.hasEvaluation()) {
-                    VariableInfo initial = vic.getPreviousOrInitial();
-                    vic.ensureEvaluation(initial.getAssignmentId(), initial.getReadId(), initial.getStatementTime(), initial.getReadAtStatementTimes());
-                }
-                if (delays) {
-                    vic.setProperty(CONTEXT_NOT_NULL_FOR_PARENT_DELAY, Level.TRUE, EVALUATION);
-                } else {
-                    vic.setProperty(CONTEXT_NOT_NULL_FOR_PARENT_DELAY_RESOLVED, Level.TRUE, EVALUATION);
-                    if (escapeAlwaysExecuted) {
-                        vic.setProperty(CONTEXT_NOT_NULL_FOR_PARENT, MultiLevel.EFFECTIVELY_NOT_NULL, EVALUATION);
+                    // move from condition (x!=null) to property
+                    VariableInfoContainer vic = statementAnalysis.findForWriting(nullVariable);
+                    if (!vic.hasEvaluation()) {
+                        VariableInfo initial = vic.getPreviousOrInitial();
+                        vic.ensureEvaluation(initial.getAssignmentId(), initial.getReadId(), initial.getStatementTime(), initial.getReadAtStatementTimes());
+                    }
+                    if (delays) {
+                        vic.setProperty(CONTEXT_NOT_NULL_FOR_PARENT_DELAY, Level.TRUE, EVALUATION);
+                    } else {
+                        vic.setProperty(CONTEXT_NOT_NULL_FOR_PARENT_DELAY_RESOLVED, Level.TRUE, EVALUATION);
+                        if (escapeAlwaysExecuted) {
+                            vic.setProperty(CONTEXT_NOT_NULL_FOR_PARENT, MultiLevel.EFFECTIVELY_NOT_NULL, EVALUATION);
+                        }
                     }
                 }
             }
@@ -1746,6 +1748,14 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             return false;
         }
 
+        public boolean escapesAlways() {
+            if (execution != NEVER && startOfBlock != null) {
+                StatementAnalysis lastStatement = startOfBlock.lastStatement().statementAnalysis;
+                return lastStatement.flowData.interruptStatus() == ALWAYS;
+            }
+            return false;
+        }
+
         public boolean alwaysExecuted() {
             return execution == ALWAYS && startOfBlock != null;
         }
@@ -1815,13 +1825,19 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                         .mapToInt(sa -> sa.statementAnalysis.flowData.getTimeAfterSubBlocks())
                         .max().orElseThrow();
             }
+            int maxTimeWithEscape;
+            if (executions.stream().allMatch(ExecutionOfBlock::escapesAlways)) {
+                maxTimeWithEscape = statementAnalysis.flowData.getTimeAfterEvaluation();
+            } else {
+                maxTimeWithEscape = maxTime;
+            }
             if (statementAnalysis.flowData.timeAfterSubBlocksNotYetSet()) {
-                statementAnalysis.flowData.setTimeAfterSubBlocks(maxTime, index());
+                statementAnalysis.flowData.setTimeAfterSubBlocks(maxTimeWithEscape, index());
             }
 
             // need timeAfterSubBlocks set already
             AnalysisStatus copyStatus = statementAnalysis.copyBackLocalCopies(evaluationContext,
-                    sharedState.localConditionManager.state(), lastStatements, atLeastOneBlockExecuted, maxTime);
+                    sharedState.localConditionManager.state(), lastStatements, atLeastOneBlockExecuted, maxTimeWithEscape);
             analysisStatus = analysisStatus.combine(copyStatus);
 
             // compute the escape situation of the sub-blocks

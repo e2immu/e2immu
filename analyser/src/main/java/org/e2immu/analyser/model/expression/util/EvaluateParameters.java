@@ -22,7 +22,10 @@ import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.Filter;
 import org.e2immu.analyser.model.expression.VariableExpression;
+import org.e2immu.analyser.model.variable.FieldReference;
+import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.objectflow.ObjectFlow;
+import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.util.Logger;
 import org.e2immu.analyser.util.Pair;
 import org.slf4j.LoggerFactory;
@@ -176,7 +179,8 @@ public class EvaluateParameters {
             } else if (!precondition.isBooleanConstant()) {
                 // there is a precondition, and we have a list of values... let's see what we can learn
                 // the precondition is using parameter info's as variables so we'll have to substitute
-                Map<Expression, Expression> translationMap = translationMap(methodInfo, parameterValues);
+                Map<Expression, Expression> translationMap = translationMap(evaluationContext.getAnalyserContext(),
+                        methodInfo, parameterValues, scopeObject);
                 EvaluationResult eRreEvaluated = precondition.reEvaluate(evaluationContext, translationMap);
                 Expression reEvaluated = eRreEvaluated.value();
                 builder.compose(eRreEvaluated);
@@ -213,6 +217,31 @@ public class EvaluateParameters {
             Expression vv = new VariableExpression(parameterInfo, parameterValue.getObjectFlow());
             builder.put(vv, parameterValue);
             i++;
+        }
+        return builder.build();
+    }
+
+
+    public static Map<Expression, Expression> translationMap(InspectionProvider inspectionProvider,
+                                                             MethodInfo methodInfo,
+                                                             List<Expression> parameters,
+                                                             Expression scope) {
+        ImmutableMap.Builder<Expression, Expression> builder = new ImmutableMap.Builder<>();
+        int i = 0;
+        for (Expression parameterValue : parameters) {
+            ParameterInfo parameterInfo = methodInfo.methodInspection.get().getParameters().get(i);
+            Expression vv = new VariableExpression(parameterInfo, parameterValue.getObjectFlow());
+            builder.put(vv, parameterValue);
+            i++;
+        }
+        TypeInspection typeInspection = inspectionProvider.getTypeInspection(methodInfo.typeInfo);
+        if (scope instanceof VariableExpression ve) {
+            This thisVar = new This(inspectionProvider, methodInfo.typeInfo);
+            for (FieldInfo fieldInfo : typeInspection.fields()) {
+                FieldReference thisField = new FieldReference(inspectionProvider, fieldInfo, thisVar);
+                FieldReference scopeField = new FieldReference(inspectionProvider, fieldInfo, ve.variable());
+                builder.put(new VariableExpression(thisField), new VariableExpression(scopeField));
+            }
         }
         return builder.build();
     }
