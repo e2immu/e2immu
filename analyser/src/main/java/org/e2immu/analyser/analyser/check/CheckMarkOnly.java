@@ -16,7 +16,7 @@ public class CheckMarkOnly {
         if (annotationExpression == null) return; // nothing to verify
 
         AnnotationParameters parameters = annotationExpression.e2ImmuAnnotationParameters();
-        boolean noData = markAndOnly == null || markAndOnly.mark();
+        boolean noData = markAndOnly == null || markAndOnly == MethodAnalysis.NO_MARK_AND_ONLY || markAndOnly.mark();
         if (parameters.absent()) {
             if (noData) {
                 methodAnalysis.annotationChecks.put(annotationExpression, Analysis.AnnotationCheck.OK_ABSENT);
@@ -76,7 +76,7 @@ public class CheckMarkOnly {
         if (annotationExpression == null) return; // nothing to verify
 
         AnnotationParameters parameters = annotationExpression.e2ImmuAnnotationParameters();
-        boolean noData = markAndOnly == null || !markAndOnly.mark();
+        boolean noData = markAndOnly == null || markAndOnly == MethodAnalysis.NO_MARK_AND_ONLY || !markAndOnly.mark();
         if (parameters.absent()) {
             if (noData) return; // fine!
             messages.add(Message.newMessage(new Location(methodInfo),

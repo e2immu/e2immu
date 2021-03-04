@@ -417,7 +417,7 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
     }
 
     private AnalysisStatus computeOnlyMarkAnnotate(SharedState sharedState) {
-        assert !methodAnalysis.markAndOnly.isSet();
+        assert !methodAnalysis.markAndOnlyIsSet();
 
         SetOnceMap<String, Expression> e1 = ((TypeAnalysisImpl.Builder) typeAnalysis).approvedPreconditionsE1;
         if (!e1.isFrozen()) {
@@ -431,7 +431,8 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
         }
         SetOnceMap<String, Expression> approvedPreconditions = !e2.isEmpty() ? e2 : e1;
         if (approvedPreconditions.size() == 0) {
-            log(DELAYED, "No approved preconditions for {}, so no @Mark, @Only", methodInfo.distinguishingName());
+            log(ANALYSER, "No approved preconditions for {}, so no @Mark, @Only", methodInfo.distinguishingName());
+            methodAnalysis.setMarkAndOnly(MethodAnalysis.NO_MARK_AND_ONLY);
             return DONE;
         }
         int modified = methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD);
@@ -471,6 +472,7 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
                     if (!methodAnalysis.annotations.isSet(e2ae.only)) {
                         methodAnalysis.annotations.put(e2ae.only, false);
                     }
+                    methodAnalysis.setMarkAndOnly(MethodAnalysis.NO_MARK_AND_ONLY);
                     return DONE;
                 }
             }
@@ -479,7 +481,8 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
                 log(MARK, "Method {} is @NotModified, so it'll be @Only rather than @Mark", methodInfo.distinguishingName());
             } else {
                 if (!mark && !after) {
-                    Boolean incompatible = TypeAnalyser.assignmentIncompatibleWithPrecondition(precondition, this);
+                    Boolean incompatible = TypeAnalyser.assignmentIncompatibleWithPrecondition(analyserContext,
+                            precondition, this, true);
                     if (incompatible == null) {
                         return DELAYS;
                     }
@@ -495,12 +498,13 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
             //   methodAnalysis.complainedAboutApprovedPreconditions.set(true);
             //   messages.add(Message.newMessage(new Location(methodInfo), Message.NO_APPROVED_PRECONDITIONS));
             // }
+            methodAnalysis.setMarkAndOnly(MethodAnalysis.NO_MARK_AND_ONLY);
             return DONE;
         }
 
         String jointMarkLabel = TypeAnalyser.labelOfPreconditionForMarkAndOnly(preconditions);
         MethodAnalysis.MarkAndOnly markAndOnly = new MethodAnalysis.MarkAndOnly(preconditions, jointMarkLabel, mark, after);
-        methodAnalysis.markAndOnly.set(markAndOnly);
+        methodAnalysis.setMarkAndOnly(markAndOnly);
         log(MARK, "Marking {} with only data {}", methodInfo.distinguishingName(), markAndOnly);
         E2ImmuAnnotationExpressions e2ae = analyserContext.getE2ImmuAnnotationExpressions();
         if (mark) {

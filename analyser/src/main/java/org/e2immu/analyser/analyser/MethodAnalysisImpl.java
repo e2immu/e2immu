@@ -175,7 +175,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
 
         // the value here (size will be one)
         public final SetOnce<List<Expression>> preconditionForMarkAndOnly = new SetOnce<>();
-        public final SetOnce<MarkAndOnly> markAndOnly = new SetOnce<>();
+        private final SetOnce<MarkAndOnly> markAndOnly = new SetOnce<>();
 
         public final SetOnce<Expression> singleReturnValue = new SetOnce<>();
         public final SetOnce<Integer> singleReturnValueImmutable = new SetOnce<>();
@@ -212,6 +212,11 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
         @Override
         public Expression getPrecondition() {
             return precondition.getOrElse(null);
+        }
+
+        @Override
+        public boolean markAndOnlyIsSet() {
+            return markAndOnly.isSet();
         }
 
         public Builder(boolean isBeingAnalysed,
@@ -416,6 +421,10 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
                 setProperty(VariableProperty.FLUENT, Level.FALSE);
                 setProperty(VariableProperty.IDENTITY, Level.FALSE);
             }
+        }
+
+        public void setMarkAndOnly(MarkAndOnly markAndOnly) {
+            this.markAndOnly.set(markAndOnly);
         }
     }
 

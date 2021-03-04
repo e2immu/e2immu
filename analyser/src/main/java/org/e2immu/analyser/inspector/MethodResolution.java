@@ -68,7 +68,11 @@ public record MethodResolution(Set<MethodInfo> overrides,
          * we use this to compute effective finality: some methods are only called from constructors,
          * they form part of the construction aspect of the class
          */
-        public final SetOnce<Set<MethodInfo>> methodsOfOwnClassReached = new SetOnce<>();
+        private final SetOnce<Set<MethodInfo>> methodsOfOwnClassReached = new SetOnce<>();
+
+        public void setMethodsOfOwnClassReached(Set<MethodInfo> set) {
+            methodsOfOwnClassReached.set(set);
+        }
 
         public Set<MethodInfo> getMethodsOfOwnClassReached() {
             return methodsOfOwnClassReached.isSet() ? ImmutableSet.copyOf(methodsOfOwnClassReached.get()) : Set.of();

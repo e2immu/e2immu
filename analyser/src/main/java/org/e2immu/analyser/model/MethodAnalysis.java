@@ -185,7 +185,11 @@ public interface MethodAnalysis extends Analysis {
         return max;
     }
 
+    default boolean markAndOnlyIsSet() { return true; }
+
     // the name refers to the @Mark and @Only annotations. It is the data for this annotation.
+
+    MarkAndOnly NO_MARK_AND_ONLY = new MarkAndOnly(List.of(), "", false, null);
 
     record MarkAndOnly(List<Expression> preconditions, String markLabel, boolean mark,
                        Boolean after) { // null for a @Mark without @Only
@@ -193,6 +197,10 @@ public interface MethodAnalysis extends Analysis {
         @Override
         public String toString() {
             return markLabel + "=" + preconditions + "; after? " + after + "; @Mark? " + mark;
+        }
+
+        public boolean consistentWith(MarkAndOnly other) {
+            return markLabel.equals(other.markLabel);
         }
     }
 

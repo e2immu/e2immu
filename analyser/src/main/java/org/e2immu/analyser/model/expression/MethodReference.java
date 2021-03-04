@@ -23,6 +23,7 @@ import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.output.OutputBuilder;
@@ -178,5 +179,14 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
     @Override
     public List<? extends Element> subElements() {
         return List.of(scope);
+    }
+
+    public boolean objectIsThisOrSuper(InspectionProvider inspectionProvider) {
+        if (scope instanceof VariableExpression ve && ve.variable() instanceof This) return true;
+        if (scope instanceof TypeExpression) {
+            MethodInspection methodInspection = inspectionProvider.getMethodInspection(methodInfo);
+            return !methodInspection.isStatic();
+        }
+        return false;
     }
 }

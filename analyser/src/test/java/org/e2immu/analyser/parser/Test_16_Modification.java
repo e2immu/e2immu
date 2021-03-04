@@ -902,6 +902,13 @@ public class Test_16_Modification extends CommonTestRunner {
                                 methodCall.methodInfo.fullyQualifiedName);
                     } else Assert.fail();
                 } else Assert.fail();
+                if(d.iteration()==0) {
+                    Assert.assertTrue(d.statementAnalysis().stateData.preconditionIsDelayed());
+                    Assert.assertFalse(d.statementAnalysis().stateData.preconditionIsEmpty());
+                } else {
+                    Assert.assertTrue(d.statementAnalysis().stateData.preconditionIsSet());
+                    Assert.assertTrue(d.statementAnalysis().stateData.getPrecondition().isBoolValueTrue());
+                }
             }
         };
 
@@ -918,6 +925,16 @@ public class Test_16_Modification extends CommonTestRunner {
             if ("clear".equals(name) && "InnerOfChild".equals(d.methodInfo().typeInfo.simpleName)) {
                 int expectModified = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
                 Assert.assertEquals(expectModified, d.getThisAsVariable().getProperty(VariableProperty.CONTEXT_MODIFIED));
+            }
+            if ("clearAndLog".equals(name) && "ParentClass".equals(d.methodInfo().typeInfo.simpleName)) {
+                Assert.assertTrue(d.methodAnalysis().getPrecondition().isBoolValueTrue());
+            }
+            if ("clearAndLog".equals(name) && "ChildClass".equals(d.methodInfo().typeInfo.simpleName)) {
+                if (d.iteration() == 0) {
+                    Assert.assertNull(d.methodAnalysis().getPrecondition());
+                } else {
+                    Assert.assertTrue(d.methodAnalysis().getPrecondition().isBoolValueTrue());
+                }
             }
         };
 

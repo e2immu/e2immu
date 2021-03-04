@@ -21,11 +21,14 @@ package org.e2immu.analyser.analyser;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.analyser.check.CheckEventual;
+import org.e2immu.analyser.analyser.util.CallsToOwnMethods;
 import org.e2immu.analyser.config.TypeAnalyserVisitor;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.And;
+import org.e2immu.analyser.model.expression.ConstantExpression;
 import org.e2immu.analyser.model.expression.Negation;
 import org.e2immu.analyser.model.expression.VariableExpression;
+import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.variable.DependentVariable;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.This;
@@ -528,7 +531,7 @@ public class TypeAnalyser extends AbstractAnalyser {
         String label = labelOfPreconditionForMarkAndOnly(precondition);
         Expression inMap = tempApproved.get(label);
 
-        Boolean isMark = assignmentIncompatibleWithPrecondition(precondition, methodAnalyser);
+        Boolean isMark = assignmentIncompatibleWithPrecondition(analyserContext, precondition, methodAnalyser, false);
         if (isMark == null) return true; // delays
         if (isMark) {
             if (inMap == null) {
@@ -547,11 +550,22 @@ public class TypeAnalyser extends AbstractAnalyser {
         return false; // no delay
     }
 
-    /*
-    null indicates delay.
+    /**
+     * @return null indicates delay; true indicates @Mark; also becomes @Only(before=)
+     *
+     * <p>
+     * Possible situations:
+     * <ul>
+     * <li>recondition does null check
+     * <li>precondition is of boolean nature
+     * <li>precondition is of integer nature, compares with Equals or GreaterThanZero
+     * <li>precondition is cause by method call to other internal @Mark/@Only method
+     * </ul>
      */
-    public static Boolean assignmentIncompatibleWithPrecondition(Expression precondition,
-                                                                 MethodAnalyser methodAnalyser) {
+    public static Boolean assignmentIncompatibleWithPrecondition(AnalyserContext analyserContext,
+                                                                 Expression precondition,
+                                                                 MethodAnalyser methodAnalyser,
+                                                                 boolean methods) {
         Set<Variable> variables = new HashSet<>(precondition.variables());
         for (Variable variable : variables) {
             FieldInfo fieldInfo = ((FieldReference) variable).fieldInfo;
@@ -569,20 +583,73 @@ public class TypeAnalyser extends AbstractAnalyser {
                     EvaluationContext evaluationContext = statementAnalyser.newEvaluationContextForOutside();
 
                     Expression state = statementAnalysis.stateData.getConditionManagerForNextStatement().state();
-                    Expression notNull = statementAnalysis.notNullValuesAsExpression(evaluationContext);
-                    Expression combined = new And(evaluationContext.getPrimitives()).append(evaluationContext, state, notNull);
 
-                    if (isCompatible(evaluationContext, combined, precondition)) {
-                        if (statementAnalysis.stateData.conditionManagerIsNotYetSet()) {
-                            return null; // DELAYS
+                    if (Primitives.isNumeric(fieldInfo.type)) {
+                        Expression value = variableInfo.getValue();
+                        if (value instanceof ConstantExpression) {
+                            Boolean incompatible = remapReturnIncompatible(evaluationContext, variable,
+                                    variableInfo.getValue(), precondition);
+                            if (incompatible != null) return incompatible;
+                        } else if (value instanceof VariableExpression ve) {
+
                         }
-                        return false;
+                    } else if (Primitives.isBoolean(fieldInfo.type)) {
+                        Boolean incompatible = remapReturnIncompatible(evaluationContext, variable,
+                                variableInfo.getValue(), precondition);
+                        if (incompatible != null) return incompatible;
+                    } else {
+                        // normal object null checking for now
+                        Expression notNull = statementAnalysis.notNullValuesAsExpression(evaluationContext);
+                        Expression combined = new And(evaluationContext.getPrimitives()).append(evaluationContext, state, notNull);
+
+                        if (isCompatible(evaluationContext, combined, precondition)) {
+                            if (statementAnalysis.stateData.conditionManagerIsNotYetSet()) {
+                                return null; // DELAYS
+                            }
+                            return false;
+                        }
+                        return true;
                     }
-                    return true;
                 }
             }
         }
+
+        if (!methods) return false;
+
+        // METHOD
+
+        // example in FlipSwitch, where copy() calls set(), which should have been handled before
+        MethodAnalysis.MarkAndOnly consistent = null;
+        Block body = analyserContext.getMethodInspection(methodAnalyser.methodInfo).getMethodBody();
+        Set<MethodInfo> calledMethods = new CallsToOwnMethods(analyserContext).visit(body).getMethods();
+        for (MethodInfo calledMethod : calledMethods) {
+            MethodAnalyser calledMethodAnalyser = analyserContext.getMethodAnalyser(calledMethod);
+            if (calledMethodAnalyser.methodAnalysis.markAndOnlyIsSet()) {
+                MethodAnalysis.MarkAndOnly markAndOnly = calledMethodAnalyser.methodAnalysis.getMarkAndOnly();
+                if (markAndOnly != MethodAnalysis.NO_MARK_AND_ONLY) {
+                    if (consistent == null) consistent = markAndOnly;
+                    else if (!markAndOnly.consistentWith(consistent)) {
+                        consistent = null;
+                        break;
+                    }
+                }
+            } else {
+                return null; // DELAYS
+            }
+        }
+        if (consistent != null) {
+            return consistent.mark();
+        }
         return false;
+    }
+
+    private static Boolean remapReturnIncompatible(EvaluationContext evaluationContext, Variable variable, Expression value,
+                                                   Expression precondition) {
+        Map<Expression, Expression> map = Map.of(new VariableExpression(variable), value);
+        Expression reEvaluated = precondition.reEvaluate(evaluationContext, map).getExpression();
+        // false ~ incompatible with precondition
+        if (reEvaluated.isBooleanConstant()) return reEvaluated.isBoolValueFalse();
+        return null;
     }
 
     private static boolean isCompatible(EvaluationContext evaluationContext, Expression v1, Expression v2) {

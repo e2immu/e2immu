@@ -20,6 +20,8 @@
 package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.config.DebugConfiguration;
+import org.e2immu.analyser.config.TypeAnalyserVisitor;
+import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -33,8 +35,16 @@ public class Test_Own_03_FlipSwitch extends CommonTestRunner {
 
     @Test
     public void test() throws IOException {
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("FlipSwitch".equals(d.typeInfo().simpleName)) {
+                String expectE2 = d.iteration() == 0 ? "{}" : "{t=!t}";
+                Assert.assertEquals(expectE2, d.typeAnalysis().getApprovedPreconditionsE2().toString());
+            }
+        };
+
         testUtilClass(List.of("FlipSwitch"), 0, 0, new DebugConfiguration.Builder()
-               .build());
+                .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
+                .build());
     }
 
 }

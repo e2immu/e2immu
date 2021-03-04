@@ -55,7 +55,7 @@ class EventuallyE1Immutable_2_M {
     }
 
     @Modified
-  //  @Mark("j")
+    @Mark("j")
     public void setPositiveJ(int j) {
         if (j <= 0) throw new UnsupportedOperationException();
         if (this.j > 0) throw new UnsupportedOperationException("Already set");
@@ -64,7 +64,7 @@ class EventuallyE1Immutable_2_M {
     }
 
     @Modified
- //   @Only(before = "j")
+    @Only(before = "j")
     public void setNegativeJ(int j) {
         if (j > 0) throw new UnsupportedOperationException();
         if (this.j > 0) throw new UnsupportedOperationException("Already set");

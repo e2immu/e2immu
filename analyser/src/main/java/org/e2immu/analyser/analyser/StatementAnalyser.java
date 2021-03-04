@@ -808,11 +808,14 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             if (translated != null) {
                 statementAnalysis.stateData.setPrecondition(translated, preconditionIsDelayed);
             }
-            if(preconditionIsDelayed) {
+            if (preconditionIsDelayed) {
                 log(DELAYED, "Apply of {}, {} is delayed because of precondition",
                         index(), myMethodAnalyser.methodInfo.fullyQualifiedName);
                 status = DELAYS;
             }
+        } else if (!statementAnalysis.stateData.preconditionIsSet()) {
+            // undo a potential previous delay, so that no precondition is seen to be present
+            statementAnalysis.stateData.setPrecondition(null, true);
         }
 
         if (status == DONE && statementAnalysis.methodLevelData.internalObjectFlowNotYetFrozen()) {
@@ -1040,7 +1043,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                                                        VariableInfo vi1) {
         // regardless of what's being delayed or not, if the type is immutable there cannot be links
         TypeInfo bestType = variable.parameterizedType().bestTypeInfo();
-        if (bestType != null && bestType != myMethodAnalyser.methodInfo.typeInfo)  {
+        if (bestType != null && bestType != myMethodAnalyser.methodInfo.typeInfo) {
             int immutable = analyserContext.getTypeAnalysis(bestType).getProperty(IMMUTABLE);
             if (immutable == MultiLevel.EFFECTIVELY_E2IMMUTABLE) {
                 return EMPTY_OVERRIDE;
@@ -1225,7 +1228,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 if (translated != null) {
                     log(VARIABLE_PROPERTIES, "Escape with precondition {}", translated);
                     statementAnalysis.stateData.setPrecondition(translated, preconditionIsDelayed);
-                    return DONE;
+                    return preconditionIsDelayed ? DELAYS : DONE;
                 }
             }
 
@@ -1234,6 +1237,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         if (statementAnalysis.stateData.preconditionIsEmpty()) {
             // it could have been set from the assert (step4) or apply via a method call
             statementAnalysis.stateData.setPrecondition(new BooleanConstant(statementAnalysis.primitives, true), false);
+        } else if (statementAnalysis.stateData.preconditionIsDelayed()) {
+            return DELAYS;
         }
         return DONE;
     }
@@ -2280,7 +2285,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 // read what's in the property map (all values should be there) at initial or current level
                 int inMap = getVariableProperty(ve.variable(), variableProperty, duringEvaluation);
                 if (variableProperty == NOT_NULL_EXPRESSION) {
-                    if(Primitives.isPrimitiveExcludingVoid(ve.variable().parameterizedType())) {
+                    if (Primitives.isPrimitiveExcludingVoid(ve.variable().parameterizedType())) {
                         return MultiLevel.EFFECTIVELY_NOT_NULL;
                     }
                     int cnn = getVariableProperty(ve.variable(), CONTEXT_NOT_NULL, duringEvaluation);

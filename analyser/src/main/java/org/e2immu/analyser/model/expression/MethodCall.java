@@ -29,6 +29,7 @@ import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.objectflow.access.MethodAccess;
 import org.e2immu.analyser.output.*;
+import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.ListUtil;
@@ -180,14 +181,14 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 TypeName typeName = new TypeName(typeInfo, qualification.qualifierRequired(typeInfo));
                 outputBuilder.add(new QualifiedName(methodInfo.name, typeName,
                         qualification.qualifierRequired(methodInfo) ? YES : NO_METHOD));
-                if(guideGenerator != null) start = true;
+                if (guideGenerator != null) start = true;
             } else if (object instanceof VariableExpression ve && ve.variable() instanceof This thisVar) {
                 assert !methodInfo.methodInspection.get().isStatic();
                 TypeName typeName = new TypeName(thisVar.typeInfo, qualification.qualifierRequired(thisVar.typeInfo));
                 ThisName thisName = new ThisName(thisVar.writeSuper, typeName, qualification.qualifierRequired(thisVar));
                 outputBuilder.add(new QualifiedName(methodInfo.name, thisName,
                         qualification.qualifierRequired(methodInfo) ? YES : NO_METHOD));
-                if(guideGenerator != null) start = true;
+                if (guideGenerator != null) start = true;
             } else {
                 // next level is NOT a gg; if gg != null we're at the start of the chain
                 outputBuilder.add(outputInParenthesis(qualification, precedence(), object));
@@ -207,7 +208,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                             .collect(OutputBuilder.joining(Symbol.COMMA)))
                     .add(Symbol.RIGHT_PARENTHESIS);
         }
-        if(start) {
+        if (start) {
             outputBuilder.add(guideGenerator.start());
         }
         if (last) {
@@ -789,6 +790,12 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     @Override
     public List<Variable> variables() {
         return object.variables();
+    }
+
+    public boolean objectIsThisOrSuper(InspectionProvider inspectionProvider) {
+        if (object instanceof VariableExpression ve && ve.variable() instanceof This) return true;
+        MethodInspection methodInspection = inspectionProvider.getMethodInspection(methodInfo);
+        return !methodInspection.isStatic() && objectIsImplicit;
     }
 
 }

@@ -638,8 +638,8 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                     .forEach(this::markRead);
         }
 
-        public void setDelayOnPrecondition() {
-            precondition = DelayedExpression.forPrecondition(evaluationContext.getPrimitives());
+        public void addDelayOnPrecondition() {
+            addPrecondition(DelayedExpression.forPrecondition(evaluationContext.getPrimitives()));
         }
     }
 }

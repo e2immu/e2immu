@@ -500,7 +500,7 @@ public class Resolver {
                             .filter(w -> w instanceof MethodInfo).map(w -> (MethodInfo) w).collect(Collectors.toSet());
 
                     MethodResolution.Builder methodResolutionBuilder = new MethodResolution.Builder();
-                    methodResolutionBuilder.methodsOfOwnClassReached.set(methodsReached);
+                    methodResolutionBuilder.setMethodsOfOwnClassReached(methodsReached);
 
                     methodCreatesObjectOfSelf(methodInfo, methodResolutionBuilder);
                     computeStaticMethodCallsOnly(methodInfo, methodResolutionBuilder);
@@ -615,7 +615,7 @@ public class Resolver {
                                                  MethodInfo methodInfo) {
         TypeInspection typeInspection = inspectionProvider.getTypeInspection(methodInfo.typeInfo);
         for (MethodInfo other : typeInspection.methods()) {
-            if (!other.isPrivate() && builders.get(other).methodsOfOwnClassReached.get().contains(methodInfo)) {
+            if (!other.isPrivate() && builders.get(other).getMethodsOfOwnClassReached().contains(methodInfo)) {
                 return true;
             }
         }
@@ -623,7 +623,7 @@ public class Resolver {
             if (!fieldInfo.isPrivate() && fieldInfo.fieldInspection.get().fieldInitialiserIsSet()) {
                 FieldInspection.FieldInitialiser fieldInitialiser = fieldInfo.fieldInspection.get().getFieldInitialiser();
                 if (fieldInitialiser.implementationOfSingleAbstractMethod() != null &&
-                        builders.get(fieldInitialiser.implementationOfSingleAbstractMethod()).methodsOfOwnClassReached.get().contains(methodInfo)) {
+                        builders.get(fieldInitialiser.implementationOfSingleAbstractMethod()).getMethodsOfOwnClassReached().contains(methodInfo)) {
                     return true;
                 }
             }
@@ -635,7 +635,7 @@ public class Resolver {
                                              MethodInfo methodInfo) {
         TypeInspection typeInspection = inspectionProvider.getTypeInspection(methodInfo.typeInfo);
         for (MethodInfo other : typeInspection.constructors()) {
-            if (builders.get(other).methodsOfOwnClassReached.get().contains(methodInfo)) {
+            if (builders.get(other).getMethodsOfOwnClassReached().contains(methodInfo)) {
                 return true;
             }
         }
@@ -648,7 +648,7 @@ public class Resolver {
                     fieldInitialiser.initialiser().visit(elt -> {
                         if (elt instanceof MethodCall methodCall) {
                             if (methodCall.methodInfo == methodInfo ||
-                                    builders.get(methodCall.methodInfo).methodsOfOwnClassReached.get().contains(methodInfo)) {
+                                    builders.get(methodCall.methodInfo).getMethodsOfOwnClassReached().contains(methodInfo)) {
                                 found.set(true);
                             }
                         }

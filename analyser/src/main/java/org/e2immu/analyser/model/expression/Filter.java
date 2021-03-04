@@ -174,9 +174,22 @@ public class Filter {
                 if (vars.size() == 1 && vars.get(0) instanceof FieldReference fr) {
                     return new FilterResult<FieldReference>(Map.of(fr, gt0), defaultRest);
                 }
+            } else if (Primitives.isBoolean(value.returnType())) {
+                FieldReference fieldReference = extractBooleanFieldReference(value);
+                if (fieldReference != null) {
+                    return new FilterResult<FieldReference>(Map.of(fieldReference, value), defaultRest);
+                }
             }
             return null;
         };
+    }
+
+    private static FieldReference extractBooleanFieldReference(Expression value) {
+        Expression v;
+        if (value instanceof Negation negation) v = negation.expression;
+        else v = value;
+        if (v instanceof VariableExpression ve && ve.variable() instanceof FieldReference fr) return fr;
+        return null;
     }
 
     private static FieldReference extractFieldReference(Expression value) {

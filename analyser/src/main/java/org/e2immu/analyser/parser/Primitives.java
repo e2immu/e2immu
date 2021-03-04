@@ -73,6 +73,11 @@ public class Primitives {
         return typeInfo != null && "boolean".equals(typeInfo.fullyQualifiedName);
     }
 
+    public static boolean isBoolean(ParameterizedType pt) {
+        if (pt == null || pt.arrays != 0) return false;
+        return pt.typeInfo != null && "boolean".equals(pt.typeInfo.fullyQualifiedName);
+    }
+
     public final TypeInfo boxedBooleanTypeInfo = new TypeInfo(JAVA_LANG, "Boolean");
 
     public static boolean isBoxedBoolean(TypeInfo typeInfo) {
@@ -343,7 +348,7 @@ public class Primitives {
     }
 
     public static boolean isPrimitiveExcludingVoid(TypeInfo typeInfo) {
-        if(typeInfo == null) return false;
+        if (typeInfo == null) return false;
         return isByte(typeInfo) || isShort(typeInfo) || isInt(typeInfo) || isLong(typeInfo) ||
                 isChar(typeInfo) || isFloat(typeInfo) || isDouble(typeInfo) || isBoolean(typeInfo);
     }
@@ -468,6 +473,10 @@ public class Primitives {
                 isLong(typeInfo) || isBoxedLong(typeInfo) ||
                 isShort(typeInfo) || isBoxedShort(typeInfo) ||
                 isByte(typeInfo) || isBoxedByte(typeInfo);
+    }
+
+    public static boolean isNumeric(ParameterizedType parameterizedType) {
+        return parameterizedType != null && parameterizedType.arrays == 0 && isNumeric(parameterizedType.typeInfo);
     }
 
     public static boolean isNumeric(TypeInfo typeInfo) {

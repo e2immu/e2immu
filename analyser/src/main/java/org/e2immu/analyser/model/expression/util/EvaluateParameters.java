@@ -170,7 +170,9 @@ public class EvaluateParameters {
             MethodAnalysis methodAnalysis = evaluationContext.getAnalyserContext().getMethodAnalysis(methodInfo);
             Expression precondition = methodAnalysis.getPrecondition();
             if (precondition == null) {
-                builder.setDelayOnPrecondition();
+                boolean callingMyself = evaluationContext.getCurrentMethod() != null &&
+                        methodInfo == evaluationContext.getCurrentMethod().methodInfo;
+                if (!partOfCallCycle && !callingMyself) builder.addDelayOnPrecondition();
             } else if (!precondition.isBooleanConstant()) {
                 // there is a precondition, and we have a list of values... let's see what we can learn
                 // the precondition is using parameter info's as variables so we'll have to substitute
