@@ -242,7 +242,7 @@ public class Test_17_Container extends CommonTestRunner {
                     } else if ("1.0.0".equals(d.statementId())) {
                         Assert.assertEquals("nullable instance type Set<String>", d.currentValue().toString());
                     } else if ("1".equals(d.statementId())) {
-                        Assert.assertEquals("null==org.e2immu.analyser.testexample.Container_3.s$0?nullable instance type Set<String>:nullable instance type Set<String>", d.currentValue().toString());
+                        Assert.assertEquals("nullable instance type Set<String>", d.currentValue().toString());
                     }
                 }
             }

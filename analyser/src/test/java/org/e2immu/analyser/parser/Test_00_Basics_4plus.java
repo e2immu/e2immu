@@ -355,7 +355,7 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
             }
         };
 
-        TypeContext typeContext = testClass("Basics_6", 0, 11, new DebugConfiguration.Builder()
+        TypeContext typeContext = testClass("Basics_6", 0, 10, new DebugConfiguration.Builder()
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
@@ -483,7 +483,7 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
                     }
                     if ("1.0.3".equals(d.statementId())) {
                         Assert.assertEquals("1+" + I1, d.currentValue().toString());
-                        Assert.assertEquals("1.0.3-C", d.variableInfo().getReadId());
+                        Assert.assertEquals("1.0.2-C", d.variableInfo().getReadId());
                     }
                 }
                 if (I.equals(d.variableName())) {

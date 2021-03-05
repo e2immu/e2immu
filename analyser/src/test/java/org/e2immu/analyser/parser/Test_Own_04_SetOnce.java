@@ -68,10 +68,15 @@ public class Test_Own_04_SetOnce extends CommonTestRunner {
 
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("get".equals(d.methodInfo().name)) {
-                if("0".equals(d.statementId())) {
+                if ("0".equals(d.statementId())) {
                     Assert.assertEquals(0, d.statementAnalysis().flowData.getTimeAfterSubBlocks());
+
+                    Assert.assertEquals("true", d.statementAnalysis().stateData
+                            .getConditionManagerForNextStatement().state().toString());
+                    Assert.assertEquals("true", d.statementAnalysis().stateData
+                            .getConditionManagerForNextStatement().precondition().toString());
                 }
-                if("1".equals(d.statementId())){
+                if ("1".equals(d.statementId())) {
                     Assert.assertEquals(d.iteration() == 0,
                             d.statementAnalysis().methodLevelData.internalObjectFlowNotYetFrozen());
                     Assert.assertEquals(0, d.statementAnalysis().flowData.getTimeAfterSubBlocks());
@@ -88,7 +93,32 @@ public class Test_Own_04_SetOnce extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             final String TYPE = "org.e2immu.analyser.util.SetOnce";
             final String T0 = TYPE + ".t$0";
+            int n = d.methodInfo().methodInspection.get().getParameters().size();
 
+            if ("get".equals(d.methodInfo().name) && n == 0) {
+                if("0".equals(d.statementId())) {
+                    if (T0.equals(d.variableName())) {
+                        Assert.assertTrue(d.iteration() > 0);
+                        Assert.assertEquals("nullable instance type T", d.currentValue().toString());
+                        Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+                    }
+                }
+                if ("1".equals(d.statementId())) {
+                    if (d.variable() instanceof ReturnVariable) {
+                        String expectValue = d.iteration() == 0 ? "<f:t>" : T0;
+                        Assert.assertEquals(expectValue, d.currentValue().toString());
+                        int expectCnn = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
+                        Assert.assertEquals(expectCnn, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+                      //  Assert.assertEquals(expectCnn, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                    }
+                    if (T0.equals(d.variableName())) {
+                        Assert.assertTrue(d.iteration() > 0);
+                        Assert.assertTrue(d.variableInfoContainer().isPrevious());
+                        Assert.assertEquals("nullable instance type T", d.currentValue().toString());
+                        Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+                    }
+                }
+            }
             if ("getOrElse".equals(d.methodInfo().name)) {
                 if ("0.0.0".equals(d.statementId())) {
                     if (d.variable() instanceof ReturnVariable) {
@@ -114,8 +144,8 @@ public class Test_Own_04_SetOnce extends CommonTestRunner {
                         Assert.assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
                     }
                 }
-                if("0".equals(d.statementId())) {
-                    if(d.variable() instanceof ReturnVariable) {
+                if ("0".equals(d.statementId())) {
+                    if (d.variable() instanceof ReturnVariable) {
                         String expectValue = switch (d.iteration()) {
                             case 0 -> "<m:isSet>?<m:get>:<return value>";
                             case 1 -> "null==<f:t>?<return value>:<f:t>";
@@ -129,8 +159,7 @@ public class Test_Own_04_SetOnce extends CommonTestRunner {
                         String expectValue = switch (d.iteration()) {
                             case 0 -> "<m:isSet>?<m:get>:alternative";
                             case 1 -> "null==<f:t>?alternative:<f:t>";
-                            // TODO can this be simplified?
-                            default -> "null==(null==org.e2immu.analyser.util.SetOnce.t$0?nullable instance type T:nullable instance type T)?alternative:null==org.e2immu.analyser.util.SetOnce.t$0?nullable instance type T:nullable instance type T";
+                            default -> "null==org.e2immu.analyser.util.SetOnce.t$0?alternative:org.e2immu.analyser.util.SetOnce.t$0";
                         };
                         Assert.assertEquals(expectValue, d.currentValue().toString());
                     }
@@ -230,7 +259,7 @@ public class Test_Own_04_SetOnce extends CommonTestRunner {
                 if (d.iteration() <= 1) {
                     Assert.assertNull(d.methodAnalysis().getSingleReturnValue());
                 } else {
-              //      Assert.assertEquals("null==t?alternative:t", d.methodAnalysis().getSingleReturnValue().toString());
+                    //      Assert.assertEquals("null==t?alternative:t", d.methodAnalysis().getSingleReturnValue().toString());
                 }
 
                 ParameterAnalysis alternative = d.parameterAnalyses().get(0);

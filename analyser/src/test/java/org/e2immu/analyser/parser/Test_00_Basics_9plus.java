@@ -300,7 +300,7 @@ public class Test_00_Basics_9plus extends CommonTestRunner {
             int cnn = d.getProperty(VariableProperty.CONTEXT_NOT_NULL);
             if ("getT".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof FieldReference t && t.fieldInfo.name.equals("t")) {
-                    if("0".equals(d.statementId())) {
+                    if ("0".equals(d.statementId())) {
                         VariableInfo initial = d.variableInfoContainer().getPreviousOrInitial();
                         Assert.assertEquals(MultiLevel.NULLABLE, initial.getProperty(VariableProperty.CONTEXT_NOT_NULL));
 
@@ -314,7 +314,7 @@ public class Test_00_Basics_9plus extends CommonTestRunner {
                     if ("0.0.0".equals(d.statementId())) {
                         Assert.assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
                     } else {
-                        int expectCnn = MultiLevel.NULLABLE;
+                        int expectCnn = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
                         Assert.assertEquals("Stmt " + d.statementId() + " it " + d.iteration(), expectCnn, cnn);
                     }
                 }

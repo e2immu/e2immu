@@ -415,11 +415,12 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             } else {
                 if (vic.hasEvaluation()) vic.copy(); //otherwise, variable not assigned, not read
             }
-            ensureLocalCopiesOfConfirmedVariableFields(evaluationContext, vic);
         });
         if (copyFrom != null) {
             explicitlyPropagateVariables(copyFrom, previous == null);
         }
+        // this comes AFTER explicitly propagating already existing local copies of confirmed variables
+        variables.toImmutableMap().values().forEach(vic -> ensureLocalCopiesOfConfirmedVariableFields(evaluationContext, vic));
     }
 
     /* explicitly copy local variables from above or previous (they cannot be created on demand)

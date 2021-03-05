@@ -348,6 +348,11 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         }
     }
 
+    @Override
+    public boolean isPrevious() {
+        return previousOrInitial.isLeft();
+    }
+
     private VariableInfoImpl prepareForWritingContextProperties(VariableInfo vi1) {
         VariableInfoImpl write = new VariableInfoImpl(vi1.variable(), vi1.getAssignmentId(),
                 vi1.getReadId(), vi1.getStatementTime(), vi1.getReadAtStatementTimes());
