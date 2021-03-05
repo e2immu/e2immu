@@ -38,6 +38,7 @@ public class FlipSwitch {
     }
 
     @NotModified
+    @TestMark("t")
     public boolean isSet() {
         return t;
     }

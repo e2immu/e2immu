@@ -21,16 +21,11 @@ package org.e2immu.analyser.parser;
 
 import ch.qos.logback.classic.Level;
 import org.e2immu.analyser.analyser.AnalysisStatus;
-import org.e2immu.analyser.analyser.EvaluationResult;
-import org.e2immu.analyser.analyser.LinkedVariables;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.inspector.TypeContext;
-import org.e2immu.analyser.model.Qualification;
-import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.Formatter;
 import org.e2immu.analyser.output.FormattingOptions;
 import org.e2immu.analyser.output.OutputBuilder;
-import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.resolver.SortedType;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -126,12 +121,21 @@ public abstract class CommonTestRunner {
         return execute(configuration, errorsToExpect, warningsToExpect);
     }
 
-    protected TypeContext testUtilClass(List<String> classNames,
-                                        int errorsToExpect,
-                                        int warningsToExpect,
-                                        DebugConfiguration debugConfiguration) throws IOException {
+    protected void testUtilClass(List<String> utilClasses,
+                                 int errorsToExpect,
+                                 int warningsToExpect,
+                                 DebugConfiguration debugConfiguration) throws IOException {
+        testWithUtilClasses(List.of(), utilClasses, errorsToExpect, warningsToExpect, debugConfiguration);
+    }
+
+    protected void testWithUtilClasses(List<String> testClasses,
+                                       List<String> utilClasses,
+                                       int errorsToExpect,
+                                       int warningsToExpect,
+                                       DebugConfiguration debugConfiguration) throws IOException {
         InputConfiguration.Builder builder = new InputConfiguration.Builder()
                 .addSources("src/main/java")
+                .addSources("src/test/java")
                 .addAnnotatedAPISources("../annotatedAPIs/src/main/java")
                 .addClassPath(InputConfiguration.DEFAULT_CLASSPATH)
                 .addClassPath(Input.JAR_WITH_PATH_PREFIX + "com/google/common/collect")
@@ -145,7 +149,9 @@ public abstract class CommonTestRunner {
                 .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/apache/http")
                 .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/apache/commons/cli")
                 .addClassPath("jmods/java.xml.jmod");
-        classNames.forEach(className -> builder.addRestrictSourceToPackages("org.e2immu.analyser.util." + className));
+
+        testClasses.forEach(className -> builder.addRestrictSourceToPackages("org.e2immu.analyser.testexample." + className));
+        utilClasses.forEach(className -> builder.addRestrictSourceToPackages("org.e2immu.analyser.util." + className));
 
         Configuration configuration = new Configuration.Builder()
                 .addDebugLogTargets(List.of(ANALYSER,
@@ -171,7 +177,7 @@ public abstract class CommonTestRunner {
                 .setDebugConfiguration(debugConfiguration)
                 .setInputConfiguration(builder.build())
                 .build();
-        return execute(configuration, errorsToExpect, warningsToExpect);
+        execute(configuration, errorsToExpect, warningsToExpect);
     }
 
     private TypeContext execute(Configuration configuration, int errorsToExpect, int warningsToExpect) throws IOException {

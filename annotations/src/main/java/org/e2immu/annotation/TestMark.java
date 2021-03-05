@@ -15,23 +15,25 @@
  * limitations under the License.
  */
 
-package org.e2immu.analyser.testexample;
+package org.e2immu.annotation;
 
-import org.e2immu.analyser.util.FlipSwitch;
-import org.e2immu.annotation.E2Container;
-import org.e2immu.annotation.TestMark;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
-/*
-Use types in util to become an eventually immutable type
-
+/**
+ * Annotation to mark a non-modifying method, returning a boolean
+ * on whether the mark has been achieved or not
  */
-@E2Container(after = "flipSwitch")
-public class EventuallyImmutableUtil_0 {
+@Retention(RetentionPolicy.CLASS)
+@Target(ElementType.METHOD)
+public @interface TestMark {
+    boolean absent() default false;
 
-    public final FlipSwitch flipSwitch = new FlipSwitch();
+    boolean contract() default false;
 
-    @TestMark("flipSwitch")
-    public boolean isReady() {
-        return flipSwitch.isSet();
-    }
+    String value();
+
+    boolean isMark() default true;
 }

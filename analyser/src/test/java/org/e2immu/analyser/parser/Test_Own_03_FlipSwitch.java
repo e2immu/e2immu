@@ -42,9 +42,10 @@ public class Test_Own_03_FlipSwitch extends CommonTestRunner {
             }
         };
 
-        testUtilClass(List.of("FlipSwitch"), 0, 0, new DebugConfiguration.Builder()
-                .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
-                .build());
+        testWithUtilClasses(List.of(), List.of("FlipSwitch"), 0, 0,
+                new DebugConfiguration.Builder()
+                        .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
+                        .build());
     }
 
 }

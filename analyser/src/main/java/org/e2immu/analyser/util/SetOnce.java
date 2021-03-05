@@ -76,6 +76,7 @@ public class SetOnce<T> {
     }
 
     @NotModified
+    @TestMark("t")
     public boolean isSet() {
         return t != null;
     }
@@ -87,7 +88,7 @@ public class SetOnce<T> {
     }
 
     @Modified
-    @Only(before = "t")
+    @Mark("t") // conditionality left out at the moment
     public void copy(SetOnce<T> other) {
         if (other.isSet()) set(other.get());
     }

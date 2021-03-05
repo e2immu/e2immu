@@ -121,7 +121,7 @@ public class Test_Own_02_Either extends CommonTestRunner {
             Assert.assertEquals("(null==a||null==b)&&(null!=a||null!=b)",
                     d.methodAnalysis().getPrecondition().toString());
             ParameterAnalysis a = d.parameterAnalyses().get(0);
-            int expectNnp = d.iteration()==0 ? Level.DELAY: MultiLevel.NULLABLE;
+            int expectNnp = d.iteration() == 0 ? Level.DELAY : MultiLevel.NULLABLE;
             Assert.assertEquals(expectNnp, a.getProperty(VariableProperty.NOT_NULL_PARAMETER));
             ParameterAnalysis b = d.parameterAnalyses().get(1);
             Assert.assertEquals(expectNnp, b.getProperty(VariableProperty.NOT_NULL_PARAMETER));
@@ -143,7 +143,7 @@ public class Test_Own_02_Either extends CommonTestRunner {
 
     @Test
     public void test() throws IOException {
-        testUtilClass(List.of("Either"), 0, 2, new DebugConfiguration.Builder()
+        testWithUtilClasses(List.of(), List.of("Either"), 0, 2, new DebugConfiguration.Builder()
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)

@@ -25,7 +25,7 @@ import org.junit.Test;
 import java.io.IOException;
 import java.util.List;
 
-public class TestFreezable extends CommonTestRunner {
+public class Test_Own_05_Freezable extends CommonTestRunner {
 
     @Test
     public void test() throws IOException {

@@ -47,7 +47,6 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -273,6 +272,7 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
 
         CheckMarkOnly.checkOnly(messages, methodInfo, methodAnalysis);
         CheckMarkOnly.checkMark(messages, methodInfo, methodAnalysis);
+        CheckMarkOnly.checkTestMark(messages, methodInfo, methodAnalysis);
 
         getParameterAnalysers().forEach(ParameterAnalyser::check);
 
@@ -450,55 +450,84 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
 
         boolean mark = false;
         Boolean after = null;
-        for (Expression precondition : preconditions) {
-            String markLabel = TypeAnalyser.labelOfPreconditionForMarkAndOnly(precondition);
-            if (!approvedPreconditions.isSet(markLabel)) {
-                // not going to work...
-                continue;
+        Boolean test;
+        if (modified == Level.FALSE && preconditions.isEmpty()) {
+            if (methodAnalysis.getSingleReturnValue() == null) {
+                log(DELAYED, "Waiting for @TestMark, need single return value of {}", methodInfo.distinguishingName());
+                return DELAYS;
             }
-            Expression before = approvedPreconditions.get(markLabel);
-            // TODO parameters have different owners, so a precondition containing them cannot be the same in a different method
-            // we need a better solution
-            if (before.toString().equals(precondition.toString())) {
-                after = false;
-            } else {
-                Expression negated = Negation.negate(sharedState.evaluationContext, precondition);
-                if (before.toString().equals(negated.toString())) {
-                    if (after == null) after = true;
+            Expression srv = methodAnalysis.getSingleReturnValue();
+            if (srv instanceof InlinedMethod im) {
+                String markLabel = TypeAnalyser.labelOfPreconditionForMarkAndOnly(im.expression());
+                if (approvedPreconditions.isSet(markLabel)) {
+                    Expression before = approvedPreconditions.get(markLabel);
+                    Expression negated = Negation.negate(sharedState.evaluationContext, before);
+                    if(before.equals(im.expression())) {
+                        test = false;
+                    } else if(negated.equals(im.expression())) {
+                        test = true;
+                    } else {
+                        test = null;
+                    }
                 } else {
-                    E2ImmuAnnotationExpressions e2ae = analyserContext.getE2ImmuAnnotationExpressions();
-                    log(MARK, "No approved preconditions for {} in {}", precondition, methodInfo.distinguishingName());
-                    if (!methodAnalysis.annotations.isSet(e2ae.mark)) {
-                        methodAnalysis.annotations.put(e2ae.mark, false);
-                    }
-                    if (!methodAnalysis.annotations.isSet(e2ae.only)) {
-                        methodAnalysis.annotations.put(e2ae.only, false);
-                    }
-                    methodAnalysis.setMarkAndOnly(MethodAnalysis.NO_MARK_AND_ONLY);
-                    return DONE;
+                    test = null;
                 }
-            }
-
-            if (modified == Level.FALSE) {
-                log(MARK, "Method {} is @NotModified, so it'll be @Only rather than @Mark", methodInfo.distinguishingName());
             } else {
-                if (!mark && !after) {
-                    Boolean incompatible = TypeAnalyser.assignmentIncompatibleWithPrecondition(analyserContext,
-                            precondition, this, true);
-                    if (incompatible == null) {
-                        return DELAYS;
+                test = null;
+            }
+        } else {
+            test = null;
+            for (Expression precondition : preconditions) {
+                String markLabel = TypeAnalyser.labelOfPreconditionForMarkAndOnly(precondition);
+                if (!approvedPreconditions.isSet(markLabel)) {
+                    // not going to work...
+                    continue;
+                }
+                Expression before = approvedPreconditions.get(markLabel);
+                // TODO parameters have different owners, so a precondition containing them cannot be the same in a different method
+                // we need a better solution
+                if (before.toString().equals(precondition.toString())) {
+                    after = false;
+                } else {
+                    Expression negated = Negation.negate(sharedState.evaluationContext, precondition);
+                    if (before.toString().equals(negated.toString())) {
+                        if (after == null) after = true;
+                    } else {
+                        E2ImmuAnnotationExpressions e2ae = analyserContext.getE2ImmuAnnotationExpressions();
+                        log(MARK, "No approved preconditions for {} in {}", precondition, methodInfo.distinguishingName());
+                        if (!methodAnalysis.annotations.isSet(e2ae.mark)) {
+                            methodAnalysis.annotations.put(e2ae.mark, false);
+                        }
+                        if (!methodAnalysis.annotations.isSet(e2ae.only)) {
+                            methodAnalysis.annotations.put(e2ae.only, false);
+                        }
+                        methodAnalysis.setMarkAndOnly(MethodAnalysis.NO_MARK_AND_ONLY);
+                        return DONE;
                     }
-                    mark = incompatible;
+                }
+
+                if (modified == Level.FALSE) {
+                    log(MARK, "Method {} is @NotModified, so it'll be @Only rather than @Mark", methodInfo.distinguishingName());
+                } else {
+                    if (!mark && !after) {
+                        Boolean incompatible = TypeAnalyser.assignmentIncompatibleWithPrecondition(analyserContext,
+                                precondition, this, true);
+                        if (incompatible == null) {
+                            return DELAYS;
+                        }
+                        mark = incompatible;
+                    }
                 }
             }
         }
-        if (after == null) {
+        if (after == null && test == null) {
             methodAnalysis.setMarkAndOnly(MethodAnalysis.NO_MARK_AND_ONLY);
             return DONE;
         }
 
         String jointMarkLabel = TypeAnalyser.labelOfPreconditionForMarkAndOnly(preconditions);
-        MethodAnalysis.MarkAndOnly markAndOnly = new MethodAnalysis.MarkAndOnly(preconditions, jointMarkLabel, mark, after);
+        MethodAnalysis.MarkAndOnly markAndOnly = new MethodAnalysis.MarkAndOnly(preconditions,
+                jointMarkLabel, mark, after, test);
         methodAnalysis.setMarkAndOnly(markAndOnly);
         log(MARK, "Marking {} with only data {}", methodInfo.distinguishingName(), markAndOnly);
         E2ImmuAnnotationExpressions e2ae = analyserContext.getE2ImmuAnnotationExpressions();
@@ -507,6 +536,18 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
                     List.of(new MemberValuePair("value",
                             new StringConstant(analyserContext.getPrimitives(), jointMarkLabel))));
             methodAnalysis.annotations.put(markAnnotation, true);
+            methodAnalysis.annotations.put(e2ae.only, false);
+        } else if (test != null) {
+            AnnotationExpression testMarkAnnotation = new AnnotationExpressionImpl(e2ae.testMark.typeInfo(),
+                    test ?
+                            List.of(new MemberValuePair("value",
+                                    new StringConstant(analyserContext.getPrimitives(), jointMarkLabel))) :
+                            List.of(new MemberValuePair("value",
+                                            new StringConstant(analyserContext.getPrimitives(), jointMarkLabel)),
+                                    new MemberValuePair("isMark",
+                                            new BooleanConstant(analyserContext.getPrimitives(), false)))
+            );
+            methodAnalysis.annotations.put(testMarkAnnotation, true);
             methodAnalysis.annotations.put(e2ae.only, false);
         } else {
             AnnotationExpression onlyAnnotation = new AnnotationExpressionImpl(e2ae.only.typeInfo(),

@@ -96,7 +96,7 @@ public class Test_Own_04_SetOnce extends CommonTestRunner {
             int n = d.methodInfo().methodInspection.get().getParameters().size();
 
             if ("get".equals(d.methodInfo().name) && n == 0) {
-                if("0".equals(d.statementId())) {
+                if ("0".equals(d.statementId())) {
                     if (T0.equals(d.variableName())) {
                         Assert.assertTrue(d.iteration() > 0);
                         Assert.assertEquals("nullable instance type T", d.currentValue().toString());
@@ -109,7 +109,7 @@ public class Test_Own_04_SetOnce extends CommonTestRunner {
                         Assert.assertEquals(expectValue, d.currentValue().toString());
                         int expectCnn = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
                         Assert.assertEquals(expectCnn, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
-                      //  Assert.assertEquals(expectCnn, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                        //  Assert.assertEquals(expectCnn, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
                     }
                     if (T0.equals(d.variableName())) {
                         Assert.assertTrue(d.iteration() > 0);
@@ -271,7 +271,7 @@ public class Test_Own_04_SetOnce extends CommonTestRunner {
             }
         };
 
-        testUtilClass(List.of("SetOnce"), 0, 0, new DebugConfiguration.Builder()
+        testWithUtilClasses(List.of(), List.of("SetOnce"), 0, 0, new DebugConfiguration.Builder()
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)

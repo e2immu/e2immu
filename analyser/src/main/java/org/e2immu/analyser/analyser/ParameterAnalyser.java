@@ -387,7 +387,8 @@ public class ParameterAnalyser {
             parameterAnalysis.setProperty(VariableProperty.CONTEXT_NOT_NULL, MultiLevel.NULLABLE);
             parameterAnalysis.setProperty(VariableProperty.NOT_MODIFIED_1, Level.FALSE);
 
-            if (lastStatementAnalysis != null && parameterInfo.owner.isNotOverridingAnyOtherMethod()) {
+            if (lastStatementAnalysis != null && parameterInfo.owner.isNotOverridingAnyOtherMethod()
+                    && !parameterInfo.owner.isCompanionMethod()) {
                 messages.add(Message.newMessage(new Location(parameterInfo.owner),
                         Message.UNUSED_PARAMETER, parameterInfo.simpleName()));
             }

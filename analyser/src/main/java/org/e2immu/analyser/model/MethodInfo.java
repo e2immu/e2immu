@@ -431,4 +431,8 @@ public class MethodInfo implements WithInspectionAndAnalysis {
         Set<MethodInfo> reached = methodResolution.get("Method "+fullyQualifiedName).methodsOfOwnClassReached();
         return reached.size() > 1 && reached.contains(this);
     }
+
+    public boolean isCompanionMethod() {
+        return CompanionMethodName.extract(name) != null;
+    }
 }

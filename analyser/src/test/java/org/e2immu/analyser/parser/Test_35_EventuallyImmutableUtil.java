@@ -23,8 +23,11 @@ import org.e2immu.analyser.config.DebugConfiguration;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.List;
 
 public class Test_35_EventuallyImmutableUtil extends CommonTestRunner {
+
+    private static final List<String> FLIP_SWITCH_SET_ONCE = List.of("FlipSwitch", "SetOnce");
 
     public Test_35_EventuallyImmutableUtil() {
         super(true);
@@ -32,25 +35,29 @@ public class Test_35_EventuallyImmutableUtil extends CommonTestRunner {
 
     @Test
     public void test_0() throws IOException {
-        testClass("EventuallyImmutableUtil_0", 0, 1, new DebugConfiguration.Builder()
-                .build());
+        testWithUtilClasses(List.of("EventuallyImmutableUtil_0"), FLIP_SWITCH_SET_ONCE,
+                0, 0, new DebugConfiguration.Builder()
+                        .build());
     }
 
     @Test
     public void test_1() throws IOException {
-        testClass("EventuallyImmutableUtil_1", 0, 0, new DebugConfiguration.Builder()
-                .build());
+        testWithUtilClasses(List.of("EventuallyImmutableUtil_1"), FLIP_SWITCH_SET_ONCE,
+                0, 0, new DebugConfiguration.Builder()
+                        .build());
     }
 
     @Test
     public void test_2() throws IOException {
-        testClass("EventuallyImmutableUtil_2", 0, 0, new DebugConfiguration.Builder()
-                .build());
+        testWithUtilClasses(List.of("EventuallyImmutableUtil_2"), FLIP_SWITCH_SET_ONCE,
+                0, 0, new DebugConfiguration.Builder()
+                        .build());
     }
 
     @Test
     public void test_3() throws IOException {
-        testClass("EventuallyImmutableUtil_3", 0, 0, new DebugConfiguration.Builder()
-                .build());
+        testWithUtilClasses(List.of("EventuallyImmutableUtil_3"), FLIP_SWITCH_SET_ONCE,
+                0, 0, new DebugConfiguration.Builder()
+                        .build());
     }
 }

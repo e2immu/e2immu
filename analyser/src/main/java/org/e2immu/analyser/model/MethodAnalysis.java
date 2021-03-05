@@ -189,10 +189,11 @@ public interface MethodAnalysis extends Analysis {
 
     // the name refers to the @Mark and @Only annotations. It is the data for this annotation.
 
-    MarkAndOnly NO_MARK_AND_ONLY = new MarkAndOnly(List.of(), "", false, null);
+    MarkAndOnly NO_MARK_AND_ONLY = new MarkAndOnly(List.of(), "", false, null, null);
 
     record MarkAndOnly(List<Expression> preconditions, String markLabel, boolean mark,
-                       Boolean after) { // null for a @Mark without @Only
+                       Boolean after, // null for a @Mark without @Only
+                       Boolean test) { // true for isSet, false for !isSet, null for absent
 
         @Override
         public String toString() {

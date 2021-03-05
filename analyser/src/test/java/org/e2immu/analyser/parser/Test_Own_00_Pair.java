@@ -57,7 +57,7 @@ public class Test_Own_00_Pair extends CommonTestRunner {
             Assert.assertEquals(expectIndependent, d.typeAnalysis().getProperty(VariableProperty.INDEPENDENT));
         };
 
-        testUtilClass(List.of("Pair"), 0, 0, new DebugConfiguration.Builder()
+        testWithUtilClasses(List.of(), List.of("Pair"), 0, 0, new DebugConfiguration.Builder()
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)

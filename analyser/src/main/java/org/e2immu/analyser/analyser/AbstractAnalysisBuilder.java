@@ -178,6 +178,7 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
 
         AnnotationExpression only = null;
         AnnotationExpression mark = null;
+        AnnotationExpression testMark = null;
 
         VariableProperty modified = isVariable ? VariableProperty.MODIFIED_VARIABLE : VariableProperty.MODIFIED_METHOD;
 
@@ -235,6 +236,8 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
                     setProperty(VariableProperty.INDEPENDENT, MultiLevel.FALSE);
                 } else if (e2ImmuAnnotationExpressions.mark.typeInfo() == t) {
                     mark = annotationExpression;
+                } else if (e2ImmuAnnotationExpressions.testMark.typeInfo() == t) {
+                    testMark = annotationExpression;
                 } else if (e2ImmuAnnotationExpressions.only.typeInfo() == t) {
                     only = annotationExpression;
                 } else if (e2ImmuAnnotationExpressions.singleton.typeInfo() == t) {
@@ -267,7 +270,7 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
         if (mark != null && only == null) {
             String markValue = mark.extract("value", "");
             List<Expression> values = safeSplit(markValue).stream().map(ContractMark::new).collect(Collectors.toList());
-            ((MethodAnalysisImpl.Builder) this).writeMarkAndOnly(new MethodAnalysis.MarkAndOnly(values, markValue, true, null));
+            ((MethodAnalysisImpl.Builder) this).writeMarkAndOnly(new MethodAnalysis.MarkAndOnly(values, markValue, true, null, null));
         } else if (only != null) {
             String markValue = mark == null ? null : mark.extract("value", "");
             String before = only.extract("before", "");
@@ -278,7 +281,12 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
                 LOGGER.warn("Have both @Only and @Mark, with different values? {} vs {}", onlyMark, markValue);
             }
             List<Expression> values = safeSplit(onlyMark).stream().map(ContractMark::new).collect(Collectors.toList());
-            ((MethodAnalysisImpl.Builder) this).writeMarkAndOnly(new MethodAnalysis.MarkAndOnly(values, onlyMark, mark != null, isAfter));
+            ((MethodAnalysisImpl.Builder) this).writeMarkAndOnly(new MethodAnalysis.MarkAndOnly(values, onlyMark, mark != null, isAfter, null));
+        } else if(testMark != null) {
+            String markValue = testMark.extract("value", "");
+            boolean isMark = testMark.extract("isMark", true);
+            List<Expression> values = safeSplit(markValue).stream().map(ContractMark::new).collect(Collectors.toList());
+            ((MethodAnalysisImpl.Builder) this).writeMarkAndOnly(new MethodAnalysis.MarkAndOnly(values, markValue, false, null, isMark));
         }
         return messages;
     }
