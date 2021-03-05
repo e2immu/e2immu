@@ -82,6 +82,6 @@ public class Basics_6 {
     }
 
     void nonPrivateMethod() {
-        // can always be overridden
+        // can always be overridden, but as of 20200305, we study what we see (code in EvaluateMethodCall)
     }
 }

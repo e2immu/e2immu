@@ -189,7 +189,7 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
 
                 if (d.variable() instanceof ReturnVariable) {
                     if ("4".equals(d.statementId())) {
-                        String expectValue = d.iteration() == 0 ? "<v:v3>" : "v3";
+                        String expectValue = d.iteration() == 0 ? "<v:v3>" : "Basics_6.someMinorMethod(org.e2immu.analyser.testexample.Basics_6.field$0)";
                         Assert.assertEquals(expectValue, d.currentValue().toString());
                         int expectNotNull = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
                         Assert.assertEquals(expectNotNull, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
@@ -275,11 +275,11 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
             if ("test4".equals(d.methodInfo().name)) {
                 if ("1".equals(d.statementId())) {
                     Assert.assertEquals(0, timeI);
-                    Assert.assertEquals(1, timeE);
-                    Assert.assertEquals(1, timeM);
+                    Assert.assertEquals(0, timeE);
+                    Assert.assertEquals(0, timeM);
                 }
-                if (d.iteration() > 0) {
-                    Assert.assertNull(d.haveError(Message.ASSERT_EVALUATES_TO_CONSTANT_TRUE));
+                if (d.iteration() > 1) {
+                    Assert.assertNotNull(d.haveError(Message.ASSERT_EVALUATES_TO_CONSTANT_TRUE));
                 }
             }
             if ("test3".equals(d.methodInfo().name)) {
@@ -355,7 +355,7 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
             }
         };
 
-        TypeContext typeContext = testClass("Basics_6", 0, 10, new DebugConfiguration.Builder()
+        TypeContext typeContext = testClass("Basics_6", 0, 11, new DebugConfiguration.Builder()
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)

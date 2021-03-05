@@ -22,10 +22,7 @@ import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.analyser.VariableProperty;
-import org.e2immu.analyser.model.Element;
-import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.ParameterizedType;
-import org.e2immu.analyser.model.Qualification;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
@@ -499,27 +496,11 @@ public record And(Primitives primitives,
         return new And(primitives, objectFlow).append(evaluationContext, list.toArray(Expression[]::new));
     }
 
-    public CommonComponentResult findCommon(EvaluationContext evaluationContext, Expression other) {
-        if (other instanceof And otherAnd) {
-            List<Expression> common = new ArrayList<>(Math.min(expressions.size(), otherAnd.expressions.size()));
-            List<Expression> rest = new ArrayList<>(expressions.size());
-            Set<Expression> otherRest = new HashSet<>(otherAnd.expressions); // make the copy
-            for (Expression expression : expressions) {
-                if (otherRest.contains(expression)) {
-                    common.add(expression);
-                    otherRest.remove(expression);
-                } else {
-                    rest.add(expression);
-                }
-            }
-            return new CommonComponentResult(toAnd(evaluationContext, common), toAnd(evaluationContext, rest),
-                    toAnd(evaluationContext, otherRest));
-        }
-        if (expressions.contains(other)) {
-            return new CommonComponentResult(other, new And(primitives, objectFlow).append(evaluationContext,
-                    expressions.stream().filter(e -> !e.equals(other)).toArray(Expression[]::new)), new BooleanConstant(primitives, true));
-        }
-        return new CommonComponentResult(new BooleanConstant(primitives, true), this, other);
+    @Override
+    public Expression translate(TranslationMap translationMap) {
+        List<Expression> translated = expressions.stream().map(e -> e.translate(translationMap))
+                .collect(Collectors.toUnmodifiableList());
+        return new And(primitives, translated, objectFlow);
     }
 
     @Override

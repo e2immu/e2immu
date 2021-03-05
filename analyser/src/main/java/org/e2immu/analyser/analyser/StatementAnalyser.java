@@ -663,7 +663,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 log(ANALYSER, "Write value {} to variable {}", valueToWrite, variable.fullyQualifiedName());
                 // first do the properties that come with the value; later, we'll write the ones in changeData
                 Map<VariableProperty, Integer> valueProperties = sharedState.evaluationContext.getValueProperties(valueToWrite);
-                Map<VariableProperty, Integer> varProperties = sharedState.evaluationContext.getVariableProperties(valueToWrite, vi1.getStatementTime());
+                Map<VariableProperty, Integer> varProperties = sharedState.evaluationContext.getVariableProperties(valueToWrite, statementAnalysis.statementTime(EVALUATION));
                 Map<VariableProperty, Integer> merged = mergeAssignment(variable, valueProperties, varProperties, changeData.properties(),
                         contextNotNull, contextModified);
 
@@ -1204,7 +1204,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             Set<Variable> nullVariables = statementAnalysis.stateData.getConditionManagerForNextStatement()
                     .findIndividualNullInCondition(sharedState.evaluationContext, true);
             for (Variable nullVariable : nullVariables) {
-                if(nullVariable instanceof ParameterInfo) {
+                if (nullVariable instanceof ParameterInfo) {
                     log(VARIABLE_PROPERTIES, "Escape with check not null on {}", nullVariable.fullyQualifiedName());
 
                     // move from condition (x!=null) to property
@@ -2419,12 +2419,13 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
 
         @Override
         public LinkedVariables linkedVariables(Variable variable) {
+            if (variable.parameterizedType().isUnboundParameterType()) return LinkedVariables.EMPTY;
             TypeInfo typeInfo = variable.parameterizedType().bestTypeInfo();
             boolean notSelf = typeInfo != getCurrentType();
             if (notSelf) {
                 VariableInfo variableInfo = statementAnalysis.initialValueForReading(variable, getInitialStatementTime(), true);
                 int immutable = variableInfo.getProperty(IMMUTABLE);
-                if (immutable == MultiLevel.DELAY) return LinkedVariables.DELAY;
+                if (immutable == Level.DELAY) return LinkedVariables.DELAY;
                 if (MultiLevel.isE2Immutable(immutable)) return LinkedVariables.EMPTY;
             }
             VariableInfo variableInfo = statementAnalysis.initialValueForReading(variable, getInitialStatementTime(), true);

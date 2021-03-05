@@ -336,7 +336,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             return evaluationContext.getPropertyFromPreviousOrInitial(variable, variableProperty, statementTime);
         }
 
-        public void markRead(Variable variable) {
+        public Builder markRead(Variable variable) {
             ChangeData ecd = valueChanges.get(variable);
             ChangeData newEcd;
             if (ecd == null) {
@@ -355,6 +355,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             if (variable instanceof FieldReference fieldReference && fieldReference.scope instanceof This) {
                 markRead(fieldReference.scope);
             }
+            return this;
         }
 
         public ObjectFlow createLiteralObjectFlow(ParameterizedType parameterizedType) {

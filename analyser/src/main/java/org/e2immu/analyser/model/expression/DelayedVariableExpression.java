@@ -124,6 +124,11 @@ public record DelayedVariableExpression(String msg, String debug,
     }
 
     @Override
+    public Expression translate(TranslationMap translationMap) {
+        return this;
+    }
+
+    @Override
     public LinkedVariables linkedVariables(EvaluationContext evaluationContext) {
         return LinkedVariables.DELAY;
     }

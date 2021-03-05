@@ -426,6 +426,12 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
         public void setMarkAndOnly(MarkAndOnly markAndOnly) {
             this.markAndOnly.set(markAndOnly);
         }
+
+        public int lastStatementTime() {
+            StatementAnalysis last = getLastStatement();
+            if (last == null) return 0;
+            return last.flowData.getTimeAfterSubBlocks();
+        }
     }
 
     private static Set<MethodAnalysis> overrides(AnalysisProvider analysisProvider, MethodInfo methodInfo, MethodAnalysis methodAnalysis) {

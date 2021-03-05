@@ -53,7 +53,7 @@ public interface Expression extends Element, Comparable<Expression> {
 
     @Override
     default Expression translate(TranslationMap translationMap) {
-        return this;
+       throw new UnsupportedOperationException("all expressions need to have this implemented! "+getClass());
     }
 
     // ********************************

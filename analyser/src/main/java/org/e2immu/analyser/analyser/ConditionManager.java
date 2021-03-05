@@ -4,6 +4,7 @@ import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.variable.Variable;
+import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Primitives;
 
 import java.util.List;
@@ -330,6 +331,11 @@ public record ConditionManager(Expression condition,
         @Override
         public String newObjectIdentifier() {
             throw new UnsupportedOperationException("Should not be called");
+        }
+
+        @Override
+        public Expression currentValue(Variable variable, int statementTime, boolean isNotAssignmentTarget) {
+           return  new VariableExpression(variable, ObjectFlow.NO_FLOW);
         }
     }
 }

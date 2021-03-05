@@ -21,10 +21,7 @@ import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.analyser.VariableProperty;
-import org.e2immu.analyser.model.Element;
-import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.ParameterizedType;
-import org.e2immu.analyser.model.Qualification;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
@@ -266,4 +263,12 @@ public record Or(Primitives primitives,
     public List<? extends Element> subElements() {
         return expressions;
     }
+
+    @Override
+    public Expression translate(TranslationMap translationMap) {
+        List<Expression> translated = expressions.stream().map(e -> e.translate(translationMap))
+                .collect(Collectors.toUnmodifiableList());
+        return new Or(primitives, translated, objectFlow);
+    }
+
 }

@@ -116,12 +116,12 @@ public record VariableExpression(Variable variable,
     public EvaluationResult reEvaluate(EvaluationContext evaluationContext, Map<Expression, Expression> translation) {
         Expression inMap = translation.get(this);
         if (inMap != null) {
+            if (inMap instanceof VariableExpression ve) {
+                return evaluate(evaluationContext, ForwardEvaluationInfo.DEFAULT, ve.variable);
+            }
             return new EvaluationResult.Builder().setExpression(inMap).build();
         }
-        EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
-        builder.setExpression(this);
-        builder.markRead(variable);
-        return builder.build();
+        return new EvaluationResult.Builder(evaluationContext).setExpression(this).markRead(variable).build();
     }
 
     @Override

@@ -21,10 +21,7 @@ import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.analyser.VariableProperty;
-import org.e2immu.analyser.model.Element;
-import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.ParameterizedType;
-import org.e2immu.analyser.model.Qualification;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
@@ -314,5 +311,10 @@ public record GreaterThanZero(ParameterizedType booleanParameterizedType,
         if (predicate.test(this)) {
             expression.visit(predicate);
         }
+    }
+
+    @Override
+    public Expression translate(TranslationMap translationMap) {
+        return new GreaterThanZero(booleanParameterizedType, expression.translate(translationMap), allowEquals, objectFlow);
     }
 }

@@ -317,19 +317,25 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         builder.compose(objectResult, res.k.build());
 
         // before we return, increment the time, irrespective of NO_VALUE
-        if (!recursiveCall && (!methodInfo.methodResolution.isSet() || methodInfo.methodResolution.get().allowsInterrupts())) {
-            builder.incrementStatementTime();
+        if (!recursiveCall) {
+            boolean increment;
+            if (methodAnalysis.isBeingAnalysed()) {
+                StatementAnalysis lastStatement = methodAnalysis.getLastStatement();
+                if (lastStatement == null) {
+                    increment = false;
+                } else if (!lastStatement.flowData.initialTimeIsSet()) {
+                    return delayedMethod(builder, objectValue, parameterValues);
+                } else {
+                    increment = lastStatement.flowData.getTimeAfterSubBlocks() > 0;
+                }
+            } else {
+                increment = !methodInfo.methodResolution.isSet() || methodInfo.methodResolution.get().allowsInterrupts();
+            }
+            if (increment) builder.incrementStatementTime();
         }
 
         if (parameterValues.stream().anyMatch(evaluationContext::isDelayed)) {
-            Logger.log(DELAYED, "Delayed method call because one of the parameter values of {} is delayed: {}",
-                    methodInfo.name, parameterValues);
-            builder.setExpression(DelayedExpression.forMethod(methodInfo));
-            // set scope delay
-            objectValue.variables().forEach(variable -> builder.setProperty(variable, VariableProperty.SCOPE_DELAY, Level.TRUE));
-            object.variables().forEach(variable -> builder.setProperty(variable, VariableProperty.SCOPE_DELAY, Level.TRUE));
-
-            return builder.build();
+            return delayedMethod(builder, objectValue, parameterValues);
         }
 
         // access
@@ -402,6 +408,17 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         }
 
         checkCommonErrors(builder, evaluationContext, objectValue);
+        return builder.build();
+    }
+
+    private EvaluationResult delayedMethod(EvaluationResult.Builder builder, Expression objectValue, List<Expression> parameterValues) {
+        Logger.log(DELAYED, "Delayed method call because one of the parameter values of {} is delayed: {}",
+                methodInfo.name, parameterValues);
+        builder.setExpression(DelayedExpression.forMethod(methodInfo));
+        // set scope delay
+        objectValue.variables().forEach(variable -> builder.setProperty(variable, VariableProperty.SCOPE_DELAY, Level.TRUE));
+        object.variables().forEach(variable -> builder.setProperty(variable, VariableProperty.SCOPE_DELAY, Level.TRUE));
+
         return builder.build();
     }
 

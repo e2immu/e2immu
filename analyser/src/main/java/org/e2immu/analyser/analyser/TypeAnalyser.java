@@ -599,7 +599,8 @@ public class TypeAnalyser extends AbstractAnalyser {
                                     .individualStateInfo(evaluationContext, ve.variable());
                             if (!state.isBoolValueTrue()) {
                                 Map<Expression, Expression> map = Map.of(new VariableExpression(ve.variable()), new VariableExpression(variable));
-                                Expression stateInTermsOfField = state.reEvaluate(evaluationContext, map).getExpression();
+                                EvaluationContext neutralEc = new ConditionManager.EvaluationContextImpl(analyserContext);
+                                Expression stateInTermsOfField = state.reEvaluate(neutralEc, map).getExpression();
                                 return !isCompatible(evaluationContext, stateInTermsOfField, precondition);
                             }
                         }

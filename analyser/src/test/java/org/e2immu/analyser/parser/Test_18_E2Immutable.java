@@ -166,7 +166,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
     public void test_7() throws IOException {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("accept".equals(d.methodInfo().name) && "$1".equals(d.methodInfo().typeInfo.simpleName)) {
-                String expectValue = d.iteration() == 0 ? "<m:setI>" : "<no return value>";
+                String expectValue = d.iteration() <= 1 ? "<m:setI>" : "<no return value>";
                 Assert.assertEquals(expectValue, d.evaluationResult().value().toString());
             }
         };
@@ -196,7 +196,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
                 if (d.iteration() == 0) {
                     Assert.assertNull(d.methodAnalysis().getSingleReturnValue());
                 } else {
-                    Assert.assertEquals("org.e2immu.analyser.testexample.E2Immutable_7.SimpleContainer.i$0", d.methodAnalysis().getSingleReturnValue().toString());
+                    Assert.assertEquals("i", d.methodAnalysis().getSingleReturnValue().toString());
                 }
             }
         };

@@ -37,7 +37,7 @@ public class Test_Own_03_FlipSwitch extends CommonTestRunner {
     public void test() throws IOException {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("FlipSwitch".equals(d.typeInfo().simpleName)) {
-                String expectE2 = d.iteration() == 0 ? "{}" : "{t=!t}";
+                String expectE2 = d.iteration() <= 1 ? "{}" : "{t=!t}";
                 Assert.assertEquals(expectE2, d.typeAnalysis().getApprovedPreconditionsE2().toString());
             }
         };

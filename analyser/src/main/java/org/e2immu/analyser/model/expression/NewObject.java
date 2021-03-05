@@ -308,7 +308,7 @@ public record NewObject(
                 parameterExpressions.stream().map(translationMap::translateExpression).collect(Collectors.toList()),
                 minimalNotNull,
                 anonymousClass, // not translating this yet!
-                TranslationMap.ensureExpressionType(arrayInitializer, ArrayInitializer.class),
+                arrayInitializer == null ? null : TranslationMap.ensureExpressionType(arrayInitializer, ArrayInitializer.class),
                 state, objectFlow);
     }
 

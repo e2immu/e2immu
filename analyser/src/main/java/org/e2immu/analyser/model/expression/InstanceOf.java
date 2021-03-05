@@ -77,7 +77,9 @@ public record InstanceOf(Primitives primitives,
     public Expression translate(TranslationMap translationMap) {
         return new InstanceOf(primitives,
                 translationMap.translateType(parameterizedType),
-                translationMap.translateExpression(expression));
+                expression == null ? null : expression.translate(translationMap),
+                variable == null ? null : translationMap.translateVariable(variable),
+                objectFlow);
     }
 
     @Override
@@ -111,7 +113,7 @@ public record InstanceOf(Primitives primitives,
 
     @Override
     public List<Variable> variables() {
-        return expression != null ? expression.variables(): List.of(variable);
+        return expression != null ? expression.variables() : List.of(variable);
     }
 
     @Override

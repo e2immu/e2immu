@@ -104,4 +104,9 @@ public interface ConstantExpression<T> extends Expression {
         }
         throw new UnsupportedOperationException("l = " + l + ", r = " + r);
     }
+
+    @Override
+    default Expression translate(TranslationMap translationMap) {
+        return this;
+    }
 }

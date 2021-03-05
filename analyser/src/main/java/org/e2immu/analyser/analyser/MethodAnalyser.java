@@ -47,7 +47,6 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -494,13 +493,6 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
             }
         }
         if (after == null) {
-
-            // this bit of code is here temporarily as a backup; it is the code in the type analyser that should
-            // keep approvedPreconditions empty
-            //if (modified == Level.TRUE && !methodAnalysis.complainedAboutApprovedPreconditions.isSet()) {
-            //   methodAnalysis.complainedAboutApprovedPreconditions.set(true);
-            //   messages.add(Message.newMessage(new Location(methodInfo), Message.NO_APPROVED_PRECONDITIONS));
-            // }
             methodAnalysis.setMarkAndOnly(MethodAnalysis.NO_MARK_AND_ONLY);
             return DONE;
         }
@@ -636,8 +628,8 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
                 log(DELAYED, "Delaying return value of {}, waiting for MODIFIED (we may try to inline!)", methodInfo.distinguishingName);
                 return DELAYS;
             }
-            if (modified == Level.FALSE) {
-                InlinedMethod.Applicability applicability = applicability(sharedState.evaluationContext, value);
+            if (modified == Level.FALSE && methodAnalysis.lastStatementTime() == 0) {
+                InlinedMethod.Applicability applicability = applicability(value);
                 if (applicability != InlinedMethod.Applicability.NONE) {
                     value = new InlinedMethod(methodInfo, replaceFields(sharedState.evaluationContext, value), applicability);
                     immutable = methodAnalysis.getProperty(VariableProperty.IMMUTABLE);
@@ -698,8 +690,6 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
         return DONE;
     }
 
-    private static final Pattern LOCAL_COPY = Pattern.compile("(.+)\\$\\d+");
-
     /*
     replace local copies of fields to fields
      */
@@ -707,8 +697,8 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
         TranslationMap.TranslationMapBuilder builder = new TranslationMap.TranslationMapBuilder();
         boolean change = false;
         for (Variable variable : value.variables()) {
-            if (variable instanceof LocalVariableReference) {
-                FieldInfo fieldInfo = extractFieldFromLocal(evaluationContext, variable.fullyQualifiedName());
+            if (variable instanceof LocalVariableReference lvr) {
+                FieldInfo fieldInfo = extractFieldFromLocal(lvr);
                 if (fieldInfo != null) {
                     This thisVar = new This(evaluationContext.getAnalyserContext(), fieldInfo.owner);
                     FieldReference fieldReference = new FieldReference(evaluationContext.getAnalyserContext(),
@@ -718,18 +708,12 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
                 }
             }
         }
-        if(!change) return value;
+        if (!change) return value;
         return value.translate(builder.build());
     }
 
-    private FieldInfo extractFieldFromLocal(EvaluationContext evaluationContext, String fqnLocalCopy) {
-        Matcher m = LOCAL_COPY.matcher(fqnLocalCopy);
-        if (m.matches()) {
-            String fqn = m.group(1);
-            return evaluationContext.getAnalyserContext()
-                    .getTypeInspection(methodInfo.typeInfo).fields().stream()
-                    .filter(fi -> fi.fullyQualifiedName().equals(fqn)).findFirst().orElse(null);
-        }
+    private FieldInfo extractFieldFromLocal(LocalVariableReference lvr) {
+        if (lvr.variable.isLocalCopyOf() instanceof FieldReference fr && fr.scope instanceof This) return fr.fieldInfo;
         return null;
     }
 
@@ -760,17 +744,22 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
         return InlinedMethod.Applicability.PACKAGE;
     }
 
-    private InlinedMethod.Applicability applicability(EvaluationContext evaluationContext, Expression value) {
+    private InlinedMethod.Applicability applicability(Expression value) {
         AtomicReference<InlinedMethod.Applicability> applicability = new AtomicReference<>(InlinedMethod.Applicability.EVERYWHERE);
         value.visit(v -> {
             if (v.isUnknown()) {
                 applicability.set(InlinedMethod.Applicability.NONE);
+                return false;
+            }
+            if (v instanceof NewObject newObject && newObject.constructor() == null) {
+                applicability.set(InlinedMethod.Applicability.NONE);
+                return false;
             }
             VariableExpression valueWithVariable;
             if ((valueWithVariable = v.asInstanceOf(VariableExpression.class)) != null) {
                 Variable variable = valueWithVariable.variable();
-                if (variable.isLocal()) {
-                    FieldInfo fieldInfo = extractFieldFromLocal(evaluationContext, variable.fullyQualifiedName());
+                if (variable instanceof LocalVariableReference lvr) {
+                    FieldInfo fieldInfo = extractFieldFromLocal(lvr);
                     if (fieldInfo != null) {
                         InlinedMethod.Applicability fieldApplicability = applicabilityField(fieldInfo);
                         InlinedMethod.Applicability current = applicability.get();
