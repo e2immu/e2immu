@@ -24,6 +24,7 @@ import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.analyser.check.CheckConstant;
 import org.e2immu.analyser.analyser.check.CheckMarkOnly;
 import org.e2immu.analyser.analyser.check.CheckPrecondition;
+import org.e2immu.analyser.analyser.util.DetectMarkAndOnly;
 import org.e2immu.analyser.config.MethodAnalyserVisitor;
 import org.e2immu.analyser.inspector.MethodResolution;
 import org.e2immu.analyser.model.*;
@@ -39,7 +40,6 @@ import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Primitives;
-import org.e2immu.analyser.util.SetOnceMap;
 import org.e2immu.annotation.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -155,6 +155,7 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
                     .add("computeModified", (sharedState) -> methodInfo.isConstructor ? DONE : computeModified())
                     .add("computeModifiedCycles", (sharedState -> methodInfo.isConstructor ? DONE : computeModifiedInternalCycles()))
                     .add("computeReturnValue", (sharedState) -> methodInfo.noReturnValue() ? DONE : computeReturnValue(sharedState))
+                    //   .add("computeTestMark", (sharedState -> methodInfo.noReturnValue() ? DONE : computeTestMark(sharedState)))
                     .add("detectMissingStaticModifier", (iteration) -> methodInfo.isConstructor ? DONE : detectMissingStaticModifier())
                     .add("computeOnlyMarkPrepWork", (sharedState) -> methodInfo.isConstructor ? DONE : computeOnlyMarkPrepWork(sharedState))
                     .add("computeOnlyMarkAnnotate", (sharedState) -> methodInfo.isConstructor ? DONE : computeOnlyMarkAnnotate(sharedState))
@@ -421,141 +422,20 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
     private AnalysisStatus computeOnlyMarkAnnotate(SharedState sharedState) {
         assert !methodAnalysis.markAndOnlyIsSet();
 
-        SetOnceMap<String, Expression> e1 = ((TypeAnalysisImpl.Builder) typeAnalysis).approvedPreconditionsE1;
-        if (!e1.isFrozen()) {
-            log(DELAYED, "No decision on approved E1 preconditions yet for {}", methodInfo.distinguishingName());
+        DetectMarkAndOnly detectMarkAndOnly = new DetectMarkAndOnly(methodInfo, methodAnalysis, typeAnalysis,
+                analyserContext);
+        MethodAnalysis.MarkAndOnly markAndOnly = detectMarkAndOnly.detect(sharedState.evaluationContext);
+        if (markAndOnly == MethodAnalysis.DELAYED_MARK_AND_ONLY) {
             return DELAYS;
         }
-        SetOnceMap<String, Expression> e2 = ((TypeAnalysisImpl.Builder) typeAnalysis).approvedPreconditionsE2;
-        if (!e2.isFrozen()) {
-            log(DELAYED, "No decision on approved E2 preconditions yet for {}", methodInfo.distinguishingName());
-            return DELAYS;
-        }
-        SetOnceMap<String, Expression> approvedPreconditions = !e2.isEmpty() ? e2 : e1;
-        if (approvedPreconditions.size() == 0) {
-            log(ANALYSER, "No approved preconditions for {}, so no @Mark, @Only", methodInfo.distinguishingName());
-            methodAnalysis.setMarkAndOnly(MethodAnalysis.NO_MARK_AND_ONLY);
-            return DONE;
-        }
-        int modified = methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD);
-        if (modified == Level.DELAY) {
-            log(DELAYED, "Delaying @Only, @Mark, don't know @Modified status in {}", methodInfo.distinguishingName());
-            return DELAYS;
-        }
-        if (!methodAnalysis.preconditionForMarkAndOnly.isSet()) {
-            log(DELAYED, "Waiting for preconditions to be resolved in {}", methodInfo.distinguishingName());
-            return DELAYS;
-        }
-        List<Expression> preconditions = methodAnalysis.preconditionForMarkAndOnly.get();
-
-        boolean mark = false;
-        Boolean after = null;
-        Boolean test;
-        if (modified == Level.FALSE && preconditions.isEmpty()) {
-            if (methodAnalysis.getSingleReturnValue() == null) {
-                log(DELAYED, "Waiting for @TestMark, need single return value of {}", methodInfo.distinguishingName());
-                return DELAYS;
-            }
-            Expression srv = methodAnalysis.getSingleReturnValue();
-            if (srv instanceof InlinedMethod im) {
-                String markLabel = TypeAnalyser.labelOfPreconditionForMarkAndOnly(im.expression());
-                if (approvedPreconditions.isSet(markLabel)) {
-                    Expression before = approvedPreconditions.get(markLabel);
-                    Expression negated = Negation.negate(sharedState.evaluationContext, before);
-                    if(before.equals(im.expression())) {
-                        test = false;
-                    } else if(negated.equals(im.expression())) {
-                        test = true;
-                    } else {
-                        test = null;
-                    }
-                } else {
-                    test = null;
-                }
-            } else {
-                test = null;
-            }
-        } else {
-            test = null;
-            for (Expression precondition : preconditions) {
-                String markLabel = TypeAnalyser.labelOfPreconditionForMarkAndOnly(precondition);
-                if (!approvedPreconditions.isSet(markLabel)) {
-                    // not going to work...
-                    continue;
-                }
-                Expression before = approvedPreconditions.get(markLabel);
-                // TODO parameters have different owners, so a precondition containing them cannot be the same in a different method
-                // we need a better solution
-                if (before.toString().equals(precondition.toString())) {
-                    after = false;
-                } else {
-                    Expression negated = Negation.negate(sharedState.evaluationContext, precondition);
-                    if (before.toString().equals(negated.toString())) {
-                        if (after == null) after = true;
-                    } else {
-                        E2ImmuAnnotationExpressions e2ae = analyserContext.getE2ImmuAnnotationExpressions();
-                        log(MARK, "No approved preconditions for {} in {}", precondition, methodInfo.distinguishingName());
-                        if (!methodAnalysis.annotations.isSet(e2ae.mark)) {
-                            methodAnalysis.annotations.put(e2ae.mark, false);
-                        }
-                        if (!methodAnalysis.annotations.isSet(e2ae.only)) {
-                            methodAnalysis.annotations.put(e2ae.only, false);
-                        }
-                        methodAnalysis.setMarkAndOnly(MethodAnalysis.NO_MARK_AND_ONLY);
-                        return DONE;
-                    }
-                }
-
-                if (modified == Level.FALSE) {
-                    log(MARK, "Method {} is @NotModified, so it'll be @Only rather than @Mark", methodInfo.distinguishingName());
-                } else {
-                    if (!mark && !after) {
-                        Boolean incompatible = TypeAnalyser.assignmentIncompatibleWithPrecondition(analyserContext,
-                                precondition, this, true);
-                        if (incompatible == null) {
-                            return DELAYS;
-                        }
-                        mark = incompatible;
-                    }
-                }
-            }
-        }
-        if (after == null && test == null) {
-            methodAnalysis.setMarkAndOnly(MethodAnalysis.NO_MARK_AND_ONLY);
-            return DONE;
-        }
-
-        String jointMarkLabel = TypeAnalyser.labelOfPreconditionForMarkAndOnly(preconditions);
-        MethodAnalysis.MarkAndOnly markAndOnly = new MethodAnalysis.MarkAndOnly(preconditions,
-                jointMarkLabel, mark, after, test);
         methodAnalysis.setMarkAndOnly(markAndOnly);
-        log(MARK, "Marking {} with only data {}", methodInfo.distinguishingName(), markAndOnly);
-        E2ImmuAnnotationExpressions e2ae = analyserContext.getE2ImmuAnnotationExpressions();
-        if (mark) {
-            AnnotationExpression markAnnotation = new AnnotationExpressionImpl(e2ae.mark.typeInfo(),
-                    List.of(new MemberValuePair("value",
-                            new StringConstant(analyserContext.getPrimitives(), jointMarkLabel))));
-            methodAnalysis.annotations.put(markAnnotation, true);
-            methodAnalysis.annotations.put(e2ae.only, false);
-        } else if (test != null) {
-            AnnotationExpression testMarkAnnotation = new AnnotationExpressionImpl(e2ae.testMark.typeInfo(),
-                    test ?
-                            List.of(new MemberValuePair("value",
-                                    new StringConstant(analyserContext.getPrimitives(), jointMarkLabel))) :
-                            List.of(new MemberValuePair("value",
-                                            new StringConstant(analyserContext.getPrimitives(), jointMarkLabel)),
-                                    new MemberValuePair("isMark",
-                                            new BooleanConstant(analyserContext.getPrimitives(), false)))
-            );
-            methodAnalysis.annotations.put(testMarkAnnotation, true);
-            methodAnalysis.annotations.put(e2ae.only, false);
-        } else {
-            AnnotationExpression onlyAnnotation = new AnnotationExpressionImpl(e2ae.only.typeInfo(),
-                    List.of(new MemberValuePair(after ? "after" : "before",
-                            new StringConstant(analyserContext.getPrimitives(), jointMarkLabel))));
-            methodAnalysis.annotations.put(onlyAnnotation, true);
-            methodAnalysis.annotations.put(e2ae.mark, false);
+        if (markAndOnly == MethodAnalysis.NO_MARK_AND_ONLY) {
+            return DONE;
         }
+
+        log(MARK, "Marking {} with only data {}", methodInfo.distinguishingName(), markAndOnly);
+        AnnotationExpression annotation = detectMarkAndOnly.makeAnnotation(markAndOnly);
+        methodAnalysis.annotations.put(annotation, true);
         return DONE;
     }
 
@@ -610,6 +490,30 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
         methodAnalysis.preconditionForMarkAndOnly.set(preconditionParts);
         return DONE;
     }
+
+    /*
+    there are two distinct places where @TestMark is computed. One is in the context of approved preconditions
+    (helper classes like SetOnce, FlipSwitch, etc.) which define eventually immutable types using preconditions.
+
+    the second one, here, is meant for types using these helper classes; the methods we consider here
+    will be @TestMarks for fields of eventually immutable types
+
+    private AnalysisStatus computeTestMark(SharedState sharedState) {
+        if (!Primitives.isBoolean(methodInfo.returnType())) return DONE;
+        int modified = methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD);
+        if (modified == Level.DELAY) {
+            log(DELAYED, "Waiting for modification status of {} to compute @TestMark",
+                    methodInfo.fullyQualifiedName);
+            return DELAYS;
+        }
+        if (modified == Level.TRUE) {
+            log(ANALYSER, "Modifying method {} cannot have @TestMark", methodInfo.fullyQualifiedName);
+            methodAnalysis.setMarkAndOnly(MethodAnalysis.NO_MARK_AND_ONLY);
+            return DONE;
+        }
+        methodAnalysis.setProperty(VariableProperty.IMMUTABLE, );
+        return DONE;
+    }*/
 
     // singleReturnValue is associated with @Constant; to be able to grab the actual Value object
     // but we cannot assign this value too early: first, there should be no evaluation anymore with NO_VALUES in them

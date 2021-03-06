@@ -20,6 +20,7 @@ package org.e2immu.analyser.testexample;
 import org.e2immu.analyser.util.FlipSwitch;
 import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.annotation.E2Container;
+import org.e2immu.annotation.TestMark;
 
 /*
 Use types in util to become an eventually immutable type
@@ -30,6 +31,7 @@ public class EventuallyImmutableUtil_1 {
 
     public final SetOnce<String> value = new SetOnce<>();
 
+    @TestMark("value")
     public boolean isReady() {
         return value.isSet();
     }

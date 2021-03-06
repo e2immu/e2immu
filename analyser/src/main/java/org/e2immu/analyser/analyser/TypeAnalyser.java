@@ -21,14 +21,11 @@ package org.e2immu.analyser.analyser;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.analyser.check.CheckEventual;
-import org.e2immu.analyser.analyser.util.CallsToOwnMethods;
+import org.e2immu.analyser.analyser.util.AssignmentIncompatibleWithPrecondition;
 import org.e2immu.analyser.config.TypeAnalyserVisitor;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.expression.And;
-import org.e2immu.analyser.model.expression.ConstantExpression;
 import org.e2immu.analyser.model.expression.Negation;
 import org.e2immu.analyser.model.expression.VariableExpression;
-import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.variable.DependentVariable;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.This;
@@ -535,7 +532,7 @@ public class TypeAnalyser extends AbstractAnalyser {
         String label = labelOfPreconditionForMarkAndOnly(precondition);
         Expression inMap = tempApproved.get(label);
 
-        Boolean isMark = assignmentIncompatibleWithPrecondition(analyserContext, precondition, methodAnalyser, false);
+        Boolean isMark = AssignmentIncompatibleWithPrecondition.isMark(analyserContext, precondition, methodAnalyser, false);
         if (isMark == null) return true; // delays
         if (isMark) {
             if (inMap == null) {
@@ -554,120 +551,8 @@ public class TypeAnalyser extends AbstractAnalyser {
         return false; // no delay
     }
 
-    /**
-     * @return null indicates delay; true indicates @Mark; also becomes @Only(before=)
-     *
-     * <p>
-     * Possible situations:
-     * <ul>
-     * <li>recondition does null check
-     * <li>precondition is of boolean nature
-     * <li>precondition is of integer nature, compares with Equals or GreaterThanZero
-     * <li>precondition is cause by method call to other internal @Mark/@Only method
-     * </ul>
-     */
-    public static Boolean assignmentIncompatibleWithPrecondition(AnalyserContext analyserContext,
-                                                                 Expression precondition,
-                                                                 MethodAnalyser methodAnalyser,
-                                                                 boolean methods) {
-        Set<Variable> variables = new HashSet<>(precondition.variables());
-        for (Variable variable : variables) {
-            FieldInfo fieldInfo = ((FieldReference) variable).fieldInfo;
-
-            for (VariableInfo variableInfo : methodAnalyser.getFieldAsVariable(fieldInfo, false)) {
-                boolean assigned = variableInfo.isAssigned();
-                if (assigned) {
-
-                    String index = VariableInfoContainer.statementId(variableInfo.getAssignmentId());
-                    log(MARK, "Field {} is assigned in {}, {}", variable.fullyQualifiedName(),
-                            methodAnalyser.methodInfo.distinguishingName(), index);
-
-                    StatementAnalyser statementAnalyser = methodAnalyser.findStatementAnalyser(index);
-                    StatementAnalysis statementAnalysis = statementAnalyser.statementAnalysis;
-                    EvaluationContext evaluationContext = statementAnalyser.newEvaluationContextForOutside();
 
 
-                    if (Primitives.isNumeric(fieldInfo.type)) {
-                        Expression value = variableInfo.getValue();
-                        if (value instanceof ConstantExpression) {
-                            Boolean incompatible = remapReturnIncompatible(evaluationContext, variable,
-                                    variableInfo.getValue(), precondition);
-                            if (incompatible != null) return incompatible;
-                        } else if (value instanceof VariableExpression ve) {
-                            // grab some state about this variable
-                            Expression state = statementAnalysis.stateData.getConditionManagerForNextStatement()
-                                    .individualStateInfo(evaluationContext, ve.variable());
-                            if (!state.isBoolValueTrue()) {
-                                Map<Expression, Expression> map = Map.of(new VariableExpression(ve.variable()), new VariableExpression(variable));
-                                EvaluationContext neutralEc = new ConditionManager.EvaluationContextImpl(analyserContext);
-                                Expression stateInTermsOfField = state.reEvaluate(neutralEc, map).getExpression();
-                                return !isCompatible(evaluationContext, stateInTermsOfField, precondition);
-                            }
-                        }
-                    } else if (Primitives.isBoolean(fieldInfo.type)) {
-                        Boolean incompatible = remapReturnIncompatible(evaluationContext, variable,
-                                variableInfo.getValue(), precondition);
-                        if (incompatible != null) return incompatible;
-                    } else {
-                        // normal object null checking for now
-                        Expression notNull = statementAnalysis.notNullValuesAsExpression(evaluationContext);
-                        Expression state = statementAnalysis.stateData.getConditionManagerForNextStatement().state();
-                        Expression combined = new And(evaluationContext.getPrimitives()).append(evaluationContext, state, notNull);
-
-                        if (isCompatible(evaluationContext, combined, precondition)) {
-                            if (statementAnalysis.stateData.conditionManagerIsNotYetSet()) {
-                                return null; // DELAYS
-                            }
-                            return false;
-                        }
-                        return true;
-                    }
-                }
-            }
-        }
-
-        if (!methods) return false;
-
-        // METHOD
-
-        // example in FlipSwitch, where copy() calls set(), which should have been handled before
-        MethodAnalysis.MarkAndOnly consistent = null;
-        Block body = analyserContext.getMethodInspection(methodAnalyser.methodInfo).getMethodBody();
-        Set<MethodInfo> calledMethods = new CallsToOwnMethods(analyserContext).visit(body).getMethods();
-        for (MethodInfo calledMethod : calledMethods) {
-            MethodAnalyser calledMethodAnalyser = analyserContext.getMethodAnalyser(calledMethod);
-            if (calledMethodAnalyser.methodAnalysis.markAndOnlyIsSet()) {
-                MethodAnalysis.MarkAndOnly markAndOnly = calledMethodAnalyser.methodAnalysis.getMarkAndOnly();
-                if (markAndOnly != MethodAnalysis.NO_MARK_AND_ONLY) {
-                    if (consistent == null) consistent = markAndOnly;
-                    else if (!markAndOnly.consistentWith(consistent)) {
-                        consistent = null;
-                        break;
-                    }
-                }
-            } else {
-                return null; // DELAYS
-            }
-        }
-        if (consistent != null) {
-            return consistent.mark();
-        }
-        return false;
-    }
-
-    private static Boolean remapReturnIncompatible(EvaluationContext evaluationContext, Variable variable, Expression value,
-                                                   Expression precondition) {
-        Map<Expression, Expression> map = Map.of(new VariableExpression(variable), value);
-        Expression reEvaluated = precondition.reEvaluate(evaluationContext, map).getExpression();
-        // false ~ incompatible with precondition
-        if (reEvaluated.isBooleanConstant()) return reEvaluated.isBoolValueFalse();
-        return null;
-    }
-
-    private static boolean isCompatible(EvaluationContext evaluationContext, Expression v1, Expression v2) {
-        Expression and = new And(evaluationContext.getPrimitives()).append(evaluationContext, v1, v2);
-        return v1.equals(and) || v2.equals(and);
-    }
 
     public static String labelOfPreconditionForMarkAndOnly(List<Expression> values) {
         return values.stream().map(TypeAnalyser::labelOfPreconditionForMarkAndOnly).sorted().collect(Collectors.joining(","));
@@ -973,6 +858,12 @@ public class TypeAnalyser extends AbstractAnalyser {
             if (fieldE2Immutable == MultiLevel.DELAY) {
                 log(DELAYED, "Field {} not known yet if @E2Immutable, delaying @E2Immutable on type", fieldFQN);
                 return DELAYS;
+            }
+            if(fieldE2Immutable == MultiLevel.EVENTUAL) {
+                eventual = true;
+                if(!typeAnalysis.namesOfEventuallyImmutableFields.contains(fieldInfo.name)) {
+                    typeAnalysis.namesOfEventuallyImmutableFields.add(fieldInfo.name);
+                }
             }
 
             // we're allowing eventualities to cascade!

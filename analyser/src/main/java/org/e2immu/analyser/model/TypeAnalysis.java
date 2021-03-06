@@ -20,6 +20,7 @@ package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.objectflow.ObjectFlow;
+import org.e2immu.analyser.util.SetUtil;
 
 import java.util.List;
 import java.util.Map;
@@ -34,19 +35,20 @@ public interface TypeAnalysis extends Analysis {
 
     Map<String, Expression> getApprovedPreconditionsE2();
 
+    Set<String> getNamesOfEventuallyImmutableFields();
+
     default boolean isEventual() {
-        return !getApprovedPreconditionsE1().isEmpty() || !getApprovedPreconditionsE2().isEmpty();
+        return !getApprovedPreconditionsE1().isEmpty() || !getApprovedPreconditionsE2().isEmpty() ||
+                !getNamesOfEventuallyImmutableFields().isEmpty();
     }
 
     default Set<String> marksRequiredForImmutable() {
-        if (getApprovedPreconditionsE1().isEmpty()) {
-            return getApprovedPreconditionsE2().keySet().stream().collect(Collectors.toUnmodifiableSet());
-        }
-        return getApprovedPreconditionsE1().keySet().stream().collect(Collectors.toUnmodifiableSet());
+        return SetUtil.immutableUnion(getApprovedPreconditionsE1().keySet(), getApprovedPreconditionsE2().keySet(),
+                getNamesOfEventuallyImmutableFields());
     }
 
     default String allLabelsRequiredForImmutable() {
-        return String.join(",", marksRequiredForImmutable());
+        return marksRequiredForImmutable().stream().sorted().collect(Collectors.joining(","));
     }
 
     /**

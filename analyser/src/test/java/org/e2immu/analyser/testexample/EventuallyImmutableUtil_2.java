@@ -18,9 +18,7 @@
 package org.e2immu.analyser.testexample;
 
 import org.e2immu.analyser.util.SetOnce;
-import org.e2immu.annotation.E2Container;
-import org.e2immu.annotation.Mark;
-import org.e2immu.annotation.Only;
+import org.e2immu.annotation.*;
 
 /*
 Use types in util to become an eventually immutable type
@@ -31,6 +29,7 @@ public class EventuallyImmutableUtil_2 {
 
     private final SetOnce<String> value = new SetOnce<>();
 
+    @TestMark("value")
     public boolean isReady() {
         return value.isSet();
     }
@@ -40,6 +39,7 @@ public class EventuallyImmutableUtil_2 {
         this.value.set(p);
     }
 
+    @NotModified
     public String getOrNull() {
         return value.getOrElse(null);
     }

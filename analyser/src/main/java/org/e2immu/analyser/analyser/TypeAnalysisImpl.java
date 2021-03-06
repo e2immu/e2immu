@@ -22,10 +22,16 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Primitives;
-import org.e2immu.analyser.util.*;
+import org.e2immu.analyser.util.AddOnceSet;
+import org.e2immu.analyser.util.FlipSwitch;
+import org.e2immu.analyser.util.SetOnce;
+import org.e2immu.analyser.util.SetOnceMap;
 import org.e2immu.annotation.AnnotationMode;
 
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 
 public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
 
@@ -37,6 +43,7 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
     private final Set<ParameterizedType> implicitlyImmutableDataTypes;
     private final Map<String, MethodInfo> aspects;
     private final List<Expression> invariants;
+    private final Set<String> namesOfEventuallyImmutableFields;
 
     private TypeAnalysisImpl(TypeInfo typeInfo,
                              Map<VariableProperty, Integer> properties,
@@ -44,6 +51,7 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
                              Set<ObjectFlow> objectFlows,
                              Map<String, Expression> approvedPreconditionsE1,
                              Map<String, Expression> approvedPreconditionsE2,
+                             Set<String> namesOfEventuallyImmutableFields,
                              Set<ParameterizedType> implicitlyImmutableDataTypes,
                              Map<String, MethodInfo> aspects,
                              List<Expression> invariants) {
@@ -55,6 +63,12 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
         this.implicitlyImmutableDataTypes = implicitlyImmutableDataTypes;
         this.aspects = Objects.requireNonNull(aspects);
         this.invariants = invariants;
+        this.namesOfEventuallyImmutableFields = namesOfEventuallyImmutableFields;
+    }
+
+    @Override
+    public Set<String> getNamesOfEventuallyImmutableFields() {
+        return namesOfEventuallyImmutableFields;
     }
 
     @Override
@@ -114,6 +128,7 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
         // from label to condition BEFORE (used by @Mark and @Only(before="label"))
         public final SetOnceMap<String, Expression> approvedPreconditionsE1 = new SetOnceMap<>();
         public final SetOnceMap<String, Expression> approvedPreconditionsE2 = new SetOnceMap<>();
+        public final AddOnceSet<String> namesOfEventuallyImmutableFields = new AddOnceSet<>();
 
         public final SetOnce<Set<ParameterizedType>> implicitlyImmutableDataTypes = new SetOnce<>();
 
@@ -179,6 +194,11 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
         }
 
         @Override
+        public Set<String> getNamesOfEventuallyImmutableFields() {
+            return namesOfEventuallyImmutableFields.toImmutableSet();
+        }
+
+        @Override
         public void transferPropertiesToAnnotations(AnalysisProvider analysisProvider,
                                                     E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
 
@@ -214,6 +234,7 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
                     constantObjectFlows.toImmutableSet(),
                     approvedPreconditionsE1.toImmutableMap(),
                     approvedPreconditionsE2.toImmutableMap(),
+                    namesOfEventuallyImmutableFields.toImmutableSet(),
                     implicitlyImmutableDataTypes.isSet() ? implicitlyImmutableDataTypes.get() : Set.of(),
                     getAspects(),
                     ImmutableList.copyOf(invariants.getOrElse(List.of())));

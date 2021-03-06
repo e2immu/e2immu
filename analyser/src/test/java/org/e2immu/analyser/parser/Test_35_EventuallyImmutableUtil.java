@@ -35,7 +35,7 @@ public class Test_35_EventuallyImmutableUtil extends CommonTestRunner {
 
     @Test
     public void test_0() throws IOException {
-        testWithUtilClasses(List.of("EventuallyImmutableUtil_0"), FLIP_SWITCH_SET_ONCE,
+        testWithUtilClasses(List.of("EventuallyImmutableUtil_0"), List.of("FlipSwitch"),
                 0, 0, new DebugConfiguration.Builder()
                         .build());
     }

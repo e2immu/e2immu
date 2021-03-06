@@ -19,6 +19,7 @@ package org.e2immu.analyser.testexample;
 
 import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.annotation.E2Container;
+import org.e2immu.annotation.TestMark;
 
 /*
 Use types in util to become an eventually immutable type
@@ -30,6 +31,7 @@ public class EventuallyImmutableUtil_3 {
     public final SetOnce<String> string = new SetOnce<>();
     public final SetOnce<Boolean> bool = new SetOnce<>();
 
+    @TestMark("bool,string")
     public boolean isReady() {
         return string.isSet() && bool.isSet();
     }
