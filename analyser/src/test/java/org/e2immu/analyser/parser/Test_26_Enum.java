@@ -81,12 +81,19 @@ public class Test_26_Enum extends CommonTestRunner {
 
     @Test
     public void test1() throws IOException {
-        final String RET_VAR = "org.e2immu.analyser.testexample.Enum_1.posInList()";
+        EvaluationResultVisitor evaluationResultVisitor = d -> {
+            if ("posInList".equals(d.methodInfo().name) & "0.0.0".equals(d.statementId())) {
+                String expectValue = d.iteration() == 0 ? "this==<v:<m:values>[<v:i>]>" : "instance type Enum_1==this";
+                Assert.assertEquals(expectValue, d.evaluationResult().value().toString());
+            }
+        };
+
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("posInList".equals(d.methodInfo().name)) {
                 if ("Enum_1.values()[i]".equals(d.variableName())) {
                     if ("0.0.0".equals(d.statementId())) {
-                        String expectValue = d.iteration() <= 4 ? "this==<new:Enum_1>?<v:Enum_1.values()[i]>:<new:Enum_1>" : "";
+                        String expectValue = d.iteration() == 0 ? "this==<new:Enum_1>?<v:Enum_1.values()[i]>:<new:Enum_1>" :
+                                "instance type Enum_1";
                         Assert.assertEquals(expectValue, d.currentValue().toString());
                     }
                 }
@@ -94,6 +101,8 @@ public class Test_26_Enum extends CommonTestRunner {
         };
 
         testClass("Enum_1", 0, 0, new DebugConfiguration.Builder()
+                .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 

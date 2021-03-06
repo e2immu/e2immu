@@ -52,7 +52,7 @@ public abstract class AbstractEvaluationContextImpl implements EvaluationContext
     }
 
     @Override
-    public boolean isNotNull0(Expression value) {
+    public boolean isNotNull0(Expression value, boolean useEnnInsteadOfCnn) {
         Expression valueIsNull = new Equals(getPrimitives(), NullConstant.NULL_CONSTANT, value, ObjectFlow.NO_FLOW);
         Expression combined = conditionManager.evaluate(this, valueIsNull);
         if (combined instanceof BooleanConstant boolValue) {

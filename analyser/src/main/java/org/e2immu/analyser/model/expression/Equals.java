@@ -63,8 +63,8 @@ public class Equals extends BinaryOperator {
         //if (l.isUnknown() || r.isUnknown()) throw new UnsupportedOperationException();
 
         if (checkForNull) {
-            if (l instanceof NullConstant && evaluationContext.isNotNull0(r) ||
-                    r instanceof NullConstant && evaluationContext.isNotNull0(l))
+            if (l instanceof NullConstant && evaluationContext.isNotNull0(r, false) ||
+                    r instanceof NullConstant && evaluationContext.isNotNull0(l, false))
                 return new BooleanConstant(primitives, false, objectFlow);
         }
 
@@ -128,8 +128,8 @@ public class Equals extends BinaryOperator {
 
         if (c instanceof NullConstant) {
             // if recursivelyX is not null, isNotNull0 will always be true
-            equalsToIfTrue = recursively1 == null && !evaluationContext.isNotNull0(inlineConditional.ifTrue);
-            equalsToIfFalse = recursively2 == null && !evaluationContext.isNotNull0(inlineConditional.ifFalse);
+            equalsToIfTrue = recursively1 == null && !evaluationContext.isNotNull0(inlineConditional.ifTrue, false);
+            equalsToIfFalse = recursively2 == null && !evaluationContext.isNotNull0(inlineConditional.ifFalse, false);
         } else {
             equalsToIfTrue = c.equals(inlineConditional.ifTrue);
             equalsToIfFalse = c.equals(inlineConditional.ifFalse);

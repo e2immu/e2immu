@@ -101,7 +101,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
     of the expression.
      */
 
-    public boolean isNotNull0() {
+    public boolean isNotNull0(boolean useEnnInsteadOfCnn) {
         assert evaluationContext != null;
         if (value instanceof VariableExpression variableExpression) {
             ChangeData cd = changeData.get(variableExpression.variable());
@@ -110,7 +110,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                 if (inChangeData != null && inChangeData >= MultiLevel.EFFECTIVELY_NOT_NULL) return true;
             }
         }
-        return evaluationContext.isNotNull0(value);
+        return evaluationContext.isNotNull0(value, useEnnInsteadOfCnn);
     }
 
     /**

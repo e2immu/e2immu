@@ -148,6 +148,8 @@ public class ArrayAccess implements Expression {
             }
             builder.setExpression(arrayValue.multiExpression.expressions()[intIndex]);
         } else {
+            boolean delayed = array.value().isDelayed(evaluationContext) || indexValue.value().isDelayed(evaluationContext);
+
             // we have to make an effort to see if we can evaluate the components; maybe there's another variable to be had
             Variable arrayVariable = variableTarget == null ? null : variableTarget.arrayVariable;
             if (array.value() instanceof VariableExpression evaluatedArrayValue) {
@@ -163,32 +165,35 @@ public class ArrayAccess implements Expression {
                     variableTarget != null ? variableTarget.dependencies : List.of(), arrayVariable);
 
             // dependentVariable is our best effort at evaluation of the individual components
-
-            if (dependentVariable.arrayVariable != null) {
-                builder.variableOccursInNotNullContext(dependentVariable.arrayVariable, array.value(), MultiLevel.EFFECTIVELY_NOT_NULL);
-            }
-            if (forwardEvaluationInfo.isNotAssignmentTarget()) {
-                builder.markRead(variableTarget);
-                if (evaluationContext.isPresent(dependentVariable)) {
-                    Expression variableValue = builder.currentExpression(dependentVariable, true);
-                    if (variableValue == null) {
-                        builder.setExpression(DelayedVariableExpression.forVariable(dependentVariable));
+            if (delayed) {
+                builder.setExpression(DelayedVariableExpression.forVariable(dependentVariable));
+            } else {
+                if (dependentVariable.arrayVariable != null) {
+                    builder.variableOccursInNotNullContext(dependentVariable.arrayVariable, array.value(), MultiLevel.EFFECTIVELY_NOT_NULL);
+                }
+                if (forwardEvaluationInfo.isNotAssignmentTarget()) {
+                    builder.markRead(variableTarget);
+                    if (evaluationContext.isPresent(dependentVariable)) {
+                        Expression variableValue = builder.currentExpression(dependentVariable, true);
+                        if (variableValue == null) {
+                            builder.setExpression(DelayedVariableExpression.forVariable(dependentVariable));
+                        } else {
+                            builder.setExpression(variableValue);
+                        }
                     } else {
-                        builder.setExpression(variableValue);
+                        // the result is not known, lets return an unknown instance
+                        Expression newObject = NewObject.genericArrayAccess(evaluationContext.newObjectIdentifier()
+                                        + "-" + dependentVariable.fullyQualifiedName(), evaluationContext, array.value(),
+                                dependentVariable, ObjectFlow.NO_FLOW);
+                        builder.setExpression(newObject);
+
+                        // NOTE (?): linked variables of a generic access to a known array -> links to ALL linked variables
+                        // of all elements == serious worst case scenario, but maybe completely relevant
+                        builder.assignment(variableTarget, newObject, LinkedVariables.EMPTY, LinkedVariables.EMPTY);
                     }
                 } else {
-                    // the result is not known, lets return an unknown instance
-                    Expression newObject = NewObject.genericArrayAccess(evaluationContext.newObjectIdentifier()
-                                    + "-" + dependentVariable.fullyQualifiedName(), evaluationContext, array.value(),
-                            dependentVariable, ObjectFlow.NO_FLOW);
-                    builder.setExpression(newObject);
-
-                    // NOTE (?): linked variables of a generic access to a known array -> links to ALL linked variables
-                    // of all elements == serious worst case scenario, but maybe completely relevant
-                    builder.assignment(variableTarget, newObject, LinkedVariables.EMPTY, LinkedVariables.EMPTY);
+                    builder.setExpression(new VariableExpression(dependentVariable));
                 }
-            } else {
-                builder.setExpression(new VariableExpression(dependentVariable));
             }
         }
 

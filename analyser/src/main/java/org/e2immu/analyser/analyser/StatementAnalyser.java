@@ -2294,10 +2294,10 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
          */
 
         @Override
-        public boolean isNotNull0(Expression value) {
+        public boolean isNotNull0(Expression value, boolean useEnnInsteadOfCnn) {
             if (value instanceof IsVariableExpression ve) {
                 VariableInfo variableInfo = findForReading(ve.variable(), getInitialStatementTime(), true);
-                int cnn = variableInfo.getProperty(CONTEXT_NOT_NULL);
+                int cnn = variableInfo.getProperty(useEnnInsteadOfCnn ? EXTERNAL_NOT_NULL: CONTEXT_NOT_NULL);
                 if (cnn >= MultiLevel.EFFECTIVELY_NOT_NULL) return true;
                 int nne = variableInfo.getProperty(NOT_NULL_EXPRESSION);
                 if (nne >= MultiLevel.EFFECTIVELY_NOT_NULL) return true;

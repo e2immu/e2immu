@@ -324,7 +324,7 @@ public record ConditionManager(Expression condition,
         }
 
         @Override
-        public boolean isNotNull0(Expression value) {
+        public boolean isNotNull0(Expression value, boolean useEnnInsteadOfCnn) {
             return false;
         }
 

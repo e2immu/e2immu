@@ -151,7 +151,7 @@ public interface EvaluationContext {
         return null;
     }
 
-    default boolean isNotNull0(Expression value) {
+    default boolean isNotNull0(Expression value, boolean useEnnInsteadOfCnn) {
         return true;
     }
 
