@@ -674,7 +674,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 // first do the properties that come with the value; later, we'll write the ones in changeData
                 Map<VariableProperty, Integer> valueProperties = sharedState.evaluationContext.getValueProperties(valueToWrite);
                 Map<VariableProperty, Integer> varProperties = sharedState.evaluationContext.getVariableProperties(valueToWrite, statementAnalysis.statementTime(EVALUATION));
-                Map<VariableProperty, Integer> merged = mergeAssignment(variable, valueProperties, varProperties, changeData.properties(),
+                Map<VariableProperty, Integer> merged = mergeAssignment(variable, valueToWriteIsDelayed,
+                        valueProperties, varProperties, changeData.properties(),
                         externalNotNull, contextNotNull, contextModified);
 
                 remapStaticallyAssignedVariables.put(variable, vi1.getStaticallyAssignedVariables());
@@ -687,7 +688,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                     if (local != null) {
                         Variable localVar = local.current().variable();
                         log(ANALYSER, "Write value {} to local copy variable {}", valueToWrite, localVar.fullyQualifiedName());
-                        Map<VariableProperty, Integer> merged2 = mergeAssignment(localVar, valueProperties, varProperties,
+                        Map<VariableProperty, Integer> merged2 = mergeAssignment(localVar, valueToWriteIsDelayed, valueProperties, varProperties,
                                 changeData.properties(), externalNotNull, contextNotNull, contextModified);
                         remapStaticallyAssignedVariables.put(localVar, local.getPreviousOrInitial().getStaticallyAssignedVariables());
                         local.setValue(valueToWrite, valueToWriteIsDelayed, changeData.staticallyAssignedVariables(), merged2,
@@ -945,6 +946,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
     There is no overlap between valueProps and variableProps
      */
     private static Map<VariableProperty, Integer> mergeAssignment(Variable variable,
+                                                                  boolean valueIsDelayed,
                                                                   Map<VariableProperty, Integer> valueProps,
                                                                   Map<VariableProperty, Integer> variableProps,
                                                                   Map<VariableProperty, Integer> changeData,
@@ -955,7 +957,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         variableProps.forEach(res::put);
         changeData.forEach(res::put);
         Integer enn = res.remove(EXTERNAL_NOT_NULL);
-        externalNotNull.put(variable, enn == null ? MultiLevel.DELAY : enn);
+        externalNotNull.put(variable, enn == null ? (valueIsDelayed ? Level.DELAY: MultiLevel.NOT_INVOLVED) : enn);
         Integer cnn = res.remove(CONTEXT_NOT_NULL);
         contextNotNull.put(variable, cnn == null ? MultiLevel.NULLABLE : cnn);
         Integer cm = res.remove(CONTEXT_MODIFIED);

@@ -438,17 +438,18 @@ class VariableInfoImpl implements VariableInfo {
     Compute and set or update in this object, the properties resulting from merging previous and merge sources.
     If existingValuesWillBeOverwritten is true, the previous object is ignored.
      */
-    void mergeProperties(boolean existingValuesWillBeOverwritten, VariableInfo previous,
+    void mergeProperties(boolean existingValuesWillBeOverwritten,
+                         VariableInfo previous,
                          List<StatementAnalysis.ConditionAndVariableInfo> mergeSources,
                          Map<Variable, Integer> externalNotNull,
                          Map<Variable, Integer> contextNotNull,
                          Map<Variable, Integer> contextModified) {
-        VariableInfo[] list = mergeSources.stream()
+        List<VariableInfo> list = mergeSources.stream()
                 .map(StatementAnalysis.ConditionAndVariableInfo::variableInfo)
-                .filter(vi -> vi.getValue().isComputeProperties())
-                .toArray(n -> new VariableInfo[n + 1]);
-        if (!existingValuesWillBeOverwritten && getValue().isComputeProperties()) {
-            list[list.length - 1] = previous;
+                .collect(Collectors.toCollection(() -> new ArrayList<>(mergeSources.size() + 1)));
+        if (!existingValuesWillBeOverwritten) {
+            assert previous != null;
+            list.add(previous);
         }
         for (MergeOp mergeOp : MERGE) {
             int commonValue = mergeOp.initial;

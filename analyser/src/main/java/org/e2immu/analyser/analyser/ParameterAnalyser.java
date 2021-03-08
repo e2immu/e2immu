@@ -197,11 +197,10 @@ public class ParameterAnalyser {
 
         StatementAnalysis lastStatementAnalysis = analyserContext.getMethodAnalysis(parameterInfo.owner)
                 .getLastStatement();
-        This thisVar = new This(analyserContext, parameterInfo.owner.typeInfo);
         Set<FieldInfo> fieldsAssignedInThisMethod =
                 Resolver.accessibleFieldsStream(analyserContext, parameterInfo.owner.typeInfo,
                         parameterInfo.owner.typeInfo.primaryType())
-                        .filter(fieldInfo -> isAssignedIn(lastStatementAnalysis, thisVar, fieldInfo))
+                        .filter(fieldInfo -> isAssignedIn(lastStatementAnalysis, fieldInfo))
                         .collect(Collectors.toSet());
 
         // find a field that's linked to me; bail out when not all field's values are set.
@@ -297,7 +296,8 @@ public class ParameterAnalyser {
         parameterAnalysis.resolveFieldDelays();
     }
 
-    private boolean isAssignedIn(StatementAnalysis lastStatementAnalysis, This thisVar, FieldInfo fieldInfo) {
+    private boolean isAssignedIn(StatementAnalysis lastStatementAnalysis, FieldInfo fieldInfo) {
+        This thisVar = new This(analyserContext, fieldInfo.owner);
         VariableInfo vi = lastStatementAnalysis.findOrNull(new FieldReference(analyserContext, fieldInfo, thisVar),
                 VariableInfoContainer.Level.MERGE);
         return vi != null && vi.isAssigned();

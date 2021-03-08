@@ -1,6 +1,5 @@
 package org.e2immu.analyser.parser;
 
-import org.e2immu.analyser.analyser.LinkedVariables;
 import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
@@ -97,11 +96,16 @@ public class Test_09_EvaluatesToConstant extends CommonTestRunner {
                 if ("0".equals(d.statementId())) {
                     Assert.assertEquals("", d.variableInfo().getLinkedVariables().toString());
                     Assert.assertEquals(Level.FALSE, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
+                    Assert.assertEquals(MultiLevel.NOT_INVOLVED, d.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
+                }
+                if("1.0.0".equals(d.statementId())) {
+                    Assert.assertEquals(MultiLevel.NOT_INVOLVED, d.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
                 }
                 if ("1.0.1.0.0".equals(d.statementId())) {
                     if (d.iteration() == 0) {
                         Assert.assertEquals("", d.variableInfo().getLinkedVariables().toString());
                         Assert.assertEquals(Level.FALSE, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
+                        Assert.assertEquals(Level.DELAY, d.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
                     } else {
                         Assert.fail(); // unreachable, now that the condition is stable
                     }
@@ -109,10 +113,14 @@ public class Test_09_EvaluatesToConstant extends CommonTestRunner {
                 if ("1.0.1".equals(d.statementId())) {
                     Assert.assertEquals("", d.variableInfo().getLinkedVariables().toString());
                     Assert.assertEquals(Level.FALSE, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
+                    int expectEnn = d.iteration() == 0 ? Level.DELAY: MultiLevel.NOT_INVOLVED;
+                    Assert.assertEquals(expectEnn, d.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
                 }
                 if ("1".equals(d.statementId())) {
                     Assert.assertEquals("", d.variableInfo().getLinkedVariables().toString());
                     Assert.assertEquals(Level.FALSE, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
+                    int expectEnn = d.iteration() == 0 ? Level.DELAY: MultiLevel.NOT_INVOLVED;
+                    Assert.assertEquals(expectEnn, d.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
                 }
             }
         }

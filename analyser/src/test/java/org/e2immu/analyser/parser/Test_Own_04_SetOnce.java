@@ -130,6 +130,8 @@ public class Test_Own_04_SetOnce extends CommonTestRunner {
                         Assert.assertEquals(expectValue, d.currentValue().toString());
                         int expectNne = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
                         Assert.assertEquals(expectNne, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                        int expectEnn = d.iteration() <= 1 ? Level.DELAY : MultiLevel.NULLABLE;
+                        Assert.assertEquals(expectEnn, d.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
                     }
                     if (d.variable() instanceof FieldReference fr && "t".equals(fr.fieldInfo.name)) {
                         Assert.assertTrue(d.iteration() > 0);
