@@ -449,6 +449,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
                       Expression stateOfDestination,
                       boolean atLeastOneBlockExecuted,
                       List<StatementAnalysis.ConditionAndVariableInfo> mergeSources,
+                      Map<Variable, Integer> externalNotNull,
                       Map<Variable, Integer> contextNotNull,
                       Map<Variable, Integer> contextModified) {
         Objects.requireNonNull(mergeSources);
@@ -458,10 +459,10 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         VariableInfoImpl existing = currentExcludingMerge();
         if (!merge.isSet()) {
             merge.set(existing.mergeIntoNewObject(evaluationContext, stateOfDestination, atLeastOneBlockExecuted, mergeSources,
-                    contextNotNull, contextModified));
+                    externalNotNull, contextNotNull, contextModified));
         } else {
             merge.get().mergeIntoMe(evaluationContext, stateOfDestination, atLeastOneBlockExecuted, existing, mergeSources,
-                    contextNotNull, contextModified);
+                    externalNotNull, contextNotNull, contextModified);
         }
     }
 }

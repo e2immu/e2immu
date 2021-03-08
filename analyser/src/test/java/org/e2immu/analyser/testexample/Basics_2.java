@@ -32,6 +32,6 @@ public class Basics_2 {
     @Nullable(absent = true)
     @NotModified
     public void add(@Modified @NotNull Collection<String> collection) {
-        collection.add(string); // expect potential null pointer exception here
+        collection.add(string); // expect potential null pointer exception here for string
     }
 }

@@ -59,12 +59,10 @@ public class Test_00_Basics_1 extends CommonTestRunner {
             if (d.variable() instanceof ParameterInfo p0 && "p0".equals(p0.name)) {
                 String expectValue = "nullable instance type Set<String>";
                 Assert.assertEquals(expectValue, d.currentValue().toString());
-                if ("0".equals(d.statementId())) {
-                    Assert.assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
-                }
-                if ("1".equals(d.statementId())) {
-                    Assert.assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
-                }
+                Assert.assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+
+                int expectEnn = d.iteration() == 0 ? Level.DELAY : MultiLevel.NULLABLE;
+                Assert.assertEquals(expectEnn, d.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
             }
         }
 
@@ -80,6 +78,9 @@ public class Test_00_Basics_1 extends CommonTestRunner {
                 Assert.assertEquals(expectValue, d.currentValue().toString());
                 int expectNN = d.iteration() == 0 ? Level.DELAY : MultiLevel.NULLABLE;
                 Assert.assertEquals(expectNN, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+
+                int expectEnn = d.iteration() == 0 ? Level.DELAY : MultiLevel.NULLABLE;
+                Assert.assertEquals(expectEnn, d.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
             }
             if (GET_F1_RETURN.equals(d.variableName())) {
                 Assert.assertTrue(d.variableInfo().isAssigned());
@@ -127,7 +128,7 @@ public class Test_00_Basics_1 extends CommonTestRunner {
             Assert.assertEquals(expectModified, p0.getProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD));
             Assert.assertEquals(expectModified, p0.getProperty(VariableProperty.MODIFIED_VARIABLE));
 
-            int expectContextNotNull = d.iteration() == 0 ? Level.DELAY: MultiLevel.NULLABLE;
+            int expectContextNotNull = d.iteration() == 0 ? Level.DELAY : MultiLevel.NULLABLE;
             Assert.assertEquals(expectContextNotNull, p0.getProperty(VariableProperty.CONTEXT_NOT_NULL));
             int expectNN = d.iteration() == 0 ? Level.DELAY : MultiLevel.NULLABLE;
             Assert.assertEquals(expectNN, p0.getProperty(VariableProperty.EXTERNAL_NOT_NULL));

@@ -290,27 +290,8 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                 // so intrinsically we can have null.
                 // if context not null is already high enough, don't complain
                 int contextNotNull = getPropertyFromInitial(variable, VariableProperty.CONTEXT_NOT_NULL);
-                int externalNotNull = getPropertyFromInitial(variable, VariableProperty.EXTERNAL_NOT_NULL);
-                boolean fieldNotAssignedToParameter = variable instanceof FieldReference &&
-                        !(value instanceof IsVariableExpression ve && ve.variable() instanceof ParameterInfo);
-                if (fieldNotAssignedToParameter && externalNotNull == Level.DELAY) {
-                    setProperty(variable, VariableProperty.EXTERNAL_NOT_NULL_DELAY, Level.TRUE);
-                } else if (!evaluationContext.isDelayed(value)) {
-                    boolean raiseError;
-                    if (fieldNotAssignedToParameter) {
-                        raiseError = externalNotNull == MultiLevel.NULLABLE && contextNotNull == MultiLevel.NULLABLE;
-                    } else {
-                        boolean isNotParameter = !(variable instanceof ParameterInfo) &&
-                                !(value instanceof IsVariableExpression ve && ve.variable() instanceof ParameterInfo);
-
-                        raiseError = isNotParameter &&
-                                notNullValue == MultiLevel.NULLABLE && contextNotNull == MultiLevel.NULLABLE;
-                    }
-                    if (raiseError) {
-                        Message message = Message.newMessage(evaluationContext.getLocation(), Message.POTENTIAL_NULL_POINTER_EXCEPTION,
-                                "Variable: " + variable.simpleName());
-                        messages.add(message);
-                    }
+                if (contextNotNull == MultiLevel.NULLABLE) {
+                    setProperty(variable, VariableProperty.IN_NOT_NULL_CONTEXT, Level.TRUE); // so we can raise an error
                 }
                 setProperty(variable, VariableProperty.CONTEXT_NOT_NULL, notNullRequired);
             }

@@ -279,9 +279,7 @@ class VariableInfoImpl implements VariableInfo {
 
             new MergeOp(NOT_NULL_EXPRESSION, MIN, NOT_NULL_EXPRESSION.best),
             new MergeOp(CONTEXT_NOT_NULL, MAX, CONTEXT_NOT_NULL.falseValue),
-            new MergeOp(EXTERNAL_NOT_NULL, MAX, MultiLevel.NOT_INVOLVED),
-            new MergeOp(EXTERNAL_NOT_NULL_DELAY, Math::max, Level.DELAY),
-            new MergeOp(EXTERNAL_NOT_NULL_DELAY_RESOLVED, MIN, EXTERNAL_NOT_NULL_DELAY_RESOLVED.best),
+            new MergeOp(EXTERNAL_NOT_NULL, MIN, MultiLevel.NOT_INVOLVED),
             new MergeOp(IMMUTABLE, MIN, IMMUTABLE.best),
             new MergeOp(CONTAINER, MIN, CONTAINER.best),
             new MergeOp(IDENTITY, MIN, IDENTITY.best),
@@ -295,8 +293,8 @@ class VariableInfoImpl implements VariableInfo {
                                         Expression stateOfDestination,
                                         boolean atLeastOneBlockExecuted,
                                         List<StatementAnalysis.ConditionAndVariableInfo> mergeSources) {
-        return mergeIntoNewObject(evaluationContext, stateOfDestination, atLeastOneBlockExecuted, mergeSources, new HashMap<>(),
-                new HashMap<>());
+        return mergeIntoNewObject(evaluationContext, stateOfDestination, atLeastOneBlockExecuted, mergeSources,
+                new HashMap<>(), new HashMap<>(), new HashMap<>());
     }
 
     /*
@@ -307,13 +305,14 @@ class VariableInfoImpl implements VariableInfo {
                                                Expression stateOfDestination,
                                                boolean atLeastOneBlockExecuted,
                                                List<StatementAnalysis.ConditionAndVariableInfo> mergeSources,
+                                               Map<Variable, Integer> externalNotNull,
                                                Map<Variable, Integer> contextNotNull,
                                                Map<Variable, Integer> contextModified) {
         String mergedAssignmentId = mergedId(evaluationContext, getAssignmentId(), VariableInfo::getAssignmentId, mergeSources);
         String mergedReadId = mergedId(evaluationContext, getReadId(), VariableInfo::getReadId, mergeSources);
         VariableInfoImpl newObject = new VariableInfoImpl(variable, mergedAssignmentId, mergedReadId);
         newObject.mergeIntoMe(evaluationContext, stateOfDestination, atLeastOneBlockExecuted, this, mergeSources,
-                contextNotNull, contextModified);
+                externalNotNull, contextNotNull, contextModified);
         return newObject;
     }
 
@@ -324,7 +323,7 @@ class VariableInfoImpl implements VariableInfo {
                      VariableInfoImpl previous,
                      List<StatementAnalysis.ConditionAndVariableInfo> mergeSources) {
         mergeIntoMe(evaluationContext, stateOfDestination, atLeastOneBlockExecuted, previous, mergeSources,
-                new HashMap<>(), new HashMap<>());
+                new HashMap<>(), new HashMap<>(), new HashMap<>());
     }
 
     /*
@@ -335,6 +334,7 @@ class VariableInfoImpl implements VariableInfo {
                             boolean atLeastOneBlockExecuted,
                             VariableInfoImpl previous,
                             List<StatementAnalysis.ConditionAndVariableInfo> mergeSources,
+                            Map<Variable, Integer> externalNotNull,
                             Map<Variable, Integer> contextNotNull,
                             Map<Variable, Integer> contextModified) {
         assert atLeastOneBlockExecuted || previous != this;
@@ -344,7 +344,7 @@ class VariableInfoImpl implements VariableInfo {
         setValue(mergedValue, evaluationContext.isDelayed(mergedValue));
 
         mergeStatementTime(evaluationContext, atLeastOneBlockExecuted, previous.getStatementTime(), mergeSources);
-        mergeProperties(atLeastOneBlockExecuted, previous, mergeSources, contextNotNull, contextModified);
+        mergeProperties(atLeastOneBlockExecuted, previous, mergeSources, externalNotNull, contextNotNull, contextModified);
         mergeLinkedVariables(atLeastOneBlockExecuted, previous, mergeSources);
         mergeStaticallyAssignedVariables(atLeastOneBlockExecuted, previous, mergeSources);
     }
@@ -429,7 +429,8 @@ class VariableInfoImpl implements VariableInfo {
     // testing only!!
     void mergeProperties(boolean existingValuesWillBeOverwritten, VariableInfo previous,
                          List<StatementAnalysis.ConditionAndVariableInfo> mergeSources) {
-        mergeProperties(existingValuesWillBeOverwritten, previous, mergeSources, new HashMap<>(), new HashMap<>());
+        mergeProperties(existingValuesWillBeOverwritten, previous, mergeSources, new HashMap<>(),
+                new HashMap<>(), new HashMap<>());
     }
 
     /*
@@ -438,6 +439,7 @@ class VariableInfoImpl implements VariableInfo {
      */
     void mergeProperties(boolean existingValuesWillBeOverwritten, VariableInfo previous,
                          List<StatementAnalysis.ConditionAndVariableInfo> mergeSources,
+                         Map<Variable, Integer> externalNotNull,
                          Map<Variable, Integer> contextNotNull,
                          Map<Variable, Integer> contextModified) {
         VariableInfo[] list = mergeSources.stream()
@@ -458,6 +460,7 @@ class VariableInfoImpl implements VariableInfo {
             }
             // important that we always write to CNN, CM, even if there is a delay
             switch (mergeOp.variableProperty) {
+                case EXTERNAL_NOT_NULL -> externalNotNull.put(previous.variable(), commonValue);
                 case CONTEXT_NOT_NULL -> contextNotNull.put(previous.variable(), commonValue);
                 case CONTEXT_MODIFIED -> contextModified.put(previous.variable(), commonValue);
                 default -> {

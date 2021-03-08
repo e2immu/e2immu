@@ -136,9 +136,4 @@ public interface VariableInfo {
     }
 
     boolean staticallyAssignedVariablesIsSet();
-
-    default boolean externalNotNullDelay() {
-        return getProperty(VariableProperty.EXTERNAL_NOT_NULL_DELAY) == Level.TRUE &&
-                getProperty(VariableProperty.EXTERNAL_NOT_NULL_DELAY_RESOLVED) != Level.TRUE;
-    }
 }

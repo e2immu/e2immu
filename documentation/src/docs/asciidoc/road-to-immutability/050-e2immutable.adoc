@@ -9,7 +9,7 @@ We propose the following:
 
 ****
 After construction, an immutable type holds a number of objects; the type will not change their content, nor will it exchange them for other objects, or allow others to do so.
-The type is not responsible for what others do to the content of the objects it has been given.
+The type is not responsible for what others do to the content of the objects it was given.
 ****
 
 Technically, level 2 immutability is much harder to define than level 1 immutability.

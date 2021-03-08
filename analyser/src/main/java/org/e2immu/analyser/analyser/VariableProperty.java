@@ -35,6 +35,9 @@ public enum VariableProperty {
 
     SCOPE_DELAY("scope delay"),
 
+    // only lives in change map
+    IN_NOT_NULL_CONTEXT("in not-null context"),
+
     // purpose: goes to false when a parameter occurs in a not_null context, but there is a delay
     // goes to true when that delay has been resolved
     CONTEXT_NOT_NULL("not null in context", MultiLevel.NULLABLE, MultiLevel.EFFECTIVELY_CONTENT2_NOT_NULL,
@@ -62,10 +65,6 @@ public enum VariableProperty {
 
     EXTERNAL_NOT_NULL("external @NotNull", MultiLevel.NULLABLE, MultiLevel.EFFECTIVELY_CONTENT2_NOT_NULL,
             MultiLevel.NULLABLE, MultiLevel.EFFECTIVELY_NOT_NULL),
-
-    // only used from EvaluationResult.variableInNotNullContext to StatementAnalyser.apply/evaluation
-    EXTERNAL_NOT_NULL_DELAY("external not null delay"),
-    EXTERNAL_NOT_NULL_DELAY_RESOLVED("external not null delay resolved"),
 
     NOT_NULL_EXPRESSION("@NotNull", MultiLevel.NULLABLE, MultiLevel.EFFECTIVELY_CONTENT2_NOT_NULL,
             MultiLevel.NULLABLE, MultiLevel.EFFECTIVELY_NOT_NULL),
@@ -109,6 +108,9 @@ public enum VariableProperty {
      */
     public static final Set<VariableProperty> FROM_ANALYSER_TO_PROPERTIES
             = Set.of(IDENTITY, FINAL, EXTERNAL_NOT_NULL, MODIFIED_OUTSIDE_METHOD, IMMUTABLE, CONTAINER, NOT_MODIFIED_1);
+
+    public static final Set<VariableProperty> GROUP_PROPERTIES = Set.of(CONTEXT_NOT_NULL, EXTERNAL_NOT_NULL, CONTEXT_MODIFIED);
+
     public final String name;
     public final int best;
     public final int falseValue;

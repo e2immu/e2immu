@@ -19,7 +19,6 @@
 
 package org.e2immu.analyser.parser;
 
-import org.e2immu.analyser.analyser.LinkedVariables;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.FieldAnalysis;
@@ -85,12 +84,15 @@ Test_00_Basics_0 extends CommonTestRunner {
                 } else {
                     Assert.assertEquals(new StringConstant(d.evaluationContext().getPrimitives(), "abc"), d.currentValue());
                 }
+                int expectEnn = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
+                Assert.assertEquals(expectEnn, d.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
                 return;
             }
             // this.
             if ((TYPE + ".this").equals(d.variableName())) {
                 Assert.assertTrue(d.variableInfo().isRead());
                 Assert.assertEquals("instance type Basics_0", d.currentValue().toString());
+                Assert.assertEquals(MultiLevel.NOT_INVOLVED, d.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
                 return;
             }
             // the return value
@@ -100,6 +102,9 @@ Test_00_Basics_0 extends CommonTestRunner {
 
             int expectNotNull = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
             Assert.assertEquals(expectNotNull, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+
+            int expectEnn = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
+            Assert.assertEquals(expectEnn, d.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
 
             Assert.assertTrue(d.variableInfo().getLinkedVariables().isEmpty());
 

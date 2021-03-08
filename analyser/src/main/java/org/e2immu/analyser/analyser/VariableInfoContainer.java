@@ -172,6 +172,7 @@ public interface VariableInfoContainer {
                Expression stateOfDestination,
                boolean atLeastOneBlockExecuted,
                List<StatementAnalysis.ConditionAndVariableInfo> mergeSources,
+               Map<Variable, Integer> externalNotNull,
                Map<Variable, Integer> contextNotNull,
                Map<Variable, Integer> contextModified);
 

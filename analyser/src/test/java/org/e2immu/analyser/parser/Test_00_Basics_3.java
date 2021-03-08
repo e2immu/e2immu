@@ -85,16 +85,10 @@ public class Test_00_Basics_3 extends CommonTestRunner {
             if ("setS1".equals(d.methodInfo().name) && d.variable() instanceof ParameterInfo pi && "input1".equals(pi.name)) {
                 // statement independent, as the only occurrence of input1 is in evaluation of "0", before "0.0.0" etc.
                 Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
-                if("0".equals(d.statementId())) {
-                    int expectEnn = d.iteration() <= 1 ? Level.DELAY : MultiLevel.DELAY;
-                    Assert.assertEquals("Statement " + d.statementId(), expectEnn,
-                            d.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
-                }
-                if("1".equals(d.statementId())) {
-                    int expectEnn = d.iteration() == 0 ? Level.DELAY : MultiLevel.DELAY;
-                    Assert.assertEquals("Statement " + d.statementId(), expectEnn,
-                            d.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
-                }
+
+                int expectEnn = d.iteration() == 0 ? Level.DELAY: MultiLevel.NOT_INVOLVED;
+                Assert.assertEquals("Statement "+d.statementId(),
+                        expectEnn, d.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
             }
             if ("setS1".equals(d.methodInfo().name) && THIS.equals(d.variableName())) {
                 if ("0".equals(d.statementId())) {
@@ -184,7 +178,7 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                     Assert.assertEquals("input1.contains(\"a\")?\"xyz\":\"abc\"", d.currentValue().toString());
                     Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
 
-                    if (d.iteration() <= 1) {
+                    if (d.iteration() == 0) {
                         Assert.assertEquals(VariableInfoContainer.VARIABLE_FIELD_DELAY, d.variableInfo().getStatementTime());
                     } else {
                         VariableInfo vi1 = d.variableInfoContainer().getPreviousOrInitial();

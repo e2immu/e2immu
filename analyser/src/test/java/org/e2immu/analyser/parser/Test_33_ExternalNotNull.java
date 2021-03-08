@@ -31,8 +31,7 @@ import org.junit.Test;
 
 import java.io.IOException;
 
-import static org.e2immu.analyser.analyser.VariableProperty.CONTEXT_NOT_NULL;
-import static org.e2immu.analyser.analyser.VariableProperty.EXTERNAL_NOT_NULL;
+import static org.e2immu.analyser.analyser.VariableProperty.*;
 
 public class Test_33_ExternalNotNull extends CommonTestRunner {
 
@@ -208,11 +207,13 @@ public class Test_33_ExternalNotNull extends CommonTestRunner {
                 }
             }
             if ("ExternalNotNull_1".equals(d.methodInfo().name) && n == 4) {
-                if (d.variable() instanceof ParameterInfo p2 && "p2".equals(p2.name) && "5".equals(d.statementId())) {
-                    int expectEnn = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
-                    Assert.assertEquals(expectEnn, d.getProperty(EXTERNAL_NOT_NULL));
-                    int expectCnn = MultiLevel.NULLABLE;
-                    Assert.assertEquals(expectCnn, d.getProperty(CONTEXT_NOT_NULL));
+                if (d.variable() instanceof ParameterInfo p2 && "p2".equals(p2.name)) {
+                    if ("1".equals(d.statementId())) {
+                        int expectEnn = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
+                        Assert.assertEquals(expectEnn, d.getProperty(EXTERNAL_NOT_NULL));
+                        int expectCnn = MultiLevel.NULLABLE;
+                        Assert.assertEquals(expectCnn, d.getProperty(CONTEXT_NOT_NULL));
+                    }
                 }
                 if (d.variable() instanceof FieldReference fr && "p".equals(fr.fieldInfo.name) && "5".equals(d.statementId())) {
                     int expectEnn = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;

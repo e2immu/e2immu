@@ -93,6 +93,17 @@ public class Test_00_Basics_2 extends CommonTestRunner {
                 // string occurs in a not-null context, even if its value is delayed
                 Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
                 Assert.assertEquals(Level.FALSE, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
+
+                int expectEnn = d.iteration() == 0 ? Level.DELAY : MultiLevel.NULLABLE;
+                Assert.assertEquals(expectEnn, d.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
+            }
+            if (STRING_0.equals(d.variableName())) {
+                Assert.assertTrue(d.iteration() > 0);
+
+                Assert.assertEquals("nullable instance type String", d.currentValue().toString());
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+                Assert.assertEquals(Level.FALSE, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
+                Assert.assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
             }
         }
         if ("setString".equals(d.methodInfo().name)) {
