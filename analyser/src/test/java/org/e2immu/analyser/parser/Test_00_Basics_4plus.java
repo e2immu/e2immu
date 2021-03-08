@@ -426,7 +426,7 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
                     String expectValue = d.iteration() == 0 ? "<f:out>" : "instance type PrintStream";
                     Assert.assertEquals(expectValue, d.currentValue().toString());
                     Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
-                    Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
+                    Assert.assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
                 }
             }
 
@@ -646,6 +646,11 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
                     }
                     Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
                 }
+            }
+            if (d.iteration() > 0) {
+                int enn = d.getProperty(VariableProperty.EXTERNAL_NOT_NULL);
+                Assert.assertTrue("Statement " + d.statementId() + " var " + d.variable().fullyQualifiedName(),
+                        enn != Level.DELAY);
             }
         };
 

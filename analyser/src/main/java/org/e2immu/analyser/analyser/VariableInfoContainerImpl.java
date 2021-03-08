@@ -323,7 +323,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
             write = new VariableInfoImpl(vi1.variable(), vi1.getAssignmentId(), vi1.getReadId(), vi1.getStatementTime(), vi1.getReadAtStatementTimes());
             if (vi1.linkedVariablesIsSet()) write.setLinkedVariables(vi1.getLinkedVariables());
             if (vi1.valueIsSet()) write.setValue(vi1.getValue(), false);
-            vi1.propertyStream().filter(e -> e.getKey() != VariableProperty.CONTEXT_NOT_NULL && e.getKey() != VariableProperty.CONTEXT_MODIFIED)
+            vi1.propertyStream().filter(e -> !VariableProperty.GROUP_PROPERTIES.contains(e.getKey()))
                     .forEach(e -> write.setProperty(e.getKey(), e.getValue()));
             evaluation.set(write);
         } else {
@@ -359,8 +359,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         if (vi1.linkedVariablesIsSet()) write.setLinkedVariables(vi1.getLinkedVariables());
         if (vi1.valueIsSet()) write.setValue(vi1.getValue(), false);
         write.setStaticallyAssignedVariables(vi1.getStaticallyAssignedVariables());
-        vi1.propertyStream().filter(e -> e.getKey() != VariableProperty.CONTEXT_NOT_NULL &&
-                e.getKey() != VariableProperty.CONTEXT_MODIFIED)
+        vi1.propertyStream().filter(e -> !VariableProperty.GROUP_PROPERTIES.contains(e.getKey()))
                 .forEach(e -> write.setProperty(e.getKey(), e.getValue()));
         return write;
     }
@@ -391,7 +390,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         boolean notReadInThisStatement = !isReadInThisStatement();
         if (noAssignmentInThisStatement && notReadInThisStatement) {
             previous.propertyStream()
-                    .filter(e -> e.getKey() != VariableProperty.CONTEXT_MODIFIED && e.getKey() != VariableProperty.CONTEXT_NOT_NULL)
+                    .filter(e -> !VariableProperty.GROUP_PROPERTIES.contains(e.getKey()))
                     .forEach(e ->
                             setProperty(e.getKey(), e.getValue(), false, Level.EVALUATION));
 
@@ -418,7 +417,9 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
     }
 
     @Override
-    public void copyFromEvalIntoMerge(Map<Variable, Integer> contextNotNull, Map<Variable, Integer> contextModified) {
+    public void copyFromEvalIntoMerge(Map<Variable, Integer> externalNotNull,
+                                      Map<Variable, Integer> contextNotNull,
+                                      Map<Variable, Integer> contextModified) {
         assert hasMerge();
 
         VariableInfo eval = best(Level.EVALUATION);
@@ -434,8 +435,12 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
                     int value = e.getValue();
                     if (vp == VariableProperty.CONTEXT_MODIFIED) contextModified.put(v, value);
                     else if (vp == VariableProperty.CONTEXT_NOT_NULL) contextNotNull.put(v, value);
+                    else if (vp == VariableProperty.EXTERNAL_NOT_NULL) externalNotNull.put(v, value);
                     else mergeImpl.setProperty(vp, value);
                 });
+        if (!externalNotNull.containsKey(v)) {
+            externalNotNull.put(v, org.e2immu.analyser.model.Level.DELAY);
+        }
         if (!contextModified.containsKey(v)) {
             contextModified.put(v, org.e2immu.analyser.model.Level.DELAY);
         }

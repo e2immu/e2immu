@@ -57,7 +57,9 @@ public interface VariableInfoContainer {
 
     void setStaticallyAssignedVariables(LinkedVariables staticallyAssignedVariables, boolean initialOrEvaluation);
 
-    void copyFromEvalIntoMerge(Map<Variable, Integer> contextNotNull, Map<Variable, Integer> contextModified);
+    void copyFromEvalIntoMerge(Map<Variable, Integer>  externalNotNull,
+                               Map<Variable, Integer> contextNotNull,
+                               Map<Variable, Integer> contextModified);
 
     void newVariableWithoutValue();
 

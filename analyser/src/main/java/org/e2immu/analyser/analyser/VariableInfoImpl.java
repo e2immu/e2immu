@@ -249,6 +249,7 @@ class VariableInfoImpl implements VariableInfo {
     public void newVariable() {
         setProperty(VariableProperty.CONTEXT_NOT_NULL, variable.parameterizedType().defaultNotNull());
         setProperty(VariableProperty.CONTEXT_MODIFIED, Level.FALSE);
+        setProperty(EXTERNAL_NOT_NULL, MultiLevel.NOT_INVOLVED);
     }
 
     // ***************************** MERGE RELATED CODE *********************************
@@ -279,7 +280,7 @@ class VariableInfoImpl implements VariableInfo {
 
             new MergeOp(NOT_NULL_EXPRESSION, MIN, NOT_NULL_EXPRESSION.best),
             new MergeOp(CONTEXT_NOT_NULL, MAX, CONTEXT_NOT_NULL.falseValue),
-            new MergeOp(EXTERNAL_NOT_NULL, MIN, MultiLevel.NOT_INVOLVED),
+            new MergeOp(EXTERNAL_NOT_NULL, MIN, MultiLevel.NULLABLE),
             new MergeOp(IMMUTABLE, MIN, IMMUTABLE.best),
             new MergeOp(CONTAINER, MIN, CONTAINER.best),
             new MergeOp(IDENTITY, MIN, IDENTITY.best),

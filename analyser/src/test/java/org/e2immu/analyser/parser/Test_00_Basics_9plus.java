@@ -298,6 +298,7 @@ public class Test_00_Basics_9plus extends CommonTestRunner {
     public void test_14() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             int cnn = d.getProperty(VariableProperty.CONTEXT_NOT_NULL);
+            int enn = d.getProperty(VariableProperty.EXTERNAL_NOT_NULL);
             if ("getT".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof FieldReference t && t.fieldInfo.name.equals("t")) {
                     if ("0".equals(d.statementId())) {
@@ -311,6 +312,9 @@ public class Test_00_Basics_9plus extends CommonTestRunner {
                     String expectValue = d.iteration() == 0 ? "<f:t>" : "nullable instance type T";
                     Assert.assertEquals(expectValue, d.currentValue().toString());
 
+                    int expectEnn = d.iteration() == 0 ? Level.DELAY : MultiLevel.NULLABLE;
+                    Assert.assertEquals("Statement " + d.statementId(), expectEnn, enn);
+
                     if ("0.0.0".equals(d.statementId())) {
                         Assert.assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
                     } else {
@@ -320,11 +324,22 @@ public class Test_00_Basics_9plus extends CommonTestRunner {
                 }
                 if ("t$0".equals(d.variableInfo().variable().simpleName())) {
                     Assert.assertEquals(MultiLevel.NULLABLE, cnn);
+                    Assert.assertEquals("Statement " + d.statementId(), MultiLevel.NULLABLE, enn);
                 }
+            }
+            if (d.iteration() > 0) {
+                Assert.assertTrue("Statement " + d.statementId() + " var " + d.variable().fullyQualifiedName(),
+                        enn != Level.DELAY);
+            }
+        };
+        FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+            if ("t".equals(d.fieldInfo().name)) {
+                Assert.assertEquals(MultiLevel.NULLABLE, d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_NOT_NULL));
             }
         };
         testClass("Basics_14", 0, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build());
     }
 }
