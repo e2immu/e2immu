@@ -280,7 +280,7 @@ class VariableInfoImpl implements VariableInfo {
 
             new MergeOp(NOT_NULL_EXPRESSION, MIN, NOT_NULL_EXPRESSION.best),
             new MergeOp(CONTEXT_NOT_NULL, MAX, CONTEXT_NOT_NULL.falseValue),
-            new MergeOp(EXTERNAL_NOT_NULL, MIN, MultiLevel.NULLABLE),
+            new MergeOp(EXTERNAL_NOT_NULL, MIN, EXTERNAL_NOT_NULL.best),
             new MergeOp(IMMUTABLE, MIN, IMMUTABLE.best),
             new MergeOp(CONTAINER, MIN, CONTAINER.best),
             new MergeOp(IDENTITY, MIN, IDENTITY.best),

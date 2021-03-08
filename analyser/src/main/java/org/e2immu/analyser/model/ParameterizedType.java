@@ -605,7 +605,7 @@ public class ParameterizedType {
 
     public boolean isRecordType() {
         if (typeInfo != null) {
-            return typeInfo.isRecord();
+            return typeInfo.isPrivateNested();
         }
         if (typeParameter != null && wildCard == WildCard.EXTENDS && parameters.size() == 1) {
             return parameters.get(0).isRecordType();

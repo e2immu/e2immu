@@ -902,7 +902,7 @@ public class Test_16_Modification extends CommonTestRunner {
                                 methodCall.methodInfo.fullyQualifiedName);
                     } else Assert.fail();
                 } else Assert.fail();
-                if(d.iteration()==0) {
+                if (d.iteration() == 0) {
                     Assert.assertTrue(d.statementAnalysis().stateData.preconditionIsDelayed());
                     Assert.assertFalse(d.statementAnalysis().stateData.preconditionIsEmpty());
                 } else {
@@ -986,7 +986,44 @@ public class Test_16_Modification extends CommonTestRunner {
 
     @Test
     public void test14() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("Modification_14".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ParameterInfo input && "input".equals(input.name)) {
+                    if ("0".equals(d.statementId())) {
+                        int expectEnn = d.iteration() <= 2 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
+                        Assert.assertTrue(d.variableInfoContainer().hasEvaluation());
+                        VariableInfo eval = d.variableInfoContainer().best(VariableInfoContainer.Level.EVALUATION);
+                        Assert.assertEquals(expectEnn, eval.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
+                        Assert.assertTrue(d.variableInfoContainer().hasMerge());
+                        Assert.assertEquals(expectEnn, d.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
+                    }
+                }
+                if (d.variable() instanceof FieldReference fieldReference && "input".equals(fieldReference.fieldInfo.name)) {
+                    if ("1".equals(d.statementId())) {
+                        int expectEnn = d.iteration() <= 2 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
+                        Assert.assertEquals(expectEnn, d.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
+                    }
+                }
+            }
+        };
+
+        FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+            if ("input".equals(d.fieldInfo().name)) {
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL,
+                        d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_NOT_NULL));
+                if (d.iteration() <= 1) {
+                    // delayed because of IMMUTABLE
+                    Assert.assertNull(d.fieldAnalysis().getEffectivelyFinalValue());
+                } else {
+                    Assert.assertEquals("input", d.fieldAnalysis().getEffectivelyFinalValue().toString());
+                }
+            }
+        };
+
+        // ! no warning @NotNull on field -> if(...)
         testClass("Modification_14", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build());
     }
 

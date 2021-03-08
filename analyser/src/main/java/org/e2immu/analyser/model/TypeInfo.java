@@ -522,8 +522,14 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         return packageNameOrEnclosingType.getRight().isEnclosedIn(typeInfo);
     }
 
-    public boolean isRecord() {
+    public boolean isPrivateNested() {
         return isNestedType() && isPrivate();
+    }
+
+    public boolean isPrivateOrEnclosingIsPrivate() {
+        if (isPrivate()) return true;
+        if (packageNameOrEnclosingType.isLeft()) return false;
+        return packageNameOrEnclosingType.getRight().isPrivateOrEnclosingIsPrivate();
     }
 
     public boolean isInterface() {

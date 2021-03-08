@@ -774,21 +774,21 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
 
         // the second one is across clusters of variables
 
-        addToMap(externalNotNull, EXTERNAL_NOT_NULL, x -> MultiLevel.DELAY, false);
-        ContextPropertyWriter contextPropertyWriterEnn = new ContextPropertyWriter();
-        AnalysisStatus ennStatus = contextPropertyWriterEnn.write(statementAnalysis, sharedState.evaluationContext,
-                VariableInfo::getStaticallyAssignedVariables,
-                EXTERNAL_NOT_NULL, externalNotNull, EVALUATION, Set.of());
-
         addToMap(contextNotNull, CONTEXT_NOT_NULL, x -> x.parameterizedType().defaultNotNull(), true);
         if (statement() instanceof ForEachStatement) {
             potentiallyUpgradeCnnOfLocalLoopVariableAndCopy(sharedState.evaluationContext,
-                    contextNotNull, evaluationResult.value());
+                  externalNotNull,  contextNotNull, evaluationResult.value());
         }
         ContextPropertyWriter contextPropertyWriter = new ContextPropertyWriter();
         status = contextPropertyWriter.write(statementAnalysis, sharedState.evaluationContext,
                 VariableInfo::getStaticallyAssignedVariables,
                 CONTEXT_NOT_NULL, contextNotNull, EVALUATION, Set.of()).combine(status);
+
+        addToMap(externalNotNull, EXTERNAL_NOT_NULL, x -> MultiLevel.DELAY, false);
+        ContextPropertyWriter contextPropertyWriterEnn = new ContextPropertyWriter();
+        AnalysisStatus ennStatus = contextPropertyWriterEnn.write(statementAnalysis, sharedState.evaluationContext,
+                VariableInfo::getStaticallyAssignedVariables,
+                EXTERNAL_NOT_NULL, externalNotNull, EVALUATION, Set.of());
 
         potentiallyRaiseErrorsOnNotNullInContext(evaluationResult.changeData());
 
@@ -862,25 +862,10 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 if (vi != null) {
                     int externalNotNull = vi.getProperty(VariableProperty.EXTERNAL_NOT_NULL);
                     int notNullExpression = vi.getProperty(NOT_NULL_EXPRESSION);
-                    Expression value = vi.getValue();
-                    boolean fieldNotAssignedToParameter = variable instanceof FieldReference &&
-                            !(value instanceof IsVariableExpression ve && ve.variable() instanceof ParameterInfo);
-                    if (fieldNotAssignedToParameter && externalNotNull == Level.DELAY) {
-                        log(DELAYED, "Not issuing error on not null in context, external not null delay on {}", variable.fullyQualifiedName());
-                    } else if (vi.valueIsSet()) {
-                        boolean raiseError;
-                        if (fieldNotAssignedToParameter) {
-                            raiseError = externalNotNull == MultiLevel.NULLABLE;
-                        } else {
-                            boolean isNotParameter = !(variable instanceof ParameterInfo) &&
-                                    !(value instanceof IsVariableExpression ve && ve.variable() instanceof ParameterInfo);
-
-                            raiseError = isNotParameter && notNullExpression == MultiLevel.NULLABLE;
-                        }
-                        if (raiseError) {
-                            statementAnalysis.ensure(Message.newMessage(getLocation(), Message.POTENTIAL_NULL_POINTER_EXCEPTION,
-                                    "Variable: " + variable.simpleName()));
-                        }
+                    if (vi.valueIsSet() && externalNotNull == MultiLevel.NULLABLE
+                            && notNullExpression == MultiLevel.NULLABLE) {
+                        statementAnalysis.ensure(Message.newMessage(getLocation(), Message.POTENTIAL_NULL_POINTER_EXCEPTION,
+                                "Variable: " + variable.simpleName()));
                     }
                 }
             }
@@ -888,6 +873,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
     }
 
     private void potentiallyUpgradeCnnOfLocalLoopVariableAndCopy(EvaluationContext evaluationContext,
+                                                                 Map<Variable, Integer> externalNotNull,
                                                                  Map<Variable, Integer> contextNotNull,
                                                                  Expression value) {
         boolean variableNotNull = evaluationContext.getProperty(value, NOT_NULL_EXPRESSION, false)
@@ -898,6 +884,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             Variable loopVar = lvc.localVariableReference;
             assert contextNotNull.containsKey(loopVar); // must be present!
             contextNotNull.put(loopVar, MultiLevel.EFFECTIVELY_NOT_NULL);
+            externalNotNull.put(loopVar, MultiLevel.NOT_INVOLVED);
 
             String copy = lvc.localVariable.name() + "$" + index();
             LocalVariableReference copyVar = createLocalCopyOfLoopVariable(loopVar, copy);
@@ -1369,10 +1356,15 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                     // otherwise we'll get delays
                     // especially in the case of forEach, the lvc.expression is empty, anyway
                     // an assignment may be difficult. The value is never used, only local copies are
+
+                    Map<VariableProperty, Integer> properties =
+                            Map.of(CONTEXT_MODIFIED, Level.FALSE,
+                            EXTERNAL_NOT_NULL, MultiLevel.NOT_INVOLVED,
+                            CONTEXT_NOT_NULL, lvr.parameterizedType().defaultNotNull());
+
                     vic.setValue(NewObject.forCatchOrThis(index() + "-" + name,
                             statementAnalysis.primitives, lvr.parameterizedType()), false,
-                            LinkedVariables.EMPTY, Map.of(CONTEXT_MODIFIED, Level.FALSE,
-                                    CONTEXT_NOT_NULL, lvr.parameterizedType().defaultNotNull()), true);
+                            LinkedVariables.EMPTY, properties, true);
                     vic.setLinkedVariables(LinkedVariables.EMPTY, true);
                 } else {
                     initialiserToEvaluate = lvc; // == expression

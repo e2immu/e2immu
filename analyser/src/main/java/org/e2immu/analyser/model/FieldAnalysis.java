@@ -46,8 +46,6 @@ public interface FieldAnalysis extends Analysis {
     // or parameters
     LinkedVariables getLinkedVariables();
 
-    Boolean getFieldError();
-
     ObjectFlow getObjectFlow();
 
     Set<ObjectFlow> getInternalObjectFlows();

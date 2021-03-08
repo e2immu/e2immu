@@ -41,7 +41,7 @@ public class Test_04_Warnings extends CommonTestRunner {
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             // ERROR: b is never read
             if ("b".equals(d.fieldInfo().name) && d.iteration() >= 1) {
-                Assert.assertTrue(d.fieldAnalysis().getFieldError());
+                Assert.assertNotNull(d.haveError(Message.PRIVATE_FIELD_NOT_READ));
             }
         };
 
@@ -319,6 +319,25 @@ public class Test_04_Warnings extends CommonTestRunner {
                     }
                 }
             }
+            if("ChildClass".equals(d.methodInfo().name)) {
+                int enn = d.getProperty(VariableProperty.EXTERNAL_NOT_NULL);
+                if(d.variable() instanceof ParameterInfo s && "s".equals(s.name)) {
+                    if("0".equals(d.statementId())) {
+                        int expectEnn = d.iteration() == 0 ? Level.DELAY: MultiLevel.NULLABLE;
+                        Assert.assertEquals(expectEnn, enn);
+                    }
+                    if("1".equals(d.statementId())) {
+                        int expectEnn = d.iteration() == 0 ? Level.DELAY: MultiLevel.NULLABLE;
+                        Assert.assertEquals(expectEnn, enn);
+                    }
+                }
+                if(d.variable() instanceof ParameterInfo t && "t".equals(t.name)) {
+                    if("1".equals(d.statementId())) {
+                        int expectEnn = d.iteration() == 0 ? Level.DELAY: MultiLevel.NULLABLE;
+                        Assert.assertEquals(expectEnn, enn);
+                    }
+                }
+            }
         };
 
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
@@ -367,6 +386,13 @@ public class Test_04_Warnings extends CommonTestRunner {
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("t".equals(d.fieldInfo().name)) {
                 Assert.assertEquals("t", d.fieldAnalysis().getEffectivelyFinalValue().toString());
+                Assert.assertEquals(MultiLevel.NULLABLE, d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_NOT_NULL));
+            }
+            if("s".equals(d.fieldInfo().name)) {
+                Assert.assertTrue(d.fieldInfo().owner.isPrivate());
+                Assert.assertEquals(Level.TRUE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
+                Assert.assertEquals("s", d.fieldAnalysis().getEffectivelyFinalValue().toString());
+                Assert.assertEquals(MultiLevel.NULLABLE, d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_NOT_NULL));
             }
         };
 

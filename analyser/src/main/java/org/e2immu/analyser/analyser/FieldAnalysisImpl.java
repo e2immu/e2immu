@@ -39,7 +39,6 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
     public final boolean isOfImplicitlyImmutableDataType;
     public final Set<ObjectFlow> internalObjectFlows;
     public final ObjectFlow objectFlow;
-    public final boolean fieldError;
     public final LinkedVariables variablesLinkedToMe;
     public final Expression effectivelyFinalValue;
     public final Expression initialValue;  // value from the initialiser
@@ -49,7 +48,6 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
                               boolean isOfImplicitlyImmutableDataType,
                               ObjectFlow objectFlow,
                               Set<ObjectFlow> internalObjectFlows,
-                              boolean fieldError,
                               LinkedVariables variablesLinkedToMe,
                               Expression effectivelyFinalValue,
                               Expression initialValue,
@@ -61,7 +59,6 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
         this.isOfImplicitlyImmutableDataType = isOfImplicitlyImmutableDataType;
         this.objectFlow = objectFlow;
         this.internalObjectFlows = internalObjectFlows;
-        this.fieldError = fieldError;
         this.variablesLinkedToMe = variablesLinkedToMe;
         this.effectivelyFinalValue = effectivelyFinalValue;
         this.initialValue = initialValue;
@@ -81,11 +78,6 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
     @Override
     public LinkedVariables getLinkedVariables() {
         return variablesLinkedToMe;
-    }
-
-    @Override
-    public Boolean getFieldError() {
-        return fieldError;
     }
 
     @Override
@@ -181,8 +173,6 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
         // or parameters
         public final SetOnce<LinkedVariables> linkedVariables = new SetOnce<>();
 
-        public final SetOnce<Boolean> fieldError = new SetOnce<>();
-
         public final FirstThen<ObjectFlow, ObjectFlow> objectFlow;
 
         public final SetOnce<Set<ObjectFlow>> internalObjectFlows = new SetOnce<>();
@@ -202,11 +192,6 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
         @Override
         public LinkedVariables getLinkedVariables() {
             return linkedVariables.getOrElse(LinkedVariables.DELAY);
-        }
-
-        @Override
-        public Boolean getFieldError() {
-            return fieldError.getOrElse(null);
         }
 
         @Override
@@ -230,7 +215,6 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
                     isOfImplicitlyImmutableDataType.getOrElse(false),
                     getObjectFlow(),
                     internalObjectFlows.getOrElse(Set.of()),
-                    fieldError.getOrElse(false),
                     linkedVariables.getOrElse(LinkedVariables.EMPTY),
                     getEffectivelyFinalValue(),
                     getInitialValue(),
@@ -325,8 +309,8 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
             return delayedValue;
         }
 
-        public boolean valuesIsSet() {
-            return values.isSet();
+        public boolean valuesIsNotSet() {
+            return !values.isSet();
         }
     }
 }

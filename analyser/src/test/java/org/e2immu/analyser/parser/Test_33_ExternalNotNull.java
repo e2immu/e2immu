@@ -31,7 +31,8 @@ import org.junit.Test;
 
 import java.io.IOException;
 
-import static org.e2immu.analyser.analyser.VariableProperty.*;
+import static org.e2immu.analyser.analyser.VariableProperty.CONTEXT_NOT_NULL;
+import static org.e2immu.analyser.analyser.VariableProperty.EXTERNAL_NOT_NULL;
 
 public class Test_33_ExternalNotNull extends CommonTestRunner {
 
@@ -200,7 +201,7 @@ public class Test_33_ExternalNotNull extends CommonTestRunner {
             int n = d.methodInfo().methodInspection.get().getParameters().size();
             if ("ExternalNotNull_1".equals(d.methodInfo().name) && n == 2) {
                 if (d.variable() instanceof ParameterInfo p1 && "p1".equals(p1.name) && "5".equals(d.statementId())) {
-                    int expectEnn = d.iteration() <= 2 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
+                    int expectEnn = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
                     Assert.assertEquals(expectEnn, d.getProperty(EXTERNAL_NOT_NULL));
                     String expectValue = d.iteration() == 0 ? "<p:p1>" : "nullable instance type String";
                     Assert.assertEquals(expectValue, d.currentValue().toString());
@@ -228,13 +229,13 @@ public class Test_33_ExternalNotNull extends CommonTestRunner {
             int n = d.methodInfo().methodInspection.get().getParameters().size();
             if ("ExternalNotNull_1".equals(d.methodInfo().name) && n == 4) {
                 if ("6".equals(d.statementId())) {
-                    //    Assert.assertEquals(d.iteration() == 0,
-                    //            null == d.haveError(Message.CONDITION_EVALUATES_TO_CONSTANT_ENN));
+                    Assert.assertEquals(d.iteration() <= 1,
+                            null == d.haveError(Message.CONDITION_EVALUATES_TO_CONSTANT_ENN));
                 }
             }
         };
 
-        testClass("ExternalNotNull_1", 0, 4, new DebugConfiguration.Builder()
+        testClass("ExternalNotNull_1", 0, 3, new DebugConfiguration.Builder()
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)

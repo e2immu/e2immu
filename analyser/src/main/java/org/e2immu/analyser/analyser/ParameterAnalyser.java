@@ -21,12 +21,14 @@ package org.e2immu.analyser.analyser;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.MultiValue;
 import org.e2immu.analyser.model.expression.VariableExpression;
+import org.e2immu.analyser.model.statement.ExplicitConstructorInvocation;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Messages;
 import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.analyser.resolver.Resolver;
 import org.e2immu.annotation.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -157,7 +159,7 @@ public class ParameterAnalyser {
                 }
                 checkLinks = false;
             }
-        } else if(parameterInfo.parameterizedType.isUnboundParameterType()) {
+        } else if (parameterInfo.parameterizedType.isUnboundParameterType()) {
             if (!parameterAnalysis.properties.isSet(VariableProperty.MODIFIED_OUTSIDE_METHOD)) {
                 parameterAnalysis.setProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD, Level.FALSE);
                 changed = true;
@@ -196,8 +198,11 @@ public class ParameterAnalyser {
         StatementAnalysis lastStatementAnalysis = analyserContext.getMethodAnalysis(parameterInfo.owner)
                 .getLastStatement();
         This thisVar = new This(analyserContext, parameterInfo.owner.typeInfo);
-        Set<FieldInfo> fieldsAssignedInThisMethod = parameterInfo.owner.typeInfo.typeInspection.get().fields().stream()
-                .filter(fieldInfo -> isAssignedIn(lastStatementAnalysis, thisVar, fieldInfo)).collect(Collectors.toSet());
+        Set<FieldInfo> fieldsAssignedInThisMethod =
+                Resolver.accessibleFieldsStream(analyserContext, parameterInfo.owner.typeInfo,
+                        parameterInfo.owner.typeInfo.primaryType())
+                        .filter(fieldInfo -> isAssignedIn(lastStatementAnalysis, thisVar, fieldInfo))
+                        .collect(Collectors.toSet());
 
         // find a field that's linked to me; bail out when not all field's values are set.
         for (FieldInfo fieldInfo : fieldsAssignedInThisMethod) {
@@ -309,9 +314,12 @@ public class ParameterAnalyser {
                 return DELAYED;
             }
             VariableExpression ve;
+
+            // == parameterInfo works fine unless a super(...) has been used
             if ((ve = effectivelyFinal.asInstanceOf(VariableExpression.class)) != null && ve.variable() == parameterInfo) {
                 return ASSIGNED;
             }
+            // the case of multiple constructors
             if (effectivelyFinal instanceof MultiValue multiValue &&
                     Arrays.stream(multiValue.multiExpression.expressions())
                             .anyMatch(e -> {
@@ -320,6 +328,16 @@ public class ParameterAnalyser {
                                         && ve2.variable() == parameterInfo;
                             })) {
                 return ASSIGNED;
+            }
+            // the case of this(...) or super(...)
+            StatementAnalysis firstStatement = analyserContext.getMethodAnalysis(parameterInfo.owner).getFirstStatement();
+            if (ve != null && ve.variable() instanceof ParameterInfo pi &&
+                    firstStatement != null && firstStatement.statement instanceof ExplicitConstructorInvocation eci &&
+                    eci.methodInfo == pi.owner) {
+                Expression param = eci.structure.updaters().get(pi.index);
+                if (param instanceof VariableExpression ve2 && ve2.variable() == parameterInfo) {
+                    return ASSIGNED;
+                }
             }
         }
         if (!checkLinks) return NO;

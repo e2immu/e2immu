@@ -284,6 +284,6 @@ public class Assignment implements Expression {
             return !(((FieldReference) at).scope instanceof This);
         }
         // outside current type, but inside primary type, only records
-        return !(owner.isRecord() && owner.isEnclosedIn(currentType));
+        return !(owner.isPrivateNested() && owner.isEnclosedIn(currentType));
     }
 }

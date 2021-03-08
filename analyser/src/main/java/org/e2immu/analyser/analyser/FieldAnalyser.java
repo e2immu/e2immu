@@ -69,7 +69,7 @@ public class FieldAnalyser extends AbstractAnalyser {
     public final FieldInspection fieldInspection;
     public final FieldAnalysisImpl.Builder fieldAnalysis;
     public final MethodAnalyser sam;
-    private final boolean fieldCanBeWrittenFromOutsideThisType;
+    private final boolean fieldCanBeWrittenFromOutsideThisPrimaryType;
     private final AnalyserComponents<String, SharedState> analyserComponents;
     private final CheckConstant checkConstant;
     private final CheckLinks checkLinks;
@@ -97,7 +97,8 @@ public class FieldAnalyser extends AbstractAnalyser {
         fieldAnalysis = new FieldAnalysisImpl.Builder(analyserContext.getPrimitives(), analyserContext, fieldInfo, ownerTypeAnalysis);
         this.primaryType = primaryType;
         this.sam = sam;
-        fieldCanBeWrittenFromOutsideThisType = fieldInfo.owner.isRecord() || !fieldInfo.isPrivate() && !fieldInfo.isExplicitlyFinal();
+        fieldCanBeWrittenFromOutsideThisPrimaryType = !fieldInfo.isPrivate() &&
+                !fieldInfo.isExplicitlyFinal() && !fieldInfo.owner.isPrivateOrEnclosingIsPrivate();
         haveInitialiser = fieldInspection.fieldInitialiserIsSet() && fieldInspection.getFieldInitialiser().initialiser() != EmptyExpression.EMPTY_EXPRESSION;
 
         analyserComponents = new AnalyserComponents.Builder<String, SharedState>()
@@ -272,8 +273,8 @@ public class FieldAnalyser extends AbstractAnalyser {
             log(DELAYED, "Delaying @NotNull on {} until we know about @Final", fieldInfo.fullyQualifiedName());
             return DELAYS;
         }
-        if (isFinal == Level.FALSE && fieldCanBeWrittenFromOutsideThisType) {
-            log(NOT_NULL, "Field {} cannot be @NotNull: it be assigned to from outside this class",
+        if (isFinal == Level.FALSE && fieldCanBeWrittenFromOutsideThisPrimaryType) {
+            log(NOT_NULL, "Field {} cannot be @NotNull: it be assigned to from outside this primary type",
                     fieldInfo.fullyQualifiedName());
             fieldAnalysis.setProperty(VariableProperty.EXTERNAL_NOT_NULL, MultiLevel.NULLABLE);
             return DONE;
@@ -315,7 +316,7 @@ public class FieldAnalyser extends AbstractAnalyser {
                 return DELAYS;
             }
             if (bestOverContext < MultiLevel.EFFECTIVELY_NOT_NULL) {
-                if (!fieldAnalysis.valuesIsSet()) return DELAYS;
+                if (fieldAnalysis.valuesIsNotSet()) return DELAYS;
                 assert fieldAnalysis.getValues().expressions().length > 0;
 
                 int worstOverValues = fieldAnalysis.getValues().stream()
@@ -332,7 +333,7 @@ public class FieldAnalyser extends AbstractAnalyser {
             if (hardNull) {
                 finalNotNullValue = MultiLevel.NULLABLE;
             } else {
-                if (!fieldAnalysis.valuesIsSet()) return DELAYS;
+                if (fieldAnalysis.valuesIsNotSet()) return DELAYS;
                 assert fieldAnalysis.getValues().expressions().length > 0;
                 int worstOverValuesBreakParameterDelay = fieldAnalysis.getValues().stream()
                         .mapToInt(expression -> notNullBreakParameterDelay(evaluationContext, expression))
@@ -360,14 +361,11 @@ public class FieldAnalyser extends AbstractAnalyser {
     }
 
     private AnalysisStatus fieldErrors() {
-        assert !fieldAnalysis.fieldError.isSet();
-
         if (fieldInspection.getModifiers().contains(FieldModifier.PRIVATE)) {
             if (!fieldInfo.isStatic()) {
                 boolean readInMethods = allMethodsAndConstructors.stream()
                         .filter(m -> !(m.methodInfo.isConstructor && m.methodInfo.typeInfo == fieldInfo.owner)) // not my own constructors
                         .anyMatch(this::isReadInMethod);
-                fieldAnalysis.fieldError.set(!readInMethods);
                 if (!readInMethods) {
                     messages.add(Message.newMessage(new Location(fieldInfo), Message.PRIVATE_FIELD_NOT_READ));
                 }
@@ -378,9 +376,7 @@ public class FieldAnalyser extends AbstractAnalyser {
             if (effectivelyFinal == Level.FALSE) {
                 // only react once we're certain the variable is not effectively final
                 // error, unless we're in a record
-                boolean record = fieldInfo.owner.isRecord();
-                fieldAnalysis.fieldError.set(!record);
-                if (!record) {
+                if (!fieldInfo.owner.isPrivateNested()) {
                     messages.add(Message.newMessage(new Location(fieldInfo), Message.NON_PRIVATE_FIELD_NOT_FINAL));
                 } // else: nested private types can have fields the way they like it
                 return DONE;
@@ -407,8 +403,9 @@ public class FieldAnalyser extends AbstractAnalyser {
             log(DELAYED, "Delaying {} on {} until we know about @Final", VariableProperty.IMMUTABLE, fieldInfo.fullyQualifiedName());
             return DELAYS;
         }
-        if (isFinal == Level.FALSE && fieldCanBeWrittenFromOutsideThisType) {
-            log(NOT_NULL, "Field {} cannot be immutable: it is not @Final, and it can be assigned to from outside this class",
+        if (isFinal == Level.FALSE && fieldCanBeWrittenFromOutsideThisPrimaryType) {
+            log(NOT_NULL, "Field {} cannot be immutable: it is not @Final," +
+                            " and it can be assigned to from outside this primary type",
                     fieldInfo.fullyQualifiedName());
             fieldAnalysis.setProperty(VariableProperty.IMMUTABLE, MultiLevel.MUTABLE);
             return DONE;
@@ -421,7 +418,7 @@ public class FieldAnalyser extends AbstractAnalyser {
             return DONE;
         }
 
-        if (!fieldAnalysis.valuesIsSet()) {
+        if (fieldAnalysis.valuesIsNotSet()) {
             return DELAYS;
         }
 
@@ -446,7 +443,7 @@ public class FieldAnalyser extends AbstractAnalyser {
     }
 
     private AnalysisStatus allAssignmentsHaveBeenSet() {
-        assert !fieldAnalysis.valuesIsSet();
+        assert fieldAnalysis.valuesIsNotSet();
         Expression nullValue = ConstantExpression.nullValue(analyserContext.getPrimitives(), fieldInfo.type.bestTypeInfo());
         List<Expression> values = new LinkedList<>();
         boolean delays = false;
@@ -529,7 +526,7 @@ public class FieldAnalyser extends AbstractAnalyser {
             fieldAnalysis.setProperty(VariableProperty.CONSTANT, Level.FALSE);
             return DONE;
         }
-        if (!fieldAnalysis.valuesIsSet()) {
+        if (fieldAnalysis.valuesIsNotSet()) {
             log(DELAYED, "Delaying, have no values yet for field " + fieldInfo.fullyQualifiedName());
             return DELAYS;
         }
@@ -699,7 +696,7 @@ public class FieldAnalyser extends AbstractAnalyser {
         }
 
         boolean isFinal;
-        if (fieldCanBeWrittenFromOutsideThisType) {
+        if (fieldCanBeWrittenFromOutsideThisPrimaryType) {
             // this means other types can write to the field... not final by definition
             isFinal = false;
         } else {
@@ -747,7 +744,7 @@ public class FieldAnalyser extends AbstractAnalyser {
             return DONE;
         }
 
-        boolean modified = fieldCanBeWrittenFromOutsideThisType ||
+        boolean modified = fieldCanBeWrittenFromOutsideThisPrimaryType ||
                 allMethodsAndConstructors.stream()
                         .filter(m -> !m.methodInfo.isConstructor)
                         .flatMap(m -> m.getFieldAsVariableStream(fieldInfo, true))
