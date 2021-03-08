@@ -178,9 +178,10 @@ public class BinaryOperator implements Expression {
             // the following line ensures that a warning is sent when th ENN of a field/parameter is not NULLABLE
             // but the CNN is. The ENN trumps the annotation, but is not used in the computation of the constructor
             // see example in ExternalNotNull_0
-            if (l == NullConstant.NULL_CONSTANT && right.isNotNull0(true) ||
-                    r == NullConstant.NULL_CONSTANT && left.isNotNull0(true)) {
-                builder.raiseError(Message.CONDITION_EVALUATES_TO_CONSTANT_ENN);
+            if (l == NullConstant.NULL_CONSTANT && right.isNotNull0(true) && r instanceof IsVariableExpression ve) {
+                builder.setProperty(ve.variable(), VariableProperty.CANDIDATE_FOR_NULL_PTR_WARNING, Level.TRUE);
+            } else if (r == NullConstant.NULL_CONSTANT && left.isNotNull0(true) && l instanceof IsVariableExpression ve) {
+                builder.setProperty(ve.variable(), VariableProperty.CANDIDATE_FOR_NULL_PTR_WARNING, Level.TRUE);
             }
             return Equals.equals(evaluationContext, l, r, booleanObjectFlow(primitives, evaluationContext));
         }

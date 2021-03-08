@@ -72,6 +72,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
     public final StateData stateData;
     public final FlowData flowData = new FlowData();
     public final AddOnceSet<String> localVariablesAssignedInThisLoop;
+    public final AddOnceSet<Variable> candidateVariablesForNullPtrWarning = new AddOnceSet<>();
 
     public StatementAnalysis(Primitives primitives,
                              MethodAnalysis methodAnalysis,

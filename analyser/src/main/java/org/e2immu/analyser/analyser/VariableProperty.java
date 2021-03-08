@@ -37,6 +37,7 @@ public enum VariableProperty {
 
     // only lives in change map
     IN_NOT_NULL_CONTEXT("in not-null context"),
+    CANDIDATE_FOR_NULL_PTR_WARNING("candidate for null pointer warning"),
 
     // purpose: goes to false when a parameter occurs in a not_null context, but there is a delay
     // goes to true when that delay has been resolved

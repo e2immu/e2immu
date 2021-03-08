@@ -778,7 +778,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         addToMap(contextNotNull, CONTEXT_NOT_NULL, x -> x.parameterizedType().defaultNotNull(), true);
         if (statement() instanceof ForEachStatement) {
             potentiallyUpgradeCnnOfLocalLoopVariableAndCopy(sharedState.evaluationContext,
-                  externalNotNull,  contextNotNull, evaluationResult.value());
+                    externalNotNull, contextNotNull, evaluationResult.value());
         }
         ContextPropertyWriter contextPropertyWriter = new ContextPropertyWriter();
         status = contextPropertyWriter.write(statementAnalysis, sharedState.evaluationContext,
@@ -853,6 +853,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
     /*
     not directly in EvaluationResult, because we could have ENN = 0 on a local field copy, and ENN = 1 on the field itself.
     that is only "leveled out" using the dependency graph of static assignments
+
+    the presence of the IN_NOT_NULL_CONTEXT flag implies that CNN was 0
      */
     private void potentiallyRaiseErrorsOnNotNullInContext(Map<Variable, EvaluationResult.ChangeData> changeDataMap) {
         for (Map.Entry<Variable, EvaluationResult.ChangeData> e : changeDataMap.entrySet()) {
@@ -860,7 +862,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             EvaluationResult.ChangeData changeData = e.getValue();
             if (changeData.getProperty(IN_NOT_NULL_CONTEXT) == Level.TRUE) {
                 VariableInfo vi = statementAnalysis.findOrNull(variable, EVALUATION);
-                if (vi != null) {
+                if (vi != null && !(vi.variable() instanceof ParameterInfo)) {
                     int externalNotNull = vi.getProperty(VariableProperty.EXTERNAL_NOT_NULL);
                     int notNullExpression = vi.getProperty(NOT_NULL_EXPRESSION);
                     if (vi.valueIsSet() && externalNotNull == MultiLevel.NULLABLE
@@ -870,7 +872,23 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                     }
                 }
             }
+            if (changeData.getProperty(CANDIDATE_FOR_NULL_PTR_WARNING) == Level.TRUE) {
+                if (!statementAnalysis.candidateVariablesForNullPtrWarning.contains(variable)) {
+                    statementAnalysis.candidateVariablesForNullPtrWarning.add(variable);
+                }
+            }
         }
+    }
+
+    private void potentiallyRaiseNullPointerWarningENN( ) {
+        statementAnalysis.candidateVariablesForNullPtrWarning.stream().forEach(variable -> {
+            VariableInfo vi = statementAnalysis.findOrNull(variable, VariableInfoContainer.Level.MERGE);
+           int cnn = vi.getProperty(CONTEXT_NOT_NULL); // after merge, CNN should still be too low
+           if(cnn < MultiLevel.EFFECTIVELY_NOT_NULL) {
+               statementAnalysis.ensure(Message.newMessage(getLocation(), Message.CONDITION_EVALUATES_TO_CONSTANT_ENN,
+                       "Variable: "+variable.fullyQualifiedName()));
+           }
+        });
     }
 
     private void potentiallyUpgradeCnnOfLocalLoopVariableAndCopy(EvaluationContext evaluationContext,
@@ -957,7 +975,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         variableProps.forEach(res::put);
         changeData.forEach(res::put);
         Integer enn = res.remove(EXTERNAL_NOT_NULL);
-        externalNotNull.put(variable, enn == null ? (valueIsDelayed ? Level.DELAY: MultiLevel.NOT_INVOLVED) : enn);
+        externalNotNull.put(variable, enn == null ? (valueIsDelayed ? Level.DELAY : MultiLevel.NOT_INVOLVED) : enn);
         Integer cnn = res.remove(CONTEXT_NOT_NULL);
         contextNotNull.put(variable, cnn == null ? MultiLevel.NULLABLE : cnn);
         Integer cm = res.remove(CONTEXT_MODIFIED);
@@ -1361,8 +1379,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
 
                     Map<VariableProperty, Integer> properties =
                             Map.of(CONTEXT_MODIFIED, Level.FALSE,
-                            EXTERNAL_NOT_NULL, MultiLevel.NOT_INVOLVED,
-                            CONTEXT_NOT_NULL, lvr.parameterizedType().defaultNotNull());
+                                    EXTERNAL_NOT_NULL, MultiLevel.NOT_INVOLVED,
+                                    CONTEXT_NOT_NULL, lvr.parameterizedType().defaultNotNull());
 
                     vic.setValue(NewObject.forCatchOrThis(index() + "-" + name,
                             statementAnalysis.primitives, lvr.parameterizedType()), false,
@@ -1899,6 +1917,9 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         if (keepCurrentLocalConditionManager) {
             statementAnalysis.stateData.setLocalConditionManagerForNextStatement(sharedState.localConditionManager);
         }
+        // has to be executed AFTER merging
+        potentiallyRaiseNullPointerWarningENN();
+
         return analysisStatus;
     }
 
