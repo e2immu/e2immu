@@ -137,6 +137,11 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
     }
 
     @Override
+    public boolean markAndOnlyIsSet() {
+        return markAndOnly != null;
+    }
+
+    @Override
     public Set<ObjectFlow> getInternalObjectFlows() {
         return internalObjectFlows;
     }

@@ -35,7 +35,6 @@ import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.analyser.util.Logger;
 import org.e2immu.analyser.util.Pair;
-import org.e2immu.annotation.Only;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
@@ -362,7 +361,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         }
 
         // @Only check
-        checkOnly(builder, objectFlow);
+        checkOnly(evaluationContext, builder, objectValue, objectFlow);
 
         // return value
         Location location = evaluationContext.getLocation(this);
@@ -581,24 +580,29 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         return MultiLevel.EFFECTIVELY_NOT_NULL;
     }
 
-    private void checkOnly(EvaluationResult.Builder builder, ObjectFlow objectFlow) {
-        Optional<AnnotationExpression> oOnly = methodInfo.methodInspection.get().getAnnotations().stream()
-                .filter(ae -> ae.typeInfo().fullyQualifiedName.equals(Only.class.getName())).findFirst();
-        if (oOnly.isPresent()) {
-            AnnotationExpression ae = oOnly.get();
-            String before = ae.extract("before", "");
-            if (!before.isEmpty()) {
-                Set<String> marks = objectFlow.marks();
-                if (marks.contains(before)) {
-                    builder.raiseError(Message.ONLY_BEFORE, methodInfo.fullyQualifiedName() +
-                            ", mark \"" + before + "\"");
-                }
-            } else {
-                String after = ae.extract("after", "");
-                Set<String> marks = objectFlow.marks();
-                if (!marks.contains(after)) {
-                    builder.raiseError(Message.ONLY_AFTER, methodInfo.fullyQualifiedName() +
-                            ", mark \"" + after + "\"");
+    private void checkOnly(EvaluationContext evaluationContext, EvaluationResult.Builder builder,
+                           Expression objectValue,
+                           ObjectFlow objectFlow) {
+        Set<String> marks = objectFlow.marks();
+        if (marks != null && !marks.isEmpty()
+                && objectValue instanceof VariableExpression ve && ve.variable() instanceof This) {
+            MethodAnalysis methodAnalysis = evaluationContext.getAnalyserContext().getMethodAnalysis(methodInfo);
+            if (methodAnalysis.markAndOnlyIsSet()) {
+                MethodAnalysis.MarkAndOnly markAndOnly = methodAnalysis.getMarkAndOnly();
+                if(markAndOnly != null) {
+                    if (markAndOnly.after() == Boolean.FALSE) {
+                        String before = markAndOnly.markLabel();
+                        if (marks.contains(before)) {
+                            builder.raiseError(Message.ONLY_BEFORE, methodInfo.fullyQualifiedName() +
+                                    ", mark \"" + before + "\"");
+                        }
+                    } else if (markAndOnly.after() == Boolean.TRUE) {
+                        String after = markAndOnly.markLabel();
+                        if (!marks.contains(after)) {
+                            builder.raiseError(Message.ONLY_AFTER, methodInfo.fullyQualifiedName() +
+                                    ", mark \"" + after + "\"");
+                        }
+                    }
                 }
             }
         }

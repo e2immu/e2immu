@@ -33,6 +33,7 @@ public class EventuallyE1Immutable_0 {
     @NotNull
     @NotModified
     public final TwoIntegers input;
+    @Final(after = "string")
     private String string;
 
     public EventuallyE1Immutable_0(@NotModified TwoIntegers input) {

@@ -20,6 +20,7 @@ package org.e2immu.analyser.analyser;
 
 import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.analyser.check.CheckConstant;
+import org.e2immu.analyser.analyser.check.CheckFinalNotModified;
 import org.e2immu.analyser.analyser.check.CheckLinks;
 import org.e2immu.analyser.config.FieldAnalyserVisitor;
 import org.e2immu.analyser.model.*;
@@ -827,11 +828,11 @@ public class FieldAnalyser extends AbstractAnalyser {
 
         log(ANALYSER, "Checking field {}", fieldInfo.fullyQualifiedName());
 
-        check(NotModified.class, e2.notModified);
         check(NotNull.class, e2.notNull);
         check(NotNull1.class, e2.notNull1);
         check(NotNull2.class, e2.notNull2);
-        check(Final.class, e2.effectivelyFinal);
+        CheckFinalNotModified.check(messages, fieldInfo, Final.class, e2.effectivelyFinal, fieldAnalysis, myTypeAnalyser.typeAnalysis);
+        CheckFinalNotModified.check(messages, fieldInfo, NotModified.class, e2.notModified, fieldAnalysis, myTypeAnalyser.typeAnalysis);
 
         // dynamic type annotations
         check(E1Immutable.class, e2.e1Immutable);
