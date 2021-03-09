@@ -350,68 +350,6 @@ public class MethodInfo implements WithInspectionAndAnalysis {
                 !inspection.isStatic() && !inspection.isDefault();
     }
 
-    /*
-    list of types which cannot be replaced by an unbound parameter type
-     */
-    public Set<ParameterizedType> explicitTypes() {
-        return explicitTypes(methodInspection.get().getMethodBody());
-    }
-
-    public static Set<ParameterizedType> explicitTypes(Element start) {
-        Set<ParameterizedType> result = new HashSet<>();
-        Consumer<Element> visitor = element -> {
-
-            // a.method() -> type of a cannot be replaced by unbound type parameter
-            if (element instanceof MethodCall mc) {
-                result.add(mc.object.returnType());
-                addTypesFromParameters(result, mc.methodInfo);
-            }
-
-            // new A() -> A cannot be replaced by unbound type parameter
-            if (element instanceof NewObject newObject) {
-                result.add(newObject.parameterizedType());
-                if (newObject.constructor() != null) { // can be null, anonymous implementation of interface
-                    addTypesFromParameters(result, newObject.constructor());
-                }
-            }
-
-            // a.b -> type of a cannot be replaced by unbound type parameter
-            if (element instanceof FieldAccess fieldAccess) {
-                result.add(fieldAccess.expression().returnType());
-            }
-
-            // for(E e: list) -> type of list cannot be replaced by unbound type parameter
-            if (element instanceof ForEachStatement forEach) {
-                result.add(forEach.expression.returnType());
-            }
-
-            // switch(e) -> type of e cannot be replaced
-            if (element instanceof SwitchStatementNewStyle switchStatement) {
-                result.add(switchStatement.expression.returnType());
-            }
-
-            // add the subject of the cast, i.e., if T t is unbound, then
-            // (String)t forces T to become explicit
-            if(element instanceof Cast cast) {
-                result.add(cast.expression().returnType());
-            }
-        };
-        start.visit(visitor);
-        return result;
-    }
-
-    // a.method(b, c) -> unless the formal parameter types are either Object or another unbound parameter type,
-    // they cannot be replaced by unbound type parameter
-    private static void addTypesFromParameters(Set<ParameterizedType> result, MethodInfo methodInfo) {
-        Objects.requireNonNull(methodInfo);
-        for (ParameterInfo parameterInfo : methodInfo.methodInspection.get().getParameters()) {
-            ParameterizedType formal = parameterInfo.parameterizedType;
-            if (!Primitives.isJavaLangObject(formal) && !formal.isUnboundParameterType()) {
-                result.add(formal);
-            }
-        }
-    }
-
     public boolean isTestMethod() {
         return hasInspectedAnnotation("org.junit.Test").isPresent();
     }

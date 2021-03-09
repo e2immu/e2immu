@@ -128,14 +128,6 @@ public interface TypeInspection extends Inspection {
                 .map(FieldInspection.FieldInitialiser::implementationOfSingleAbstractMethod);
     }
 
-    default Set<ParameterizedType> explicitTypes() {
-        // handles SAMs of fields as well
-        Stream<ParameterizedType> methodTypes = methodsAndConstructors(TypeInspectionImpl.Methods.THIS_TYPE_ONLY)
-                .flatMap(methodInfo -> methodInfo.explicitTypes().stream());
-        Stream<ParameterizedType> fieldTypes = fields().stream().flatMap(fieldInfo -> fieldInfo.explicitTypes().stream());
-        return Stream.concat(methodTypes, fieldTypes).collect(Collectors.toSet());
-    }
-
     TypeInspectionImpl.InspectionState getInspectionState();
 
     default boolean haveNonStaticNonDefaultMethods() {

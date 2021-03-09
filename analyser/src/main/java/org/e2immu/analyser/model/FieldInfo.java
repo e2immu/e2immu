@@ -171,11 +171,4 @@ public class FieldInfo implements WithInspectionAndAnalysis {
     public boolean isPrivate() {
         return fieldInspection.get().getModifiers().contains(FieldModifier.PRIVATE);
     }
-
-    public Set<ParameterizedType> explicitTypes() {
-        if (!fieldInspection.get().fieldInitialiserIsSet()) return Set.of();
-        FieldInspection.FieldInitialiser fieldInitialiser = fieldInspection.get().getFieldInitialiser();
-        // SAMs are handled by the method code
-        return MethodInfo.explicitTypes(fieldInitialiser.initialiser());
-    }
 }

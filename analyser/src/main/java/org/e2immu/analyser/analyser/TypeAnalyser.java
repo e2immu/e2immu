@@ -22,6 +22,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.analyser.check.CheckEventual;
 import org.e2immu.analyser.analyser.util.AssignmentIncompatibleWithPrecondition;
+import org.e2immu.analyser.analyser.util.ExplicitTypes;
 import org.e2immu.analyser.config.TypeAnalyserVisitor;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.Negation;
@@ -338,7 +339,12 @@ public class TypeAnalyser extends AbstractAnalyser {
         typesOfFields.addAll(typesOfFields.stream().flatMap(pt -> pt.components(false).stream()).collect(Collectors.toList()));
         log(E2IMMUTABLE, "Types of fields, methods and constructors: {}", typesOfFields);
 
-        Set<ParameterizedType> explicitTypes = typeInspection.explicitTypes();
+        Map<ParameterizedType, Set<ExplicitTypes.UsedAs>> explicitTypes =
+                new ExplicitTypes(analyserContext, analyserContext, typeInspection, typeInfo).getResult();
+        Set<ParameterizedType> explicitTypesAsSet = explicitTypes.entrySet().stream()
+                .filter(e -> !e.getValue().equals(Set.of(ExplicitTypes.UsedAs.CAST_TO_E2IMMU)))
+                .map(Map.Entry::getKey).collect(Collectors.toSet());
+
         log(E2IMMUTABLE, "Explicit types: {}", explicitTypes);
 
         typesOfFields.removeIf(type -> {
@@ -347,9 +353,10 @@ public class TypeAnalyser extends AbstractAnalyser {
             boolean self = type.typeInfo == typeInfo;
             if (self || Primitives.isPrimitiveExcludingVoid(type) || Primitives.isBoxedExcludingVoid(type))
                 return true;
-            boolean explicit = explicitTypes.contains(type);
+
+            boolean explicit = explicitTypesAsSet.contains(type);
             boolean assignableFrom = !type.isUnboundParameterType() &&
-                    explicitTypes.stream().anyMatch(t -> type.isAssignableFrom(analyserContext, t));
+                    explicitTypesAsSet.stream().anyMatch(t -> type.isAssignableFrom(analyserContext, t));
             return explicit || assignableFrom;
         });
 
@@ -550,8 +557,6 @@ public class TypeAnalyser extends AbstractAnalyser {
         }
         return false; // no delay
     }
-
-
 
 
     public static String labelOfPreconditionForMarkAndOnly(List<Expression> values) {
@@ -859,9 +864,9 @@ public class TypeAnalyser extends AbstractAnalyser {
                 log(DELAYED, "Field {} not known yet if @E2Immutable, delaying @E2Immutable on type", fieldFQN);
                 return DELAYS;
             }
-            if(fieldE2Immutable == MultiLevel.EVENTUAL) {
+            if (fieldE2Immutable == MultiLevel.EVENTUAL) {
                 eventual = true;
-                if(!typeAnalysis.namesOfEventuallyImmutableFields.contains(fieldInfo.name)) {
+                if (!typeAnalysis.namesOfEventuallyImmutableFields.contains(fieldInfo.name)) {
                     typeAnalysis.namesOfEventuallyImmutableFields.add(fieldInfo.name);
                 }
             }
