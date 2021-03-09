@@ -22,7 +22,7 @@ As such we have to ensure that definitions for functional interfaces which we wi
 
 We will also have to introduce one extra provision for dealing with code for which no declaration is readily available.
 This is the case for interface types and abstract classes.
-Because the actual implementation of such types cannot be known beforehand
+Because the actual implementation of such types cannot be known beforehand #TODO#
 
 The case of overriding implementations
 

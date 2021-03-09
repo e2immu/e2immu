@@ -343,14 +343,14 @@ public class TypeAnalyser extends AbstractAnalyser {
 
         typesOfFields.removeIf(type -> {
             if (type.arrays > 0) return true;
-            if (type.isUnboundParameterType()) return false;
 
-            TypeInfo bestType = type.bestTypeInfo();
-            if (bestType == null) return false;
             boolean self = type.typeInfo == typeInfo;
-            if (self || Primitives.isPrimitiveExcludingVoid(typeInfo) || Primitives.isBoxedExcludingVoid(typeInfo))
+            if (self || Primitives.isPrimitiveExcludingVoid(type) || Primitives.isBoxedExcludingVoid(type))
                 return true;
-            return explicitTypes.contains(type) || explicitTypes.stream().anyMatch(t -> type.isAssignableFrom(analyserContext, t));
+            boolean explicit = explicitTypes.contains(type);
+            boolean assignableFrom = !type.isUnboundParameterType() &&
+                    explicitTypes.stream().anyMatch(t -> type.isAssignableFrom(analyserContext, t));
+            return explicit || assignableFrom;
         });
 
         // e2immu is more work, we need to check delays
@@ -633,7 +633,7 @@ public class TypeAnalyser extends AbstractAnalyser {
         if (parentOrEnclosing == DONE || parentOrEnclosing == DELAYS) return parentOrEnclosing;
 
         boolean variablesLinkedNotSet = myFieldAnalysers.stream()
-                .anyMatch(fieldAnalyser -> fieldAnalyser.fieldAnalysis.getLinkedVariables() == null);
+                .anyMatch(fieldAnalyser -> !fieldAnalyser.fieldAnalysis.linkedVariables.isSet());
         if (variablesLinkedNotSet) {
             log(DELAYED, "Delay independence of type {}, not all variables linked to fields set", typeInfo.fullyQualifiedName);
             return DELAYS;

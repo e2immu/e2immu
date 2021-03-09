@@ -24,6 +24,7 @@ import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.statement.ExplicitConstructorInvocation;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.This;
+import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Messages;
@@ -41,8 +42,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.AnalysisStatus.*;
-import static org.e2immu.analyser.analyser.VariableProperty.MODIFIED_OUTSIDE_METHOD;
-import static org.e2immu.analyser.analyser.VariableProperty.NOT_NULL_PARAMETER;
+import static org.e2immu.analyser.analyser.VariableProperty.*;
 import static org.e2immu.analyser.model.ParameterAnalysis.AssignedOrLinked.*;
 import static org.e2immu.analyser.util.Logger.LogTarget.ANALYSER;
 import static org.e2immu.analyser.util.Logger.log;
@@ -53,6 +53,7 @@ public class ParameterAnalyser {
     private final Messages messages = new Messages();
     public final ParameterInfo parameterInfo;
     public final ParameterAnalysisImpl.Builder parameterAnalysis;
+    private final TypeAnalysis typeAnalysis;
 
     private Map<FieldInfo, FieldAnalyser> fieldAnalysers;
     private final E2ImmuAnnotationExpressions e2;
@@ -63,6 +64,7 @@ public class ParameterAnalyser {
         this.parameterInfo = parameterInfo;
         parameterAnalysis = new ParameterAnalysisImpl.Builder(analyserContext.getPrimitives(), analyserContext, parameterInfo);
         this.analyserContext = analyserContext;
+        this.typeAnalysis = analyserContext.getTypeAnalysis(parameterInfo.owner.typeInfo);
     }
 
     public ParameterAnalysis getParameterAnalysis() {
@@ -93,14 +95,15 @@ public class ParameterAnalyser {
         parameterAnalysis.transferPropertiesToAnnotations(analyserContext, e2);
     }
 
-    private static final Set<VariableProperty> CHECK_WORSE_THAN_PARENT = Set.of(NOT_NULL_PARAMETER, MODIFIED_OUTSIDE_METHOD);
+    private static final Set<VariableProperty> CHECK_WORSE_THAN_PARENT = Set.of(NOT_NULL_PARAMETER, MODIFIED_VARIABLE);
 
     private void checkWorseThanParent() {
         for (VariableProperty variableProperty : CHECK_WORSE_THAN_PARENT) {
             int valueFromOverrides = analyserContext.getMethodAnalysis(parameterInfo.owner).getOverrides(analyserContext)
                     .stream()
                     .map(ma -> ma.getMethodInfo().methodInspection.get().getParameters().get(parameterInfo.index))
-                    .mapToInt(pi -> analyserContext.getParameterAnalysis(pi).getProperty(variableProperty))
+                    .mapToInt(pi -> analyserContext.getParameterAnalysis(pi).getParameterProperty(analyserContext,
+                            parameterInfo, ObjectFlow.NO_FLOW, variableProperty))
                     .max().orElse(Level.DELAY);
             int value = parameterAnalysis.getProperty(variableProperty);
             if (valueFromOverrides != Level.DELAY && value != Level.DELAY) {
@@ -159,12 +162,16 @@ public class ParameterAnalyser {
                 }
                 checkLinks = false;
             }
-        } else if (parameterInfo.parameterizedType.isUnboundParameterType()) {
-            if (!parameterAnalysis.properties.isSet(VariableProperty.MODIFIED_OUTSIDE_METHOD)) {
-                parameterAnalysis.setProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD, Level.FALSE);
-                changed = true;
+        } else {
+            Set<ParameterizedType> implicitlyImmutableDataTypes = typeAnalysis.getImplicitlyImmutableDataTypes();
+            if(implicitlyImmutableDataTypes != null &&
+                    implicitlyImmutableDataTypes.contains(parameterInfo.parameterizedType)) {
+                if (!parameterAnalysis.properties.isSet(VariableProperty.MODIFIED_OUTSIDE_METHOD)) {
+                    parameterAnalysis.setProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD, Level.FALSE);
+                    changed = true;
+                }
+                checkLinks = false;
             }
-            checkLinks = false;
         }
 
         int contractModified = parameterAnalysis.getProperty(VariableProperty.MODIFIED_VARIABLE);

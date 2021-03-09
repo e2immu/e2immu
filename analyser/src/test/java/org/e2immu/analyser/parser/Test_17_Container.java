@@ -278,6 +278,12 @@ public class Test_17_Container extends CommonTestRunner {
                     param0.parameterAnalysis.get().getProperty(VariableProperty.MODIFIED_VARIABLE));
         };
 
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("Container_4".equals(d.typeInfo().simpleName)) {
+                Assert.assertTrue(d.typeAnalysis().getImplicitlyImmutableDataTypes().isEmpty());
+            }
+        };
+
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             final String TYPE = "org.e2immu.analyser.testexample.Container_4";
             final String S = TYPE + ".s";
@@ -297,7 +303,8 @@ public class Test_17_Container extends CommonTestRunner {
 
             if ("m2".equals(d.methodInfo().name) && "toModifyM2".equals(d.variableName())) {
                 if ("0".equals(d.statementId())) {
-                    Assert.assertEquals(Level.FALSE, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
+                    int expectCm = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
+                    Assert.assertEquals(expectCm, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
                 }
                 if ("1".equals(d.statementId())) {
                     int expectCm = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
@@ -337,6 +344,7 @@ public class Test_17_Container extends CommonTestRunner {
 
         testClass("Container_4", 0, 0, new DebugConfiguration.Builder()
                 .addTypeMapVisitor(typeMapVisitor)
+                .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)

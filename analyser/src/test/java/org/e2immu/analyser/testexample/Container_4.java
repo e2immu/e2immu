@@ -52,4 +52,8 @@ public class Container_4 {
     public static void crossModify(@NotNull1 @NotModified Set<String> in, @NotNull @NotModified(absent = true) Set<String> out) {
         out.addAll(in);
     }
+
+    public boolean contains(String t) {
+        return s.contains(t);
+    }
 }

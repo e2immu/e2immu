@@ -17,23 +17,29 @@
 
 package org.e2immu.analyser.testexample;
 
-import java.util.Set;
+import org.e2immu.annotation.E2Container;
+import org.e2immu.annotation.Modified;
+import org.e2immu.annotation.NotModified;
 
-public class Basics_1 {
+/*
+Example of a cast, but not one that interferes with the immutability rules
+ */
+@E2Container
+public class Cast_0<T> {
 
-    public final Set<String> f1;
+    private final T t;
 
-    public Basics_1(Set<String> p0, Set<String> p1, String p2) {
-        Set<String> s1 = p0;
-        this.f1 = s1;
+    public Cast_0(T input) {
+        t = input;
     }
 
-    public Set<String> getF1() {
-        return f1;
+    @NotModified
+    public T getT() {
+        return t;
     }
 
-    // this method is here to ensure that Set<String> does not become an implicitly immutable type
-    public boolean contains(String s) {
-        return f1 != null && f1.contains(s);
+    @NotModified
+    public String getTAsString() {
+        return (String) t;
     }
 }

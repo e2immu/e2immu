@@ -880,14 +880,14 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         }
     }
 
-    private void potentiallyRaiseNullPointerWarningENN( ) {
+    private void potentiallyRaiseNullPointerWarningENN() {
         statementAnalysis.candidateVariablesForNullPtrWarning.stream().forEach(variable -> {
             VariableInfo vi = statementAnalysis.findOrNull(variable, VariableInfoContainer.Level.MERGE);
-           int cnn = vi.getProperty(CONTEXT_NOT_NULL); // after merge, CNN should still be too low
-           if(cnn < MultiLevel.EFFECTIVELY_NOT_NULL) {
-               statementAnalysis.ensure(Message.newMessage(getLocation(), Message.CONDITION_EVALUATES_TO_CONSTANT_ENN,
-                       "Variable: "+variable.fullyQualifiedName()));
-           }
+            int cnn = vi.getProperty(CONTEXT_NOT_NULL); // after merge, CNN should still be too low
+            if (cnn < MultiLevel.EFFECTIVELY_NOT_NULL) {
+                statementAnalysis.ensure(Message.newMessage(getLocation(), Message.CONDITION_EVALUATES_TO_CONSTANT_ENN,
+                        "Variable: " + variable.fullyQualifiedName()));
+            }
         });
     }
 
@@ -2476,7 +2476,11 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
 
         @Override
         public LinkedVariables linkedVariables(Variable variable) {
-            if (variable.parameterizedType().isUnboundParameterType()) return LinkedVariables.EMPTY;
+            Boolean implicit = variable.parameterizedType().isImplicitlyImmutable(analyserContext, myMethodAnalyser.methodInfo.typeInfo);
+            if (implicit == Boolean.TRUE) {
+                return LinkedVariables.EMPTY;
+            }
+            // if implicit is null, we can only return EMPTY or DELAY!
             TypeInfo typeInfo = variable.parameterizedType().bestTypeInfo();
             boolean notSelf = typeInfo != getCurrentType();
             if (notSelf) {
@@ -2487,7 +2491,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             }
             VariableInfo variableInfo = statementAnalysis.initialValueForReading(variable, getInitialStatementTime(), true);
             // we've encountered the variable before
-            if (variableInfo.linkedVariablesIsSet()) {
+            if (variableInfo.linkedVariablesIsSet() && implicit != null) {
                 return variableInfo.getLinkedVariables().merge(new LinkedVariables(Set.of(variable)));
             }
             return LinkedVariables.DELAY; // delay

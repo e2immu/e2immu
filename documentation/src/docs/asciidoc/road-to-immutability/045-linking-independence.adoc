@@ -20,7 +20,7 @@ class LinkExample1<X> {
 }
 ----
 
-After construction, an instance of `LinkExample1` contains a reference to the set that was passed as an argument to its constructor.
+After construction, an instance of `LinkExample1` contains a reference to the set that was passed on as an argument to its constructor.
 We say the field `set` links to the parameter `xs` of the constructor.
 In this example, this is an expensive way of saying that there is an assignment from one to the other.
 However, linking can become more complicated.
@@ -45,8 +45,8 @@ class LinkExample1<X> {
 }
 ----
 
-As noted above, the parameter `x` of `LinkExample1.add` is trivially {nm} because unbound parameter types have no modifying methods that can be called on them.
-Because of the modification on `xs`, `LinkExample1` cannot be marked {container}.
+The parameter `x` of `LinkExample1.add` is {nm} because the first parameter of `Set.add` is {nm}.
+Because of the modification on parameter `xs`, `LinkExample1` cannot be marked {container}.
 
 Linking looks at the underlying object, and not at the variable.
 Consider the following alternative `add` method:
@@ -63,23 +63,36 @@ public void add(X x) {
 ----
 
 Nothing has changed, obviously.
+Finally, as an example of how linking can become more complicated than following assignments, consider a typical _view_ on a collection:
+
+.Example 9, linking using a method call
+[source,java]
+----
+List<X> list = createSomeLargeList();
+List<X> sub = list.subList(1, 5);
+sub.set(0, x); // will modify sub, and list!
+----
+
+On the other side of the spectrum, linking does not work on objects that cannot be modified, like primitives or deeply immutable objects such as `java.lang.String`.
+
+Let us summarize by:
 
 ****
-Intuitively, linking means that modifying the source object implies that the linked object may be modified too.
-Linking does not work on objects that cannot be modified, like primitives or deeply immutable objects such as `java.lang.String`.
+Intuitively, linking two variables means that modifying the content of one variable implies that the content of the
+linked variable may be modified too.
 ****
 
 We will discuss linking formally in <<linking-part2>>.
-For now, assume that a field links to another field, or to a parameter, if there is a possibility that both represent the same object.
+For now, assume that a field links to another field, or to a parameter, if there is a possibility that both represent (part of) the same object.
 
 The opposite of linking is independence.
-While the code analyser will not annotate linking, it will annotate independence with `@Independent` on methods and constructors, and, in one specific case, to parameters.
+While the code analyser will not annotate linking, it will annotate independence with `@Independent` on methods and constructors, and, in one specific case, on parameters.
 
 ****
-*Definition*: A method returning a real value (not `void`, not `this`) is *independent* when the object returned does not link to any of the fields of the type.
+*Definition*: A method returning a proper value (not `void`, not `this`) is *independent* when the object returned does not link to any of the fields of the type.
 ****
 
-The definition for independence on a constructor is very similar:
+The definition of independence on a constructor is very similar:
 
 ****
 *Definition*: A constructor is *independent* when the fields of the resulting instance do not link to the parameters of the constructor.

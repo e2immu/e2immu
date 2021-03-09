@@ -397,8 +397,22 @@ public record NewObject(
             case IGNORE_MODIFICATIONS:
                 return Level.FALSE;
 
-            case IMMUTABLE:
-            case CONTAINER: {
+            case CONTAINER: { // must be pretty similar to the code in ParameterAnalysis, because every parameter will be of this type
+                Boolean implicit = parameterizedType.isImplicitlyImmutable(evaluationContext.getAnalyserContext(),
+                        evaluationContext.getCurrentType());
+                if (implicit == Boolean.TRUE) return Level.TRUE;
+                // if implicit is null, we cannot return FALSE, we'll have to wait!
+                TypeInfo bestType = parameterizedType.bestTypeInfo();
+                int withoutImplicitDelay;
+                if (bestType != null) {
+                    withoutImplicitDelay = evaluationContext.getAnalyserContext()
+                            .getTypeAnalysis(bestType).getProperty(VariableProperty.CONTAINER);
+                } else {
+                    withoutImplicitDelay = Level.FALSE;
+                }
+                return implicit == null && withoutImplicitDelay != Level.TRUE ? Level.DELAY : withoutImplicitDelay;
+            }
+            case IMMUTABLE: {
                 TypeInfo bestType = parameterizedType.bestTypeInfo();
                 if (Primitives.isPrimitiveExcludingVoid(bestType)) return variableProperty.best;
                 return bestType == null ? variableProperty.falseValue :

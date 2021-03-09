@@ -188,11 +188,13 @@ public class Test_11_IfStatement extends CommonTestRunner {
             if ("IfStatement_4".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo map && "map".equals(map.name)) {
                     Assert.assertEquals("nullable instance type Map<String,Integer>", d.currentValue().toString());
-                    Assert.assertEquals(0, d.getProperty(VariableProperty.CONTAINER));
+                    int expectContainer = d.iteration() == 0 ? Level.DELAY: Level.FALSE; // NO API!
+                    Assert.assertEquals(expectContainer, d.getProperty(VariableProperty.CONTAINER));
                 }
                 if (d.variable() instanceof FieldReference fr && "map".equals(fr.fieldInfo.name)) {
                     Assert.assertEquals("map", d.currentValue().toString());
-                    Assert.assertEquals(0, d.getProperty(VariableProperty.CONTAINER));
+                    int expectContainer = d.iteration() == 0 ? Level.DELAY: Level.FALSE; // NO API!
+                    Assert.assertEquals(expectContainer, d.getProperty(VariableProperty.CONTAINER));
                 }
             }
         };

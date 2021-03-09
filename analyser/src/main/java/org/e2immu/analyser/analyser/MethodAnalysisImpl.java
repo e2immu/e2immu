@@ -357,7 +357,8 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
         }
 
         private boolean allowIndependentOnMethod() {
-            return !Primitives.isVoid(returnType) && returnType.isImplicitlyOrAtLeastEventuallyE2Immutable(analysisProvider) != Boolean.TRUE;
+            return !Primitives.isVoid(returnType) &&
+                    returnType.isImplicitlyOrAtLeastEventuallyE2Immutable(analysisProvider, methodInfo.typeInfo) != Boolean.TRUE;
         }
 
         // the name refers to the @Mark and @Only annotations. It is the data for this annotation.

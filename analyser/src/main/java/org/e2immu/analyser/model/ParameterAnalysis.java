@@ -141,11 +141,17 @@ public interface ParameterAnalysis extends Analysis {
             // the only way to have a container is for the type to be a container, or for the user to have
             // contract annotated the parameter with @Container
             case CONTAINER: {
-                if (parameterInfo.parameterizedType.isUnboundParameterType()) return Level.TRUE;
+                Boolean implicit = parameterInfo.parameterizedType.isImplicitlyImmutable(analysisProvider, parameterInfo.owner.typeInfo);
+                if (implicit == Boolean.TRUE) return Level.TRUE;
+                // if implicit is null, we cannot return FALSE, we'll have to wait!
                 TypeInfo bestType = parameterInfo.parameterizedType.bestTypeInfo();
-                if (bestType != null)
-                    return analysisProvider.getTypeAnalysis(bestType).getProperty(VariableProperty.CONTAINER);
-                return Level.best(internalGetProperty(VariableProperty.CONTAINER), Level.FALSE);
+                int withoutImplicitDelay;
+                if (bestType != null) {
+                    withoutImplicitDelay = analysisProvider.getTypeAnalysis(bestType).getProperty(VariableProperty.CONTAINER);
+                } else {
+                    withoutImplicitDelay = Level.best(internalGetProperty(VariableProperty.CONTAINER), Level.FALSE);
+                }
+                return implicit == null && withoutImplicitDelay != Level.TRUE ? Level.DELAY : withoutImplicitDelay;
             }
             // when can a parameter be immutable? it cannot be computed in the method
             // (1) if the type is effectively immutable

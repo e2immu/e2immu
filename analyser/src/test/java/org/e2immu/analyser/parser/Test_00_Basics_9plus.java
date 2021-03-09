@@ -299,6 +299,13 @@ public class Test_00_Basics_9plus extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             int cnn = d.getProperty(VariableProperty.CONTEXT_NOT_NULL);
             int enn = d.getProperty(VariableProperty.EXTERNAL_NOT_NULL);
+            if ("setT".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ParameterInfo p && "t".equals(p.name)) {
+                    int expectContainer = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
+                    Assert.assertEquals("Statement: " + d.statementId(), expectContainer,
+                            d.getProperty(VariableProperty.CONTAINER));
+                }
+            }
             if ("getT".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof FieldReference t && t.fieldInfo.name.equals("t")) {
                     if ("0".equals(d.statementId())) {
@@ -327,19 +334,30 @@ public class Test_00_Basics_9plus extends CommonTestRunner {
                     Assert.assertEquals("Statement " + d.statementId(), MultiLevel.NULLABLE, enn);
                 }
             }
-            if (d.iteration() > 0) {
+            if (d.iteration() > 1) {
                 Assert.assertTrue("Statement " + d.statementId() + " var " + d.variable().fullyQualifiedName(),
                         enn != Level.DELAY);
             }
         };
+
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("t".equals(d.fieldInfo().name)) {
                 Assert.assertEquals(MultiLevel.NULLABLE, d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_NOT_NULL));
             }
         };
+
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("setT".equals(d.methodInfo().name)) {
+                ParameterAnalysis p0 = d.parameterAnalyses().get(0);
+                int expectContainer = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
+                Assert.assertEquals(expectContainer, p0.getProperty(VariableProperty.CONTAINER));
+            }
+        };
+
         testClass("Basics_14", 0, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 }

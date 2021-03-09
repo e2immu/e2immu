@@ -357,7 +357,8 @@ public class Test_16_Modification extends CommonTestRunner {
                         d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_NOT_NULL));
 
                 Assert.assertEquals("in4", d.fieldAnalysis().getEffectivelyFinalValue().toString());
-                Assert.assertEquals("in4", d.fieldAnalysis().getLinkedVariables().toString());
+                String expectLinked = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "in4";
+                Assert.assertEquals(expectLinked, d.fieldAnalysis().getLinkedVariables().toString());
             }
         };
 
@@ -641,7 +642,11 @@ public class Test_16_Modification extends CommonTestRunner {
 
                 if (iteration == 0) {
                     Assert.assertFalse(list.isAssignedToFieldDelaysResolved());
+                } else if (iteration == 1) {
+                    Assert.assertFalse(list.isAssignedToFieldDelaysResolved());
+                    Assert.assertEquals("{c0=ASSIGNED, s1=NO, l1=NO, l2=NO, l0=NO}", list.getAssignedToField().toString());
                 } else {
+                    Assert.assertTrue(list.isAssignedToFieldDelaysResolved());
                     Assert.assertEquals("{c1=LINKED, s0=NO, c0=ASSIGNED, s1=NO, l1=NO, l2=NO, l0=NO}", list.getAssignedToField().toString());
                 }
                 if (iteration >= 2) {
@@ -678,8 +683,15 @@ public class Test_16_Modification extends CommonTestRunner {
 
         };
 
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("Modification_10".equals(d.typeInfo().simpleName)) {
+                Assert.assertTrue(d.typeAnalysis().getImplicitlyImmutableDataTypes().isEmpty());
+            }
+        };
+
         testClass("Modification_10", 0, 0, new DebugConfiguration.Builder()
                 .addTypeMapVisitor(typeMapVisitor)
+                .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
@@ -707,7 +719,8 @@ public class Test_16_Modification extends CommonTestRunner {
                     Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
                     // not a direct assignment!
                     Assert.assertEquals("", d.variableInfo().getStaticallyAssignedVariables().toString());
-                    Assert.assertEquals("setC", d.variableInfo().getLinkedVariables().toString());
+                    String expectLinked = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "setC";
+                    Assert.assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
                     Assert.assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
                 }
                 if (d.variable() instanceof ParameterInfo setC && "setC".equals(setC.name)) {
@@ -750,9 +763,10 @@ public class Test_16_Modification extends CommonTestRunner {
                     }
                     if ("2".equals(d.statementId())) {
                         Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
-                        String expectLinked = d.iteration() <= 2 ? LinkedVariables.DELAY_STRING : "this.s2";
-                        Assert.assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
+
                     }
+                    String expectLinked = d.iteration() <= 2 ? LinkedVariables.DELAY_STRING : "this.s2";
+                    Assert.assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
                 }
                 if (d.variable() instanceof ReturnVariable && "2".equals(d.statementId())) {
                     String expectValue = d.iteration() <= 1 ? "<m:addAll>" : "c.set.addAll(localD.set)";
@@ -796,7 +810,8 @@ public class Test_16_Modification extends CommonTestRunner {
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("set".equals(d.fieldInfo().name)) {
-                Assert.assertEquals("setC", d.fieldAnalysis().getLinkedVariables().toString());
+                String expectLinked = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "setC";
+                Assert.assertEquals(expectLinked, d.fieldAnalysis().getLinkedVariables().toString());
                 Assert.assertEquals("setC/*@NotNull*/", d.fieldAnalysis().getEffectivelyFinalValue().debugOutput());
                 // the field analyser sees addAll being used on set in the method addAllOnC
                 int expectEnn = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL;
@@ -834,9 +849,16 @@ public class Test_16_Modification extends CommonTestRunner {
             }
         };
 
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("Modification_11".equals(d.typeInfo().simpleName)) {
+                Assert.assertTrue(d.typeAnalysis().getImplicitlyImmutableDataTypes().isEmpty());
+            }
+        };
+
         testClass("Modification_11", 0, 0, new DebugConfiguration.Builder()
+                .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+              //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addEvaluationResultVisitor(evaluationResultVisitor)
@@ -1030,6 +1052,13 @@ public class Test_16_Modification extends CommonTestRunner {
     @Test
     public void test15() throws IOException {
         testClass("Modification_15", 1, 0, new DebugConfiguration.Builder()
+                .build());
+    }
+
+
+    @Test
+    public void test16() throws IOException {
+        testClass("Modification_16_M", 1, 0, new DebugConfiguration.Builder()
                 .build());
     }
 }

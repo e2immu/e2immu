@@ -20,6 +20,7 @@
 package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.FieldAnalysisImpl;
+import org.e2immu.analyser.analyser.LinkedVariables;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.Level;
@@ -46,6 +47,7 @@ public class Test_Own_04_SetOnce extends CommonTestRunner {
     public void test() throws IOException {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("SetOnce".equals(d.typeInfo().simpleName)) {
+                Assert.assertEquals("[Type param T]", d.typeAnalysis().getImplicitlyImmutableDataTypes().toString());
                 String expectE1 = d.iteration() <= 1 ? "{}" : "{t=null==t}";
                 Assert.assertEquals(expectE1, d.typeAnalysis().getApprovedPreconditionsE1().toString());
                 String expectE2 = d.iteration() <= 1 ? "{}" : "{t=null==t}";
@@ -63,6 +65,9 @@ public class Test_Own_04_SetOnce extends CommonTestRunner {
                 int expectImmu = d.iteration() <= 1 ? Level.DELAY : MultiLevel.MUTABLE;
                 Assert.assertEquals(expectImmu, d.fieldAnalysis().getProperty(VariableProperty.IMMUTABLE));
                 Assert.assertEquals(MultiLevel.NULLABLE, d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_NOT_NULL));
+
+                String expectLinked = d.iteration() == 0  ? LinkedVariables.DELAY_STRING : "";
+                Assert.assertEquals(expectLinked, d.fieldAnalysis().getLinkedVariables().toString());
             }
         };
 

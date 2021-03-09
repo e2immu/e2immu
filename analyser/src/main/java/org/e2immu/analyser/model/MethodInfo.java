@@ -21,6 +21,7 @@ package org.e2immu.analyser.model;
 import org.e2immu.analyser.analyser.StatementAnalysis;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.inspector.MethodResolution;
+import org.e2immu.analyser.model.expression.Cast;
 import org.e2immu.analyser.model.expression.FieldAccess;
 import org.e2immu.analyser.model.expression.MethodCall;
 import org.e2immu.analyser.model.expression.NewObject;
@@ -349,6 +350,9 @@ public class MethodInfo implements WithInspectionAndAnalysis {
                 !inspection.isStatic() && !inspection.isDefault();
     }
 
+    /*
+    list of types which cannot be replaced by an unbound parameter type
+     */
     public Set<ParameterizedType> explicitTypes() {
         return explicitTypes(methodInspection.get().getMethodBody());
     }
@@ -384,6 +388,12 @@ public class MethodInfo implements WithInspectionAndAnalysis {
             // switch(e) -> type of e cannot be replaced
             if (element instanceof SwitchStatementNewStyle switchStatement) {
                 result.add(switchStatement.expression.returnType());
+            }
+
+            // add the subject of the cast, i.e., if T t is unbound, then
+            // (String)t forces T to become explicit
+            if(element instanceof Cast cast) {
+                result.add(cast.expression().returnType());
             }
         };
         start.visit(visitor);

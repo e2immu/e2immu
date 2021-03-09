@@ -353,6 +353,12 @@ public class Primitives {
                 isChar(typeInfo) || isFloat(typeInfo) || isDouble(typeInfo) || isBoolean(typeInfo);
     }
 
+    public static boolean isBoxedExcludingVoid(ParameterizedType parameterizedType) {
+        return parameterizedType.typeInfo != null &&
+                parameterizedType.arrays == 0 &&
+                isBoxedExcludingVoid(parameterizedType.typeInfo);
+    }
+
     public static boolean isBoxedExcludingVoid(TypeInfo typeInfo) {
         return isBoxedByte(typeInfo) || isBoxedShort(typeInfo) || isInteger(typeInfo) || isBoxedLong(typeInfo)
                 || isCharacter(typeInfo) || isBoxedFloat(typeInfo) || isBoxedDouble(typeInfo) || isBoolean(typeInfo);

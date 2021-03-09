@@ -868,7 +868,7 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
                         analyserContext.getMethodAnalysis(mi).methodLevelData().getCallsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod() == null ||
                                 (analyserContext.getMethodAnalysis(mi).methodLevelData().getCallsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod() && (
                                         analyserContext.getMethodAnalysis(mi).getProperty(VariableProperty.MODIFIED_METHOD) == Level.DELAY ||
-                                                mi.returnType().isImplicitlyOrAtLeastEventuallyE2Immutable(analyserContext) == null ||
+                                                mi.returnType().isImplicitlyOrAtLeastEventuallyE2Immutable(analyserContext, methodInfo.typeInfo) == null ||
                                                 analyserContext.getMethodAnalysis(mi).getProperty(VariableProperty.INDEPENDENT) == Level.DELAY)))
                 .findFirst();
         if (someOtherMethodNotYetDecided.isPresent()) {
@@ -879,7 +879,7 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
         return methodInfo.typeInfo.typeInspection.get()
                 .methodStream(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM)
                 .anyMatch(mi -> analyserContext.getMethodAnalysis(mi).getProperty(VariableProperty.MODIFIED_METHOD) == Level.TRUE ||
-                        !mi.returnType().isImplicitlyOrAtLeastEventuallyE2Immutable(analyserContext) &&
+                        !mi.returnType().isImplicitlyOrAtLeastEventuallyE2Immutable(analyserContext, methodInfo.typeInfo) &&
                                 analyserContext.getMethodAnalysis(mi).getProperty(VariableProperty.INDEPENDENT) == Level.FALSE);
     }
 

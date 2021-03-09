@@ -51,9 +51,9 @@ public class Test_Own_00_Pair extends CommonTestRunner {
             }
         };
 
-        // fields k and v are non-private, non @E2Immutable (even though the field's type is implicitly immutable)
+        // fields k and v do not link to the constructor's parameters because they are implicitly immutable
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
-            int expectIndependent = d.iteration() == 0 ? Level.DELAY : MultiLevel.FALSE;
+            int expectIndependent = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVE;
             Assert.assertEquals(expectIndependent, d.typeAnalysis().getProperty(VariableProperty.INDEPENDENT));
         };
 

@@ -319,21 +319,21 @@ public class Test_04_Warnings extends CommonTestRunner {
                     }
                 }
             }
-            if("ChildClass".equals(d.methodInfo().name)) {
+            if ("ChildClass".equals(d.methodInfo().name)) {
                 int enn = d.getProperty(VariableProperty.EXTERNAL_NOT_NULL);
-                if(d.variable() instanceof ParameterInfo s && "s".equals(s.name)) {
-                    if("0".equals(d.statementId())) {
-                        int expectEnn = d.iteration() == 0 ? Level.DELAY: MultiLevel.NULLABLE;
+                if (d.variable() instanceof ParameterInfo s && "s".equals(s.name)) {
+                    if ("0".equals(d.statementId())) {
+                        int expectEnn = d.iteration() == 0 ? Level.DELAY : MultiLevel.NULLABLE;
                         Assert.assertEquals(expectEnn, enn);
                     }
-                    if("1".equals(d.statementId())) {
-                        int expectEnn = d.iteration() == 0 ? Level.DELAY: MultiLevel.NULLABLE;
+                    if ("1".equals(d.statementId())) {
+                        int expectEnn = d.iteration() == 0 ? Level.DELAY : MultiLevel.NULLABLE;
                         Assert.assertEquals(expectEnn, enn);
                     }
                 }
-                if(d.variable() instanceof ParameterInfo t && "t".equals(t.name)) {
-                    if("1".equals(d.statementId())) {
-                        int expectEnn = d.iteration() == 0 ? Level.DELAY: MultiLevel.NULLABLE;
+                if (d.variable() instanceof ParameterInfo t && "t".equals(t.name)) {
+                    if ("1".equals(d.statementId())) {
+                        int expectEnn = d.iteration() == 0 ? Level.DELAY : MultiLevel.NULLABLE;
                         Assert.assertEquals(expectEnn, enn);
                     }
                 }
@@ -354,15 +354,16 @@ public class Test_04_Warnings extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("methodMustNotBeStatic3".equals(d.methodInfo().name)) {
                 ParameterAnalysis parameterAnalysis = d.parameterAnalyses().get(0);
-
-                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL,
-                        d.methodAnalysis().getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                int expectNne = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
+                Assert.assertEquals(expectNne, d.methodAnalysis().getProperty(VariableProperty.NOT_NULL_EXPRESSION));
                 Assert.assertEquals(MultiLevel.NULLABLE, parameterAnalysis.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
 
-                Assert.assertEquals(Level.FALSE, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
+                int expectMm = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
+                Assert.assertEquals(expectMm, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
                 Assert.assertEquals(Level.FALSE, parameterAnalysis.getProperty(VariableProperty.MODIFIED_VARIABLE));
 
-                Assert.assertEquals(Level.TRUE, d.methodAnalysis().getProperty(VariableProperty.FLUENT));
+                int expectFluent = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
+                Assert.assertEquals(expectFluent, d.methodAnalysis().getProperty(VariableProperty.FLUENT));
             }
             if ("methodMustNotBeStatic4".equals(d.methodInfo().name)) {
                 if (d.iteration() == 0) {
@@ -377,7 +378,8 @@ public class Test_04_Warnings extends CommonTestRunner {
                 } else {
                     Assert.assertEquals("this", d.methodAnalysis().getSingleReturnValue().toString());
                 }
-                Assert.assertEquals(Level.FALSE, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
+                int expectMm = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
+                Assert.assertEquals(expectMm, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
                 int expectFluent = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
                 Assert.assertEquals(expectFluent, d.methodAnalysis().getProperty(VariableProperty.FLUENT));
             }
@@ -388,7 +390,7 @@ public class Test_04_Warnings extends CommonTestRunner {
                 Assert.assertEquals("t", d.fieldAnalysis().getEffectivelyFinalValue().toString());
                 Assert.assertEquals(MultiLevel.NULLABLE, d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_NOT_NULL));
             }
-            if("s".equals(d.fieldInfo().name)) {
+            if ("s".equals(d.fieldInfo().name)) {
                 Assert.assertTrue(d.fieldInfo().owner.isPrivate());
                 Assert.assertEquals(Level.TRUE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
                 Assert.assertEquals("s", d.fieldAnalysis().getEffectivelyFinalValue().toString());
@@ -396,8 +398,15 @@ public class Test_04_Warnings extends CommonTestRunner {
             }
         };
 
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("Warnings_5".equals(d.typeInfo().simpleName)) {
+                Assert.assertTrue(d.typeAnalysis().getImplicitlyImmutableDataTypes().isEmpty());
+            }
+        };
+
         testClass("Warnings_5", 0, 2, new DebugConfiguration.Builder()
                 .addTypeMapVisitor(typeMapVisitor)
+                .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)

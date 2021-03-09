@@ -27,6 +27,7 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.util.Set;
+import java.util.function.Function;
 
 public class Test_22_SubTypes extends CommonTestRunner {
     public Test_22_SubTypes() {
@@ -132,7 +133,18 @@ public class Test_22_SubTypes extends CommonTestRunner {
 
     @Test
     public void test_6() throws IOException {
-        testClass("SubTypes_6", 0, 0, new DebugConfiguration.Builder().build());
+        TypeMapVisitor typeMapVisitor = typeMap -> {
+            TypeInfo function = typeMap.get(Function.class);
+            MethodInfo apply = function.findUniqueMethod("apply", 1);
+            ParameterInfo apply0 = apply.methodInspection.get().getParameters().get(0);
+            int modified = apply0.parameterAnalysis.get().getProperty(VariableProperty.MODIFIED_VARIABLE);
+            Assert.assertEquals(Level.FALSE, modified);
+        };
+
+        // error: we postulate that Function has a @NotModified parameter
+        testClass("SubTypes_6", 1, 0, new DebugConfiguration.Builder()
+                .addTypeMapVisitor(typeMapVisitor)
+                .build());
     }
 
     @Test

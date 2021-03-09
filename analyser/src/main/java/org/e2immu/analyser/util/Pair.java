@@ -32,9 +32,7 @@ import org.e2immu.annotation.Linked;
 @E2Container
 public class Pair<K, V> {
 
-    @Linked(to = {"Pair:k"})
     public final K k;
-    @Linked(to = {"Pair:v"})
     public final V v;
 
     public Pair(K k, V v) {

@@ -47,13 +47,15 @@ public class Test_00_Basics_1 extends CommonTestRunner {
             if ("s1".equals(d.variableName())) {
                 if ("0".equals(d.statementId())) {
                     Assert.assertEquals("p0", d.currentValue().toString());
-                    Assert.assertEquals("p0", d.variableInfo().getLinkedVariables().toString());
+                    String expectLinked = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "p0";
+                    Assert.assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
                 }
             }
             if (FIELD1.equals(d.variableName())) {
                 if ("1".equals(d.statementId())) {
                     Assert.assertTrue(d.variableInfo().isAssigned());
-                    Assert.assertEquals("p0", d.variableInfo().getLinkedVariables().toString());
+                    String expectLinked = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "p0";
+                    Assert.assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
                 }
             }
             if (d.variable() instanceof ParameterInfo p0 && "p0".equals(p0.name)) {
@@ -99,7 +101,7 @@ public class Test_00_Basics_1 extends CommonTestRunner {
 
     StatementAnalyserVisitor statementAnalyserVisitor = d -> {
         if (BASICS_1.equals(d.methodInfo().name) && "1".equals(d.statementId())) {
-            Assert.assertTrue(d.statementAnalysis().methodLevelData.linksHaveBeenEstablished.isSet());
+            Assert.assertEquals(d.iteration() > 0, d.statementAnalysis().methodLevelData.linksHaveBeenEstablished.isSet());
         }
         if ("getF1".equals(d.methodInfo().name) && d.iteration() > 1) {
             Assert.assertTrue(d.statementAnalysis().methodLevelData.linksHaveBeenEstablished.isSet());
@@ -122,7 +124,7 @@ public class Test_00_Basics_1 extends CommonTestRunner {
     MethodAnalyserVisitor methodAnalyserVisitor = d -> {
         if (BASICS_1.equals(d.methodInfo().name)) {
             ParameterAnalysis p0 = d.parameterAnalyses().get(0);
-            int expectContextModified = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
+            int expectContextModified = d.iteration() <= 1 ? Level.DELAY : Level.FALSE;
             Assert.assertEquals(expectContextModified, p0.getProperty(VariableProperty.CONTEXT_MODIFIED));
             int expectModified = d.iteration() <= 1 ? Level.DELAY : Level.FALSE;
             Assert.assertEquals(expectModified, p0.getProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD));
@@ -142,6 +144,12 @@ public class Test_00_Basics_1 extends CommonTestRunner {
         }
     };
 
+    TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+        if("Basics_1".equals(d.typeInfo().simpleName)) {
+            Assert.assertTrue(d.typeAnalysis().getImplicitlyImmutableDataTypes().isEmpty());
+        }
+    };
+
     @Test
     public void test() throws IOException {
         // two warnings: two unused parameters
@@ -150,6 +158,7 @@ public class Test_00_Basics_1 extends CommonTestRunner {
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
                 .build());
     }
 

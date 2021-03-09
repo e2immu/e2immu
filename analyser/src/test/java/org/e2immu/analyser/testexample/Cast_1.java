@@ -17,23 +17,44 @@
 
 package org.e2immu.analyser.testexample;
 
-import java.util.Set;
+import org.e2immu.annotation.E1Immutable;
+import org.e2immu.annotation.Modified;
+import org.e2immu.annotation.NotModified;
 
-public class Basics_1 {
+/*
+so while T is implicitly immutable, this promise is broken by the use
+of a cast in the incrementedT method
+ */
+@E1Immutable
+public class Cast_1<T> {
 
-    public final Set<String> f1;
+    static class Counter {
+        private int i = 0;
 
-    public Basics_1(Set<String> p0, Set<String> p1, String p2) {
-        Set<String> s1 = p0;
-        this.f1 = s1;
+        public int increment() {
+            return ++i;
+        }
     }
 
-    public Set<String> getF1() {
-        return f1;
+    @Modified
+    private final T t;
+
+    public Cast_1(@Modified T input) {
+        t = input;
     }
 
-    // this method is here to ensure that Set<String> does not become an implicitly immutable type
-    public boolean contains(String s) {
-        return f1 != null && f1.contains(s);
+    @NotModified
+    public T getT() {
+        return t;
+    }
+
+    @NotModified
+    public String getTAsString() {
+        return (String) t;
+    }
+
+    @Modified
+    public int incrementedT() {
+        return ((Counter) t).increment();
     }
 }

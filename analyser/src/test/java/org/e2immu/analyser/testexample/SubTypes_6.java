@@ -11,10 +11,10 @@ import java.util.function.Function;
 public class SubTypes_6 {
 
     private static Function<Set<String>, Set<String>> removeElement =
-            (@NotNull @Modified Set<String> set) -> {
-                Iterator<String> it1 = set.iterator();
+            (@NotNull @Modified Set<String> set1) -> {
+                Iterator<String> it1 = set1.iterator();
                 if (it1.hasNext()) it1.remove();
-                return set;
+                return set1;
             };
 
     // an alternative approach is to use an interface, which also allows for the @Identity
@@ -25,10 +25,10 @@ public class SubTypes_6 {
         Set<String> go(@NotNull @Modified Set<String> in);
     }
 
-    final static RemoveOne removeOne = set -> {
-        Iterator<String> it2 = set.iterator();
+    final static RemoveOne removeOne = set2 -> {
+        Iterator<String> it2 = set2.iterator();
         if (it2.hasNext()) it2.remove();
-        return set;
+        return set2;
     };
 
 }

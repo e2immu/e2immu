@@ -27,7 +27,7 @@ public class SetOnce<T> {
 
     @Final(after = "t")
     @Nullable // eventually not-null, not implemented yet
-    @Linked(to = {"t"})
+    @Linked(absent = true)
     // volatile guarantees that once the value is set, other threads see the effect immediately
     private volatile T t;
 

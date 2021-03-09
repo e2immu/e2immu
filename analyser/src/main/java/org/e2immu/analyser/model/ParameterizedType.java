@@ -640,19 +640,19 @@ public class ParameterizedType {
         return null;
     }
 
-    public Boolean isImplicitlyOrAtLeastEventuallyE2Immutable(AnalysisProvider analysisProvider) {
+    public Boolean isImplicitlyOrAtLeastEventuallyE2Immutable(AnalysisProvider analysisProvider, TypeInfo typeBeingAnalysed) {
         if (arrays > 0) return false;
-        if (isUnboundParameterType()) return true;
         Boolean immu = isAtLeastEventuallyE2Immutable(analysisProvider);
         if (immu == Boolean.TRUE) return true;
-        TypeAnalysis typeAnalysis = analysisProvider.getTypeAnalysis(bestTypeInfo());
-        if (typeAnalysis.getImplicitlyImmutableDataTypes() == null) {
-            // not yet defined
-            return null;
-        }
-        boolean implicit = typeAnalysis.getImplicitlyImmutableDataTypes().contains(this);
-        if (implicit) return true;
-        return immu;
+        Boolean implicit = isImplicitlyImmutable(analysisProvider, typeBeingAnalysed);
+        if (implicit == Boolean.TRUE) return true;
+        return immu == null || implicit == null ? null : false;
+    }
+
+    public Boolean isImplicitlyImmutable(AnalysisProvider analysisProvider, TypeInfo typeBeingAnalysed) {
+        TypeAnalysis typeAnalysis = analysisProvider.getTypeAnalysis(typeBeingAnalysed);
+        Set<ParameterizedType> implicitTypes = typeAnalysis.getImplicitlyImmutableDataTypes();
+        return implicitTypes == null ? null : implicitTypes.contains(this);
     }
 
     public Boolean isAtLeastEventuallyE2Immutable(AnalysisProvider analysisProvider) {
