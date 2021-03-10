@@ -71,6 +71,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                                List<ObjectFlow> objectFlows,
                                Map<Variable, ChangeData> changeData,
                                Expression precondition,
+                               Expression untranslatedPrecondition,
                                boolean addCircularCallOrUndeclaredFunctionalInterface) {
 
     public EvaluationResult {
@@ -169,6 +170,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
         private int statementTime;
         private final Map<Variable, ChangeData> valueChanges = new HashMap<>();
         private Expression precondition;
+        private Expression untranslatedPrecondition;
         private boolean addCircularCallOrUndeclaredFunctionalInterface;
         private boolean someValueWasDelayed;
 
@@ -234,6 +236,13 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                     precondition = combinePrecondition(precondition, evaluationResult.precondition);
                 }
             }
+            if (evaluationResult.untranslatedPrecondition != null) {
+                if (untranslatedPrecondition == null) {
+                    untranslatedPrecondition = evaluationResult.untranslatedPrecondition;
+                } else {
+                    untranslatedPrecondition = combinePrecondition(untranslatedPrecondition, evaluationResult.untranslatedPrecondition);
+                }
+            }
         }
 
         public void incrementStatementTime() {
@@ -263,6 +272,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                     storedExpressions == null ? null : ImmutableList.copyOf(storedExpressions),
                     someValueWasDelayed,
                     messages, objectFlows == null ? List.of() : objectFlows, valueChanges, precondition,
+                    untranslatedPrecondition,
                     addCircularCallOrUndeclaredFunctionalInterface);
         }
 
@@ -540,6 +550,14 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                 precondition = expression;
             } else {
                 precondition = combinePrecondition(precondition, expression);
+            }
+        }
+
+        public void addUntranslatedPrecondition(Expression expression) {
+            if (untranslatedPrecondition == null) {
+                untranslatedPrecondition = expression;
+            } else {
+                untranslatedPrecondition = combinePrecondition(untranslatedPrecondition, expression);
             }
         }
 

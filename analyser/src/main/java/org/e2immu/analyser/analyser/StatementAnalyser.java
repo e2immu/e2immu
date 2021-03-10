@@ -805,20 +805,23 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
 
         // not checking on DONE anymore because any delay will also have crept into the precondition itself??
         if (evaluationResult.precondition() != null) {
-            if(evaluationResult.precondition().isBoolValueFalse()) {
+            if (evaluationResult.precondition().isBoolValueFalse()) {
                 statementAnalysis.ensure(Message.newMessage(getLocation(), Message.INCOMPATIBLE_PRECONDITION));
                 statementAnalysis.stateData.setPrecondition(evaluationResult.precondition(), false);
             } else {
                 boolean preconditionIsDelayed = sharedState.evaluationContext.isDelayed(evaluationResult.precondition());
                 Expression translated = sharedState.evaluationContext.acceptAndTranslatePrecondition(evaluationResult.precondition());
                 if (translated != null) {
-                    // FIXME and if not present in condition or state at the same time
                     statementAnalysis.stateData.setPrecondition(translated, preconditionIsDelayed);
                 }
+                Expression untranslated = evaluationResult.untranslatedPrecondition();
                 if (preconditionIsDelayed) {
                     log(DELAYED, "Apply of {}, {} is delayed because of precondition",
                             index(), myMethodAnalyser.methodInfo.fullyQualifiedName);
                     status = DELAYS;
+                } else if (untranslated != null) {
+                    checkPreconditionCompatibilityWithConditionManager(sharedState.evaluationContext, untranslated,
+                            sharedState.localConditionManager);
                 }
             }
         } else if (!statementAnalysis.stateData.preconditionIsSet()) {
@@ -853,6 +856,15 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         }
 
         return new ApplyStatusAndEnnStatus(status, ennStatus);
+    }
+
+    private void checkPreconditionCompatibilityWithConditionManager(EvaluationContext evaluationContext,
+                                                                    Expression untranslated,
+                                                                    ConditionManager localConditionManager) {
+        Expression result = localConditionManager.evaluate(evaluationContext, untranslated);
+        if(result.isBoolValueFalse()) {
+            statementAnalysis.ensure(Message.newMessage(getLocation(), Message.INCOMPATIBLE_PRECONDITION));
+        }
     }
 
     /*

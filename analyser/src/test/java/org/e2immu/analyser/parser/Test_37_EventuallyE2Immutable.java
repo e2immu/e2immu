@@ -182,10 +182,39 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
                 .build());
     }
 
+    /*
+    untranslated precondition and condition manager combine to detect errors
+     */
+
     @Test
     public void test_3() throws IOException {
+        String TYPE = "org.e2immu.analyser.testexample.EventuallyE2Immutable_3";
+        String OTHER_T_0 = TYPE + ".t#" + TYPE + ".error1(" + TYPE + "<T>):0:other$0";
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("error1".equals(d.methodInfo().name)) {
+                if ("0.0.0".equals(d.statementId())) {
+                    String expectCondition = switch (d.iteration()) {
+                        case 0 -> "!<m:isSet>";
+                        case 1 -> "null==<f:t>";
+                        default -> "null==" + OTHER_T_0;
+                    };
+                    Assert.assertEquals(expectCondition, d.condition().toString());
+                }
+            }
+        };
+        testClass("EventuallyE2Immutable_3", 2, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .build());
+    }
 
-        testClass("EventuallyE2Immutable_3", 4, 0, new DebugConfiguration.Builder()
+
+    /*
+    object flow helps to find the errors
+     */
+
+    @Test
+    public void test_4() throws IOException {
+        testClass("EventuallyE2Immutable_4", 2, 0, new DebugConfiguration.Builder()
                 .build());
     }
 }

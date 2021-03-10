@@ -201,6 +201,7 @@ public class EvaluateParameters {
 
                 // all the rest: preconditions
                 Expression rest = filterResult.rest();
+                builder.addUntranslatedPrecondition(rest);
                 Expression translated = evaluationContext.acceptAndTranslatePrecondition(rest);
                 if (translated != null) {
                     builder.addPrecondition(translated);
