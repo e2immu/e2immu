@@ -17,16 +17,13 @@
 
 package org.e2immu.analyser.testexample;
 
-import org.e2immu.annotation.E2Container;
-import org.e2immu.annotation.Mark;
-import org.e2immu.annotation.Only;
-import org.e2immu.annotation.TestMark;
+import org.e2immu.annotation.*;
 
 /*
-Similar to setOnce, to detect errors.
+similar to setOnce, to detect errors
  */
 @E2Container(after = "t")
-public class EventuallyE2Immutable_0<T> {
+public class EventuallyE2Immutable_1<T> {
 
     private T t;
 
@@ -43,18 +40,12 @@ public class EventuallyE2Immutable_0<T> {
         return t;
     }
 
-    @TestMark("t")
-    public boolean isSet() {
-        return t != null;
+    /*
+    getT() requires null!=this.t as precondition,
+    while setT() requires null==this.t
+     */
+    public void error() {
+        setT(getT()); // should cause an error
     }
 
-    @TestMark(value = "t", isMark = false)
-    public boolean isNotYetSet() {
-        return t == null;
-    }
-
-    @Mark("t")
-    public void set2(T t) {
-        setT(t);
-    }
 }

@@ -85,7 +85,7 @@ public class Message {
 
     public static final String CALLING_MODIFYING_METHOD_ON_E2IMMU = "Calling modifying method on level 2 immutable type";
 
-    public static final String NO_APPROVED_PRECONDITIONS = "No approved preconditions";
+    public static final String INCOMPATIBLE_PRECONDITION = "Incompatible preconditions";
     public static final String WORSE_THAN_OVERRIDDEN_METHOD = "Property value worse than overridden method";
     public static final String WORSE_THAN_OVERRIDDEN_METHOD_PARAMETER = "Property value worse than overridden method's parameter";
 

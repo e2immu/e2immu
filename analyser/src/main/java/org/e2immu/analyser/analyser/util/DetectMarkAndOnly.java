@@ -34,18 +34,15 @@ import static org.e2immu.analyser.util.Logger.log;
 
 public record DetectMarkAndOnly(MethodInfo methodInfo,
                                 MethodAnalysisImpl.Builder methodAnalysis,
-                                TypeAnalysis typeAnalysis,
+                                TypeAnalysisImpl.Builder typeAnalysis,
                                 AnalyserContext analyserContext) {
 
     public MethodAnalysis.MarkAndOnly detect(EvaluationContext evaluationContext) {
-
-        SetOnceMap<String, Expression> e1 = ((TypeAnalysisImpl.Builder) typeAnalysis).approvedPreconditionsE1;
-        if (!e1.isFrozen()) {
+        if (!typeAnalysis.approvedPreconditionsIsFrozen(false)) {
             log(DELAYED, "No decision on approved E1 preconditions yet for {}", methodInfo.distinguishingName());
             return MethodAnalysis.DELAYED_MARK_AND_ONLY;
         }
-        SetOnceMap<String, Expression> e2 = ((TypeAnalysisImpl.Builder) typeAnalysis).approvedPreconditionsE2;
-        if (!e2.isFrozen()) {
+        if (!typeAnalysis.approvedPreconditionsIsFrozen(true)) {
             log(DELAYED, "No decision on approved E2 preconditions yet for {}", methodInfo.distinguishingName());
             return MethodAnalysis.DELAYED_MARK_AND_ONLY;
         }
@@ -60,7 +57,7 @@ public record DetectMarkAndOnly(MethodInfo methodInfo,
             return MethodAnalysis.DELAYED_MARK_AND_ONLY;
         }
         List<Expression> preconditions = methodAnalysis.preconditionForMarkAndOnly.get();
-        SetOnceMap<String, Expression> approvedPreconditions = !e2.isEmpty() ? e2 : e1;
+        boolean e2 = !typeAnalysis.approvedPreconditionsIsEmpty(true);
 
         if (modified == Level.FALSE && Primitives.isBoolean(methodInfo.returnType())) {
 
@@ -90,11 +87,11 @@ public record DetectMarkAndOnly(MethodInfo methodInfo,
             @TestMark second situation: we require approvedPreconditions; still non-modifying
             */
             Expression srv = methodAnalysis.getSingleReturnValue();
-            if (srv != null && !approvedPreconditions.isEmpty() && srv instanceof InlinedMethod im) {
+            if (srv != null && !typeAnalysis.approvedPreconditionsIsEmpty(e2) && srv instanceof InlinedMethod im) {
                 // TODO this is not the joint label, we'll need more code for that
                 String markLabel = TypeAnalyser.labelOfPreconditionForMarkAndOnly(im.expression());
-                if (approvedPreconditions.isSet(markLabel)) {
-                    Expression before = approvedPreconditions.get(markLabel);
+                if (typeAnalysis.approvedPreconditionsIsSet(e2, markLabel)) {
+                    Expression before = typeAnalysis.getApprovedPreconditions(e2, markLabel);
                     if (before.equals(im.expression())) {
                         return new MethodAnalysis.MarkAndOnly(List.of(), markLabel, false, null, false);
                     }
@@ -116,11 +113,11 @@ public record DetectMarkAndOnly(MethodInfo methodInfo,
         String jointMarkLabel = TypeAnalyser.labelOfPreconditionForMarkAndOnly(preconditions);
         for (Expression precondition : preconditions) {
             String markLabel = TypeAnalyser.labelOfPreconditionForMarkAndOnly(precondition);
-            if (!approvedPreconditions.isSet(markLabel)) {
+            if (!typeAnalysis.approvedPreconditionsIsSet(e2, markLabel)) {
                 // not going to work...
                 continue;
             }
-            Expression before = approvedPreconditions.get(markLabel);
+            Expression before = typeAnalysis.getApprovedPreconditions(e2, markLabel);
             // TODO parameters have different owners, so a precondition containing them cannot be the same in a different method
             // we need a better solution
             if (before.toString().equals(precondition.toString())) {

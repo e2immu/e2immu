@@ -112,6 +112,21 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
     }
 
     @Override
+    public Expression getApprovedPreconditions(boolean e2, String markLabel) {
+        return e2 ? approvedPreconditionsE2.get(markLabel) : approvedPreconditionsE1.get(markLabel);
+    }
+
+    @Override
+    public boolean approvedPreconditionsIsSet(boolean e2, String markLabel) {
+        return e2 ? approvedPreconditionsE2.containsKey(markLabel) : approvedPreconditionsE1.containsKey(markLabel);
+    }
+
+    @Override
+    public boolean approvedPreconditionsIsFrozen(boolean e2) {
+        return true;
+    }
+
+    @Override
     public Set<ParameterizedType> getImplicitlyImmutableDataTypes() {
         return implicitlyImmutableDataTypes;
     }
@@ -126,8 +141,8 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
         public final AddOnceSet<ObjectFlow> constantObjectFlows = new AddOnceSet<>();
 
         // from label to condition BEFORE (used by @Mark and @Only(before="label"))
-        public final SetOnceMap<String, Expression> approvedPreconditionsE1 = new SetOnceMap<>();
-        public final SetOnceMap<String, Expression> approvedPreconditionsE2 = new SetOnceMap<>();
+        private final SetOnceMap<String, Expression> approvedPreconditionsE1 = new SetOnceMap<>();
+        private final SetOnceMap<String, Expression> approvedPreconditionsE2 = new SetOnceMap<>();
         public final AddOnceSet<String> namesOfEventuallyImmutableFields = new AddOnceSet<>();
 
         public final SetOnce<Set<ParameterizedType>> implicitlyImmutableDataTypes = new SetOnce<>();
@@ -141,6 +156,40 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
         public Builder(Primitives primitives, TypeInfo typeInfo) {
             super(primitives, typeInfo.simpleName);
             this.typeInfo = typeInfo;
+        }
+
+        @Override
+        public Expression getApprovedPreconditions(boolean e2, String markLabel) {
+            return e2 ? approvedPreconditionsE2.get(markLabel) : approvedPreconditionsE1.get(markLabel);
+        }
+
+        @Override
+        public boolean approvedPreconditionsIsSet(boolean e2, String markLabel) {
+            return e2 ? approvedPreconditionsE2.isSet(markLabel) : approvedPreconditionsE1.isSet(markLabel);
+        }
+
+        public void freezeApprovedPreconditionsE1() {
+            approvedPreconditionsE1.freeze();
+        }
+
+        public boolean approvedPreconditionsIsEmpty(boolean e2) {
+            return e2 ? approvedPreconditionsE2.isEmpty() : approvedPreconditionsE1.isEmpty();
+        }
+
+        public void putInApprovedPreconditionsE1(String string, Expression expression) {
+            approvedPreconditionsE1.put(string, expression);
+        }
+
+        public boolean approvedPreconditionsIsFrozen(boolean e2) {
+            return e2 ? approvedPreconditionsE2.isFrozen() : approvedPreconditionsE1.isFrozen();
+        }
+
+        public void freezeApprovedPreconditionsE2() {
+            approvedPreconditionsE2.freeze();
+        }
+
+        public void putInApprovedPreconditionsE2(String string, Expression expression) {
+            approvedPreconditionsE2.put(string, expression);
         }
 
         @Override

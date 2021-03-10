@@ -17,16 +17,13 @@
 
 package org.e2immu.analyser.testexample;
 
-import org.e2immu.annotation.E2Container;
-import org.e2immu.annotation.Mark;
-import org.e2immu.annotation.Only;
-import org.e2immu.annotation.TestMark;
+import org.e2immu.annotation.*;
 
 /*
-Similar to setOnce, to detect errors.
+similar to setOnce, to detect errors
  */
 @E2Container(after = "t")
-public class EventuallyE2Immutable_0<T> {
+public class EventuallyE2Immutable_2<T> {
 
     private T t;
 
@@ -53,8 +50,48 @@ public class EventuallyE2Immutable_0<T> {
         return t == null;
     }
 
-    @Mark("t")
-    public void set2(T t) {
+    /*
+    other.getT() requires the precondition null!=other.t
+    while !other.isSet() provides null==other.t
+     */
+    public void error1(EventuallyE2Immutable_2<T> other) {
+        if (!other.isSet()) {
+            setT(other.getT()); // should cause an error!
+        }
+    }
+
+    /*
+    other.getT() requires the precondition null!=other.t
+    while isNotYetSet() provides null==other.t
+    */
+    public void error2(EventuallyE2Immutable_2<T> other) {
+        if (other.isNotYetSet()) {
+            setT(other.getT()); // should cause an error!
+        }
+    }
+
+    /*
+    getT() requires null!=this.t as precondition,
+    while setT() requires null==this.t
+     */
+    public void error3() {
+        setT(getT()); // should cause an error
+    }
+
+    /*
+    the first statement requires null==this.t, but leaves null!=this.t as
+    a state. The second statement requires null==this.t again.
+     */
+    public void error4(T t) {
         setT(t);
+        setT(t);
+    }
+
+    /*
+    Same, but now with other.
+    */
+    public void error5(@Modified EventuallyE2Immutable_2<T> other) {
+        other.setT(getT());
+        other.setT(getT());
     }
 }

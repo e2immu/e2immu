@@ -401,7 +401,7 @@ public class TypeAnalyser extends AbstractAnalyser {
      when? all assigning methods must have methodAnalysis.preconditionForOnlyData set with value != NO_VALUE
     */
     private AnalysisStatus analyseOnlyMarkEventuallyE1Immutable(int iteration) {
-        if (typeAnalysis.approvedPreconditionsE1.isFrozen()) {
+        if (typeAnalysis.approvedPreconditionsIsFrozen(false)) {
             return DONE;
         }
         Set<MethodAnalyser> assigningMethods = determineAssigningMethods();
@@ -418,7 +418,7 @@ public class TypeAnalyser extends AbstractAnalyser {
         if (oEmpty.isPresent()) {
             log(MARK, "Not all assigning methods have a valid precondition in {}; (findFirst) {}",
                     typeInfo.fullyQualifiedName, oEmpty.get().methodInfo.fullyQualifiedName);
-            typeAnalysis.approvedPreconditionsE1.freeze();
+            typeAnalysis.freezeApprovedPreconditionsE1();
             return DONE;
         }
 
@@ -435,13 +435,13 @@ public class TypeAnalyser extends AbstractAnalyser {
         }
         if (tempApproved.isEmpty()) {
             log(MARK, "No modifying methods in {}", typeInfo.fullyQualifiedName);
-            typeAnalysis.approvedPreconditionsE1.freeze();
+            typeAnalysis.freezeApprovedPreconditionsE1();
             return DONE;
         }
 
         // copy into approved preconditions
-        tempApproved.forEach(typeAnalysis.approvedPreconditionsE1::put);
-        typeAnalysis.approvedPreconditionsE1.freeze();
+        tempApproved.forEach(typeAnalysis::putInApprovedPreconditionsE1);
+        typeAnalysis.freezeApprovedPreconditionsE1();
         log(MARK, "Approved preconditions {} in {}, type is now @E1Immutable(after=)", tempApproved.values(), typeInfo.fullyQualifiedName);
         return DONE;
     }
@@ -455,13 +455,18 @@ public class TypeAnalyser extends AbstractAnalyser {
         Set<MethodInfo> assigningMethods = myMethodAnalysersExcludingSAMs.stream()
                 .filter(ma -> {
                     StatementAnalysis statementAnalysis = ma.methodAnalysis.getLastStatement();
-                    return statementAnalysis != null && statementAnalysis.assignsToFields();
+                    return statementAnalysis != null && statementAnalysis.assignsToFields() &&
+                            statementAnalysis.noIncompatiblePrecondition();
                 })
                 .map(ma -> ma.methodInfo)
                 .collect(Collectors.toUnmodifiableSet());
 
         return myMethodAnalysersExcludingSAMs.stream()
                 .filter(ma -> !ma.methodInspection.isPrivate())
+                .filter(ma -> {
+                    StatementAnalysis statementAnalysis = ma.methodAnalysis.getLastStatement();
+                    return statementAnalysis != null && statementAnalysis.noIncompatiblePrecondition();
+                })
                 .filter(ma -> assigningMethods.contains(ma.methodInfo) ||
                         !Collections.disjoint(ma.methodInfo.methodResolution.get().methodsOfOwnClassReached(), assigningMethods))
                 .collect(Collectors.toSet());
@@ -474,7 +479,7 @@ public class TypeAnalyser extends AbstractAnalyser {
 
          */
     private AnalysisStatus analyseOnlyMarkEventuallyE2Immutable(int iteration) {
-        if (typeAnalysis.approvedPreconditionsE2.isFrozen()) {
+        if (typeAnalysis.approvedPreconditionsIsFrozen(true)) {
             return DONE;
         }
         Optional<MethodAnalyser> optModificationDelay = myMethodAnalysersExcludingSAMs.stream()
@@ -498,7 +503,7 @@ public class TypeAnalyser extends AbstractAnalyser {
                         methodAnalyser.methodAnalysis.preconditionForMarkAndOnly.get().isEmpty());
         if (someInvalidPreconditionsOnModifyingMethods) {
             log(MARK, "Not all modifying methods have a valid precondition in {}", typeInfo.fullyQualifiedName);
-            typeAnalysis.approvedPreconditionsE2.freeze();
+            typeAnalysis.freezeApprovedPreconditionsE2();
             return DONE;
         }
 
@@ -518,13 +523,13 @@ public class TypeAnalyser extends AbstractAnalyser {
         }
         if (tempApproved.isEmpty()) {
             log(MARK, "No modifying methods in {}", typeInfo.fullyQualifiedName);
-            typeAnalysis.approvedPreconditionsE2.freeze();
+            typeAnalysis.freezeApprovedPreconditionsE2();
             return DONE;
         }
 
         // copy into approved preconditions
-        tempApproved.forEach(typeAnalysis.approvedPreconditionsE2::put);
-        typeAnalysis.approvedPreconditionsE2.freeze();
+        tempApproved.forEach(typeAnalysis::putInApprovedPreconditionsE2);
+        typeAnalysis.freezeApprovedPreconditionsE2();
         log(MARK, "Approved preconditions {} in {}, type can now be @E2Immutable(after=)", tempApproved.values(), typeInfo.fullyQualifiedName);
         return DONE;
     }
@@ -795,12 +800,12 @@ public class TypeAnalyser extends AbstractAnalyser {
         int e1Component;
         boolean eventual;
         if (e1 == Level.FALSE) {
-            if (!typeAnalysis.approvedPreconditionsE1.isFrozen()) {
+            if (!typeAnalysis.approvedPreconditionsIsFrozen(false)) {
                 log(DELAYED, "Type {} is not effectively level 1 immutable, waiting for" +
                         " preconditions to find out if it is eventually level 1 immutable", typeInfo.fullyQualifiedName);
                 return DELAYS;
             }
-            boolean isEventuallyE1 = !typeAnalysis.approvedPreconditionsE1.isEmpty();
+            boolean isEventuallyE1 = !typeAnalysis.approvedPreconditionsIsEmpty(false);
             if (!isEventuallyE1) {
                 log(E1IMMUTABLE, "Type {} is not eventually level 1 immutable", typeInfo.fullyQualifiedName);
                 typeAnalysis.setProperty(VariableProperty.IMMUTABLE, MultiLevel.MUTABLE);
@@ -832,7 +837,7 @@ public class TypeAnalyser extends AbstractAnalyser {
 
         // E2
 
-        if (!typeAnalysis.approvedPreconditionsE2.isFrozen()) {
+        if (!typeAnalysis.approvedPreconditionsIsFrozen(true)) {
             log(DELAYED, "Type {} is not effectively level 1 immutable, waiting for" +
                     " preconditions to find out if it is eventually level 2 immutable", typeInfo.fullyQualifiedName);
             return DELAYS;

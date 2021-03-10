@@ -35,6 +35,12 @@ public interface TypeAnalysis extends Analysis {
 
     Map<String, Expression> getApprovedPreconditionsE2();
 
+    Expression getApprovedPreconditions(boolean e2, String markLabel);
+
+    boolean approvedPreconditionsIsSet(boolean e2, String markLabel);
+
+    boolean approvedPreconditionsIsFrozen(boolean e2);
+
     Set<String> getNamesOfEventuallyImmutableFields();
 
     default boolean isEventual() {
@@ -77,4 +83,5 @@ public interface TypeAnalysis extends Analysis {
     default boolean aspectsIsSet(String aspect) {
         return getAspects().containsKey(aspect);
     }
+
 }

@@ -422,8 +422,8 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
     private AnalysisStatus computeOnlyMarkAnnotate(SharedState sharedState) {
         assert !methodAnalysis.markAndOnlyIsSet();
 
-        DetectMarkAndOnly detectMarkAndOnly = new DetectMarkAndOnly(methodInfo, methodAnalysis, typeAnalysis,
-                analyserContext);
+        DetectMarkAndOnly detectMarkAndOnly = new DetectMarkAndOnly(methodInfo, methodAnalysis,
+                (TypeAnalysisImpl.Builder) typeAnalysis, analyserContext);
         MethodAnalysis.MarkAndOnly markAndOnly = detectMarkAndOnly.detect(sharedState.evaluationContext);
         if (markAndOnly == MethodAnalysis.DELAYED_MARK_AND_ONLY) {
             return DELAYS;

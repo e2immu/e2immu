@@ -316,8 +316,8 @@ public class Primitives {
             ti.typeAnalysis.set(builder);
             builder.properties.put(VariableProperty.CONTAINER, Level.TRUE);
             builder.properties.put(VariableProperty.IMMUTABLE, MultiLevel.EFFECTIVELY_E2IMMUTABLE);
-            builder.approvedPreconditionsE1.freeze(); // cannot change these anymore; will never be eventual
-            builder.approvedPreconditionsE2.freeze(); // cannot change these anymore; will never be eventual
+            builder.freezeApprovedPreconditionsE2(); // cannot change these anymore; will never be eventual
+            builder.freezeApprovedPreconditionsE1(); // cannot change these anymore; will never be eventual
             builder.properties.put(VariableProperty.MODIFIED_OUTSIDE_METHOD, Level.FALSE);
             builder.properties.put(VariableProperty.CONTEXT_MODIFIED, Level.FALSE);
             builder.implicitlyImmutableDataTypes.set(Set.of());

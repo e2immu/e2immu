@@ -592,6 +592,10 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         return variableStream().anyMatch(vi -> vi.variable() instanceof FieldReference && vi.isAssigned());
     }
 
+    public boolean noIncompatiblePrecondition() {
+        return !(methodLevelData.combinedPreconditionIsSet() && methodLevelData.getCombinedPrecondition().isBoolValueFalse());
+    }
+
     public record ConditionAndLastStatement(Expression condition,
                                             String firstStatementIndexForOldStyleSwitch,
                                             StatementAnalyser lastStatement,
