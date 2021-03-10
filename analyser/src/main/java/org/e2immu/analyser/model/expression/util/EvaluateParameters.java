@@ -140,7 +140,7 @@ public class EvaluateParameters {
                 ObjectFlow source = parameterValue.getObjectFlow();
                 int modified = map.getOrDefault(VariableProperty.CONTEXT_MODIFIED, Level.DELAY);
                 if (modified == Level.DELAY) {
-                    Logger.log(DELAYED, "Delaying flow access registration because modification status of {} not known",
+                    Logger.log(DELAYED, "Delaying flow access registration in param because modification status of {} not known",
                             methodInfo.fullyQualifiedName());
                     source.delay();
                 } else {

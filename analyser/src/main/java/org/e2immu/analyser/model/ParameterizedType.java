@@ -44,6 +44,7 @@ public class ParameterizedType {
     public static final ParameterizedType NO_TYPE_GIVEN_IN_LAMBDA = new ParameterizedType(WildCard.NONE);
     public static final ParameterizedType WILDCARD_PARAMETERIZED_TYPE = new ParameterizedType(WildCard.UNBOUND);
 
+
     public enum WildCard {
         NONE, UNBOUND, SUPER, EXTENDS
     }
@@ -661,6 +662,14 @@ public class ParameterizedType {
         int immutable = analysisProvider.getTypeAnalysis(bestType).getProperty(VariableProperty.IMMUTABLE);
         if (immutable == Level.DELAY) return null;
         return MultiLevel.isAtLeastEventuallyE2Immutable(immutable);
+    }
+
+    public Boolean isE2Immutable(AnalysisProvider analysisProvider) {
+        TypeInfo bestType = bestTypeInfo();
+        if (bestType == null) return false;
+        int immutable = analysisProvider.getTypeAnalysis(bestType).getProperty(VariableProperty.IMMUTABLE);
+        if (immutable == Level.DELAY) return null;
+        return immutable == MultiLevel.EFFECTIVELY_E2IMMUTABLE; // exactly
     }
 
     public TypeInfo toBoxed(Primitives primitives) {

@@ -20,13 +20,8 @@
 package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.VariableProperty;
-import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.config.MethodAnalyserVisitor;
-import org.e2immu.analyser.config.StatementAnalyserVisitor;
-import org.e2immu.analyser.config.TypeAnalyserVisitor;
-import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.Level;
-import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.config.*;
+import org.e2immu.analyser.model.*;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -151,4 +146,46 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
                 .build());
     }
 
+
+    @Test
+    public void test_2() throws IOException {
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("setT".equals(d.methodInfo().name)) {
+                Assert.assertEquals(Level.TRUE, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
+                ParameterAnalysis p0 = d.parameterAnalyses().get(0);
+                int expectMv = d.iteration() <= 1 ? Level.DELAY : Level.FALSE;
+                Assert.assertEquals(expectMv, p0.getProperty(VariableProperty.MODIFIED_VARIABLE));
+            }
+
+            if ("copyInto".equals(d.methodInfo().name)) {
+                int expectMm = d.iteration() <= 1 ? Level.DELAY : Level.FALSE;
+                Assert.assertEquals(expectMm, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
+                ParameterAnalysis p0 = d.parameterAnalyses().get(0);
+                int expectMv = d.iteration() <= 2 ? Level.DELAY : Level.TRUE;
+                Assert.assertEquals(expectMv, p0.getProperty(VariableProperty.CONTEXT_MODIFIED));
+                Assert.assertEquals(expectMv, p0.getProperty(VariableProperty.MODIFIED_VARIABLE));
+            }
+        };
+
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("copyInto".equals(d.methodInfo().name) && "0".equals(d.statementId())) {
+                if (d.variable() instanceof ParameterInfo other && "other".equals(other.name)) {
+                    int expectCm = d.iteration() <= 1 ? Level.DELAY : Level.TRUE;
+                    Assert.assertEquals(expectCm, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
+                }
+            }
+        };
+
+        testClass("EventuallyE2Immutable_2", 0, 0, new DebugConfiguration.Builder()
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .build());
+    }
+
+    @Test
+    public void test_3() throws IOException {
+
+        testClass("EventuallyE2Immutable_3", 4, 0, new DebugConfiguration.Builder()
+                .build());
+    }
 }

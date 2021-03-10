@@ -23,7 +23,7 @@ import org.e2immu.annotation.*;
 similar to setOnce, to detect errors
  */
 @E2Immutable(after = "t")
-public class EventuallyE2Immutable_2<T> {
+public class EventuallyE2Immutable_3<T> {
 
     private T t;
 
@@ -51,9 +51,39 @@ public class EventuallyE2Immutable_2<T> {
     }
 
     /*
-    This method causes other to be marked
+    other.getT() requires the precondition null!=other.t
+    while !other.isSet() provides null==other.t
+     */
+    public void error1(EventuallyE2Immutable_3<T> other) {
+        if (!other.isSet()) {
+            setT(other.getT()); // should cause an error!
+        }
+    }
+
+    /*
+    other.getT() requires the precondition null!=other.t
+    while isNotYetSet() provides null==other.t
     */
-    public void copyInto(@Modified EventuallyE2Immutable_2<T> other) {
+    public void error2(EventuallyE2Immutable_3<T> other) {
+        if (other.isNotYetSet()) {
+            setT(other.getT()); // should cause an error!
+        }
+    }
+
+    /*
+    the first statement requires null==this.t, but leaves null!=this.t as
+    a state. The second statement requires null==this.t again.
+     */
+    public void error3(T t) {
+        setT(t);
+        setT(t); // error
+    }
+
+    /*
+    Same, but now with other.
+    */
+    public void error4(@Modified EventuallyE2Immutable_3<T> other) {
         other.setT(getT());
+        other.setT(getT()); // error
     }
 }

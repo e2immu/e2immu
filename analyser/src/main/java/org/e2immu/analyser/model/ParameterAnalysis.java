@@ -124,7 +124,8 @@ public interface ParameterAnalysis extends Analysis {
             case CONTEXT_MODIFIED:
             case MODIFIED_OUTSIDE_METHOD: {
                 // if the parameter is level 2 immutable, it cannot be modified
-                if (parameterInfo.parameterizedType.isAtLeastEventuallyE2Immutable(analysisProvider) == Boolean.TRUE) {
+                // if own type, eventually doesn't cut it FIXME eventual, or not?
+                if (parameterInfo.parameterizedType.isE2Immutable(analysisProvider) == Boolean.TRUE) {
                     return Level.FALSE;
                 }
                 if (parameterInfo.parameterizedType.isFunctionalInterface()) {
