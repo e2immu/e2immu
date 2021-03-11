@@ -211,7 +211,7 @@ public interface MethodAnalysis extends Analysis {
         }
 
         public String markLabel() {
-            return fields.stream().map(f -> f.name).sorted().collect(Collectors.joining());
+            return fields.stream().map(f -> f.name).sorted().collect(Collectors.joining(","));
         }
 
         public boolean consistentWith(Eventual other) {

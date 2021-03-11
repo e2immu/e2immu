@@ -627,11 +627,9 @@ public class FieldAnalyser extends AbstractAnalyser {
             if (expression instanceof NewObject newObject) {
                 // now the state of the new object may survive if there are no modifying methods called,
                 // but that's too early to know now
-                fieldAnalysis.setStateOfEffectivelyFinalValue(newObject.state());
                 return downgradeFromNewInstanceWithConstructor ?
                         newObject.copyAfterModifyingMethodOnConstructor(TRUE) : newObject.copyWithNewState(TRUE);
             }
-            fieldAnalysis.setStateOfEffectivelyFinalValue(TRUE);
             return expression;
         }
         return new MultiValue(fieldAnalysis.primitives, ObjectFlow.NO_FLOW, values, fieldInfo.type);

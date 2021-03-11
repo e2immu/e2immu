@@ -42,7 +42,6 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
     public final LinkedVariables variablesLinkedToMe;
     public final Expression effectivelyFinalValue;
     public final Expression initialValue;  // value from the initialiser
-    public final Expression stateOfEffectivelyFinalValue;
 
     private FieldAnalysisImpl(FieldInfo fieldInfo,
                               boolean isOfImplicitlyImmutableDataType,
@@ -51,7 +50,6 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
                               LinkedVariables variablesLinkedToMe,
                               Expression effectivelyFinalValue,
                               Expression initialValue,
-                              Expression stateOfEffectivelyFinalValue,
                               Map<VariableProperty, Integer> properties,
                               Map<AnnotationExpression, AnnotationCheck> annotations) {
         super(properties, annotations);
@@ -62,12 +60,6 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
         this.variablesLinkedToMe = variablesLinkedToMe;
         this.effectivelyFinalValue = effectivelyFinalValue;
         this.initialValue = initialValue;
-        this.stateOfEffectivelyFinalValue = stateOfEffectivelyFinalValue; // null when there is no EFV
-    }
-
-    @Override
-    public Expression getStateOfEffectivelyFinalValue() {
-        return stateOfEffectivelyFinalValue;
     }
 
     @Override
@@ -124,7 +116,6 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
         private final TypeAnalysis typeAnalysisOfOwner;
         private final AnalysisProvider analysisProvider;
         public final SetOnce<Expression> initialValue = new SetOnce<>();
-        public Expression stateOfEffectivelyFinalValue;
 
         private final SetOnce<MultiExpression> values = new SetOnce<>();
         private MultiExpression delayedValue;
@@ -218,7 +209,6 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
                     linkedVariables.getOrElse(LinkedVariables.EMPTY),
                     getEffectivelyFinalValue(),
                     getInitialValue(),
-                    getStateOfEffectivelyFinalValue(),
                     properties.toImmutableMap(),
                     annotationChecks.toImmutableMap());
         }
@@ -285,15 +275,6 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
 
         public boolean isDeclaredFunctionalInterface() {
             return false; // TODO
-        }
-
-        @Override
-        public Expression getStateOfEffectivelyFinalValue() {
-            return stateOfEffectivelyFinalValue;
-        }
-
-        public void setStateOfEffectivelyFinalValue(Expression stateOfEffectivelyFinalValue) {
-            this.stateOfEffectivelyFinalValue = Objects.requireNonNull(stateOfEffectivelyFinalValue);
         }
 
         public void setValues(MultiExpression values, boolean delayed) {
