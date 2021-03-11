@@ -22,6 +22,7 @@ import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.variable.FieldReference;
+import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.Primitives;
@@ -156,18 +157,30 @@ public class Filter {
     }
     // some filter methods
 
+    public FilterMethod<FieldReference> individualFieldClause() {
+        return individualFieldClause(false);
+    }
 
     // EXAMPLE: field == null, field == constant, ...
     // exclusively used for Eventual
-    public FilterMethod<FieldReference> individualFieldClause() {
+    public FilterMethod<FieldReference> individualFieldClause(boolean acceptAndRemapLocalCopy) {
         return value -> {
             if (value instanceof Equals equalsValue) {
-                FieldReference l = extractFieldReference(equalsValue.lhs);
-                FieldReference r = extractFieldReference(equalsValue.rhs);
-                if (l != null && r == null)
-                    return new FilterResult<FieldReference>(Map.of(l, value), defaultRest);
-                if (r != null && l == null)
-                    return new FilterResult<FieldReference>(Map.of(r, value), defaultRest);
+                FieldReference l = extractFieldReference(equalsValue.lhs, acceptAndRemapLocalCopy);
+                FieldReference r = extractFieldReference(equalsValue.rhs, acceptAndRemapLocalCopy);
+                if (l != null && r == null) {
+                    // must make a new one because we could have remapped a local copy to its field
+                    Expression expr = acceptAndRemapLocalCopy ?
+                            new Equals(equalsValue.primitives, new VariableExpression(l), equalsValue.rhs, equalsValue.objectFlow)
+                            : value;
+                    return new FilterResult<FieldReference>(Map.of(l, expr), defaultRest);
+                }
+                if (r != null && l == null) {
+                    Expression expr = acceptAndRemapLocalCopy ?
+                            new Equals(equalsValue.primitives, equalsValue.lhs, new VariableExpression(r), equalsValue.objectFlow)
+                            : value;
+                    return new FilterResult<FieldReference>(Map.of(r, expr), defaultRest);
+                }
             } else if (value instanceof GreaterThanZero gt0) {
                 Expression expression = gt0.expression();
                 List<Variable> vars = expression.variables();
@@ -175,7 +188,7 @@ public class Filter {
                     return new FilterResult<FieldReference>(Map.of(fr, gt0), defaultRest);
                 }
             } else if (Primitives.isBoolean(value.returnType())) {
-                FieldReference fieldReference = extractBooleanFieldReference(value);
+                FieldReference fieldReference = extractBooleanFieldReference(value, acceptAndRemapLocalCopy);
                 if (fieldReference != null) {
                     return new FilterResult<FieldReference>(Map.of(fieldReference, value), defaultRest);
                 }
@@ -184,13 +197,16 @@ public class Filter {
         };
     }
 
-    private static FieldReference extractBooleanFieldReference(Expression value) {
+    private static FieldReference extractBooleanFieldReference(Expression value, boolean acceptAndRemapLocalCopy) {
         Expression v;
         if (value instanceof Negation negation) v = negation.expression;
         else v = value;
         if (v instanceof VariableExpression ve
                 && ve.variable() instanceof FieldReference fr
                 && acceptScope(fr.scope)) return fr;
+        if (acceptAndRemapLocalCopy && v instanceof VariableExpression ve
+                && ve.variable() instanceof LocalVariableReference lvr
+                && lvr.variable.isLocalCopyOf() instanceof FieldReference fr && acceptScope(fr.scope)) return fr;
         return null;
     }
 
@@ -199,10 +215,16 @@ public class Filter {
         return scope instanceof This || (scope instanceof FieldReference fr && acceptScope(fr.scope));
     }
 
-    private static FieldReference extractFieldReference(Expression value) {
-        return value instanceof IsVariableExpression variableValue &&
-                variableValue.variable() instanceof FieldReference fieldReference &&
-                acceptScope(fieldReference.scope) ? fieldReference : null;
+    private static FieldReference extractFieldReference(Expression value, boolean acceptAndRemapLocalCopy) {
+        if (value instanceof IsVariableExpression variableValue) {
+            if (variableValue.variable() instanceof FieldReference fieldReference &&
+                    acceptScope(fieldReference.scope)) return fieldReference;
+            if (acceptAndRemapLocalCopy &&
+                    variableValue.variable() instanceof LocalVariableReference lvr &&
+                    lvr.variable.isLocalCopyOf() instanceof FieldReference fieldReference &&
+                    acceptScope(fieldReference.scope)) return fieldReference;
+        }
+        return null;
     }
 
     // EXAMPLE: p == null, field != null

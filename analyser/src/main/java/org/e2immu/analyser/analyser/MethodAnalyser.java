@@ -47,6 +47,8 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -484,8 +486,34 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
         }
         Expression precondition = methodAnalysis.precondition.get();
         if (precondition.isBoolValueTrue()) {
-            log(MARK, "No @Mark @Only annotation in {}, as no precondition", methodInfo.distinguishingName());
-            methodAnalysis.preconditionForEventual.set(List.of());
+
+            List<Expression> preconditionsBasedOnStateBeforeAssignment = new ArrayList<>();
+            for (FieldAnalyser fieldAnalyser : myFieldAnalysers.values()) {
+                if (fieldAnalyser.fieldAnalysis.getProperty(VariableProperty.FINAL) == Level.FALSE) {
+                    FieldReference fr = new FieldReference(analyserContext, fieldAnalyser.fieldInfo, new This(analyserContext, methodInfo.typeInfo));
+                    StatementAnalysis beforeAssignment = statementBeforeAssignment(fr);
+                    if (beforeAssignment != null) {
+                        ConditionManager cm = beforeAssignment.stateData.getConditionManagerForNextStatement();
+                        if (cm.stateIsDelayed()) {
+                            log(DELAYED, "Delaying compute @Only, @Mark, delay in state {} {}", beforeAssignment.index,
+                                    methodInfo.fullyQualifiedName);
+                            return DELAYS;
+                        }
+                        Expression state = cm.state();
+                        if (!state.isBoolValueTrue()) {
+                            Filter filter = new Filter(sharedState.evaluationContext, Filter.FilterMode.ACCEPT);
+                            Filter.FilterResult<FieldReference> filterResult = filter.filter(state, filter.individualFieldClause(true));
+                            Expression inResult = filterResult.accepted().get(fr);
+                            if (inResult != null) {
+                                preconditionsBasedOnStateBeforeAssignment.add(inResult);
+                            }
+                        }
+                    }
+                }
+            }
+            log(MARK, "No @Mark @Only annotation in {} from precondition, found {} from assignment",
+                    methodInfo.distinguishingName(), preconditionsBasedOnStateBeforeAssignment);
+            methodAnalysis.preconditionForEventual.set(preconditionsBasedOnStateBeforeAssignment);
             return DONE;
         }
         // at this point, the null and size checks on parameters have been removed.
@@ -503,6 +531,24 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
                 filterResult.accepted().keySet(), methodInfo.distinguishingName());
         methodAnalysis.preconditionForEventual.set(preconditionParts);
         return DONE;
+    }
+
+    private static final Pattern INDEX_PATTERN = Pattern.compile("(\\d+)(-C|-E|:M)");
+
+    private StatementAnalysis statementBeforeAssignment(FieldReference fieldReference) {
+        StatementAnalysis lastStatement = methodAnalysis.getLastStatement();
+        VariableInfo vi = lastStatement.findOrNull(fieldReference, VariableInfoContainer.Level.MERGE);
+        if (vi != null && vi.isAssigned()) {
+            Matcher m = INDEX_PATTERN.matcher(vi.getAssignmentId());
+            if (m.matches()) {
+                int index = Integer.parseInt(m.group(1)) - 1;
+                if(index >= 0) {
+                    String id = "" + index; // TODO numeric padding to same length
+                    return findStatementAnalyser(id).statementAnalysis;
+                }
+            }
+        }
+        return null;
     }
 
     // singleReturnValue is associated with @Constant; to be able to grab the actual Value object

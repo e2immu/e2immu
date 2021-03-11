@@ -105,6 +105,12 @@ public class Test_Own_07_Lazy extends CommonTestRunner {
         }
     };
 
+    TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+        if("Lazy".equals(d.typeInfo().simpleName)) {
+            Assert.assertEquals("[Type param T]", d.typeAnalysis().getImplicitlyImmutableDataTypes().toString());
+        }
+    };
+
     @Test
     public void test() throws IOException {
         testUtilClass(List.of("Lazy"), 0, 0, new DebugConfiguration.Builder()
@@ -112,6 +118,7 @@ public class Test_Own_07_Lazy extends CommonTestRunner {
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
                 .build());
     }
 
