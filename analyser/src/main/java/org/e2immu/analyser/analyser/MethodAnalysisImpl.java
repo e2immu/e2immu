@@ -35,10 +35,7 @@ import org.e2immu.annotation.AnnotationMode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
@@ -50,8 +47,8 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
     public final MethodInfo methodInfo;
     public final ObjectFlow objectFlow;
     public final Set<ObjectFlow> internalObjectFlows;
-    public final List<Expression> preconditionForMarkAndOnly;
-    public final MarkAndOnly markAndOnly;
+    public final List<Expression> preconditionForEventual;
+    public final Eventual eventual;
     public final Expression precondition;
     public final Expression singleReturnValue;
     public final Map<CompanionMethodName, CompanionAnalysis> companionAnalyses;
@@ -64,8 +61,8 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
                                Expression singleReturnValue,
                                ObjectFlow objectFlow,
                                Set<ObjectFlow> internalObjectFlows,
-                               List<Expression> preconditionForMarkAndOnly,
-                               MarkAndOnly markAndOnly,
+                               List<Expression> preconditionForEventual,
+                               Eventual eventual,
                                Expression precondition,
                                Map<VariableProperty, Integer> properties,
                                Map<AnnotationExpression, AnnotationCheck> annotations,
@@ -78,8 +75,8 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
         this.parameterAnalyses = parameterAnalyses;
         this.objectFlow = objectFlow;
         this.internalObjectFlows = internalObjectFlows;
-        this.preconditionForMarkAndOnly = preconditionForMarkAndOnly;
-        this.markAndOnly = markAndOnly;
+        this.preconditionForEventual = preconditionForEventual;
+        this.eventual = eventual;
         this.precondition = Objects.requireNonNull(precondition);
         this.singleReturnValue = singleReturnValue;
         this.companionAnalyses = companionAnalyses;
@@ -127,18 +124,18 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
     }
 
     @Override
-    public List<Expression> getPreconditionForMarkAndOnly() {
-        return preconditionForMarkAndOnly;
+    public List<Expression> getPreconditionForEventual() {
+        return preconditionForEventual;
     }
 
     @Override
-    public MarkAndOnly getMarkAndOnly() {
-        return markAndOnly;
+    public Eventual getEventual() {
+        return eventual;
     }
 
     @Override
-    public boolean markAndOnlyIsSet() {
-        return markAndOnly != null;
+    public boolean eventualIsSet() {
+        return eventual != null;
     }
 
     @Override
@@ -177,10 +174,11 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
         private final SetOnce<StatementAnalysis> firstStatement = new SetOnce<>();
         public final List<ParameterAnalysis> parameterAnalyses;
         private final AnalysisProvider analysisProvider;
+        private final InspectionProvider inspectionProvider;
 
         // the value here (size will be one)
-        public final SetOnce<List<Expression>> preconditionForMarkAndOnly = new SetOnce<>();
-        private final SetOnce<MarkAndOnly> markAndOnly = new SetOnce<>();
+        public final SetOnce<List<Expression>> preconditionForEventual = new SetOnce<>();
+        private final SetOnce<Eventual> eventual = new SetOnce<>();
 
         public final SetOnce<Expression> singleReturnValue = new SetOnce<>();
         public final SetOnce<Integer> singleReturnValueImmutable = new SetOnce<>();
@@ -220,16 +218,18 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
         }
 
         @Override
-        public boolean markAndOnlyIsSet() {
-            return markAndOnly.isSet();
+        public boolean eventualIsSet() {
+            return eventual.isSet();
         }
 
         public Builder(boolean isBeingAnalysed,
                        Primitives primitives,
                        AnalysisProvider analysisProvider,
+                       InspectionProvider inspectionProvider,
                        MethodInfo methodInfo,
                        List<ParameterAnalysis> parameterAnalyses) {
             super(primitives, methodInfo.name);
+            this.inspectionProvider = inspectionProvider;
             this.isBeingAnalysed = isBeingAnalysed;
             this.parameterAnalyses = parameterAnalyses;
             this.methodInfo = methodInfo;
@@ -256,8 +256,8 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
                     getSingleReturnValue(),
                     getObjectFlow(),
                     ImmutableSet.copyOf(internalObjectFlows.getOrElse(Set.of())),
-                    ImmutableList.copyOf(preconditionForMarkAndOnly.getOrElse(List.of())),
-                    getMarkAndOnly(),
+                    ImmutableList.copyOf(preconditionForEventual.getOrElse(List.of())),
+                    getEventual(),
                     precondition.getOrElse(new BooleanConstant(primitives, true)),
                     properties.toImmutableMap(),
                     annotationChecks.toImmutableMap(),
@@ -297,7 +297,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
 
         private int dynamicProperty(int formalImmutableProperty) {
             int immutableTypeAfterEventual = MultiLevel.eventual(formalImmutableProperty,
-                    getObjectFlow().conditionsMetForEventual(analysisProvider, returnType));
+                    getObjectFlow().conditionsMetForEventual(methodInfo.typeInfo, inspectionProvider, analysisProvider, returnType));
             return Level.best(super.getProperty(VariableProperty.IMMUTABLE), immutableTypeAfterEventual);
         }
 
@@ -366,11 +366,10 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
                     returnType.isImplicitlyOrAtLeastEventuallyE2Immutable(analysisProvider, methodInfo.typeInfo) != Boolean.TRUE;
         }
 
-        // the name refers to the @Mark and @Only annotations. It is the data for this annotation.
-        protected void writeMarkAndOnly(MarkAndOnly markAndOnly) {
-            ContractMark contractMark = new ContractMark(markAndOnly.markLabel());
-            preconditionForMarkAndOnly.set(List.of(contractMark));
-            this.markAndOnly.set(markAndOnly);
+        protected void writeEventual(Eventual eventual) {
+            ContractMark contractMark = new ContractMark(eventual.fields());
+            preconditionForEventual.set(List.of(contractMark));
+            this.eventual.set(eventual);
         }
 
         @Override
@@ -396,13 +395,13 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
         }
 
         @Override
-        public List<Expression> getPreconditionForMarkAndOnly() {
-            return preconditionForMarkAndOnly.getOrElse(null);
+        public List<Expression> getPreconditionForEventual() {
+            return preconditionForEventual.getOrElse(null);
         }
 
         @Override
-        public MarkAndOnly getMarkAndOnly() {
-            return markAndOnly.getOrElse(null);
+        public Eventual getEventual() {
+            return eventual.getOrElse(null);
         }
 
         @Override
@@ -419,7 +418,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
         }
 
         public void minimalInfoForEmptyMethod(Primitives primitives) {
-            preconditionForMarkAndOnly.set(List.of());
+            preconditionForEventual.set(List.of());
             precondition.set(new BooleanConstant(primitives, true));
             if (!methodInfo.isAbstract()) {
                 setProperty(VariableProperty.MODIFIED_METHOD, Level.FALSE);
@@ -429,14 +428,20 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
             }
         }
 
-        public void setMarkAndOnly(MarkAndOnly markAndOnly) {
-            this.markAndOnly.set(markAndOnly);
+        public void setEventual(Eventual eventual) {
+            this.eventual.set(eventual);
         }
 
         public int lastStatementTime() {
             StatementAnalysis last = getLastStatement();
             if (last == null) return 0;
             return last.flowData.getTimeAfterSubBlocks();
+        }
+
+        @Override
+        protected void writeEventual(String markValue, boolean mark, Boolean isAfter, Boolean test) {
+            Set<FieldInfo> fields = methodInfo.typeInfo.findFields(inspectionProvider, markValue);
+            writeEventual(new MethodAnalysis.Eventual(fields, mark, isAfter, test));
         }
     }
 

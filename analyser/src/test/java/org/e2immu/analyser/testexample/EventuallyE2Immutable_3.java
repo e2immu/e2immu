@@ -45,7 +45,7 @@ public class EventuallyE2Immutable_3<T> {
         return t != null;
     }
 
-    @TestMark(value = "t", isMark = false)
+    @TestMark(value = "t", before = true)
     public boolean isNotYetSet() {
         return t == null;
     }

@@ -45,12 +45,14 @@ public class TestObjectFlowFreezableSet extends CommonTestRunner {
 
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
         ObjectFlow objectFlow = d.variableInfo().getObjectFlow();
-        
+        TypeInfo currentType = d.methodInfo().typeInfo;
+        InspectionProvider inspectionProvider = d.evaluationContext().getAnalyserContext();
+
         if ("method1".equals(d.methodInfo().name)) {
             if ("1".equals(d.statementId()) && "set1".equals(d.variableName())) {
                 Assert.assertSame(Origin.NEW_OBJECT_CREATION, objectFlow.origin);
                 Assert.assertEquals("add", objectFlow.getModifyingAccess().methodInfo.name);
-                Assert.assertTrue(objectFlow.marks().isEmpty());
+                Assert.assertTrue(objectFlow.marks(currentType, inspectionProvider).isEmpty());
             }
             if ("2".equals(d.statementId()) && "set1".equals(d.variableName())) {
                 Assert.assertSame(Origin.INTERNAL, objectFlow.origin);
@@ -69,13 +71,13 @@ public class TestObjectFlowFreezableSet extends CommonTestRunner {
                 ObjectFlow parent2 = parent.getPrevious().findFirst().orElseThrow();
                 Assert.assertSame(Origin.NEW_OBJECT_CREATION, parent2.origin);
                 Assert.assertEquals("add", parent2.getModifyingAccess().methodInfo.name);
-                Assert.assertTrue(objectFlow.marks().isEmpty());
+                Assert.assertTrue(objectFlow.marks(currentType, inspectionProvider).isEmpty());
             }
             if ("4".equals(d.statementId()) && "set1".equals(d.variableName())) {
                 Assert.assertSame(Origin.INTERNAL, objectFlow.origin);
                 Assert.assertEquals("isFrozen", ((MethodAccess) objectFlow.getNonModifyingAccesses().findFirst().orElseThrow()).methodInfo.name);
                 Assert.assertEquals("freeze", objectFlow.getModifyingAccess().methodInfo.name);
-                Assert.assertEquals("[mark]", objectFlow.marks().toString());
+                Assert.assertEquals("[mark]", objectFlow.marks(currentType, inspectionProvider).toString());
             }
             if ("5".equals(d.statementId()) && "set1".equals(d.variableName())) {
                 Assert.assertSame(Origin.INTERNAL, objectFlow.origin);
@@ -86,48 +88,51 @@ public class TestObjectFlowFreezableSet extends CommonTestRunner {
                 Assert.assertSame(Origin.INTERNAL, objectFlow.origin);
                 Assert.assertEquals(2L, objectFlow.getNonModifyingAccesses().count());
                 Assert.assertNull(objectFlow.getModifyingAccess());
-                Assert.assertEquals("[mark]", objectFlow.marks().toString());
+                Assert.assertEquals("[mark]", objectFlow.marks(currentType, inspectionProvider).toString());
             }
         }
 
         if ("method4".equals(d.methodInfo().name) && "set4".equals(d.variableName())) {
             if ("1".equals(d.statementId())) {
-                Assert.assertTrue(objectFlow.marks().isEmpty());
+                Assert.assertTrue(objectFlow.marks(currentType, inspectionProvider).isEmpty());
             }
             if ("4".equals(d.statementId())) {
-                Assert.assertEquals("[mark]", objectFlow.marks().toString());
+                Assert.assertEquals("[mark]", objectFlow.marks(currentType, inspectionProvider).toString());
             }
         }
 
         if ("method7".equals(d.methodInfo().name) && "set7".equals(d.variableName())) {
             if ("0".equals(d.statementId())) {
-                Assert.assertTrue("Have " + objectFlow.marks(), objectFlow.marks().isEmpty());
+                Assert.assertTrue("Have " + objectFlow.marks(currentType, inspectionProvider), objectFlow.marks(currentType, inspectionProvider).isEmpty());
             }
             // now after set7.freeze():
             if ("1".equals(d.statementId())) {
-                Assert.assertEquals("[mark]", objectFlow.marks().toString());
+                Assert.assertEquals("[mark]", objectFlow.marks(currentType, inspectionProvider).toString());
                 Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.MODIFIED_VARIABLE));
             }
         }
     };
 
     MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+        TypeInfo currentType = d.methodInfo().typeInfo;
+        InspectionProvider inspectionProvider = d.evaluationContext().getAnalyserContext();
+
         if ("method4".equals(d.methodInfo().name)) {
             ObjectFlow objectFlow = d.methodAnalysis().getObjectFlow();
             Assert.assertNotNull(objectFlow);
-            Assert.assertEquals("[mark]", objectFlow.marks().toString());
+            Assert.assertEquals("[mark]", objectFlow.marks(currentType, inspectionProvider).toString());
             Assert.assertEquals(MultiLevel.EVENTUALLY_E2IMMUTABLE_AFTER_MARK, d.methodAnalysis().getProperty(VariableProperty.IMMUTABLE));
         }
         if ("method6".equals(d.methodInfo().name)) {
             ObjectFlow objectFlow = d.methodAnalysis().getObjectFlow();
             Assert.assertNotNull(objectFlow);
-            Assert.assertTrue(objectFlow.marks().isEmpty());
+            Assert.assertTrue(objectFlow.marks(currentType, inspectionProvider).isEmpty());
             Assert.assertEquals(MultiLevel.EVENTUALLY_E2IMMUTABLE_BEFORE_MARK, d.methodAnalysis().getProperty(VariableProperty.IMMUTABLE));
         }
         if ("method7".equals(d.methodInfo().name)) {
             ObjectFlow objectFlow = d.methodAnalysis().getObjectFlow();
             Assert.assertNotNull(objectFlow);
-            Assert.assertEquals("[mark]", objectFlow.marks().toString());
+            Assert.assertEquals("[mark]", objectFlow.marks(currentType, inspectionProvider).toString());
             Assert.assertEquals(MultiLevel.EVENTUALLY_E2IMMUTABLE_AFTER_MARK, d.methodAnalysis().getProperty(VariableProperty.IMMUTABLE));
         }
     };
@@ -153,6 +158,9 @@ public class TestObjectFlowFreezableSet extends CommonTestRunner {
     FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
         int iteration = d.iteration();
         String name = d.fieldInfo().name;
+        TypeInfo currentType = d.fieldInfo().owner;
+        InspectionProvider inspectionProvider = d.evaluationContext().getAnalyserContext();
+
         if ("SET5".equals(name) && iteration > 0) {
             int immutable = d.fieldAnalysis().getProperty(VariableProperty.IMMUTABLE);
             Assert.assertEquals(MultiLevel.EVENTUALLY_E2IMMUTABLE_AFTER_MARK, immutable);
@@ -162,7 +170,7 @@ public class TestObjectFlowFreezableSet extends CommonTestRunner {
         if ("SET10".equals(name) && iteration > 0) {
             ObjectFlow objectFlow = d.fieldAnalysis().getObjectFlow();
             LOGGER.info("Object flow of SET10 at iteration {}: {}", iteration, objectFlow.detailed());
-            Assert.assertTrue(objectFlow.marks().isEmpty());
+            Assert.assertTrue(objectFlow.marks(currentType, inspectionProvider).isEmpty());
             int immutable = d.fieldAnalysis().getProperty(VariableProperty.IMMUTABLE);
             Assert.assertEquals(MultiLevel.EVENTUALLY_E2IMMUTABLE_BEFORE_MARK, immutable);
         }
@@ -170,7 +178,7 @@ public class TestObjectFlowFreezableSet extends CommonTestRunner {
         if ("SET8".equals(name) && iteration > 0) {
             ObjectFlow objectFlow = d.fieldAnalysis().getObjectFlow();
             LOGGER.info("Object flow of SET8 at iteration {}: {}", iteration, objectFlow.detailed());
-            Assert.assertEquals("[mark]", objectFlow.marks().toString());
+            Assert.assertEquals("[mark]", objectFlow.marks(currentType, inspectionProvider).toString());
             int immutable = d.fieldAnalysis().getProperty(VariableProperty.IMMUTABLE);
             Assert.assertEquals(MultiLevel.EVENTUALLY_E2IMMUTABLE_AFTER_MARK, immutable);
             int container = d.fieldAnalysis().getProperty(VariableProperty.CONTAINER);

@@ -24,7 +24,7 @@ import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.analyser.check.CheckConstant;
 import org.e2immu.analyser.analyser.check.CheckMarkOnly;
 import org.e2immu.analyser.analyser.check.CheckPrecondition;
-import org.e2immu.analyser.analyser.util.DetectMarkAndOnly;
+import org.e2immu.analyser.analyser.util.DetectEventual;
 import org.e2immu.analyser.config.MethodAnalyserVisitor;
 import org.e2immu.analyser.inspector.MethodResolution;
 import org.e2immu.analyser.model.*;
@@ -111,8 +111,8 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
 
         this.typeAnalysis = typeAnalysis;
         Block block = methodInspection.getMethodBody();
-        methodAnalysis = new MethodAnalysisImpl.Builder(true, analyserContext.getPrimitives(), analyserContext,
-                methodInfo, parameterAnalyses);
+        methodAnalysis = new MethodAnalysisImpl.Builder(true, analyserContext.getPrimitives(),
+                analyserContext, analyserContext, methodInfo, parameterAnalyses);
 
         if (block == Block.EMPTY_BLOCK) {
             firstStatementAnalyser = null;
@@ -155,7 +155,6 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
                     .add("computeModified", (sharedState) -> methodInfo.isConstructor ? DONE : computeModified())
                     .add("computeModifiedCycles", (sharedState -> methodInfo.isConstructor ? DONE : computeModifiedInternalCycles()))
                     .add("computeReturnValue", (sharedState) -> methodInfo.noReturnValue() ? DONE : computeReturnValue(sharedState))
-                    //   .add("computeTestMark", (sharedState -> methodInfo.noReturnValue() ? DONE : computeTestMark(sharedState)))
                     .add("detectMissingStaticModifier", (iteration) -> methodInfo.isConstructor ? DONE : detectMissingStaticModifier())
                     .add("computeOnlyMarkPrepWork", (sharedState) -> methodInfo.isConstructor ? DONE : computeOnlyMarkPrepWork(sharedState))
                     .add("computeOnlyMarkAnnotate", (sharedState) -> methodInfo.isConstructor ? DONE : computeOnlyMarkAnnotate(sharedState))
@@ -420,27 +419,28 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
     }
 
     private AnalysisStatus computeOnlyMarkAnnotate(SharedState sharedState) {
-        assert !methodAnalysis.markAndOnlyIsSet();
+        assert !methodAnalysis.eventualIsSet();
 
-        DetectMarkAndOnly detectMarkAndOnly = new DetectMarkAndOnly(methodInfo, methodAnalysis,
-                (TypeAnalysisImpl.Builder) typeAnalysis, analyserContext);
-        MethodAnalysis.MarkAndOnly markAndOnly = detectMarkAndOnly.detect(sharedState.evaluationContext);
-        if (markAndOnly == MethodAnalysis.DELAYED_MARK_AND_ONLY) {
+        Set<FieldInfo> visibleFields = ImmutableSet.copyOf(methodInfo.typeInfo.visibleFields(analyserContext));
+        DetectEventual detectEventual = new DetectEventual(methodInfo, methodAnalysis,
+                (TypeAnalysisImpl.Builder) typeAnalysis, visibleFields, analyserContext);
+        MethodAnalysis.Eventual eventual = detectEventual.detect(sharedState.evaluationContext);
+        if (eventual == MethodAnalysis.DELAYED_EVENTUAL) {
             return DELAYS;
         }
-        methodAnalysis.setMarkAndOnly(markAndOnly);
-        if (markAndOnly == MethodAnalysis.NO_MARK_AND_ONLY) {
+        methodAnalysis.setEventual(eventual);
+        if (eventual == MethodAnalysis.NOT_EVENTUAL) {
             return DONE;
         }
 
-        log(MARK, "Marking {} with only data {}", methodInfo.distinguishingName(), markAndOnly);
-        AnnotationExpression annotation = detectMarkAndOnly.makeAnnotation(markAndOnly);
+        log(MARK, "Marking {} with only data {}", methodInfo.distinguishingName(), eventual);
+        AnnotationExpression annotation = detectEventual.makeAnnotation(eventual);
         methodAnalysis.annotations.put(annotation, true);
         return DONE;
     }
 
     private AnalysisStatus computeOnlyMarkPrepWork(SharedState sharedState) {
-        assert !methodAnalysis.preconditionForMarkAndOnly.isSet();
+        assert !methodAnalysis.preconditionForEventual.isSet();
 
         TypeInfo typeInfo = methodInfo.typeInfo;
         while (true) {
@@ -455,10 +455,24 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
             if (haveNonFinalFields) {
                 break;
             }
+            boolean haveDelayOnImmutableFields = myFieldAnalysers.values()
+                    .stream().anyMatch(fa -> fa.fieldAnalysis.getProperty(VariableProperty.IMMUTABLE) == Level.DELAY);
+            if (haveDelayOnImmutableFields) {
+                log(DELAYED, "Delaying @Mark/@Only in {} until we know about @Immutable of fields", methodInfo.fullyQualifiedName);
+                return DELAYS;
+            }
+            boolean haveEventuallyImmutableFields = myFieldAnalysers.values()
+                    .stream().anyMatch(fa -> {
+                        int immutable = fa.fieldAnalysis.getProperty(VariableProperty.IMMUTABLE);
+                        return MultiLevel.isEventuallyE1Immutable(immutable) || MultiLevel.isEventuallyE2Immutable(immutable);
+                    });
+            if (haveEventuallyImmutableFields) {
+                break;
+            }
             ParameterizedType parentClass = typeInfo.typeInspection.get().parentClass();
             if (Primitives.isJavaLangObject(parentClass)) {
                 log(MARK, "No @Mark/@Only annotation in {}: found no non-final fields", methodInfo.distinguishingName());
-                methodAnalysis.preconditionForMarkAndOnly.set(List.of());
+                methodAnalysis.preconditionForEventual.set(List.of());
                 return DONE;
             }
             typeInfo = parentClass.bestTypeInfo();
@@ -471,7 +485,7 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
         Expression precondition = methodAnalysis.precondition.get();
         if (precondition.isBoolValueTrue()) {
             log(MARK, "No @Mark @Only annotation in {}, as no precondition", methodInfo.distinguishingName());
-            methodAnalysis.preconditionForMarkAndOnly.set(List.of());
+            methodAnalysis.preconditionForEventual.set(List.of());
             return DONE;
         }
         // at this point, the null and size checks on parameters have been removed.
@@ -481,39 +495,15 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
         Filter.FilterResult<FieldReference> filterResult = filter.filter(precondition, filter.individualFieldClause());
         if (filterResult.accepted().isEmpty()) {
             log(MARK, "No @Mark/@Only annotation in {}: found no individual field preconditions", methodInfo.distinguishingName());
-            methodAnalysis.preconditionForMarkAndOnly.set(List.of());
+            methodAnalysis.preconditionForEventual.set(List.of());
             return DONE;
         }
         List<Expression> preconditionParts = new ArrayList<>(filterResult.accepted().values());
         log(MARK, "Did prep work for @Only, @Mark, found precondition on variables {} in {}", precondition,
                 filterResult.accepted().keySet(), methodInfo.distinguishingName());
-        methodAnalysis.preconditionForMarkAndOnly.set(preconditionParts);
+        methodAnalysis.preconditionForEventual.set(preconditionParts);
         return DONE;
     }
-
-    /*
-    there are two distinct places where @TestMark is computed. One is in the context of approved preconditions
-    (helper classes like SetOnce, FlipSwitch, etc.) which define eventually immutable types using preconditions.
-
-    the second one, here, is meant for types using these helper classes; the methods we consider here
-    will be @TestMarks for fields of eventually immutable types
-
-    private AnalysisStatus computeTestMark(SharedState sharedState) {
-        if (!Primitives.isBoolean(methodInfo.returnType())) return DONE;
-        int modified = methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD);
-        if (modified == Level.DELAY) {
-            log(DELAYED, "Waiting for modification status of {} to compute @TestMark",
-                    methodInfo.fullyQualifiedName);
-            return DELAYS;
-        }
-        if (modified == Level.TRUE) {
-            log(ANALYSER, "Modifying method {} cannot have @TestMark", methodInfo.fullyQualifiedName);
-            methodAnalysis.setMarkAndOnly(MethodAnalysis.NO_MARK_AND_ONLY);
-            return DONE;
-        }
-        methodAnalysis.setProperty(VariableProperty.IMMUTABLE, );
-        return DONE;
-    }*/
 
     // singleReturnValue is associated with @Constant; to be able to grab the actual Value object
     // but we cannot assign this value too early: first, there should be no evaluation anymore with NO_VALUES in them

@@ -25,7 +25,7 @@ public class TestExampleManualEventuallyE1Container extends CommonTestRunner {
 
         if ("addIfGreater".equals(name)) {
             if (iteration > 0) {
-                List<Expression> preconditions = d.methodAnalysis().getPreconditionForMarkAndOnly();
+                List<Expression> preconditions = d.methodAnalysis().getPreconditionForEventual();
                 Assert.assertEquals(1, preconditions.size());
                 Assert.assertEquals("this.j > 0", preconditions.get(0).toString());
                 Assert.assertEquals("(-this.j) >= 0", Negation.negate(d.evaluationContext(), preconditions.get(0)).toString());
@@ -34,7 +34,7 @@ public class TestExampleManualEventuallyE1Container extends CommonTestRunner {
         if ("setNegativeJ".equals(name)) {
             if (iteration > 0) {
                 Assert.assertEquals("((-this.j) >= 0 and (-j) >= 0)", d.methodAnalysis().getPrecondition().toString());
-                Assert.assertEquals("[(-this.j) >= 0]", d.methodAnalysis().getPreconditionForMarkAndOnly().toString());
+                Assert.assertEquals("[(-this.j) >= 0]", d.methodAnalysis().getPreconditionForEventual().toString());
 
                 FieldInfo fieldJ = d.methodInfo().typeInfo.getFieldByName("j", true);
                 VariableInfo tv = d.getFieldAsVariable(fieldJ);

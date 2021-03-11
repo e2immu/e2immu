@@ -21,13 +21,7 @@ package org.e2immu.analyser.model;
 import org.e2immu.analyser.analyser.StatementAnalysis;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.inspector.MethodResolution;
-import org.e2immu.analyser.model.expression.Cast;
-import org.e2immu.analyser.model.expression.FieldAccess;
-import org.e2immu.analyser.model.expression.MethodCall;
-import org.e2immu.analyser.model.expression.NewObject;
 import org.e2immu.analyser.model.statement.Block;
-import org.e2immu.analyser.model.statement.ForEachStatement;
-import org.e2immu.analyser.model.statement.SwitchStatementNewStyle;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.*;
@@ -41,7 +35,6 @@ import org.e2immu.annotation.E2Immutable;
 import org.e2immu.annotation.NotNull;
 
 import java.util.*;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -239,7 +232,7 @@ public class MethodInfo implements WithInspectionAndAnalysis {
                 .map(ParameterInfo::simpleName).collect(Collectors.toSet());
         Set<String> localNames = SetUtil.immutableUnion(localNamesFromBody, parameterNames);
 
-        List<FieldInfo> visibleFields = typeInfo.visibleFields();
+        List<FieldInfo> visibleFields = typeInfo.visibleFields(InspectionProvider.DEFAULT);
         QualificationImpl res = new QualificationImpl(qualification);
         visibleFields.stream().filter(fieldInfo -> !localNames.contains(fieldInfo.name)).forEach(res::addField);
 

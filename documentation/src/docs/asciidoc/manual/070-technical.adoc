@@ -163,7 +163,7 @@ A method can have restrictions on the parameter and field values called _precond
 In general, these restrictions end up as a boolean expression in `MethodAnalysis.precondition`.
 The exception to this rule are the not-null and size restrictions on parameters, which become properties during evaluation, and are written out as separate annotations.
 
-Preconditions that participate in {mark} and {only} are stored in `MethodAnalysis.preconditionForMarkAndOnly`.
+Preconditions that participate in {mark} and {only} are stored in `MethodAnalysis.preconditionForEventual`.
 They are computed from normal preconditions.
 
 As the analyser progresses through the blocks and statements, it keeps track of:
@@ -247,7 +247,7 @@ The analyser associates eventuality with a precondition on a field (or technical
 Methods that guard against the precondition are _before_ the mark, methods that guard against the boolean complement are _after_ the mark.
 We define a guard here as the throwing of a run-time exception when the field's value does not satisfy the condition.
 
-Each method holds information about such a precondition in `SetOnce<MarkAndOnly> markAndOnly`.
+Each method holds information about such a precondition in `SetOnce<Eventual> eventual`.
 The `MethodAnalyser` computes the information in `computeOnlyMarkPrepWork` and `computeOnlyMarkAnnotate`.
 
 Then, the `TypeAnalyser` combines the information of the methods in `analyseOnlyMarkEventuallyE1Immutable`; the end result of the whole computation resides in `SetOnceMap<String, Value> approvedPreconditions` in `TypeAnalysis`.

@@ -232,7 +232,7 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
 
             // @Final(after=), @Final, @Variable
             if (effectivelyFinal == Level.FALSE && MultiLevel.isEventuallyE1Immutable(ownerImmutable)) {
-                String labels = typeAnalysisOfOwner.allLabelsRequiredForImmutable();
+                String labels = typeAnalysisOfOwner.markLabel();
                 annotations.put(e2ImmuAnnotationExpressions.effectivelyFinal.copyWith(primitives, "after", labels), true);
             } else {
                 if (effectivelyFinal == Level.TRUE && !isExplicitlyFinal) {
@@ -248,8 +248,8 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
 
             // @NotModified(after=), @NotModified, @Modified
             if (modified == Level.TRUE && MultiLevel.isEventuallyE2Immutable(ownerImmutable)) {
-                String marks = String.join(",", typeAnalysisOfOwner.marksRequiredForImmutable());
-                annotations.put(e2ImmuAnnotationExpressions.notModified.copyWith(primitives, "after", marks), true);
+                String labels = typeAnalysisOfOwner.markLabel();
+                annotations.put(e2ImmuAnnotationExpressions.notModified.copyWith(primitives, "after", labels), true);
             } else if (allowModificationAnnotation(effectivelyFinal)) {
                 AnnotationExpression ae = modified == Level.FALSE ? e2ImmuAnnotationExpressions.notModified :
                         e2ImmuAnnotationExpressions.modified;

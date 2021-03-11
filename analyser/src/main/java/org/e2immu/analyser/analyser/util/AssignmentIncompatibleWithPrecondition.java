@@ -115,16 +115,16 @@ public class AssignmentIncompatibleWithPrecondition {
         // METHOD
 
         // example in FlipSwitch, where copy() calls set(), which should have been handled before
-        MethodAnalysis.MarkAndOnly consistent = null;
+        MethodAnalysis.Eventual consistent = null;
         Block body = analyserContext.getMethodInspection(methodAnalyser.methodInfo).getMethodBody();
         Set<MethodInfo> calledMethods = new CallsToOwnMethods(analyserContext).visit(body).getMethods();
         for (MethodInfo calledMethod : calledMethods) {
             MethodAnalyser calledMethodAnalyser = analyserContext.getMethodAnalyser(calledMethod);
-            if (calledMethodAnalyser.methodAnalysis.markAndOnlyIsSet()) {
-                MethodAnalysis.MarkAndOnly markAndOnly = calledMethodAnalyser.methodAnalysis.getMarkAndOnly();
-                if (markAndOnly != MethodAnalysis.NO_MARK_AND_ONLY) {
-                    if (consistent == null) consistent = markAndOnly;
-                    else if (!markAndOnly.consistentWith(consistent)) {
+            if (calledMethodAnalyser.methodAnalysis.eventualIsSet()) {
+                MethodAnalysis.Eventual eventual = calledMethodAnalyser.methodAnalysis.getEventual();
+                if (eventual != MethodAnalysis.NOT_EVENTUAL) {
+                    if (consistent == null) consistent = eventual;
+                    else if (!eventual.consistentWith(consistent)) {
                         consistent = null;
                         break;
                     }

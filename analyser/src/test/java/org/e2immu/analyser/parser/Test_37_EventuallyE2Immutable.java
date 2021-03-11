@@ -131,9 +131,9 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("error".equals(d.methodInfo().name)) {
                 if (d.iteration() <= 1) {
-                    Assert.assertNull(d.methodAnalysis().getPreconditionForMarkAndOnly());
+                    Assert.assertNull(d.methodAnalysis().getPreconditionForEventual());
                 } else {
-                    List<Expression> precondition = d.methodAnalysis().getPreconditionForMarkAndOnly();
+                    List<Expression> precondition = d.methodAnalysis().getPreconditionForEventual();
                     Assert.assertEquals("[]", precondition.toString());
                 }
             }

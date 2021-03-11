@@ -46,7 +46,7 @@ public class CheckFinalNotModified {
             isModifiedOrVariable = fieldAnalysis.getProperty(VariableProperty.MODIFIED_METHOD) == Level.FALSE;
         } else throw new UnsupportedOperationException();
 
-        String mark = typeAnalysis.isEventual() && isModifiedOrVariable ? typeAnalysis.allLabelsRequiredForImmutable() : null;
+        String mark = typeAnalysis.isEventual() && isModifiedOrVariable ? typeAnalysis.markLabel() : null;
 
         CheckLinks.checkAnnotationWithValue(messages,
                 fieldAnalysis,

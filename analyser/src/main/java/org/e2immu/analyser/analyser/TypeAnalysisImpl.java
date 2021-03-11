@@ -37,21 +37,21 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
 
     private final TypeInfo typeInfo;
     private final Set<ObjectFlow> objectFlows;
-    private final Map<String, Expression> approvedPreconditionsE1;
-    private final Map<String, Expression> approvedPreconditionsE2;
+    private final Map<FieldInfo, Expression> approvedPreconditionsE1;
+    private final Map<FieldInfo, Expression> approvedPreconditionsE2;
 
     private final Set<ParameterizedType> implicitlyImmutableDataTypes;
     private final Map<String, MethodInfo> aspects;
     private final List<Expression> invariants;
-    private final Set<String> namesOfEventuallyImmutableFields;
+    private final Set<FieldInfo> eventuallyImmutableFields;
 
     private TypeAnalysisImpl(TypeInfo typeInfo,
                              Map<VariableProperty, Integer> properties,
                              Map<AnnotationExpression, AnnotationCheck> annotations,
                              Set<ObjectFlow> objectFlows,
-                             Map<String, Expression> approvedPreconditionsE1,
-                             Map<String, Expression> approvedPreconditionsE2,
-                             Set<String> namesOfEventuallyImmutableFields,
+                             Map<FieldInfo, Expression> approvedPreconditionsE1,
+                             Map<FieldInfo, Expression> approvedPreconditionsE2,
+                             Set<FieldInfo> eventuallyImmutableFields,
                              Set<ParameterizedType> implicitlyImmutableDataTypes,
                              Map<String, MethodInfo> aspects,
                              List<Expression> invariants) {
@@ -63,12 +63,12 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
         this.implicitlyImmutableDataTypes = implicitlyImmutableDataTypes;
         this.aspects = Objects.requireNonNull(aspects);
         this.invariants = invariants;
-        this.namesOfEventuallyImmutableFields = namesOfEventuallyImmutableFields;
+        this.eventuallyImmutableFields = eventuallyImmutableFields;
     }
 
     @Override
-    public Set<String> getNamesOfEventuallyImmutableFields() {
-        return namesOfEventuallyImmutableFields;
+    public Set<FieldInfo> getEventuallyImmutableFields() {
+        return eventuallyImmutableFields;
     }
 
     @Override
@@ -102,23 +102,23 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
     }
 
     @Override
-    public Map<String, Expression> getApprovedPreconditionsE1() {
+    public Map<FieldInfo, Expression> getApprovedPreconditionsE1() {
         return approvedPreconditionsE1;
     }
 
     @Override
-    public Map<String, Expression> getApprovedPreconditionsE2() {
+    public Map<FieldInfo, Expression> getApprovedPreconditionsE2() {
         return approvedPreconditionsE2;
     }
 
     @Override
-    public Expression getApprovedPreconditions(boolean e2, String markLabel) {
-        return e2 ? approvedPreconditionsE2.get(markLabel) : approvedPreconditionsE1.get(markLabel);
+    public Expression getApprovedPreconditions(boolean e2, FieldInfo fieldInfo) {
+        return e2 ? approvedPreconditionsE2.get(fieldInfo) : approvedPreconditionsE1.get(fieldInfo);
     }
 
     @Override
-    public boolean approvedPreconditionsIsSet(boolean e2, String markLabel) {
-        return e2 ? approvedPreconditionsE2.containsKey(markLabel) : approvedPreconditionsE1.containsKey(markLabel);
+    public boolean approvedPreconditionsIsSet(boolean e2, FieldInfo fieldInfo) {
+        return e2 ? approvedPreconditionsE2.containsKey(fieldInfo) : approvedPreconditionsE1.containsKey(fieldInfo);
     }
 
     @Override
@@ -141,9 +141,9 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
         public final AddOnceSet<ObjectFlow> constantObjectFlows = new AddOnceSet<>();
 
         // from label to condition BEFORE (used by @Mark and @Only(before="label"))
-        private final SetOnceMap<String, Expression> approvedPreconditionsE1 = new SetOnceMap<>();
-        private final SetOnceMap<String, Expression> approvedPreconditionsE2 = new SetOnceMap<>();
-        public final AddOnceSet<String> namesOfEventuallyImmutableFields = new AddOnceSet<>();
+        private final SetOnceMap<FieldInfo, Expression> approvedPreconditionsE1 = new SetOnceMap<>();
+        private final SetOnceMap<FieldInfo, Expression> approvedPreconditionsE2 = new SetOnceMap<>();
+        public final AddOnceSet<FieldInfo> eventuallyImmutableFields = new AddOnceSet<>();
 
         public final SetOnce<Set<ParameterizedType>> implicitlyImmutableDataTypes = new SetOnce<>();
 
@@ -159,13 +159,13 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
         }
 
         @Override
-        public Expression getApprovedPreconditions(boolean e2, String markLabel) {
-            return e2 ? approvedPreconditionsE2.get(markLabel) : approvedPreconditionsE1.get(markLabel);
+        public Expression getApprovedPreconditions(boolean e2, FieldInfo fieldInfo) {
+            return e2 ? approvedPreconditionsE2.get(fieldInfo) : approvedPreconditionsE1.get(fieldInfo);
         }
 
         @Override
-        public boolean approvedPreconditionsIsSet(boolean e2, String markLabel) {
-            return e2 ? approvedPreconditionsE2.isSet(markLabel) : approvedPreconditionsE1.isSet(markLabel);
+        public boolean approvedPreconditionsIsSet(boolean e2, FieldInfo fieldInfo) {
+            return e2 ? approvedPreconditionsE2.isSet(fieldInfo) : approvedPreconditionsE1.isSet(fieldInfo);
         }
 
         public void freezeApprovedPreconditionsE1() {
@@ -176,8 +176,8 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
             return e2 ? approvedPreconditionsE2.isEmpty() : approvedPreconditionsE1.isEmpty();
         }
 
-        public void putInApprovedPreconditionsE1(String string, Expression expression) {
-            approvedPreconditionsE1.put(string, expression);
+        public void putInApprovedPreconditionsE1(FieldInfo fieldInfo, Expression expression) {
+            approvedPreconditionsE1.put(fieldInfo, expression);
         }
 
         public boolean approvedPreconditionsIsFrozen(boolean e2) {
@@ -188,8 +188,8 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
             approvedPreconditionsE2.freeze();
         }
 
-        public void putInApprovedPreconditionsE2(String string, Expression expression) {
-            approvedPreconditionsE2.put(string, expression);
+        public void putInApprovedPreconditionsE2(FieldInfo fieldInfo, Expression expression) {
+            approvedPreconditionsE2.put(fieldInfo, expression);
         }
 
         @Override
@@ -228,12 +228,12 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
         }
 
         @Override
-        public Map<String, Expression> getApprovedPreconditionsE1() {
+        public Map<FieldInfo, Expression> getApprovedPreconditionsE1() {
             return approvedPreconditionsE1.toImmutableMap();
         }
 
         @Override
-        public Map<String, Expression> getApprovedPreconditionsE2() {
+        public Map<FieldInfo, Expression> getApprovedPreconditionsE2() {
             return approvedPreconditionsE2.toImmutableMap();
         }
 
@@ -243,8 +243,8 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
         }
 
         @Override
-        public Set<String> getNamesOfEventuallyImmutableFields() {
-            return namesOfEventuallyImmutableFields.toImmutableSet();
+        public Set<FieldInfo> getEventuallyImmutableFields() {
+            return eventuallyImmutableFields.toImmutableSet();
         }
 
         @Override
@@ -283,7 +283,7 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
                     constantObjectFlows.toImmutableSet(),
                     approvedPreconditionsE1.toImmutableMap(),
                     approvedPreconditionsE2.toImmutableMap(),
-                    namesOfEventuallyImmutableFields.toImmutableSet(),
+                    eventuallyImmutableFields.toImmutableSet(),
                     implicitlyImmutableDataTypes.isSet() ? implicitlyImmutableDataTypes.get() : Set.of(),
                     getAspects(),
                     ImmutableList.copyOf(invariants.getOrElse(List.of())));

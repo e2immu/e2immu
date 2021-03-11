@@ -25,6 +25,7 @@ import org.e2immu.analyser.analyser.util.AssignmentIncompatibleWithPrecondition;
 import org.e2immu.analyser.analyser.util.ExplicitTypes;
 import org.e2immu.analyser.config.TypeAnalyserVisitor;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.expression.Filter;
 import org.e2immu.analyser.model.expression.Negation;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.DependentVariable;
@@ -407,13 +408,13 @@ public class TypeAnalyser extends AbstractAnalyser {
         Set<MethodAnalyser> assigningMethods = determineAssigningMethods();
 
         boolean allPreconditionsOnAssigningMethodsSet = assigningMethods.stream()
-                .allMatch(methodAnalyser -> methodAnalyser.methodAnalysis.preconditionForMarkAndOnly.isSet());
+                .allMatch(methodAnalyser -> methodAnalyser.methodAnalysis.preconditionForEventual.isSet());
         if (!allPreconditionsOnAssigningMethodsSet) {
             log(DELAYED, "Not all precondition preps on assigning methods have been set in {}, delaying", typeInfo.fullyQualifiedName);
             return DELAYS;
         }
         Optional<MethodAnalyser> oEmpty = assigningMethods.stream()
-                .filter(ma -> ma.methodAnalysis.preconditionForMarkAndOnly.get().isEmpty())
+                .filter(ma -> ma.methodAnalysis.preconditionForEventual.get().isEmpty())
                 .findFirst();
         if (oEmpty.isPresent()) {
             log(MARK, "Not all assigning methods have a valid precondition in {}; (findFirst) {}",
@@ -422,14 +423,24 @@ public class TypeAnalyser extends AbstractAnalyser {
             return DONE;
         }
 
-        Map<String, Expression> tempApproved = new HashMap<>();
+        Map<FieldInfo, Expression> tempApproved = new HashMap<>();
         for (MethodAnalyser methodAnalyser : assigningMethods) {
-            List<Expression> preconditions = methodAnalyser.methodAnalysis.preconditionForMarkAndOnly.get();
+            List<Expression> preconditions = methodAnalyser.methodAnalysis.preconditionForEventual.get();
             for (Expression precondition : preconditions) {
-                boolean delay = handlePrecondition(methodAnalyser, precondition, tempApproved, iteration);
-                if (delay) {
+                List<FieldToCondition> fields = handlePrecondition(methodAnalyser, precondition, iteration);
+                if (fields == null) {
                     log(MARK, "Delaying approved preconditions (no incompatible found yet) in {}", typeInfo.fullyQualifiedName);
                     return DELAYS;
+                }
+                for (FieldToCondition fieldToCondition : fields) {
+                    Expression inMap = fieldToCondition.overwrite ?
+                            tempApproved.put(fieldToCondition.fieldInfo, fieldToCondition.condition) :
+                            !tempApproved.containsKey(fieldToCondition.fieldInfo) ?
+                                    tempApproved.put(fieldToCondition.fieldInfo, fieldToCondition.condition) : null;
+                    if (inMap != null && !inMap.equals(fieldToCondition.condition) && !inMap.equals(fieldToCondition.negatedCondition)) {
+                        messages.add(Message.newMessage(new Location(fieldToCondition.fieldInfo), Message.DUPLICATE_MARK_CONDITION,
+                                "Field: " + fieldToCondition.fieldInfo));
+                    }
                 }
             }
         }
@@ -493,30 +504,40 @@ public class TypeAnalyser extends AbstractAnalyser {
 
         boolean allPreconditionsOnModifyingMethodsSet = myMethodAnalysersExcludingSAMs.stream()
                 .filter(methodAnalyser -> methodAnalyser.methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD) == Level.TRUE)
-                .allMatch(methodAnalyser -> methodAnalyser.methodAnalysis.preconditionForMarkAndOnly.isSet());
+                .allMatch(methodAnalyser -> methodAnalyser.methodAnalysis.preconditionForEventual.isSet());
         if (!allPreconditionsOnModifyingMethodsSet) {
             log(DELAYED, "Not all precondition preps on modifying methods have been set in {}, delaying", typeInfo.fullyQualifiedName);
             return DELAYS;
         }
         boolean someInvalidPreconditionsOnModifyingMethods = myMethodAnalysersExcludingSAMs.stream().anyMatch(methodAnalyser ->
                 methodAnalyser.methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD) == Level.TRUE &&
-                        methodAnalyser.methodAnalysis.preconditionForMarkAndOnly.get().isEmpty());
+                        methodAnalyser.methodAnalysis.preconditionForEventual.get().isEmpty());
         if (someInvalidPreconditionsOnModifyingMethods) {
             log(MARK, "Not all modifying methods have a valid precondition in {}", typeInfo.fullyQualifiedName);
             typeAnalysis.freezeApprovedPreconditionsE2();
             return DONE;
         }
 
-        Map<String, Expression> tempApproved = new HashMap<>();
+        Map<FieldInfo, Expression> tempApproved = new HashMap<>();
         for (MethodAnalyser methodAnalyser : myMethodAnalysersExcludingSAMs) {
             int modified = methodAnalyser.methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD);
             if (modified == Level.TRUE) {
-                List<Expression> preconditions = methodAnalyser.methodAnalysis.preconditionForMarkAndOnly.get();
+                List<Expression> preconditions = methodAnalyser.methodAnalysis.preconditionForEventual.get();
                 for (Expression precondition : preconditions) {
-                    boolean delay = handlePrecondition(methodAnalyser, precondition, tempApproved, iteration);
-                    if (delay) {
+                    List<FieldToCondition> fields = handlePrecondition(methodAnalyser, precondition, iteration);
+                    if (fields == null) {
                         log(MARK, "Delaying approved preconditions (no incompatible found yet) in {}", typeInfo.fullyQualifiedName);
                         return DELAYS;
+                    }
+                    for (FieldToCondition fieldToCondition : fields) {
+                        Expression inMap = fieldToCondition.overwrite ?
+                                tempApproved.put(fieldToCondition.fieldInfo, fieldToCondition.condition) :
+                                !tempApproved.containsKey(fieldToCondition.fieldInfo) ?
+                                        tempApproved.put(fieldToCondition.fieldInfo, fieldToCondition.condition) : null;
+                        if (inMap != null && !inMap.equals(fieldToCondition.condition) && !inMap.equals(fieldToCondition.negatedCondition)) {
+                            messages.add(Message.newMessage(new Location(fieldToCondition.fieldInfo), Message.DUPLICATE_MARK_CONDITION,
+                                    "Field: " + fieldToCondition.fieldInfo));
+                        }
                     }
                 }
             }
@@ -534,42 +555,23 @@ public class TypeAnalyser extends AbstractAnalyser {
         return DONE;
     }
 
-    private boolean handlePrecondition(MethodAnalyser methodAnalyser,
-                                       Expression precondition,
-                                       Map<String, Expression> tempApproved,
-                                       int iteration) {
+    private record FieldToCondition(FieldInfo fieldInfo, Expression condition, Expression negatedCondition,
+                                    boolean overwrite) {
+    }
+
+    private List<FieldToCondition> handlePrecondition(MethodAnalyser methodAnalyser, Expression precondition, int iteration) {
         EvaluationContext evaluationContext = new EvaluationContextImpl(iteration,
                 ConditionManager.initialConditionManager(analyserContext.getPrimitives()), null);
-        Expression negated = Negation.negate(evaluationContext, precondition);
-        String label = labelOfPreconditionForMarkAndOnly(precondition);
-        Expression inMap = tempApproved.get(label);
-
-        Boolean isMark = AssignmentIncompatibleWithPrecondition.isMark(analyserContext, precondition, methodAnalyser, false);
-        if (isMark == null) return true; // delays
-        if (isMark) {
-            if (inMap == null) {
-                tempApproved.put(label, precondition);
-            } else if (inMap.equals(precondition)) {
-                log(MARK, "OK, precondition for {} turns out to be 'before' already", label);
-            } else if (inMap.equals(negated)) {
-                log(MARK, "Precondition for {} turns out to be 'after', we switch");
-                tempApproved.put(label, precondition);
-            }
-        } else if (inMap == null) {
-            tempApproved.put(label, precondition); // no idea yet if before or after
-        } else if (!inMap.equals(precondition) && !inMap.equals(negated)) {
-            messages.add(Message.newMessage(new Location(methodAnalyser.methodInfo), Message.DUPLICATE_MARK_LABEL, "Label: " + label));
+        Filter filter = new Filter(evaluationContext, Filter.FilterMode.ACCEPT);
+        Filter.FilterResult<FieldReference> filterResult = filter.filter(precondition, filter.individualFieldClause());
+        List<FieldToCondition> fieldToConditions = new ArrayList<>();
+        for (Map.Entry<FieldReference, Expression> e : filterResult.accepted().entrySet()) {
+            Boolean isMark = AssignmentIncompatibleWithPrecondition.isMark(analyserContext, e.getValue(), methodAnalyser, false);
+            if (isMark == null) return null;
+            fieldToConditions.add(new FieldToCondition(e.getKey().fieldInfo, e.getValue(), Negation.negate(evaluationContext,
+                    e.getValue()), isMark));
         }
-        return false; // no delay
-    }
-
-
-    public static String labelOfPreconditionForMarkAndOnly(List<Expression> values) {
-        return values.stream().map(TypeAnalyser::labelOfPreconditionForMarkAndOnly).sorted().collect(Collectors.joining(","));
-    }
-
-    public static String labelOfPreconditionForMarkAndOnly(Expression value) {
-        return value.variables().stream().map(Variable::simpleName).distinct().sorted().collect(Collectors.joining("+"));
+        return fieldToConditions;
     }
 
     private AnalysisStatus analyseContainer() {
@@ -871,8 +873,8 @@ public class TypeAnalyser extends AbstractAnalyser {
             }
             if (fieldE2Immutable == MultiLevel.EVENTUAL) {
                 eventual = true;
-                if (!typeAnalysis.namesOfEventuallyImmutableFields.contains(fieldInfo.name)) {
-                    typeAnalysis.namesOfEventuallyImmutableFields.add(fieldInfo.name);
+                if (!typeAnalysis.eventuallyImmutableFields.contains(fieldInfo)) {
+                    typeAnalysis.eventuallyImmutableFields.add(fieldInfo);
                 }
             }
 

@@ -22,6 +22,7 @@ import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.EvaluateMethodCall;
 import org.e2immu.analyser.model.expression.util.EvaluateParameters;
+import org.e2immu.analyser.model.expression.util.EvaluatePreconditionFromMethod;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
@@ -315,6 +316,9 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         List<Expression> parameterValues = res.v;
         builder.compose(objectResult, res.k.build());
 
+        // precondition
+        EvaluatePreconditionFromMethod.evaluate(evaluationContext, builder, methodInfo, objectValue, parameterValues);
+
         // before we return, increment the time, irrespective of NO_VALUE
         if (!recursiveCall) {
             boolean increment;
@@ -583,22 +587,22 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     private void checkOnly(EvaluationContext evaluationContext, EvaluationResult.Builder builder,
                            Expression objectValue,
                            ObjectFlow objectFlow) {
-        Set<String> marks = objectFlow.marks();
+        Set<FieldInfo> marks = objectFlow.marks(evaluationContext.getCurrentType(), evaluationContext.getAnalyserContext());
         if (marks != null && !marks.isEmpty()
                 && objectValue instanceof VariableExpression ve && ve.variable() instanceof This) {
             MethodAnalysis methodAnalysis = evaluationContext.getAnalyserContext().getMethodAnalysis(methodInfo);
-            if (methodAnalysis.markAndOnlyIsSet()) {
-                MethodAnalysis.MarkAndOnly markAndOnly = methodAnalysis.getMarkAndOnly();
-                if(markAndOnly != null) {
-                    if (markAndOnly.after() == Boolean.FALSE) {
-                        String before = markAndOnly.markLabel();
-                        if (marks.contains(before)) {
+            if (methodAnalysis.eventualIsSet()) {
+                MethodAnalysis.Eventual eventual = methodAnalysis.getEventual();
+                if(eventual != null) {
+                    if (eventual.after() == Boolean.FALSE) {
+                        Set<FieldInfo> before = eventual.fields();
+                        if (marks.containsAll(before)) {
                             builder.raiseError(Message.ONLY_BEFORE, methodInfo.fullyQualifiedName() +
                                     ", mark \"" + before + "\"");
                         }
-                    } else if (markAndOnly.after() == Boolean.TRUE) {
-                        String after = markAndOnly.markLabel();
-                        if (!marks.contains(after)) {
+                    } else if (eventual.after() == Boolean.TRUE) {
+                        Set<FieldInfo> after = eventual.fields();
+                        if (!marks.containsAll(after)) {
                             builder.raiseError(Message.ONLY_AFTER, methodInfo.fullyQualifiedName() +
                                     ", mark \"" + after + "\"");
                         }

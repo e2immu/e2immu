@@ -3,6 +3,7 @@ package org.e2immu.analyser.objectflow;
 import org.e2immu.analyser.analyser.AnalysisProvider;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.objectflow.access.MethodAccess;
+import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.util.SetUtil;
 import org.e2immu.annotation.Mark;
 
@@ -251,8 +252,8 @@ public class ObjectFlow {
     }
 
 
-    public Set<String> marks() {
-        Set<String> marksSources = getPrevious().flatMap(of -> of.marks().stream()).collect(Collectors.toSet());
+    public Set<FieldInfo> marks(TypeInfo currentType, InspectionProvider inspectionProvider) {
+        Set<FieldInfo> marksSources = getPrevious().flatMap(of -> of.marks(currentType, inspectionProvider).stream()).collect(Collectors.toSet());
         if (modifyingAccess != null) {
             MethodInfo methodInfo = modifyingAccess.methodInfo;
             Optional<AnnotationExpression> oMark = methodInfo.methodInspection.get().getAnnotations().stream()
@@ -260,8 +261,9 @@ public class ObjectFlow {
             if (oMark.isPresent()) {
                 AnnotationExpression ae = oMark.get();
                 String mark = ae.extract("value", "");
-                if (!mark.isEmpty()) {
-                    return SetUtil.immutableUnion(marksSources, Set.of(mark));
+                Set<FieldInfo> fieldsInMark = currentType.findFields(inspectionProvider, mark);
+                if (!fieldsInMark.isEmpty()) {
+                    return SetUtil.immutableUnion(marksSources, fieldsInMark);
                 }
             }
         }
@@ -286,10 +288,10 @@ public class ObjectFlow {
      * @param typeAnalysis the type to check for
      * @return also returns true if effectively immutable (not eventually!)
      */
-    public boolean conditionsMetForEventual(TypeAnalysis typeAnalysis) {
-        Set<String> set = typeAnalysis.marksRequiredForImmutable();
+    public boolean conditionsMetForEventual(TypeInfo currentType, TypeAnalysis typeAnalysis, InspectionProvider inspectionProvider) {
+        Set<FieldInfo> set = typeAnalysis.getEventuallyImmutableFields();
         // set.isEmpty() is a speed-up, marks() could be expensive && not necessary
-        return set.isEmpty() || marks().containsAll(set);
+        return set.isEmpty() || marks(currentType, inspectionProvider).containsAll(set);
     }
 
     /**
@@ -298,9 +300,10 @@ public class ObjectFlow {
      * @param returnType te type to check for, uses bestTypeInfo
      * @return also returns true if effectively immutable (not eventually!)
      */
-    public boolean conditionsMetForEventual(AnalysisProvider analysisProvider, ParameterizedType returnType) {
+    public boolean conditionsMetForEventual(TypeInfo currentType, InspectionProvider inspectionProvider,
+                                            AnalysisProvider analysisProvider, ParameterizedType returnType) {
         TypeInfo typeInfo = returnType.bestTypeInfo();
-        return typeInfo != null && conditionsMetForEventual(analysisProvider.getTypeAnalysis(typeInfo));
+        return typeInfo != null && conditionsMetForEventual(currentType, analysisProvider.getTypeAnalysis(typeInfo), inspectionProvider);
     }
 
     // for testing

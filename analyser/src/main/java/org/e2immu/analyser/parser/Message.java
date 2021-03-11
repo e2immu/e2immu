@@ -79,7 +79,7 @@ public class Message {
     public static final String ONLY_BEFORE = "Calling method annotated @Only(before=\"x\") when \"x\" has already been @Mark'ed";
     public static final String ONLY_AFTER = "Calling method annotated @Only(after=\"x\") when \"x\" has not yet been @Mark'ed";
     public static final String ONLY_WRONG_MARK_LABEL = "@Only annotation, wrong mark label";
-    public static final String DUPLICATE_MARK_LABEL = "Duplicate mark label";
+    public static final String DUPLICATE_MARK_CONDITION = "Duplicate mark precondition";
 
     public static final String CIRCULAR_TYPE_DEPENDENCY = "Detected circular type dependency: this affects modification computations";
 

@@ -15,25 +15,25 @@
  * limitations under the License.
  */
 
-package org.e2immu.annotation;
+package org.e2immu.analyser.testexample;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+import org.e2immu.analyser.util.SetOnce;
+import org.e2immu.annotation.E2Container;
+import org.e2immu.annotation.TestMark;
 
-/**
- * Annotation to mark a non-modifying method, returning a boolean
- * on whether the mark has been achieved or not
+/*
+Use types in util to become an eventually immutable type
+
  */
-@Retention(RetentionPolicy.CLASS)
-@Target(ElementType.METHOD)
-public @interface TestMark {
-    boolean absent() default false;
+@E2Container(after = "bool,string")
+public class EventuallyImmutableUtil_4 {
 
-    boolean contract() default false;
+    public final SetOnce<String> string = new SetOnce<>();
+    public final SetOnce<Boolean> bool = new SetOnce<>();
 
-    String value();
+    @TestMark("bool,string")
+    public boolean isReady() {
+        return string.isSet() && bool.isSet();
+    }
 
-    boolean before() default false;
 }

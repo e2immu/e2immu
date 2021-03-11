@@ -20,6 +20,10 @@
 package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.config.DebugConfiguration;
+import org.e2immu.analyser.config.StatementAnalyserVariableVisitor;
+import org.e2immu.analyser.config.StatementAnalyserVisitor;
+import org.e2immu.analyser.model.variable.ReturnVariable;
+import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -49,15 +53,42 @@ public class Test_35_EventuallyImmutableUtil extends CommonTestRunner {
 
     @Test
     public void test_2() throws IOException {
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("set".equals(d.methodInfo().name) && "EventuallyImmutableUtil_2".equals(d.methodInfo().typeInfo.simpleName)) {
+                String expectPre = switch (d.iteration()) {
+                    case 0 -> "<precondition>";
+                    case 1 -> "null==<f:t>";
+                    default -> "null==value.t";
+                };
+                Assert.assertEquals(expectPre, d.statementAnalysis().stateData.getPrecondition().toString());
+                Assert.assertEquals(d.iteration() <= 1, d.statementAnalysis().stateData.preconditionIsDelayed());
+            }
+        };
         testWithUtilClasses(List.of("EventuallyImmutableUtil_2"), FLIP_SWITCH_SET_ONCE,
                 0, 0, new DebugConfiguration.Builder()
+                        .addStatementAnalyserVisitor(statementAnalyserVisitor)
                         .build());
     }
 
     @Test
     public void test_3() throws IOException {
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("isReady".equals(d.methodInfo().name)) {
+                // preconditions have nothing to do with this
+                Assert.assertEquals("true", d.statementAnalysis().stateData.getPrecondition().toString());
+            }
+        };
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("isReady".equals(d.methodInfo().name) && d.variable() instanceof ReturnVariable) {
+                String expectValue = d.iteration() == 0 ? "<m:isSet>&&<m:isSet>" : "bool.isSet()&&string.isSet()";
+                Assert.assertEquals(expectValue, d.currentValue().toString());
+            }
+        };
+
         testWithUtilClasses(List.of("EventuallyImmutableUtil_3"), FLIP_SWITCH_SET_ONCE,
                 0, 0, new DebugConfiguration.Builder()
+                        .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         .build());
     }
 }

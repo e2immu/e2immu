@@ -90,7 +90,7 @@ public class TestSetOnceMap extends CommonTestRunner {
             }
             if (iteration > 1) {
                 Assert.assertEquals("[not (this.frozen), not (this.map.containsKey(k))]",
-                        d.methodAnalysis().getPreconditionForMarkAndOnly().toString());
+                        d.methodAnalysis().getPreconditionForEventual().toString());
             }
         }
     };
@@ -103,6 +103,7 @@ public class TestSetOnceMap extends CommonTestRunner {
             if (d.iteration() > 1) {
                 Assert.assertEquals(2, d.typeAnalysis().getApprovedPreconditionsE2().size());
                 Assert.assertEquals("frozen,map", d.typeAnalysis().getApprovedPreconditionsE2().keySet().stream()
+                        .map(fieldInfo -> fieldInfo.name)
                         .sorted()
                         .collect(Collectors.joining(",")));
             }

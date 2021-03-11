@@ -158,7 +158,7 @@ public class Filter {
 
 
     // EXAMPLE: field == null, field == constant, ...
-    // exclusively used for MarkAndOnly
+    // exclusively used for Eventual
     public FilterMethod<FieldReference> individualFieldClause() {
         return value -> {
             if (value instanceof Equals equalsValue) {
@@ -171,7 +171,7 @@ public class Filter {
             } else if (value instanceof GreaterThanZero gt0) {
                 Expression expression = gt0.expression();
                 List<Variable> vars = expression.variables();
-                if (vars.size() == 1 && vars.get(0) instanceof FieldReference fr && fr.scope instanceof This) {
+                if (vars.size() == 1 && vars.get(0) instanceof FieldReference fr && acceptScope(fr)) {
                     return new FilterResult<FieldReference>(Map.of(fr, gt0), defaultRest);
                 }
             } else if (Primitives.isBoolean(value.returnType())) {
@@ -190,14 +190,19 @@ public class Filter {
         else v = value;
         if (v instanceof VariableExpression ve
                 && ve.variable() instanceof FieldReference fr
-                && fr.scope instanceof This) return fr;
+                && acceptScope(fr.scope)) return fr;
         return null;
+    }
+
+    // we do not allow parameters or local variables
+    private static boolean acceptScope(Variable scope) {
+        return scope instanceof This || (scope instanceof FieldReference fr && acceptScope(fr.scope));
     }
 
     private static FieldReference extractFieldReference(Expression value) {
         return value instanceof IsVariableExpression variableValue &&
                 variableValue.variable() instanceof FieldReference fieldReference &&
-                fieldReference.scope instanceof This ? fieldReference : null;
+                acceptScope(fieldReference.scope) ? fieldReference : null;
     }
 
     // EXAMPLE: p == null, field != null

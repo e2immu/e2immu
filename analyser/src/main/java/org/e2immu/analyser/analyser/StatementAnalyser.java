@@ -1623,7 +1623,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             }
         }
         List<Expression> assignments = new ArrayList<>();
-        for (FieldInfo fieldInfo : myMethodAnalyser.methodInfo.typeInfo.visibleFields()) {
+        for (FieldInfo fieldInfo : myMethodAnalyser.methodInfo.typeInfo.visibleFields(analyserContext)) {
             for (VariableInfo variableInfo : methodAnalyser.getFieldAsVariable(fieldInfo, false)) {
                 if (variableInfo.isAssigned()) {
                     EvaluationResult translated = variableInfo.getValue()

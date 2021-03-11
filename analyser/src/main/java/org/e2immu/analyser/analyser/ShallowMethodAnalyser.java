@@ -18,10 +18,7 @@
 package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
-import org.e2immu.analyser.parser.Message;
-import org.e2immu.analyser.parser.Messages;
-import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.analyser.parser.*;
 import org.e2immu.analyser.util.SMapList;
 
 import java.util.ArrayList;
@@ -60,8 +57,8 @@ public class ShallowMethodAnalyser {
             parameterAnalyses.add(builder); // building will take place when the method analysis is built
         });
 
-        MethodAnalysisImpl.Builder methodAnalysisBuilder = new MethodAnalysisImpl.Builder(false, primitives, analysisProvider,
-                methodInfo, parameterAnalyses);
+        MethodAnalysisImpl.Builder methodAnalysisBuilder = new MethodAnalysisImpl.Builder(false, primitives,
+                analysisProvider, InspectionProvider.DEFAULT, methodInfo, parameterAnalyses);
 
         messages.addAll(methodAnalysisBuilder.fromAnnotationsIntoProperties(VariableProperty.NOT_NULL_EXPRESSION, false, true, map.getOrDefault(methodInfo, Map.of()).keySet(),
                 e2ImmuAnnotationExpressions));

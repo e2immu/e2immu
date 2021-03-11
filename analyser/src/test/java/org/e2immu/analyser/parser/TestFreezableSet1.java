@@ -39,7 +39,7 @@ public class TestFreezableSet1 extends CommonTestRunner {
     TypeAnalyserVisitor typeAnalyserVisitor = d -> {
         if (d.iteration() > 1) {
             Assert.assertEquals(1L, d.typeAnalysis().getApprovedPreconditionsE2().size());
-            Assert.assertEquals("frozen", d.typeAnalysis().allLabelsRequiredForImmutable());
+            Assert.assertEquals("frozen", d.typeAnalysis().markLabel());
         }
     };
 
@@ -50,23 +50,23 @@ public class TestFreezableSet1 extends CommonTestRunner {
         if (d.iteration() > 0) {
             if ("stream".equals(name)) {
                 Assert.assertEquals(Level.FALSE, modified);
-                Assert.assertEquals("[this.frozen]", methodAnalysis.getPreconditionForMarkAndOnly().toString());
+                Assert.assertEquals("[this.frozen]", methodAnalysis.getPreconditionForEventual().toString());
             }
             if ("streamEarly".equals(name)) {
                 Assert.assertEquals(Level.FALSE, modified);
-                Assert.assertEquals("[not (this.frozen)]", methodAnalysis.getPreconditionForMarkAndOnly().toString());
+                Assert.assertEquals("[not (this.frozen)]", methodAnalysis.getPreconditionForEventual().toString());
             }
             if ("add".equals(name)) {
                 Assert.assertEquals(Level.TRUE, modified);
-                Assert.assertEquals("[not (this.frozen)]", methodAnalysis.getPreconditionForMarkAndOnly().toString());
+                Assert.assertEquals("[not (this.frozen)]", methodAnalysis.getPreconditionForEventual().toString());
             }
             if ("freeze".equals(name)) {
                 Assert.assertEquals(Level.TRUE, modified);
-                Assert.assertEquals("[not (this.frozen)]", methodAnalysis.getPreconditionForMarkAndOnly().toString());
+                Assert.assertEquals("[not (this.frozen)]", methodAnalysis.getPreconditionForEventual().toString());
             }
             if ("isFrozen".equals(name)) {
                 Assert.assertEquals(Level.FALSE, modified);
-                Assert.assertTrue(methodAnalysis.getPreconditionForMarkAndOnly().isEmpty());
+                Assert.assertTrue(methodAnalysis.getPreconditionForEventual().isEmpty());
             }
         }
     };

@@ -19,7 +19,6 @@ package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.analyser.util.GenerateAnnotationsImmutable;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.expression.ContractMark;
 import org.e2immu.analyser.model.expression.MemberValuePair;
 import org.e2immu.analyser.model.expression.StringConstant;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
@@ -123,15 +122,17 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
 
     protected void doImmutableContainer(E2ImmuAnnotationExpressions e2, int immutable, boolean betterThanFormal) {
         int container = getProperty(VariableProperty.CONTAINER);
-        String mark;
+        String eventualFieldNames;
         boolean isType = this instanceof TypeAnalysis;
         boolean isInterface = isType && ((TypeAnalysisImpl.Builder) this).typeInfo.isInterface();
         boolean eventual = isType && ((TypeAnalysis) this).isEventual();
         if (eventual) {
-            mark = ((TypeAnalysis) this).allLabelsRequiredForImmutable();
-        } else mark = "";
+            eventualFieldNames = ((TypeAnalysis) this).markLabel();
+        } else {
+            eventualFieldNames = "";
+        }
         Map<Class<?>, Map<String, String>> map = GenerateAnnotationsImmutable.generate(immutable, container, isType, isInterface,
-                mark, betterThanFormal);
+                eventualFieldNames, betterThanFormal);
         for (Map.Entry<Class<?>, Map<String, String>> entry : map.entrySet()) {
             List<Expression> list;
             if (entry.getValue() == GenerateAnnotationsImmutable.TRUE) {
@@ -159,7 +160,7 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
         }
         boolean eventual = this instanceof TypeAnalysis && ((TypeAnalysis) this).isEventual();
         if (!eventual) throw new UnsupportedOperationException("??");
-        String mark = ((TypeAnalysis) this).allLabelsRequiredForImmutable();
+        String mark = ((TypeAnalysis) this).markLabel();
         AnnotationExpression ae = new AnnotationExpressionImpl(e2ImmuAnnotationExpressions.independent.typeInfo(),
                 List.of(new MemberValuePair("after", new StringConstant(primitives, mark))));
         annotations.put(ae, true);
@@ -269,8 +270,7 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
         }
         if (mark != null && only == null) {
             String markValue = mark.extract("value", "");
-            List<Expression> values = safeSplit(markValue).stream().map(ContractMark::new).collect(Collectors.toList());
-            ((MethodAnalysisImpl.Builder) this).writeMarkAndOnly(new MethodAnalysis.MarkAndOnly(values, markValue, true, null, null));
+            writeEventual(markValue, true, null, null);
         } else if (only != null) {
             String markValue = mark == null ? null : mark.extract("value", "");
             String before = only.extract("before", "");
@@ -280,20 +280,17 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
             if (markValue != null && !onlyMark.equals(markValue)) {
                 LOGGER.warn("Have both @Only and @Mark, with different values? {} vs {}", onlyMark, markValue);
             }
-            List<Expression> values = safeSplit(onlyMark).stream().map(ContractMark::new).collect(Collectors.toList());
-            ((MethodAnalysisImpl.Builder) this).writeMarkAndOnly(new MethodAnalysis.MarkAndOnly(values, onlyMark, mark != null, isAfter, null));
-        } else if(testMark != null) {
+            writeEventual(markValue, false, isAfter, null);
+        } else if (testMark != null) {
             String markValue = testMark.extract("value", "");
-            boolean isMark = testMark.extract("isMark", true);
-            List<Expression> values = safeSplit(markValue).stream().map(ContractMark::new).collect(Collectors.toList());
-            ((MethodAnalysisImpl.Builder) this).writeMarkAndOnly(new MethodAnalysis.MarkAndOnly(values, markValue, false, null, isMark));
+            boolean before = testMark.extract("before", false);
+            writeEventual(markValue, false, null, before);
         }
         return messages;
     }
 
-    private static List<String> safeSplit(String s) {
-        String[] ss = s.split(",\\s*");
-        return Arrays.stream(ss).filter(l -> l.trim().isEmpty()).collect(Collectors.toList());
+    protected void writeEventual(String value, boolean mark, Boolean isAfter, Boolean test) {
+        throw new UnsupportedOperationException();
     }
 
     public Map<VariableProperty, Integer> getProperties(Set<VariableProperty> properties) {

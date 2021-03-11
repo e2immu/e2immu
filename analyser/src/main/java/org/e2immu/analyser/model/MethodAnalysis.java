@@ -35,7 +35,8 @@ public interface MethodAnalysis extends Analysis {
         List<ParameterAnalysis> parameterAnalyses = methodInfo.methodInspection.get().getParameters().stream()
                 .map(ParameterAnalysis::createEmpty).collect(Collectors.toList());
         MethodAnalysisImpl.Builder builder = new MethodAnalysisImpl.Builder(false,
-                primitives, AnalysisProvider.DEFAULT_PROVIDER, methodInfo, parameterAnalyses);
+                primitives, AnalysisProvider.DEFAULT_PROVIDER, InspectionProvider.DEFAULT,
+                methodInfo, parameterAnalyses);
         return (MethodAnalysis) builder.build();
     }
 
@@ -69,14 +70,14 @@ public interface MethodAnalysis extends Analysis {
     }
 
     // the value here (size will be one)
-    default List<Expression> getPreconditionForMarkAndOnly() {
+    default List<Expression> getPreconditionForEventual() {
         return List.of();
     }
 
     /**
-     * @return null when the method has no MarkAndOnly
+     * @return null when the method has no eventual
      */
-    default MarkAndOnly getMarkAndOnly() {
+    default Eventual getEventual() {
         throw new UnsupportedOperationException();
     }
 
@@ -158,7 +159,7 @@ public interface MethodAnalysis extends Analysis {
 
     private int dynamicProperty(AnalysisProvider analysisProvider, int formalImmutableProperty, ParameterizedType returnType) {
         int immutableTypeAfterEventual = MultiLevel.eventual(formalImmutableProperty,
-                getObjectFlow().conditionsMetForEventual(analysisProvider, returnType));
+                getObjectFlow().conditionsMetForEventual(getMethodInfo().typeInfo, InspectionProvider.DEFAULT, analysisProvider, returnType));
         return Level.best(internalGetProperty(VariableProperty.IMMUTABLE), immutableTypeAfterEventual);
     }
 
@@ -185,24 +186,36 @@ public interface MethodAnalysis extends Analysis {
         return max;
     }
 
-    default boolean markAndOnlyIsSet() { return true; }
+    default boolean eventualIsSet() {
+        return true;
+    }
 
-    // the name refers to the @Mark and @Only annotations. It is the data for this annotation.
+    Eventual NOT_EVENTUAL = new Eventual(Set.of(), false, null, null);
+    Eventual DELAYED_EVENTUAL = new Eventual(Set.of(), false, null, null);
 
-    MarkAndOnly NO_MARK_AND_ONLY = new MarkAndOnly(List.of(), "", false, null, null);
-    MarkAndOnly DELAYED_MARK_AND_ONLY = new MarkAndOnly(List.of(), "", false, null, null);
+    record Eventual(Set<FieldInfo> fields,
+                    boolean mark,
+                    Boolean after, // null for a @Mark without @Only
+                    Boolean test) { // true for isSet (before==false), false for !isSet (before==true), null for absent
 
-    record MarkAndOnly(List<Expression> preconditions, String markLabel, boolean mark,
-                       Boolean after, // null for a @Mark without @Only
-                       Boolean test) { // true for isSet, false for !isSet, null for absent
+        public Eventual {
+            assert !fields.isEmpty() || !mark && after == null && test == null;
+        }
 
         @Override
         public String toString() {
-            return markLabel + "=" + preconditions + "; after? " + after + "; @Mark? " + mark;
+            if (mark) return "@Mark: " + fields;
+            if (test != null) return "@TestMark: " + fields;
+            if (after == null) throw new UnsupportedOperationException();
+            return "@Only " + (after ? "after" : "before") + ": " + fields;
         }
 
-        public boolean consistentWith(MarkAndOnly other) {
-            return markLabel.equals(other.markLabel);
+        public String markLabel() {
+            return fields.stream().map(f -> f.name).sorted().collect(Collectors.joining());
+        }
+
+        public boolean consistentWith(Eventual other) {
+            return fields.equals(other.fields);
         }
     }
 

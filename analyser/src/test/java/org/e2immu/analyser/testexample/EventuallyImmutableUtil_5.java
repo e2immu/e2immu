@@ -17,44 +17,47 @@
 
 package org.e2immu.analyser.testexample;
 
+import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.annotation.E2Container;
-import org.e2immu.annotation.Mark;
-import org.e2immu.annotation.Only;
 import org.e2immu.annotation.TestMark;
 
 /*
-Similar to setOnce, to detect errors.
+Use types in util to become an eventually immutable type
+
  */
 @E2Container(after = "t")
-public class EventuallyE2Immutable_0<T> {
+public class EventuallyImmutableUtil_5 {
 
-    private T t;
+    static class S {
+        public final SetOnce<String> string = new SetOnce<>();
+        public final SetOnce<Boolean> bool = new SetOnce<>();
 
-    @Mark("t")
-    public void setT(T t) {
-        if (t == null) throw new NullPointerException();
-        if (this.t != null) throw new UnsupportedOperationException();
-        this.t = t;
+
+        @TestMark("bool,string")
+        public boolean isReady() {
+            return string.isSet() && bool.isSet();
+        }
     }
 
-    @Only(after = "t")
-    public T getT() {
-        if (t == null) throw new UnsupportedOperationException();
-        return t;
+    static class T {
+        private final S s1 = new S();
+        private final S s2 = new S();
+
+        public boolean isTReady() {
+            return s1.isReady() && s2.isReady();
+        }
+    }
+
+    private final T t = new T();
+
+
+    @TestMark("t")
+    public boolean isReady() {
+        return t.s1.isReady() && t.s2.isReady();
     }
 
     @TestMark("t")
-    public boolean isSet() {
-        return t != null;
-    }
-
-    @TestMark(value = "t", before = true)
-    public boolean isNotYetSet() {
-        return t == null;
-    }
-
-    @Mark("t")
-    public void set2(T t) {
-        setT(t);
+    public boolean isReady2() {
+        return t.isTReady();
     }
 }

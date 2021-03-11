@@ -21,18 +21,17 @@ import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.analyser.VariableProperty;
-import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.Level;
-import org.e2immu.analyser.model.ParameterizedType;
-import org.e2immu.analyser.model.Qualification;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.output.OutputBuilder;
 
+import java.util.Set;
+
 /**
  * Specifically used to transfer @Mark(" ...") at CONTRACT level.
  */
-public record ContractMark(String mark) implements Expression {
+public record ContractMark(Set<FieldInfo> fields) implements Expression {
 
     @Override
     public ParameterizedType returnType() {
@@ -56,7 +55,7 @@ public record ContractMark(String mark) implements Expression {
 
     @Override
     public String toString() {
-        return mark;
+        return fields().toString();
     }
 
     @Override

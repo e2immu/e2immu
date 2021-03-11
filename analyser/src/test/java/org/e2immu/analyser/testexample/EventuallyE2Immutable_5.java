@@ -17,18 +17,39 @@
 
 package org.e2immu.analyser.testexample;
 
-import org.e2immu.annotation.E2Container;
-import org.e2immu.annotation.Mark;
-import org.e2immu.annotation.Only;
-import org.e2immu.annotation.TestMark;
+import org.e2immu.annotation.*;
 
 /*
-Similar to setOnce, to detect errors.
+Two fields
  */
-@E2Container(after = "t")
-public class EventuallyE2Immutable_0<T> {
+@E2Container(after = "b,t")
+public class EventuallyE2Immutable_5<T> {
 
     private T t;
+    private boolean b;
+
+    @Mark("b")
+    public void setB() {
+        if (this.b) throw new UnsupportedOperationException();
+        this.b = true;
+    }
+
+    @TestMark("b")
+    public boolean isB() {
+        return b;
+    }
+
+    @Only(after = "b")
+    public void goAfter() {
+        if (!b) throw new UnsupportedOperationException();
+        // do something
+    }
+
+    @Only(before = "b")
+    public void goBefore() {
+        if (b) throw new UnsupportedOperationException();
+        // do something
+    }
 
     @Mark("t")
     public void setT(T t) {
@@ -44,17 +65,12 @@ public class EventuallyE2Immutable_0<T> {
     }
 
     @TestMark("t")
-    public boolean isSet() {
+    public boolean isSetT() {
         return t != null;
     }
 
-    @TestMark(value = "t", before = true)
-    public boolean isNotYetSet() {
-        return t == null;
-    }
-
-    @Mark("t")
-    public void set2(T t) {
-        setT(t);
+    @TestMark("b,t")
+    public boolean isReady() {
+        return b && t != null;
     }
 }

@@ -37,7 +37,7 @@ public class CheckEventual {
                              TypeAnalysisImpl.Builder typeAnalysis) {
 
         Function<AnnotationExpression, String> extractInspected = ae -> ae.extract("after", null);
-        String mark = typeAnalysis.isEventual() ? typeAnalysis.allLabelsRequiredForImmutable() : null;
+        String mark = typeAnalysis.isEventual() ? typeAnalysis.markLabel() : null;
 
         CheckLinks.checkAnnotationWithValue(messages,
                 typeAnalysis,

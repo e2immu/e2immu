@@ -31,30 +31,31 @@ public interface TypeAnalysis extends Analysis {
 
     Set<ObjectFlow> getConstantObjectFlows();
 
-    Map<String, Expression> getApprovedPreconditionsE1();
+    Map<FieldInfo, Expression> getApprovedPreconditionsE1();
 
-    Map<String, Expression> getApprovedPreconditionsE2();
+    Map<FieldInfo, Expression> getApprovedPreconditionsE2();
 
-    Expression getApprovedPreconditions(boolean e2, String markLabel);
+    Expression getApprovedPreconditions(boolean e2, FieldInfo fieldInfo);
 
-    boolean approvedPreconditionsIsSet(boolean e2, String markLabel);
+    boolean approvedPreconditionsIsSet(boolean e2, FieldInfo fieldInfo);
 
     boolean approvedPreconditionsIsFrozen(boolean e2);
 
-    Set<String> getNamesOfEventuallyImmutableFields();
+    Set<FieldInfo> getEventuallyImmutableFields();
+
+
+    default String markLabel() {
+        return marksRequiredForImmutable().stream().map(f -> f.name).sorted().collect(Collectors.joining(","));
+    }
 
     default boolean isEventual() {
         return !getApprovedPreconditionsE1().isEmpty() || !getApprovedPreconditionsE2().isEmpty() ||
-                !getNamesOfEventuallyImmutableFields().isEmpty();
+                !getEventuallyImmutableFields().isEmpty();
     }
 
-    default Set<String> marksRequiredForImmutable() {
+    default Set<FieldInfo> marksRequiredForImmutable() {
         return SetUtil.immutableUnion(getApprovedPreconditionsE1().keySet(), getApprovedPreconditionsE2().keySet(),
-                getNamesOfEventuallyImmutableFields());
-    }
-
-    default String allLabelsRequiredForImmutable() {
-        return marksRequiredForImmutable().stream().sorted().collect(Collectors.joining(","));
+                getEventuallyImmutableFields());
     }
 
     /**
@@ -83,5 +84,4 @@ public interface TypeAnalysis extends Analysis {
     default boolean aspectsIsSet(String aspect) {
         return getAspects().containsKey(aspect);
     }
-
 }

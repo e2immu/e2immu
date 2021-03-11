@@ -21,6 +21,7 @@ package org.e2immu.analyser.model;
 import org.e2immu.analyser.analyser.AnalysisProvider;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.objectflow.ObjectFlow;
+import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 
 import java.util.Map;
@@ -167,7 +168,8 @@ public interface ParameterAnalysis extends Analysis {
                     int immutable = bestTypeAnalysis.getProperty(VariableProperty.IMMUTABLE);
                     if (immutable == Level.DELAY) return internalGetProperty(VariableProperty.IMMUTABLE);
                     boolean objectFlowCondition = parameterInfo.owner.isPrivate() &&
-                            objectFlow != null && objectFlow.getPrevious().allMatch(of -> of.conditionsMetForEventual(bestTypeAnalysis));
+                            objectFlow != null && objectFlow.getPrevious().allMatch(of ->
+                            of.conditionsMetForEventual(parameterInfo.owner.typeInfo, bestTypeAnalysis, InspectionProvider.DEFAULT));
                     immutableFromType = MultiLevel.eventual(immutable, objectFlowCondition);
                 } else {
                     immutableFromType = MultiLevel.MUTABLE;

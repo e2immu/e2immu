@@ -294,6 +294,16 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         return Stream.of();
     }
 
+    public Set<FieldInfo> findFields(InspectionProvider inspectionProvider, String csv) {
+        if (csv.isBlank()) {
+            return Set.of();
+        }
+        List<FieldInfo> fields = visibleFields(inspectionProvider);
+        return Arrays.stream(csv.split(",")).filter(s -> !s.isBlank()).map(s ->
+                fields.stream().filter(f -> f.name.equals(s)).findFirst().orElseThrow())
+                .collect(Collectors.toUnmodifiableSet());
+    }
+
     private record ResultOfImportComputation(Set<String> imports, QualificationImpl qualification) {
     }
 
@@ -749,13 +759,13 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         return packageNameOrEnclosingType.getRight().fromPrimaryTypeDownwards() + "." + simpleName;
     }
 
-    public List<FieldInfo> visibleFields() {
-        TypeInspection inspection = typeInspection.get();
+    public List<FieldInfo> visibleFields(InspectionProvider inspectionProvider) {
+        TypeInspection inspection = inspectionProvider.getTypeInspection(this);
         List<FieldInfo> locally = inspection.fields();
         List<FieldInfo> fromParent = Primitives.isJavaLangObject(this) ? List.of() :
-                inspection.parentClass().typeInfo.visibleFields();
+                inspection.parentClass().typeInfo.visibleFields(inspectionProvider);
         List<FieldInfo> fromInterfaces = inspection.interfacesImplemented().stream()
-                .flatMap(i -> i.typeInfo.visibleFields().stream()).collect(Collectors.toUnmodifiableList());
+                .flatMap(i -> i.typeInfo.visibleFields(inspectionProvider).stream()).collect(Collectors.toUnmodifiableList());
         return ListUtil.immutableConcat(locally, fromParent, fromInterfaces);
     }
 }

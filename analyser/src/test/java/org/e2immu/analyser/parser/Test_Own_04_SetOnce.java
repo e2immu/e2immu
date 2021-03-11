@@ -182,66 +182,66 @@ public class Test_Own_04_SetOnce extends CommonTestRunner {
                 Assert.assertEquals(expectEnn, paramT.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
 
                 if (d.iteration() == 0) {
-                    Assert.assertNull(d.methodAnalysis().getPreconditionForMarkAndOnly());
+                    Assert.assertNull(d.methodAnalysis().getPreconditionForEventual());
                 } else {
-                    Assert.assertEquals("[null==t]", d.methodAnalysis().getPreconditionForMarkAndOnly().toString());
+                    Assert.assertEquals("[null==t]", d.methodAnalysis().getPreconditionForEventual().toString());
                     Assert.assertEquals("null==t", d.methodAnalysis().getPrecondition().toString());
                 }
                 Assert.assertEquals(Level.TRUE, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
                 Assert.assertEquals(d.iteration() > 0, d.methodAnalysis().methodLevelData().linksHaveBeenEstablished.isSet());
 
-                MethodAnalysis.MarkAndOnly markAndOnly = d.methodAnalysis().getMarkAndOnly();
+                MethodAnalysis.Eventual eventual = d.methodAnalysis().getEventual();
                 if (d.iteration() > 2) {
-                    Assert.assertTrue(markAndOnly.mark());
+                    Assert.assertTrue(eventual.mark());
                 } else {
-                    Assert.assertNull(markAndOnly);
+                    Assert.assertNull(eventual);
                 }
             }
 
             if ("get".equals(d.methodInfo().name)) {
                 if (d.iteration() == 0) {
-                    Assert.assertNull(d.methodAnalysis().getPreconditionForMarkAndOnly());
+                    Assert.assertNull(d.methodAnalysis().getPreconditionForEventual());
                     Assert.assertNull(d.methodAnalysis().getSingleReturnValue());
                 } else {
-                    Assert.assertEquals("[null!=t]", d.methodAnalysis().getPreconditionForMarkAndOnly().toString());
+                    Assert.assertEquals("[null!=t]", d.methodAnalysis().getPreconditionForEventual().toString());
                     Assert.assertEquals("t", d.methodAnalysis().getSingleReturnValue().toString());
                 }
                 int expectModified = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
                 Assert.assertEquals(expectModified, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
                 Assert.assertEquals(d.iteration() > 0, d.methodAnalysis().methodLevelData().linksHaveBeenEstablished.isSet());
 
-                MethodAnalysis.MarkAndOnly markAndOnly = d.methodAnalysis().getMarkAndOnly();
+                MethodAnalysis.Eventual eventual = d.methodAnalysis().getEventual();
                 if (d.iteration() > 2) {
-                    Assert.assertTrue(markAndOnly.after());
+                    Assert.assertTrue(eventual.after());
                 } else {
-                    Assert.assertNull(markAndOnly);
+                    Assert.assertNull(eventual);
                 }
             }
 
             if ("copy".equals(d.methodInfo().name)) {
                 if (d.iteration() <= 1) {
-                    Assert.assertNull(d.methodAnalysis().getPreconditionForMarkAndOnly());
+                    Assert.assertNull(d.methodAnalysis().getPreconditionForEventual());
                 } else {
                     Assert.assertEquals("[null==t]",
-                            d.methodAnalysis().getPreconditionForMarkAndOnly().toString());
+                            d.methodAnalysis().getPreconditionForEventual().toString());
                 }
                 Assert.assertEquals(d.iteration() > 1, d.methodAnalysis().methodLevelData().linksHaveBeenEstablished.isSet());
                 int expectModified = d.iteration() <= 1 ? Level.DELAY : Level.TRUE;
                 Assert.assertEquals(expectModified, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
 
-                MethodAnalysis.MarkAndOnly markAndOnly = d.methodAnalysis().getMarkAndOnly();
+                MethodAnalysis.Eventual eventual = d.methodAnalysis().getEventual();
                 if (d.iteration() > 2) {
-                    Assert.assertTrue(markAndOnly.mark());
+                    Assert.assertTrue(eventual.mark());
                 } else {
-                    Assert.assertNull(markAndOnly);
+                    Assert.assertNull(eventual);
                 }
             }
 
             if ("toString".equals(d.methodInfo().name)) {
                 if (d.iteration() == 0) {
-                    Assert.assertNull(d.methodAnalysis().getPreconditionForMarkAndOnly());
+                    Assert.assertNull(d.methodAnalysis().getPreconditionForEventual());
                 } else {
-                    Assert.assertEquals("[]", d.methodAnalysis().getPreconditionForMarkAndOnly().toString());
+                    Assert.assertEquals("[]", d.methodAnalysis().getPreconditionForEventual().toString());
                 }
                 int expectModified = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
                 Assert.assertEquals(expectModified, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
@@ -249,12 +249,12 @@ public class Test_Own_04_SetOnce extends CommonTestRunner {
 
             if ("isSet".equals(d.methodInfo().name)) {
                 if (d.iteration() == 0) {
-                    Assert.assertNull(d.methodAnalysis().getPreconditionForMarkAndOnly());
+                    Assert.assertNull(d.methodAnalysis().getPreconditionForEventual());
                 } else {
                     Assert.assertEquals("null!=t", d.methodAnalysis().getSingleReturnValue().toString());
                     Assert.assertTrue(d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod im
                             && im.expression() instanceof Negation);
-                    Assert.assertEquals("[]", d.methodAnalysis().getPreconditionForMarkAndOnly().toString());
+                    Assert.assertEquals("[]", d.methodAnalysis().getPreconditionForEventual().toString());
                 }
                 int expectModified = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
                 Assert.assertEquals(expectModified, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));

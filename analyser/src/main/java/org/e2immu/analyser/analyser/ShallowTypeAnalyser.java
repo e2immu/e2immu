@@ -117,7 +117,8 @@ public class ShallowTypeAnalyser implements AnalyserContext {
         parameterAnalysis.setProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD, Level.FALSE);
 
         List<ParameterAnalysis> parameterAnalyses = List.of((ParameterAnalysis) parameterAnalysis.build());
-        MethodAnalysisImpl.Builder builder = new MethodAnalysisImpl.Builder(false, getPrimitives(), this, methodInfo, parameterAnalyses);
+        MethodAnalysisImpl.Builder builder = new MethodAnalysisImpl.Builder(false, getPrimitives(),
+                this, this, methodInfo, parameterAnalyses);
         builder.setProperty(VariableProperty.IDENTITY, Level.FALSE);
         builder.setProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD, Level.FALSE);
         builder.setProperty(VariableProperty.CONTEXT_MODIFIED, Level.FALSE);
@@ -145,7 +146,8 @@ public class ShallowTypeAnalyser implements AnalyserContext {
         parameterAnalysis.setProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD, Level.FALSE);
 
         List<ParameterAnalysis> parameterAnalyses = List.of((ParameterAnalysis) parameterAnalysis.build());
-        MethodAnalysisImpl.Builder builder = new MethodAnalysisImpl.Builder(false, getPrimitives(), this, methodInfo, parameterAnalyses);
+        MethodAnalysisImpl.Builder builder = new MethodAnalysisImpl.Builder(false, getPrimitives(),
+                this, this, methodInfo, parameterAnalyses);
         builder.setProperty(VariableProperty.IDENTITY, Level.FALSE);
         builder.setProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD, Level.FALSE);
         builder.setProperty(VariableProperty.CONTEXT_MODIFIED, Level.FALSE);
