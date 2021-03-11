@@ -1981,6 +1981,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         if (statementAnalysis.statement instanceof SwitchStatementOldStyle switchStatementOldStyle) {
             return switchStatementOldStyle.atLeastOneBlockExecuted();
         }
+        if(statementAnalysis.statement instanceof SynchronizedStatement) return true;
         if (list.stream().anyMatch(ExecutionOfBlock::alwaysExecuted)) return true;
         // we have a default, and all conditions have code, and are possible
         return list.stream().anyMatch(e -> e.isDefault && e.startOfBlock != null) &&

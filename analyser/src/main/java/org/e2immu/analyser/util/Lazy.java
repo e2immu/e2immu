@@ -32,13 +32,13 @@ import java.util.function.Supplier;
  * @param <T> the container's content type
  */
 
-@E2Container(after = "get")
+@E2Container(after = "t")
 public class Lazy<T> {
     @NotNull1
-    @Linked(to = "supplierParam")
+    @Linked(to = {"Lazy:supplierParam"})
     private final Supplier<T> supplier;
 
-    @Final(after = "get")
+    @Final(after = "t")
     private volatile T t;
 
     /**
@@ -60,23 +60,18 @@ public class Lazy<T> {
      */
     @NotNull
     @Modified
-    @Mark(value = "get", contract = true)
+    @Mark(value = "t")
     public T get() {
-        T localT = t;
-        if (localT != null) return localT;
-
-        synchronized (this) {
-            if (t == null) {
-                t = Objects.requireNonNull(supplier.get()); // this statement causes @NotNull1 on supplier
-            }
-            return t;
-        }
+        if (t != null) return t;
+        t = Objects.requireNonNull(supplier.get()); // this statement causes @NotNull1 on supplier
+        return t;
     }
 
     /**
      * @return true when the lazy object has been evaluated
      */
     @NotModified
+    @TestMark("t")
     public boolean hasBeenEvaluated() {
         return t != null;
     }

@@ -495,6 +495,17 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
 
         // this is the first time we see this field (initial)
         ExpressionAndDelay initialValue = initialValueOfField(evaluationContext, fieldReference, selfReference);
+
+        boolean notYetAssignedToWillBeAssignedToLater = notYetAssignedToWillBeAssignedToLater(variableInfo, fieldReference);
+        // see FirstThen_0: this is here to break an chicken-and-egg problem between the FieldAnalyser (allAssignmentsHaveBeenSet)
+        // and StatementAnalyser (checkNotNullEscapesAndPreconditions)
+        if (initialValue.expressionIsDelayed && notYetAssignedToWillBeAssignedToLater) {
+            String objectId = index + "-" + fieldReference.fieldInfo.fullyQualifiedName();
+            Expression initial = NewObject.initialValueOfField(objectId, primitives, fieldReference.parameterizedType(),
+                    ObjectFlow.NO_FLOW);
+            initialValue = new ExpressionAndDelay(initial, false);
+        }
+
         Map<VariableProperty, Integer> map = propertyMap(evaluationContext.getAnalyserContext(), fieldReference.fieldInfo,
                 fieldReference.fieldInfo.type.defaultNotNull());
         Map<VariableProperty, Integer> valueMap = evaluationContext.getValueProperties(initialValue.expression);
@@ -531,6 +542,12 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                 vic.setLinkedVariables(LinkedVariables.EMPTY, false);
             }
         }
+    }
+
+    private boolean notYetAssignedToWillBeAssignedToLater(VariableInfo variableInfo, FieldReference fieldReference) {
+        StatementAnalysis lastStatement = lastStatement();
+        VariableInfo vi = lastStatement.findOrNull(fieldReference, MERGE);
+        return !variableInfo.isAssigned() && vi.isAssigned();
     }
 
     private void ensureLocalCopiesOfConfirmedVariableFields(EvaluationContext evaluationContext, VariableInfoContainer vic) {

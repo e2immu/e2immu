@@ -35,7 +35,7 @@ public record ContractMark(Set<FieldInfo> fields) implements Expression {
 
     @Override
     public ParameterizedType returnType() {
-        throw new UnsupportedOperationException();
+        return fields.stream().findFirst().orElseThrow().type;
     }
 
     @Override

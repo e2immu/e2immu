@@ -35,10 +35,8 @@ import java.util.Objects;
 
 @E2Container(after = "first")
 public class FirstThen<S, T> {
-    @Linked(to = {"first"})
     @Final(after = "first")
     private volatile S first;
-    @Linked(to = {"then"})
     @Final(after = "first")
     private volatile T then;
 
@@ -90,13 +88,8 @@ public class FirstThen<S, T> {
     @NotModified
     @Only(before = "first")
     public S getFirst() {
-        // TODO this is a bit convoluted, but in on the 3rd statement it does not (yet) recognize @Only
-        if (first == null) throw new UnsupportedOperationException("Then has already been set");
-
-        // note that we assign to a local variable to guarantee the same value
-        S s = first;
-        if (s == null) throw new NullPointerException();
-        return s;
+        if (first == null) throw new NullPointerException();
+        return first;
     }
 
     /**
@@ -109,11 +102,10 @@ public class FirstThen<S, T> {
     @NotModified
     @Only(after = "first")
     public T get() {
-        // TODO we could have had a check on then directly, but then @Only would not be recognized
+        // we could have had a check on "then" directly, but then @Only would not be recognized
         if (first != null) throw new UnsupportedOperationException("Not yet set");
-        T t = then;
-        if (t == null) throw new UnsupportedOperationException();
-        return t;
+        if (then == null) throw new UnsupportedOperationException();
+        return then;
     }
 
     /**

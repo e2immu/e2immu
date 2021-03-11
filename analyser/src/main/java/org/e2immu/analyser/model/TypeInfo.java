@@ -300,7 +300,9 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         }
         List<FieldInfo> fields = visibleFields(inspectionProvider);
         return Arrays.stream(csv.split(",")).filter(s -> !s.isBlank()).map(s ->
-                fields.stream().filter(f -> f.name.equals(s)).findFirst().orElseThrow())
+                fields.stream().filter(f -> f.name.equals(s))
+                        .findFirst()
+                        .orElseThrow(() -> new UnsupportedOperationException("Cannot find field " + s + " in type " + fullyQualifiedName)))
                 .collect(Collectors.toUnmodifiableSet());
     }
 

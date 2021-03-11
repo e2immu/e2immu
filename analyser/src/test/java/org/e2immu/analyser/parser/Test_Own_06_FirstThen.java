@@ -43,7 +43,7 @@ public class Test_Own_06_FirstThen extends CommonTestRunner {
         }
         if ("set".equals(d.methodInfo().name)) {
             if ("1.0.0.0.0".equals(d.statementId())) {
-                String expectCondition = d.iteration() == 0 ? "null==<f:first>" : "";
+                String expectCondition = d.iteration() == 0 ? "null==<f:first>" : "null==org.e2immu.analyser.util.FirstThen.first$0";
                 Assert.assertEquals(expectCondition, d.condition().toString());
             }
         }
@@ -72,7 +72,7 @@ public class Test_Own_06_FirstThen extends CommonTestRunner {
             if (d.iteration() == 0) {
                 Assert.assertNull(d.methodAnalysis().getPrecondition());
             } else {
-                Assert.assertEquals("not (null == this.first)", d.methodAnalysis().getPrecondition().toString());
+                Assert.assertEquals("null!=first", d.methodAnalysis().getPrecondition().toString());
             }
         }
 
@@ -90,12 +90,12 @@ public class Test_Own_06_FirstThen extends CommonTestRunner {
             Assert.assertTrue(vi.isRead());
             Assert.assertEquals(Level.DELAY, vi.getProperty(VariableProperty.METHOD_CALLED));
 
-            int expectModified = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
+            int expectModified = d.iteration() <= 1 ? Level.DELAY : Level.FALSE;
             Assert.assertEquals(expectModified, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
         }
 
         if ("equals".equals(name)) {
-            int expectModified = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
+            int expectModified = d.iteration() <= 1 ? Level.DELAY : Level.FALSE;
             Assert.assertEquals(expectModified, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
 
             ParameterAnalysis o = d.parameterAnalyses().get(0);
@@ -106,7 +106,7 @@ public class Test_Own_06_FirstThen extends CommonTestRunner {
     TypeAnalyserVisitor typeAnalyserVisitor = d -> {
         Assert.assertEquals("Type param S,Type param T", d.typeAnalysis().getImplicitlyImmutableDataTypes()
                 .stream().map(Object::toString).sorted().collect(Collectors.joining(",")));
-        Assert.assertEquals(d.iteration() > 1, d.typeAnalysis().approvedPreconditionsIsFrozen(false));
+        Assert.assertEquals(d.iteration() > 0, d.typeAnalysis().approvedPreconditionsIsFrozen(false));
     };
 
     TypeMapVisitor typeMapVisitor = typeMap -> {
