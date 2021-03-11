@@ -22,7 +22,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.analyser.check.CheckConstant;
-import org.e2immu.analyser.analyser.check.CheckMarkOnly;
+import org.e2immu.analyser.analyser.check.CheckEventual;
 import org.e2immu.analyser.analyser.check.CheckPrecondition;
 import org.e2immu.analyser.analyser.util.DetectEventual;
 import org.e2immu.analyser.config.MethodAnalyserVisitor;
@@ -270,9 +270,9 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
 
         CheckPrecondition.checkPrecondition(messages, methodInfo, methodAnalysis, companionAnalyses);
 
-        CheckMarkOnly.checkOnly(messages, methodInfo, methodAnalysis);
-        CheckMarkOnly.checkMark(messages, methodInfo, methodAnalysis);
-        CheckMarkOnly.checkTestMark(messages, methodInfo, methodAnalysis);
+        CheckEventual.checkOnly(messages, methodInfo, methodAnalysis);
+        CheckEventual.checkMark(messages, methodInfo, methodAnalysis);
+        CheckEventual.checkTestMark(messages, methodInfo, methodAnalysis);
 
         getParameterAnalysers().forEach(ParameterAnalyser::check);
 

@@ -1,52 +1,150 @@
-/*
- * e2immu: code analyser for effective and eventual immutability
- * Copyright 2020, Bart Naudts, https://www.e2immu.org
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *       http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package org.e2immu.analyser.analyser.check;
 
-import org.e2immu.analyser.analyser.TypeAnalysisImpl;
-import org.e2immu.analyser.model.AnnotationExpression;
-import org.e2immu.analyser.model.Location;
-import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.analyser.AnnotationParameters;
+import org.e2immu.analyser.analyser.MethodAnalysisImpl;
+import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Messages;
-
-import java.util.function.Function;
+import org.e2immu.annotation.Mark;
+import org.e2immu.annotation.Only;
+import org.e2immu.annotation.TestMark;
 
 public class CheckEventual {
 
-    /*
-    creation of the @E1Container, @E1Immutable, @E2Container, @E2Immutable annotations is in AbstractAnalysisBuilder
-     */
-    public static void check(Messages messages,
-                             TypeInfo typeInfo,
-                             Class<?> annotation,
-                             AnnotationExpression annotationExpression,
-                             TypeAnalysisImpl.Builder typeAnalysis) {
+    public static void checkOnly(Messages messages, MethodInfo methodInfo, MethodAnalysisImpl.Builder methodAnalysis) {
+        MethodAnalysis.Eventual eventual = methodAnalysis.getEventual();
+        AnnotationExpression annotationExpression = methodInfo.hasInspectedAnnotation(Only.class).orElse(null);
+        if (annotationExpression == null) return; // nothing to verify
 
-        Function<AnnotationExpression, String> extractInspected = ae -> ae.extract("after", null);
-        String mark = typeAnalysis.isEventual() ? typeAnalysis.markLabel() : null;
+        AnnotationParameters parameters = annotationExpression.e2ImmuAnnotationParameters();
+        boolean noData = eventual == null || eventual == MethodAnalysis.NOT_EVENTUAL || eventual.mark()
+                || eventual.test() != null;
+        if (parameters.absent()) {
+            if (noData) {
+                methodAnalysis.annotationChecks.put(annotationExpression, Analysis.AnnotationCheck.OK_ABSENT);
+                return; // fine!
+            }
+            messages.add(Message.newMessage(new Location(methodInfo),
+                    Message.ANNOTATION_UNEXPECTEDLY_PRESENT, "@Only"));
+            methodAnalysis.annotationChecks.put(annotationExpression, Analysis.AnnotationCheck.PRESENT);
+            return;
+        }
+        if (noData) {
+            messages.add(Message.newMessage(new Location(methodInfo), Message.ANNOTATION_ABSENT, "@Only"));
+            methodAnalysis.annotationChecks.put(annotationExpression, Analysis.AnnotationCheck.MISSING);
+            return;
+        }
+        String before = annotationExpression.extract("before", "");
+        if (before.isEmpty()) {
+            if (!eventual.after()) {
+                messages.add(Message.newMessage(new Location(methodInfo),
+                        Message.ONLY_WRONG_MARK_LABEL, "Missing before=\"" + eventual.markLabel() + "\""));
+                methodAnalysis.annotationChecks.put(annotationExpression, Analysis.AnnotationCheck.WRONG);
+                return;
+            }
+        } else {
+            if (eventual.after()) {
+                messages.add(Message.newMessage(new Location(methodInfo),
+                        Message.ONLY_WRONG_MARK_LABEL, "Got before=\"" + before + "\" but found after=\"" + eventual.markLabel() + "\""));
+                methodAnalysis.annotationChecks.put(annotationExpression, Analysis.AnnotationCheck.WRONG);
+                return;
+            }
+            if (!before.equals(eventual.markLabel())) {
+                messages.add(Message.newMessage(new Location(methodInfo),
+                        Message.ONLY_WRONG_MARK_LABEL, "Got before=\"" + before + "\" but computed before=\"" + eventual.markLabel() + "\""));
+                methodAnalysis.annotationChecks.put(annotationExpression, Analysis.AnnotationCheck.WRONG);
+            }
+            methodAnalysis.annotationChecks.put(annotationExpression, Analysis.AnnotationCheck.OK);
+            return;
+        }
+        String after = annotationExpression.extract("after", "");
+        if (after.isEmpty()) {
+            messages.add(Message.newMessage(new Location(methodInfo),
+                    Message.ONLY_WRONG_MARK_LABEL, "Missing after=\"" + eventual.markLabel() + "\""));
+            methodAnalysis.annotationChecks.put(annotationExpression, Analysis.AnnotationCheck.WRONG);
+        } else {
+            if (after.equals(eventual.markLabel())) {
+                methodAnalysis.annotationChecks.put(annotationExpression, Analysis.AnnotationCheck.OK);
+            } else {
+                messages.add(Message.newMessage(new Location(methodInfo),
+                        Message.ONLY_WRONG_MARK_LABEL, "Got after=\"" + after + "\" but computed after=\"" + eventual.markLabel() + "\""));
+                methodAnalysis.annotationChecks.put(annotationExpression, Analysis.AnnotationCheck.WRONG);
+            }
+        }
+    }
 
-        CheckLinks.checkAnnotationWithValue(messages,
-                typeAnalysis,
-                annotation.getName(),
-                "@" + annotation.getSimpleName(),
-                annotationExpression.typeInfo(),
-                extractInspected,
-                mark,
-                typeInfo.typeInspection.get().getAnnotations(),
-                new Location(typeInfo));
+    public static void checkMark(Messages messages, MethodInfo methodInfo, MethodAnalysisImpl.Builder methodAnalysis) {
+        MethodAnalysis.Eventual eventual = methodAnalysis.getEventual();
+        AnnotationExpression annotationExpression = methodInfo.hasInspectedAnnotation(Mark.class).orElse(null);
+        if (annotationExpression == null) return; // nothing to verify
+
+        AnnotationParameters parameters = annotationExpression.e2ImmuAnnotationParameters();
+        boolean noData = eventual == null || eventual == MethodAnalysis.NOT_EVENTUAL || !eventual.mark();
+        if (parameters.absent()) {
+            if (noData) return; // fine!
+            messages.add(Message.newMessage(new Location(methodInfo),
+                    Message.ANNOTATION_UNEXPECTEDLY_PRESENT, "@Mark"));
+            methodAnalysis.annotationChecks.put(annotationExpression, Analysis.AnnotationCheck.PRESENT);
+            return;
+        }
+        if (noData) {
+            messages.add(Message.newMessage(new Location(methodInfo),
+                    Message.ANNOTATION_ABSENT, "@Mark"));
+            methodAnalysis.annotationChecks.put(annotationExpression, Analysis.AnnotationCheck.MISSING);
+            return;
+        }
+        String value = annotationExpression.extract("value", "");
+        if (value.isEmpty()) {
+            messages.add(Message.newMessage(new Location(methodInfo),
+                    Message.ONLY_WRONG_MARK_LABEL, "Missing value \"" + eventual.markLabel() + "\""));
+        } else if (value.equals(eventual.markLabel())) {
+            methodAnalysis.annotationChecks.put(annotationExpression, Analysis.AnnotationCheck.OK);
+        } else {
+            messages.add(Message.newMessage(new Location(methodInfo),
+                    Message.ONLY_WRONG_MARK_LABEL, "Got \"" + value + "\" but computed \"" + eventual.markLabel() + "\""));
+            methodAnalysis.annotationChecks.put(annotationExpression, Analysis.AnnotationCheck.WRONG);
+        }
+    }
+
+
+    public static void checkTestMark(Messages messages, MethodInfo methodInfo, MethodAnalysisImpl.Builder methodAnalysis) {
+        MethodAnalysis.Eventual eventual = methodAnalysis.getEventual();
+        AnnotationExpression annotationExpression = methodInfo.hasInspectedAnnotation(TestMark.class).orElse(null);
+        if (annotationExpression == null) return; // nothing to verify
+
+        AnnotationParameters parameters = annotationExpression.e2ImmuAnnotationParameters();
+        boolean noData = eventual == null || eventual == MethodAnalysis.NOT_EVENTUAL || eventual.test() == null;
+        if (parameters.absent()) {
+            if (noData) return; // fine!
+            messages.add(Message.newMessage(new Location(methodInfo),
+                    Message.ANNOTATION_UNEXPECTEDLY_PRESENT, "@TestMark"));
+            methodAnalysis.annotationChecks.put(annotationExpression, Analysis.AnnotationCheck.PRESENT);
+            return;
+        }
+        if (noData) {
+            messages.add(Message.newMessage(new Location(methodInfo),
+                    Message.ANNOTATION_ABSENT, "@TestMark"));
+            methodAnalysis.annotationChecks.put(annotationExpression, Analysis.AnnotationCheck.MISSING);
+            return;
+        }
+        String value = annotationExpression.extract("value", "");
+        if (value.isEmpty()) {
+            messages.add(Message.newMessage(new Location(methodInfo),
+                    Message.ONLY_WRONG_MARK_LABEL, "Missing value \"" + eventual.markLabel() + "\""));
+        } else if (value.equals(eventual.markLabel())) {
+
+            boolean before = annotationExpression.extract("before", false);
+            if (before == !eventual.test()) {
+                methodAnalysis.annotationChecks.put(annotationExpression, Analysis.AnnotationCheck.OK);
+            } else {
+                messages.add(Message.newMessage(new Location(methodInfo),
+                        Message.ONLY_WRONG_MARK_LABEL, "Got before=\"" + before + "\" but computed \"" + eventual.test() + "\""));
+                methodAnalysis.annotationChecks.put(annotationExpression, Analysis.AnnotationCheck.WRONG);
+            }
+        } else {
+            messages.add(Message.newMessage(new Location(methodInfo),
+                    Message.ONLY_WRONG_MARK_LABEL, "Got \"" + value + "\" but computed \"" + eventual.markLabel() + "\""));
+            methodAnalysis.annotationChecks.put(annotationExpression, Analysis.AnnotationCheck.WRONG);
+        }
     }
 }

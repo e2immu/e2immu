@@ -20,7 +20,7 @@ package org.e2immu.analyser.analyser;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import org.e2immu.analyser.analyser.check.CheckEventual;
+import org.e2immu.analyser.analyser.check.CheckE1E2Immutable;
 import org.e2immu.analyser.analyser.util.AssignmentIncompatibleWithPrecondition;
 import org.e2immu.analyser.analyser.util.ExplicitTypes;
 import org.e2immu.analyser.config.TypeAnalyserVisitor;
@@ -216,10 +216,10 @@ public class TypeAnalyser extends AbstractAnalyser {
         check(typeInfo, Independent.class, e2.independent);
         check(typeInfo, Container.class, e2.container);
 
-        CheckEventual.check(messages, typeInfo, E1Immutable.class, e2.e1Immutable, typeAnalysis);
-        CheckEventual.check(messages, typeInfo, E1Container.class, e2.e1Container, typeAnalysis);
-        CheckEventual.check(messages, typeInfo, E2Immutable.class, e2.e2Immutable, typeAnalysis);
-        CheckEventual.check(messages, typeInfo, E2Container.class, e2.e2Container, typeAnalysis);
+        CheckE1E2Immutable.check(messages, typeInfo, E1Immutable.class, e2.e1Immutable, typeAnalysis);
+        CheckE1E2Immutable.check(messages, typeInfo, E1Container.class, e2.e1Container, typeAnalysis);
+        CheckE1E2Immutable.check(messages, typeInfo, E2Immutable.class, e2.e2Immutable, typeAnalysis);
+        CheckE1E2Immutable.check(messages, typeInfo, E2Container.class, e2.e2Container, typeAnalysis);
 
         // opposites
         check(typeInfo, MutableModifiesArguments.class, e2.mutableModifiesArguments);
