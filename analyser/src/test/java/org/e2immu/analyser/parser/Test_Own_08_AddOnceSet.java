@@ -19,19 +19,14 @@
 package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.VariableProperty;
-import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.config.MethodAnalyserVisitor;
-import org.e2immu.analyser.config.StatementAnalyserVariableVisitor;
-import org.e2immu.analyser.config.TypeAnalyserVisitor;
-import org.e2immu.analyser.model.Level;
-import org.e2immu.analyser.model.MultiLevel;
-import org.e2immu.analyser.model.ParameterAnalysis;
-import org.e2immu.analyser.model.ParameterInfo;
+import org.e2immu.analyser.config.*;
+import org.e2immu.analyser.model.*;
 import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
 public class Test_Own_08_AddOnceSet extends CommonTestRunner {
 
@@ -41,6 +36,13 @@ public class Test_Own_08_AddOnceSet extends CommonTestRunner {
 
     @Test
     public void test() throws IOException {
+        TypeMapVisitor typeMapVisitor = typeMap -> {
+            TypeInfo map = typeMap.get(Map.class);
+            MethodInfo keySet = map.findUniqueMethod("keySet", 0);
+            Assert.assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL,
+                    keySet.methodAnalysis.get().getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+        };
+
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("AddOnceSet".equals(d.typeInfo().simpleName)) {
                 Assert.assertEquals("[Type param V]", d.typeAnalysis().getImplicitlyImmutableDataTypes().toString());
@@ -64,7 +66,8 @@ public class Test_Own_08_AddOnceSet extends CommonTestRunner {
             }
         };
 
-        testUtilClass(List.of("AddOnceSet"), 0, 0, new DebugConfiguration.Builder()
+        testUtilClass(List.of("AddOnceSet"), 0, 1, new DebugConfiguration.Builder()
+                .addTypeMapVisitor(typeMapVisitor)
                 .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)

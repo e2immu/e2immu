@@ -55,7 +55,7 @@ public class AddOnceSet<V> extends Freezable {
     @NotNull
     public V get(V v) {
         if (!contains(v)) throw new UnsupportedOperationException("Not yet decided on " + v);
-        return Objects.requireNonNull(set.get(v));
+        return Objects.requireNonNull(set.get(v)); // causes potential null pointer exception warning; that's OK
     }
 
     public void size$Aspect$Size() {}

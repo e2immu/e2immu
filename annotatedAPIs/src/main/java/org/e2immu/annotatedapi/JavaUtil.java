@@ -437,9 +437,14 @@ public class JavaUtil extends AnnotatedAPI {
         int size() { return 0; }
 
         int entrySet$Transfer$Size(int i) { return i; }
-        @NotNull1
+        @NotNull2
         @NotModified
         Set<Map.Entry<K, V>> entrySet() { return null; }
+
+        int keySet$Transfer$Size(int i) { return i; }
+        @NotModified
+        @NotNull1
+        Set<K> keySet() { return null; }
 
         @NotModified
         //@Independent implicit!
