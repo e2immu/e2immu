@@ -947,6 +947,8 @@ public class Test_16_Modification extends CommonTestRunner {
             if ("clear".equals(name) && "InnerOfChild".equals(d.methodInfo().typeInfo.simpleName)) {
                 int expectModified = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
                 Assert.assertEquals(expectModified, d.getThisAsVariable().getProperty(VariableProperty.CONTEXT_MODIFIED));
+                Assert.assertTrue(d.getThisAsVariable().isRead());
+                Assert.assertEquals(expectModified, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
             }
             if ("clearAndLog".equals(name) && "ParentClass".equals(d.methodInfo().typeInfo.simpleName)) {
                 Assert.assertTrue(d.methodAnalysis().getPrecondition().isBoolValueTrue());

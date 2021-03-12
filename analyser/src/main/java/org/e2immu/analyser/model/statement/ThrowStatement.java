@@ -24,11 +24,18 @@ import org.e2immu.analyser.analyser.StatementAnalysis;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.output.*;
 
+import java.util.List;
+
 public class ThrowStatement extends StatementWithExpression {
 
     public ThrowStatement(Expression expression) {
         super(new Structure.Builder().setExpression(expression)
                 .setForwardEvaluationInfo(ForwardEvaluationInfo.NOT_NULL).build(), expression);
+    }
+
+    @Override
+    public List<? extends Element> subElements() {
+        return List.of(structure.expression());
     }
 
     @Override

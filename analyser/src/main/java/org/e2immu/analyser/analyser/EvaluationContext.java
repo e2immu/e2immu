@@ -266,4 +266,8 @@ public interface EvaluationContext {
     }
 
     String newObjectIdentifier();
+
+    default This currentThis() {
+        return new This(getAnalyserContext(), getCurrentType());
+    }
 }

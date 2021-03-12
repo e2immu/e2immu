@@ -45,11 +45,10 @@ public class EvaluateParameters {
                                                                              Expression scopeObject) {
         int n = methodInfo == null ? 10 : methodInfo.methodInspection.get().getParameters().size();
         List<Expression> parameterValues = new ArrayList<>(n);
-        List<EvaluationResult> parameterResults = new ArrayList<>(n);
         int i = 0;
         int minNotNullOverParameters = MultiLevel.EFFECTIVELY_NOT_NULL;
 
-        EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext).compose(parameterResults);
+        EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
         boolean partOfCallCycle = methodInfo != null && methodInfo.partOfCallCycle();
 
         for (Expression parameterExpression : parameterExpressions) {
@@ -90,8 +89,8 @@ public class EvaluateParameters {
                     map.put(VariableProperty.CONTEXT_NOT_NULL, Level.FALSE);
                 }
 
-                int contextNotModified = map.getOrDefault(VariableProperty.CONTEXT_MODIFIED, Level.DELAY);
-                if (contextNotModified == Level.DELAY) {
+                int contextModified = map.getOrDefault(VariableProperty.CONTEXT_MODIFIED, Level.DELAY);
+                if (contextModified == Level.DELAY) {
                     map.put(VariableProperty.CONTEXT_MODIFIED_DELAY, Level.TRUE);
                 }
                 int contextNotNull = map.getOrDefault(VariableProperty.CONTEXT_NOT_NULL, Level.DELAY);
@@ -129,7 +128,6 @@ public class EvaluateParameters {
 
                 ForwardEvaluationInfo forward = new ForwardEvaluationInfo(map, true);
                 parameterResult = parameterExpression.evaluate(evaluationContext, forward);
-                parameterResults.add(parameterResult);
                 parameterValue = parameterResult.value();
 
                 ObjectFlow source = parameterValue.getObjectFlow();
@@ -146,7 +144,6 @@ public class EvaluateParameters {
             } else {
                 parameterResult = parameterExpression.evaluate(evaluationContext, ForwardEvaluationInfo.DEFAULT);
                 parameterValue = parameterResult.value();
-                parameterResults.add(parameterResult);
             }
 
             builder.compose(parameterResult);

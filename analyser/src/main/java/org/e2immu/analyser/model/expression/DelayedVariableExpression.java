@@ -29,6 +29,7 @@ import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.E2Container;
 
+import java.util.List;
 import java.util.Objects;
 
 @E2Container
@@ -131,5 +132,10 @@ public record DelayedVariableExpression(String msg, String debug,
     @Override
     public LinkedVariables linkedVariables(EvaluationContext evaluationContext) {
         return LinkedVariables.DELAY;
+    }
+
+    @Override
+    public List<Variable> variables() {
+        return List.of(variable);
     }
 }

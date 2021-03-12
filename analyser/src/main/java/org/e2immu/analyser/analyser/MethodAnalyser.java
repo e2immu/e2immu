@@ -843,20 +843,15 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
                     methodInfo.fullyQualifiedName(), fieldsWithContentModifications);
         }
         if (!isModified && !methodInfo.methodInspection.get().isStatic()) {
-            boolean localMethodsCalled = getThisAsVariable().getProperty(VariableProperty.METHOD_CALLED) == Level.TRUE;
-            // IMPORTANT: localMethodsCalled only works on "this"; it does not work for static methods (See IdentityChecks)
-            if (localMethodsCalled) {
-                int thisModified = getThisAsVariable().getProperty(VariableProperty.CONTEXT_MODIFIED);
-
-                if (thisModified == Level.DELAY) {
-                    log(DELAYED, "In {}: other local methods are called, but no idea if they are @NotModified yet, delaying",
-                            methodInfo.distinguishingName());
-                    return DELAYS;
-                }
-                isModified = thisModified == Level.TRUE;
-                log(NOT_MODIFIED, "Mark method {} as {}", methodInfo.distinguishingName(),
-                        isModified ? "@Modified" : "@NotModified");
+            int thisModified = getThisAsVariable().getProperty(VariableProperty.CONTEXT_MODIFIED);
+            if (thisModified == Level.DELAY) {
+                log(DELAYED, "In {}: other local methods are called, but no idea if they are @NotModified yet, delaying",
+                        methodInfo.distinguishingName());
+                return DELAYS;
             }
+            isModified = thisModified == Level.TRUE;
+            log(NOT_MODIFIED, "Mark method {} as {}", methodInfo.distinguishingName(),
+                    isModified ? "@Modified" : "@NotModified");
         } // else: already true, so no need to look at this
 
         if (!isModified) {

@@ -454,6 +454,9 @@ public class JavaUtil extends AnnotatedAPI {
         //@Independent implicit!
         V get(Object key) { return null; }
 
+        @Modified
+        V put(@NotNull K key, @NotNull V value) { return null; }
+
         @NotNull1
         @NotModified
         Collection<V> values() { return null; }

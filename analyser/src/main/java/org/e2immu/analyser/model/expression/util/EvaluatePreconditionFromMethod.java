@@ -60,25 +60,30 @@ public class EvaluatePreconditionFromMethod {
             Expression reEvaluated = eRreEvaluated.value();
             builder.compose(eRreEvaluated);
 
-            // from the result we either may infer another condition, or values to be set...
+            // see SetOnceMap, get() inside if(isSet()) throw new X(" "+get())
+            Expression inCondition = evaluationContext.getConditionManager().evaluate(evaluationContext, reEvaluated);
+            if (!inCondition.isBoolValueTrue()) {
 
-            // NOT_NULL
-            Filter filter = new Filter(evaluationContext, Filter.FilterMode.ACCEPT);
-            Filter.FilterResult<ParameterInfo> filterResult = filter.filter(reEvaluated,
-                    filter.individualNullOrNotNullClauseOnParameter());
-            Map<ParameterInfo, Expression> individualNullClauses = filterResult.accepted();
-            for (Map.Entry<ParameterInfo, Expression> nullClauseEntry : individualNullClauses.entrySet()) {
-                if (!nullClauseEntry.getValue().equalsNull()) {
-                    builder.setProperty(nullClauseEntry.getKey(), VariableProperty.CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
+                // from the result we either may infer another condition, or values to be set...
+
+                // NOT_NULL
+                Filter filter = new Filter(evaluationContext, Filter.FilterMode.ACCEPT);
+                Filter.FilterResult<ParameterInfo> filterResult = filter.filter(reEvaluated,
+                        filter.individualNullOrNotNullClauseOnParameter());
+                Map<ParameterInfo, Expression> individualNullClauses = filterResult.accepted();
+                for (Map.Entry<ParameterInfo, Expression> nullClauseEntry : individualNullClauses.entrySet()) {
+                    if (!nullClauseEntry.getValue().equalsNull()) {
+                        builder.setProperty(nullClauseEntry.getKey(), VariableProperty.CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
+                    }
                 }
-            }
 
-            // all the rest: preconditions
-            Expression rest = filterResult.rest();
-            builder.addUntranslatedPrecondition(rest);
-            Expression translated = evaluationContext.acceptAndTranslatePrecondition(rest);
-            if (translated != null) {
-                builder.addPrecondition(translated);
+                // all the rest: preconditions
+                Expression rest = filterResult.rest();
+                builder.addUntranslatedPrecondition(rest);
+                Expression translated = evaluationContext.acceptAndTranslatePrecondition(rest);
+                if (translated != null) {
+                    builder.addPrecondition(translated);
+                }
             }
         }
     }

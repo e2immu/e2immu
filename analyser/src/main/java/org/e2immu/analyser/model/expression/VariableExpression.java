@@ -126,19 +126,12 @@ public record VariableExpression(Variable variable,
 
     @Override
     public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
-        return evaluate(evaluationContext, forwardEvaluationInfo, replaceSuperByThis(evaluationContext, variable));
+        return evaluate(evaluationContext, forwardEvaluationInfo, variable);
     }
 
     @Override
     public boolean isDelayed(EvaluationContext evaluationContext) {
         return evaluationContext.variableIsDelayed(variable);
-    }
-
-    public static Variable replaceSuperByThis(EvaluationContext evaluationContext, Variable variable) {
-        if (variable instanceof This tv && tv.typeInfo != evaluationContext.getCurrentType()) {
-            return new This(evaluationContext.getAnalyserContext(), evaluationContext.getCurrentType());
-        }
-        return variable;
     }
 
     // code also used by FieldAccess
@@ -154,11 +147,21 @@ public record VariableExpression(Variable variable,
 
         if (forwardEvaluationInfo.isNotAssignmentTarget()) {
             builder.markRead(variable);
+            if (variable instanceof This thisVar && !thisVar.typeInfo.equals(evaluationContext.getCurrentType())) {
+                builder.markRead(evaluationContext.currentThis());
+            }
             if (currentValue instanceof VariableExpression ve) {
                 builder.markRead(ve.variable);
+                if (ve.variable instanceof This thisVar && !thisVar.typeInfo.equals(evaluationContext.getCurrentType())) {
+                    builder.markRead(evaluationContext.currentThis());
+                }
             }
         } else if (variable instanceof FieldReference fieldReference && fieldReference.scope instanceof This thisVar) {
             builder.markRead(thisVar);
+            // if super is read, then this should be read to
+            if (!thisVar.typeInfo.equals(evaluationContext.getCurrentType())) {
+                builder.markRead(evaluationContext.currentThis());
+            } // TODO: and do all types "in between"
         }
 
         int notNull = forwardEvaluationInfo.getProperty(VariableProperty.CONTEXT_NOT_NULL);
@@ -169,6 +172,11 @@ public record VariableExpression(Variable variable,
         if (modified != Level.DELAY) {
             builder.markContextModified(variable, modified);
             // do not check for implicit this!! otherwise, any x.y will also affect this.y
+
+            // if super is modified, then this should be modified to
+            if (variable instanceof This thisVar && !thisVar.typeInfo.equals(evaluationContext.getCurrentType())) {
+                builder.markContextModified(evaluationContext.currentThis(), modified);
+            }
         }
 
         int notModified1 = forwardEvaluationInfo.getProperty(VariableProperty.NOT_MODIFIED_1);

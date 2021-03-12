@@ -406,8 +406,16 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
         // scope delay
         if (resultIsDelayed || contextModifiedDelay == Level.TRUE) {
-            objectValue.variables().forEach(variable -> builder.setProperty(variable, VariableProperty.SCOPE_DELAY, Level.TRUE));
-            object.variables().forEach(variable -> builder.setProperty(variable, VariableProperty.SCOPE_DELAY, Level.TRUE));
+            objectValue.variables().forEach(variable -> {
+                builder.setProperty(variable, VariableProperty.SCOPE_DELAY, Level.TRUE);
+                if (variable instanceof This thisVar && !thisVar.typeInfo.equals(evaluationContext.getCurrentType())) {
+                    This currentThis = evaluationContext.currentThis();
+                    builder.setProperty(currentThis, VariableProperty.SCOPE_DELAY, Level.TRUE);
+                    if(contextModifiedDelay == Level.TRUE) {
+                        builder.setProperty(currentThis, VariableProperty.CONTEXT_MODIFIED_DELAY, Level.TRUE);
+                    }
+                }
+            });
         }
 
         checkCommonErrors(builder, evaluationContext, objectValue);
@@ -593,7 +601,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             MethodAnalysis methodAnalysis = evaluationContext.getAnalyserContext().getMethodAnalysis(methodInfo);
             if (methodAnalysis.eventualIsSet()) {
                 MethodAnalysis.Eventual eventual = methodAnalysis.getEventual();
-                if(eventual != null) {
+                if (eventual != null) {
                     if (eventual.after() == Boolean.FALSE) {
                         Set<FieldInfo> before = eventual.fields();
                         if (marks.containsAll(before)) {
