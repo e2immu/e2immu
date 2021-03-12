@@ -20,6 +20,7 @@ package org.e2immu.analyser.util;
 
 import org.e2immu.annotation.Final;
 import org.e2immu.annotation.Mark;
+import org.e2immu.annotation.TestMark;
 
 /**
  * Super-class for eventually immutable types.
@@ -45,6 +46,7 @@ public abstract class Freezable {
         frozen = true;
     }
 
+    @TestMark("frozen")
     public boolean isFrozen() {
         return frozen;
     }

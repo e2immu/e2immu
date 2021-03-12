@@ -273,6 +273,7 @@ class VariableInfoImpl implements VariableInfo {
             new MergeOp(SCOPE_DELAY, Math::max, Level.DELAY),
             new MergeOp(METHOD_CALLED, Math::max, Level.DELAY),
             new MergeOp(CONTEXT_MODIFIED_DELAY, Math::max, Level.DELAY),
+            new MergeOp(CONTEXT_NOT_NULL_DELAY, Math::max, Level.DELAY),
 
             new MergeOp(CONTEXT_NOT_NULL_FOR_PARENT, Math::max, Level.DELAY),
             new MergeOp(CONTEXT_NOT_NULL_FOR_PARENT_DELAY, Math::max, Level.DELAY),

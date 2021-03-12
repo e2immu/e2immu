@@ -91,4 +91,25 @@ public class Test_35_EventuallyImmutableUtil extends CommonTestRunner {
                         .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         .build());
     }
+
+    @Test
+    public void test_4() throws IOException {
+        testWithUtilClasses(List.of("EventuallyImmutableUtil_4"), FLIP_SWITCH_SET_ONCE,
+                0, 0, new DebugConfiguration.Builder()
+                        .build());
+    }
+
+    @Test
+    public void test_5() throws IOException {
+        testWithUtilClasses(List.of("EventuallyImmutableUtil_5"), FLIP_SWITCH_SET_ONCE,
+                0, 0, new DebugConfiguration.Builder()
+                        .build());
+    }
+
+    @Test
+    public void test_6() throws IOException {
+        testWithUtilClasses(List.of("EventuallyImmutableUtil_6"), List.of("AddOnceSet"),
+                0, 0, new DebugConfiguration.Builder()
+                        .build());
+    }
 }
