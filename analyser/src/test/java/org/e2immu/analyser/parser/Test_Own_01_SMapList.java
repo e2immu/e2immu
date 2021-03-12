@@ -250,7 +250,7 @@ public class Test_Own_01_SMapList extends CommonTestRunner {
     TypeMapVisitor typeMapVisitor = typeMap -> {
         TypeInfo map = typeMap.get(Map.class);
         MethodInfo entrySet = map.findUniqueMethod("entrySet", 0);
-        Assert.assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL,
+        Assert.assertEquals(MultiLevel.EFFECTIVELY_CONTENT2_NOT_NULL,
                 entrySet.methodAnalysis.get().getProperty(VariableProperty.NOT_NULL_EXPRESSION));
     };
 

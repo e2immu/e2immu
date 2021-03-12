@@ -436,6 +436,10 @@ public class JavaUtil extends AnnotatedAPI {
         @NotModified
         int size() { return 0; }
 
+        boolean isEmpty$Value$Size(int i, boolean retVal) { return i == 0; }
+        @NotModified
+        boolean isEmpty() { return true; }
+
         int entrySet$Transfer$Size(int i) { return i; }
         @NotNull2
         @NotModified

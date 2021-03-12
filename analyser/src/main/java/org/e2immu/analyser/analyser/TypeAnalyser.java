@@ -106,8 +106,8 @@ public class TypeAnalyser extends AbstractAnalyser {
                 .add("analyseImplicitlyImmutableTypes", (iteration) -> analyseImplicitlyImmutableTypes());
 
         if (!typeInfo.isInterface()) {
-            builder.add("analyseOnlyMarkEventuallyE1Immutable", this::analyseOnlyMarkEventuallyE1Immutable)
-                    .add("analyseOnlyMarkEventuallyE2Immutable", this::analyseOnlyMarkEventuallyE2Immutable)
+            builder.add("computeApprovedPreconditionsE1", this::computeApprovedPreconditionsE1)
+                    .add("computeApprovedPreconditionsE2", this::computeApprovedPreconditionsE2)
                     .add("analyseIndependent", (iteration) -> analyseIndependent())
                     .add("analyseEffectivelyEventuallyE2Immutable", (iteration) -> analyseEffectivelyEventuallyE2Immutable())
                     .add("analyseContainer", (iteration) -> analyseContainer())
@@ -396,12 +396,7 @@ public class TypeAnalyser extends AbstractAnalyser {
         throw new UnsupportedOperationException();
     }
 
-    /*
-     writes: typeAnalysis.approvedPreconditionsL1, the official marker for level 1 eventuality in the type
-
-     when? all assigning methods must have methodAnalysis.preconditionForOnlyData set with value != NO_VALUE
-    */
-    private AnalysisStatus analyseOnlyMarkEventuallyE1Immutable(int iteration) {
+    private AnalysisStatus computeApprovedPreconditionsE1(int iteration) {
         if (typeAnalysis.approvedPreconditionsIsFrozen(false)) {
             return DONE;
         }
@@ -445,7 +440,7 @@ public class TypeAnalyser extends AbstractAnalyser {
             }
         }
         if (tempApproved.isEmpty()) {
-            log(MARK, "No modifying methods in {}", typeInfo.fullyQualifiedName);
+            log(MARK, "No assigning methods in {}", typeInfo.fullyQualifiedName);
             typeAnalysis.freezeApprovedPreconditionsE1();
             return DONE;
         }
@@ -461,6 +456,9 @@ public class TypeAnalyser extends AbstractAnalyser {
     all non-private methods which assign a field, or can reach a method that assigns a field
 
     TODO may be slow, we should cache this?
+
+    FIXME also include those of the parent types?
+    Rather not, if we're extending without!
      */
     private Set<MethodAnalyser> determineAssigningMethods() {
         Set<MethodInfo> assigningMethods = myMethodAnalysersExcludingSAMs.stream()
@@ -489,7 +487,7 @@ public class TypeAnalyser extends AbstractAnalyser {
           when? all modifying methods must have methodAnalysis.preconditionForOnlyData set with value != NO_VALUE
 
          */
-    private AnalysisStatus analyseOnlyMarkEventuallyE2Immutable(int iteration) {
+    private AnalysisStatus computeApprovedPreconditionsE2(int iteration) {
         if (typeAnalysis.approvedPreconditionsIsFrozen(true)) {
             return DONE;
         }
@@ -509,11 +507,12 @@ public class TypeAnalyser extends AbstractAnalyser {
             log(DELAYED, "Not all precondition preps on modifying methods have been set in {}, delaying", typeInfo.fullyQualifiedName);
             return DELAYS;
         }
-        boolean someInvalidPreconditionsOnModifyingMethods = myMethodAnalysersExcludingSAMs.stream().anyMatch(methodAnalyser ->
+        Optional<MethodAnalyser> optEmptyPreconditions = myMethodAnalysersExcludingSAMs.stream().filter(methodAnalyser ->
                 methodAnalyser.methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD) == Level.TRUE &&
-                        methodAnalyser.methodAnalysis.preconditionForEventual.get().isEmpty());
-        if (someInvalidPreconditionsOnModifyingMethods) {
-            log(MARK, "Not all modifying methods have a valid precondition in {}", typeInfo.fullyQualifiedName);
+                        methodAnalyser.methodAnalysis.preconditionForEventual.get().isEmpty()).findFirst();
+        if (optEmptyPreconditions.isPresent()) {
+            log(MARK, "Not all modifying methods have a valid precondition in {}: (findFirst) {}",
+                    typeInfo.fullyQualifiedName, optEmptyPreconditions.get().methodInfo.fullyQualifiedName);
             typeAnalysis.freezeApprovedPreconditionsE2();
             return DONE;
         }
@@ -739,25 +738,14 @@ public class TypeAnalyser extends AbstractAnalyser {
             return DELAYS;
         }
         if (propertyValues.stream().anyMatch(level -> level != Level.TRUE)) {
-            log(DELAYED, "{} cannot be {}, parent or enclosing class is not", typeInfo.fullyQualifiedName, variableProperty);
+            log(ANALYSER, "{} cannot be {}, parent or enclosing class is not", typeInfo.fullyQualifiedName, variableProperty);
             typeAnalysis.setProperty(variableProperty, falseValue);
             return DONE;
         }
         return PROGRESS;
     }
 
-    /*
-    FIXME for now we exclude
-
-        AnalysisStatus parentOrEnclosing = parentOrEnclosingMustHaveTheSameProperty(VariableProperty.IMMUTABLE,
-              i -> convertMultiLevelEffectiveToDelayTrue(MultiLevel.value(i, MultiLevel.E1IMMUTABLE)), MultiLevel.FALSE);
-        if (parentOrEnclosing == DELAYS || parentOrEnclosing == DONE) return parentOrEnclosing;
-
-
-     */
-
-
-    private int effectivelyE1Immutable() {
+    private int allMyFieldsFinal() {
         for (FieldAnalyser fieldAnalyser : myFieldAnalysers) {
             int effectivelyFinal = fieldAnalyser.fieldAnalysis.getProperty(VariableProperty.FINAL);
             if (effectivelyFinal == Level.DELAY) {
@@ -793,22 +781,31 @@ public class TypeAnalyser extends AbstractAnalyser {
         if (typeImmutable != Level.DELAY) return DONE; // we have a decision already
 
         // effectively E1
-        int e1 = effectivelyE1Immutable();
-        if (e1 == Level.DELAY) {
+        int allMyFieldsFinal = allMyFieldsFinal();
+        if (allMyFieldsFinal == Level.DELAY) {
             return DELAYS;
+        }
+        TypeInspection typeInspection = analyserContext.getTypeInspection(typeInfo);
+        int parentE1;
+        if (Primitives.isJavaLangObject(typeInspection.parentClass())) {
+            parentE1 = MultiLevel.EFFECTIVE;
+        } else {
+            TypeInfo parentType = typeInspection.parentClass().typeInfo;
+            int parentImmutable = analyserContext.getTypeAnalysis(parentType).getProperty(VariableProperty.IMMUTABLE);
+            parentE1 = MultiLevel.value(parentImmutable, MultiLevel.E1IMMUTABLE);
         }
 
         int myWhenE2Fails;
         int e1Component;
         boolean eventual;
-        if (e1 == Level.FALSE) {
+        if (allMyFieldsFinal == Level.FALSE || parentE1 != MultiLevel.EFFECTIVE) {
             if (!typeAnalysis.approvedPreconditionsIsFrozen(false)) {
                 log(DELAYED, "Type {} is not effectively level 1 immutable, waiting for" +
                         " preconditions to find out if it is eventually level 1 immutable", typeInfo.fullyQualifiedName);
                 return DELAYS;
             }
             boolean isEventuallyE1 = !typeAnalysis.approvedPreconditionsIsEmpty(false);
-            if (!isEventuallyE1) {
+            if (!isEventuallyE1 && parentE1 != MultiLevel.EVENTUAL) {
                 log(E1IMMUTABLE, "Type {} is not eventually level 1 immutable", typeInfo.fullyQualifiedName);
                 typeAnalysis.setProperty(VariableProperty.IMMUTABLE, MultiLevel.MUTABLE);
                 return DONE;

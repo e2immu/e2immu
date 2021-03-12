@@ -119,9 +119,9 @@ public class AssignmentIncompatibleWithPrecondition {
         Block body = analyserContext.getMethodInspection(methodAnalyser.methodInfo).getMethodBody();
         Set<MethodInfo> calledMethods = new CallsToOwnMethods(analyserContext).visit(body).getMethods();
         for (MethodInfo calledMethod : calledMethods) {
-            MethodAnalyser calledMethodAnalyser = analyserContext.getMethodAnalyser(calledMethod);
-            if (calledMethodAnalyser.methodAnalysis.eventualIsSet()) {
-                MethodAnalysis.Eventual eventual = calledMethodAnalyser.methodAnalysis.getEventual();
+            MethodAnalysis calledMethodAnalysis = analyserContext.getMethodAnalysis(calledMethod);
+            if (calledMethodAnalysis.eventualIsSet()) {
+                MethodAnalysis.Eventual eventual = calledMethodAnalysis.getEventual();
                 if (eventual != MethodAnalysis.NOT_EVENTUAL) {
                     if (consistent == null) consistent = eventual;
                     else if (!eventual.consistentWith(consistent)) {

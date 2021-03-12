@@ -20,31 +20,34 @@ package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.config.TypeAnalyserVisitor;
+import org.e2immu.analyser.model.ParameterizedType;
 import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /*
 first issue: import of Collector.Characteristics should be automatic
 second issue: UnevaluatedLambdaExpression exception
  */
-public class Test_Own_09_UpgradableBooleanMap extends CommonTestRunner {
+public class Test_Own_09_SetOnceMap extends CommonTestRunner {
 
-    public Test_Own_09_UpgradableBooleanMap() {
+    public Test_Own_09_SetOnceMap() {
         super(true);
     }
 
     TypeAnalyserVisitor typeAnalyserVisitor = d -> {
-        if("UpgradableBooleanMap".equals(d.typeInfo().simpleName)) {
-            Assert.assertEquals("[Type param T]", d.typeAnalysis().getImplicitlyImmutableDataTypes().toString());
+        if("SetOnceMap".equals(d.typeInfo().simpleName)) {
+            Assert.assertEquals("Type param K, Type param V", d.typeAnalysis().getImplicitlyImmutableDataTypes()
+                    .stream().map(ParameterizedType::toString).sorted().collect(Collectors.joining(", ")));
         }
     };
 
     @Test
     public void test() throws IOException {
-        testUtilClass(List.of("UpgradableBooleanMap"), 0, 0, new DebugConfiguration.Builder()
+        testUtilClass(List.of("SetOnceMap"), 0, 0, new DebugConfiguration.Builder()
                 .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
                 .build());
     }

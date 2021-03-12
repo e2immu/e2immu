@@ -46,6 +46,11 @@ public class Test_Own_08_AddOnceSet extends CommonTestRunner {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("AddOnceSet".equals(d.typeInfo().simpleName)) {
                 Assert.assertEquals("[Type param V]", d.typeAnalysis().getImplicitlyImmutableDataTypes().toString());
+
+                Assert.assertTrue(d.typeAnalysis().getApprovedPreconditionsE1().isEmpty());
+                if (d.iteration() >= 2) {
+                    Assert.assertEquals("{frozen=!frozen}", d.typeAnalysis().getApprovedPreconditionsE2().toString());
+                }
             }
         };
 
@@ -54,6 +59,13 @@ public class Test_Own_08_AddOnceSet extends CommonTestRunner {
                 ParameterAnalysis v = d.parameterAnalyses().get(0);
                 int expectNnp = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
                 Assert.assertEquals(expectNnp, v.getProperty(VariableProperty.NOT_NULL_PARAMETER));
+            }
+            if ("add".equals(d.methodInfo().name) && "AddOnceSet".equals(d.methodInfo().typeInfo.simpleName)) {
+                if (d.iteration() <= 1) {
+                    Assert.assertNull(d.methodAnalysis().getPreconditionForEventual());
+                } else {
+                    Assert.assertEquals("[!frozen]", d.methodAnalysis().getPreconditionForEventual().toString());
+                }
             }
         };
 
@@ -66,7 +78,7 @@ public class Test_Own_08_AddOnceSet extends CommonTestRunner {
             }
         };
 
-        testUtilClass(List.of("AddOnceSet"), 0, 1, new DebugConfiguration.Builder()
+        testUtilClass(List.of("AddOnceSet", "Freezable"), 0, 1, new DebugConfiguration.Builder()
                 .addTypeMapVisitor(typeMapVisitor)
                 .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)

@@ -158,8 +158,8 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
                     .add("computeModifiedCycles", (sharedState -> methodInfo.isConstructor ? DONE : computeModifiedInternalCycles()))
                     .add("computeReturnValue", (sharedState) -> methodInfo.noReturnValue() ? DONE : computeReturnValue(sharedState))
                     .add("detectMissingStaticModifier", (iteration) -> methodInfo.isConstructor ? DONE : detectMissingStaticModifier())
-                    .add("computeOnlyMarkPrepWork", (sharedState) -> methodInfo.isConstructor ? DONE : computeOnlyMarkPrepWork(sharedState))
-                    .add("computeOnlyMarkAnnotate", (sharedState) -> methodInfo.isConstructor ? DONE : computeOnlyMarkAnnotate(sharedState))
+                    .add("eventualPrepWork", (sharedState) -> methodInfo.isConstructor ? DONE : eventualPrepWork(sharedState))
+                    .add("annotateEventual", (sharedState) -> methodInfo.isConstructor ? DONE : annotateEventual(sharedState))
                     .add("methodIsIndependent", this::methodIsIndependent);
 
         } else {
@@ -420,7 +420,7 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
         return parameterAnalyser;
     }
 
-    private AnalysisStatus computeOnlyMarkAnnotate(SharedState sharedState) {
+    private AnalysisStatus annotateEventual(SharedState sharedState) {
         assert !methodAnalysis.eventualIsSet();
 
         Set<FieldInfo> visibleFields = ImmutableSet.copyOf(methodInfo.typeInfo.visibleFields(analyserContext));
@@ -441,31 +441,33 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
         return DONE;
     }
 
-    private AnalysisStatus computeOnlyMarkPrepWork(SharedState sharedState) {
+    private AnalysisStatus eventualPrepWork(SharedState sharedState) {
         assert !methodAnalysis.preconditionForEventual.isSet();
 
         TypeInfo typeInfo = methodInfo.typeInfo;
+        List<FieldAnalysis> fieldAnalysesOfTypeInfo = myFieldAnalysers.values().stream().map(fa -> fa.fieldAnalysis).collect(Collectors.toUnmodifiableList());
+
         while (true) {
-            boolean haveDelayOnFinalFields = myFieldAnalysers.values()
-                    .stream().anyMatch(fa -> fa.fieldAnalysis.getProperty(VariableProperty.FINAL) == Level.DELAY);
+            boolean haveDelayOnFinalFields = fieldAnalysesOfTypeInfo
+                    .stream().anyMatch(fa -> fa.getProperty(VariableProperty.FINAL) == Level.DELAY);
             if (haveDelayOnFinalFields) {
                 log(DELAYED, "Delaying @Mark/@Only in {} until we know about @Final of fields", methodInfo.fullyQualifiedName);
                 return DELAYS;
             }
-            boolean haveNonFinalFields = myFieldAnalysers.values()
-                    .stream().anyMatch(fa -> fa.fieldAnalysis.getProperty(VariableProperty.FINAL) == Level.FALSE);
+            boolean haveNonFinalFields = fieldAnalysesOfTypeInfo
+                    .stream().anyMatch(fa -> fa.getProperty(VariableProperty.FINAL) == Level.FALSE);
             if (haveNonFinalFields) {
                 break;
             }
-            boolean haveDelayOnImmutableFields = myFieldAnalysers.values()
-                    .stream().anyMatch(fa -> fa.fieldAnalysis.getProperty(VariableProperty.IMMUTABLE) == Level.DELAY);
+            boolean haveDelayOnImmutableFields = fieldAnalysesOfTypeInfo
+                    .stream().anyMatch(fa -> fa.getProperty(VariableProperty.IMMUTABLE) == Level.DELAY);
             if (haveDelayOnImmutableFields) {
                 log(DELAYED, "Delaying @Mark/@Only in {} until we know about @Immutable of fields", methodInfo.fullyQualifiedName);
                 return DELAYS;
             }
-            boolean haveEventuallyImmutableFields = myFieldAnalysers.values()
+            boolean haveEventuallyImmutableFields = fieldAnalysesOfTypeInfo
                     .stream().anyMatch(fa -> {
-                        int immutable = fa.fieldAnalysis.getProperty(VariableProperty.IMMUTABLE);
+                        int immutable = fa.getProperty(VariableProperty.IMMUTABLE);
                         return MultiLevel.isEventuallyE1Immutable(immutable) || MultiLevel.isEventuallyE2Immutable(immutable);
                     });
             if (haveEventuallyImmutableFields) {
@@ -478,6 +480,9 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
                 return DONE;
             }
             typeInfo = parentClass.bestTypeInfo();
+            TypeInspection typeInspection = analyserContext.getTypeInspection(typeInfo);
+            fieldAnalysesOfTypeInfo = typeInspection.fields().stream().map(analyserContext::getFieldAnalysis)
+                    .collect(Collectors.toUnmodifiableList());
         }
 
         if (!methodAnalysis.precondition.isSet()) {
@@ -542,7 +547,7 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
             Matcher m = INDEX_PATTERN.matcher(vi.getAssignmentId());
             if (m.matches()) {
                 int index = Integer.parseInt(m.group(1)) - 1;
-                if(index >= 0) {
+                if (index >= 0) {
                     String id = "" + index; // TODO numeric padding to same length
                     return findStatementAnalyser(id).statementAnalysis;
                 }
