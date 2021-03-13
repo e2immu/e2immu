@@ -26,7 +26,6 @@ import org.e2immu.annotation.AnnotationMode;
 
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -159,7 +158,8 @@ public interface TypeInspection extends Inspection {
                 //ti.subTypes.stream().flatMap(a -> a.typesReferenced().stream()).collect(UpgradableBooleanMap.collector()),
                 methodsAndConstructors(TypeInspection.Methods.THIS_TYPE_ONLY)
                         .flatMap(a -> a.typesReferenced().stream()).collect(UpgradableBooleanMap.collector()),
-                fields().stream().flatMap(a -> a.typesReferenced().stream()).collect(UpgradableBooleanMap.collector())
+                fields().stream().flatMap(a -> a.typesReferenced().stream()).collect(UpgradableBooleanMap.collector()),
+                subTypes().stream().flatMap(a -> a.typesReferenced().stream()).collect(UpgradableBooleanMap.collector())
         );
     }
 

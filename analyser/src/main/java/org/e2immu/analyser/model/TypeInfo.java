@@ -681,6 +681,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
 
     @Override
     public UpgradableBooleanMap<TypeInfo> typesReferenced() {
+        if(!typeInspection.isSet()) return UpgradableBooleanMap.of(); // dangerous?
         return typeInspection.get("type inspection of " + fullyQualifiedName).typesReferenced();
     }
 
