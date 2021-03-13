@@ -482,11 +482,11 @@ public record ParseMethodCallExpr(InspectionProvider inspectionProvider) {
         if (evaluatedExpression instanceof UnevaluatedMethodCall) {
             return 1; // we'll just have to redo this
         }
-        if (evaluatedExpression instanceof UnevaluatedLambdaExpression) {
+        if (evaluatedExpression instanceof UnevaluatedLambdaExpression ule) {
             MethodTypeParameterMap sam = typeOfParameter.findSingleAbstractMethodOfInterface(inspectionProvider);
             if (sam == null) return NOT_ASSIGNABLE;
             int numberOfParametersInSam = sam.methodInspection.getParameters().size();
-            return ((UnevaluatedLambdaExpression) evaluatedExpression).numberOfParameters.contains(numberOfParametersInSam) ? 0 : NOT_ASSIGNABLE;
+            return ule.numberOfParameters().contains(numberOfParametersInSam) ? 0 : NOT_ASSIGNABLE;
         }
         ParameterizedType returnType = evaluatedExpression.returnType();
         if (typeOfParameter.isFunctionalInterface(inspectionProvider) && returnType.isFunctionalInterface(inspectionProvider)) {

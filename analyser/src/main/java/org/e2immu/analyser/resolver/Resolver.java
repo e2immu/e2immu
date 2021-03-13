@@ -458,7 +458,7 @@ public class Resolver {
                 } else if (e instanceof NewObject newObject && newObject.constructor() != null &&
                         restrictToType.contains(newObject.constructor().typeInfo)) {
                     methodsAndFields.add(newObject.constructor());
-                } else if(e instanceof ExplicitConstructorInvocation eci) {
+                } else if (e instanceof ExplicitConstructorInvocation eci) {
                     methodsAndFields.add(eci.methodInfo);
                 }
             });
@@ -470,7 +470,9 @@ public class Resolver {
                          MethodInspectionImpl.Builder methodInspection,
                          BlockStmt block) {
         try {
-            ExpressionContext newContext = expressionContext.newVariableContext(methodInfo);
+            MethodTypeParameterMap returnTypeSAM = methodInspection.getReturnType() == null ? null :
+                    methodInspection.getReturnType().findSingleAbstractMethodOfInterface(expressionContext.typeContext);
+            ExpressionContext newContext = expressionContext.newVariableContext(methodInfo, returnTypeSAM);
             methodInspection.getParameters().forEach(newContext.variableContext::add);
             log(RESOLVE, "Parsing block with variable context {}", newContext.variableContext);
             Block parsedBlock = newContext.parseBlockOrStatement(block);

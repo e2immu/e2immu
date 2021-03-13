@@ -34,10 +34,8 @@ import java.util.Objects;
 import java.util.Set;
 
 @E2Immutable
-public class UnevaluatedLambdaExpression implements Expression {
-    public final Set<Integer> numberOfParameters; // the amount of parameters of the lambda
-    public final Boolean nonVoid; // true when expression without block, null otherwise
-
+public record UnevaluatedLambdaExpression(Set<Integer> numberOfParameters,
+                                          Boolean nonVoid) implements Expression {
     public UnevaluatedLambdaExpression(Set<Integer> numberOfParameters, Boolean nonVoid) {
         this.numberOfParameters = ImmutableSet.copyOf(numberOfParameters);
         this.nonVoid = nonVoid;

@@ -60,6 +60,7 @@ public class ExpressionContext {
     public final VariableContext variableContext; // gets modified! so this class cannot even be a container...
     public final AnonymousTypeCounters anonymousTypeCounters;
     public final MethodInfo enclosingMethod;
+    public final MethodTypeParameterMap returnTypeSAM;
     public final FieldInfo enclosingField; // terminology ~ assigning field, field that we're assigning to
     public final ParameterizedType typeOfEnclosingSwitchExpression;
 
@@ -77,7 +78,8 @@ public class ExpressionContext {
                                                                @NotNull @NotModified TypeContext typeContext,
                                                                @NotNull @NotModified AnonymousTypeCounters anonymousTypeCounters) {
         log(CONTEXT, "Creating a new expression context for {}", typeInfo.fullyQualifiedName);
-        return new ExpressionContext(Objects.requireNonNull(typeInfo), null, null,
+        return new ExpressionContext(Objects.requireNonNull(typeInfo), null,
+                null, null,
                 null, typeInfo,
                 Objects.requireNonNull(typeContext),
                 VariableContext.initialVariableContext(null, new HashMap<>()),
@@ -89,7 +91,8 @@ public class ExpressionContext {
                                                        @NotNull @NotModified ExpressionContext expressionContextOfType) {
         Map<String, FieldReference> staticallyImportedFields = expressionContextOfType.typeContext.staticFieldImports();
         log(CONTEXT, "Creating a new expression context for {}", enclosingType.fullyQualifiedName);
-        return new ExpressionContext(Objects.requireNonNull(enclosingType), null, null, null,
+        return new ExpressionContext(Objects.requireNonNull(enclosingType), null, null,
+                null, null,
                 Objects.requireNonNull(primaryType),
                 Objects.requireNonNull(expressionContextOfType.typeContext),
                 VariableContext.initialVariableContext(expressionContextOfType.variableContext, staticallyImportedFields),
@@ -98,6 +101,7 @@ public class ExpressionContext {
 
     private ExpressionContext(TypeInfo enclosingType,
                               MethodInfo enclosingMethod,
+                              MethodTypeParameterMap returnTypeSAM,
                               FieldInfo enclosingField,
                               ParameterizedType typeOfEnclosingSwitchExpression,
                               TypeInfo primaryType,
@@ -112,48 +116,52 @@ public class ExpressionContext {
         this.anonymousTypeCounters = anonymousTypeCounters;
         this.variableContext = variableContext;
         this.typeOfEnclosingSwitchExpression = typeOfEnclosingSwitchExpression;
+        this.returnTypeSAM = returnTypeSAM;
     }
 
-    public ExpressionContext newVariableContext(MethodInfo methodInfo) {
+    public ExpressionContext newVariableContext(MethodInfo methodInfo, MethodTypeParameterMap returnTypeSAM) {
         log(CONTEXT, "Creating a new variable context for method {}", methodInfo.fullyQualifiedName);
-        return new ExpressionContext(enclosingType, methodInfo, null, null, primaryType, typeContext,
-                VariableContext.dependentVariableContext(variableContext), anonymousTypeCounters);
+        return new ExpressionContext(enclosingType, methodInfo, returnTypeSAM, null, null,
+                primaryType, typeContext, VariableContext.dependentVariableContext(variableContext), anonymousTypeCounters);
     }
 
     public ExpressionContext newVariableContext(@NotNull String reason) {
         log(CONTEXT, "Creating a new variable context for {}", reason);
-        return new ExpressionContext(enclosingType, enclosingMethod, enclosingField, typeOfEnclosingSwitchExpression,
+        return new ExpressionContext(enclosingType, enclosingMethod, null, enclosingField, typeOfEnclosingSwitchExpression,
                 primaryType, typeContext, VariableContext.dependentVariableContext(variableContext),
                 anonymousTypeCounters);
     }
 
     public ExpressionContext newVariableContext(@NotNull VariableContext newVariableContext, String reason) {
         log(CONTEXT, "Creating a new variable context for {}", reason);
-        return new ExpressionContext(enclosingType, enclosingMethod, enclosingField, typeOfEnclosingSwitchExpression,
+        return new ExpressionContext(enclosingType, enclosingMethod, null, enclosingField, typeOfEnclosingSwitchExpression,
                 primaryType, typeContext, newVariableContext, anonymousTypeCounters);
     }
 
     public ExpressionContext newSubType(@NotNull TypeInfo subType) {
         log(CONTEXT, "Creating a new type context for subtype {}", subType.simpleName);
-        return new ExpressionContext(subType, null, null, null, primaryType,
+        return new ExpressionContext(subType, null, null, null, null, primaryType,
                 new TypeContext(typeContext), variableContext, anonymousTypeCounters);
     }
 
     public ExpressionContext newTypeContext(String reason) {
         log(CONTEXT, "Creating a new type context for {}", reason);
-        return new ExpressionContext(enclosingType, enclosingMethod, enclosingField, typeOfEnclosingSwitchExpression, primaryType,
+        return new ExpressionContext(enclosingType, enclosingMethod, returnTypeSAM,
+                enclosingField, typeOfEnclosingSwitchExpression, primaryType,
                 new TypeContext(typeContext), variableContext, anonymousTypeCounters);
     }
 
     public ExpressionContext newTypeContext(ParameterizedType typeOfEnclosingSwitchExpression) {
         log(CONTEXT, "Creating a new type context for switch expression, with type {}", typeOfEnclosingSwitchExpression);
-        return new ExpressionContext(enclosingType, enclosingMethod, enclosingField, typeOfEnclosingSwitchExpression, primaryType,
+        return new ExpressionContext(enclosingType, enclosingMethod, returnTypeSAM,
+                enclosingField, typeOfEnclosingSwitchExpression, primaryType,
                 new TypeContext(typeContext), variableContext, anonymousTypeCounters);
     }
 
     public ExpressionContext newTypeContext(FieldInfo fieldInfo) {
         log(CONTEXT, "Creating a new type context for initialiser of field {}", fieldInfo.fullyQualifiedName());
-        return new ExpressionContext(enclosingType, null, fieldInfo, null, primaryType,
+        return new ExpressionContext(enclosingType, null, null,
+                fieldInfo, null, primaryType,
                 new TypeContext(typeContext), variableContext, anonymousTypeCounters);
     }
 
@@ -190,7 +198,8 @@ public class ExpressionContext {
             org.e2immu.analyser.model.Statement newStatement;
             if (statement.isReturnStmt()) {
                 newStatement = new ReturnStatement(((ReturnStmt) statement).getExpression()
-                        .map(e -> parseExpression(e, typeOfEnclosingMethodOrField(), null)).orElse(EmptyExpression.EMPTY_EXPRESSION));
+                        .map(e -> parseExpression(e, typeOfEnclosingMethodOrField(), returnTypeSAM))
+                        .orElse(EmptyExpression.EMPTY_EXPRESSION));
             } else if (statement.isYieldStmt()) {
                 Expression expr = parseExpression(((YieldStmt) statement).getExpression(),
                         Objects.requireNonNull(typeOfEnclosingSwitchExpression), null);

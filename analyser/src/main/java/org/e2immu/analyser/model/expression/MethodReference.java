@@ -94,6 +94,7 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
 
     @Override
     public UpgradableBooleanMap<TypeInfo> typesReferenced() {
+        if(!methodInfo.methodInspection.isSet()) return UpgradableBooleanMap.of(scope.typesReferenced());
         return UpgradableBooleanMap.of(methodInfo.returnType().typesReferenced(false), scope.typesReferenced());
     }
 
