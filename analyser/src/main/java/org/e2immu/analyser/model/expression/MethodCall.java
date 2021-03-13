@@ -327,7 +327,8 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 if (lastStatement == null) {
                     increment = false;
                 } else if (!lastStatement.flowData.initialTimeIsSet()) {
-                    return delayedMethod(builder, objectValue, parameterValues);
+                    return delayedMethod(evaluationContext, builder, objectValue,
+                            contextModifiedDelay == Level.TRUE, parameterValues);
                 } else {
                     increment = lastStatement.flowData.getTimeAfterSubBlocks() > 0;
                 }
@@ -338,7 +339,8 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         }
 
         if (parameterValues.stream().anyMatch(evaluationContext::isDelayed)) {
-            return delayedMethod(builder, objectValue, parameterValues);
+            return delayedMethod(evaluationContext, builder, objectValue,
+                    contextModifiedDelay == Level.TRUE, parameterValues);
         }
 
         // access
@@ -406,31 +408,40 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
         // scope delay
         if (resultIsDelayed || contextModifiedDelay == Level.TRUE) {
-            objectValue.variables().forEach(variable -> {
-                builder.setProperty(variable, VariableProperty.SCOPE_DELAY, Level.TRUE);
-                if (variable instanceof This thisVar && !thisVar.typeInfo.equals(evaluationContext.getCurrentType())) {
-                    This currentThis = evaluationContext.currentThis();
-                    builder.setProperty(currentThis, VariableProperty.SCOPE_DELAY, Level.TRUE);
-                    if(contextModifiedDelay == Level.TRUE) {
-                        builder.setProperty(currentThis, VariableProperty.CONTEXT_MODIFIED_DELAY, Level.TRUE);
-                    }
-                }
-            });
+            delay(evaluationContext, builder, objectValue, contextModifiedDelay == Level.TRUE);
         }
 
         checkCommonErrors(builder, evaluationContext, objectValue);
         return builder.build();
     }
 
-    private EvaluationResult delayedMethod(EvaluationResult.Builder builder, Expression objectValue, List<Expression> parameterValues) {
-        Logger.log(DELAYED, "Delayed method call because one of the parameter values of {} is delayed: {}",
+    private EvaluationResult delayedMethod(EvaluationContext evaluationContext,
+                                           EvaluationResult.Builder builder,
+                                           Expression objectValue,
+                                           boolean contextModifiedDelay,
+                                           List<Expression> parameterValues) {
+        Logger.log(DELAYED, "Delayed method call because the object value or one of the parameter values of {} is delayed: {}",
                 methodInfo.name, parameterValues);
         builder.setExpression(DelayedExpression.forMethod(methodInfo));
         // set scope delay
-        objectValue.variables().forEach(variable -> builder.setProperty(variable, VariableProperty.SCOPE_DELAY, Level.TRUE));
-        object.variables().forEach(variable -> builder.setProperty(variable, VariableProperty.SCOPE_DELAY, Level.TRUE));
-
+        delay(evaluationContext, builder, objectValue, contextModifiedDelay);
         return builder.build();
+    }
+
+    private void delay(EvaluationContext evaluationContext,
+                       EvaluationResult.Builder builder,
+                       Expression objectValue,
+                       boolean contextModifiedDelay) {
+        objectValue.variables().forEach(variable -> {
+            builder.setProperty(variable, VariableProperty.SCOPE_DELAY, Level.TRUE);
+            if (variable instanceof This thisVar && !thisVar.typeInfo.equals(evaluationContext.getCurrentType())) {
+                This currentThis = evaluationContext.currentThis();
+                builder.setProperty(currentThis, VariableProperty.SCOPE_DELAY, Level.TRUE);
+                if (contextModifiedDelay) {
+                    builder.setProperty(currentThis, VariableProperty.CONTEXT_MODIFIED_DELAY, Level.TRUE);
+                }
+            }
+        });
     }
 
     static NewObject checkCompanionMethodsModifying(

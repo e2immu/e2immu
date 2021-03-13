@@ -26,7 +26,6 @@ import org.e2immu.annotation.Only;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
@@ -41,6 +40,7 @@ public class SetOnceMap<K, V> extends Freezable {
 
     private final Map<K, V> map = new HashMap<>();
 
+    @Only(before = "frozen")
     public void put(@NotNull K k, @NotNull V v) {
         Objects.requireNonNull(k);
         Objects.requireNonNull(v);
@@ -77,15 +77,9 @@ public class SetOnceMap<K, V> extends Freezable {
         return map.entrySet().stream();
     }
 
+    @Only(before = "frozen")
     public void putAll(SetOnceMap<K, V> setOnceMap) {
         setOnceMap.stream().forEach(e -> put(e.getKey(), e.getValue()));
-    }
-
-    @Only(before = "frozen")
-    public void putAll(SetOnceMap<K, V> setOnceMap, boolean complainWhenAlreadySet) {
-        setOnceMap.stream().forEach(e -> {
-            if (complainWhenAlreadySet || !isSet(e.getKey())) put(e.getKey(), e.getValue());
-        });
     }
 
     public V getOrDefault(K k, V v) {

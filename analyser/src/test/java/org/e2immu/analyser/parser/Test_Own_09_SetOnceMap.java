@@ -23,7 +23,6 @@ import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.variable.FieldReference;
-import org.e2immu.analyser.model.variable.This;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -71,12 +70,11 @@ public class Test_Own_09_SetOnceMap extends CommonTestRunner {
         };
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-            if ("accept".equals(d.methodInfo().name) && "$2".equals(d.methodInfo().typeInfo.simpleName)) {
-                if ("0.0.0".equals(d.statementId())) {
-                    if (d.variable() instanceof This thisVar && thisVar.typeInfo.simpleName.equals("$2")) {
-                        //       int expectCm = d.iteration() <= 1 ? Level.DELAY : Level.TRUE;
-                        //      Assert.assertEquals(expectCm, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
-                    }
+            if ("accept".equals(d.methodInfo().name) && "$1".equals(d.methodInfo().typeInfo.simpleName)) {
+                if (d.variable() instanceof FieldReference fr && "map".equals(fr.fieldInfo.name)) {
+                    Assert.assertTrue(d.iteration() >= 2);
+                    String expectValue = d.iteration() <= 3 ? "<f:map>" : ""; // FIXME
+                    Assert.assertEquals(expectValue, d.currentValue().toString());
                 }
             }
             if ("get".equals(d.methodInfo().name)) {
@@ -147,6 +145,10 @@ public class Test_Own_09_SetOnceMap extends CommonTestRunner {
         };
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("putAll".equals(d.methodInfo().name)) {
+                Assert.assertEquals("get,isSet,put,stream", d.methodInfo().methodResolution.get().methodsOfOwnClassReached()
+                        .stream().map(m -> m.name).sorted().collect(Collectors.joining(",")));
+            }
             if ("put".equals(d.methodInfo().name) && "SetOnceMap".equals(d.methodInfo().typeInfo.simpleName)) {
 
                 Assert.assertEquals("get,isSet", d.methodInfo().methodResolution.get().methodsOfOwnClassReached()
@@ -178,6 +180,13 @@ public class Test_Own_09_SetOnceMap extends CommonTestRunner {
                 Assert.assertEquals(expectCm, k.getProperty(VariableProperty.CONTEXT_MODIFIED));
                 int expectMv = d.iteration() <= 2 ? Level.DELAY : Level.FALSE;
                 Assert.assertEquals(expectMv, k.getProperty(VariableProperty.MODIFIED_VARIABLE));
+            }
+            if ("stream".equals(d.methodInfo().name)) {
+                Assert.assertEquals("", d.methodInfo().methodResolution.get().methodsOfOwnClassReached()
+                        .stream().map(m -> m.name).sorted().collect(Collectors.joining(",")));
+
+                int expectMm = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
+                Assert.assertEquals(expectMm, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
             }
         };
 
