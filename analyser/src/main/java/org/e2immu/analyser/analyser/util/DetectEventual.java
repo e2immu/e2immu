@@ -176,8 +176,6 @@ public record DetectEventual(MethodInfo methodInfo,
     }
 
     /**
-     * IMPROVE this is a trivial implementation; more code needed
-     *
      * @param expression the expression to analyse, like "flipSwitch.isSet()"
      * @return null when the expression does not represent a @TestMark; the mark value otherwise
      */
@@ -216,10 +214,9 @@ public record DetectEventual(MethodInfo methodInfo,
             expressionAfterNegation = expression;
             negated = false;
         }
+        // @TestMark method on This, FieldReference
         if (expressionAfterNegation instanceof MethodCall methodCall &&
-                methodCall.object instanceof VariableExpression ve &&
-                ve.variable() instanceof FieldReference fr &&
-                fr.scope instanceof This) {
+                methodCall.object instanceof VariableExpression ve) {
             MethodAnalysis methodCallAnalysis = analyserContext.getMethodAnalysis(methodCall.methodInfo);
             MethodAnalysis.Eventual mao = methodCallAnalysis.getEventual();
             if (mao == null) {
@@ -227,13 +224,21 @@ public record DetectEventual(MethodInfo methodInfo,
             }
             Boolean testMark = mao.test();
             if (testMark == null) return MethodAnalysis.NOT_EVENTUAL;
-            return new MethodAnalysis.Eventual(Set.of(fr.fieldInfo), false, null, testMark ^ negated);
+            Set<FieldInfo> fields;
+            if (ve.variable() instanceof This) fields = mao.fields();
+            else if (ve.variable() instanceof FieldReference fr) {
+                FieldInfo selected = selectField(fr);
+                if (selected == null) {
+                    return MethodAnalysis.NOT_EVENTUAL;
+                }
+                fields = Set.of(selected);
+            } else return MethodAnalysis.NOT_EVENTUAL;
+            return new MethodAnalysis.Eventual(fields, false, null, testMark ^ negated);
         }
         return MethodAnalysis.NOT_EVENTUAL;
     }
 
     private static final FieldsAndBefore NO_FIELDS = new FieldsAndBefore(Set.of(), true);
-    private static final FieldsAndBefore DELAYS = new FieldsAndBefore(Set.of(), true);
 
     private record FieldsAndBefore(Set<FieldInfo> fields, boolean before) {
     }

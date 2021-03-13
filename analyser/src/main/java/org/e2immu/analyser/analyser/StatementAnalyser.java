@@ -862,7 +862,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                                                                     Expression untranslated,
                                                                     ConditionManager localConditionManager) {
         Expression result = localConditionManager.evaluate(evaluationContext, untranslated);
-        if(result.isBoolValueFalse()) {
+        if (result.isBoolValueFalse()) {
             statementAnalysis.ensure(Message.newMessage(getLocation(), Message.INCOMPATIBLE_PRECONDITION));
         }
     }
@@ -1981,7 +1981,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         if (statementAnalysis.statement instanceof SwitchStatementOldStyle switchStatementOldStyle) {
             return switchStatementOldStyle.atLeastOneBlockExecuted();
         }
-        if(statementAnalysis.statement instanceof SynchronizedStatement) return true;
+        if (statementAnalysis.statement instanceof SynchronizedStatement) return true;
         if (list.stream().anyMatch(ExecutionOfBlock::alwaysExecuted)) return true;
         // we have a default, and all conditions have code, and are possible
         return list.stream().anyMatch(e -> e.isDefault && e.startOfBlock != null) &&
@@ -2424,8 +2424,13 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             return notNullVariablesInCondition.contains(variable);
         }
 
+        /*
+        Important that the closure is used for local variables and parameters (we'd never find them otherwise).
+        However, fields will be introduced in StatementAnalysis.fromFieldAnalyserIntoInitial and should
+        have their own local copy.
+         */
         private VariableInfo findForReading(Variable variable, int statementTime, boolean isNotAssignmentTarget) {
-            if (closure != null && isNotMine(variable)) {
+            if (closure != null && isNotMine(variable) && !(variable instanceof FieldReference)) {
                 return ((EvaluationContextImpl) closure).findForReading(variable, statementTime, isNotAssignmentTarget);
             }
             return statementAnalysis.initialValueForReading(variable, statementTime, isNotAssignmentTarget);

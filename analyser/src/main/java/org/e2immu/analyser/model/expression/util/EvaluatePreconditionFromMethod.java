@@ -58,7 +58,9 @@ public class EvaluatePreconditionFromMethod {
                     methodInfo, parameterValues, scopeObject);
             EvaluationResult eRreEvaluated = precondition.reEvaluate(evaluationContext, translationMap);
             Expression reEvaluated = eRreEvaluated.value();
-            builder.compose(eRreEvaluated);
+            // composing the effects of re-evaluation introduces the field(s) of the precondition to the statement
+            // the result of the re-evaluation may cause delays
+            builder.composeIgnoreExpression(eRreEvaluated);
 
             // see SetOnceMap, get() inside if(isSet()) throw new X(" "+get())
             Expression inCondition = evaluationContext.getConditionManager().evaluate(evaluationContext, reEvaluated);

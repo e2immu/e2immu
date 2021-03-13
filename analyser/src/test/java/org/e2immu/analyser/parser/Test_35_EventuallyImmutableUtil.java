@@ -112,4 +112,25 @@ public class Test_35_EventuallyImmutableUtil extends CommonTestRunner {
                 0, 0, new DebugConfiguration.Builder()
                         .build());
     }
+
+    @Test
+    public void test_7() throws IOException {
+        testWithUtilClasses(List.of("EventuallyImmutableUtil_7"), List.of("Freezable"),
+                0, 0, new DebugConfiguration.Builder()
+                        .build());
+    }
+
+    @Test
+    public void test_8() throws IOException {
+        testWithUtilClasses(List.of("EventuallyImmutableUtil_8"), List.of("Freezable"),
+                0, 0, new DebugConfiguration.Builder()
+                        .build());
+    }
+
+    @Test
+    public void test_9() throws IOException {
+        testWithUtilClasses(List.of("EventuallyImmutableUtil_9"), List.of("Freezable"),
+                0, 0, new DebugConfiguration.Builder()
+                        .build());
+    }
 }

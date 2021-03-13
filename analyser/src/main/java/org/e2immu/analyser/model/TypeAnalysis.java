@@ -37,6 +37,10 @@ public interface TypeAnalysis extends Analysis {
 
     Expression getApprovedPreconditions(boolean e2, FieldInfo fieldInfo);
 
+    default Map<FieldInfo, Expression> getApprovedPreconditions(boolean e2) {
+        return e2 ? getApprovedPreconditionsE2() : getApprovedPreconditionsE1();
+    }
+
     boolean approvedPreconditionsIsSet(boolean e2, FieldInfo fieldInfo);
 
     boolean approvedPreconditionsIsFrozen(boolean e2);

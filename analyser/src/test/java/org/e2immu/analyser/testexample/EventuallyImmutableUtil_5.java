@@ -52,7 +52,7 @@ public class EventuallyImmutableUtil_5 {
 
 
     @TestMark("t")
-    public boolean isReady() {
+    public boolean isReady1() {
         return t.s1.isReady() && t.s2.isReady();
     }
 

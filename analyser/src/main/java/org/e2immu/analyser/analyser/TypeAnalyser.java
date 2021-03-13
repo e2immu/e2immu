@@ -44,7 +44,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -439,11 +438,7 @@ public class TypeAnalyser extends AbstractAnalyser {
                 }
             }
         }
-        if (tempApproved.isEmpty()) {
-            log(MARK, "No assigning methods in {}", typeInfo.fullyQualifiedName);
-            typeAnalysis.freezeApprovedPreconditionsE1();
-            return DONE;
-        }
+        tempApproved.putAll(approvedPreconditionsFromParent(typeInfo, false));
 
         // copy into approved preconditions
         tempApproved.forEach(typeAnalysis::putInApprovedPreconditionsE1);
@@ -452,12 +447,23 @@ public class TypeAnalyser extends AbstractAnalyser {
         return DONE;
     }
 
+    private Map<FieldInfo, Expression> approvedPreconditionsFromParent(TypeInfo typeInfo, boolean e2) {
+        TypeInspection typeInspection = analyserContext.getTypeInspection(typeInfo);
+        if (!Primitives.isJavaLangObject(typeInspection.parentClass())) {
+            TypeInfo parent = typeInspection.parentClass().typeInfo;
+            TypeAnalysis parentAnalysis = analyserContext.getTypeAnalysis(parent);
+            Map<FieldInfo, Expression> map = new HashMap<>(parentAnalysis.getApprovedPreconditions(e2));
+            map.putAll(approvedPreconditionsFromParent(parent, e2));
+            return map;
+        }
+        return Map.of();
+    }
+
     /*
     all non-private methods which assign a field, or can reach a method that assigns a field
 
     TODO may be slow, we should cache this?
 
-    FIXME also include those of the parent types?
     Rather not, if we're extending without!
      */
     private Set<MethodAnalyser> determineAssigningMethods() {
@@ -541,11 +547,7 @@ public class TypeAnalyser extends AbstractAnalyser {
                 }
             }
         }
-        if (tempApproved.isEmpty()) {
-            log(MARK, "No modifying methods in {}", typeInfo.fullyQualifiedName);
-            typeAnalysis.freezeApprovedPreconditionsE2();
-            return DONE;
-        }
+        tempApproved.putAll(approvedPreconditionsFromParent(typeInfo, true));
 
         // copy into approved preconditions
         tempApproved.forEach(typeAnalysis::putInApprovedPreconditionsE2);
@@ -577,7 +579,7 @@ public class TypeAnalyser extends AbstractAnalyser {
         int container = typeAnalysis.getProperty(VariableProperty.CONTAINER);
         if (container != Level.UNDEFINED) return DONE;
 
-        AnalysisStatus parentOrEnclosing = parentOrEnclosingMustHaveTheSameProperty(VariableProperty.CONTAINER, Function.identity(), Level.FALSE);
+        AnalysisStatus parentOrEnclosing = parentOrEnclosingMustHaveTheSameProperty(VariableProperty.CONTAINER);
         if (parentOrEnclosing == DONE || parentOrEnclosing == DELAYS) return parentOrEnclosing;
 
         boolean fieldsReady = myFieldAnalysers.stream().allMatch(
@@ -617,12 +619,6 @@ public class TypeAnalyser extends AbstractAnalyser {
         return DONE;
     }
 
-    private static int convertMultiLevelEffectiveToDelayTrue(int i) {
-        if (i <= MultiLevel.DELAY) return Level.DELAY;
-        if (i == MultiLevel.EFFECTIVE) return Level.TRUE;
-        return Level.FALSE;
-    }
-
     /**
      * 4 different rules to enforce:
      * <p>
@@ -640,7 +636,7 @@ public class TypeAnalyser extends AbstractAnalyser {
         int typeIndependent = typeAnalysis.getProperty(VariableProperty.INDEPENDENT);
         if (typeIndependent != Level.DELAY) return DONE;
 
-        AnalysisStatus parentOrEnclosing = parentOrEnclosingMustHaveTheSameProperty(VariableProperty.INDEPENDENT, Function.identity(), Level.FALSE);
+        AnalysisStatus parentOrEnclosing = parentOrEnclosingMustHaveTheSameProperty(VariableProperty.INDEPENDENT);
         if (parentOrEnclosing == DONE || parentOrEnclosing == DELAYS) return parentOrEnclosing;
 
         boolean variablesLinkedNotSet = myFieldAnalysers.stream()
@@ -726,11 +722,9 @@ public class TypeAnalyser extends AbstractAnalyser {
         return DELAYS;
     }
 
-    private AnalysisStatus parentOrEnclosingMustHaveTheSameProperty(VariableProperty variableProperty,
-                                                                    Function<Integer, Integer> mapProperty,
-                                                                    int falseValue) {
+    private AnalysisStatus parentOrEnclosingMustHaveTheSameProperty(VariableProperty variableProperty) {
         List<Integer> propertyValues = parentAndOrEnclosingTypeAnalysis.stream()
-                .map(typeAnalysis -> mapProperty.apply(typeAnalysis.getProperty(variableProperty)))
+                .map(typeAnalysis -> typeAnalysis.getProperty(variableProperty))
                 .collect(Collectors.toList());
         if (propertyValues.stream().anyMatch(level -> level == Level.DELAY)) {
             log(DELAYED, "Waiting with {} on {}, parent or enclosing class's status not yet known",
@@ -739,7 +733,7 @@ public class TypeAnalyser extends AbstractAnalyser {
         }
         if (propertyValues.stream().anyMatch(level -> level != Level.TRUE)) {
             log(ANALYSER, "{} cannot be {}, parent or enclosing class is not", typeInfo.fullyQualifiedName, variableProperty);
-            typeAnalysis.setProperty(variableProperty, falseValue);
+            typeAnalysis.setProperty(variableProperty, variableProperty.falseValue);
             return DONE;
         }
         return PROGRESS;
@@ -920,7 +914,7 @@ public class TypeAnalyser extends AbstractAnalyser {
                     return DELAYS; //not decided
                 }
                 if (independent == MultiLevel.FALSE) {
-                    // FIXME break delay if the fields are self-references??
+                    // TODO break delay if the fields are self-references??
                     log(E2IMMUTABLE, "{} is not an E2Immutable class, because constructor is not @Independent",
                             typeInfo.fullyQualifiedName, constructor.methodInfo.name);
                     typeAnalysis.setProperty(VariableProperty.IMMUTABLE, whenE2Fails);
@@ -973,15 +967,8 @@ public class TypeAnalyser extends AbstractAnalyser {
     }
 
     private boolean typeContainsMyselfAndE2ImmutableComponents(ParameterizedType parameterizedType) {
-        if (parameterizedType.typeInfo == typeInfo) return true;
-        return false;
-        // FIXME make more complicated
-    }
-
-    private static int convertMultiLevelEventualToDelayTrue(int i) {
-        if (i <= MultiLevel.DELAY) return Level.DELAY;
-        if (i >= MultiLevel.EVENTUAL) return Level.TRUE;
-        return Level.FALSE;
+        return parameterizedType.typeInfo == typeInfo;
+        // TODO make more complicated
     }
 
     private AnalysisStatus analyseExtensionClass() {

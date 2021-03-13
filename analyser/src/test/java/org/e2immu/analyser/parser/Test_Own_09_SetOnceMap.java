@@ -31,10 +31,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-/*
-first issue: import of Collector.Characteristics should be automatic
-second issue: UnevaluatedLambdaExpression exception
- */
 public class Test_Own_09_SetOnceMap extends CommonTestRunner {
 
     public Test_Own_09_SetOnceMap() {
@@ -47,6 +43,8 @@ public class Test_Own_09_SetOnceMap extends CommonTestRunner {
             if ("SetOnceMap".equals(d.typeInfo().simpleName)) {
                 Assert.assertEquals("Type param K, Type param V", d.typeAnalysis().getImplicitlyImmutableDataTypes()
                         .stream().map(ParameterizedType::toString).sorted().collect(Collectors.joining(", ")));
+                int expectContainer = d.iteration() <= 3 ? Level.DELAY : Level.TRUE;
+                Assert.assertEquals(expectContainer, d.typeAnalysis().getProperty(VariableProperty.CONTAINER));
             }
         };
 
@@ -73,8 +71,7 @@ public class Test_Own_09_SetOnceMap extends CommonTestRunner {
             if ("accept".equals(d.methodInfo().name) && "$1".equals(d.methodInfo().typeInfo.simpleName)) {
                 if (d.variable() instanceof FieldReference fr && "map".equals(fr.fieldInfo.name)) {
                     Assert.assertTrue(d.iteration() >= 2);
-                    String expectValue = d.iteration() <= 3 ? "<f:map>" : ""; // FIXME
-                    Assert.assertEquals(expectValue, d.currentValue().toString());
+                    Assert.assertEquals("instance type HashMap<K,V>", d.currentValue().toString());
                 }
             }
             if ("get".equals(d.methodInfo().name)) {
@@ -204,7 +201,7 @@ public class Test_Own_09_SetOnceMap extends CommonTestRunner {
             }
         };
 
-        testUtilClass(List.of("SetOnceMap"), 0, 0, new DebugConfiguration.Builder()
+        testUtilClass(List.of("SetOnceMap", "Freezable"), 0, 0, new DebugConfiguration.Builder()
                 .addTypeMapVisitor(typeMapVisitor)
                 .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)

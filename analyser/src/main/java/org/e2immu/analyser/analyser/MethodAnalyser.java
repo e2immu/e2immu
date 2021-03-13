@@ -492,6 +492,7 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
         Expression precondition = methodAnalysis.precondition.get();
         if (precondition.isBoolValueTrue()) {
 
+            // code to detect the situation as in Lazy
             List<Expression> preconditionsBasedOnStateBeforeAssignment = new ArrayList<>();
             for (FieldAnalyser fieldAnalyser : myFieldAnalysers.values()) {
                 if (fieldAnalyser.fieldAnalysis.getProperty(VariableProperty.FINAL) == Level.FALSE) {
