@@ -184,7 +184,9 @@ public class Lambda implements Expression {
                     result = DelayedExpression.forMethod(methodInfo);
                 }
             } else {
-                result = EmptyExpression.NO_RETURN_VALUE; // there is no return value (void method)
+                result = NewObject.forGetInstance(evaluationContext.newObjectIdentifier(),
+                        parameterizedType, new BooleanConstant(evaluationContext.getPrimitives(), true),
+                        MultiLevel.EFFECTIVELY_NOT_NULL, objectFlow);
             }
             builder.markVariablesFromSubMethod(methodAnalysis);
         }

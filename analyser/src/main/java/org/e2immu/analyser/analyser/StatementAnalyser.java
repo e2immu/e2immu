@@ -528,24 +528,13 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 return primaryTypeAnalyser;
             }).collect(Collectors.toUnmodifiableList());
             localAnalysers.set(analysers);
+            analysers.forEach(analyserContext::addPrimaryTypeAnalyser);
 
             boolean haveNext = navigationData.next.get().isPresent();
             // first, simple propagation of those analysers that we've already accumulated
             if (haveNext) {
                 navigationData.next.get().get().analyserContext.addAll(analyserContext);
                 navigationData.blocks.get().forEach(opt -> opt.ifPresent(sa -> sa.analyserContext.addAll(analyserContext)));
-            }
-
-            // in the subsequent statements, we'll want to used this local class declaration!
-            if (statement() instanceof LocalClassDeclaration localClassDeclaration) {
-                if (haveNext) {
-                    // we'll need to ensure that the local type's analysers are available in the coming statements
-                    StatementAnalyser next = navigationData.next.get().get();
-                    localAnalysers.get().forEach(next.analyserContext::addPrimaryTypeAnalyser);
-                } else {
-                    statementAnalysis.ensure(Message.newMessage(getLocation(),
-                            Message.USELESS_LOCAL_CLASS_DECLARATION, localClassDeclaration.typeInfo.simpleName));
-                }
             }
         }
 

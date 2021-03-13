@@ -696,10 +696,10 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                     if (toMerge.size() > 0) {
                         destination.merge(evaluationContext, stateOfConditionManagerBeforeExecution, ignoreCurrent, toMerge,
                                 externalNotNull, contextNotNull, contextModified);
-                    } else if (vic.hasMerge()) {
+                    } else if (destination.hasMerge()) {
                         assert evaluationContext.getIteration() > 0; // or it wouldn't have had a merge
                         // in previous iterations there was data for us, but now there isn't; copy from I/E into M
-                        vic.copyFromEvalIntoMerge(externalNotNull, contextNotNull, contextModified);
+                        destination.copyFromEvalIntoMerge(externalNotNull, contextNotNull, contextModified);
                     } else {
                         externalNotNull.put(variable, current.getProperty(EXTERNAL_NOT_NULL));
                         contextModified.put(variable, current.getProperty(CONTEXT_MODIFIED));

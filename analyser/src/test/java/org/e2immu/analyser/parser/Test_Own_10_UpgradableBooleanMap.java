@@ -38,7 +38,8 @@ public class Test_Own_10_UpgradableBooleanMap extends CommonTestRunner {
 
     TypeAnalyserVisitor typeAnalyserVisitor = d -> {
         if("UpgradableBooleanMap".equals(d.typeInfo().simpleName)) {
-            Assert.assertEquals("[Type param T]", d.typeAnalysis().getImplicitlyImmutableDataTypes().toString());
+            Assert.assertEquals("[Type param T, Type param T, Type param T, Type param T, Type param T, Type param T]",
+                    d.typeAnalysis().getImplicitlyImmutableDataTypes().toString());
         }
     };
 
