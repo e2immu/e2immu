@@ -17,6 +17,7 @@
 
 package org.e2immu.analyser.analyser;
 
+import com.google.common.collect.ImmutableMap;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.variable.FieldReference;
@@ -31,7 +32,6 @@ import org.slf4j.LoggerFactory;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.VariableProperty.*;
@@ -80,7 +80,9 @@ public interface EvaluationContext {
         return child(condition);
     }
 
-    default EvaluationContext childState(Expression state) { throw new UnsupportedOperationException(); }
+    default EvaluationContext childState(Expression state) {
+        throw new UnsupportedOperationException();
+    }
 
     default Expression currentValue(Variable variable, int statementTime, boolean isNotAssignmentTarget) {
         throw new UnsupportedOperationException();
@@ -155,7 +157,9 @@ public interface EvaluationContext {
         return true;
     }
 
-    default boolean notNullAccordingToConditionManager(Variable variable) { return true; }
+    default boolean notNullAccordingToConditionManager(Variable variable) {
+        return true;
+    }
 
     default LinkedVariables linkedVariables(Expression value) {
         return value.linkedVariables(this);
@@ -174,11 +178,16 @@ public interface EvaluationContext {
     computed/copied during assignment. Critical that NNE is present!
      */
     default Map<VariableProperty, Integer> getValueProperties(Expression value) {
-        return VALUE_PROPERTIES.stream().collect(Collectors.toMap(vp -> vp, vp -> getProperty(value, vp, true)));
+        ImmutableMap.Builder<VariableProperty, Integer> builder = new ImmutableMap.Builder<>();
+        for (VariableProperty property : VALUE_PROPERTIES) {
+            int v = getProperty(value, property, true);
+            if (v != Level.DELAY) builder.put(property, v);
+        }
+        return builder.build();
     }
 
     default Map<VariableProperty, Integer> getVariableProperties(Expression valueToWrite, int statementTime) {
-        if(valueToWrite instanceof IsVariableExpression ve) {
+        if (valueToWrite instanceof IsVariableExpression ve) {
             return Map.of(EXTERNAL_NOT_NULL, getPropertyFromPreviousOrInitial(ve.variable(), EXTERNAL_NOT_NULL, statementTime));
         }
         return Map.of();

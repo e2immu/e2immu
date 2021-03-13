@@ -21,10 +21,7 @@ import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.analyser.VariableProperty;
-import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.MethodInfo;
-import org.e2immu.analyser.model.ParameterizedType;
-import org.e2immu.analyser.model.Qualification;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.output.OutputBuilder;
@@ -35,8 +32,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Predicate;
 
-import static org.e2immu.analyser.analyser.VariableProperty.INDEPENDENT;
-import static org.e2immu.analyser.analyser.VariableProperty.MODIFIED_METHOD;
+import static org.e2immu.analyser.analyser.VariableProperty.*;
 
 /*
  can only be created as the single result value of a method
@@ -123,6 +119,9 @@ public record InlinedMethod(MethodInfo methodInfo, Expression expression,
     public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty, boolean duringEvaluation) {
         if (METHOD_PROPERTIES_IN_INLINE_SAM.contains(variableProperty)) {
             return evaluationContext.getAnalyserContext().getMethodAnalysis(methodInfo).getProperty(variableProperty);
+        }
+        if(NOT_NULL_EXPRESSION.equals(variableProperty)) {
+            return MultiLevel.EFFECTIVELY_NOT_NULL;
         }
         return evaluationContext.getProperty(expression, variableProperty, duringEvaluation);
     }
