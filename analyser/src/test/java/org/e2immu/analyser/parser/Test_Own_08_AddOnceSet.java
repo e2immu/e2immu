@@ -47,7 +47,7 @@ public class Test_Own_08_AddOnceSet extends CommonTestRunner {
             if ("AddOnceSet".equals(d.typeInfo().simpleName)) {
                 Assert.assertEquals("[Type param V]", d.typeAnalysis().getImplicitlyImmutableDataTypes().toString());
 
-                Assert.assertTrue(d.typeAnalysis().getApprovedPreconditionsE1().isEmpty());
+                Assert.assertEquals("{frozen=!frozen}", d.typeAnalysis().getApprovedPreconditionsE1().toString());
                 if (d.iteration() >= 2) {
                     Assert.assertEquals("{frozen=!frozen}", d.typeAnalysis().getApprovedPreconditionsE2().toString());
                 }

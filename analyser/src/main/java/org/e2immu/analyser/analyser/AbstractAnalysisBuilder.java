@@ -280,7 +280,11 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
             if (markValue != null && !onlyMark.equals(markValue)) {
                 LOGGER.warn("Have both @Only and @Mark, with different values? {} vs {}", onlyMark, markValue);
             }
-            writeEventual(markValue, false, isAfter, null);
+            if(markValue == null) {
+                LOGGER.warn("No mark value on {}", location());
+            } else {
+                writeEventual(markValue, false, isAfter, null);
+            }
         } else if (testMark != null) {
             String markValue = testMark.extract("value", "");
             boolean before = testMark.extract("before", false);

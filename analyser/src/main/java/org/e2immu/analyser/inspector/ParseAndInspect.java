@@ -21,7 +21,9 @@ import com.github.javaparser.StaticJavaParser;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.ImportDeclaration;
 import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.model.TypeInspection;
 import org.e2immu.analyser.parser.TypeMapImpl;
+import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.analyser.util.Resources;
 import org.e2immu.analyser.util.StringUtil;
 import org.e2immu.analyser.util.Trie;
@@ -78,7 +80,7 @@ public record ParseAndInspect(Resources classPath,
         classPath.expandLeaves(packageName, ".class", (expansion, urls) -> {
             if (!expansion[expansion.length - 1].contains("$")) {
                 String fqn = fqnOfClassFile(packageName, expansion);
-                TypeInfo typeInfo = importType(fqn); //typeContextOfFile.typeMapBuilder.getOrCreateFromPath(fqn, TRIGGER_BYTECODE_INSPECTION);
+                TypeInfo typeInfo = importTypeNoSubTypes(fqn); // no subtypes, they appear individually in the classPath
                 typeContextOfFile.addToContext(typeInfo, false);
             }
         });
@@ -88,14 +90,14 @@ public record ParseAndInspect(Resources classPath,
             if (importDeclaration.isStatic()) {
                 // fields and methods; important: we do NOT add the type itself to the type context
                 if (importDeclaration.isAsterisk()) {
-                    TypeInfo typeInfo = importType(fullyQualified);
+                    TypeInfo typeInfo = importTypeNoSubTypes(fullyQualified);
                     log(INSPECT, "Add import static wildcard {}", typeInfo.fullyQualifiedName);
                     typeContextOfFile.addImportStaticWildcard(typeInfo);
                 } else {
                     int dot = fullyQualified.lastIndexOf('.');
                     String typeName = fullyQualified.substring(0, dot);
                     String member = fullyQualified.substring(dot + 1);
-                    TypeInfo typeInfo = importType(typeName);
+                    TypeInfo typeInfo = importTypeNoSubTypes(typeName);
                     log(INSPECT, "Add import static member {} on class {}", typeName, member);
                     typeContextOfFile.addImportStatic(typeInfo, member);
                 }
@@ -133,8 +135,8 @@ public record ParseAndInspect(Resources classPath,
                 } else {
                     // higher priority names, allowOverwrite = true
                     log(INSPECT, "Import of {}", fullyQualified);
-                    TypeInfo typeInfo = importType(fullyQualified);
-                    typeContextOfFile.addToContext(typeInfo, true);
+                    List<TypeInfo> types = importType(fullyQualified);
+                    types.forEach(typeInfo -> typeContextOfFile.addToContext(typeInfo, true));
                 }
             }
         }
@@ -165,7 +167,7 @@ public record ParseAndInspect(Resources classPath,
         return allPrimaryTypesInspected;
     }
 
-    private TypeInfo importType(String fqn) {
+    private TypeInfo importTypeNoSubTypes(String fqn) {
         TypeInfo inMap = typeMapBuilder.get(fqn);
         if (inMap != null) return inMap;
         // we don't know it... so we don't know the boundary between primary and sub-type
@@ -177,6 +179,19 @@ public record ParseAndInspect(Resources classPath,
         String path = classPath.fqnToPath(fqn, ".class");
         if (path == null) throw new UnsupportedOperationException("Cannot find " + fqn);
         return typeMapBuilder.getOrCreateFromPath(StringUtil.stripDotClass(path), TRIGGER_BYTECODE_INSPECTION);
+    }
+
+    /*
+    when a type is imported, its sub-types are accessible straight away (they might need disambiguation, but that's not
+    the problem here)
+     */
+    private List<TypeInfo> importType(String fqn) {
+        TypeInfo typeInfo = importTypeNoSubTypes(fqn);
+        TypeInspection inspection = typeMapBuilder.getTypeInspection(typeInfo);
+        if(inspection != null) {
+            return ListUtil.immutableConcat(List.of(typeInfo), inspection.subTypes());
+        }
+        return List.of(typeInfo);
     }
 
 
