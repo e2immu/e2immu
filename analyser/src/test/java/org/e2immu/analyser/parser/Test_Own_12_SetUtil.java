@@ -1,3 +1,4 @@
+
 /*
  * e2immu-analyser: code analyser for effective and eventual immutability
  * Copyright 2020, Bart Naudts, https://www.e2immu.org
@@ -16,32 +17,21 @@
  *
  */
 
-package org.e2immu.analyser.testexample;
+package org.e2immu.analyser.parser;
 
+import org.e2immu.analyser.config.DebugConfiguration;
+import org.junit.Test;
+
+import java.io.IOException;
 import java.util.List;
-import java.util.stream.Collectors;
 
-public class MethodReferences {
+public class Test_Own_12_SetUtil extends CommonTestRunner {
 
-    private List<C> strings;
 
-    static class C {
-        final String s;
-
-        C(String s) {
-            this.s = s;
-        }
-
-        C(Integer t) {
-            s = t.toString();
-        }
+    @Test
+    public void test() throws IOException {
+        testUtilClass(List.of("SetUtil"), 0, 0, new DebugConfiguration.Builder()
+                .build());
     }
 
-    public MethodReferences(List<Integer> input) {
-        strings = input.stream().map(C::new).collect(Collectors.toList());
-    }
-
-    public List<C> getStrings() {
-        return strings;
-    }
 }

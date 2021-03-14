@@ -12,8 +12,8 @@ import org.junit.Test;
 import java.io.IOException;
 import java.util.Collection;
 
-public class TestMethodReferences extends CommonTestRunner {
-    public TestMethodReferences() {
+public class Test_39_MethodReferences extends CommonTestRunner {
+    public Test_39_MethodReferences() {
         super(false);
     }
 
@@ -27,8 +27,8 @@ public class TestMethodReferences extends CommonTestRunner {
     };
 
     @Test
-    public void test() throws IOException {
-        testClass("MethodReferences", 0, 1, new DebugConfiguration.Builder()
+    public void test_0() throws IOException {
+        testClass("MethodReferences_0", 0, 2, new DebugConfiguration.Builder()
                 .addTypeMapVisitor(typeMapVisitor)
                 .build());
     }

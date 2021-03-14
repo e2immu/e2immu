@@ -55,6 +55,7 @@ public class MultiLevel {
 
     public static final int EFFECTIVELY_E2IMMUTABLE = compose(EFFECTIVE, EFFECTIVE);
     public static final int EFFECTIVELY_E1IMMUTABLE = compose(EFFECTIVE);
+    public static final int EFFECTIVELY_E1IMMUTABLE_NOT_E2IMMUTABLE = compose(EFFECTIVE, FALSE);
 
     public static final int EFFECTIVELY_CONTENT_NOT_NULL_EVENTUALLY_CONTENT2_NOT_NULL = compose(EFFECTIVE, EFFECTIVE, EVENTUAL);
     public static final int EFFECTIVELY_NOT_NULL_EVENTUALLY_CONTENT2_NOT_NULL = compose(EFFECTIVE, EVENTUAL, EVENTUAL);

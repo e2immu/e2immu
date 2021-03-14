@@ -329,21 +329,30 @@ public class ShallowTypeAnalyser implements AnalyserContext {
         TypeAnalysis typeAnalysis = typeAnalysisBuilder.build();
         typeInfo.typeAnalysis.set(typeAnalysis);
 
-        typeInspection.fields().forEach(this::shallowFieldAnalyser);
+        boolean isEnum = typeInspection.typeNature() == TypeNature.ENUM;
+        typeInspection.fields().forEach(fieldInfo -> shallowFieldAnalyser(fieldInfo, isEnum));
     }
 
 
-    public void shallowFieldAnalyser(FieldInfo fieldInfo) {
+    public void shallowFieldAnalyser(FieldInfo fieldInfo, boolean typeIsEnum) {
         FieldAnalysisImpl.Builder fieldAnalysisBuilder = new FieldAnalysisImpl.Builder(primitives, AnalysisProvider.DEFAULT_PROVIDER,
                 fieldInfo, fieldInfo.owner.typeAnalysis.get());
 
         messages.addAll(fieldAnalysisBuilder.fromAnnotationsIntoProperties(VariableProperty.EXTERNAL_NOT_NULL, true, true,
                 fieldInfo.fieldInspection.get().getAnnotations(), e2ImmuAnnotationExpressions));
 
+        FieldInspection fieldInspection = getFieldInspection(fieldInfo);
+        boolean enumField = typeIsEnum && fieldInspection.isSynthetic();
+
         // the following code is here to save some @Final annotations in annotated APIs where there already is a `final` keyword.
-        if (fieldInfo.isExplicitlyFinal()) {
+        if (fieldInfo.isExplicitlyFinal() || enumField) {
             fieldAnalysisBuilder.setProperty(VariableProperty.FINAL, Level.TRUE);
         }
+        // unless annotated with something heavier, ...
+        if(enumField && fieldAnalysisBuilder.getProperty(VariableProperty.EXTERNAL_NOT_NULL) == Level.DELAY) {
+            fieldAnalysisBuilder.setProperty(VariableProperty.EXTERNAL_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
+        }
+
         if (fieldAnalysisBuilder.getProperty(VariableProperty.FINAL) == Level.TRUE && fieldInfo.fieldInspection.get().fieldInitialiserIsSet()) {
             Expression initialiser = fieldInfo.fieldInspection.get().getFieldInitialiser().initialiser();
             Expression value;

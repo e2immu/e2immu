@@ -18,13 +18,21 @@
 
 package org.e2immu.analyser.parser;
 
+import org.e2immu.analyser.analyser.LinkedVariables;
+import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
+import org.e2immu.analyser.config.MethodAnalyserVisitor;
+import org.e2immu.analyser.config.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.config.TypeAnalyserVisitor;
+import org.e2immu.analyser.model.Level;
+import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /*
 first issue: import of Collector.Characteristics should be automatic
@@ -36,17 +44,91 @@ public class Test_Own_10_UpgradableBooleanMap extends CommonTestRunner {
         super(true);
     }
 
-    TypeAnalyserVisitor typeAnalyserVisitor = d -> {
-        if("UpgradableBooleanMap".equals(d.typeInfo().simpleName)) {
-            Assert.assertEquals("[Type param T, Type param T, Type param T, Type param T, Type param T, Type param T]",
-                    d.typeAnalysis().getImplicitlyImmutableDataTypes().toString());
-        }
-    };
-
     @Test
     public void test() throws IOException {
+        int TOO_LATE = 8;
+
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("UpgradableBooleanMap".equals(d.typeInfo().simpleName)) {
+                Assert.assertEquals("[Type param T, Type param T, Type param T, Type param T, Type param T, Type param T]",
+                        d.typeAnalysis().getImplicitlyImmutableDataTypes().toString());
+
+                int expectImmutable = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EFFECTIVELY_E1IMMUTABLE_NOT_E2IMMUTABLE;
+                Assert.assertEquals(expectImmutable, d.typeAnalysis().getProperty(VariableProperty.IMMUTABLE));
+            }
+
+            if ("$1".equals(d.typeInfo().simpleName)) {
+                Assert.assertEquals("org.e2immu.analyser.util.UpgradableBooleanMap.$1", d.typeInfo().fullyQualifiedName);
+
+                int expectImmutable = d.iteration() <= TOO_LATE ? Level.DELAY : MultiLevel.EFFECTIVELY_E1IMMUTABLE_NOT_E2IMMUTABLE;
+                Assert.assertEquals(expectImmutable, d.typeAnalysis().getProperty(VariableProperty.IMMUTABLE));
+            }
+
+            if ("$2".equals(d.typeInfo().simpleName)) {
+                Assert.assertEquals("org.e2immu.analyser.util.UpgradableBooleanMap.$1.$2", d.typeInfo().fullyQualifiedName);
+
+                int expectImmutable = d.iteration() <= TOO_LATE ? Level.DELAY : MultiLevel.EFFECTIVELY_E1IMMUTABLE_NOT_E2IMMUTABLE;
+                Assert.assertEquals(expectImmutable, d.typeAnalysis().getProperty(VariableProperty.IMMUTABLE));
+            }
+        };
+
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("combiner".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ReturnVariable) {
+                    String expectValue = d.iteration() <= 1 ? "<m:putAll>" : "this";
+                    Assert.assertEquals(expectValue, d.currentValue().toString());
+                    String expectLinked = d.iteration() <= 1 ? LinkedVariables.DELAY_STRING : "";
+                    Assert.assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
+                }
+            }
+        };
+
+
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("put".equals(d.methodInfo().name)) {
+                int expectMm = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
+                Assert.assertEquals(expectMm, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
+            }
+            if ("stream".equals(d.methodInfo().name)) {
+                int expectMm = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
+                Assert.assertEquals(expectMm, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
+            }
+            if ("putAll".equals(d.methodInfo().name)) {
+                Assert.assertEquals("put,stream", d.methodInfo().methodResolution.get().methodsOfOwnClassReached()
+                        .stream().map(m -> m.name).sorted().collect(Collectors.joining(",")));
+                int expectMm = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
+                Assert.assertEquals(expectMm, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
+            }
+
+            // uses putAll as a method reference
+            if ("combiner".equals(d.methodInfo().name)) {
+                int expectMm = d.iteration() <= TOO_LATE ? Level.DELAY : Level.FALSE;
+                Assert.assertEquals(expectMm, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
+            }
+
+            // accumulator
+            if ("accept".equals(d.methodInfo().name) && "$2".equals(d.methodInfo().typeInfo.simpleName)) {
+                int expectMm = d.iteration() <= 2 ? Level.DELAY : Level.FALSE;
+                Assert.assertEquals(expectMm, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
+            }
+
+            // finisher
+            if ("apply".equals(d.methodInfo().name) && "$3".equals(d.methodInfo().typeInfo.simpleName)) {
+                int expectMm = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
+                Assert.assertEquals(expectMm, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
+            }
+
+            // putAll
+            if ("accept".equals(d.methodInfo().name) && "$4".equals(d.methodInfo().typeInfo.simpleName)) {
+                int expectMm = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
+                Assert.assertEquals(expectMm, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
+            }
+        };
+
         testUtilClass(List.of("UpgradableBooleanMap"), 0, 0, new DebugConfiguration.Builder()
                 .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 

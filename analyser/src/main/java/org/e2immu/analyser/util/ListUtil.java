@@ -19,22 +19,20 @@
 package org.e2immu.analyser.util;
 
 import com.google.common.collect.ImmutableList;
-import org.e2immu.annotation.ExtensionClass;
-import org.e2immu.annotation.NotModified;
-import org.e2immu.annotation.NotNull;
+import org.e2immu.annotation.*;
 
 import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Stream;
 
-@ExtensionClass(of = List.class)
+@UtilityClass
 public class ListUtil {
 
     private ListUtil() {
     }
 
     @SafeVarargs
-    @NotNull
+    @NotNull1
     public static <T> List<T> immutableConcat(@NotNull @NotModified Iterable<? extends T>... lists) {
         ImmutableList.Builder<T> builder = new ImmutableList.Builder<T>();
         for (Iterable<? extends T> list : lists) {

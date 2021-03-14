@@ -1,3 +1,4 @@
+
 /*
  * e2immu-analyser: code analyser for effective and eventual immutability
  * Copyright 2020, Bart Naudts, https://www.e2immu.org
@@ -16,27 +17,21 @@
  *
  */
 
-package org.e2immu.analyser.util;
+package org.e2immu.analyser.parser;
 
-import com.google.common.collect.ImmutableSet;
-import org.e2immu.annotation.NotModified;
-import org.e2immu.annotation.NotNull;
-import org.e2immu.annotation.UtilityClass;
+import org.e2immu.analyser.config.DebugConfiguration;
+import org.junit.Test;
 
-import java.util.Set;
+import java.io.IOException;
+import java.util.List;
 
-@UtilityClass
-public class SetUtil {
+public class Test_Own_13_ListUtil extends CommonTestRunner {
 
-    private SetUtil() {
+
+    @Test
+    public void test() throws IOException {
+        testUtilClass(List.of("ListUtil"), 0, 0, new DebugConfiguration.Builder()
+                .build());
     }
 
-    @SafeVarargs
-    public static <T> Set<T> immutableUnion(@NotNull @NotModified Set<T>... sets) {
-        ImmutableSet.Builder<T> builder = new ImmutableSet.Builder<T>();
-        for (Set<T> set : sets) {
-            builder.addAll(set);
-        }
-        return builder.build();
-    }
 }
