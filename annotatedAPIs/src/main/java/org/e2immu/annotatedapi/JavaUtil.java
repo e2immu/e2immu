@@ -451,6 +451,9 @@ public class JavaUtil extends AnnotatedAPI {
         Set<K> keySet() { return null; }
 
         @NotModified
+        void forEach(@NotNull BiConsumer<? super K, ? super V> action) { }
+
+        @NotModified
         //@Independent implicit!
         V get(Object key) { return null; }
 

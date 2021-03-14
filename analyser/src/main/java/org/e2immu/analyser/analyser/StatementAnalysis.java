@@ -910,7 +910,6 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         AnalyserContext analyserContext = evaluationContext.getAnalyserContext();
         FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(fieldReference.fieldInfo);
         // rather than fieldAnalysis.getLinkedVariables
-        FieldAnalyser fieldAnalyser = analyserContext.getFieldAnalyser(fieldReference.fieldInfo);
 
         boolean myOwn = fieldReference.scope instanceof This thisVariable && thisVariable.typeInfo.equals(methodAnalysis.getMethodInfo().typeInfo);
         String newObjectIdentifier = index + "-" + fieldReference.fieldInfo.fullyQualifiedName();
@@ -923,9 +922,11 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             if (initialValue.isConstant()) {
                 return new ExpressionAndDelay(initialValue, false);
             }
+            if(initialValue instanceof NewObject) return new ExpressionAndDelay(initialValue, false);
+
+            // FIXME will crash when notNull==-1
             NewObject newObject = NewObject.initialValueOfFieldPartOfConstruction(
-                    newObjectIdentifier,
-                    evaluationContext, fieldReference, fieldAnalyser.fieldAnalysis.getObjectFlow());
+                    newObjectIdentifier, evaluationContext, fieldReference, fieldAnalysis.getObjectFlow());
             return new ExpressionAndDelay(newObject, false);
         }
 
@@ -960,6 +961,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         }
         // variable field, some cases of effectively final field
         NewObject newObject;
+        FieldAnalyser fieldAnalyser = analyserContext.getFieldAnalyser(fieldReference.fieldInfo);
         if (fieldAnalyser == null) {
             // not a local field
             int minimalNotNull = Math.max(MultiLevel.NULLABLE,

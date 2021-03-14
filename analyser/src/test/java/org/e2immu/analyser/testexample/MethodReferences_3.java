@@ -18,20 +18,28 @@
 
 package org.e2immu.analyser.testexample;
 
-import org.e2immu.annotation.*;
+import org.e2immu.annotation.E2Container;
+import org.e2immu.annotation.NotModified;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 
-@E1Container
-public class MethodReferences_2 {
+@E2Container
+public class MethodReferences_3 {
 
-    protected final Map<String, Integer> map = new HashMap<>();
+    private final Map<String, Integer> map = new HashMap<>();
 
-    @Modified
-    public void put(@NotModified Map<String, Integer> input) {
-        input.forEach(map::put);
+    public MethodReferences_3(int i) {
+        map.put("" + i, i);
     }
 
+    @NotModified
+    public void print(Map<String, Integer> input) {
+        input.keySet().forEach(map::get);
+    }
+
+    public Stream<Map.Entry<String, Integer>> stream() {
+        return map.entrySet().stream();
+    }
 }

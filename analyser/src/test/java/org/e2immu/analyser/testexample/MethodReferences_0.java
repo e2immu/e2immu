@@ -18,14 +18,12 @@
 
 package org.e2immu.analyser.testexample;
 
-import org.e2immu.annotation.Dependent;
-import org.e2immu.annotation.E1Immutable;
-import org.e2immu.annotation.E2Container;
+import org.e2immu.annotation.*;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
-@E1Immutable
+@E1Container
 public class MethodReferences_0 {
 
     private List<C> strings;
@@ -43,7 +41,7 @@ public class MethodReferences_0 {
         }
     }
 
-    public MethodReferences_0(List<Integer> input) {
+    public MethodReferences_0(@NotModified List<Integer> input) {
         strings = input.stream().map(C::new).collect(Collectors.toList());
     }
 
