@@ -75,10 +75,8 @@ public class Test_Own_10_UpgradableBooleanMap extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("combiner".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ReturnVariable) {
-                    String expectValue = d.iteration() <= 1 ? "<m:putAll>" : "this";
-                    Assert.assertEquals(expectValue, d.currentValue().toString());
-                    String expectLinked = d.iteration() <= 1 ? LinkedVariables.DELAY_STRING : "";
-                    Assert.assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
+                    Assert.assertEquals("UpgradableBooleanMap::putAll", d.currentValue().toString());
+                    Assert.assertEquals("", d.variableInfo().getLinkedVariables().toString());
                 }
             }
         };
@@ -102,8 +100,7 @@ public class Test_Own_10_UpgradableBooleanMap extends CommonTestRunner {
 
             // uses putAll as a method reference
             if ("combiner".equals(d.methodInfo().name)) {
-                int expectMm = d.iteration() <= TOO_LATE ? Level.DELAY : Level.FALSE;
-                Assert.assertEquals(expectMm, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
+                Assert.assertEquals(Level.FALSE, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
             }
 
             // accumulator

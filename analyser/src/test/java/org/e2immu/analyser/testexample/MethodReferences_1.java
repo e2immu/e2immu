@@ -18,21 +18,19 @@
 
 package org.e2immu.analyser.testexample;
 
-import org.e2immu.annotation.Dependent;
-import org.e2immu.annotation.E1Immutable;
-import org.e2immu.annotation.Modified;
+import org.e2immu.annotation.*;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-@E1Immutable
+@E1Container
 public class MethodReferences_1 {
 
     private final Map<String, Integer> map = new HashMap<>();
 
     @Modified
-    public void put(List<Integer> input) {
+    public void put(@NotModified List<Integer> input) {
         input.forEach(this::put);
     }
 

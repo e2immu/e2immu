@@ -24,7 +24,7 @@ import org.e2immu.annotation.NotModified1;
 
 import java.util.function.Consumer;
 
-public class NotModified1Checks {
+public class NotModified1_0 {
 
     @Container
     static class Counter {

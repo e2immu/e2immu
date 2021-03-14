@@ -23,7 +23,7 @@ import org.e2immu.annotation.NotModified;
 
 import java.util.function.Function;
 
-public class FunctionalInterfaceModified6 {
+public class FunctionalInterface_6 {
 
     @NotModified
     @Final
@@ -52,7 +52,7 @@ public class FunctionalInterfaceModified6 {
     @Final
     private Function<String, Integer> function6;
 
-    public FunctionalInterfaceModified6(char c) {
+    public FunctionalInterface_6(char c) {
         function1 = s -> s.lastIndexOf(c);
         function6 = new Function<String, Integer>() {
             @Override

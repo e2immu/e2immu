@@ -27,13 +27,13 @@ import java.util.Set;
 import java.util.function.Consumer;
 
 @E2Container
-public class FunctionalInterfaceModified4<T> {
+public class FunctionalInterface_4<T> {
 
     @NotModified
     private final Set<T> ts;
 
     @Independent
-    public FunctionalInterfaceModified4(@NotNull @NotModified Set<T> ts) {
+    public FunctionalInterface_4(@NotNull @NotModified Set<T> ts) {
         this.ts = new HashSet<>(ts);
     }
 

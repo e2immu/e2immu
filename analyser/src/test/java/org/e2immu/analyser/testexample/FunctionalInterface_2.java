@@ -21,7 +21,7 @@ import org.e2immu.annotation.*;
 
 import java.util.function.Consumer;
 
-public class FunctionalInterfaceModified2 {
+public class FunctionalInterface_2 {
 
     @Container
     static class Counter {

@@ -25,7 +25,7 @@ import java.util.function.Consumer;
 
 @Independent
 @Container
-public class FunctionalInterfaceModified5<T> {
+public class FunctionalInterface_5<T> {
 
     @NotModified
     private final Set<T> ts;
@@ -39,7 +39,7 @@ public class FunctionalInterfaceModified5<T> {
     }
 
     @Independent
-    public FunctionalInterfaceModified5(Set<T> ts) {
+    public FunctionalInterface_5(Set<T> ts) {
         this.ts = new HashSet<>(ts);
     }
 
@@ -62,17 +62,17 @@ public class FunctionalInterfaceModified5<T> {
     }
 
     public static void useNonModifyingVisitor() {
-        FunctionalInterfaceModified5<Integer> f = new FunctionalInterfaceModified5<>(Set.of(1, 2));
+        FunctionalInterface_5<Integer> f = new FunctionalInterface_5<>(Set.of(1, 2));
         f.nonModifyingVisitor(i -> System.out.println("I is " + i));
     }
 
     public static void useNonModifyingVisitorWithError() {
-        FunctionalInterfaceModified5<Integer> f = new FunctionalInterfaceModified5<>(Set.of(1, 2));
+        FunctionalInterface_5<Integer> f = new FunctionalInterface_5<>(Set.of(1, 2));
         f.nonModifyingVisitor(i -> System.out.println("I is " + i + "; counting" + f.incrementAndGet())); // ERROR
     }
 
     public static void useModifyingVisitor() {
-        FunctionalInterfaceModified5<Integer> f = new FunctionalInterfaceModified5<>(Set.of(1, 2));
+        FunctionalInterface_5<Integer> f = new FunctionalInterface_5<>(Set.of(1, 2));
         f.modifyingVisitor(i -> System.out.println("I is " + i + "; counting" + f.incrementAndGet()));
     }
 }

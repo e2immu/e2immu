@@ -24,7 +24,7 @@ import org.e2immu.annotation.Variable;
 
 import java.util.function.Consumer;
 
-public class FunctionalInterfaceModified3<T> {
+public class FunctionalInterface_3<T> {
 
     private final T t1;
 
@@ -40,9 +40,9 @@ public class FunctionalInterfaceModified3<T> {
     private final Consumer<T> exposingConsumer1;
     private final Consumer<T> exposingConsumer2;
 
-    public FunctionalInterfaceModified3(T t1, T t2,
-                                        Consumer<T> exposingConsumerParam1,
-                                        Consumer<T> exposingConsumerParam2) {
+    public FunctionalInterface_3(T t1, T t2,
+                                 Consumer<T> exposingConsumerParam1,
+                                 Consumer<T> exposingConsumerParam2) {
         this.t1 = t1;
         this.t2 = t2;
         this.exposingConsumer1 = exposingConsumerParam1;

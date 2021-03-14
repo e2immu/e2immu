@@ -73,4 +73,11 @@ public class Test_39_MethodReferences extends CommonTestRunner {
                 .build());
     }
 
+
+    @Test
+    public void test_4() throws IOException {
+        testClass("MethodReferences_4", 0, 0, new DebugConfiguration.Builder()
+                .build());
+    }
+
 }

@@ -1,4 +1,3 @@
-
 /*
  * e2immu-analyser: code analyser for effective and eventual immutability
  * Copyright 2020, Bart Naudts, https://www.e2immu.org
@@ -17,20 +16,28 @@
  *
  */
 
-package org.e2immu.analyser.parser;
+package org.e2immu.analyser.testexample;
 
-import org.e2immu.analyser.config.DebugConfiguration;
-import org.junit.Test;
+import org.e2immu.annotation.E2Container;
+import org.e2immu.annotation.NotModified;
+import org.e2immu.annotation.NotNull;
 
-import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Stream;
 
-public class TestEventuallyImmutable2 extends CommonTestRunner {
+public class MethodReferences_4 {
 
-    @Test
-    public void test() throws IOException {
-        testClass("EventuallyE1Immutable2", 0, 0, new DebugConfiguration.Builder()
-                .build());
+    private final Map<String, Integer> map = new HashMap<>();
 
+    public MethodReferences_4(int i) {
+        map.put("" + i, i);
     }
 
+    @NotNull
+    @NotModified
+    public Function<String, Integer> getFunction() {
+        return map::get;
+    }
 }

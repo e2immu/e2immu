@@ -36,7 +36,7 @@ public class MethodReferences_3 {
 
     @NotModified
     public void print(Map<String, Integer> input) {
-        input.keySet().forEach(map::get);
+        input.keySet().forEach(map::get); // will cause potential null ptr exception, get
     }
 
     public Stream<Map.Entry<String, Integer>> stream() {

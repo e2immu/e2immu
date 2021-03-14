@@ -23,7 +23,7 @@ import org.e2immu.annotation.Modified;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-public class FunctionalInterfaceModified1 {
+public class FunctionalInterface_1 {
 
     @Container
     static class Counter {

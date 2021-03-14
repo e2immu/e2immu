@@ -94,7 +94,7 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
 
     @Override
     public UpgradableBooleanMap<TypeInfo> typesReferenced() {
-        if(!methodInfo.methodInspection.isSet()) return UpgradableBooleanMap.of(scope.typesReferenced());
+        if (!methodInfo.methodInspection.isSet()) return UpgradableBooleanMap.of(scope.typesReferenced());
         return UpgradableBooleanMap.of(methodInfo.returnType().typesReferenced(false), scope.typesReferenced());
     }
 
@@ -117,59 +117,7 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
 
         EvaluationResult scopeResult = scope.evaluate(evaluationContext, ForwardEvaluationInfo.NOT_NULL);
         builder.compose(scopeResult);
-
-        if (methodInfo.isConstructor) {
-            // construction, similar to NewObject, without parameters
-            // TODO arrays? TODO ObjectFlow
-            Location location = evaluationContext.getLocation(this);
-            ObjectFlow objectFlow = builder.createInternalObjectFlow(location, methodInfo.returnType(), Origin.NEW_OBJECT_CREATION);
-            MethodAnalysis methodAnalysis = evaluationContext.getAnalyserContext().getMethodAnalysis(methodInfo);
-            NewObject initialInstance = NewObject.objectCreation(
-                    evaluationContext.newObjectIdentifier(),
-                    evaluationContext.getPrimitives(),
-                    methodInfo, makeParameterizedTypeFromContext(evaluationContext.getAnalyserContext(),
-                            methodInfo.typeInfo, scopeResult.value().returnType()), Diamond.NO, List.of(), objectFlow);
-            NewObject instance = MethodCall.checkCompanionMethodsModifying(builder, evaluationContext, methodInfo,
-                    methodAnalysis, scope, initialInstance, List.of());
-            builder.setExpression(instance);
-        } else {
-            // normal method call, very similar to MethodCall.evaluate
-            MethodAnalysis methodAnalysis = evaluationContext.getAnalyserContext().getMethodAnalysis(methodInfo);
-            // check the not-null aspect
-            int notNull = MultiLevel.value(methodAnalysis.getProperty(VariableProperty.NOT_NULL_EXPRESSION), MultiLevel.NOT_NULL);
-            int forwardNotNull = MultiLevel.value(forwardEvaluationInfo.getProperty(VariableProperty.CONTEXT_NOT_NULL), MultiLevel.NOT_NULL);
-
-            if (forwardNotNull == MultiLevel.EFFECTIVE && notNull == MultiLevel.FALSE) {
-                // we're in a @NotNul context, and the method is decidedly NOT @NotNull...
-                builder.raiseError(Message.POTENTIAL_NULL_POINTER_EXCEPTION, "Result of method reference " + methodInfo.distinguishingName());
-            }
-            Expression result;
-            ObjectFlow objectFlow = ObjectFlow.NO_FLOW; // TODO
-            Expression singleReturnValue = methodAnalysis.getSingleReturnValue();
-            if (singleReturnValue != null) {
-                if (!singleReturnValue.isUnknown() && methodInfo.cannotBeOverridden()) {
-                    result = singleReturnValue;
-                } else {
-                    if (scopeResult.value().isInstanceOf(NullConstant.class)) {
-                        builder.raiseError(Message.NULL_POINTER_EXCEPTION);
-                    }
-                    result = new MethodCall(scopeResult.value(), methodInfo, List.of(), objectFlow);
-                }
-            } else if (methodInfo.hasStatements()) {
-                result = DelayedExpression.forMethod(methodInfo);
-            } else {
-                if (scopeResult.value() instanceof NullConstant) {
-                    builder.raiseError(Message.NULL_POINTER_EXCEPTION);
-                }
-                result = new MethodCall(scopeResult.value(), methodInfo, List.of(), objectFlow);
-            }
-            builder.setExpression(result);
-        }
-
-        if (!methodInfo.methodResolution.isSet() || methodInfo.methodResolution.get().allowsInterrupts()) {
-            builder.incrementStatementTime();
-        }
-
+        builder.setExpression(this);
         return builder.build();
     }
 
@@ -189,5 +137,17 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
             return !methodInspection.isStatic();
         }
         return false;
+    }
+
+    @Override
+    public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty, boolean duringEvaluation) {
+        return switch (variableProperty) {
+            case NOT_NULL_EXPRESSION -> MultiLevel.EFFECTIVELY_NOT_NULL;
+            case CONTAINER -> Level.TRUE;
+            case IMMUTABLE -> MultiLevel.EFFECTIVELY_E2IMMUTABLE;
+
+            case IDENTITY, FLUENT, CONTEXT_MODIFIED -> Level.FALSE;
+            default -> throw new UnsupportedOperationException("Property: "+variableProperty);
+        };
     }
 }
