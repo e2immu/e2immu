@@ -468,8 +468,6 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         // there are no extra type parameters; only those of the enclosing type(s) can be in 'type'
 
         MethodInspectionImpl.Builder methodBuilder = method.buildCopy(typeInfo);
-        MethodInfo methodInfo = methodBuilder.getMethodInfo();
-        builder.addMethod(methodInfo);
 
         // compose the content of the method...
         MethodInspection methodReferenceInspection = expressionContext.typeContext.getMethodInspection(methodReference.methodInfo);
@@ -479,10 +477,10 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         } else {
             if (methodBuilder.getParameters().size() != 1)
                 throw new UnsupportedOperationException("Referenced method has multiple parameters");
-            newReturnExpression = methodCallNoParameters(methodInfo, methodReferenceInspection);
+            newReturnExpression = methodCallNoParameters(methodBuilder.getParameters().get(0), methodReferenceInspection);
         }
         Statement statement;
-        if (methodInfo.isVoid()) {
+        if (methodBuilder.isVoid()) {
             statement = new ExpressionAsStatement(newReturnExpression);
         } else {
             statement = new ReturnStatement(newReturnExpression);
@@ -490,17 +488,19 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         Block block = new Block.BlockBuilder().addStatement(statement).build();
 
         if (Logger.isLogEnabled(LAMBDA)) {
-            log(LAMBDA, "Result of translating block: {}", block.output(null));
+            log(LAMBDA, "Result of translating block: {}", block.output(Qualification.FULLY_QUALIFIED_NAME, null));
         }
         methodBuilder.setInspectedBlock(block).build(expressionContext.typeContext);
+        MethodInfo methodInfo = methodBuilder.getMethodInfo();
+        builder.addMethod(methodInfo);
         typeInfo.typeInspection.set(builder.build());
         expressionContext.addNewlyCreatedType(typeInfo);
         return methodInfo;
     }
 
 
-    private Expression methodCallNoParameters(MethodInfo interfaceMethod, MethodInspection concreteMethod) {
-        Expression newScope = new VariableExpression(interfaceMethod.methodInspection.get().getParameters().get(0));
+    private Expression methodCallNoParameters(ParameterInfo firstParameter, MethodInspection concreteMethod) {
+        Expression newScope = new VariableExpression(firstParameter);
         return new MethodCall(newScope, concreteMethod.getMethodInfo(), List.of(), ObjectFlow.NO_FLOW);
     }
 
@@ -681,7 +681,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
 
     @Override
     public UpgradableBooleanMap<TypeInfo> typesReferenced() {
-        if(!typeInspection.isSet()) return UpgradableBooleanMap.of(); // dangerous?
+        if (!typeInspection.isSet()) return UpgradableBooleanMap.of(); // dangerous?
         return typeInspection.get("type inspection of " + fullyQualifiedName).typesReferenced();
     }
 

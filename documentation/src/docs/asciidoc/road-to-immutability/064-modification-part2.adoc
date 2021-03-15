@@ -62,11 +62,12 @@ This has the advantage of simplicity, both for the programmer and the analyser, 
 It imposes more annotation work on the programmer, however, because the interface's methods need annotating.
 
 [#params-functional-interface]
-=== Parameters of functional interface types
+=== Parameters of abstract types
 
-When the parameter is of a functional interface type, and no declarations are present, complications arise.
+When the parameter is of an abstract type, other complications arise.
 Starting with an example, we realise that the single abstract method in `Consumer` is, in general, modifying, and that it modifies its parameter:
 
+.Initial observation of modification in Consumer
 [source,java]
 ----
 @FunctionalInterface
@@ -82,7 +83,7 @@ Indeed, using `Point` defined in <<point-and-line>>,
 [source,java]
 ----
 Consumer<Point> moveOneToTheRight = point -> point.setX(point.getX() + 1);
-Point p;
+Point p = ...;
 Consumer<Point> addToP = point -> {
     p.setX(p.getX() + point.getX());
     p.setY(p.getY() + point.getY());
@@ -92,7 +93,7 @@ Consumer<Point> addToP = point -> {
 The first consumer, `moveOneToTheRight`, has a non-modifying `accept` method which modifies its parameter.
 The second one, `addToP`, has a modifying `accept` method, with a parameter which remains unmodified.
 
-However, if we now observe the use of `Consumer` in the example of the `forEach` method of `Collection`:
+However, these observations contrast with the use of `Consumer` in the `forEach` method of many collections:
 
 .Possible implementation of forEach
 [source,java]
@@ -102,33 +103,33 @@ default void forEach(Consumer<T> consumer) {
 }
 ----
 
-we must conclude that:
+Here,
 
-. the parameter `consumer` is {modified}, because `accept`, as modifying method, runs on this object;
-. the method `forEach` is {modified}, as `t` is linked to `this` and `t` is modified by `accept`.
+. `T` is implicitly immutable, so the consumer's `accept` cannot make changes to `t` _that we know of_;
+. it is expected that `accept` makes some modification, but not a modification to `this`.
 
-The first observation is a problem to make containers, because a container does not allow methods to modify their parameters.
-The second problem occurs when creating level 2 immutable types, where the consumers have no means for modifying the fields, even though `accept` claims it does.
+For all intents and purposes, we want to mark both the method and the parameter as {nm}.
+The method does nothing but help us iterate over the elements of the collection, an action which is not modifying when executed using a for-loop.
+The modifying aspect is in the application of the method: when a modifying method is passed as argument to `forEach`, the object of the method call will be marked as modified:
 
-There is an obvious need to solve both problems, because semantically, there is little difference between iterating using a `forEach` method, and using a `getStream` as in:
-
+.Marking the object as modified
 [source,java]
 ----
-default Stream<E> stream() {
-    return StreamSupport.stream(spliterator(), false);
-}
+Set<Integer> set = new HashSet<>();
+List.of(1, 2, 3).forEach(set::add); // <1>
 ----
+<1> The `forEach` modifies `set` as the object of the modifying method `add`.
 
-Creating a stream is non-modifying.
-The code that pulls from this stream is completely outside the scope of the analysis of the `Collection` type; it is free to modify `E` objects at will.
-
-We address this problem as follows.
-Firstly, we decide that:
+We already conclude that
 
 ****
-*Additional, overriding modification rule*: Parameters of functional interface types are {nm}.
-We assume the annotation to be implicitly present.
+*Additional, overriding modification rule*: Parameters of abstract types are {nm} if the abstract method is not applied to other parameters of the method.
 ****
+
+Let us explain this:
+
+
+
 
 Modifications they make to the fields of the class can only be made through methods which are already {modified}; this will not change the overall modification status of the type.
 As a consequence,
@@ -278,7 +279,7 @@ The following matrix summarizes modification related annotations for functional 
 |===
 | The annotation on ... | parameter | field | method return type
 | {modified} | never | *with declaration*: if it changes other fields; *without declaration*: never | (annotation does not refer to return type)
-| {nm} |  implicit | *with declaration*: if it does not modify other fields;  *without declaration*: implicit | (annotation does not refer to return type)
+| {nm} |  implicit | *with declaration*: if it does not modify other fields; *without declaration*: implicit | (annotation does not refer to return type)
 | {nm1} | *contracted*: no implementations which modify their parameters allowed; sets SAM's parameters to {nm} | computed via declaration or linking |   computed via declaration or linking
 | {independent} | computed when the SAM's parameters do not link to a field | N/A | N/A
 | {nn1} | computed when the SAM's parameters cannot be `null` | computed via declaration or linking | computed via declaration or linking

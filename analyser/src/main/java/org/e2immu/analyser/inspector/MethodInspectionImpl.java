@@ -24,6 +24,7 @@ import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.parser.InspectionProvider;
+import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.Container;
 import org.e2immu.annotation.Fluent;
 import org.e2immu.annotation.NotModified;
@@ -473,6 +474,10 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
         public Builder setSynthetic(boolean synthetic) {
             this.synthetic = synthetic;
             return this;
+        }
+
+        public boolean isVoid() {
+            return Primitives.isVoid(returnType);
         }
     }
 }

@@ -46,35 +46,6 @@ class Builder {
 }
 ----
 
-=== Size
-
-The `@Size` annotations are conceptually similar to the nullability markers.
-When presented with the precondition:
-
-[source,java]
-----
-public boolean process(Set<T> set) {
-    if(set.isEmpty()) throw new UnsupportedOperationException();
-    // ...
-}
-----
-
-the {e2immu} code analyser adds a `@Size(min = 1)` annotation.
-This leads to a similar check method:
-
-[source,java]
-----
-@Identity @Size(min=1) @NotModified @NotNull
-public static <T> Collection<T> requireNonEmpty(
-        @Size(min = 1) @NotModified @NotNull Collection<T> collection) {
-    if(collection.isEmpty()) throw new UnsupportedOperationException();
-    return collection;
-}
-----
-
-with apologies for the massive amount of annotations.
-Internally the analyser translates the `isEmpty` method to the expression `collection.size() >= 1`, which allows for further comparisons and analysis.
-
 === Utility class, extensions, singleton
 
 Using the simple and common definition:

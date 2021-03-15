@@ -19,6 +19,7 @@
 package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.model.statement.Block;
+import org.e2immu.analyser.parser.InspectionProvider;
 
 import java.util.List;
 import java.util.Map;

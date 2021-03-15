@@ -39,7 +39,7 @@ public interface Statement extends Element {
 
     @Override
     default OutputBuilder output(Qualification qualification) {
-        throw new UnsupportedOperationException("Use other output method");
+        throw new UnsupportedOperationException("Use other output method: "+getClass());
     }
 
     @Override

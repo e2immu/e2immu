@@ -26,7 +26,7 @@ import java.lang.annotation.Target;
  * Opposite of @Independent.
  */
 @Retention(RetentionPolicy.CLASS)
-@Target({ElementType.CONSTRUCTOR, ElementType.METHOD})
+@Target({ElementType.CONSTRUCTOR, ElementType.METHOD, ElementType.PARAMETER})
 public @interface Dependent {
     boolean absent() default false;
 

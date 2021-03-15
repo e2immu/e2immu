@@ -37,7 +37,7 @@ include::{includedir}/road-to-immutability/080-other-annotations.adoc[]
 
 == Copyright and License
 
-Copyright (C) 2020, Bart Naudts
+Copyright (C) 2020, 2021, Bart Naudts
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
