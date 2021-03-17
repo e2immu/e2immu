@@ -272,7 +272,7 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                     Assert.assertEquals("input1.contains(\"a\")", d.absoluteState().toString());
                     Assert.assertEquals("true", d.localConditionManager().precondition().toString());
                     Assert.assertFalse(d.localConditionManager().isDelayed());
-                    Assert.assertEquals("true", d.statementAnalysis().stateData.getPrecondition().toString());
+                    Assert.assertEquals("true", d.statementAnalysis().stateData.precondition.get().toString());
                 }
                 if ("0.0.1".equals(d.statementId())) { // first assignment
                     Assert.assertEquals(2, time1);

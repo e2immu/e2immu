@@ -17,6 +17,7 @@
 
 package org.e2immu.annotatedapi;
 
+import org.e2immu.annotation.NotModified;
 import org.e2immu.annotation.NotNull;
 
 import java.util.Comparator;
@@ -38,7 +39,8 @@ public class JavaUtilFunction {
 
     @FunctionalInterface
     public interface Consumer$<T> {
-        void accept(T t);
+        @NotModified
+        void accept(@NotModified T t);
 
         default java.util.function.Consumer<T> andThen(@NotNull java.util.function.Consumer<? super T> after) {
             return null;

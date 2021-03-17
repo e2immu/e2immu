@@ -36,22 +36,22 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("setT".equals(d.methodInfo().name)) {
                 if ("0.0.0".equals(d.statementId()) || "0".equals(d.statementId())) {
-                    Assert.assertEquals("true", d.statementAnalysis().stateData.getPrecondition().toString());
+                    Assert.assertEquals("true", d.statementAnalysis().stateData.precondition.get().toString());
                 }
                 if ("1.0.0".equals(d.statementId())) {
                     if (d.iteration() == 0) {
-                        Assert.assertNull(d.statementAnalysis().stateData.getPrecondition());
+                        Assert.assertNull(d.statementAnalysis().stateData.precondition.get());
                     } else {
-                        Assert.assertEquals("null==t", d.statementAnalysis().stateData.getPrecondition().toString());
+                        Assert.assertEquals("null==t", d.statementAnalysis().stateData.precondition.get().toString());
                         Assert.assertEquals("null==t", d.statementAnalysis().methodLevelData
                                 .getCombinedPrecondition().toString());
                     }
                 }
                 if ("1".equals(d.statementId())) {
                     if (d.iteration() == 0) {
-                        Assert.assertNull(d.statementAnalysis().stateData.getPrecondition());
+                        Assert.assertNull(d.statementAnalysis().stateData.precondition.get());
                     } else {
-                        Assert.assertEquals("true", d.statementAnalysis().stateData.getPrecondition().toString());
+                        Assert.assertEquals("true", d.statementAnalysis().stateData.precondition.get().toString());
                         Assert.assertEquals("null==t", d.statementAnalysis().methodLevelData
                                 .getCombinedPrecondition().toString());
                     }
@@ -63,7 +63,7 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
                     case 1 -> "null==<f:t>";
                     default -> "null==t";
                 };
-                Assert.assertEquals(expectPrecondition, d.statementAnalysis().stateData.getPrecondition().toString());
+                Assert.assertEquals(expectPrecondition, d.statementAnalysis().stateData.precondition.get().toString());
             }
         };
 
@@ -118,8 +118,8 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
                     case 1 -> "null==<f:t>&&null!=<f:t>";
                     default -> "false";
                 };
-                Assert.assertEquals(expectPrecondition, d.statementAnalysis().stateData.getPrecondition().toString());
-                Assert.assertEquals(d.iteration() <= 1, d.statementAnalysis().stateData.preconditionIsDelayed());
+                Assert.assertEquals(expectPrecondition, d.statementAnalysis().stateData.precondition.get().toString());
+                Assert.assertEquals(d.iteration() <= 1, d.statementAnalysis().stateData.precondition.isVariable());
 
                 Assert.assertEquals(d.iteration() <= 1 ? "true" : "false", d.statementAnalysis().methodLevelData
                         .getCombinedPreconditionOrDelay().toString());

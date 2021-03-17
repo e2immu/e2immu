@@ -46,12 +46,12 @@ public class Test_14_Precondition extends CommonTestRunner {
                     Assert.assertEquals("null==e1&&null==e2",
                             d.statementAnalysis().stateData.getConditionManagerForNextStatement().condition().toString());
                     Assert.assertEquals("null!=e1||null!=e2",
-                            d.statementAnalysis().stateData.getPrecondition().toString());
+                            d.statementAnalysis().stateData.precondition.get().toString());
                 }
                 if ("0".equals(d.statementId())) {
                     Assert.assertEquals("true",
                             d.statementAnalysis().stateData.getConditionManagerForNextStatement().state().toString());
-                    Assert.assertTrue(d.statementAnalysis().stateData.getPrecondition().isBoolValueTrue());
+                    Assert.assertTrue(d.statementAnalysis().stateData.precondition.get().isBoolValueTrue());
                     Assert.assertEquals("null!=e1||null!=e2",
                             d.statementAnalysis().methodLevelData.getCombinedPrecondition().toString());
                 }
@@ -92,11 +92,11 @@ public class Test_14_Precondition extends CommonTestRunner {
                 if ("0.0.0".equals(d.statementId())) {
                     if (d.iteration() == 0) {
                         Assert.assertTrue(d.localConditionManager().isDelayed());
-                        Assert.assertNull(d.statementAnalysis().stateData.getPrecondition());
+                        Assert.assertNull(d.statementAnalysis().stateData.precondition.get());
                         Assert.assertNull(d.statementAnalysis().methodLevelData.getCombinedPrecondition());
                     } else if (d.iteration() == 1) {
                         Assert.assertEquals("org.e2immu.analyser.testexample.Precondition_1.i$0<=-1", d.condition().toString());
-                        Assert.assertEquals("i>=0", d.statementAnalysis().stateData.getPrecondition().toString());
+                        Assert.assertEquals("i>=0", d.statementAnalysis().stateData.precondition.get().toString());
                         Assert.assertEquals("i>=0", d.statementAnalysis().methodLevelData.getCombinedPrecondition().toString());
                     }
                 }

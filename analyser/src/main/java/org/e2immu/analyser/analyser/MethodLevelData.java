@@ -23,7 +23,6 @@ import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.expression.And;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.This;
-import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.util.*;
 import org.slf4j.Logger;
@@ -149,10 +148,10 @@ public class MethodLevelData {
 
         List<StatementAnalysis> subBlocks = sharedState.statementAnalysis.lastStatementsOfNonEmptySubBlocks();
         delays |= subBlocks.stream().anyMatch(sa -> !sa.methodLevelData.combinedPrecondition.isSet());
-        delays |= sharedState.stateData.preconditionIsDelayed();
+        delays |= sharedState.stateData.precondition.isVariable();
 
-        Stream<Expression> fromMyStateData = sharedState.stateData.preconditionIsSet() ?
-                Stream.of(sharedState.stateData.getPrecondition()) : Stream.of();
+        Stream<Expression> fromMyStateData = sharedState.stateData.precondition.isFinal() ?
+                Stream.of(sharedState.stateData.precondition.get()) : Stream.of();
         Stream<Expression> fromPrevious = sharedState.previous != null && sharedState.previous.getCombinedPrecondition() != null ?
                 Stream.of(sharedState.previous.getCombinedPrecondition()) : Stream.of();
         Stream<Expression> fromBlocks = sharedState.statementAnalysis.lastStatementsOfNonEmptySubBlocks().stream()

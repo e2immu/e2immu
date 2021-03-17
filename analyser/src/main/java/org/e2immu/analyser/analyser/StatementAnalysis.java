@@ -922,7 +922,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             if (initialValue.isConstant()) {
                 return new ExpressionAndDelay(initialValue, false);
             }
-            if(initialValue instanceof NewObject) return new ExpressionAndDelay(initialValue, false);
+            if (initialValue instanceof NewObject) return new ExpressionAndDelay(initialValue, false);
 
             // FIXME will crash when notNull==-1
             NewObject newObject = NewObject.initialValueOfFieldPartOfConstruction(
@@ -1139,6 +1139,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
      * @throws IllegalArgumentException when the variable does not yet exist
      */
     public Expression initialValueOfReturnVariable(@NotNull Variable variable) {
+        assert methodAnalysis.getMethodInfo().hasReturnValue();
         String fqn = variable.fullyQualifiedName();
         VariableInfoContainer vic = variables.getOtherwiseNull(fqn);
         if (vic == null) {

@@ -60,8 +60,8 @@ public class Test_35_EventuallyImmutableUtil extends CommonTestRunner {
                     case 1 -> "null==<f:t>";
                     default -> "null==value.t";
                 };
-                Assert.assertEquals(expectPre, d.statementAnalysis().stateData.getPrecondition().toString());
-                Assert.assertEquals(d.iteration() <= 1, d.statementAnalysis().stateData.preconditionIsDelayed());
+                Assert.assertEquals(expectPre, d.statementAnalysis().stateData.precondition.get().toString());
+                Assert.assertEquals(d.iteration() <= 1, d.statementAnalysis().stateData.precondition.isVariable());
             }
         };
         testWithUtilClasses(List.of("EventuallyImmutableUtil_2"), FLIP_SWITCH_SET_ONCE,
@@ -75,7 +75,7 @@ public class Test_35_EventuallyImmutableUtil extends CommonTestRunner {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("isReady".equals(d.methodInfo().name)) {
                 // preconditions have nothing to do with this
-                Assert.assertEquals("true", d.statementAnalysis().stateData.getPrecondition().toString());
+                Assert.assertEquals("true", d.statementAnalysis().stateData.precondition.get().toString());
             }
         };
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {

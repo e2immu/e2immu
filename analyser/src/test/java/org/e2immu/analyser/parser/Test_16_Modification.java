@@ -925,11 +925,11 @@ public class Test_16_Modification extends CommonTestRunner {
                     } else Assert.fail();
                 } else Assert.fail();
                 if (d.iteration() == 0) {
-                    Assert.assertTrue(d.statementAnalysis().stateData.preconditionIsDelayed());
+                    Assert.assertTrue(d.statementAnalysis().stateData.precondition.isVariable());
                     Assert.assertFalse(d.statementAnalysis().stateData.preconditionIsEmpty());
                 } else {
-                    Assert.assertTrue(d.statementAnalysis().stateData.preconditionIsSet());
-                    Assert.assertTrue(d.statementAnalysis().stateData.getPrecondition().isBoolValueTrue());
+                    Assert.assertTrue(d.statementAnalysis().stateData.precondition.isFinal());
+                    Assert.assertTrue(d.statementAnalysis().stateData.precondition.get().isBoolValueTrue());
                 }
             }
         };

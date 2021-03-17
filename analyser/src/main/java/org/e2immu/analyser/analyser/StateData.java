@@ -18,7 +18,7 @@
 package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.util.FlipSwitch;
+import org.e2immu.analyser.util.EventuallyFinal;
 import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.analyser.util.SetOnceMap;
 
@@ -34,8 +34,10 @@ public class StateData {
      this variable contains the precondition of one single statement; an aggregate is computed in MethodLevelData
      */
 
-    private final SetOnce<Expression> precondition = new SetOnce<>();
-    private Expression currentDelayedPrecondition;
+    public final EventuallyFinal<Expression> precondition = new EventuallyFinal<>();
+    public boolean preconditionIsEmpty() {
+        return precondition.isVariable() && precondition.get() == null;
+    }
 
     /*
     contains the change in state (not condition, not precondition) when going from one statement to the next
@@ -51,6 +53,7 @@ public class StateData {
 
     private final SetOnce<Expression> valueOfExpression = new SetOnce<>();
     private Expression currentDelayedExpression;
+
 
     static class CurrentDelayedAndFinalExpression {
 
@@ -121,31 +124,5 @@ public class StateData {
 
     public Stream<Expression> statesOfInterruptsStream() {
         return statesOfInterrupts.stream().map(e -> e.getValue().getExpression());
-    }
-
-    // precondition
-
-    public void setPrecondition(Expression expression, boolean expressionIsDelayed) {
-        if (expressionIsDelayed) {
-            currentDelayedPrecondition = expression;
-        } else if (!precondition.isSet() || !expression.equals(precondition.get())) {
-            precondition.set(expression);
-        }
-    }
-
-    public Expression getPrecondition() {
-        return precondition.getOrElse(currentDelayedPrecondition);
-    }
-
-    public boolean preconditionIsDelayed() {
-        return !precondition.isSet();
-    }
-
-    public boolean preconditionIsSet() {
-        return precondition.isSet();
-    }
-
-    public boolean preconditionIsEmpty() {
-        return currentDelayedPrecondition == null && !precondition.isSet();
     }
 }

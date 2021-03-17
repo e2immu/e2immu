@@ -35,7 +35,6 @@ import java.util.function.Supplier;
 @E2Container(after = "t")
 public class Lazy<T> {
     @NotNull1
-    @Linked(to = {"Lazy:supplierParam"})
     private final Supplier<T> supplier;
 
     @Final(after = "t")

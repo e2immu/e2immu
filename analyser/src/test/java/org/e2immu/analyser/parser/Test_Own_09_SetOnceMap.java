@@ -52,7 +52,7 @@ public class Test_Own_09_SetOnceMap extends CommonTestRunner {
             if ("put".equals(d.methodInfo().name)) {
                 if ("3.0.0".equals(d.statementId())) {
                     String expect = d.iteration() <= 1 ? "<precondition>" : "!map.containsKey(k)";
-                    Assert.assertEquals(expect, d.statementAnalysis().stateData.getPrecondition().toString());
+                    Assert.assertEquals(expect, d.statementAnalysis().stateData.precondition.get().toString());
                     Assert.assertEquals(d.iteration() >= 3,
                             d.statementAnalysis().methodLevelData.linksHaveBeenEstablished.isSet());
                 }

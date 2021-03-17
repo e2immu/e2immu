@@ -28,9 +28,11 @@ public enum TypeModifier {
     // added to be able to use this type for access privileges
     PACKAGE(0),
 
-    ABSTRACT(1), STATIC(1),
+    ABSTRACT(1),
 
-    FINAL(2), SEALED(2),
+    STATIC(2),
+
+    FINAL(3), SEALED(3),
     ;
 
     TypeModifier(int group) {
@@ -38,7 +40,7 @@ public enum TypeModifier {
     }
 
     private final int group;
-    private static final int GROUPS = 3;
+    private static final int GROUPS = 4;
 
     public static TypeModifier from(Modifier modifier) {
         Modifier.Keyword keyword = modifier.getKeyword();
@@ -53,7 +55,7 @@ public enum TypeModifier {
         TypeModifier[] array = new TypeModifier[GROUPS];
         for (TypeModifier modifier : modifiers) {
             if (array[modifier.group] != null)
-                throw new UnsupportedOperationException("? already have " + array[modifier.group]);
+                throw new UnsupportedOperationException("? already have " + array[modifier.group] + ", want to add " + modifier);
             array[modifier.group] = modifier;
         }
         return Arrays.stream(array).filter(m -> m != null && m != PACKAGE).map(TypeModifier::toJava).toArray(String[]::new);

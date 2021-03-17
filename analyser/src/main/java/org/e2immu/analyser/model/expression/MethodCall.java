@@ -260,6 +260,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             // internal circular dependency (as opposed to one outside the primary type)
             neverModifying = methodInfo.partOfCallCycle();
 
+            // FIXME code needs updating!!!!
             boolean undeclaredFunctionalInterface;
             if (methodInfo.isSingleAbstractMethod()) {
                 Boolean b = EvaluateParameters.tryToDetectUndeclared(evaluationContext, builder.getStatementTime(), object);

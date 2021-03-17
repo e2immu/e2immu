@@ -156,11 +156,15 @@ public interface ParameterAnalysis extends Analysis {
                 return implicit == null && withoutImplicitDelay != Level.TRUE ? Level.DELAY : withoutImplicitDelay;
             }
             // when can a parameter be immutable? it cannot be computed in the method
+            // (0) parameters of functional interface type are @E2Immutable
             // (1) if the type is effectively immutable
             // (2) if all the flows leading up to this parameter are flows where the mark has been set; but this
             // we can only know when the method is private and the flows are known
             // (3) when the user has contract-annotated the parameter with @E2Immutable
             case IMMUTABLE: {
+                if(parameterInfo.parameterizedType.isFunctionalInterface()) {
+                    return MultiLevel.EFFECTIVELY_E2IMMUTABLE;
+                }
                 TypeInfo bestType = parameterInfo.parameterizedType.bestTypeInfo();
                 int immutableFromType;
                 if (bestType != null) {

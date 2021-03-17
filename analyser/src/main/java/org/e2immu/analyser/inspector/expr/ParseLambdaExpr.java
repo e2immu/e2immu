@@ -107,9 +107,12 @@ public class ParseLambdaExpr {
                 return partiallyParse(lambdaExpr);
             }
             inferredReturnType = expr.returnType();
-            if (Primitives.isVoid(inferredReturnType)) {
+            if (Primitives.isVoid(singleAbstractMethod.getConcreteReturnType())) {
+                // we don't expect/want a value, even if the inferredReturnType provides one
                 block = new Block.BlockBuilder().addStatement(new ExpressionAsStatement(expr)).build();
             } else {
+                // but if we expect one, the inferredReturnType cannot be void (would be a compiler error)
+                assert !Primitives.isVoid(inferredReturnType);
                 block = new Block.BlockBuilder().addStatement(new ReturnStatement(expr)).build();
             }
         } else {
