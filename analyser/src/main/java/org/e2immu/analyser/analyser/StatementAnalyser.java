@@ -423,16 +423,16 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                                                        Expression condition,
                                                        boolean conditionIsDelayed,
                                                        EvaluationContext closure) {
-        Expression combinedPrecondition = previous.methodLevelData.getCombinedPrecondition();
+        Expression combinedPrecondition;
         boolean combinedPreconditionIsDelayed;
-        if (combinedPrecondition == null) {
+        if (previous.methodLevelData.combinedPrecondition.isFinal()) {
+            combinedPrecondition = previous.methodLevelData.combinedPrecondition.get();
+            combinedPreconditionIsDelayed = false;
+        } else {
             combinedPreconditionIsDelayed = true;
             combinedPrecondition = new BooleanConstant(statementAnalysis.primitives, true);
-        } else {
-            EvaluationContext tmpEvaluationContext = new EvaluationContextImpl(iteration,
-                    ConditionManager.initialConditionManager(previous.primitives), closure);
-            combinedPreconditionIsDelayed = tmpEvaluationContext.isDelayed(combinedPrecondition);
         }
+
         ConditionManager previousCm = previous.stateData.conditionManagerForNextStatement.get();
         // can be null in case the statement is unreachable
         if (previousCm == null) {

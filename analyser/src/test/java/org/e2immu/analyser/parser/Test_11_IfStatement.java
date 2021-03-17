@@ -247,13 +247,13 @@ public class Test_11_IfStatement extends CommonTestRunner {
                     Assert.assertEquals("\"3\".equals(label1)", d.condition().toString());
                     Assert.assertEquals("true", d.state().toString());
                     Assert.assertEquals("!\"3\".equals(label1)", d.statementAnalysis().stateData.precondition.get().toString());
-                    Assert.assertEquals("!\"3\".equals(label1)", d.statementAnalysis().methodLevelData.getCombinedPrecondition().toString());
+                    Assert.assertEquals("!\"3\".equals(label1)", d.statementAnalysis().methodLevelData.combinedPrecondition.get().toString());
                     Assert.assertEquals("true", d.conditionManagerForNextStatement().precondition().toString());
                 }
                 if ("0".equals(d.statementId())) {
                     Assert.assertEquals("true", d.condition().toString());
                     Assert.assertEquals("true", d.state().toString());
-                    Assert.assertEquals("!\"3\".equals(label1)", d.statementAnalysis().methodLevelData.getCombinedPrecondition().toString());
+                    Assert.assertEquals("!\"3\".equals(label1)", d.statementAnalysis().methodLevelData.combinedPrecondition.get().toString());
                     Assert.assertEquals("true", d.statementAnalysis().stateData.precondition.get().toString());
                     Assert.assertEquals("true", d.conditionManagerForNextStatement().precondition().toString());
                 }

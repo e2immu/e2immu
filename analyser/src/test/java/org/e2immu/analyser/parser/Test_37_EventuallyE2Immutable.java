@@ -44,7 +44,7 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
                     } else {
                         Assert.assertEquals("null==t", d.statementAnalysis().stateData.precondition.get().toString());
                         Assert.assertEquals("null==t", d.statementAnalysis().methodLevelData
-                                .getCombinedPrecondition().toString());
+                                .combinedPrecondition.get().toString());
                     }
                 }
                 if ("1".equals(d.statementId())) {
@@ -53,7 +53,7 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
                     } else {
                         Assert.assertEquals("true", d.statementAnalysis().stateData.precondition.get().toString());
                         Assert.assertEquals("null==t", d.statementAnalysis().methodLevelData
-                                .getCombinedPrecondition().toString());
+                                .combinedPrecondition.get().toString());
                     }
                 }
             }
@@ -122,9 +122,9 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
                 Assert.assertEquals(d.iteration() <= 1, d.statementAnalysis().stateData.precondition.isVariable());
 
                 Assert.assertEquals(d.iteration() <= 1 ? "true" : "false", d.statementAnalysis().methodLevelData
-                        .getCombinedPreconditionOrDelay().toString());
+                        .combinedPrecondition.get().toString());
                 Assert.assertEquals(d.iteration() <= 1, d.statementAnalysis().methodLevelData
-                        .combinedPreconditionIsDelayed());
+                        .combinedPrecondition.isVariable());
             }
         };
 

@@ -28,10 +28,13 @@ import org.e2immu.analyser.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Stream;
 
-import static org.e2immu.analyser.analyser.AnalysisStatus.*;
+import static org.e2immu.analyser.analyser.AnalysisStatus.DELAYS;
+import static org.e2immu.analyser.analyser.AnalysisStatus.DONE;
 import static org.e2immu.analyser.util.Logger.LogTarget.DELAYED;
 import static org.e2immu.analyser.util.Logger.log;
 
@@ -53,30 +56,13 @@ public class MethodLevelData {
     public final SetOnceMap<MethodInfo, Boolean> copyModificationStatusFrom = new SetOnceMap<>();
 
     // aggregates the preconditions on individual statements
-    private final SetOnce<Expression> combinedPrecondition = new SetOnce<>();
-    private Expression currentDelayedCombinedPrecondition;
+    public final EventuallyFinal<Expression> combinedPrecondition = new EventuallyFinal<>();
 
     // no delays when frozen
     private final AddOnceSet<ObjectFlow> internalObjectFlows = new AddOnceSet<>();
 
     // not for local processing, but so that we know in the method and field analyser that this process has been completed
     public final FlipSwitch linksHaveBeenEstablished = new FlipSwitch();
-
-    public Expression getCombinedPrecondition() {
-        return combinedPrecondition.getOrElse(null);
-    }
-
-    public Expression getCombinedPreconditionOrDelay() {
-        return combinedPrecondition.getOrElse(currentDelayedCombinedPrecondition);
-    }
-
-    private void setCombinedPrecondition(Expression expression, boolean isDelayed) {
-        if (isDelayed) {
-            currentDelayedCombinedPrecondition = expression;
-        } else if (!combinedPrecondition.isSet() || !combinedPrecondition.get().equals(expression)) {
-            combinedPrecondition.set(expression);
-        }
-    }
 
     public void addCircularCallOrUndeclaredFunctionalInterface() {
         if (!callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod.isSet()) {
@@ -100,14 +86,6 @@ public class MethodLevelData {
         if (!internalObjectFlows.contains(objectFlow)) {
             internalObjectFlows.add(objectFlow);
         }
-    }
-
-    public boolean combinedPreconditionIsSet() {
-        return combinedPrecondition.isSet();
-    }
-
-    public boolean combinedPreconditionIsDelayed() {
-        return !combinedPrecondition.isSet();
     }
 
     record SharedState(StatementAnalyserResult.Builder builder,
@@ -144,24 +122,26 @@ public class MethodLevelData {
     // they are accumulated from the previous statement, and from all child statements
 
     private AnalysisStatus combinePrecondition(SharedState sharedState) {
-        boolean delays = sharedState.previous != null && !sharedState.previous.combinedPrecondition.isSet();
+        boolean delays = sharedState.previous != null && sharedState.previous.combinedPrecondition.isVariable();
 
         List<StatementAnalysis> subBlocks = sharedState.statementAnalysis.lastStatementsOfNonEmptySubBlocks();
-        delays |= subBlocks.stream().anyMatch(sa -> !sa.methodLevelData.combinedPrecondition.isSet());
+        delays |= subBlocks.stream().anyMatch(sa -> sa.methodLevelData.combinedPrecondition.isVariable());
         delays |= sharedState.stateData.precondition.isVariable();
 
         Stream<Expression> fromMyStateData = sharedState.stateData.precondition.isFinal() ?
                 Stream.of(sharedState.stateData.precondition.get()) : Stream.of();
-        Stream<Expression> fromPrevious = sharedState.previous != null && sharedState.previous.getCombinedPrecondition() != null ?
-                Stream.of(sharedState.previous.getCombinedPrecondition()) : Stream.of();
+        Stream<Expression> fromPrevious = sharedState.previous != null && sharedState.previous.combinedPrecondition.isFinal() ?
+                Stream.of(sharedState.previous.combinedPrecondition.get()) : Stream.of();
         Stream<Expression> fromBlocks = sharedState.statementAnalysis.lastStatementsOfNonEmptySubBlocks().stream()
-                .map(sa -> sa.methodLevelData.getCombinedPrecondition())
-                .filter(Objects::nonNull);
+                .map(sa -> sa.methodLevelData.combinedPrecondition)
+                .filter(EventuallyFinal::isFinal)
+                .map(EventuallyFinal::get);
         Expression[] all = Stream.concat(fromMyStateData, Stream.concat(fromBlocks, fromPrevious)).toArray(Expression[]::new);
         Expression and = new And(sharedState.evaluationContext.getPrimitives()).append(sharedState.evaluationContext, all);
 
         delays |= sharedState.evaluationContext.isDelayed(and);
-        setCombinedPrecondition(and, delays);
+        if (delays) combinedPrecondition.setVariable(and);
+        else combinedPrecondition.setFinal(and);
 
         return delays ? DELAYS : DONE;
     }

@@ -377,8 +377,8 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
     private AnalysisStatus obtainMostCompletePrecondition() {
         assert !methodAnalysis.precondition.isSet();
         MethodLevelData methodLevelData = methodAnalysis.methodLevelData();
-        if (!methodLevelData.combinedPreconditionIsSet()) return DELAYS;
-        methodAnalysis.precondition.set(methodLevelData.getCombinedPrecondition());
+        if (methodLevelData.combinedPrecondition.isVariable()) return DELAYS;
+        methodAnalysis.precondition.set(methodLevelData.combinedPrecondition.get());
         return DONE;
     }
 

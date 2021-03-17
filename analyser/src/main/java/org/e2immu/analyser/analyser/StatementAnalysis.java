@@ -610,7 +610,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
     }
 
     public boolean noIncompatiblePrecondition() {
-        return !(methodLevelData.combinedPreconditionIsSet() && methodLevelData.getCombinedPrecondition().isBoolValueFalse());
+        return !(methodLevelData.combinedPrecondition.isFinal() && methodLevelData.combinedPrecondition.get().isBoolValueFalse());
     }
 
     public record ConditionAndLastStatement(Expression condition,

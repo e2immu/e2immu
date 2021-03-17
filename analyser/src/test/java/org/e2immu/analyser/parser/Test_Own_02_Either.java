@@ -102,7 +102,7 @@ public class Test_Own_02_Either extends CommonTestRunner {
             }
             if ("0".equals(d.statementId())) {
                 Assert.assertEquals("(null==a||null==b)&&(null!=a||null!=b)",
-                        d.statementAnalysis().methodLevelData.getCombinedPrecondition().toString());
+                        d.statementAnalysis().methodLevelData.combinedPrecondition.get().toString());
             }
         }
     };
