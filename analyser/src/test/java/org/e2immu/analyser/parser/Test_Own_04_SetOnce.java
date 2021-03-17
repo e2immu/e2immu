@@ -77,9 +77,9 @@ public class Test_Own_04_SetOnce extends CommonTestRunner {
                     Assert.assertEquals(0, d.statementAnalysis().flowData.getTimeAfterSubBlocks());
 
                     Assert.assertEquals("true", d.statementAnalysis().stateData
-                            .getConditionManagerForNextStatement().state().toString());
+                            .conditionManagerForNextStatement.get().state().toString());
                     Assert.assertEquals("true", d.statementAnalysis().stateData
-                            .getConditionManagerForNextStatement().precondition().toString());
+                            .conditionManagerForNextStatement.get().precondition().toString());
                 }
                 if ("1".equals(d.statementId())) {
                     Assert.assertEquals(d.iteration() == 0,

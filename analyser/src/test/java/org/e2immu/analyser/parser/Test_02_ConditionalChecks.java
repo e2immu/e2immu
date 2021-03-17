@@ -60,14 +60,14 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                     Assert.assertEquals("true", d.statementAnalysis().methodLevelData.getCombinedPrecondition().toString());
                 }
                 if ("2".equals(d.statementId())) {
-                    Assert.assertEquals("a&&!b", d.statementAnalysis().stateData.getValueOfExpression().toString());
+                    Assert.assertEquals("a&&!b", d.statementAnalysis().stateData.valueOfExpression.get().toString());
                     Assert.assertEquals("!a&&b", d.state().toString());
                     Assert.assertEquals(FlowData.Execution.CONDITIONALLY, inBlock);
                     Assert.assertEquals(FlowData.Execution.CONDITIONALLY, inMethod);
                 }
                 // constant condition
                 if ("3".equals(d.statementId())) {
-                    Assert.assertEquals("true", d.statementAnalysis().stateData.getValueOfExpression().toString());
+                    Assert.assertEquals("true", d.statementAnalysis().stateData.valueOfExpression.get().toString());
                     Assert.assertEquals("false", d.state().toString()); // after the statement...
                     Assert.assertEquals("ERROR in M:method1:3: Condition in 'if' or 'switch' statement evaluates to constant",
                             d.haveError(Message.CONDITION_EVALUATES_TO_CONSTANT));

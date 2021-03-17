@@ -19,7 +19,6 @@ package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.util.EventuallyFinal;
-import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.analyser.util.SetOnceMap;
 
 import java.util.stream.Stream;
@@ -35,8 +34,14 @@ public class StateData {
      */
 
     public final EventuallyFinal<Expression> precondition = new EventuallyFinal<>();
+
     public boolean preconditionIsEmpty() {
         return precondition.isVariable() && precondition.get() == null;
+    }
+
+    public void setPrecondition(Expression expression, boolean isDelayed) {
+        if (isDelayed) precondition.setVariable(expression);
+        else precondition.setFinal(expression);
     }
 
     /*
@@ -48,81 +53,38 @@ public class StateData {
     the local condition manager of a subsequent statement in the same block needs to combine this value
     and the method level data's combined precondition.
      */
-    private final SetOnce<ConditionManager> conditionManagerForNextStatement = new SetOnce<>();
-    private ConditionManager currentDelayedConditionManagerForNextStatement;
+    public final EventuallyFinal<ConditionManager> conditionManagerForNextStatement = new EventuallyFinal<>();
 
-    private final SetOnce<Expression> valueOfExpression = new SetOnce<>();
-    private Expression currentDelayedExpression;
-
-
-    static class CurrentDelayedAndFinalExpression {
-
-        final SetOnce<Expression> expression = new SetOnce<>();
-        Expression currentDelayedExpression;
-
-        public Expression getExpression() {
-            return expression.getOrElse(currentDelayedExpression);
-        }
-
+    public void setLocalConditionManagerForNextStatement(ConditionManager localConditionManager) {
+        if (localConditionManager.isDelayed()) conditionManagerForNextStatement.setVariable(localConditionManager);
+        else conditionManagerForNextStatement.setFinal(localConditionManager);
     }
 
-    private final SetOnceMap<String, CurrentDelayedAndFinalExpression> statesOfInterrupts;
+    public final EventuallyFinal<Expression> valueOfExpression = new EventuallyFinal<>();
+
+    public void setValueOfExpression(Expression value, boolean isDelayed) {
+        if (isDelayed) valueOfExpression.setVariable(value);
+        else valueOfExpression.setFinal(value);
+    }
+
+    private final SetOnceMap<String, EventuallyFinal<Expression>> statesOfInterrupts;
 
     public StateData(boolean isLoop) {
         statesOfInterrupts = isLoop ? new SetOnceMap<>() : null;
     }
 
-
-    // condition manager
-    public ConditionManager getConditionManagerForNextStatement() {
-        return conditionManagerForNextStatement.getOrElse(currentDelayedConditionManagerForNextStatement);
-    }
-
-    public boolean conditionManagerIsNotYetSet() {
-        return !conditionManagerForNextStatement.isSet();
-    }
-
-    public void setLocalConditionManagerForNextStatement(ConditionManager conditionManager) {
-        if (conditionManager.isDelayed()) {
-            currentDelayedConditionManagerForNextStatement = conditionManager;
-        } else if (!conditionManagerForNextStatement.isSet() || !conditionManager.equals(conditionManagerForNextStatement.get())) {
-            conditionManagerForNextStatement.set(conditionManager);
-        }
-    }
-
-    // value of expression
-    public void setValueOfExpression(Expression expression, boolean expressionIsDelayed) {
-        if (expressionIsDelayed) {
-            currentDelayedExpression = expression;
-        } else if (!valueOfExpression.isSet() || !valueOfExpression.get().equals(expression)) {
-            valueOfExpression.set(expression);
-        }
-    }
-
-    public Expression getValueOfExpression() {
-        return valueOfExpression.getOrElse(currentDelayedExpression);
-    }
-
-    public boolean valueOfExpressionIsSet() {
-        return valueOfExpression.isSet();
-    }
-
-    public boolean valueOfExpressionIsDelayed() {
-        return !valueOfExpression.isSet();
-    }
-
     // states of interrupt
 
     public void addStateOfInterrupt(String index, Expression state, boolean stateIsDelayed) {
-        CurrentDelayedAndFinalExpression cd = statesOfInterrupts.getOrCreate(index, i -> new CurrentDelayedAndFinalExpression());
+        EventuallyFinal<Expression> cd = statesOfInterrupts.getOrCreate(index, i -> new EventuallyFinal<>());
         if (stateIsDelayed) {
-            cd.currentDelayedExpression = state;
-        } else if (!cd.expression.isSet() || !cd.expression.get().equals(state)) {
-            cd.expression.set(state);
+            cd.setVariable(state);
+        } else {
+            cd.setFinal(state);
         }
     }
 
     public Stream<Expression> statesOfInterruptsStream() {
-        return statesOfInterrupts.stream().map(e -> e.getValue().getExpression());
+        return statesOfInterrupts.stream().map(e -> e.getValue().get());
     }
 }

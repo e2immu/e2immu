@@ -186,7 +186,7 @@ public class Test_10_Identity extends CommonTestRunner {
 
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("idem3".equals(d.methodInfo().name) && "1.0.0".equals(d.statementId()) && d.iteration() > 0) {
-                Expression value = d.statementAnalysis().stateData.getValueOfExpression();
+                Expression value = d.statementAnalysis().stateData.valueOfExpression.get();
                 Assert.assertTrue(value instanceof PropertyWrapper);
                 Expression valueInside = ((PropertyWrapper) value).expression;
                 Assert.assertTrue(valueInside instanceof PropertyWrapper);

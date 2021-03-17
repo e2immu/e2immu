@@ -48,11 +48,6 @@ public class EventuallyFinal<T> {
         this.value = value;
     }
 
-    public void set(T value, boolean isFinal) {
-        if(isFinal) setFinal(value);
-        else setVariable(value);
-    }
-
     @TestMark("isFinal")
     public boolean isFinal() {
         return isFinal;

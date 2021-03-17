@@ -148,7 +148,8 @@ public class Test_01_Loops extends CommonTestRunner {
                 Assert.assertEquals("true", d.condition().toString());
                 String expectState = d.iteration() == 0 ? "n-<v:i>>=1" : "-1-i$2+n>=1";
                 Assert.assertEquals(expectState, d.state().toString());
-                Assert.assertEquals(d.iteration() == 0, d.statementAnalysis().stateData.conditionManagerIsNotYetSet());
+                Assert.assertEquals(d.iteration() == 0, d.statementAnalysis()
+                        .stateData.conditionManagerForNextStatement.isVariable());
 
                 Assert.assertEquals(ALWAYS, d.statementAnalysis().flowData.getGuaranteedToBeReachedInMethod());
                 Assert.assertEquals(ALWAYS, d.statementAnalysis().flowData.getGuaranteedToBeReachedInCurrentBlock());

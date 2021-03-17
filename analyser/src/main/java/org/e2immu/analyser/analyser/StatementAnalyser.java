@@ -433,7 +433,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                     ConditionManager.initialConditionManager(previous.primitives), closure);
             combinedPreconditionIsDelayed = tmpEvaluationContext.isDelayed(combinedPrecondition);
         }
-        ConditionManager previousCm = previous.stateData.getConditionManagerForNextStatement();
+        ConditionManager previousCm = previous.stateData.conditionManagerForNextStatement.get();
         // can be null in case the statement is unreachable
         if (previousCm == null) {
             return ConditionManager.impossibleConditionManager(statementAnalysis.primitives);
@@ -496,7 +496,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         }
         for (StatementAnalyserVisitor statementAnalyserVisitor :
                 analyserContext.getConfiguration().debugConfiguration.statementAnalyserVisitors) {
-            ConditionManager cm = statementAnalysis.stateData.getConditionManagerForNextStatement();
+            ConditionManager cm = statementAnalysis.stateData.conditionManagerForNextStatement.get();
             statementAnalyserVisitor.visit(
                     new StatementAnalyserVisitor.Data(
                             result,
@@ -801,7 +801,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 boolean preconditionIsDelayed = sharedState.evaluationContext.isDelayed(evaluationResult.precondition());
                 Expression translated = sharedState.evaluationContext.acceptAndTranslatePrecondition(evaluationResult.precondition());
                 if (translated != null) {
-                    statementAnalysis.stateData.precondition.set(translated, !preconditionIsDelayed);
+                    statementAnalysis.stateData.setPrecondition(translated, preconditionIsDelayed);
                 }
                 Expression untranslated = evaluationResult.untranslatedPrecondition();
                 if (preconditionIsDelayed) {
@@ -1248,9 +1248,9 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
     private AnalysisStatus checkNotNullEscapesAndPreconditions(SharedState sharedState) {
         if (statementAnalysis.statement instanceof AssertStatement) return DONE; // is dealt with in subBlocks
         Boolean escapeAlwaysExecuted = isEscapeAlwaysExecutedInCurrentBlock();
-        boolean delays = escapeAlwaysExecuted == null || statementAnalysis.stateData.conditionManagerIsNotYetSet();
+        boolean delays = escapeAlwaysExecuted == null || statementAnalysis.stateData.conditionManagerForNextStatement.isVariable();
         if (escapeAlwaysExecuted != Boolean.FALSE) {
-            Set<Variable> nullVariables = statementAnalysis.stateData.getConditionManagerForNextStatement()
+            Set<Variable> nullVariables = statementAnalysis.stateData.conditionManagerForNextStatement.get()
                     .findIndividualNullInCondition(sharedState.evaluationContext, true);
             for (Variable nullVariable : nullVariables) {
                 log(VARIABLE_PROPERTIES, "Escape with check not null on {}", nullVariable.fullyQualifiedName());
@@ -1287,12 +1287,13 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             }
             if (!delays && escapeAlwaysExecuted) {
                 // escapeCondition should filter out all != null, == null clauses
-                Expression precondition = statementAnalysis.stateData.getConditionManagerForNextStatement().precondition(sharedState.evaluationContext);
+                Expression precondition = statementAnalysis.stateData.conditionManagerForNextStatement.get()
+                        .precondition(sharedState.evaluationContext);
                 boolean preconditionIsDelayed = sharedState.evaluationContext.isDelayed(precondition);
                 Expression translated = sharedState.evaluationContext.acceptAndTranslatePrecondition(precondition);
                 if (translated != null) {
                     log(VARIABLE_PROPERTIES, "Escape with precondition {}", translated);
-                    statementAnalysis.stateData.precondition.set(translated, !preconditionIsDelayed);
+                    statementAnalysis.stateData.setPrecondition(translated, preconditionIsDelayed);
                     return preconditionIsDelayed ? DELAYS : DONE;
                 }
             }
@@ -1497,8 +1498,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         Structure structure = statementAnalysis.statement.getStructure();
         if (structure.expression() == EmptyExpression.EMPTY_EXPRESSION && expressionsFromInitAndUpdate.isEmpty()) {
             // try-statement has no main expression, and it may not have initialisers; break; continue; ...
-            if (!statementAnalysis.stateData.valueOfExpressionIsSet()) {
-                statementAnalysis.stateData.setValueOfExpression(EmptyExpression.EMPTY_EXPRESSION, false);
+            if (statementAnalysis.stateData.valueOfExpression.isVariable()) {
+                statementAnalysis.stateData.valueOfExpression.setFinal(EmptyExpression.EMPTY_EXPRESSION);
             }
             if (statementAnalysis.flowData.timeAfterExecutionNotYetSet()) {
                 statementAnalysis.flowData.copyTimeAfterExecutionFromInitialTime();
@@ -1760,12 +1761,12 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         }
 
         if (statementAnalysis.statement instanceof AssertStatement) {
-            Expression assertion = statementAnalysis.stateData.getValueOfExpression();
-            boolean expressionIsDelayed = statementAnalysis.stateData.valueOfExpressionIsDelayed();
+            Expression assertion = statementAnalysis.stateData.valueOfExpression.get();
+            boolean expressionIsDelayed = statementAnalysis.stateData.valueOfExpression.isVariable();
             Expression translated = Objects.requireNonNullElse(
                     sharedState.evaluationContext.acceptAndTranslatePrecondition(assertion),
                     new BooleanConstant(statementAnalysis.primitives, true));
-            statementAnalysis.stateData.precondition.set(translated, !expressionIsDelayed);
+            statementAnalysis.stateData.setPrecondition(translated, expressionIsDelayed);
 
             if (expressionIsDelayed) {
                 analysisStatus = DELAYS;
@@ -1840,7 +1841,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                         forward = new ForwardAnalysisInfo(executionOfBlock.execution,
                                 executionOfBlock.conditionManager, executionOfBlock.catchVariable,
                                 switchStatement.startingPointToLabels(evaluationContext, executionOfBlock.startOfBlock.statementAnalysis),
-                                statementAnalysis.stateData.getValueOfExpression(), statementAnalysis.stateData.valueOfExpressionIsDelayed());
+                                statementAnalysis.stateData.valueOfExpression.get(),
+                                statementAnalysis.stateData.valueOfExpression.isVariable());
                     } else {
                         forward = new ForwardAnalysisInfo(executionOfBlock.execution,
                                 executionOfBlock.conditionManager, executionOfBlock.catchVariable, null, null, false);
@@ -2033,7 +2035,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         }
 
         if (statementAnalysis.statement instanceof SynchronizedStatement && list.get(0).startOfBlock != null) {
-            Expression lastState = list.get(0).startOfBlock.lastStatement().statementAnalysis.stateData.getConditionManagerForNextStatement().state();
+            Expression lastState = list.get(0).startOfBlock.lastStatement()
+                    .statementAnalysis.stateData.conditionManagerForNextStatement.get().state();
             return evaluationContext.replaceLocalVariables(lastState);
         }
         return TRUE;
@@ -2043,8 +2046,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
     private List<ExecutionOfBlock> step4a_determineExecution(SharedState sharedState, List<Optional<StatementAnalyser>> startOfBlocks) {
         List<ExecutionOfBlock> executions = new ArrayList<>(startOfBlocks.size());
 
-        Expression value = statementAnalysis.stateData.getValueOfExpression();
-        boolean valueIsDelayed = statementAnalysis.stateData.valueOfExpressionIsDelayed();
+        Expression value = statementAnalysis.stateData.valueOfExpression.get();
+        boolean valueIsDelayed = statementAnalysis.stateData.valueOfExpression.isVariable();
         assert !sharedState.evaluationContext.isDelayed(value) || valueIsDelayed; // sanity check
         Structure structure = statementAnalysis.statement.getStructure();
         EvaluationContext evaluationContext = sharedState.evaluationContext;
