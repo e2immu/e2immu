@@ -32,7 +32,7 @@ import org.junit.Test;
 import java.io.IOException;
 import java.util.List;
 
-public class Test_Own_00_Pair extends CommonTestRunner {
+public class Test_Util_00_Pair extends CommonTestRunner {
 
     @Test
     public void test() throws IOException {
@@ -57,7 +57,7 @@ public class Test_Own_00_Pair extends CommonTestRunner {
             Assert.assertEquals(expectIndependent, d.typeAnalysis().getProperty(VariableProperty.INDEPENDENT));
         };
 
-        testWithUtilClasses(List.of(), List.of("Pair"), 0, 0, new DebugConfiguration.Builder()
+        testUtilClass(List.of("Pair"), 0, 0, new DebugConfiguration.Builder()
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)

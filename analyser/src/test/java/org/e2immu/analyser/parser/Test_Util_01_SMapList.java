@@ -32,9 +32,9 @@ import java.util.Map;
 
 import static org.e2immu.analyser.analyser.FlowData.Execution.CONDITIONALLY;
 
-public class Test_Own_01_SMapList extends CommonTestRunner {
+public class Test_Util_01_SMapList extends CommonTestRunner {
 
-    public Test_Own_01_SMapList() {
+    public Test_Util_01_SMapList() {
         super(true);
     }
 
@@ -256,7 +256,7 @@ public class Test_Own_01_SMapList extends CommonTestRunner {
 
     @Test
     public void test() throws IOException {
-        testWithUtilClasses(List.of(), List.of("SMapList"), 0, 0, new DebugConfiguration.Builder()
+        testUtilClass(List.of("SMapList"), 0, 0, new DebugConfiguration.Builder()
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)

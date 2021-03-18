@@ -32,9 +32,9 @@ import org.junit.Test;
 import java.io.IOException;
 import java.util.List;
 
-public class Test_Own_02_Either extends CommonTestRunner {
+public class Test_Util_02_Either extends CommonTestRunner {
 
-    public Test_Own_02_Either() {
+    public Test_Util_02_Either() {
         super(true);
     }
 
@@ -144,7 +144,7 @@ public class Test_Own_02_Either extends CommonTestRunner {
 
     @Test
     public void test() throws IOException {
-        testWithUtilClasses(List.of(), List.of("Either"), 0, 2, new DebugConfiguration.Builder()
+        testUtilClass(List.of("Either"), 0, 2, new DebugConfiguration.Builder()
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)

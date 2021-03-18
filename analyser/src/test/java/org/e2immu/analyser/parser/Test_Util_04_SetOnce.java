@@ -37,9 +37,9 @@ import org.junit.Test;
 import java.io.IOException;
 import java.util.List;
 
-public class Test_Own_04_SetOnce extends CommonTestRunner {
+public class Test_Util_04_SetOnce extends CommonTestRunner {
 
-    public Test_Own_04_SetOnce() {
+    public Test_Util_04_SetOnce() {
         super(true);
     }
 
@@ -278,7 +278,7 @@ public class Test_Own_04_SetOnce extends CommonTestRunner {
             }
         };
 
-        testWithUtilClasses(List.of(), List.of("SetOnce"), 0, 0, new DebugConfiguration.Builder()
+        testUtilClass(List.of("SetOnce"), 0, 0, new DebugConfiguration.Builder()
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)

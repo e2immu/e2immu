@@ -31,9 +31,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-public class Test_Own_09_SetOnceMap extends CommonTestRunner {
+public class Test_Util_09_SetOnceMap extends CommonTestRunner {
 
-    public Test_Own_09_SetOnceMap() {
+    public Test_Util_09_SetOnceMap() {
         super(true);
     }
 

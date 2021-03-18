@@ -31,9 +31,9 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
-public class Test_Own_06_FirstThen extends CommonTestRunner {
+public class Test_Util_06_FirstThen extends CommonTestRunner {
 
-    public Test_Own_06_FirstThen() {
+    public Test_Util_06_FirstThen() {
         super(true);
     }
 

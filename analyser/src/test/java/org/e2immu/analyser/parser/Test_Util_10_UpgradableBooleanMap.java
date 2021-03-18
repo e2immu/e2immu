@@ -38,9 +38,9 @@ import java.util.stream.Collectors;
 first issue: import of Collector.Characteristics should be automatic
 second issue: UnevaluatedLambdaExpression exception
  */
-public class Test_Own_10_UpgradableBooleanMap extends CommonTestRunner {
+public class Test_Util_10_UpgradableBooleanMap extends CommonTestRunner {
 
-    public Test_Own_10_UpgradableBooleanMap() {
+    public Test_Util_10_UpgradableBooleanMap() {
         super(true);
     }
 

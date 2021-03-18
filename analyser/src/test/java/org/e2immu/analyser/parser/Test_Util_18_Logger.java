@@ -25,13 +25,13 @@ import org.junit.Test;
 import java.io.IOException;
 import java.util.List;
 
-public class Test_Own_05_Freezable extends CommonTestRunner {
+public class Test_Util_18_Logger extends CommonTestRunner {
+
 
     @Test
     public void test() throws IOException {
-        testUtilClass(List.of("Freezable"), 0, 0, new DebugConfiguration.Builder()
+        testUtilClass(List.of("Logger"), 0, 0, new DebugConfiguration.Builder()
                 .build());
-
     }
 
 }

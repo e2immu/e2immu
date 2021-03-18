@@ -25,12 +25,12 @@ import org.junit.Test;
 import java.io.IOException;
 import java.util.List;
 
-public class Test_Own_12_SetUtil extends CommonTestRunner {
+public class Test_Util_13_ListUtil extends CommonTestRunner {
 
 
     @Test
     public void test() throws IOException {
-        testUtilClass(List.of("SetUtil"), 0, 0, new DebugConfiguration.Builder()
+        testUtilClass(List.of("ListUtil"), 0, 0, new DebugConfiguration.Builder()
                 .build());
     }
 

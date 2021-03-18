@@ -33,9 +33,9 @@ import org.junit.Test;
 import java.io.IOException;
 import java.util.List;
 
-public class Test_Own_07_Lazy extends CommonTestRunner {
+public class Test_Util_07_Lazy extends CommonTestRunner {
 
-    public Test_Own_07_Lazy() {
+    public Test_Util_07_Lazy() {
         super(true);
     }
 

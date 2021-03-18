@@ -30,7 +30,6 @@ import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.parser.*;
 import org.e2immu.analyser.util.DependencyGraph;
-import org.e2immu.analyser.util.SMapSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -145,7 +144,7 @@ public class Resolver {
             log(RESOLVE, "Type {} is part of cycle: {}", typeInfo,
                     () -> typesInCycle.stream().map(t -> t.simpleName).collect(Collectors.joining(",")));
             for (TypeInfo other : typesInCycle) {
-                SMapSet.add(participatesInCycles, other, typesInCycle);
+                add(participatesInCycles, other, typesInCycle);
             }
             messages.add(Message.newMessage(new Location(typeInfo), Message.CIRCULAR_TYPE_DEPENDENCY,
                     typesInCycle.stream().map(t -> t.fullyQualifiedName).collect(Collectors.joining(", "))));
@@ -153,6 +152,11 @@ public class Resolver {
 
         return sorted.stream().map(typeInfo -> computeTypeResolution(typeInfo, participatesInCycles, toSortedType))
                 .collect(Collectors.toList());
+    }
+
+    private void add(Map<TypeInfo, Set<TypeInfo>> map, TypeInfo key, Set<TypeInfo> set) {
+        Set<TypeInfo> inMap = map.computeIfAbsent(key, k -> new HashSet<>());
+        inMap.addAll(set);
     }
 
     private SortedType computeTypeResolution(TypeInfo typeInfo,

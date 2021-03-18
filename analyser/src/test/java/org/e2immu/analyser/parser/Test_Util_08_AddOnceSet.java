@@ -28,9 +28,9 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
-public class Test_Own_08_AddOnceSet extends CommonTestRunner {
+public class Test_Util_08_AddOnceSet extends CommonTestRunner {
 
-    public Test_Own_08_AddOnceSet() {
+    public Test_Util_08_AddOnceSet() {
         super(true);
     }
 
