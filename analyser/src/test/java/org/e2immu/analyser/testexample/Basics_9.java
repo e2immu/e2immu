@@ -17,22 +17,33 @@
 
 package org.e2immu.analyser.testexample;
 
+import org.e2immu.annotation.NotModified;
+
+import java.util.Set;
+
 /*
 Test is here to catch certain delays in computing modifications.
 
  */
 public class Basics_9 {
 
+    @NotModified
     public static boolean isFact(boolean b) {
         throw new UnsupportedOperationException();
     }
 
+    @NotModified
     public static boolean isKnown(boolean test) {
         throw new UnsupportedOperationException();
     }
 
+    @NotModified
     static boolean setContainsValueHelper(int size, boolean containsE, boolean retVal) {
         return isFact(containsE) ? containsE : !isKnown(true) && size > 0 && retVal;
     }
 
+    @NotModified
+    public static boolean test1(Set<Integer> set) {
+        return setContainsValueHelper(1, set.contains(3), set.isEmpty());
+    }
 }

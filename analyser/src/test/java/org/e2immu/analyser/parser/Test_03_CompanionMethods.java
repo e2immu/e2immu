@@ -23,7 +23,9 @@ import org.e2immu.analyser.analyser.AnalysisStatus;
 import org.e2immu.analyser.analyser.CompanionAnalysis;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.VariableProperty;
-import org.e2immu.analyser.config.*;
+import org.e2immu.analyser.config.AnalyserConfiguration;
+import org.e2immu.analyser.config.AnnotatedAPIConfiguration;
+import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
@@ -286,18 +288,16 @@ public class Test_03_CompanionMethods extends CommonTestRunner {
         };
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("test".equals(d.methodInfo().name) && "set".equals(d.variableName())) {
-                if ("0".equals(d.statementId())) {
-                    assertEquals("new HashSet()/*this.isKnown(true)&&0==this.size()*/",
+                if ("00".equals(d.statementId())) {
+                    assertEquals("new HashSet<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/",
                             d.currentValue().toString());
                 }
-                if (Set.of("1", "4").contains(d.statementId())) {
-                    assertEquals("In statement " + d.statementId(),
-                            "instance type HashSet/*this.contains(\"a\")&&this.isKnown(true)&&1==this.size()*/",
+                if (Set.of("01", "04").contains(d.statementId())) {
+                    assertEquals("instance type HashSet<String>/*this.contains(\"a\")&&AnnotatedAPI.isKnown(true)&&1==this.size()*/",
                             d.currentValue().toString());
                 }
-                if ("7".equals(d.statementId())) {
-                    assertEquals("instance type HashSet/*this.contains(\"a\")&&this.contains(\"b\")" +
-                                    "&&this.isKnown(true)&&2==this.size()*/",
+                if ("07".equals(d.statementId())) {
+                    assertEquals("instance type HashSet<String>/*this.contains(\"a\")&&this.contains(\"b\")&&AnnotatedAPI.isKnown(true)&&2==this.size()*/",
                             d.currentValue().toString());
                 }
             }
@@ -374,7 +374,6 @@ public class Test_03_CompanionMethods extends CommonTestRunner {
             assertTrue(isKnown.methodInspection.get().isStatic());
         };
 
-        final String PARAM = "org.e2immu.analyser.testexample.BasicCompanionMethods_7.test(Set<java.lang.String>):0:strings";
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("test".equals(d.methodInfo().name) && "set".equals(d.variableName())) {
                 if ("0".equals(d.statementId())) {
@@ -442,25 +441,24 @@ public class Test_03_CompanionMethods extends CommonTestRunner {
     public void test9() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("test".equals(d.methodInfo().name) && "set".equals(d.variableName())) {
-                if ("1".equals(d.statementId())) {
-                    assertEquals("instance type HashSet/*this.contains(\"a\")&&this.isKnown(true)&&1==this.size()*/",
+                if ("01".equals(d.statementId())) {
+                    assertEquals("instance type HashSet<String>/*this.contains(\"a\")&&AnnotatedAPI.isKnown(true)&&1==this.size()*/",
                             d.currentValue().toString());
                 }
-                if ("4".equals(d.statementId())) {
-                    assertEquals("instance type HashSet/*!this.contains(\"a\")&&this.isKnown(true)&&0==this.size()*/",
+                if ("04".equals(d.statementId())) {
+                    assertEquals("instance type HashSet<String>/*!this.contains(\"a\")&&AnnotatedAPI.isKnown(true)&&0==this.size()*/",
                             d.currentValue().toString());
                 }
-                if ("9".equals(d.statementId())) {
-                    assertEquals("instance type HashSet/*this.contains(\"c\")&&!this.contains(\"a\")&&" +
-                            "this.isKnown(true)&&1==this.size()*/", d.currentValue().toString());
+                if ("09".equals(d.statementId())) {
+                    assertEquals("instance type HashSet<String>/*!this.contains(\"a\")&&this.contains(\"c\")&&AnnotatedAPI.isKnown(true)&&1==this.size()*/", d.currentValue().toString());
                 }
             }
         };
         EvaluationResultVisitor evaluationResultVisitor = d -> {
-            if ("test".equals(d.methodInfo().name) && "4".equals(d.statementId())) {
+            if ("test".equals(d.methodInfo().name) && "04".equals(d.statementId())) {
                 assertEquals("true", d.evaluationResult().value().toString());
             }
-            if ("test".equals(d.methodInfo().name) && "7".equals(d.statementId())) {
+            if ("test".equals(d.methodInfo().name) && "07".equals(d.statementId())) {
                 assertEquals("true", d.evaluationResult().value().toString());
             }
         };

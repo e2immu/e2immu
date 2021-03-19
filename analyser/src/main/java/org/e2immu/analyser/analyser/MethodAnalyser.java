@@ -22,7 +22,6 @@ import org.e2immu.analyser.analyser.check.CheckConstant;
 import org.e2immu.analyser.analyser.check.CheckEventual;
 import org.e2immu.analyser.analyser.check.CheckPrecondition;
 import org.e2immu.analyser.analyser.util.DetectEventual;
-import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
 import org.e2immu.analyser.inspector.MethodResolution;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
@@ -37,6 +36,7 @@ import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
 import org.e2immu.annotation.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -612,7 +612,7 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
                 log(DELAYED, "Delaying return value of {}, waiting for MODIFIED (we may try to inline!)", methodInfo.distinguishingName);
                 return DELAYS;
             }
-            if (modified == Level.FALSE && methodAnalysis.lastStatementTime() == 0) {
+            if (modified == Level.FALSE) {
                 InlinedMethod.Applicability applicability = applicability(value);
                 if (applicability != InlinedMethod.Applicability.NONE) {
                     value = new InlinedMethod(methodInfo, replaceFields(sharedState.evaluationContext, value), applicability);
