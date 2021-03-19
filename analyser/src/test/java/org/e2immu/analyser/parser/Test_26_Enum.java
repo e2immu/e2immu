@@ -20,7 +20,7 @@
 package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.VariableProperty;
-import org.e2immu.analyser.config.*;
+import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterAnalysis;
@@ -28,10 +28,11 @@ import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.visitor.*;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_26_Enum extends CommonTestRunner {
 
@@ -50,26 +51,26 @@ public class Test_26_Enum extends CommonTestRunner {
             if ("values".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ReturnVariable) {
                     String expectValue = d.iteration() == 0 ? "{<f:ONE>,<f:TWO>,<f:THREE>}" : "{ONE,TWO,THREE}";
-                    Assert.assertEquals(expectValue, d.currentValue().toString());
+                    assertEquals(expectValue, d.currentValue().toString());
                 }
             }
         };
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("values".equals(d.methodInfo().name)) {
-                Assert.assertTrue(d.methodInfo().methodInspection.get().isSynthetic());
+                assertTrue(d.methodInfo().methodInspection.get().isSynthetic());
                 if (d.iteration() == 0) {
-                    Assert.assertNull(d.methodAnalysis().getSingleReturnValue());
+                    assertNull(d.methodAnalysis().getSingleReturnValue());
                 } else {
-                    Assert.assertEquals("{ONE,TWO,THREE}", d.methodAnalysis().getSingleReturnValue().toString());
+                    assertEquals("{ONE,TWO,THREE}", d.methodAnalysis().getSingleReturnValue().toString());
                 }
             }
         };
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("ONE".equals(d.fieldInfo().name)) {
-                Assert.assertEquals(Level.TRUE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
-                Assert.assertEquals("new Enum_0()", d.fieldAnalysis().getEffectivelyFinalValue().toString());
+                assertEquals(Level.TRUE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
+                assertEquals("new Enum_0()", d.fieldAnalysis().getEffectivelyFinalValue().toString());
             }
         };
 
@@ -85,7 +86,7 @@ public class Test_26_Enum extends CommonTestRunner {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("posInList".equals(d.methodInfo().name) & "0.0.0".equals(d.statementId())) {
                 String expectValue = d.iteration() == 0 ? "this==<v:<m:values>[<v:i>]>" : "instance type Enum_1==this";
-                Assert.assertEquals(expectValue, d.evaluationResult().value().toString());
+                assertEquals(expectValue, d.evaluationResult().value().toString());
             }
         };
 
@@ -95,7 +96,7 @@ public class Test_26_Enum extends CommonTestRunner {
                     if ("0.0.0".equals(d.statementId())) {
                         String expectValue = d.iteration() == 0 ? "this==<new:Enum_1>?<v:Enum_1.values()[i]>:<new:Enum_1>" :
                                 "instance type Enum_1";
-                        Assert.assertEquals(expectValue, d.currentValue().toString());
+                        assertEquals(expectValue, d.currentValue().toString());
                     }
                 }
             }
@@ -126,42 +127,42 @@ public class Test_26_Enum extends CommonTestRunner {
             if (!"posInList".equals(d.methodInfo().name)) return;
             if ("array".equals(d.variableName()) && ("0".equals(d.statementId()) || "1".equals(d.statementId()))) {
                 String expectValue = d.iteration() == 0 ? "<m:values>" : "{ONE,TWO,THREE}";
-                Assert.assertEquals(expectValue, d.currentValue().toString());
+                assertEquals(expectValue, d.currentValue().toString());
             }
             if ("array[i]".equals(d.variableName())) {
                 if ("2.0.0".equals(d.statementId())) {
                     String expectValue = d.iteration() <= 2 ? "this==<new:Enum_3>?<v:array[i]>:<new:Enum_3>" : "instance type Enum_3";
-                    Assert.assertEquals(expectValue, d.currentValue().toString());
+                    assertEquals(expectValue, d.currentValue().toString());
                 }
                 if ("2".equals(d.statementId())) {
                     String expectValue = d.iteration() <= 2 ? "<v:array[i]>" : "instance type Enum_3";
-                    Assert.assertEquals(expectValue, d.currentValue().toString());
+                    assertEquals(expectValue, d.currentValue().toString());
                 }
             }
             if (THIS.equals(d.variableName())) {
                 if ("0".equals(d.statementId())) {
-                    Assert.assertEquals("instance type Enum_3", d.currentValue().toString());
+                    assertEquals("instance type Enum_3", d.currentValue().toString());
                 }
             }
             if (THREE.equals(d.variableName())) {
                 if ("0".equals(d.statementId()) || "1".equals(d.statementId()) || "2".equals(d.statementId())) {
-                    Assert.assertEquals("new Enum_3(3)", d.currentValue().toString());
-                    //      Assert.assertTrue(d.iteration() >= 3);
+                    assertEquals("new Enum_3(3)", d.currentValue().toString());
+                    //      assertTrue(d.iteration() >= 3);
                 }
             }
             if ("i$2".equals(d.variableName())) {
                 if ("2.0.0.0.0".equals(d.statementId())) {
-                    Assert.assertEquals("", d.variableInfo().getLinkedVariables().toString());
-                    Assert.assertEquals("", d.variableInfo().getStaticallyAssignedVariables().toString());
+                    assertEquals("", d.variableInfo().getLinkedVariables().toString());
+                    assertEquals("", d.variableInfo().getStaticallyAssignedVariables().toString());
                 }
             }
             if ("i$2$2-E".equals(d.variableName())) {
                 if ("2.0.0".equals(d.statementId())) {
                     String expectValue = d.iteration() <= 2 ? "<v:i$2$2-E>" : "1+i$2";
-                    Assert.assertEquals("Statement " + d.statementId() + ", it " + d.iteration(),
+                    assertEquals("Statement " + d.statementId() + ", it " + d.iteration(),
                             expectValue, d.currentValue().toString());
                     String expectLinked = "";
-                    Assert.assertEquals("Statement " + d.statementId() + ", it " + d.iteration(),
+                    assertEquals("Statement " + d.statementId() + ", it " + d.iteration(),
                             expectLinked, d.variableInfo().getLinkedVariables().toString());
                 }
             }
@@ -169,20 +170,20 @@ public class Test_26_Enum extends CommonTestRunner {
 
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("posInList".equals(d.methodInfo().name)) { // starting from statement 0, they'll all have to be there
-                Assert.assertEquals(d.iteration() > 0, d.statementAnalysis().variables.isSet(ONE));
-                Assert.assertEquals(d.iteration() > 0, d.statementAnalysis().variables.isSet(TWO));
-                Assert.assertEquals(d.iteration() > 0, d.statementAnalysis().variables.isSet(THREE));
+                assertEquals(d.iteration() > 0, d.statementAnalysis().variables.isSet(ONE));
+                assertEquals(d.iteration() > 0, d.statementAnalysis().variables.isSet(TWO));
+                assertEquals(d.iteration() > 0, d.statementAnalysis().variables.isSet(THREE));
 
                 if ("2.0.0.0.0".equals(d.statementId())) {
                     String expectCondition = d.iteration() <= 2 ? "this==<new:Enum_3>" : "instance type Enum_3==this";
-                    Assert.assertEquals(expectCondition, d.condition().toString());
+                    assertEquals(expectCondition, d.condition().toString());
                 }
 
                 if ("2.0.0".equals(d.statementId())) {
-                    Assert.assertTrue(d.statementAnalysis().variables.isSet("array[i]"));
+                    assertTrue(d.statementAnalysis().variables.isSet("array[i]"));
                     String expectCondition = d.iteration() == 0 ? "<delayed array length>><v:i>" :
                             d.iteration() <= 2 ? "<delayed array length>>i$2" : "i$2<=2";
-                    Assert.assertEquals(expectCondition, d.condition().toString());
+                    assertEquals(expectCondition, d.condition().toString());
                 }
             }
         };
@@ -190,35 +191,34 @@ public class Test_26_Enum extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("highest".equals(d.methodInfo().name)) {
                 int expectConstant = d.iteration() <= 2 ? Level.DELAY : Level.TRUE;
-                Assert.assertEquals(expectConstant, d.methodAnalysis().getProperty(VariableProperty.CONSTANT));
+                assertEquals(expectConstant, d.methodAnalysis().getProperty(VariableProperty.CONSTANT));
             }
         };
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("THREE".equals(d.fieldInfo().name)) {
-                int expectConstant = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
-                Assert.assertEquals(Level.TRUE, d.fieldAnalysis().getProperty(VariableProperty.CONSTANT));
+                assertEquals(Level.TRUE, d.fieldAnalysis().getProperty(VariableProperty.CONSTANT));
             }
             if ("cnt".equals(d.fieldInfo().name)) {
-                Assert.assertEquals("cnt", d.fieldAnalysis().getEffectivelyFinalValue().toString());
-                Assert.assertEquals(Level.TRUE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
-                Assert.assertEquals(Level.FALSE, d.fieldAnalysis().getProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD));
+                assertEquals("cnt", d.fieldAnalysis().getEffectivelyFinalValue().toString());
+                assertEquals(Level.TRUE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
+                assertEquals(Level.FALSE, d.fieldAnalysis().getProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD));
             }
         };
 
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             int expectImmutable = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_E2IMMUTABLE;
-            Assert.assertEquals(expectImmutable, d.typeAnalysis().getProperty(VariableProperty.IMMUTABLE));
+            assertEquals(expectImmutable, d.typeAnalysis().getProperty(VariableProperty.IMMUTABLE));
         };
 
         // expect an "always true" warning on the assert
         testClass("Enum_3", 0, 1, new DebugConfiguration.Builder()
-                ///   .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                //   .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                //   .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                //   .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
                 .build());
     }
 
@@ -227,8 +227,8 @@ public class Test_26_Enum extends CommonTestRunner {
         // two assert statements should return "true"
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("cnt".equals(d.fieldInfo().name)) {
-                Assert.assertEquals("cnt", d.fieldAnalysis().getEffectivelyFinalValue().toString());
-                Assert.assertTrue(d.fieldAnalysis().getEffectivelyFinalValue() instanceof VariableExpression ve
+                assertEquals("cnt", d.fieldAnalysis().getEffectivelyFinalValue().toString());
+                assertTrue(d.fieldAnalysis().getEffectivelyFinalValue() instanceof VariableExpression ve
                         && ve.variable() instanceof ParameterInfo);
             }
         };
@@ -236,8 +236,8 @@ public class Test_26_Enum extends CommonTestRunner {
             if ("Enum_4".equals(d.methodInfo().name)) {
                 ParameterAnalysis cnt = d.parameterAnalyses().get(0);
                 if (d.iteration() > 0) {
-                    Assert.assertTrue(cnt.assignedToFieldIsFrozen());
-                    Assert.assertEquals("{cnt=ASSIGNED}", cnt.getAssignedToField().toString());
+                    assertTrue(cnt.assignedToFieldIsFrozen());
+                    assertEquals("{cnt=ASSIGNED}", cnt.getAssignedToField().toString());
                 }
             }
         };

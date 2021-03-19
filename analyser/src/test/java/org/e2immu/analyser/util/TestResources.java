@@ -20,9 +20,8 @@ package org.e2immu.analyser.util;
 
 import org.apache.commons.io.IOUtils;
 import org.e2immu.analyser.bytecode.TestByteCodeInspector;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,10 +34,13 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 public class TestResources {
     private static final Logger LOGGER = LoggerFactory.getLogger(TestResources.class);
 
-    @BeforeClass
+    @BeforeAll
     public static void beforeClass() {
         org.e2immu.analyser.util.Logger.activate(org.e2immu.analyser.util.Logger.LogTarget.RESOURCES);
     }
@@ -53,7 +55,7 @@ public class TestResources {
             counter.getAndIncrement();
             LOGGER.info("expand to {}", Arrays.toString(ss));
         });
-        Assert.assertTrue(20 < counter.get());
+        assertTrue(20 < counter.get());
     }
 
     @Test
@@ -61,8 +63,8 @@ public class TestResources {
         Resources resources = new Resources();
         resources.addJarFromClassPath("org/e2immu/annotation");
         byte[] bytes = resources.loadBytes("org/e2immu/annotation/Final.class");
-        Assert.assertNotNull(bytes);
-        Assert.assertTrue(bytes.length > 10);
+        assertNotNull(bytes);
+        assertTrue(bytes.length > 10);
     }
 
     @Test
@@ -76,12 +78,12 @@ public class TestResources {
                 // let's see if we can read the file
                 InputStreamReader isr = new InputStreamReader(url.openStream());
                 String code = IOUtils.toString(isr);
-                Assert.assertTrue("Code is " + code, code.contains("@Retention(RetentionPolicy.CLASS)"));
+                assertTrue(code.contains("@Retention(RetentionPolicy.CLASS)"));
                 LOGGER.info("Successfully read source!");
             }
             LOGGER.info("expand to {}", url);
         }
-        Assert.assertTrue("Counter is " + counter, 20 < counter);
+        assertTrue(20 < counter);
     }
 
     @Test
@@ -94,11 +96,11 @@ public class TestResources {
             counter.getAndIncrement();
             LOGGER.info("expand to {}", Arrays.toString(ss));
         });
-        Assert.assertTrue(50 < counter.get());
+        assertTrue(50 < counter.get());
     }
 
     @Test
-    public void testViaPath() throws IOException {
+    public void testViaPath() {
         Resources classPath = new Resources();
         classPath.addDirectoryFromFileSystem(new File("build/classes/java/main/"));
         List<String[]> expansions = classPath.expandPaths("org.e2immu.analyser.model");
@@ -107,7 +109,7 @@ public class TestResources {
             counter.getAndIncrement();
             LOGGER.info("expand to {}", Arrays.toString(ss));
         });
-        Assert.assertTrue("Counter is " + counter, 50 < counter.get());
+        assertTrue(50 < counter.get());
     }
 
     @Test
@@ -122,6 +124,6 @@ public class TestResources {
                 found.set(true);
             }
         });
-        Assert.assertTrue(found.get());
+        assertTrue(found.get());
     }
 }

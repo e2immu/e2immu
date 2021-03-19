@@ -17,13 +17,14 @@
 
 package org.e2immu.analyser.testexample;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.ConcurrentModificationException;
 import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class ExampleManualSelfModificationOnForEach {
 
@@ -33,7 +34,7 @@ public class ExampleManualSelfModificationOnForEach {
         Collections.addAll(l1, "a", "c", "e");
         try {
             print(l1);
-            Assert.fail();
+            fail();
         } catch(ConcurrentModificationException cme) {
             // OK
         }

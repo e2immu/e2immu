@@ -25,12 +25,14 @@ import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.visitor.TypeAnalyserVisitor;
 import org.e2immu.analyser.visitor.TypeMapVisitor;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 public class Test_Support_06_AddOnceSet extends CommonTestRunner {
 
@@ -43,17 +45,17 @@ public class Test_Support_06_AddOnceSet extends CommonTestRunner {
         TypeMapVisitor typeMapVisitor = typeMap -> {
             TypeInfo map = typeMap.get(Map.class);
             MethodInfo keySet = map.findUniqueMethod("keySet", 0);
-            Assert.assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL,
+            assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL,
                     keySet.methodAnalysis.get().getProperty(VariableProperty.NOT_NULL_EXPRESSION));
         };
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("AddOnceSet".equals(d.typeInfo().simpleName)) {
-                Assert.assertEquals("[Type param V]", d.typeAnalysis().getImplicitlyImmutableDataTypes().toString());
+                assertEquals("[Type param V]", d.typeAnalysis().getImplicitlyImmutableDataTypes().toString());
 
-                Assert.assertEquals("{frozen=!frozen}", d.typeAnalysis().getApprovedPreconditionsE1().toString());
+                assertEquals("{frozen=!frozen}", d.typeAnalysis().getApprovedPreconditionsE1().toString());
                 if (d.iteration() >= 2) {
-                    Assert.assertEquals("{frozen=!frozen}", d.typeAnalysis().getApprovedPreconditionsE2().toString());
+                    assertEquals("{frozen=!frozen}", d.typeAnalysis().getApprovedPreconditionsE2().toString());
                 }
             }
         };
@@ -62,13 +64,13 @@ public class Test_Support_06_AddOnceSet extends CommonTestRunner {
             if ("contains".equals(d.methodInfo().name)) {
                 ParameterAnalysis v = d.parameterAnalyses().get(0);
                 int expectNnp = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
-                Assert.assertEquals(expectNnp, v.getProperty(VariableProperty.NOT_NULL_PARAMETER));
+                assertEquals(expectNnp, v.getProperty(VariableProperty.NOT_NULL_PARAMETER));
             }
             if ("add".equals(d.methodInfo().name) && "AddOnceSet".equals(d.methodInfo().typeInfo.simpleName)) {
                 if (d.iteration() <= 1) {
-                    Assert.assertNull(d.methodAnalysis().getPreconditionForEventual());
+                    assertNull(d.methodAnalysis().getPreconditionForEventual());
                 } else {
-                    Assert.assertEquals("[!frozen]", d.methodAnalysis().getPreconditionForEventual().toString());
+                    assertEquals("[!frozen]", d.methodAnalysis().getPreconditionForEventual().toString());
                 }
             }
         };
@@ -77,7 +79,7 @@ public class Test_Support_06_AddOnceSet extends CommonTestRunner {
             if ("add$Modification$Size".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo v && "v".equals(v.name)) {
                     int expectNnc = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
-                    Assert.assertEquals(expectNnc, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+                    assertEquals(expectNnc, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
                 }
             }
         };

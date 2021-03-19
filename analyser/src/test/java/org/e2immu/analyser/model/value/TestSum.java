@@ -20,16 +20,17 @@ package org.e2immu.analyser.model.value;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.expression.Sum;
 import org.e2immu.analyser.objectflow.ObjectFlow;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class TestSum extends CommonAbstractValue {
 
     @Test
     public void test1() {
         Expression s = Sum.sum(minimalEvaluationContext, newInt(1), i, ObjectFlow.NO_FLOW);
-        Assert.assertEquals("1+i", s.toString());
+        assertEquals("1+i", s.toString());
         Expression s2 = Sum.sum(minimalEvaluationContext, newInt(2), s, ObjectFlow.NO_FLOW);
-        Assert.assertEquals("3+i", s2.toString());
+        assertEquals("3+i", s2.toString());
     }
 }

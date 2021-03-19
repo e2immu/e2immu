@@ -10,10 +10,11 @@ import org.e2immu.analyser.visitor.EvaluationResultVisitor;
 import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_30_SwitchStatement extends CommonTestRunner {
     public Test_30_SwitchStatement() {
@@ -37,21 +38,21 @@ public class Test_30_SwitchStatement extends CommonTestRunner {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("method".equals(d.methodInfo().name) && "0.0.2".equals(d.statementId())) {
                 // this point comes before we check the value against the condition manager
-                Assert.assertEquals("'a'!=c&&'b'!=c", d.evaluationResult()
+                assertEquals("'a'!=c&&'b'!=c", d.evaluationResult()
                         .evaluationContext().getConditionManager().condition().toString());
-                Assert.assertEquals("'a'==c||'b'==c", d.evaluationResult().value().toString());
+                assertEquals("'a'==c||'b'==c", d.evaluationResult().value().toString());
             }
         };
 
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("method".equals(d.methodInfo().name) && "0.0.2".equals(d.statementId())) {
-                Assert.assertNotNull(d.haveError(Message.CONDITION_EVALUATES_TO_CONSTANT));
+                assertNotNull(d.haveError(Message.CONDITION_EVALUATES_TO_CONSTANT));
             }
         };
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
-                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL,
+                assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL,
                         d.methodAnalysis().getProperty(VariableProperty.NOT_NULL_EXPRESSION));
             }
         };
@@ -67,7 +68,7 @@ public class Test_30_SwitchStatement extends CommonTestRunner {
     public void test_3() throws IOException {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
-                Assert.assertEquals("b", d.methodAnalysis().getSingleReturnValue().toString());
+                assertEquals("b", d.methodAnalysis().getSingleReturnValue().toString());
             }
         };
 
@@ -92,24 +93,24 @@ public class Test_30_SwitchStatement extends CommonTestRunner {
     public void test_6() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("method".equals(d.methodInfo().name) && "3".equals(d.statementId()) && "res".equals(d.variableName())) {
-                Assert.assertEquals("nullable instance type String", d.currentValue().toString());
-                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                assertEquals("nullable instance type String", d.currentValue().toString());
+                assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
             }
         };
 
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
                 if ("2".equals(d.statementId())) {
-                    Assert.assertNotNull(d.haveError(Message.TRIVIAL_CASES_IN_SWITCH));
-                    Assert.assertSame(FlowData.Execution.NEVER, d.statementAnalysis().flowData.interruptStatus());
+                    assertNotNull(d.haveError(Message.TRIVIAL_CASES_IN_SWITCH));
+                    assertSame(FlowData.Execution.NEVER, d.statementAnalysis().flowData.interruptStatus());
                 }
             }
         };
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("method".equals(d.methodInfo().name) && d.iteration() > 0) {
-                Assert.assertEquals(Level.FALSE, d.methodAnalysis().getProperty(VariableProperty.CONSTANT));
-                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL,
+                assertEquals(Level.FALSE, d.methodAnalysis().getProperty(VariableProperty.CONSTANT));
+                assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL,
                         d.methodAnalysis().getProperty(VariableProperty.NOT_NULL_EXPRESSION));
             }
         };
@@ -127,12 +128,12 @@ public class Test_30_SwitchStatement extends CommonTestRunner {
             if ("values".equals(d.methodInfo().name) && "Choices".equals(d.methodInfo().typeInfo.simpleName)) {
                 if (d.variable() instanceof ReturnVariable) {
                     String expectValue = d.iteration() == 0 ? "{<f:ONE>,<f:TWO>,<f:THREE>,<f:FOUR>}" : "{ONE,TWO,THREE,FOUR}";
-                    Assert.assertEquals(expectValue, d.currentValue().toString());
-                    Assert.assertEquals(d.iteration() > 0, d.variableInfo().valueIsSet());
+                    assertEquals(expectValue, d.currentValue().toString());
+                    assertEquals(d.iteration() > 0, d.variableInfo().valueIsSet());
                     int expectNne = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL;
-                    Assert.assertEquals(expectNne, d.currentValue()
+                    assertEquals(expectNne, d.currentValue()
                             .getProperty(d.evaluationContext(), VariableProperty.NOT_NULL_EXPRESSION, true));
-                    Assert.assertEquals(expectNne, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                    assertEquals(expectNne, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
                 }
             }
         };

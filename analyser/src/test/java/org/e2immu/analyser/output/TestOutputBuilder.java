@@ -17,10 +17,12 @@
 
 package org.e2immu.analyser.output;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class TestOutputBuilder {
 
@@ -31,10 +33,10 @@ public class TestOutputBuilder {
                 new OutputBuilder().add(new Text("c")), };
         OutputBuilder all = Arrays.stream(outputBuilders).collect(OutputBuilder.joining(Symbol.COMMA));
         System.out.println(all.list);
-        Assert.assertEquals(9, all.list.size());
-        Assert.assertTrue(all.list.get(0) instanceof Guide guide && guide.position() == Guide.Position.START);
-        Assert.assertTrue(all.list.get(3) instanceof Guide guide && guide.position() == Guide.Position.MID);
-        Assert.assertTrue(all.list.get(6) instanceof Guide guide && guide.position() == Guide.Position.MID);
-        Assert.assertTrue(all.list.get(8) instanceof Guide guide && guide.position() == Guide.Position.END);
+        assertEquals(9, all.list.size());
+        assertTrue(all.list.get(0) instanceof Guide guide && guide.position() == Guide.Position.START);
+        assertTrue(all.list.get(3) instanceof Guide guide && guide.position() == Guide.Position.MID);
+        assertTrue(all.list.get(6) instanceof Guide guide && guide.position() == Guide.Position.MID);
+        assertTrue(all.list.get(8) instanceof Guide guide && guide.position() == Guide.Position.END);
     }
 }

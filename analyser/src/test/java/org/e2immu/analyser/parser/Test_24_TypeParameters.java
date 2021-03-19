@@ -7,11 +7,13 @@ import org.e2immu.analyser.visitor.TypeMapVisitor;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.TypeInfo;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.Collection;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class Test_24_TypeParameters extends CommonTestRunner {
     public Test_24_TypeParameters() {
@@ -20,9 +22,9 @@ public class Test_24_TypeParameters extends CommonTestRunner {
 
     TypeMapVisitor typeMapVisitor = typeMap -> {
         TypeInfo collection = typeMap.get(Collection.class);
-        Assert.assertNotNull(collection);
+        assertNotNull(collection);
         MethodInfo stream = collection.typeInspection.get().methods().stream().filter(m -> m.name.equals("stream")).findAny().orElseThrow();
-        Assert.assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL,
+        assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL,
                 stream.methodAnalysis.get().getProperty(VariableProperty.NOT_NULL_EXPRESSION));
     };
 
@@ -33,8 +35,8 @@ public class Test_24_TypeParameters extends CommonTestRunner {
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("TypeParameters_0".equals(d.methodInfo().name) && STRINGS.equals(d.variableName())) {
-                Assert.assertEquals("(instance type Stream<E>).map(C::new).collect(Collectors.toList())", d.currentValue().toString());
-                Assert.assertEquals("", d.variableInfo().getLinkedVariables().toString());
+                assertEquals("(instance type Stream<E>).map(C::new).collect(Collectors.toList())", d.currentValue().toString());
+                assertEquals("", d.variableInfo().getLinkedVariables().toString());
             }
         };
 

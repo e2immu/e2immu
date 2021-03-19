@@ -29,13 +29,14 @@ import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.objectflow.access.MethodAccess;
 import org.e2immu.analyser.testexample.ObjectFlow2;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 public class TestObjectFlow2 extends CommonTestRunner {
 
@@ -46,9 +47,9 @@ public class TestObjectFlow2 extends CommonTestRunner {
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
         if ("of".equals(d.methodInfo().name) && "4".equals(d.statementId()) && "res".equals(d.variableName())) {
             ObjectFlow objectFlow = d.variableInfo().getObjectFlow();
-            Assert.assertSame(Origin.INTERNAL, objectFlow.origin);
+            assertSame(Origin.INTERNAL, objectFlow.origin);
             ObjectFlow parent = objectFlow.getPrevious().findFirst().orElseThrow();
-            Assert.assertSame(Origin.NEW_OBJECT_CREATION, parent.origin);
+            assertSame(Origin.NEW_OBJECT_CREATION, parent.origin);
         }
     };
 
@@ -67,9 +68,9 @@ public class TestObjectFlow2 extends CommonTestRunner {
                 .filter(of -> of.type.typeInfo == hashSet)
                 .filter(of -> of.origin == Origin.NEW_OBJECT_CREATION)
                 .findAny().orElseThrow();
-        Assert.assertEquals(1L, newHashSet.getNext().count());
+        assertEquals(1L, newHashSet.getNext().count());
         ObjectFlow newHashSet2 = newHashSet.getNext().findFirst().orElseThrow();
-        Assert.assertSame(newHashSet2, ofMethod.methodAnalysis.get().getObjectFlow());
+        assertSame(newHashSet2, ofMethod.methodAnalysis.get().getObjectFlow());
 
         ObjectFlow ofParam = ofMethod.methodInspection.get().getParameters().get(0).parameterAnalysis.get().getObjectFlow();
 
@@ -77,29 +78,29 @@ public class TestObjectFlow2 extends CommonTestRunner {
 
         ObjectFlow constantX = objectFlow2.typeAnalysis.get().getConstantObjectFlows().stream()
                 .filter(of -> of.type.typeInfo == typeContext.getPrimitives().stringTypeInfo).findFirst().orElseThrow();
-        Assert.assertTrue(ofParam.containsPrevious(constantX));
+        assertTrue(ofParam.containsPrevious(constantX));
 
         ObjectFlow useOfFlow = useOf.methodAnalysis.get().getInternalObjectFlows().stream()
                 .filter(of -> of.type.typeInfo == set)
                 .findAny().orElseThrow();
-        Assert.assertSame(Origin.RESULT_OF_METHOD, useOfFlow.origin);
-        Assert.assertTrue(useOfFlow.containsPrevious(newHashSet2));
-        Assert.assertTrue(newHashSet2.getNext().collect(Collectors.toSet()).contains(useOfFlow));
+        assertSame(Origin.RESULT_OF_METHOD, useOfFlow.origin);
+        assertTrue(useOfFlow.containsPrevious(newHashSet2));
+        assertTrue(newHashSet2.getNext().collect(Collectors.toSet()).contains(useOfFlow));
 
         FieldInfo set1 = objectFlow2.typeInspection.get().fields().stream().filter(f -> "set1".equals(f.name)).findAny().orElseThrow();
         ObjectFlow set1ObjectFlow = set1.fieldAnalysis.get().getObjectFlow();
 
-        Assert.assertSame(Origin.RESULT_OF_METHOD, set1ObjectFlow.origin);
-        Assert.assertEquals(1L, set1ObjectFlow.getPrevious().count());
-        Assert.assertTrue(set1ObjectFlow.containsPrevious(newHashSet2));
-        Assert.assertTrue(newHashSet2.getNext().collect(Collectors.toSet()).contains(set1ObjectFlow));
+        assertSame(Origin.RESULT_OF_METHOD, set1ObjectFlow.origin);
+        assertEquals(1L, set1ObjectFlow.getPrevious().count());
+        assertTrue(set1ObjectFlow.containsPrevious(newHashSet2));
+        assertTrue(newHashSet2.getNext().collect(Collectors.toSet()).contains(set1ObjectFlow));
 
-        Assert.assertEquals(0L, newHashSet.getNonModifyingAccesses().count());
-        Assert.assertEquals(0L, newHashSet2.getNonModifyingAccesses().count());
+        assertEquals(0L, newHashSet.getNonModifyingAccesses().count());
+        assertEquals(0L, newHashSet2.getNonModifyingAccesses().count());
         MethodAccess add1 = newHashSet.getModifyingAccess();
-        Assert.assertEquals("add", add1.methodInfo.name);
+        assertEquals("add", add1.methodInfo.name);
         MethodAccess add2 = newHashSet2.getModifyingAccess();
-        Assert.assertEquals("add", add2.methodInfo.name);
+        assertEquals("add", add2.methodInfo.name);
     }
 
 }

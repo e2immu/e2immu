@@ -21,10 +21,11 @@ package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.visitor.TypeAnalyserVisitor;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class Test_36_Cast extends CommonTestRunner {
 
@@ -43,8 +44,8 @@ public class Test_36_Cast extends CommonTestRunner {
     public void test_1() throws IOException {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("Cast_1".equals(d.typeInfo().simpleName)) {
-                Assert.assertTrue("Have "+d.typeAnalysis().getImplicitlyImmutableDataTypes().toString(),
-                        d.typeAnalysis().getImplicitlyImmutableDataTypes().isEmpty());
+                assertTrue(d.typeAnalysis().getImplicitlyImmutableDataTypes().isEmpty(),
+                        () -> "Have " + d.typeAnalysis().getImplicitlyImmutableDataTypes().toString());
             }
         };
         testClass("Cast_1", 0, 0, new DebugConfiguration.Builder()

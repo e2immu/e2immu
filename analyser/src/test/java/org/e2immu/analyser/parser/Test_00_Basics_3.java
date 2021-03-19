@@ -23,7 +23,7 @@ import org.e2immu.analyser.analyser.FlowData;
 import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analyser.VariableInfoContainer;
 import org.e2immu.analyser.analyser.VariableProperty;
-import org.e2immu.analyser.config.*;
+import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterAnalysis;
@@ -31,10 +31,11 @@ import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.visitor.*;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 /*
 Aims to catch problems in assigning properties from the field to the variable in statement 0, setS1.
@@ -57,7 +58,6 @@ public class Test_00_Basics_3 extends CommonTestRunner {
         final String TYPE = "org.e2immu.analyser.testexample.Basics_3";
         final String S = TYPE + ".s";
         final String S_0 = TYPE + ".s$0";
-        final String S_1 = TYPE + ".s$1";
         final String THIS = TYPE + ".this";
         final String OUT = "java.lang.System.out";
         final String GET_S_RET_VAR = TYPE + ".getS()";
@@ -66,49 +66,48 @@ public class Test_00_Basics_3 extends CommonTestRunner {
             if ("setS1".equals(d.methodInfo().name)) {
                 if ("0.0.0".equals(d.statementId())) {
                     if (d.iteration() == 0) {
-                        Assert.assertTrue(d.evaluationResult().someValueWasDelayed());
+                        assertTrue(d.evaluationResult().someValueWasDelayed());
                     } else {
-                        Assert.assertSame(EmptyExpression.NO_RETURN_VALUE, d.evaluationResult().value());
+                        assertSame(EmptyExpression.NO_RETURN_VALUE, d.evaluationResult().value());
                     }
                 }
                 if ("1".equals(d.statementId())) {
                     // should not be sth like null != s$2, because statement time has not advanced since the assignments
-                    Assert.assertEquals("true", d.evaluationResult().value().debugOutput());
+                    assertEquals("true", d.evaluationResult().value().debugOutput());
                 }
             }
             if ("getS".equals(d.methodInfo().name)) {
                 String expectValue = d.iteration() == 0 ? "<f:s>" : S_0;
-                Assert.assertEquals(expectValue, d.evaluationResult().value().toString());
+                assertEquals(expectValue, d.evaluationResult().value().toString());
             }
         };
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("setS1".equals(d.methodInfo().name) && d.variable() instanceof ParameterInfo pi && "input1".equals(pi.name)) {
                 // statement independent, as the only occurrence of input1 is in evaluation of "0", before "0.0.0" etc.
-                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+                assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
 
-                int expectEnn = d.iteration() == 0 ? Level.DELAY: MultiLevel.NOT_INVOLVED;
-                Assert.assertEquals("Statement "+d.statementId(),
-                        expectEnn, d.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
+                int expectEnn = d.iteration() == 0 ? Level.DELAY : MultiLevel.NOT_INVOLVED;
+                assertEquals(expectEnn, d.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
             }
             if ("setS1".equals(d.methodInfo().name) && THIS.equals(d.variableName())) {
                 if ("0".equals(d.statementId())) {
-                    Assert.assertTrue(d.variableInfoContainer().hasMerge());
+                    assertTrue(d.variableInfoContainer().hasMerge());
 
-                    Assert.assertEquals("instance type Basics_3", d.currentValue().toString());
+                    assertEquals("instance type Basics_3", d.currentValue().toString());
                 }
                 if ("0.0.0".equals(d.statementId())) {
-                    Assert.assertEquals(VariableInfoContainer.NOT_YET_ASSIGNED, d.variableInfo().getAssignmentId());
-                    Assert.assertEquals("0.0.0" + E, d.variableInfo().getReadId());
+                    assertEquals(VariableInfoContainer.NOT_YET_ASSIGNED, d.variableInfo().getAssignmentId());
+                    assertEquals("0.0.0" + E, d.variableInfo().getReadId());
                     if (d.iteration() > 0) {
-                        Assert.assertEquals("instance type Basics_3", d.currentValue().toString());
+                        assertEquals("instance type Basics_3", d.currentValue().toString());
                     }
                 }
                 if ("0.1.0".equals(d.statementId())) {
-                    Assert.assertEquals(VariableInfoContainer.NOT_YET_ASSIGNED, d.variableInfo().getAssignmentId());
-                    Assert.assertEquals("0.1.0" + E, d.variableInfo().getReadId());
+                    assertEquals(VariableInfoContainer.NOT_YET_ASSIGNED, d.variableInfo().getAssignmentId());
+                    assertEquals("0.1.0" + E, d.variableInfo().getReadId());
                     if (d.iteration() > 0) {
-                        Assert.assertEquals("instance type Basics_3", d.currentValue().toString());
+                        assertEquals("instance type Basics_3", d.currentValue().toString());
                     }
                 }
             }
@@ -117,132 +116,132 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                 if ("0.0.0".equals(d.statementId())) {
                     // because of the modifying method println
                     if (d.iteration() == 0) {
-                        Assert.assertTrue(d.currentValueIsDelayed());
+                        assertTrue(d.currentValueIsDelayed());
                     } else {
-                        Assert.assertEquals("instance type PrintStream", d.currentValue().toString());
+                        assertEquals("instance type PrintStream", d.currentValue().toString());
                     }
-                    Assert.assertEquals(VariableInfoContainer.NOT_A_VARIABLE_FIELD, d.variableInfo().getStatementTime());
+                    assertEquals(VariableInfoContainer.NOT_A_VARIABLE_FIELD, d.variableInfo().getStatementTime());
                 } else if ("0.1.0".equals(d.statementId())) {
-                    Assert.assertTrue(d.iteration() > 0);
-                    Assert.assertEquals(VariableInfoContainer.NOT_YET_READ, d.variableInfo().getReadId());
-                    Assert.assertEquals(VariableInfoContainer.NOT_A_VARIABLE_FIELD, d.variableInfo().getStatementTime());
+                    assertTrue(d.iteration() > 0);
+                    assertEquals(VariableInfoContainer.NOT_YET_READ, d.variableInfo().getReadId());
+                    assertEquals(VariableInfoContainer.NOT_A_VARIABLE_FIELD, d.variableInfo().getStatementTime());
                 } else if ("0".equals(d.statementId())) {
-                    Assert.assertEquals("nullable instance type PrintStream",
+                    assertEquals("nullable instance type PrintStream",
                             d.variableInfoContainer().getPreviousOrInitial().getValue().toString());
                     String expectValue = d.iteration() == 0 ? "<field:java.lang.System.out>" : "instance type PrintStream";
-                    Assert.assertEquals(expectValue, d.currentValue().debugOutput());
-                    Assert.assertEquals(VariableInfoContainer.NOT_A_VARIABLE_FIELD, d.variableInfo().getStatementTime());
+                    assertEquals(expectValue, d.currentValue().debugOutput());
+                    assertEquals(VariableInfoContainer.NOT_A_VARIABLE_FIELD, d.variableInfo().getStatementTime());
                 }
 
                 // completely independent of the iterations, we always should have @NotNull because of context
                 if ("0.0.0".equals(d.statementId()) || "0".equals(d.statementId())) {
-                    Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+                    assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
                 }
             }
             if ("setS1".equals(d.methodInfo().name) && S.equals(d.variableName())) {
                 if ("0.0.0".equals(d.statementId())) {
                     String expectValue = d.iteration() == 0 ? "<f:s>" : "nullable instance type String";
-                    Assert.assertEquals(expectValue, d.currentValue().toString());
-                    Assert.assertFalse(d.variableInfo().isAssigned());
+                    assertEquals(expectValue, d.currentValue().toString());
+                    assertFalse(d.variableInfo().isAssigned());
                     if (d.iteration() == 0) {
-                        Assert.assertEquals(VariableInfoContainer.VARIABLE_FIELD_DELAY, d.variableInfo().getStatementTime());
+                        assertEquals(VariableInfoContainer.VARIABLE_FIELD_DELAY, d.variableInfo().getStatementTime());
                     } else {
-                        Assert.assertEquals(1, d.variableInfo().getStatementTime());
+                        assertEquals(1, d.variableInfo().getStatementTime());
                     }
-                    Assert.assertEquals("", d.variableInfo().getStaticallyAssignedVariables().toString());
-                    Assert.assertEquals("", d.variableInfo().getLinkedVariables().toString());
+                    assertEquals("", d.variableInfo().getStaticallyAssignedVariables().toString());
+                    assertEquals("", d.variableInfo().getLinkedVariables().toString());
                 }
                 if ("0.0.1".equals(d.statementId())) {
-                    Assert.assertEquals("\"xyz\"", d.currentValue().debugOutput());
-                    Assert.assertTrue(d.variableInfo().isAssigned());
+                    assertEquals("\"xyz\"", d.currentValue().debugOutput());
+                    assertTrue(d.variableInfo().isAssigned());
                     if (d.iteration() == 0) {
-                        Assert.assertEquals(VariableInfoContainer.VARIABLE_FIELD_DELAY, d.variableInfo().getStatementTime());
+                        assertEquals(VariableInfoContainer.VARIABLE_FIELD_DELAY, d.variableInfo().getStatementTime());
                     } else {
-                        Assert.assertEquals(2, d.variableInfo().getStatementTime());
+                        assertEquals(2, d.variableInfo().getStatementTime());
                     }
-                    Assert.assertEquals("", d.variableInfo().getLinkedVariables().toString());
+                    assertEquals("", d.variableInfo().getLinkedVariables().toString());
                     // not null of assignment
-                    Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                    assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
                 }
                 if ("0.1.0".equals(d.statementId())) {
-                    Assert.assertEquals("\"abc\"", d.currentValue().debugOutput());
-                    Assert.assertTrue(d.variableInfo().isAssigned());
+                    assertEquals("\"abc\"", d.currentValue().debugOutput());
+                    assertTrue(d.variableInfo().isAssigned());
                     if (d.iteration() == 0) {
-                        Assert.assertEquals(VariableInfoContainer.VARIABLE_FIELD_DELAY, d.variableInfo().getStatementTime());
+                        assertEquals(VariableInfoContainer.VARIABLE_FIELD_DELAY, d.variableInfo().getStatementTime());
                     } else {
-                        Assert.assertEquals(1, d.variableInfo().getStatementTime());
+                        assertEquals(1, d.variableInfo().getStatementTime());
                     }
-                    Assert.assertTrue(d.variableInfo().getLinkedVariables().isEmpty());
-                    Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                    assertTrue(d.variableInfo().getLinkedVariables().isEmpty());
+                    assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
                 }
                 if ("0".equals(d.statementId())) {
-                    Assert.assertEquals("input1.contains(\"a\")?\"xyz\":\"abc\"", d.currentValue().toString());
-                    Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                    assertEquals("input1.contains(\"a\")?\"xyz\":\"abc\"", d.currentValue().toString());
+                    assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
 
                     if (d.iteration() == 0) {
-                        Assert.assertEquals(VariableInfoContainer.VARIABLE_FIELD_DELAY, d.variableInfo().getStatementTime());
+                        assertEquals(VariableInfoContainer.VARIABLE_FIELD_DELAY, d.variableInfo().getStatementTime());
                     } else {
                         VariableInfo vi1 = d.variableInfoContainer().getPreviousOrInitial();
-                        Assert.assertEquals(0, vi1.getStatementTime());
-                        Assert.assertEquals(2, d.variableInfo().getStatementTime());
+                        assertEquals(0, vi1.getStatementTime());
+                        assertEquals(2, d.variableInfo().getStatementTime());
 
                     }
-                    Assert.assertEquals("", d.variableInfo().getLinkedVariables().toString());
-                    Assert.assertTrue("At " + d.statementId(), d.variableInfo().isAssigned());
+                    assertEquals("", d.variableInfo().getLinkedVariables().toString());
+                    assertTrue(d.variableInfo().isAssigned());
                 }
                 if ("1".equals(d.statementId())) {
-                    Assert.assertEquals("input1.contains(\"a\")?\"xyz\":\"abc\"", d.currentValue().toString());
+                    assertEquals("input1.contains(\"a\")?\"xyz\":\"abc\"", d.currentValue().toString());
 
-                    Assert.assertEquals("", d.variableInfo().getStaticallyAssignedVariables().toString());
-                    Assert.assertEquals("", d.variableInfo().getLinkedVariables().toString());
-                    Assert.assertTrue("At " + d.statementId(), d.variableInfo().isAssigned());
+                    assertEquals("", d.variableInfo().getStaticallyAssignedVariables().toString());
+                    assertEquals("", d.variableInfo().getLinkedVariables().toString());
+                    assertTrue(d.variableInfo().isAssigned());
 
-                    Assert.assertEquals(Level.FALSE, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
-                    Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                    assertEquals(Level.FALSE, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
+                    assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
                 }
             }
             if ("setS2".equals(d.methodInfo().name) && S.equals(d.variableName())) {
                 if ("0".equals(d.statementId())) {
-                    Assert.assertTrue(d.variableInfo().isAssigned());
-                    Assert.assertEquals("input2", d.currentValue().toString());
-                    Assert.assertTrue(d.variableInfo().getLinkedVariables().isEmpty());
+                    assertTrue(d.variableInfo().isAssigned());
+                    assertEquals("input2", d.currentValue().toString());
+                    assertTrue(d.variableInfo().getLinkedVariables().isEmpty());
 
-                    Assert.assertEquals(Level.FALSE, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
-                    Assert.assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+                    assertEquals(Level.FALSE, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
+                    assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
                 }
             }
             if ("getS".equals(d.methodInfo().name)) {
                 if (S.equals(d.variableName())) {
                     String expectS = d.iteration() == 0 ? "<f:s>" : "nullable instance type String";
-                    Assert.assertEquals(expectS, d.currentValue().toString());
-                    Assert.assertEquals("", d.variableInfo().getStaticallyAssignedVariables().toString());
+                    assertEquals(expectS, d.currentValue().toString());
+                    assertEquals("", d.variableInfo().getStaticallyAssignedVariables().toString());
 
                     int expectNotNull = d.iteration() == 0 ? Level.DELAY : MultiLevel.NULLABLE;
-                    Assert.assertEquals(expectNotNull, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
-                    Assert.assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+                    assertEquals(expectNotNull, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                    assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
 
                     int expectModifiedOutside = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
-                    Assert.assertEquals(expectModifiedOutside, d.getProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD));
-                    Assert.assertEquals(Level.FALSE, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
+                    assertEquals(expectModifiedOutside, d.getProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD));
+                    assertEquals(Level.FALSE, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
                 }
                 if (S_0.equals(d.variableName())) {
                     assert d.iteration() > 0;
-                    Assert.assertEquals("nullable instance type String", d.currentValue().toString());
-                    Assert.assertEquals("this.s", d.variableInfo().getStaticallyAssignedVariables().toString());
-                    Assert.assertEquals("", d.variableInfo().getLinkedVariables().toString());
+                    assertEquals("nullable instance type String", d.currentValue().toString());
+                    assertEquals("this.s", d.variableInfo().getStaticallyAssignedVariables().toString());
+                    assertEquals("", d.variableInfo().getLinkedVariables().toString());
 
-                    Assert.assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
-                    Assert.assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+                    assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                    assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
                 }
                 if (d.variable() instanceof ReturnVariable) {
-                    Assert.assertEquals(GET_S_RET_VAR, d.variableName());
+                    assertEquals(GET_S_RET_VAR, d.variableName());
                     String expectValue = d.iteration() == 0 ? "<f:s>" : S_0;
-                    Assert.assertEquals(expectValue, d.currentValue().toString());
+                    assertEquals(expectValue, d.currentValue().toString());
 
                     // copied from S
                     int expectNotNull = d.iteration() == 0 ? Level.DELAY : MultiLevel.NULLABLE;
-                    Assert.assertEquals(expectNotNull, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
-                    Assert.assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+                    assertEquals(expectNotNull, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                    assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
                 }
             }
         };
@@ -254,54 +253,54 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                 int time3 = flowData.getTimeAfterEvaluation();
                 int time4 = flowData.getTimeAfterSubBlocks();
                 if ("0".equals(d.statementId())) {
-                    Assert.assertEquals(0, time1);
-                    Assert.assertEquals(1, time3);
-                    Assert.assertEquals(2, time4); // merge
-                    Assert.assertEquals("0" + C, flowData.assignmentIdOfStatementTime.get(0));
-                    Assert.assertEquals("0" + E, flowData.assignmentIdOfStatementTime.get(1));
-                    Assert.assertEquals("0" + M, flowData.assignmentIdOfStatementTime.get(2));
+                    assertEquals(0, time1);
+                    assertEquals(1, time3);
+                    assertEquals(2, time4); // merge
+                    assertEquals("0" + C, flowData.assignmentIdOfStatementTime.get(0));
+                    assertEquals("0" + E, flowData.assignmentIdOfStatementTime.get(1));
+                    assertEquals("0" + M, flowData.assignmentIdOfStatementTime.get(2));
                 }
                 if ("0.0.0".equals(d.statementId())) {
-                    Assert.assertEquals(1, time1);
-                    Assert.assertEquals(2, time3);
-                    Assert.assertEquals(2, time4);
-                    Assert.assertEquals("0" + C, flowData.assignmentIdOfStatementTime.get(0));
-                    Assert.assertEquals("0" + E, flowData.assignmentIdOfStatementTime.get(1));
-                    Assert.assertEquals("0.0.0" + E, flowData.assignmentIdOfStatementTime.get(2));
-                    Assert.assertEquals("true", d.state().toString());
-                    Assert.assertEquals("input1.contains(\"a\")", d.condition().toString());
-                    Assert.assertEquals("input1.contains(\"a\")", d.absoluteState().toString());
-                    Assert.assertEquals("true", d.localConditionManager().precondition().toString());
-                    Assert.assertFalse(d.localConditionManager().isDelayed());
-                    Assert.assertEquals("true", d.statementAnalysis().stateData.precondition.get().toString());
+                    assertEquals(1, time1);
+                    assertEquals(2, time3);
+                    assertEquals(2, time4);
+                    assertEquals("0" + C, flowData.assignmentIdOfStatementTime.get(0));
+                    assertEquals("0" + E, flowData.assignmentIdOfStatementTime.get(1));
+                    assertEquals("0.0.0" + E, flowData.assignmentIdOfStatementTime.get(2));
+                    assertEquals("true", d.state().toString());
+                    assertEquals("input1.contains(\"a\")", d.condition().toString());
+                    assertEquals("input1.contains(\"a\")", d.absoluteState().toString());
+                    assertEquals("true", d.localConditionManager().precondition().toString());
+                    assertFalse(d.localConditionManager().isDelayed());
+                    assertEquals("true", d.statementAnalysis().stateData.precondition.get().toString());
                 }
                 if ("0.0.1".equals(d.statementId())) { // first assignment
-                    Assert.assertEquals(2, time1);
-                    Assert.assertEquals(2, time3);
-                    Assert.assertEquals(2, time4);
-                    Assert.assertEquals("0" + C, flowData.assignmentIdOfStatementTime.get(0));
-                    Assert.assertEquals("0" + E, flowData.assignmentIdOfStatementTime.get(1));
-                    Assert.assertEquals("0.0.0" + E, flowData.assignmentIdOfStatementTime.get(2));
+                    assertEquals(2, time1);
+                    assertEquals(2, time3);
+                    assertEquals(2, time4);
+                    assertEquals("0" + C, flowData.assignmentIdOfStatementTime.get(0));
+                    assertEquals("0" + E, flowData.assignmentIdOfStatementTime.get(1));
+                    assertEquals("0.0.0" + E, flowData.assignmentIdOfStatementTime.get(2));
                 }
                 if ("0.1.0".equals(d.statementId())) { // second assignment
-                    Assert.assertEquals(1, time1);
-                    Assert.assertEquals(1, time3);
-                    Assert.assertEquals(1, time4);
-                    Assert.assertEquals("0" + C, flowData.assignmentIdOfStatementTime.get(0));
-                    Assert.assertEquals("0" + E, flowData.assignmentIdOfStatementTime.get(1));
-                    Assert.assertEquals("true", d.state().toString());
-                    Assert.assertEquals("!input1.contains(\"a\")", d.condition().toString());
-                    Assert.assertEquals("!input1.contains(\"a\")", d.absoluteState().toString());
+                    assertEquals(1, time1);
+                    assertEquals(1, time3);
+                    assertEquals(1, time4);
+                    assertEquals("0" + C, flowData.assignmentIdOfStatementTime.get(0));
+                    assertEquals("0" + E, flowData.assignmentIdOfStatementTime.get(1));
+                    assertEquals("true", d.state().toString());
+                    assertEquals("!input1.contains(\"a\")", d.condition().toString());
+                    assertEquals("!input1.contains(\"a\")", d.absoluteState().toString());
                 }
                 if ("1".equals(d.statementId())) {
-                    Assert.assertEquals(2, time1);
-                    Assert.assertEquals(2, time3);
-                    Assert.assertEquals(2, time4);
-                    Assert.assertEquals("0" + C, flowData.assignmentIdOfStatementTime.get(0));
-                    Assert.assertEquals("0" + E, flowData.assignmentIdOfStatementTime.get(1));
-                    Assert.assertEquals("0" + M, flowData.assignmentIdOfStatementTime.get(2));
+                    assertEquals(2, time1);
+                    assertEquals(2, time3);
+                    assertEquals(2, time4);
+                    assertEquals("0" + C, flowData.assignmentIdOfStatementTime.get(0));
+                    assertEquals("0" + E, flowData.assignmentIdOfStatementTime.get(1));
+                    assertEquals("0" + M, flowData.assignmentIdOfStatementTime.get(2));
                     if (d.iteration() > 0) {
-                        Assert.assertNotNull(d.haveError(Message.ASSERT_EVALUATES_TO_CONSTANT_TRUE));
+                        assertNotNull(d.haveError(Message.ASSERT_EVALUATES_TO_CONSTANT_TRUE));
                     }
                 }
             }
@@ -309,11 +308,11 @@ public class Test_00_Basics_3 extends CommonTestRunner {
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("s".equals(d.fieldInfo().name)) {
-                Assert.assertEquals(MultiLevel.NULLABLE, d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_NOT_NULL));
-                Assert.assertEquals(Level.FALSE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
-                Assert.assertEquals(Level.TRUE, d.fieldAnalysis().getProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD));
-                Assert.assertNull(d.fieldAnalysis().getEffectivelyFinalValue());
-                Assert.assertEquals("", d.fieldAnalysis().getLinkedVariables().toString());
+                assertEquals(MultiLevel.NULLABLE, d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_NOT_NULL));
+                assertEquals(Level.FALSE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
+                assertEquals(Level.TRUE, d.fieldAnalysis().getProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD));
+                assertNull(d.fieldAnalysis().getEffectivelyFinalValue());
+                assertEquals("", d.fieldAnalysis().getLinkedVariables().toString());
             }
         };
 
@@ -321,9 +320,9 @@ public class Test_00_Basics_3 extends CommonTestRunner {
             if ("setS1".equals(d.methodInfo().name)) {
                 ParameterAnalysis p0 = d.parameterAnalyses().get(0);
                 int expectCnn = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
-                Assert.assertEquals(expectCnn, p0.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+                assertEquals(expectCnn, p0.getProperty(VariableProperty.CONTEXT_NOT_NULL));
                 int expectExternalNotNull = d.iteration() == 0 ? Level.DELAY : MultiLevel.DELAY;
-                Assert.assertEquals(expectExternalNotNull, p0.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
+                assertEquals(expectExternalNotNull, p0.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
             }
         };
 

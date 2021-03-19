@@ -20,15 +20,16 @@ package org.e2immu.analyser.model;
 import org.e2immu.analyser.inspector.TypeInspectionImpl;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.Logger;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 public class TestParameterizedTypeStreamer {
 
-    @BeforeClass
+    @BeforeAll
     public static void beforeClass() {
         Logger.activate();
     }
@@ -66,7 +67,7 @@ public class TestParameterizedTypeStreamer {
     public void test() {
         Clazz<Integer> clazz = new Clazz<>(3);
         Clazz<Integer>.Sub<Character> sub = clazz.new Sub<Character>('a');
-        Assert.assertEquals("a=3", sub.toString());
+        assertEquals("a=3", sub.toString());
     }
 
     @Test
@@ -83,7 +84,7 @@ public class TestParameterizedTypeStreamer {
         ParameterizedType clazzTS = new ParameterizedType(clazz, List.of(
                 new ParameterizedType(t, 0, ParameterizedType.WildCard.NONE),
                 new ParameterizedType(s, 0, ParameterizedType.WildCard.NONE)));
-        Assert.assertEquals("a.b.Clazz<T,S>", clazzTS.detailedString());
+        assertEquals("a.b.Clazz<T,S>", clazzTS.detailedString());
 
         TypeInfo sub = new TypeInfo(clazz, "Sub");
 
@@ -93,7 +94,7 @@ public class TestParameterizedTypeStreamer {
         ParameterizedType clazzTSubS = new ParameterizedType(sub, List.of(
                 new ParameterizedType(t, 0, ParameterizedType.WildCard.NONE),
                 new ParameterizedType(s, 0, ParameterizedType.WildCard.NONE)));
-        Assert.assertEquals("a.b.Clazz<T,S>.Sub", clazzTSubS.detailedString());
+        assertEquals("a.b.Clazz<T,S>.Sub", clazzTSubS.detailedString());
     }
 
     @Test
@@ -106,7 +107,7 @@ public class TestParameterizedTypeStreamer {
                 .addTypeParameter(t);
         clazz.typeInspection.set(clazzInspection.build());
         ParameterizedType clazzT = new ParameterizedType(clazz, List.of(new ParameterizedType(t, 0, ParameterizedType.WildCard.NONE)));
-        Assert.assertEquals("a.b.Clazz<T>", clazzT.detailedString());
+        assertEquals("a.b.Clazz<T>", clazzT.detailedString());
 
         TypeInfo sub = new TypeInfo(clazz, "Sub");
         TypeParameter s = new TypeParameterImpl(sub, "S", 0);
@@ -117,6 +118,6 @@ public class TestParameterizedTypeStreamer {
         ParameterizedType clazzTSubS = new ParameterizedType(sub, List.of(
                 new ParameterizedType(t, 0, ParameterizedType.WildCard.NONE),
                 new ParameterizedType(s, 0, ParameterizedType.WildCard.NONE)));
-        Assert.assertEquals("a.b.Clazz<T>.Sub<S>", clazzTSubS.detailedString());
+        assertEquals("a.b.Clazz<T>.Sub<S>", clazzTSubS.detailedString());
     }
 }

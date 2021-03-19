@@ -22,18 +22,20 @@ import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.parser.Parser;
 import org.e2immu.analyser.util.Logger;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.Objects;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class TestPreloadJavaBase {
 
     private static TypeContext typeContext;
 
-    @BeforeClass
+    @BeforeAll
     public static void beforeClass() throws IOException {
         org.e2immu.analyser.util.Logger.activate(Logger.LogTarget.INSPECT,
                 Logger.LogTarget.BYTECODE_INSPECTOR);
@@ -45,10 +47,10 @@ public class TestPreloadJavaBase {
     @Test
     public void test() {
         TypeInfo list = typeContext.typeMapBuilder.get("java.util.List");
-        Assert.assertNotNull(list);
+        assertNotNull(list);
 
         ParameterizedType listPt = Objects.requireNonNull(list.asParameterizedType(typeContext));
         ParameterizedType typeParam = listPt.parameters.get(0);
-        Assert.assertEquals("Type param E", typeParam.toString());
+        assertEquals("Type param E", typeParam.toString());
     }
 }

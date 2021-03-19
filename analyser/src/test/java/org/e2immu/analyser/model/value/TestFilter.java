@@ -20,12 +20,12 @@ package org.e2immu.analyser.model.value;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.variable.Variable;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Map;
 
 import static org.e2immu.analyser.model.expression.Filter.FilterMode.ALL;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class TestFilter extends CommonAbstractValue {
 
@@ -34,10 +34,10 @@ public class TestFilter extends CommonAbstractValue {
     @Test
     public void test() {
         And andValue = (And) newAndAppend(a, b);
-        Assert.assertEquals("a&&b", andValue.toString());
+        assertEquals("a&&b", andValue.toString());
         Filter filter = new Filter(minimalEvaluationContext, ALL);
         Filter.FilterResult<Variable> filterResult = filter.filter(andValue, value -> new Filter.FilterResult<>(Map.of(), value));
-        Assert.assertEquals(filterResult.rest(), andValue);
+        assertEquals(filterResult.rest(), andValue);
 
         Filter.FilterResult<Variable> filterResult2 = filter.filter(andValue, value -> {
             if (value instanceof VariableExpression variableValue && variableValue.variable() == b.variable()) {
@@ -45,7 +45,7 @@ public class TestFilter extends CommonAbstractValue {
             }
             return null;
         });
-        Assert.assertEquals(a, filterResult2.rest());
+        assertEquals(a, filterResult2.rest());
     }
 
     // OrValue, AndValue, NegatedValue are collecting filters, but EqualsValue is NOT. So every ad-hoc filter that needs to be able
@@ -55,7 +55,7 @@ public class TestFilter extends CommonAbstractValue {
     public void testWithEquals() {
         Expression sNotNull = negate(equals(NullConstant.NULL_CONSTANT, s));
         And andValue = (And) newAndAppend(a, sNotNull);
-        Assert.assertEquals("a&&null!=s", andValue.toString());
+        assertEquals("a&&null!=s", andValue.toString());
         Filter filter = new Filter(minimalEvaluationContext, ALL);
         Filter.FilterResult<Variable> filterResult = filter.filter(andValue, value -> {
             if (value instanceof Equals equalsValue) {
@@ -65,6 +65,6 @@ public class TestFilter extends CommonAbstractValue {
             }
             return null;
         });
-        Assert.assertEquals(a, filterResult.rest());
+        assertEquals(a, filterResult.rest());
     }
 }

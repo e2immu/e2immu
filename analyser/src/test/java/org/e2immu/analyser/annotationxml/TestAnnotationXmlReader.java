@@ -20,9 +20,8 @@ package org.e2immu.analyser.annotationxml;
 
 import org.e2immu.analyser.annotationxml.model.TypeItem;
 import org.e2immu.analyser.util.Resources;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.SAXException;
@@ -34,10 +33,12 @@ import java.net.URL;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 public class TestAnnotationXmlReader {
     private static final Logger LOGGER = LoggerFactory.getLogger(TestAnnotationXmlReader.class);
 
-    @BeforeClass
+    @BeforeAll
     public static void beforeClass() {
         org.e2immu.analyser.util.Logger.activate(org.e2immu.analyser.util.Logger.LogTarget.ANNOTATION_XML_READER);
     }
@@ -48,7 +49,7 @@ public class TestAnnotationXmlReader {
         Objects.requireNonNull(resourceUrl);
         AnnotationXmlReader reader = new AnnotationXmlReader(resourceUrl);
         TypeItem booleanType = reader.typeItemMap.get("java.lang.Boolean");
-        Assert.assertNotNull(booleanType);
+        assertNotNull(booleanType);
         System.out.println(reader
                 .summary()
                 .entrySet()
@@ -60,20 +61,20 @@ public class TestAnnotationXmlReader {
         AnnotationXmlWriter.writeSinglePackage(outputFile, reader.typeItemMap.values());
         LOGGER.info("Wrote to {}", outputFile);
 
-        Assert.assertTrue(reader.typeItemMap.size() > 20);
+        assertTrue(reader.typeItemMap.size() > 20);
         AnnotationXmlReader reader2 = new AnnotationXmlReader(outputFile.toURI().toURL());
 
-        Assert.assertEquals(reader.typeItemMap.keySet(), reader2.typeItemMap.keySet());
+        assertEquals(reader.typeItemMap.keySet(), reader2.typeItemMap.keySet());
         // TODO more tests would be good
     }
 
     @Test
-    public void testWholeFolder() throws IOException {
+    public void testWholeFolder() {
         Resources resources = new Resources();
         resources.addDirectoryFromFileSystem(new File("src/main/resources/annotations/jdkAnnotations"));
         AnnotationXmlReader annotationParser = new AnnotationXmlReader(resources);
         TypeItem booleanType = annotationParser.typeItemMap.get("java.lang.Boolean");
-        Assert.assertNotNull(booleanType);
+        assertNotNull(booleanType);
         System.out.println(annotationParser
                 .summary()
                 .entrySet()

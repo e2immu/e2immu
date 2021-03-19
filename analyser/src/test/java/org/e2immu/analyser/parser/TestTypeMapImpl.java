@@ -19,8 +19,9 @@ package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.util.Trie;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 public class TestTypeMapImpl {
 
@@ -33,24 +34,24 @@ public class TestTypeMapImpl {
         TypeInfo parser = new TypeInfo("org.e2immu", "Parser");
         trie.add(orgE2ImmuParser, parser);
 
-        Assert.assertSame(parser, TypeMapImpl.fromTrie(trie, orgE2ImmuParser));
+        assertSame(parser, TypeMapImpl.fromTrie(trie, orgE2ImmuParser));
 
         String[] orgE2ImmuParserSub = {"org", "e2immu", "Parser", "Sub"};
 
         TypeInfo parserSub = TypeMapImpl.fromTrie(trie, orgE2ImmuParserSub);
-        Assert.assertNotNull(parserSub);
-        Assert.assertEquals("Sub", parserSub.simpleName);
-        Assert.assertSame(parser, parserSub.packageNameOrEnclosingType.getRight());
+        assertNotNull(parserSub);
+        assertEquals("Sub", parserSub.simpleName);
+        assertSame(parser, parserSub.packageNameOrEnclosingType.getRight());
 
         String[] orgE2ImmuParserSubSup = {"org", "e2immu", "Parser", "Sub", "Sup"};
 
         TypeInfo parserSubSup = TypeMapImpl.fromTrie(trie, orgE2ImmuParserSubSup);
-        Assert.assertNotNull(parserSubSup);
-        Assert.assertEquals("Sup", parserSubSup.simpleName);
-        Assert.assertNotSame(parserSub, parserSubSup.packageNameOrEnclosingType.getRight()); // not adding to trie
-        Assert.assertEquals(parserSub, parserSubSup.packageNameOrEnclosingType.getRight());
+        assertNotNull(parserSubSup);
+        assertEquals("Sup", parserSubSup.simpleName);
+        assertNotSame(parserSub, parserSubSup.packageNameOrEnclosingType.getRight()); // not adding to trie
+        assertEquals(parserSub, parserSubSup.packageNameOrEnclosingType.getRight());
 
         String[] orgE3ImmuParser = {"org", "e3immu", "Parser"};
-        Assert.assertNull(TypeMapImpl.fromTrie(trie, orgE3ImmuParser));
+        assertNull(TypeMapImpl.fromTrie(trie, orgE3ImmuParser));
     }
 }

@@ -27,10 +27,9 @@ import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.resolver.ShallowMethodResolver;
 import org.e2immu.analyser.resolver.SortedType;
 import org.e2immu.analyser.util.Trie;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,12 +43,13 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.e2immu.analyser.inspector.TypeInspectionImpl.InspectionState.TRIGGER_JAVA_PARSER;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_13_MethodOverloadAndSuperTypes {
     private static final Logger LOGGER = LoggerFactory.getLogger(Test_13_MethodOverloadAndSuperTypes.class);
     public static final String SRC_TEST_JAVA_ORG_E2IMMU_ANALYSER = "src/test/java/org/e2immu/analyser/";
 
-    @BeforeClass
+    @BeforeAll
     public static void beforeClass() {
         org.e2immu.analyser.util.Logger.activate(org.e2immu.analyser.util.Logger.LogTarget.INSPECT);
     }
@@ -57,7 +57,7 @@ public class Test_13_MethodOverloadAndSuperTypes {
     Parser parser;
     TypeContext typeContext;
 
-    @Before
+    @BeforeEach
     public void before() throws IOException {
         parser = new Parser(new Configuration.Builder()
                 .setInputConfiguration(new InputConfiguration.Builder()
@@ -71,37 +71,37 @@ public class Test_13_MethodOverloadAndSuperTypes {
     @Test
     public void testSetCollection() {
         TypeInfo set = typeContext.typeMapBuilder.get("java.util.Set");
-        Assert.assertNotNull(set);
+        assertNotNull(set);
         MethodInfo containsAll = set.findUniqueMethod("containsAll", 1);
         Set<MethodInfo> overloads = containsAll.methodResolution.get().overrides();
         TypeInfo collection = typeContext.typeMapBuilder.get("java.util.Collection");
-        Assert.assertNotNull(collection);
+        assertNotNull(collection);
         MethodInfo containsAllInCollection = collection.findUniqueMethod("containsAll", 1);
-        Assert.assertTrue(overloads.contains(containsAllInCollection));
+        assertTrue(overloads.contains(containsAllInCollection));
     }
 
     @Test
     public void testThrowable() {
         TypeInfo throwable = typeContext.typeMapBuilder.get("java.lang.Throwable");
-        Assert.assertNotNull(throwable);
+        assertNotNull(throwable);
         Set<TypeInfo> superTypes = throwable.typeResolution.get().superTypesExcludingJavaLangObject();
-        Assert.assertEquals("[java.io.Serializable]", superTypes.toString());
+        assertEquals("[java.io.Serializable]", superTypes.toString());
     }
 
     @Test
     public void testSetCollectionEquals() {
         TypeInfo set = typeContext.typeMapBuilder.get("java.util.Set");
-        Assert.assertNotNull(set);
+        assertNotNull(set);
         MethodInfo equalsInSet = set.findUniqueMethod("equals", 1);
         Set<MethodInfo> overloads = equalsInSet.methodResolution.get().overrides();
         TypeInfo collection = typeContext.typeMapBuilder.get("java.util.Collection");
-        Assert.assertNotNull(collection);
+        assertNotNull(collection);
         MethodInfo equalsInCollection = collection.findUniqueMethod("equals", 1);
-        Assert.assertTrue(overloads.contains(equalsInCollection));
+        assertTrue(overloads.contains(equalsInCollection));
         TypeInfo object = typeContext.typeMapBuilder.get("java.lang.Object");
-        Assert.assertNotNull(object);
+        assertNotNull(object);
         MethodInfo equalsInObject = object.findUniqueMethod("equals", 1);
-        Assert.assertTrue(overloads.contains(equalsInObject));
+        assertTrue(overloads.contains(equalsInObject));
     }
 
     @Test
@@ -114,21 +114,21 @@ public class Test_13_MethodOverloadAndSuperTypes {
 
         // method: hashCode
         TypeInfo methodOverload = types.get(0).primaryType();
-        Assert.assertSame(methodOverload, methodOverloadOrig);
+        assertSame(methodOverload, methodOverloadOrig);
 
         MethodInfo hashCode = methodOverload.typeInspection.get().methods()
                 .stream().filter(m -> m.name.equals("hashCode")).findFirst().orElseThrow();
         Set<MethodInfo> overloadsOfHashCode = hashCode.methodResolution.get().overrides();
         LOGGER.info("Overloads of hashCode: {}", overloadsOfHashCode);
-        Assert.assertEquals("[java.lang.Object.hashCode()]", overloadsOfHashCode.toString());
+        assertEquals("[java.lang.Object.hashCode()]", overloadsOfHashCode.toString());
 
         // method: C1.method(int)
         TypeInfo c1 = methodOverload.typeInspection.get().subTypes().stream().filter(t -> t.simpleName.equals("C1")).findFirst().orElseThrow();
 
         Set<TypeInfo> superTypesC1 = c1.typeResolution.get().superTypesExcludingJavaLangObject();
-        Assert.assertEquals("[org.e2immu.analyser.testexample.MethodOverload.I1]", superTypesC1.toString());
+        assertEquals("[org.e2immu.analyser.testexample.MethodOverload.I1]", superTypesC1.toString());
         List<ParameterizedType> directSuperTypesC1 = ShallowMethodResolver.directSuperTypes(parser.getTypeContext(), c1);
-        Assert.assertEquals("[Type java.lang.Object, Type org.e2immu.analyser.testexample.MethodOverload.I1]", directSuperTypesC1.toString());
+        assertEquals("[Type java.lang.Object, Type org.e2immu.analyser.testexample.MethodOverload.I1]", directSuperTypesC1.toString());
 
 
         LOGGER.info("Distinguishing names of C1 methods: " +
@@ -137,7 +137,7 @@ public class Test_13_MethodOverloadAndSuperTypes {
                 .equals("org.e2immu.analyser.testexample.MethodOverload.C1.method(int)")).findFirst().orElseThrow();
         Set<MethodInfo> overloadsOfM1 = m1.methodResolution.get().overrides();
         LOGGER.info("Overloads of m1: {}", overloadsOfM1);
-        Assert.assertEquals("[org.e2immu.analyser.testexample.MethodOverload.I1.method(int)]", overloadsOfM1.toString());
+        assertEquals("[org.e2immu.analyser.testexample.MethodOverload.I1.method(int)]", overloadsOfM1.toString());
 
         // method C2.toString()
         TypeInfo c2 = methodOverload.typeInspection.get().subTypes().stream().filter(t -> t.simpleName.equals("C2")).findFirst().orElseThrow();
@@ -145,15 +145,15 @@ public class Test_13_MethodOverloadAndSuperTypes {
                 c2.typeInspection.get().methods().stream().map(MethodInfo::distinguishingName).collect(Collectors.joining(", ")));
 
         Set<TypeInfo> superTypesC2 = c2.typeResolution.get().superTypesExcludingJavaLangObject();
-        Assert.assertEquals("org.e2immu.analyser.testexample.MethodOverload.C1,org.e2immu.analyser.testexample.MethodOverload.I1",
+        assertEquals("org.e2immu.analyser.testexample.MethodOverload.C1,org.e2immu.analyser.testexample.MethodOverload.I1",
                 superTypesC2.stream().map(Objects::toString).sorted().collect(Collectors.joining(",")));
         List<ParameterizedType> directSuperTypesC2 = ShallowMethodResolver.directSuperTypes(parser.getTypeContext(), c2);
-        Assert.assertEquals("[Type org.e2immu.analyser.testexample.MethodOverload.C1]", directSuperTypesC2.toString());
+        assertEquals("[Type org.e2immu.analyser.testexample.MethodOverload.C1]", directSuperTypesC2.toString());
 
         MethodInfo toString = c2.findUniqueMethod("toString", 0);
         Set<MethodInfo> overloadsOfToString = toString.methodResolution.get().overrides();
         LOGGER.info("Overloads of toString: {}", overloadsOfToString);
-        Assert.assertEquals("java.lang.Object.toString(),org.e2immu.analyser.testexample.MethodOverload.C1.toString()",
+        assertEquals("java.lang.Object.toString(),org.e2immu.analyser.testexample.MethodOverload.C1.toString()",
                 overloadsOfToString.stream().map(MethodInfo::toString).sorted().collect(Collectors.joining(",")));
     }
 

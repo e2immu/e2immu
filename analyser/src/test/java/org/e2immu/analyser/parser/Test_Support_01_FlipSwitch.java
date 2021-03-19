@@ -21,11 +21,12 @@ package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.visitor.TypeAnalyserVisitor;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class Test_Support_01_FlipSwitch extends CommonTestRunner {
 
@@ -38,7 +39,7 @@ public class Test_Support_01_FlipSwitch extends CommonTestRunner {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("FlipSwitch".equals(d.typeInfo().simpleName)) {
                 String expectE2 = d.iteration() <= 1 ? "{}" : "{t=!t}";
-                Assert.assertEquals(expectE2, d.typeAnalysis().getApprovedPreconditionsE2().toString());
+                assertEquals(expectE2, d.typeAnalysis().getApprovedPreconditionsE2().toString());
             }
         };
 

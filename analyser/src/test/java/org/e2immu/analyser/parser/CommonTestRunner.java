@@ -27,8 +27,7 @@ import org.e2immu.analyser.output.Formatter;
 import org.e2immu.analyser.output.FormattingOptions;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.resolver.SortedType;
-import org.junit.Assert;
-import org.junit.BeforeClass;
+import org.junit.jupiter.api.BeforeAll;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,6 +38,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 public abstract class CommonTestRunner {
     private static final Logger LOGGER = LoggerFactory.getLogger(CommonTestRunner.class);
@@ -55,7 +56,7 @@ public abstract class CommonTestRunner {
         this.withAnnotatedAPIs = false;
     }
 
-    @BeforeClass
+    @BeforeAll
     public static void beforeClass() {
         org.e2immu.analyser.util.Logger.configure(Level.INFO);
         org.e2immu.analyser.util.Logger.activate();
@@ -199,18 +200,17 @@ public abstract class CommonTestRunner {
             LOGGER.info("Stream:\n{}\n", formatter.write(outputBuilder));
             //LOGGER.info("\n----\nOutput builder:\n{}", outputBuilder.generateJavaForDebugging());
         }
-        Assert.assertFalse(types.isEmpty());
+        assertFalse(types.isEmpty());
         parser.getMessages().forEach(message -> LOGGER.info(message.toString()));
-        Assert.assertEquals("ERRORS: ", errorsToExpect, (int) parser.getMessages()
-                .filter(m -> m.severity == Message.Severity.ERROR).count());
-        Assert.assertEquals("WARNINGS: ", warningsToExpect, (int) parser.getMessages()
-                .filter(m -> m.severity == Message.Severity.WARN).count());
+        assertEquals((int) parser.getMessages()
+                .filter(m -> m.severity == Message.Severity.ERROR).count(), errorsToExpect, "ERRORS: ");
+        assertEquals((int) parser.getMessages()
+                .filter(m -> m.severity == Message.Severity.WARN).count(), warningsToExpect, "WARNINGS: ");
         return parser.getTypeContext();
     }
 
     protected void assertSubMap(Map<AnalysisStatus, Set<String>> expect, Map<String, AnalysisStatus> statuses) {
-        expect.forEach((as, set) -> set.forEach(label -> Assert.assertEquals(
-                "Expected " + as + " for " + label + "; map is\n" + statuses,
-                as, statuses.get(label))));
+        expect.forEach((as, set) -> set.forEach(label -> assertEquals(as, statuses.get(label),
+                "Expected " + as + " for " + label + "; map is\n" + statuses)));
     }
 }

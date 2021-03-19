@@ -17,8 +17,9 @@
 
 package org.e2immu.analyser.output;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class TestFormatter4 {
 
@@ -51,6 +52,6 @@ public class TestFormatter4 {
         Formatter formatter = new Formatter(options);
         OutputBuilder example = createExample0();
 
-        Assert.assertEquals("EnumMap<K extends Enum<K>, V>\n", formatter.write(example));
+        assertEquals("EnumMap<K extends Enum<K>, V>\n", formatter.write(example));
     }
 }

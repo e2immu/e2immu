@@ -18,23 +18,25 @@
 
 package org.e2immu.analyser.bytecode.asm;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class TestMyClassVisitor {
 
     @Test
     public void testDirectChild() {
-        Assert.assertTrue(MyClassVisitor.isDirectChildOf(
+        assertTrue(MyClassVisitor.isDirectChildOf(
                 "java/util/stream/StreamSpliterators$SliceSpliterator$OfPrimitive",
                 "java/util/stream/StreamSpliterators$SliceSpliterator"));
-        Assert.assertFalse(MyClassVisitor.isDirectChildOf(
+        assertFalse(MyClassVisitor.isDirectChildOf(
                 "java/util/stream/StreamSpliterators$SliceSpliterator$OfPrimitive",
                 "java/util/stream/StreamSpliterators$SliceSpliterator$OfPrimitive"));
-        Assert.assertFalse(MyClassVisitor.isDirectChildOf(
+        assertFalse(MyClassVisitor.isDirectChildOf(
                 "java/util/stream/StreamSpliterators$SliceSpliterator",
                 "java/util/stream/StreamSpliterators$SliceSpliterator$OfPrimitive"));
-        Assert.assertFalse(MyClassVisitor.isDirectChildOf(
+        assertFalse(MyClassVisitor.isDirectChildOf(
                 "java/util/stream/StreamSpliterators$SliceSpliterator$SomeOther",
                 "java/util/stream/StreamSpliterators$SliceSpliterator$OfPrimitive"));
     }

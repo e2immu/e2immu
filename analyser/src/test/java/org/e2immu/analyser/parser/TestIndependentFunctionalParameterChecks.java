@@ -23,10 +23,12 @@ import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class TestIndependentFunctionalParameterChecks extends CommonTestRunner {
 
@@ -38,7 +40,7 @@ public class TestIndependentFunctionalParameterChecks extends CommonTestRunner {
     // it should not yet cause an error in the first.
     StatementAnalyserVisitor statementAnalyserVisitor = d -> {
         if("getFirst".equals(d.methodInfo().name) && d.iteration() == 0) {
-            Assert.assertNotNull(d.haveError(Message.NULL_POINTER_EXCEPTION)); // TODO
+            assertNotNull(d.haveError(Message.NULL_POINTER_EXCEPTION)); // TODO
         }
     };
 
@@ -46,9 +48,9 @@ public class TestIndependentFunctionalParameterChecks extends CommonTestRunner {
         if ("stream".equals(d.methodInfo().name)) {
             int notNull = d.methodAnalysis().getProperty(VariableProperty.NOT_NULL_EXPRESSION);
             if (d.iteration() == 0) {
-                Assert.assertEquals(Level.DELAY, notNull);
+                assertEquals(Level.DELAY, notNull);
             } else {
-                Assert.assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL, notNull);
+                assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL, notNull);
             }
         }
     };

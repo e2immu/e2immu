@@ -17,8 +17,9 @@
 
 package org.e2immu.analyser.analyser;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class TestLevelSuffixes {
 
@@ -27,7 +28,7 @@ public class TestLevelSuffixes {
         String[] order = {"-", "0", "0-C", "0-E", "0.0.0", "0.0.0-E", "0.0.0.0.0", "0.0.0.1.0", "0.0.0:M", "0:M"};
         for (int i = 0; i < order.length - 1; i++) {
             for (int j = i + 1; j < order.length; j++) {
-                Assert.assertTrue(order[i].compareTo(order[j]) < 0);
+                assertTrue(order[i].compareTo(order[j]) < 0);
             }
         }
     }

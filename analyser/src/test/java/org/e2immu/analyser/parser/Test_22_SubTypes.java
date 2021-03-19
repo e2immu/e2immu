@@ -23,12 +23,13 @@ import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.visitor.*;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.Set;
 import java.util.function.Function;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_22_SubTypes extends CommonTestRunner {
     public Test_22_SubTypes() {
@@ -48,32 +49,32 @@ public class Test_22_SubTypes extends CommonTestRunner {
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("key".equals(d.fieldInfo().name) && SUBTYPE.equals(d.fieldInfo().owner.simpleName)) {
-                Assert.assertEquals(Level.TRUE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
-                Assert.assertEquals("", d.fieldAnalysis().getLinkedVariables().toString());
+                assertEquals(Level.TRUE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
+                assertEquals("", d.fieldAnalysis().getLinkedVariables().toString());
             }
         };
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if (SUBTYPE.equals(d.methodInfo().name)) {
-                Assert.assertTrue(d.methodInfo().isConstructor);
+                assertTrue(d.methodInfo().isConstructor);
             }
         };
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if (SUBTYPE.equals(d.methodInfo().name) && KEY.equals(d.variableName())) {
-                Assert.assertEquals("key", d.currentValue().toString());
+                assertEquals("key", d.currentValue().toString());
                 // empty because String is @E2Container!
-                Assert.assertEquals("", d.variableInfo().getLinkedVariables().toString());
+                assertEquals("", d.variableInfo().getLinkedVariables().toString());
             }
 
         };
 
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if (SUBTYPE.equals(d.methodInfo().name) && "0".equals(d.statementId())) {
-                Assert.assertEquals("key", d.evaluationResult().value().toString());
+                assertEquals("key", d.evaluationResult().value().toString());
             }
             if (SUBTYPE.equals(d.methodInfo().name) && "1".equals(d.statementId())) {
-                Assert.assertEquals("value+\"abc\"", d.evaluationResult().value().toString());
+                assertEquals("value+\"abc\"", d.evaluationResult().value().toString());
             }
         };
 
@@ -91,24 +92,24 @@ public class Test_22_SubTypes extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("NonStaticSubType2".equals(d.methodInfo().typeInfo.simpleName) && "toString".equals(d.methodInfo().name)) {
                 Set<MethodAnalysis> overrides = d.methodAnalysis().getOverrides(d.evaluationContext().getAnalyserContext());
-                Assert.assertEquals(1, overrides.size());
+                assertEquals(1, overrides.size());
                 MethodAnalysis objectToString = overrides.stream().findFirst().orElseThrow();
-                Assert.assertEquals("Object", objectToString.getMethodInfo().typeInfo.simpleName);
+                assertEquals("Object", objectToString.getMethodInfo().typeInfo.simpleName);
             }
         };
 
         TypeMapVisitor typeMapVisitor = typeMap -> {
             TypeInfo object = typeMap.get(Object.class);
             MethodInfo toString = object.findUniqueMethod("toString", 0);
-            Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL,
+            assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL,
                     toString.methodAnalysis.get().getProperty(VariableProperty.NOT_NULL_EXPRESSION));
-            Assert.assertEquals(Level.FALSE, toString.methodAnalysis.get().getProperty(VariableProperty.MODIFIED_METHOD));
+            assertEquals(Level.FALSE, toString.methodAnalysis.get().getProperty(VariableProperty.MODIFIED_METHOD));
 
             TypeInfo nonStatic2 = typeMap.get("org.e2immu.analyser.testexample.SubTypes_2.NonStaticSubType2");
             MethodInfo toString2 = nonStatic2.findUniqueMethod("toString", 0);
             Set<MethodInfo> overrides = toString2.methodResolution.get().overrides();
-            Assert.assertEquals(1, overrides.size());
-            Assert.assertSame(toString, overrides.stream().findFirst().orElseThrow());
+            assertEquals(1, overrides.size());
+            assertSame(toString, overrides.stream().findFirst().orElseThrow());
         };
 
         testClass("SubTypes_2", 3, 0, new DebugConfiguration.Builder()
@@ -139,7 +140,7 @@ public class Test_22_SubTypes extends CommonTestRunner {
             MethodInfo apply = function.findUniqueMethod("apply", 1);
             ParameterInfo apply0 = apply.methodInspection.get().getParameters().get(0);
             int modified = apply0.parameterAnalysis.get().getProperty(VariableProperty.MODIFIED_VARIABLE);
-            Assert.assertEquals(Level.FALSE, modified);
+            assertEquals(Level.FALSE, modified);
         };
 
         // error: we postulate that Function has a @NotModified parameter

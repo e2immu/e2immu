@@ -18,13 +18,14 @@
 
 package org.e2immu.analyser.util;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 public class TestTrie {
     private static final Logger LOGGER = LoggerFactory.getLogger(TestTrie.class);
@@ -40,22 +41,22 @@ public class TestTrie {
         trie.visit(new String[]{"org", "e2immu"}, (ss, list) -> {
             LOGGER.info("Visit 1: {} -> {}", Arrays.toString(ss), list);
             if (counter.getAndIncrement() == 0) {
-                Assert.assertEquals("[analyser, util]", Arrays.toString(ss));
-                Assert.assertEquals("[Trie, Either]", list.toString());
+                assertEquals("[analyser, util]", Arrays.toString(ss));
+                assertEquals("[Trie, Either]", list.toString());
             } else if (counter.getAndIncrement() == 1) {
-                Assert.assertEquals("[analyser, testexample]", Arrays.toString(ss));
-                Assert.assertEquals("[EquivalentLoop]", list.toString());
+                assertEquals("[analyser, testexample]", Arrays.toString(ss));
+                assertEquals("[EquivalentLoop]", list.toString());
             }
         });
 
-        Assert.assertTrue(trie.isStrictPrefix(new String[]{"org"}));
-        Assert.assertFalse(trie.isStrictPrefix(new String[]{"org", "junit"}));
-        Assert.assertTrue(trie.isStrictPrefix(new String[]{"org", "e2immu"}));
-        Assert.assertTrue(trie.isStrictPrefix(new String[]{"org", "e2immu", "analyser"}));
-        Assert.assertFalse(trie.isStrictPrefix(new String[]{"org", "e2immu", "analyser", "util"}));
+        assertTrue(trie.isStrictPrefix(new String[]{"org"}));
+        assertFalse(trie.isStrictPrefix(new String[]{"org", "junit"}));
+        assertTrue(trie.isStrictPrefix(new String[]{"org", "e2immu"}));
+        assertTrue(trie.isStrictPrefix(new String[]{"org", "e2immu", "analyser"}));
+        assertFalse(trie.isStrictPrefix(new String[]{"org", "e2immu", "analyser", "util"}));
 
-        Assert.assertNull(trie.get(new String[]{"com"}));
-        Assert.assertNull(trie.get(new String[]{"org"}));
-        Assert.assertEquals("[Trie, Either]", trie.get(new String[]{"org", "e2immu", "analyser", "util"}).toString());
+        assertNull(trie.get(new String[]{"com"}));
+        assertNull(trie.get(new String[]{"org"}));
+        assertEquals("[Trie, Either]", trie.get(new String[]{"org", "e2immu", "analyser", "util"}).toString());
     }
 }

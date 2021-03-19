@@ -17,11 +17,12 @@
 
 package org.e2immu.analyser.analyser;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class TestDistinct {
 
@@ -33,6 +34,6 @@ public class TestDistinct {
         list.add("abc");
         list.add("b");
         list.add(null);
-        Assert.assertEquals(3L, list.stream().distinct().count());
+        assertEquals(3L, list.stream().distinct().count());
     }
 }

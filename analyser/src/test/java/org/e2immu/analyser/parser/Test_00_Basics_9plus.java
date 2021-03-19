@@ -22,7 +22,7 @@ package org.e2immu.analyser.parser;
 import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analyser.VariableInfoContainer;
 import org.e2immu.analyser.analyser.VariableProperty;
-import org.e2immu.analyser.config.*;
+import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterAnalysis;
@@ -33,10 +33,11 @@ import org.e2immu.analyser.visitor.EvaluationResultVisitor;
 import org.e2immu.analyser.visitor.FieldAnalyserVisitor;
 import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_00_Basics_9plus extends CommonTestRunner {
 
@@ -48,21 +49,21 @@ public class Test_00_Basics_9plus extends CommonTestRunner {
     public void test_9() throws IOException {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("setContainsValueHelper".equals(d.methodInfo().name)) {
-                Assert.assertEquals("Basics_9.isFact(containsE)?containsE:!Basics_9.isKnown(true)&&retVal&&size>=1",
+                assertEquals("Basics_9.isFact(containsE)?containsE:!Basics_9.isKnown(true)&&retVal&&size>=1",
                         d.evaluationResult().value().toString());
-                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL,
+                assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL,
                         d.evaluationResult().evaluationContext().getProperty(d.evaluationResult().value(),
                                 VariableProperty.NOT_NULL_EXPRESSION, false));
             }
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("isFact".equals(d.methodInfo().name) || "isKnown".equals(d.methodInfo().name)) {
-                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL,
+                assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL,
                         d.methodAnalysis().getProperty(VariableProperty.NOT_NULL_EXPRESSION));
                 ParameterAnalysis p0 = d.parameterAnalyses().get(0);
-                Assert.assertEquals(MultiLevel.NOT_INVOLVED, p0.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
-                Assert.assertEquals("Method: " + d.methodInfo().name,
-                        MultiLevel.EFFECTIVELY_NOT_NULL, p0.getProperty(VariableProperty.NOT_NULL_PARAMETER));
+                assertEquals(MultiLevel.NOT_INVOLVED, p0.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
+                assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, p0.getProperty(VariableProperty.NOT_NULL_PARAMETER),
+                        "Method: " + d.methodInfo().name);
             }
         };
         testClass("Basics_9", 0, 2, new DebugConfiguration.Builder()
@@ -76,7 +77,7 @@ public class Test_00_Basics_9plus extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("Basics_10".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof FieldReference fr && "string".equals(fr.fieldInfo.name)) {
-                    Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL,
+                    assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL,
                             d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
                 }
             }
@@ -84,12 +85,12 @@ public class Test_00_Basics_9plus extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("Basics_10".equals(d.methodInfo().name)) {
                 ParameterAnalysis in = d.parameterAnalyses().get(0);
-                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, in.getProperty(VariableProperty.NOT_NULL_PARAMETER));
+                assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, in.getProperty(VariableProperty.NOT_NULL_PARAMETER));
             }
         };
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("string".equals(d.fieldInfo().name)) {
-                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL,
+                assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL,
                         d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_NOT_NULL));
             }
         };
@@ -110,39 +111,39 @@ public class Test_00_Basics_9plus extends CommonTestRunner {
 
                 if (d.variable() instanceof ParameterInfo in1 && "in".equals(in1.name)) {
                     if ("0".equals(d.statementId()) || "1".equals(d.statementId())) {
-                        Assert.assertEquals(NULLABLE_INSTANCE, value);
+                        assertEquals(NULLABLE_INSTANCE, value);
                     }
                     if ("2".equals(d.statementId())) {
                         String expectValue = d.iteration() == 0 ? "<p:in>" : NULLABLE_INSTANCE;
-                        Assert.assertEquals(expectValue, value);
-                        Assert.assertEquals(MultiLevel.NULLABLE, cnn);
+                        assertEquals(expectValue, value);
+                        assertEquals(MultiLevel.NULLABLE, cnn);
                     }
                     if ("3".equals(d.statementId())) {
                         String expectValue = d.iteration() == 0 ? "<p:in>" : NULLABLE_INSTANCE;
-                        Assert.assertEquals(expectValue, value);
-                        Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, cnn);
+                        assertEquals(expectValue, value);
+                        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, cnn);
                     }
                     if ("4".equals(d.statementId())) {
-                        Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, cnn);
+                        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, cnn);
                     }
                 }
                 if ("s1".equals(d.variableName())) {
                     if ("0".equals(d.statementId()) || "1".equals(d.statementId())) {
-                        Assert.assertEquals("in", value);
+                        assertEquals("in", value);
                     }
                     if ("2".equals(d.statementId())) {
                         String expectValue = d.iteration() == 0 ? "<v:s1>" : "in";
-                        Assert.assertEquals(expectValue, value);
+                        assertEquals(expectValue, value);
                     }
                 }
                 if ("s2".equals(d.variableName())) {
                     if ("1".equals(d.statementId()) || "2".equals(d.statementId())) {
-                        Assert.assertEquals("in", value);
+                        assertEquals("in", value);
                     }
                     if ("3".equals(d.statementId())) {
                         String expectValue = d.iteration() == 0 ? "<v:s2>" : "in";
-                        Assert.assertEquals(expectValue, value);
-                        Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, cnn);
+                        assertEquals(expectValue, value);
+                        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, cnn);
                     }
                 }
             }
@@ -177,115 +178,115 @@ public class Test_00_Basics_9plus extends CommonTestRunner {
                 if (d.variable() instanceof ParameterInfo in1 && "in1".equals(in1.name)) {
                     if ("0".equals(d.statementId())) {
                         // means: there are no fields, we have no opinion, right from the start ->
-                        Assert.assertEquals(MultiLevel.NOT_INVOLVED, enn);
-                        Assert.assertEquals(MultiLevel.NULLABLE, nne);
-                        Assert.assertEquals(MultiLevel.NULLABLE, cnn);
-                        Assert.assertEquals(Level.FALSE, cm);
-                        Assert.assertEquals("nullable instance type String", value);
-                        Assert.assertEquals("", linkedVariables);
+                        assertEquals(MultiLevel.NOT_INVOLVED, enn);
+                        assertEquals(MultiLevel.NULLABLE, nne);
+                        assertEquals(MultiLevel.NULLABLE, cnn);
+                        assertEquals(Level.FALSE, cm);
+                        assertEquals("nullable instance type String", value);
+                        assertEquals("", linkedVariables);
                     }
                     if ("4".equals(d.statementId())) {
-                        Assert.assertEquals(MultiLevel.NULLABLE, cnn);
-                        Assert.assertEquals(Level.FALSE, cm);
-                        Assert.assertEquals("", linkedVariables);
+                        assertEquals(MultiLevel.NULLABLE, cnn);
+                        assertEquals(Level.FALSE, cm);
+                        assertEquals("", linkedVariables);
                     }
                 }
                 if (d.variable() instanceof ParameterInfo in2 && "in2".equals(in2.name)) {
                     if ("0".equals(d.statementId())) {
-                        Assert.assertEquals(MultiLevel.NOT_INVOLVED, enn);
-                        Assert.assertEquals(MultiLevel.NULLABLE, nne);
-                        Assert.assertEquals(MultiLevel.NULLABLE, cnn);
-                        Assert.assertEquals(Level.FALSE, cm);
-                        Assert.assertEquals("", linkedVariables);
-                        Assert.assertEquals("nullable instance type String", value);
+                        assertEquals(MultiLevel.NOT_INVOLVED, enn);
+                        assertEquals(MultiLevel.NULLABLE, nne);
+                        assertEquals(MultiLevel.NULLABLE, cnn);
+                        assertEquals(Level.FALSE, cm);
+                        assertEquals("", linkedVariables);
+                        assertEquals("nullable instance type String", value);
                     }
                     if ("4".equals(d.statementId())) {
-                        Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, cnn);
-                        Assert.assertEquals(Level.FALSE, cm);
-                        Assert.assertEquals("", linkedVariables);
+                        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, cnn);
+                        assertEquals(Level.FALSE, cm);
+                        assertEquals("", linkedVariables);
                     }
                 }
                 if (d.variable() instanceof ReturnVariable) {
                     if ("0".equals(d.statementId())) {
-                        Assert.assertEquals("<return value>", value);
-                        Assert.assertEquals("", staticallyAssignedVariables);
-                        Assert.assertEquals(MultiLevel.NULLABLE, cnn);
-                        Assert.assertEquals(MultiLevel.NULLABLE, nne);
-                        Assert.assertEquals(MultiLevel.NOT_INVOLVED, enn);
-                        Assert.assertEquals(Level.FALSE, cm);
-                        Assert.assertEquals("", linkedVariables);
+                        assertEquals("<return value>", value);
+                        assertEquals("", staticallyAssignedVariables);
+                        assertEquals(MultiLevel.NULLABLE, cnn);
+                        assertEquals(MultiLevel.NULLABLE, nne);
+                        assertEquals(MultiLevel.NOT_INVOLVED, enn);
+                        assertEquals(Level.FALSE, cm);
+                        assertEquals("", linkedVariables);
                     }
                     if ("4".equals(d.statementId())) {
-                        Assert.assertEquals("in1", value);
-                        Assert.assertEquals("b", staticallyAssignedVariables);
-                        Assert.assertEquals(MultiLevel.NULLABLE, cnn);
-                        Assert.assertEquals(MultiLevel.NULLABLE, nne);
-                        Assert.assertEquals(MultiLevel.NOT_INVOLVED, enn);
-                        Assert.assertEquals(Level.FALSE, cm);
-                        Assert.assertEquals("", linkedVariables);
+                        assertEquals("in1", value);
+                        assertEquals("b", staticallyAssignedVariables);
+                        assertEquals(MultiLevel.NULLABLE, cnn);
+                        assertEquals(MultiLevel.NULLABLE, nne);
+                        assertEquals(MultiLevel.NOT_INVOLVED, enn);
+                        assertEquals(Level.FALSE, cm);
+                        assertEquals("", linkedVariables);
                     }
                 }
                 if ("a".equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {
-                        Assert.assertEquals("in1", value);
-                        Assert.assertTrue(d.variableInfo().valueIsSet());
-                        Assert.assertEquals("in1", staticallyAssignedVariables);
-                        Assert.assertEquals(MultiLevel.NOT_INVOLVED, enn);
-                        Assert.assertEquals(MultiLevel.NULLABLE, cnn);
-                        Assert.assertEquals(MultiLevel.NULLABLE, nne);
-                        Assert.assertEquals(Level.FALSE, cm);
-                        Assert.assertEquals("", linkedVariables);
+                        assertEquals("in1", value);
+                        assertTrue(d.variableInfo().valueIsSet());
+                        assertEquals("in1", staticallyAssignedVariables);
+                        assertEquals(MultiLevel.NOT_INVOLVED, enn);
+                        assertEquals(MultiLevel.NULLABLE, cnn);
+                        assertEquals(MultiLevel.NULLABLE, nne);
+                        assertEquals(Level.FALSE, cm);
+                        assertEquals("", linkedVariables);
                     }
                     if ("2".equals(d.statementId())) {
-                        Assert.assertEquals("in2", staticallyAssignedVariables);
-                        Assert.assertTrue(d.variableInfo().valueIsSet());
-                        Assert.assertEquals(MultiLevel.NULLABLE, cnn);
-                        Assert.assertEquals(MultiLevel.NOT_INVOLVED, enn);
+                        assertEquals("in2", staticallyAssignedVariables);
+                        assertTrue(d.variableInfo().valueIsSet());
+                        assertEquals(MultiLevel.NULLABLE, cnn);
+                        assertEquals(MultiLevel.NOT_INVOLVED, enn);
                     }
                     if ("3".equals(d.statementId())) {
-                        Assert.assertFalse(d.variableInfoContainer().hasMerge());
-                        Assert.assertEquals("in2", staticallyAssignedVariables);
-                        Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, cnn);
-                        Assert.assertEquals(MultiLevel.NOT_INVOLVED, enn);
-                        Assert.assertEquals(Level.FALSE, cm);
-                        Assert.assertEquals("", linkedVariables);
+                        assertFalse(d.variableInfoContainer().hasMerge());
+                        assertEquals("in2", staticallyAssignedVariables);
+                        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, cnn);
+                        assertEquals(MultiLevel.NOT_INVOLVED, enn);
+                        assertEquals(Level.FALSE, cm);
+                        assertEquals("", linkedVariables);
                     }
                     if ("4".equals(d.statementId())) {
-                        Assert.assertEquals("in2", staticallyAssignedVariables);
-                        Assert.assertEquals("", linkedVariables);
+                        assertEquals("in2", staticallyAssignedVariables);
+                        assertEquals("", linkedVariables);
                     }
                 }
                 if ("b".equals(d.variableName())) {
                     if ("1".equals(d.statementId())) {
-                        Assert.assertEquals("a", staticallyAssignedVariables);
-                        Assert.assertEquals(MultiLevel.NULLABLE, cnn);
-                        Assert.assertEquals(MultiLevel.NULLABLE, nne);
-                        Assert.assertEquals(MultiLevel.NOT_INVOLVED, enn);
-                        Assert.assertEquals(Level.FALSE, cm);
-                        Assert.assertEquals("", linkedVariables);
-                        Assert.assertTrue(d.variableInfo().valueIsSet());
+                        assertEquals("a", staticallyAssignedVariables);
+                        assertEquals(MultiLevel.NULLABLE, cnn);
+                        assertEquals(MultiLevel.NULLABLE, nne);
+                        assertEquals(MultiLevel.NOT_INVOLVED, enn);
+                        assertEquals(Level.FALSE, cm);
+                        assertEquals("", linkedVariables);
+                        assertTrue(d.variableInfo().valueIsSet());
                     }
                     if ("2".equals(d.statementId())) {
-                        Assert.assertEquals("in1", staticallyAssignedVariables);
-                        Assert.assertEquals(MultiLevel.NULLABLE, cnn);
-                        Assert.assertEquals(MultiLevel.NOT_INVOLVED, enn);
-                        Assert.assertEquals(Level.FALSE, cm);
-                        Assert.assertEquals("", linkedVariables);
-                        Assert.assertTrue(d.variableInfo().valueIsSet());
+                        assertEquals("in1", staticallyAssignedVariables);
+                        assertEquals(MultiLevel.NULLABLE, cnn);
+                        assertEquals(MultiLevel.NOT_INVOLVED, enn);
+                        assertEquals(Level.FALSE, cm);
+                        assertEquals("", linkedVariables);
+                        assertTrue(d.variableInfo().valueIsSet());
                     }
                     if ("3".equals(d.statementId())) {
-                        Assert.assertFalse(d.variableInfoContainer().hasMerge());
-                        Assert.assertEquals("in1", staticallyAssignedVariables);
-                        Assert.assertEquals(MultiLevel.NULLABLE, cnn);
-                        Assert.assertEquals(Level.FALSE, cm);
-                        Assert.assertEquals("", linkedVariables);
+                        assertFalse(d.variableInfoContainer().hasMerge());
+                        assertEquals("in1", staticallyAssignedVariables);
+                        assertEquals(MultiLevel.NULLABLE, cnn);
+                        assertEquals(Level.FALSE, cm);
+                        assertEquals("", linkedVariables);
                     }
                     if ("4".equals(d.statementId())) {
-                        Assert.assertEquals(MultiLevel.NULLABLE, cnn);
-                        Assert.assertEquals(Level.FALSE, cm);
-                        Assert.assertEquals("in1", value);
-                        Assert.assertEquals("", linkedVariables);
-                        Assert.assertEquals(MultiLevel.NOT_INVOLVED, enn);
+                        assertEquals(MultiLevel.NULLABLE, cnn);
+                        assertEquals(Level.FALSE, cm);
+                        assertEquals("in1", value);
+                        assertEquals("", linkedVariables);
+                        assertEquals(MultiLevel.NOT_INVOLVED, enn);
                     }
                 }
             }
@@ -306,48 +307,46 @@ public class Test_00_Basics_9plus extends CommonTestRunner {
             if ("setT".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo p && "t".equals(p.name)) {
                     int expectContainer = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
-                    Assert.assertEquals("Statement: " + d.statementId(), expectContainer,
-                            d.getProperty(VariableProperty.CONTAINER));
+                    assertEquals(expectContainer, d.getProperty(VariableProperty.CONTAINER), "Statement: " + d.statementId());
                 }
             }
             if ("getT".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof FieldReference t && t.fieldInfo.name.equals("t")) {
                     if ("0".equals(d.statementId())) {
                         VariableInfo initial = d.variableInfoContainer().getPreviousOrInitial();
-                        Assert.assertEquals(MultiLevel.NULLABLE, initial.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+                        assertEquals(MultiLevel.NULLABLE, initial.getProperty(VariableProperty.CONTEXT_NOT_NULL));
 
                         VariableInfo eval = d.variableInfoContainer().best(VariableInfoContainer.Level.EVALUATION);
-                        Assert.assertEquals(MultiLevel.NULLABLE, eval.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+                        assertEquals(MultiLevel.NULLABLE, eval.getProperty(VariableProperty.CONTEXT_NOT_NULL));
                     }
 
                     String expectValue = d.iteration() == 0 ? "<f:t>" : "nullable instance type T";
-                    Assert.assertEquals(expectValue, d.currentValue().toString());
+                    assertEquals(expectValue, d.currentValue().toString());
 
                     int expectEnn = d.iteration() == 0 ? Level.DELAY : MultiLevel.NULLABLE;
-                    Assert.assertEquals("Statement " + d.statementId(), expectEnn, enn);
+                    assertEquals(expectEnn, enn);
 
                     if ("0.0.0".equals(d.statementId())) {
-                        Assert.assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+                        assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
                     } else {
                         int expectCnn = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
-                        Assert.assertEquals("Stmt " + d.statementId() + " it " + d.iteration(), expectCnn, cnn);
+                        assertEquals(expectCnn, cnn);
                     }
                 }
                 if ("t$0".equals(d.variableInfo().variable().simpleName())) {
-                    Assert.assertEquals(MultiLevel.NULLABLE, cnn);
-                    Assert.assertEquals("Statement " + d.statementId(), MultiLevel.NULLABLE, enn);
+                    assertEquals(MultiLevel.NULLABLE, cnn);
+                    assertEquals(MultiLevel.NULLABLE, enn);
                 }
             }
             if (d.iteration() > 1) {
-                Assert.assertTrue("Statement " + d.statementId() + " var " + d.variable().fullyQualifiedName(),
-                        enn != Level.DELAY);
+                assertTrue(enn != Level.DELAY);
             }
         };
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("t".equals(d.fieldInfo().name)) {
-                Assert.assertEquals(MultiLevel.NULLABLE, d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_NOT_NULL));
-                Assert.assertEquals(Level.FALSE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
+                assertEquals(MultiLevel.NULLABLE, d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_NOT_NULL));
+                assertEquals(Level.FALSE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
             }
         };
 
@@ -355,7 +354,7 @@ public class Test_00_Basics_9plus extends CommonTestRunner {
             if ("setT".equals(d.methodInfo().name)) {
                 ParameterAnalysis p0 = d.parameterAnalyses().get(0);
                 int expectContainer = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
-                Assert.assertEquals(expectContainer, p0.getProperty(VariableProperty.CONTAINER));
+                assertEquals(expectContainer, p0.getProperty(VariableProperty.CONTAINER));
             }
         };
 

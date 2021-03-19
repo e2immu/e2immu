@@ -17,8 +17,9 @@
 
 package org.e2immu.analyser.output;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class TestFormatter3 {
 
@@ -168,7 +169,7 @@ public class TestFormatter3 {
         Formatter formatter = new Formatter(options);
         OutputBuilder example = createExample0();
 
-        Assert.assertEquals("""
+        assertEquals("""
                   package org.e2immu.analyser.testexample;
                   import java.util.stream.Stream;
                   import org.e2immu.annotation.NotModified;

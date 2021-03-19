@@ -27,10 +27,11 @@ import org.e2immu.analyser.visitor.TypeAnalyserVisitor;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /*
 a series of tests to detect an infinite delayed loop 20210311
@@ -46,25 +47,25 @@ public class Test_38_FirstThen extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("FirstThen_0".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo first && "first".equals(first.name)) {
-                    Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
-                    Assert.assertEquals("nullable instance type S", d.currentValue().toString());
-                    Assert.assertEquals("", d.variableInfo().getLinkedVariables().toString());
+                    assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+                    assertEquals("nullable instance type S", d.currentValue().toString());
+                    assertEquals("", d.variableInfo().getLinkedVariables().toString());
                 }
             }
         };
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("first".equals(d.fieldInfo().name)) {
-                Assert.assertEquals(Level.FALSE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
+                assertEquals(Level.FALSE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
 
                 String expectValues = "[first/*@NotNull*/,null]";
-          //      Assert.assertEquals(expectValues, ((FieldAnalysisImpl.Builder) d.fieldAnalysis()).getValues().toString());
+          //      assertEquals(expectValues, ((FieldAnalysisImpl.Builder) d.fieldAnalysis()).getValues().toString());
             }
         };
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("FirstThen_0".equals(d.typeInfo().simpleName)) {
-                Assert.assertEquals("[Type param S]", d.typeAnalysis().getImplicitlyImmutableDataTypes().toString());
+                assertEquals("[Type param S]", d.typeAnalysis().getImplicitlyImmutableDataTypes().toString());
             }
         };
 

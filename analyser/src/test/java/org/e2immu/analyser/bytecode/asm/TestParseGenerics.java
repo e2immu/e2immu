@@ -29,9 +29,8 @@ import org.e2immu.analyser.parser.Input;
 import org.e2immu.analyser.parser.TypeMapImpl;
 import org.e2immu.analyser.util.Logger;
 import org.e2immu.analyser.util.Resources;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.net.URL;
@@ -39,12 +38,14 @@ import java.util.*;
 
 import static org.e2immu.analyser.inspector.TypeInspectionImpl.InspectionState.STARTING_BYTECODE;
 import static org.e2immu.analyser.inspector.TypeInspectionImpl.InspectionState.TRIGGER_BYTECODE_INSPECTION;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 
 public class TestParseGenerics {
 
     private static TypeContext typeContext;
 
-    @BeforeClass
+    @BeforeAll
     public static void beforeClass() throws IOException {
         Logger.activate(Logger.LogTarget.BYTECODE_INSPECTOR, Logger.LogTarget.BYTECODE_INSPECTOR_DEBUG);
 
@@ -62,20 +63,20 @@ public class TestParseGenerics {
     @Test
     public void testNormalTypeParameter() {
         TypeInfo typeInfo = typeContext.getFullyQualified(Spliterator.class);
-        Assert.assertEquals("java.util.Spliterator<T>", typeInfo.asParameterizedType(typeContext).printForMethodFQN(typeContext, false, Diamond.SHOW_ALL));
-        Assert.assertEquals("java.util.Spliterator<>", typeInfo.asParameterizedType(typeContext).printForMethodFQN(typeContext, false, Diamond.YES));
-        Assert.assertEquals("java.util.Spliterator", typeInfo.asParameterizedType(typeContext).printForMethodFQN(typeContext, false, Diamond.NO));
+        assertEquals("java.util.Spliterator<T>", typeInfo.asParameterizedType(typeContext).printForMethodFQN(typeContext, false, Diamond.SHOW_ALL));
+        assertEquals("java.util.Spliterator<>", typeInfo.asParameterizedType(typeContext).printForMethodFQN(typeContext, false, Diamond.YES));
+        assertEquals("java.util.Spliterator", typeInfo.asParameterizedType(typeContext).printForMethodFQN(typeContext, false, Diamond.NO));
     }
 
     @Test
     public void testWildcard() {
         TypeInfo typeInfo = typeContext.getFullyQualified(Collection.class);
-        Assert.assertEquals("java.util.Collection<E>", typeInfo.asParameterizedType(typeContext)
+        assertEquals("java.util.Collection<E>", typeInfo.asParameterizedType(typeContext)
                 .printForMethodFQN(typeContext, false, Diamond.SHOW_ALL));
         TypeInspection typeInspection = typeContext.getTypeInspection(typeInfo);
         MethodInfo containsAll = typeInspection.methods().stream()
                 .filter(m -> m.name.equals("containsAll")).findFirst().orElseThrow();
-        Assert.assertEquals("java.util.Collection.containsAll(java.util.Collection<?>)", containsAll.fullyQualifiedName);
+        assertEquals("java.util.Collection.containsAll(java.util.Collection<?>)", containsAll.fullyQualifiedName);
     }
 
     @Test
@@ -83,7 +84,7 @@ public class TestParseGenerics {
         TypeInfo typeInfo = typeContext.getFullyQualified(Collection.class);
         TypeInspection typeInspection = typeContext.getTypeInspection(typeInfo);
         MethodInfo addAll = typeInspection.methods().stream().filter(m -> m.name.equals("addAll")).findFirst().orElseThrow();
-        Assert.assertEquals("java.util.Collection.addAll(java.util.Collection<? extends E>)", addAll.fullyQualifiedName);
+        assertEquals("java.util.Collection.addAll(java.util.Collection<? extends E>)", addAll.fullyQualifiedName);
     }
 
     @Test
@@ -98,26 +99,26 @@ public class TestParseGenerics {
                 findType);
         int expected = "<K:Ljava/lang/Enum<TK;>;V:Ljava/lang/Object;>".length();
         int pos = parseGenerics.parseTypeGenerics(signature) + 1;
-        Assert.assertEquals(expected, pos);
+        assertEquals(expected, pos);
 
         TypeParameter K = typeInspectionBuilder.typeParameters().get(0);
-        Assert.assertEquals(1, K.getTypeBounds().size());
+        assertEquals(1, K.getTypeBounds().size());
         ParameterizedType typeBoundK = K.getTypeBounds().get(0);
-        Assert.assertEquals(ParameterizedType.WildCard.NONE, typeBoundK.wildCard);
+        assertEquals(ParameterizedType.WildCard.NONE, typeBoundK.wildCard);
 
         Set<TypeParameter> visited = new HashSet<>();
         visited.add(K);
-        Assert.assertEquals("java.lang.Enum<K>", ParameterizedTypePrinter.print(newTypeContext,
+        assertEquals("java.lang.Enum<K>", ParameterizedTypePrinter.print(newTypeContext,
                 Qualification.FULLY_QUALIFIED_NAME, typeBoundK, false, Diamond.SHOW_ALL, false, visited).toString());
-        Assert.assertSame(K, typeBoundK.parameters.get(0).typeParameter);
+        assertSame(K, typeBoundK.parameters.get(0).typeParameter);
 
         OutputBuilder outputBuilder = ParameterizedTypePrinter.print(typeContext, Qualification.FULLY_QUALIFIED_NAME,
                 typeInfo.asParameterizedType(typeContext), false, Diamond.SHOW_ALL, false);
         System.out.println(outputBuilder.generateJavaForDebugging());
         FormattingOptions options = FormattingOptions.DEFAULT;
         org.e2immu.analyser.output.Formatter formatter = new Formatter(options);
-        Assert.assertEquals("java.util.EnumMap<K extends java.lang.Enum<K>, V>\n", formatter.write(outputBuilder));
-        Assert.assertEquals("java.util.EnumMap<K extends java.lang.Enum<K>,V>", outputBuilder.toString());
+        assertEquals("java.util.EnumMap<K extends java.lang.Enum<K>, V>\n", formatter.write(outputBuilder));
+        assertEquals("java.util.EnumMap<K extends java.lang.Enum<K>,V>", outputBuilder.toString());
     }
 
     @Test
@@ -126,7 +127,7 @@ public class TestParseGenerics {
         TypeInspection typeInspection = typeContext.getTypeInspection(sortedSet);
         MethodInfo comparator = typeInspection.methods().stream().filter(m -> m.name.equals("comparator")).findFirst().orElseThrow();
         MethodInspection comparatorInspection = typeContext.getMethodInspection(comparator);
-        Assert.assertEquals("java.util.Comparator<? super E>", comparatorInspection.getReturnType().printForMethodFQN(typeContext, false, Diamond.SHOW_ALL));
+        assertEquals("java.util.Comparator<? super E>", comparatorInspection.getReturnType().printForMethodFQN(typeContext, false, Diamond.SHOW_ALL));
     }
 
     /*
@@ -142,11 +143,11 @@ public class TestParseGenerics {
 
         TypeParameter splitter = typeInspectionBuilder.typeParameters().get(2);
         ParameterizedType typeBoundSplitter = splitter.getTypeBounds().get(0);
-        Assert.assertEquals(ParameterizedType.WildCard.NONE, typeBoundSplitter.wildCard); // EXTENDS
+        assertEquals(ParameterizedType.WildCard.NONE, typeBoundSplitter.wildCard); // EXTENDS
 
-        Assert.assertSame(splitter, typeBoundSplitter.parameters.get(2).typeParameter);
+        assertSame(splitter, typeBoundSplitter.parameters.get(2).typeParameter);
 
-        Assert.assertEquals("java.util.Spliterator.OfPrimitive<T,T_CONS,T_SPLITR extends java.util.Spliterator.OfPrimitive<T,T_CONS,T_SPLITR>>",
+        assertEquals("java.util.Spliterator.OfPrimitive<T,T_CONS,T_SPLITR extends java.util.Spliterator.OfPrimitive<T,T_CONS,T_SPLITR>>",
                 pt.printForMethodFQN(typeContext, false, Diamond.SHOW_ALL));
     }
 
@@ -165,6 +166,6 @@ public class TestParseGenerics {
 
         int expected = "<K:Ljava/lang/Object;>".length();
         int pos = parseGenerics.parseTypeGenerics(signature) + 1;
-        Assert.assertEquals(expected, pos);
+        assertEquals(expected, pos);
     }
 }

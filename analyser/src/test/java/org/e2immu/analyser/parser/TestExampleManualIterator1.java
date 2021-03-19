@@ -7,13 +7,14 @@ import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.visitor.*;
 import org.e2immu.annotation.AnnotationMode;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 public class TestExampleManualIterator1 extends CommonTestRunner {
 
@@ -24,24 +25,24 @@ public class TestExampleManualIterator1 extends CommonTestRunner {
     MethodAnalyserVisitor methodAnalyserVisitor = d -> {
         MethodLevelData methodLevelData = d.methodAnalysis().methodLevelData();
         if ("iterator".equals(d.methodInfo().name)) {
-            //  Assert.assertEquals(MultiLevel.EFFECTIVE, methodInfo.methodAnalysis.get().getProperty(VariableProperty.INDEPENDENT));
+            //  assertEquals(MultiLevel.EFFECTIVE, methodInfo.methodAnalysis.get().getProperty(VariableProperty.INDEPENDENT));
             VariableInfo variableInfo = d.getReturnAsVariable();
-            Assert.assertTrue(variableInfo.isNotDelayed());
+            assertTrue(variableInfo.isNotDelayed());
         }
 
         if (Set.of("hasNext", "next").contains(d.methodInfo().name) && "MyIteratorImpl".equals(d.methodInfo().typeInfo.simpleName)) {
             if (d.iteration() > 0) {
-                Assert.assertTrue(methodLevelData.linksHaveBeenEstablished.isSet());
+                assertTrue(methodLevelData.linksHaveBeenEstablished.isSet());
             }
         }
     };
 
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
         if ("hasNext".equals(d.methodInfo().name) && "MyIteratorImpl.this.list".equals(d.variableName())) {
-            Assert.assertEquals(Level.FALSE, d.getProperty(VariableProperty.MODIFIED_VARIABLE));
+            assertEquals(Level.FALSE, d.getProperty(VariableProperty.MODIFIED_VARIABLE));
         }
         if ("iterator".equals(d.methodInfo().name) && "ExampleManualIterator1.this.list".equals(d.variableName()) && d.iteration() > 1) {
-            Assert.assertEquals(Level.FALSE, d.getProperty(VariableProperty.MODIFIED_VARIABLE));
+            assertEquals(Level.FALSE, d.getProperty(VariableProperty.MODIFIED_VARIABLE));
         }
     };
 
@@ -50,34 +51,34 @@ public class TestExampleManualIterator1 extends CommonTestRunner {
         if ("MyConsumer".equals(typeInfo.simpleName)) {
             MethodInfo accept = typeInfo.findUniqueMethod("accept", 1);
             ParameterInfo param0 = accept.methodInspection.get().getParameters().get(0);
-            Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL,
+            assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL,
                     param0.parameterAnalysis.get().getProperty(VariableProperty.NOT_NULL_EXPRESSION));
         }
         if ("MyIterator".equals(typeInfo.simpleName)) {
             //MethodInfo hasNext = typeInfo.findUniqueMethod("hasNext", 0);
-            Assert.assertSame(AnnotationMode.DEFENSIVE, typeInfo.typeInspection.get().annotationMode());
-            // Assert.assertEquals(Level.TRUE, hasNext.methodAnalysis.get().getProperty(VariableProperty.MODIFIED));
+            assertSame(AnnotationMode.DEFENSIVE, typeInfo.typeInspection.get().annotationMode());
+            // assertEquals(Level.TRUE, hasNext.methodAnalysis.get().getProperty(VariableProperty.MODIFIED));
         }
         if ("ExampleManualIterator1".equals(typeInfo.simpleName)) {
-            Assert.assertEquals("E", d.typeAnalysis().getImplicitlyImmutableDataTypes()
+            assertEquals("E", d.typeAnalysis().getImplicitlyImmutableDataTypes()
                     .stream().map(ParameterizedType::detailedString).sorted().collect(Collectors.joining(";")));
         }
         if ("MyIteratorImpl".equals(typeInfo.simpleName)) {
             int container = d.typeAnalysis().getProperty(VariableProperty.CONTAINER);
             int expectContainer = d.iteration() < 2 ? Level.DELAY : Level.TRUE;
-            Assert.assertEquals(expectContainer, container);
+            assertEquals(expectContainer, container);
 
             int independent = d.typeAnalysis().getProperty(VariableProperty.INDEPENDENT);
             int expectIndependent = d.iteration() < 2 ? Level.DELAY : Level.TRUE;
-            Assert.assertEquals(expectIndependent, independent);
+            assertEquals(expectIndependent, independent);
         }
     };
 
     TypeMapVisitor typeMapVisitor = typeMap -> {
         TypeInfo list = typeMap.get(List.class);
-        Assert.assertSame(AnnotationMode.DEFENSIVE, list.typeInspection.get().annotationMode());
+        assertSame(AnnotationMode.DEFENSIVE, list.typeInspection.get().annotationMode());
         MethodInfo size = list.findUniqueMethod("size", 0);
-        Assert.assertEquals(Level.FALSE, size.methodAnalysis.get().getProperty(VariableProperty.MODIFIED_METHOD));
+        assertEquals(Level.FALSE, size.methodAnalysis.get().getProperty(VariableProperty.MODIFIED_METHOD));
     };
 
     FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
@@ -86,10 +87,10 @@ public class TestExampleManualIterator1 extends CommonTestRunner {
         if ("list".equals(fieldInfo.name) && "MyIteratorImpl".equals(fieldInfo.owner.simpleName)) {
             int modified = d.fieldAnalysis().getProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD);
             int expect = iteration <= 1 ? Level.DELAY : Level.FALSE;
-            Assert.assertEquals(expect, modified);
+            assertEquals(expect, modified);
 
             if (iteration > 0) {
-                Assert.assertEquals("", d.fieldAnalysis().getLinkedVariables().toString());
+                assertEquals("", d.fieldAnalysis().getLinkedVariables().toString());
             }
         }
         if ("list".equals(fieldInfo.name) && "ExampleManualIterator1".equals(fieldInfo.owner.simpleName)) {
@@ -98,24 +99,24 @@ public class TestExampleManualIterator1 extends CommonTestRunner {
                 MethodAnalysis constructorMa = d.evaluationContext().getAnalyserContext().getMethodAnalysis(constructor);
                 VariableInfo constructorTv = constructorMa.getLastStatement().getLatestVariableInfo(fieldInfo.fullyQualifiedName());
 
-                Assert.assertTrue(constructorTv.isRead());
-                Assert.assertEquals(Level.TRUE, constructorTv.getProperty(VariableProperty.MODIFIED_VARIABLE));
+                assertTrue(constructorTv.isRead());
+                assertEquals(Level.TRUE, constructorTv.getProperty(VariableProperty.MODIFIED_VARIABLE));
 
                 MethodInfo visit = fieldInfo.owner.findUniqueMethod("visit", 1);
                 MethodAnalysis visitMa = d.evaluationContext().getAnalyserContext().getMethodAnalysis(visit);
                 VariableInfo visitTv = visitMa.getLastStatement().getLatestVariableInfo(fieldInfo.fullyQualifiedName());
 
-                Assert.assertTrue(visitTv.isRead());
-                Assert.assertEquals(Level.FALSE, visitTv.getProperty(VariableProperty.MODIFIED_VARIABLE));
+                assertTrue(visitTv.isRead());
+                assertEquals(Level.FALSE, visitTv.getProperty(VariableProperty.MODIFIED_VARIABLE));
 
                 MethodInfo iterator = fieldInfo.owner.findUniqueMethod("iterator", 0);
                 MethodAnalysis iteratorMa = d.evaluationContext().getAnalyserContext().getMethodAnalysis(iterator);
                 VariableInfo iteratorTv = iteratorMa.getLastStatement().getLatestVariableInfo(fieldInfo.fullyQualifiedName());
 
-                Assert.assertTrue(iteratorTv.isRead());
+                assertTrue(iteratorTv.isRead());
 
                 if (iteration > 1) {
-                    Assert.assertEquals(Level.FALSE, iteratorTv.getProperty(VariableProperty.MODIFIED_VARIABLE));
+                    assertEquals(Level.FALSE, iteratorTv.getProperty(VariableProperty.MODIFIED_VARIABLE));
                 }
             }
         }
@@ -124,7 +125,7 @@ public class TestExampleManualIterator1 extends CommonTestRunner {
     // TODO we allow for one error at the moment, a transfer of @Size from Collections.addAll which has not yet been implemented
     StatementAnalyserVisitor statementAnalyserVisitor = d -> {
         if ("visit".equals(d.methodInfo().name) && "0".equals(d.statementId()) && d.iteration() > 1) {
-            Assert.assertNotNull(d.haveError(Message.CONDITION_EVALUATES_TO_CONSTANT)); // TODO change message
+            assertNotNull(d.haveError(Message.CONDITION_EVALUATES_TO_CONSTANT)); // TODO change message
         }
     };
 

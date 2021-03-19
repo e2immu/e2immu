@@ -19,8 +19,9 @@ package org.e2immu.analyser.model.value;
 
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.expression.GreaterThanZero;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class TestBooleanAndComparison extends CommonAbstractValue {
 
@@ -33,13 +34,13 @@ public class TestBooleanAndComparison extends CommonAbstractValue {
         GreaterThanZero jGe0 = (GreaterThanZero) GreaterThanZero.greater(minimalEvaluationContext, j, newInt(0), true);
 
         Expression iGe0_and__iLt0_or_jGe0 = newAndAppend(iGe0, newOrAppend(iLt0, jGe0));
-        Assert.assertEquals("i>=0&&j>=0", iGe0_and__iLt0_or_jGe0.toString());
+        assertEquals("i>=0&&j>=0", iGe0_and__iLt0_or_jGe0.toString());
 
         Expression addIGe0Again = newAndAppend(iGe0_and__iLt0_or_jGe0, iGe0);
-        Assert.assertEquals(iGe0_and__iLt0_or_jGe0, addIGe0Again);
+        assertEquals(iGe0_and__iLt0_or_jGe0, addIGe0Again);
 
         Expression addIGe0Again2 = newAndAppend(iGe0, iGe0_and__iLt0_or_jGe0);
-        Assert.assertEquals(iGe0_and__iLt0_or_jGe0, addIGe0Again2);
+        assertEquals(iGe0_and__iLt0_or_jGe0, addIGe0Again2);
     }
 
 }

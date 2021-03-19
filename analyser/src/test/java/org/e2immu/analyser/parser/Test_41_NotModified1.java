@@ -5,11 +5,13 @@ import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
 import org.e2immu.analyser.model.Level;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.Set;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class Test_41_NotModified1 extends CommonTestRunner {
 
@@ -24,13 +26,13 @@ public class Test_41_NotModified1 extends CommonTestRunner {
 
             // checks the 2 errors
             if ("useApply".equals(d.methodInfo().name) && Set.of("2", "3").contains(d.statementId())) {
-                Assert.assertNotNull(d.haveError(Message.CONDITION_EVALUATES_TO_CONSTANT)); // TODO
+                assertNotNull(d.haveError(Message.CONDITION_EVALUATES_TO_CONSTANT)); // TODO
             }
         };
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if("apply".equals(d.methodInfo().name) && "consumer".equals(d.variableName())) {
-                Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.NOT_MODIFIED_1));
+                assertEquals(Level.TRUE, d.getProperty(VariableProperty.NOT_MODIFIED_1));
             }
         };
 

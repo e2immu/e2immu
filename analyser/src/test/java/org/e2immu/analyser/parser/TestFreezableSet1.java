@@ -25,10 +25,12 @@ import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
 import org.e2immu.analyser.visitor.TypeAnalyserVisitor;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MethodAnalysis;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class TestFreezableSet1 extends CommonTestRunner {
 
@@ -38,8 +40,8 @@ public class TestFreezableSet1 extends CommonTestRunner {
 
     TypeAnalyserVisitor typeAnalyserVisitor = d -> {
         if (d.iteration() > 1) {
-            Assert.assertEquals(1L, d.typeAnalysis().getApprovedPreconditionsE2().size());
-            Assert.assertEquals("frozen", d.typeAnalysis().markLabel());
+            assertEquals(1L, d.typeAnalysis().getApprovedPreconditionsE2().size());
+            assertEquals("frozen", d.typeAnalysis().markLabel());
         }
     };
 
@@ -49,24 +51,24 @@ public class TestFreezableSet1 extends CommonTestRunner {
         String name = d.methodInfo().name;
         if (d.iteration() > 0) {
             if ("stream".equals(name)) {
-                Assert.assertEquals(Level.FALSE, modified);
-                Assert.assertEquals("[this.frozen]", methodAnalysis.getPreconditionForEventual().toString());
+                assertEquals(Level.FALSE, modified);
+                assertEquals("[this.frozen]", methodAnalysis.getPreconditionForEventual().toString());
             }
             if ("streamEarly".equals(name)) {
-                Assert.assertEquals(Level.FALSE, modified);
-                Assert.assertEquals("[not (this.frozen)]", methodAnalysis.getPreconditionForEventual().toString());
+                assertEquals(Level.FALSE, modified);
+                assertEquals("[not (this.frozen)]", methodAnalysis.getPreconditionForEventual().toString());
             }
             if ("add".equals(name)) {
-                Assert.assertEquals(Level.TRUE, modified);
-                Assert.assertEquals("[not (this.frozen)]", methodAnalysis.getPreconditionForEventual().toString());
+                assertEquals(Level.TRUE, modified);
+                assertEquals("[not (this.frozen)]", methodAnalysis.getPreconditionForEventual().toString());
             }
             if ("freeze".equals(name)) {
-                Assert.assertEquals(Level.TRUE, modified);
-                Assert.assertEquals("[not (this.frozen)]", methodAnalysis.getPreconditionForEventual().toString());
+                assertEquals(Level.TRUE, modified);
+                assertEquals("[not (this.frozen)]", methodAnalysis.getPreconditionForEventual().toString());
             }
             if ("isFrozen".equals(name)) {
-                Assert.assertEquals(Level.FALSE, modified);
-                Assert.assertTrue(methodAnalysis.getPreconditionForEventual().isEmpty());
+                assertEquals(Level.FALSE, modified);
+                assertTrue(methodAnalysis.getPreconditionForEventual().isEmpty());
             }
         }
     };

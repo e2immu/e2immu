@@ -17,8 +17,9 @@
 
 package org.e2immu.analyser.model;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class TestTypeParameterImpl {
 
@@ -28,6 +29,6 @@ public class TestTypeParameterImpl {
 
         TypeParameter t0 = new TypeParameterImpl(typeInfo, "T", 0);
         TypeParameter t1 = new TypeParameterImpl(typeInfo, "T", 0);
-        Assert.assertEquals(t0, t1);
+        assertEquals(t0, t1);
     }
 }

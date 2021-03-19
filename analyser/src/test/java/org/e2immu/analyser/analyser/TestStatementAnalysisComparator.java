@@ -24,8 +24,10 @@ import org.e2immu.analyser.model.Statement;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.statement.ExpressionAsStatement;
 import org.e2immu.analyser.parser.Primitives;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class TestStatementAnalysisComparator {
     Primitives primitives = new Primitives();
@@ -38,25 +40,25 @@ public class TestStatementAnalysisComparator {
         StatementAnalysis ns01 = newStatementAnalysis("0.1");
         StatementAnalysis ns10 = newStatementAnalysis("1.0");
 
-        Assert.assertTrue(ns0.compareTo(ns0) == 0);
-        Assert.assertTrue(ns0.compareTo(ns1) < 0);
-        Assert.assertTrue(ns0.compareTo(ns01) < 0);
-        Assert.assertTrue(ns0.compareTo(ns10) < 0);
+        assertEquals(ns0.compareTo(ns0), 0);
+        assertTrue(ns0.compareTo(ns1) < 0);
+        assertTrue(ns0.compareTo(ns01) < 0);
+        assertTrue(ns0.compareTo(ns10) < 0);
 
-        Assert.assertTrue(ns01.compareTo(ns0) > 0);
-        Assert.assertTrue(ns01.compareTo(ns1) < 0);
-        Assert.assertTrue(ns01.compareTo(ns01) == 0);
-        Assert.assertTrue(ns01.compareTo(ns10) < 0);
+        assertTrue(ns01.compareTo(ns0) > 0);
+        assertTrue(ns01.compareTo(ns1) < 0);
+        assertEquals(ns01.compareTo(ns01), 0);
+        assertTrue(ns01.compareTo(ns10) < 0);
 
-        Assert.assertTrue(ns1.compareTo(ns0) > 0);
-        Assert.assertTrue(ns1.compareTo(ns01) > 0);
-        Assert.assertTrue(ns1.compareTo(ns1) == 0);
-        Assert.assertTrue(ns1.compareTo(ns10) < 0);
+        assertTrue(ns1.compareTo(ns0) > 0);
+        assertTrue(ns1.compareTo(ns01) > 0);
+        assertEquals(ns1.compareTo(ns1), 0);
+        assertTrue(ns1.compareTo(ns10) < 0);
 
-        Assert.assertTrue(ns10.compareTo(ns0) > 0);
-        Assert.assertTrue(ns10.compareTo(ns01) > 0);
-        Assert.assertTrue(ns10.compareTo(ns1) > 0);
-        Assert.assertTrue(ns10.compareTo(ns10) == 0);
+        assertTrue(ns10.compareTo(ns0) > 0);
+        assertTrue(ns10.compareTo(ns01) > 0);
+        assertTrue(ns10.compareTo(ns1) > 0);
+        assertEquals(ns10.compareTo(ns10), 0);
     }
 
     private StatementAnalysis newStatementAnalysis(String s) {

@@ -3,10 +3,11 @@ package org.e2immu.analyser.parser;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.visitor.TypeMapVisitor;
 import org.e2immu.analyser.model.MethodInfo;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class Test_15_InlineMethods extends CommonTestRunner {
     public Test_15_InlineMethods() {
@@ -15,7 +16,7 @@ public class Test_15_InlineMethods extends CommonTestRunner {
 
     TypeMapVisitor typeMapVisitor = typeMap -> {
         MethodInfo unaryMinusInt = typeMap.getPrimitives().unaryMinusOperatorInt;
-        Assert.assertEquals("int.-(int)", unaryMinusInt.fullyQualifiedName());
+        assertEquals("int.-(int)", unaryMinusInt.fullyQualifiedName());
     };
 
     @Test

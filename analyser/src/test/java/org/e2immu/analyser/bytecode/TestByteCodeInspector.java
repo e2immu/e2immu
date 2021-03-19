@@ -28,9 +28,8 @@ import org.e2immu.analyser.parser.Input;
 import org.e2immu.analyser.parser.TypeMap;
 import org.e2immu.analyser.parser.TypeMapImpl;
 import org.e2immu.analyser.util.Resources;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,11 +37,13 @@ import java.io.IOException;
 import java.net.URL;
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 public class TestByteCodeInspector {
     public static final String VERSION = "0.0.1"; // TODO determine dynamically
     private static final Logger LOGGER = LoggerFactory.getLogger(TestByteCodeInspector.class);
 
-    @BeforeClass
+    @BeforeAll
     public static void beforeClass() {
         org.e2immu.analyser.util.Logger.activate(org.e2immu.analyser.util.Logger.LogTarget.BYTECODE_INSPECTOR,
                 org.e2immu.analyser.util.Logger.LogTarget.BYTECODE_INSPECTOR_DEBUG);
@@ -70,7 +71,7 @@ public class TestByteCodeInspector {
     public void test() throws IOException {
         TypeMap typeMap = parseFromJar("org/e2immu/analyser/parser/Parser");
         TypeInfo parser = typeMap.get("org.e2immu.analyser.parser.Parser");
-        Assert.assertEquals(TypeNature.CLASS, parser.typeInspection.get().typeNature());
+        assertEquals(TypeNature.CLASS, parser.typeInspection.get().typeNature());
         LOGGER.info("Stream is\n{}", parser.toString());
     }
 
@@ -79,9 +80,9 @@ public class TestByteCodeInspector {
         TypeMap typeMap = parseFromJar("org/e2immu/analyser/parser/Parser$InspectWithJavaParserImpl");
         TypeInfo subType = typeMap.get("org.e2immu.analyser.parser.Parser.InspectWithJavaParserImpl");
 
-        Assert.assertEquals(TypeNature.CLASS, subType.typeInspection.get().typeNature());
-        Assert.assertFalse(subType.typeInspection.get().isStatic());
-        Assert.assertTrue(subType.typeInspection.get().modifiers().contains(TypeModifier.PRIVATE));
+        assertEquals(TypeNature.CLASS, subType.typeInspection.get().typeNature());
+        assertFalse(subType.typeInspection.get().isStatic());
+        assertTrue(subType.typeInspection.get().modifiers().contains(TypeModifier.PRIVATE));
 
         LOGGER.info("Stream is\n{}", subType.toString());
     }
@@ -92,7 +93,7 @@ public class TestByteCodeInspector {
         TypeInfo typeInfo = typeMap.get("org.e2immu.analyser.analyser.EvaluationContext");
 
         LOGGER.info("Stream is\n{}", typeInfo.toString());
-        Assert.assertEquals(TypeNature.INTERFACE, typeInfo.typeInspection.get().typeNature());
+        assertEquals(TypeNature.INTERFACE, typeInfo.typeInspection.get().typeNature());
     }
 
     @Test
@@ -100,7 +101,7 @@ public class TestByteCodeInspector {
         TypeMap typeMap = parseFromJar("org/e2immu/analyser/util/Lazy.class");
         TypeInfo typeInfo = typeMap.get("org.e2immu.support.Lazy");
 
-        Assert.assertEquals(TypeNature.CLASS, typeInfo.typeInspection.get().typeNature());
+        assertEquals(TypeNature.CLASS, typeInfo.typeInspection.get().typeNature());
         LOGGER.info("Stream is\n{}", typeInfo.toString());
     }
 
@@ -108,7 +109,7 @@ public class TestByteCodeInspector {
     public void testGenerics2() throws IOException {
         TypeMap typeMap = parseFromJar("org/e2immu/analyser/util/Either");
         TypeInfo typeInfo = typeMap.get("org.e2immu.support.Either");
-        Assert.assertEquals(TypeNature.CLASS, typeInfo.typeInspection.get().typeNature());
+        assertEquals(TypeNature.CLASS, typeInfo.typeInspection.get().typeNature());
         LOGGER.info("Stream is\n{}", typeInfo.toString());
     }
 
@@ -117,7 +118,7 @@ public class TestByteCodeInspector {
         TypeMap typeMap = parseFromJar("org/e2immu/analyser/model/PackagePrefix");
         TypeInfo typeInfo = typeMap.get("org.e2immu.analyser.model.PackagePrefix");
 
-        Assert.assertEquals(TypeNature.CLASS, typeInfo.typeInspection.get().typeNature());
+        assertEquals(TypeNature.CLASS, typeInfo.typeInspection.get().typeNature());
         LOGGER.info("Stream is\n{}", typeInfo.toString());
     }
 
@@ -126,7 +127,7 @@ public class TestByteCodeInspector {
         TypeMap typeMap = parseFromJar("org/e2immu/analyser/util/SetOnce.class");
         TypeInfo typeInfo = typeMap.get("org.e2immu.support.SetOnce");
 
-        Assert.assertEquals(TypeNature.CLASS, typeInfo.typeInspection.get().typeNature());
+        assertEquals(TypeNature.CLASS, typeInfo.typeInspection.get().typeNature());
         LOGGER.info("Stream is\n{}", typeInfo.toString());
     }
 
@@ -135,7 +136,7 @@ public class TestByteCodeInspector {
         TypeMap typeMap = parseFromJar("org/e2immu/analyser/model/SideEffect.class");
         TypeInfo typeInfo = typeMap.get("org.e2immu.analyser.model.SideEffect");
 
-        Assert.assertEquals(TypeNature.ENUM, typeInfo.typeInspection.get().typeNature());
+        assertEquals(TypeNature.ENUM, typeInfo.typeInspection.get().typeNature());
         LOGGER.info("Stream is\n{}", typeInfo.toString());
     }
 
@@ -144,10 +145,10 @@ public class TestByteCodeInspector {
         TypeMap typeMap = parseFromJar("org/e2immu/analyser/output/OutputElement.class");
         TypeInfo typeInfo = typeMap.get("org.e2immu.analyser.output.OutputElement");
 
-        Assert.assertEquals(TypeNature.INTERFACE, typeInfo.typeInspection.get().typeNature());
+        assertEquals(TypeNature.INTERFACE, typeInfo.typeInspection.get().typeNature());
         LOGGER.info("Stream is\n{}", typeInfo.toString());
 
         MethodInfo forDebug = typeInfo.findUniqueMethod("debug", 0);
-        Assert.assertTrue(forDebug.methodInspection.get().isDefault());
+        assertTrue(forDebug.methodInspection.get().isDefault());
     }
 }

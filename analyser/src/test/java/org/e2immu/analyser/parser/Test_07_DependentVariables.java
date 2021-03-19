@@ -5,10 +5,11 @@ import org.e2immu.analyser.analyser.VariableInfoContainer;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_07_DependentVariables extends CommonTestRunner {
     public Test_07_DependentVariables() {
@@ -24,47 +25,47 @@ public class Test_07_DependentVariables extends CommonTestRunner {
             String assigned = d.variableInfo().getAssignmentId();
 
             if ("1".equals(d.statementId()) && "array[0]".equals(d.variableName())) {
-                Assert.assertEquals("12", d.currentValue().toString());
+                assertEquals("12", d.currentValue().toString());
             }
             if ("2".equals(d.statementId()) && "array[0]".equals(d.variableName())) {
-                Assert.assertTrue(assigned.compareTo(read) > 0);
-                Assert.assertEquals("12", d.variableInfo().getValue().toString());
+                assertTrue(assigned.compareTo(read) > 0);
+                assertEquals("12", d.variableInfo().getValue().toString());
             }
             if ("2".equals(d.statementId()) && "array[1]".equals(d.variableName())) {
-                Assert.assertEquals("13", d.currentValue().toString());
+                assertEquals("13", d.currentValue().toString());
             }
             if ("4".equals(d.statementId()) && "array[0]".equals(d.variableName())) {
-                Assert.assertTrue(assigned.compareTo(read) < 0);
-                Assert.assertEquals("12", d.variableInfo().getValue().toString());
+                assertTrue(assigned.compareTo(read) < 0);
+                assertEquals("12", d.variableInfo().getValue().toString());
             }
             if ("4".equals(d.statementId()) && "array[1]".equals(d.variableName())) {
-                Assert.assertTrue(assigned.compareTo(read) < 0);
-                Assert.assertEquals("13", d.variableInfo().getValue().toString());
+                assertTrue(assigned.compareTo(read) < 0);
+                assertEquals("13", d.variableInfo().getValue().toString());
             }
             if ("4".equals(d.statementId()) && "array[2]".equals(d.variableName())) {
-                Assert.assertTrue(assigned.compareTo(read) < 0);
-                Assert.assertEquals("31", d.variableInfo().getValue().toString());
+                assertTrue(assigned.compareTo(read) < 0);
+                assertEquals("31", d.variableInfo().getValue().toString());
             }
             if ("4".equals(d.statementId()) && "array".equals(d.variableName())) {
-                Assert.assertEquals("4" + VariableInfoContainer.Level.EVALUATION, read);
+                assertEquals("4" + VariableInfoContainer.Level.EVALUATION, read);
             }
         }
         if ("method2".equals(d.methodInfo().name)) {
             if (A2.equals(d.variableName())) {
-                Assert.assertEquals("instance type int", d.currentValue().toString());
+                assertEquals("instance type int", d.currentValue().toString());
             }
             if ("b".equals(d.variableName())) {
-                Assert.assertEquals("a", d.variableInfo().getValue().toString());
+                assertEquals("a", d.variableInfo().getValue().toString());
             }
             if ("3".equals(d.statementId())) {
                 if ("array[a]".equals(d.variableName())) {
-                    Assert.fail("This variable should not be produced");
+                    fail("This variable should not be produced");
                 }
                 if ("array[b]".equals(d.variableName())) {
-                    Assert.fail("This variable should not be produced");
+                    fail("This variable should not be produced");
                 }
                 if (("array[" + A2 + "]").equals(d.variableName())) {
-                    Assert.assertEquals("12", d.variableInfo().getValue().toString());
+                    assertEquals("12", d.variableInfo().getValue().toString());
                 }
             }
         }
@@ -73,11 +74,11 @@ public class Test_07_DependentVariables extends CommonTestRunner {
     StatementAnalyserVisitor statementAnalyserVisitor = d -> {
         if ("method1".equals(d.methodInfo().name) && "4".equals(d.statementId())) {
             VariableInfo tv = d.getReturnAsVariable();
-            Assert.assertEquals("56", tv.getValue().toString());
+            assertEquals("56", tv.getValue().toString());
         }
         if ("method2".equals(d.methodInfo().name) && "3".equals(d.statementId())) {
             VariableInfo tv = d.getReturnAsVariable();
-            Assert.assertEquals("12", tv.getValue().toString());
+            assertEquals("12", tv.getValue().toString());
         }
     };
 

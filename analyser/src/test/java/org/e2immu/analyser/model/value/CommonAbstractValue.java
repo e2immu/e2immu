@@ -32,7 +32,7 @@ import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.TypeMapImpl;
 import org.e2immu.analyser.util.Logger;
-import org.junit.BeforeClass;
+import org.junit.jupiter.api.BeforeAll;
 
 import java.util.Set;
 
@@ -68,7 +68,7 @@ public abstract class CommonAbstractValue {
     protected static Variable vp;
     protected static VariableExpression p;
 
-    @BeforeClass
+    @BeforeAll
     public static void beforeClass() {
         Logger.activate(Logger.LogTarget.CNF);
 
@@ -98,7 +98,7 @@ public abstract class CommonAbstractValue {
         vs = createVariable("s"); // nullable
         s = new VariableExpression(vs);
 
-        vp = createParameter("p"); // nullable
+        vp = createParameter(); // nullable
         p = new VariableExpression(vp);
     }
 
@@ -165,11 +165,7 @@ public abstract class CommonAbstractValue {
         return new IntConstant(PRIMITIVES, i, ObjectFlow.NO_FLOW);
     }
 
-    protected static Expression newString(String s) {
-        return new StringConstant(PRIMITIVES, s, ObjectFlow.NO_FLOW);
-    }
-
-    static ParameterInfo createParameter(String name) {
+    static ParameterInfo createParameter() {
         assert PRIMITIVES != null;
         if (!PRIMITIVES.objectTypeInfo.typeInspection.isSet()) {
             PRIMITIVES.objectTypeInfo.typeInspection.set(new TypeInspectionImpl.Builder(PRIMITIVES.objectTypeInfo, BY_HAND)
@@ -179,7 +175,7 @@ public abstract class CommonAbstractValue {
         TypeInfo someType = new TypeInfo("some", "type");
         someType.typeAnalysis.set(new TypeAnalysisImpl.Builder(PRIMITIVES, someType).build());
         MethodInspectionImpl.Builder methodBuilder = new MethodInspectionImpl.Builder(someType, "type");
-        ParameterInspectionImpl.Builder pi = new ParameterInspectionImpl.Builder(PRIMITIVES.stringParameterizedType, name, 0);
+        ParameterInspectionImpl.Builder pi = new ParameterInspectionImpl.Builder(PRIMITIVES.stringParameterizedType, "p", 0);
         methodBuilder.setReturnType(PRIMITIVES.stringParameterizedType).addParameter(pi);
         MethodInfo methodInfo = methodBuilder.build(InspectionProvider.DEFAULT).getMethodInfo();
         ParameterInfo p0 = methodInfo.methodInspection.get().getParameters().get(0);

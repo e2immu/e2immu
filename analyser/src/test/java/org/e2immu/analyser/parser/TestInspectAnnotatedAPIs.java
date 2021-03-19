@@ -26,12 +26,10 @@ import org.e2immu.analyser.config.UploadConfiguration;
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
-import org.e2immu.analyser.model.Qualification;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.util.Resources;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,11 +40,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.BYTECODE_INSPECTOR;
 import static org.e2immu.analyser.util.Logger.LogTarget.INSPECT;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class TestInspectAnnotatedAPIs {
     private static final Logger LOGGER = LoggerFactory.getLogger(TestInspectAnnotatedAPIs.class);
 
-    @BeforeClass
+    @BeforeAll
     public static void beforeClass() {
         org.e2immu.analyser.util.Logger.activate(BYTECODE_INSPECTOR, INSPECT);
     }
@@ -66,7 +65,7 @@ public class TestInspectAnnotatedAPIs {
                 counter.incrementAndGet();
             }
         });
-        Assert.assertTrue(counter.get() > 5);
+        assertTrue(counter.get() > 5);
     }
 
     @Test
@@ -82,12 +81,12 @@ public class TestInspectAnnotatedAPIs {
                 .setUploadConfiguration(new UploadConfiguration.Builder()
                         .setUpload(true).build())
                 .build();
-        URL url = new URL("file:src/main/resources/annotatedAPIs/java.util.annotated_api");
+        //URL url = new URL("file:src/main/resources/annotatedAPIs/java.util.annotated_api");
         Parser parser = new Parser(configuration);
         //parser.runAnnotatedAPIs(List.of(url));
         TypeInfo optional = parser.getTypeContext().typeMapBuilder.get("java.util.Optional");
-        Assert.assertNotNull(optional);
-        Assert.assertEquals(Level.TRUE, MultiLevel.value(optional.typeAnalysis.get().getProperty(VariableProperty.CONTAINER), 0));
+        assertNotNull(optional);
+        assertEquals(Level.TRUE, MultiLevel.value(optional.typeAnalysis.get().getProperty(VariableProperty.CONTAINER), 0));
         LOGGER.info("Source of Optional: " + optional.output().toString());
     }
 

@@ -17,11 +17,12 @@
 
 package org.e2immu.analyser.util;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.List;
 import java.util.Map;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 public class TestUpgradableBooleanMap {
 
@@ -30,9 +31,9 @@ public class TestUpgradableBooleanMap {
         List<String> list = List.of("a", "b", "c", "d", "e");
         UpgradableBooleanMap<String> map = list.stream().map(s -> Map.of(s, "a".equals(s)))
                 .flatMap(m -> m.entrySet().stream()).collect(UpgradableBooleanMap.collector());
-        Assert.assertTrue(map.get("a"));
-        Assert.assertFalse(map.get("b"));
-        Assert.assertEquals(5L, map.stream().count());
+        assertTrue(map.get("a"));
+        assertFalse(map.get("b"));
+        assertEquals(5L, map.stream().count());
     }
 
     @Test
@@ -40,8 +41,8 @@ public class TestUpgradableBooleanMap {
         List<UpgradableBooleanMap<String>> list = List.of(UpgradableBooleanMap.of("a", true),
                 UpgradableBooleanMap.of("b", false));
         UpgradableBooleanMap<String> map = list.stream().flatMap(UpgradableBooleanMap::stream).collect(UpgradableBooleanMap.collector());
-        Assert.assertTrue(map.get("a"));
-        Assert.assertFalse(map.get("b"));
-        Assert.assertEquals(2L, map.stream().count());
+        assertTrue(map.get("a"));
+        assertFalse(map.get("b"));
+        assertEquals(2L, map.stream().count());
     }
 }

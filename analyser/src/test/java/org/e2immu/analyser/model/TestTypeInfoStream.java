@@ -25,15 +25,16 @@ import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
 import static org.e2immu.analyser.inspector.TypeInspectionImpl.InspectionState.BY_HAND;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class TestTypeInfoStream {
     private static final Logger LOGGER = LoggerFactory.getLogger(TestTypeInfoStream.class);
@@ -42,7 +43,7 @@ public class TestTypeInfoStream {
     public static final String JAVA_UTIL = "java.util";
     public static final String MODEL = "org.e2immu.analyser.model";
 
-    @BeforeClass
+    @BeforeAll
     public static void beforeClass() {
         org.e2immu.analyser.util.Logger.activate();
     }
@@ -264,16 +265,16 @@ public class TestTypeInfoStream {
         String stream = testTypeInfo.output().toString();
         LOGGER.info("stream is\n\n{}", stream);
 
-        Assert.assertTrue(stream.contains("import org.slf4j.Logger"));
-        Assert.assertTrue(stream.contains("private static final Logger LOGGER"));
-        Assert.assertTrue(stream.contains("public class TestTypeInfoStream"));
-        Assert.assertTrue(stream.contains("static class Container<T> implements GenericContainer<T>"));
-        Assert.assertTrue(stream.contains("int i"));
-        Assert.assertTrue(stream.contains("private double d"));
-        Assert.assertTrue(stream.contains("final String s"));
-        Assert.assertFalse(stream.contains("import java.lang"));
-        Assert.assertTrue(stream.contains("TestTypeInfoStream(){"));
-        Assert.assertTrue(stream.contains("public static int sum(int x,int y) throws MyException{"));
-        Assert.assertTrue(stream.contains("T put(T value)"));
+        assertTrue(stream.contains("import org.slf4j.Logger"));
+        assertTrue(stream.contains("private static final Logger LOGGER"));
+        assertTrue(stream.contains("public class TestTypeInfoStream"));
+        assertTrue(stream.contains("static class Container<T> implements GenericContainer<T>"));
+        assertTrue(stream.contains("int i"));
+        assertTrue(stream.contains("private double d"));
+        assertTrue(stream.contains("final String s"));
+        assertFalse(stream.contains("import java.lang"));
+        assertTrue(stream.contains("TestTypeInfoStream(){"));
+        assertTrue(stream.contains("public static int sum(int x,int y) throws MyException{"));
+        assertTrue(stream.contains("T put(T value)"));
     }
 }

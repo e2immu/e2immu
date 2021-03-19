@@ -28,12 +28,14 @@ import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.visitor.FieldAnalyserVisitor;
 import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
 import org.e2immu.analyser.visitor.TypeAnalyserVisitor;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class TestModificationGraph extends CommonTestRunner {
 
@@ -45,18 +47,18 @@ public class TestModificationGraph extends CommonTestRunner {
         if ("c1".equals(d.fieldInfo().name)) {
             int modified = d.fieldAnalysis().getProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD);
             int expect = d.iteration() < 2 ? Level.DELAY : Level.TRUE;
-            Assert.assertEquals(expect, modified);
+            assertEquals(expect, modified);
         }
     };
 
     MethodAnalyserVisitor methodAnalyserVisitor = d -> {
         String name = d.methodInfo().name;
         if ("incrementAndGetWithI".equals(name)) {
-            Assert.assertTrue(d.methodAnalysis().methodLevelData()
+            assertTrue(d.methodAnalysis().methodLevelData()
                     .getCallsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod());
         }
         if ("useC2".equals(name) && d.iteration() > 1) {
-            Assert.assertTrue(d.methodAnalysis().methodLevelData()
+            assertTrue(d.methodAnalysis().methodLevelData()
                     .getCallsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod());
         }
         if ("C2".equals(name)) {
@@ -64,10 +66,10 @@ public class TestModificationGraph extends CommonTestRunner {
             if (d.iteration() > 0) {
                 Map.Entry<FieldInfo, ParameterAnalysis.AssignedOrLinked> entry = c1.parameterAnalysis.get()
                         .getAssignedToField().entrySet().stream().findFirst().orElseThrow();
-                Assert.assertEquals("c1", entry.getKey().name);
-                Assert.assertEquals("c1", entry.getKey().name);
+                assertEquals("c1", entry.getKey().name);
+                assertEquals("c1", entry.getKey().name);
                 if (d.iteration() > 1) {
-                    Assert.assertTrue(c1.parameterAnalysis.get().isAssignedToFieldDelaysResolved());
+                    assertTrue(c1.parameterAnalysis.get().isAssignedToFieldDelaysResolved());
                 }
             }
         }
@@ -75,11 +77,11 @@ public class TestModificationGraph extends CommonTestRunner {
 
     TypeAnalyserVisitor typeAnalyserVisitor = d -> {
         if ("C1".equals(d.typeInfo().simpleName)) {
-            Assert.assertEquals(2, d.typeInfo().typeResolution.get().circularDependencies().size());
+            assertEquals(2, d.typeInfo().typeResolution.get().circularDependencies().size());
         }
         if ("C2".equals(d.typeInfo().simpleName)) {
-            Assert.assertEquals(2, d.typeInfo().typeResolution.get().circularDependencies().size());
-            Assert.assertEquals("[]", d.typeAnalysis().getImplicitlyImmutableDataTypes().toString());
+            assertEquals(2, d.typeInfo().typeResolution.get().circularDependencies().size());
+            assertEquals("[]", d.typeAnalysis().getImplicitlyImmutableDataTypes().toString());
         }
     };
 

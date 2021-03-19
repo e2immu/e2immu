@@ -27,10 +27,12 @@ import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.variable.ReturnVariable;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class Test_20_CyclicReferences extends CommonTestRunner {
     public Test_20_CyclicReferences() {
@@ -46,23 +48,23 @@ public class Test_20_CyclicReferences extends CommonTestRunner {
     public void test_1() throws IOException {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("findTailRecursion".equals(d.methodInfo().name) && "2".equals(d.statementId())) {
-                Assert.assertEquals("!list.get(0).equals(find)&&!list.isEmpty()&&CyclicReferences_1.findTailRecursion(find,list.subList(1,list.size()))",
+                assertEquals("!list.get(0).equals(find)&&!list.isEmpty()&&CyclicReferences_1.findTailRecursion(find,list.subList(1,list.size()))",
                         d.evaluationResult().value().toString());
             }
         };
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("findTailRecursion".equals(d.methodInfo().name) && d.variable() instanceof ParameterInfo p && p.name.equals("list")) {
-                Assert.assertEquals("statement " + d.statementId() + ", iteration " + d.iteration(),
+                assertEquals("statement " + d.statementId() + ", iteration " + d.iteration(),
                         "nullable instance type List<String>", d.currentValue().toString());
 
-                Assert.assertEquals("", d.variableInfo().getLinkedVariables().toString());
+                assertEquals("", d.variableInfo().getLinkedVariables().toString());
             }
         };
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("findTailRecursion".equals(d.methodInfo().name)) {
-                Assert.assertEquals(Level.FALSE, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
+                assertEquals(Level.FALSE, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
             }
         };
 
@@ -80,18 +82,18 @@ public class Test_20_CyclicReferences extends CommonTestRunner {
                 if(d.variable() instanceof ReturnVariable) {
                     if ("0.0.0".equals(d.statementId())) {
                         String expectValue = d.iteration() == 0 ? "<m:methodA>": "\"a\".equals(paramB)&&!\"b\".equals(paramB)";
-                        Assert.assertEquals(expectValue, d.currentValue().toString());
+                        assertEquals(expectValue, d.currentValue().toString());
                     }
                     if ("1".equals(d.statementId())) {
                         String expectValue = d.iteration() == 0 ? "<m:equals>&&!<m:equals>" : "!\"a\".equals(paramB)&&\"b\".equals(paramB)";
-                        Assert.assertEquals(expectValue, d.currentValue().toString());
+                        assertEquals(expectValue, d.currentValue().toString());
                     }
                 }
             }
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("methodB".equals(d.methodInfo().name) || "methodA".equals(d.methodInfo().name)) {
-                Assert.assertTrue(d.methodInfo().methodResolution.get().methodsOfOwnClassReached().contains(d.methodInfo()));
+                assertTrue(d.methodInfo().methodResolution.get().methodsOfOwnClassReached().contains(d.methodInfo()));
             }
         };
 

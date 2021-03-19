@@ -20,9 +20,8 @@ package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.config.InputConfiguration;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,10 +30,12 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.URL;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 public class TestInput {
     private static final Logger LOGGER = LoggerFactory.getLogger(TestInput.class);
 
-    @BeforeClass
+    @BeforeAll
     public static void beforeClass() {
         org.e2immu.analyser.util.Logger.activate(org.e2immu.analyser.util.Logger.LogTarget.BYTECODE_INSPECTOR,
                 org.e2immu.analyser.util.Logger.LogTarget.CONFIGURATION);
@@ -50,20 +51,20 @@ public class TestInput {
                         .addClassPath("jmods/java.base.jmod")
                         .build())
                 .build());
-        Assert.assertTrue("Have at least 15 classes in util package", 15 <= input.sourceURLs().size());
+        assertTrue(15 <= input.sourceURLs().size(), "Have at least 15 classes in util package");
 
         for (URL url : input.sourceURLs().values()) {
             LOGGER.info("Have source URL {}", url);
             File file = new File(url.toURI());
-            Assert.assertTrue(file.canRead());
+            assertTrue(file.canRead());
         }
 
-        Assert.assertTrue("Have at least 3 annotated API sources", 3 <= input.annotatedAPIs().size());
+        assertTrue(3 <= input.annotatedAPIs().size(), "Have at least 3 annotated API sources");
 
         for (URL url : input.annotatedAPIs().values()) {
             LOGGER.info("Have annotated API URL {}", url);
             File file = new File(url.toURI());
-            Assert.assertTrue(file.canRead());
+            assertTrue(file.canRead());
         }
     }
 

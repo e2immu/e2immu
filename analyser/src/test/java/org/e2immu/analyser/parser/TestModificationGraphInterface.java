@@ -24,11 +24,13 @@ import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.visitor.FieldAnalyserVisitor;
 import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 // in this test, the introduction of a functional interface has resolved the circular dependency
 // however, useC2 remains modifying because of the functional interface
@@ -41,17 +43,17 @@ public class TestModificationGraphInterface extends CommonTestRunner {
 
     MethodAnalyserVisitor methodAnalyserVisitor = d -> {
         if ("useC2".equals(d.methodInfo().name)) {
-            Assert.assertTrue(d.methodAnalysis().methodLevelData()
+            assertTrue(d.methodAnalysis().methodLevelData()
                     .getCallsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod());
         }
         if ("incrementAndGetWithI".equals(d.methodInfo().name) && d.iteration() > 0) {
-            Assert.assertEquals(Level.TRUE, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
+            assertEquals(Level.TRUE, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
         }
     };
 
     FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
         if ("c1".equals(d.fieldInfo().name) && d.iteration() > 1) {
-            Assert.assertEquals(Level.TRUE, d.fieldAnalysis().getProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD));
+            assertEquals(Level.TRUE, d.fieldAnalysis().getProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD));
         }
     };
 

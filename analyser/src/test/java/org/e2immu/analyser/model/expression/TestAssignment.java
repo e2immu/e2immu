@@ -5,13 +5,14 @@ import org.e2immu.analyser.model.LocalVariable;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.Logger;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class TestAssignment {
 
-    @BeforeClass
+    @BeforeAll
     public static void beforeClass() {
         Logger.activate();
     }
@@ -33,7 +34,7 @@ public class TestAssignment {
         LocalVariableCreation i = new LocalVariableCreation(inspectionProvider, lvi, new IntConstant(primitives, 0));
         Expression iPlusEquals1 = new Assignment(primitives,
                 new VariableExpression(i.localVariableReference), new IntConstant(primitives, 1));
-        Assert.assertEquals("i=1", iPlusEquals1.minimalOutput());
+        assertEquals("i=1", iPlusEquals1.minimalOutput());
     }
 
     @Test
@@ -42,15 +43,15 @@ public class TestAssignment {
         LocalVariableCreation i = new LocalVariableCreation(inspectionProvider, lvi, new IntConstant(primitives, 0));
         Expression iPlusEquals1 = new Assignment(primitives, new VariableExpression(i.localVariableReference),
                 new IntConstant(primitives, 1), primitives.assignPlusOperatorInt, null, true);
-        Assert.assertEquals("i+=1", iPlusEquals1.minimalOutput());
+        assertEquals("i+=1", iPlusEquals1.minimalOutput());
 
         Expression iPlusEquals1AsPlusPlusI = new Assignment(primitives, new VariableExpression(i.localVariableReference),
                 new IntConstant(primitives, 1), primitives.assignPlusOperatorInt, true, true);
-        Assert.assertEquals("++i", iPlusEquals1AsPlusPlusI.minimalOutput());
+        assertEquals("++i", iPlusEquals1AsPlusPlusI.minimalOutput());
 
         Expression iPlusEquals1AsIPlusPlus = new Assignment(primitives, new VariableExpression(i.localVariableReference),
                 new IntConstant(primitives, 1), primitives.assignPlusOperatorInt, false, true);
-        Assert.assertEquals("i++", iPlusEquals1AsIPlusPlus.minimalOutput());
+        assertEquals("i++", iPlusEquals1AsIPlusPlus.minimalOutput());
     }
 
     @Test
@@ -60,10 +61,10 @@ public class TestAssignment {
 
         Expression iPlusPlus = new UnaryOperator(primitives.postfixIncrementOperatorInt,
                 new VariableExpression(i.localVariableReference), Precedence.PLUSPLUS);
-        Assert.assertEquals("i++", iPlusPlus.minimalOutput());
+        assertEquals("i++", iPlusPlus.minimalOutput());
 
         Expression plusPlusI = new UnaryOperator(primitives.prefixIncrementOperatorInt,
                 new VariableExpression(i.localVariableReference), Precedence.UNARY);
-        Assert.assertEquals("++i", plusPlusI.minimalOutput());
+        assertEquals("++i", plusPlusI.minimalOutput());
     }
 }

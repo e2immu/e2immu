@@ -2,10 +2,11 @@ package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 public class Test_19_UtilityClass extends CommonTestRunner {
     public Test_19_UtilityClass() {
@@ -15,7 +16,7 @@ public class Test_19_UtilityClass extends CommonTestRunner {
     StatementAnalyserVisitor statementAnalyserVisitor = d -> {
         if ("print".equals(d.methodInfo().name)) {
             if ("0".equals(d.statementId())) {
-                Assert.assertNull(d.haveError(Message.POTENTIAL_NULL_POINTER_EXCEPTION));
+                assertNull(d.haveError(Message.POTENTIAL_NULL_POINTER_EXCEPTION));
             }
         }
     };

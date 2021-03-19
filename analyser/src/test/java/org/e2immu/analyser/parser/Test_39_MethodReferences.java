@@ -7,12 +7,14 @@ import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.TypeInfo;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Map;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class Test_39_MethodReferences extends CommonTestRunner {
     public Test_39_MethodReferences() {
@@ -25,10 +27,10 @@ public class Test_39_MethodReferences extends CommonTestRunner {
     public void test_0() throws IOException {
         TypeMapVisitor typeMapVisitor = typeMap -> {
             TypeInfo collection = typeMap.get(Collection.class);
-            Assert.assertNotNull(collection);
+            assertNotNull(collection);
             MethodInfo stream = collection.findUniqueMethod("stream" ,0);
 
-            Assert.assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL, stream.methodAnalysis.get().getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+            assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL, stream.methodAnalysis.get().getProperty(VariableProperty.NOT_NULL_EXPRESSION));
         };
 
         testClass("MethodReferences_0", 0, 0, new DebugConfiguration.Builder()
@@ -47,9 +49,9 @@ public class Test_39_MethodReferences extends CommonTestRunner {
         TypeMapVisitor typeMapVisitor = typeMap -> {
             TypeInfo map = typeMap.get(Map.class);
             MethodInfo put = map.findUniqueMethod("put", 2);
-            Assert.assertEquals(Level.TRUE, put.methodAnalysis.get().getProperty(VariableProperty.MODIFIED_METHOD));
+            assertEquals(Level.TRUE, put.methodAnalysis.get().getProperty(VariableProperty.MODIFIED_METHOD));
             MethodInfo forEach = map.findUniqueMethod("forEach", 1);
-            Assert.assertEquals(Level.FALSE, forEach.methodAnalysis.get().getProperty(VariableProperty.MODIFIED_METHOD));
+            assertEquals(Level.FALSE, forEach.methodAnalysis.get().getProperty(VariableProperty.MODIFIED_METHOD));
         };
 
         testClass("MethodReferences_2", 0, 2, new DebugConfiguration.Builder()
@@ -63,9 +65,9 @@ public class Test_39_MethodReferences extends CommonTestRunner {
         TypeMapVisitor typeMapVisitor = typeMap -> {
             TypeInfo map = typeMap.get(Map.class);
             MethodInfo put = map.findUniqueMethod("get", 1);
-            Assert.assertEquals(Level.FALSE, put.methodAnalysis.get().getProperty(VariableProperty.MODIFIED_METHOD));
+            assertEquals(Level.FALSE, put.methodAnalysis.get().getProperty(VariableProperty.MODIFIED_METHOD));
             MethodInfo forEach = map.findUniqueMethod("forEach", 1);
-            Assert.assertEquals(Level.FALSE, forEach.methodAnalysis.get().getProperty(VariableProperty.MODIFIED_METHOD));
+            assertEquals(Level.FALSE, forEach.methodAnalysis.get().getProperty(VariableProperty.MODIFIED_METHOD));
         };
 
         testClass("MethodReferences_3", 0, 0, new DebugConfiguration.Builder()

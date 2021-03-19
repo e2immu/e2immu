@@ -17,11 +17,12 @@
 
 package org.e2immu.analyser.output;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 public class TestFormatter1 {
 
@@ -59,8 +60,8 @@ public class TestFormatter1 {
     public void testLineSplit1() {
         String PACKAGE = "org.e2immu.analyser.output";
         OutputBuilder outputBuilder = new OutputBuilder().add(new Text("package")).add(Space.ONE).add(new Text(PACKAGE));
-        Assert.assertEquals("package " + PACKAGE, outputBuilder.toString());
-        Assert.assertEquals("package " + PACKAGE + "\n", new Formatter(FormattingOptions.DEFAULT).write(outputBuilder));
+        assertEquals("package " + PACKAGE, outputBuilder.toString());
+        assertEquals("package " + PACKAGE + "\n", new Formatter(FormattingOptions.DEFAULT).write(outputBuilder));
 
         FormattingOptions options = new FormattingOptions.Builder().setLengthOfLine(20)
                 .setSpacesInTab(2).setTabsForLineSplit(2).build();
@@ -72,10 +73,10 @@ public class TestFormatter1 {
             System.out.println(fi);
             return false;
         }, 0, options.lengthOfLine() + 20);
-        Assert.assertEquals(2, info.size());
-        Assert.assertEquals(" " + PACKAGE, info.get(1).string());
+        assertEquals(2, info.size());
+        assertEquals(" " + PACKAGE, info.get(1).string());
 
-        Assert.assertEquals("package\n    " + PACKAGE + "\n", formatter.write(outputBuilder));
+        assertEquals("package\n    " + PACKAGE + "\n", formatter.write(outputBuilder));
     }
 
     @Test
@@ -94,9 +95,9 @@ public class TestFormatter1 {
             System.out.println(fi);
             return false;
         }, 0, 120);
-        Assert.assertEquals(5, info.size());
+        assertEquals(5, info.size());
 
-        Assert.assertEquals("public\n  static\n  abstract\n  method;\n",
+        assertEquals("public\n  static\n  abstract\n  method;\n",
                 new Formatter(options).write(outputBuilder));
     }
 
@@ -104,7 +105,7 @@ public class TestFormatter1 {
     public void testGuide1() {
         FormattingOptions options = new FormattingOptions.Builder().setLengthOfLine(20)
                 .setSpacesInTab(2).setTabsForLineSplit(2).build();
-        Assert.assertEquals("""
+        assertEquals("""
                         public int method(
                           int p1,
                           int p2) {
@@ -126,13 +127,13 @@ public class TestFormatter1 {
             System.out.println(fi);
             return false;
         }, 0, 120);
-        Assert.assertEquals(",", info.get(7).string());
-        Assert.assertNull(info.get(8).string());
-        Assert.assertEquals(" int", info.get(9).string());
+        assertEquals(",", info.get(7).string());
+        assertNull(info.get(8).string());
+        assertEquals(" int", info.get(9).string());
 
-        //Assert.assertEquals(53, new Formatter(options).lookAhead(createExample1().list, 120));
+        //assertEquals(53, new Formatter(options).lookAhead(createExample1().list, 120));
 
-        Assert.assertEquals("public int method(int p1, int p2) { return p1 + p2; }\n",
+        assertEquals("public int method(int p1, int p2) { return p1 + p2; }\n",
                 new Formatter(options).write(createExample1()));
     }
 
@@ -140,7 +141,7 @@ public class TestFormatter1 {
     public void testGuide1Compact() {
         FormattingOptions options = new FormattingOptions.Builder().setLengthOfLine(120)
                 .setSpacesInTab(2).setTabsForLineSplit(2).setCompact(true).build();
-        Assert.assertEquals("public int method(int p1,int p2){return p1+p2;}\n",
+        assertEquals("public int method(int p1,int p2){return p1+p2;}\n",
                 new Formatter(options).write(createExample1()));
     }
 
@@ -174,7 +175,7 @@ public class TestFormatter1 {
     public void testGuide2() {
         FormattingOptions options = new FormattingOptions.Builder().setLengthOfLine(20)
                 .setSpacesInTab(2).setTabsForLineSplit(2).build();
-        Assert.assertEquals("""
+        assertEquals("""
                         public int method(
                           int p1,
                           int p2,
@@ -193,7 +194,7 @@ public class TestFormatter1 {
     public void testGuide2MidLine() {
         FormattingOptions options = new FormattingOptions.Builder().setLengthOfLine(80).setCompact(false).build();
         // around 90 characters long
-        Assert.assertEquals("""
+        assertEquals("""
                         public int method(int p1, int p2, double somewhatLonger, double d) {
                             log(p1, p2);
                             return p1 + p2;
@@ -206,7 +207,7 @@ public class TestFormatter1 {
     public void testGuide2LongLine() {
         FormattingOptions options = new FormattingOptions.Builder().setLengthOfLine(120).setCompact(false).build();
         // around 90 characters long
-        Assert.assertEquals("public int method(int p1, int p2, double somewhatLonger, double d) { log(p1, p2); return p1 + p2; }\n",
+        assertEquals("public int method(int p1, int p2, double somewhatLonger, double d) { log(p1, p2); return p1 + p2; }\n",
                 new Formatter(options).write(createExample2()));
     }
 
@@ -221,13 +222,13 @@ public class TestFormatter1 {
             System.out.println(fi);
             return false;
         }, 0, 120);
-        Assert.assertEquals(41, info.size());
-        Assert.assertEquals(" somewhatLonger", info.get(14).string());
-        Assert.assertNull(info.get(16).string()); // ensure that the MID is there
+        assertEquals(41, info.size());
+        assertEquals(" somewhatLonger", info.get(14).string());
+        assertNull(info.get(16).string()); // ensure that the MID is there
 
-        //Assert.assertEquals(89, new Formatter(options).lookAhead(createExample2().list, 120));
+        //assertEquals(89, new Formatter(options).lookAhead(createExample2().list, 120));
 
-        Assert.assertEquals("public int method(int p1,int p2,double somewhatLonger,double d){log(p1,p2);return p1+p2;}\n",
+        assertEquals("public int method(int p1,int p2,double somewhatLonger,double d){log(p1,p2);return p1+p2;}\n",
                 new Formatter(options).write(createExample2()));
     }
 
@@ -256,7 +257,7 @@ public class TestFormatter1 {
     public void testGuide3() {
         FormattingOptions options = new FormattingOptions.Builder().setLengthOfLine(20)
                 .setSpacesInTab(2).setTabsForLineSplit(2).build();
-        Assert.assertEquals("""
+        assertEquals("""
                         try {
                           if(a) {
                             assert b;
@@ -276,7 +277,7 @@ public class TestFormatter1 {
     public void testGuide3ShortLine() {
         FormattingOptions options = new FormattingOptions.Builder().setLengthOfLine(30)
                 .setSpacesInTab(2).setTabsForLineSplit(2).build();
-        Assert.assertEquals("""
+        assertEquals("""
                         try {
                           if(a) { 
                             assert b; 
@@ -294,14 +295,14 @@ public class TestFormatter1 {
     public void testGuide3Midline() {
         FormattingOptions options = new FormattingOptions.Builder().setLengthOfLine(80)
                 .setSpacesInTab(2).setTabsForLineSplit(2).build();
-        Assert.assertEquals("try { if(a) { assert b; } else { assert c; exit(1); } }\n",
+        assertEquals("try { if(a) { assert b; } else { assert c; exit(1); } }\n",
                 new Formatter(options).write(createExample3()));
     }
 
     @Test
     public void testGuide3Compact() {
         FormattingOptions options = new FormattingOptions.Builder().setLengthOfLine(120).setCompact(true).build();
-        Assert.assertEquals("try{if(a){assert b;}else{assert c;exit(1);}}\n",
+        assertEquals("try{if(a){assert b;}else{assert c;exit(1);}}\n",
                 new Formatter(options).write(createExample3()));
     }
 
@@ -333,7 +334,7 @@ public class TestFormatter1 {
     public void testGuide4() {
         FormattingOptions options = new FormattingOptions.Builder().setLengthOfLine(20)
                 .setSpacesInTab(2).setTabsForLineSplit(2).build();
-        Assert.assertEquals("""
+        assertEquals("""
                         @NotModified
                         @Independent
                         @NotNull 
@@ -353,7 +354,7 @@ public class TestFormatter1 {
         FormattingOptions options = new FormattingOptions.Builder().setLengthOfLine(120).setCompact(true).build();
         Formatter formatter = new Formatter(options);
         List<OutputElement> list = createExample4().list;
-        Assert.assertEquals(41, list.size());
+        assertEquals(41, list.size());
 
         List<Formatter.ForwardInfo> info = new ArrayList<>();
         formatter.forward(list, fi -> {
@@ -361,11 +362,11 @@ public class TestFormatter1 {
             System.out.println(fi);
             return false;
         }, 0, 120);
-        Assert.assertNull(info.get(30).string()); // end of } guide
-        Assert.assertEquals("}", info.get(31).string());
-        Assert.assertNull(info.get(32).string()); // end of annotation guide
+        assertNull(info.get(30).string()); // end of } guide
+        assertEquals("}", info.get(31).string());
+        assertNull(info.get(32).string()); // end of annotation guide
 
-        Assert.assertEquals("@NotModified @Independent @NotNull public int method(int p1,int p2){return p1+p2;}\n",
+        assertEquals("@NotModified @Independent @NotNull public int method(int p1,int p2){return p1+p2;}\n",
                 formatter.write(createExample4()));
     }
 
@@ -456,12 +457,12 @@ public class TestFormatter1 {
         List<OutputElement> list = createExample5(false).list;
 
         // the two guides one after the other should not result in a blank line
-        Assert.assertTrue(list.get(55) instanceof Guide);
-        Assert.assertTrue(list.get(56) instanceof Guide);
-        Assert.assertEquals(Symbol.RIGHT_BRACE, list.get(57));
-        Assert.assertTrue(list.get(58) instanceof Guide);
+        assertTrue(list.get(55) instanceof Guide);
+        assertTrue(list.get(56) instanceof Guide);
+        assertEquals(Symbol.RIGHT_BRACE, list.get(57));
+        assertTrue(list.get(58) instanceof Guide);
 
-        Assert.assertEquals("""
+        assertEquals("""
                 @E2Container 
                 public class Basics_0 { 
                     @Constant("abc") 
@@ -478,7 +479,7 @@ public class TestFormatter1 {
         FormattingOptions options = new FormattingOptions.Builder().setLengthOfLine(400).setCompact(false).build();
         Formatter formatter = new Formatter(options);
 
-        Assert.assertEquals("""
+        assertEquals("""
                 @E2Container public class Basics_0 { @Constant("abc") @E2Container(absent = true) @Final(absent = true) @NotNull private final String explicitlyFinal = "abc"; }
                 """, formatter.write(createExample5(false)));
     }
@@ -486,7 +487,7 @@ public class TestFormatter1 {
     @Test
     public void testGuide5CompactShortLine() {
         FormattingOptions options = new FormattingOptions.Builder().setLengthOfLine(80).setCompact(true).build();
-        Assert.assertEquals("""
+        assertEquals("""
                 @E2Container 
                 public class Basics_0{
                 @Constant("abc")
@@ -503,7 +504,7 @@ public class TestFormatter1 {
         FormattingOptions options = new FormattingOptions.Builder().setLengthOfLine(120).setCompact(false).build();
         Formatter formatter = new Formatter(options);
 
-        Assert.assertEquals("""
+        assertEquals("""
                 @E2Container 
                 public class Basics_0 { 
                     @Constant("abc") 
@@ -546,7 +547,7 @@ public class TestFormatter1 {
                 .setSpacesInTab(2).setTabsForLineSplit(2).build();
         Formatter formatter = new Formatter(options);
         List<OutputElement> list = createExample7().list;
-        Assert.assertEquals(30, list.size());
+        assertEquals(30, list.size());
 
         List<Formatter.ForwardInfo> info = new ArrayList<>();
         formatter.forward(list, fi -> {
@@ -554,9 +555,9 @@ public class TestFormatter1 {
             System.out.println(fi);
             return false;
         }, 0, 120);
-        Assert.assertEquals("@", info.get(5).string());
+        assertEquals("@", info.get(5).string());
 
-        Assert.assertEquals("public int method(@E2Immutable int p1, int p2) { return p1 + p2; }\n",
+        assertEquals("public int method(@E2Immutable int p1, int p2) { return p1 + p2; }\n",
                 formatter.write(createExample7()));
     }
 
@@ -586,9 +587,9 @@ public class TestFormatter1 {
             System.out.println(fi);
             return false;
         }, 0, 100);
-        Assert.assertEquals("public", info.get(0).string());
-        Assert.assertEquals(3, info.get(1).pos()); // pos 1, 2 have been skipped
-        Assert.assertEquals(6, info.get(1).chars()); // 6 chars have been written before this space
+        assertEquals("public", info.get(0).string());
+        assertEquals(3, info.get(1).pos()); // pos 1, 2 have been skipped
+        assertEquals(6, info.get(1).chars()); // 6 chars have been written before this space
     }
 
     // !a && b == c
@@ -610,7 +611,7 @@ public class TestFormatter1 {
             System.out.println(fi);
             return false;
         }, 0, 100);
-        Assert.assertEquals("!", info.get(0).string());
+        assertEquals("!", info.get(0).string());
     }
 
     // a = { { "b", "c" }, "d" };
@@ -637,7 +638,7 @@ public class TestFormatter1 {
             System.out.println(fi);
             return false;
         }, 0, 100);
-        Assert.assertEquals("a", info.get(0).string());
+        assertEquals("a", info.get(0).string());
     }
 
     @Test
@@ -650,7 +651,7 @@ public class TestFormatter1 {
             System.out.println(fi);
             return false;
         }, 0, 25);
-        Assert.assertEquals(3, info.size());
+        assertEquals(3, info.size());
     }
 
     @Test
@@ -663,7 +664,7 @@ public class TestFormatter1 {
             System.out.println(fi);
             return false;
         }, 0, 15);
-        Assert.assertEquals(2, info.size());
+        assertEquals(2, info.size());
     }
 
     // public method(int p1, int p2); with guides
@@ -685,7 +686,7 @@ public class TestFormatter1 {
             System.out.println(fi);
             return false;
         }, 0, 14);
-        Assert.assertFalse(interrupted);
-        Assert.assertEquals(3, info.size()); // excluding the start guide
+        assertFalse(interrupted);
+        assertEquals(3, info.size()); // excluding the start guide
     }
 }

@@ -18,10 +18,11 @@
 
 package org.e2immu.analyser.testexample;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Iterator;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class SubTypes_5 {
 
@@ -60,6 +61,6 @@ public class SubTypes_5 {
 
     @Test
     public void test() {
-        Assert.assertEquals(15, sum());
+        assertEquals(15, sum());
     }
 }

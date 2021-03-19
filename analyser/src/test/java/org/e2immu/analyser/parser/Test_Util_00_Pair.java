@@ -26,11 +26,12 @@ import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
 import org.e2immu.analyser.visitor.TypeAnalyserVisitor;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_Util_00_Pair extends CommonTestRunner {
 
@@ -39,22 +40,22 @@ public class Test_Util_00_Pair extends CommonTestRunner {
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("v".equals(d.fieldInfo().name)) {
-                if (d.iteration() == 0) Assert.assertNull(d.fieldAnalysis().isOfImplicitlyImmutableDataType());
-                else Assert.assertTrue(d.fieldAnalysis().isOfImplicitlyImmutableDataType());
+                if (d.iteration() == 0) assertNull(d.fieldAnalysis().isOfImplicitlyImmutableDataType());
+                else assertTrue(d.fieldAnalysis().isOfImplicitlyImmutableDataType());
             }
         };
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("getV".equals(d.methodInfo().name)) {
                 int expectIndependent = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVE;
-                Assert.assertEquals(expectIndependent, d.methodAnalysis().getProperty(VariableProperty.INDEPENDENT));
+                assertEquals(expectIndependent, d.methodAnalysis().getProperty(VariableProperty.INDEPENDENT));
             }
         };
 
         // fields k and v do not link to the constructor's parameters because they are implicitly immutable
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             int expectIndependent = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVE;
-            Assert.assertEquals(expectIndependent, d.typeAnalysis().getProperty(VariableProperty.INDEPENDENT));
+            assertEquals(expectIndependent, d.typeAnalysis().getProperty(VariableProperty.INDEPENDENT));
         };
 
         testUtilClass(List.of("Pair"), 0, 0, new DebugConfiguration.Builder()

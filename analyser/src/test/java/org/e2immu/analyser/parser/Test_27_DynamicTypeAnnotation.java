@@ -21,10 +21,11 @@ package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class Test_27_DynamicTypeAnnotation extends CommonTestRunner {
 
@@ -35,10 +36,10 @@ public class Test_27_DynamicTypeAnnotation extends CommonTestRunner {
     StatementAnalyserVisitor statementAnalyserVisitor = d -> {
         if (d.iteration() > 0) {
             if ("modifySetCreated".equals(d.methodInfo().name)) {
-                Assert.assertNotNull(d.haveError(Message.CALLING_MODIFYING_METHOD_ON_E2IMMU));
+                assertNotNull(d.haveError(Message.CALLING_MODIFYING_METHOD_ON_E2IMMU));
             }
             if ("modifySet1".equals(d.methodInfo().name)) {
-                Assert.assertNotNull(d.haveError(Message.CALLING_MODIFYING_METHOD_ON_E2IMMU));
+                assertNotNull(d.haveError(Message.CALLING_MODIFYING_METHOD_ON_E2IMMU));
             }
         }
     };

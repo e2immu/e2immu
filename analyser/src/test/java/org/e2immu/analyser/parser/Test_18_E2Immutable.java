@@ -30,10 +30,12 @@ import org.e2immu.analyser.visitor.EvaluationResultVisitor;
 import org.e2immu.analyser.visitor.FieldAnalyserVisitor;
 import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 public class Test_18_E2Immutable extends CommonTestRunner {
     public Test_18_E2Immutable() {
@@ -43,7 +45,6 @@ public class Test_18_E2Immutable extends CommonTestRunner {
     @Test
     public void test_0() throws IOException {
         testClass("E2Immutable_0", 0, 0, new DebugConfiguration.Builder()
-
                 .build());
     }
 
@@ -61,12 +62,12 @@ public class Test_18_E2Immutable extends CommonTestRunner {
                         String expectValue = d.iteration() == 0
                                 ? "2+<field:org.e2immu.analyser.testexample.E2Immutable_1.level2#org.e2immu.analyser.testexample.E2Immutable_1.E2Immutable_1(org.e2immu.analyser.testexample.E2Immutable_1,java.lang.String):0:parent2Param>"
                                 : "2+parent2Param.level2";
-                        Assert.assertEquals(expectValue, d.currentValue().debugOutput());
+                        assertEquals(expectValue, d.currentValue().debugOutput());
                     }
                 }
                 if (d.variable() instanceof ParameterInfo pi && pi.name.equals("parent2Param")) {
                     int expectImmu = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EFFECTIVELY_E2IMMUTABLE;
-                    Assert.assertEquals(expectImmu, d.getProperty(VariableProperty.IMMUTABLE));
+                    assertEquals(expectImmu, d.getProperty(VariableProperty.IMMUTABLE));
                 }
             }
         };
@@ -85,7 +86,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
     public void test_3() throws IOException {
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("strings4".equals(d.fieldInfo().name)) {
-                Assert.assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL,
+                assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL,
                         d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_NOT_NULL));
             }
         };
@@ -96,7 +97,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
                 FieldInfo strings4 = d.methodInfo().typeInfo.getFieldByName("strings4", true);
                 VariableInfo vi = d.getFieldAsVariable(strings4);
                 assert vi != null;
-                Assert.assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL, vi.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL, vi.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
             }
 
             if ("mingle".equals(d.methodInfo().name)) {
@@ -105,12 +106,12 @@ public class Test_18_E2Immutable extends CommonTestRunner {
                     VariableInfo vi = d.getFieldAsVariable(strings4);
                     assert vi != null;
 
-                    Assert.assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL,
+                    assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL,
                             vi.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
                 }
                 // this method returns the input parameter
                 int expectMethodNN = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
-                Assert.assertEquals(expectMethodNN, d.methodAnalysis().getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                assertEquals(expectMethodNN, d.methodAnalysis().getProperty(VariableProperty.NOT_NULL_EXPRESSION));
             }
             if ("getStrings4".equals(d.methodInfo().name)) {
                 if (d.iteration() > 0) {
@@ -120,15 +121,15 @@ public class Test_18_E2Immutable extends CommonTestRunner {
                 }
                 // method not null
                 int expectNN = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL;
-                Assert.assertEquals(expectNN, d.methodAnalysis().getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                assertEquals(expectNN, d.methodAnalysis().getProperty(VariableProperty.NOT_NULL_EXPRESSION));
             }
         };
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("E2Immutable_3".equals(d.methodInfo().name) && d.variable() instanceof FieldReference fieldReference &&
                     "strings4".equals(fieldReference.fieldInfo.name)) {
-                Assert.assertEquals("Set.copyOf(input4)", d.currentValue().toString());
-                Assert.assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                assertEquals("Set.copyOf(input4)", d.currentValue().toString());
+                assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
             }
         };
 
@@ -165,7 +166,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("accept".equals(d.methodInfo().name) && "$1".equals(d.methodInfo().typeInfo.simpleName)) {
                 String expectValue = d.iteration() <= 1 ? "<m:setI>" : "<no return value>";
-                Assert.assertEquals(expectValue, d.evaluationResult().value().toString());
+                assertEquals(expectValue, d.evaluationResult().value().toString());
             }
         };
 
@@ -174,27 +175,27 @@ public class Test_18_E2Immutable extends CommonTestRunner {
                 if ("0".equals(d.statementId())) {
                     String expectValue = d.iteration() == 0 ? "<new:HashMap<String,SimpleContainer>>"
                             : "new HashMap<>(map7)/*this.size()==map7.size()*/";
-                    Assert.assertEquals(expectValue, d.currentValue().toString());
+                    assertEquals(expectValue, d.currentValue().toString());
                     String expectLinked = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "";
-                    Assert.assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
+                    assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
                 }
                 if ("1".equals(d.statementId())) {
                     String expectValue = d.iteration() == 0 ? "<new:HashMap<String,SimpleContainer>>" : "new HashMap<>(map7)/*this.size()==map7.size()*/";
-                    Assert.assertEquals(expectValue, d.currentValue().toString());
+                    assertEquals(expectValue, d.currentValue().toString());
                 }
             }
         };
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("setI".equals(d.methodInfo().name)) {
-                Assert.assertEquals(Level.TRUE, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
+                assertEquals(Level.TRUE, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
             }
             if ("getI".equals(d.methodInfo().name)) {
-                Assert.assertEquals(Level.FALSE, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
+                assertEquals(Level.FALSE, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
                 if (d.iteration() == 0) {
-                    Assert.assertNull(d.methodAnalysis().getSingleReturnValue());
+                    assertNull(d.methodAnalysis().getSingleReturnValue());
                 } else {
-                    Assert.assertEquals("i", d.methodAnalysis().getSingleReturnValue().toString());
+                    assertEquals("i", d.methodAnalysis().getSingleReturnValue().toString());
                 }
             }
         };
@@ -209,7 +210,6 @@ public class Test_18_E2Immutable extends CommonTestRunner {
     @Test
     public void test_8() throws IOException {
         testClass("E2Immutable_8", 0, 0, new DebugConfiguration.Builder()
-
                 .build());
     }
 }

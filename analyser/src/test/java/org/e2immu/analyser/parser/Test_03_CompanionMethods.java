@@ -30,8 +30,7 @@ import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.analyser.testexample.BasicCompanionMethods_6;
 import org.e2immu.analyser.visitor.*;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.Collection;
@@ -41,6 +40,8 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_03_CompanionMethods extends CommonTestRunner {
 
@@ -54,13 +55,13 @@ public class Test_03_CompanionMethods extends CommonTestRunner {
     public void test0() throws IOException {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("0".equals(d.statementId())) {
-                Assert.assertEquals("true", d.state().toString());
+                assertEquals("true", d.state().toString());
             }
         };
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("test".equals(d.methodInfo().name) && "list".equals(d.variableName())) {
-                Assert.assertEquals(NEW_LIST_SIZE, d.currentValue().toString());
+                assertEquals(NEW_LIST_SIZE, d.currentValue().toString());
             }
         };
 
@@ -68,17 +69,17 @@ public class Test_03_CompanionMethods extends CommonTestRunner {
             if ("test".equals(d.methodInfo().name) && "0".equals(d.statementId())) {
                 EvaluationResult.ChangeData valueChangeData = d.evaluationResult().getExpressionChangeStream()
                         .filter(e -> "list".equals(e.getKey().fullyQualifiedName())).map(Map.Entry::getValue).findFirst().orElseThrow();
-                Assert.assertEquals(NEW_LIST_SIZE, valueChangeData.value().toString());
+                assertEquals(NEW_LIST_SIZE, valueChangeData.value().toString());
             }
             if ("test".equals(d.methodInfo().name) && "1".equals(d.statementId())) {
-                Assert.assertEquals("false", d.evaluationResult().value().toString());
+                assertEquals("false", d.evaluationResult().value().toString());
             }
         };
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("test".equals(d.methodInfo().name)) {
-                Assert.assertEquals("4", d.methodAnalysis().getSingleReturnValue().toString());
-                Assert.assertTrue(d.methodInfo().methodInspection.get().isStatic());
+                assertEquals("4", d.methodAnalysis().getSingleReturnValue().toString());
+                assertTrue(d.methodInfo().methodInspection.get().isStatic());
             }
         };
 
@@ -86,11 +87,11 @@ public class Test_03_CompanionMethods extends CommonTestRunner {
             TypeInfo collection = typeMap.get(Collection.class);
             MethodInfo size = collection.findUniqueMethod("size", 0);
             int modified = size.methodAnalysis.get().getProperty(VariableProperty.MODIFIED_METHOD);
-            Assert.assertEquals(Level.FALSE, modified);
+            assertEquals(Level.FALSE, modified);
 
             TypeInfo list = typeMap.get(List.class);
             MethodInfo listSize = list.findUniqueMethod("size", 0);
-            Assert.assertEquals(Level.FALSE, listSize.methodAnalysis.get().getProperty(VariableProperty.MODIFIED_METHOD));
+            assertEquals(Level.FALSE, listSize.methodAnalysis.get().getProperty(VariableProperty.MODIFIED_METHOD));
         };
 
         // two errors: two unused parameters
@@ -115,38 +116,38 @@ public class Test_03_CompanionMethods extends CommonTestRunner {
     public void test1() throws IOException {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("test".equals(d.methodInfo().name) && "1".equals(d.statementId())) {
-                Assert.assertTrue(d.haveValueChange("list")); // because of a modification
-                Assert.assertEquals(INSTANCE_SIZE_1_CONTAINS, d.findValueChange("list").value().toString());
-                Assert.assertTrue(d.haveLinkVariable("list", Set.of()));
+                assertTrue(d.haveValueChange("list")); // because of a modification
+                assertEquals(INSTANCE_SIZE_1_CONTAINS, d.findValueChange("list").value().toString());
+                assertTrue(d.haveLinkVariable("list", Set.of()));
             }
             if ("test".equals(d.methodInfo().name) && "2".equals(d.statementId())) {
-                Assert.assertTrue(d.haveValueChange("b"));
+                assertTrue(d.haveValueChange("b"));
                 EvaluationResult.ChangeData valueChangeData = d.findValueChange("b");
-                Assert.assertEquals("true", valueChangeData.value().toString());
+                assertEquals("true", valueChangeData.value().toString());
             }
             if ("test".equals(d.methodInfo().name) && "4".equals(d.statementId())) {
-                Assert.assertEquals("true", d.evaluationResult().value().toString());
+                assertEquals("true", d.evaluationResult().value().toString());
             }
         };
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("test".equals(d.methodInfo().name) && "1".compareTo(d.statementId()) <= 0 && "list".equals(d.variableName())) {
-                Assert.assertEquals(INSTANCE_SIZE_1_CONTAINS, d.currentValue().toString());
+                assertEquals(INSTANCE_SIZE_1_CONTAINS, d.currentValue().toString());
             }
             if ("test".equals(d.methodInfo().name) && "3".compareTo(d.statementId()) <= 0 && "b".equals(d.variableName())) {
-                Assert.assertEquals("true", d.currentValue().toString());
+                assertEquals("true", d.currentValue().toString());
             }
         };
 
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("test".equals(d.methodInfo().name) && "1".equals(d.statementId())) {
-                Assert.assertTrue(d.statusesAsMap().values().stream().allMatch(as -> as == AnalysisStatus.DONE || as == AnalysisStatus.RUN_AGAIN));
+                assertTrue(d.statusesAsMap().values().stream().allMatch(as -> as == AnalysisStatus.DONE || as == AnalysisStatus.RUN_AGAIN));
             }
         };
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("test".equals(d.methodInfo().name)) {
-                Assert.assertEquals("true", d.methodAnalysis().getSingleReturnValue().toString());
+                assertEquals("true", d.methodAnalysis().getSingleReturnValue().toString());
             }
         };
 
@@ -167,18 +168,18 @@ public class Test_03_CompanionMethods extends CommonTestRunner {
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("test".equals(d.methodInfo().name) && "1".equals(d.statementId()) && "list".equals(d.variableName())) {
-                Assert.assertEquals("instance type ArrayList<String>/*this.contains(\"a\")&&1==this.size()*/",
+                assertEquals("instance type ArrayList<String>/*this.contains(\"a\")&&1==this.size()*/",
                         d.currentValue().toString());
             }
             if ("test".equals(d.methodInfo().name) && "2".equals(d.statementId()) && "list".equals(d.variableName())) {
-                Assert.assertEquals("instance type ArrayList<String>/*this.contains(\"a\")&&this.contains(\"b\")&&2==this.size()*/",
+                assertEquals("instance type ArrayList<String>/*this.contains(\"a\")&&this.contains(\"b\")&&2==this.size()*/",
                         d.currentValue().toString());
             }
         };
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("test".equals(d.methodInfo().name)) {
-                Assert.assertEquals("true", d.methodAnalysis().getSingleReturnValue().toString());
+                assertEquals("true", d.methodAnalysis().getSingleReturnValue().toString());
             }
 
         };
@@ -194,8 +195,8 @@ public class Test_03_CompanionMethods extends CommonTestRunner {
         TypeMapVisitor typeMapVisitor = typeMap -> {
             TypeInfo charSequence = typeMap.get(CharSequence.class);
             MethodInfo length = charSequence.findUniqueMethod("length", 0);
-            Assert.assertTrue(length.methodAnalysis.isSet());
-            Assert.assertEquals(Set.of(CompanionMethodName.Action.ASPECT, CompanionMethodName.Action.INVARIANT),
+            assertTrue(length.methodAnalysis.isSet());
+            assertEquals(Set.of(CompanionMethodName.Action.ASPECT, CompanionMethodName.Action.INVARIANT),
                     length.methodInspection.get().getCompanionMethods().keySet().stream().map(CompanionMethodName::action).collect(Collectors.toSet()));
 
             TypeInfo intTypeInfo = typeMap.getPrimitives().intTypeInfo;
@@ -204,7 +205,7 @@ public class Test_03_CompanionMethods extends CommonTestRunner {
                     intTypeInfo == methodInfo.methodInspection.get().getParameters().get(0).parameterizedType.typeInfo).findFirst().orElseThrow();
             MethodInfo appendIntCompanion = appendInt.methodInspection.get().getCompanionMethods().values().stream().findFirst().orElseThrow();
             ReturnStatement returnStatement = (ReturnStatement) appendIntCompanion.methodInspection.get().getMethodBody().structure.statements().get(0);
-            Assert.assertEquals("return post==prev+Integer.toString(i).length();", returnStatement.minimalOutput());
+            assertEquals("return post==prev+Integer.toString(i).length();", returnStatement.minimalOutput());
 
             TypeInfo string = typeMap.getPrimitives().stringTypeInfo;
             MethodInfo stringLength = string.findUniqueMethod("length", 0);
@@ -215,44 +216,44 @@ public class Test_03_CompanionMethods extends CommonTestRunner {
                     lengthCall.object instanceof MethodCall toString &&
                     toString.object instanceof TypeExpression integer) {
                 // check we have the same Integer type
-                Assert.assertSame(integer.parameterizedType.typeInfo, typeMap.getPrimitives().integerTypeInfo);
+                assertSame(integer.parameterizedType.typeInfo, typeMap.getPrimitives().integerTypeInfo);
                 // check the length method
-                Assert.assertSame(lengthCall.methodInfo, stringLength);
+                assertSame(lengthCall.methodInfo, stringLength);
             }
             CompanionAnalysis appendCa = appendInt.methodAnalysis.get().getCompanionAnalyses()
                     .get(new CompanionMethodName("append", CompanionMethodName.Action.MODIFICATION, "Len"));
             Expression appendCompanionValue = appendCa.getValue();
-            Assert.assertEquals("Integer.toString(i).length()+pre==this.length()",
+            assertEquals("Integer.toString(i).length()+pre==this.length()",
                     appendCa.getValue().toString());
             if (appendCompanionValue instanceof Equals eq && eq.lhs instanceof Sum sum && sum.lhs instanceof MethodCall lengthCall) {
-                Assert.assertSame(lengthCall.methodInfo, stringLength);
-            } else Assert.fail();
+                assertSame(lengthCall.methodInfo, stringLength);
+            } else fail();
 
             MethodInfo appendStr = stringBuilder.typeInspection.get().methods().stream().filter(methodInfo -> "append".equals(methodInfo.name) &&
                     string == methodInfo.methodInspection.get().getParameters().get(0).parameterizedType.typeInfo).findFirst().orElseThrow();
             MethodInfo appendStringCompanion = appendStr.methodInspection.get().getCompanionMethods().values().stream().findFirst().orElseThrow();
             ReturnStatement returnStatementStr = (ReturnStatement) appendStringCompanion.methodInspection.get().getMethodBody().structure.statements().get(0);
-            Assert.assertEquals("return post==prev+(str==null?4:str.length());", returnStatementStr.minimalOutput());
+            assertEquals("return post==prev+(str==null?4:str.length());", returnStatementStr.minimalOutput());
 
             MethodInfo sbToString = stringBuilder.findUniqueMethod("toString", 0);
             CompanionAnalysis sbToStringCa = sbToString.methodAnalysis.get().getCompanionAnalyses()
                     .get(new CompanionMethodName("toString", CompanionMethodName.Action.TRANSFER, "Len"));
-            Assert.assertEquals("this.length()", sbToStringCa.getValue().toString());
+            assertEquals("this.length()", sbToStringCa.getValue().toString());
         };
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("test".equals(d.methodInfo().name) && "0".equals(d.statementId()) && "sb".equals(d.variableName())) {
-                Assert.assertEquals("instance type StringBuilder/*5==this.length()*/",
+                assertEquals("instance type StringBuilder/*5==this.length()*/",
                         d.currentValue().toString());
             }
         };
 
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("test".equals(d.methodInfo().name) && "1".equals(d.statementId())) {
-                Assert.assertEquals("false", d.evaluationResult().value().toString());
+                assertEquals("false", d.evaluationResult().value().toString());
             }
             if ("test".equals(d.methodInfo().name) && "2".equals(d.statementId())) {
-                Assert.assertEquals("true", d.evaluationResult().value().toString());
+                assertEquals("true", d.evaluationResult().value().toString());
             }
         };
 
@@ -267,7 +268,7 @@ public class Test_03_CompanionMethods extends CommonTestRunner {
     public void test4() throws IOException {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("test".equals(d.methodInfo().name) && "5".equals(d.statementId())) {
-                Assert.assertTrue(d.statementAnalysis().flowData.isUnreachable());
+                assertTrue(d.statementAnalysis().flowData.isUnreachable());
             }
         };
         testClass("BasicCompanionMethods_4", 2, 1, new DebugConfiguration.Builder()
@@ -279,23 +280,23 @@ public class Test_03_CompanionMethods extends CommonTestRunner {
     public void test5() throws IOException {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("setAddModificationHelper".equals(d.methodInfo().name)) {
-                Assert.assertEquals("AnnotatedAPI.isFact(containsE)?containsE?i==j:1+j==i:AnnotatedAPI.isKnown(true)?1+j==i:1+j>=i&&i>=j",
+                assertEquals("AnnotatedAPI.isFact(containsE)?containsE?i==j:1+j==i:AnnotatedAPI.isKnown(true)?1+j==i:1+j>=i&&i>=j",
                         d.evaluationResult().value().toString());
             }
         };
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("test".equals(d.methodInfo().name) && "set".equals(d.variableName())) {
                 if ("0".equals(d.statementId())) {
-                    Assert.assertEquals("new HashSet()/*this.isKnown(true)&&0==this.size()*/",
+                    assertEquals("new HashSet()/*this.isKnown(true)&&0==this.size()*/",
                             d.currentValue().toString());
                 }
                 if (Set.of("1", "4").contains(d.statementId())) {
-                    Assert.assertEquals("In statement " + d.statementId(),
+                    assertEquals("In statement " + d.statementId(),
                             "instance type HashSet/*this.contains(\"a\")&&this.isKnown(true)&&1==this.size()*/",
                             d.currentValue().toString());
                 }
                 if ("7".equals(d.statementId())) {
-                    Assert.assertEquals("instance type HashSet/*this.contains(\"a\")&&this.contains(\"b\")" +
+                    assertEquals("instance type HashSet/*this.contains(\"a\")&&this.contains(\"b\")" +
                                     "&&this.isKnown(true)&&2==this.size()*/",
                             d.currentValue().toString());
                 }
@@ -315,15 +316,15 @@ public class Test_03_CompanionMethods extends CommonTestRunner {
             if ("test".equals(d.methodInfo().name)) {
                 if ("set".equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {
-                        Assert.assertEquals("new HashSet<>(strings)/*this.size()==strings.size()*/",
+                        assertEquals("new HashSet<>(strings)/*this.size()==strings.size()*/",
                                 d.currentValue().toString());
                     }
                 }
                 if (d.variable() instanceof ParameterInfo pi && "strings".equals(pi.name)) {
                     if ("2".equals(d.statementId())) {
-                        Assert.assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL,
+                        assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL,
                                 d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
-                        Assert.assertEquals(Level.FALSE, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
+                        assertEquals(Level.FALSE, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
                     }
                 }
             }
@@ -332,11 +333,11 @@ public class Test_03_CompanionMethods extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("test".equals(d.methodInfo().name) && d.iteration() > 0) {
                 ParameterAnalysis param = d.parameterAnalyses().get(0);
-                Assert.assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL,
+                assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL,
                         param.getProperty(VariableProperty.CONTEXT_NOT_NULL));
-                Assert.assertEquals(MultiLevel.DELAY, param.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
-                Assert.assertEquals(Level.FALSE, param.getProperty(VariableProperty.CONTEXT_MODIFIED));
-                Assert.assertEquals(MultiLevel.DELAY, param.getProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD));
+                assertEquals(MultiLevel.DELAY, param.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
+                assertEquals(Level.FALSE, param.getProperty(VariableProperty.CONTEXT_MODIFIED));
+                assertEquals(MultiLevel.DELAY, param.getProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD));
             }
         };
 
@@ -348,7 +349,7 @@ public class Test_03_CompanionMethods extends CommonTestRunner {
         MethodInfo test = bc6.findUniqueMethod("test", 1);
 
         MethodAnalysis methodAnalysis = test.methodAnalysis.get();
-        Assert.assertEquals(0, methodAnalysis.getComputedCompanions().size());
+        assertEquals(0, methodAnalysis.getComputedCompanions().size());
         // See Precondition_4 for a similar example with precondition
     }
 
@@ -360,32 +361,32 @@ public class Test_03_CompanionMethods extends CommonTestRunner {
             MethodInfo clear = collection.findUniqueMethod("clear", 0);
             CompanionAnalysis clearCompanion = clear.methodAnalysis.get().getCompanionAnalyses()
                     .get(new CompanionMethodName("clear", CompanionMethodName.Action.CLEAR, "Size"));
-            Assert.assertNotNull(clearCompanion);
-            Assert.assertEquals(Level.TRUE, clear.methodAnalysis.get().getProperty(VariableProperty.MODIFIED_METHOD));
+            assertNotNull(clearCompanion);
+            assertEquals(Level.TRUE, clear.methodAnalysis.get().getProperty(VariableProperty.MODIFIED_METHOD));
 
             TypeInfo set = typeMap.get(Set.class);
             MethodInfo setClear = set.findUniqueMethod("clear", 0);
-            Assert.assertEquals(Level.TRUE, setClear.methodAnalysis.get().getProperty(VariableProperty.MODIFIED_METHOD));
+            assertEquals(Level.TRUE, setClear.methodAnalysis.get().getProperty(VariableProperty.MODIFIED_METHOD));
 
             TypeInfo annotatedAPI = typeMap.get("org.e2immu.annotatedapi.AnnotatedAPI");
-            Assert.assertNotNull(annotatedAPI);
+            assertNotNull(annotatedAPI);
             MethodInfo isKnown = annotatedAPI.findUniqueMethod("isKnown", 1);
-            Assert.assertTrue(isKnown.methodInspection.get().isStatic());
+            assertTrue(isKnown.methodInspection.get().isStatic());
         };
 
         final String PARAM = "org.e2immu.analyser.testexample.BasicCompanionMethods_7.test(Set<java.lang.String>):0:strings";
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("test".equals(d.methodInfo().name) && "set".equals(d.variableName())) {
                 if ("0".equals(d.statementId())) {
-                    Assert.assertEquals("new HashSet<>(strings)/*this.size()==strings.size()*/",
+                    assertEquals("new HashSet<>(strings)/*this.size()==strings.size()*/",
                             d.currentValue().toString());
                 }
                 if ("2".equals(d.statementId())) {
-                    Assert.assertEquals("instance type HashSet<String>/*this.contains(\"a\")&&1+strings.size()>=this.size()&&this.size()>=strings.size()*/",
+                    assertEquals("instance type HashSet<String>/*this.contains(\"a\")&&1+strings.size()>=this.size()&&this.size()>=strings.size()*/",
                             d.currentValue().toString());
                 }
                 if ("4".equals(d.statementId())) {
-                    Assert.assertEquals("instance type HashSet<String>/*AnnotatedAPI.isKnown(true)&&0==this.size()*/",
+                    assertEquals("instance type HashSet<String>/*AnnotatedAPI.isKnown(true)&&0==this.size()*/",
                             d.currentValue().toString());
                 }
             }
@@ -406,28 +407,28 @@ public class Test_03_CompanionMethods extends CommonTestRunner {
 
                 // there are 10+ statements, so numbers are two digits
                 Matcher matcher = PATTERN.matcher(d.statementId());
-                Assert.assertTrue(matcher.matches());
-                Assert.assertEquals(2, matcher.group(0).length());
+                assertTrue(matcher.matches());
+                assertEquals(2, matcher.group(0).length());
 
                 if ("00".equals(d.statementId())) {
-                    Assert.assertEquals("new HashSet<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/",
+                    assertEquals("new HashSet<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/",
                             d.currentValue().toString());
                 }
             }
             if ("test".equals(d.methodInfo().name) && "added1".equals(d.variableName())) {
                 if ("02".equals(d.statementId())) {
-                    Assert.assertEquals("true", d.currentValue().toString());
+                    assertEquals("true", d.currentValue().toString());
                 }
             }
             if ("test".equals(d.methodInfo().name) && "added3".equals(d.variableName())) {
                 if ("02".equals(d.statementId())) {
-                    Assert.assertEquals("false", d.currentValue().toString());
+                    assertEquals("false", d.currentValue().toString());
                 }
             }
         };
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("test".equals(d.methodInfo().name) && "04".equals(d.statementId())) {
-                Assert.assertEquals("true", d.evaluationResult().value().toString());
+                assertEquals("true", d.evaluationResult().value().toString());
             }
         };
 
@@ -442,25 +443,25 @@ public class Test_03_CompanionMethods extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("test".equals(d.methodInfo().name) && "set".equals(d.variableName())) {
                 if ("1".equals(d.statementId())) {
-                    Assert.assertEquals("instance type HashSet/*this.contains(\"a\")&&this.isKnown(true)&&1==this.size()*/",
+                    assertEquals("instance type HashSet/*this.contains(\"a\")&&this.isKnown(true)&&1==this.size()*/",
                             d.currentValue().toString());
                 }
                 if ("4".equals(d.statementId())) {
-                    Assert.assertEquals("instance type HashSet/*!this.contains(\"a\")&&this.isKnown(true)&&0==this.size()*/",
+                    assertEquals("instance type HashSet/*!this.contains(\"a\")&&this.isKnown(true)&&0==this.size()*/",
                             d.currentValue().toString());
                 }
                 if ("9".equals(d.statementId())) {
-                    Assert.assertEquals("instance type HashSet/*this.contains(\"c\")&&!this.contains(\"a\")&&" +
+                    assertEquals("instance type HashSet/*this.contains(\"c\")&&!this.contains(\"a\")&&" +
                             "this.isKnown(true)&&1==this.size()*/", d.currentValue().toString());
                 }
             }
         };
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("test".equals(d.methodInfo().name) && "4".equals(d.statementId())) {
-                Assert.assertEquals("true", d.evaluationResult().value().toString());
+                assertEquals("true", d.evaluationResult().value().toString());
             }
             if ("test".equals(d.methodInfo().name) && "7".equals(d.statementId())) {
-                Assert.assertEquals("true", d.evaluationResult().value().toString());
+                assertEquals("true", d.evaluationResult().value().toString());
             }
         };
 
@@ -475,13 +476,13 @@ public class Test_03_CompanionMethods extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("test".equals(d.methodInfo().name) && "set".equals(d.variableName())) {
                 if ("5".equals(d.statementId())) {
-                    Assert.assertEquals("instance type HashSet<String>/*this.size()>=in.size()*/", d.currentValue().toString());
+                    assertEquals("instance type HashSet<String>/*this.size()>=in.size()*/", d.currentValue().toString());
                 }
             }
         };
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("test".equals(d.methodInfo().name) && "8".equals(d.statementId())) {
-                Assert.assertEquals("set.size()", d.evaluationResult().value().toString());
+                assertEquals("set.size()", d.evaluationResult().value().toString());
             }
         };
         testClass("BasicCompanionMethods_10", 0, 3, new DebugConfiguration.Builder()

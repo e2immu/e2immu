@@ -20,7 +20,7 @@ package org.e2immu.analyser.testexample;
 
 import static java.lang.System.out;
 import static java.util.Arrays.stream;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class StaticImports_0 {
 

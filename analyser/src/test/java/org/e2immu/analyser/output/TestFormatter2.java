@@ -17,8 +17,9 @@
 
 package org.e2immu.analyser.output;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class TestFormatter2 {
 
@@ -177,7 +178,7 @@ public class TestFormatter2 {
         Formatter formatter = new Formatter(options);
         OutputBuilder example = createExample0();
 
-        Assert.assertEquals("""
+        assertEquals("""
                 public class Basics_1 {
                     @Linked(to = { "p0" }) @NotModified @Nullable public final Set<String> f1;
                     
@@ -362,7 +363,7 @@ public class TestFormatter2 {
     @Test
     public void testExample1() {
         FormattingOptions options = FormattingOptions.DEFAULT;
-        Assert.assertEquals("""
+        assertEquals("""
                         package org.e2immu.analyser.testexample;
                         import java.util.Set;
                         @Dependent
@@ -447,7 +448,7 @@ public class TestFormatter2 {
     @Test
     public void testExample2() {
         FormattingOptions options = FormattingOptions.DEFAULT;
-        Assert.assertEquals("""
+        assertEquals("""
                         static int test() {
                             List<String> list = new ArrayList();
                             
@@ -577,7 +578,7 @@ public class TestFormatter2 {
 
     @Test
     public void testExample3() {
-        Assert.assertEquals("""
+        assertEquals("""
                         package org.e2immu.analyser.testexample;
                         import java.util.ArrayList;
                         import java.util.List;

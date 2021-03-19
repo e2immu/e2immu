@@ -2,24 +2,24 @@ package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
-import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
-import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.expression.ConstantExpression;
 import org.e2immu.analyser.model.expression.StringConcat;
-import org.junit.Assert;
-import org.junit.Test;
+import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
+import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
+import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_29_TryStatement extends CommonTestRunner {
 
     public Test_29_TryStatement() {
         super(false);
     }
-
 
     @Test
     public void test_0() throws IOException {
@@ -30,7 +30,7 @@ public class Test_29_TryStatement extends CommonTestRunner {
             if ("method".equals(d.methodInfo().name) && METHOD_FQN.equals(d.variableName())) {
                 if ("0".equals(d.statementId())) {
                     // meaning: no idea
-                    Assert.assertEquals("nullable instance type String", d.currentValue().toString());
+                    assertEquals("nullable instance type String", d.currentValue().toString());
                 }
             }
         };
@@ -38,21 +38,21 @@ public class Test_29_TryStatement extends CommonTestRunner {
             if ("method".equals(d.methodInfo().name)) {
                 if ("0.0.0".equals(d.statementId())) {
                     Expression value0 = d.statementAnalysis().variables.get(METHOD_FQN).current().getValue();
-                    Assert.assertTrue("Got " + value0.getClass(), value0 instanceof StringConcat);
+                    assertTrue(value0 instanceof StringConcat, "Got " + value0.getClass());
                 }
                 if ("0.1.0".equals(d.statementId())) {
                     Expression value1 = d.statementAnalysis().variables.get(METHOD_FQN).current().getValue();
-                    Assert.assertTrue("Got " + value1.getClass(), value1 instanceof ConstantExpression);
+                    assertTrue(value1 instanceof ConstantExpression, "Got " + value1.getClass());
                 }
-                Assert.assertFalse("Statement " + d.statementId() + ", it " + d.iteration(),
-                        d.statementAnalysis().methodLevelData.internalObjectFlowNotYetFrozen());
+                assertFalse(d.statementAnalysis().methodLevelData.internalObjectFlowNotYetFrozen(),
+                        "Statement " + d.statementId() + ", it " + d.iteration());
             }
         };
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
                 Expression srv = d.methodAnalysis().getSingleReturnValue();
-                Assert.assertEquals("nullable instance type String", srv.toString());
+                assertEquals("nullable instance type String", srv.toString());
             }
         };
 
@@ -75,18 +75,18 @@ public class Test_29_TryStatement extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("method".equals(d.methodInfo().name) && "npe".equals(d.variableName())) {
                 if ("1.1.0".equals(d.statementId())) {
-                    Assert.assertEquals("instance type NullPointerException", d.currentValue().toString());
+                    assertEquals("instance type NullPointerException", d.currentValue().toString());
                 }
             }
         };
 
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("method".equals(d.methodInfo().name) && "1.1.1".equals(d.statementId())) {
-                Assert.assertEquals("ERROR in M:method:1.1.1: Useless assignment: res",
+                assertEquals("ERROR in M:method:1.1.1: Useless assignment: res",
                         d.haveError(Message.USELESS_ASSIGNMENT));
             }
             if ("method".equals(d.methodInfo().name) && "1.2.1".equals(d.statementId())) {
-                Assert.assertEquals("ERROR in M:method:1.2.1: Useless assignment: res",
+                assertEquals("ERROR in M:method:1.2.1: Useless assignment: res",
                         d.haveError(Message.USELESS_ASSIGNMENT));
             }
         };
@@ -103,14 +103,14 @@ public class Test_29_TryStatement extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("method".equals(d.methodInfo().name) && "res".equals(d.variableName())) {
                 if ("1".equals(d.statementId()) || "2".equals(d.statementId())) {
-                    Assert.assertEquals("null", d.currentValue().toString());
+                    assertEquals("null", d.currentValue().toString());
                 }
             }
         };
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
-                Assert.assertEquals(Level.TRUE, d.methodAnalysis().getProperty(VariableProperty.CONSTANT));
+                assertEquals(Level.TRUE, d.methodAnalysis().getProperty(VariableProperty.CONSTANT));
             }
         };
 

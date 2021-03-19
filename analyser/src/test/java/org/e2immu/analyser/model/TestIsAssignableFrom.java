@@ -4,20 +4,20 @@ import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.parser.Parser;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.Logger;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
-import java.util.List;
 import java.util.Objects;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 public class TestIsAssignableFrom {
 
     private static TypeContext typeContext;
     private static Primitives primitives;
 
-    @BeforeClass
+    @BeforeAll
     public static void beforeClass() throws IOException {
         org.e2immu.analyser.util.Logger.activate(Logger.LogTarget.INSPECT,
                 Logger.LogTarget.BYTECODE_INSPECTOR);
@@ -33,12 +33,12 @@ public class TestIsAssignableFrom {
         ParameterizedType stringPt = Objects.requireNonNull(typeContext.typeMapBuilder.get("java.lang.String").asParameterizedType(typeContext));
         ParameterizedType integerPt = Objects.requireNonNull(typeContext.typeMapBuilder.get("java.lang.Integer").asParameterizedType(typeContext));
 
-        Assert.assertTrue(integerPt.isAssignableFrom(typeContext, primitives.intParameterizedType));
-        Assert.assertTrue(primitives.intParameterizedType.isAssignableFrom(typeContext, primitives.intParameterizedType));
-        Assert.assertTrue(primitives.intParameterizedType.isAssignableFrom(typeContext, integerPt));
+        assertTrue(integerPt.isAssignableFrom(typeContext, primitives.intParameterizedType));
+        assertTrue(primitives.intParameterizedType.isAssignableFrom(typeContext, primitives.intParameterizedType));
+        assertTrue(primitives.intParameterizedType.isAssignableFrom(typeContext, integerPt));
 
-        Assert.assertFalse(primitives.intParameterizedType.isAssignableFrom(typeContext, stringPt));
-        Assert.assertFalse(stringPt.isAssignableFrom(typeContext, primitives.intParameterizedType));
+        assertFalse(primitives.intParameterizedType.isAssignableFrom(typeContext, stringPt));
+        assertFalse(stringPt.isAssignableFrom(typeContext, primitives.intParameterizedType));
     }
 
     // CharSequence[] <- String[] should be allowed
@@ -47,13 +47,12 @@ public class TestIsAssignableFrom {
         ParameterizedType stringArrayPt = new ParameterizedType(Objects.requireNonNull(typeContext.typeMapBuilder.get("java.lang.String")), 1);
         ParameterizedType charSeqArrayPt = new ParameterizedType(Objects.requireNonNull(typeContext.typeMapBuilder.get("java.lang.CharSequence")), 1);
 
-        String[] strings = {"a", "b"};
-        CharSequence[] sequences = strings;
+        CharSequence[] sequences = new String[]{"a", "b"};
         for (CharSequence sequence : sequences) {
-            Assert.assertEquals(1, sequence.length());
+            assertEquals(1, sequence.length());
         }
-        Assert.assertFalse(stringArrayPt.isAssignableFrom(typeContext, charSeqArrayPt));
-        Assert.assertTrue(charSeqArrayPt.isAssignableFrom(typeContext, stringArrayPt));
+        assertFalse(stringArrayPt.isAssignableFrom(typeContext, charSeqArrayPt));
+        assertTrue(charSeqArrayPt.isAssignableFrom(typeContext, stringArrayPt));
     }
 
     // String <- null should be allowed, but int <- null should fail
@@ -61,11 +60,11 @@ public class TestIsAssignableFrom {
     public void testNull() {
         ParameterizedType stringPt = Objects.requireNonNull(typeContext.typeMapBuilder.get("java.lang.String").asParameterizedType(typeContext));
 
-        Assert.assertFalse(ParameterizedType.NULL_CONSTANT.isAssignableFrom(typeContext, stringPt));
-        Assert.assertTrue(stringPt.isAssignableFrom(typeContext, ParameterizedType.NULL_CONSTANT));
+        assertFalse(ParameterizedType.NULL_CONSTANT.isAssignableFrom(typeContext, stringPt));
+        assertTrue(stringPt.isAssignableFrom(typeContext, ParameterizedType.NULL_CONSTANT));
 
-        Assert.assertFalse(ParameterizedType.NULL_CONSTANT.isAssignableFrom(typeContext, primitives.intParameterizedType));
-        Assert.assertFalse(primitives.intParameterizedType.isAssignableFrom(typeContext, ParameterizedType.NULL_CONSTANT));
+        assertFalse(ParameterizedType.NULL_CONSTANT.isAssignableFrom(typeContext, primitives.intParameterizedType));
+        assertFalse(primitives.intParameterizedType.isAssignableFrom(typeContext, ParameterizedType.NULL_CONSTANT));
     }
 
     // E <- String, E <- Integer, E <- int, E <- int[] should work
@@ -75,16 +74,15 @@ public class TestIsAssignableFrom {
         ParameterizedType integerPt = Objects.requireNonNull(typeContext.typeMapBuilder.get("java.lang.Integer").asParameterizedType(typeContext));
         ParameterizedType listPt = Objects.requireNonNull(typeContext.typeMapBuilder.get("java.util.List").asParameterizedType(typeContext));
         ParameterizedType typeParam = listPt.parameters.get(0);
-        Assert.assertNotNull(typeParam);
+        assertNotNull(typeParam);
 
-        Assert.assertTrue(typeParam.isAssignableFrom(typeContext, stringPt));
-        Assert.assertFalse(stringPt.isAssignableFrom(typeContext, typeParam));
+        assertTrue(typeParam.isAssignableFrom(typeContext, stringPt));
+        assertFalse(stringPt.isAssignableFrom(typeContext, typeParam));
 
-        Assert.assertTrue(typeParam.isAssignableFrom(typeContext, integerPt));
-        Assert.assertFalse(integerPt.isAssignableFrom(typeContext, typeParam));
+        assertTrue(typeParam.isAssignableFrom(typeContext, integerPt));
+        assertFalse(integerPt.isAssignableFrom(typeContext, typeParam));
 
-        List<int[]> intArrayList;
-        Assert.assertTrue(typeParam.isAssignableFrom(typeContext, primitives.intParameterizedType));
-        Assert.assertFalse(primitives.intParameterizedType.isAssignableFrom(typeContext, typeParam));
+        assertTrue(typeParam.isAssignableFrom(typeContext, primitives.intParameterizedType));
+        assertFalse(primitives.intParameterizedType.isAssignableFrom(typeContext, typeParam));
     }
 }

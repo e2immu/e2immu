@@ -5,11 +5,12 @@ import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.visitor.TypeMapVisitor;
 import org.e2immu.analyser.model.*;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.function.Consumer;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class Test_42_AbstractTypeAsParameter extends CommonTestRunner {
 
@@ -23,14 +24,14 @@ public class Test_42_AbstractTypeAsParameter extends CommonTestRunner {
             if ("forEach".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo p && "consumer".equals(p.name)) {
                     if ("0.0.0".equals(d.statementId())) {
-                        Assert.assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, d.getProperty(VariableProperty.IMMUTABLE));
+                        assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, d.getProperty(VariableProperty.IMMUTABLE));
 
                         int expectCm = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
-                        Assert.assertEquals(expectCm, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
+                        assertEquals(expectCm, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
                     }
                     if ("0".equals(d.statementId())) {
                         int expectCm = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
-                        Assert.assertEquals(expectCm, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
+                        assertEquals(expectCm, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
                     }
                 }
             }
@@ -38,7 +39,7 @@ public class Test_42_AbstractTypeAsParameter extends CommonTestRunner {
         TypeMapVisitor typeMapVisitor = typeMap -> {
             TypeInfo consumer = typeMap.get(Consumer.class);
             MethodInfo accept = consumer.findUniqueMethod("accept", 1);
-            Assert.assertEquals(Level.FALSE, accept.methodAnalysis.get().getProperty(VariableProperty.MODIFIED_METHOD));
+            assertEquals(Level.FALSE, accept.methodAnalysis.get().getProperty(VariableProperty.MODIFIED_METHOD));
         };
 
         testClass("AbstractTypeAsParameter_0", 0, 0, new DebugConfiguration.Builder()

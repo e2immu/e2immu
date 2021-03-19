@@ -23,11 +23,12 @@ import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
 import org.e2immu.analyser.model.variable.ReturnVariable;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class Test_35_EventuallyImmutableUtil extends CommonTestRunner {
 
@@ -60,8 +61,8 @@ public class Test_35_EventuallyImmutableUtil extends CommonTestRunner {
                     case 1 -> "null==<f:t>";
                     default -> "null==value.t";
                 };
-                Assert.assertEquals(expectPre, d.statementAnalysis().stateData.precondition.get().toString());
-                Assert.assertEquals(d.iteration() <= 1, d.statementAnalysis().stateData.precondition.isVariable());
+                assertEquals(expectPre, d.statementAnalysis().stateData.precondition.get().toString());
+                assertEquals(d.iteration() <= 1, d.statementAnalysis().stateData.precondition.isVariable());
             }
         };
         testSupportAndUtilClasses(List.of("EventuallyImmutableUtil_2"), FLIP_SWITCH_SET_ONCE, ORG_E2IMMU_SUPPORT,
@@ -75,13 +76,13 @@ public class Test_35_EventuallyImmutableUtil extends CommonTestRunner {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("isReady".equals(d.methodInfo().name)) {
                 // preconditions have nothing to do with this
-                Assert.assertEquals("true", d.statementAnalysis().stateData.precondition.get().toString());
+                assertEquals("true", d.statementAnalysis().stateData.precondition.get().toString());
             }
         };
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("isReady".equals(d.methodInfo().name) && d.variable() instanceof ReturnVariable) {
                 String expectValue = d.iteration() == 0 ? "<m:isSet>&&<m:isSet>" : "bool.isSet()&&string.isSet()";
-                Assert.assertEquals(expectValue, d.currentValue().toString());
+                assertEquals(expectValue, d.currentValue().toString());
             }
         };
 

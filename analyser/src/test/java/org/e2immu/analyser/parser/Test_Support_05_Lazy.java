@@ -21,18 +21,19 @@ package org.e2immu.analyser.parser;
 import org.e2immu.analyser.analyser.MethodLevelData;
 import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analyser.VariableProperty;
-import org.e2immu.analyser.config.*;
+import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.FieldInfo;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.visitor.*;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_Support_05_Lazy extends CommonTestRunner {
 
@@ -42,16 +43,16 @@ public class Test_Support_05_Lazy extends CommonTestRunner {
 
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
         if ("get".equals(d.methodInfo().name) && d.variable() instanceof FieldReference s && "supplier".equals(s.fieldInfo.name)) {
-            Assert.assertFalse("Statement: " + d.statementId(), d.variableInfo().isAssigned());
+            assertFalse(d.variableInfo().isAssigned());
         }
         if ("get".equals(d.methodInfo().name)) {
             if (d.variable() instanceof FieldReference t && "t".equals(t.fieldInfo.name)) {
                 if ("1".equals(d.statementId())) {
                     if (d.iteration() > 0) {
-                        Assert.assertEquals("supplier.get()/*@NotNull*/", d.currentValue().toString());
-                        Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL,
+                        assertEquals("supplier.get()/*@NotNull*/", d.currentValue().toString());
+                        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL,
                                 d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL_EXPRESSION));
-                        Assert.assertEquals(1, d.currentValue().variables().size());
+                        assertEquals(1, d.currentValue().variables().size());
                     }
                 }
             }
@@ -61,11 +62,11 @@ public class Test_Support_05_Lazy extends CommonTestRunner {
     FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
         int iteration = d.iteration();
         if ("t".equals(d.fieldInfo().name) && iteration > 0) {
-            Assert.assertEquals(Level.FALSE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
+            assertEquals(Level.FALSE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
         }
         if ("supplier".equals(d.fieldInfo().name) && iteration > 0) {
-            Assert.assertEquals(Level.TRUE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
-            Assert.assertNotNull(d.fieldAnalysis().getEffectivelyFinalValue());
+            assertEquals(Level.TRUE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
+            assertNotNull(d.fieldAnalysis().getEffectivelyFinalValue());
         }
     };
 
@@ -73,7 +74,7 @@ public class Test_Support_05_Lazy extends CommonTestRunner {
         if (d.iteration() > 0 && "get".equals(d.methodInfo().name)) {
             if ("1".equals(d.statementId())) {
                 // this can be picked up as a precondition for the method
-                Assert.assertEquals("null==org.e2immu.support.Lazy.t$0", d.state().toString());
+                assertEquals("null==org.e2immu.support.Lazy.t$0", d.state().toString());
             }
         }
     };
@@ -82,33 +83,32 @@ public class Test_Support_05_Lazy extends CommonTestRunner {
         if (!"Lazy".equals(d.methodInfo().typeInfo.simpleName)) return;
 
         FieldInfo supplier = d.methodInfo().typeInfo.getFieldByName("supplier", true);
-        FieldInfo t = d.methodInfo().typeInfo.getFieldByName("t", true);
         MethodLevelData methodLevelData = d.methodAnalysis().methodLevelData();
 
         if ("Lazy".equals(d.methodInfo().name)) {
             VariableInfo tv = d.getFieldAsVariable(supplier);
             assert tv != null;
-            Assert.assertFalse(tv.isDelayed());
+            assertFalse(tv.isDelayed());
 
             ParameterInfo supplierParam = d.methodInfo().methodInspection.get().getParameters().get(0);
-            Assert.assertEquals("supplierParam", supplierParam.name);
+            assertEquals("supplierParam", supplierParam.name);
         }
         if ("get".equals(d.methodInfo().name)) {
             VariableInfo vi = d.getFieldAsVariable(supplier);
             assert vi != null;
-            Assert.assertFalse(vi.isAssigned());
+            assertFalse(vi.isAssigned());
 
             VariableInfo ret = d.getReturnAsVariable();
             if (d.iteration() >= 1) {
-                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, ret.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
-                Assert.assertTrue(methodLevelData.linksHaveBeenEstablished.isSet());
+                assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, ret.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                assertTrue(methodLevelData.linksHaveBeenEstablished.isSet());
             }
         }
     };
 
     TypeAnalyserVisitor typeAnalyserVisitor = d -> {
-        if("Lazy".equals(d.typeInfo().simpleName)) {
-            Assert.assertEquals("[Type param T]", d.typeAnalysis().getImplicitlyImmutableDataTypes().toString());
+        if ("Lazy".equals(d.typeInfo().simpleName)) {
+            assertEquals("[Type param T]", d.typeAnalysis().getImplicitlyImmutableDataTypes().toString());
         }
     };
 
