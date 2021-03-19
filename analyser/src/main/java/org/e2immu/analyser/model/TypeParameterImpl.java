@@ -26,8 +26,8 @@ import org.e2immu.analyser.output.Space;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.parser.InspectionProvider;
-import org.e2immu.analyser.util.Either;
-import org.e2immu.analyser.util.SetOnce;
+import org.e2immu.support.Either;
+import org.e2immu.support.SetOnce;
 
 import java.util.ArrayList;
 import java.util.List;

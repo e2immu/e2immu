@@ -32,6 +32,10 @@ jar {
     from sourceSets.main.java
 }
 
+dependencies {
+    testImplementation group: 'junit', name: 'junit', version: '4.12'                 // EPL v1.0
+}
+
 // the reason the groupId is 'e2immu' and not 'org.e2immu' is that this reflects Gradle's project structure.
 // we push to mavenLocal() so that we can use/test the gradle-plugin locally
 

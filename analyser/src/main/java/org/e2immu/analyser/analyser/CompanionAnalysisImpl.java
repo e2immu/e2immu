@@ -19,7 +19,7 @@ package org.e2immu.analyser.analyser;
 
 import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.util.SetOnce;
+import org.e2immu.support.SetOnce;
 
 import java.util.List;
 import java.util.Map;

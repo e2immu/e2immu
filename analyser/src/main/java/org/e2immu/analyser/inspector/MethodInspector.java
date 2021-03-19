@@ -32,7 +32,7 @@ import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.TypeMapImpl;
 import org.e2immu.analyser.util.ListUtil;
-import org.e2immu.analyser.util.SetOnce;
+import org.e2immu.support.SetOnce;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

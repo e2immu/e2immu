@@ -20,12 +20,11 @@ package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.parser.InspectionProvider;
-import org.e2immu.analyser.util.Either;
+import org.e2immu.support.Either;
 
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 public interface TypeParameter extends NamedType {
 

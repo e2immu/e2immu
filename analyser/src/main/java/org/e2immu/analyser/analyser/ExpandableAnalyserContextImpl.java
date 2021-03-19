@@ -22,7 +22,7 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.pattern.PatternMatcher;
-import org.e2immu.analyser.util.SetOnceMap;
+import org.e2immu.support.SetOnceMap;
 
 import java.util.Map;
 import java.util.Objects;

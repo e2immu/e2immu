@@ -34,10 +34,7 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import java.io.IOException;
 import java.net.URL;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -134,7 +131,7 @@ public class AnnotationXmlReader implements AnnotationStore {
                                 TypeItem typeItem = typeItem(typeItemMap, fieldMatcher.group(1));
                                 theType = fieldItem(typeItem, fieldMatcher.group(2));
                             } else {
-                                throw new UnsupportedOperationException("? have name that is not matched at all: " + name);
+                                throw new NoSuchElementException("Have name that is not matched at all: " + name);
                             }
                         }
                     }
@@ -226,13 +223,12 @@ public class AnnotationXmlReader implements AnnotationStore {
             typeItem.getMethodItems().values().forEach(methodItem -> {
                 methodItem.getAnnotations().forEach(annotation -> increment(annotationCounts, "M " + annotation.name()));
 
-                methodItem.getParameterItems().forEach(parameterItem -> {
-                    parameterItem.getAnnotations().forEach(annotation -> increment(annotationCounts, "P " + annotation.name()));
-                });
+                methodItem.getParameterItems().forEach(parameterItem ->
+                        parameterItem.getAnnotations().forEach(annotation ->
+                                increment(annotationCounts, "P " + annotation.name())));
             });
-            typeItem.getFieldItems().values().forEach(fieldItem -> {
-                fieldItem.getAnnotations().forEach(annotation -> increment(annotationCounts, "F " + annotation.name()));
-            });
+            typeItem.getFieldItems().values().forEach(fieldItem ->
+                    fieldItem.getAnnotations().forEach(annotation -> increment(annotationCounts, "F " + annotation.name())));
         });
         return annotationCounts;
     }
@@ -247,11 +243,6 @@ public class AnnotationXmlReader implements AnnotationStore {
     @Override
     public TypeItem typeItemsByFQName(String fqTypeName) {
         return typeItemMap.get(fqTypeName);
-    }
-
-    @Override
-    public Collection<TypeItem> typeItems() {
-        return typeItemMap.values();
     }
 
     @Override

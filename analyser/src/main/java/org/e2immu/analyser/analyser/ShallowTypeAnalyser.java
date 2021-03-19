@@ -26,7 +26,7 @@ import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Messages;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.pattern.PatternMatcher;
-import org.e2immu.analyser.util.Either;
+import org.e2immu.support.Either;
 import org.e2immu.analyser.util.Logger;
 
 import java.util.*;

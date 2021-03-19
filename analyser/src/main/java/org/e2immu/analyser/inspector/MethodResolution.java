@@ -19,7 +19,7 @@ package org.e2immu.analyser.inspector;
 
 import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.model.MethodInfo;
-import org.e2immu.analyser.util.SetOnce;
+import org.e2immu.support.SetOnce;
 
 import java.util.Set;
 

@@ -29,7 +29,7 @@ import org.e2immu.analyser.pattern.PatternMatcher;
 import org.e2immu.analyser.resolver.SortedType;
 import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.analyser.util.Pair;
-import org.e2immu.analyser.util.SetOnce;
+import org.e2immu.support.SetOnce;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

@@ -26,9 +26,9 @@ import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Primitives;
-import org.e2immu.analyser.util.FirstThen;
-import org.e2immu.analyser.util.FlipSwitch;
-import org.e2immu.analyser.util.SetOnceMap;
+import org.e2immu.support.FirstThen;
+import org.e2immu.support.FlipSwitch;
+import org.e2immu.support.SetOnceMap;
 import org.e2immu.annotation.AnnotationMode;
 
 import java.util.Map;

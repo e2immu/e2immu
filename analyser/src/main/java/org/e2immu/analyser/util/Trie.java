@@ -19,10 +19,10 @@
 package org.e2immu.analyser.util;
 
 import org.e2immu.annotation.*;
+import org.e2immu.support.Freezable;
 
 import java.util.*;
 import java.util.function.BiConsumer;
-import java.util.function.Function;
 
 @E2Container(after = "frozen")
 public class Trie<T> extends Freezable {
@@ -78,20 +78,6 @@ public class Trie<T> extends Freezable {
     public List<T> get(String[] strings, int upToPosition) {
         TrieNode<T> node = goTo(strings, upToPosition);
         return node == null ? null : node.data == null ? List.of() : node.data;
-    }
-
-    @Only(before = "frozen")
-    @Modified
-    public List<T> getOrCompute(String[] strings, Function<String[], T> action) {
-        TrieNode<T> node = goTo(strings);
-        if (node == null) {
-            return add(strings, action.apply(strings)).data;
-        }
-        if (node.data == null) {
-            node.data = new LinkedList<>();
-            node.data.add(action.apply(strings));
-        }
-        return node.data;
     }
 
     @NotModified(contract = true)

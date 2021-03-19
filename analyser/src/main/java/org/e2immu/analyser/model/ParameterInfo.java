@@ -24,7 +24,7 @@ import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Space;
 import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.output.QualifiedName;
-import org.e2immu.analyser.util.SetOnce;
+import org.e2immu.support.SetOnce;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.Container;
 import org.e2immu.annotation.NotNull;

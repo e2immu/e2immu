@@ -34,6 +34,8 @@ import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.*;
 import org.e2immu.annotation.NotNull;
+import org.e2immu.support.Either;
+import org.e2immu.support.SetOnce;
 
 import java.util.*;
 import java.util.stream.Collectors;

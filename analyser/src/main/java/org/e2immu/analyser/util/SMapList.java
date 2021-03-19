@@ -18,11 +18,12 @@
 
 package org.e2immu.analyser.util;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import org.e2immu.annotation.*;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 
 // extension class: implies @NotNull on first argument
@@ -39,15 +40,15 @@ public class SMapList {
 
     @NotModified
     @Constant(absent = true)
-    public static <A, B> boolean addAll(@NotModified Map<A, List<B>> src, @Modified @NotNull Map<A, List<B>> dest) {
+    public static <A, B> boolean addAll(@NotModified Map<A, List<B>> src, @Modified @NotNull Map<A, List<B>> destination) {
         boolean change = false;
         for (Entry<A, List<B>> e : src.entrySet()) {
-            List<B> inDest = dest.get(e.getKey());
-            if (inDest == null) {
-                dest.put(e.getKey(), new LinkedList<>(e.getValue()));
+            List<B> inDestination = destination.get(e.getKey());
+            if (inDestination == null) {
+                destination.put(e.getKey(), new LinkedList<>(e.getValue()));
                 change = true;
             } else {
-                if (inDest.addAll(e.getValue())) {
+                if (inDestination.addAll(e.getValue())) {
                     change = true;
                 }
             }
@@ -63,17 +64,6 @@ public class SMapList {
             throw new IllegalArgumentException(NULL_VALUE);
         }
         List<B> set = map.computeIfAbsent(a, k -> new LinkedList<>());
-        return set.add(b);
-    }
-
-    public static <A, B> boolean addWithArrayList(Map<A, List<B>> map, @NotNull A a, @NotNull B b) {
-        if (a == null) {
-            throw new IllegalArgumentException(NULL_KEY);
-        }
-        if (b == null) {
-            throw new IllegalArgumentException(NULL_VALUE);
-        }
-        List<B> set = map.computeIfAbsent(a, k -> new ArrayList<>());
         return set.add(b);
     }
 
@@ -106,12 +96,12 @@ public class SMapList {
     @NotNull1
     @E2Container
     public static <A, B> Map<A, List<B>> immutable(@NotModified @NotNull1(contract = true) Map<A, List<B>> map) {
-        Map<A, ImmutableList<B>> tmp = new HashMap<>();
+        Map<A, List<B>> tmp = new HashMap<>();
         for (Entry<A, List<B>> e : map.entrySet()) {
-            ImmutableList<B> is = new ImmutableList.Builder<B>().addAll(e.getValue()).build();
+            List<B> is = List.copyOf(e.getValue());
             tmp.put(e.getKey(), is);
         }
-        return new ImmutableMap.Builder<A, List<B>>().putAll(tmp).build();
+        return Map.copyOf(tmp);
     }
 
     @NotNull

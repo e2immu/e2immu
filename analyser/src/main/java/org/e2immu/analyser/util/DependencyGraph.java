@@ -19,6 +19,7 @@
 package org.e2immu.analyser.util;
 
 import org.e2immu.annotation.*;
+import org.e2immu.support.Freezable;
 
 import java.util.*;
 import java.util.function.BiConsumer;

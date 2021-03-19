@@ -31,7 +31,7 @@ public class Test_21_StaticImports extends CommonTestRunner {
 
     @Test
     public void testStaticImports() throws IOException {
-        testClass("StaticImports", 0, 0, new DebugConfiguration.Builder().build());
+        testClass("StaticImports_0", 0, 0, new DebugConfiguration.Builder().build());
     }
 
 }

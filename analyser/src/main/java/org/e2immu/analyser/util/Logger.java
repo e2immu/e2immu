@@ -20,7 +20,6 @@ package org.e2immu.analyser.util;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.LoggerContext;
-import com.google.common.collect.ImmutableSet;
 import org.e2immu.annotation.NotModified;
 import org.e2immu.annotation.UtilityClass;
 import org.slf4j.LoggerFactory;
@@ -134,7 +133,7 @@ public class Logger {
     @NotModified
     public static void activate(LogMethod logMethod, Collection<LogTarget> logTargetSet) {
         logger = logMethod;
-        logTargets = ImmutableSet.copyOf(logTargetSet);
+        logTargets = Set.copyOf(logTargetSet);
     }
 
     public static boolean isLogEnabled(LogTarget logTarget) {

@@ -42,6 +42,8 @@ import static org.e2immu.analyser.util.Logger.LogTarget.*;
 
 public abstract class CommonTestRunner {
     private static final Logger LOGGER = LoggerFactory.getLogger(CommonTestRunner.class);
+    public static final String ORG_E2IMMU_SUPPORT = "org.e2immu.support";
+    public static final String ORG_E2IMMU_ANALYSER_UTIL = "org.e2immu.analyser.util";
 
     public final boolean withAnnotatedAPIs;
 
@@ -121,37 +123,44 @@ public abstract class CommonTestRunner {
         return execute(configuration, errorsToExpect, warningsToExpect);
     }
 
-    protected void testUtilClass(List<String> utilClasses,
+    protected void testUtilClass(List<String> classes,
                                  int errorsToExpect,
                                  int warningsToExpect,
                                  DebugConfiguration debugConfiguration) throws IOException {
-        testWithUtilClasses(List.of(), utilClasses, errorsToExpect, warningsToExpect, debugConfiguration);
+        testSupportAndUtilClasses(List.of(), classes, ORG_E2IMMU_ANALYSER_UTIL,
+                errorsToExpect, warningsToExpect, debugConfiguration);
     }
 
-    protected void testWithUtilClasses(List<String> testClasses,
-                                       List<String> utilClasses,
-                                       int errorsToExpect,
-                                       int warningsToExpect,
-                                       DebugConfiguration debugConfiguration) throws IOException {
+    protected void testSupportClass(List<String> classes,
+                                    int errorsToExpect,
+                                    int warningsToExpect,
+                                    DebugConfiguration debugConfiguration) throws IOException {
+        testSupportAndUtilClasses(List.of(), classes, ORG_E2IMMU_SUPPORT,
+                errorsToExpect, warningsToExpect, debugConfiguration);
+    }
+
+    protected void testSupportAndUtilClasses(List<String> testClasses,
+                                             List<String> utilClasses,
+                                             String packageString,
+                                             int errorsToExpect,
+                                             int warningsToExpect,
+                                             DebugConfiguration debugConfiguration) throws IOException {
         InputConfiguration.Builder builder = new InputConfiguration.Builder()
                 .addSources("src/main/java")
                 .addSources("src/test/java")
+                .addSources("../annotations/src/main/java")
                 .addAnnotatedAPISources("../annotatedAPIs/src/main/java")
                 .addClassPath(InputConfiguration.DEFAULT_CLASSPATH)
+                // we need the following packages on the path because they're used in the annotated APIs
                 .addClassPath(Input.JAR_WITH_PATH_PREFIX + "com/google/common/collect")
                 .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/junit")
                 .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/slf4j")
                 .addClassPath(Input.JAR_WITH_PATH_PREFIX + "ch/qos/logback/core/spi")
                 .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/apache/commons/io")
-                .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/objectweb/asm")
-                .addClassPath(Input.JAR_WITH_PATH_PREFIX + "com/google/gson")
-                .addClassPath(Input.JAR_WITH_PATH_PREFIX + "com/github/javaparser")
-                .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/apache/http")
-                .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/apache/commons/cli")
                 .addClassPath("jmods/java.xml.jmod");
 
         testClasses.forEach(className -> builder.addRestrictSourceToPackages("org.e2immu.analyser.testexample." + className));
-        utilClasses.forEach(className -> builder.addRestrictSourceToPackages("org.e2immu.analyser.util." + className));
+        utilClasses.forEach(className -> builder.addRestrictSourceToPackages(packageString + "." + className));
 
         Configuration configuration = new Configuration.Builder()
                 .addDebugLogTargets(List.of(ANALYSER,
@@ -190,6 +199,7 @@ public abstract class CommonTestRunner {
             LOGGER.info("Stream:\n{}\n", formatter.write(outputBuilder));
             //LOGGER.info("\n----\nOutput builder:\n{}", outputBuilder.generateJavaForDebugging());
         }
+        Assert.assertFalse(types.isEmpty());
         parser.getMessages().forEach(message -> LOGGER.info(message.toString()));
         Assert.assertEquals("ERRORS: ", errorsToExpect, (int) parser.getMessages()
                 .filter(m -> m.severity == Message.Severity.ERROR).count());

@@ -74,6 +74,7 @@ public class UpgradableBooleanMap<T> {
         return upgradableBooleanMap;
     }
 
+    @SuppressWarnings("unchecked")
     public static <T> UpgradableBooleanMap<T> of() {
         return (UpgradableBooleanMap<T>) EMPTY;
     }

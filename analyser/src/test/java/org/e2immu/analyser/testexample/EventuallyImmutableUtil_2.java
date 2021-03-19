@@ -17,7 +17,7 @@
 
 package org.e2immu.analyser.testexample;
 
-import org.e2immu.analyser.util.SetOnce;
+import org.e2immu.support.SetOnce;
 import org.e2immu.annotation.*;
 
 /*

@@ -153,6 +153,10 @@ public class JavaUtil extends AnnotatedAPI {
         @NotModified
         boolean contains(@NotNull Object object) { return false; }
 
+        @E2Container
+        @NotNull1
+        static <E> List<E> copyOf(Collection<? extends E> collection) { return null; }
+
         @NotNull1
         java.util.Iterator<E> iterator() { return null; }
 
@@ -230,6 +234,10 @@ public class JavaUtil extends AnnotatedAPI {
         boolean contains$Value$Size(int i, Object o, boolean retVal) { return org.e2immu.annotatedapi.JavaUtil.setContainsValueHelper(i, contains(o), retVal); }
         @NotModified
         boolean contains(@NotNull Object object) { return true; }
+
+        @E2Container
+        @NotNull1
+        static <E> Set<E> copyOf(Collection<? extends E> collection) { return null; }
 
         boolean isEmpty$Value$Size(int i, boolean retVal) { return i == 0; }
         @NotModified
@@ -430,6 +438,10 @@ public class JavaUtil extends AnnotatedAPI {
         boolean containsKey$Value$Size(int i, Object key, boolean retVal) { return i != 0 && retVal; }
         @NotModified
         boolean containsKey(@NotNull Object key) { return true; }
+
+        @E2Container
+        @NotNull1
+        static <K, V> Map<K, V> copyOf(Map<? extends K, ? extends V> map) { return null; }
 
         boolean size$Invariant$Size(int i) { return i >= 0; }
         void size$Aspect$Size() {}

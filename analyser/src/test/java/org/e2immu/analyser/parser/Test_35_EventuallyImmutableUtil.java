@@ -39,14 +39,14 @@ public class Test_35_EventuallyImmutableUtil extends CommonTestRunner {
 
     @Test
     public void test_0() throws IOException {
-        testWithUtilClasses(List.of("EventuallyImmutableUtil_0"), List.of("FlipSwitch"),
+        testSupportAndUtilClasses(List.of("EventuallyImmutableUtil_0"), List.of("FlipSwitch"), ORG_E2IMMU_SUPPORT,
                 0, 0, new DebugConfiguration.Builder()
                         .build());
     }
 
     @Test
     public void test_1() throws IOException {
-        testWithUtilClasses(List.of("EventuallyImmutableUtil_1"), FLIP_SWITCH_SET_ONCE,
+        testSupportAndUtilClasses(List.of("EventuallyImmutableUtil_1"), FLIP_SWITCH_SET_ONCE, ORG_E2IMMU_SUPPORT,
                 0, 0, new DebugConfiguration.Builder()
                         .build());
     }
@@ -64,7 +64,7 @@ public class Test_35_EventuallyImmutableUtil extends CommonTestRunner {
                 Assert.assertEquals(d.iteration() <= 1, d.statementAnalysis().stateData.precondition.isVariable());
             }
         };
-        testWithUtilClasses(List.of("EventuallyImmutableUtil_2"), FLIP_SWITCH_SET_ONCE,
+        testSupportAndUtilClasses(List.of("EventuallyImmutableUtil_2"), FLIP_SWITCH_SET_ONCE, ORG_E2IMMU_SUPPORT,
                 0, 0, new DebugConfiguration.Builder()
                         .addStatementAnalyserVisitor(statementAnalyserVisitor)
                         .build());
@@ -85,7 +85,7 @@ public class Test_35_EventuallyImmutableUtil extends CommonTestRunner {
             }
         };
 
-        testWithUtilClasses(List.of("EventuallyImmutableUtil_3"), FLIP_SWITCH_SET_ONCE,
+        testSupportAndUtilClasses(List.of("EventuallyImmutableUtil_3"), FLIP_SWITCH_SET_ONCE, ORG_E2IMMU_SUPPORT,
                 0, 0, new DebugConfiguration.Builder()
                         .addStatementAnalyserVisitor(statementAnalyserVisitor)
                         .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
@@ -94,42 +94,42 @@ public class Test_35_EventuallyImmutableUtil extends CommonTestRunner {
 
     @Test
     public void test_4() throws IOException {
-        testWithUtilClasses(List.of("EventuallyImmutableUtil_4"), FLIP_SWITCH_SET_ONCE,
+        testSupportAndUtilClasses(List.of("EventuallyImmutableUtil_4"), FLIP_SWITCH_SET_ONCE, ORG_E2IMMU_SUPPORT,
                 0, 0, new DebugConfiguration.Builder()
                         .build());
     }
 
     @Test
     public void test_5() throws IOException {
-        testWithUtilClasses(List.of("EventuallyImmutableUtil_5"), FLIP_SWITCH_SET_ONCE,
+        testSupportAndUtilClasses(List.of("EventuallyImmutableUtil_5"), FLIP_SWITCH_SET_ONCE, ORG_E2IMMU_SUPPORT,
                 0, 0, new DebugConfiguration.Builder()
                         .build());
     }
 
     @Test
     public void test_6() throws IOException {
-        testWithUtilClasses(List.of("EventuallyImmutableUtil_6"), List.of("AddOnceSet"),
+        testSupportAndUtilClasses(List.of("EventuallyImmutableUtil_6"), List.of("AddOnceSet"), ORG_E2IMMU_SUPPORT,
                 0, 0, new DebugConfiguration.Builder()
                         .build());
     }
 
     @Test
     public void test_7() throws IOException {
-        testWithUtilClasses(List.of("EventuallyImmutableUtil_7"), List.of("Freezable"),
+        testSupportAndUtilClasses(List.of("EventuallyImmutableUtil_7"), List.of("Freezable"), ORG_E2IMMU_SUPPORT,
                 0, 0, new DebugConfiguration.Builder()
                         .build());
     }
 
     @Test
     public void test_8() throws IOException {
-        testWithUtilClasses(List.of("EventuallyImmutableUtil_8"), List.of("Freezable"),
+        testSupportAndUtilClasses(List.of("EventuallyImmutableUtil_8"), List.of("Freezable"), ORG_E2IMMU_SUPPORT,
                 0, 0, new DebugConfiguration.Builder()
                         .build());
     }
 
     @Test
     public void test_9() throws IOException {
-        testWithUtilClasses(List.of("EventuallyImmutableUtil_9"), List.of("Freezable"),
+        testSupportAndUtilClasses(List.of("EventuallyImmutableUtil_9"), List.of("Freezable"), ORG_E2IMMU_SUPPORT,
                 0, 0, new DebugConfiguration.Builder()
                         .build());
     }

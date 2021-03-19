@@ -45,6 +45,12 @@ import static org.e2immu.analyser.util.Logger.log;
 
 public class Resources {
 
+    static class ResourceAccessException extends RuntimeException {
+        public ResourceAccessException(String msg) {
+            super(msg);
+        }
+    }
+
     private final Trie<URL> data = new Trie<>();
 
     public void visit(String[] prefix, BiConsumer<String[], List<URL>> visitor) {
@@ -54,9 +60,7 @@ public class Resources {
     public List<String[]> expandPaths(String path) {
         List<String[]> expansions = new LinkedList<>();
         String[] prefix = path.split("\\.");
-        data.visit(prefix, (s, list) -> {
-            expansions.add(s);
-        });
+        data.visit(prefix, (s, list) -> expansions.add(s));
         return expansions;
     }
 
@@ -104,7 +108,7 @@ public class Resources {
                     IOUtils.copy(url.openStream(), byteArrayOutputStream);
                     return byteArrayOutputStream.toByteArray();
                 } catch (IOException e) {
-                    throw new UnsupportedOperationException("URL = " + url + ", Cannot read? " + e.getMessage());
+                    throw new ResourceAccessException("URL = " + url + ", Cannot read? " + e.getMessage());
                 }
             }
         }
@@ -130,7 +134,7 @@ public class Resources {
             if ("jar".equals(strippedURL.getProtocol())) {
                 entries += addJar(strippedURL);
             } else
-                throw new UnsupportedOperationException("Protocol not implemented in URL: " + strippedURL.getProtocol());
+                throw new MalformedURLException("Protocol not implemented in URL: " + strippedURL.getProtocol());
         }
         return entries;
     }

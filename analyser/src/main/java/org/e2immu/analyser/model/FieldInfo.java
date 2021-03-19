@@ -20,7 +20,7 @@ package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.output.*;
-import org.e2immu.analyser.util.SetOnce;
+import org.e2immu.support.SetOnce;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.NotNull;
 

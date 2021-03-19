@@ -17,7 +17,7 @@
 
 package org.e2immu.analyser.analyser;
 
-import org.e2immu.analyser.util.SetOnce;
+import org.e2immu.support.SetOnce;
 
 import java.util.List;
 import java.util.Optional;

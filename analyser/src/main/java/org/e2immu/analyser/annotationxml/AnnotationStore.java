@@ -26,7 +26,5 @@ public interface AnnotationStore {
 
     TypeItem typeItemsByFQName(String fqTypeName);
 
-    Collection<TypeItem> typeItems();
-
     int getNumberOfAnnotations();
 }

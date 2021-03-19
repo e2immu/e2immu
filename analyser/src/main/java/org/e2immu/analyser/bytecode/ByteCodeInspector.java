@@ -30,6 +30,7 @@ import org.objectweb.asm.ClassReader;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Stack;
 import java.util.stream.Collectors;
 
@@ -45,8 +46,8 @@ public class ByteCodeInspector implements OnDemandInspection {
     private final AnnotationStore annotationStore;
 
     public ByteCodeInspector(Resources classPath, AnnotationStore annotationStore, TypeContext typeContext) {
-        this.classPath = classPath;
-        this.typeContext = typeContext;
+        this.classPath = Objects.requireNonNull(classPath);
+        this.typeContext = Objects.requireNonNull(typeContext);
         this.annotationStore = annotationStore;
     }
 
@@ -58,9 +59,6 @@ public class ByteCodeInspector implements OnDemandInspection {
      */
     @Override
     public List<TypeInfo> inspectFromPath(String path) {
-        if (classPath == null) {
-            throw new UnsupportedOperationException("No on-demand parsing if no classpath! Failed to load " + path);
-        }
         int dollar = path.indexOf('$');
         if (dollar > 0) {
             String pathOfPrimaryType = path.substring(0, dollar);
@@ -95,9 +93,6 @@ public class ByteCodeInspector implements OnDemandInspection {
     public TypeInfo inspectFromPath(String path,
                                     Stack<TypeInfo> enclosingTypes,
                                     TypeContext parentTypeContext) {
-        if (classPath == null) {
-            throw new UnsupportedOperationException("No on-demand parsing if no classpath! Failed to load " + path);
-        }
         if (Logger.isLogEnabled(BYTECODE_INSPECTOR)) {
             logTypesInProcess(path);
             log(BYTECODE_INSPECTOR, enclosingTypes.stream().map(ti -> ti.fullyQualifiedName)

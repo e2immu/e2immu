@@ -327,7 +327,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 StatementAnalysis lastStatement = methodAnalysis.getLastStatement();
                 if (lastStatement == null) {
                     increment = false;
-                } else if (!lastStatement.flowData.initialTimeIsSet()) {
+                } else if (lastStatement.flowData.initialTimeNotYetSet()) {
                     return delayedMethod(evaluationContext, builder, objectValue,
                             contextModifiedDelay == Level.TRUE, parameterValues);
                 } else {

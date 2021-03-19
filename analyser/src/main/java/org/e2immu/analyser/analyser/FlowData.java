@@ -22,8 +22,8 @@ import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Statement;
 import org.e2immu.analyser.model.statement.*;
 import org.e2immu.analyser.util.Logger;
-import org.e2immu.analyser.util.SetOnce;
-import org.e2immu.analyser.util.SetOnceMap;
+import org.e2immu.support.SetOnce;
+import org.e2immu.support.SetOnceMap;
 
 import java.util.HashMap;
 import java.util.List;
@@ -91,8 +91,8 @@ public class FlowData {
         timeAfterSubBlocks.set(exe);
     }
 
-    public boolean initialTimeIsSet() {
-        return initialTime.isSet();
+    public boolean initialTimeNotYetSet() {
+        return !initialTime.isSet();
     }
 
     public boolean timeAfterExecutionNotYetSet() {

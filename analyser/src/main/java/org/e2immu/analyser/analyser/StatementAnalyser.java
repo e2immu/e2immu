@@ -30,7 +30,7 @@ import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.pattern.PatternMatcher;
-import org.e2immu.analyser.util.SetOnce;
+import org.e2immu.support.SetOnce;
 import org.e2immu.analyser.util.StringUtil;
 import org.e2immu.annotation.Container;
 import org.slf4j.Logger;
@@ -461,7 +461,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             statementAnalysis.initIteration1Plus(sharedState.evaluationContext, myMethodAnalyser.methodInfo, sharedState.previous);
         }
 
-        if (!statementAnalysis.flowData.initialTimeIsSet()) {
+        if (statementAnalysis.flowData.initialTimeNotYetSet()) {
             int time;
             if (sharedState.previous != null) {
                 time = sharedState.previous.flowData.getTimeAfterSubBlocks();

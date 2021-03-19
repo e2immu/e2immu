@@ -18,10 +18,13 @@
 
 package org.e2immu.analyser.util;
 
-import com.google.common.collect.ImmutableList;
-import org.e2immu.annotation.*;
+import org.e2immu.annotation.NotModified;
+import org.e2immu.annotation.NotNull;
+import org.e2immu.annotation.NotNull1;
+import org.e2immu.annotation.UtilityClass;
 
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -34,11 +37,13 @@ public class ListUtil {
     @SafeVarargs
     @NotNull1
     public static <T> List<T> immutableConcat(@NotNull @NotModified Iterable<? extends T>... lists) {
-        ImmutableList.Builder<T> builder = new ImmutableList.Builder<T>();
+        List<T> builder = new LinkedList<>();
         for (Iterable<? extends T> list : lists) {
-            builder.addAll(list);
+            for (T t : list) {
+                builder.add(t);
+            }
         }
-        return builder.build();
+        return List.copyOf(builder);
     }
 
     public static <T extends Comparable<? super T>> int compare(List<T> values1, List<T> values2) {

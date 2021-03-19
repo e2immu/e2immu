@@ -21,9 +21,9 @@ import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
-import org.e2immu.analyser.util.Either;
-import org.e2immu.analyser.util.Freezable;
-import org.e2immu.analyser.util.SetOnce;
+import org.e2immu.support.Either;
+import org.e2immu.support.Freezable;
+import org.e2immu.support.SetOnce;
 
 import java.util.List;
 import java.util.Map;

@@ -17,7 +17,7 @@
 
 package org.e2immu.analyser.analyser;
 
-import org.e2immu.analyser.util.SetOnceMap;
+import org.e2immu.support.SetOnceMap;
 
 public class VariableProperties extends SetOnceMap<VariableProperty, Integer> {
 

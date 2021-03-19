@@ -20,7 +20,7 @@ package org.e2immu.analyser.inspector;
 
 import org.e2immu.analyser.model.AnnotationExpression;
 import org.e2immu.analyser.model.Inspection;
-import org.e2immu.analyser.util.AddOnceSet;
+import org.e2immu.support.AddOnceSet;
 
 import java.util.List;
 

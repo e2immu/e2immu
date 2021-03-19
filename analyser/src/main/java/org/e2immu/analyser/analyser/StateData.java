@@ -18,8 +18,8 @@
 package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.util.EventuallyFinal;
-import org.e2immu.analyser.util.SetOnceMap;
+import org.e2immu.support.EventuallyFinal;
+import org.e2immu.support.SetOnceMap;
 
 import java.util.stream.Stream;
 

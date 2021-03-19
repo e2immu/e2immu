@@ -35,8 +35,6 @@ public class TestTrie {
         trie.add(new String[]{"org", "e2immu", "analyser", "util"}, "Trie");
         trie.add(new String[]{"org", "e2immu", "analyser", "util"}, "Either");
         trie.add(new String[]{"org", "e2immu", "analyser", "testexample"}, "EquivalentLoop");
-        trie.getOrCompute(new String[]{"org", "junit"}, strings -> "Assert");
-        trie.getOrCompute(new String[]{"org", "junit"}, strings -> "BeforeClass");
 
         AtomicInteger counter = new AtomicInteger();
         trie.visit(new String[]{"org", "e2immu"}, (ss, list) -> {
@@ -59,18 +57,5 @@ public class TestTrie {
         Assert.assertNull(trie.get(new String[]{"com"}));
         Assert.assertNull(trie.get(new String[]{"org"}));
         Assert.assertEquals("[Trie, Either]", trie.get(new String[]{"org", "e2immu", "analyser", "util"}).toString());
-
-        trie.getOrCompute(new String[]{"org", "junit", "internal"}, (strings -> {
-            LOGGER.info("Compute: {}", Arrays.toString(strings));
-            Assert.assertEquals("[org, junit, internal]", Arrays.toString(strings));
-            return "Test";
-        }));
-        trie.visit(new String[]{"org", "junit", "internal"}, (ss, list) -> {
-            LOGGER.info("Visit 2: {} -> {}", Arrays.toString(ss), list);
-            Assert.assertEquals("Test", list.get(0));
-        });
-
-        // to reach the 2nd if-statement's content in getOrCompute
-        trie.getOrCompute(new String[]{"org", "e2immu", "analyser" }, strings -> "Analyser");
     }
 }

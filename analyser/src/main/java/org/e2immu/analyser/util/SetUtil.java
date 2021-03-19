@@ -18,11 +18,11 @@
 
 package org.e2immu.analyser.util;
 
-import com.google.common.collect.ImmutableSet;
 import org.e2immu.annotation.NotModified;
 import org.e2immu.annotation.NotNull;
 import org.e2immu.annotation.UtilityClass;
 
+import java.util.HashSet;
 import java.util.Set;
 
 @UtilityClass
@@ -33,10 +33,10 @@ public class SetUtil {
 
     @SafeVarargs
     public static <T> Set<T> immutableUnion(@NotNull @NotModified Set<T>... sets) {
-        ImmutableSet.Builder<T> builder = new ImmutableSet.Builder<T>();
+        Set<T> builder = new HashSet<>();
         for (Set<T> set : sets) {
             builder.addAll(set);
         }
-        return builder.build();
+        return Set.copyOf(builder);
     }
 }

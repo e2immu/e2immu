@@ -18,6 +18,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public class Test_16_Modification extends CommonTestRunner {
 
@@ -644,10 +645,12 @@ public class Test_16_Modification extends CommonTestRunner {
                     Assert.assertFalse(list.isAssignedToFieldDelaysResolved());
                 } else if (iteration == 1) {
                     Assert.assertFalse(list.isAssignedToFieldDelaysResolved());
-                    Assert.assertEquals("{c0=ASSIGNED, s1=NO, l1=NO, l2=NO, l0=NO}", list.getAssignedToField().toString());
+                    Assert.assertEquals("c0=ASSIGNED, l0=NO, l1=NO, l2=NO, s1=NO", list.getAssignedToField()
+                            .entrySet().stream().map(e -> e.getKey() + "=" + e.getValue()).sorted().collect(Collectors.joining(", ")));
                 } else {
                     Assert.assertTrue(list.isAssignedToFieldDelaysResolved());
-                    Assert.assertEquals("{c1=LINKED, s0=NO, c0=ASSIGNED, s1=NO, l1=NO, l2=NO, l0=NO}", list.getAssignedToField().toString());
+                    Assert.assertEquals("c0=ASSIGNED, c1=LINKED, l0=NO, l1=NO, l2=NO, s0=NO, s1=NO", list.getAssignedToField()
+                            .entrySet().stream().map(e -> e.getKey() + "=" + e.getValue()).sorted().collect(Collectors.joining(", ")));
                 }
                 if (iteration >= 2) {
                     Assert.assertEquals(0, list.getProperty(VariableProperty.MODIFIED_VARIABLE));
@@ -858,7 +861,7 @@ public class Test_16_Modification extends CommonTestRunner {
         testClass("Modification_11", 0, 0, new DebugConfiguration.Builder()
                 .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-              //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addEvaluationResultVisitor(evaluationResultVisitor)

@@ -98,7 +98,7 @@ public class TestByteCodeInspector {
     @Test
     public void testGenerics() throws IOException {
         TypeMap typeMap = parseFromJar("org/e2immu/analyser/util/Lazy.class");
-        TypeInfo typeInfo = typeMap.get("org.e2immu.analyser.util.Lazy");
+        TypeInfo typeInfo = typeMap.get("org.e2immu.support.Lazy");
 
         Assert.assertEquals(TypeNature.CLASS, typeInfo.typeInspection.get().typeNature());
         LOGGER.info("Stream is\n{}", typeInfo.toString());
@@ -107,7 +107,7 @@ public class TestByteCodeInspector {
     @Test
     public void testGenerics2() throws IOException {
         TypeMap typeMap = parseFromJar("org/e2immu/analyser/util/Either");
-        TypeInfo typeInfo = typeMap.get("org.e2immu.analyser.util.Either");
+        TypeInfo typeInfo = typeMap.get("org.e2immu.support.Either");
         Assert.assertEquals(TypeNature.CLASS, typeInfo.typeInspection.get().typeNature());
         LOGGER.info("Stream is\n{}", typeInfo.toString());
     }
@@ -124,7 +124,7 @@ public class TestByteCodeInspector {
     @Test
     public void testSetOnce() throws IOException {
         TypeMap typeMap = parseFromJar("org/e2immu/analyser/util/SetOnce.class");
-        TypeInfo typeInfo = typeMap.get("org.e2immu.analyser.util.SetOnce");
+        TypeInfo typeInfo = typeMap.get("org.e2immu.support.SetOnce");
 
         Assert.assertEquals(TypeNature.CLASS, typeInfo.typeInspection.get().typeNature());
         LOGGER.info("Stream is\n{}", typeInfo.toString());

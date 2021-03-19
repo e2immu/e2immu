@@ -22,10 +22,10 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Primitives;
-import org.e2immu.analyser.util.AddOnceSet;
-import org.e2immu.analyser.util.FlipSwitch;
-import org.e2immu.analyser.util.SetOnce;
-import org.e2immu.analyser.util.SetOnceMap;
+import org.e2immu.support.AddOnceSet;
+import org.e2immu.support.FlipSwitch;
+import org.e2immu.support.SetOnce;
+import org.e2immu.support.SetOnceMap;
 import org.e2immu.annotation.AnnotationMode;
 
 import java.util.List;
