@@ -17,7 +17,6 @@
 
 package org.e2immu.analyser.analyser;
 
-import com.google.common.collect.ImmutableMap;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.variable.FieldReference;
@@ -29,6 +28,7 @@ import org.e2immu.annotation.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -178,12 +178,12 @@ public interface EvaluationContext {
     computed/copied during assignment. Critical that NNE is present!
      */
     default Map<VariableProperty, Integer> getValueProperties(Expression value) {
-        ImmutableMap.Builder<VariableProperty, Integer> builder = new ImmutableMap.Builder<>();
+        Map<VariableProperty, Integer> builder = new HashMap<>();
         for (VariableProperty property : VALUE_PROPERTIES) {
             int v = getProperty(value, property, true);
             if (v != Level.DELAY) builder.put(property, v);
         }
-        return builder.build();
+        return Map.copyOf(builder);
     }
 
     default Map<VariableProperty, Integer> getVariableProperties(Expression valueToWrite, int statementTime) {

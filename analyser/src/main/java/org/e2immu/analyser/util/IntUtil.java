@@ -15,31 +15,12 @@
  * limitations under the License.
  */
 
-package org.e2immu.analyser.testexample;
+package org.e2immu.analyser.util;
 
-import org.e2immu.annotation.E2Container;
+public class IntUtil {
 
-import java.util.Set;
-
-public class DynamicTypeAnnotation_0 {
-
-    //boolean DynamicTypeAnnotation$Invariant() { return set1.size() == 2; }
-    public DynamicTypeAnnotation_0() {}
-    
-    @E2Container
-    private final Set<String> set1 = Set.of("a", "b");
-
-    public void modifySet1() {
-        set1.add("b"); // ERROR
+    // copied from Guava, DoubleMath class
+    public static boolean isMathematicalInteger(double x) {
+        return !Double.isNaN(x) && !Double.isInfinite(x) && x == Math.rint(x);
     }
-
-    @E2Container
-    public static Set<String> createSet(String a) {
-        return Set.of(a);
-    }
-
-    public static void modifySetCreated(String a) {
-        createSet(a).add("abc"); // ERROR
-    }
-
 }

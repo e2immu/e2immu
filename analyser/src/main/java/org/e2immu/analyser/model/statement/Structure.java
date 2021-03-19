@@ -17,7 +17,6 @@
 
 package org.e2immu.analyser.model.statement;
 
-import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Statement;
@@ -166,14 +165,14 @@ public record Structure(List<Expression> initialisers,
 
         @NotNull
         public Structure build() {
-            return new Structure(ImmutableList.copyOf(initialisers),
+            return new Structure(List.copyOf(initialisers),
                     expression == null ? EmptyExpression.EMPTY_EXPRESSION : expression,
                     forwardEvaluationInfo == null ? ForwardEvaluationInfo.DEFAULT : forwardEvaluationInfo,
-                    ImmutableList.copyOf(updaters),
+                    List.copyOf(updaters),
                     block,
-                    statements == null ? null : ImmutableList.copyOf(statements),
+                    statements == null ? null : List.copyOf(statements),
                     Objects.requireNonNull(statementExecution),
-                    ImmutableList.copyOf(subStatements),
+                    List.copyOf(subStatements),
                     createVariablesInsideBlock,
                     expressionIsCondition);
         }

@@ -18,7 +18,6 @@
 
 package org.e2immu.analyser.analyser;
 
-import com.google.common.collect.ImmutableMap;
 import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
@@ -76,7 +75,7 @@ public class PrimaryTypeAnalyser implements AnalyserContext, Analyser, HoldsAnal
         assert (parent == null) == this.primaryType.isPrimaryType();
 
         // do the types first, so we can pass on a TypeAnalysis objects
-        ImmutableMap.Builder<TypeInfo, TypeAnalyser> typeAnalysersBuilder = new ImmutableMap.Builder<>();
+        Map<TypeInfo, TypeAnalyser> typeAnalysersBuilder = new HashMap<>();
         SetOnce<TypeAnalyser> primaryTypeAnalyser = new SetOnce<>();
         sortedType.methodsFieldsSubTypes().forEach(mfs -> {
             if (mfs instanceof TypeInfo typeInfo && !typeInfo.typeAnalysis.isSet()) {
@@ -85,13 +84,13 @@ public class PrimaryTypeAnalyser implements AnalyserContext, Analyser, HoldsAnal
                 if (typeInfo == primaryType) primaryTypeAnalyser.set(typeAnalyser);
             }
         });
-        typeAnalysers = typeAnalysersBuilder.build();
+        typeAnalysers = Map.copyOf(typeAnalysersBuilder);
 
         // then methods
         // filtering out those methods that have not been defined is not a good idea, since the MethodAnalysisImpl object
         // can only reach TypeAnalysisImpl, and not its builder. We'd better live with empty methods in the method analyser.
-        ImmutableMap.Builder<ParameterInfo, ParameterAnalyser> parameterAnalysersBuilder = new ImmutableMap.Builder<>();
-        ImmutableMap.Builder<MethodInfo, MethodAnalyser> methodAnalysersBuilder = new ImmutableMap.Builder<>();
+        Map<ParameterInfo, ParameterAnalyser> parameterAnalysersBuilder = new HashMap<>();
+        Map<MethodInfo, MethodAnalyser> methodAnalysersBuilder = new HashMap<>();
         sortedType.methodsFieldsSubTypes().forEach(mfs -> {
             if (mfs instanceof MethodInfo methodInfo && !methodInfo.methodAnalysis.isSet()) {
                 MethodAnalyser analyser = new MethodAnalyser(methodInfo, typeAnalysers.get(methodInfo.typeInfo).typeAnalysis,
@@ -103,11 +102,11 @@ public class PrimaryTypeAnalyser implements AnalyserContext, Analyser, HoldsAnal
             }
         });
 
-        parameterAnalysers = parameterAnalysersBuilder.build();
-        methodAnalysers = methodAnalysersBuilder.build();
+        parameterAnalysers = Map.copyOf(parameterAnalysersBuilder);
+        methodAnalysers = Map.copyOf(methodAnalysersBuilder);
 
         // finally fields, and wire everything together
-        ImmutableMap.Builder<FieldInfo, FieldAnalyser> fieldAnalysersBuilder = new ImmutableMap.Builder<>();
+        Map<FieldInfo, FieldAnalyser> fieldAnalysersBuilder = new HashMap<>();
         List<Analyser> allAnalysers = sortedType.methodsFieldsSubTypes().stream().flatMap(mfs -> {
             Analyser analyser;
             if (mfs instanceof FieldInfo fieldInfo && !fieldInfo.fieldAnalysis.isSet()) {
@@ -129,7 +128,7 @@ public class PrimaryTypeAnalyser implements AnalyserContext, Analyser, HoldsAnal
             } else throw new UnsupportedOperationException();
             return analyser == null ? Stream.empty() : Stream.of(analyser);
         }).collect(Collectors.toList());
-        fieldAnalysers = fieldAnalysersBuilder.build();
+        fieldAnalysers = Map.copyOf(fieldAnalysersBuilder);
 
         List<MethodAnalyser> methodAnalysersInOrder = new ArrayList<>(methodAnalysers.size());
         List<FieldAnalyser> fieldAnalysersInOrder = new ArrayList<>(fieldAnalysers.size());

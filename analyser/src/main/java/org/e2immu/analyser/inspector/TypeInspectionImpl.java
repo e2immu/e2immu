@@ -17,8 +17,6 @@
 
 package org.e2immu.analyser.inspector;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.*;
@@ -351,37 +349,37 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
 
         @Override
         public List<MethodInfo> constructors() {
-            return ImmutableList.copyOf(constructors);
+            return List.copyOf(constructors);
         }
 
         @Override
         public List<MethodInfo> methods() {
-            return ImmutableList.copyOf(methods);
+            return List.copyOf(methods);
         }
 
         @Override
         public List<FieldInfo> fields() {
-            return ImmutableList.copyOf(fields);
+            return List.copyOf(fields);
         }
 
         @Override
         public Set<TypeModifier> modifiers() {
-            return ImmutableSet.copyOf(modifiers);
+            return Set.copyOf(modifiers);
         }
 
         @Override
         public List<TypeInfo> subTypes() {
-            return ImmutableList.copyOf(subTypes);
+            return List.copyOf(subTypes);
         }
 
         @Override
         public List<TypeParameter> typeParameters() {
-            return ImmutableList.copyOf(typeParameters);
+            return List.copyOf(typeParameters);
         }
 
         @Override
         public List<ParameterizedType> interfacesImplemented() {
-            return ImmutableList.copyOf(interfacesImplemented);
+            return List.copyOf(interfacesImplemented);
         }
 
         @Override

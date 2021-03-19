@@ -18,11 +18,11 @@
 
 package org.e2immu.analyser.parser;
 
-import com.google.common.collect.ImmutableMap;
 import org.e2immu.analyser.model.Location;
 import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.NotNull1;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
@@ -101,7 +101,7 @@ public class Message {
     public static final Map<String, Severity> SEVERITY_MAP;
 
     static {
-        ImmutableMap.Builder<String, Severity> map = new ImmutableMap.Builder<>();
+        Map<String, Severity> map = new HashMap<>();
 
         // the following is an error because it "covers" for a gap in the definition of modification (See Modified_15)
         map.put(ASSIGNMENT_TO_FIELD_OUTSIDE_TYPE, Severity.ERROR);
@@ -118,7 +118,7 @@ public class Message {
         map.put(INLINE_CONDITION_EVALUATES_TO_CONSTANT_ENN, Severity.WARN);
         map.put(CONDITION_EVALUATES_TO_CONSTANT_ENN, Severity.WARN);
 
-        SEVERITY_MAP = map.build();
+        SEVERITY_MAP = Map.copyOf(map);
     }
 
     public final String message;

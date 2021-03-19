@@ -18,7 +18,6 @@
 
 package org.e2immu.analyser.upload;
 
-import com.google.common.base.Charsets;
 import com.google.gson.Gson;
 import com.google.gson.stream.JsonReader;
 import org.apache.http.HttpEntity;
@@ -40,6 +39,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -214,7 +214,7 @@ public class AnnotationUploader {
             int statusCode = response.getStatusLine().getStatusCode();
             if (statusCode == 200) {
                 HttpEntity entity = response.getEntity();
-                JsonReader reader = new JsonReader(new InputStreamReader(entity.getContent(), Charsets.UTF_8));
+                JsonReader reader = new JsonReader(new InputStreamReader(entity.getContent(), StandardCharsets.UTF_8));
                 reader.beginObject();
                 while (reader.hasNext()) {
                     String action = reader.nextName();

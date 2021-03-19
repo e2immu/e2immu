@@ -18,7 +18,6 @@
 
 package org.e2immu.analyser.model;
 
-import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.analyser.AnnotationParameters;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.variable.FieldReference;
@@ -58,7 +57,7 @@ public record AnnotationExpressionImpl(TypeInfo typeInfo,
         }
 
         public AnnotationExpression build() {
-            return new AnnotationExpressionImpl(typeInfo, ImmutableList.copyOf(expressions));
+            return new AnnotationExpressionImpl(typeInfo, List.copyOf(expressions));
         }
     }
 
@@ -100,6 +99,7 @@ public record AnnotationExpressionImpl(TypeInfo typeInfo,
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public <T> T extract(String fieldName, T defaultValue) {
         for (Expression expression : expressions) {
             if (expression instanceof MemberValuePair mvp) {

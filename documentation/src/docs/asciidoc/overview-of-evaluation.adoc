@@ -135,7 +135,7 @@ class Append {
   public final Set<String> strings;
 
   public Append(Set<String> input) {
-    strings = ImmutableSet.copyOf(input);
+    strings = Set.copyOf(input);
   }
 
   @Identity // and @NotModified but not @Independent

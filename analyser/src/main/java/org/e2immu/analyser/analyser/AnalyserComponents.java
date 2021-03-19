@@ -17,7 +17,6 @@
 
 package org.e2immu.analyser.analyser;
 
-import com.google.common.collect.ImmutableMap;
 import org.e2immu.analyser.util.Pair;
 
 import java.util.*;
@@ -99,12 +98,12 @@ public class AnalyserComponents<T, S> {
     }
 
     public Map<String, AnalysisStatus> getStatusesAsMap() {
-        ImmutableMap.Builder<String, AnalysisStatus> builder = new ImmutableMap.Builder<>();
+        Map<String, AnalysisStatus> builder = new HashMap<>();
         int i = 0;
         for (T t : suppliers.keySet()) {
             builder.put(t.toString(), state[i++]);
         }
-        return builder.build();
+        return Map.copyOf(builder);
     }
 
     public List<Pair<T, AnalysisStatus>> getStatuses() {

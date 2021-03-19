@@ -17,7 +17,6 @@
 
 package org.e2immu.analyser.testexample;
 
-import com.google.common.collect.ImmutableSet;
 import org.e2immu.annotation.*;
 
 import java.util.Collection;
@@ -128,7 +127,7 @@ public class ImmutabilityAnnotations {
         @Independent
         @E2Container
         public Set<String> copy() {
-            return ImmutableSet.copyOf(strings);
+            return Set.copyOf(strings);
         }
     }
 

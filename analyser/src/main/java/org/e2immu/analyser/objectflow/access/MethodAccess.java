@@ -1,6 +1,5 @@
 package org.e2immu.analyser.objectflow.access;
 
-import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.objectflow.Access;
 import org.e2immu.analyser.objectflow.ObjectFlow;
@@ -17,7 +16,7 @@ public class MethodAccess implements Access {
 
     public MethodAccess(MethodInfo methodInfo, List<ObjectFlow> objectFlowsOfArguments) {
         this.methodInfo = methodInfo;
-        this.objectFlowsOfArguments = ImmutableList.copyOf(objectFlowsOfArguments);
+        this.objectFlowsOfArguments = List.copyOf(objectFlowsOfArguments);
     }
 
     @Override

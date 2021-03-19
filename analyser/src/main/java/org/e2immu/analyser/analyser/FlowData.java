@@ -17,7 +17,6 @@
 
 package org.e2immu.analyser.analyser;
 
-import com.google.common.collect.ImmutableMap;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Statement;
 import org.e2immu.analyser.model.statement.*;
@@ -338,7 +337,7 @@ public class FlowData {
                 builder.merge(i, subAnalyserExecution, (a, b) -> b.worst(a));
             }
         }
-        setInterruptsFlow(ImmutableMap.copyOf(builder));
+        setInterruptsFlow(Map.copyOf(builder));
         return DONE.combine(analysisStatus);
     }
 

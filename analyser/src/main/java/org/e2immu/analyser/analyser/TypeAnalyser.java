@@ -18,8 +18,6 @@
 
 package org.e2immu.analyser.analyser;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.analyser.check.CheckE1E2Immutable;
 import org.e2immu.analyser.analyser.util.AssignmentIncompatibleWithPrecondition;
 import org.e2immu.analyser.analyser.util.ExplicitTypes;
@@ -38,8 +36,8 @@ import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Messages;
 import org.e2immu.analyser.parser.Primitives;
-import org.e2immu.support.Either;
 import org.e2immu.annotation.*;
+import org.e2immu.support.Either;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -148,11 +146,11 @@ public class TypeAnalyser extends AbstractAnalyser {
     @Override
     public void initialize() {
 
-        ImmutableList.Builder<MethodAnalyser> myMethodAnalysersExcludingSAMs = new ImmutableList.Builder<>();
-        ImmutableList.Builder<MethodAnalyser> myMethodAnalysers = new ImmutableList.Builder<>();
-        ImmutableList.Builder<MethodAnalyser> myMethodAndConstructorAnalysersExcludingSAMs = new ImmutableList.Builder<>();
-        ImmutableList.Builder<MethodAnalyser> myConstructors = new ImmutableList.Builder<>();
-        ImmutableList.Builder<FieldAnalyser> myFieldAnalysers = new ImmutableList.Builder<>();
+        List<MethodAnalyser> myMethodAnalysersExcludingSAMs = new LinkedList<>();
+        List<MethodAnalyser> myMethodAnalysers = new LinkedList<>();
+        List<MethodAnalyser> myMethodAndConstructorAnalysersExcludingSAMs = new LinkedList<>();
+        List<MethodAnalyser> myConstructors = new LinkedList<>();
+        List<FieldAnalyser> myFieldAnalysers = new LinkedList<>();
 
         analyserContext.methodAnalyserStream().forEach(methodAnalyser -> {
             if (methodAnalyser.methodInfo.typeInfo == typeInfo) {
@@ -175,11 +173,11 @@ public class TypeAnalyser extends AbstractAnalyser {
             }
         });
 
-        this.myMethodAnalysersExcludingSAMs = myMethodAnalysersExcludingSAMs.build();
-        this.myConstructors = myConstructors.build();
-        this.myMethodAnalysers = myMethodAnalysers.build();
-        this.myMethodAndConstructorAnalysersExcludingSAMs = myMethodAndConstructorAnalysersExcludingSAMs.build();
-        this.myFieldAnalysers = myFieldAnalysers.build();
+        this.myMethodAnalysersExcludingSAMs = List.copyOf(myMethodAnalysersExcludingSAMs);
+        this.myConstructors = List.copyOf(myConstructors);
+        this.myMethodAnalysers = List.copyOf(myMethodAnalysers);
+        this.myMethodAndConstructorAnalysersExcludingSAMs = List.copyOf(myMethodAndConstructorAnalysersExcludingSAMs);
+        this.myFieldAnalysers = List.copyOf(myFieldAnalysers);
 
         Either<String, TypeInfo> pe = typeInfo.packageNameOrEnclosingType;
         List<TypeAnalysis> tmp = new ArrayList<>(2);
@@ -190,7 +188,7 @@ public class TypeAnalyser extends AbstractAnalyser {
             TypeAnalyser typeAnalyser = analyserContext.getTypeAnalyser(typeInspection.parentClass().typeInfo);
             tmp.add(typeAnalyser != null ? typeAnalyser.typeAnalysis : typeInspection.parentClass().typeInfo.typeAnalysis.get());
         }
-        parentAndOrEnclosingTypeAnalysis = ImmutableList.copyOf(tmp);
+        parentAndOrEnclosingTypeAnalysis = List.copyOf(tmp);
     }
 
     @Override
@@ -378,7 +376,7 @@ public class TypeAnalyser extends AbstractAnalyser {
             return MultiLevel.isAtLeastEventuallyE2Immutable(immutable);
         });
 
-        typeAnalysis.implicitlyImmutableDataTypes.set(ImmutableSet.copyOf(typesOfFields));
+        typeAnalysis.implicitlyImmutableDataTypes.set(Set.copyOf(typesOfFields));
         log(E2IMMUTABLE, "Implicitly immutable data types for {} are: [{}]", typeInfo.fullyQualifiedName, typesOfFields);
         return DONE;
     }

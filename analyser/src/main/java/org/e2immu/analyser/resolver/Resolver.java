@@ -19,8 +19,6 @@ package org.e2immu.analyser.resolver;
 
 import com.github.javaparser.ast.expr.Expression;
 import com.github.javaparser.ast.stmt.BlockStmt;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.inspector.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
@@ -125,7 +123,7 @@ public class Resolver {
     private List<TypeInfo> typeAndAllSubTypes(TypeInfo typeInfo) {
         List<TypeInfo> result = new ArrayList<>();
         recursivelyCollectSubTypes(typeInfo, result);
-        return ImmutableList.copyOf(result);
+        return List.copyOf(result);
     }
 
     private void recursivelyCollectSubTypes(TypeInfo typeInfo, List<TypeInfo> result) {
@@ -203,8 +201,8 @@ public class Resolver {
         typeDependencies.remove(typeInfo);
         typeDependencies.retainAll(stayWithin);
 
-        typeGraph.addNode(typeInfo, ImmutableList.copyOf(typeDependencies));
-        ImmutableList<WithInspectionAndAnalysis> methodFieldSubTypeOrder = ImmutableList.copyOf(methodFieldSubTypeGraph.sorted());
+        typeGraph.addNode(typeInfo, List.copyOf(typeDependencies));
+        List<WithInspectionAndAnalysis> methodFieldSubTypeOrder = List.copyOf(methodFieldSubTypeGraph.sorted());
 
         if (isLogEnabled(RESOLVE)) {
             log(RESOLVE, "Method graph has {} relations", methodFieldSubTypeGraph.relations());
@@ -261,7 +259,7 @@ public class Resolver {
             Set<TypeInfo> typeDependencies = typeInspection.typesReferenced().stream()
                     .map(Map.Entry::getKey).collect(Collectors.toCollection(HashSet::new));
             typeDependencies.retainAll(restrictToType);
-            methodFieldSubTypeGraph.addNode(typeInfo, ImmutableList.copyOf(typeDependencies));
+            methodFieldSubTypeGraph.addNode(typeInfo, List.copyOf(typeDependencies));
             return typeAndAllSubTypes;
         } catch (RuntimeException re) {
             LOGGER.warn("Caught exception resolving type {}", typeInfo.fullyQualifiedName);
@@ -345,7 +343,7 @@ public class Resolver {
             Element toVisit = sam != null ? sam.methodInspection.get().getMethodBody() : parsedExpression;
             MethodsAndFieldsVisited methodsAndFieldsVisited = new MethodsAndFieldsVisited(restrictToType);
             methodsAndFieldsVisited.visit(toVisit);
-            dependencies = ImmutableList.copyOf(methodsAndFieldsVisited.methodsAndFields);
+            dependencies = List.copyOf(methodsAndFieldsVisited.methodsAndFields);
         } else {
             fieldInitialiser = new FieldInspection.FieldInitialiser(EmptyExpression.EMPTY_EXPRESSION, null, false);
             dependencies = List.of();
@@ -431,7 +429,7 @@ public class Resolver {
         methodInspection.build(expressionContext.typeContext);
 
         // and only then, when the FQN is known, add to the sub-graph
-        methodFieldSubTypeGraph.addNode(methodInfo, ImmutableList.copyOf(methodsAndFieldsVisited.methodsAndFields));
+        methodFieldSubTypeGraph.addNode(methodInfo, List.copyOf(methodsAndFieldsVisited.methodsAndFields));
     }
 
     private static class MethodsAndFieldsVisited {
@@ -699,7 +697,7 @@ public class Resolver {
             assert i.typeInfo != null;
             list.addAll(superTypesExcludingJavaLangObject(inspectionProvider, i.typeInfo));
         });
-        return ImmutableSet.copyOf(list);
+        return Set.copyOf(list);
     }
 
 

@@ -18,7 +18,6 @@
 
 package org.e2immu.analyser.testexample;
 
-import com.google.common.collect.ImmutableMap;
 import org.e2immu.annotation.Container;
 import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.Independent;
@@ -57,6 +56,6 @@ public class E2Immutable_6 {
 
     @E2Container
     public Map<String, SimpleContainer> getMap6() {
-        return ImmutableMap.copyOf(map6);
+        return Map.copyOf(map6);
     }
 }

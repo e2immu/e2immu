@@ -17,7 +17,6 @@
 
 package org.e2immu.analyser.analyser;
 
-import com.google.common.collect.ImmutableMap;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
 
@@ -28,7 +27,7 @@ import java.util.StringJoiner;
 public record ForwardEvaluationInfo(Map<VariableProperty, Integer> properties, boolean notAssignmentTarget) {
 
     public ForwardEvaluationInfo(Map<VariableProperty, Integer> properties, boolean notAssignmentTarget) {
-        this.properties = ImmutableMap.copyOf(properties);
+        this.properties = Map.copyOf(properties);
         this.notAssignmentTarget = notAssignmentTarget;
     }
 

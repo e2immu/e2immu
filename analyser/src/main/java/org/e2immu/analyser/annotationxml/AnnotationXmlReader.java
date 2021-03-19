@@ -18,7 +18,6 @@
 
 package org.e2immu.analyser.annotationxml;
 
-import com.google.common.collect.ImmutableMap;
 import org.e2immu.analyser.annotationxml.model.*;
 import org.e2immu.analyser.util.Resources;
 import org.e2immu.annotation.E2Immutable;
@@ -68,7 +67,7 @@ public class AnnotationXmlReader implements AnnotationStore {
             }
         }
         this.numberOfAnnotations = countAnnotations;
-        this.typeItemMap = ImmutableMap.copyOf(typeItemMap);
+        this.typeItemMap = Map.copyOf(typeItemMap);
         this.typeItemMap.values().forEach(TypeItem::freeze);
     }
 
@@ -84,7 +83,7 @@ public class AnnotationXmlReader implements AnnotationStore {
             countAnnotations += parse(annotationXml, typeItemMap);
         }
         this.numberOfAnnotations = countAnnotations;
-        this.typeItemMap = ImmutableMap.copyOf(typeItemMap);
+        this.typeItemMap = Map.copyOf(typeItemMap);
         this.typeItemMap.values().forEach(TypeItem::freeze);
     }
 

@@ -17,7 +17,6 @@
 
 package org.e2immu.analyser.model.expression.util;
 
-import com.google.common.collect.ImmutableMap;
 import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.VariableProperty;
@@ -28,6 +27,7 @@ import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.parser.InspectionProvider;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -94,7 +94,7 @@ public class EvaluatePreconditionFromMethod {
                                                              MethodInfo methodInfo,
                                                              List<Expression> parameters,
                                                              Expression scope) {
-        ImmutableMap.Builder<Expression, Expression> builder = new ImmutableMap.Builder<>();
+        Map<Expression, Expression> builder = new HashMap<>();
         int i = 0;
         for (Expression parameterValue : parameters) {
             ParameterInfo parameterInfo = methodInfo.methodInspection.get().getParameters().get(i);
@@ -111,6 +111,6 @@ public class EvaluatePreconditionFromMethod {
                 builder.put(new VariableExpression(thisField), new VariableExpression(scopeField));
             }
         }
-        return builder.build();
+        return Map.copyOf(builder);
     }
 }

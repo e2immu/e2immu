@@ -18,7 +18,6 @@
 
 package org.e2immu.analyser.analyser;
 
-import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.analyser.check.CheckConstant;
 import org.e2immu.analyser.analyser.check.CheckFinalNotModified;
 import org.e2immu.analyser.analyser.check.CheckLinks;
@@ -148,8 +147,8 @@ public class FieldAnalyser extends AbstractAnalyser {
 
     @Override
     public void initialize() {
-        ImmutableList.Builder<MethodAnalyser> allMethodsAndConstructors = new ImmutableList.Builder<>();
-        ImmutableList.Builder<MethodAnalyser> myMethodsAndConstructors = new ImmutableList.Builder<>();
+        List<MethodAnalyser> allMethodsAndConstructors = new LinkedList<>();
+        List<MethodAnalyser> myMethodsAndConstructors = new LinkedList<>();
 
         messages.addAll(fieldAnalysis.fromAnnotationsIntoProperties(VariableProperty.EXTERNAL_NOT_NULL,
                 true, false,
@@ -162,8 +161,8 @@ public class FieldAnalyser extends AbstractAnalyser {
             }
         });
         myTypeAnalyser = analyserContext.getTypeAnalyser(fieldInfo.owner);
-        this.allMethodsAndConstructors = allMethodsAndConstructors.build();
-        this.myMethodsAndConstructors = myMethodsAndConstructors.build();
+        this.allMethodsAndConstructors = List.copyOf(allMethodsAndConstructors);
+        this.myMethodsAndConstructors = List.copyOf(myMethodsAndConstructors);
     }
 
     @Override

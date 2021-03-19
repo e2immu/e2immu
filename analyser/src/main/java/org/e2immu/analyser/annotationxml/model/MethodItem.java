@@ -18,7 +18,6 @@
 
 package org.e2immu.analyser.annotationxml.model;
 
-import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.ParameterInfo;
@@ -107,9 +106,9 @@ public class MethodItem extends HasAnnotations implements Comparable<MethodItem>
 
     void freeze() {
         super.freeze();
-        parameterItems = ImmutableList.copyOf(parameterItems);
+        parameterItems = List.copyOf(parameterItems);
         parameterItems.forEach(ParameterItem::freeze);
-        companionMethods = ImmutableList.copyOf(companionMethods);
+        companionMethods = List.copyOf(companionMethods);
         companionMethods.forEach(MethodItem::freeze);
     }
 

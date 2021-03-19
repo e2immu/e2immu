@@ -17,7 +17,6 @@
 
 package org.e2immu.analyser.analyser;
 
-import com.google.common.collect.ImmutableMap;
 import org.e2immu.analyser.analyser.util.MergeHelper;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Level;
@@ -479,7 +478,7 @@ class VariableInfoImpl implements VariableInfo {
             (Map<VariableProperty, Integer> m1, Map<VariableProperty, Integer> m2) {
         if (m2.isEmpty()) return m1;
         if (m1.isEmpty()) return m2;
-        ImmutableMap.Builder<VariableProperty, Integer> map = new ImmutableMap.Builder<>();
+        Map<VariableProperty, Integer> map = new HashMap<>();
         for (MergeOp mergeOp : MERGE) {
 
             int v1 = m1.getOrDefault(mergeOp.variableProperty, Level.DELAY);
@@ -490,7 +489,7 @@ class VariableInfoImpl implements VariableInfo {
                 map.put(mergeOp.variableProperty, v);
             }
         }
-        return map.build();
+        return Map.copyOf(map);
     }
 
     /*

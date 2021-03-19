@@ -17,11 +17,12 @@
 
 package org.e2immu.analyser.analyser;
 
-import com.google.common.collect.ImmutableMap;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.util.ListUtil;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public interface CompanionAnalysis {
 
@@ -56,8 +57,8 @@ public interface CompanionAnalysis {
      * @return a re-evaluated Value
      */
     default Expression reEvaluate(EvaluationContext evaluationContext, List<Expression> parameterValues) {
-        ImmutableMap.Builder<Expression, Expression> translationMap = new ImmutableMap.Builder<>();
+        Map<Expression, Expression> translationMap = new HashMap<>();
         ListUtil.joinLists(getParameterValues(), parameterValues).forEach(pair -> translationMap.put(pair.k, pair.v));
-        return getValue().reEvaluate(evaluationContext, translationMap.build()).value();
+        return getValue().reEvaluate(evaluationContext, Map.copyOf(translationMap)).value();
     }
 }

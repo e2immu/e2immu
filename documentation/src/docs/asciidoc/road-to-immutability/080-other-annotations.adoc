@@ -39,7 +39,7 @@ class Builder {
 
     @E2Container
     public List<String> build() {
-        return ImmutableList.copyOf(list);
+        return List.copyOf(list);
     }
 
     public static final Set<String> one23 = new Builder().add(1).add(2).add(3).add("go").build();

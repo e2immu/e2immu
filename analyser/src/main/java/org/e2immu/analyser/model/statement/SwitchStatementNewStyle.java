@@ -1,6 +1,5 @@
 package org.e2immu.analyser.model.statement;
 
-import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.analyser.StatementAnalysis;
 import org.e2immu.analyser.model.*;
@@ -19,7 +18,7 @@ public class SwitchStatementNewStyle extends StatementWithExpression implements 
 
     public SwitchStatementNewStyle(Expression selector, List<SwitchEntry> switchEntries) {
         super(codeOrganization(selector, switchEntries), selector);
-        this.switchEntries = ImmutableList.copyOf(switchEntries);
+        this.switchEntries = List.copyOf(switchEntries);
     }
 
     @Override

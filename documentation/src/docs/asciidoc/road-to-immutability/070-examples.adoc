@@ -190,7 +190,7 @@ public class Trie<T> extends Freezable {
     @Nullable @NotModified
     public List<T> get(@NotNull1 String[] strings) {
         TrieNode<T> node = goTo(strings);
-        return node == null ? null : ImmutableList.copyOf(node.data);
+        return node == null ? null : List.copyOf(node.data);
     }
 
     @NotNull @Modified @Only(before = "freeze")
@@ -220,7 +220,7 @@ public class Trie<T> extends Freezable {
                                              Stack<String> strings,
                                              BiConsumer<String[], List<T>> visitor) {
         if (node.data != null) {
-            visitor.accept(strings.toArray(String[]::new), ImmutableList.copyOf(node.data));
+            visitor.accept(strings.toArray(String[]::new), List.copyOf(node.data));
         }
         if (node.map != null) {
             node.map.forEach((s, n) -> {

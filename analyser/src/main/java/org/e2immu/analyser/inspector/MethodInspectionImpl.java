@@ -18,9 +18,6 @@
 package org.e2immu.analyser.inspector;
 
 import com.github.javaparser.ast.stmt.BlockStmt;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.parser.InspectionProvider;
@@ -342,14 +339,14 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
                     isStatic(),
                     isDefault(),
                     synthetic,
-                    ImmutableSet.copyOf(modifiers),
-                    ImmutableList.copyOf(immutableParameters),
+                    Set.copyOf(modifiers),
+                    List.copyOf(immutableParameters),
                     returnType,
                     getAnnotations(),
-                    ImmutableList.copyOf(typeParameters),
-                    ImmutableList.copyOf(exceptionTypes),
-                    ImmutableList.copyOf(implementationsOf),
-                    ImmutableMap.copyOf(getCompanionMethods()),
+                    List.copyOf(typeParameters),
+                    List.copyOf(exceptionTypes),
+                    List.copyOf(implementationsOf),
+                    Map.copyOf(getCompanionMethods()),
                     inspectedBlock
             );
             methodInfo.methodInspection.set(methodInspection);

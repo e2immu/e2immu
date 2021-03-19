@@ -1,6 +1,5 @@
 package org.e2immu.analyser.model.statement;
 
-import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
@@ -29,8 +28,8 @@ public class TryStatement extends StatementWithStructure {
                         List<Pair<CatchParameter, Block>> catchClauses,
                         Block finallyBlock) {
         super(codeOrganization(resources, tryBlock, catchClauses, finallyBlock));
-        this.resources = ImmutableList.copyOf(resources);
-        this.catchClauses = ImmutableList.copyOf(catchClauses);
+        this.resources = List.copyOf(resources);
+        this.catchClauses = List.copyOf(catchClauses);
         this.finallyBlock = finallyBlock;
         subElements = ListUtil.immutableConcat(List.of(tryBlock), catchClauses.stream().map(Pair::getV).collect(Collectors.toList()),
                 finallyBlock == Block.EMPTY_BLOCK ? List.of() : List.of(finallyBlock));
@@ -75,7 +74,7 @@ public class TryStatement extends StatementWithStructure {
                                         List<ParameterizedType> unionOfTypes) implements Expression {
         public CatchParameter(LocalVariableCreation localVariableCreation, List<ParameterizedType> unionOfTypes) {
             this.localVariableCreation = localVariableCreation;
-            this.unionOfTypes = ImmutableList.copyOf(unionOfTypes);
+            this.unionOfTypes = List.copyOf(unionOfTypes);
         }
 
         @Override

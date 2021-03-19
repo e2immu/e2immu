@@ -17,8 +17,6 @@
 
 package org.e2immu.analyser.analyser;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.analyser.util.CreatePreconditionCompanion;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.BooleanConstant;
@@ -250,13 +248,13 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
             return new MethodAnalysisImpl(methodInfo,
                     firstStatement.getOrElse(null),
                     getLastStatement(),
-                    ImmutableList.copyOf(parameterAnalyses.stream()
+                    List.copyOf(parameterAnalyses.stream()
                             .map(parameterAnalysis -> parameterAnalysis instanceof ParameterAnalysisImpl.Builder builder ?
                                     (ParameterAnalysis) builder.build() : parameterAnalysis).collect(Collectors.toList())),
                     getSingleReturnValue(),
                     getObjectFlow(),
-                    ImmutableSet.copyOf(internalObjectFlows.getOrElse(Set.of())),
-                    ImmutableList.copyOf(preconditionForEventual.getOrElse(List.of())),
+                    Set.copyOf(internalObjectFlows.getOrElse(Set.of())),
+                    List.copyOf(preconditionForEventual.getOrElse(List.of())),
                     getEventual(),
                     precondition.getOrElse(new BooleanConstant(primitives, true)),
                     properties.toImmutableMap(),

@@ -17,7 +17,6 @@
 
 package org.e2immu.analyser.analyser;
 
-import com.google.common.collect.ImmutableMap;
 import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
@@ -66,7 +65,7 @@ public class ShallowTypeAnalyser implements AnalyserContext {
         this.shallowMethodAnalyser = new ShallowMethodAnalyser(primitives, this, e2ImmuAnnotationExpressions);
 
         typeAnalyses = new LinkedHashMap<>(); // we keep the order provided
-        ImmutableMap.Builder<MethodInfo, MethodAnalysis> methodAnalysesBuilder = new ImmutableMap.Builder<>();
+        Map<MethodInfo, MethodAnalysis> methodAnalysesBuilder = new HashMap<>();
         for (TypeInfo typeInfo : types) {
             TypeAnalysis typeAnalysis = new TypeAnalysisImpl.Builder(primitives, typeInfo);
             typeAnalyses.put(typeInfo, typeAnalysis);
@@ -103,7 +102,7 @@ public class ShallowTypeAnalyser implements AnalyserContext {
                 }
             });
         }
-        methodAnalyses = methodAnalysesBuilder.build();
+        methodAnalyses = Map.copyOf(methodAnalysesBuilder);
     }
 
     // dedicated method exactly for this "isFact" method

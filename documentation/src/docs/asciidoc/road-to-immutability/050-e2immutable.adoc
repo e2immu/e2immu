@@ -273,7 +273,7 @@ Finally, we have a level 2 immutable type.
 class SetBasedContainer4<T> {
     public final ImmutableSet<T> data; // <1>
     public SetBasedContainer4(Set<T> ts) {
-        this.data = ImmutableSet.copyOf(ts); // <2>
+        this.data = Set.copyOf(ts); // <2>
     }
     public Stream<T> stream() {
         return data.stream();
@@ -336,7 +336,7 @@ class SetBasedContainer6<T> {
     public final Set<T> data;
 
     public SetBasedContainer4(Set<T> ts) {
-        this.data = ImmutableSet.copyOf(ts);
+        this.data = Set.copyOf(ts);
     }
 
     @E2Container

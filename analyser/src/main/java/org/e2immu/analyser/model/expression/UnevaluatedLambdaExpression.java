@@ -18,7 +18,6 @@
 
 package org.e2immu.analyser.model.expression;
 
-import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
@@ -37,7 +36,7 @@ import java.util.Set;
 public record UnevaluatedLambdaExpression(Set<Integer> numberOfParameters,
                                           Boolean nonVoid) implements Expression {
     public UnevaluatedLambdaExpression(Set<Integer> numberOfParameters, Boolean nonVoid) {
-        this.numberOfParameters = ImmutableSet.copyOf(numberOfParameters);
+        this.numberOfParameters = Set.copyOf(numberOfParameters);
         this.nonVoid = nonVoid;
     }
 

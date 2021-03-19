@@ -17,7 +17,6 @@
 
 package org.e2immu.analyser.model.expression;
 
-import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
@@ -47,7 +46,7 @@ public record CommaExpression(List<Expression> expressions) implements Expressio
         if (expressions.size() == 0) return new BooleanConstant(evaluationContext.getPrimitives(), true);
         if (expressions.size() == 1) return expressions.get(0);
         if (expressions.stream().anyMatch(Expression::isUnknown)) throw new UnsupportedOperationException();
-        return new CommaExpression(ImmutableList.copyOf(expressions));
+        return new CommaExpression(List.copyOf(expressions));
     }
 
     @Override

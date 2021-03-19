@@ -155,7 +155,7 @@ public class JavaUtil extends AnnotatedAPI {
 
         @E2Container
         @NotNull1
-        static <E> List<E> copyOf(Collection<? extends E> collection) { return null; }
+        static <E> List<E> copyOf(@NotNull1 Collection<? extends E> collection) { return null; }
 
         @NotNull1
         java.util.Iterator<E> iterator() { return null; }
@@ -237,7 +237,7 @@ public class JavaUtil extends AnnotatedAPI {
 
         @E2Container
         @NotNull1
-        static <E> Set<E> copyOf(Collection<? extends E> collection) { return null; }
+        static <E> Set<E> copyOf(@NotNull1 Collection<? extends E> collection) { return null; }
 
         boolean isEmpty$Value$Size(int i, boolean retVal) { return i == 0; }
         @NotModified
@@ -440,8 +440,8 @@ public class JavaUtil extends AnnotatedAPI {
         boolean containsKey(@NotNull Object key) { return true; }
 
         @E2Container
-        @NotNull1
-        static <K, V> Map<K, V> copyOf(Map<? extends K, ? extends V> map) { return null; }
+        @NotNull
+        static <K, V> Map<K, V> copyOf(@NotNull Map<? extends K, ? extends V> map) { return null; }
 
         boolean size$Invariant$Size(int i) { return i >= 0; }
         void size$Aspect$Size() {}

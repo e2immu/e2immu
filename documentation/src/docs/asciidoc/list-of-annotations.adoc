@@ -139,12 +139,12 @@ public class ParameterInspection {
         @NotModified // <2>
         @NotNull
         public ParameterInspection build() {
-            return new ParameterInspection(ImmutableList.copyOf(parameterNames), varArgs);
+            return new ParameterInspection(List.copyOf(parameterNames), varArgs);
         }
     }
 }
 ----
-<1> because the constructor is private, and only called in the `build` method with an `ImmutableList.copyOf` method, we can be sure that `parameterNames` is effectively immutable
+<1> because the constructor is private, and only called in the `build` method with an `List.copyOf` method, we can be sure that `parameterNames` is effectively immutable
 <2> in a container, <<notmodified-annotation>> on methods is not implied!
 
 Many generic data structures, such as the collection classes like `java.util.List`, are also containers.
@@ -486,7 +486,7 @@ private Set<T> set = ...;
 @Independent
 @NotNull
 public Set<T> build() {
-    return ImmutableSet.copyOf(set);
+    return Set.copyOf(set);
 }
 ----
 
@@ -496,7 +496,7 @@ which, in a Vertx.io context would look like
 public void build(@NullNotAllowed2 @Independent Handler<AsyncResult<Set<T>>> next) {
     Set<T> set = new HashSet<>();
     ...
-    next.handle(Future.succeededFuture(ImmutableSet.copyOf(set)));
+    next.handle(Future.succeededFuture(Set.copyOf(set)));
 }
 ----
 

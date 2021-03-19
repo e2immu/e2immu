@@ -17,8 +17,6 @@
 
 package org.e2immu.analyser.resolver;
 
-import com.google.common.collect.ImmutableSet;
-import org.e2immu.analyser.inspector.MethodInspectionImpl;
 import org.e2immu.analyser.inspector.MethodResolution;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.InspectionProvider;
@@ -44,7 +42,7 @@ public class ShallowMethodResolver {
      * @return all super methods
      */
     public static Set<MethodInfo> overrides(InspectionProvider inspectionProvider, MethodInfo methodInfo) {
-        return ImmutableSet.copyOf(recursiveOverridesCall(inspectionProvider,
+        return Set.copyOf(recursiveOverridesCall(inspectionProvider,
                 methodInfo.typeInfo,
                 inspectionProvider.getMethodInspection(methodInfo),
                 Map.of()));

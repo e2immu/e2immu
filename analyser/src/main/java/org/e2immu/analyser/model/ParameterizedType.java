@@ -18,7 +18,6 @@
 
 package org.e2immu.analyser.model;
 
-import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.analyser.AnalysisProvider;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.inspector.MethodTypeParameterMap;
@@ -108,7 +107,7 @@ public class ParameterizedType {
     // String, Function<R, ? super T>
     public ParameterizedType(TypeInfo typeInfo, List<ParameterizedType> parameters) {
         this.typeInfo = Objects.requireNonNull(typeInfo);
-        this.parameters = ImmutableList.copyOf(Objects.requireNonNull(parameters));
+        this.parameters = List.copyOf(Objects.requireNonNull(parameters));
         this.typeParameter = null;
         this.arrays = 0;
         this.wildCard = WildCard.NONE;
@@ -119,7 +118,7 @@ public class ParameterizedType {
         this.typeInfo = Objects.requireNonNull(typeInfo);
         this.arrays = arrays;
         this.wildCard = wildCard;
-        this.parameters = ImmutableList.copyOf(typeParameters);
+        this.parameters = List.copyOf(typeParameters);
         this.typeParameter = null;
     }
 

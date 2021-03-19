@@ -17,7 +17,6 @@
 
 package org.e2immu.analyser.bytecode.asm;
 
-import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.inspector.MethodInspectionImpl;
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.inspector.TypeInspectionImpl;
@@ -123,7 +122,7 @@ class ParseGenerics {
         }
 
 
-        typeParameter.setTypeBounds(ImmutableList.copyOf(typeBounds));
+        typeParameter.setTypeBounds(List.copyOf(typeBounds));
         next.result = typeParameter;
 
 

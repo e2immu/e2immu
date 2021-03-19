@@ -18,7 +18,6 @@
 
 package org.e2immu.analyser.config;
 
-import com.google.common.collect.ImmutableList;
 import org.e2immu.annotation.Container;
 import org.e2immu.annotation.E2Immutable;
 import org.e2immu.annotation.Fluent;
@@ -117,10 +116,10 @@ public class InputConfiguration {
                 sourceDirs.addAll(Arrays.asList(DEFAULT_SOURCE_DIRS.split(PATH_SEPARATOR)));
             }
             Charset sourceCharset = sourceEncoding == null ? StandardCharsets.UTF_8 : Charset.forName(sourceEncoding);
-            return new InputConfiguration(ImmutableList.copyOf(sourceDirs),
-                    ImmutableList.copyOf(annotatedAPISourceDirs),
-                    ImmutableList.copyOf(classPathParts),
-                    ImmutableList.copyOf(restrictSourceToPackages),
+            return new InputConfiguration(List.copyOf(sourceDirs),
+                    List.copyOf(annotatedAPISourceDirs),
+                    List.copyOf(classPathParts),
+                    List.copyOf(restrictSourceToPackages),
                     alternativeJREDirectory,
                     sourceCharset
             );

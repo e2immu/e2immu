@@ -17,7 +17,6 @@
 
 package org.e2immu.analyser.model;
 
-import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.OutputBuilder;
@@ -43,15 +42,7 @@ public interface Element {
         consumer.accept(this);
     }
 
-    default void visitStatements(Consumer<Statement> consumer) {
-        if (this instanceof Statement) {
-            subElements().forEach(element -> {
-                if (element instanceof Statement) element.visitStatements(consumer);
-            });
-            consumer.accept((Statement) this);
-        }
-    }
-
+    @SuppressWarnings("unchecked")
     default <T extends Element> void visit(Consumer<T> consumer, Class<T> clazz) {
         visit(element -> {
             if (clazz.isAssignableFrom(element.getClass())) consumer.accept((T) element);
@@ -61,7 +52,7 @@ public interface Element {
     default <E extends Element> List<E> collect(Class<E> clazz) {
         List<E> result = new ArrayList<>();
         visit(result::add, clazz);
-        return ImmutableList.copyOf(result);
+        return List.copyOf(result);
     }
 
     // translate

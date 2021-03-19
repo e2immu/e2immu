@@ -45,7 +45,7 @@ class Polygon {
         }
 
         public Polygon build() {
-            return new Polygon(ImmutableList.copyOf(points));
+            return new Polygon(List.copyOf(points));
         }
     }
 }

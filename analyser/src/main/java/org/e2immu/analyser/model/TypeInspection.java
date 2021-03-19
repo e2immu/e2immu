@@ -18,9 +18,9 @@
 
 package org.e2immu.analyser.model;
 
-import com.google.common.collect.Iterables;
 import org.e2immu.analyser.inspector.TypeInspectionImpl;
 import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.AnnotationMode;
 
@@ -115,8 +115,8 @@ public interface TypeInspection extends Inspection {
         return () -> methodStream(methodsMode).iterator();
     }
 
-    default Iterable<MethodInfo> methodsAndConstructors() {
-        return Iterables.concat(methods(), constructors());
+    default List<MethodInfo> methodsAndConstructors() {
+        return ListUtil.immutableConcat(methods(), constructors());
     }
 
     default Stream<MethodInfo> methodsInFieldInitializers(boolean alsoArtificial) {

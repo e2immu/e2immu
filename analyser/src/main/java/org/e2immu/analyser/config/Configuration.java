@@ -19,7 +19,6 @@
 package org.e2immu.analyser.config;
 
 import ch.qos.logback.classic.Level;
-import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.cli.Main;
 import org.e2immu.annotation.Container;
 import org.e2immu.annotation.E2Immutable;
@@ -200,7 +199,7 @@ public class Configuration {
 
         public Configuration build() {
             return new Configuration(inputConfiguration != null ? inputConfiguration : new InputConfiguration.Builder().build(),
-                    ImmutableSet.copyOf(logTargets),
+                    Set.copyOf(logTargets),
                     quiet,
                     ignoreErrors,
                     skipAnalysis,

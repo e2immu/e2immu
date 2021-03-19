@@ -17,7 +17,6 @@
 
 package org.e2immu.analyser.inspector;
 
-import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.support.SetOnce;
 
@@ -60,7 +59,7 @@ public record MethodResolution(Set<MethodInfo> overrides,
         public final SetOnce<Set<MethodInfo>> overrides = new SetOnce<>();
 
         public Set<MethodInfo> getOverrides() {
-            return overrides.isSet() ? ImmutableSet.copyOf(overrides.get()) : Set.of();
+            return overrides.isSet() ? Set.copyOf(overrides.get()) : Set.of();
         }
 
         /**
@@ -75,7 +74,7 @@ public record MethodResolution(Set<MethodInfo> overrides,
         }
 
         public Set<MethodInfo> getMethodsOfOwnClassReached() {
-            return methodsOfOwnClassReached.isSet() ? ImmutableSet.copyOf(methodsOfOwnClassReached.get()) : Set.of();
+            return methodsOfOwnClassReached.isSet() ? Set.copyOf(methodsOfOwnClassReached.get()) : Set.of();
         }
 
         public final SetOnce<CallStatus> partOfConstruction = new SetOnce<>();

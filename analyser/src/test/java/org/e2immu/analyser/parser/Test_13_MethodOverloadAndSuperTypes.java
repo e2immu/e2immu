@@ -39,6 +39,7 @@ import java.io.IOException;
 import java.net.URL;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -144,7 +145,8 @@ public class Test_13_MethodOverloadAndSuperTypes {
                 c2.typeInspection.get().methods().stream().map(MethodInfo::distinguishingName).collect(Collectors.joining(", ")));
 
         Set<TypeInfo> superTypesC2 = c2.typeResolution.get().superTypesExcludingJavaLangObject();
-        Assert.assertEquals("[org.e2immu.analyser.testexample.MethodOverload.C1, org.e2immu.analyser.testexample.MethodOverload.I1]", superTypesC2.toString());
+        Assert.assertEquals("org.e2immu.analyser.testexample.MethodOverload.C1,org.e2immu.analyser.testexample.MethodOverload.I1",
+                superTypesC2.stream().map(Objects::toString).sorted().collect(Collectors.joining(",")));
         List<ParameterizedType> directSuperTypesC2 = ShallowMethodResolver.directSuperTypes(parser.getTypeContext(), c2);
         Assert.assertEquals("[Type org.e2immu.analyser.testexample.MethodOverload.C1]", directSuperTypesC2.toString());
 

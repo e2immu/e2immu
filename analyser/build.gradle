@@ -56,7 +56,6 @@ compileTestJava {
 dependencies {
     implementation project(':annotations')
 
-    implementation group: 'com.google.guava', name: 'guava', version: '28.1-jre'      // Apache License 2.0
     implementation group: 'org.slf4j', name: 'slf4j-api', version: '1.7.25'           // MIT X-11 License
     implementation group: 'com.github.javaparser', name: 'javaparser-core', version: '3.18.0'
     // LGPL or Apache License 2.0
@@ -69,6 +68,7 @@ dependencies {
 
     // TEST
 
+    testImplementation group: 'com.google.guava', name: 'guava', version: '28.1-jre'      // Apache License 2.0
     testImplementation group: 'junit', name: 'junit', version: '4.12'                 // EPL v1.0
 }
 

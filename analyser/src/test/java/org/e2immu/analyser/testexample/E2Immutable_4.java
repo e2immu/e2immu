@@ -18,7 +18,6 @@
 
 package org.e2immu.analyser.testexample;
 
-import com.google.common.collect.ImmutableMap;
 import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.Linked;
 
@@ -41,6 +40,6 @@ public class E2Immutable_4 {
 
     @E2Container
     public Map<String, String> getMap4() {
-        return ImmutableMap.copyOf(map4);
+        return Map.copyOf(map4);
     }
 }

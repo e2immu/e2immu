@@ -1,6 +1,5 @@
 package org.e2immu.analyser.parser;
 
-import com.google.common.collect.ImmutableMap;
 import org.e2immu.analyser.model.AnnotationExpression;
 import org.e2immu.analyser.model.AnnotationExpressionImpl;
 import org.e2immu.analyser.model.TypeInfo;
@@ -8,6 +7,7 @@ import org.e2immu.analyser.model.expression.BooleanConstant;
 import org.e2immu.analyser.model.expression.MemberValuePair;
 import org.e2immu.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -54,17 +54,17 @@ public class E2ImmuAnnotationExpressions {
     private final Map<String, TypeInfo> annotationTypes;
 
     public E2ImmuAnnotationExpressions() {
-        ImmutableMap.Builder<String, TypeInfo> builder = new ImmutableMap.Builder<>();
+        Map<String, TypeInfo> builder = new HashMap<>();
         add(builder, allowsInterrupt, beforeMark, constant, container, dependent, e1Container, e2Container,
                 extensionClass, e1Immutable, e2Immutable,
                 effectivelyFinal, fluent, identity, ignoreModifications, independent,
                 linked, mark, modified, mutableModifiesArguments);
         add(builder, notModified, notModified1, notNull, notNull1, notNull2, nullable, only, singleton,
                 testMark, utilityClass, variableField);
-        annotationTypes = builder.build();
+        annotationTypes = Map.copyOf(builder);
     }
 
-    private static void add(ImmutableMap.Builder<String, TypeInfo> builder, AnnotationExpression... aes) {
+    private static void add(Map<String, TypeInfo> builder, AnnotationExpression... aes) {
         for (AnnotationExpression ae : aes) {
             builder.put(ae.typeInfo().fullyQualifiedName, ae.typeInfo());
         }

@@ -18,9 +18,6 @@
 
 package org.e2immu.analyser.analyser;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.analyser.check.CheckConstant;
 import org.e2immu.analyser.analyser.check.CheckEventual;
 import org.e2immu.analyser.analyser.check.CheckPrecondition;
@@ -95,20 +92,20 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
         this.methodInfo = methodInfo;
         methodInspection = methodInfo.methodInspection.get();
 
-        ImmutableMap.Builder<CompanionMethodName, CompanionAnalyser> companionAnalysersBuilder = new ImmutableMap.Builder<>();
+        Map<CompanionMethodName, CompanionAnalyser> companionAnalysersBuilder = new HashMap<>();
         for (Map.Entry<CompanionMethodName, MethodInfo> entry : methodInspection.getCompanionMethods().entrySet()) {
             companionAnalysersBuilder.put(entry.getKey(),
                     new CompanionAnalyser(analyserContext, typeAnalysis, entry.getKey(), entry.getValue(), methodInfo, AnnotationParameters.DEFAULT));
         }
-        companionAnalysers = companionAnalysersBuilder.build();
+        companionAnalysers = Map.copyOf(companionAnalysersBuilder);
         companionAnalyses = companionAnalysers.entrySet().stream().collect(Collectors.toUnmodifiableMap(Map.Entry::getKey,
                 e -> e.getValue().companionAnalysis));
 
-        ImmutableList.Builder<ParameterAnalyser> parameterAnalysersBuilder = new ImmutableList.Builder<>();
+        List<ParameterAnalyser> parameterAnalysersBuilder = new LinkedList<>();
         for (ParameterInfo parameterInfo : methodInspection.getParameters()) {
             parameterAnalysersBuilder.add(new ParameterAnalyser(analyserContext, parameterInfo));
         }
-        parameterAnalysers = parameterAnalysersBuilder.build();
+        parameterAnalysers = List.copyOf(parameterAnalysersBuilder);
         parameterAnalyses = parameterAnalysers.stream().map(pa -> pa.parameterAnalysis).collect(Collectors.toUnmodifiableList());
 
         this.typeAnalysis = typeAnalysis;
@@ -197,13 +194,13 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
 
     @Override
     public void initialize() {
-        ImmutableMap.Builder<FieldInfo, FieldAnalyser> myFieldAnalysers = new ImmutableMap.Builder<>();
+        Map<FieldInfo, FieldAnalyser> myFieldAnalysers = new HashMap<>();
         analyserContext.fieldAnalyserStream().forEach(analyser -> {
             if (analyser.fieldInfo.owner == methodInfo.typeInfo) {
                 myFieldAnalysers.put(analyser.fieldInfo, analyser);
             }
         });
-        this.myFieldAnalysers = myFieldAnalysers.build();
+        this.myFieldAnalysers = Map.copyOf(myFieldAnalysers);
 
         // copy CONTRACT annotations into the properties
         methodAnalysis.fromAnnotationsIntoProperties(VariableProperty.NOT_NULL_EXPRESSION,
@@ -393,7 +390,7 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
             return DELAYS;
         }
 
-        Set<ObjectFlow> internalObjectFlowsWithoutParametersAndLiterals = ImmutableSet.copyOf
+        Set<ObjectFlow> internalObjectFlowsWithoutParametersAndLiterals = Set.copyOf
                 (methodLevelData.getInternalObjectFlowStream()
                         .filter(of -> of.origin != Origin.PARAMETER && of.origin != Origin.LITERAL)
                         .collect(Collectors.toSet()));
@@ -423,7 +420,7 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
     private AnalysisStatus annotateEventual(SharedState sharedState) {
         assert !methodAnalysis.eventualIsSet();
 
-        Set<FieldInfo> visibleFields = ImmutableSet.copyOf(methodInfo.typeInfo.visibleFields(analyserContext));
+        Set<FieldInfo> visibleFields = Set.copyOf(methodInfo.typeInfo.visibleFields(analyserContext));
         DetectEventual detectEventual = new DetectEventual(methodInfo, methodAnalysis,
                 (TypeAnalysisImpl.Builder) typeAnalysis, visibleFields, analyserContext);
         MethodAnalysis.Eventual eventual = detectEventual.detect(sharedState.evaluationContext);

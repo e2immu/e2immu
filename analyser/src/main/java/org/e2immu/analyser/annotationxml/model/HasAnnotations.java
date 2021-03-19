@@ -18,7 +18,6 @@
 
 package org.e2immu.analyser.annotationxml.model;
 
-import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.model.AnnotationExpression;
 import org.e2immu.annotation.E2Immutable;
 
@@ -31,7 +30,7 @@ public abstract class HasAnnotations {
     private List<Annotation> annotations = new ArrayList<>();
 
     void freeze() {
-        annotations = ImmutableList.copyOf(annotations);
+        annotations = List.copyOf(annotations);
     }
 
     public List<Annotation> getAnnotations() {

@@ -17,7 +17,6 @@
 
 package org.e2immu.analyser.model.expression;
 
-import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
@@ -144,7 +143,7 @@ public record And(Primitives primitives,
             log(CNF, "And reduced to 1 component: {}", concat.get(0));
             return concat.get(0);
         }
-        And res = new And(primitives, ImmutableList.copyOf(concat), objectFlow);
+        And res = new And(primitives, List.copyOf(concat), objectFlow);
         log(CNF, "Constructed {}", res);
         return res;
     }

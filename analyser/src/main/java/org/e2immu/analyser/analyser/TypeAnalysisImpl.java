@@ -17,7 +17,6 @@
 
 package org.e2immu.analyser.analyser;
 
-import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
@@ -286,7 +285,7 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
                     eventuallyImmutableFields.toImmutableSet(),
                     implicitlyImmutableDataTypes.isSet() ? implicitlyImmutableDataTypes.get() : Set.of(),
                     getAspects(),
-                    ImmutableList.copyOf(invariants.getOrElse(List.of())));
+                    List.copyOf(invariants.getOrElse(List.of())));
         }
     }
 }

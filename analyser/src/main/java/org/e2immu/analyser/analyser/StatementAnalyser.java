@@ -17,7 +17,6 @@
 
 package org.e2immu.analyser.analyser;
 
-import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.config.EvaluationResultVisitor;
 import org.e2immu.analyser.config.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.config.StatementAnalyserVisitor;
@@ -145,8 +144,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 }
                 blockIndex++;
             }
-            statementAnalyser.statementAnalysis.navigationData.blocks.set(ImmutableList.copyOf(analysisBlocks));
-            statementAnalyser.navigationData.blocks.set(ImmutableList.copyOf(blocks));
+            statementAnalyser.statementAnalysis.navigationData.blocks.set(List.copyOf(analysisBlocks));
+            statementAnalyser.navigationData.blocks.set(List.copyOf(blocks));
             ++statementIndex;
         }
         if (previous != null && setNextAtEnd) {

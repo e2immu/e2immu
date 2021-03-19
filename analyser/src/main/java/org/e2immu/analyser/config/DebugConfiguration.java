@@ -1,6 +1,5 @@
 package org.e2immu.analyser.config;
 
-import com.google.common.collect.ImmutableList;
 import org.e2immu.annotation.Container;
 import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.Fluent;
@@ -99,14 +98,14 @@ public class DebugConfiguration {
 
         public DebugConfiguration build() {
             return new DebugConfiguration(
-                    ImmutableList.copyOf(typeMapVisitors),
-                    ImmutableList.copyOf(afterTypePropertyComputations),
-                    ImmutableList.copyOf(afterFieldAnalyserVisitors),
-                    ImmutableList.copyOf(afterMethodAnalyserVisitors),
-                    ImmutableList.copyOf(afterCompanionAnalyserVisitors),
-                    ImmutableList.copyOf(statementAnalyserVisitors),
-                    ImmutableList.copyOf(statementAnalyserVariableVisitors),
-                    ImmutableList.copyOf(evaluationResultVisitors));
+                    List.copyOf(typeMapVisitors),
+                    List.copyOf(afterTypePropertyComputations),
+                    List.copyOf(afterFieldAnalyserVisitors),
+                    List.copyOf(afterMethodAnalyserVisitors),
+                    List.copyOf(afterCompanionAnalyserVisitors),
+                    List.copyOf(statementAnalyserVisitors),
+                    List.copyOf(statementAnalyserVariableVisitors),
+                    List.copyOf(evaluationResultVisitors));
         }
     }
 }

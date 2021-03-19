@@ -18,7 +18,6 @@
 
 package org.e2immu.analyser.testexample;
 
-import com.google.common.collect.ImmutableSet;
 import org.e2immu.annotation.*;
 
 import java.util.Set;
@@ -32,7 +31,7 @@ public class E2Immutable_3 {
 
     @Independent
     public E2Immutable_3(@NotNull1 @NotModified Set<String> input4) {
-        strings4 = ImmutableSet.copyOf(input4);
+        strings4 = Set.copyOf(input4);
     }
 
     @E2Container

@@ -17,7 +17,6 @@
 
 package org.e2immu.analyser.analyser;
 
-import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.inspector.MethodResolution;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
@@ -221,7 +220,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                 }
                 blockIndex++;
             }
-            statementAnalysis.navigationData.blocks.set(ImmutableList.copyOf(analysisBlocks));
+            statementAnalysis.navigationData.blocks.set(List.copyOf(analysisBlocks));
             ++statementIndex;
         }
         if (previous != null && setNextAtEnd) {

@@ -18,7 +18,6 @@
 
 package org.e2immu.analyser.model.statement;
 
-import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.analyser.StatementAnalysis;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.EmptyExpression;
@@ -70,7 +69,7 @@ public class Block extends StatementWithStructure {
         public Block build() {
             if (statements.isEmpty()) return Block.EMPTY_BLOCK;
             // NOTE: we don't do labels on empty blocks. that's pretty useless anyway
-            return new Block(new ImmutableList.Builder<Statement>().addAll(statements).build(), label);
+            return new Block(List.copyOf(statements), label);
         }
 
         public int size() {

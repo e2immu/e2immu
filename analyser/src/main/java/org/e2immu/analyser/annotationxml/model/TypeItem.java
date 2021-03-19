@@ -18,7 +18,6 @@
 
 package org.e2immu.analyser.annotationxml.model;
 
-import com.google.common.collect.ImmutableMap;
 import org.e2immu.analyser.model.FieldInfo;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.TypeInfo;
@@ -67,9 +66,9 @@ public class TypeItem extends HasAnnotations implements Comparable<TypeItem> {
     @Mark("freeze")
     public void freeze() {
         super.freeze();
-        methodItems = ImmutableMap.copyOf(methodItems);
+        methodItems = Map.copyOf(methodItems);
         methodItems.values().forEach(MethodItem::freeze);
-        fieldItems = ImmutableMap.copyOf(fieldItems);
+        fieldItems = Map.copyOf(fieldItems);
         fieldItems.values().forEach(FieldItem::freeze);
     }
 

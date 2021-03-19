@@ -18,13 +18,13 @@
 
 package org.e2immu.analyser.config;
 
-import com.google.common.collect.ImmutableMap;
 import org.e2immu.analyser.cli.Main;
 import org.e2immu.analyser.util.Logger;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import java.util.HashMap;
 import java.util.Map;
 
 import static org.e2immu.analyser.cli.Main.*;
@@ -54,14 +54,12 @@ public class TestConfiguration {
                 .build();
         log(CONFIGURATION, "Config1:\n{}", configuration);
 
-        ImmutableMap.Builder<String, String> builder = new ImmutableMap.Builder<>();
-        Map<String, String> properties = builder
-                .put(DEBUG, BYTECODE_INSPECTOR.toString() + "," + INSPECT.toString() + "," + ANALYSER.toString())
-                .put(SOURCE, "src/main/java")
-                .put(SOURCE_PACKAGES, "org.e2immu.analyser.util")
-                .put(CLASSPATH, "build/resources/main/annotatedAPIs" + PATH_SEPARATOR + "build/resources/main/annotations/jdkAnnotations" + PATH_SEPARATOR + "jmods/java.base.jmod")
-                .put(Main.UPLOAD, "true")
-                .build();
+        Map<String, String> properties = new HashMap<>();
+        properties.put(DEBUG, BYTECODE_INSPECTOR.toString() + "," + INSPECT.toString() + "," + ANALYSER.toString());
+        properties.put(SOURCE, "src/main/java");
+        properties.put(SOURCE_PACKAGES, "org.e2immu.analyser.util");
+        properties.put(CLASSPATH, "build/resources/main/annotatedAPIs" + PATH_SEPARATOR + "build/resources/main/annotations/jdkAnnotations" + PATH_SEPARATOR + "jmods/java.base.jmod");
+        properties.put(Main.UPLOAD, "true");
         Configuration configuration2 = Configuration.fromProperties(properties);
         log(CONFIGURATION, "Config2:\n{}", configuration2);
         Assert.assertEquals(configuration.toString(), configuration2.toString());

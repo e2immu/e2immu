@@ -18,7 +18,6 @@
 
 package org.e2immu.analyser.model;
 
-import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.inspector.ParameterizedTypeFactory;
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.output.OutputBuilder;
@@ -133,7 +132,7 @@ public class TypeParameterImpl implements TypeParameter {
     // from byte code inspector
 
     public void setTypeBounds(List<ParameterizedType> typeBounds) {
-        this.typeBounds.set(ImmutableList.copyOf(typeBounds));
+        this.typeBounds.set(List.copyOf(typeBounds));
     }
 
     @Override

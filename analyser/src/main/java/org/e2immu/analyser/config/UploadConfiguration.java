@@ -18,7 +18,6 @@
 
 package org.e2immu.analyser.config;
 
-import com.google.common.collect.ImmutableList;
 import org.e2immu.annotation.Container;
 import org.e2immu.annotation.E2Immutable;
 import org.e2immu.annotation.Fluent;
@@ -120,7 +119,7 @@ public class UploadConfiguration {
             return new UploadConfiguration(upload,
                     annotationServerUrl == null ? DEFAULT_ANNOTATION_SERVER_URL : annotationServerUrl,
                     projectName == null ? DEFAULT_PROJECT : projectName,
-                    ImmutableList.copyOf(uploadPackages)
+                    List.copyOf(uploadPackages)
             );
         }
 

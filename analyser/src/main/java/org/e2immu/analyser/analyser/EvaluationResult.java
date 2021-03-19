@@ -17,8 +17,6 @@
 
 package org.e2immu.analyser.analyser;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.variable.FieldReference;
@@ -269,7 +267,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
 
         public EvaluationResult build() {
             return new EvaluationResult(evaluationContext, statementTime, value,
-                    storedExpressions == null ? null : ImmutableList.copyOf(storedExpressions),
+                    storedExpressions == null ? null : List.copyOf(storedExpressions),
                     someValueWasDelayed,
                     messages, objectFlows == null ? List.of() : objectFlows, valueChanges, precondition,
                     untranslatedPrecondition,
@@ -542,7 +540,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                 (Map<VariableProperty, Integer> m1, Map<VariableProperty, Integer> m2) {
             Map<VariableProperty, Integer> res = new HashMap<>(m1);
             m2.forEach((vp, v) -> res.merge(vp, v, Math::max));
-            return ImmutableMap.copyOf(res);
+            return Map.copyOf(res);
         }
 
         public void addPrecondition(Expression expression) {

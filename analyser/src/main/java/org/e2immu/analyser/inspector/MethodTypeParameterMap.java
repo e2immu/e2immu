@@ -17,7 +17,6 @@
 
 package org.e2immu.analyser.inspector;
 
-import com.google.common.collect.ImmutableMap;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
@@ -53,7 +52,7 @@ public class MethodTypeParameterMap {
 
     public MethodTypeParameterMap(MethodInspection methodInspection, @NotNull Map<NamedType, ParameterizedType> concreteTypes) {
         this.methodInspection = methodInspection; // can be null, for SAMs
-        this.concreteTypes = ImmutableMap.copyOf(concreteTypes);
+        this.concreteTypes = Map.copyOf(concreteTypes);
     }
 
     public boolean isSingleAbstractMethod() {
@@ -85,7 +84,7 @@ public class MethodTypeParameterMap {
     public MethodTypeParameterMap expand(Map<NamedType, ParameterizedType> mapExpansion) {
         Map<NamedType, ParameterizedType> join = new HashMap<>(concreteTypes);
         join.putAll(mapExpansion);
-        return new MethodTypeParameterMap(methodInspection, ImmutableMap.copyOf(join));
+        return new MethodTypeParameterMap(methodInspection, Map.copyOf(join));
     }
 
     public ParameterizedType applyMap(TypeParameter typeParameter) {

@@ -17,9 +17,9 @@
 
 package org.e2immu.analyser.output;
 
-import com.google.common.math.DoubleMath;
 import org.e2immu.analyser.model.expression.FloatConstant;
 import org.e2immu.analyser.model.expression.Numeric;
+import org.e2immu.analyser.util.IntUtil;
 import org.e2immu.analyser.util.StringUtil;
 
 public record Text(String text, String debug) implements OutputElement {
@@ -31,7 +31,7 @@ public record Text(String text, String debug) implements OutputElement {
 
 
     public static String formatNumber(double d, Class<? extends Numeric> clazz) {
-        if (DoubleMath.isMathematicalInteger(d)) {
+        if (IntUtil.isMathematicalInteger(d)) {
             return Long.toString((long) d);
         }
         if (clazz.equals(FloatConstant.class)) {

@@ -18,7 +18,6 @@
 
 package org.e2immu.analyser.testexample;
 
-import com.google.common.collect.ImmutableSet;
 import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.Independent;
 import org.e2immu.annotation.Linked;
@@ -46,6 +45,6 @@ public class E2Immutable_2 {
 
     @E2Container
     public Set<String> getSet3() {
-        return ImmutableSet.copyOf(set3);
+        return Set.copyOf(set3);
     }
 }

@@ -17,7 +17,6 @@
 
 package org.e2immu.analyser.analyser;
 
-import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.model.Qualification;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.Variable;
@@ -32,7 +31,7 @@ public record LinkedVariables(Set<Variable> variables) {
 
     public LinkedVariables(Set<Variable> variables) {
         assert variables != null;
-        this.variables = ImmutableSet.copyOf(variables);
+        this.variables = Set.copyOf(variables);
     }
 
     public static final LinkedVariables EMPTY = new LinkedVariables(Set.of());

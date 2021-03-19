@@ -19,7 +19,6 @@ package org.e2immu.analyser.inspector;
 
 import com.github.javaparser.ast.visitor.GenericVisitor;
 import com.github.javaparser.ast.visitor.VoidVisitor;
-import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.model.AnnotationExpression;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.FieldInspection;
@@ -138,7 +137,7 @@ public class FieldInspectionImpl extends InspectionImpl implements FieldInspecti
 
         @Override
         public Set<FieldModifier> getModifiers() {
-            return ImmutableSet.copyOf(modifiers);
+            return Set.copyOf(modifiers);
         }
 
         @Override

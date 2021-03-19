@@ -17,7 +17,6 @@
 
 package org.e2immu.analyser.analyser;
 
-import com.google.common.collect.ImmutableMap;
 import org.e2immu.analyser.config.CompanionAnalyserVisitor;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
@@ -120,7 +119,7 @@ public class CompanionAnalyser {
 
     private void computeRemapParameters(boolean modifyingMainMethod) {
         int aspectVariables = companionMethodName.numAspectVariables(modifyingMainMethod);
-        ImmutableMap.Builder<String, Expression> remap = new ImmutableMap.Builder<>();
+        Map<String, Expression> remap = new HashMap<>();
         int numIndices = companionMethod.methodInspection.get().getParameters().size();
         int mainIndices = mainMethod.methodInspection.get().getParameters().size();
         List<Expression> parameterValues = new ArrayList<>();
@@ -157,7 +156,7 @@ public class CompanionAnalyser {
             remap.put(parameterInfo.name, value);
         }
         log(COMPANION, "Companion map for {} of {}: {}", companionMethodName, mainMethod.fullyQualifiedName(), remap);
-        companionAnalysis.remapParameters.set(remap.build());
+        companionAnalysis.remapParameters.set(Map.copyOf(remap));
         companionAnalysis.parameterValues.set(parameterValues);
     }
 

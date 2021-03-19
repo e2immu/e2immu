@@ -18,7 +18,6 @@
 
 package org.e2immu.analyser.annotationxml.model;
 
-import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.model.AnnotationExpression;
 import org.e2immu.analyser.model.Expression;
 
@@ -50,7 +49,7 @@ public record Annotation(String name, List<Value> values) {
         }
 
         public Annotation build() {
-            return new Annotation(name, ImmutableList.copyOf(values));
+            return new Annotation(name, List.copyOf(values));
         }
     }
 }

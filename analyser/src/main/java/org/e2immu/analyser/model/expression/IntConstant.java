@@ -19,7 +19,6 @@
 package org.e2immu.analyser.model.expression;
 
 
-import com.google.common.math.DoubleMath;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.Qualification;
@@ -28,6 +27,7 @@ import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.analyser.util.IntUtil;
 import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.NotNull;
 
@@ -43,7 +43,7 @@ public record IntConstant(Primitives primitives,
     }
 
     public static Expression intOrDouble(Primitives primitives, double b, ObjectFlow objectFlow) {
-        if (DoubleMath.isMathematicalInteger(b)) {
+        if (IntUtil.isMathematicalInteger(b)) {
             long l = Math.round(b);
             if (l > Integer.MAX_VALUE || l < Integer.MIN_VALUE) {
                 return new LongConstant(primitives, l, objectFlow);

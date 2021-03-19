@@ -18,7 +18,6 @@
 
 package org.e2immu.analyser.config;
 
-import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.cli.Main;
 import org.e2immu.annotation.Container;
 import org.e2immu.annotation.E2Immutable;
@@ -87,7 +86,7 @@ public class AnnotationXmlConfiguration {
         public AnnotationXmlConfiguration build() {
             return new AnnotationXmlConfiguration(
                     writeAnnotationXml,
-                    ImmutableList.copyOf(writeAnnotationXmlPackages),
+                    List.copyOf(writeAnnotationXmlPackages),
                     writeAnnotationXmlDir
             );
         }
