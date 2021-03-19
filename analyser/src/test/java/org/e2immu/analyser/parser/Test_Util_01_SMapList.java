@@ -23,6 +23,7 @@ import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.variable.ReturnVariable;
+import org.e2immu.analyser.visitor.*;
 import org.junit.Assert;
 import org.junit.Test;
 

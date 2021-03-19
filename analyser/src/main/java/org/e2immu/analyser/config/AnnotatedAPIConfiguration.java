@@ -18,14 +18,11 @@
 
 package org.e2immu.analyser.config;
 
-import org.e2immu.analyser.cli.Main;
 import org.e2immu.annotation.Container;
 import org.e2immu.annotation.E2Immutable;
 import org.e2immu.annotation.Fluent;
 
 import java.util.*;
-
-import static org.e2immu.analyser.config.Configuration.*;
 
 @E2Immutable
 public class AnnotatedAPIConfiguration {
@@ -46,14 +43,6 @@ public class AnnotatedAPIConfiguration {
         this.writeAnnotatedAPIsPackages = writeAnnotatedAPIsPackages;
         this.writeAnnotatedAPIsDir = writeAnnotatedAPIsDir;
         this.reportWarnings = reportWarnings;
-    }
-
-    public static AnnotatedAPIConfiguration fromProperties(Map<String, String> analyserProperties) {
-        Builder builder = new Builder();
-        setBooleanProperty(analyserProperties, Main.WRITE_ANNOTATED_API, builder::setAnnotatedAPIs);
-        setStringProperty(analyserProperties, Main.WRITE_ANNOTATED_API_DIR, builder::setWriteAnnotatedAPIsDir);
-        setSplitStringProperty(analyserProperties, Main.COMMA, Main.WRITE_ANNOTATED_API_PACKAGES, builder::addAnnotatedAPIPackages);
-        return builder.build();
     }
 
     @Override

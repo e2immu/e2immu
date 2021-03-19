@@ -11,6 +11,7 @@ import org.e2immu.analyser.model.expression.GreaterThanZero;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.testexample.Warnings_1;
+import org.e2immu.analyser.visitor.*;
 import org.junit.Assert;
 import org.junit.Test;
 

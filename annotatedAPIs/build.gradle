@@ -35,9 +35,7 @@ jar {
 dependencies {
     implementation project(':annotations')
 
-    implementation group: 'com.google.guava', name: 'guava', version: '28.1-jre'      // Apache License 2.0
     implementation group: 'org.slf4j', name: 'slf4j-api', version: '1.7.25'           // MIT X-11 License
-
 }
 
 // the reason the groupId is 'e2immu' and not 'org.e2immu' is that this reflects Gradle's project structure.

@@ -26,6 +26,7 @@ import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.expression.StringConstant;
+import org.e2immu.analyser.visitor.*;
 import org.junit.Assert;
 import org.junit.Test;
 

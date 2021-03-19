@@ -26,6 +26,7 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.testexample.Precondition_4;
+import org.e2immu.analyser.visitor.*;
 import org.junit.Assert;
 import org.junit.Test;
 

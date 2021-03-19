@@ -1,0 +1,31 @@
+plugins {
+    id 'java'
+}
+
+group 'org.e2immu'
+version '0.0.1'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation project(':analyser')
+    implementation group: 'commons-cli', name: 'commons-cli', version: '1.4'          // Apache License 2.0
+    implementation group: 'org.slf4j', name: 'slf4j-api', version: '1.7.25'           // MIT X-11 License
+
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.6.0'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
+}
+
+test {
+    useJUnitPlatform()
+}
+
+compileJava {
+    options.compilerArgs.add("--enable-preview")
+}
+
+compileTestJava {
+    options.compilerArgs.add("--enable-preview")
+}

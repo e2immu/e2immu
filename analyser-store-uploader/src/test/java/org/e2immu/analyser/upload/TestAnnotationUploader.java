@@ -24,21 +24,23 @@ import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.parser.Input;
 import org.e2immu.analyser.parser.Parser;
-import org.e2immu.analyser.testexample.Basics_0;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.Map;
 import java.util.Set;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class TestAnnotationUploader {
 
-    @BeforeClass
+    public static final String BASICS_0 = "org.e2immu.analyser.upload.Basics_0";
+
+    @BeforeAll
     public static void beforeClass() {
         org.e2immu.analyser.util.Logger.configure(Level.INFO);
         org.e2immu.analyser.util.Logger.activate(ANALYSER, INSPECT, RESOLVE);
@@ -49,7 +51,7 @@ public class TestAnnotationUploader {
         Configuration configuration = new Configuration.Builder()
                 .setInputConfiguration(new InputConfiguration.Builder()
                         .addSources("src/test/java")
-                        .addRestrictSourceToPackages("org.e2immu.analyser.testexample.Basics_0")
+                        .addRestrictSourceToPackages(BASICS_0)
                         .addClassPath(InputConfiguration.DEFAULT_CLASSPATH)
                         .addClassPath(Input.JAR_WITH_PATH_PREFIX + "com/google/common/collect")
                         .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/junit")
@@ -62,15 +64,15 @@ public class TestAnnotationUploader {
         parser.run();
         TypeContext typeContext = parser.getTypeContext();
 
-        TypeInfo basics = typeContext.typeMapBuilder.get(Basics_0.class);
+        TypeInfo basics = typeContext.typeMapBuilder.get(BASICS_0);
         UpgradableBooleanMap<TypeInfo> typesReferredTo = basics.typesReferenced();
-        Assert.assertTrue(typesReferredTo.get(typeContext.getPrimitives().stringTypeInfo));
+        assertTrue(typesReferredTo.get(typeContext.getPrimitives().stringTypeInfo));
 
         AnnotationUploader annotationUploader = new AnnotationUploader(configuration.uploadConfiguration,
                 parser.getTypeContext().typeMapBuilder.getE2ImmuAnnotationExpressions());
         Map<String, String> map = annotationUploader.createMap(Set.of(basics));
         map.forEach((k, v) -> System.out.println(k + " --> " + v));
 
-        Assert.assertEquals("e2container-mt", map.get("org.e2immu.analyser.testexample.Basics_0.getExplicitlyFinal() java.lang.String"));
+        assertEquals("e2container-mt", map.get("org.e2immu.analyser.testexample.Basics_0.getExplicitlyFinal() java.lang.String"));
     }
 }

@@ -20,7 +20,7 @@
 package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.config.TypeAnalyserVisitor;
+import org.e2immu.analyser.visitor.TypeAnalyserVisitor;
 import org.junit.Assert;
 import org.junit.Test;
 

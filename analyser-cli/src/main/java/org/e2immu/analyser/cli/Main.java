@@ -1,19 +1,18 @@
 /*
- * e2immu-analyser: code analyser for effective and eventual immutability
+ * e2immu: code analyser for effective and eventual immutability
  * Copyright 2020, Bart Naudts, https://www.e2immu.org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- *
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.e2immu.analyser.cli;
@@ -21,12 +20,17 @@ package org.e2immu.analyser.cli;
 import org.apache.commons.cli.*;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.parser.Parser;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Map;
 import java.util.function.Consumer;
 
 public class Main {
+    private static final Logger LOGGER = LoggerFactory.getLogger(Main.class);
+
     public static final String PATH_SEPARATOR = System.getProperty("path.separator");
 
     public static final String UPLOAD_PROJECT = "upload-project";
@@ -232,5 +236,85 @@ public class Main {
                         + System.getProperty("user.dir") + "'.").build());
 
         return options;
+    }
+
+    public static Configuration fromProperties(Map<String, String> analyserProperties) {
+        Configuration.Builder builder = new Configuration.Builder();
+        builder.setInputConfiguration(inputConfigurationFromProperties(analyserProperties));
+        builder.setUploadConfiguration(uploadConfigurationFromProperties(analyserProperties));
+        builder.setAnnotatedAPIConfiguration(annotatedAPIConfigurationFromProperties(analyserProperties));
+        builder.setWriteAnnotationXmConfiguration(annotationXmlConfigurationFromProperties(analyserProperties));
+
+        setBooleanProperty(analyserProperties, QUIET, builder::setQuiet);
+        setBooleanProperty(analyserProperties, IGNORE_ERRORS, builder::setIgnoreErrors);
+        setBooleanProperty(analyserProperties, SKIP_ANALYSIS, builder::setSkipAnalysis);
+
+        setSplitStringProperty(analyserProperties, COMMA, DEBUG, builder::addDebugLogTargets);
+
+        return builder.build();
+    }
+
+    public static UploadConfiguration uploadConfigurationFromProperties(Map<String, String> analyserProperties) {
+        UploadConfiguration.Builder builder = new UploadConfiguration.Builder();
+        setBooleanProperty(analyserProperties, UPLOAD, builder::setUpload);
+        setStringProperty(analyserProperties, UPLOAD_PROJECT, builder::setProjectName);
+        setStringProperty(analyserProperties, UPLOAD_URL, builder::setAnnotationServerUrl);
+        setSplitStringProperty(analyserProperties, COMMA, UPLOAD_PACKAGES, builder::addUploadPackage);
+        return builder.build();
+    }
+
+    public static AnnotationXmlConfiguration annotationXmlConfigurationFromProperties(Map<String, String> analyserProperties) {
+        AnnotationXmlConfiguration.Builder builder = new AnnotationXmlConfiguration.Builder();
+        setBooleanProperty(analyserProperties, WRITE_ANNOTATION_XML, builder::setAnnotationXml);
+        setStringProperty(analyserProperties, WRITE_ANNOTATION_XML_DIR, builder::setWriteAnnotationXmlDir);
+        setSplitStringProperty(analyserProperties, COMMA, WRITE_ANNOTATION_XML_PACKAGES, builder::addAnnotationXmlPackages);
+        return builder.build();
+    }
+
+    public static InputConfiguration inputConfigurationFromProperties(Map<String, String> analyserProperties) {
+        InputConfiguration.Builder builder = new InputConfiguration.Builder();
+        setStringProperty(analyserProperties, JRE, builder::setAlternativeJREDirectory);
+        setStringProperty(analyserProperties, SOURCE_ENCODING, builder::setSourceEncoding);
+        setSplitStringProperty(analyserProperties, PATH_SEPARATOR, SOURCE, builder::addSources);
+        setSplitStringProperty(analyserProperties, PATH_SEPARATOR, CLASSPATH, builder::addClassPath);
+        setSplitStringProperty(analyserProperties, COMMA, SOURCE_PACKAGES, builder::addRestrictSourceToPackages);
+        return builder.build();
+    }
+
+    public static AnnotatedAPIConfiguration annotatedAPIConfigurationFromProperties(Map<String, String> analyserProperties) {
+        AnnotatedAPIConfiguration.Builder builder = new AnnotatedAPIConfiguration.Builder();
+        setBooleanProperty(analyserProperties, Main.WRITE_ANNOTATED_API, builder::setAnnotatedAPIs);
+        setStringProperty(analyserProperties, Main.WRITE_ANNOTATED_API_DIR, builder::setWriteAnnotatedAPIsDir);
+        setSplitStringProperty(analyserProperties, Main.COMMA, Main.WRITE_ANNOTATED_API_PACKAGES, builder::addAnnotatedAPIPackages);
+        return builder.build();
+    }
+
+
+    static void setStringProperty(Map<String, String> properties, String key, Consumer<String> consumer) {
+        String value = properties.get(key);
+        if (value != null) {
+            String trim = value.trim();
+            if (!trim.isEmpty()) consumer.accept(trim);
+        }
+    }
+
+    public static void setSplitStringProperty(Map<String, String> properties, String separator, String key, Consumer<String> consumer) {
+        String value = properties.get(key);
+        LOGGER.debug("Have {}: {}", key, value);
+        if (value != null) {
+            String[] parts = value.split(separator);
+            for (String part : parts) {
+                if (part != null && !part.trim().isEmpty()) {
+                    consumer.accept(part);
+                }
+            }
+        }
+    }
+
+    public static void setBooleanProperty(Map<String, String> properties, String key, Consumer<Boolean> consumer) {
+        String value = properties.get(key);
+        if (value != null) {
+            consumer.accept("true".equalsIgnoreCase(value.trim()));
+        }
     }
 }

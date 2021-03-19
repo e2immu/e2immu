@@ -3,9 +3,8 @@ package org.e2immu.analyser.parser;
 import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analyser.VariableInfoContainer;
 import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.config.StatementAnalyserVariableVisitor;
-import org.e2immu.analyser.config.StatementAnalyserVisitor;
-import org.e2immu.analyser.model.ParameterInfo;
+import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
+import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
 import org.junit.Assert;
 import org.junit.Test;
 

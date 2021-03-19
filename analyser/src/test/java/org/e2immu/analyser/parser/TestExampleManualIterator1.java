@@ -5,6 +5,7 @@ import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.visitor.*;
 import org.e2immu.annotation.AnnotationMode;
 import org.junit.Assert;
 import org.junit.Test;

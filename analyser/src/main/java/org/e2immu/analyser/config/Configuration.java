@@ -19,7 +19,6 @@
 package org.e2immu.analyser.config;
 
 import ch.qos.logback.classic.Level;
-import org.e2immu.analyser.cli.Main;
 import org.e2immu.annotation.Container;
 import org.e2immu.annotation.E2Immutable;
 import org.e2immu.annotation.Fluent;
@@ -27,13 +26,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
-
-import static org.e2immu.analyser.cli.Main.COMMA;
 
 /**
  * Basic use:
@@ -44,6 +39,7 @@ import static org.e2immu.analyser.cli.Main.COMMA;
 @E2Immutable
 public class Configuration {
     private static final Logger LOGGER = LoggerFactory.getLogger(Configuration.class);
+    public static final String PATH_SEPARATOR = System.getProperty("path.separator");
 
     // input options
     public final InputConfiguration inputConfiguration;
@@ -127,50 +123,6 @@ public class Configuration {
         return Objects.hash(inputConfiguration, logTargets, quiet, ignoreErrors,
                 skipAnalysis,
                 uploadConfiguration, annotatedAPIConfiguration, annotationXmlConfiguration);
-    }
-
-    public static Configuration fromProperties(Map<String, String> analyserProperties) {
-        Builder builder = new Builder();
-        builder.setInputConfiguration(InputConfiguration.fromProperties(analyserProperties));
-        builder.setUploadConfiguration(UploadConfiguration.fromProperties(analyserProperties));
-        builder.setAnnotatedAPIConfiguration(AnnotatedAPIConfiguration.fromProperties(analyserProperties));
-        builder.setWriteAnnotationXmConfiguration(AnnotationXmlConfiguration.fromProperties(analyserProperties));
-
-        setBooleanProperty(analyserProperties, Main.QUIET, builder::setQuiet);
-        setBooleanProperty(analyserProperties, Main.IGNORE_ERRORS, builder::setIgnoreErrors);
-        setBooleanProperty(analyserProperties, Main.SKIP_ANALYSIS, builder::setSkipAnalysis);
-
-        setSplitStringProperty(analyserProperties, COMMA, Main.DEBUG, builder::addDebugLogTargets);
-
-        return builder.build();
-    }
-
-    static void setStringProperty(Map<String, String> properties, String key, Consumer<String> consumer) {
-        String value = properties.get(key);
-        if (value != null) {
-            String trim = value.trim();
-            if (!trim.isEmpty()) consumer.accept(trim);
-        }
-    }
-
-    static void setSplitStringProperty(Map<String, String> properties, String separator, String key, Consumer<String> consumer) {
-        String value = properties.get(key);
-        LOGGER.debug("Have {}: {}", key, value);
-        if (value != null) {
-            String[] parts = value.split(separator);
-            for (String part : parts) {
-                if (part != null && !part.trim().isEmpty()) {
-                    consumer.accept(part);
-                }
-            }
-        }
-    }
-
-    static void setBooleanProperty(Map<String, String> properties, String key, Consumer<Boolean> consumer) {
-        String value = properties.get(key);
-        if (value != null) {
-            consumer.accept("true".equalsIgnoreCase(value.trim()));
-        }
     }
 
     public void initializeLoggers() {
@@ -268,7 +220,7 @@ public class Configuration {
 
         @Fluent
         public Builder addDebugLogTargets(String debugLogTargets) {
-            for (String s : debugLogTargets.split(COMMA)) {
+            for (String s : debugLogTargets.split(",")) {
                 if (s != null && !s.trim().isEmpty()) {
                     try {
                         org.e2immu.analyser.util.Logger.LogTarget logTarget = org.e2immu.analyser.util.Logger.LogTarget.valueOf(s.toUpperCase());

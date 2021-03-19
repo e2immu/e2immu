@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.e2immu.analyser.config;
+package org.e2immu.analyser.visitor;
 
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.StatementAnalysis;

@@ -21,7 +21,7 @@ package org.e2immu.analyser.analyser;
 import org.e2immu.analyser.analyser.check.CheckConstant;
 import org.e2immu.analyser.analyser.check.CheckFinalNotModified;
 import org.e2immu.analyser.analyser.check.CheckLinks;
-import org.e2immu.analyser.config.FieldAnalyserVisitor;
+import org.e2immu.analyser.visitor.FieldAnalyserVisitor;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;

@@ -1,7 +1,7 @@
 package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.config.StatementAnalyserVisitor;
+import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
 import org.junit.Assert;
 import org.junit.Test;
 

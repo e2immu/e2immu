@@ -27,9 +27,6 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 
-import static org.e2immu.analyser.cli.Main.*;
-import static org.e2immu.analyser.config.Configuration.*;
-
 @E2Immutable
 public class UploadConfiguration {
     public static final String DEFAULT_ANNOTATION_SERVER_URL = "http://localhost:8281/v1";
@@ -76,15 +73,6 @@ public class UploadConfiguration {
     @Override
     public int hashCode() {
         return Objects.hash(upload, uploadPackages, annotationServerUrl, projectName);
-    }
-
-    public static UploadConfiguration fromProperties(Map<String, String> analyserProperties) {
-        Builder builder = new Builder();
-        setBooleanProperty(analyserProperties, UPLOAD, builder::setUpload);
-        setStringProperty(analyserProperties, UPLOAD_PROJECT, builder::setProjectName);
-        setStringProperty(analyserProperties, UPLOAD_URL, builder::setAnnotationServerUrl);
-        setSplitStringProperty(analyserProperties, COMMA, UPLOAD_PACKAGES, builder::addUploadPackage);
-        return builder.build();
     }
 
     public String createUrlWithProjectName(String action) {

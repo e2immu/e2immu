@@ -26,10 +26,6 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 
-import static org.e2immu.analyser.cli.Main.*;
-import static org.e2immu.analyser.config.Configuration.setSplitStringProperty;
-import static org.e2immu.analyser.config.Configuration.setStringProperty;
-
 @E2Immutable
 public class InputConfiguration {
     public static final String DEFAULT_SOURCE_DIRS = "src/main/java";
@@ -89,16 +85,6 @@ public class InputConfiguration {
         return Objects.hash(sources, sourcesAnnotatedAPIs, sourceEncoding, classPathParts, restrictSourceToPackages, alternativeJREDirectory);
     }
 
-    public static InputConfiguration fromProperties(Map<String, String> analyserProperties) {
-        Builder builder = new Builder();
-        setStringProperty(analyserProperties, JRE, builder::setAlternativeJREDirectory);
-        setStringProperty(analyserProperties, SOURCE_ENCODING, builder::setSourceEncoding);
-        setSplitStringProperty(analyserProperties, PATH_SEPARATOR, SOURCE, builder::addSources);
-        setSplitStringProperty(analyserProperties, PATH_SEPARATOR, CLASSPATH, builder::addClassPath);
-        setSplitStringProperty(analyserProperties, COMMA, SOURCE_PACKAGES, builder::addRestrictSourceToPackages);
-        return builder.build();
-    }
-
     @Container
     public static class Builder {
         private final List<String> sourceDirs = new ArrayList<>();
@@ -113,7 +99,7 @@ public class InputConfiguration {
                 classPathParts.addAll(Arrays.asList(DEFAULT_CLASSPATH));
             }
             if (sourceDirs.isEmpty()) {
-                sourceDirs.addAll(Arrays.asList(DEFAULT_SOURCE_DIRS.split(PATH_SEPARATOR)));
+                sourceDirs.addAll(Arrays.asList(DEFAULT_SOURCE_DIRS.split(Configuration.PATH_SEPARATOR)));
             }
             Charset sourceCharset = sourceEncoding == null ? StandardCharsets.UTF_8 : Charset.forName(sourceEncoding);
             return new InputConfiguration(List.copyOf(sourceDirs),

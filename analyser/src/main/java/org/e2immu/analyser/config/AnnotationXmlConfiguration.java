@@ -18,7 +18,6 @@
 
 package org.e2immu.analyser.config;
 
-import org.e2immu.analyser.cli.Main;
 import org.e2immu.annotation.Container;
 import org.e2immu.annotation.E2Immutable;
 import org.e2immu.annotation.Fluent;
@@ -66,14 +65,6 @@ public class AnnotationXmlConfiguration {
     @Override
     public int hashCode() {
         return Objects.hash(writeAnnotationXml, writeAnnotationXmlPackages, writeAnnotationXmlDir);
-    }
-
-    public static AnnotationXmlConfiguration fromProperties(Map<String, String> analyserProperties) {
-        Builder builder = new Builder();
-        setBooleanProperty(analyserProperties, Main.WRITE_ANNOTATION_XML, builder::setAnnotationXml);
-        setStringProperty(analyserProperties, Main.WRITE_ANNOTATION_XML_DIR, builder::setWriteAnnotationXmlDir);
-        setSplitStringProperty(analyserProperties, Main.COMMA, Main.WRITE_ANNOTATION_XML_PACKAGES, builder::addAnnotationXmlPackages);
-        return builder.build();
     }
 
     @Container

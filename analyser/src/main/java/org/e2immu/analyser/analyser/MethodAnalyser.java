@@ -22,7 +22,7 @@ import org.e2immu.analyser.analyser.check.CheckConstant;
 import org.e2immu.analyser.analyser.check.CheckEventual;
 import org.e2immu.analyser.analyser.check.CheckPrecondition;
 import org.e2immu.analyser.analyser.util.DetectEventual;
-import org.e2immu.analyser.config.MethodAnalyserVisitor;
+import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
 import org.e2immu.analyser.inspector.MethodResolution;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;

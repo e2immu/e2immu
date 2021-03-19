@@ -1,5 +1,6 @@
 package org.e2immu.analyser.config;
 
+import org.e2immu.analyser.visitor.*;
 import org.e2immu.annotation.Container;
 import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.Fluent;

@@ -9,6 +9,7 @@ import org.e2immu.analyser.model.statement.ExpressionAsStatement;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.This;
+import org.e2immu.analyser.visitor.*;
 import org.e2immu.annotation.AnnotationMode;
 import org.junit.Assert;
 import org.junit.Test;

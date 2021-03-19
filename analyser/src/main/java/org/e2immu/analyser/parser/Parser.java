@@ -21,17 +21,16 @@ package org.e2immu.analyser.parser;
 import org.apache.commons.io.IOUtils;
 import org.e2immu.analyser.analyser.PrimaryTypeAnalyser;
 import org.e2immu.analyser.analyser.ShallowTypeAnalyser;
-import org.e2immu.analyser.annotationxml.AnnotationXmlWriter;
 import org.e2immu.analyser.bytecode.ByteCodeInspector;
 import org.e2immu.analyser.config.Configuration;
-import org.e2immu.analyser.config.TypeMapVisitor;
 import org.e2immu.analyser.inspector.*;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.TypeInspection;
 import org.e2immu.analyser.resolver.Resolver;
 import org.e2immu.analyser.resolver.SortedType;
-import org.e2immu.analyser.upload.AnnotationUploader;
 import org.e2immu.analyser.util.Trie;
+import org.e2immu.analyser.visitor.SortedTypeListVisitor;
+import org.e2immu.analyser.visitor.TypeMapVisitor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -94,9 +93,14 @@ public class Parser {
             // we pass on the Java sources for the PrimaryTypeAnalyser, while all other loaded types
             // will be sent to the ShallowAnalyser
             runShallowAnalyser(typeMap, sortedAnnotatedAPITypes);
-            writeAndUpload(sortedAnnotatedAPITypes);
+            for (SortedTypeListVisitor sortedTypeListVisitor : configuration.analyserConfiguration.sortedTypeListVisitors) {
+                sortedTypeListVisitor.visit(new SortedTypeListVisitor.Data(configuration, input, sortedAnnotatedAPITypes));
+            }
+
             runPrimaryTypeAnalyser(typeMap, resolvedSourceTypes);
-            writeAndUpload(resolvedSourceTypes);
+            for (SortedTypeListVisitor sortedTypeListVisitor : configuration.analyserConfiguration.sortedTypeListVisitors) {
+                sortedTypeListVisitor.visit(new SortedTypeListVisitor.Data(configuration, input, resolvedSourceTypes));
+            }
         }
 
         return resolvedSourceTypes;
@@ -166,25 +170,6 @@ public class Parser {
                 throw rte;
             } catch (IOException ioe) {
                 LOGGER.error("Stopping runnable because of an IOException parsing URL {}", url);
-                throw new RuntimeException(ioe);
-            }
-        }
-    }
-
-    private void writeAndUpload(List<SortedType> sortedPrimaryTypes) {
-        Set<TypeInfo> typesToWrite = sortedPrimaryTypes.stream()
-                .map(SortedType::primaryType).collect(Collectors.toSet());
-        if (configuration.uploadConfiguration.upload) {
-            AnnotationUploader annotationUploader = new AnnotationUploader(configuration.uploadConfiguration,
-                    input.globalTypeContext().typeMapBuilder.getE2ImmuAnnotationExpressions());
-            Map<String, String> map = annotationUploader.createMap(typesToWrite);
-            annotationUploader.writeMap(map);
-        }
-        if (configuration.annotationXmlConfiguration.writeAnnotationXml) {
-            try {
-                AnnotationXmlWriter.write(configuration.annotationXmlConfiguration, typesToWrite);
-            } catch (IOException ioe) {
-                LOGGER.error("Caught ioe exception writing annotation XMLs");
                 throw new RuntimeException(ioe);
             }
         }

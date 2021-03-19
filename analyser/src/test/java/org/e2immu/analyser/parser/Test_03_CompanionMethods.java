@@ -29,6 +29,7 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.analyser.testexample.BasicCompanionMethods_6;
+import org.e2immu.analyser.visitor.*;
 import org.junit.Assert;
 import org.junit.Test;
 

@@ -17,7 +17,7 @@
 
 package org.e2immu.analyser.analyser;
 
-import org.e2immu.analyser.config.CompanionAnalyserVisitor;
+import org.e2immu.analyser.visitor.CompanionAnalyserVisitor;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.statement.ReturnStatement;

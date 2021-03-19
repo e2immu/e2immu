@@ -19,9 +19,9 @@ package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.config.EvaluationResultVisitor;
-import org.e2immu.analyser.config.StatementAnalyserVariableVisitor;
-import org.e2immu.analyser.config.StatementAnalyserVisitor;
+import org.e2immu.analyser.visitor.EvaluationResultVisitor;
+import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
+import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;

@@ -13,6 +13,7 @@ import org.e2immu.analyser.model.expression.ConstantExpression;
 import org.e2immu.analyser.model.expression.StringConstant;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.objectflow.ObjectFlow;
+import org.e2immu.analyser.visitor.*;
 import org.junit.Assert;
 import org.junit.Test;
 

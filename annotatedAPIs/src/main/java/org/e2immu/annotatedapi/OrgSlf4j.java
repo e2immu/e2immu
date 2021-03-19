@@ -29,7 +29,6 @@ public class OrgSlf4j {
         /*
         The reason we want to add @NotModified on the methods, is that these
         modifications are outside of the scope of what we're interested in.
-        (STATIC_SIDE_EFFECTS_ONLY)
          */
         @NotModified
         public void info(@NotNull String s, @NotModified Object... objects) {

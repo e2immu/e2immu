@@ -19,9 +19,12 @@ package org.e2immu.analyser.config;
 
 import org.e2immu.analyser.analyser.StatementAnalyser;
 import org.e2immu.analyser.pattern.PatternMatcher;
+import org.e2immu.analyser.visitor.SortedTypeListVisitor;
 import org.e2immu.annotation.Container;
 import org.e2immu.annotation.E2Container;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import java.util.function.Supplier;
 
@@ -30,10 +33,14 @@ public class AnalyserConfiguration {
 
     public final boolean skipTransformations;
     private final Supplier<PatternMatcher<StatementAnalyser>> patternMatcherSupplier;
+    public final List<SortedTypeListVisitor> sortedTypeListVisitors;
 
-    public AnalyserConfiguration(boolean skipTransformations, Supplier<PatternMatcher<StatementAnalyser>> patternMatcherSupplier) {
+    public AnalyserConfiguration(boolean skipTransformations,
+                                 Supplier<PatternMatcher<StatementAnalyser>> patternMatcherSupplier,
+                                 List<SortedTypeListVisitor> sortedTypeListVisitors) {
         this.skipTransformations = skipTransformations;
         this.patternMatcherSupplier = Objects.requireNonNull(patternMatcherSupplier);
+        this.sortedTypeListVisitors = sortedTypeListVisitors;
     }
 
     public PatternMatcher<StatementAnalyser> newPatternMatcher() {
@@ -44,19 +51,27 @@ public class AnalyserConfiguration {
     public static class Builder {
         private boolean skipTransformations;
         private Supplier<PatternMatcher<StatementAnalyser>> patternMatcherSupplier;
+        private final List<SortedTypeListVisitor> sortedTypeListVisitors = new ArrayList<>();
 
         public Builder setSkipTransformations(boolean skipTransformations) {
             this.skipTransformations = skipTransformations;
             return this;
         }
 
-        public void setPatternMatcherSupplier(Supplier<PatternMatcher<StatementAnalyser>> patternMatcherSupplier) {
+        public Builder setPatternMatcherSupplier(Supplier<PatternMatcher<StatementAnalyser>> patternMatcherSupplier) {
             this.patternMatcherSupplier = patternMatcherSupplier;
+            return this;
+        }
+
+        public Builder addSortedTypeListVisitor(SortedTypeListVisitor sortedTypeListVisitor) {
+            this.sortedTypeListVisitors.add(sortedTypeListVisitor);
+            return this;
         }
 
         public AnalyserConfiguration build() {
             return new AnalyserConfiguration(skipTransformations, patternMatcherSupplier == null ?
-                    () -> PatternMatcher.NO_PATTERN_MATCHER : patternMatcherSupplier);
+                    () -> PatternMatcher.NO_PATTERN_MATCHER : patternMatcherSupplier,
+                    List.copyOf(sortedTypeListVisitors));
         }
     }
 }

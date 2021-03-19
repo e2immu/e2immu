@@ -63,7 +63,7 @@ public class AnalyserTask extends ConventionTask {
         }
         org.e2immu.analyser.util.Logger.activate(AnalyserTask::logMessage, Set.of(CONFIGURATION));
 
-        Configuration configuration = Configuration.fromProperties(properties);
+        Configuration configuration = Main.fromProperties(properties);
         log(CONFIGURATION, "Configuration:\n{}", configuration);
         org.e2immu.analyser.util.Logger.activate(AnalyserTask::logMessage, configuration.logTargets);
 

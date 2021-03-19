@@ -21,7 +21,7 @@ package org.e2immu.analyser.analyser;
 import org.e2immu.analyser.analyser.check.CheckE1E2Immutable;
 import org.e2immu.analyser.analyser.util.AssignmentIncompatibleWithPrecondition;
 import org.e2immu.analyser.analyser.util.ExplicitTypes;
-import org.e2immu.analyser.config.TypeAnalyserVisitor;
+import org.e2immu.analyser.visitor.TypeAnalyserVisitor;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.Filter;
 import org.e2immu.analyser.model.expression.Negation;
