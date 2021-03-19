@@ -21,12 +21,12 @@ package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.visitor.EvaluationResultVisitor;
-import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
-import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.variable.ReturnVariable;
+import org.e2immu.analyser.visitor.EvaluationResultVisitor;
+import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
+import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -55,9 +55,7 @@ public class Test_20_CyclicReferences extends CommonTestRunner {
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("findTailRecursion".equals(d.methodInfo().name) && d.variable() instanceof ParameterInfo p && p.name.equals("list")) {
-                assertEquals("statement " + d.statementId() + ", iteration " + d.iteration(),
-                        "nullable instance type List<String>", d.currentValue().toString());
-
+                assertEquals("nullable instance type List<String>", d.currentValue().toString());
                 assertEquals("", d.variableInfo().getLinkedVariables().toString());
             }
         };
@@ -79,9 +77,9 @@ public class Test_20_CyclicReferences extends CommonTestRunner {
     public void test_2() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("methodB".equals(d.methodInfo().name)) {
-                if(d.variable() instanceof ReturnVariable) {
+                if (d.variable() instanceof ReturnVariable) {
                     if ("0.0.0".equals(d.statementId())) {
-                        String expectValue = d.iteration() == 0 ? "<m:methodA>": "\"a\".equals(paramB)&&!\"b\".equals(paramB)";
+                        String expectValue = d.iteration() == 0 ? "<m:methodA>" : "\"a\".equals(paramB)&&!\"b\".equals(paramB)";
                         assertEquals(expectValue, d.currentValue().toString());
                     }
                     if ("1".equals(d.statementId())) {

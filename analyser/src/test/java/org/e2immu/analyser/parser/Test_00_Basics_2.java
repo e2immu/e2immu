@@ -193,7 +193,7 @@ public class Test_00_Basics_2 extends CommonTestRunner {
         }
         if (d.methodInfo().name.equals("add") && "0".equals(d.statementId())) {
             String expectEvalString = d.iteration() == 0 ? "<m:add>" : METHOD_VALUE_ADD;
-            assertEquals(d.evaluationResult().toString(), expectEvalString, d.evaluationResult().value().toString());
+            assertEquals(expectEvalString, d.evaluationResult().value().toString());
         }
     };
 

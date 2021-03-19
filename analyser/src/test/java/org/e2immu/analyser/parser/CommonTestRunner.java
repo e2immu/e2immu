@@ -45,6 +45,7 @@ public abstract class CommonTestRunner {
     private static final Logger LOGGER = LoggerFactory.getLogger(CommonTestRunner.class);
     public static final String ORG_E2IMMU_SUPPORT = "org.e2immu.support";
     public static final String ORG_E2IMMU_ANALYSER_UTIL = "org.e2immu.analyser.util";
+    public static final String ORG_E2IMMU_ANALYSER_TESTEXAMPLE = "org.e2immu.analyser.testexample";
 
     public final boolean withAnnotatedAPIs;
 
@@ -81,16 +82,15 @@ public abstract class CommonTestRunner {
         // test runner's classpath to ours
         InputConfiguration.Builder inputConfigurationBuilder = new InputConfiguration.Builder()
                 .addSources("src/test/java")
-                .addClassPath(withAnnotatedAPIs ? InputConfiguration.DEFAULT_CLASSPATH : InputConfiguration.CLASSPATH_WITHOUT_ANNOTATED_APIS)
-                .addClassPath(Input.JAR_WITH_PATH_PREFIX + "com/google/common/collect")
-                .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/junit")
+                .addClassPath(withAnnotatedAPIs ? InputConfiguration.DEFAULT_CLASSPATH
+                        : InputConfiguration.CLASSPATH_WITHOUT_ANNOTATED_APIS)
                 .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/slf4j")
-                .addClassPath(Input.JAR_WITH_PATH_PREFIX + "ch/qos/logback/core/spi")
-                .addClassPath(Input.JAR_WITH_PATH_PREFIX + "io/vertx/core");
+                .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/junit/jupiter/api")
+                .addClassPath(Input.JAR_WITH_PATH_PREFIX + "ch/qos/logback/core/spi");
         if (withAnnotatedAPIs) {
             inputConfigurationBuilder.addAnnotatedAPISources("../annotatedAPIs/src/main/java");
         }
-        classNames.forEach(className -> inputConfigurationBuilder.addRestrictSourceToPackages("org.e2immu.analyser.testexample." + className));
+        classNames.forEach(className -> inputConfigurationBuilder.addRestrictSourceToPackages(ORG_E2IMMU_ANALYSER_TESTEXAMPLE + "." + className));
 
         Configuration configuration = new Configuration.Builder()
                 .setDebugConfiguration(debugConfiguration)
@@ -152,15 +152,11 @@ public abstract class CommonTestRunner {
                 .addSources("../annotations/src/main/java")
                 .addAnnotatedAPISources("../annotatedAPIs/src/main/java")
                 .addClassPath(InputConfiguration.DEFAULT_CLASSPATH)
-                // we need the following packages on the path because they're used in the annotated APIs
-                .addClassPath(Input.JAR_WITH_PATH_PREFIX + "com/google/common/collect")
-                .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/junit")
                 .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/slf4j")
                 .addClassPath(Input.JAR_WITH_PATH_PREFIX + "ch/qos/logback/core/spi")
-                .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/apache/commons/io")
                 .addClassPath("jmods/java.xml.jmod");
 
-        testClasses.forEach(className -> builder.addRestrictSourceToPackages("org.e2immu.analyser.testexample." + className));
+        testClasses.forEach(className -> builder.addRestrictSourceToPackages(ORG_E2IMMU_ANALYSER_TESTEXAMPLE + "." + className));
         utilClasses.forEach(className -> builder.addRestrictSourceToPackages(packageString + "." + className));
 
         Configuration configuration = new Configuration.Builder()
@@ -202,10 +198,10 @@ public abstract class CommonTestRunner {
         }
         assertFalse(types.isEmpty());
         parser.getMessages().forEach(message -> LOGGER.info(message.toString()));
-        assertEquals((int) parser.getMessages()
-                .filter(m -> m.severity == Message.Severity.ERROR).count(), errorsToExpect, "ERRORS: ");
-        assertEquals((int) parser.getMessages()
-                .filter(m -> m.severity == Message.Severity.WARN).count(), warningsToExpect, "WARNINGS: ");
+        assertEquals(errorsToExpect, (int) parser.getMessages()
+                .filter(m -> m.severity == Message.Severity.ERROR).count(), "ERRORS: ");
+        assertEquals(warningsToExpect, (int) parser.getMessages()
+                .filter(m -> m.severity == Message.Severity.WARN).count(), "WARNINGS: ");
         return parser.getTypeContext();
     }
 

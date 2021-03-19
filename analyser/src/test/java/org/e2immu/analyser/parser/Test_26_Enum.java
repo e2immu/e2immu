@@ -131,11 +131,11 @@ public class Test_26_Enum extends CommonTestRunner {
             }
             if ("array[i]".equals(d.variableName())) {
                 if ("2.0.0".equals(d.statementId())) {
-                    String expectValue = d.iteration() <= 2 ? "this==<new:Enum_3>?<v:array[i]>:<new:Enum_3>" : "instance type Enum_3";
+                    String expectValue = d.iteration() == 0 ? "this==<new:Enum_3>?<v:array[i]>:<new:Enum_3>" : "instance type Enum_3";
                     assertEquals(expectValue, d.currentValue().toString());
                 }
                 if ("2".equals(d.statementId())) {
-                    String expectValue = d.iteration() <= 2 ? "<v:array[i]>" : "instance type Enum_3";
+                    String expectValue = d.iteration() == 0 ? "<v:array[i]>" : "instance type Enum_3";
                     assertEquals(expectValue, d.currentValue().toString());
                 }
             }
@@ -158,12 +158,9 @@ public class Test_26_Enum extends CommonTestRunner {
             }
             if ("i$2$2-E".equals(d.variableName())) {
                 if ("2.0.0".equals(d.statementId())) {
-                    String expectValue = d.iteration() <= 2 ? "<v:i$2$2-E>" : "1+i$2";
-                    assertEquals("Statement " + d.statementId() + ", it " + d.iteration(),
-                            expectValue, d.currentValue().toString());
-                    String expectLinked = "";
-                    assertEquals("Statement " + d.statementId() + ", it " + d.iteration(),
-                            expectLinked, d.variableInfo().getLinkedVariables().toString());
+                    String expectValue = d.iteration() == 0 ? "<v:i$2$2-E>" : "1+i$2";
+                    assertEquals(expectValue, d.currentValue().toString());
+                    assertEquals("", d.variableInfo().getLinkedVariables().toString());
                 }
             }
         };
@@ -175,14 +172,13 @@ public class Test_26_Enum extends CommonTestRunner {
                 assertEquals(d.iteration() > 0, d.statementAnalysis().variables.isSet(THREE));
 
                 if ("2.0.0.0.0".equals(d.statementId())) {
-                    String expectCondition = d.iteration() <= 2 ? "this==<new:Enum_3>" : "instance type Enum_3==this";
+                    String expectCondition = d.iteration() == 0 ? "this==<v:array[<v:i>]>" : "instance type Enum_3==this";
                     assertEquals(expectCondition, d.condition().toString());
                 }
 
                 if ("2.0.0".equals(d.statementId())) {
-                    assertTrue(d.statementAnalysis().variables.isSet("array[i]"));
-                    String expectCondition = d.iteration() == 0 ? "<delayed array length>><v:i>" :
-                            d.iteration() <= 2 ? "<delayed array length>>i$2" : "i$2<=2";
+                    assertEquals(d.iteration() > 0, d.statementAnalysis().variables.isSet("array[i]"));
+                    String expectCondition = d.iteration() == 0 ? "<delayed array length>><v:i>" : "i$2<=2";
                     assertEquals(expectCondition, d.condition().toString());
                 }
             }
@@ -190,7 +186,7 @@ public class Test_26_Enum extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("highest".equals(d.methodInfo().name)) {
-                int expectConstant = d.iteration() <= 2 ? Level.DELAY : Level.TRUE;
+                int expectConstant = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
                 assertEquals(expectConstant, d.methodAnalysis().getProperty(VariableProperty.CONSTANT));
             }
         };

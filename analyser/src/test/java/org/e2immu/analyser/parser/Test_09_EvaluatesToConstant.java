@@ -87,7 +87,7 @@ public class Test_09_EvaluatesToConstant extends CommonTestRunner {
                 }
             }
             if ("b".equals(d.variableName()) && "0".equals(d.statementId())) {
-                assertEquals(d.toString(), "null==param?\"x\":param", d.currentValue().toString());
+                assertEquals("null==param?\"x\":param", d.currentValue().toString());
                 assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
             }
             if ("a".equals(d.variableName()) && "1.0.0".equals(d.statementId())) {

@@ -144,10 +144,7 @@ public class Test_14_Precondition extends CommonTestRunner {
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("integer".equals(d.fieldInfo().name)) {
                 assertEquals(Level.FALSE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
-                // the return value is delayed
-                int expectEnn = d.iteration() == 0 ? Level.DELAY : MultiLevel.NULLABLE;
-                assertEquals(expectEnn,
-                        d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_NOT_NULL));
+                assertEquals(MultiLevel.NULLABLE, d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_NOT_NULL));
             }
         };
 
@@ -241,8 +238,9 @@ public class Test_14_Precondition extends CommonTestRunner {
                     assertTrue(variableInfo.isAssigned());
 
                     if (d.iteration() == 0) {
-                        assertNull(d.statementAnalysis().methodLevelData.combinedPrecondition.get());
+                        assertFalse(d.statementAnalysis().methodLevelData.combinedPrecondition.isFinal());
                     } else {
+                        assertTrue(d.statementAnalysis().methodLevelData.combinedPrecondition.isFinal());
                         assertEquals("null==integer&&ii>=0",
                                 d.statementAnalysis().methodLevelData.combinedPrecondition.get().toString());
                     }

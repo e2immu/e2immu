@@ -467,8 +467,7 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
                     assertEquals("instance type int", d.currentValue().toString());
                     String expectStaticallyAssigned = d.statementId().equals("1.0.0") ? "this.i" : "";
                     // after the assignment, i becomes a different value
-                    assertEquals(d.statementId(), expectStaticallyAssigned,
-                            d.variableInfo().getStaticallyAssignedVariables().toString());
+                    assertEquals(expectStaticallyAssigned, d.variableInfo().getStaticallyAssignedVariables().toString());
                 }
                 if (I101.equals(d.variableName())) {
                     assertEquals("this.i", d.variableInfo().getStaticallyAssignedVariables().toString());
@@ -620,8 +619,7 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
                         || "2".equals(d.statementId())
                         || "3".equals(d.statementId())
                         || "4.0.0.0.0".equals(d.statementId()))) {
-                    assertEquals("statement " + d.statementId(),
-                            "this.i", d.variableInfo().getStaticallyAssignedVariables().toString());
+                    assertEquals("this.i", d.variableInfo().getStaticallyAssignedVariables().toString());
                 }
 
                 if (d.iteration() > 0) {
@@ -638,11 +636,11 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
                 if ("java.lang.System.out".equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {
                         String expectValue = d.iteration() == 0 ? "<f:out>" : "instance type PrintStream";
-                        assertEquals(d.statementId(), expectValue, d.currentValue().toString());
+                        assertEquals(expectValue, d.currentValue().toString());
                     }
                     if ("4".equals(d.statementId())) {
                         String expectValue = d.iteration() == 0 ? "<f:out>" : "instance type PrintStream";
-                        assertEquals(d.statementId(), expectValue, d.currentValue().toString());
+                        assertEquals(expectValue, d.currentValue().toString());
                     }
                     assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
                 }
