@@ -53,7 +53,7 @@ public class TestAnnotationXmlWriter {
                 .addSources("some/empty/dir")
                 .addClassPath(InputConfiguration.DEFAULT_CLASSPATH)
                 .addClassPath(Input.JAR_WITH_PATH_PREFIX + "com/google/common/collect")
-                .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/junit")
+                .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/junit/jupiter/api")
                 .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/slf4j")
                 .addClassPath(Input.JAR_WITH_PATH_PREFIX + "ch/qos/logback/core/spi")
                 .addClassPath(Input.JAR_WITH_PATH_PREFIX + "io/vertx/core")

@@ -121,14 +121,14 @@ public class TestDependencyGraph {
         try {
             graph.ensureFrozen();
             fail();
-        } catch (UnsupportedOperationException e) {
+        } catch (IllegalStateException e) {
             // normal behaviour
         }
         graph.freeze();
         try {
             graph.addNode('e', List.of());
             fail();
-        } catch (UnsupportedOperationException e) {
+        } catch (IllegalStateException e) {
             // normal behaviour
         }
         assertTrue(graph.isFrozen());
@@ -136,7 +136,7 @@ public class TestDependencyGraph {
         try {
             graph.ensureNotFrozen();
             fail();
-        } catch (UnsupportedOperationException e) {
+        } catch (IllegalStateException e) {
             // normal behaviour
         }
     }

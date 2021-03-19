@@ -120,7 +120,8 @@ public class TestConditionalValue extends CommonAbstractValue {
 
     @Test
     public void test6() {
-        Expression cv1 = inline(a, b, NullConstant.NULL_CONSTANT);
+        // a?bn:null
+        Expression cv1 = inline(a, bn, NullConstant.NULL_CONSTANT);
         Expression eq = Equals.equals(minimalEvaluationContext, NullConstant.NULL_CONSTANT, cv1, ObjectFlow.NO_FLOW);
         assertEquals(Negation.negate(minimalEvaluationContext, a), eq);
     }

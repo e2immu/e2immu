@@ -32,7 +32,9 @@ import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.output.*;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
-import org.e2immu.analyser.util.*;
+import org.e2immu.analyser.util.ListUtil;
+import org.e2immu.analyser.util.Logger;
+import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.NotNull;
 import org.e2immu.support.Either;
 import org.e2immu.support.SetOnce;
@@ -271,7 +273,8 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
                         outputBuilder.add(Symbol.COMMA).add(gg.mid());
                     }
                     outputBuilder.add(new Text(fieldInfo.name));
-                    Expression initialiser = fieldInfo.fieldInspection.get().getFieldInitialiser().initialiser();
+                    FieldInspection.FieldInitialiser fieldInitialiser = fieldInfo.fieldInspection.get().getFieldInitialiser();
+                    Expression initialiser = fieldInitialiser == null ? null : fieldInitialiser.initialiser();
                     if (initialiser instanceof NewObject newObject) {
                         if (!newObject.parameterExpressions().isEmpty()) {
                             Guide.GuideGenerator args = Guide.defaultGuideGenerator();
@@ -287,7 +290,9 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
                             }
                             outputBuilder.add(args.end()).add(Symbol.RIGHT_PARENTHESIS);
                         }
-                    } else throw new UnsupportedOperationException(initialiser.getClass().toString());
+                    } else if (initialiser != null) {
+                        throw new UnsupportedOperationException("Expect initialiser to be a NewObject");
+                    }
                 }
             }
             outputBuilder.add(gg.end()).add(Symbol.SEMICOLON);

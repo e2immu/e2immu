@@ -18,7 +18,7 @@
 package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.expression.util.EvaluateInlineConditional;
 import org.e2immu.analyser.model.variable.Variable;
@@ -29,6 +29,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
+import static org.e2immu.analyser.analyser.VariableProperty.IDENTITY;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class TestVariableInfo extends CommonVariableInfo {
@@ -42,20 +43,20 @@ public class TestVariableInfo extends CommonVariableInfo {
     public void testNoneNoOverwrite() {
         VariableInfoImpl viB = new VariableInfoImpl(makeLocalIntVar("b"));
         viB.setValue(four, false);
-        viB.setProperty(VariableProperty.CONTEXT_NOT_NULL, MultiLevel.MUTABLE);
+        viB.setProperty(IDENTITY, Level.TRUE);
 
         VariableInfoImpl vii = viB.mergeIntoNewObject(minimalEvaluationContext, TRUE, false, List.of());
 
         assertSame(four, vii.getValue());
         vii.mergeProperties(false, viB, List.of());
-        assertEquals(MultiLevel.MUTABLE, vii.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+        assertEquals(Level.TRUE, vii.getProperty(IDENTITY));
     }
 
     @Test
     public void testNoneOverwrite() {
         VariableInfoImpl viB = new VariableInfoImpl(makeLocalIntVar("b"));
         viB.setValue(four, false);
-        viB.setProperty(VariableProperty.CONTEXT_NOT_NULL, MultiLevel.MUTABLE);
+        viB.setProperty(IDENTITY, Level.FALSE);
 
         VariableInfoImpl overwritten = new VariableInfoImpl(viB.variable());
         try {
@@ -70,11 +71,11 @@ public class TestVariableInfo extends CommonVariableInfo {
     public void testOneOverwrite() {
         VariableInfoImpl viA = new VariableInfoImpl(makeLocalIntVar("a"));
         viA.setValue(three, false);
-        viA.setProperty(VariableProperty.CONTEXT_NOT_NULL, MultiLevel.MUTABLE);
+        viA.setProperty(IDENTITY, Level.TRUE);
 
         VariableInfoImpl viB = new VariableInfoImpl(makeLocalIntVar("b"));
         viB.setValue(four, false);
-        viB.setProperty(VariableProperty.CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
+        viB.setProperty(IDENTITY, Level.FALSE);
 
         // situation:
         // int c = a;
@@ -87,7 +88,7 @@ public class TestVariableInfo extends CommonVariableInfo {
         Expression res = viC2.getValue();
         assertEquals("4", res.toString());
         viC2.mergeProperties(true, viA, list);
-        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, viC2.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+        assertEquals(Level.FALSE, viC2.getProperty(IDENTITY));
     }
 
     @Test
@@ -98,11 +99,11 @@ public class TestVariableInfo extends CommonVariableInfo {
 
         VariableInfoImpl viA = new VariableInfoImpl(makeLocalIntVar("a"));
         viA.setValue(three, false);
-        viA.setProperty(VariableProperty.CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
+        viA.setProperty(IDENTITY, Level.TRUE);
 
         VariableInfoImpl viB = new VariableInfoImpl(makeLocalIntVar("b"));
         viB.setValue(four, false);
-        viB.setProperty(VariableProperty.CONTEXT_NOT_NULL, MultiLevel.MUTABLE);
+        viB.setProperty(IDENTITY, Level.FALSE);
 
         // situation: boolean x = ...; int c = a; if(x) c = b;
         List<StatementAnalysis.ConditionAndVariableInfo> xViB = List.of(new StatementAnalysis.ConditionAndVariableInfo(x, viB));
@@ -114,7 +115,7 @@ public class TestVariableInfo extends CommonVariableInfo {
         assertEquals("instance type boolean?4:3", res.toString());
 
         viC.mergeProperties(true, viA, xViB);
-        assertEquals(MultiLevel.MUTABLE, viC.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+        assertEquals(Level.FALSE, viC.getProperty(IDENTITY));
 
         // in a second iteration, we may encounter:
         viC.mergeIntoMe(minimalEvaluationContext, TRUE, false, viA, xViB);
@@ -126,7 +127,7 @@ public class TestVariableInfo extends CommonVariableInfo {
     public void testOneIfXThenReturn() {
         Variable retVar = makeReturnVariable();
         VariableInfoImpl ret = new VariableInfoImpl(retVar);
-        ret.setProperty(VariableProperty.CONTEXT_NOT_NULL, MultiLevel.MUTABLE);
+        ret.setProperty(IDENTITY, Level.FALSE);
         ret.setValue(new UnknownExpression(primitives.booleanParameterizedType, UnknownExpression.RETURN_VALUE), false);
 
         VariableInfoImpl viX = new VariableInfoImpl(makeLocalBooleanVar("x"));
@@ -135,7 +136,7 @@ public class TestVariableInfo extends CommonVariableInfo {
 
         VariableInfoImpl viB = new VariableInfoImpl(makeLocalIntVar("b"));
         viB.setValue(four, false);
-        viB.setProperty(VariableProperty.CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
+        viB.setProperty(IDENTITY, Level.TRUE);
 
         // situation: if(x) return b;
         List<StatementAnalysis.ConditionAndVariableInfo> xViB = List.of(new StatementAnalysis.ConditionAndVariableInfo(x, viB));
@@ -146,7 +147,7 @@ public class TestVariableInfo extends CommonVariableInfo {
         Expression value2 = ret2.getValue();
         assertEquals("instance type boolean?4:<return value:boolean>", value2.debugOutput());
         ret2.mergeProperties(false, ret, xViB);
-        assertEquals(MultiLevel.MUTABLE, ret2.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+        assertEquals(Level.FALSE, ret2.getProperty(IDENTITY));
 
         // OK let's continue
         // situation:  if(x) return b; return a;
@@ -167,7 +168,7 @@ public class TestVariableInfo extends CommonVariableInfo {
         Variable retVar = makeReturnVariable();
         VariableInfoImpl ret = new VariableInfoImpl(retVar);
         ret.setValue(new UnknownExpression(primitives.booleanParameterizedType, UnknownExpression.RETURN_VALUE), false);
-        ret.setProperty(VariableProperty.CONTEXT_NOT_NULL, MultiLevel.MUTABLE);
+        ret.setProperty(IDENTITY, Level.FALSE);
 
         VariableInfoImpl viX = new VariableInfoImpl(makeLocalIntVar("x"));
         Expression x = NewObject.forTesting(primitives, viX.variable().parameterizedType());
@@ -176,7 +177,7 @@ public class TestVariableInfo extends CommonVariableInfo {
         VariableInfoImpl viB = new VariableInfoImpl(makeLocalIntVar("b"));
         Expression xEquals3 = Equals.equals(minimalEvaluationContext, x, three, ObjectFlow.NO_FLOW);
         viB.setValue(four, false);
-        viB.setProperty(VariableProperty.CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
+        viB.setProperty(IDENTITY, Level.TRUE);
 
         // situation: if(x==3) return b;
         List<StatementAnalysis.ConditionAndVariableInfo> x3ViB = List.of(new StatementAnalysis.ConditionAndVariableInfo(xEquals3, viB));
@@ -186,7 +187,7 @@ public class TestVariableInfo extends CommonVariableInfo {
         assertEquals("3==instance type int?4:<return value:boolean>", ret2.getValue().debugOutput());
 
         ret2.mergeProperties(false, ret, x3ViB);
-        assertEquals(MultiLevel.MUTABLE, ret2.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+        assertEquals(Level.FALSE, ret2.getProperty(IDENTITY));
 
         // OK let's continue, but with another if in between
 
@@ -196,7 +197,7 @@ public class TestVariableInfo extends CommonVariableInfo {
         Expression xEquals4 = Equals.equals(minimalEvaluationContext, x, four, ObjectFlow.NO_FLOW);
         assertEquals("4==instance type int", xEquals4.debugOutput());
         viA.setValue(three, false);
-        viA.setProperty(VariableProperty.CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
+        viA.setProperty(IDENTITY, Level.TRUE);
 
         Expression state = Negation.negate(minimalEvaluationContext, xEquals3);
         List<StatementAnalysis.ConditionAndVariableInfo> x4ViA = List.of(new StatementAnalysis.ConditionAndVariableInfo(xEquals4, viA));
@@ -206,7 +207,7 @@ public class TestVariableInfo extends CommonVariableInfo {
         assertEquals("4==instance type int?3:3==instance type int?4:<return value:boolean>",
                 ret3.getValue().debugOutput());
         ret3.mergeProperties(false, ret2, x4ViA);
-        assertEquals(MultiLevel.MUTABLE, ret3.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+        assertEquals(Level.FALSE, ret3.getProperty(IDENTITY));
 
         // situation:
         // if(x==3) return b;
@@ -231,11 +232,11 @@ public class TestVariableInfo extends CommonVariableInfo {
     public void testOneCisAIfUnclearThenB() {
         VariableInfoImpl viA = new VariableInfoImpl(makeLocalIntVar("a"));
         viA.setValue(three, false);
-        viA.setProperty(VariableProperty.CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
+        viA.setProperty(IDENTITY, Level.TRUE);
 
         VariableInfoImpl viB = new VariableInfoImpl(makeLocalIntVar("b"));
         viB.setValue(four, false);
-        viB.setProperty(VariableProperty.CONTEXT_NOT_NULL, MultiLevel.MUTABLE);
+        viB.setProperty(IDENTITY, Level.FALSE);
 
         // situation: boolean x = ...; int c = a; if(some obscure condition) c = b;
 
@@ -250,7 +251,7 @@ public class TestVariableInfo extends CommonVariableInfo {
         assertEquals("<no idea>?4:instance type int", viC2.getValue().toString());
 
         viC2.mergeProperties(false, viA, uViB);
-        assertEquals(MultiLevel.MUTABLE, viC2.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+        assertEquals(Level.FALSE, viC2.getProperty(IDENTITY));
     }
 
 
@@ -262,11 +263,11 @@ public class TestVariableInfo extends CommonVariableInfo {
 
         VariableInfoImpl viA = new VariableInfoImpl(makeLocalIntVar("a"));
         viA.setValue(three, false);
-        viA.setProperty(VariableProperty.CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
+        viA.setProperty(IDENTITY, Level.TRUE);
 
         VariableInfoImpl viB = new VariableInfoImpl(makeLocalIntVar("b"));
         viB.setValue(four, false);
-        viB.setProperty(VariableProperty.CONTEXT_NOT_NULL, MultiLevel.MUTABLE);
+        viB.setProperty(IDENTITY, Level.FALSE);
 
         // situation: boolean x = ...; int c; if(x) c = a; else c = b;
 
@@ -277,8 +278,8 @@ public class TestVariableInfo extends CommonVariableInfo {
         viC.mergeIntoMe(minimalEvaluationContext, TRUE, true, viC, list);
         assertEquals("instance type boolean?3:4", viC.getValue().toString());
 
-        viC.mergeProperties(true, null, list);
-        assertEquals(MultiLevel.MUTABLE, viC.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+        viC.mergeProperties(true, new VariableInfoImpl(viA.variable()), list);
+        assertEquals(Level.FALSE, viC.getProperty(IDENTITY));
     }
 
     // slight variant, showing the strength of ConditionalValue's factory method
@@ -290,11 +291,11 @@ public class TestVariableInfo extends CommonVariableInfo {
 
         VariableInfoImpl viA = new VariableInfoImpl(makeLocalIntVar("a"));
         viA.setValue(three, false);
-        viA.setProperty(VariableProperty.CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
+        viA.setProperty(IDENTITY, Level.TRUE);
 
         VariableInfoImpl viB = new VariableInfoImpl(makeLocalIntVar("b"));
         viB.setValue(three, false);
-        viB.setProperty(VariableProperty.CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
+        viB.setProperty(IDENTITY, Level.TRUE);
 
         // situation: boolean x = ...; int c; if(x) c = a; else c = b;
 
@@ -307,7 +308,7 @@ public class TestVariableInfo extends CommonVariableInfo {
         Expression res = viC.getValue();
         assertEquals("3", res.toString());
 
-        viC.mergeProperties(true, null, list);
-        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, viC.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+        viC.mergeProperties(true, new VariableInfoImpl(viA.variable()), list);
+        assertEquals(Level.TRUE, viC.getProperty(IDENTITY));
     }
 }

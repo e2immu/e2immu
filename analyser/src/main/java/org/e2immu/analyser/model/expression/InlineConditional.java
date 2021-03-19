@@ -242,7 +242,7 @@ public class InlineConditional implements Expression {
 
     @Override
     public ParameterizedType returnType() {
-        return ifTrue.returnType();
+        return ifTrue.returnType(); // IMPROVE
     }
 
     @Override

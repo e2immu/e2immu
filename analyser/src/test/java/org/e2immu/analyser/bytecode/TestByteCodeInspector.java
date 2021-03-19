@@ -28,6 +28,7 @@ import org.e2immu.analyser.parser.Input;
 import org.e2immu.analyser.parser.TypeMap;
 import org.e2immu.analyser.parser.TypeMapImpl;
 import org.e2immu.analyser.util.Resources;
+import org.e2immu.analyser.util.SMapList;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
@@ -72,7 +73,7 @@ public class TestByteCodeInspector {
         TypeMap typeMap = parseFromJar("org/e2immu/analyser/parser/Parser");
         TypeInfo parser = typeMap.get("org.e2immu.analyser.parser.Parser");
         assertEquals(TypeNature.CLASS, parser.typeInspection.get().typeNature());
-        LOGGER.info("Stream is\n{}", parser.toString());
+        LOGGER.info("Stream is\n{}", parser.output());
     }
 
     @Test
@@ -83,8 +84,6 @@ public class TestByteCodeInspector {
         assertEquals(TypeNature.CLASS, subType.typeInspection.get().typeNature());
         assertFalse(subType.typeInspection.get().isStatic());
         assertTrue(subType.typeInspection.get().modifiers().contains(TypeModifier.PRIVATE));
-
-        LOGGER.info("Stream is\n{}", subType.toString());
     }
 
     @Test
@@ -92,25 +91,25 @@ public class TestByteCodeInspector {
         TypeMap typeMap = parseFromJar("org/e2immu/analyser/analyser/EvaluationContext");
         TypeInfo typeInfo = typeMap.get("org.e2immu.analyser.analyser.EvaluationContext");
 
-        LOGGER.info("Stream is\n{}", typeInfo.toString());
+        LOGGER.info("Stream is\n{}", typeInfo.output());
         assertEquals(TypeNature.INTERFACE, typeInfo.typeInspection.get().typeNature());
     }
 
     @Test
     public void testGenerics() throws IOException {
-        TypeMap typeMap = parseFromJar("org/e2immu/analyser/util/Lazy.class");
-        TypeInfo typeInfo = typeMap.get("org.e2immu.support.Lazy");
+        TypeMap typeMap = parseFromJar("org/e2immu/analyser/util/SMapList.class");
+        TypeInfo typeInfo = typeMap.get(SMapList.class);
 
         assertEquals(TypeNature.CLASS, typeInfo.typeInspection.get().typeNature());
-        LOGGER.info("Stream is\n{}", typeInfo.toString());
+        LOGGER.info("Stream is\n{}", typeInfo.output());
     }
 
     @Test
     public void testGenerics2() throws IOException {
-        TypeMap typeMap = parseFromJar("org/e2immu/analyser/util/Either");
-        TypeInfo typeInfo = typeMap.get("org.e2immu.support.Either");
+        TypeMap typeMap = parseFromJar("org/e2immu/analyser/util/DependencyGraph.class");
+        TypeInfo typeInfo = typeMap.get("org.e2immu.analyser.util.DependencyGraph");
         assertEquals(TypeNature.CLASS, typeInfo.typeInspection.get().typeNature());
-        LOGGER.info("Stream is\n{}", typeInfo.toString());
+        LOGGER.info("Stream is\n{}", typeInfo.output());
     }
 
     @Test
@@ -119,25 +118,25 @@ public class TestByteCodeInspector {
         TypeInfo typeInfo = typeMap.get("org.e2immu.analyser.model.PackagePrefix");
 
         assertEquals(TypeNature.CLASS, typeInfo.typeInspection.get().typeNature());
-        LOGGER.info("Stream is\n{}", typeInfo.toString());
+        LOGGER.info("Stream is\n{}", typeInfo.output());
     }
 
     @Test
-    public void testSetOnce() throws IOException {
-        TypeMap typeMap = parseFromJar("org/e2immu/analyser/util/SetOnce.class");
-        TypeInfo typeInfo = typeMap.get("org.e2immu.support.SetOnce");
+    public void testTrie() throws IOException {
+        TypeMap typeMap = parseFromJar("org/e2immu/analyser/util/Trie.class");
+        TypeInfo typeInfo = typeMap.get("org.e2immu.analyser.util.Trie");
 
         assertEquals(TypeNature.CLASS, typeInfo.typeInspection.get().typeNature());
-        LOGGER.info("Stream is\n{}", typeInfo.toString());
+        LOGGER.info("Stream is\n{}", typeInfo.output());
     }
 
     @Test
     public void testEnum() throws IOException {
-        TypeMap typeMap = parseFromJar("org/e2immu/analyser/model/SideEffect.class");
-        TypeInfo typeInfo = typeMap.get("org.e2immu.analyser.model.SideEffect");
+        TypeMap typeMap = parseFromJar("org/e2immu/analyser/model/Diamond.class");
+        TypeInfo typeInfo = typeMap.get("org.e2immu.analyser.model.Diamond");
 
         assertEquals(TypeNature.ENUM, typeInfo.typeInspection.get().typeNature());
-        LOGGER.info("Stream is\n{}", typeInfo.toString());
+        LOGGER.info("Stream is\n{}", typeInfo.output());
     }
 
     @Test
@@ -146,7 +145,7 @@ public class TestByteCodeInspector {
         TypeInfo typeInfo = typeMap.get("org.e2immu.analyser.output.OutputElement");
 
         assertEquals(TypeNature.INTERFACE, typeInfo.typeInspection.get().typeNature());
-        LOGGER.info("Stream is\n{}", typeInfo.toString());
+        LOGGER.info("Stream is\n{}", typeInfo.output());
 
         MethodInfo forDebug = typeInfo.findUniqueMethod("debug", 0);
         assertTrue(forDebug.methodInspection.get().isDefault());
