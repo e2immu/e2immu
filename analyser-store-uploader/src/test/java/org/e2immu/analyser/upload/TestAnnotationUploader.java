@@ -14,37 +14,47 @@
 
 package org.e2immu.analyser.upload;
 
-import ch.qos.logback.classic.Level;
+import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.Configuration;
+import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.config.InputConfiguration;
 import org.e2immu.analyser.inspector.TypeContext;
+import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.parser.Input;
 import org.e2immu.analyser.parser.Parser;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
-import org.junit.jupiter.api.BeforeAll;
+import org.e2immu.analyser.visitor.TypeMapVisitor;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.Map;
 import java.util.Set;
 
-import static org.e2immu.analyser.util.Logger.LogTarget.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class TestAnnotationUploader {
 
     public static final String BASICS_0 = "org.e2immu.analyser.upload.example.Basics_0";
+    public static final String[] CLASSPATH_WITHOUT_ANNOTATED_APIS = {"build/classes/java/main",
+            "jmods/java.base.jmod", "../analyser/src/main/resources/annotations/minimal"};
 
     @Test
     public void test() throws IOException {
+        TypeMapVisitor typeMapVisitor = typeMap -> {
+            TypeInfo string = typeMap.get(String.class);
+            assertEquals(Level.TRUE, string.typeAnalysis.get().getProperty(VariableProperty.CONTAINER));
+        };
+
         Configuration configuration = new Configuration.Builder()
+                .setDebugConfiguration(new DebugConfiguration.Builder()
+                        .addTypeMapVisitor(typeMapVisitor).build())
                 .addDebugLogTargets("ANALYSER,INSPECT,RESOLVE,DELAYED")
                 .setInputConfiguration(new InputConfiguration.Builder()
                         .addSources("src/test/java")
                         .addRestrictSourceToPackages(BASICS_0)
-                        .addClassPath(InputConfiguration.DEFAULT_CLASSPATH)
+                        .addClassPath(CLASSPATH_WITHOUT_ANNOTATED_APIS)
                         .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/slf4j")
                         .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/junit/jupiter/api")
                         .addClassPath(Input.JAR_WITH_PATH_PREFIX + "ch/qos/logback/core/spi")
@@ -64,6 +74,6 @@ public class TestAnnotationUploader {
         Map<String, String> map = annotationUploader.createMap(Set.of(basics));
         map.forEach((k, v) -> System.out.println(k + " --> " + v));
 
-        assertEquals("e2container-mt", map.get(BASICS_0 + ".getExplicitlyFinal() java.lang.String"));
+        assertEquals("notmodified-m", map.get(BASICS_0 + ".getExplicitlyFinal()"));
     }
 }
