@@ -19,8 +19,17 @@ plugins {
 group 'org.e2immu'
 version '0.1.0'
 
+
 repositories {
     mavenCentral()
+    maven {
+        name = "GitHubPackages"
+        url = uri("https://maven.pkg.github.com/e2immu/e2immu-support")
+        credentials {
+            username = project.findProperty("gpr.user") ?: System.getenv("USERNAME")
+            password = project.findProperty("gpr.key") ?: System.getenv("GITHUB_TOKEN")
+        }
+    }
 }
 
 java {
@@ -37,7 +46,8 @@ compileTestJava {
 }
 
 dependencies {
-    implementation project(':annotations')
+    implementation group: 'org.e2immu', name: 'e2immu-support', version: '0.1.0'      // LGPL 3.0
+
     implementation project(':analyser')
 
     implementation group: 'org.apache.httpcomponents', name: 'httpclient', version: '4.5.12' // Apache License 2.0

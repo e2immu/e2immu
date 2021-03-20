@@ -17,19 +17,19 @@ plugins {
     id 'maven-publish'
     id 'application'
 }
-/*
+
 repositories {
     mavenCentral()
     maven {
         name = "GitHubPackages"
-        url = uri("https://maven.pkg.github.com/bnaudts/e2immu-annot")
+        url = uri("https://maven.pkg.github.com/e2immu/e2immu-support")
         credentials {
             username = project.findProperty("gpr.user") ?: System.getenv("USERNAME")
             password = project.findProperty("gpr.key") ?: System.getenv("GITHUB_TOKEN")
         }
     }
 }
-*/
+
 java {
     sourceCompatibility = JavaVersion.VERSION_15
     targetCompatibility = JavaVersion.VERSION_15
@@ -52,7 +52,7 @@ compileTestJava {
 }
 
 dependencies {
-    implementation project(':annotations')
+    implementation group: 'org.e2immu', name: 'e2immu-support', version: '0.1.0'      // LGPL 3.0
 
     implementation group: 'org.slf4j', name: 'slf4j-api', version: '1.7.25'           // MIT X-11 License
     implementation group: 'ch.qos.logback', name: 'logback-classic', version: '1.2.3' // EPL v1.0 and the LGPL 2.1
@@ -62,7 +62,7 @@ dependencies {
     implementation group: 'org.ow2.asm', name: 'asm', version: '9.0'                  // 3-clause BSD permissive license
 
     // TEST
-    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.6.0'
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.6.0'                    // EPL v2.0
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
 }
 
