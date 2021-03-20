@@ -1,0 +1,4 @@
+e2immu/gradle-plugin: Gradle plugin for e2immu, a static code analyser for the Java language
+Copyright 2020-2021, Bart Naudts, https://www.e2immu.org
+
+Licensed under the Gnu Lesser General Public Licenses, version 3

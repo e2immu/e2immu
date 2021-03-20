@@ -1,19 +1,15 @@
 /*
- * e2immu-analyser: code analyser for effective and eventual immutability
- * Copyright 2020, Bart Naudts, https://www.e2immu.org
+ * e2immu: a static code analyser for effective and eventual immutability
+ * Copyright 2020-2021, Bart Naudts, https://www.e2immu.org
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- *
+ * This program is free software: you can redistribute it and/or modify it under the
+ * terms of the GNU Lesser General Public License as published by the Free Software
+ * Foundation, either version 3 of the License, or (at your option) any later version.
+ * This program is distributed in the hope that it will be useful, but WITHOUT ANY
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for
+ * more details. You should have received a copy of the GNU Lesser General Public
+ * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 package org.e2immu.analyser.analyser;
@@ -21,7 +17,6 @@ package org.e2immu.analyser.analyser;
 import org.e2immu.analyser.analyser.check.CheckConstant;
 import org.e2immu.analyser.analyser.check.CheckFinalNotModified;
 import org.e2immu.analyser.analyser.check.CheckLinks;
-import org.e2immu.analyser.visitor.FieldAnalyserVisitor;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
@@ -34,6 +29,7 @@ import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.util.Logger;
+import org.e2immu.analyser.visitor.FieldAnalyserVisitor;
 import org.e2immu.annotation.*;
 import org.slf4j.LoggerFactory;
 
@@ -90,7 +86,7 @@ public class FieldAnalyser extends AbstractAnalyser {
                          AnalyserContext analyserContext) {
         super("Field " + fieldInfo.name, analyserContext);
         this.checkConstant = new CheckConstant(analyserContext.getPrimitives(), analyserContext.getE2ImmuAnnotationExpressions());
-        this.checkLinks = new CheckLinks(analyserContext.getPrimitives(), analyserContext.getE2ImmuAnnotationExpressions());
+        this.checkLinks = new CheckLinks(analyserContext, analyserContext.getE2ImmuAnnotationExpressions());
 
         this.fieldInfo = fieldInfo;
         fieldInspection = fieldInfo.fieldInspection.get();
@@ -631,7 +627,7 @@ public class FieldAnalyser extends AbstractAnalyser {
             }
             return expression;
         }
-        return new MultiValue(fieldAnalysis.primitives, ObjectFlow.NO_FLOW, values, fieldInfo.type);
+        return new MultiValue(analyserContext, ObjectFlow.NO_FLOW, values, fieldInfo.type);
     }
 
     private AnalysisStatus analyseLinked() {

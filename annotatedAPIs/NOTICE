@@ -1,7 +1,4 @@
-e2immu/annotations: annotations for effective and eventual immutability
-Copyright 2020, Bart Naudts, https://www.e2immu.org
+e2immu/annotatedAPIs: annotated core APIs for the e2immu static code analyser
+Copyright 2020-2021, Bart Naudts, https://www.e2immu.org
 
-Licensed under the Apache License, Version 2.0.
-
-
-
+Licensed under the Gnu Lesser General Public Licenses, version 3

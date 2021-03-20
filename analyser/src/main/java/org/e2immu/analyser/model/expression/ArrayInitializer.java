@@ -1,19 +1,15 @@
 /*
- * e2immu-analyser: code analyser for effective and eventual immutability
- * Copyright 2020, Bart Naudts, https://www.e2immu.org
+ * e2immu: a static code analyser for effective and eventual immutability
+ * Copyright 2020-2021, Bart Naudts, https://www.e2immu.org
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- *
+ * This program is free software: you can redistribute it and/or modify it under the
+ * terms of the GNU Lesser General Public License as published by the Free Software
+ * Foundation, either version 3 of the License, or (at your option) any later version.
+ * This program is distributed in the hope that it will be useful, but WITHOUT ANY
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for
+ * more details. You should have received a copy of the GNU Lesser General Public
+ * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 package org.e2immu.analyser.model.expression;
@@ -29,7 +25,7 @@ import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
-import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.annotation.E2Container;
 
 import java.util.Arrays;
@@ -45,32 +41,32 @@ public class ArrayInitializer implements Expression {
     public final MultiExpression multiExpression;
     public final ObjectFlow objectFlow;
     private final ParameterizedType commonType;
-    private final Primitives primitives;
+    private final InspectionProvider inspectionProvider;
 
-    public ArrayInitializer(Primitives primitives, ObjectFlow objectFlow, List<Expression> values, ParameterizedType formalCommonType) {
+    public ArrayInitializer(InspectionProvider inspectionProvider,
+                            ObjectFlow objectFlow,
+                            List<Expression> values,
+                            ParameterizedType formalCommonType) {
         this.objectFlow = Objects.requireNonNull(objectFlow);
         this.multiExpression = MultiExpression.create(values);
-        this.commonType = best(formalCommonType, multiExpression.commonType(primitives));
-        this.primitives = primitives;
-    }
-
-    private ParameterizedType best(ParameterizedType formalCommonType, ParameterizedType commonType) {
-        return formalCommonType; // IMPROVE
+        this.commonType = formalCommonType.commonType(inspectionProvider, multiExpression.commonType(inspectionProvider));
+        this.inspectionProvider = inspectionProvider;
     }
 
     @Override
     public EvaluationResult reEvaluate(EvaluationContext evaluationContext, Map<Expression, Expression> translation) {
-        List<EvaluationResult> reClauseERs = multiExpression.stream().map(v -> v.reEvaluate(evaluationContext, translation)).collect(Collectors.toList());
+        List<EvaluationResult> reClauseERs = multiExpression.stream()
+                .map(v -> v.reEvaluate(evaluationContext, translation)).collect(Collectors.toList());
         List<Expression> reValues = reClauseERs.stream().map(EvaluationResult::value).collect(Collectors.toList());
         return new EvaluationResult.Builder()
                 .compose(reClauseERs)
-                .setExpression(new ArrayInitializer(evaluationContext.getPrimitives(), objectFlow, reValues, commonType))
+                .setExpression(new ArrayInitializer(evaluationContext.getAnalyserContext(), objectFlow, reValues, commonType))
                 .build();
     }
 
     @Override
     public Expression translate(TranslationMap translationMap) {
-        return new ArrayInitializer(primitives, ObjectFlow.NYE,
+        return new ArrayInitializer(inspectionProvider, ObjectFlow.NYE,
                 multiExpression.stream().map(translationMap::translateExpression)
                         .collect(Collectors.toList()), translationMap.translateType(commonType));
     }
@@ -114,7 +110,7 @@ public class ArrayInitializer implements Expression {
 
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext).compose(results);
         ObjectFlow objectFlow = builder.createLiteralObjectFlow(commonType);
-        builder.setExpression(new ArrayInitializer(evaluationContext.getPrimitives(), objectFlow, values, commonType));
+        builder.setExpression(new ArrayInitializer(evaluationContext.getAnalyserContext(), objectFlow, values, commonType));
 
         return builder.build();
     }
@@ -173,6 +169,6 @@ public class ArrayInitializer implements Expression {
     @Override
     public NewObject getInstance(EvaluationResult evaluationContext) {
         return NewObject.forGetInstance(evaluationContext.evaluationContext().newObjectIdentifier(),
-                primitives, returnType(), getObjectFlow());
+                inspectionProvider.getPrimitives(), returnType(), getObjectFlow());
     }
 }

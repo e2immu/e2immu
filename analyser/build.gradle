@@ -1,19 +1,15 @@
 /*
- * e2immu-analyser: code analyser for effective and eventual immutability
- * Copyright 2020, Bart Naudts, https://www.e2immu.org
+ * e2immu: a static code analyser for effective and eventual immutability
+ * Copyright 2020-2021, Bart Naudts, https://www.e2immu.org
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- *
+ * This program is free software: you can redistribute it and/or modify it under the
+ * terms of the GNU Lesser General Public License as published by the Free Software
+ * Foundation, either version 3 of the License, or (at your option) any later version.
+ * This program is distributed in the hope that it will be useful, but WITHOUT ANY
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for
+ * more details. You should have received a copy of the GNU Lesser General Public
+ * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 plugins {
@@ -59,18 +55,18 @@ dependencies {
     implementation project(':annotations')
 
     implementation group: 'org.slf4j', name: 'slf4j-api', version: '1.7.25'           // MIT X-11 License
-    implementation group: 'com.github.javaparser', name: 'javaparser-core', version: '3.18.0'
-    // LGPL or Apache License 2.0
-    implementation group: 'org.ow2.asm', name: 'asm', version: '9.0'                  // 3-clause BSD permissive license
-    implementation group: 'commons-io', name: 'commons-io', version: '2.6'            // Apache License 2.0
     implementation group: 'ch.qos.logback', name: 'logback-classic', version: '1.2.3' // EPL v1.0 and the LGPL 2.1
+    implementation group: 'commons-io', name: 'commons-io', version: '2.6'            // Apache License 2.0
+
+    implementation group: 'com.github.javaparser', name: 'javaparser-core', version: '3.18.0' // LGPL or Apache License 2.0
+    implementation group: 'org.ow2.asm', name: 'asm', version: '9.0'                  // 3-clause BSD permissive license
 
     // TEST
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.6.0'
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
 }
 
-version = '0.0.1'
+version = '0.1.0'
 
 application {
     mainClassName = 'org.e2immu.analyser.cli.Main'

@@ -1,19 +1,15 @@
 /*
- * e2immu-analyser: code analyser for effective and eventual immutability
- * Copyright 2020, Bart Naudts, https://www.e2immu.org
+ * e2immu: a static code analyser for effective and eventual immutability
+ * Copyright 2020-2021, Bart Naudts, https://www.e2immu.org
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- *
+ * This program is free software: you can redistribute it and/or modify it under the
+ * terms of the GNU Lesser General Public License as published by the Free Software
+ * Foundation, either version 3 of the License, or (at your option) any later version.
+ * This program is distributed in the hope that it will be useful, but WITHOUT ANY
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for
+ * more details. You should have received a copy of the GNU Lesser General Public
+ * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 package org.e2immu.analyser.model.expression;
@@ -29,6 +25,7 @@ import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
+import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.E2Container;
 
@@ -49,20 +46,16 @@ public class MultiValue implements Expression {
     public final MultiExpression multiExpression;
     public final ObjectFlow objectFlow;
     private final ParameterizedType commonType;
-    private final Primitives primitives;
+    private final InspectionProvider inspectionProvider;
 
-    public MultiValue(Primitives primitives,
+    public MultiValue(InspectionProvider inspectionProvider,
                       ObjectFlow objectFlow,
                       MultiExpression multiExpression,
                       ParameterizedType formalCommonType) {
         this.objectFlow = Objects.requireNonNull(objectFlow);
-        this.commonType = best(formalCommonType, multiExpression.commonType(primitives));
-        this.primitives = primitives;
+        this.commonType = formalCommonType.commonType(inspectionProvider, multiExpression.commonType(inspectionProvider));
         this.multiExpression = multiExpression;
-    }
-
-    private ParameterizedType best(ParameterizedType formalCommonType, ParameterizedType commonType) {
-        return formalCommonType; // IMPROVE
+        this.inspectionProvider = inspectionProvider;
     }
 
     @Override
@@ -72,13 +65,13 @@ public class MultiValue implements Expression {
         MultiExpression reMulti = new MultiExpression(reValues);
         return new EvaluationResult.Builder()
                 .compose(reClauseERs)
-                .setExpression(new MultiValue(evaluationContext.getPrimitives(), objectFlow, reMulti, commonType))
+                .setExpression(new MultiValue(evaluationContext.getAnalyserContext(), objectFlow, reMulti, commonType))
                 .build();
     }
 
     @Override
     public Expression translate(TranslationMap translationMap) {
-        return new MultiValue(primitives, ObjectFlow.NYE,
+        return new MultiValue(inspectionProvider, ObjectFlow.NYE,
                 new MultiExpression(multiExpression.stream().map(translationMap::translateExpression)
                         .toArray(Expression[]::new)), translationMap.translateType(commonType));
     }
@@ -173,6 +166,6 @@ public class MultiValue implements Expression {
     @Override
     public NewObject getInstance(EvaluationResult evaluationResult) {
         return NewObject.forGetInstance(evaluationResult.evaluationContext().newObjectIdentifier(),
-                primitives, returnType(), getObjectFlow());
+                inspectionProvider.getPrimitives(), returnType(), getObjectFlow());
     }
 }

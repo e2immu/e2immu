@@ -1,3 +1,17 @@
+/*
+ * e2immu: a static code analyser for effective and eventual immutability
+ * Copyright 2020-2021, Bart Naudts, https://www.e2immu.org
+ *
+ * This program is free software: you can redistribute it and/or modify it under the
+ * terms of the GNU Lesser General Public License as published by the Free Software
+ * Foundation, either version 3 of the License, or (at your option) any later version.
+ * This program is distributed in the hope that it will be useful, but WITHOUT ANY
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for
+ * more details. You should have received a copy of the GNU Lesser General Public
+ * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 package org.e2immu.kvstore;
 
 import io.vertx.config.ConfigRetriever;
@@ -12,7 +26,10 @@ import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.BodyHandler;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
 public class Store {
     public static final String API_VERSION = "/v1";
@@ -148,7 +165,8 @@ public class Store {
         try {
             for (Map.Entry<String, Object> entry : body.getMap().entrySet()) {
                 String element = entry.getKey();
-                if (entry.getValue() instanceof String current) {
+                if (entry.getValue() instanceof String) {
+                    String current = (String) entry.getValue();
                     if (current.isEmpty()) {
                         String prev = project.remove(element);
                         if (prev != null) countRemoved++;
@@ -180,10 +198,11 @@ public class Store {
         JsonObject result = new JsonObject();
         Set<String> queried = new HashSet<>();
         for (Object element : body.getList()) {
-            if (element instanceof String key) {
+            if (element instanceof String) {
+                String key = (String) element;
                 queried.add(key);
                 String annotation = project.get(key);
-                result.put(key, Objects.requireNonNullElse(annotation, ""));
+                result.put(key, annotation != null ? annotation : "");
             }
         }
         Map<String, String> recent = project.recentlyReadAndUpdatedAfterwards(queried, readWithinMillis);

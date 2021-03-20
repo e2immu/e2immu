@@ -1,0 +1,4 @@
+e2immu/analyser-store-uploader: a library to support uploading annotations to e2immu's annotation-store
+Copyright 2020-2021, Bart Naudts, https://www.e2immu.org
+
+Licensed under the Gnu Lesser General Public Licenses, version 3

@@ -1,19 +1,15 @@
 /*
- * e2immu-analyser: code analyser for effective and eventual immutability
- * Copyright 2020, Bart Naudts, https://www.e2immu.org
+ * e2immu: a static code analyser for effective and eventual immutability
+ * Copyright 2020-2021, Bart Naudts, https://www.e2immu.org
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- *
+ * This program is free software: you can redistribute it and/or modify it under the
+ * terms of the GNU Lesser General Public License as published by the Free Software
+ * Foundation, either version 3 of the License, or (at your option) any later version.
+ * This program is distributed in the hope that it will be useful, but WITHOUT ANY
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for
+ * more details. You should have received a copy of the GNU Lesser General Public
+ * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 package org.e2immu.analyser.model;
@@ -620,8 +616,10 @@ public class ParameterizedType {
      * @return the common type
      */
     public ParameterizedType commonType(InspectionProvider inspectionProvider, ParameterizedType other) {
-        if (other == null) return null;
+        assert other != null;
+
         if (equals(other)) return this;
+
         TypeInfo bestType = bestTypeInfo();
         TypeInfo otherBestType = other.bestTypeInfo();
         boolean isPrimitive = Primitives.isPrimitiveExcludingVoid(this) || bestType != null && Primitives.isBoxedExcludingVoid(bestType);
@@ -629,15 +627,25 @@ public class ParameterizedType {
         if (isPrimitive && otherIsPrimitive) {
             return inspectionProvider.getPrimitives().widestType(this, other);
         }
-        if (isPrimitive || otherIsPrimitive) return null; // no common type
-        if (bestType == null || otherBestType == null) return null;
+        if (isPrimitive && other == ParameterizedType.NULL_CONSTANT) {
+            return inspectionProvider.getPrimitives().boxed(bestType).asParameterizedType(inspectionProvider);
+        }
+        if (otherIsPrimitive && this == ParameterizedType.NULL_CONSTANT) {
+            return inspectionProvider.getPrimitives().boxed(otherBestType).asParameterizedType(inspectionProvider);
+        }
+        if (isPrimitive || otherIsPrimitive) return inspectionProvider.getPrimitives().objectParameterizedType; // no common type
+
+        if(other == ParameterizedType.NULL_CONSTANT) return this;
+        if(this == ParameterizedType.NULL_CONSTANT) return other;
+
+        if (bestType == null || otherBestType == null) return inspectionProvider.getPrimitives().objectParameterizedType; // no common type
         if (isAssignableFrom(inspectionProvider, other)) {
             return this;
         }
         if (other.isAssignableFrom(inspectionProvider, this)) {
             return other;
         }
-        return null;
+        return inspectionProvider.getPrimitives().objectParameterizedType; // no common type
     }
 
     public Boolean isImplicitlyOrAtLeastEventuallyE2Immutable(AnalysisProvider analysisProvider, TypeInfo typeBeingAnalysed) {

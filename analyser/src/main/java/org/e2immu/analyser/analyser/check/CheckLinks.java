@@ -1,3 +1,17 @@
+/*
+ * e2immu: a static code analyser for effective and eventual immutability
+ * Copyright 2020-2021, Bart Naudts, https://www.e2immu.org
+ *
+ * This program is free software: you can redistribute it and/or modify it under the
+ * terms of the GNU Lesser General Public License as published by the Free Software
+ * Foundation, either version 3 of the License, or (at your option) any later version.
+ * This program is distributed in the hope that it will be useful, but WITHOUT ANY
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for
+ * more details. You should have received a copy of the GNU Lesser General Public
+ * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 package org.e2immu.analyser.analyser.check;
 
 import org.e2immu.analyser.analyser.AbstractAnalysisBuilder;
@@ -9,25 +23,23 @@ import org.e2immu.analyser.model.expression.MemberValuePair;
 import org.e2immu.analyser.model.expression.StringConstant;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
-import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
-import org.e2immu.analyser.parser.Message;
-import org.e2immu.analyser.parser.Messages;
-import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.analyser.parser.*;
 import org.e2immu.annotation.Linked;
 
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-public record CheckLinks(Primitives primitives, E2ImmuAnnotationExpressions e2) {
+public record CheckLinks(InspectionProvider inspectionProvider, E2ImmuAnnotationExpressions e2) {
 
-    public AnnotationExpression createLinkAnnotation(E2ImmuAnnotationExpressions typeContext, Set<Variable> links) {
-        List<Expression> linkNameList = links.stream().map(variable -> new StringConstant(primitives,
+    public AnnotationExpression createLinkAnnotation(E2ImmuAnnotationExpressions e2, Set<Variable> links) {
+        List<Expression> linkNameList = links.stream().map(variable -> new StringConstant(inspectionProvider.getPrimitives(),
                 variable.nameInLinkedAnnotation())).collect(Collectors.toList());
         Expression linksStringArray = new MemberValuePair("to",
-                new ArrayInitializer(primitives, ObjectFlow.NO_FLOW, linkNameList, primitives.stringParameterizedType));
+                new ArrayInitializer(inspectionProvider, ObjectFlow.NO_FLOW, linkNameList,
+                        inspectionProvider.getPrimitives().stringParameterizedType));
         List<Expression> expressions = List.of(linksStringArray);
-        return new AnnotationExpressionImpl(typeContext.linked.typeInfo(), expressions);
+        return new AnnotationExpressionImpl(e2.linked.typeInfo(), expressions);
     }
 
     public void checkLinksForFields(Messages messages, FieldInfo fieldInfo, FieldAnalysisImpl.Builder fieldAnalysis) {

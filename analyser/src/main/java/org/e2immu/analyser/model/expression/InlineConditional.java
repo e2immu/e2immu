@@ -1,19 +1,15 @@
 /*
- * e2immu-analyser: code analyser for effective and eventual immutability
- * Copyright 2020, Bart Naudts, https://www.e2immu.org
+ * e2immu: a static code analyser for effective and eventual immutability
+ * Copyright 2020-2021, Bart Naudts, https://www.e2immu.org
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- *
+ * This program is free software: you can redistribute it and/or modify it under the
+ * terms of the GNU Lesser General Public License as published by the Free Software
+ * Foundation, either version 3 of the License, or (at your option) any later version.
+ * This program is distributed in the hope that it will be useful, but WITHOUT ANY
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for
+ * more details. You should have received a copy of the GNU Lesser General Public
+ * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 package org.e2immu.analyser.model.expression;
@@ -26,6 +22,7 @@ import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
+import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.ListUtil;
 
@@ -40,14 +37,17 @@ public class InlineConditional implements Expression {
     public final Expression ifTrue;
     public final Expression ifFalse;
     public final ObjectFlow objectFlow;
+    public final InspectionProvider inspectionProvider;
 
-    public InlineConditional(Expression condition,
+    public InlineConditional(InspectionProvider inspectionProvider,
+                             Expression condition,
                              Expression ifTrue,
                              Expression ifFalse) {
-        this(condition, ifTrue, ifFalse, ObjectFlow.NO_FLOW);
+        this(inspectionProvider, condition, ifTrue, ifFalse, ObjectFlow.NO_FLOW);
     }
 
-    public InlineConditional(Expression condition,
+    public InlineConditional(InspectionProvider inspectionProvider,
+                             Expression condition,
                              Expression ifTrue,
                              Expression ifFalse,
                              ObjectFlow objectFlow) {
@@ -55,6 +55,7 @@ public class InlineConditional implements Expression {
         this.ifFalse = Objects.requireNonNull(ifFalse);
         this.ifTrue = Objects.requireNonNull(ifTrue);
         this.objectFlow = Objects.requireNonNull(objectFlow);
+        this.inspectionProvider = inspectionProvider;
     }
 
     @Override
@@ -74,7 +75,7 @@ public class InlineConditional implements Expression {
 
     @Override
     public Expression translate(TranslationMap translationMap) {
-        return new InlineConditional(
+        return new InlineConditional(inspectionProvider,
                 translationMap.translateExpression(condition),
                 translationMap.translateExpression(ifTrue),
                 translationMap.translateExpression(ifFalse));
@@ -242,7 +243,7 @@ public class InlineConditional implements Expression {
 
     @Override
     public ParameterizedType returnType() {
-        return ifTrue.returnType(); // IMPROVE
+        return ifTrue.returnType().commonType(inspectionProvider, ifFalse.returnType());
     }
 
     @Override

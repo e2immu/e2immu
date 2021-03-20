@@ -1,8 +1,0 @@
-<root>
-    <item name='org.e2immu.intellij.highlighter.example.Example1'>
-        <annotation name='org.e2immu.annotation.Container'/>
-    </item>
-    <item name='org.e2immu.intellij.highlighter.example.Example1 void add(java.lang.String)'>
-        <annotation name='org.e2immu.annotation.NotModified'/>
-    </item>
-</root>
