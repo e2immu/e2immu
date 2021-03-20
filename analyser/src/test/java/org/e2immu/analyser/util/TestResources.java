@@ -85,7 +85,7 @@ public class TestResources {
     @Test
     public void testViaJar() throws IOException {
         Resources classPath = new Resources();
-        classPath.addJar(new URL("jar:file:build/libs/analyser-" + TestByteCodeInspector.VERSION + ".jar!/"));
+        classPath.addJar(new URL("jar:file:build/libs/" + TestByteCodeInspector.determineAnalyserJarName() + "!/"));
         List<String[]> expansions = classPath.expandPaths("org.e2immu.analyser.model");
         AtomicInteger counter = new AtomicInteger();
         expansions.forEach(ss -> {

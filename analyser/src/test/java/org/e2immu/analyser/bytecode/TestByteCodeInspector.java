@@ -30,14 +30,15 @@ import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.URL;
+import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 public class TestByteCodeInspector {
-    public static final String VERSION = "0.0.1"; // TODO determine dynamically
     private static final Logger LOGGER = LoggerFactory.getLogger(TestByteCodeInspector.class);
 
     @BeforeAll
@@ -47,8 +48,9 @@ public class TestByteCodeInspector {
     }
 
     private TypeMap parseFromJar(String path) throws IOException {
+        String analyserJar = determineAnalyserJarName();
         Resources resources = new Resources();
-        resources.addJar(new URL("jar:file:build/libs/analyser-" + VERSION + ".jar!/"));
+        resources.addJar(new URL("jar:file:build/libs/" + analyserJar + "!/"));
         resources.addJmod(new URL("jar:file:" + System.getProperty("java.home") + "/jmods/java.base.jmod!/"));
         Resources annotationResources = new Resources();
         AnnotationXmlReader annotationParser = new AnnotationXmlReader(annotationResources);
@@ -62,6 +64,16 @@ public class TestByteCodeInspector {
         // in case the path is a subType, we need to inspect it explicitly
         types.forEach(typeContext.typeMapBuilder::getTypeInspection);
         return typeContext.typeMapBuilder.build();
+    }
+
+    public static String determineAnalyserJarName() {
+        File libs = new File("./build/libs");
+        assertTrue(libs.isDirectory());
+        File[] analysers = libs.listFiles(file -> file.canRead() && file.getName().endsWith(".jar") && file.getName().startsWith("analyser-"));
+        assertNotNull(analysers);
+        Arrays.sort(analysers);
+        assertTrue(analysers.length > 0);
+        return analysers[analysers.length - 1].getName();
     }
 
     @Test

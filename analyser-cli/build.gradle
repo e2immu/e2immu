@@ -19,19 +19,6 @@ plugins {
 group 'org.e2immu'
 version '0.1.0'
 
-
-repositories {
-    mavenCentral()
-    maven {
-        name = "GitHubPackages"
-        url = uri("https://maven.pkg.github.com/e2immu/e2immu-support")
-        credentials {
-            username = project.findProperty("gpr.user") ?: System.getenv("USERNAME")
-            password = project.findProperty("gpr.key") ?: System.getenv("GITHUB_TOKEN")
-        }
-    }
-}
-
 dependencies {
     implementation group: 'org.e2immu', name: 'e2immu-support', version: '0.1.0'      // LGPL 3.0
 
