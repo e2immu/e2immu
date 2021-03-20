@@ -35,28 +35,22 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class TestAnnotationUploader {
 
-    public static final String BASICS_0 = "org.e2immu.analyser.upload.Basics_0";
-
-    @BeforeAll
-    public static void beforeClass() {
-        org.e2immu.analyser.util.Logger.configure(Level.INFO);
-        org.e2immu.analyser.util.Logger.activate(ANALYSER, INSPECT, RESOLVE);
-    }
+    public static final String BASICS_0 = "org.e2immu.analyser.upload.example.Basics_0";
 
     @Test
     public void test() throws IOException {
         Configuration configuration = new Configuration.Builder()
+                .addDebugLogTargets("ANALYSER,INSPECT,RESOLVE,DELAYED")
                 .setInputConfiguration(new InputConfiguration.Builder()
                         .addSources("src/test/java")
                         .addRestrictSourceToPackages(BASICS_0)
                         .addClassPath(InputConfiguration.DEFAULT_CLASSPATH)
-                        .addClassPath(Input.JAR_WITH_PATH_PREFIX + "com/google/common/collect")
-                        .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/junit")
                         .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/slf4j")
+                        .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/junit/jupiter/api")
                         .addClassPath(Input.JAR_WITH_PATH_PREFIX + "ch/qos/logback/core/spi")
-                        .addClassPath(Input.JAR_WITH_PATH_PREFIX + "io/vertx/core")
                         .build())
                 .build();
+        configuration.initializeLoggers();
         Parser parser = new Parser(configuration);
         parser.run();
         TypeContext typeContext = parser.getTypeContext();
@@ -70,6 +64,6 @@ public class TestAnnotationUploader {
         Map<String, String> map = annotationUploader.createMap(Set.of(basics));
         map.forEach((k, v) -> System.out.println(k + " --> " + v));
 
-        assertEquals("e2container-mt", map.get("org.e2immu.analyser.testexample.Basics_0.getExplicitlyFinal() java.lang.String"));
+        assertEquals("e2container-mt", map.get(BASICS_0 + ".getExplicitlyFinal() java.lang.String"));
     }
 }

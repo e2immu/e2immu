@@ -1,3 +1,4 @@
+
 /*
  * e2immu: a static code analyser for effective and eventual immutability
  * Copyright 2020-2021, Bart Naudts, https://www.e2immu.org
@@ -12,13 +13,21 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-plugins {
-    id 'org.asciidoctor.jvm.convert' version '3.1.0' apply false 
-}
+package org.e2immu.analyser.parser;
 
-allprojects {
-    repositories {
-        jcenter() 
-        mavenCentral()
+import org.e2immu.analyser.config.DebugConfiguration;
+import org.junit.jupiter.api.Test;
+
+import java.io.IOException;
+
+public class Test_00_Basics_0_withAPI extends CommonTestRunner {
+    public Test_00_Basics_0_withAPI() {
+        super(true);
+    }
+
+    @Test
+    public void test() throws IOException {
+        testClass("Basics_0", 0, 0, new DebugConfiguration.Builder()
+                .build());
     }
 }

@@ -58,7 +58,8 @@ dependencies {
     implementation group: 'ch.qos.logback', name: 'logback-classic', version: '1.2.3' // EPL v1.0 and the LGPL 2.1
     implementation group: 'commons-io', name: 'commons-io', version: '2.6'            // Apache License 2.0
 
-    implementation group: 'com.github.javaparser', name: 'javaparser-core', version: '3.18.0' // LGPL or Apache License 2.0
+    implementation group: 'com.github.javaparser', name: 'javaparser-core', version: '3.18.0'
+    // LGPL or Apache License 2.0
     implementation group: 'org.ow2.asm', name: 'asm', version: '9.0'                  // 3-clause BSD permissive license
 
     // TEST
@@ -69,7 +70,7 @@ dependencies {
 version = '0.1.0'
 
 application {
-    mainClassName = 'org.e2immu.analyser.cli.Main'
+    mainClass.set('org.e2immu.analyser.cli.Main')
 }
 
 /*

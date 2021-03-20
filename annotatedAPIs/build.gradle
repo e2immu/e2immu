@@ -15,7 +15,7 @@
 
 plugins {
     id 'java'
-    id 'maven-publish'
+  //  id 'maven-publish'
 }
 
 version '0.1.0'
@@ -50,7 +50,7 @@ dependencies {
 
 // the reason the groupId is 'e2immu' and not 'org.e2immu' is that this reflects Gradle's project structure.
 // we push to mavenLocal() so that we can use/test the gradle-plugin locally
-
+/*
 publishing {
     repositories {
         mavenLocal()
@@ -69,11 +69,12 @@ publishing {
             artifactId = 'annotatedAPIs'
             from components.java
         }
-        /*gpr(MavenPublication) {
+        gpr(MavenPublication) {
             groupId = 'org.e2immu'
             artifactId = 'annotatedAPIs'
             from components.java
-        }*/
+        }
     }
 }
 
+*/
