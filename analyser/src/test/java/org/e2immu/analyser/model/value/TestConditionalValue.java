@@ -35,8 +35,10 @@ public class TestConditionalValue extends CommonAbstractValue {
 
     @Test
     public void test1() {
-        Expression cv1 = new InlineConditional(a, newInt(3), newInt(4), ObjectFlow.NO_FLOW);
-        Expression cv2 = new InlineConditional(a, newInt(3), newInt(4), ObjectFlow.NO_FLOW);
+        Expression cv1 = new InlineConditional(minimalEvaluationContext.getAnalyserContext(),
+                a, newInt(3), newInt(4), ObjectFlow.NO_FLOW);
+        Expression cv2 = new InlineConditional(minimalEvaluationContext.getAnalyserContext(),
+                a, newInt(3), newInt(4), ObjectFlow.NO_FLOW);
         assertEquals("a?3:4", cv1.toString());
         assertEquals("a?3:4", cv2.toString());
         assertEquals(cv1, cv2);
@@ -120,8 +122,8 @@ public class TestConditionalValue extends CommonAbstractValue {
 
     @Test
     public void test6() {
-        // a?bn:null
-        Expression cv1 = inline(a, bn, NullConstant.NULL_CONSTANT);
+        Expression cv1 = inline(a, b, NullConstant.NULL_CONSTANT);
+        assertEquals("a?b:null", cv1.toString());
         Expression eq = Equals.equals(minimalEvaluationContext, NullConstant.NULL_CONSTANT, cv1, ObjectFlow.NO_FLOW);
         assertEquals(Negation.negate(minimalEvaluationContext, a), eq);
     }

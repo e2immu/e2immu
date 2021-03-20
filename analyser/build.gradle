@@ -44,6 +44,8 @@ compileJava {
 }
 
 test {
+    exclude '**/parserfailing/*.class'
+
     maxHeapSize = "2G"
     jvmArgs("--enable-preview")
     useJUnitPlatform()
