@@ -145,7 +145,7 @@ public abstract class CommonTestRunner {
         InputConfiguration.Builder builder = new InputConfiguration.Builder()
                 .addSources("src/main/java")
                 .addSources("src/test/java")
-                .addSources("../annotations/src/main/java")
+                .addSources("../../e2immu-support/src/main/java")
                 .addAnnotatedAPISources("../annotatedAPIs/src/main/java")
                 .addClassPath(InputConfiguration.DEFAULT_CLASSPATH)
                 .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/slf4j")

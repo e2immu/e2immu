@@ -90,7 +90,7 @@ public class TestVariableInfo extends CommonVariableInfo {
 
     @Test
     public void testOneCisAIfXThenB() {
-        VariableInfoImpl viX = new VariableInfoImpl(makeLocalBooleanVar("x"));
+        VariableInfoImpl viX = new VariableInfoImpl(makeLocalBooleanVar());
         Expression x = NewObject.forTesting(primitives, viX.variable().parameterizedType());
         viX.setValue(x, false);
 
@@ -127,7 +127,7 @@ public class TestVariableInfo extends CommonVariableInfo {
         ret.setProperty(IDENTITY, Level.FALSE);
         ret.setValue(new UnknownExpression(primitives.booleanParameterizedType, UnknownExpression.RETURN_VALUE), false);
 
-        VariableInfoImpl viX = new VariableInfoImpl(makeLocalBooleanVar("x"));
+        VariableInfoImpl viX = new VariableInfoImpl(makeLocalBooleanVar());
         Expression x = NewObject.forTesting(primitives, viX.variable().parameterizedType());
         viX.setValue(x, false);
 
@@ -254,7 +254,7 @@ public class TestVariableInfo extends CommonVariableInfo {
 
     @Test
     public void testTwoOverwriteCisIfXThenAElseB() {
-        VariableInfoImpl viX = new VariableInfoImpl(makeLocalBooleanVar("x"));
+        VariableInfoImpl viX = new VariableInfoImpl(makeLocalBooleanVar());
         Expression x = NewObject.forTesting(primitives, viX.variable().parameterizedType());
         viX.setValue(x, false);
 
@@ -282,7 +282,7 @@ public class TestVariableInfo extends CommonVariableInfo {
     // slight variant, showing the strength of ConditionalValue's factory method
     @Test
     public void testTwoOverwriteCisIfXThenAElseA() {
-        VariableInfoImpl viX = new VariableInfoImpl(makeLocalBooleanVar("x"));
+        VariableInfoImpl viX = new VariableInfoImpl(makeLocalBooleanVar());
         Expression x = NewObject.forTesting(primitives, viX.variable().parameterizedType());
         viX.setValue(x, false);
 

@@ -116,7 +116,7 @@ public interface AnalyserContext extends AnalysisProvider, InspectionProvider {
             if (typeAnalyser == null) {
                 AnalyserContext parent = getParent();
                 if (parent != null) return parent.getTypeAnalysis(typeInfo);
-                return typeInfo.typeAnalysis.get();
+                return typeInfo.typeAnalysis.get(typeInfo.fullyQualifiedName);
             }
             return typeAnalyser.typeAnalysis;
         } catch (UnsupportedOperationException e) {
@@ -130,7 +130,7 @@ public interface AnalyserContext extends AnalysisProvider, InspectionProvider {
             if (methodAnalyser == null) {
                 AnalyserContext parent = getParent();
                 if (parent != null) return parent.getMethodAnalysis(methodInfo);
-                return methodInfo.methodAnalysis.get();
+                return methodInfo.methodAnalysis.get(methodInfo.fullyQualifiedName);
             }
             return methodAnalyser.methodAnalysis;
         } catch (UnsupportedOperationException e) {
@@ -143,11 +143,11 @@ public interface AnalyserContext extends AnalysisProvider, InspectionProvider {
     }
 
     default TypeInspection getTypeInspection(TypeInfo typeInfo) {
-        return typeInfo.typeInspection.get();
+        return typeInfo.typeInspection.get(typeInfo.fullyQualifiedName);
     }
 
     default MethodInspection getMethodInspection(MethodInfo methodInfo) {
-        return methodInfo.methodInspection.get();
+        return methodInfo.methodInspection.get(methodInfo.fullyQualifiedName);
     }
 
 }

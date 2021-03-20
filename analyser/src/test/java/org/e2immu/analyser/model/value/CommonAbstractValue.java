@@ -70,6 +70,8 @@ public abstract class CommonAbstractValue {
 
         TYPE_MAP_BUILDER = new TypeMapImpl.Builder();
         PRIMITIVES = TYPE_MAP_BUILDER.getPrimitives();
+        PRIMITIVES.setInspectionOfBoxedTypesForTesting();
+
         TRUE = new BooleanConstant(PRIMITIVES, true);
         FALSE = new BooleanConstant(PRIMITIVES, false);
         minimalEvaluationContext = new EvaluationContextImpl();

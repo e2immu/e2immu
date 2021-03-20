@@ -16,10 +16,7 @@ package org.e2immu.analyser.inspector;
 
 import com.github.javaparser.ast.expr.NormalAnnotationExpr;
 import com.github.javaparser.ast.expr.SingleMemberAnnotationExpr;
-import org.e2immu.analyser.model.AnnotationExpression;
-import org.e2immu.analyser.model.AnnotationExpressionImpl;
-import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.MemberValuePair;
 
 import java.util.ArrayList;
@@ -28,19 +25,32 @@ import java.util.List;
 public class AnnotationInspector {
 
     public static AnnotationExpression inspect(ExpressionContext expressionContext, com.github.javaparser.ast.expr.AnnotationExpr ae) {
+        TypeInfo typeInfo = (TypeInfo) expressionContext.typeContext.get(ae.getNameAsString(), true);
+        TypeInspection typeInspection = expressionContext.typeContext.getTypeInspection(typeInfo);
+
         List<Expression> analyserExpressions;
         if (ae instanceof NormalAnnotationExpr) {
             analyserExpressions = new ArrayList<>();
             for (com.github.javaparser.ast.expr.MemberValuePair mvp : ((NormalAnnotationExpr) ae).getPairs()) {
-                Expression value = expressionContext.parseExpression(mvp.getValue());
-                analyserExpressions.add(new MemberValuePair(mvp.getName().asString(), value));
+                String methodName = mvp.getNameAsString();
+                ParameterizedType expectedType = expectedType(expressionContext, methodName, typeInspection);
+                Expression value = expressionContext.parseExpression(mvp.getValue(), expectedType, null);
+                analyserExpressions.add(new MemberValuePair(methodName, value));
             }
         } else if (ae instanceof SingleMemberAnnotationExpr) {
-            Expression value = expressionContext.parseExpression(ae.asSingleMemberAnnotationExpr().getMemberValue());
+            ParameterizedType expectedType = expectedType(expressionContext, "value", typeInspection);
+            Expression value = expressionContext.parseExpression(ae.asSingleMemberAnnotationExpr().getMemberValue(),
+                    expectedType, null);
             analyserExpressions = List.of(new MemberValuePair("value", value));
         } else analyserExpressions = List.of();
-        TypeInfo typeInfo = (TypeInfo) expressionContext.typeContext.get(ae.getNameAsString(), true);
         return new AnnotationExpressionImpl(typeInfo, analyserExpressions);
     }
 
+    private static ParameterizedType expectedType(ExpressionContext expressionContext,
+                                                  String methodName, TypeInspection typeInspection) {
+        MethodInfo methodInfo = typeInspection.methods().stream()
+                .filter(m -> m.name.equals(methodName)).findFirst().orElseThrow();
+        MethodInspection methodInspection = expressionContext.typeContext.getMethodInspection(methodInfo);
+        return methodInspection.getReturnType();
+    }
 }

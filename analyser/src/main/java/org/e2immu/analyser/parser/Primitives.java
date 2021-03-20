@@ -300,13 +300,26 @@ public class Primitives {
     public final Set<TypeInfo> primitives = Set.of(booleanTypeInfo, byteTypeInfo, doubleTypeInfo, floatTypeInfo,
             longTypeInfo, shortTypeInfo, voidTypeInfo, intTypeInfo, charTypeInfo);
 
-
-    private static boolean singleton;
+    // normally, this information is read from the annotated APIs
+    public void setInspectionOfBoxedTypesForTesting() {
+        for (TypeInfo ti : boxed) {
+            ti.typeInspection.set(new TypeInspectionImpl.Builder(ti, BY_HAND)
+                    .setTypeNature(TypeNature.CLASS)
+                    .setParentClass(objectParameterizedType)
+                    .build());
+            TypeAnalysisImpl.Builder builder = new TypeAnalysisImpl.Builder(this, ti);
+            builder.properties.put(VariableProperty.CONTAINER, Level.TRUE);
+            builder.properties.put(VariableProperty.IMMUTABLE, MultiLevel.EFFECTIVELY_E2IMMUTABLE);
+            builder.freezeApprovedPreconditionsE2(); // cannot change these anymore; will never be eventual
+            builder.freezeApprovedPreconditionsE1(); // cannot change these anymore; will never be eventual
+            builder.properties.put(VariableProperty.MODIFIED_OUTSIDE_METHOD, Level.FALSE);
+            builder.properties.put(VariableProperty.CONTEXT_MODIFIED, Level.FALSE);
+            builder.implicitlyImmutableDataTypes.set(Set.of());
+            ti.typeAnalysis.set(builder.build());
+        }
+    }
 
     public Primitives() {
-        if(singleton) throw new UnsupportedOperationException();
-        singleton = true;
-
         for (TypeInfo ti : primitives) {
             ti.typeInspection.set(new TypeInspectionImpl.Builder(ti, BY_HAND)
                     .setTypeNature(TypeNature.PRIMITIVE)
@@ -324,7 +337,8 @@ public class Primitives {
             builder.implicitlyImmutableDataTypes.set(Set.of());
         }
 
-        for (TypeInfo ti : List.of(stringTypeInfo, objectTypeInfo, classTypeInfo, annotationTypeTypeInfo, annotationModeTypeInfo, functionalInterface)) {
+        for (TypeInfo ti : List.of(stringTypeInfo, objectTypeInfo, classTypeInfo, annotationTypeTypeInfo,
+                annotationModeTypeInfo, functionalInterface)) {
             typeByName.put(ti.simpleName, ti);
         }
         for (TypeInfo ti : boxed) {

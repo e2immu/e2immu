@@ -45,10 +45,10 @@ public abstract class CommonVariableInfo {
                 List.of());
     }
 
-    protected Variable makeLocalBooleanVar(String name) {
+    protected Variable makeLocalBooleanVar() {
         return new LocalVariableReference(inspectionProvider,
                 new LocalVariable.Builder()
-                        .setName(name)
+                        .setName("x")
                         .setParameterizedType(primitives.booleanParameterizedType)
                         .setOwningType(primitives.stringTypeInfo)
                         .build(),

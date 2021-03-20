@@ -14,20 +14,36 @@
 
 package org.e2immu.analyser.analyser;
 
+import ch.qos.logback.classic.Level;
 import org.e2immu.analyser.model.MethodAnalysis;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.Statement;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.statement.ExpressionAsStatement;
 import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.analyser.util.Logger;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class TestStatementAnalysisComparator {
-    Primitives primitives = new Primitives();
-    Statement emptyStatement = new ExpressionAsStatement(EmptyExpression.EMPTY_EXPRESSION);
+
+    @BeforeAll
+    public static void beforeAll() {
+        Logger.activate();
+    }
+
+    Primitives primitives;
+    Statement emptyStatement;
+
+    @BeforeEach
+    public void before() {
+        primitives = new Primitives();
+        emptyStatement = new ExpressionAsStatement(EmptyExpression.EMPTY_EXPRESSION);
+    }
 
     @Test
     public void test() {
