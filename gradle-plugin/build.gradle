@@ -12,10 +12,14 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+
 plugins {
     id 'java'
     id 'maven-publish'
 }
+
+version '0.1.0b';
+group 'org.e2immu'
 
 java {
     sourceCompatibility = JavaVersion.VERSION_15
@@ -39,20 +43,45 @@ compileJava {
     options.compilerArgs.add("--enable-preview")
 }
 
-// for now, we publish to maven local, so that we can use the plugin locally
-
 publishing {
     repositories {
         mavenLocal()
+        maven {
+            name = "GitHubPackages"
+            url = uri("https://maven.pkg.github.com/e2immu/e2immu")
+            credentials {
+                username = project.findProperty("gpr.user") ?: System.getenv("USERNAME")
+                password = project.findProperty("gpr.key") ?: System.getenv("GITHUB_TOKEN")
+            }
+        }
     }
     publications {
-        mavenJava(MavenPublication) {
-            groupId = 'e2immu'
+        gpr(MavenPublication) {
+            groupId = 'org.e2immu'
             artifactId = 'gradle-plugin'
-            version = '0.0.1'
-
             from components.java
+
+            pom {
+                name = 'e2immu gradle plugin'
+                description = 'A gradle plugin for the e2immu static code analyser'
+                url = 'http://www.e2immu.org'
+                licenses {
+                    license {
+                        name = 'GNU Lesser General Public License, version 3.0'
+                        url = 'https://www.gnu.org/licenses/lgpl-3.0.html'
+                    }
+                }
+                developers {
+                    developer {
+                        id = 'bnaudts'
+                        name = 'Bart Naudts'
+                        email = 'bart.naudts@e2immu.org'
+                    }
+                }
+            }
         }
     }
 }
+
+
 

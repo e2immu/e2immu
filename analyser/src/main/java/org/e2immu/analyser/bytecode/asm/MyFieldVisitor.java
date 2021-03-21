@@ -23,7 +23,7 @@ import org.objectweb.asm.FieldVisitor;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.BYTECODE_INSPECTOR_DEBUG;
 import static org.e2immu.analyser.util.Logger.log;
-import static org.objectweb.asm.Opcodes.ASM7;
+import static org.objectweb.asm.Opcodes.ASM9;
 
 public class MyFieldVisitor extends FieldVisitor {
     private final FieldInfo fieldInfo;
@@ -35,7 +35,7 @@ public class MyFieldVisitor extends FieldVisitor {
                           FieldInfo fieldInfo,
                           FieldInspectionImpl.Builder fieldInspectionBuilder,
                           TypeInspectionImpl.Builder typeInspectionBuilder) {
-        super(ASM7);
+        super(ASM9);
         this.typeContext = typeContext;
         this.fieldInfo = fieldInfo;
         this.fieldInspectionBuilder = fieldInspectionBuilder;

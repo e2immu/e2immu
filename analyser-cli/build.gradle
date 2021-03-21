@@ -14,15 +14,18 @@
 
 plugins {
     id 'java'
+    id 'application'
+    id 'maven-publish'
 }
 
 group 'org.e2immu'
-version '0.1.0'
+version '0.1.0a'
 
 dependencies {
     implementation group: 'org.e2immu', name: 'e2immu-support', version: '0.1.0'      // LGPL 3.0
 
     implementation project(':analyser')
+    implementation project(':analyser-store-uploader')
 
     implementation group: 'commons-cli', name: 'commons-cli', version: '1.4' // Apache License 2.0
     implementation group: 'org.slf4j', name: 'slf4j-api', version: '1.7.25'  // MIT X-11 License
@@ -48,3 +51,56 @@ compileJava {
 compileTestJava {
     options.compilerArgs.add("--enable-preview")
 }
+
+application {
+    mainClass.set('org.e2immu.analyser.cli.Main')
+    applicationDefaultJvmArgs = ['--enable-preview']
+}
+
+jar {
+    manifest {
+        attributes "Main-Class": "org.e2immu.analyser.cli.Main"
+    }
+}
+
+publishing {
+    repositories {
+        mavenLocal()
+        maven {
+            name = "GitHubPackages"
+            url = uri("https://maven.pkg.github.com/e2immu/e2immu")
+            credentials {
+                username = project.findProperty("gpr.user") ?: System.getenv("USERNAME")
+                password = project.findProperty("gpr.key") ?: System.getenv("GITHUB_TOKEN")
+            }
+        }
+    }
+    publications {
+        gpr(MavenPublication) {
+            groupId = 'org.e2immu'
+            artifactId = 'analyser-cli'
+            from components.java
+
+            pom {
+                name = 'e2immu analyser command line'
+                description = 'The command line interface of the e2immu static code analyser'
+                url = 'http://www.e2immu.org'
+                licenses {
+                    license {
+                        name = 'GNU Lesser General Public License, version 3.0'
+                        url = 'https://www.gnu.org/licenses/lgpl-3.0.html'
+                    }
+                }
+                developers {
+                    developer {
+                        id = 'bnaudts'
+                        name = 'Bart Naudts'
+                        email = 'bart.naudts@e2immu.org'
+                    }
+                }
+            }
+        }
+    }
+}
+
+

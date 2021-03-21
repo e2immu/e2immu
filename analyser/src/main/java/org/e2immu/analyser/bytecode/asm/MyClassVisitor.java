@@ -45,7 +45,7 @@ import static org.e2immu.analyser.inspector.TypeInspectionImpl.InspectionState.*
 import static org.e2immu.analyser.util.Logger.LogTarget.BYTECODE_INSPECTOR;
 import static org.e2immu.analyser.util.Logger.LogTarget.BYTECODE_INSPECTOR_DEBUG;
 import static org.e2immu.analyser.util.Logger.log;
-import static org.objectweb.asm.Opcodes.ASM8;
+import static org.objectweb.asm.Opcodes.ASM9;
 
 public class MyClassVisitor extends ClassVisitor {
     private static final Logger LOGGER = LoggerFactory.getLogger(MyClassVisitor.class);
@@ -66,7 +66,7 @@ public class MyClassVisitor extends ClassVisitor {
                           TypeContext typeContext,
                           List<TypeInfo> types,
                           Stack<TypeInfo> enclosingTypes) {
-        super(ASM8);
+        super(ASM9);
         this.types = types;
         this.enclosingTypes = enclosingTypes;
         this.typeContext = typeContext;

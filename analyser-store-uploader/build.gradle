@@ -14,10 +14,11 @@
 
 plugins {
     id 'java'
+    id 'maven-publish'
 }
 
 group 'org.e2immu'
-version '0.1.0'
+version '0.1.0a'
 
 java {
     sourceCompatibility = JavaVersion.VERSION_15
@@ -51,4 +52,46 @@ test {
     jvmArgs("--enable-preview")
     useJUnitPlatform()
 }
+
+publishing {
+    repositories {
+        mavenLocal()
+        maven {
+            name = "GitHubPackages"
+            url = uri("https://maven.pkg.github.com/e2immu/e2immu")
+            credentials {
+                username = project.findProperty("gpr.user") ?: System.getenv("USERNAME")
+                password = project.findProperty("gpr.key") ?: System.getenv("GITHUB_TOKEN")
+            }
+        }
+    }
+    publications {
+        gpr(MavenPublication) {
+            groupId = 'org.e2immu'
+            artifactId = 'analyser-store-uploader'
+            from components.java
+
+            pom {
+                name = 'e2immu store uploader'
+                description = 'Library for the e2immu static code analyser to upload to the annotation store'
+                url = 'http://www.e2immu.org'
+                licenses {
+                    license {
+                        name = 'GNU Lesser General Public License, version 3.0'
+                        url = 'https://www.gnu.org/licenses/lgpl-3.0.html'
+                    }
+                }
+                developers {
+                    developer {
+                        id = 'bnaudts'
+                        name = 'Bart Naudts'
+                        email = 'bart.naudts@e2immu.org'
+                    }
+                }
+            }
+        }
+    }
+}
+
+
 

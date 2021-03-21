@@ -31,7 +31,7 @@ import java.util.List;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.BYTECODE_INSPECTOR_DEBUG;
 import static org.e2immu.analyser.util.Logger.log;
-import static org.objectweb.asm.Opcodes.ASM8;
+import static org.objectweb.asm.Opcodes.ASM9;
 
 public class MyMethodVisitor extends MethodVisitor {
     private final TypeInspectionImpl.Builder typeInspectionBuilder;
@@ -53,7 +53,7 @@ public class MyMethodVisitor extends MethodVisitor {
                            boolean lastParameterIsVarargs,
                            MethodItem methodItem,
                            JetBrainsAnnotationTranslator jetBrainsAnnotationTranslator) {
-        super(ASM8);
+        super(ASM9);
         this.typeContext = typeContext;
         this.methodInspectionBuilder = methodInspectionBuilder;
         this.typeInspectionBuilder = typeInspectionBuilder;

@@ -28,7 +28,7 @@ import java.util.Objects;
 import static org.e2immu.analyser.inspector.TypeInspectionImpl.InspectionState.TRIGGER_BYTECODE_INSPECTION;
 import static org.e2immu.analyser.util.Logger.LogTarget.BYTECODE_INSPECTOR_DEBUG;
 import static org.e2immu.analyser.util.Logger.log;
-import static org.objectweb.asm.Opcodes.ASM8;
+import static org.objectweb.asm.Opcodes.ASM9;
 
 
 public class MyAnnotationVisitor<T> extends AnnotationVisitor {
@@ -37,7 +37,7 @@ public class MyAnnotationVisitor<T> extends AnnotationVisitor {
     private final AnnotationExpressionImpl.Builder expressionBuilder;
 
     public MyAnnotationVisitor(TypeContext typeContext, String descriptor, AbstractInspectionBuilder<T> inspectionBuilder) {
-        super(ASM8);
+        super(ASM9);
         this.typeContext = typeContext;
         this.inspectionBuilder = Objects.requireNonNull(inspectionBuilder);
         log(BYTECODE_INSPECTOR_DEBUG, "My annotation visitor: {}", descriptor);
