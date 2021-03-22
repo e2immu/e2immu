@@ -89,7 +89,7 @@ public class SMapList {
         return list;
     }
 
-    @NotNull1
+    @NotNull
     @E2Container
     public static <A, B> Map<A, List<B>> immutable(@NotModified @NotNull1(contract = true) Map<A, List<B>> map) {
         Map<A, List<B>> tmp = new HashMap<>();

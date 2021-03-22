@@ -13,7 +13,7 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parserfailing;
+package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.config.*;
@@ -188,7 +188,7 @@ public class Test_Util_01_SMapList extends CommonTestRunner {
             }
             if ("1".equals(d.statementId())) {
                 // a != null is in the property of parameter, not in precondition
-                assertEquals("true", d.localConditionManager().precondition().toString());
+                assertTrue( d.localConditionManager().precondition().isEmpty());
             }
             if ("2.0.0".equals(d.statementId())) {
                 assertEquals("null==map.get(a)", d.condition().toString());
