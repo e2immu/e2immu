@@ -134,8 +134,8 @@ public class Test_35_EventuallyImmutableUtil extends CommonTestRunner {
 
     @Test
     public void test_6() throws IOException {
-        testSupportAndUtilClasses(List.of("EventuallyImmutableUtil_6"), List.of("AddOnceSet"), ORG_E2IMMU_SUPPORT,
-                0, 0, new DebugConfiguration.Builder()
+        testSupportAndUtilClasses(List.of("EventuallyImmutableUtil_6"), List.of("AddOnceSet", "Freezable"),
+                ORG_E2IMMU_SUPPORT, 0, 1, new DebugConfiguration.Builder()
                         .build());
     }
 

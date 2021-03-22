@@ -2418,7 +2418,20 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             Set<Variable> notNullVariablesInState = conditionManager.findIndividualNullInState(this, false);
             if (notNullVariablesInState.contains(variable)) return true;
             Set<Variable> notNullVariablesInCondition = conditionManager.findIndividualNullInCondition(this, false);
-            return notNullVariablesInCondition.contains(variable);
+            if (notNullVariablesInCondition.contains(variable)) return true;
+            FieldReference fieldReference;
+            if (variable instanceof FieldReference fr) {
+                fieldReference = fr;
+            } else if (variable instanceof LocalVariableReference lvr && lvr.variable.isLocalCopyOf() instanceof FieldReference fr) {
+                fieldReference = fr;
+                VariableInfo variableInfo = statementAnalysis.findOrThrow(fr);
+                if(variableInfo.isAssigned()) return false;
+                // IMPROVE this is only valid if the statement time of the local copy is the same as that of the precondition
+                // but how to do that?
+            } else return false;
+
+            Set<Variable> notNullVariablesInPrecondition = conditionManager.findIndividualNullInPrecondition(this, false);
+            return notNullVariablesInPrecondition.contains(fieldReference);
         }
 
         /*

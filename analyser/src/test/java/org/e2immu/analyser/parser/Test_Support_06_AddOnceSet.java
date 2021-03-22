@@ -72,6 +72,14 @@ public class Test_Support_06_AddOnceSet extends CommonTestRunner {
                             .getPreconditionForEventual().expression().toString());
                 }
             }
+            if("ensureNotFrozen".equals(d.methodInfo().name)) {
+                if (d.iteration() == 0) {
+                    assertNull(d.methodAnalysis().getPreconditionForEventual());
+                } else {
+                    assertEquals("!frozen", d.methodAnalysis()
+                            .getPreconditionForEventual().expression().toString());
+                }
+            }
         };
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {

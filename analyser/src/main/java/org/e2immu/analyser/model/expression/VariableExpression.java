@@ -117,7 +117,7 @@ public record VariableExpression(Variable variable,
             }
             return new EvaluationResult.Builder().setExpression(inMap).build();
         }
-        if (variable instanceof FieldReference fieldReference) {
+        if (variable instanceof FieldReference fieldReference && fieldReference.scope != null) {
             // the variable itself is not in the map, but we may have to substitute
             // (see EventuallyImmutableUtil_5, s1.bool with substitution s1 -> t.s1
             // IMPROVE how should we go recursive here? we should call reEvaluate, but may bump into

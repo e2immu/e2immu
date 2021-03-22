@@ -224,6 +224,10 @@ public record ConditionManager(Expression condition,
 
     }
 
+    public Set<Variable> findIndividualNullInPrecondition(EvaluationContext evaluationContext, boolean requireEqualsNull) {
+        return findIndividualNull(precondition.expression(), evaluationContext, Filter.FilterMode.ACCEPT, requireEqualsNull);
+    }
+
     /**
      * Extract NOT_NULL properties from the current condition
      *

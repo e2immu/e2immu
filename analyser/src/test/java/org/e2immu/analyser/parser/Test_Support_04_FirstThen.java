@@ -13,13 +13,12 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parserfailing;
+package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analyser.VariableProperty;
-import org.e2immu.analyser.config.*;
+import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
 
@@ -44,6 +43,12 @@ public class Test_Support_04_FirstThen extends CommonTestRunner {
             if ("1.0.0.0.0".equals(d.statementId())) {
                 String expectCondition = d.iteration() == 0 ? "null==<f:first>" : "null==org.e2immu.support.FirstThen.first$0";
                 assertEquals(expectCondition, d.condition().toString());
+            }
+        }
+        if ("get".equals(d.methodInfo().name)) {
+            if ("1".equals(d.statementId())) {
+                String expectPre = d.iteration() == 0 ? "null!=<f:then>" : "null!=then";
+                assertEquals(expectPre, d.statementAnalysis().stateData.precondition.get().expression().toString());
             }
         }
     };
@@ -71,7 +76,7 @@ public class Test_Support_04_FirstThen extends CommonTestRunner {
             if (d.iteration() == 0) {
                 assertNull(d.methodAnalysis().getPrecondition());
             } else {
-                assertEquals("null!=first", d.methodAnalysis().getPrecondition().toString());
+                assertEquals("null!=first", d.methodAnalysis().getPrecondition().expression().toString());
             }
         }
 

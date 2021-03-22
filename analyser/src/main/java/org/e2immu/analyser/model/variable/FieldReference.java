@@ -46,6 +46,9 @@ public class FieldReference extends VariableWithConcreteReturnType {
     }
 
     /**
+     * Two field references with the same fieldInfo object can only be different when
+     * not both scopes are instances of This.
+    *
      * @param o the other one
      * @return true if the same field is being referred to
      */
@@ -54,7 +57,7 @@ public class FieldReference extends VariableWithConcreteReturnType {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         FieldReference that = (FieldReference) o;
-        return fieldInfo.equals(that.fieldInfo) && Objects.equals(scope, that.scope);
+        return fieldInfo.equals(that.fieldInfo) && (scope instanceof This && that.scope instanceof This || Objects.equals(scope, that.scope));
     }
 
     @Override
