@@ -486,7 +486,7 @@ public class Test_01_Loops extends CommonTestRunner {
                     }
                     if ("1".equals(d.statementId())) {
                         String expect = d.iteration() == 0
-                                ? "<new:int>>=10?0:<new:int><=9&&<new:int><=9?1==<new:int>&&<new:int><=9?<s:int>:<return value>:<return value>"
+                                ? "<new:int>>=10?0:<new:int><=9&&<new:int><=9?1==<new:int>&&<new:int><=9&&<new:int><=9&&<new:int><=9?<s:int>:<return value>:<return value>"
                                 : "instance type int>=10?0:0==instance type int?4:<return value>";
                         assertEquals(expect, d.currentValue().toString());
                     }

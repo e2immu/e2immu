@@ -241,6 +241,28 @@ public class InlineConditional implements Expression {
         return builder.compose(cv).build();
     }
 
+    public Expression optimise(EvaluationContext evaluationContext) {
+        return optimise(evaluationContext, false);
+    }
+
+    private Expression optimise(EvaluationContext evaluationContext, boolean useState) {
+        boolean resultIsBoolean = returnType().equals(evaluationContext.getPrimitives().booleanParameterizedType);
+
+        // we'll want to evaluate in a different context, but pass on forward evaluation info to both
+        // UNLESS the result is of boolean type. There is sufficient logic in EvaluateInlineConditional to deal
+        // with the boolean case.
+        EvaluationContext copyForThen = resultIsBoolean ? evaluationContext : evaluationContext.child(condition);
+        Expression t = ifTrue instanceof InlineConditional inlineTrue ? inlineTrue.optimise(copyForThen, true) : ifTrue;
+        EvaluationContext copyForElse = resultIsBoolean ? evaluationContext : evaluationContext.child(Negation.negate(evaluationContext, condition));
+        Expression f = ifFalse instanceof InlineConditional inlineFalse ? inlineFalse.optimise(copyForElse, true) : ifFalse;
+
+        if (useState) {
+            return EvaluateInlineConditional.conditionalValueCurrentState(evaluationContext, condition, t, f, ObjectFlow.NO_FLOW).getExpression();
+        }
+        return EvaluateInlineConditional.conditionalValueConditionResolved(evaluationContext, condition, t, f, ObjectFlow.NO_FLOW).getExpression();
+
+    }
+
     @Override
     public ParameterizedType returnType() {
         return ifTrue.returnType().commonType(inspectionProvider, ifFalse.returnType());

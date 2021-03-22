@@ -15,6 +15,8 @@
 package org.e2immu.analyser.model.value;
 
 import org.e2immu.analyser.analyser.EvaluationContext;
+import org.e2immu.analyser.analyser.EvaluationResult;
+import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.analyser.ShallowTypeAnalyser;
 import org.e2immu.analyser.inspector.MethodInspectionImpl;
 import org.e2immu.analyser.model.*;
@@ -174,5 +176,17 @@ public class TestConditionalValue extends CommonAbstractValue {
         assertEquals(ge10, notLe9);
         Expression notGe10 = negate(ge10);
         assertEquals(le9, notGe10);
+    }
+
+    @Test
+    public void testListUtil() {
+        Expression e1 = inline(a, newInt(3), inline(b, newInt(4), newInt(5)));
+        assertEquals("a?3:b?4:5", e1.toString());
+        Expression notAAndNotB = newAndAppend(negate(a), negate(b));
+        InlineConditional e2 = (InlineConditional) inline(notAAndNotB, newInt(2), e1);
+        assertEquals("!a&&!b?2:a?3:b?4:5", e2.toString());
+        EvaluationResult er = e2.evaluate(minimalEvaluationContext, ForwardEvaluationInfo.DEFAULT);
+        assertEquals("!a&&!b?2:a?3:4", er.getExpression().toString());
+        assertEquals("!a&&!b?2:a?3:4", e2.optimise(minimalEvaluationContext).toString());
     }
 }

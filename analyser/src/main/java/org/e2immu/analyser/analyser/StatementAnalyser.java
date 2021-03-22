@@ -1180,8 +1180,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             // do not take vi1 itself, but "the" local copy of the variable
             Expression valueOfVariablePreAssignment = sharedState.evaluationContext.currentValue(vi1.variable(),
                     statementAnalysis.statementTime(VariableInfoContainer.Level.INITIAL), true);
-            return EvaluateInlineConditional.conditionalValueConditionResolved(sharedState.evaluationContext, state, value,
-                    valueOfVariablePreAssignment, ObjectFlow.NO_FLOW).value();
+            InlineConditional inlineConditional = new InlineConditional(analyserContext, state, value, valueOfVariablePreAssignment);
+            return inlineConditional.optimise(sharedState.evaluationContext);
         }
         return value;
     }
@@ -1667,9 +1667,9 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                         structure.expression());
             } else {
                 // state, not boolean
-                toEvaluate = EvaluateInlineConditional.conditionalValueConditionResolved(evaluationContext,
-                        localConditionManager.state(), structure.expression(), currentReturnValue, ObjectFlow.NO_FLOW)
-                        .getExpression();
+                InlineConditional inlineConditional = new InlineConditional(analyserContext, localConditionManager.state(),
+                        structure.expression(), currentReturnValue);
+                toEvaluate = inlineConditional.optimise(evaluationContext);
             }
         }
         Assignment assignment = new Assignment(statementAnalysis.primitives,

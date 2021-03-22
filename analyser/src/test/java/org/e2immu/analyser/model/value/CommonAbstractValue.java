@@ -231,6 +231,11 @@ public abstract class CommonAbstractValue {
         }
 
         @Override
+        public TypeInfo getCurrentType() {
+            return PRIMITIVES.booleanTypeInfo;
+        }
+
+        @Override
         public String newObjectIdentifier() {
             return "-";
         }

@@ -16,16 +16,27 @@
 package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.config.DebugConfiguration;
+import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 public class Test_Util_05_ListUtil extends CommonTestRunner {
 
     @Test
     public void test() throws IOException {
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("concatImmutable".equals(d.methodInfo().name)) {
+                if ("1".equals(d.statementId())) {
+                    assertEquals("!list1.isEmpty()&&!list2.isEmpty()", d.conditionManagerForNextStatement().state().toString());
+                }
+            }
+        };
         testUtilClass(List.of("ListUtil"), 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build());
     }
 
