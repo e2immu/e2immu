@@ -45,14 +45,14 @@ public class Test_14_Precondition extends CommonTestRunner {
                     assertEquals("null==e1&&null==e2",
                             d.statementAnalysis().stateData.conditionManagerForNextStatement.get().condition().toString());
                     assertEquals("null!=e1||null!=e2",
-                            d.statementAnalysis().stateData.precondition.get().toString());
+                            d.statementAnalysis().stateData.precondition.get().expression().toString());
                 }
                 if ("0".equals(d.statementId())) {
                     assertEquals("true",
                             d.statementAnalysis().stateData.conditionManagerForNextStatement.get().state().toString());
-                    assertTrue(d.statementAnalysis().stateData.precondition.get().isBoolValueTrue());
+                    assertTrue(d.statementAnalysis().stateData.precondition.get().isEmpty());
                     assertEquals("null!=e1||null!=e2",
-                            d.statementAnalysis().methodLevelData.combinedPrecondition.get().toString());
+                            d.statementAnalysis().methodLevelData.combinedPrecondition.get().expression().toString());
                 }
             }
         };
@@ -67,7 +67,7 @@ public class Test_14_Precondition extends CommonTestRunner {
             String name = d.methodInfo().name;
             if ("either".equals(name)) {
                 MethodAnalysis methodAnalysis = d.methodAnalysis();
-                assertEquals("null!=e1||null!=e2", methodAnalysis.getPrecondition().toString());
+                assertEquals("null!=e1||null!=e2", methodAnalysis.getPrecondition().expression().toString());
             }
         };
 
@@ -95,22 +95,26 @@ public class Test_14_Precondition extends CommonTestRunner {
                         assertTrue(d.statementAnalysis().methodLevelData.combinedPrecondition.isVariable());
                     } else if (d.iteration() == 1) {
                         assertEquals("org.e2immu.analyser.testexample.Precondition_1.i$0<=-1", d.condition().toString());
-                        assertEquals("i>=0", d.statementAnalysis().stateData.precondition.get().toString());
-                        assertEquals("i>=0", d.statementAnalysis().methodLevelData.combinedPrecondition.get().toString());
+                        assertEquals("i>=0", d.statementAnalysis().stateData
+                                .precondition.get().expression().toString());
+                        assertEquals("i>=0", d.statementAnalysis().methodLevelData
+                                .combinedPrecondition.get().expression().toString());
                     }
                 }
                 if ("0".equals(d.statementId())) {
                     assertTrue(d.condition().isBoolValueTrue());
                     assertTrue(d.state().isBoolValueTrue());
                     if (d.iteration() > 0) {
-                        assertEquals("i>=0", d.statementAnalysis().methodLevelData.combinedPrecondition.get().toString());
+                        assertEquals("i>=0", d.statementAnalysis().methodLevelData
+                                .combinedPrecondition.get().expression().toString());
                     }
                 }
                 if ("0".equals(d.statementId())) {
                     if (d.iteration() == 0) {
                         assertTrue(d.statementAnalysis().methodLevelData.combinedPrecondition.isVariable());
                     } else {
-                        assertEquals("i>=0", d.statementAnalysis().methodLevelData.combinedPrecondition.get().toString());
+                        assertEquals("i>=0", d.statementAnalysis().methodLevelData
+                                .combinedPrecondition.get().expression().toString());
                     }
                 }
                 if ("1".equals(d.statementId())) {
@@ -149,7 +153,8 @@ public class Test_14_Precondition extends CommonTestRunner {
             String name = d.methodInfo().name;
             if ("setInteger".equals(name)) {
                 if (d.iteration() > 0) {
-                    assertEquals("null==integer&&ii>=0", d.methodAnalysis().getPrecondition().toString());
+                    assertEquals("null==integer&&ii>=0",
+                            d.methodAnalysis().getPrecondition().expression().toString());
                 }
             }
         };
@@ -216,7 +221,8 @@ public class Test_14_Precondition extends CommonTestRunner {
                 FieldInfo integer = d.methodInfo().typeInfo.getFieldByName("integer", true);
                 if ("0.0.0".equals(d.statementId())) {
                     assertEquals("true", d.state().toString());
-                    assertEquals("ii>=0", d.statementAnalysis().methodLevelData.combinedPrecondition.get().toString());
+                    assertEquals("ii>=0", d.statementAnalysis().methodLevelData
+                            .combinedPrecondition.get().expression().toString());
                 }
                 if ("0.0.0.0.0".equals(d.statementId())) {
                     assertEquals("ii<=-1", d.condition().toString());
@@ -238,7 +244,7 @@ public class Test_14_Precondition extends CommonTestRunner {
                     } else {
                         assertTrue(d.statementAnalysis().methodLevelData.combinedPrecondition.isFinal());
                         assertEquals("null==integer&&ii>=0",
-                                d.statementAnalysis().methodLevelData.combinedPrecondition.get().toString());
+                                d.statementAnalysis().methodLevelData.combinedPrecondition.get().expression().toString());
                     }
                 }
                 if ("0".equals(d.statementId())) {
@@ -248,8 +254,10 @@ public class Test_14_Precondition extends CommonTestRunner {
                     assertTrue(variableInfo.isAssigned());
 
                     String expect = d.iteration() == 0 ? "true" : "null==integer&&ii>=0";
-                    assertEquals(expect, d.statementAnalysis().methodLevelData.combinedPrecondition.get().toString());
-                    assertEquals(d.iteration() == 0, d.statementAnalysis().methodLevelData.combinedPrecondition.isVariable());
+                    assertEquals(expect, d.statementAnalysis().methodLevelData
+                            .combinedPrecondition.get().expression().toString());
+                    assertEquals(d.iteration() == 0,
+                            d.statementAnalysis().methodLevelData.combinedPrecondition.isVariable());
                 }
                 if ("1".equals(d.statementId())) {
                     assertEquals(d.iteration() == 0, d.localConditionManager().isDelayed());

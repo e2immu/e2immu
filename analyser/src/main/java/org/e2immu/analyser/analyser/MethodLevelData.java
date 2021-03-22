@@ -14,10 +14,8 @@
 
 package org.e2immu.analyser.analyser;
 
-import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MethodInfo;
-import org.e2immu.analyser.model.expression.And;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.objectflow.ObjectFlow;
@@ -52,7 +50,7 @@ public class MethodLevelData {
     public final SetOnceMap<MethodInfo, Boolean> copyModificationStatusFrom = new SetOnceMap<>();
 
     // aggregates the preconditions on individual statements
-    public final EventuallyFinal<Expression> combinedPrecondition = new EventuallyFinal<>();
+    public final EventuallyFinal<Precondition> combinedPrecondition = new EventuallyFinal<>();
 
     // no delays when frozen
     private final AddOnceSet<ObjectFlow> internalObjectFlows = new AddOnceSet<>();
@@ -124,20 +122,21 @@ public class MethodLevelData {
         delays |= subBlocks.stream().anyMatch(sa -> sa.methodLevelData.combinedPrecondition.isVariable());
         delays |= sharedState.stateData.precondition.isVariable();
 
-        Stream<Expression> fromMyStateData = sharedState.stateData.precondition.isFinal() ?
+        Stream<Precondition> fromMyStateData = sharedState.stateData.precondition.isFinal() ?
                 Stream.of(sharedState.stateData.precondition.get()) : Stream.of();
-        Stream<Expression> fromPrevious = sharedState.previous != null && sharedState.previous.combinedPrecondition.isFinal() ?
+        Stream<Precondition> fromPrevious = sharedState.previous != null && sharedState.previous.combinedPrecondition.isFinal() ?
                 Stream.of(sharedState.previous.combinedPrecondition.get()) : Stream.of();
-        Stream<Expression> fromBlocks = sharedState.statementAnalysis.lastStatementsOfNonEmptySubBlocks().stream()
+        Stream<Precondition> fromBlocks = sharedState.statementAnalysis.lastStatementsOfNonEmptySubBlocks().stream()
                 .map(sa -> sa.methodLevelData.combinedPrecondition)
                 .filter(EventuallyFinal::isFinal)
                 .map(EventuallyFinal::get);
-        Expression[] all = Stream.concat(fromMyStateData, Stream.concat(fromBlocks, fromPrevious)).toArray(Expression[]::new);
-        Expression and = new And(sharedState.evaluationContext.getPrimitives()).append(sharedState.evaluationContext, all);
+        Precondition all = Stream.concat(fromMyStateData, Stream.concat(fromBlocks, fromPrevious))
+                .reduce((pc1, pc2) -> pc1.combine(sharedState.evaluationContext, pc2))
+                .orElse(Precondition.empty(sharedState.evaluationContext.getPrimitives()));
 
-        delays |= sharedState.evaluationContext.isDelayed(and);
-        if (delays) combinedPrecondition.setVariable(and);
-        else combinedPrecondition.setFinal(and);
+        delays |= sharedState.evaluationContext.isDelayed(all.expression());
+        if (delays) combinedPrecondition.setVariable(all);
+        else combinedPrecondition.setFinal(all);
 
         return delays ? DELAYS : DONE;
     }

@@ -13,7 +13,7 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parserfailing;
+package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
@@ -68,7 +68,8 @@ public class Test_Support_06_AddOnceSet extends CommonTestRunner {
                 if (d.iteration() <= 1) {
                     assertNull(d.methodAnalysis().getPreconditionForEventual());
                 } else {
-                    assertEquals("[!frozen]", d.methodAnalysis().getPreconditionForEventual().toString());
+                    assertEquals("!frozen", d.methodAnalysis()
+                            .getPreconditionForEventual().expression().toString());
                 }
             }
         };

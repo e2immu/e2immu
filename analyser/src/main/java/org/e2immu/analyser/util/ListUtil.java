@@ -64,4 +64,13 @@ public class ListUtil {
         }
         return builder.build();
     }
+
+    /*
+    concat already immutable lists, which allows to take some shortcuts
+     */
+    public static <T> List<T> concatImmutable(List<T> list1, List<T> list2) {
+        if (list1.isEmpty()) return list2;
+        if (list2.isEmpty()) return list1;
+        return immutableConcat(list1, list2);
+    }
 }

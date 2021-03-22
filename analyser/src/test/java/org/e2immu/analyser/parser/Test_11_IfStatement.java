@@ -16,7 +16,7 @@ package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.LinkedVariables;
 import org.e2immu.analyser.analyser.VariableProperty;
-import org.e2immu.analyser.config.*;
+import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
@@ -203,12 +203,12 @@ public class Test_11_IfStatement extends CommonTestRunner {
             if ("IfStatement_4".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo map && "map".equals(map.name)) {
                     assertEquals("nullable instance type Map<String,Integer>", d.currentValue().toString());
-                    int expectContainer = d.iteration() == 0 ? Level.DELAY: Level.FALSE; // NO API!
+                    int expectContainer = d.iteration() == 0 ? Level.DELAY : Level.FALSE; // NO API!
                     assertEquals(expectContainer, d.getProperty(VariableProperty.CONTAINER));
                 }
                 if (d.variable() instanceof FieldReference fr && "map".equals(fr.fieldInfo.name)) {
                     assertEquals("map", d.currentValue().toString());
-                    int expectContainer = d.iteration() == 0 ? Level.DELAY: Level.FALSE; // NO API!
+                    int expectContainer = d.iteration() == 0 ? Level.DELAY : Level.FALSE; // NO API!
                     assertEquals(expectContainer, d.getProperty(VariableProperty.CONTAINER));
                 }
             }
@@ -261,21 +261,25 @@ public class Test_11_IfStatement extends CommonTestRunner {
                 if ("0.0.0".equals(d.statementId())) {
                     assertEquals("\"3\".equals(label1)", d.condition().toString());
                     assertEquals("true", d.state().toString());
-                    assertEquals("!\"3\".equals(label1)", d.statementAnalysis().stateData.precondition.get().toString());
-                    assertEquals("!\"3\".equals(label1)", d.statementAnalysis().methodLevelData.combinedPrecondition.get().toString());
-                    assertEquals("true", d.conditionManagerForNextStatement().precondition().toString());
+                    assertEquals("!\"3\".equals(label1)", d.statementAnalysis().stateData
+                            .precondition.get().expression().toString());
+                    assertEquals("!\"3\".equals(label1)", d.statementAnalysis()
+                            .methodLevelData.combinedPrecondition.get().expression().toString());
+                    assertTrue(d.conditionManagerForNextStatement().precondition().isEmpty());
                 }
                 if ("0".equals(d.statementId())) {
                     assertEquals("true", d.condition().toString());
                     assertEquals("true", d.state().toString());
-                    assertEquals("!\"3\".equals(label1)", d.statementAnalysis().methodLevelData.combinedPrecondition.get().toString());
-                    assertEquals("true", d.statementAnalysis().stateData.precondition.get().toString());
-                    assertEquals("true", d.conditionManagerForNextStatement().precondition().toString());
+                    assertEquals("!\"3\".equals(label1)", d.statementAnalysis()
+                            .methodLevelData.combinedPrecondition.get().expression().toString());
+                    assertTrue(d.statementAnalysis().stateData.precondition.get().isEmpty());
+                    assertTrue(d.conditionManagerForNextStatement().precondition().isEmpty());
                 }
                 if ("1".equals(d.statementId())) {
                     assertEquals("true", d.condition().toString());
                     assertEquals("true", d.state().toString());
-                    assertEquals("!\"3\".equals(label1)", d.localConditionManager().precondition().toString());
+                    assertEquals("!\"3\".equals(label1)", d.localConditionManager()
+                            .precondition().expression().toString());
                 }
             }
         };

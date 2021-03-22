@@ -948,7 +948,7 @@ public class Test_16_Modification extends CommonTestRunner {
                     assertFalse(d.statementAnalysis().stateData.preconditionIsEmpty());
                 } else {
                     assertTrue(d.statementAnalysis().stateData.precondition.isFinal());
-                    assertTrue(d.statementAnalysis().stateData.precondition.get().isBoolValueTrue());
+                    assertTrue(d.statementAnalysis().stateData.precondition.get().isEmpty());
                 }
             }
         };
@@ -970,13 +970,13 @@ public class Test_16_Modification extends CommonTestRunner {
                 assertEquals(expectModified, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
             }
             if ("clearAndLog".equals(name) && "ParentClass".equals(d.methodInfo().typeInfo.simpleName)) {
-                assertTrue(d.methodAnalysis().getPrecondition().isBoolValueTrue());
+                assertTrue(d.methodAnalysis().getPrecondition().isEmpty());
             }
             if ("clearAndLog".equals(name) && "ChildClass".equals(d.methodInfo().typeInfo.simpleName)) {
                 if (d.iteration() == 0) {
                     assertNull(d.methodAnalysis().getPrecondition());
                 } else {
-                    assertTrue(d.methodAnalysis().getPrecondition().isBoolValueTrue());
+                    assertTrue(d.methodAnalysis().getPrecondition().isEmpty());
                 }
             }
         };

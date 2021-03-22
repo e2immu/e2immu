@@ -123,7 +123,7 @@ public class BinaryOperator implements Expression {
 
     @Override
     public List<Variable> variables() {
-        return ListUtil.immutableConcat(lhs.variables(), rhs.variables());
+        return ListUtil.concatImmutable(lhs.variables(), rhs.variables());
     }
 
     @Override

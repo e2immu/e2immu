@@ -30,13 +30,13 @@ public class StateData {
      this variable contains the precondition of one single statement; an aggregate is computed in MethodLevelData
      */
 
-    public final EventuallyFinal<Expression> precondition = new EventuallyFinal<>();
+    public final EventuallyFinal<Precondition> precondition = new EventuallyFinal<>();
 
     public boolean preconditionIsEmpty() {
         return precondition.isVariable() && precondition.get() == null;
     }
 
-    public void setPrecondition(Expression expression, boolean isDelayed) {
+    public void setPrecondition(Precondition expression, boolean isDelayed) {
         if (isDelayed) precondition.setVariable(expression);
         else precondition.setFinal(expression);
     }

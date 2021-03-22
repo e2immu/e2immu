@@ -32,7 +32,7 @@ public class CheckPrecondition {
                                          MethodInfo methodInfo,
                                          MethodAnalysis methodAnalysis,
                                          Map<CompanionMethodName, CompanionAnalysis> companionAnalyses) {
-        Expression precondition = methodAnalysis.getPrecondition();
+        Expression precondition = methodAnalysis.getPrecondition().expression();
         for (Map.Entry<CompanionMethodName, CompanionAnalysis> entry : companionAnalyses.entrySet()) {
             CompanionMethodName cmn = entry.getKey();
             if (cmn.action() == CompanionMethodName.Action.PRECONDITION) {

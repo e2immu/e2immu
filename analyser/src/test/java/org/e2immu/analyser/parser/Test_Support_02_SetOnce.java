@@ -18,7 +18,7 @@ package org.e2immu.analyser.parser;
 import org.e2immu.analyser.analyser.FieldAnalysisImpl;
 import org.e2immu.analyser.analyser.LinkedVariables;
 import org.e2immu.analyser.analyser.VariableProperty;
-import org.e2immu.analyser.config.*;
+import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MethodAnalysis;
 import org.e2immu.analyser.model.MultiLevel;
@@ -64,7 +64,7 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
                 assertEquals(expectImmu, d.fieldAnalysis().getProperty(VariableProperty.IMMUTABLE));
                 assertEquals(MultiLevel.NULLABLE, d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_NOT_NULL));
 
-                String expectLinked = d.iteration() == 0  ? LinkedVariables.DELAY_STRING : "";
+                String expectLinked = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "";
                 assertEquals(expectLinked, d.fieldAnalysis().getLinkedVariables().toString());
             }
         };
@@ -76,8 +76,8 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
 
                     assertEquals("true", d.statementAnalysis().stateData
                             .conditionManagerForNextStatement.get().state().toString());
-                    assertEquals("true", d.statementAnalysis().stateData
-                            .conditionManagerForNextStatement.get().precondition().toString());
+                    assertTrue(d.statementAnalysis().stateData
+                            .conditionManagerForNextStatement.get().precondition().isEmpty());
                 }
                 if ("1".equals(d.statementId())) {
                     assertEquals(d.iteration() == 0,
@@ -89,7 +89,7 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
                 assertEquals(d.iteration() > 1,
                         d.statementAnalysis().methodLevelData.linksHaveBeenEstablished.isSet());
                 String expectState = d.iteration() == 0 ? "<precondition>" : "true";
-                assertEquals(expectState, d.statementAnalysis().stateData.precondition.get().toString());
+                assertEquals(expectState, d.statementAnalysis().stateData.precondition.get().expression().toString());
             }
         };
 
@@ -182,8 +182,8 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
                 if (d.iteration() == 0) {
                     assertNull(d.methodAnalysis().getPreconditionForEventual());
                 } else {
-                    assertEquals("[null==t]", d.methodAnalysis().getPreconditionForEventual().toString());
-                    assertEquals("null==t", d.methodAnalysis().getPrecondition().toString());
+                    assertEquals("null==t", d.methodAnalysis().getPreconditionForEventual().expression().toString());
+                    assertEquals("null==t", d.methodAnalysis().getPrecondition().expression().toString());
                 }
                 assertEquals(Level.TRUE, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
                 assertEquals(d.iteration() > 0, d.methodAnalysis().methodLevelData().linksHaveBeenEstablished.isSet());
@@ -192,7 +192,7 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
                 if (d.iteration() > 2) {
                     assertTrue(eventual.mark());
                 } else {
-                    assertNull(eventual);
+                    assertSame(MethodAnalysis.DELAYED_EVENTUAL, eventual);
                 }
             }
 
@@ -201,7 +201,8 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
                     assertNull(d.methodAnalysis().getPreconditionForEventual());
                     assertNull(d.methodAnalysis().getSingleReturnValue());
                 } else {
-                    assertEquals("[null!=t]", d.methodAnalysis().getPreconditionForEventual().toString());
+                    assertEquals("null!=t", d.methodAnalysis().getPreconditionForEventual()
+                            .expression().toString());
                     assertEquals("t", d.methodAnalysis().getSingleReturnValue().toString());
                 }
                 int expectModified = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
@@ -212,7 +213,7 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
                 if (d.iteration() > 2) {
                     assertTrue(eventual.after());
                 } else {
-                    assertNull(eventual);
+                    assertSame(MethodAnalysis.DELAYED_EVENTUAL, eventual);
                 }
             }
 
@@ -220,8 +221,7 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
                 if (d.iteration() <= 1) {
                     assertNull(d.methodAnalysis().getPreconditionForEventual());
                 } else {
-                    assertEquals("[null==t]",
-                            d.methodAnalysis().getPreconditionForEventual().toString());
+                    assertEquals("null==t", d.methodAnalysis().getPreconditionForEventual().expression().toString());
                 }
                 assertEquals(d.iteration() > 1, d.methodAnalysis().methodLevelData().linksHaveBeenEstablished.isSet());
                 int expectModified = d.iteration() <= 1 ? Level.DELAY : Level.TRUE;
@@ -231,28 +231,23 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
                 if (d.iteration() > 2) {
                     assertTrue(eventual.mark());
                 } else {
-                    assertNull(eventual);
+                    assertSame(MethodAnalysis.DELAYED_EVENTUAL, eventual);
                 }
             }
 
             if ("toString".equals(d.methodInfo().name)) {
-                if (d.iteration() == 0) {
-                    assertNull(d.methodAnalysis().getPreconditionForEventual());
-                } else {
-                    assertEquals("[]", d.methodAnalysis().getPreconditionForEventual().toString());
-                }
+                assertNull(d.methodAnalysis().getPreconditionForEventual());
+
                 int expectModified = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
                 assertEquals(expectModified, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
             }
 
             if ("isSet".equals(d.methodInfo().name)) {
-                if (d.iteration() == 0) {
-                    assertNull(d.methodAnalysis().getPreconditionForEventual());
-                } else {
+                assertNull(d.methodAnalysis().getPreconditionForEventual());
+                if (d.iteration() > 0) {
                     assertEquals("null!=t", d.methodAnalysis().getSingleReturnValue().toString());
                     assertTrue(d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod im
                             && im.expression() instanceof Negation);
-                    assertEquals("[]", d.methodAnalysis().getPreconditionForEventual().toString());
                 }
                 int expectModified = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
                 assertEquals(expectModified, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));

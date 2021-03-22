@@ -17,7 +17,7 @@ package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.VariableInfoContainer;
 import org.e2immu.analyser.analyser.VariableProperty;
-import org.e2immu.analyser.config.*;
+import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MethodAnalysis;
 import org.e2immu.analyser.model.MultiLevel;
@@ -68,9 +68,9 @@ public class Test_31_EventuallyE1Immutable extends CommonTestRunner {
                 if (d.iteration() == 0) {
                     assertNull(d.methodAnalysis().getPreconditionForEventual());
                 } else {
-                    assertEquals(1, d.methodAnalysis().getPreconditionForEventual().size());
+                    assertNotNull(d.methodAnalysis().getPreconditionForEventual());
                     assertEquals("null==string",
-                            d.methodAnalysis().getPreconditionForEventual().get(0).toString());
+                            d.methodAnalysis().getPreconditionForEventual().expression().toString());
                     if (d.iteration() > 3) {
                         MethodAnalysis.Eventual eventual = d.methodAnalysis().getEventual();
                         assertNotNull(eventual);
@@ -116,7 +116,7 @@ public class Test_31_EventuallyE1Immutable extends CommonTestRunner {
     public void test_2() throws IOException {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("EventuallyE1Immutable_2_M".equals(d.typeInfo().simpleName)) {
-                String expectApprovedPreconditions = d.iteration()==0 ? "{}": "{j=j<=0}";
+                String expectApprovedPreconditions = d.iteration() == 0 ? "{}" : "{j=j<=0}";
                 assertEquals(expectApprovedPreconditions, d.typeAnalysis().getApprovedPreconditionsE1().toString());
                 assertEquals(expectApprovedPreconditions, d.typeAnalysis().getApprovedPreconditionsE2().toString());
             }
@@ -134,9 +134,9 @@ public class Test_31_EventuallyE1Immutable extends CommonTestRunner {
                 if (d.iteration() == 0) {
                     assertNull(d.methodAnalysis().getPreconditionForEventual());
                 } else {
-                    assertEquals(1, d.methodAnalysis().getPreconditionForEventual().size());
+                    assertNotNull(d.methodAnalysis().getPreconditionForEventual());
                     assertEquals("null==string",
-                            d.methodAnalysis().getPreconditionForEventual().get(0).toString());
+                            d.methodAnalysis().getPreconditionForEventual().expression().toString());
                     if (d.iteration() > 3) {
                         MethodAnalysis.Eventual eventual = d.methodAnalysis().getEventual();
                         assertNotNull(eventual);

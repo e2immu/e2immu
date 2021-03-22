@@ -44,14 +44,14 @@ public record ConditionManager(Expression condition,
                                boolean conditionIsDelayed,
                                Expression state,
                                boolean stateIsDelayed,
-                               Expression precondition,
+                               Precondition precondition,
                                boolean preconditionIsDelayed,
                                ConditionManager parent) {
 
     public ConditionManager {
         checkBooleanOrUnknown(Objects.requireNonNull(condition));
         checkBooleanOrUnknown(Objects.requireNonNull(state));
-        checkBooleanOrUnknown(Objects.requireNonNull(precondition));
+        Objects.requireNonNull(precondition);
     }
 
     public boolean isDelayed() {
@@ -70,12 +70,14 @@ public record ConditionManager(Expression condition,
 
     public static ConditionManager initialConditionManager(Primitives primitives) {
         BooleanConstant TRUE = new BooleanConstant(primitives, true);
-        return new ConditionManager(TRUE, false, TRUE, false, TRUE, false, null);
+        return new ConditionManager(TRUE, false, TRUE, false,
+                Precondition.empty(TRUE), false, null);
     }
 
     public static ConditionManager impossibleConditionManager(Primitives primitives) {
         BooleanConstant FALSE = new BooleanConstant(primitives, true);
-        return new ConditionManager(FALSE, false, FALSE, false, FALSE, false, null);
+        return new ConditionManager(FALSE, false, FALSE, false,
+                new Precondition(FALSE, List.of()), false, null);
     }
 
     /*
@@ -84,7 +86,7 @@ public record ConditionManager(Expression condition,
     public ConditionManager newAtStartOfNewBlock(Primitives primitives,
                                                  Expression condition,
                                                  boolean conditionIsDelayed,
-                                                 Expression precondition,
+                                                 Precondition precondition,
                                                  boolean preconditionIsDelayed) {
         return new ConditionManager(condition, conditionIsDelayed,
                 new BooleanConstant(primitives, true), false,
@@ -118,7 +120,7 @@ public record ConditionManager(Expression condition,
     /*
     stays at the same level (parent parent)
      */
-    public ConditionManager withPrecondition(Expression combinedPrecondition, boolean combinedPreconditionIsDelayed) {
+    public ConditionManager withPrecondition(Precondition combinedPrecondition, boolean combinedPreconditionIsDelayed) {
         return new ConditionManager(condition, conditionIsDelayed, state, stateIsDelayed, combinedPrecondition,
                 combinedPreconditionIsDelayed, parent);
     }
@@ -175,10 +177,11 @@ public record ConditionManager(Expression condition,
         if (absoluteState.isUnknown() || value.isUnknown()) throw new UnsupportedOperationException();
 
         Expression combinedWithPrecondition;
-        if (precondition.isBoolValueTrue()) {
+        if (precondition.isEmpty()) {
             combinedWithPrecondition = absoluteState;
         } else {
-            combinedWithPrecondition = new And(evaluationContext.getPrimitives()).append(evaluationContext, absoluteState, precondition);
+            combinedWithPrecondition = new And(evaluationContext.getPrimitives())
+                    .append(evaluationContext, absoluteState, precondition.expression());
         }
 
         // this one solves boolean problems; in a boolean context, there is no difference
@@ -241,47 +244,6 @@ public record ConditionManager(Expression condition,
                 .map(Map.Entry::getKey).collect(Collectors.toSet());
     }
 
-    private static Filter.FilterResult<Variable> removeVariableFilter(Expression defaultRest,
-                                                                      Variable variable,
-                                                                      Expression value,
-                                                                      boolean removeEqualityOnVariable) {
-        VariableExpression variableValue;
-        if ((variableValue = value.asInstanceOf(VariableExpression.class)) != null && variable.equals(variableValue.variable())) {
-            return new Filter.FilterResult<>(Map.of(variable, value), defaultRest);
-        }
-        Equals equalsValue;
-        if (removeEqualityOnVariable && (equalsValue = value.asInstanceOf(Equals.class)) != null) {
-            VariableExpression lhs;
-            if ((lhs = equalsValue.lhs.asInstanceOf(VariableExpression.class)) != null && variable.equals(lhs.variable())) {
-                return new Filter.FilterResult<>(Map.of(lhs.variable(), value), defaultRest);
-            }
-            VariableExpression rhs;
-            if ((rhs = equalsValue.rhs.asInstanceOf(VariableExpression.class)) != null && variable.equals(rhs.variable())) {
-                return new Filter.FilterResult<>(Map.of(rhs.variable(), value), defaultRest);
-            }
-        }
-        if (value.isInstanceOf(MethodCall.class) && value.variables().contains(variable)) {
-            return new Filter.FilterResult<>(Map.of(variable, value), defaultRest);
-        }
-        return null;
-    }
-
-    /**
-     * null-clauses like if(a==null) a = ... (then the null-clause on a should go)
-     * same applies to size()... if(a.isEmpty()) a = ...
-     *
-     * @param conditional              the conditional from which we need to remove clauses
-     * @param variable                 the variable to be removed
-     * @param removeEqualityOnVariable in the case of modifying method access, clauses with equality should STAY rather than be removed
-     */
-    public static Expression removeClausesInvolving(EvaluationContext evaluationContext,
-                                                    Expression conditional, Variable variable, boolean removeEqualityOnVariable) {
-        Filter filter = new Filter(evaluationContext, Filter.FilterMode.ALL);
-        Filter.FilterResult<Variable> filterResult = filter.filter(conditional,
-                value -> removeVariableFilter(filter.getDefaultRest(), variable, value, removeEqualityOnVariable));
-        return filterResult.rest();
-    }
-
     /*
      return that part of the absolute conditional that is NOT covered by @NotNull (individual not null clauses), as
      an AND of negations of the remainder after getting rid of != null, == null clauses.
@@ -314,10 +276,11 @@ public record ConditionManager(Expression condition,
         Filter filter = new Filter(evaluationContext, Filter.FilterMode.ACCEPT);
         Expression absoluteState = absoluteState(evaluationContext);
         Expression combinedWithPrecondition;
-        if (precondition.isBoolValueTrue()) {
+        if (precondition.isEmpty()) {
             combinedWithPrecondition = absoluteState;
         } else {
-            combinedWithPrecondition = new And(evaluationContext.getPrimitives()).append(evaluationContext, absoluteState, precondition);
+            combinedWithPrecondition = new And(evaluationContext.getPrimitives())
+                    .append(evaluationContext, absoluteState, precondition.expression());
         }
 
         Filter.FilterResult<Variable> filterResult = filter.filter(combinedWithPrecondition,

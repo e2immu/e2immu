@@ -16,8 +16,11 @@
 package org.e2immu.analyser.parserfailing;
 
 import org.e2immu.analyser.analyser.VariableProperty;
-import org.e2immu.analyser.config.*;
-import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.config.DebugConfiguration;
+import org.e2immu.analyser.model.Level;
+import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.model.ParameterAnalysis;
+import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
@@ -26,7 +29,6 @@ import org.e2immu.analyser.visitor.TypeAnalyserVisitor;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
-import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -133,12 +135,7 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("error".equals(d.methodInfo().name)) {
-                if (d.iteration() <= 1) {
-                    assertNull(d.methodAnalysis().getPreconditionForEventual());
-                } else {
-                    List<Expression> precondition = d.methodAnalysis().getPreconditionForEventual();
-                    assertEquals("[]", precondition.toString());
-                }
+                assertNull(d.methodAnalysis().getPreconditionForEventual());
             }
         };
 

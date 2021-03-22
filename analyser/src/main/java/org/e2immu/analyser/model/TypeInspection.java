@@ -112,7 +112,7 @@ public interface TypeInspection extends Inspection {
     }
 
     default List<MethodInfo> methodsAndConstructors() {
-        return ListUtil.immutableConcat(methods(), constructors());
+        return ListUtil.concatImmutable(methods(), constructors());
     }
 
     default Stream<MethodInfo> methodsInFieldInitializers(boolean alsoArtificial) {

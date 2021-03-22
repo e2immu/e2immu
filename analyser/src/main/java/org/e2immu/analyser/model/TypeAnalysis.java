@@ -18,6 +18,7 @@ import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.util.SetUtil;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -53,9 +54,43 @@ public interface TypeAnalysis extends Analysis {
                 !getEventuallyImmutableFields().isEmpty();
     }
 
+    /*
+    if value is an eventually immutable field, then the e2 precondition on field value.t will be present
+    as well. We don't want them to show up in the annotations.
+     */
     default Set<FieldInfo> marksRequiredForImmutable() {
-        return SetUtil.immutableUnion(getApprovedPreconditionsE1().keySet(), getApprovedPreconditionsE2().keySet(),
-                getEventuallyImmutableFields());
+        Set<FieldInfo> res = new HashSet<>(getEventuallyImmutableFields());
+        if (res.isEmpty()) {
+            return SetUtil.immutableUnion(getApprovedPreconditionsE1().keySet(), getApprovedPreconditionsE2().keySet());
+        }
+
+        for (FieldInfo e1 : getApprovedPreconditionsE1().keySet()) {
+            for (FieldInfo fieldInfo : res) {
+                if (!isPartOf(e1, fieldInfo)) {
+                    res.add(e1);
+                }
+            }
+        }
+        for (FieldInfo e2 : getApprovedPreconditionsE2().keySet()) {
+            for (FieldInfo fieldInfo : res) {
+                if (!isPartOf(e2, fieldInfo)) {
+                    res.add(e2);
+                }
+            }
+        }
+        return res;
+    }
+
+    static boolean isPartOf(FieldInfo target, FieldInfo field) {
+        if (target.equals(field)) return true;
+        if (field.type.typeInfo != null && field.type.typeInfo != field.owner) {
+            for (FieldInfo subField : field.type.typeInfo.typeInspection.get().fields()) {
+                if (isPartOf(target, subField)) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     /**

@@ -66,7 +66,7 @@ public class Test_00_Basics_0 extends CommonTestRunner {
             if (d.methodInfo().name.equals("getExplicitlyFinal") && "0".equals(d.statementId())) {
                 assertTrue(d.condition().isBoolValueTrue());
                 assertTrue(d.state().isBoolValueTrue());
-                assertTrue(d.localConditionManager().precondition().isBoolValueTrue());
+                assertTrue(d.localConditionManager().precondition().isEmpty());
             }
         };
 

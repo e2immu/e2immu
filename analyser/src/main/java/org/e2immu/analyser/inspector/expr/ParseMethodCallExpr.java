@@ -215,13 +215,20 @@ public record ParseMethodCallExpr(InspectionProvider inspectionProvider) {
             }
         }
 
-        // fill in the map expansion
+        // fill in the map expansion, deal with variable arguments!
         int i = 0;
         List<ParameterInfo> formalParameters = method.methodInspection.getParameters();
         for (Expression expression : newParameterExpressions) {
             log(METHOD_CALL, "Examine parameter {}", i);
             ParameterizedType concreteParameterType = expression.returnType();
-            Map<NamedType, ParameterizedType> translated = formalParameters.get(i).parameterizedType
+            ParameterInfo formalParameter = formalParameters.get(i);
+            ParameterizedType formalParameterType =
+                    formalParameters.size() - 1 == i &&
+                            formalParameter.parameterInspection.get().isVarArgs() ?
+                            formalParameter.parameterizedType.copyWithOneFewerArrays() :
+                            formalParameters.get(i).parameterizedType;
+
+            Map<NamedType, ParameterizedType> translated = formalParameterType
                     .translateMap(inspectionProvider, concreteParameterType, true);
             ParameterizedType concreteTypeInMethod = method.getConcreteTypeOfParameter(i);
 
@@ -247,7 +254,7 @@ public record ParseMethodCallExpr(InspectionProvider inspectionProvider) {
     private ParameterizedType determineConcreteParameterType(Expression e,
                                                              ParameterizedType formalParameterType,
                                                              MethodTypeParameterMap mapForEvaluation) {
-        if(e instanceof UnevaluatedObjectCreation) {
+        if (e instanceof UnevaluatedObjectCreation) {
             return mapForEvaluation.applyMap(formalParameterType);
         }
         return null;

@@ -117,6 +117,18 @@ public record VariableExpression(Variable variable,
             }
             return new EvaluationResult.Builder().setExpression(inMap).build();
         }
+        if (variable instanceof FieldReference fieldReference) {
+            // the variable itself is not in the map, but we may have to substitute
+            // (see EventuallyImmutableUtil_5, s1.bool with substitution s1 -> t.s1
+            // IMPROVE how should we go recursive here? we should call reEvaluate, but may bump into
+            // unknown fields (t is known, but t.s1 is not), which causes infinite delays.
+            Expression scopeInMap = translation.get(new VariableExpression(fieldReference.scope));
+            if (scopeInMap instanceof VariableExpression newScope) {
+                Variable newFieldRef = new FieldReference(evaluationContext.getAnalyserContext(), fieldReference.fieldInfo, newScope.variable);
+                return new EvaluationResult.Builder(evaluationContext)
+                        .setExpression(new VariableExpression(newFieldRef)).build();
+            }
+        }
         return new EvaluationResult.Builder(evaluationContext).setExpression(this).markRead(variable).build();
     }
 

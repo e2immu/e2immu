@@ -16,7 +16,7 @@ package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.LinkedVariables;
 import org.e2immu.analyser.analyser.VariableProperty;
-import org.e2immu.analyser.config.*;
+import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
@@ -27,6 +27,7 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class Test_12_IfStatementAPI extends CommonTestRunner {
     public Test_12_IfStatementAPI() {
@@ -93,21 +94,25 @@ public class Test_12_IfStatementAPI extends CommonTestRunner {
                 if ("0.0.0".equals(d.statementId())) {
                     assertEquals("\"3\".equals(label1)", d.condition().toString());
                     assertEquals("true", d.state().toString());
-                    assertEquals("!\"3\".equals(label1)", d.statementAnalysis().stateData.precondition.get().toString());
-                    assertEquals("!\"3\".equals(label1)", d.statementAnalysis().methodLevelData.combinedPrecondition.get().toString());
-                    assertEquals("true", d.conditionManagerForNextStatement().precondition().toString());
+                    assertEquals("!\"3\".equals(label1)", d.statementAnalysis().stateData
+                            .precondition.get().expression().toString());
+                    assertEquals("!\"3\".equals(label1)", d.statementAnalysis().methodLevelData
+                            .combinedPrecondition.get().expression().toString());
+                    assertTrue(d.conditionManagerForNextStatement().precondition().isEmpty());
                 }
                 if ("0".equals(d.statementId())) {
                     assertEquals("true", d.condition().toString());
                     assertEquals("true", d.state().toString());
-                    assertEquals("!\"3\".equals(label1)", d.statementAnalysis().methodLevelData.combinedPrecondition.get().toString());
-                    assertEquals("true", d.statementAnalysis().stateData.precondition.get().toString());
-                    assertEquals("true", d.conditionManagerForNextStatement().precondition().toString());
+                    assertEquals("!\"3\".equals(label1)",
+                            d.statementAnalysis().methodLevelData.combinedPrecondition.get().expression().toString());
+                    assertTrue(d.statementAnalysis().stateData.precondition.get().isEmpty());
+                    assertTrue(d.conditionManagerForNextStatement().precondition().isEmpty());
                 }
                 if ("1".equals(d.statementId())) {
                     assertEquals("true", d.condition().toString());
                     assertEquals("true", d.state().toString());
-                    assertEquals("!\"3\".equals(label1)", d.localConditionManager().precondition().toString());
+                    assertEquals("!\"3\".equals(label1)", d.localConditionManager()
+                            .precondition().expression().toString());
                 }
             }
         };

@@ -130,7 +130,7 @@ public class Test_01_Loops extends CommonTestRunner {
             if ("2.0.0".equals(d.statementId())) {
                 assertEquals("true", d.condition().toString());
                 assertEquals("true", d.state().toString());
-                assertEquals("true", d.localConditionManager().precondition().toString());
+                assertTrue(d.localConditionManager().precondition().isEmpty());
                 if (d.iteration() == 0) {
                     VariableInfoContainer vic = d.statementAnalysis().variables.get("i");
                     assertEquals("0", vic.current().getValue().toString());
@@ -139,7 +139,7 @@ public class Test_01_Loops extends CommonTestRunner {
                 assertEquals(ALWAYS, d.statementAnalysis().flowData.getGuaranteedToBeReachedInCurrentBlock());
             }
             if ("2.0.1".equals(d.statementId())) {
-                assertEquals("true", d.localConditionManager().precondition().toString());
+                assertTrue(d.localConditionManager().precondition().isEmpty());
             }
             if ("2.0.2".equals(d.statementId())) {
                 assertEquals("true", d.condition().toString());

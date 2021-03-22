@@ -13,19 +13,21 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parserfailing;
+package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.parser.CommonTestRunner;
+import org.e2immu.analyser.model.variable.ReturnVariable;
+import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
-import org.e2immu.analyser.model.variable.ReturnVariable;
+import org.e2immu.analyser.visitor.TypeAnalyserVisitor;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class Test_35_EventuallyImmutableUtil extends CommonTestRunner {
 
@@ -52,19 +54,29 @@ public class Test_35_EventuallyImmutableUtil extends CommonTestRunner {
     @Test
     public void test_2() throws IOException {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
-            if ("set".equals(d.methodInfo().name) && "EventuallyImmutableUtil_2".equals(d.methodInfo().typeInfo.simpleName)) {
+            if ("set2".equals(d.methodInfo().name)) {
                 String expectPre = switch (d.iteration()) {
                     case 0 -> "<precondition>";
                     case 1 -> "null==<f:t>";
                     default -> "null==value.t";
                 };
-                assertEquals(expectPre, d.statementAnalysis().stateData.precondition.get().toString());
+                assertEquals(expectPre, d.statementAnalysis().stateData.precondition.get().expression().toString());
                 assertEquals(d.iteration() <= 1, d.statementAnalysis().stateData.precondition.isVariable());
+            }
+        };
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("EventuallyImmutableUtil_2".equals(d.typeInfo().simpleName)) {
+                assertTrue(d.typeAnalysis().getApprovedPreconditionsE1().isEmpty());
+                String expectFields = d.iteration() <= 1 ? "[]" : "[value]";
+                assertEquals(expectFields, d.typeAnalysis().getEventuallyImmutableFields().toString());
+                String expectE2 = d.iteration() <= 1 ? "{}" : "{t=null==value.t}";
+                assertEquals(expectE2, d.typeAnalysis().getApprovedPreconditionsE2().toString());
             }
         };
         testSupportAndUtilClasses(List.of("EventuallyImmutableUtil_2"), FLIP_SWITCH_SET_ONCE, ORG_E2IMMU_SUPPORT,
                 0, 0, new DebugConfiguration.Builder()
                         .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                        .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
                         .build());
     }
 
@@ -73,7 +85,7 @@ public class Test_35_EventuallyImmutableUtil extends CommonTestRunner {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("isReady".equals(d.methodInfo().name)) {
                 // preconditions have nothing to do with this
-                assertEquals("true", d.statementAnalysis().stateData.precondition.get().toString());
+                assertTrue(d.statementAnalysis().stateData.precondition.get().isEmpty());
             }
         };
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
@@ -99,8 +111,24 @@ public class Test_35_EventuallyImmutableUtil extends CommonTestRunner {
 
     @Test
     public void test_5() throws IOException {
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            final String expectedT = "t.s1.bool.isSet()&&t.s2.bool.isSet()&&t.s1.string.isSet()&&t.s2.string.isSet()";
+            final String expected = "s1.bool.isSet()&&s2.bool.isSet()&&s1.string.isSet()&&s2.string.isSet()";
+
+            if ("isReady1".equals(d.methodInfo().name) && d.iteration() > 5) {
+                assertEquals(expectedT, d.methodAnalysis().getSingleReturnValue().toString());
+            }
+            if ("isReady2".equals(d.methodInfo().name) && d.iteration() > 5) {
+                assertEquals(expectedT, d.methodAnalysis().getSingleReturnValue().toString());
+            }
+
+            if ("isTReady".equals(d.methodInfo().name) && d.iteration() > 4) {
+                assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
+            }
+        };
         testSupportAndUtilClasses(List.of("EventuallyImmutableUtil_5"), FLIP_SWITCH_SET_ONCE, ORG_E2IMMU_SUPPORT,
                 0, 0, new DebugConfiguration.Builder()
+                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                         .build());
     }
 

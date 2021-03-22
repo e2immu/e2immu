@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.parserfailing;
 
+import org.e2immu.analyser.analyser.Precondition;
 import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
@@ -21,7 +22,6 @@ import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.FieldInfo;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterizedType;
-import org.e2immu.analyser.model.expression.Negation;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
@@ -30,12 +30,10 @@ import org.e2immu.analyser.visitor.TypeAnalyserVisitor;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
-import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class TestExampleManualEventuallyE1Container extends CommonTestRunner {
 
@@ -45,10 +43,9 @@ public class TestExampleManualEventuallyE1Container extends CommonTestRunner {
 
         if ("addIfGreater".equals(name)) {
             if (iteration > 0) {
-                List<Expression> preconditions = d.methodAnalysis().getPreconditionForEventual();
-                assertEquals(1, preconditions.size());
-                assertEquals("this.j > 0", preconditions.get(0).toString());
-                assertEquals("(-this.j) >= 0", Negation.negate(d.evaluationContext(), preconditions.get(0)).toString());
+                Precondition precondition = d.methodAnalysis().getPreconditionForEventual();
+                assertNotNull(precondition);
+                assertEquals("this.j > 0", precondition.expression().toString());
             }
         }
         if ("setNegativeJ".equals(name)) {

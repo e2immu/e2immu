@@ -16,6 +16,7 @@ package org.e2immu.analyser.model.expression.util;
 
 import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
+import org.e2immu.analyser.analyser.Precondition;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.Filter;
@@ -37,13 +38,13 @@ public class EvaluatePreconditionFromMethod {
                                 List<Expression> parameterValues) {
 
         MethodAnalysis methodAnalysis = evaluationContext.getAnalyserContext().getMethodAnalysis(methodInfo);
-        Expression precondition = methodAnalysis.getPrecondition();
+        Precondition precondition = methodAnalysis.getPrecondition();
         if (precondition == null) {
             boolean partOfCallCycle = methodInfo != null && methodInfo.partOfCallCycle();
             boolean callingMyself = evaluationContext.getCurrentMethod() != null &&
                     methodInfo == evaluationContext.getCurrentMethod().methodInfo;
             if (!partOfCallCycle && !callingMyself) builder.addDelayOnPrecondition();
-        } else if (!precondition.isBooleanConstant()) {
+        } else if (!precondition.expression().isBooleanConstant()) {
             boolean scopeDelayed = evaluationContext.isDelayed(scopeObject);
             if (scopeDelayed) {
                 builder.addDelayOnPrecondition();
@@ -53,7 +54,7 @@ public class EvaluatePreconditionFromMethod {
             // the precondition is using parameter info's as variables so we'll have to substitute
             Map<Expression, Expression> translationMap = translationMap(evaluationContext.getAnalyserContext(),
                     methodInfo, parameterValues, scopeObject);
-            EvaluationResult eRreEvaluated = precondition.reEvaluate(evaluationContext, translationMap);
+            EvaluationResult eRreEvaluated = precondition.expression().reEvaluate(evaluationContext, translationMap);
             Expression reEvaluated = eRreEvaluated.value();
             // composing the effects of re-evaluation introduces the field(s) of the precondition to the statement
             // the result of the re-evaluation may cause delays
@@ -81,7 +82,8 @@ public class EvaluatePreconditionFromMethod {
                 builder.addUntranslatedPrecondition(rest);
                 Expression translated = evaluationContext.acceptAndTranslatePrecondition(rest);
                 if (translated != null) {
-                    builder.addPrecondition(translated);
+                    builder.addPrecondition(new Precondition(translated,
+                            List.of(new Precondition.MethodCallCause(methodInfo, scopeObject))));
                 }
             }
         }

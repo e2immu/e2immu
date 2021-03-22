@@ -17,7 +17,6 @@ package org.e2immu.analyser.analyser;
 import org.e2immu.analyser.analyser.check.CheckE1E2Immutable;
 import org.e2immu.analyser.analyser.util.AssignmentIncompatibleWithPrecondition;
 import org.e2immu.analyser.analyser.util.ExplicitTypes;
-import org.e2immu.analyser.visitor.TypeAnalyserVisitor;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.Filter;
 import org.e2immu.analyser.model.expression.Negation;
@@ -32,6 +31,7 @@ import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Messages;
 import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.analyser.visitor.TypeAnalyserVisitor;
 import org.e2immu.annotation.*;
 import org.e2immu.support.Either;
 import org.slf4j.Logger;
@@ -413,9 +413,9 @@ public class TypeAnalyser extends AbstractAnalyser {
 
         Map<FieldInfo, Expression> tempApproved = new HashMap<>();
         for (MethodAnalyser methodAnalyser : assigningMethods) {
-            List<Expression> preconditions = methodAnalyser.methodAnalysis.preconditionForEventual.get();
-            for (Expression precondition : preconditions) {
-                List<FieldToCondition> fields = handlePrecondition(methodAnalyser, precondition, iteration);
+            Optional<Precondition> precondition = methodAnalyser.methodAnalysis.preconditionForEventual.get();
+            if (precondition.isPresent()) {
+                List<FieldToCondition> fields = handlePrecondition(methodAnalyser, precondition.get(), iteration);
                 if (fields == null) {
                     log(MARK, "Delaying approved preconditions (no incompatible found yet) in {}", typeInfo.fullyQualifiedName);
                     return DELAYS;
@@ -521,9 +521,9 @@ public class TypeAnalyser extends AbstractAnalyser {
         for (MethodAnalyser methodAnalyser : myMethodAnalysersExcludingSAMs) {
             int modified = methodAnalyser.methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD);
             if (modified == Level.TRUE) {
-                List<Expression> preconditions = methodAnalyser.methodAnalysis.preconditionForEventual.get();
-                for (Expression precondition : preconditions) {
-                    List<FieldToCondition> fields = handlePrecondition(methodAnalyser, precondition, iteration);
+                Optional<Precondition> precondition = methodAnalyser.methodAnalysis.preconditionForEventual.get();
+                if (precondition.isPresent()) {
+                    List<FieldToCondition> fields = handlePrecondition(methodAnalyser, precondition.get(), iteration);
                     if (fields == null) {
                         log(MARK, "Delaying approved preconditions (no incompatible found yet) in {}", typeInfo.fullyQualifiedName);
                         return DELAYS;
@@ -554,17 +554,23 @@ public class TypeAnalyser extends AbstractAnalyser {
                                     boolean overwrite) {
     }
 
-    private List<FieldToCondition> handlePrecondition(MethodAnalyser methodAnalyser, Expression precondition, int iteration) {
+    private List<FieldToCondition> handlePrecondition(MethodAnalyser methodAnalyser,
+                                                      Precondition precondition,
+                                                      int iteration) {
         EvaluationContext evaluationContext = new EvaluationContextImpl(iteration,
                 ConditionManager.initialConditionManager(analyserContext.getPrimitives()), null);
         Filter filter = new Filter(evaluationContext, Filter.FilterMode.ACCEPT);
-        Filter.FilterResult<FieldReference> filterResult = filter.filter(precondition, filter.individualFieldClause());
+        Filter.FilterResult<FieldReference> filterResult = filter.filter(precondition.expression(),
+                filter.individualFieldClause());
         List<FieldToCondition> fieldToConditions = new ArrayList<>();
+
         for (Map.Entry<FieldReference, Expression> e : filterResult.accepted().entrySet()) {
-            Boolean isMark = AssignmentIncompatibleWithPrecondition.isMark(analyserContext, e.getValue(), methodAnalyser, false);
+            FieldInfo fieldInfo = e.getKey().fieldInfo;
+            Precondition pc = new Precondition(e.getValue(), List.of());
+            Boolean isMark = AssignmentIncompatibleWithPrecondition.isMark(analyserContext, pc, methodAnalyser);
             if (isMark == null) return null;
-            fieldToConditions.add(new FieldToCondition(e.getKey().fieldInfo, e.getValue(), Negation.negate(evaluationContext,
-                    e.getValue()), isMark));
+            fieldToConditions.add(new FieldToCondition(fieldInfo, e.getValue(),
+                    Negation.negate(evaluationContext, e.getValue()), isMark));
         }
         return fieldToConditions;
     }

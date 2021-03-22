@@ -23,10 +23,10 @@ import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.annotation.AnnotationMode;
 import org.e2immu.support.FirstThen;
 import org.e2immu.support.SetOnce;
 import org.e2immu.support.SetOnceMap;
-import org.e2immu.annotation.AnnotationMode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,9 +42,9 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
     public final MethodInfo methodInfo;
     public final ObjectFlow objectFlow;
     public final Set<ObjectFlow> internalObjectFlows;
-    public final List<Expression> preconditionForEventual;
+    public final Precondition preconditionForEventual;
     public final Eventual eventual;
-    public final Expression precondition;
+    public final Precondition precondition;
     public final Expression singleReturnValue;
     public final Map<CompanionMethodName, CompanionAnalysis> companionAnalyses;
     public final Map<CompanionMethodName, MethodInfo> computedCompanions;
@@ -56,9 +56,9 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
                                Expression singleReturnValue,
                                ObjectFlow objectFlow,
                                Set<ObjectFlow> internalObjectFlows,
-                               List<Expression> preconditionForEventual,
+                               Precondition preconditionForEventual,
                                Eventual eventual,
-                               Expression precondition,
+                               Precondition precondition,
                                Map<VariableProperty, Integer> properties,
                                Map<AnnotationExpression, AnnotationCheck> annotations,
                                Map<CompanionMethodName, CompanionAnalysis> companionAnalyses,
@@ -119,7 +119,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
     }
 
     @Override
-    public List<Expression> getPreconditionForEventual() {
+    public Precondition getPreconditionForEventual() {
         return preconditionForEventual;
     }
 
@@ -144,7 +144,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
     }
 
     @Override
-    public Expression getPrecondition() {
+    public Precondition getPrecondition() {
         return precondition;
     }
 
@@ -172,7 +172,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
         private final InspectionProvider inspectionProvider;
 
         // the value here (size will be one)
-        public final SetOnce<List<Expression>> preconditionForEventual = new SetOnce<>();
+        public final SetOnce<Optional<Precondition>> preconditionForEventual = new SetOnce<>();
         private final SetOnce<Eventual> eventual = new SetOnce<>();
 
         public final SetOnce<Expression> singleReturnValue = new SetOnce<>();
@@ -186,7 +186,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
 
         // ************** PRECONDITION
 
-        public final SetOnce<Expression> precondition = new SetOnce<>();
+        public final SetOnce<Precondition> precondition = new SetOnce<>();
         public final SetOnceMap<CompanionMethodName, CompanionAnalysis> companionAnalyses = new SetOnceMap<>();
 
         public final SetOnceMap<CompanionMethodName, MethodInfo> computedCompanions = new SetOnceMap<>();
@@ -208,7 +208,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
         }
 
         @Override
-        public Expression getPrecondition() {
+        public Precondition getPrecondition() {
             return precondition.getOrElse(null);
         }
 
@@ -251,9 +251,9 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
                     getSingleReturnValue(),
                     getObjectFlow(),
                     Set.copyOf(internalObjectFlows.getOrElse(Set.of())),
-                    List.copyOf(preconditionForEventual.getOrElse(List.of())),
-                    getEventual(),
-                    precondition.getOrElse(new BooleanConstant(primitives, true)),
+                    preconditionForEventual.getOrElse(Optional.empty()).orElse(null),
+                    eventual.getOrElse(NOT_EVENTUAL),
+                    precondition.getOrElse(Precondition.empty(primitives)),
                     properties.toImmutableMap(),
                     annotationChecks.toImmutableMap(),
                     getCompanionAnalyses(),
@@ -306,11 +306,11 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
 
             // @Precondition
             if (precondition.isSet()) {
-                Expression value = precondition.get();
-                if (!(value instanceof BooleanConstant)) {
+                Precondition pc = precondition.get();
+                if (!(pc.expression() instanceof BooleanConstant)) {
                     // generate a companion method, but only when the precondition is non-trivial
                     new CreatePreconditionCompanion(InspectionProvider.defaultFrom(primitives), analysisProvider)
-                            .addPreconditionCompanion(methodInfo, this, value);
+                            .addPreconditionCompanion(methodInfo, this, pc.expression());
                 }
             }
 
@@ -363,7 +363,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
 
         protected void writeEventual(Eventual eventual) {
             ContractMark contractMark = new ContractMark(eventual.fields());
-            preconditionForEventual.set(List.of(contractMark));
+            preconditionForEventual.set(Optional.of(new Precondition(contractMark, List.of())));
             this.eventual.set(eventual);
         }
 
@@ -390,13 +390,13 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
         }
 
         @Override
-        public List<Expression> getPreconditionForEventual() {
-            return preconditionForEventual.getOrElse(null);
+        public Precondition getPreconditionForEventual() {
+            return preconditionForEventual.getOrElse(Optional.empty()).orElse(null);
         }
 
         @Override
         public Eventual getEventual() {
-            return eventual.getOrElse(null);
+            return eventual.getOrElse(DELAYED_EVENTUAL);
         }
 
         @Override
@@ -413,8 +413,8 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
         }
 
         public void minimalInfoForEmptyMethod(Primitives primitives) {
-            preconditionForEventual.set(List.of());
-            precondition.set(new BooleanConstant(primitives, true));
+            preconditionForEventual.set(Optional.empty());
+            precondition.set(Precondition.empty(primitives));
             if (!methodInfo.isAbstract()) {
                 setProperty(VariableProperty.MODIFIED_METHOD, Level.FALSE);
                 setProperty(VariableProperty.INDEPENDENT, MultiLevel.EFFECTIVE);
@@ -425,12 +425,6 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
 
         public void setEventual(Eventual eventual) {
             this.eventual.set(eventual);
-        }
-
-        public int lastStatementTime() {
-            StatementAnalysis last = getLastStatement();
-            if (last == null) return 0;
-            return last.flowData.getTimeAfterSubBlocks();
         }
 
         @Override

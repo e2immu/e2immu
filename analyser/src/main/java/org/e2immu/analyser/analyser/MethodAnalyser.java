@@ -469,7 +469,7 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
             ParameterizedType parentClass = typeInfo.typeInspection.get().parentClass();
             if (Primitives.isJavaLangObject(parentClass)) {
                 log(MARK, "No @Mark/@Only annotation in {}: found no non-final fields", methodInfo.distinguishingName());
-                methodAnalysis.preconditionForEventual.set(List.of());
+                methodAnalysis.preconditionForEventual.set(Optional.empty());
                 return DONE;
             }
             typeInfo = parentClass.bestTypeInfo();
@@ -482,11 +482,11 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
             log(DELAYED, "Delaying compute @Only and @Mark, precondition not set (weird, should be set by now)");
             return DELAYS;
         }
-        Expression precondition = methodAnalysis.precondition.get();
-        if (precondition.isBoolValueTrue()) {
+        Precondition precondition = methodAnalysis.precondition.get();
+        if (precondition.isEmpty()) {
 
             // code to detect the situation as in Lazy
-            List<Expression> preconditionsBasedOnStateBeforeAssignment = new ArrayList<>();
+            Precondition combinedPrecondition = null;
             for (FieldAnalyser fieldAnalyser : myFieldAnalysers.values()) {
                 if (fieldAnalyser.fieldAnalysis.getProperty(VariableProperty.FINAL) == Level.FALSE) {
                     FieldReference fr = new FieldReference(analyserContext, fieldAnalyser.fieldInfo, new This(analyserContext, methodInfo.typeInfo));
@@ -504,31 +504,38 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
                             Filter.FilterResult<FieldReference> filterResult = filter.filter(state, filter.individualFieldClause(true));
                             Expression inResult = filterResult.accepted().get(fr);
                             if (inResult != null) {
-                                preconditionsBasedOnStateBeforeAssignment.add(inResult);
+                                Precondition pc = new Precondition(inResult, List.of(new Precondition.StateCause()));
+                                if (combinedPrecondition == null) {
+                                    combinedPrecondition = pc;
+                                } else {
+                                    combinedPrecondition = combinedPrecondition.combine(sharedState.evaluationContext, pc);
+                                }
                             }
                         }
                     }
                 }
             }
             log(MARK, "No @Mark @Only annotation in {} from precondition, found {} from assignment",
-                    methodInfo.distinguishingName(), preconditionsBasedOnStateBeforeAssignment);
-            methodAnalysis.preconditionForEventual.set(preconditionsBasedOnStateBeforeAssignment);
+                    methodInfo.distinguishingName(), combinedPrecondition);
+            methodAnalysis.preconditionForEventual.set(Optional.ofNullable(combinedPrecondition));
             return DONE;
         }
-        // at this point, the null and size checks on parameters have been removed.
-        // we still need to remove other parameter components; what remains can be used for marking/only
 
         Filter filter = new Filter(sharedState.evaluationContext, Filter.FilterMode.ACCEPT);
-        Filter.FilterResult<FieldReference> filterResult = filter.filter(precondition, filter.individualFieldClause());
+        Filter.FilterResult<FieldReference> filterResult = filter.filter(precondition.expression(),
+                filter.individualFieldClause());
         if (filterResult.accepted().isEmpty()) {
             log(MARK, "No @Mark/@Only annotation in {}: found no individual field preconditions", methodInfo.distinguishingName());
-            methodAnalysis.preconditionForEventual.set(List.of());
+            methodAnalysis.preconditionForEventual.set(Optional.empty());
             return DONE;
         }
-        List<Expression> preconditionParts = new ArrayList<>(filterResult.accepted().values());
+        Expression[] preconditionExpressions = filterResult.accepted().values().toArray(Expression[]::new);
         log(MARK, "Did prep work for @Only, @Mark, found precondition on variables {} in {}", precondition,
                 filterResult.accepted().keySet(), methodInfo.distinguishingName());
-        methodAnalysis.preconditionForEventual.set(preconditionParts);
+
+        Expression and = new And(sharedState.evaluationContext().getPrimitives()).append(sharedState.evaluationContext,
+                preconditionExpressions);
+        methodAnalysis.preconditionForEventual.set(Optional.of(new Precondition(and, precondition.causes())));
         return DONE;
     }
 

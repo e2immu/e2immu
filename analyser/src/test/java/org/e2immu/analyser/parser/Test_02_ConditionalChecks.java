@@ -64,7 +64,7 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                     assertEquals(FlowData.Execution.ALWAYS, inBlock);
                     assertEquals(FlowData.Execution.ALWAYS, inMethod);
                     assertEquals(Map.of(InterruptsFlow.RETURN, FlowData.Execution.CONDITIONALLY), interruptsFlow);
-                    assertEquals("true", d.statementAnalysis().methodLevelData.combinedPrecondition.get().toString());
+                    assertTrue(d.statementAnalysis().methodLevelData.combinedPrecondition.get().isEmpty());
                 }
                 if ("1.0.0".equals(d.statementId())) {
                     assertEquals("!a&&!b", d.condition().toString());
@@ -77,7 +77,7 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                     assertEquals("(a||b)&&(!a||!b)", d.state().toString());
                     assertEquals(FlowData.Execution.CONDITIONALLY, inBlock);
                     assertEquals(FlowData.Execution.CONDITIONALLY, inMethod);
-                    assertEquals("true", d.statementAnalysis().methodLevelData.combinedPrecondition.get().toString());
+                    assertTrue(d.statementAnalysis().methodLevelData.combinedPrecondition.get().isEmpty());
                 }
                 if ("2".equals(d.statementId())) {
                     assertEquals("a&&!b", d.statementAnalysis().stateData.valueOfExpression.get().toString());
@@ -93,7 +93,7 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                             d.haveError(Message.CONDITION_EVALUATES_TO_CONSTANT));
                     assertEquals(FlowData.Execution.CONDITIONALLY, inBlock);
                     assertEquals(FlowData.Execution.CONDITIONALLY, inMethod);
-                    assertEquals("true", d.statementAnalysis().methodLevelData.combinedPrecondition.get().toString());
+                    assertTrue(d.statementAnalysis().methodLevelData.combinedPrecondition.get().isEmpty());
                 }
                 // unreachable statement
                 if ("4".equals(d.statementId())) {
@@ -159,7 +159,7 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("method1".equals(d.methodInfo().name)) {
                 assertEquals("3", d.methodAnalysis().getLastStatement().index);
-                assertEquals("true", d.methodAnalysis().getPrecondition().toString());
+                assertTrue(d.methodAnalysis().getPrecondition().isEmpty());
                 assertEquals(Level.FALSE, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
                 assertEquals(RETURN_1_VALUE, d.methodAnalysis().getSingleReturnValue().toString());
             }
@@ -189,14 +189,14 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                 if ("0.0.0".equals(d.statementId())) {
                     assertEquals("null==a||null==b", d.absoluteState().toString());
                     assertEquals("null==a||null==b", d.condition().toString());
-                    assertEquals("true", d.statementAnalysis().stateData.precondition.get().toString());
+                    assertTrue(d.statementAnalysis().stateData.precondition.get().isEmpty());
                 }
                 if ("0".equals(d.statementId()) || "1".equals(d.statementId())) {
                     if (d.iteration() > 0) {
                         assertEquals("true", d.state().toString());
                         assertEquals("true", d.condition().toString());
                         assertEquals("true", d.statementAnalysis().stateData.precondition.get().toString());
-                        assertEquals("true", d.statementAnalysis().methodLevelData.combinedPrecondition.get().toString());
+                        assertTrue(d.statementAnalysis().methodLevelData.combinedPrecondition.get().isEmpty());
                     }
                 }
             }
@@ -227,7 +227,7 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                 }
                 assertEquals(0, d.methodAnalysis().getCompanionAnalyses().size());
                 assertEquals(0, d.methodAnalysis().getComputedCompanions().size());
-                assertTrue(d.methodAnalysis().getPrecondition().isBoolValueTrue());
+                assertTrue(d.methodAnalysis().getPrecondition().isEmpty());
             }
         };
 
@@ -600,7 +600,7 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                 }
                 if ("4".equals(d.statementId())) {
                     assertEquals("(q>=5||p>=3)&&(q>=5||q<=-1)&&(p>=3||p<=2)&&(q<=-1||p<=2)",
-                            d.localConditionManager().precondition().toString());
+                            d.localConditionManager().precondition().expression().toString());
                     assertEquals("true", d.state().toString());
                 }
             }

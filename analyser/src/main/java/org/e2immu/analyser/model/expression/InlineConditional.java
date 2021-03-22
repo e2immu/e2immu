@@ -162,7 +162,7 @@ public class InlineConditional implements Expression {
     @Override
     public LinkedVariables linkedVariables(EvaluationContext evaluationContext) {
         Set<Variable> result = null;
-        for (Variable variable : ListUtil.immutableConcat(ifTrue.variables(), ifFalse.variables())) {
+        for (Variable variable : ListUtil.concatImmutable(ifTrue.variables(), ifFalse.variables())) {
             LinkedVariables links = evaluationContext.linkedVariables(variable);
             if (links == LinkedVariables.DELAY) {
                 return LinkedVariables.DELAY;

@@ -32,17 +32,17 @@ public class EventuallyImmutableUtil_2 {
     }
 
     @Mark("value")
-    public void set(String p) {
+    public void set2(String p) {
         this.value.set(p);
     }
 
     @NotModified
-    public String getOrNull() {
+    public String getOrNull2() {
         return value.getOrElse(null);
     }
 
     @Only(after = "value")
-    public String get() {
+    public String get2() {
         return value.get();
     }
 }

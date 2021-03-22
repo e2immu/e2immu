@@ -14,9 +14,6 @@
 
 package org.e2immu.analyser.analyser;
 
-import org.e2immu.analyser.visitor.EvaluationResultVisitor;
-import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
-import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.expression.util.EvaluateInlineConditional;
@@ -26,9 +23,12 @@ import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.pattern.PatternMatcher;
-import org.e2immu.support.SetOnce;
 import org.e2immu.analyser.util.StringUtil;
+import org.e2immu.analyser.visitor.EvaluationResultVisitor;
+import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
+import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
 import org.e2immu.annotation.Container;
+import org.e2immu.support.SetOnce;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -383,8 +383,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             if (startOfNewBlock) {
                 localConditionManager = forwardAnalysisInfo.conditionManager();
             } else {
-                localConditionManager = makeLocalConditionManager(iteration, previous, forwardAnalysisInfo.conditionManager().condition(),
-                        forwardAnalysisInfo.switchSelectorIsDelayed(), closure);
+                localConditionManager = makeLocalConditionManager(previous, forwardAnalysisInfo.conditionManager().condition(),
+                        forwardAnalysisInfo.switchSelectorIsDelayed());
             }
 
             StatementAnalyserResult.Builder builder = new StatementAnalyserResult.Builder();
@@ -415,18 +415,17 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
     2- state, comes via conditionManagerForNextStatement
     3- condition, can be updated in case of SwitchOldStyle
      */
-    private ConditionManager makeLocalConditionManager(int iteration, StatementAnalysis previous,
+    private ConditionManager makeLocalConditionManager(StatementAnalysis previous,
                                                        Expression condition,
-                                                       boolean conditionIsDelayed,
-                                                       EvaluationContext closure) {
-        Expression combinedPrecondition;
+                                                       boolean conditionIsDelayed) {
+        Precondition combinedPrecondition;
         boolean combinedPreconditionIsDelayed;
         if (previous.methodLevelData.combinedPrecondition.isFinal()) {
             combinedPrecondition = previous.methodLevelData.combinedPrecondition.get();
             combinedPreconditionIsDelayed = false;
         } else {
             combinedPreconditionIsDelayed = true;
-            combinedPrecondition = new BooleanConstant(statementAnalysis.primitives, true);
+            combinedPrecondition = Precondition.empty(statementAnalysis.primitives);
         }
 
         ConditionManager previousCm = previous.stateData.conditionManagerForNextStatement.get();
@@ -438,7 +437,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             return previousCm.withPrecondition(combinedPrecondition, combinedPreconditionIsDelayed);
         }
         // swap condition for the one from forwardAnalysisInfo
-        return new ConditionManager(condition, conditionIsDelayed, previousCm.state(), previousCm.stateIsDelayed(), combinedPrecondition,
+        return new ConditionManager(condition, conditionIsDelayed, previousCm.state(),
+                previousCm.stateIsDelayed(), combinedPrecondition,
                 combinedPreconditionIsDelayed, previousCm.parent());
     }
 
@@ -790,23 +790,28 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
 
         // not checking on DONE anymore because any delay will also have crept into the precondition itself??
         if (evaluationResult.precondition() != null) {
-            if (evaluationResult.precondition().isBoolValueFalse()) {
+            if (evaluationResult.precondition().isEmpty()) {
                 statementAnalysis.ensure(Message.newMessage(getLocation(), Message.INCOMPATIBLE_PRECONDITION));
                 statementAnalysis.stateData.precondition.setFinal(evaluationResult.precondition());
             } else {
-                boolean preconditionIsDelayed = sharedState.evaluationContext.isDelayed(evaluationResult.precondition());
-                Expression translated = sharedState.evaluationContext.acceptAndTranslatePrecondition(evaluationResult.precondition());
+                boolean preconditionIsDelayed = sharedState.evaluationContext
+                        .isDelayed(evaluationResult.precondition().expression());
+                Expression translated = sharedState.evaluationContext
+                        .acceptAndTranslatePrecondition(evaluationResult.precondition().expression());
                 if (translated != null) {
-                    statementAnalysis.stateData.setPrecondition(translated, preconditionIsDelayed);
+                    Precondition pc = new Precondition(translated, evaluationResult.precondition().causes());
+                    statementAnalysis.stateData.setPrecondition(pc, preconditionIsDelayed);
                 }
-                Expression untranslated = evaluationResult.untranslatedPrecondition();
                 if (preconditionIsDelayed) {
                     log(DELAYED, "Apply of {}, {} is delayed because of precondition",
                             index(), myMethodAnalyser.methodInfo.fullyQualifiedName);
                     status = DELAYS;
-                } else if (untranslated != null) {
-                    checkPreconditionCompatibilityWithConditionManager(sharedState.evaluationContext, untranslated,
-                            sharedState.localConditionManager);
+                } else {
+                    Expression untranslated = evaluationResult.untranslatedPrecondition();
+                    if (untranslated != null) {
+                        checkPreconditionCompatibilityWithConditionManager(sharedState.evaluationContext, untranslated,
+                                sharedState.localConditionManager);
+                    }
                 }
             }
         } else if (!statementAnalysis.stateData.precondition.isFinal()) {
@@ -1289,7 +1294,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 Expression translated = sharedState.evaluationContext.acceptAndTranslatePrecondition(precondition);
                 if (translated != null) {
                     log(VARIABLE_PROPERTIES, "Escape with precondition {}", translated);
-                    statementAnalysis.stateData.setPrecondition(translated, preconditionIsDelayed);
+                    Precondition pc = new Precondition(translated, List.of(new Precondition.EscapeCause()));
+                    statementAnalysis.stateData.setPrecondition(pc, preconditionIsDelayed);
                     return preconditionIsDelayed ? DELAYS : DONE;
                 }
             }
@@ -1298,7 +1304,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         }
         if (statementAnalysis.stateData.preconditionIsEmpty()) {
             // it could have been set from the assert (step4) or apply via a method call
-            statementAnalysis.stateData.precondition.setFinal(new BooleanConstant(statementAnalysis.primitives, true));
+            statementAnalysis.stateData.precondition.setFinal(Precondition.empty(statementAnalysis.primitives));
         } else if (statementAnalysis.stateData.precondition.isVariable()) {
             return DELAYS;
         }
@@ -1762,7 +1768,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             Expression translated = Objects.requireNonNullElse(
                     sharedState.evaluationContext.acceptAndTranslatePrecondition(assertion),
                     new BooleanConstant(statementAnalysis.primitives, true));
-            statementAnalysis.stateData.setPrecondition(translated, expressionIsDelayed);
+            Precondition pc = new Precondition(translated, List.of(new Precondition.EscapeCause()));
+            statementAnalysis.stateData.setPrecondition(pc, expressionIsDelayed);
 
             if (expressionIsDelayed) {
                 analysisStatus = DELAYS;

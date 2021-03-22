@@ -186,7 +186,7 @@ public record ParseAndInspect(Resources classPath,
         TypeInfo typeInfo = importTypeNoSubTypes(fqn);
         TypeInspection inspection = typeMapBuilder.getTypeInspection(typeInfo);
         if(inspection != null) {
-            return ListUtil.immutableConcat(List.of(typeInfo), inspection.subTypes());
+            return ListUtil.concatImmutable(List.of(typeInfo), inspection.subTypes());
         }
         return List.of(typeInfo);
     }

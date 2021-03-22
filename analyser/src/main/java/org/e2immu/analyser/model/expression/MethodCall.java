@@ -646,7 +646,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         MethodAnalysis methodAnalysis = evaluationContext.getAnalyserContext().getMethodAnalysis(method);
         int modified = methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD);
         int immutable = evaluationContext.getProperty(objectValue, VariableProperty.IMMUTABLE, true);
-        if (modified == Level.TRUE && immutable >= MultiLevel.EVENTUALLY_E2IMMUTABLE) {
+        if (modified == Level.TRUE && immutable >= MultiLevel.EVENTUALLY_E2IMMUTABLE_AFTER_MARK) {
             builder.raiseError(Message.CALLING_MODIFYING_METHOD_ON_E2IMMU,
                     "Method: " + methodInfo.distinguishingName() + ", Type: " + objectValue.returnType());
         }

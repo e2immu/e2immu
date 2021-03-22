@@ -97,11 +97,11 @@ public class Test_Support_00_Either extends CommonTestRunner {
                 assertEquals("(null==a||null!=b)&&(null!=a||null==b)", d.condition().toString());
                 assertEquals("true", d.state().toString());
                 assertEquals("(null==a||null==b)&&(null!=a||null!=b)",
-                        d.statementAnalysis().stateData.precondition.get().toString());
+                        d.statementAnalysis().stateData.precondition.get().expression().toString());
             }
             if ("0".equals(d.statementId())) {
                 assertEquals("(null==a||null==b)&&(null!=a||null!=b)",
-                        d.statementAnalysis().methodLevelData.combinedPrecondition.get().toString());
+                        d.statementAnalysis().methodLevelData.combinedPrecondition.get().expression().toString());
             }
         }
     };
@@ -119,7 +119,7 @@ public class Test_Support_00_Either extends CommonTestRunner {
         }
         if ("Either".equals(d.methodInfo().name)) {
             assertEquals("(null==a||null==b)&&(null!=a||null!=b)",
-                    d.methodAnalysis().getPrecondition().toString());
+                    d.methodAnalysis().getPrecondition().expression().toString());
             ParameterAnalysis a = d.parameterAnalyses().get(0);
             int expectNnp = d.iteration() == 0 ? Level.DELAY : MultiLevel.NULLABLE;
             assertEquals(expectNnp, a.getProperty(VariableProperty.NOT_NULL_PARAMETER));

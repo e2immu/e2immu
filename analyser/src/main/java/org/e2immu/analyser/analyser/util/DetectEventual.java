@@ -22,10 +22,7 @@ import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Primitives;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.DELAYED;
 import static org.e2immu.analyser.util.Logger.log;
@@ -55,7 +52,7 @@ public record DetectEventual(MethodInfo methodInfo,
             log(DELAYED, "Waiting for preconditions to be resolved in {}", methodInfo.distinguishingName());
             return MethodAnalysis.DELAYED_EVENTUAL;
         }
-        List<Expression> preconditions = methodAnalysis.preconditionForEventual.get();
+        Optional<Precondition> precondition = methodAnalysis.preconditionForEventual.get();
         boolean e2 = !typeAnalysis.approvedPreconditionsIsEmpty(true);
 
         if (modified == Level.FALSE && Primitives.isBoolean(methodInfo.returnType())) {
@@ -65,14 +62,14 @@ public record DetectEventual(MethodInfo methodInfo,
             themselves.
             */
 
-            if (preconditions.isEmpty()) {
+            if (precondition.isEmpty()) {
                 if (methodAnalysis.getSingleReturnValue() == null) {
                     log(DELAYED, "Waiting for @TestMark, need single return value of {}", methodInfo.distinguishingName());
                     return MethodAnalysis.DELAYED_EVENTUAL;
                 }
                 Expression srv = methodAnalysis.getSingleReturnValue();
-                if (srv != null) {
-                    MethodAnalysis.Eventual eventual = detectTestMark(srv);
+                if (srv instanceof InlinedMethod inlinedMethod) {
+                    MethodAnalysis.Eventual eventual = detectTestMark(inlinedMethod.expression());
                     if (eventual == MethodAnalysis.DELAYED_EVENTUAL) {
                         return MethodAnalysis.DELAYED_EVENTUAL;
                     }
@@ -104,14 +101,9 @@ public record DetectEventual(MethodInfo methodInfo,
         @Mark("label")
         @Only(before="label"), @Only(after="label")
          */
+        if (precondition.isEmpty()) return MethodAnalysis.NOT_EVENTUAL;
 
-        Expression onePrecondition;
-        if (preconditions.size() == 1) {
-            onePrecondition = preconditions.get(0);
-        } else {
-            onePrecondition = new And(evaluationContext.getPrimitives()).append(evaluationContext, preconditions.toArray(Expression[]::new));
-        }
-        FieldsAndBefore fieldsAndBefore = analyseExpression(evaluationContext, e2, onePrecondition);
+        FieldsAndBefore fieldsAndBefore = analyseExpression(evaluationContext, e2, precondition.get().expression());
         if (fieldsAndBefore == NO_FIELDS) return MethodAnalysis.NOT_EVENTUAL;
 
         // fieldsAndBefore.before == true -> @Mark or @Only(before); otherwise @OnlyAfter
@@ -120,11 +112,13 @@ public record DetectEventual(MethodInfo methodInfo,
             return new MethodAnalysis.Eventual(fieldsAndBefore.fields, false, true, null);
         }
 
-        // now we need to decide between @Only(before) and @Mark
-        // either all are @Mark, or all are @Only(before)
+        /* now we need to decide between @Only(before) and @Mark
+         either all are @Mark, or all are @Only(before)
+
+        the cause of the precondition will help in case of non-assignment-based @Mark detection
+         */
         MethodAnalyser methodAnalyser = analyserContext.getMethodAnalyser(methodInfo);
-        Boolean isMark = AssignmentIncompatibleWithPrecondition.isMark(analyserContext,
-                onePrecondition, methodAnalyser, true);
+        Boolean isMark = AssignmentIncompatibleWithPrecondition.isMark(analyserContext, precondition.get(), methodAnalyser);
         if (isMark == null) {
             return MethodAnalysis.DELAYED_EVENTUAL;
         }
@@ -216,7 +210,7 @@ public record DetectEventual(MethodInfo methodInfo,
                 methodCall.object instanceof VariableExpression ve) {
             MethodAnalysis methodCallAnalysis = analyserContext.getMethodAnalysis(methodCall.methodInfo);
             MethodAnalysis.Eventual mao = methodCallAnalysis.getEventual();
-            if (mao == null) {
+            if (mao == MethodAnalysis.DELAYED_EVENTUAL) {
                 return MethodAnalysis.DELAYED_EVENTUAL;
             }
             Boolean testMark = mao.test();

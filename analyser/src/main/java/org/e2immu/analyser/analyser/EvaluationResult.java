@@ -65,7 +65,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                                Messages messages,
                                List<ObjectFlow> objectFlows,
                                Map<Variable, ChangeData> changeData,
-                               Expression precondition,
+                               Precondition precondition,
                                Expression untranslatedPrecondition,
                                boolean addCircularCallOrUndeclaredFunctionalInterface) {
 
@@ -164,7 +164,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
         private List<Expression> storedExpressions;
         private int statementTime;
         private final Map<Variable, ChangeData> valueChanges = new HashMap<>();
-        private Expression precondition;
+        private Precondition precondition;
         private Expression untranslatedPrecondition;
         private boolean addCircularCallOrUndeclaredFunctionalInterface;
         private boolean someValueWasDelayed;
@@ -228,7 +228,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                 if (precondition == null) {
                     precondition = evaluationResult.precondition;
                 } else {
-                    precondition = combinePrecondition(precondition, evaluationResult.precondition);
+                    precondition = precondition.combine(evaluationContext, evaluationResult.precondition);
                 }
             }
             if (evaluationResult.untranslatedPrecondition != null) {
@@ -303,11 +303,11 @@ public record EvaluationResult(EvaluationContext evaluationContext,
 
         }
 
-        private int getPropertyFromInitial(Expression expression, VariableProperty variableProperty) {
+        private int getNotModified1FromInitial(Expression expression) {
             if (expression instanceof VariableExpression variableExpression) {
-                return getPropertyFromInitial(variableExpression.variable(), variableProperty);
+                return getPropertyFromInitial(variableExpression.variable(), VariableProperty.NOT_MODIFIED_1);
             }
-            return evaluationContext.getProperty(expression, variableProperty, true);
+            return evaluationContext.getProperty(expression, VariableProperty.NOT_MODIFIED_1, true);
         }
 
         /*
@@ -477,7 +477,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
 
             if (evaluationContext.isDelayed(currentExpression)) return; // not yet
             // if we already know that the variable is NOT @NotNull, then we'll raise an error
-            int notModified1 = getPropertyFromInitial(currentExpression, VariableProperty.NOT_MODIFIED_1);
+            int notModified1 = getNotModified1FromInitial(currentExpression);
             if (notModified1 == Level.FALSE) {
                 Message message = Message.newMessage(evaluationContext.getLocation(), Message.MODIFICATION_NOT_ALLOWED, variable.simpleName());
                 messages.add(message);
@@ -540,11 +540,11 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             return Map.copyOf(res);
         }
 
-        public void addPrecondition(Expression expression) {
+        public void addPrecondition(Precondition newPrecondition) {
             if (precondition == null) {
-                precondition = expression;
+                precondition = newPrecondition;
             } else {
-                precondition = combinePrecondition(precondition, expression);
+                precondition = precondition.combine(evaluationContext, newPrecondition);
             }
         }
 
@@ -634,7 +634,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
         }
 
         public void addDelayOnPrecondition() {
-            addPrecondition(DelayedExpression.forPrecondition(evaluationContext.getPrimitives()));
+            addPrecondition(Precondition.forDelayed(DelayedExpression.forPrecondition(evaluationContext.getPrimitives())));
         }
     }
 }

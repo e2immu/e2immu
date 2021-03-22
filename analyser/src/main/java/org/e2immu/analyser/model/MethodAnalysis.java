@@ -66,8 +66,8 @@ public interface MethodAnalysis extends Analysis {
     }
 
     // the value here (size will be one)
-    default List<Expression> getPreconditionForEventual() {
-        return List.of();
+    default Precondition getPreconditionForEventual() {
+        return null;
     }
 
     /**
@@ -100,7 +100,7 @@ public interface MethodAnalysis extends Analysis {
     /**
      * @return null when not yet computed, EMPTY when no precondition
      */
-    default Expression getPrecondition() {
+    default Precondition getPrecondition() {
         return null;
     }
 
@@ -202,7 +202,11 @@ public interface MethodAnalysis extends Analysis {
         public String toString() {
             if (mark) return "@Mark: " + fields;
             if (test != null) return "@TestMark: " + fields;
-            if (after == null) throw new UnsupportedOperationException();
+            if (after == null) {
+                if (this == NOT_EVENTUAL) return "NOT_EVENTUAL";
+                if (this == DELAYED_EVENTUAL) return "DELAYED_EVENTUAL";
+                throw new UnsupportedOperationException();
+            }
             return "@Only " + (after ? "after" : "before") + ": " + fields;
         }
 

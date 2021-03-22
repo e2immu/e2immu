@@ -22,7 +22,6 @@ import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.expression.And;
 import org.e2immu.analyser.model.expression.ConstantExpression;
 import org.e2immu.analyser.model.expression.VariableExpression;
-import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.Primitives;
@@ -48,17 +47,16 @@ public class AssignmentIncompatibleWithPrecondition {
      * </ul>
      */
     public static Boolean isMark(AnalyserContext analyserContext,
-                                 Expression precondition,
-                                 MethodAnalyser methodAnalyser,
-                                 boolean methods) {
-        Set<Variable> variables = new HashSet<>(precondition.variables());
+                                 Precondition precondition,
+                                 MethodAnalyser methodAnalyser) {
+        Set<Variable> variables = new HashSet<>(precondition.expression().variables());
         for (Variable variable : variables) {
             FieldInfo fieldInfo = ((FieldReference) variable).fieldInfo;
 
             for (VariableInfo variableInfo : methodAnalyser.getFieldAsVariable(fieldInfo, false)) {
                 boolean assigned = variableInfo.isAssigned();
                 if (assigned) {
-
+                    Expression pcExpression = precondition.expression();
                     String index = VariableInfoContainer.statementId(variableInfo.getAssignmentId());
                     log(MARK, "Field {} is assigned in {}, {}", variable.fullyQualifiedName(),
                             methodAnalyser.methodInfo.distinguishingName(), index);
@@ -72,7 +70,7 @@ public class AssignmentIncompatibleWithPrecondition {
                         Expression value = variableInfo.getValue();
                         if (value instanceof ConstantExpression) {
                             Boolean incompatible = remapReturnIncompatible(evaluationContext, variable,
-                                    variableInfo.getValue(), precondition);
+                                    variableInfo.getValue(), pcExpression);
                             if (incompatible != null) return incompatible;
                         } else if (value instanceof VariableExpression ve) {
                             // grab some state about this variable
@@ -82,12 +80,12 @@ public class AssignmentIncompatibleWithPrecondition {
                                 Map<Expression, Expression> map = Map.of(new VariableExpression(ve.variable()), new VariableExpression(variable));
                                 EvaluationContext neutralEc = new ConditionManager.EvaluationContextImpl(analyserContext);
                                 Expression stateInTermsOfField = state.reEvaluate(neutralEc, map).getExpression();
-                                return !isCompatible(evaluationContext, stateInTermsOfField, precondition);
+                                return !isCompatible(evaluationContext, stateInTermsOfField, pcExpression);
                             }
                         }
                     } else if (Primitives.isBoolean(fieldInfo.type)) {
                         Boolean incompatible = remapReturnIncompatible(evaluationContext, variable,
-                                variableInfo.getValue(), precondition);
+                                variableInfo.getValue(), pcExpression);
                         if (incompatible != null) return incompatible;
                     } else {
                         // normal object null checking for now
@@ -95,7 +93,7 @@ public class AssignmentIncompatibleWithPrecondition {
                         Expression state = statementAnalysis.stateData.conditionManagerForNextStatement.get().state();
                         Expression combined = new And(evaluationContext.getPrimitives()).append(evaluationContext, state, notNull);
 
-                        if (isCompatible(evaluationContext, combined, precondition)) {
+                        if (isCompatible(evaluationContext, combined, pcExpression)) {
                             if (statementAnalysis.stateData.conditionManagerForNextStatement.isVariable()) {
                                 return null; // DELAYS
                             }
@@ -107,27 +105,26 @@ public class AssignmentIncompatibleWithPrecondition {
             }
         }
 
-        if (!methods) return false;
-
         // METHOD
-
-        // example in FlipSwitch, where copy() calls set(), which should have been handled before
         MethodAnalysis.Eventual consistent = null;
-        Block body = analyserContext.getMethodInspection(methodAnalyser.methodInfo).getMethodBody();
-        Set<MethodInfo> calledMethods = new CallsToOwnMethods(analyserContext).visit(body).getMethods();
-        for (MethodInfo calledMethod : calledMethods) {
-            MethodAnalysis calledMethodAnalysis = analyserContext.getMethodAnalysis(calledMethod);
-            if (calledMethodAnalysis.eventualIsSet()) {
-                MethodAnalysis.Eventual eventual = calledMethodAnalysis.getEventual();
-                if (eventual != MethodAnalysis.NOT_EVENTUAL) {
-                    if (consistent == null) consistent = eventual;
-                    else if (!eventual.consistentWith(consistent)) {
-                        consistent = null;
-                        break;
+
+        for (Precondition.PreconditionCause preconditionCause : precondition.causes()) {
+            // example in FlipSwitch, where copy() calls set(), which should have been handled before
+            if (preconditionCause instanceof Precondition.MethodCallCause methodCallCause) {
+                MethodInfo calledMethod = methodCallCause.methodInfo();
+                MethodAnalysis calledMethodAnalysis = analyserContext.getMethodAnalysis(calledMethod);
+                if (calledMethodAnalysis.eventualIsSet()) {
+                    MethodAnalysis.Eventual eventual = calledMethodAnalysis.getEventual();
+                    if (eventual != MethodAnalysis.NOT_EVENTUAL) {
+                        if (consistent == null) consistent = eventual;
+                        else if (!eventual.consistentWith(consistent)) {
+                            consistent = null;
+                            break;
+                        }
                     }
+                } else {
+                    return null; // DELAYS
                 }
-            } else {
-                return null; // DELAYS
             }
         }
         if (consistent != null) {
