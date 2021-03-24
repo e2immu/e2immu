@@ -12,18 +12,36 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-plugins {
-    id 'org.asciidoctor.jvm.convert' version '3.1.0' apply false 
-}
+package org.e2immu.analyser.testexample;
 
-allprojects {
-    repositories {
-        jcenter() 
-        mavenCentral()
-        mavenLocal()
-        maven {
-            name = "GitHubPackages"
-            url = uri("https://maven.pkg.github.com/e2immu/e2immu-support")
+import org.e2immu.annotation.NotModified;
+import org.e2immu.annotation.PropagateModification;
+
+public class PropagateModification_1 {
+
+    abstract static class ClassWithConsumer<T> {
+        private final String name;
+
+        public ClassWithConsumer(String name) {
+            this.name = name;
         }
+
+        abstract void accept(T t);
+
+        public String getName() {
+            return name;
+        }
+    }
+
+    private final String string;
+
+    public PropagateModification_1(String in) {
+        this.string = in;
+    }
+
+    @NotModified
+    public void forEach(@NotModified @PropagateModification ClassWithConsumer<String> myConsumer) {
+        System.out.println("Consumer is " + myConsumer.getName());
+        myConsumer.accept(string);
     }
 }

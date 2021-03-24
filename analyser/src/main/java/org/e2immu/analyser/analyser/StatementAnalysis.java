@@ -29,13 +29,13 @@ import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.resolver.Resolver;
-import org.e2immu.support.AddOnceSet;
 import org.e2immu.analyser.util.Pair;
-import org.e2immu.support.SetOnceMap;
 import org.e2immu.analyser.util.SetUtil;
 import org.e2immu.annotation.AnnotationMode;
 import org.e2immu.annotation.Container;
 import org.e2immu.annotation.NotNull;
+import org.e2immu.support.AddOnceSet;
+import org.e2immu.support.SetOnceMap;
 
 import java.util.*;
 import java.util.function.BiFunction;
@@ -356,6 +356,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         vic.setProperty(NOT_NULL_EXPRESSION, notNull, INITIAL);
         vic.setProperty(EXTERNAL_NOT_NULL, MultiLevel.NOT_INVOLVED, INITIAL);
         vic.setProperty(CONTEXT_MODIFIED, Level.FALSE, INITIAL);
+        vic.setProperty(PROPAGATE_MODIFICATION, Level.FALSE, INITIAL);
     }
 
     private void copyVariableFromPreviousInIteration0(Map.Entry<String, VariableInfoContainer> entry,
@@ -529,7 +530,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             if (!viEval.valueIsSet() && !initialValue.expression.isUnknown() && !viEval.isRead()) {
                 // whatever we do, we do NOT write CONTEXT properties, because they are written exactly once at the
                 // end of the apply phase, even for variables that aren't read
-                combined.keySet().removeAll(GROUP_PROPERTIES);
+                combined.keySet().removeAll(GroupPropertyValues.PROPERTIES);
                 vic.setValue(initialValue.expression, initialValue.expressionIsDelayed,
                         viInitial.getStaticallyAssignedVariables(), combined, false);
             }
@@ -578,7 +579,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                         Map<VariableProperty, Integer> valueMap = evaluationContext.getValueProperties(initialValue);
                         Map<VariableProperty, Integer> combined = new HashMap<>(propertyMap);
                         valueMap.forEach((k, v) -> combined.merge(k, v, Math::max));
-                        for (VariableProperty vp : GROUP_PROPERTIES) {
+                        for (VariableProperty vp : GroupPropertyValues.PROPERTIES) {
                             combined.put(vp, vp == EXTERNAL_NOT_NULL ? MultiLevel.NOT_INVOLVED : vp.falseValue);
                         }
                         lvrVic.setValue(initialValue, false, assignedToOriginal, combined, true);
@@ -646,9 +647,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
 
         // we need to make a synthesis of the variable state of fields, local copies, etc.
         // some blocks are guaranteed to be executed, others are only executed conditionally.
-        Map<Variable, Integer> externalNotNull = new HashMap<>();
-        Map<Variable, Integer> contextNotNull = new HashMap<>();
-        Map<Variable, Integer> contextModified = new HashMap<>();
+        GroupPropertyValues groupPropertyValues = new GroupPropertyValues();
 
         // first, per variable
 
@@ -692,21 +691,21 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                     }
                     if (toMerge.size() > 0) {
                         destination.merge(evaluationContext, stateOfConditionManagerBeforeExecution, ignoreCurrent, toMerge,
-                                externalNotNull, contextNotNull, contextModified);
+                                groupPropertyValues);
                     } else if (destination.hasMerge()) {
                         assert evaluationContext.getIteration() > 0; // or it wouldn't have had a merge
                         // in previous iterations there was data for us, but now there isn't; copy from I/E into M
-                        destination.copyFromEvalIntoMerge(externalNotNull, contextNotNull, contextModified);
+                        destination.copyFromEvalIntoMerge(groupPropertyValues);
                     } else {
-                        externalNotNull.put(variable, current.getProperty(EXTERNAL_NOT_NULL));
-                        contextModified.put(variable, current.getProperty(CONTEXT_MODIFIED));
-                        contextNotNull.put(variable, current.getProperty(CONTEXT_NOT_NULL));
+                        for (VariableProperty variableProperty : GroupPropertyValues.PROPERTIES) {
+                            groupPropertyValues.set(variableProperty, variable, current.getProperty(variableProperty));
+                        }
                     }
                 }
             } else {
-                externalNotNull.put(variable, current.getProperty(EXTERNAL_NOT_NULL));
-                contextModified.put(variable, current.getProperty(CONTEXT_MODIFIED));
-                contextNotNull.put(variable, current.getProperty(CONTEXT_NOT_NULL));
+                for (VariableProperty variableProperty : GroupPropertyValues.PROPERTIES) {
+                    groupPropertyValues.set(variableProperty, variable, current.getProperty(variableProperty));
+                }
                 // the !merged check here is because some variables appear 2x, once with a positive accept,
                 // and the second time from inside the block with a negative one
                 if (!merged.contains(fqn)) doNotWrite.add(variable);
@@ -719,10 +718,11 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                 int cnn4ParentDelay = calVi.getProperty(CONTEXT_NOT_NULL_FOR_PARENT_DELAY);
                 int cnn4ParentDelayResolved = calVi.getProperty(CONTEXT_NOT_NULL_FOR_PARENT_DELAY_RESOLVED);
                 if (cnn4ParentDelay == Level.TRUE && cnn4ParentDelayResolved != Level.TRUE) {
-                    contextNotNull.put(calVi.variable(), Level.DELAY);
+                    groupPropertyValues.set(VariableProperty.CONTEXT_NOT_NULL, calVi.variable(), Level.DELAY);
                 } else {
                     int cnn4Parent = calVi.getProperty(CONTEXT_NOT_NULL_FOR_PARENT);
-                    if (cnn4Parent != Level.DELAY) contextNotNull.put(calVi.variable(), cnn4Parent);
+                    if (cnn4Parent != Level.DELAY)
+                        groupPropertyValues.set(VariableProperty.CONTEXT_NOT_NULL, calVi.variable(), cnn4Parent);
                 }
             });
         });
@@ -731,13 +731,20 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
 
         ContextPropertyWriter contextPropertyWriter = new ContextPropertyWriter();
         AnalysisStatus ennStatus = contextPropertyWriter.write(this, evaluationContext,
-                VariableInfo::getStaticallyAssignedVariables, EXTERNAL_NOT_NULL, externalNotNull, MERGE, doNotWrite);
+                VariableInfo::getStaticallyAssignedVariables, EXTERNAL_NOT_NULL,
+                groupPropertyValues.getMap(EXTERNAL_NOT_NULL), MERGE, doNotWrite);
 
         AnalysisStatus cnnStatus = contextPropertyWriter.write(this, evaluationContext,
-                VariableInfo::getStaticallyAssignedVariables, CONTEXT_NOT_NULL, contextNotNull, MERGE, doNotWrite);
+                VariableInfo::getStaticallyAssignedVariables, CONTEXT_NOT_NULL,
+                groupPropertyValues.getMap(CONTEXT_NOT_NULL), MERGE, doNotWrite);
 
         AnalysisStatus cmStatus = contextPropertyWriter.write(this, evaluationContext,
-                VariableInfo::getLinkedVariables, CONTEXT_MODIFIED, contextModified, MERGE, doNotWrite);
+                VariableInfo::getLinkedVariables, CONTEXT_MODIFIED,
+                groupPropertyValues.getMap(CONTEXT_MODIFIED), MERGE, doNotWrite);
+
+        contextPropertyWriter.write(this, evaluationContext,
+                VariableInfo::getLinkedVariables, PROPAGATE_MODIFICATION,
+                groupPropertyValues.getMap(PROPAGATE_MODIFICATION), MERGE, doNotWrite);
 
         return ennStatus.combine(cnnStatus).combine(cmStatus);
     }
@@ -804,7 +811,9 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         if (variable instanceof ReturnVariable returnVariable) {
             int defaultNotNull = methodAnalysis.getMethodInfo().returnType().defaultNotNull();
             vic.setValue(new UnknownExpression(returnVariable.returnType, UnknownExpression.RETURN_VALUE), false,
-                    LinkedVariables.EMPTY, Map.of(CONTEXT_NOT_NULL, defaultNotNull, CONTEXT_MODIFIED, Level.FALSE), true);
+                    LinkedVariables.EMPTY, Map.of(CONTEXT_NOT_NULL, defaultNotNull,
+                            CONTEXT_MODIFIED, Level.FALSE,
+                            PROPAGATE_MODIFICATION, Level.FALSE), true);
             // assignment will be at LEVEL 3
             vic.setLinkedVariables(LinkedVariables.EMPTY, true);
 
@@ -816,6 +825,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             vic.setLinkedVariables(LinkedVariables.EMPTY, true);
             vic.setProperty(NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL, INITIAL);
             vic.setProperty(EXTERNAL_NOT_NULL, MultiLevel.NOT_INVOLVED, INITIAL);
+            vic.setProperty(PROPAGATE_MODIFICATION, Level.FALSE, INITIAL);
 
         } else if ((variable instanceof ParameterInfo parameterInfo)) {
             Expression initial = initialValueOfParameter(analyserContext, parameterInfo);
@@ -869,7 +879,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
 
     private static final Set<VariableProperty> FROM_ANALYSER_TO_PROPERTIES_AND_CUSTOM
             = Set.of(IDENTITY, FINAL, EXTERNAL_NOT_NULL, MODIFIED_OUTSIDE_METHOD, IMMUTABLE, CONTAINER, NOT_MODIFIED_1,
-            CONTEXT_NOT_NULL, CONTEXT_MODIFIED);
+            CONTEXT_NOT_NULL, CONTEXT_MODIFIED, PROPAGATE_MODIFICATION);
 
     private Map<VariableProperty, Integer> propertyMap(AnalyserContext analyserContext,
                                                        WithInspectionAndAnalysis object,
@@ -889,6 +899,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                 .collect(Collectors.toUnmodifiableMap(vp -> vp, vp -> {
                     if (vp == CONTEXT_NOT_NULL) return defaultNotNull;
                     if (vp == CONTEXT_MODIFIED) return Level.FALSE;
+                    if (vp == PROPAGATE_MODIFICATION) return Level.FALSE;
                     return f.apply(vp);
                 }));
     }

@@ -16,7 +16,6 @@ package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
-import org.e2immu.analyser.model.expression.util.EvaluateInlineConditional;
 import org.e2immu.analyser.model.statement.*;
 import org.e2immu.analyser.model.variable.*;
 import org.e2immu.analyser.objectflow.ObjectFlow;
@@ -613,9 +612,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         if (evaluationResult.addCircularCallOrUndeclaredFunctionalInterface()) {
             statementAnalysis.methodLevelData.addCircularCallOrUndeclaredFunctionalInterface();
         }
-        Map<Variable, Integer> externalNotNull = new HashMap<>();
-        Map<Variable, Integer> contextNotNull = new HashMap<>();
-        Map<Variable, Integer> contextModified = new HashMap<>();
+        GroupPropertyValues groupPropertyValues = new GroupPropertyValues();
         Map<Variable, LinkedVariables> remapStaticallyAssignedVariables = new HashMap<>();
 
         // the first part is per variable
@@ -660,8 +657,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 Map<VariableProperty, Integer> valueProperties = sharedState.evaluationContext.getValueProperties(valueToWrite);
                 Map<VariableProperty, Integer> varProperties = sharedState.evaluationContext.getVariableProperties(valueToWrite, statementAnalysis.statementTime(EVALUATION));
                 Map<VariableProperty, Integer> merged = mergeAssignment(variable, valueToWriteIsDelayed,
-                        valueProperties, varProperties, changeData.properties(),
-                        externalNotNull, contextNotNull, contextModified);
+                        valueProperties, varProperties, changeData.properties(), groupPropertyValues);
 
                 remapStaticallyAssignedVariables.put(variable, vi1.getStaticallyAssignedVariables());
                 vic.setValue(valueToWrite, valueToWriteIsDelayed, changeData.staticallyAssignedVariables(),
@@ -674,7 +670,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                         Variable localVar = local.current().variable();
                         log(ANALYSER, "Write value {} to local copy variable {}", valueToWrite, localVar.fullyQualifiedName());
                         Map<VariableProperty, Integer> merged2 = mergeAssignment(localVar, valueToWriteIsDelayed, valueProperties, varProperties,
-                                changeData.properties(), externalNotNull, contextNotNull, contextModified);
+                                changeData.properties(), groupPropertyValues);
                         remapStaticallyAssignedVariables.put(localVar, local.getPreviousOrInitial().getStaticallyAssignedVariables());
                         local.setValue(valueToWrite, valueToWriteIsDelayed, changeData.staticallyAssignedVariables(), merged2,
                                 false);
@@ -684,7 +680,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 }
             } else {
                 Map<VariableProperty, Integer> merged = mergePreviousAndChange(variable, vi1.getProperties().toImmutableMap(),
-                        changeData.properties(), externalNotNull, contextNotNull, contextModified);
+                        changeData.properties(), groupPropertyValues);
 
                 if (changeData.value() != null) {
                     // a modifying method caused an updated instance value
@@ -760,29 +756,36 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
 
         // the second one is across clusters of variables
 
-        addToMap(contextNotNull, CONTEXT_NOT_NULL, x -> x.parameterizedType().defaultNotNull(), true);
+        addToMap(groupPropertyValues, CONTEXT_NOT_NULL, x -> x.parameterizedType().defaultNotNull(), true);
         if (statement() instanceof ForEachStatement) {
             potentiallyUpgradeCnnOfLocalLoopVariableAndCopy(sharedState.evaluationContext,
-                    externalNotNull, contextNotNull, evaluationResult.value());
+                    groupPropertyValues.getMap(EXTERNAL_NOT_NULL),
+                    groupPropertyValues.getMap(CONTEXT_NOT_NULL), evaluationResult.value());
         }
         ContextPropertyWriter contextPropertyWriter = new ContextPropertyWriter();
         status = contextPropertyWriter.write(statementAnalysis, sharedState.evaluationContext,
                 VariableInfo::getStaticallyAssignedVariables,
-                CONTEXT_NOT_NULL, contextNotNull, EVALUATION, Set.of()).combine(status);
+                CONTEXT_NOT_NULL, groupPropertyValues.getMap(CONTEXT_NOT_NULL), EVALUATION, Set.of()).combine(status);
 
-        addToMap(externalNotNull, EXTERNAL_NOT_NULL, x -> MultiLevel.DELAY, false);
+        addToMap(groupPropertyValues, EXTERNAL_NOT_NULL, x -> MultiLevel.DELAY, false);
         ContextPropertyWriter contextPropertyWriterEnn = new ContextPropertyWriter();
         AnalysisStatus ennStatus = contextPropertyWriterEnn.write(statementAnalysis, sharedState.evaluationContext,
                 VariableInfo::getStaticallyAssignedVariables,
-                EXTERNAL_NOT_NULL, externalNotNull, EVALUATION, Set.of());
+                EXTERNAL_NOT_NULL, groupPropertyValues.getMap(EXTERNAL_NOT_NULL), EVALUATION, Set.of());
 
         potentiallyRaiseErrorsOnNotNullInContext(evaluationResult.changeData());
 
-        addToMap(contextModified, CONTEXT_MODIFIED, x -> Level.FALSE, true);
+        addToMap(groupPropertyValues, CONTEXT_MODIFIED, x -> Level.FALSE, true);
         // we add the linked variables on top of the statically assigned variables
         status = contextPropertyWriter.write(statementAnalysis, sharedState.evaluationContext,
                 VariableInfo::getLinkedVariables,
-                CONTEXT_MODIFIED, contextModified, EVALUATION, Set.of()).combine(status);
+                CONTEXT_MODIFIED, groupPropertyValues.getMap(CONTEXT_MODIFIED), EVALUATION, Set.of()).combine(status);
+
+        addToMap(groupPropertyValues, PROPAGATE_MODIFICATION, x -> Level.FALSE, true);
+        // the delay for PM is ignored (if any, it will come from CM)
+        contextPropertyWriter.write(statementAnalysis, sharedState.evaluationContext,
+                VariableInfo::getLinkedVariables,
+                PROPAGATE_MODIFICATION, groupPropertyValues.getMap(PROPAGATE_MODIFICATION), EVALUATION, Set.of());
 
         // odds and ends
 
@@ -933,8 +936,11 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         return new LinkedVariables(set);
     }
 
-    private void addToMap(Map<Variable, Integer> map, VariableProperty variableProperty, Function<Variable, Integer> falseValue,
+    private void addToMap(GroupPropertyValues groupPropertyValues,
+                          VariableProperty variableProperty,
+                          Function<Variable, Integer> falseValue,
                           boolean complainDelay0) {
+        Map<Variable, Integer> map = groupPropertyValues.getMap(variableProperty);
         statementAnalysis.variables.stream().forEach(e -> {
             VariableInfoContainer vic = e.getValue();
             VariableInfo vi1 = vic.getPreviousOrInitial();
@@ -975,69 +981,69 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                                                                   Map<VariableProperty, Integer> valueProps,
                                                                   Map<VariableProperty, Integer> variableProps,
                                                                   Map<VariableProperty, Integer> changeData,
-                                                                  Map<Variable, Integer> externalNotNull,
-                                                                  Map<Variable, Integer> contextNotNull,
-                                                                  Map<Variable, Integer> contextModified) {
+                                                                  GroupPropertyValues groupPropertyValues) {
         Map<VariableProperty, Integer> res = new HashMap<>(valueProps);
         variableProps.forEach(res::put);
         changeData.forEach(res::put);
         Integer enn = res.remove(EXTERNAL_NOT_NULL);
-        externalNotNull.put(variable, enn == null ? (valueIsDelayed ? Level.DELAY : MultiLevel.NOT_INVOLVED) : enn);
+        groupPropertyValues.set(EXTERNAL_NOT_NULL, variable, enn == null ? (valueIsDelayed ? Level.DELAY : MultiLevel.NOT_INVOLVED) : enn);
         Integer cnn = res.remove(CONTEXT_NOT_NULL);
-        contextNotNull.put(variable, cnn == null ? MultiLevel.NULLABLE : cnn);
+        groupPropertyValues.set(CONTEXT_NOT_NULL, variable, cnn == null ? MultiLevel.NULLABLE : cnn);
         Integer cm = res.remove(CONTEXT_MODIFIED);
-        contextModified.put(variable, cm == null ? Level.FALSE : cm);
+        groupPropertyValues.set(CONTEXT_MODIFIED, variable, cm == null ? Level.FALSE : cm);
+        Integer pm = res.remove(PROPAGATE_MODIFICATION);
+        groupPropertyValues.set(PROPAGATE_MODIFICATION, variable, pm == null ? Level.FALSE : pm);
         return res;
     }
 
     private Map<VariableProperty, Integer> mergePreviousAndChange(Variable variable,
                                                                   Map<VariableProperty, Integer> previous,
                                                                   Map<VariableProperty, Integer> changeData,
-                                                                  Map<Variable, Integer> externalNotNull,
-                                                                  Map<Variable, Integer> contextNotNull,
-                                                                  Map<Variable, Integer> contextModified) {
+                                                                  GroupPropertyValues groupPropertyValues) {
         Set<VariableProperty> both = new HashSet<>(previous.keySet());
         both.addAll(changeData.keySet());
-        both.addAll(GROUP_PROPERTIES);
+        both.addAll(GroupPropertyValues.PROPERTIES);
         Map<VariableProperty, Integer> res = new HashMap<>(changeData);
 
         both.forEach(k -> {
             int prev = previous.getOrDefault(k, Level.DELAY);
             int change = changeData.getOrDefault(k, Level.DELAY);
-            switch (k) {
-                case EXTERNAL_NOT_NULL -> {
+            if (GroupPropertyValues.PROPERTIES.contains(k)) {
+                int value = switch (k) {
                     // values simply travel downward (delay until there's a value from another analyser)
-                    if (prev != Level.DELAY) {
-                        externalNotNull.put(variable, Math.max(MultiLevel.DELAY, prev));
-                    } else {
-                        externalNotNull.put(variable, Level.DELAY);
+                    case EXTERNAL_NOT_NULL -> prev != Level.DELAY ? Math.max(MultiLevel.DELAY, prev) : Level.DELAY;
+                    case CONTEXT_NOT_NULL -> {
+                        if (changeData.getOrDefault(CONTEXT_NOT_NULL_DELAY, Level.DELAY) != Level.TRUE && prev != Level.DELAY) {
+                            yield Math.max(variable.parameterizedType().defaultNotNull(), Math.max(prev, change));
+                        } else {
+                            yield Level.DELAY;
+                        }
                     }
-                }
-                case CONTEXT_NOT_NULL -> {
-                    if (changeData.getOrDefault(CONTEXT_NOT_NULL_DELAY, Level.DELAY) != Level.TRUE && prev != Level.DELAY) {
-                        contextNotNull.put(variable, Math.max(variable.parameterizedType().defaultNotNull(), Math.max(prev, change)));
-                    } else {
-                        contextNotNull.put(variable, Level.DELAY);
+                    case CONTEXT_MODIFIED -> {
+                        if (changeData.getOrDefault(CONTEXT_MODIFIED_DELAY, Level.DELAY) != Level.TRUE && prev != Level.DELAY) {
+                            yield Math.max(Level.FALSE, Math.max(prev, change));
+                        } else {
+                            yield Level.DELAY;
+                        }
                     }
-                }
-                case CONTEXT_MODIFIED -> {
-                    if (changeData.getOrDefault(CONTEXT_MODIFIED_DELAY, Level.DELAY) != Level.TRUE && prev != Level.DELAY) {
-                        contextModified.put(variable, Math.max(Level.FALSE, Math.max(prev, change)));
-                    } else {
-                        contextModified.put(variable, Level.DELAY);
+                    case PROPAGATE_MODIFICATION -> Math.max(Level.FALSE, Math.max(prev, change));
+                    default -> throw new UnsupportedOperationException();
+                };
+                groupPropertyValues.set(k, variable, value);
+            } else {
+                switch (k) {
+                    // value properties are copied from previous, because there is NO assignment!
+                    case CONTAINER, IMMUTABLE, NOT_NULL_EXPRESSION, MODIFIED_OUTSIDE_METHOD, IDENTITY, FLUENT -> {
+                        if (prev != Level.DELAY) res.put(k, prev);
                     }
-                }
-                // value properties are copied from previous, because there is NO assignment!
-                case CONTAINER, IMMUTABLE, NOT_NULL_EXPRESSION, MODIFIED_OUTSIDE_METHOD, IDENTITY, FLUENT -> {
-                    if (prev != Level.DELAY) res.put(k, prev);
-                }
-                // all other are copied from change data
-                default -> {
-                    if (change != Level.DELAY) res.put(k, change);
+                    // all other are copied from change data
+                    default -> {
+                        if (change != Level.DELAY) res.put(k, change);
+                    }
                 }
             }
         });
-        res.keySet().removeAll(GROUP_PROPERTIES);
+        res.keySet().removeAll(GroupPropertyValues.PROPERTIES);
         return res;
     }
 
@@ -1388,6 +1394,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
 
                     Map<VariableProperty, Integer> properties =
                             Map.of(CONTEXT_MODIFIED, Level.FALSE,
+                                    PROPAGATE_MODIFICATION, Level.FALSE,
                                     EXTERNAL_NOT_NULL, MultiLevel.NOT_INVOLVED,
                                     CONTEXT_NOT_NULL, lvr.parameterizedType().defaultNotNull());
 
@@ -2425,7 +2432,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             } else if (variable instanceof LocalVariableReference lvr && lvr.variable.isLocalCopyOf() instanceof FieldReference fr) {
                 fieldReference = fr;
                 VariableInfo variableInfo = statementAnalysis.findOrThrow(fr);
-                if(variableInfo.isAssigned()) return false;
+                if (variableInfo.isAssigned()) return false;
                 // IMPROVE this is only valid if the statement time of the local copy is the same as that of the precondition
                 // but how to do that?
             } else return false;

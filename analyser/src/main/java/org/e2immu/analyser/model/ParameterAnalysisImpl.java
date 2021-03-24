@@ -22,10 +22,10 @@ import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.annotation.AnnotationMode;
 import org.e2immu.support.FirstThen;
 import org.e2immu.support.FlipSwitch;
 import org.e2immu.support.SetOnceMap;
-import org.e2immu.annotation.AnnotationMode;
 
 import java.util.Map;
 
@@ -147,8 +147,11 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
             // @NotModified1
             doNotModified1(e2ImmuAnnotationExpressions);
 
-            // @NotNull, @Size
+            // @NotNull
             doNotNull(e2ImmuAnnotationExpressions, getProperty(VariableProperty.NOT_NULL_PARAMETER));
+
+            // @PropagateModification
+            doPropagateModification(e2ImmuAnnotationExpressions);
         }
 
         public boolean addAssignedToField(FieldInfo fieldInfo, AssignedOrLinked assignedOrLinked) {

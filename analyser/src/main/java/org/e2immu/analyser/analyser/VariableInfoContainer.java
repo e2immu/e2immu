@@ -54,9 +54,7 @@ public interface VariableInfoContainer {
 
     void setStaticallyAssignedVariables(LinkedVariables staticallyAssignedVariables, boolean initialOrEvaluation);
 
-    void copyFromEvalIntoMerge(Map<Variable, Integer>  externalNotNull,
-                               Map<Variable, Integer> contextNotNull,
-                               Map<Variable, Integer> contextModified);
+    void copyFromEvalIntoMerge(GroupPropertyValues groupPropertyValues);
 
     void newVariableWithoutValue();
 
@@ -171,9 +169,7 @@ public interface VariableInfoContainer {
                Expression stateOfDestination,
                boolean atLeastOneBlockExecuted,
                List<StatementAnalysis.ConditionAndVariableInfo> mergeSources,
-               Map<Variable, Integer> externalNotNull,
-               Map<Variable, Integer> contextNotNull,
-               Map<Variable, Integer> contextModified);
+               GroupPropertyValues groupPropertyValues);
 
     /*
     Statement time is irrelevant for all but variable fields.
@@ -199,10 +195,6 @@ public interface VariableInfoContainer {
 
     default String getStatementIndexOfThisLoopOrShadowVariable() {
         return getVariableInLoop().statementId(VariableInLoop.VariableType.LOOP, VariableInLoop.VariableType.LOOP_COPY);
-    }
-
-    default String getStatementIndexOfThisShadowVariable() {
-        return getVariableInLoop().statementId(VariableInLoop.VariableType.LOOP_COPY);
     }
 
     default String getStatementIndexOfThisLoopVariable() {

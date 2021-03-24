@@ -20,11 +20,11 @@ import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.annotation.AnnotationMode;
+import org.e2immu.annotation.NotModified;
 import org.e2immu.support.FirstThen;
 import org.e2immu.support.FlipSwitch;
 import org.e2immu.support.SetOnce;
-import org.e2immu.annotation.AnnotationMode;
-import org.e2immu.annotation.NotModified;
 
 import java.util.Map;
 import java.util.Set;
@@ -242,7 +242,9 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
                 annotations.put(ae, true);
             }
 
+            // dynamic type annotation for types with abstract methods:
             doNotModified1(e2ImmuAnnotationExpressions);
+            doPropagateModification(e2ImmuAnnotationExpressions);
 
             // @NotNull
             doNotNull(e2ImmuAnnotationExpressions, getProperty(VariableProperty.EXTERNAL_NOT_NULL));

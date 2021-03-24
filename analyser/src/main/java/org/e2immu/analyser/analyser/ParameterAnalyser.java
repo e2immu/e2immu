@@ -79,6 +79,7 @@ public class ParameterAnalyser {
         check(NotNull1.class, e2.notNull1);
         check(NotNull2.class, e2.notNull2);
         check(NotModified1.class, e2.notModified1);
+        check(PropagateModification.class, e2.propagateModification);
 
         // opposites
         check(Nullable.class, e2.nullable);
@@ -91,7 +92,8 @@ public class ParameterAnalyser {
         parameterAnalysis.transferPropertiesToAnnotations(analyserContext, e2);
     }
 
-    private static final Set<VariableProperty> CHECK_WORSE_THAN_PARENT = Set.of(NOT_NULL_PARAMETER, MODIFIED_VARIABLE);
+    private static final Set<VariableProperty> CHECK_WORSE_THAN_PARENT = Set.of(NOT_NULL_PARAMETER, MODIFIED_VARIABLE,
+            NOT_MODIFIED_1, PROPAGATE_MODIFICATION);
 
     private void checkWorseThanParent() {
         for (VariableProperty variableProperty : CHECK_WORSE_THAN_PARENT) {
@@ -354,7 +356,7 @@ public class ParameterAnalyser {
     }
 
     public static final VariableProperty[] CONTEXT_PROPERTIES = {VariableProperty.CONTEXT_NOT_NULL,
-            VariableProperty.CONTEXT_MODIFIED};
+            VariableProperty.CONTEXT_MODIFIED};//, PROPAGATE_MODIFICATION}; // FIXME REMOVE COMMENT
 
     private AnalysisStatus analyseContext(SharedState sharedState) {
         // no point, we need to have seen the statement+field analysers first.
@@ -367,8 +369,8 @@ public class ParameterAnalyser {
         boolean changed = false;
         for (VariableProperty variableProperty : CONTEXT_PROPERTIES) {
             if (!parameterAnalysis.properties.isSet(variableProperty)) {
-                if (vi.getProperty(variableProperty) != Level.DELAY) {
-                    int value = vi.getProperty(variableProperty, variableProperty.falseValue);
+                int value = vi.getProperty(variableProperty);
+                if (value != Level.DELAY) {
                     parameterAnalysis.setProperty(variableProperty, value);
                     log(ANALYSER, "Set {} on parameter {} to {}", variableProperty,
                             parameterInfo.fullyQualifiedName(), value);
@@ -407,6 +409,7 @@ public class ParameterAnalyser {
             }
             parameterAnalysis.setProperty(VariableProperty.CONTEXT_NOT_NULL, MultiLevel.NULLABLE);
             parameterAnalysis.setProperty(VariableProperty.NOT_MODIFIED_1, Level.FALSE);
+            parameterAnalysis.setProperty(PROPAGATE_MODIFICATION, Level.FALSE);
 
             if (lastStatementAnalysis != null && parameterInfo.owner.isNotOverridingAnyOtherMethod()
                     && !parameterInfo.owner.isCompanionMethod()) {

@@ -60,6 +60,7 @@ public class E2ImmuAnnotationExpressions {
     public final AnnotationExpression notNull2 = create(NotNull2.class);
     public final AnnotationExpression nullable = create(Nullable.class);
     public final AnnotationExpression only = create(Only.class);
+    public final AnnotationExpression propagateModification = create(PropagateModification.class);
     public final AnnotationExpression singleton = create(Singleton.class);
     public final AnnotationExpression testMark = create(TestMark.class);
     public final AnnotationExpression utilityClass = create(UtilityClass.class);
@@ -73,8 +74,8 @@ public class E2ImmuAnnotationExpressions {
                 extensionClass, e1Immutable, e2Immutable,
                 effectivelyFinal, fluent, identity, ignoreModifications, independent,
                 linked, mark, modified, mutableModifiesArguments);
-        add(builder, notModified, notModified1, notNull, notNull1, notNull2, nullable, only, singleton,
-                testMark, utilityClass, variableField);
+        add(builder, notModified, notModified1, notNull, notNull1, notNull2, nullable, only, propagateModification,
+                singleton, testMark, utilityClass, variableField);
         annotationTypes = Map.copyOf(builder);
     }
 

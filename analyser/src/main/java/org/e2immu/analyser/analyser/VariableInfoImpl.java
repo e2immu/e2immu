@@ -246,6 +246,7 @@ class VariableInfoImpl implements VariableInfo {
         setProperty(VariableProperty.CONTEXT_NOT_NULL, variable.parameterizedType().defaultNotNull());
         setProperty(VariableProperty.CONTEXT_MODIFIED, Level.FALSE);
         setProperty(EXTERNAL_NOT_NULL, MultiLevel.NOT_INVOLVED);
+        setProperty(PROPAGATE_MODIFICATION, Level.FALSE);
     }
 
     // ***************************** MERGE RELATED CODE *********************************
@@ -282,6 +283,7 @@ class VariableInfoImpl implements VariableInfo {
             new MergeOp(CONTAINER, MIN, CONTAINER.best),
             new MergeOp(IDENTITY, MIN, IDENTITY.best),
 
+            new MergeOp(PROPAGATE_MODIFICATION, MAX_CM, PROPAGATE_MODIFICATION.falseValue),
             new MergeOp(CONTEXT_MODIFIED, MAX_CM, CONTEXT_MODIFIED.falseValue),
             new MergeOp(MODIFIED_OUTSIDE_METHOD, MAX_CM, MODIFIED_OUTSIDE_METHOD.falseValue)
     );
@@ -292,7 +294,7 @@ class VariableInfoImpl implements VariableInfo {
                                         boolean atLeastOneBlockExecuted,
                                         List<StatementAnalysis.ConditionAndVariableInfo> mergeSources) {
         return mergeIntoNewObject(evaluationContext, stateOfDestination, atLeastOneBlockExecuted, mergeSources,
-                new HashMap<>(), new HashMap<>(), new HashMap<>());
+                new GroupPropertyValues());
     }
 
     /*
@@ -303,14 +305,12 @@ class VariableInfoImpl implements VariableInfo {
                                                Expression stateOfDestination,
                                                boolean atLeastOneBlockExecuted,
                                                List<StatementAnalysis.ConditionAndVariableInfo> mergeSources,
-                                               Map<Variable, Integer> externalNotNull,
-                                               Map<Variable, Integer> contextNotNull,
-                                               Map<Variable, Integer> contextModified) {
+                                               GroupPropertyValues groupPropertyValues) {
         String mergedAssignmentId = mergedId(evaluationContext, getAssignmentId(), VariableInfo::getAssignmentId, mergeSources);
         String mergedReadId = mergedId(evaluationContext, getReadId(), VariableInfo::getReadId, mergeSources);
         VariableInfoImpl newObject = new VariableInfoImpl(variable, mergedAssignmentId, mergedReadId);
         newObject.mergeIntoMe(evaluationContext, stateOfDestination, atLeastOneBlockExecuted, this, mergeSources,
-                externalNotNull, contextNotNull, contextModified);
+                groupPropertyValues);
         return newObject;
     }
 
@@ -321,7 +321,7 @@ class VariableInfoImpl implements VariableInfo {
                      VariableInfoImpl previous,
                      List<StatementAnalysis.ConditionAndVariableInfo> mergeSources) {
         mergeIntoMe(evaluationContext, stateOfDestination, atLeastOneBlockExecuted, previous, mergeSources,
-                new HashMap<>(), new HashMap<>(), new HashMap<>());
+                new GroupPropertyValues());
     }
 
     /*
@@ -332,9 +332,7 @@ class VariableInfoImpl implements VariableInfo {
                             boolean atLeastOneBlockExecuted,
                             VariableInfoImpl previous,
                             List<StatementAnalysis.ConditionAndVariableInfo> mergeSources,
-                            Map<Variable, Integer> externalNotNull,
-                            Map<Variable, Integer> contextNotNull,
-                            Map<Variable, Integer> contextModified) {
+                            GroupPropertyValues groupPropertyValues) {
         assert atLeastOneBlockExecuted || previous != this;
 
         Expression mergedValue = evaluationContext.replaceLocalVariables(
@@ -342,7 +340,7 @@ class VariableInfoImpl implements VariableInfo {
         setValue(mergedValue, evaluationContext.isDelayed(mergedValue));
 
         mergeStatementTime(evaluationContext, atLeastOneBlockExecuted, previous.getStatementTime(), mergeSources);
-        mergeProperties(atLeastOneBlockExecuted, previous, mergeSources, externalNotNull, contextNotNull, contextModified);
+        mergeProperties(atLeastOneBlockExecuted, previous, mergeSources, groupPropertyValues);
         mergeLinkedVariables(atLeastOneBlockExecuted, previous, mergeSources);
         mergeStaticallyAssignedVariables(atLeastOneBlockExecuted, previous, mergeSources);
     }
@@ -427,8 +425,7 @@ class VariableInfoImpl implements VariableInfo {
     // testing only!!
     void mergeProperties(boolean existingValuesWillBeOverwritten, VariableInfo previous,
                          List<StatementAnalysis.ConditionAndVariableInfo> mergeSources) {
-        mergeProperties(existingValuesWillBeOverwritten, previous, mergeSources, new HashMap<>(),
-                new HashMap<>(), new HashMap<>());
+        mergeProperties(existingValuesWillBeOverwritten, previous, mergeSources, new GroupPropertyValues());
     }
 
     /*
@@ -438,9 +435,7 @@ class VariableInfoImpl implements VariableInfo {
     void mergeProperties(boolean existingValuesWillBeOverwritten,
                          VariableInfo previous,
                          List<StatementAnalysis.ConditionAndVariableInfo> mergeSources,
-                         Map<Variable, Integer> externalNotNull,
-                         Map<Variable, Integer> contextNotNull,
-                         Map<Variable, Integer> contextModified) {
+                         GroupPropertyValues groupPropertyValues) {
         List<VariableInfo> list = mergeSources.stream()
                 .map(StatementAnalysis.ConditionAndVariableInfo::variableInfo)
                 .collect(Collectors.toCollection(() -> new ArrayList<>(mergeSources.size() + 1)));
@@ -458,14 +453,11 @@ class VariableInfoImpl implements VariableInfo {
                 }
             }
             // important that we always write to CNN, CM, even if there is a delay
-            switch (mergeOp.variableProperty) {
-                case EXTERNAL_NOT_NULL -> externalNotNull.put(previous.variable(), commonValue);
-                case CONTEXT_NOT_NULL -> contextNotNull.put(previous.variable(), commonValue);
-                case CONTEXT_MODIFIED -> contextModified.put(previous.variable(), commonValue);
-                default -> {
-                    if (commonValue > Level.DELAY) {
-                        setProperty(mergeOp.variableProperty, commonValue);
-                    }
+            if (GroupPropertyValues.PROPERTIES.contains(mergeOp.variableProperty)) {
+                groupPropertyValues.set(mergeOp.variableProperty, previous.variable(), commonValue);
+            } else {
+                if (commonValue > Level.DELAY) {
+                    setProperty(mergeOp.variableProperty, commonValue);
                 }
             }
         }

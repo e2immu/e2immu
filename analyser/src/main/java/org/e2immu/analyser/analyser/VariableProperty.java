@@ -91,6 +91,7 @@ public enum VariableProperty {
     LINKED("@Linked"),
     MARK("@Mark"),
     ONLY("@Only"),
+    PROPAGATE_MODIFICATION("@PropagateModification"),
     SINGLETON("@Singleton"),
     NOT_MODIFIED_1("@NotModified1"),
     UTILITY_CLASS("@UtilityClass");
@@ -105,8 +106,6 @@ public enum VariableProperty {
      */
     public static final Set<VariableProperty> FROM_ANALYSER_TO_PROPERTIES
             = Set.of(IDENTITY, FINAL, EXTERNAL_NOT_NULL, MODIFIED_OUTSIDE_METHOD, IMMUTABLE, CONTAINER, NOT_MODIFIED_1);
-
-    public static final Set<VariableProperty> GROUP_PROPERTIES = Set.of(CONTEXT_NOT_NULL, EXTERNAL_NOT_NULL, CONTEXT_MODIFIED);
 
     public final String name;
     public final int best;

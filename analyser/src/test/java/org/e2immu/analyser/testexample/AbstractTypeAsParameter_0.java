@@ -27,16 +27,22 @@ situation: consumer applied to non-parameter of implicitly immutable type
  */
 public class AbstractTypeAsParameter_0 {
 
+    interface MyConsumer<T> {
+        // UNMARKED
+        void accept(T t); // PARAMETER T unmarked
+    }
+
     @E1Container
     static class MySet<X> {
         private final Set<X> set = new HashSet<>();
 
+        @Modified
         public void add(X x) {
             set.add(x);
         }
 
-        @NotModified
-        public void forEach(@NotModified Consumer<X> consumer) {
+        @NotModified // because X is implicitly immutable, the parameter of accept cannot touch it wrt MySet
+        public void forEach(@NotModified @PropagateModification MyConsumer<X> consumer) { // because forEach calls an unmarked method on consumer (and no other modifying method)
             for (X x : set) consumer.accept(x);
         }
 

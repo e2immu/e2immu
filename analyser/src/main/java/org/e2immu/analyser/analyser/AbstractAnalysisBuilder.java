@@ -117,6 +117,11 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
         annotations.put(e2ImmuAnnotationExpressions.notModified1, getProperty(VariableProperty.NOT_MODIFIED_1) == Level.TRUE);
     }
 
+    protected void doPropagateModification(E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
+        // @PropagateModification
+        annotations.put(e2ImmuAnnotationExpressions.propagateModification, getProperty(VariableProperty.PROPAGATE_MODIFICATION) == Level.TRUE);
+    }
+
     protected void doImmutableContainer(E2ImmuAnnotationExpressions e2, int immutable, boolean betterThanFormal) {
         int container = getProperty(VariableProperty.CONTAINER);
         String eventualFieldNames;
@@ -246,8 +251,12 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
                     setProperty(VariableProperty.LINKED, trueFalse);
                 } else if (e2ImmuAnnotationExpressions.notModified1.typeInfo() == t) {
                     setProperty(VariableProperty.NOT_MODIFIED_1, trueFalse);
-                } else if (e2ImmuAnnotationExpressions.allowsInterrupt.typeInfo() != t) {
-                    throw new UnsupportedOperationException("TODO: " + t.fullyQualifiedName);
+                } else if (e2ImmuAnnotationExpressions.allowsInterrupt.typeInfo() == t) {
+                    // caught earlier on
+                } else if (e2ImmuAnnotationExpressions.propagateModification.typeInfo() == t) {
+                    setProperty(VariableProperty.PROPAGATE_MODIFICATION, trueFalse);
+                } else {
+                    throw new UnsupportedOperationException("? " + t.fullyQualifiedName);
                 }
             }
         }
@@ -277,7 +286,7 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
             if (markValue != null && !onlyMark.equals(markValue)) {
                 LOGGER.warn("Have both @Only and @Mark, with different values? {} vs {}", onlyMark, markValue);
             }
-            if(markValue == null) {
+            if (markValue == null) {
                 LOGGER.warn("No mark value on {}", location());
             } else {
                 writeEventual(markValue, false, isAfter, null);
