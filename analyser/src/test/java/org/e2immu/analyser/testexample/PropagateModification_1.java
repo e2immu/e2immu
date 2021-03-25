@@ -14,11 +14,14 @@
 
 package org.e2immu.analyser.testexample;
 
+import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.NotModified;
+import org.e2immu.annotation.NotNull;
 import org.e2immu.annotation.PropagateModification;
 
 public class PropagateModification_1 {
 
+    @E2Container
     abstract static class ClassWithConsumer<T> {
         private final String name;
 
@@ -26,21 +29,23 @@ public class PropagateModification_1 {
             this.name = name;
         }
 
-        abstract void accept(T t);
+        abstract void accept(@NotNull T t);
 
         public String getName() {
             return name;
         }
     }
 
+    @NotNull
     private final String string;
 
-    public PropagateModification_1(String in) {
+    public PropagateModification_1(@NotNull String in) {
         this.string = in;
     }
 
+    // do not write @NotModified on myConsumer, because the type is @E2Container (implicit!)
     @NotModified
-    public void forEach(@NotModified @PropagateModification ClassWithConsumer<String> myConsumer) {
+    public void forEach(@PropagateModification ClassWithConsumer<String> myConsumer) {
         System.out.println("Consumer is " + myConsumer.getName());
         myConsumer.accept(string);
     }

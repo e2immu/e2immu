@@ -44,6 +44,7 @@ public class PropagateModification_3 {
         this.string = in;
     }
 
+    // in this example, the abstract method is not called, so there's no need for @PropagateModification
     @NotModified
     public String forEach(@Modified ClassWithConsumer<String> myConsumer) {
         return string + ": Consumer is " + myConsumer.getName() + ", count " + myConsumer.increment();

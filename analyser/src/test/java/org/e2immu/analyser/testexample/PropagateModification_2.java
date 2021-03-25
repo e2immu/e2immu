@@ -16,6 +16,7 @@ package org.e2immu.analyser.testexample;
 
 import org.e2immu.annotation.Modified;
 import org.e2immu.annotation.NotModified;
+import org.e2immu.annotation.Nullable;
 import org.e2immu.annotation.PropagateModification;
 
 public class PropagateModification_2 {
@@ -28,6 +29,7 @@ public class PropagateModification_2 {
             this.name = name;
         }
 
+        // in test1 we demand @NotNull, here we do not
         abstract void accept(T t);
 
         public String getName() {
@@ -39,6 +41,7 @@ public class PropagateModification_2 {
         }
     }
 
+    @Nullable
     private final String string;
 
     public PropagateModification_2(String in) {
