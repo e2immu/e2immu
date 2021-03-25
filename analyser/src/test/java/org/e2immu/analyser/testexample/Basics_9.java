@@ -16,8 +16,6 @@ package org.e2immu.analyser.testexample;
 
 import org.e2immu.annotation.NotModified;
 
-import java.util.Set;
-
 /*
 Test is here to catch certain delays in computing modifications.
 
@@ -40,7 +38,7 @@ public class Basics_9 {
     }
 
     @NotModified
-    public static boolean test1(Set<Integer> set) {
-        return setContainsValueHelper(1, set.contains(3), set.isEmpty());
+    public static boolean test1(boolean contains, boolean isEmpty) {
+        return setContainsValueHelper(1, contains, isEmpty);
     }
 }

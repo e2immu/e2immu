@@ -47,7 +47,10 @@ public class JavaUtil extends AnnotatedAPI {
         @NotModified
         default void forEachRemaining(Consumer<? super T> action) {
         }
-        // rest has no annotations
+
+        boolean hasNext();
+
+        T next();
     }
 
     @Container
@@ -161,6 +164,7 @@ public class JavaUtil extends AnnotatedAPI {
         static <E> List<E> copyOf(@NotNull1 Collection<? extends E> collection) { return null; }
 
         @NotNull1
+        @NotModified
         java.util.Iterator<E> iterator() { return null; }
 
         static boolean get$Precondition$Size(int size, int index) { return index < size; }
@@ -443,6 +447,7 @@ public class JavaUtil extends AnnotatedAPI {
         void clear() { }
 
         @NotNull
+        @Modified
         V computeIfAbsent(@NotNull K key, @NotNull1 Function<? super K, ? extends V> mappingFunction) { return null; }
 
         boolean containsKey$Value$Size(int i, Object key, boolean retVal) { return i != 0 && retVal; }
@@ -451,6 +456,7 @@ public class JavaUtil extends AnnotatedAPI {
 
         @E2Container
         @NotNull
+        @NotModified
         static <K, V> Map<K, V> copyOf(@NotNull Map<? extends K, ? extends V> map) { return null; }
 
         boolean size$Invariant$Size(int i) { return i >= 0; }

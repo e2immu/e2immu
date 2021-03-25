@@ -166,17 +166,25 @@ public interface MethodAnalysis extends Analysis {
     }
 
     private int getPropertyCheckOverrides(AnalysisProvider analysisProvider, VariableProperty variableProperty) {
-        IntStream mine = IntStream.of(getPropertyAsIs(variableProperty));
-        IntStream theStream;
+        int mine = getPropertyAsIs(variableProperty);
+        int max;
         if (getMethodInfo().shallowAnalysis()) {
-            IntStream overrideValues = getOverrides(analysisProvider).stream().mapToInt(ma -> ma.getPropertyAsIs(variableProperty));
-            theStream = IntStream.concat(mine, overrideValues);
+            int bestOfOverrides = Level.DELAY;
+            for (MethodAnalysis override : getOverrides(analysisProvider)) {
+                int overrideAsIs = override.getPropertyAsIs(variableProperty);
+                bestOfOverrides = Math.max(bestOfOverrides, overrideAsIs);
+            }
+            max = Math.max(mine, bestOfOverrides);
         } else {
-            theStream = mine;
+            max = mine;
         }
-        int max = theStream.max().orElse(Level.DELAY);
         if (max == Level.DELAY && getMethodInfo().shallowAnalysis()) {
-            // no information found in the whole hierarchy
+            // no information found in the whole hierarchy, we default to the value of the annotation mode
+
+            // unless: abstract methods, not annotated for modification. They remain as they are
+            if (variableProperty == VariableProperty.MODIFIED_METHOD && getMethodInfo().isAbstract()) {
+                return Level.DELAY;
+            }
             return variableProperty.valueWhenAbsent(annotationMode());
         }
         return max;

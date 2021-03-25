@@ -77,9 +77,9 @@ public class Test_00_Basics_9plus extends CommonTestRunner {
             }
             if("test1".equals(d.methodInfo().name)) {
                 assertEquals(Level.FALSE, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
-                assertEquals(2, d.methodAnalysis().getLastStatement().statementTime(VariableInfoContainer.Level.MERGE));
+                assertEquals(1, d.methodAnalysis().getLastStatement().statementTime(VariableInfoContainer.Level.MERGE));
 
-                assertEquals("Basics_9.isFact(set.contains(3))?set.contains(3):set.isEmpty()&&!Basics_9.isKnown(true)",
+                assertEquals("Basics_9.isFact(contains)?contains:!Basics_9.isKnown(true)&&isEmpty",
                         d.methodAnalysis().getSingleReturnValue().toString());
                 assertTrue(d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod,
                         "class is "+d.methodAnalysis().getSingleReturnValue().getClass());

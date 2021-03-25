@@ -35,6 +35,10 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_31_EventuallyE1Immutable extends CommonTestRunner {
 
+    public Test_31_EventuallyE1Immutable() {
+        super(true);
+    }
+
     @Test
     public void test_0() throws IOException {
         final String TYPE = "org.e2immu.analyser.testexample.EventuallyE1Immutable_0";

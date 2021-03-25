@@ -29,8 +29,8 @@ import java.io.IOException;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class Test_12_IfStatementAPI extends CommonTestRunner {
-    public Test_12_IfStatementAPI() {
+public class Test_12_IfStatement extends CommonTestRunner {
+    public Test_12_IfStatement() {
         super(true);
     }
 

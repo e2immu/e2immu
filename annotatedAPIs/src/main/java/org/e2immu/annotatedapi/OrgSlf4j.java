@@ -40,6 +40,10 @@ public class OrgSlf4j {
         }
 
         @NotModified
+        public void debug(@NotNull String s, @NotModified Object object1, @NotModified Object object2) {
+        }
+
+        @NotModified
         public void debug(@NotNull String s, @NotModified Object... objects) {
         }
 

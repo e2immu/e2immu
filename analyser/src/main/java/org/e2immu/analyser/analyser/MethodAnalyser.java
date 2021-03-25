@@ -198,15 +198,16 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
         });
         this.myFieldAnalysers = Map.copyOf(myFieldAnalysers);
 
+        boolean acceptVerify = methodInfo.isAbstract();
         // copy CONTRACT annotations into the properties
         methodAnalysis.fromAnnotationsIntoProperties(VariableProperty.NOT_NULL_EXPRESSION,
-                false, false, methodInspection.getAnnotations(),
+                false, acceptVerify, methodInspection.getAnnotations(),
                 analyserContext.getE2ImmuAnnotationExpressions());
 
         parameterAnalysers.forEach(pa -> {
             Collection<AnnotationExpression> annotations = pa.parameterInfo.getInspection().getAnnotations();
-            pa.parameterAnalysis.fromAnnotationsIntoProperties(VariableProperty.NOT_NULL_PARAMETER, true, false, annotations,
-                    analyserContext.getE2ImmuAnnotationExpressions());
+            pa.parameterAnalysis.fromAnnotationsIntoProperties(VariableProperty.NOT_NULL_PARAMETER,
+                    true, acceptVerify, annotations, analyserContext.getE2ImmuAnnotationExpressions());
 
             pa.initialize(analyserContext.fieldAnalyserStream());
         });
