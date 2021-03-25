@@ -207,6 +207,11 @@ public record VariableExpression(Variable variable,
             builder.markContextNotNullDelay(variable);
         }
 
+        int propagate = forwardEvaluationInfo.getProperty(VariableProperty.PROPAGATE_MODIFICATION);
+        if(propagate == Level.TRUE) {
+            assert modified == Level.FALSE;
+            builder.markPropagateModification(variable);
+        }
         return builder.build();
     }
 

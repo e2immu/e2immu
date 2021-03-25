@@ -68,34 +68,38 @@ public class ShallowTypeAnalyser implements AnalyserContext {
             typeAnalyses.put(typeInfo, typeAnalysis);
 
             typeInfo.typeInspection.get().methodsAndConstructors(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM).forEach(methodInfo -> {
-
-                if (IS_FACT_FQN.equals(methodInfo.fullyQualifiedName())) {
-                    analyseIsFact(methodInfo);
-                } else if (IS_KNOWN_FQN.equals(methodInfo.fullyQualifiedName())) {
-                    analyseIsKnown(methodInfo);
-                } else {
-                    MethodAnalysisImpl.Builder methodAnalysisBuilder;
-
-                    boolean hasNoCompanionMethods = methodInfo.methodInspection.get().getCompanionMethods().isEmpty();
-                    if (hasNoCompanionMethods && methodInfo.hasStatements()) {
-                        // normal method analysis
-
-                        MethodAnalyser methodAnalyser = new MethodAnalyser(methodInfo, typeAnalysis, false, this);
-                        methodAnalyser.initialize(); // sets the field analysers, not implemented yet.
-                        buildersForCompanionAnalysis.put(methodInfo, Either.left(methodAnalyser));
-                        methodAnalysisBuilder = methodAnalyser.methodAnalysis;
+                try {
+                    if (IS_FACT_FQN.equals(methodInfo.fullyQualifiedName())) {
+                        analyseIsFact(methodInfo);
+                    } else if (IS_KNOWN_FQN.equals(methodInfo.fullyQualifiedName())) {
+                        analyseIsKnown(methodInfo);
                     } else {
-                        // shallow method analysis, companion analysis
-                        methodAnalysisBuilder = shallowMethodAnalyser.copyAnnotationsIntoMethodAnalysisProperties(methodInfo);
-                        if (hasNoCompanionMethods) {
-                            MethodAnalysis methodAnalysis = (MethodAnalysis) methodAnalysisBuilder.build();
-                            methodInfo.setAnalysis(methodAnalysis); // also sets parameter analyses
-                        } else {
-                            buildersForCompanionAnalysis.put(methodInfo, Either.right(methodAnalysisBuilder));
-                        }
-                    }
+                        MethodAnalysisImpl.Builder methodAnalysisBuilder;
 
-                    methodAnalysesBuilder.put(methodInfo, methodAnalysisBuilder);
+                        boolean hasNoCompanionMethods = methodInfo.methodInspection.get().getCompanionMethods().isEmpty();
+                        if (hasNoCompanionMethods && methodInfo.hasStatements()) {
+                            // normal method analysis
+
+                            MethodAnalyser methodAnalyser = new MethodAnalyser(methodInfo, typeAnalysis, false, this);
+                            methodAnalyser.initialize(); // sets the field analysers, not implemented yet.
+                            buildersForCompanionAnalysis.put(methodInfo, Either.left(methodAnalyser));
+                            methodAnalysisBuilder = methodAnalyser.methodAnalysis;
+                        } else {
+                            // shallow method analysis, companion analysis
+                            methodAnalysisBuilder = shallowMethodAnalyser.copyAnnotationsIntoMethodAnalysisProperties(methodInfo);
+                            if (hasNoCompanionMethods) {
+                                MethodAnalysis methodAnalysis = (MethodAnalysis) methodAnalysisBuilder.build();
+                                methodInfo.setAnalysis(methodAnalysis); // also sets parameter analyses
+                            } else {
+                                buildersForCompanionAnalysis.put(methodInfo, Either.right(methodAnalysisBuilder));
+                            }
+                        }
+
+                        methodAnalysesBuilder.put(methodInfo, methodAnalysisBuilder);
+                    }
+                } catch (RuntimeException rte) {
+                    LOGGER.error("Caught runtime exception shallowly analysing method "+methodInfo.fullyQualifiedName);
+                    throw rte;
                 }
             });
         }

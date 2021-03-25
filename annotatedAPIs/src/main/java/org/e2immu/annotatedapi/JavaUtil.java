@@ -55,6 +55,7 @@ public class JavaUtil extends AnnotatedAPI {
     static class Collection$<E>  {
 
         boolean add$Postcondition(E e) { return contains(e); }
+        @Modified
         boolean add(@NotNull E e) { return true; }
 
         @Independent
@@ -88,16 +89,19 @@ public class JavaUtil extends AnnotatedAPI {
         boolean remove$Modification$Size(int i, int j) { return i <= j && i >= j - 1; }
         boolean remove$Value$Size(int i, Object object, boolean retVal) { return i != 0 && retVal; }
         boolean remove$Postcondition(Object object) { return !contains(object); }
+        @Modified
         boolean remove(@NotNull Object object) { return true; }
 
         boolean removeAll$Modification$Size(int i, int j, java.util.Collection<?> c) { return i >= j - c.size() && i <= j; }
         boolean removeAll$Value$Size(int i, java.util.Collection<?> c, boolean retVal) { return i != 0 && c.size() != 0 && retVal; }
         @Independent
+        @Modified
         boolean removeAll(@NotNull1 java.util.Collection<?> c) { return true; }
 
         boolean retainAll$Modification$Size(int i, int j, java.util.Collection<?> c) { return i <= c.size() && i <= j; }
         boolean retainAll$Value$Size(int i, java.util.Collection<?> c, boolean retVal) { return i != 0 && c.size() != 0 && retVal; }
         @Independent
+        @Modified
         boolean retainAll(@NotNull1 java.util.Collection<?> c) { return true; }
 
         boolean size$Invariant$Size(int i) { return i >= 0; }
@@ -136,6 +140,7 @@ public class JavaUtil extends AnnotatedAPI {
         boolean add$Modification$Size(int i, int j, E e) { return i == j + 1; }
         boolean add$Value(E e, boolean retVal) { return true; }
         boolean add$Postcondition(E e) { return contains(e); }
+        @Modified
         boolean add(@NotNull E e) { return false; /* actually, true, see $Value */ }
 
         boolean addAll$Modification$Size(int i, int j, java.util.Collection<? extends E> c) { return i == j + c.size(); }
@@ -143,6 +148,7 @@ public class JavaUtil extends AnnotatedAPI {
         // IMPROVE causes problems with method resolution
         // boolean addAll$Postcondition(java.util.Collection<? extends E> c) { return c.stream().allMatch(this::contains); }
         @Independent
+        @Modified
         boolean addAll(@NotNull1 Collection<? extends E> collection) { return false; }
 
         // needed here because it is used by a companion of 'add'.
@@ -187,9 +193,11 @@ public class JavaUtil extends AnnotatedAPI {
         @E2Container
         <H> java.util.List<H> of(@NotNull H e1, @NotNull H e2, @NotNull H e3) { return null; }
 
+        @Modified
         boolean remove(@NotNull Object object) { return false; }
 
         @Independent
+        @Modified
         boolean removeAll(@NotNull1 Collection<?> c) { return false; }
 
         @NotModified
@@ -218,10 +226,12 @@ public class JavaUtil extends AnnotatedAPI {
         boolean add$Value$Size(int size, E e, boolean retVal) { return org.e2immu.annotatedapi.JavaUtil.setAddValueHelper(size, contains(e), retVal); }
         boolean add$Remove(E e) { return !contains(e); }
         boolean add$Postcondition(E e) { return contains(e); }
+        @Modified
         boolean add(@NotNull E e) { return true; }
 
         boolean addAll$Clear$Size(int i, Collection<? extends E> c) { return i >= c.size(); } // do NOT add isKnown()
         @Independent
+        @Modified
         boolean addAll(@NotNull1 java.util.Collection<? extends E> collection) { return true; }
 
         boolean clear$Clear$Size(int i) { return i == 0 && org.e2immu.annotatedapi.AnnotatedAPI.isKnown(false); }
@@ -234,6 +244,7 @@ public class JavaUtil extends AnnotatedAPI {
 
         @E2Container
         @NotNull1
+        @NotModified
         static <E> Set<E> copyOf(@NotNull1 Collection<? extends E> collection) { return null; }
 
         boolean isEmpty$Value$Size(int i, boolean retVal) { return i == 0; }
@@ -241,6 +252,7 @@ public class JavaUtil extends AnnotatedAPI {
         boolean isEmpty() { return true; }
 
         @NotNull1
+        @NotModified
         java.util.Iterator<E> iterator() { return null; }
 
         int of$Transfer$Size() { return 0; }
@@ -364,6 +376,7 @@ public class JavaUtil extends AnnotatedAPI {
     static class Comparator$<T> {
 
         int compare$Value(T o1, T o2, int retVal) { return o1.equals(o2) || o2.equals(o1) ? 0: retVal; }
+        @NotModified
         int compare(@NotModified T o1, @NotModified T o2) { return 0; }
 
         static <U> java.util.Comparator<U> comparingInt(@NotNull ToIntFunction<? super U> keyExtractor) { return null; }

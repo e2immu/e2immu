@@ -52,6 +52,18 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
     }
 
     @Override
+    public int internalGetProperty(VariableProperty variableProperty) {
+        int inMap = properties.getOrDefault(variableProperty, Level.DELAY);
+        if (inMap == Level.DELAY) {
+            if (variableProperty == VariableProperty.MODIFIED_VARIABLE && parameterInfo.owner.isAbstract()) {
+                return Level.DELAY;
+            }
+            return variableProperty.valueWhenAbsent(annotationMode());
+        }
+        return inMap;
+    }
+
+    @Override
     public Location location() {
         return new Location(parameterInfo);
     }
@@ -137,8 +149,7 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
             // @NotModified, @Modified
             // implicitly @NotModified when E2Immutable, or functional interface
             int modified = getProperty(VariableProperty.MODIFIED_VARIABLE);
-            if (!parameterInfo.parameterizedType.isFunctionalInterface() &&
-                    parameterInfo.parameterizedType.isE2Immutable(analysisProvider) != Boolean.TRUE) {
+            if (parameterInfo.parameterizedType.isE2Immutable(analysisProvider) != Boolean.TRUE) {
                 AnnotationExpression ae = modified == Level.FALSE ? e2ImmuAnnotationExpressions.notModified :
                         e2ImmuAnnotationExpressions.modified;
                 annotations.put(ae, true);

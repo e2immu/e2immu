@@ -492,6 +492,7 @@ public class TypeAnalyser extends AbstractAnalyser {
             return DONE;
         }
         Optional<MethodAnalyser> optModificationDelay = myMethodAnalysersExcludingSAMs.stream()
+                .filter(methodAnalyser -> !methodAnalyser.methodInfo.isAbstract())
                 .filter(methodAnalyser -> methodAnalyser.methodAnalysis
                         .getProperty(VariableProperty.MODIFIED_METHOD) == Level.DELAY).findFirst();
         if (optModificationDelay.isPresent()) {

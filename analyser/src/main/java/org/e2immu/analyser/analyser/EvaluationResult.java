@@ -636,5 +636,9 @@ public record EvaluationResult(EvaluationContext evaluationContext,
         public void addDelayOnPrecondition() {
             addPrecondition(Precondition.forDelayed(DelayedExpression.forPrecondition(evaluationContext.getPrimitives())));
         }
+
+        public void markPropagateModification(Variable variable) {
+            setProperty(variable, VariableProperty.PROPAGATE_MODIFICATION, Level.TRUE);
+        }
     }
 }

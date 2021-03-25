@@ -36,8 +36,7 @@ public class JavaUtilFunction {
 
     @FunctionalInterface
     public interface Consumer$<T> {
-        @NotModified
-        void accept(@NotModified T t);
+        void accept(T t);
 
         default java.util.function.Consumer<T> andThen(@NotNull java.util.function.Consumer<? super T> after) {
             return null;

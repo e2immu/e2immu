@@ -125,9 +125,6 @@ public interface ParameterAnalysis extends Analysis {
                 if (parameterInfo.parameterizedType.isE2Immutable(analysisProvider) == Boolean.TRUE) {
                     return Level.FALSE;
                 }
-                if (parameterInfo.parameterizedType.isFunctionalInterface()) {
-                    return Level.FALSE; // by definition, see manual
-                }
                 if (!parameterInfo.owner.isPrivate() && analysisProvider.getTypeAnalysis(parameterInfo.owner.typeInfo)
                         .getProperty(VariableProperty.CONTAINER) == Level.TRUE) {
                     return Level.FALSE;
@@ -158,9 +155,6 @@ public interface ParameterAnalysis extends Analysis {
             // we can only know when the method is private and the flows are known
             // (3) when the user has contract-annotated the parameter with @E2Immutable
             case IMMUTABLE: {
-                if(parameterInfo.parameterizedType.isFunctionalInterface()) {
-                    return MultiLevel.EFFECTIVELY_E2IMMUTABLE;
-                }
                 TypeInfo bestType = parameterInfo.parameterizedType.bestTypeInfo();
                 int immutableFromType;
                 if (bestType != null) {
@@ -214,7 +208,7 @@ public interface ParameterAnalysis extends Analysis {
             return MultiLevel.bestNotNull(v, getProperty(NOT_NULL_PARAMETER));
         }
         if (variableProperty == MODIFIED_OUTSIDE_METHOD) {
-            return MultiLevel.bestNotNull(v, getProperty(MODIFIED_VARIABLE));
+            return Math.max(v, getProperty(MODIFIED_VARIABLE));
         }
         return v;
     }
