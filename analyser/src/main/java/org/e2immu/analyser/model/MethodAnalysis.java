@@ -118,6 +118,7 @@ public interface MethodAnalysis extends Analysis {
                 // we explicitly check on EFFECTIVE, because in an eventually E2IMMU we want the methods to remain @Modified
                 TypeAnalysis typeAnalysis = analysisProvider.getTypeAnalysis(methodInfo.typeInfo);
                 if (!methodInfo.isConstructor &&
+                        !methodInfo.isAbstract() &&
                         typeAnalysis.getProperty(VariableProperty.IMMUTABLE) == MultiLevel.EFFECTIVELY_E2IMMUTABLE) {
                     return Level.FALSE;
                 }

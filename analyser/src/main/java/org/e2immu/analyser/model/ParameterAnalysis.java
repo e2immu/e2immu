@@ -22,7 +22,6 @@ import org.e2immu.analyser.parser.Primitives;
 
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.IntStream;
 
 import static org.e2immu.analyser.analyser.VariableProperty.*;
 
@@ -83,20 +82,24 @@ public interface ParameterAnalysis extends Analysis {
     default int getParameterPropertyCheckOverrides(AnalysisProvider analysisProvider,
                                                    ParameterInfo parameterInfo,
                                                    VariableProperty variableProperty) {
-        IntStream mine = IntStream.of(getPropertyAsIs(variableProperty));
-        IntStream theStream;
-        if (isBeingAnalysed()) {
-            theStream = mine;
+        int mine = getPropertyAsIs(variableProperty);
+        int max;
+        if (parameterInfo.owner.shallowAnalysis()) {
+            int bestOfOverrides = Level.DELAY;
+            for (MethodAnalysis override : analysisProvider.getMethodAnalysis(parameterInfo.owner).getOverrides(analysisProvider)) {
+                ParameterAnalysis parameterAnalysis = override.getParameterAnalyses().get(parameterInfo.index);
+                int overrideAsIs = parameterAnalysis.getPropertyAsIs(variableProperty);
+                bestOfOverrides = Math.max(bestOfOverrides, overrideAsIs);
+            }
+            max = Math.max(mine, bestOfOverrides);
         } else {
-            IntStream overrideValues = analysisProvider.getMethodAnalysis(parameterInfo.owner).getOverrides(analysisProvider)
-                    .stream()
-                    .map(methodAnalysis -> methodAnalysis.getParameterAnalyses().get(parameterInfo.index))
-                    .mapToInt(parameterAnalysis -> parameterAnalysis.getPropertyAsIs(variableProperty));
-            theStream = IntStream.concat(mine, overrideValues);
+            max = mine;
         }
-        int max = theStream.max().orElse(Level.DELAY);
-        if (max == Level.DELAY && !isBeingAnalysed()) {
+        if (max == Level.DELAY && parameterInfo.owner.shallowAnalysis()) {
             // no information found in the whole hierarchy
+            if (variableProperty == MODIFIED_VARIABLE && parameterInfo.owner.isAbstract()) {
+                return Level.DELAY;
+            }
             return variableProperty.valueWhenAbsent(annotationMode());
         }
         return max;
@@ -111,8 +114,18 @@ public interface ParameterAnalysis extends Analysis {
                 return parameterInfo.index == 0 ? Level.TRUE : Level.FALSE;
 
             case MODIFIED_VARIABLE:
+                if (parameterInfo.parameterizedType.isE2Immutable(analysisProvider) == Boolean.TRUE) {
+                    return Level.FALSE;
+                }
+                if (!parameterInfo.owner.isPrivate() && analysisProvider.getTypeAnalysis(parameterInfo.owner.typeInfo)
+                        .getProperty(VariableProperty.CONTAINER) == Level.TRUE) {
+                    return Level.FALSE;
+                }
                 int mv = getPropertyAsIs(MODIFIED_VARIABLE);
-                if (mv != Level.DELAY) return mv;
+                if (mv != Level.DELAY) return mv;// || parameterInfo.owner.isAbstract()) return mv;
+                if (parameterInfo.owner.isAbstract()) {
+                    return getParameterPropertyCheckOverrides(analysisProvider, parameterInfo, MODIFIED_VARIABLE);
+                }
                 int cm = getParameterProperty(analysisProvider, parameterInfo, objectFlow, CONTEXT_MODIFIED);
                 int mom = getParameterProperty(analysisProvider, parameterInfo, objectFlow, MODIFIED_OUTSIDE_METHOD);
                 if (cm == Level.DELAY || mom == Level.DELAY) return Level.DELAY;
