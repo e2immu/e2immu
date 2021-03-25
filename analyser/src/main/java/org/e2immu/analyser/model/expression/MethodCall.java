@@ -242,7 +242,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
         boolean alwaysModifying;
         boolean neverModifying;
-        boolean delayUndeclared;
+        boolean abstractMethod;
         boolean recursiveCall;
 
         if (evaluationContext.getCurrentMethod() != null) {
@@ -256,24 +256,16 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             // internal circular dependency (as opposed to one outside the primary type)
             neverModifying = methodInfo.partOfCallCycle();
 
-            // FIXME code needs updating!!!!
-            boolean undeclaredFunctionalInterface;
-            if (methodInfo.isSingleAbstractMethod()) {
-                Boolean b = EvaluateParameters.tryToDetectUndeclared(evaluationContext, builder.getStatementTime(), object);
-                undeclaredFunctionalInterface = b != null && b;
-                delayUndeclared = b == null;
-            } else {
-                undeclaredFunctionalInterface = false;
-                delayUndeclared = false;
-            }
-            if ((circularCallOutsidePrimaryType || undeclaredFunctionalInterface)) {
+            abstractMethod = methodInfo.isAbstract();
+
+            if (circularCallOutsidePrimaryType) {
                 builder.addCircularCallOrUndeclaredFunctionalInterface();
             }
-            alwaysModifying = circularCallOutsidePrimaryType || undeclaredFunctionalInterface;
+            alwaysModifying = circularCallOutsidePrimaryType;
             recursiveCall = evaluationContext.getCurrentMethod().methodInfo == this.methodInfo; // recursive call
         } else {
             alwaysModifying = false;
-            delayUndeclared = false;
+            abstractMethod = false;
             neverModifying = false;
             recursiveCall = false;
         }
@@ -286,9 +278,11 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             throw e;
         }
         // is the method modifying, do we need to wait?
-        int modified = alwaysModifying ? Level.TRUE : recursiveCall || neverModifying ? Level.FALSE
-                : methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD);
-        int contextModifiedDelay = Level.fromBool(modified == Level.DELAY || delayUndeclared);
+        int modifiedMethod = methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD);
+        boolean propagateModification = abstractMethod && modifiedMethod == Level.DELAY;
+        int modified = alwaysModifying ? Level.TRUE : recursiveCall || neverModifying ||
+                propagateModification ? Level.FALSE : modifiedMethod;
+        int contextModifiedDelay = Level.fromBool(modified == Level.DELAY);
 
         // effectively not null is the default, but when we're in a not null situation, we can demand effectively content not null
         int notNullForward = notNullRequirementOnScope(forwardEvaluationInfo.getProperty(VariableProperty.CONTEXT_NOT_NULL));
@@ -299,7 +293,8 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 VariableProperty.CONTEXT_NOT_NULL, notNullForward,
                 VariableProperty.METHOD_CALLED, Level.TRUE,
                 VariableProperty.CONTEXT_MODIFIED_DELAY, contextModifiedDelay,
-                VariableProperty.CONTEXT_MODIFIED, modified), true));
+                VariableProperty.CONTEXT_MODIFIED, modified,
+                VariableProperty.PROPAGATE_MODIFICATION, Level.fromBool(propagateModification)), true));
 
         // null scope
         Expression objectValue = objectResult.value();
@@ -309,7 +304,8 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
         // process parameters
         int notModified1Scope = evaluationContext.getProperty(objectValue, VariableProperty.NOT_MODIFIED_1, true);
-        Pair<EvaluationResult.Builder, List<Expression>> res = EvaluateParameters.transform(parameterExpressions, evaluationContext, methodInfo, notModified1Scope, objectValue);
+        Pair<EvaluationResult.Builder, List<Expression>> res = EvaluateParameters.transform(parameterExpressions,
+                evaluationContext, methodInfo, notModified1Scope, objectValue);
         List<Expression> parameterValues = res.v;
         builder.compose(objectResult, res.k.build());
 

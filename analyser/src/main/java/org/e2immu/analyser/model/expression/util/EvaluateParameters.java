@@ -85,10 +85,16 @@ public class EvaluateParameters {
                 if (notModified1Scope == Level.TRUE) {
                     map.put(VariableProperty.CONTEXT_NOT_NULL, Level.FALSE);
                 }
-
-                int contextModified = map.getOrDefault(VariableProperty.CONTEXT_MODIFIED, Level.DELAY);
-                if (contextModified == Level.DELAY) {
-                    map.put(VariableProperty.CONTEXT_MODIFIED_DELAY, Level.TRUE);
+                {
+                    int contextModified = map.getOrDefault(VariableProperty.CONTEXT_MODIFIED, Level.DELAY);
+                    if (contextModified == Level.DELAY) {
+                        if (parameterInfo.owner.isAbstract()) {
+                            // we explicitly allow for a delay on CM, it triggers PROPAGATE_MODIFICATION; locally, it is non-modifying
+                            map.put(VariableProperty.CONTEXT_MODIFIED, Level.FALSE);
+                        } else {
+                            map.put(VariableProperty.CONTEXT_MODIFIED_DELAY, Level.TRUE);
+                        }
+                    }
                 }
                 int contextNotNull = map.getOrDefault(VariableProperty.CONTEXT_NOT_NULL, Level.DELAY);
                 if (contextNotNull == Level.DELAY) {
@@ -108,16 +114,6 @@ public class EvaluateParameters {
                         map.put(VariableProperty.CONTEXT_MODIFIED_DELAY, Level.TRUE); // DELAY
                     } else if (cannotBeModified) {
                         map.put(VariableProperty.CONTEXT_MODIFIED, Level.FALSE);
-                    }
-                }
-
-                if (parameterInfo.parameterizedType.isFunctionalInterface()) {
-                    Boolean undeclared = tryToDetectUndeclared(evaluationContext, builder.getStatementTime(), parameterExpression);
-                    MethodLevelData methodLevelData = evaluationContext.getCurrentMethod() != null ?
-                            evaluationContext.getCurrentMethod().methodLevelData() : null;
-                    if (undeclared == Boolean.TRUE && methodLevelData != null &&
-                            !methodLevelData.copyModificationStatusFrom.isSet(methodInfo)) {
-                        methodLevelData.copyModificationStatusFrom.put(methodInfo, true);
                     }
                 }
 
