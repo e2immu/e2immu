@@ -180,6 +180,18 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
         public boolean assignedToFieldIsFrozen() {
             return assignedToField.isFrozen();
         }
+
+        @Override
+        public int internalGetProperty(VariableProperty variableProperty) {
+            int inMap = properties.getOrDefault(variableProperty, Level.DELAY);
+            if (inMap == Level.DELAY && parameterInfo.owner.isAbstract()) {
+                if (variableProperty == VariableProperty.MODIFIED_VARIABLE) {
+                    return Level.DELAY;
+                }
+                return variableProperty.valueWhenAbsent(annotationMode());
+            }
+            return inMap;
+        }
     }
 
 }

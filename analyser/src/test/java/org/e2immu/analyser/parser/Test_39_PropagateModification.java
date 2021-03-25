@@ -110,7 +110,9 @@ public class Test_39_PropagateModification extends CommonTestRunner {
 
     @Test
     public void test_2() throws IOException {
-        testClass("PropagateModification_2", 0, 0, new DebugConfiguration.Builder()
+
+        // warning: typical System.out potential null pointer exception, no Annotated APIs
+        testClass("PropagateModification_2", 0, 1, new DebugConfiguration.Builder()
                 .build());
     }
 
