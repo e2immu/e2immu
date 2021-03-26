@@ -35,6 +35,8 @@ include::{includedir}/road-to-immutability/086-examples.adoc[]
 include::{includedir}/road-to-immutability/087-builders.adoc[]
 
 include::{includedir}/road-to-immutability/090-other-annotations.adoc[]
+include::{includedir}/road-to-immutability/095-preconditions.adoc[]
+
 
 == Copyright and License
 

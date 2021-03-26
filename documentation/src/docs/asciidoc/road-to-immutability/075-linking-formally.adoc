@@ -1,5 +1,5 @@
 [#linking-part2]
-== Linking, part 2
+== Linking and independence, part 2
 
 === New definition of independence
 

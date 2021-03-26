@@ -1,5 +1,5 @@
 
-=== A builder example
+=== Builders
 
 Class `Foo` creates holds an object of type `Bar`, which is mutable for some period, after which it stabilises and becomes immutable.
 Create an interface `Bar`, which will be used by all the code that does not rely on `Bar` being mutable.

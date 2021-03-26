@@ -1,0 +1,4 @@
+== Preconditions and instance state
+
+The {e2immu} analyser needs pretty strong support for determining preconditions on methods to be able to compute eventual immutability.
+This support can be harnessed in other ways as well, for example, to detect common collection mistakes

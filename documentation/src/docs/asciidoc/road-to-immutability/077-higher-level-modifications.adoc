@@ -1,12 +1,14 @@
 [#higher-level-modifications]
 == Higher-level modifications
 
-From a local type's point of view, fields are either of a concrete type, or they are implicitly immutable, in other words, replaceable by `Object`.
-Our focus up to now has been on modification of the concrete types: we have argued that they are the only ones that matter for practical immutability.
+From a type's point of view, fields are either of an explicit type, they are accessible, or they are of implicitly immutable type, in other words, replaceable by `Object` and inaccessible.
+Our focus up to now has been on modification of the explicit types: we have argued that they are the only ones that matter for practical immutability.
 Now we will try to characterise modifications that are beyond the scope of the type.
 
-Please note that characterising _all_ modifications is a hopelessly complex task.
+Please note that characterising _all_ modifications is a hopelessly complex, and unnecessary, task.
 We will, however, need to deal with what can be seen as the first of higher level modifications, if we want to be able to characterise the modifications going on in extremely important constructs such as iterators.
+
+=== Propagating modifications
 
 The basis of this section is an example container class called `Circular`:
 
@@ -54,11 +56,11 @@ We also revisit the `MyConsumer` functional interface from <<functional-interfac
 [source,java]
 ----
 interface MyConsumer<T> {
-    // Method unmarked in terms of modification
-    void accept(T t); // Parameter unmarked in terms of modification
+    void accept(T t);
 }
 ----
 
+Note that method and parameter remain unmarked in terms of modification.
 Using the `MyConsumer` we introduce a `forEach` method which iterates over the two elements:
 
 .forEach in Circular
@@ -81,30 +83,32 @@ In this example we will use `StringBuilder` as an archetypal modifiable type.
 [source,java]
 ----
 static void print(@NotModified @NotModified1 Circular<StringBuilder> c) {
-    c.forEach(System.out::println); // nan-modifying method implies no modification on c
+    c.forEach(System.out::println); // <1>
 }
 
 static void addNewLine(@NotModified @Modified1 Circular<StringBuilder> c) {
-    c.forEach(sb -> sb.append("\n")); // parameter-modifying lambda propagates modification to c
+    c.forEach(sb -> sb.append("\n")); // <2>
 }
 
 static void replace(@Modified @NotModified1 Circular<StringBuilder> c) {
-    // object-modifying lambda changing c but not its content
-    c.forEach(sb -> c.add(new StringBuilder("x" + sb)));
+    c.forEach(sb -> c.add(new StringBuilder("x" + sb))); // <3>
 }
 ----
+<1> non-modifying method implies no modification on `c`
+<2> parameter-modifying lambda propagates modification to `c`
+<3> object-modifying lambda changing `c` but not its content
 
 We have introduced two new annotations, {m1} and {nm1}.
 Their meaning is intuitively clear from the example:
-the method `print` does not modify the implicitly immutable data of `Circular`, whereas the `addNewLine` method will do so.
+the method `print` does not modify the implicitly immutable content of `Circular`, whereas the `addNewLine` method will do so.
 Conversely, `replace` modifies the `Circular` parameter directly, ignoring its content.
 
 It is clear that we make a distinction between modifying the `Circular` instance, and modifying its content, the objects of type `StringBuilder`.
 Does this contradict the initial definition of modification of a parameter?
 Yes, but it allows us to be more specific.
 
-
-How can we use this additional firepower? Consider the following two examples:
+How can we use this additional firepower?
+Consider the following two examples:
 
 .Using print and addNewLine
 [source,java]
@@ -113,10 +117,10 @@ static String usePrint(@NotModified StringBuilder sb1,
                        @NotModified StringBuilder sb2,
                        @NotModified StringBuilder sb3) {
     Circular<StringBuilder> circular = new Circular<>();
-    circular.add(sb1); // circular holds sb1
-    circular.add(sb2); // circular holds sb1, sb2
-    circular.add(sb3); // now sb1 is not held by circular anymore
-    print(circular); // no modifications all around
+    circular.add(sb1); // <1>
+    circular.add(sb2);
+    circular.add(sb3);
+    print(circular);
     return circular.stream().collect(Collectors.joining());
 }
 
@@ -124,11 +128,90 @@ static String useAddNewLine(@Modified StringBuilder sb1,
                             @Modified StringBuilder sb2,
                             @Modified StringBuilder sb3) {
     Circular<StringBuilder> circular = new Circular<>();
-    circular.add(sb1); // circular holds sb1
-    circular.add(sb2); // circular holds sb1, sb2
-    circular.add(sb3); // now sb1 is not held by circular anymore
-    addNewLine(circular); // <1>
+    circular.add(sb1);
+    circular.add(sb2);
+    circular.add(sb3);
+    addNewLine(circular); // <2>
     return circular.stream().collect(Collectors.joining());
 }
 ----
-<1> {m1} implies that the elements held by circular are modified (but not circular itself)
+<1> `circular` now holds `sb1`
+<2> {m1} implies that the elements held by circular are modified (but not circular itself)
+
+Proper propagation of the modifications relies on knowing that `circular` holds the parameters `sb1`, `sb2` and `sb3`.
+(We will assume it is too complicated to assess whether `sb1` is still held by `circular` or not.) This will be accomplished by computing 'content links', which give rise to 'content (in)dependence', all in a way very similar to ordinary linking and (in)dependence.
+
+=== Content linking
+
+Going back to `Circular`, we see that the `add` method binds the parameter `t` to the instance by means of assignment.
+Let us call this binding of parameters of implicitly immutable types _content linking_, and mark it using {dependent1}, _content dependence_:
+
+.Extra annotation on add
+[source,java]
+----
+@Modified
+public void add(@Dependent1 T t) {
+    if (next) {
+        this.y = t;
+    } else {
+        this.x = t;
+    }
+    next = !next;
+}
+----
+
+Note that content dependence implies normal independence, exactly because we are dealing with parameters of implicitly immutable type.
+Thanks to this annotation, the statement `circular.add(sb1)` can content link `sb1` to circular.
+When propagating the modification of `addNewLine`'s parameter, all variables content linked to the argument get marked.
+
+A second way, next to assignment, of adding to content links is Java's for-each loop:
+
+.For-each loop and content linking
+[source,java]
+----
+Collection<StringBuilder> builders = ...;
+for(StringBuilder sb: builders) { circular.add(sb); }
+----
+
+The local loop variable `sb` gets content linked to `circular`.
+Crucially, however, it is not difficult to see that `sb` is also content linked to `builders`!
+The `Collection` API will contain an `add` method annotated as:
+
+[source,java]
+----
+@Modified
+boolean add(@NotNull @Dependent1 E e) { return true; }
+----
+
+indicating that after calling `add`, the argument will become part of the implicitly immutable content of the collection.
+We need yet another annotation, {dependent2}, to indicate that the implicitly immutable content of two objects are linked.
+Looking at a possible implementation of `addAll`:
+
+.addAll
+[source,java]
+----
+@Modified
+boolean addAll(@NotNull1 @Dependent2 Collection<? extends E> collection) {
+    boolean modified = false;
+    for (E e : c) if (add(e)) modified = true;
+    return modified;
+}
+----
+
+The call to `add` content links `e` to `this`.
+Because `e` is also content linked to `c`, the parameter `collection`
+holds implicitly immutable content linked to the implicitly immutable content of the instance.
+
+Again, note that {dependent2} implies independence, because it deals with the implicitly immutable content:
+
+====
+{dependent1} => {independent}
+
+{dependent2} => {independent}
+====
+
+We're now properly armed to see how a for-each loop can be defined as an iterator whose implicitly immutable content
+links to that of a container.
+
+=== Iterator, Iterable, for-each
+
