@@ -44,13 +44,18 @@ public class JavaUtil extends AnnotatedAPI {
 
     // Note: we can use T instead of E (in the byte-code), since we use distinguishingName instead of fullyQualifiedName
     interface Iterator$<T> {
-        @NotModified
+        @Modified
         default void forEachRemaining(Consumer<? super T> action) {
         }
 
+        @Modified
         boolean hasNext();
 
+        @Modified
         T next();
+
+        @Modified
+        default void remove() {}
     }
 
     @Container

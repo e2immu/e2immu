@@ -15,8 +15,9 @@
 
 package org.e2immu.analyser.parser;
 
+import org.e2immu.analyser.analyser.LinkedVariables;
 import org.e2immu.analyser.analyser.VariableProperty;
-import org.e2immu.analyser.config.*;
+import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
@@ -136,12 +137,38 @@ public class Test_22_SubTypes extends CommonTestRunner {
             MethodInfo apply = function.findUniqueMethod("apply", 1);
             ParameterInfo apply0 = apply.methodInspection.get().getParameters().get(0);
             int modified = apply0.parameterAnalysis.get().getProperty(VariableProperty.MODIFIED_VARIABLE);
-            assertEquals(Level.FALSE, modified);
+            assertEquals(Level.DELAY, modified);
+        };
+
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("go".equals(d.methodInfo().name)) {
+                if ("it2".equals(d.variableName())) {
+                    if ("0".equals(d.statementId())) {
+                        String expectLinked = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "set2";
+                        assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
+                    }
+                    if ("1".equals(d.statementId())) {
+                        int expectPm = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
+                        assertEquals(expectPm, d.getProperty(VariableProperty.PROPAGATE_MODIFICATION));
+                        String expectLinked = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "";
+                        assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
+                    }
+                }
+                if (d.variable() instanceof ParameterInfo p && "set2".equals(p.name)) {
+                    if ("0".equals(d.statementId())) {
+                        int expectPm = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
+                        // FIXME the issue here is that linking is first "" then set2 (should have been delay!)
+                        // assertEquals(expectPm, d.getProperty(VariableProperty.PROPAGATE_MODIFICATION));
+                        assertEquals("", d.variableInfo().getLinkedVariables().toString());
+                    }
+                }
+            }
         };
 
         // error: we postulate that Function has a @NotModified parameter
         testClass("SubTypes_6", 1, 0, new DebugConfiguration.Builder()
                 .addTypeMapVisitor(typeMapVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 

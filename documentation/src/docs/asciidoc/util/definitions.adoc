@@ -24,6 +24,7 @@
 :only:  pass:normal[ `@Only` ]
 :mark: pass:normal[ `@Mark` ]
 :modified:  pass:normal[ `@Modified` ]
+:m1: pass:normal[ `@Modified1`]
 :mutableModifiesArguments: pass:normal[ `@MutableModifiesArguments` ]
 :nm1: pass:normal[ `@NotModified1`]
 :nm: pass:normal[ `@NotModified`]
@@ -31,7 +32,7 @@
 :nn2: pass:normal[ `@NotNull2` ]
 :nn: pass:normal[ `@NotNull` ]
 :nullable: pass:normal[ `@Nullable` ]
-:size: pass:normal[ `@Size` ]
+:propagateModification: pass:normal[ `@PropagateModification` ]
 :supportData: pass:normal[ `@SupportData` ]
 :variable:  pass:normal[ `@Variable` ]
 

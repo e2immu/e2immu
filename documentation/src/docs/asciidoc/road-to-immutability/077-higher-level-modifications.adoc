@@ -1,0 +1,134 @@
+[#higher-level-modifications]
+== Higher-level modifications
+
+From a local type's point of view, fields are either of a concrete type, or they are implicitly immutable, in other words, replaceable by `Object`.
+Our focus up to now has been on modification of the concrete types: we have argued that they are the only ones that matter for practical immutability.
+Now we will try to characterise modifications that are beyond the scope of the type.
+
+Please note that characterising _all_ modifications is a hopelessly complex task.
+We will, however, need to deal with what can be seen as the first of higher level modifications, if we want to be able to characterise the modifications going on in extremely important constructs such as iterators.
+
+The basis of this section is an example container class called `Circular`:
+
+.First methods of Circular
+[source,java]
+----
+@Container
+class Circular<T> {
+
+    private T x;
+    private T y;
+    private boolean next;
+
+    public Circular() {
+    }
+
+    @Independent
+    public Circular(Circular<T> c) {
+        x = c.x;
+        y = c.y;
+        next = c.next;
+    }
+
+    @Modified
+    public void add(T t) {
+        if (next) {
+            this.y = t;
+        } else {
+            this.x = t;
+        }
+        next = !next;
+    }
+
+    @NotModified
+    @E2Container
+    public Stream<T> stream() {
+        return Stream.of(x, y);
+    }
+}
+----
+
+We also revisit the `MyConsumer` functional interface from <<functional-interfaces>>:
+
+.MyConsumer
+[source,java]
+----
+interface MyConsumer<T> {
+    // Method unmarked in terms of modification
+    void accept(T t); // Parameter unmarked in terms of modification
+}
+----
+
+Using the `MyConsumer` we introduce a `forEach` method which iterates over the two elements:
+
+.forEach in Circular
+[source,java]
+----
+@NotModified
+public void forEach(@PropagateModification MyConsumer<T> consumer) {
+    consumer.accept(x);
+    consumer.accept(y);
+}
+----
+
+The {nm} and {propagateModification} annotations are as described in the earlier section: from the point of view of `Circular`, no modifications occur because `accept` operates on fields of the implicitly immutable type `T`.
+By convention, the parameter `consumer` is not modified, so `Circular` can remain a container.
+
+How do we propagate the modification?
+In this example we will use `StringBuilder` as an archetypal modifiable type.
+
+.Propagating the modification of forEach
+[source,java]
+----
+static void print(@NotModified @NotModified1 Circular<StringBuilder> c) {
+    c.forEach(System.out::println); // nan-modifying method implies no modification on c
+}
+
+static void addNewLine(@NotModified @Modified1 Circular<StringBuilder> c) {
+    c.forEach(sb -> sb.append("\n")); // parameter-modifying lambda propagates modification to c
+}
+
+static void replace(@Modified @NotModified1 Circular<StringBuilder> c) {
+    // object-modifying lambda changing c but not its content
+    c.forEach(sb -> c.add(new StringBuilder("x" + sb)));
+}
+----
+
+We have introduced two new annotations, {m1} and {nm1}.
+Their meaning is intuitively clear from the example:
+the method `print` does not modify the implicitly immutable data of `Circular`, whereas the `addNewLine` method will do so.
+Conversely, `replace` modifies the `Circular` parameter directly, ignoring its content.
+
+It is clear that we make a distinction between modifying the `Circular` instance, and modifying its content, the objects of type `StringBuilder`.
+Does this contradict the initial definition of modification of a parameter?
+Yes, but it allows us to be more specific.
+
+
+How can we use this additional firepower? Consider the following two examples:
+
+.Using print and addNewLine
+[source,java]
+----
+static String usePrint(@NotModified StringBuilder sb1,
+                       @NotModified StringBuilder sb2,
+                       @NotModified StringBuilder sb3) {
+    Circular<StringBuilder> circular = new Circular<>();
+    circular.add(sb1); // circular holds sb1
+    circular.add(sb2); // circular holds sb1, sb2
+    circular.add(sb3); // now sb1 is not held by circular anymore
+    print(circular); // no modifications all around
+    return circular.stream().collect(Collectors.joining());
+}
+
+static String useAddNewLine(@Modified StringBuilder sb1,
+                            @Modified StringBuilder sb2,
+                            @Modified StringBuilder sb3) {
+    Circular<StringBuilder> circular = new Circular<>();
+    circular.add(sb1); // circular holds sb1
+    circular.add(sb2); // circular holds sb1, sb2
+    circular.add(sb3); // now sb1 is not held by circular anymore
+    addNewLine(circular); // <1>
+    return circular.stream().collect(Collectors.joining());
+}
+----
+<1> {m1} implies that the elements held by circular are modified (but not circular itself)

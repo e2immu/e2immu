@@ -1,7 +1,7 @@
-[#modification-part2]
-== Modification, part 2
+[#indirect-modification]
+== Indirect Modification
 
-=== Indirect modifications
+=== Cyclic references
 
 Time for more fine print on modifications.
 We need to revisit the situation of seemingly non-modifying methods with modifying parameters.
@@ -61,128 +61,11 @@ An additional interface can help to remove the circular dependency between the t
 This has the advantage of simplicity, both for the programmer and the analyser, which at this point doesn't handle circular dependencies too well.
 It imposes more annotation work on the programmer, however, because the interface's methods need annotating.
 
-[#params-functional-interface]
-=== Parameters of abstract types
+[#abstract-methods]
+=== Abstract methods
 
-When the parameter is of an abstract type, other complications arise.
-Starting with an example, we realise that the single abstract method in `Consumer` is, in general, modifying, and that it modifies its parameter:
+=== Concrete use of abstract methods
 
-.Initial observation of modification in Consumer
-[source,java]
-----
-@FunctionalInterface
-public interface Consumer<T> {
-    @Modified
-    void accept(@Modified T t);
-    // ...
-}
-----
-
-Indeed, using `Point` defined in <<point-and-line>>,
-
-[source,java]
-----
-Consumer<Point> moveOneToTheRight = point -> point.setX(point.getX() + 1);
-Point p = ...;
-Consumer<Point> addToP = point -> {
-    p.setX(p.getX() + point.getX());
-    p.setY(p.getY() + point.getY());
-}
-----
-
-The first consumer, `moveOneToTheRight`, has a non-modifying `accept` method which modifies its parameter.
-The second one, `addToP`, has a modifying `accept` method, with a parameter which remains unmodified.
-
-However, these observations contrast with the use of `Consumer` in the `forEach` method of many collections:
-
-.Possible implementation of forEach
-[source,java]
-----
-default void forEach(Consumer<T> consumer) {
-    for(T t: this) consumer.accept(t);
-}
-----
-
-Here,
-
-. `T` is implicitly immutable, so the consumer's `accept` cannot make changes to `t` _that we know of_;
-. it is expected that `accept` makes some modification, but not a modification to `this`.
-
-For all intents and purposes, we want to mark both the method and the parameter as {nm}.
-The method does nothing but help us iterate over the elements of the collection, an action which is not modifying when executed using a for-loop.
-The modifying aspect is in the application of the method: when a modifying method is passed as argument to `forEach`, the object of the method call will be marked as modified:
-
-.Marking the object as modified
-[source,java]
-----
-Set<Integer> set = new HashSet<>();
-List.of(1, 2, 3).forEach(set::add); // <1>
-----
-<1> The `forEach` modifies `set` as the object of the modifying method `add`.
-
-We already conclude that
-
-****
-*Additional, overriding modification rule*: Parameters of abstract types are {nm} if the abstract method is not applied to other parameters of the method.
-****
-
-Let us explain this:
-
-
-
-
-Modifications they make to the fields of the class can only be made through methods which are already {modified}; this will not change the overall modification status of the type.
-As a consequence,
-
-. we need not look at indirect modifications (which would be nigh on impossible anyway), implying that functional interface type parameters have no impact on the modification status of the method.
-. we do not need to change our definition of containers, which requires parameters that are {nm}.
-
-Secondly,
-
-****
-*Additional, overriding modification rule*: We treat unbound parameter types, and types that can be replaced by an unbound parameter type, as level 2 immutable when passing them as parameters to abstract methods.
-They will not be modified.
-****
-
-So in effect, the parameter of the `accept` method is modifying for all types except the ones where modifications don't matter to the type.
-Making the consumer {nm1} forces absence of modifications on the parameters in the implementation.
-The annotation {nn1} implies that null arguments will cause exceptions; the analyser will warn against them.
-
-If the data passed to the `accept` method is independent of the fields, we annotate the consumer parameter with {independent}.
-The independence shields off the fields from modification, which is a necessary requirement for level 2 immutability.
-
-Implementing a visitor using the `forEach` method defined as:
-
-.Annotated definition of forEach.
-[source,java]
-----
-@NotModified
-default void forEach(Consumer<T> consumer) {
-    for(T t: this) consumer.accept(t);
-}
-----
-
-renders code like:
-
-.Example use of forEach.
-[source,java]
-----
-private Set<T> set;
-
-@NotModified
-public void visit(Consumer<T> consumer) {
-    set.forEach(consumer);
-}
-
-@NotModified
-public void copy(@Independent Consumer<Set<T>> consumer) {
-    consumer.accept(new HashSet<>(set));
-}
-----
-
-The next section discusses the modification or non-modification of the `visit` and `copy` methods.
-
-=== Indirect modification with functional interface types
 
 Once there is modifying method in a class, the analyser cannot exclude that the unknown code will not execute it.
 Therefore,
@@ -270,18 +153,123 @@ public void expose2() {
 
 Note that we never make a distinction between static and instance fields, or methods, concerning modification.
 
-=== Summary
+[#params-functional-interface]
+=== Parameters of abstract types
 
-The following matrix summarizes modification related annotations for functional interface types:
+When the parameter is of an abstract type, other complications arise.
+Starting with the functional interface `Consumer` an example,
 
-.Annotations of a single abstract interface type
-[options=header]
-|===
-| The annotation on ... | parameter | field | method return type
-| {modified} | never | *with declaration*: if it changes other fields; *without declaration*: never | (annotation does not refer to return type)
-| {nm} |  implicit | *with declaration*: if it does not modify other fields; *without declaration*: implicit | (annotation does not refer to return type)
-| {nm1} | *contracted*: no implementations which modify their parameters allowed; sets SAM's parameters to {nm} | computed via declaration or linking |   computed via declaration or linking
-| {independent} | computed when the SAM's parameters do not link to a field | N/A | N/A
-| {nn1} | computed when the SAM's parameters cannot be `null` | computed via declaration or linking | computed via declaration or linking
-|===
+.Initial observation of modification in Consumer
+[source,java]
+----
+@FunctionalInterface
+public interface Consumer<T> {
+    @Modified
+    void accept(@Modified T t);
+    // ...
+}
+----
+
+we realise that the single abstract method in `Consumer` is, in general, modifying, and that it potentially modifies its parameter.
+Indeed, using `Point` defined in <<point-and-line>>,
+
+[source,java]
+----
+Consumer<Point> moveOneToTheRight = point -> point.setX(point.getX() + 1);
+Point p = ...;
+Consumer<Point> addToP = point -> {
+    p.setX(p.getX() + point.getX());
+    p.setY(p.getY() + point.getY());
+}
+----
+
+The first consumer, `moveOneToTheRight`, has a non-modifying `accept` method which modifies its parameter.
+The second one, `addToP`, has a modifying `accept` method, with a parameter which remains unmodified.
+
+However, these observations contrast with the use of `Consumer` in the `forEach` method of many collections:
+
+.Possible implementation of forEach
+[source,java]
+----
+default void forEach(Consumer<T> consumer) {
+    for(T t: this) consumer.accept(t);
+}
+----
+
+Here,
+
+. `T` is implicitly immutable, so the consumer's `accept` cannot make changes to `t` _that we know of_;
+. it is expected that `accept` makes some modification, but not a modification to `this`.
+
+For all intents and purposes, we want to mark both the method and the parameter inside `forEach` as {nm}.
+The method does nothing but help us iterate over the elements of the collection, an action which is not modifying when executed using a for-loop.
+The modifying aspect is in the application of the method: when a modifying method is passed as argument to `forEach`, the object of the method call will be marked as modified:
+
+.Marking the object as modified
+[source,java]
+----
+Set<Integer> set = new HashSet<>();
+List.of(1, 2, 3).forEach(set::add); // <1>
+----
+<1> The `forEach` modifies `set` as the object of the modifying method `add`.
+
+We already conclude that
+
+****
+*Additional, overriding modification rule*: Parameters of abstract types are {nm} if the abstract method is not applied to other parameters of the method.
+****
+
+Let us explain this:
+
+Modifications abstract methods make to the fields of the class can only be made through methods which are already {modified} (or access to non-private fields); this will not change the overall modification status of the type.
+As a consequence,
+
+. we need not look at indirect modifications (which would be nigh on impossible anyway), implying that functional interface type parameters have no impact on the modification status of the method.
+. we do not need to change our definition of containers, which requires parameters that are {nm}.
+
+Secondly,
+
+****
+*Additional, overriding modification rule*: We treat unbound parameter types, and types that can be replaced by an unbound parameter type, as level 2 immutable when passing them as parameters to abstract methods.
+They will not be modified.
+****
+
+So in effect, the parameter of the `accept` method is modifying for all types except the ones where modifications don't matter to the type.
+Making the consumer {nm1} forces absence of modifications on the parameters in the implementation.
+The annotation {nn1} implies that null arguments will cause exceptions; the analyser will warn against them.
+
+If the data passed to the `accept` method is independent of the fields, we annotate the consumer parameter with {independent}.
+The independence shields off the fields from modification, which is a necessary requirement for level 2 immutability.
+
+Implementing a visitor using the `forEach` method defined as:
+
+.Annotated definition of forEach.
+[source,java]
+----
+@NotModified
+default void forEach(Consumer<T> consumer) {
+    for(T t: this) consumer.accept(t);
+}
+----
+
+renders code like:
+
+.Example use of forEach.
+[source,java]
+----
+private Set<T> set;
+
+@NotModified
+public void visit(Consumer<T> consumer) {
+    set.forEach(consumer);
+}
+
+@NotModified
+public void copy(@Independent Consumer<Set<T>> consumer) {
+    consumer.accept(new HashSet<>(set));
+}
+----
+
+The next section discusses the modification or non-modification of the `visit` and `copy` methods.
+
 

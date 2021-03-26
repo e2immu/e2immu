@@ -22,19 +22,58 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /*
-situation: consumer applied to field (non-parameter) of implicitly immutable type
+Multi-example
+
+3 interfaces, one with unmarked modification (up to the implementation), two with explicitly marked modification.
+'MyIterator.next' demands @Modified @Dependent1
+'MyIterable.iterator' demands @NotModified @Dependent2 (which implies @Independent)
+
+Consumer applied to field (non-parameter) of implicitly immutable type
+Examples of propagation of modification:
+print, addNewLine, addNewLine2, replace
+
+Examples of propagation of modification to parameters content linked to a parameter:
+oneMore1, oneMore2, oneMore3
+
+E1Circular shows @Linked  @Dependent                -> @E1Container,
+E2Circular shows @Linked1 @Dependent2 @Independent  -> @E2Container
+
+@PropagateModification is generated when an abstract method is called on a parameter (or variable linked to parameter)
+@Dependent1 is generated on
+(1) assignment of II type parameter to field
+(2) exposure to parameter of abstract method
+(3) propagation
+
+@Dependent2 is generated when a @Dependent1 object is linked to FIXME
  */
 public class AbstractTypeAsParameter_00 {
 
+    interface MyIterator<T> {
+        @Modified
+        @Dependent1
+            // content bind the result to my IID (which is the implementation's IID)
+        T next();
+
+        @Modified
+        boolean hasNext();
+    }
+
+    interface MyIterable<T> {
+        @NotModified
+        @Dependent2
+            // the result is content bound to my IID; independent of SD
+        MyIterator<T> iterator();
+    }
+
     interface MyConsumer<T> {
-        // UNMARKED
-        void accept(T t); // PARAMETER T unmarked
+        // Method unmarked in terms of modification
+        void accept(T t); // Parameter unmarked in terms of modification
     }
 
     @Container
-    static class Circular<T> {
+    static class Circular<T> implements MyIterable<T> {
 
-        private T x;
+        private T x; // implicitly immutable type T
         private T y;
         private boolean next;
 
@@ -42,14 +81,14 @@ public class AbstractTypeAsParameter_00 {
         }
 
         @Independent
-        public Circular(@Dependent1 Circular<T> c) {
+        public Circular(@Dependent2 Circular<T> c) { // @Dependent2: my IID becomes part of the IID
             x = c.x;
             y = c.y;
             next = c.next;
         }
 
         @Modified
-        public void add(@Dependent T t) { // @Dependent means @NM + @Linked to fields
+        public void add(@Dependent1 T t) { // @Dependent1: becomes part of IID
             if (next) {
                 this.y = t;
             } else {
@@ -59,15 +98,44 @@ public class AbstractTypeAsParameter_00 {
         }
 
         @NotModified // because T is implicitly immutable, the parameter of accept cannot touch it wrt Circular
-        public void forEach(@NotModified @PropagateModification @Dependent MyConsumer<T> consumer) { // because forEach calls an unmarked method on consumer (and no other modifying method)
-            consumer.accept(x);
+        public void forEach(@NotModified @PropagateModification @Dependent1 MyConsumer<T> consumer) {
+            consumer.accept(x); // sending in x implies @Dependent1; using accept implies @PM
             consumer.accept(y);
         }
 
         @NotModified
-        @Dependent1
+        @E2Container // the stream itself is level2 immutable
+        @Dependent2 // the stream's IID is content bound to my IID
         public Stream<T> stream() {
             return Stream.of(x, y);
+        }
+
+        @Override
+        @Independent // my SD cannot be reached/is independent
+        @NotModified // not changing my SD in this operation
+        @Dependent2 // my IID is bound to 'this' 's IID
+        public MyIterator<T> iterator() {
+            return new IteratorImpl();
+        }
+
+        @Independent
+                // means: no way to modify the implicitly present parent class's SD (next boolean)
+        class IteratorImpl implements MyIterator<T> {
+            boolean returnY;
+
+            @Override
+            @Modified
+            public boolean hasNext() {
+                if (returnY) return false;
+                returnY = true;
+                return true;
+            }
+
+            @Override // @NotModified, even if the interface allows for modification
+            @Dependent1 // returning my IID
+            public T next() {
+                return returnY ? y : x;
+            }
         }
     }
 
@@ -77,6 +145,16 @@ public class AbstractTypeAsParameter_00 {
 
     public static void addNewLine(@NotModified @Modified1 Circular<StringBuilder> c) {
         c.forEach(sb -> sb.append("\n")); // parameter-modifying lambda propagates modification to c
+    }
+
+    public static void addNewLine2(@NotModified @Modified1 Circular<StringBuilder> c) {
+        MyIterator<StringBuilder> iterator = c.iterator(); // non-modifying operation on c, but content binding
+        while (iterator.hasNext()) { // modifying operation on iterator
+            StringBuilder sb = iterator.next();
+            // modify a local variable which is content bound to iterator, which in turn is content bound to c
+            // this implies the @Modified1 on c
+            sb.append("\n");
+        }
     }
 
     public static void replace(@Modified @NotModified1 Circular<StringBuilder> c) {
@@ -133,31 +211,33 @@ public class AbstractTypeAsParameter_00 {
     typical proxying of some methods to another background container
      */
     @E1Container
-    static class Circular2<T> {
+    static class E1Circular<T> {
+        @Linked(to = {"E1Circular:0:circular"})
         private final Circular<T> circular;
 
-        public Circular2(Circular<T> circular) {
+        @Dependent // assignment
+        public E1Circular(Circular<T> circular) {
             this.circular = circular;
         }
 
         @Modified
-        public void add(@Dependent T t) {
+        public void add(@Dependent1 T t) {
             circular.add(t);
         }
 
         @Modified
-        public void addAll(@Dependent1 Collection<? extends T> collection) {
-            for (T t : collection) circular.add(t);
+        public void addAll(@Dependent2 Collection<? extends T> collection) {
+            for (T t : collection) circular.add(t); // links t to circular, and t was linked to collection -> @Dep2
         }
 
         @NotModified
         public void forEach(@NotModified @PropagateModification @Independent @Dependent1 MyConsumer<T> consumer) {
-            circular.forEach(consumer);
+            circular.forEach(consumer); // t -> consumer.apply(t)
         }
 
-        @Dependent1
+        @Dependent2
         @NotModified
-        @Independent
+        @E2Container
         public Stream<T> stream() {
             return circular.stream();
         }
@@ -172,7 +252,7 @@ public class AbstractTypeAsParameter_00 {
         private final Circular<T> circular;
 
         @Independent
-        public E2Circular(@NotModified @Dependent1 Circular<T> circular) {
+        public E2Circular(@NotModified @Dependent2 Circular<T> circular) {
             this.circular = new Circular<>(circular);
         }
 
@@ -181,9 +261,9 @@ public class AbstractTypeAsParameter_00 {
             circular.forEach(consumer);
         }
 
-        @Dependent1
+        @Dependent2
         @NotModified
-        @Independent
+        @E2Container
         public Stream<T> stream() {
             return circular.stream();
         }

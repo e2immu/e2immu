@@ -1,9 +1,0 @@
-
-== Installation
-
-How to install `e2immu`.
-
-=== Add the jar
-
-=== Install the code analyser
-

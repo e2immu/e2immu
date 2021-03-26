@@ -1,5 +1,5 @@
 [#functional-interfaces]
-== Functional interfaces
+=== Functional interfaces
 
 Functional interfaces are interfaces with a single abstract method.
 The following table lists some frequently used examples:
@@ -378,4 +378,153 @@ This is compatible with level 2 immutability rules for fields that are not suppo
 
 We conclude that no specific rules need adding or tweaking to the definition of level 2 immutability because of functional interfaces.
 On the other hand, we are due a more detailed explanation of how to compute linking and exposure.
+
+
+
+
+==== Abstract methods
+
+In terms of modification, abstract methods can in theory be either: it depends on the concrete implementation.
+Sometimes we can contract them, as in the case of a collection's methods; otherwise, we explicitly want to avoid contracting, as for functional interfaces.
+
+Elsewhere, we've argued that inside the method calling an abstract method which has arrived as a parameter, the abstract method can be treated as _non modifying_.
+The effect will be on the object of the concrete instance that was passed on as argument.
+Therefore, we annotate the parameter with {propagateModification}, to inform the analyser that modification needs to assessed at the point where the concrete implementation is passed on as argument to the parameter.
+
+[source,java]
+----
+interface T {
+    @Modified
+    void doSomething();
+    @NotModified
+    void print();
+}
+
+interface Consumer {
+  // Method unmarked
+  void accept(T t); // Parameter t unmarked
+}
+
+class SomeContainer {
+  private T someT;
+  ....
+  @NotModified
+  public void forEach(@PropagateModification Consumer consumer) {
+    consumer.accept(someT); // internally, non-modifying action
+  }
+  ...
+}
+
+public void loop1(SomeContainer sc) {
+    sc.forEach(T::doSomething); // changes to T object in SomeContainer
+}
+
+public void loop2(SomeContainer sc) {
+    sc.forEach(T::print); // no changes to T object in SomeContainer
+}
+
+public void loop3(@Modified1 SomeContainer sc) {
+    sc.forEach(this::someModifyingAction); // changes to 'this', not to T object
+}
+
+@Modified
+public void someModifyingAction(@NotModified T t) { ... }
+----
+
+In `loop1` and `loop2` no modifying method is called on `sc`, so according to the rules of modification, the parameter `sc` is {nm}.
+However, because of the  {propagateModification} on the consumer, we know that inside `sc`, some object will be changed.
+This, we indicate with {m1}:
+
+[source,java]
+----
+public static void loop1(@Modified1 SomeContainer sc) {
+    sc.forEach(T::doSomething); // changes to T object in SomeContainer
+}
+----
+
+#TODO# situation is different when `accept` takes another parameter (instead of a field) as argument.
+
+#TODO# situation where a field is modified.
+
+In `loop2`, {nm1} is implicitly present.
+We can contract the latter annotation instead of computing {propagateModification}:
+
+[source,java]
+----
+class SomeContainer {
+  private T someT;
+  ....
+  @NotModified
+  public void forEach(@NotModified1 Consumer consumer) {
+    consumer.accept(someT); // internally, non-modifying action
+  }
+  ...
+}
+----
+
+If we define it to indicate that concrete consumers cannot modify their parameters, the implementors of `forEach` are guaranteed that no changes to `someT` take place.
+In this way they can avoid the independence requirement for level 2 immutability.
+
+#TODO# inconsistency?
+No. {modified} means that a change on the object, or subgraph.
+{m1} indicates no change on object, only subgraph.
+{nm} {m1} means that the change is only in the subgraph.
+{modified} {nm1} means that the change is only in the object, not in the subgraph.
+
+Summarising what we currently have:
+
+====
+{propagateModification} is used on parameters of types with at least one abstract method, to indicate that this abstract method has been called inside the method.
+The argument of the abstract method is not a constant, and is not linked to another parameter.
+
+{m1} is used when there is a potential modification on objects held by the object annotated.
+
+====
+
+NOTE: Attentive readers feel that they are facing a full-blown recursion here.
+However, software developers are humans as well, and will not work easily with 3rd, 4th level functions.
+We will stick to one, and later maybe a second level; after all, we're trying to make a practical tool and not a theoretically closed system.
+There are too many combinations possible, even if we restrict to one level.
+
+==== Example: iterators
+
+An iterator can never be a level 2 immutable object: it has to hold state.
+
+[source,java]
+----
+interface Iterator<T> {
+    @Modified boolean hasNext();
+
+    @Modified T next();
+
+    @Modified default void remove() { throw new UnsupportedOperationException(); }
+
+    @Modified // computed
+    default void forEachRemaining(@PropagateModification Consumer<T> action) {
+        while(hasNext()) action.accept(next());
+    }
+}
+----
+
+The nature of `remove` is radically different from that of the `next`, `hasNext` combo, however.
+An iterator is independent of the type it iterates over: the modifications made by `next` and `hasNext` are restricted to the iterator itself, whereas the modification made by `remove` plans to modify the underlying type.
+
+.Iterator, attempt 2
+[source,java]
+----
+interface Iterator<T> {
+    @Modified @NotModified1 boolean hasNext();
+
+    @Modified @NotModified1 T next();
+
+    @Modified @Modified1 default void remove() { throw new UnsupportedOperationException(); }
+
+    @Modified // computed
+    default void forEachRemaining(@PropagateModification Consumer<T> action) {
+        while(hasNext()) action.accept(next());
+    }
+}
+----
+
+
 

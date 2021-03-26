@@ -54,7 +54,7 @@ class Polygon {
 
 If your code can live with two different types (`Polygon.Builder`, `Polygon`) to represent polygons in their different stages (mutable, immutable), the builder paradigm is great.
 If, on the other hand, you want to hold polygons in a type that spans both stages of the polygon lifecycle, it becomes difficult to do this with an eye on immutability.
-The <<firstthen>> type, as detailed further, can assist in this situation: it holds an initial object (the _first_) until a state change occurs, and it is forced to hold a second object (the _then_).
+The <<support-firstthen>> type, as detailed further, can assist in this situation: it holds an initial object (the _first_) until a state change occurs, and it is forced to hold a second object (the _then_).
 Once it is in the final state, it cannot change anymore.
 It is _eventually immutable_:
 
