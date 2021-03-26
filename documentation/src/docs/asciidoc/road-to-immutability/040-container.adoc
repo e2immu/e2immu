@@ -10,7 +10,7 @@ This is the formal rule:
 Whatever else the container does, storing the parameters in fields or not, it will not change your objects.
 You obviously remain free to change them elsewhere; then the container will hold on to the changed object, not some copy.
 
-Containers are complementary to immutable objects, and we will find that many immutable objects are containers, while some containers can be modified to become immutable.
+Containers are complementary to immutable objects, and we will find that many immutable objects are containers, while some containers are the precursors to immutable types.
 There are two archetypes for containers: collections and builders.
 
 The code analyser will annotate a type that is both level 1 immutable, and a container, with {e1container}.

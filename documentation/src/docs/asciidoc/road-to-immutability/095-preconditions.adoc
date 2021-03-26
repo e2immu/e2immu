@@ -1,4 +1,29 @@
 == Preconditions and instance state
 
 The {e2immu} analyser needs pretty strong support for determining preconditions on methods to be able to compute eventual immutability.
-This support can be harnessed in other ways as well, for example, to detect common collection mistakes
+This support can be harnessed in other ways as well, for example, to detect common mistakes in the use of collection classes.
+
+We have implemented a system focused on an evolving instance state.
+In the case of Java collections and `StringBuilder`, size-based instance state is low-hanging fruit.
+Let's proceed along with an example:
+
+.Creating an empty list
+[source,java]
+----
+List<String> list = new ArrayList<>();
+if (list.size() > 0) { // WARNING: evaluates to constant
+}
+----
+
+When creating a new `ArrayList` using the empty constructor, we can store in the value that its size is 0.
+First, let us look at the annotations for the constructor, and the `size` method:
+
+.Annotations of ArrayList constructor, and size
+[source,java]
+----
+boolean size$Invariant$Size(int i) { return i >= 0; }
+void size$Aspect$Size() {}
+@NotModified
+int size() { return 0; }
+
+----

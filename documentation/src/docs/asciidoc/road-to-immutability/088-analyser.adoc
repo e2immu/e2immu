@@ -1,0 +1,45 @@
+=== In the analyser itself
+
+Practice what you preach, and all that.
+The {e2immu} analyser relies heavily on support classes such as `SetOnce`, and on the builder pattern described in the previous section.
+Almost all public types are containers.
+Because we intend to use the analyser's code as a showcase for this project, one important class (`ExpressionContext`) was intentionally kept as a non-container.
+
+A good example of our aim for eventual immutability is `TypeInfo`, the primary container holding a type.
+Initially, a type is nothing but a reference, with a fully qualified name.
+Source code or byte code inspection augments it with information about its methods and fields.
+Whilst during inspection information is writable, after inspection this information becomes immutable.
+We use the builder pattern for `TypeInspection`, using `TypeInspectionImpl.Builder` first and `TypeInspectionImpl` later.
+The inspection information is stored using `SetOnce`:
+
+.Parts of TypeInfo
+[source,java]
+----
+public class TypeInfo {
+    public final String fullyQualifiedName;
+    public final SetOnce<TypeInspection> typeInspection = new SetOnce<>();
+    ...
+}
+----
+
+Once inspection is over, the code analyser takes over.
+Results are temporarily stored in `TypeAnalysisImpl.Builder`, then copied into the immutable `TypeAnalysisImpl` class.
+Both classes implement the `TypeAnalysis` interface to shield off the build phase.
+Once the immutable type is ready, it is stored in `TypeInfo`:
+
+.Parts of TypeInfo, v2
+[source,java]
+----
+@E2Container(after="typeAnalysis,typeInspection")
+public class TypeInfo {
+    public final String fullyQualifiedName;
+
+    public final SetOnce<TypeInspection> typeInspection = new SetOnce<>();
+    public final SetOnce<TypeAnalysis> typeAnalysis = new SetOnce<>();
+
+    ...
+}
+----
+
+In this way, if we keep playing by the book recursively downward, `TypeInfo` will become an eventually level 2 immutable type.
+Software engineers writing applications which use the {e2immu} analyser as a library, can feel secure that once the analysis phase is over, all the inspected and analysed information remains stable.

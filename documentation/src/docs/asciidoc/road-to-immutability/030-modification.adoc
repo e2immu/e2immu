@@ -12,7 +12,7 @@ The code analyser uses the annotations {nm} and {modified}.
 They are exclusive, and the analyser will compute one or the other for every method of the type.
 All non-trivial constructors are modifying, so we avoid clutter by not annotating them.
 
-For clarity, we repeat that directly assigning to the fields also causes the {modified} mark for methods.
+It follows from the definition that directly assigning to the fields also causes the {modified} mark for methods.
 As a consequence, setters are {modified}, while getters are {nm}.
 Consider:
 
@@ -66,7 +66,7 @@ The analyser marks a *field* as *modified* when at least one of the type's metho
 
 Let us start by agreeing that the methods of `Object` and `String` are all {nm}.
 This is pretty obvious in the case of `toString`, `hashCode`, `getClass`.
-It is less obvious for the `wait` and other synchronization-related methods, but remember that as a general rule, we exclude synchronization support from this discussion.
+It is less obvious for the `wait` and other synchronization-related methods, but remember that as discussed in the <<assumptions>>, we exclude synchronization support from this discussion.
 
 Note also that we cannot add modifying methods to the type `DeeplyImmutable1` in Example 3.
 
@@ -116,13 +116,16 @@ public interface Collection<E> extends Iterable<E> {
 Adding an object to a collection (set, list) will cause some assignment somewhere inside the data structure.
 Returning the size of the collection should not.
 
+IMPORTANT: Under supervision of the static code analyser, you will not be able to create an implementation of this interface which violates the modification rules.
+This is intentional: no implementation should modify the data structure when `size` is called.
+
 Adding all elements of a collection to the object (in `addAll`) should not modify the input collection, whence the {nm}.
 Other types in the parameters have not been annotated with {nm}:
 
 * `Object` because it is deeply immutable;
 * `E` because it is of an unbound generic type, it has the same methods available as `Object`.
 No code statically visible to implementations of `Collection` can make modifications to `E`;
-* `Consumer` because it is a functional interface (an interface with a single abstract method or SAM); they are {nm} by definition.
+* `Consumer` because it is a functional interface (an interface with a single abstract method); they are {nm} by definition.
 
 In order to keep the narrative going, we defer a discussion of modification in the context of parameters of functional interface types to the section <<indirect-modification>>.
 Here, we continue with the first use case of modification: containers.

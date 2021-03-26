@@ -2,11 +2,13 @@
 :source-highlighter: coderay
 :source-language: java
 :description: A walk-through of the concepts and definitions of _e2immu_
-:author: Bart Naudts
+:author: Bart Naudts <bart.naudts@e2immu.org>
 :sectnums:
 :icons: font
 :toc: left
+:url-repo: https://github.com/e2immu/e2immu
 
+Effective and eventual immutability with _e2immu_, a static code analyser for Java.
 
 include::{includedir}/util/definitions.adoc[]
 
@@ -33,6 +35,7 @@ include::{includedir}/road-to-immutability/077-higher-level-modifications.adoc[]
 include::{includedir}/road-to-immutability/080-support-classes.adoc[]
 include::{includedir}/road-to-immutability/086-examples.adoc[]
 include::{includedir}/road-to-immutability/087-builders.adoc[]
+include::{includedir}/road-to-immutability/088-analyser.adoc[]
 
 include::{includedir}/road-to-immutability/090-other-annotations.adoc[]
 include::{includedir}/road-to-immutability/095-preconditions.adoc[]

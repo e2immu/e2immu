@@ -140,18 +140,18 @@ More on this later, but here is a first example of an eventually level 1 immutab
 .Simplified version of `SetOnce`
 [source,java]
 ----
-@E1Immutable(after="set")
+@E1Immutable(after="t")
 class SetOnce<T> {
     private T t;
 
-    @Mark("set")
+    @Mark("t")
     public void set(T t) {
         if(t == null) throw new NullPointerException();
         if(this.t != null) throw new UnsupportedOperationException("Already set");
         this.t = t;
     }
 
-    @Only(after="set")
+    @Only(after="t")
     public void get() {
         if(this.t == null) throw new UnsupportedOperationException("Not yet set");
         return this.t;
