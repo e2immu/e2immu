@@ -46,6 +46,8 @@ public interface FieldAnalysis extends Analysis {
 
     Boolean isOfImplicitlyImmutableDataType();
 
+    FieldInfo getFieldInfo();
+
     default int getFieldProperty(AnalysisProvider analysisProvider,
                                  FieldInfo fieldInfo,
                                  TypeInfo bestType,

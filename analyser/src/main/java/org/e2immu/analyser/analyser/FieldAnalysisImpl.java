@@ -103,6 +103,11 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
         return fieldInfo.owner.typeInspection.get().annotationMode();
     }
 
+    @Override
+    public FieldInfo getFieldInfo() {
+        return fieldInfo;
+    }
+
     public static class Builder extends AbstractAnalysisBuilder implements FieldAnalysis {
         public final TypeInfo bestType;
         public final boolean isExplicitlyFinal;
@@ -131,6 +136,11 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
                     Origin.INITIAL_FIELD_FLOW);
             objectFlow = new FirstThen<>(initialObjectFlow);
             this.fieldInfo = fieldInfo;
+        }
+
+        @Override
+        public FieldInfo getFieldInfo() {
+            return fieldInfo;
         }
 
         @Override
@@ -164,7 +174,14 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
 
         public final SetOnce<Set<ObjectFlow>> internalObjectFlows = new SetOnce<>();
 
-        public final SetOnce<Boolean> isOfImplicitlyImmutableDataType = new SetOnce<>();
+        private final SetOnce<Boolean> isOfImplicitlyImmutableDataType = new SetOnce<>();
+
+        public void setImplicitlyImmutableDataType(boolean value) {
+            isOfImplicitlyImmutableDataType.set(value);
+        }
+        public boolean isOfImplicitlyImmutableDataTypeIsSet() {
+            return isOfImplicitlyImmutableDataType.isSet();
+        }
 
         @Override
         public int getProperty(VariableProperty variableProperty) {

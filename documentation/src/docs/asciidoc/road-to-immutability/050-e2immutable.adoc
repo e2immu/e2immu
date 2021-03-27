@@ -1,14 +1,13 @@
-
 == Level 2 immutability
 
 === Definition
 
 First, what do we want intuitively?
 A useful form of immutability, less strong than deeply immutable, but better than level 1 immutability for many situations.
-We propose the following:
+We propose the following description:
 
 ****
-After construction, an immutable type holds a number of objects; the type will not change their content, nor will it exchange them for other objects, or allow others to do so.
+After construction, an immutable type holds a number of objects; the type will not change their content, nor will it exchange these objects for other objects, or allow others to do so.
 The type is not responsible for what others do to the content of the objects it was given.
 ****
 
@@ -125,26 +124,26 @@ They will only be of relevance for _some_ fields; requiring them for all fields 
 Rather than specifying which fields need to follow the additional rules, it is easier to say which fields are exempt from them:
 
 . fields that are of level 2 immutable type themselves;
-. fields whose type could be replaced by an unbound type parameter.
+. fields whose type can be replaced by an unbound type parameter.
 
-For all modification purposes we can replace unbound type parameters with `java.lang.Object`, which is level 2 immutable.
-Therefore, the requirement of level 2 immutability suffices.
+Note that for all modification purposes we can replace unbound type parameters with `java.lang.Object`, which is level 2 immutable.
+We will call those fields _implicitly immutable_, and the total of the values of fields of implicitly immutable type the _implicitly immutable content_ of the type.
+Their primary characteristic is that their content is inaccessible from within the type
 
-Constructor parameters of unbound type parameter, or method return types of unbound type parameter are always independent,
-in the same way that level 2 immutable types are: inside the class, there's no way of modifying them.
+Constructor parameters of unbound type parameter, or method return types of unbound type parameter are always independent, in the same way that level 2 immutable types are: inside the class, there's no way of modifying them.
 
 We now add rules 2 and 3 to the definition, and obtain:
 
 ****
 *Definition: level 2 immutability*:
 
-(*Rule 0*: the type is level 1 immutable: all fields are effectively final)
+(*Rule 0*: The type is level 1 immutable: all fields are effectively final)
 
-*Rule 1*: all fields are {nm}.
+*Rule 1*: All fields are {nm}.
 
-*Rule 2*: all fields are either private, or level 2 immutable themselves.
+*Rule 2*: All fields are either private, or of level 2 immutable or implicitly immutable type.
 
-*Rule 3*: all constructors and non-private methods are independent of the fields.
+*Rule 3*: All constructors and non-private methods are independent of the fields.
 ****
 
 Rule 2 is there to ensure that the content of the object cannot be modified by means of access to the non-private fields.
@@ -327,7 +326,6 @@ class Example2 {
 
 When it is clear a method returns an immutable set, but the formal type is `java.util.Set`, the {e2immutable} annotation can 'travel':
 
-
 [source,java]
 ----
 @E2Container
@@ -345,6 +343,7 @@ class SetBasedContainer6<T> {
     }
 }
 ----
+
 Whilst `Set` in general is not {e2immutable}, the `data` field itself is.
 
 The computations that the analyser needs to track dynamic type annotations, are similar to those it needs to compute eventual immutability.

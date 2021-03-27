@@ -227,10 +227,10 @@ public class FieldAnalyser extends AbstractAnalyser {
     }
 
     private AnalysisStatus computeImplicitlyImmutableDataType() {
-        assert !fieldAnalysis.isOfImplicitlyImmutableDataType.isSet();
+        assert !fieldAnalysis.isOfImplicitlyImmutableDataTypeIsSet();
         if (myTypeAnalyser.typeAnalysis.getImplicitlyImmutableDataTypes() == null) return DELAYS;
         boolean implicit = myTypeAnalyser.typeAnalysis.getImplicitlyImmutableDataTypes().contains(fieldInfo.type);
-        fieldAnalysis.isOfImplicitlyImmutableDataType.set(implicit);
+        fieldAnalysis.setImplicitlyImmutableDataType(implicit);
         return DONE;
     }
 

@@ -439,13 +439,16 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
         assert !methodAnalysis.preconditionForEventual.isSet();
 
         TypeInfo typeInfo = methodInfo.typeInfo;
-        List<FieldAnalysis> fieldAnalysesOfTypeInfo = myFieldAnalysers.values().stream().map(fa -> fa.fieldAnalysis).collect(Collectors.toUnmodifiableList());
+        List<FieldAnalysis> fieldAnalysesOfTypeInfo = myFieldAnalysers.values().stream()
+                .map(fa -> fa.fieldAnalysis).collect(Collectors.toUnmodifiableList());
 
         while (true) {
+            // FIRST CRITERION: is there a non-@Final field?
+
             boolean haveDelayOnFinalFields = fieldAnalysesOfTypeInfo
                     .stream().anyMatch(fa -> fa.getProperty(VariableProperty.FINAL) == Level.DELAY);
             if (haveDelayOnFinalFields) {
-                log(DELAYED, "Delaying @Mark/@Only in {} until we know about @Final of fields", methodInfo.fullyQualifiedName);
+                log(DELAYED, "Delaying eventual in {} until we know about @Final of fields", methodInfo.fullyQualifiedName);
                 return DELAYS;
             }
             boolean haveNonFinalFields = fieldAnalysesOfTypeInfo
@@ -453,10 +456,13 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
             if (haveNonFinalFields) {
                 break;
             }
+
+            // SECOND CRITERION: is there an eventually immutable field?
+
             boolean haveDelayOnImmutableFields = fieldAnalysesOfTypeInfo
                     .stream().anyMatch(fa -> fa.getProperty(VariableProperty.IMMUTABLE) == Level.DELAY);
             if (haveDelayOnImmutableFields) {
-                log(DELAYED, "Delaying @Mark/@Only in {} until we know about @Immutable of fields", methodInfo.fullyQualifiedName);
+                log(DELAYED, "Delaying eventual in {} until we know about @Immutable of fields", methodInfo.fullyQualifiedName);
                 return DELAYS;
             }
             boolean haveEventuallyImmutableFields = fieldAnalysesOfTypeInfo
@@ -467,9 +473,33 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
             if (haveEventuallyImmutableFields) {
                 break;
             }
+
+            // THIRD CRITERION: is there a field whose content can change? Non-primitive, not implicitly immutable, not E2
+
+            boolean haveDelayOnImplicitlyImmutableType =  fieldAnalysesOfTypeInfo
+                    .stream().anyMatch(fa -> fa.isOfImplicitlyImmutableDataType() == null);
+            if (haveDelayOnImplicitlyImmutableType) {
+                log(DELAYED, "Delaying eventual in {} until we know about implicitly immutable type of fields",
+                        methodInfo.fullyQualifiedName);
+                return DELAYS;
+            };
+
+            boolean haveContentChangeableField = fieldAnalysesOfTypeInfo
+                    .stream().anyMatch(fa -> {
+                        int immutable = fa.getProperty(VariableProperty.IMMUTABLE);
+                        return !MultiLevel.isE2Immutable(immutable)
+                                && !Primitives.isPrimitiveExcludingVoid(fa.getFieldInfo().type)
+                                && !fa.isOfImplicitlyImmutableDataType();
+                    });
+            if(haveContentChangeableField) {
+                break;
+            }
+
+            // GO UP TO PARENT
+
             ParameterizedType parentClass = typeInfo.typeInspection.get().parentClass();
             if (Primitives.isJavaLangObject(parentClass)) {
-                log(MARK, "No @Mark/@Only annotation in {}: found no non-final fields", methodInfo.distinguishingName());
+                log(MARK, "No eventual annotation in {}: found no non-final fields", methodInfo.distinguishingName());
                 methodAnalysis.preconditionForEventual.set(Optional.empty());
                 return DONE;
             }
@@ -502,7 +532,8 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
                         Expression state = cm.state();
                         if (!state.isBoolValueTrue()) {
                             Filter filter = new Filter(sharedState.evaluationContext, Filter.FilterMode.ACCEPT);
-                            Filter.FilterResult<FieldReference> filterResult = filter.filter(state, filter.individualFieldClause(true));
+                            Filter.FilterResult<FieldReference> filterResult = filter.filter(state,
+                                    filter.individualFieldClause(analyserContext,true));
                             Expression inResult = filterResult.accepted().get(fr);
                             if (inResult != null) {
                                 Precondition pc = new Precondition(inResult, List.of(new Precondition.StateCause()));
@@ -524,7 +555,7 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
 
         Filter filter = new Filter(sharedState.evaluationContext, Filter.FilterMode.ACCEPT);
         Filter.FilterResult<FieldReference> filterResult = filter.filter(precondition.expression(),
-                filter.individualFieldClause());
+                filter.individualFieldClause(analyserContext));
         if (filterResult.accepted().isEmpty()) {
             log(MARK, "No @Mark/@Only annotation in {}: found no individual field preconditions", methodInfo.distinguishingName());
             methodAnalysis.preconditionForEventual.set(Optional.empty());

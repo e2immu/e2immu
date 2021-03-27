@@ -14,10 +14,11 @@
 
 package org.e2immu.analyser.model.expression;
 
+import org.e2immu.analyser.analyser.AnalyserContext;
 import org.e2immu.analyser.analyser.EvaluationContext;
-import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.MethodInfo;
-import org.e2immu.analyser.model.ParameterInfo;
+import org.e2immu.analyser.analyser.MethodAnalyser;
+import org.e2immu.analyser.analyser.VariableProperty;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.This;
@@ -154,13 +155,13 @@ public class Filter {
     }
     // some filter methods
 
-    public FilterMethod<FieldReference> individualFieldClause() {
-        return individualFieldClause(false);
+    public FilterMethod<FieldReference> individualFieldClause(AnalyserContext analyserContext) {
+        return individualFieldClause(analyserContext, false);
     }
 
     // EXAMPLE: field == null, field == constant, ...
     // exclusively used for Eventual
-    public FilterMethod<FieldReference> individualFieldClause(boolean acceptAndRemapLocalCopy) {
+    public FilterMethod<FieldReference> individualFieldClause(AnalyserContext analyserContext, boolean acceptAndRemapLocalCopy) {
         return value -> {
             if (value instanceof Equals equalsValue) {
                 FieldReference l = extractFieldReference(equalsValue.lhs, acceptAndRemapLocalCopy);
@@ -185,7 +186,7 @@ public class Filter {
                     return new FilterResult<FieldReference>(Map.of(fr, gt0), defaultRest);
                 }
             } else if (Primitives.isBoolean(value.returnType())) {
-                FieldReference fieldReference = extractBooleanFieldReference(value, acceptAndRemapLocalCopy);
+                FieldReference fieldReference = extractBooleanFieldReference(analyserContext, value, acceptAndRemapLocalCopy);
                 if (fieldReference != null) {
                     return new FilterResult<FieldReference>(Map.of(fieldReference, value), defaultRest);
                 }
@@ -194,10 +195,18 @@ public class Filter {
         };
     }
 
-    private static FieldReference extractBooleanFieldReference(Expression value, boolean acceptAndRemapLocalCopy) {
+    private static FieldReference extractBooleanFieldReference(AnalyserContext analyserContext,
+                                                               Expression value,
+                                                               boolean acceptAndRemapLocalCopy) {
         Expression v;
         if (value instanceof Negation negation) v = negation.expression;
         else v = value;
+        // @NotModified method returning a boolean
+        if(value instanceof MethodCall mc) {
+            MethodAnalysis methodAnalysis = analyserContext.getMethodAnalysis(mc.methodInfo);
+            if(methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD) != Level.FALSE) return null;
+            v = mc.object;
+        }
         if (v instanceof VariableExpression ve
                 && ve.variable() instanceof FieldReference fr
                 && acceptScope(fr.scope)) return fr;

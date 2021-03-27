@@ -562,7 +562,7 @@ public class TypeAnalyser extends AbstractAnalyser {
                 ConditionManager.initialConditionManager(analyserContext.getPrimitives()), null);
         Filter filter = new Filter(evaluationContext, Filter.FilterMode.ACCEPT);
         Filter.FilterResult<FieldReference> filterResult = filter.filter(precondition.expression(),
-                filter.individualFieldClause());
+                filter.individualFieldClause(analyserContext));
         List<FieldToCondition> fieldToConditions = new ArrayList<>();
 
         for (Map.Entry<FieldReference, Expression> e : filterResult.accepted().entrySet()) {

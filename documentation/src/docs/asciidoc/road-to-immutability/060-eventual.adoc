@@ -88,29 +88,30 @@ We propose a system of eventual immutability based on a single transition of sta
 .First example of frozen class
 [source,java]
 ----
-@E2Container(after="freeze")
+@E2Container(after="frozen")
 class SimpleImmutableSet1<T> {
     private final Set<T> set = new HashSet<>();
     private boolean frozen;
 
-    @Only(before="freeze")
+    @Only(before="frozen")
     public boolean add(T t) {
         if(frozen) throw new UnsupportedOperationException();
         set.add(t);
     }
 
-    @Mark("freeze")
+    @Mark("frozen")
     public void freeze() {
         if(frozen) throw new UnsupportedOperationException();
         frozen = true;
     }
 
-    @Only(after="freeze")
+    @Only(after="frozen")
     public Stream<T> stream() {
         if(!frozen) throw new UnsupportedOperationException();
         return set.stream();
     }
 
+    @TestMark("frozen")
     public boolean isFrozen() { // <1>
         return frozen;
     }
@@ -129,18 +130,18 @@ This example does not require an additional field, but relies on the empty/not-e
 .Second example of frozen class
 [source,java]
 ----
-@E2Container(after="freeze")
+@E2Container(after="set")
 class SimpleImmutableSet2<T> {
     private final Set<T> set = new HashSet<>();
 
-    @Mark("freeze")
-    public boolean initialize(Set<T> data) {
+    @Mark("set")
+    public void initialize(Set<T> data) {
         if(!set.isEmpty()) throw new UnsupportedOperationException();
         if(data.isEmpty()) throw new IllegalArgumentException();
         set.addAll(data);
     }
 
-    @Only(after="freeze")
+    @Only(after="set")
     public Stream<T> stream() {
         if(set.isEmpty()) throw new UnsupportedOperationException();
         return set.stream();
@@ -148,6 +149,11 @@ class SimpleImmutableSet2<T> {
 
     public int size() {
         return set.size();
+    }
+
+    @TestMark("set")
+    public boolean hasBeenInitialised() {
+        return !set.isEmpty();
     }
 }
 ----
@@ -264,9 +270,5 @@ In the case of eventual level 2 immutability,
 * the analyser disallows modifications to the other fields.
 
 Eventual finality simply adds a  `@Final(after="mark")` annotation to each of these situations.
-
-=== Marking by hand
-
-{mark} can only be set in a modifying method.
 
 // ensure a newline at the end

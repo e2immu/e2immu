@@ -236,7 +236,8 @@ public record DetectEventual(MethodInfo methodInfo,
 
     private FieldsAndBefore analyseExpression(EvaluationContext evaluationContext, boolean e2, Expression expression) {
         Filter filter = new Filter(evaluationContext, Filter.FilterMode.ACCEPT);
-        Filter.FilterResult<FieldReference> filterResult = filter.filter(expression, filter.individualFieldClause());
+        Filter.FilterResult<FieldReference> filterResult = filter.filter(expression,
+                filter.individualFieldClause(evaluationContext.getAnalyserContext()));
         boolean allAfter = true;
         boolean allBefore = true;
         Set<FieldInfo> fields = new HashSet<>();

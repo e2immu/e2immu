@@ -46,7 +46,8 @@ class LinkExample1<X> {
 ----
 
 The parameter `x` of `LinkExample1.add` is {nm} because the first parameter of `Set.add` is {nm}.
-Because of the modification on parameter `xs`, `LinkExample1` cannot be marked {container}.
+The `add` method modifies the field, which causes the annotation first on the method, then on the field, and finally on the parameter of the constructor.
+Because of the latter, `LinkExample1` cannot be marked {container}.
 
 Linking looks at the underlying object, and not at the variable.
 Consider the following alternative `add` method:
@@ -73,35 +74,31 @@ List<X> sub = list.subList(1, 5);
 sub.set(0, x); // will modify sub, and list!
 ----
 
-On the other side of the spectrum, linking does not work on objects that cannot be modified, like primitives or deeply immutable objects such as `java.lang.String`.
+On the other side of the spectrum, linking does not work on objects that cannot be modified, like primitives or deeply immutable objects such as the primitives, or `java.lang.String`.
 
 Let us summarize by:
 
 ****
-Intuitively, linking two variables means that modifying the content of one variable implies that the content of the
-linked variable may be modified too.
+Intuitively, linking two variables means that modifying the content of one variable implies that the content of the linked variable may be modified too.
 ****
 
 We will discuss linking formally in <<linking-part2>>.
-For now, assume that a field links to another field, or to a parameter, if there is a possibility that both represent (part of) the same object.
+For now, assume that a field links to another field, or to a parameter, if there is a possibility that both variables represent (part of) the same object (their object graphs overlap).
 
 The opposite of linking is independence.
-While the code analyser will not annotate linking, it will annotate independence with `@Independent` on methods and constructors, and, in one specific case, on parameters.
+While the code analyser will not express all the linking that goes on, it will annotate (in)dependence on the entry and exit points of the type: a method's return value and parameters, and a constructor's parameters.
 
 ****
-*Definition*: A method returning a proper value (not `void`, not `this`) is *independent* when the object returned does not link to any of the fields of the type.
-****
-
-The definition of independence on a constructor is very similar:
-
-****
-*Definition*: A constructor is *independent* when the fields of the resulting instance do not link to the parameters of the constructor.
+*Definition*:
+A method or constructor is *independent* when neither the parameters, nor the returned value (in case there is one, not `void`, not `this`) link to any of the fields of the type.
+The independence (or dependence) is marked with {independent} (or {dependent}) on the method for the return value, and on the relevant parameters otherwise.
 ****
 
 It follows immediately that:
 
-* empty constructors of top-level types and static sub-types (but not necessarily inner classes, sub-types that are not static) are always independent
-* methods that return primitives or deeply immutable objects are independent, since these objects cannot be modified
+* empty constructors of top-level types and static sub-types (but not necessarily inner classes, sub-types that are not static) are always independent;
+* non-modifying methods that return primitives or deeply immutable objects are independent, since no assignments take place, and the returned objects cannot be modified.
 
 Examples follow soon, once immutability has been defined in more detail.
-We discuss the special case of (in)dependence in the context of functional interfaces in <<functional-interfaces>>.
+We discuss the special case of (in)dependence in the context of parameters of types with abstract methods in <<functional-interfaces>>.
+

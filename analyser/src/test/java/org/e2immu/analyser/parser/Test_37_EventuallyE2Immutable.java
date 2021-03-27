@@ -13,7 +13,7 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parserfailing;
+package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
@@ -21,19 +21,19 @@ import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterAnalysis;
 import org.e2immu.analyser.model.ParameterInfo;
-import org.e2immu.analyser.parser.CommonTestRunner;
-import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
-import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
-import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
-import org.e2immu.analyser.visitor.TypeAnalyserVisitor;
+import org.e2immu.analyser.model.variable.FieldReference;
+import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
+
+    public Test_37_EventuallyE2Immutable() {
+        super(true);
+    }
 
     @Test
     public void test_0() throws IOException {
@@ -41,24 +41,25 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("setT".equals(d.methodInfo().name)) {
                 if ("0.0.0".equals(d.statementId()) || "0".equals(d.statementId())) {
-                    assertEquals("true", d.statementAnalysis().stateData.precondition.get().toString());
+                    assertTrue(d.statementAnalysis().stateData.precondition.get().isEmpty());
                 }
                 if ("1.0.0".equals(d.statementId())) {
                     if (d.iteration() == 0) {
                         assertNull(d.statementAnalysis().stateData.precondition.get());
                     } else {
-                        assertEquals("null==t", d.statementAnalysis().stateData.precondition.get().toString());
+                        assertEquals("null==t", d.statementAnalysis().stateData.precondition
+                                .get().expression().toString());
                         assertEquals("null==t", d.statementAnalysis().methodLevelData
-                                .combinedPrecondition.get().toString());
+                                .combinedPrecondition.get().expression().toString());
                     }
                 }
                 if ("1".equals(d.statementId())) {
                     if (d.iteration() == 0) {
                         assertNull(d.statementAnalysis().stateData.precondition.get());
                     } else {
-                        assertEquals("true", d.statementAnalysis().stateData.precondition.get().toString());
+                        assertTrue(d.statementAnalysis().stateData.precondition.get().isEmpty());
                         assertEquals("null==t", d.statementAnalysis().methodLevelData
-                                .combinedPrecondition.get().toString());
+                                .combinedPrecondition.get().expression().toString());
                     }
                 }
             }
@@ -68,7 +69,8 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
                     case 1 -> "null==<f:t>";
                     default -> "null==t";
                 };
-                assertEquals(expectPrecondition, d.statementAnalysis().stateData.precondition.get().toString());
+                assertEquals(expectPrecondition, d.statementAnalysis()
+                        .stateData.precondition.get().expression().toString());
             }
         };
 
@@ -123,11 +125,12 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
                     case 1 -> "null==<f:t>&&null!=<f:t>";
                     default -> "false";
                 };
-                assertEquals(expectPrecondition, d.statementAnalysis().stateData.precondition.get().toString());
+                assertEquals(expectPrecondition, d.statementAnalysis()
+                        .stateData.precondition.get().expression().toString());
                 assertEquals(d.iteration() <= 1, d.statementAnalysis().stateData.precondition.isVariable());
 
-                assertEquals(d.iteration() <= 1 ? "true" : "false", d.statementAnalysis().methodLevelData
-                        .combinedPrecondition.get().toString());
+                assertEquals(d.iteration() <= 1, d.statementAnalysis().methodLevelData
+                        .combinedPrecondition.get().isEmpty());
                 assertEquals(d.iteration() <= 1, d.statementAnalysis().methodLevelData
                         .combinedPrecondition.isVariable());
             }
@@ -140,9 +143,9 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
         };
 
         testClass("EventuallyE2Immutable_1", 1, 0, new DebugConfiguration.Builder()
-                .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
-                .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                //  .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
+                //   .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                //  .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 
@@ -215,6 +218,86 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
     @Test
     public void test_4() throws IOException {
         testClass("EventuallyE2Immutable_4", 2, 0, new DebugConfiguration.Builder()
+                .build());
+    }
+
+    @Test
+    public void test_5() throws IOException {
+        testClass("EventuallyE2Immutable_5", 0, 0, new DebugConfiguration.Builder()
+                .build());
+    }
+
+    /*
+    in this example we combine the eventual work, based on preconditions,
+    with the companion work/instance state changes
+
+    An additional complication is that the precondition discovered is !data.isEmpty(),
+    while the instance state says that this.size()>=data.size().
+    We should be able to conclude from this that after statement 2 in initialise, !set.isEmpty()
+     */
+    @Test
+    public void test_6() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("initialize".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof FieldReference fr && "set".equals(fr.fieldInfo.name)) {
+                    if ("2".equals(d.statementId())) {
+                        String expectValue = d.iteration() == 0 ? "<f:set>" :
+                                "instance type HashSet<T>/*this.size()>=data.size()*/";
+                        assertEquals(expectValue, d.currentValue().toString());
+                    }
+                }
+            }
+        };
+
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("initialize".equals(d.methodInfo().name)) {
+                if ("1".equals(d.statementId())) {
+                    if (d.iteration() == 0) {
+                        assertTrue(d.statementAnalysis().stateData.precondition.isVariable());
+                    } else {
+                        assertTrue(d.statementAnalysis().stateData.precondition.get().isEmpty());
+                        assertEquals("!data.isEmpty()&&set.isEmpty()",
+                                d.statementAnalysis().methodLevelData.combinedPrecondition.get().expression().toString());
+                    }
+                }
+            }
+        };
+
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("stream".equals(d.methodInfo().name)) {
+                if (d.iteration() <= 1) {
+                    assertNull(d.methodAnalysis().getPreconditionForEventual());
+                } else {
+                    assertEquals("!set.isEmpty()",
+                            d.methodAnalysis().getPreconditionForEventual().expression().toString());
+                }
+            }
+            if ("initialize".equals(d.methodInfo().name)) {
+                if (d.iteration() <= 1) {
+                    // need to wait for implicitly immutable types
+                    assertNull(d.methodAnalysis().getPreconditionForEventual());
+                } else {
+                    assertEquals("set.isEmpty()",
+                            d.methodAnalysis().getPreconditionForEventual().expression().toString());
+                }
+            }
+        };
+
+        FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+            if ("set".equals(d.fieldInfo().name)) {
+                if (d.iteration() == 0) {
+                    assertNull(d.fieldAnalysis().isOfImplicitlyImmutableDataType());
+                } else {
+                    assertFalse(d.fieldAnalysis().isOfImplicitlyImmutableDataType());
+                }
+            }
+        };
+
+        testClass("EventuallyE2Immutable_6", 0, 0, new DebugConfiguration.Builder()
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 }
