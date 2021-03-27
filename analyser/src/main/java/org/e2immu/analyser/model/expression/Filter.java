@@ -16,7 +16,6 @@ package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.analyser.AnalyserContext;
 import org.e2immu.analyser.analyser.EvaluationContext;
-import org.e2immu.analyser.analyser.MethodAnalyser;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.variable.FieldReference;
@@ -164,20 +163,28 @@ public class Filter {
     public FilterMethod<FieldReference> individualFieldClause(AnalyserContext analyserContext, boolean acceptAndRemapLocalCopy) {
         return value -> {
             if (value instanceof Equals equalsValue) {
-                FieldReference l = extractFieldReference(equalsValue.lhs, acceptAndRemapLocalCopy);
-                FieldReference r = extractFieldReference(equalsValue.rhs, acceptAndRemapLocalCopy);
+                FieldReferenceAndTranslationMap l = extractFieldReference(analyserContext,
+                        equalsValue.lhs, acceptAndRemapLocalCopy);
+                FieldReferenceAndTranslationMap r = extractFieldReference(analyserContext,
+                        equalsValue.rhs, acceptAndRemapLocalCopy);
                 if (l != null && r == null) {
                     // must make a new one because we could have remapped a local copy to its field
-                    Expression expr = acceptAndRemapLocalCopy ?
-                            new Equals(equalsValue.primitives, new VariableExpression(l), equalsValue.rhs, equalsValue.objectFlow)
-                            : value;
-                    return new FilterResult<FieldReference>(Map.of(l, expr), defaultRest);
+                    Expression expr;
+                    if (acceptAndRemapLocalCopy) {
+                        expr = equalsValue.translate(l.translationMap);
+                    } else {
+                        expr = value;
+                    }
+                    return new FilterResult<FieldReference>(Map.of(l.fieldReference, expr), defaultRest);
                 }
                 if (r != null && l == null) {
-                    Expression expr = acceptAndRemapLocalCopy ?
-                            new Equals(equalsValue.primitives, equalsValue.lhs, new VariableExpression(r), equalsValue.objectFlow)
-                            : value;
-                    return new FilterResult<FieldReference>(Map.of(r, expr), defaultRest);
+                    Expression expr;
+                    if (acceptAndRemapLocalCopy) {
+                        expr = equalsValue.translate(r.translationMap);
+                    } else {
+                        expr = value;
+                    }
+                    return new FilterResult<FieldReference>(Map.of(r.fieldReference, expr), defaultRest);
                 }
             } else if (value instanceof GreaterThanZero gt0) {
                 Expression expression = gt0.expression();
@@ -202,9 +209,9 @@ public class Filter {
         if (value instanceof Negation negation) v = negation.expression;
         else v = value;
         // @NotModified method returning a boolean
-        if(value instanceof MethodCall mc) {
+        if (value instanceof MethodCall mc) {
             MethodAnalysis methodAnalysis = analyserContext.getMethodAnalysis(mc.methodInfo);
-            if(methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD) != Level.FALSE) return null;
+            if (methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD) != Level.FALSE) return null;
             v = mc.object;
         }
         if (v instanceof VariableExpression ve
@@ -221,14 +228,30 @@ public class Filter {
         return scope instanceof This || (scope instanceof FieldReference fr && acceptScope(fr.scope));
     }
 
-    private static FieldReference extractFieldReference(Expression value, boolean acceptAndRemapLocalCopy) {
-        if (value instanceof IsVariableExpression variableValue) {
+    private record FieldReferenceAndTranslationMap(FieldReference fieldReference, TranslationMap translationMap) {
+    }
+
+    private static FieldReferenceAndTranslationMap extractFieldReference(AnalyserContext analyserContext,
+                                                                         Expression value,
+                                                                         boolean acceptAndRemapLocalCopy) {
+        Expression v;
+        if (value instanceof MethodCall mc) {
+            MethodAnalysis methodAnalysis = analyserContext.getMethodAnalysis(mc.methodInfo);
+            if (methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD) != Level.FALSE) return null;
+            v = mc.object;
+        } else {
+            v = value;
+        }
+        if (v instanceof IsVariableExpression variableValue) {
             if (variableValue.variable() instanceof FieldReference fieldReference &&
-                    acceptScope(fieldReference.scope)) return fieldReference;
+                    acceptScope(fieldReference.scope)) return new FieldReferenceAndTranslationMap(fieldReference, null);
             if (acceptAndRemapLocalCopy &&
                     variableValue.variable() instanceof LocalVariableReference lvr &&
                     lvr.variable.isLocalCopyOf() instanceof FieldReference fieldReference &&
-                    acceptScope(fieldReference.scope)) return fieldReference;
+                    acceptScope(fieldReference.scope)) {
+                return new FieldReferenceAndTranslationMap(fieldReference,
+                        new TranslationMap.TranslationMapBuilder().put(lvr, fieldReference).build());
+            }
         }
         return null;
     }

@@ -17,6 +17,8 @@ package org.e2immu.analyser.model.value;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.expression.And;
 import org.e2immu.analyser.model.expression.GreaterThanZero;
+import org.e2immu.analyser.model.expression.Sum;
+import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -244,5 +246,22 @@ public class TestComparisons extends CommonAbstractValue {
         assertEquals("i<=2||j>=0", or1.toString());
         Expression notOr1 = negate(or1);
         assertEquals("i>=3&&j<=-1", notOr1.toString());
+    }
+
+    @Test
+    public void testEvE2Imm7() {
+        Expression iGt0 = GreaterThanZero.greater(minimalEvaluationContext, i, newInt(0), false);
+        Expression jLe0 = GreaterThanZero.less(minimalEvaluationContext, j, newInt(0), true);
+        Expression iGt0jLe0 = newAndAppend(iGt0, jLe0);
+        assertEquals("i>=1&&j<=0", iGt0jLe0.toString());
+
+        // j>=i === j-i>=0
+        Expression jMinusI = Sum.sum(minimalEvaluationContext, j, negate(i), ObjectFlow.NO_FLOW);
+        Expression jGeI = GreaterThanZero.greater(minimalEvaluationContext, jMinusI, newInt(0), true);
+        assertEquals("j>=i", jGeI.toString());
+
+        // the combination should be false instead of i>=1&&j>=i&&j<=0
+        Expression both = newAndAppend(iGt0jLe0, jGeI);
+        assertTrue(both.isBoolValueFalse(), "Have "+both);
     }
 }
