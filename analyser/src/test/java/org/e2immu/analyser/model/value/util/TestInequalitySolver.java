@@ -18,21 +18,34 @@ import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.expression.GreaterThanZero;
 import org.e2immu.analyser.model.expression.Product;
 import org.e2immu.analyser.model.expression.Sum;
-import org.e2immu.analyser.model.expression.util.LinearInequalityInTwoVariables;
 import org.e2immu.analyser.model.expression.util.InequalitySolver;
 import org.e2immu.analyser.model.value.CommonAbstractValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.*;
+import java.util.stream.Collectors;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class TestInequalitySolver extends CommonAbstractValue {
 
     @Test
     public void test1() {
         Expression iGt0 = GreaterThanZero.greater(minimalEvaluationContext, i, newInt(0), false);
-        InequalitySolver inequalitySolver = new InequalitySolver(minimalEvaluationContext, iGt0);
-        assertEquals("{i=[i>=1]}", inequalitySolver.getPerVariable().toString());
+        Expression jLt0 = GreaterThanZero.less(minimalEvaluationContext, j, newInt(0), false);
+        Expression iGt0AndJLt0 = newAndAppend(iGt0, jLt0);
+        InequalitySolver inequalitySolver = new InequalitySolver(minimalEvaluationContext, iGt0AndJLt0);
+        assertEquals("i=[i>=1],j=[j<=-1]", inequalitySolver.getPerVariable()
+                .entrySet().stream().map(Object::toString).sorted().collect(Collectors.joining(",")));
+
+        Expression i2 = Product.product(minimalEvaluationContext, newInt(2), i, ObjectFlow.NO_FLOW);
+        Expression minusJ3 = negate(Product.product(minimalEvaluationContext, j, newInt(3), ObjectFlow.NO_FLOW));
+        Expression i2Minus3JGe1 = GreaterThanZero.greater(minimalEvaluationContext,
+                Sum.sum(minimalEvaluationContext, i2, minusJ3, ObjectFlow.NO_FLOW), newInt(1), true);
+        assertEquals("2*i-(3*j)>=1", i2Minus3JGe1.toString());
+
+        assertTrue(inequalitySolver.evaluate(i2Minus3JGe1));
     }
 
 }
