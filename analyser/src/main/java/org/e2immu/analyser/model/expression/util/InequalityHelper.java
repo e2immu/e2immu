@@ -17,7 +17,6 @@ package org.e2immu.analyser.model.expression.util;
 import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.expression.*;
-import org.e2immu.analyser.model.variable.Variable;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -25,7 +24,7 @@ import java.util.stream.Collectors;
 
 public class InequalityHelper {
 
-    private record Term(double a, Variable v) {
+    private record Term(double a, OneVariable v) {
     }
 
     public static Inequality extract(EvaluationContext evaluationContext, GreaterThanZero gt0) {
@@ -51,25 +50,41 @@ public class InequalityHelper {
 
     private static boolean recursivelyCollectTerms(Expression expression,
                                                    List<Term> terms) {
+        OneVariable oneVariableRhs;
         if (expression instanceof Product product &&
                 product.lhs instanceof ConstantExpression<?> ce
-                && product.rhs instanceof VariableExpression ve) {
-            terms.add(new Term(extractDouble((Number) ce.getValue()), ve.variable()));
-        } else if (expression instanceof Sum sum) {
+                && ((oneVariableRhs = extractOneVariable(product.rhs)) != null)) {
+            terms.add(new Term(extractDouble((Number) ce.getValue()), oneVariableRhs));
+            return true;
+        }
+        if (expression instanceof Sum sum) {
             if (!recursivelyCollectTerms(sum.lhs, terms)) return false;
             return recursivelyCollectTerms(sum.rhs, terms);
-        } else if (expression instanceof VariableExpression ve) {
-            terms.add(new Term(1.0, ve.variable()));
-        } else if (expression instanceof ConstantExpression<?> ce) {
+        }
+        OneVariable oneVariable;
+        if ((oneVariable = extractOneVariable(expression)) != null) {
+            terms.add(new Term(1.0, oneVariable));
+            return true;
+        }
+        if (expression instanceof ConstantExpression<?> ce) {
             terms.add(new Term(extractDouble((Number) ce.getValue()), null));
-        } else if (expression instanceof Negation negation) {
+            return true;
+        }
+        if (expression instanceof Negation negation) {
             List<Term> sub = new ArrayList<>();
             if (!recursivelyCollectTerms(negation.expression, sub)) return false;
             sub.forEach(term -> terms.add(new Term(-term.a, term.v)));
-        } else {
-            return false;
+            return true;
         }
-        return true;
+        return false;
+    }
+
+    private static OneVariable extractOneVariable(Expression expression) {
+        if (expression instanceof VariableExpression ve) return ve.variable();
+        if (expression instanceof MethodCall mc && mc.object instanceof VariableExpression ve) {
+            return mc;
+        }
+        return null;
     }
 
     private static double extractDouble(Number number) {

@@ -36,7 +36,7 @@ public class TestInequalitySolver extends CommonAbstractValue {
         Expression jLt0 = GreaterThanZero.less(minimalEvaluationContext, j, newInt(0), false);
         Expression iGt0AndJLt0 = newAndAppend(iGt0, jLt0);
         InequalitySolver inequalitySolver = new InequalitySolver(minimalEvaluationContext, iGt0AndJLt0);
-        assertEquals("i=[i>=1],j=[j<=-1]", inequalitySolver.getPerVariable()
+        assertEquals("i=[i>=1],j=[j<=-1]", inequalitySolver.getPerComponent()
                 .entrySet().stream().map(Object::toString).sorted().collect(Collectors.joining(",")));
 
         Expression i2 = Product.product(minimalEvaluationContext, newInt(2), i, ObjectFlow.NO_FLOW);
@@ -48,4 +48,8 @@ public class TestInequalitySolver extends CommonAbstractValue {
         assertTrue(inequalitySolver.evaluate(i2Minus3JGe1));
     }
 
+    @Test
+    public void test2() {
+
+    }
 }

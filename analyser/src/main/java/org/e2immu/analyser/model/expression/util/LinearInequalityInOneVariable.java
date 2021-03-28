@@ -16,7 +16,6 @@ package org.e2immu.analyser.model.expression.util;
 
 import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.variable.Variable;
 
 import java.util.List;
 
@@ -28,7 +27,8 @@ av + b  >= 0 or av + b > 0
 (we're not using x because IntelliJ complains passing y onto x)
  */
 public record LinearInequalityInOneVariable(EvaluationContext evaluationContext,
-                                            double a, Variable v,
+                                            double a,
+                                            OneVariable v,
                                             double b,
                                             boolean allowEquals) implements Inequality {
 

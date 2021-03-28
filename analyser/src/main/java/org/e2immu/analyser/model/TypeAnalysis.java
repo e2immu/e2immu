@@ -112,9 +112,10 @@ public interface TypeAnalysis extends Analysis {
      * Invariants can be associated with an aspect, such as "size()>=0". They can describe the aspect and the state of fields.
      * Invariants that are not associated with an aspect must only describe the state of fields.
      *
-     * @return a list of values, each of boolean return type, describing invariants.
+     * @return for each of the type's methods for which an invariant exists,
+     * a list of values, each of boolean return type, describing the invariant for that aspect.
      */
-    List<Expression> getInvariants();
+    List<Expression> invariants(MethodInfo mainMethod);
 
     default boolean aspectsIsSet(String aspect) {
         return getAspects().containsKey(aspect);

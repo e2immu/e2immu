@@ -16,7 +16,6 @@ package org.e2immu.analyser.model.expression.util;
 
 import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.variable.Variable;
 
 import java.util.List;
 
@@ -24,8 +23,10 @@ import static org.e2immu.analyser.model.expression.util.InequalityHelper.extract
 import static org.e2immu.analyser.model.expression.util.InequalityHelper.onlyNotEquals;
 
 public record LinearInequalityInTwoVariables(EvaluationContext evaluationContext,
-                                             double a, Variable x,
-                                             double b, Variable y,
+                                             double a,
+                                             OneVariable x,
+                                             double b,
+                                             OneVariable y,
                                              double c, boolean allowEquals) implements Inequality {
     public LinearInequalityInTwoVariables {
         assert evaluationContext != null;

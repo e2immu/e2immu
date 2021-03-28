@@ -20,6 +20,7 @@ import org.e2immu.analyser.analyser.util.ExplicitTypes;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.Filter;
 import org.e2immu.analyser.model.expression.Negation;
+import org.e2immu.analyser.model.expression.NullConstant;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.DependentVariable;
 import org.e2immu.analyser.model.variable.FieldReference;
@@ -96,6 +97,7 @@ public class TypeAnalyser extends AbstractAnalyser {
         typeAnalysis = new TypeAnalysisImpl.Builder(analyserContext.getPrimitives(), typeInfo);
         AnalyserComponents.Builder<String, Integer> builder = new AnalyserComponents.Builder<String, Integer>()
                 .add("findAspects", (iteration) -> findAspects())
+                .add("findInvariants", (iteration) -> findInvariants())
                 .add("analyseImplicitlyImmutableTypes", (iteration) -> analyseImplicitlyImmutableTypes());
 
         if (!typeInfo.isInterface()) {
@@ -294,6 +296,45 @@ public class TypeAnalyser extends AbstractAnalyser {
                     typeAnalysis.typeInfo.fullyQualifiedName, mainMethod.fullyQualifiedName);
         }
     }
+
+    private AnalysisStatus findInvariants() {
+        return findInvariants(typeAnalysis, typeInfo);
+    }
+
+    public static AnalysisStatus findInvariants(TypeAnalysisImpl.Builder typeAnalysis, TypeInfo typeInfo) {
+        Set<TypeInfo> typesToSearch = new HashSet<>(typeInfo.typeResolution.get().superTypesExcludingJavaLangObject());
+        typesToSearch.add(typeInfo);
+        typesToSearch.forEach(type -> findInvariantsSingleType(typeAnalysis, type));
+        return DONE;
+    }
+
+    // also used by ShallowTypeAnalyser
+    private static void findInvariantsSingleType(TypeAnalysisImpl.Builder typeAnalysis,
+                                                 TypeInfo typeInfo) {
+        typeInfo.typeInspection.get().methodsAndConstructors(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM)
+                .forEach(mainMethod -> findInvariantsSingleMethod(typeAnalysis, mainMethod));
+    }
+
+    private static void findInvariantsSingleMethod(TypeAnalysisImpl.Builder typeAnalysis, MethodInfo mainMethod) {
+        List<CompanionMethodName> companionMethodNames =
+                mainMethod.methodInspection.get().getCompanionMethods().keySet().stream()
+                        .filter(mi -> mi.action() == CompanionMethodName.Action.INVARIANT).collect(Collectors.toList());
+        if (!companionMethodNames.isEmpty()) {
+            for (CompanionMethodName companionMethodName : companionMethodNames) {
+                if (companionMethodName.aspect() == null) {
+                    throw new UnsupportedOperationException("Aspect is null in invariant of " +
+                            mainMethod.fullyQualifiedName());
+                }
+                MethodInfo companion = mainMethod.methodInspection.get().getCompanionMethods().get(companionMethodName);
+                Expression expression = NullConstant.NULL_CONSTANT;
+                typeAnalysis.addInvariant(mainMethod, expression);
+            }
+            log(ANALYSER, "Found invariants {} in {}, {}",
+                    typeAnalysis.invariantStream().map(e -> e.getKey().name).collect(Collectors.joining(",")),
+                    typeAnalysis.typeInfo.fullyQualifiedName, mainMethod.fullyQualifiedName);
+        }
+    }
+
 
     private AnalysisStatus makeInternalObjectFlowsPermanent() {
         if (typeAnalysis.constantObjectFlows.isFrozen()) return DONE;
@@ -790,30 +831,6 @@ public class TypeAnalyser extends AbstractAnalyser {
             parentE1 = MultiLevel.value(parentImmutable, MultiLevel.E1IMMUTABLE);
         }
 
-        int myWhenE2Fails;
-        int e1Component;
-        boolean eventual;
-        if (allMyFieldsFinal == Level.FALSE || parentE1 != MultiLevel.EFFECTIVE) {
-            if (!typeAnalysis.approvedPreconditionsIsFrozen(false)) {
-                log(DELAYED, "Type {} is not effectively level 1 immutable, waiting for" +
-                        " preconditions to find out if it is eventually level 1 immutable", typeInfo.fullyQualifiedName);
-                return DELAYS;
-            }
-            boolean isEventuallyE1 = !typeAnalysis.approvedPreconditionsIsEmpty(false);
-            if (!isEventuallyE1 && parentE1 != MultiLevel.EVENTUAL) {
-                log(E1IMMUTABLE, "Type {} is not eventually level 1 immutable", typeInfo.fullyQualifiedName);
-                typeAnalysis.setProperty(VariableProperty.IMMUTABLE, MultiLevel.MUTABLE);
-                return DONE;
-            }
-            myWhenE2Fails = MultiLevel.compose(MultiLevel.EVENTUAL, MultiLevel.FALSE);
-            e1Component = MultiLevel.EVENTUAL;
-            eventual = true;
-        } else {
-            myWhenE2Fails = MultiLevel.compose(MultiLevel.EFFECTIVE, MultiLevel.FALSE);
-            e1Component = MultiLevel.EFFECTIVE;
-            eventual = false;
-        }
-
         int fromParentOrEnclosing = parentAndOrEnclosingTypeAnalysis.stream()
                 .mapToInt(typeAnalysis -> typeAnalysis.getProperty(VariableProperty.IMMUTABLE)).min()
                 .orElse(VariableProperty.IMMUTABLE.best);
@@ -827,10 +844,41 @@ public class TypeAnalyser extends AbstractAnalyser {
             typeAnalysis.setProperty(VariableProperty.IMMUTABLE, MultiLevel.MUTABLE);
             return DONE;
         }
+
+        int myWhenE2Fails;
+        int e1Component;
+        boolean eventual;
+        if (allMyFieldsFinal == Level.FALSE || parentE1 != MultiLevel.EFFECTIVE) {
+            if (!typeAnalysis.approvedPreconditionsIsFrozen(false)) {
+                log(DELAYED, "Type {} is not effectively level 1 immutable, waiting for" +
+                        " preconditions to find out if it is eventually level 1 immutable", typeInfo.fullyQualifiedName);
+                return DELAYS;
+            }
+            boolean isEventuallyE1 = typeAnalysis.approvedPreconditionsIsNotEmpty(false);
+            if (!isEventuallyE1 && parentE1 != MultiLevel.EVENTUAL) {
+                log(E1IMMUTABLE, "Type {} is not eventually level 1 immutable", typeInfo.fullyQualifiedName);
+                typeAnalysis.setProperty(VariableProperty.IMMUTABLE, MultiLevel.MUTABLE);
+                return DONE;
+            }
+            myWhenE2Fails = MultiLevel.compose(MultiLevel.EVENTUAL, MultiLevel.FALSE);
+            e1Component = MultiLevel.EVENTUAL;
+            eventual = true;
+        } else {
+            if (!typeAnalysis.approvedPreconditionsIsFrozen(true)) {
+                log(DELAYED, "Type {} is not effectively level 1 immutable, waiting for" +
+                        " preconditions to find out if it is eventually level 2 immutable", typeInfo.fullyQualifiedName);
+                return DELAYS;
+            }
+            myWhenE2Fails = MultiLevel.compose(MultiLevel.EFFECTIVE, MultiLevel.FALSE);
+            e1Component = MultiLevel.EFFECTIVE;
+            // it is possible that all fields are final, yet some field's content is used as the precondition
+            eventual = !typeAnalysis.getApprovedPreconditionsE2().isEmpty();
+        }
+
         int whenE2Fails = Math.min(fromParentOrEnclosing, myWhenE2Fails);
 
         // E2
-
+        // NOTE that we need to check 2x: needed in else of previous statement, but also if we get through if-side.
         if (!typeAnalysis.approvedPreconditionsIsFrozen(true)) {
             log(DELAYED, "Type {} is not effectively level 1 immutable, waiting for" +
                     " preconditions to find out if it is eventually level 2 immutable", typeInfo.fullyQualifiedName);
@@ -883,7 +931,7 @@ public class TypeAnalyser extends AbstractAnalyser {
                     log(DELAYED, "Field {} not known yet if @NotModified, delaying E2Immutable on type", fieldFQN);
                     return DELAYS;
                 }
-                if (!eventual && modified == Level.TRUE) {
+                if (modified == Level.TRUE && !typeAnalysis.getApprovedPreconditionsE2().containsKey(fieldInfo)) {
                     log(E2IMMUTABLE, "{} is not an E2Immutable class, because field {} is not primitive, not @E2Immutable, and its content is modified",
                             typeInfo.fullyQualifiedName, fieldInfo.name);
                     typeAnalysis.setProperty(VariableProperty.IMMUTABLE, whenE2Fails);

@@ -53,7 +53,7 @@ public record DetectEventual(MethodInfo methodInfo,
             return MethodAnalysis.DELAYED_EVENTUAL;
         }
         Optional<Precondition> precondition = methodAnalysis.preconditionForEventual.get();
-        boolean e2 = !typeAnalysis.approvedPreconditionsIsEmpty(true);
+        boolean e2 = typeAnalysis.approvedPreconditionsIsNotEmpty(true);
 
         if (modified == Level.FALSE && Primitives.isBoolean(methodInfo.returnType())) {
 
@@ -90,7 +90,7 @@ public record DetectEventual(MethodInfo methodInfo,
 
             */
             Expression srv = methodAnalysis.getSingleReturnValue();
-            if (srv != null && !typeAnalysis.approvedPreconditionsIsEmpty(e2) && srv instanceof InlinedMethod im) {
+            if (srv != null && typeAnalysis.approvedPreconditionsIsNotEmpty(e2) && srv instanceof InlinedMethod im) {
                 FieldsAndBefore fieldsAndBefore = analyseExpression(evaluationContext, e2, im.expression());
                 if (fieldsAndBefore == NO_FIELDS) return MethodAnalysis.NOT_EVENTUAL;
                 return new MethodAnalysis.Eventual(fieldsAndBefore.fields, false, null, !fieldsAndBefore.before);

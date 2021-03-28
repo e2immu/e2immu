@@ -15,14 +15,17 @@
 package org.e2immu.analyser.analyser.util;
 
 import org.e2immu.analyser.analyser.*;
-import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.FieldInfo;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.And;
+import org.e2immu.analyser.model.expression.MethodCall;
 import org.e2immu.analyser.model.expression.NewObject;
+import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.parser.InspectionProvider;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.DELAYED;
@@ -41,7 +44,7 @@ public class MethodCallIncompatibleWithPrecondition {
         StatementAnalysis statementAnalysis = methodAnalyser.methodAnalysis.getLastStatement();
         assert statementAnalysis.methodLevelData.combinedPrecondition.isFinal();
         Expression precondition = statementAnalysis.methodLevelData.combinedPrecondition.get().expression();
-        // IMPROVE add state to this
+        // IMPROVE add stateData.conditionManagerForNextStatement.state to this
         for (FieldInfo fieldInfo : fields) {
             FieldReference fieldReference = new FieldReference(InspectionProvider.DEFAULT,
                     fieldInfo, new This(InspectionProvider.DEFAULT, methodAnalyser.methodInfo.typeInfo));
@@ -54,12 +57,34 @@ public class MethodCallIncompatibleWithPrecondition {
             if (variableInfo.getValue() instanceof NewObject newObject) {
                 Expression state = newObject.stateTranslateThisTo(evaluationContext, fieldReference);
                 if (!state.isBoolValueTrue()) {
+                    Expression stateWithInvariants = enrichWithInvariants(evaluationContext, state);
                     Expression and = new And(evaluationContext.getPrimitives()).append(evaluationContext,
-                            precondition, state);
+                            precondition, stateWithInvariants);
                     if (and.isBoolValueFalse()) return true;
                 }
             }
         }
         return false;
+    }
+
+    private static Expression enrichWithInvariants(EvaluationContext evaluationContext, Expression expression) {
+        List<Expression> additionalComponents = new ArrayList<>();
+        additionalComponents.add(expression);
+
+        expression.visit(e -> {
+            if (e instanceof MethodCall methodCall && methodCall.object instanceof VariableExpression ve) {
+                TypeInfo typeInfo = methodCall.methodInfo.typeInfo;
+                TypeAnalysis typeAnalysis = evaluationContext.getAnalyserContext().getTypeAnalysis(typeInfo);
+                for (Expression invariant : typeAnalysis.invariants(methodCall.methodInfo)) {
+                    TranslationMap translationMap = new TranslationMap.TranslationMapBuilder()
+                            .put(new This(InspectionProvider.DEFAULT, typeInfo), ve.variable()).build();
+                    Expression translated = invariant.translate(translationMap);
+                    additionalComponents.add(translated);
+                }
+            }
+            return true;
+        });
+        return new And(evaluationContext.getPrimitives()).append(evaluationContext,
+                additionalComponents.toArray(Expression[]::new));
     }
 }

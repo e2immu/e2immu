@@ -16,10 +16,7 @@ package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.expression.util.EvaluateMethodCall;
-import org.e2immu.analyser.model.expression.util.EvaluateParameters;
-import org.e2immu.analyser.model.expression.util.EvaluatePreconditionFromMethod;
-import org.e2immu.analyser.model.expression.util.ExpressionComparator;
+import org.e2immu.analyser.model.expression.util.*;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
@@ -45,7 +42,7 @@ import static org.e2immu.analyser.output.QualifiedName.Required.YES;
 import static org.e2immu.analyser.util.Logger.LogTarget.DELAYED;
 
 
-public class MethodCall extends ExpressionWithMethodReferenceResolution implements HasParameterExpressions {
+public class MethodCall extends ExpressionWithMethodReferenceResolution implements HasParameterExpressions, OneVariable {
     private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(MethodCall.class);
 
     public final boolean objectIsImplicit; // irrelevant after evaluation
@@ -71,6 +68,13 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         this.parameterExpressions = Objects.requireNonNull(parameterExpressions);
         this.objectIsImplicit = objectIsImplicit;
         this.objectFlow = Objects.requireNonNull(objectFlow);
+    }
+
+    // only used in the inequality system
+    @Override
+    public Variable variable() {
+        List<Variable> variables = object.variables();
+        return variables.size() == 1 ? variables.get(0) : null;
     }
 
     @Override

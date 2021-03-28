@@ -22,8 +22,8 @@ import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Messages;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.pattern.PatternMatcher;
-import org.e2immu.support.Either;
 import org.e2immu.analyser.util.Logger;
+import org.e2immu.support.Either;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -98,7 +98,7 @@ public class ShallowTypeAnalyser implements AnalyserContext {
                         methodAnalysesBuilder.put(methodInfo, methodAnalysisBuilder);
                     }
                 } catch (RuntimeException rte) {
-                    LOGGER.error("Caught runtime exception shallowly analysing method "+methodInfo.fullyQualifiedName);
+                    LOGGER.error("Caught runtime exception shallowly analysing method " + methodInfo.fullyQualifiedName);
                     throw rte;
                 }
             });
@@ -320,6 +320,7 @@ public class ShallowTypeAnalyser implements AnalyserContext {
                 false, true, typeInspection.getAnnotations(), e2ImmuAnnotationExpressions));
 
         TypeAnalyser.findAspects(typeAnalysisBuilder, typeInfo);
+        TypeAnalyser.findInvariants(typeAnalysisBuilder, typeInfo);
         typeAnalysisBuilder.freezeApprovedPreconditionsE1();
         typeAnalysisBuilder.freezeApprovedPreconditionsE2();
 
@@ -349,7 +350,7 @@ public class ShallowTypeAnalyser implements AnalyserContext {
             fieldAnalysisBuilder.setProperty(VariableProperty.FINAL, Level.TRUE);
         }
         // unless annotated with something heavier, ...
-        if(enumField && fieldAnalysisBuilder.getProperty(VariableProperty.EXTERNAL_NOT_NULL) == Level.DELAY) {
+        if (enumField && fieldAnalysisBuilder.getProperty(VariableProperty.EXTERNAL_NOT_NULL) == Level.DELAY) {
             fieldAnalysisBuilder.setProperty(VariableProperty.EXTERNAL_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
         }
 

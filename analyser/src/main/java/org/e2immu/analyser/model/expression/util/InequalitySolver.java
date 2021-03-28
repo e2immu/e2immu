@@ -15,26 +15,27 @@
 package org.e2immu.analyser.model.expression.util;
 
 import org.e2immu.analyser.analyser.EvaluationContext;
+import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.expression.And;
-import org.e2immu.analyser.model.expression.Equals;
-import org.e2immu.analyser.model.expression.GreaterThanZero;
-import org.e2immu.analyser.model.variable.Variable;
+import org.e2immu.analyser.model.Level;
+import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.SMapList;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /*
 very simple inequality solver
 
 first goal: given i>0, j<0 then j>i should fail
 
+A component can be a variable, but it can as well be a method call (expression) having a variable
+as object. Rat
+
  */
 public class InequalitySolver {
-    private final Map<Variable, List<Expression>> perVariable;
+    private final Map<OneVariable, List<Expression>> perComponent;
     private final EvaluationContext evaluationContext;
 
     /*
@@ -45,35 +46,61 @@ public class InequalitySolver {
      */
     public InequalitySolver(EvaluationContext evaluationContext, Expression expression) {
         this.evaluationContext = evaluationContext;
-        Map<Variable, List<Expression>> builder = new HashMap<>();
+        Map<OneVariable, List<Expression>> builder = new HashMap<>();
         if (expression instanceof And and) {
             and.expressions().forEach(e -> tryToAddSingleNumericVariableComparison(builder, e));
         } else {
             tryToAddSingleNumericVariableComparison(builder, expression);
         }
-        perVariable = Map.copyOf(builder);
+        perComponent = Map.copyOf(builder);
     }
 
     public InequalitySolver(EvaluationContext evaluationContext, List<Expression> expressions) {
         this.evaluationContext = evaluationContext;
-        Map<Variable, List<Expression>> builder = new HashMap<>();
+        Map<OneVariable, List<Expression>> builder = new HashMap<>();
         expressions.forEach(e -> tryToAddSingleNumericVariableComparison(builder, e));
-        perVariable = Map.copyOf(builder);
+        perComponent = Map.copyOf(builder);
     }
 
-    private static void tryToAddSingleNumericVariableComparison(Map<Variable, List<Expression>> map, Expression e) {
-        List<Variable> vars = e.variables();
-        if (vars.size() == 1) {
-            Variable variable = vars.get(0);
-            if (Primitives.isNumeric(variable.parameterizedType()) &&
-                    (e.isInstanceOf(GreaterThanZero.class) || e.isInstanceOf(Equals.class))) {
-                SMapList.add(map, variable, e);
+    /*
+    if the expression is recognized as an expression in a single variable, then it is added to the map.
+    We recognize a single variable comparison, such as i=1, i<=10, etc. but also set.size()<=10
+     */
+    private void tryToAddSingleNumericVariableComparison(Map<OneVariable, List<Expression>> map, Expression e) {
+        Set<OneVariable> oneVariables = new HashSet<>();
+        AtomicBoolean invalid = new AtomicBoolean();
+        e.visit(element -> {
+            if (element instanceof MethodCall methodCall) {
+                if (Primitives.isNumeric(methodCall.returnType()) && evaluationContext.getAnalyserContext()
+                        .getMethodAnalysis(methodCall.methodInfo)
+                        .getProperty(VariableProperty.MODIFIED_METHOD) == Level.FALSE) {
+                    oneVariables.add(methodCall);
+                } else {
+                    invalid.set(true);
+                }
+                return false;
             }
+            if (element instanceof VariableExpression ve) {
+                if (Primitives.isNumeric(ve.variable().parameterizedType())) {
+                    oneVariables.add(ve.variable());
+                } else {
+                    invalid.set(true);
+                }
+                return false;
+            }
+            if (element instanceof InlineConditional) {
+                invalid.set(true);
+                return false;
+            }
+            return true;
+        });
+        if (oneVariables.size() == 1 && !invalid.get()) {
+            SMapList.add(map, oneVariables.stream().findFirst().orElseThrow(), e);
         }
     }
 
-    public Map<Variable, List<Expression>> getPerVariable() {
-        return perVariable;
+    public Map<OneVariable, List<Expression>> getPerComponent() {
+        return perComponent;
     }
 
     /*
@@ -97,14 +124,14 @@ public class InequalitySolver {
             Inequality inequality = InequalityHelper.extract(evaluationContext, gt0);
 
             if (inequality instanceof LinearInequalityInOneVariable oneVar) {
-                List<Expression> expressionsInV = perVariable.getOrDefault(oneVar.v(), List.of());
+                List<Expression> expressionsInV = perComponent.getOrDefault(oneVar.v(), List.of());
                 if (expressionsInV.isEmpty()) return null;
                 return oneVar.accept(expressionsInV);
             }
 
             if (inequality instanceof LinearInequalityInTwoVariables twoVars) {
-                List<Expression> expressionsInX = perVariable.getOrDefault(twoVars.x(), List.of());
-                List<Expression> expressionsInY = perVariable.getOrDefault(twoVars.y(), List.of());
+                List<Expression> expressionsInX = perComponent.getOrDefault(twoVars.x(), List.of());
+                List<Expression> expressionsInY = perComponent.getOrDefault(twoVars.y(), List.of());
                 if (expressionsInX.isEmpty() || expressionsInY.isEmpty()) return null;
 
                 return twoVars.accept(expressionsInX, expressionsInY);

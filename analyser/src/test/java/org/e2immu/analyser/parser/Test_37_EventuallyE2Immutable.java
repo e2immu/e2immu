@@ -304,10 +304,10 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
     /*
     The slightly less complicated version of test 6: Here we only have size() not isEmpty.
 
-    IMPORTANT NOTE: at the moment, we must use size()>0 instead of size() !=0, because that expression is not recognized
+    This tests uses size()>0 instead of size() !=0, because that expression is not (yet) recognized
     by Filter.individualFieldClause. Similarly, for consistency we use <= 0 instead of != 0 in the precondition.
 
-    The critical code is in Detect
+    Dedicated code in MethodCallIncompatibleWithPrecondition detects the modification wrt the precondition.
      */
     @Test
     public void test_7() throws IOException {
@@ -362,6 +362,62 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .build());
+    }
+
+    @Test
+    public void test_8() throws IOException {
+
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("initialize".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof FieldReference fr && "set".equals(fr.fieldInfo.name)) {
+                    if ("2".equals(d.statementId())) {
+                        String expectValue = d.iteration() == 0 ? "<f:set>" :
+                                "instance type HashSet<T>/*this.size()>=data.size()*/";
+                        assertEquals(expectValue, d.currentValue().toString());
+                    }
+                }
+            }
+        };
+
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("initialize".equals(d.methodInfo().name)) {
+                if ("1".equals(d.statementId())) {
+                    if (d.iteration() == 0) {
+                        assertTrue(d.statementAnalysis().stateData.precondition.isVariable());
+                    } else {
+                        assertTrue(d.statementAnalysis().stateData.precondition.get().isEmpty());
+                        assertEquals("0!=data.size()&&0==set.size()",
+                                d.statementAnalysis().methodLevelData.combinedPrecondition.get().expression().toString());
+                    }
+                }
+            }
+        };
+
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("stream".equals(d.methodInfo().name)) {
+                if (d.iteration() <= 1) {
+                    assertNull(d.methodAnalysis().getPreconditionForEventual());
+                } else {
+                    assertEquals("0!=set.size()",
+                            d.methodAnalysis().getPreconditionForEventual().expression().toString());
+                }
+            }
+            if ("initialize".equals(d.methodInfo().name)) {
+                if (d.iteration() <= 1) {
+                    // need to wait for implicitly immutable types
+                    assertNull(d.methodAnalysis().getPreconditionForEventual());
+                } else {
+                    assertEquals("0==set.size()",
+                            d.methodAnalysis().getPreconditionForEventual().expression().toString());
+                }
+            }
+        };
+
+        testClass("EventuallyE2Immutable_8", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 

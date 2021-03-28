@@ -19,6 +19,7 @@ import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.Qualification;
 import org.e2immu.analyser.model.SideEffect;
 import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.model.expression.util.OneVariable;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
@@ -31,7 +32,12 @@ import java.util.stream.Collectors;
  */
 
 // at some point: @E2Container
-public interface Variable {
+public interface Variable extends OneVariable {
+
+    @Override
+    default Variable variable() {
+        return this;
+    }
 
     static String fullyQualifiedName(Set<Variable> dependencies) {
         if (dependencies == null) return "";
@@ -115,5 +121,7 @@ public interface Variable {
         return simpleName();
     }
 
-    default boolean needsNewVariableWithoutValueCall() { return false; };
+    default boolean needsNewVariableWithoutValueCall() {
+        return false;
+    }
 }
