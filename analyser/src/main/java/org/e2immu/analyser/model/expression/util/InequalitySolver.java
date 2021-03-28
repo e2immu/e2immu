@@ -54,6 +54,13 @@ public class InequalitySolver {
         perVariable = Map.copyOf(builder);
     }
 
+    public InequalitySolver(EvaluationContext evaluationContext, List<Expression> expressions) {
+        this.evaluationContext = evaluationContext;
+        Map<Variable, List<Expression>> builder = new HashMap<>();
+        expressions.forEach(e -> tryToAddSingleNumericVariableComparison(builder, e));
+        perVariable = Map.copyOf(builder);
+    }
+
     private static void tryToAddSingleNumericVariableComparison(Map<Variable, List<Expression>> map, Expression e) {
         List<Variable> vars = e.variables();
         if (vars.size() == 1) {

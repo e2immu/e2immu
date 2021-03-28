@@ -36,12 +36,12 @@ public class MethodCallIncompatibleWithPrecondition {
     return null upon delays.
      */
     public static Boolean isMark(EvaluationContext evaluationContext,
-                                 Precondition precondition,
                                  Set<FieldInfo> fields,
                                  MethodAnalyser methodAnalyser) {
-        assert !precondition.isEmpty();
-
         StatementAnalysis statementAnalysis = methodAnalyser.methodAnalysis.getLastStatement();
+        assert statementAnalysis.methodLevelData.combinedPrecondition.isFinal();
+        Expression precondition = statementAnalysis.methodLevelData.combinedPrecondition.get().expression();
+        // IMPROVE add state to this
         for (FieldInfo fieldInfo : fields) {
             FieldReference fieldReference = new FieldReference(InspectionProvider.DEFAULT,
                     fieldInfo, new This(InspectionProvider.DEFAULT, methodAnalyser.methodInfo.typeInfo));
@@ -52,10 +52,10 @@ public class MethodCallIncompatibleWithPrecondition {
                 return null;
             }
             if (variableInfo.getValue() instanceof NewObject newObject) {
-                Expression state = newObject.state();
+                Expression state = newObject.stateTranslateThisTo(evaluationContext, fieldReference);
                 if (!state.isBoolValueTrue()) {
                     Expression and = new And(evaluationContext.getPrimitives()).append(evaluationContext,
-                            precondition.expression(), state);
+                            precondition, state);
                     if (and.isBoolValueFalse()) return true;
                 }
             }

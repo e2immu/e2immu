@@ -20,6 +20,7 @@ import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
+import org.e2immu.analyser.model.expression.util.InequalitySolver;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.output.OutputBuilder;
@@ -311,6 +312,13 @@ public record And(Primitives primitives,
                     return Action.REPLACE;
                 }
             }
+        }
+
+        if (value instanceof GreaterThanZero gt0 && gt0.expression().variables().size() > 1) {
+            // it may be interesting to run the inequality solver
+            InequalitySolver inequalitySolver = new InequalitySolver(evaluationContext, newConcat);
+            Boolean resolve = inequalitySolver.evaluate(value);
+            if (resolve == Boolean.FALSE) return Action.FALSE;
         }
 
         // GE and GE

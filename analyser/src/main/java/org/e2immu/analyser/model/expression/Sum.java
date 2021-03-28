@@ -18,6 +18,7 @@ import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Qualification;
+import org.e2immu.analyser.model.TranslationMap;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.output.OutputBuilder;
@@ -27,6 +28,12 @@ import org.e2immu.analyser.parser.Primitives;
 import java.util.Map;
 
 public class Sum extends BinaryOperator {
+
+    @Override
+    public Expression translate(TranslationMap translationMap) {
+        return new Sum(primitives, translationMap.translateExpression(lhs),
+                translationMap.translateExpression(rhs), objectFlow);
+    }
 
     private Sum(Primitives primitives, Expression lhs, Expression rhs, ObjectFlow objectFlow) {
         super(primitives, lhs, primitives.plusOperatorInt, rhs, Precedence.ADDITIVE, objectFlow);

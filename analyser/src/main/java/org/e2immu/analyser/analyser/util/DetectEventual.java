@@ -127,7 +127,7 @@ public record DetectEventual(MethodInfo methodInfo,
             return new MethodAnalysis.Eventual(fieldsAndBefore.fields, true, null, null);
         }
         Boolean isMarkViaModifyingMethod = MethodCallIncompatibleWithPrecondition.isMark(evaluationContext,
-                precondition.get(), fieldsAndBefore.fields, methodAnalyser);
+                fieldsAndBefore.fields, methodAnalyser);
         if (isMarkViaModifyingMethod) {
             return new MethodAnalysis.Eventual(fieldsAndBefore.fields, true, null, null);
         }

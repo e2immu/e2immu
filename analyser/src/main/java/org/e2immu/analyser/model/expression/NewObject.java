@@ -19,6 +19,7 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.EvaluateParameters;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.model.variable.FieldReference;
+import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;
@@ -35,6 +36,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -581,4 +583,22 @@ public record NewObject(
     }
 
 
+    public Expression stateTranslateThisTo(EvaluationContext evaluationContext, FieldReference fieldReference) {
+        if (state.isBooleanConstant()) return state;
+        // the "this" in the state can belong to the type of the object, or any of its super types
+        This thisVar = findThis();
+        return state.translate(new TranslationMap.TranslationMapBuilder().put(thisVar, fieldReference).build());
+    }
+
+    private This findThis() {
+        AtomicReference<This> thisVar = new AtomicReference<>();
+        state.visit(e -> {
+            if (e instanceof VariableExpression ve && ve.variable() instanceof This tv) {
+                thisVar.set(tv);
+                return false;
+            }
+            return true;
+        });
+        return thisVar.get();
+    }
 }

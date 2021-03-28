@@ -28,6 +28,7 @@ import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.parser.Primitives;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -287,10 +288,17 @@ public record GreaterThanZero(ParameterizedType booleanParameterizedType,
 
     @Override
     public int internalCompareTo(Expression v) {
-        if(v instanceof InlineConditional inline) {
+        if (v instanceof InlineConditional inline) {
             return expression.compareTo(inline.condition);
         }
-        return expression.compareTo(((GreaterThanZero) v).expression);
+        // as a general rule, comparisons with more (unique) variables come LATER!
+        // this facilitates the use of the InequalitySolver in And
+        int vars = new HashSet<>(expression.variables()).size();
+        int otherVars = new HashSet<>(((GreaterThanZero) v).expression.variables()).size();
+        if (vars == otherVars) {
+            return expression.compareTo(((GreaterThanZero) v).expression);
+        }
+        return vars - otherVars;
     }
 
     @Override
