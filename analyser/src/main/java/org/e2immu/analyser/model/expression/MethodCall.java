@@ -79,6 +79,8 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
     @Override
     public Expression translate(TranslationMap translationMap) {
+        Expression asExpression = translationMap.directExpression(this);
+        if (asExpression != null) return asExpression;
         MethodInfo translatedMethod = translationMap.translateMethod(methodInfo);
         return new MethodCall(objectIsImplicit,
                 translationMap.translateExpression(object),

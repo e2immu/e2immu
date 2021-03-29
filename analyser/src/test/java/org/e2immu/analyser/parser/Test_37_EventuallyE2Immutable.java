@@ -365,6 +365,9 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
                 .build());
     }
 
+    /*
+    8 is a bit more complicated than 7: it relies on the invariants of size() to resolve !=0 into >0.
+     */
     @Test
     public void test_8() throws IOException {
 

@@ -28,8 +28,7 @@ public class Product extends BinaryOperator {
 
     @Override
     public Expression translate(TranslationMap translationMap) {
-        return new Product(primitives, translationMap.translateExpression(lhs),
-                translationMap.translateExpression(rhs), objectFlow);
+        return new Product(primitives, lhs.translate(translationMap), rhs.translate(translationMap), objectFlow);
     }
 
     private Product(Primitives primitives, Expression lhs, Expression rhs, ObjectFlow objectFlow) {

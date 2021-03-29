@@ -89,6 +89,10 @@ public class TranslationMap {
         return Objects.requireNonNullElse(expressions.get(expression), expression).translate(this);
     }
 
+    public Expression directExpression(Expression expression) {
+        return expressions.get(expression);
+    }
+
     public MethodInfo translateMethod(MethodInfo methodInfo) {
         return methods.getOrDefault(methodInfo, methodInfo);
     }
@@ -149,6 +153,11 @@ public class TranslationMap {
                     return inMap == null ? e.getKey() : inMap;
                 }, Map.Entry::getValue));
         return new TranslationMap(statements, expressions, updatedVariables, methods, types);
+    }
+
+    public boolean isEmpty() {
+        return statements.isEmpty() && expressions.isEmpty() && methods.isEmpty() &&
+                types.isEmpty() && variables.isEmpty() && localVariables.isEmpty();
     }
 
     @Container(builds = TranslationMap.class)

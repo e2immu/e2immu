@@ -24,10 +24,7 @@ import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.parser.InspectionProvider;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.COMPANION;
 import static org.e2immu.analyser.util.Logger.LogTarget.DELAYED;
@@ -46,6 +43,8 @@ public class MethodCallIncompatibleWithPrecondition {
         StatementAnalysis statementAnalysis = methodAnalyser.methodAnalysis.getLastStatement();
         assert statementAnalysis.methodLevelData.combinedPrecondition.isFinal();
         Expression precondition = statementAnalysis.methodLevelData.combinedPrecondition.get().expression();
+        Expression preconditionInTermsOfAspect = replaceByAspectsWherePossible(evaluationContext, precondition);
+
         // IMPROVE add stateData.conditionManagerForNextStatement.state to this
         for (FieldInfo fieldInfo : fields) {
             FieldReference fieldReference = new FieldReference(InspectionProvider.DEFAULT,
@@ -67,7 +66,7 @@ public class MethodCallIncompatibleWithPrecondition {
 
                        We have to normalise, and cannot easily do that at equality level
                      */
-                    Expression normalisedPrecondition = normaliseMethods(evaluationContext, precondition);
+                    Expression normalisedPrecondition = normaliseMethods(evaluationContext, preconditionInTermsOfAspect);
                     Expression normalisedStateWithInvariants = normaliseMethods(evaluationContext, stateWithInvariants);
                     Expression and = new And(evaluationContext.getPrimitives()).append(evaluationContext,
                             normalisedPrecondition, normalisedStateWithInvariants);
@@ -91,6 +90,38 @@ public class MethodCallIncompatibleWithPrecondition {
                             .ifPresent(original -> builder.put(methodCall.methodInfo, original));
                 }
             }
+        });
+        return expression.translate(builder.build());
+    }
+
+    /*
+    set.isEmpty() => we add 0==set.size()
+     */
+    private static Expression replaceByAspectsWherePossible(EvaluationContext evaluationContext, Expression expression) {
+        TranslationMap.TranslationMapBuilder builder = new TranslationMap.TranslationMapBuilder();
+
+        expression.visit(e -> {
+            if (e instanceof MethodCall methodCall && methodCall.object instanceof VariableExpression ve) {
+                // the first thing we need to know is if this methodCall.methodInfo is involved in an aspect
+                MethodAnalysis methodAnalysis = evaluationContext.getAnalyserContext().getMethodAnalysis(methodCall.methodInfo);
+                for (Map.Entry<CompanionMethodName, CompanionAnalysis> entry : methodAnalysis.getCompanionAnalyses().entrySet()) {
+                    if (entry.getKey().action() == CompanionMethodName.Action.VALUE) {
+                        CompanionMethodName companionMethodName = entry.getKey();
+                        CompanionAnalysis companionAnalysis = entry.getValue();
+                        Expression value = companionAnalysis.getValue();
+                        log(COMPANION, "Found value expression {} for aspect {} for method call", value, companionMethodName.aspect());
+
+                        TypeAnalysis typeAnalysis = evaluationContext.getAnalyserContext().getTypeAnalysis(methodCall.methodInfo.typeInfo);
+                        MethodInfo aspectMethod = typeAnalysis.getAspects().get(companionMethodName.aspect());
+                        This thisVar = new This(InspectionProvider.DEFAULT, aspectMethod.typeInfo);
+                        TranslationMap translationMap = new TranslationMap.TranslationMapBuilder()
+                                .put(thisVar, ve.variable()).build();
+                        Expression translated = value.translate(translationMap);
+                        builder.put(e, translated);
+                    }
+                }
+            }
+            return true;
         });
         return expression.translate(builder.build());
     }

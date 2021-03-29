@@ -498,16 +498,9 @@ public record And(Primitives primitives,
         return UnknownExpression.primitiveGetProperty(variableProperty);
     }
 
-    public record CommonComponentResult(Expression common, Expression rest1, Expression rest2) {
-    }
-
-    private Expression toAnd(EvaluationContext evaluationContext, Collection<Expression> list) {
-        if (list.isEmpty()) return new BooleanConstant(primitives, true);
-        return new And(primitives, objectFlow).append(evaluationContext, list.toArray(Expression[]::new));
-    }
-
     @Override
     public Expression translate(TranslationMap translationMap) {
+        if(translationMap.isEmpty()) return this;
         List<Expression> translated = expressions.stream().map(e -> e.translate(translationMap))
                 .collect(Collectors.toUnmodifiableList());
         return new And(primitives, translated, objectFlow);

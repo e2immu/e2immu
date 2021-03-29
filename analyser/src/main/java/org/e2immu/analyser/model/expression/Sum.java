@@ -31,8 +31,7 @@ public class Sum extends BinaryOperator {
 
     @Override
     public Expression translate(TranslationMap translationMap) {
-        return new Sum(primitives, translationMap.translateExpression(lhs),
-                translationMap.translateExpression(rhs), objectFlow);
+        return new Sum(primitives, lhs.translate(translationMap), rhs.translate(translationMap), objectFlow);
     }
 
     private Sum(Primitives primitives, Expression lhs, Expression rhs, ObjectFlow objectFlow) {
