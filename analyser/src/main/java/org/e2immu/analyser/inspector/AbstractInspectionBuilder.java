@@ -25,6 +25,7 @@ public abstract class AbstractInspectionBuilder<B> implements Inspection {
 
     protected final AddOnceSet<AnnotationExpression> annotations = new AddOnceSet<>();
 
+    @SuppressWarnings("unchecked")
     public B addAnnotation(AnnotationExpression annotationExpression) {
         if (!annotations.contains(annotationExpression)) {
             annotations.add(annotationExpression);

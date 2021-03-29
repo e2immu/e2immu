@@ -17,7 +17,6 @@ package org.e2immu.analyser.model.value;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.variable.Variable;
-import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.junit.jupiter.api.Test;
 
 import java.util.Map;
@@ -84,12 +83,12 @@ public class TestAbstractValue extends CommonAbstractValue {
 
     @Test
     public void testInstanceOf() {
-        Expression iva = new InstanceOf(PRIMITIVES, PRIMITIVES.stringParameterizedType, null, va, ObjectFlow.NO_FLOW);
+        Expression iva = new InstanceOf(PRIMITIVES, PRIMITIVES.stringParameterizedType, null, va);
         assertEquals("a instanceof String", iva.toString());
-        Expression ivb = new InstanceOf(PRIMITIVES, PRIMITIVES.stringParameterizedType, null, vb, ObjectFlow.NO_FLOW);
+        Expression ivb = new InstanceOf(PRIMITIVES, PRIMITIVES.stringParameterizedType, null, vb);
         Expression or = newOrAppend(ivb, iva);
         assertEquals("a instanceof String||b instanceof String", or.toString());
-        Expression iva2 = new InstanceOf(PRIMITIVES, PRIMITIVES.objectParameterizedType, null, va, ObjectFlow.NO_FLOW);
+        Expression iva2 = new InstanceOf(PRIMITIVES, PRIMITIVES.objectParameterizedType, null, va);
         Expression or2 = newOrAppend(iva, iva2);
         assertEquals("a instanceof Object||a instanceof String", or2.toString());
     }
@@ -104,13 +103,13 @@ public class TestAbstractValue extends CommonAbstractValue {
     // note: van and vbn are nullable, va and vb are NOT (see CommonAbstractValue)
     @Test
     public void testIsNull() {
-        Expression v = Equals.equals(minimalEvaluationContext, an, NullConstant.NULL_CONSTANT, ObjectFlow.NO_FLOW);
+        Expression v = Equals.equals(minimalEvaluationContext, an, NullConstant.NULL_CONSTANT);
         assertEquals("null==an", v.toString());
         Map<Variable, Boolean> nullClauses = nullClauses(v, Filter.FilterMode.ACCEPT);
         assertEquals(1, nullClauses.size());
         assertEquals(true, nullClauses.get(van));
 
-        Expression v2 = Equals.equals(minimalEvaluationContext, bn, NullConstant.NULL_CONSTANT, ObjectFlow.NO_FLOW);
+        Expression v2 = Equals.equals(minimalEvaluationContext, bn, NullConstant.NULL_CONSTANT);
         assertEquals("null==bn", v2.toString());
         Map<Variable, Boolean> nullClauses2 = nullClauses(v2, Filter.FilterMode.ACCEPT);
         assertEquals(1, nullClauses2.size());
@@ -126,7 +125,7 @@ public class TestAbstractValue extends CommonAbstractValue {
 
     @Test
     public void testIsNotNull() {
-        Expression v = Negation.negate(minimalEvaluationContext, new Equals(PRIMITIVES, NullConstant.NULL_CONSTANT, a, ObjectFlow.NO_FLOW));
+        Expression v = Negation.negate(minimalEvaluationContext, new Equals(PRIMITIVES, NullConstant.NULL_CONSTANT, a));
         assertEquals("null!=a", v.toString());
         Map<Variable, Boolean> nullClauses = nullClauses(v, Filter.FilterMode.REJECT);
         assertEquals(1, nullClauses.size());
@@ -167,11 +166,11 @@ public class TestAbstractValue extends CommonAbstractValue {
         Expression v = newAndAppend(negate(a), negate(b), newOrAppend(a, b));
         assertEquals(FALSE, v);
 
-        Expression cIsA = equals(new CharConstant(PRIMITIVES, 'a', ObjectFlow.NO_FLOW), c);
-        Expression cIsABis = equals(new CharConstant(PRIMITIVES, 'a', ObjectFlow.NO_FLOW), c);
+        Expression cIsA = equals(new CharConstant(PRIMITIVES, 'a'), c);
+        Expression cIsABis = equals(new CharConstant(PRIMITIVES, 'a'), c);
         assertEquals(cIsA, cIsABis);
 
-        Expression cIsB = equals(new CharConstant(PRIMITIVES, 'b', ObjectFlow.NO_FLOW), c);
+        Expression cIsB = equals(new CharConstant(PRIMITIVES, 'b'), c);
 
         Expression v2 = newAndAppend(negate(cIsA), negate(cIsB), newOrAppend(cIsA, cIsB));
         assertEquals(FALSE, v2);
@@ -191,20 +190,19 @@ public class TestAbstractValue extends CommonAbstractValue {
 
     @Test
     public void testSumProduct() {
-        Expression aa = Sum.sum(minimalEvaluationContext, a, a, ObjectFlow.NO_FLOW);
+        Expression aa = Sum.sum(minimalEvaluationContext, a, a);
         assertEquals("2*a", aa.toString());
-        Expression a0 = Sum.sum(minimalEvaluationContext, a, newInt(0), ObjectFlow.NO_FLOW);
+        Expression a0 = Sum.sum(minimalEvaluationContext, a, newInt(0));
         assertEquals(a, a0);
-        Expression aTimes0 = Product.product(minimalEvaluationContext, a, newInt(0), ObjectFlow.NO_FLOW);
+        Expression aTimes0 = Product.product(minimalEvaluationContext, a, newInt(0));
         assertEquals(newInt(0), aTimes0);
 
         Expression a3a = Sum.sum(minimalEvaluationContext, a,
-                Product.product(minimalEvaluationContext, newInt(3), a, ObjectFlow.NO_FLOW),
-                ObjectFlow.NO_FLOW);
+                Product.product(minimalEvaluationContext, newInt(3), a));
         assertEquals("4*a", a3a.toString());
-        Expression b2 = Product.product(minimalEvaluationContext, b, newInt(2), ObjectFlow.NO_FLOW);
-        Expression b4 = Product.product(minimalEvaluationContext, newInt(4), b, ObjectFlow.NO_FLOW);
-        Expression b4b2 = Sum.sum(minimalEvaluationContext, b4, b2, ObjectFlow.NO_FLOW);
+        Expression b2 = Product.product(minimalEvaluationContext, b, newInt(2));
+        Expression b4 = Product.product(minimalEvaluationContext, newInt(4), b);
+        Expression b4b2 = Sum.sum(minimalEvaluationContext, b4, b2);
         assertEquals("6*b", b4b2.toString());
     }
 }

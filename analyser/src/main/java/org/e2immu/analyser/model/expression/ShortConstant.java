@@ -19,7 +19,6 @@ import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.Qualification;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
-import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.parser.Primitives;
@@ -30,12 +29,7 @@ import java.util.Objects;
 
 @E2Container
 public record ShortConstant(Primitives primitives,
-                            short constant,
-                            ObjectFlow objectFlow) implements ConstantExpression<Short>, Numeric {
-
-    public ShortConstant(Primitives primitives, short constant) {
-        this(primitives, constant, ObjectFlow.NO_FLOW);
-    }
+                            short constant) implements ConstantExpression<Short>, Numeric {
 
     @Override
     @NotNull
@@ -67,11 +61,6 @@ public record ShortConstant(Primitives primitives,
     }
 
     @Override
-    public ObjectFlow getObjectFlow() {
-        return objectFlow;
-    }
-
-    @Override
     public Short getValue() {
         return constant;
     }
@@ -83,7 +72,7 @@ public record ShortConstant(Primitives primitives,
 
     @Override
     public Expression negate() {
-        return new ShortConstant(primitives, (short) (-constant), objectFlow);
+        return new ShortConstant(primitives, (short) (-constant));
     }
 
     @Override

@@ -25,8 +25,6 @@ import org.e2immu.analyser.model.variable.DependentVariable;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
-import org.e2immu.analyser.objectflow.ObjectFlow;
-import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Messages;
@@ -105,8 +103,7 @@ public class TypeAnalyser extends AbstractAnalyser {
                     .add("analyseEffectivelyEventuallyE2Immutable", (iteration) -> analyseEffectivelyEventuallyE2Immutable())
                     .add("analyseContainer", (iteration) -> analyseContainer())
                     .add("analyseUtilityClass", (iteration) -> analyseUtilityClass())
-                    .add("analyseExtensionClass", (iteration) -> analyseExtensionClass())
-                    .add("makeInternalObjectFlowsPermanent", (iteration) -> makeInternalObjectFlowsPermanent());
+                    .add("analyseExtensionClass", (iteration) -> analyseExtensionClass());
         }
         analyserComponents = builder.build();
 
@@ -295,34 +292,6 @@ public class TypeAnalyser extends AbstractAnalyser {
         }
     }
 
-    private AnalysisStatus makeInternalObjectFlowsPermanent() {
-        if (typeAnalysis.constantObjectFlows.isFrozen()) return DONE;
-        for (MethodAnalyser methodAnalyser : myMethodAnalysers) {
-            if (methodAnalyser.hasCode()) {
-                MethodLevelData methodLevelData = methodAnalyser.methodLevelData();
-                if (methodLevelData.internalObjectFlowNotYetFrozen()) {
-                    log(DELAYED, "Delay the freezing of internal object flows in type {}", typeInfo.fullyQualifiedName);
-                    return DELAYS;
-                }
-                methodLevelData.getInternalObjectFlowStream().filter(of -> of.origin == Origin.LITERAL).forEach(of -> {
-                    ObjectFlow inType = ensureConstantObjectFlow(of);
-                    of.moveAllInto(inType);
-                });
-            }
-        }
-        typeAnalysis.constantObjectFlows.freeze();
-        return DONE;
-    }
-
-    private ObjectFlow ensureConstantObjectFlow(ObjectFlow objectFlow) {
-        if (objectFlow == ObjectFlow.NO_FLOW) throw new UnsupportedOperationException();
-        if (typeAnalysis.constantObjectFlows.contains(objectFlow))
-            return typeAnalysis.constantObjectFlows.get(objectFlow);
-        typeAnalysis.constantObjectFlows.add(objectFlow);
-        return objectFlow;
-    }
-
-
     private AnalysisStatus analyseImplicitlyImmutableTypes() {
         if (typeAnalysis.implicitlyImmutableDataTypes.isSet()) return DONE;
 
@@ -383,8 +352,7 @@ public class TypeAnalyser extends AbstractAnalyser {
             throw new UnsupportedOperationException("NYI");
         }
         if (variable instanceof This) {
-            ObjectFlow objectFlow = new ObjectFlow(new Location(typeInfo), typeInfo.asParameterizedType(analyserContext), Origin.NO_ORIGIN);
-            return new VariableExpression(variable, objectFlow);
+           return new VariableExpression(variable);
         }
         throw new UnsupportedOperationException();
     }

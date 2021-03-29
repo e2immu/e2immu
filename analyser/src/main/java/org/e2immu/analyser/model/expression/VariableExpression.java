@@ -20,7 +20,6 @@ import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
-import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
@@ -31,16 +30,10 @@ import java.util.Map;
 import java.util.Objects;
 
 @E2Container
-public record VariableExpression(Variable variable,
-                                 String name,
-                                 ObjectFlow objectFlow) implements Expression, IsVariableExpression {
+public record VariableExpression(Variable variable, String name) implements Expression, IsVariableExpression {
 
     public VariableExpression(Variable variable) {
-        this(variable, ObjectFlow.NO_FLOW);
-    }
-
-    public VariableExpression(Variable variable, ObjectFlow objectFlow) {
-        this(variable, variable.fullyQualifiedName(), objectFlow);
+        this(variable, variable.fullyQualifiedName());
     }
 
     @Override
@@ -93,11 +86,6 @@ public record VariableExpression(Variable variable,
     @Override
     public NewObject getInstance(EvaluationResult evaluationResult) {
         return evaluationResult.evaluationContext().currentInstance(variable, evaluationResult.statementTime());
-    }
-
-    @Override
-    public ObjectFlow getObjectFlow() {
-        return objectFlow;
     }
 
     /*
@@ -208,7 +196,7 @@ public record VariableExpression(Variable variable,
         }
 
         int propagate = forwardEvaluationInfo.getProperty(VariableProperty.PROPAGATE_MODIFICATION);
-        if(propagate == Level.TRUE) {
+        if (propagate == Level.TRUE) {
             assert modified == Level.FALSE;
             builder.markPropagateModification(variable);
         }

@@ -22,11 +22,9 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.model.expression.util.MultiExpression;
 import org.e2immu.analyser.model.variable.Variable;
-import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.parser.InspectionProvider;
-import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.E2Container;
 
 import java.util.Arrays;
@@ -44,15 +42,12 @@ it pays to keep track of all of them.
 public class MultiValue implements Expression {
 
     public final MultiExpression multiExpression;
-    public final ObjectFlow objectFlow;
     private final ParameterizedType commonType;
     private final InspectionProvider inspectionProvider;
 
     public MultiValue(InspectionProvider inspectionProvider,
-                      ObjectFlow objectFlow,
                       MultiExpression multiExpression,
                       ParameterizedType formalCommonType) {
-        this.objectFlow = Objects.requireNonNull(objectFlow);
         this.commonType = formalCommonType.commonType(inspectionProvider, multiExpression.commonType(inspectionProvider));
         this.multiExpression = multiExpression;
         this.inspectionProvider = inspectionProvider;
@@ -65,15 +60,14 @@ public class MultiValue implements Expression {
         MultiExpression reMulti = new MultiExpression(reValues);
         return new EvaluationResult.Builder()
                 .compose(reClauseERs)
-                .setExpression(new MultiValue(evaluationContext.getAnalyserContext(), objectFlow, reMulti, commonType))
+                .setExpression(new MultiValue(evaluationContext.getAnalyserContext(), reMulti, commonType))
                 .build();
     }
 
     @Override
     public Expression translate(TranslationMap translationMap) {
-        return new MultiValue(inspectionProvider, ObjectFlow.NYE,
-                new MultiExpression(multiExpression.stream().map(translationMap::translateExpression)
-                        .toArray(Expression[]::new)), translationMap.translateType(commonType));
+        return new MultiValue(inspectionProvider, new MultiExpression(multiExpression.stream()
+                .map(translationMap::translateExpression).toArray(Expression[]::new)), translationMap.translateType(commonType));
     }
 
     @Override
@@ -139,11 +133,6 @@ public class MultiValue implements Expression {
     }
 
     @Override
-    public ObjectFlow getObjectFlow() {
-        return objectFlow;
-    }
-
-    @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
@@ -166,6 +155,6 @@ public class MultiValue implements Expression {
     @Override
     public NewObject getInstance(EvaluationResult evaluationResult) {
         return NewObject.forGetInstance(evaluationResult.evaluationContext().newObjectIdentifier(),
-                inspectionProvider.getPrimitives(), returnType(), getObjectFlow());
+                inspectionProvider.getPrimitives(), returnType());
     }
 }

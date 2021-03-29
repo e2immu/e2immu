@@ -22,7 +22,6 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.model.expression.util.MultiExpression;
 import org.e2immu.analyser.model.variable.Variable;
-import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.parser.InspectionProvider;
@@ -39,15 +38,12 @@ import java.util.stream.Collectors;
 public class ArrayInitializer implements Expression {
 
     public final MultiExpression multiExpression;
-    public final ObjectFlow objectFlow;
     private final ParameterizedType commonType;
     private final InspectionProvider inspectionProvider;
 
     public ArrayInitializer(InspectionProvider inspectionProvider,
-                            ObjectFlow objectFlow,
                             List<Expression> values,
                             ParameterizedType formalCommonType) {
-        this.objectFlow = Objects.requireNonNull(objectFlow);
         this.multiExpression = MultiExpression.create(values);
         this.commonType = formalCommonType.commonType(inspectionProvider, multiExpression.commonType(inspectionProvider));
         this.inspectionProvider = inspectionProvider;
@@ -60,15 +56,14 @@ public class ArrayInitializer implements Expression {
         List<Expression> reValues = reClauseERs.stream().map(EvaluationResult::value).collect(Collectors.toList());
         return new EvaluationResult.Builder()
                 .compose(reClauseERs)
-                .setExpression(new ArrayInitializer(evaluationContext.getAnalyserContext(), objectFlow, reValues, commonType))
+                .setExpression(new ArrayInitializer(evaluationContext.getAnalyserContext(), reValues, commonType))
                 .build();
     }
 
     @Override
     public Expression translate(TranslationMap translationMap) {
-        return new ArrayInitializer(inspectionProvider, ObjectFlow.NYE,
-                multiExpression.stream().map(translationMap::translateExpression)
-                        .collect(Collectors.toList()), translationMap.translateType(commonType));
+        return new ArrayInitializer(inspectionProvider, multiExpression.stream().map(translationMap::translateExpression)
+                .collect(Collectors.toList()), translationMap.translateType(commonType));
     }
 
     @Override
@@ -109,8 +104,7 @@ public class ArrayInitializer implements Expression {
         List<Expression> values = results.stream().map(EvaluationResult::getExpression).collect(Collectors.toList());
 
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext).compose(results);
-        ObjectFlow objectFlow = builder.createLiteralObjectFlow(commonType);
-        builder.setExpression(new ArrayInitializer(evaluationContext.getAnalyserContext(), objectFlow, values, commonType));
+        builder.setExpression(new ArrayInitializer(evaluationContext.getAnalyserContext(), values, commonType));
 
         return builder.build();
     }
@@ -142,11 +136,6 @@ public class ArrayInitializer implements Expression {
     }
 
     @Override
-    public ObjectFlow getObjectFlow() {
-        return objectFlow;
-    }
-
-    @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
@@ -169,6 +158,6 @@ public class ArrayInitializer implements Expression {
     @Override
     public NewObject getInstance(EvaluationResult evaluationContext) {
         return NewObject.forGetInstance(evaluationContext.evaluationContext().newObjectIdentifier(),
-                inspectionProvider.getPrimitives(), returnType(), getObjectFlow());
+                inspectionProvider.getPrimitives(), returnType());
     }
 }

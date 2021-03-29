@@ -19,7 +19,6 @@ import org.e2immu.analyser.model.expression.And;
 import org.e2immu.analyser.model.expression.GreaterThanZero;
 import org.e2immu.analyser.model.expression.Sum;
 import org.e2immu.analyser.model.expression.util.InequalitySolver;
-import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -257,7 +256,7 @@ public class TestComparisons extends CommonAbstractValue {
         assertEquals("i>=1&&j<=0", iGt0jLe0.toString());
 
         // j>=i === j-i>=0
-        Expression jMinusI = Sum.sum(minimalEvaluationContext, j, negate(i), ObjectFlow.NO_FLOW);
+        Expression jMinusI = Sum.sum(minimalEvaluationContext, j, negate(i));
         Expression jGeI = GreaterThanZero.greater(minimalEvaluationContext, jMinusI, newInt(0), true);
         assertEquals("j>=i", jGeI.toString());
 

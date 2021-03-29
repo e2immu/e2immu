@@ -20,7 +20,6 @@ import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.parser.Primitives;
@@ -65,11 +64,6 @@ public class UnaryOperator implements Expression {
         throw new UnsupportedOperationException("Not yet evaluated: " + operator.name);
     }
 
-    @Override
-    public ObjectFlow getObjectFlow() {
-        return ObjectFlow.NYE;
-    }
-
     public static Precedence precedence(@NotNull @NotModified UnaryExpr.Operator operator) {
         return switch (operator) {
             case POSTFIX_DECREMENT, POSTFIX_INCREMENT, PLUS, MINUS -> Precedence.PLUSPLUS;
@@ -99,18 +93,18 @@ public class UnaryOperator implements Expression {
         }
         if (operator == primitives.bitWiseNotOperatorInt) {
             if (v instanceof IntConstant ic)
-                return new IntConstant(primitives, ~ic.constant(), v.getObjectFlow());
+                return new IntConstant(primitives, ~ic.constant());
             return new UnaryOperator(operator, v, precedence);
         }
         if (operator == primitives.postfixDecrementOperatorInt
                 || operator == primitives.prefixDecrementOperatorInt) {
             if (v instanceof IntConstant ic)
-                return new IntConstant(primitives, ic.constant() - 1, v.getObjectFlow());
+                return new IntConstant(primitives, ic.constant() - 1);
             return new UnaryOperator(operator, v, precedence);
         }
         if (operator == primitives.postfixIncrementOperatorInt || operator == primitives.prefixIncrementOperatorInt) {
             if (v instanceof IntConstant ic)
-                return new IntConstant(primitives, ic.constant() + 1, v.getObjectFlow());
+                return new IntConstant(primitives, ic.constant() + 1);
             return new UnaryOperator(operator, v, precedence);
         }
         throw new UnsupportedOperationException();

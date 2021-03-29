@@ -15,18 +15,14 @@
 package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.analyser.VariableProperty;
-import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.util.SetUtil;
 
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 public interface TypeAnalysis extends Analysis {
-
-    Set<ObjectFlow> getConstantObjectFlows();
 
     Map<FieldInfo, Expression> getApprovedPreconditionsE1();
 

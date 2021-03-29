@@ -19,11 +19,9 @@ import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.Qualification;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
-import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Text;
 import org.e2immu.annotation.E2Container;
@@ -68,11 +66,6 @@ public record EmptyExpression(String msg) implements Expression {
     @Override
     public int order() {
         return ExpressionComparator.ORDER_NO_VALUE;
-    }
-
-    @Override
-    public ObjectFlow getObjectFlow() {
-        return ObjectFlow.NO_FLOW;
     }
 
     @Override

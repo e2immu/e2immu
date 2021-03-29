@@ -21,27 +21,19 @@ import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
-import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.E2Container;
-import org.e2immu.annotation.NotNull;
 
 import java.util.Objects;
 
 @E2Container
 public class TypeExpression implements Expression {
     public final ParameterizedType parameterizedType;
-    public final ObjectFlow objectFlow;
     public final Diamond diamond;
 
-    public TypeExpression(@NotNull ParameterizedType parameterizedType, Diamond diamond) {
-        this(parameterizedType, diamond, ObjectFlow.NYE);
-    }
-
-    public TypeExpression(ParameterizedType parameterizedType, Diamond diamond, ObjectFlow objectFlow) {
+    public TypeExpression(ParameterizedType parameterizedType, Diamond diamond) {
         this.parameterizedType = Objects.requireNonNull(parameterizedType);
-        this.objectFlow = Objects.requireNonNull(objectFlow);
         this.diamond = diamond;
     }
 
@@ -86,13 +78,12 @@ public class TypeExpression implements Expression {
     @Override
     public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
-        ObjectFlow objectFlow = builder.createLiteralObjectFlow(parameterizedType);
-        return builder.setExpression(new TypeExpression(parameterizedType, diamond, objectFlow)).build();
+        return builder.setExpression(new TypeExpression(parameterizedType, diamond)).build();
     }
 
     @Override
     public Expression translate(TranslationMap translationMap) {
-        return new TypeExpression(translationMap.translateType(parameterizedType), diamond, objectFlow);
+        return new TypeExpression(translationMap.translateType(parameterizedType), diamond);
     }
 
     @Override
@@ -109,10 +100,5 @@ public class TypeExpression implements Expression {
     public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty, boolean duringEvaluation) {
         if (variableProperty == VariableProperty.NOT_NULL_EXPRESSION) return MultiLevel.EFFECTIVELY_NOT_NULL;
         return variableProperty.falseValue;
-    }
-
-    @Override
-    public ObjectFlow getObjectFlow() {
-        return ObjectFlow.NYE;
     }
 }

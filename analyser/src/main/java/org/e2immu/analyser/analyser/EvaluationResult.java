@@ -19,9 +19,6 @@ import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
-import org.e2immu.analyser.objectflow.ObjectFlow;
-import org.e2immu.analyser.objectflow.Origin;
-import org.e2immu.analyser.objectflow.access.MethodAccess;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Messages;
 import org.e2immu.analyser.util.SetUtil;
@@ -63,7 +60,6 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                                List<Expression> storedValues,
                                boolean someValueWasDelayed,
                                Messages messages,
-                               List<ObjectFlow> objectFlows,
                                Map<Variable, ChangeData> changeData,
                                Precondition precondition,
                                Expression untranslatedPrecondition,
@@ -77,10 +73,6 @@ public record EvaluationResult(EvaluationContext evaluationContext,
 
     public Stream<Message> getMessageStream() {
         return messages.getMessageStream();
-    }
-
-    public Stream<ObjectFlow> getObjectFlowStream() {
-        return objectFlows.stream();
     }
 
     public Stream<Map.Entry<Variable, ChangeData>> getExpressionChangeStream() {
@@ -159,7 +151,6 @@ public record EvaluationResult(EvaluationContext evaluationContext,
     public static class Builder {
         private final EvaluationContext evaluationContext;
         private final Messages messages = new Messages();
-        private List<ObjectFlow> objectFlows;
         private Expression value;
         private List<Expression> storedExpressions;
         private int statementTime;
@@ -214,10 +205,6 @@ public record EvaluationResult(EvaluationContext evaluationContext,
 
             this.messages.addAll(evaluationResult.getMessageStream());
 
-            if (!evaluationResult.objectFlows.isEmpty()) {
-                if (objectFlows == null) objectFlows = new LinkedList<>(evaluationResult.objectFlows);
-                else objectFlows.addAll(evaluationResult.objectFlows);
-            }
             for (Map.Entry<Variable, ChangeData> e : evaluationResult.changeData.entrySet()) {
                 valueChanges.merge(e.getKey(), e.getValue(), ChangeData::merge);
             }
@@ -266,7 +253,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             return new EvaluationResult(evaluationContext, statementTime, value,
                     storedExpressions == null ? null : List.copyOf(storedExpressions),
                     someValueWasDelayed,
-                    messages, objectFlows == null ? List.of() : objectFlows, valueChanges, precondition,
+                    messages, valueChanges, precondition,
                     untranslatedPrecondition,
                     addCircularCallOrUndeclaredFunctionalInterface);
         }
@@ -342,23 +329,6 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                 markRead(fieldReference.scope);
             }
             return this;
-        }
-
-        public ObjectFlow createLiteralObjectFlow(ParameterizedType parameterizedType) {
-            assert evaluationContext != null;
-
-            return createInternalObjectFlow(new Location(evaluationContext.getCurrentType()), parameterizedType, Origin.LITERAL);
-        }
-
-        public ObjectFlow createInternalObjectFlow(Location location, ParameterizedType parameterizedType, Origin
-                origin) {
-            ObjectFlow objectFlow = new ObjectFlow(location, parameterizedType, origin);
-            if (objectFlows == null) objectFlows = new LinkedList<>();
-            if (!objectFlows.contains(objectFlow)) {
-                objectFlows.add(objectFlow);
-            }
-            log(OBJECT_FLOW, "Created internal flow {}", objectFlow);
-            return objectFlow;
         }
 
         public Builder raiseError(String messageString) {
@@ -560,16 +530,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             return new And(evaluationContext.getPrimitives()).append(evaluationContext, e1, e2);
         }
 
-        public void addCallOut(boolean b, ObjectFlow destination, Expression parameterExpression) {
-            // TODO part of object flow
-        }
-
-        public void addAccess(boolean b, MethodAccess methodAccess, Expression object) {
-            // TODO part of object flow
-        }
-
         public void modifyingMethodAccess(Variable variable, NewObject newInstance, LinkedVariables linkedVariables) {
-            //add(new StateData.RemoveVariableFromState(evaluationContext, variable)); TODO replace by other code
             assignInstanceToVariable(variable, newInstance, linkedVariables);
         }
 

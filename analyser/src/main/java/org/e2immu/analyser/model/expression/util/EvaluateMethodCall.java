@@ -20,7 +20,6 @@ import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
-import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.analyser.util.Logger;
@@ -44,8 +43,7 @@ public class EvaluateMethodCall {
                                                MethodInfo methodInfo,
                                                MethodAnalysis methodAnalysis,
                                                Expression objectValue,
-                                               List<Expression> parameters,
-                                               ObjectFlow objectFlowOfResult) {
+                                               List<Expression> parameters) {
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
 
         Objects.requireNonNull(evaluationContext);
@@ -53,7 +51,7 @@ public class EvaluateMethodCall {
         boolean recursiveCall = evaluationContext.getCurrentMethod() != null &&
                 evaluationContext.getCurrentMethod().methodInfo == methodInfo;
         if (recursiveCall) {
-            MethodCall methodValue = new MethodCall(objectValue, methodInfo, parameters, objectFlowOfResult);
+            MethodCall methodValue = new MethodCall(objectValue, methodInfo, parameters);
             return builder.setExpression(methodValue).build();
         }
 
@@ -66,7 +64,7 @@ public class EvaluateMethodCall {
                 !evaluationContext.getAnalyserContext().inAnnotatedAPIAnalysis() &&
                 parameters.get(0) instanceof BooleanConstant boolValue) {
             Expression clause = new MethodCall(objectValue, methodInfo,
-                    List.of(new BooleanConstant(evaluationContext.getPrimitives(), true)), objectFlowOfResult);
+                    List.of(new BooleanConstant(evaluationContext.getPrimitives(), true)));
             if (boolValue.constant()) {
                 Filter filter = new Filter(evaluationContext, Filter.FilterMode.ACCEPT);
                 // isKnown(true) -> return BoolValue.TRUE or BoolValue.FALSE, depending on state
@@ -128,7 +126,7 @@ public class EvaluateMethodCall {
         }
 
         // @Identity as method annotation
-        Expression identity = computeIdentity(evaluationContext, methodInfo, methodAnalysis, parameters, objectFlowOfResult);
+        Expression identity = computeIdentity(evaluationContext, methodInfo, methodAnalysis, parameters);
         if (identity != null) {
             return builder.setExpression(identity).build();
         }
@@ -178,7 +176,7 @@ public class EvaluateMethodCall {
         }
 
         // normal method value
-        MethodCall methodValue = new MethodCall(objectValue, methodInfo, parameters, objectFlowOfResult);
+        MethodCall methodValue = new MethodCall(objectValue, methodInfo, parameters);
         return builder.setExpression(methodValue).build();
     }
 
@@ -302,7 +300,7 @@ public class EvaluateMethodCall {
         /*
         translationMap.put(new VariableValue(new ReturnVariable(methodInfo)),
                 new MethodValue(methodInfo, new VariableValue(new This(evaluationContext.getAnalyserContext(), methodInfo.typeInfo)),
-                        parameterValues, ObjectFlow.NO_FLOW));
+                        parameterValues));
         */
         // we might encounter isFact or isKnown, so we add the instance's state to the context
         EvaluationContext child = evaluationContext.child(instance.state(), true);
@@ -350,12 +348,12 @@ public class EvaluateMethodCall {
                             .getTypeAnalysis(instance.parameterizedType().typeInfo).getAspects().get(cmn.aspect());
                     Expression oldValue = new MethodCall(
                             new VariableExpression(new This(evaluationContext.getAnalyserContext(), oldAspectMethod.typeInfo)),
-                            oldAspectMethod, List.of(), ObjectFlow.NO_FLOW);
+                            oldAspectMethod, List.of());
                     MethodInfo newAspectMethod = evaluationContext.getAnalyserContext()
                             .getTypeAnalysis(methodInfo.typeInfo).getAspects().get(cmn.aspect());
                     Expression newValue = new MethodCall(
                             new VariableExpression(new This(evaluationContext.getAnalyserContext(), newAspectMethod.typeInfo)),
-                            newAspectMethod, List.of(), ObjectFlow.NO_FLOW);
+                            newAspectMethod, List.of());
                     translationMap.put(oldValue, newValue);
                     CompanionAnalysis companionAnalysis = e.getValue();
                     ListUtil.joinLists(companionAnalysis.getParameterValues(), parameterValues)
@@ -367,7 +365,7 @@ public class EvaluateMethodCall {
         // TODO object flow
         int notNull = Math.max(MultiLevel.EFFECTIVELY_NOT_NULL, methodAnalysis.getProperty(NOT_NULL_EXPRESSION));
         return NewObject.forGetInstance(evaluationContext.newObjectIdentifier() + "-" + methodInfo.fullyQualifiedName,
-                methodInfo.returnType(), newState, notNull, ObjectFlow.NO_FLOW);
+                methodInfo.returnType(), newState, notNull);
     }
 
     // example 1: instance type java.util.ArrayList()[0 == java.util.ArrayList.this.size()].size()
@@ -411,7 +409,7 @@ public class EvaluateMethodCall {
         StringConstant stringValue;
         if ("java.lang.String.length()".equals(methodInfo.fullyQualifiedName()) &&
                 (stringValue = objectValue.asInstanceOf(StringConstant.class)) != null) {
-            return new IntConstant(primitives, stringValue.constant().length(), ObjectFlow.NO_FLOW);
+            return new IntConstant(primitives, stringValue.constant().length());
         }
         return null;
     }
@@ -433,8 +431,7 @@ public class EvaluateMethodCall {
     private static Expression computeIdentity(EvaluationContext evaluationContext,
                                               MethodInfo methodInfo,
                                               MethodAnalysis methodAnalysis,
-                                              List<Expression> parameters,
-                                              ObjectFlow objectFlowOfResult) {
+                                              List<Expression> parameters) {
         int identity = methodAnalysis.getProperty(VariableProperty.IDENTITY);
         if (identity == Level.DELAY && methodAnalysis.isBeingAnalysed()) {
             log(Logger.LogTarget.DELAYED, "Delaying method value because @Identity delayed on {}",
@@ -448,7 +445,7 @@ public class EvaluateMethodCall {
             int v = methodAnalysis.getProperty(property);
             if (v != Level.DELAY) map.put(property, v);
         }
-        return PropertyWrapper.propertyWrapper(evaluationContext, parameters.get(0), map, objectFlowOfResult);
+        return PropertyWrapper.propertyWrapper(evaluationContext, parameters.get(0), map);
     }
 
 }

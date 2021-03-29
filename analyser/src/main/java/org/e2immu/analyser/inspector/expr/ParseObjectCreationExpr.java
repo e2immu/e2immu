@@ -20,7 +20,6 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.NewObject;
 import org.e2immu.analyser.model.expression.UnevaluatedMethodCall;
 import org.e2immu.analyser.model.expression.UnevaluatedObjectCreation;
-import org.e2immu.analyser.objectflow.ObjectFlow;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -76,6 +75,6 @@ public class ParseObjectCreationExpr {
                         parameterizedType, objectCreationExpr.getBegin().orElseThrow());
         if (method == null) return new UnevaluatedMethodCall(parameterizedType.detailedString() + "::new");
         return NewObject.objectCreation("unevaluated new object", typeContext.getPrimitives(),
-                method.methodInspection.getMethodInfo(), parameterizedType, diamond, newParameterExpressions, ObjectFlow.NO_FLOW);
+                method.methodInspection.getMethodInfo(), parameterizedType, diamond, newParameterExpressions);
     }
 }

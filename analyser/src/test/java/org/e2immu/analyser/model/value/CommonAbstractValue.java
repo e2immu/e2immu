@@ -21,7 +21,6 @@ import org.e2immu.analyser.inspector.TypeInspectionImpl;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.variable.Variable;
-import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.QualifiedName;
 import org.e2immu.analyser.parser.InspectionProvider;
@@ -160,7 +159,7 @@ public abstract class CommonAbstractValue {
     }
 
     protected static Expression newInt(int i) {
-        return new IntConstant(PRIMITIVES, i, ObjectFlow.NO_FLOW);
+        return new IntConstant(PRIMITIVES, i);
     }
 
     static ParameterInfo createParameter() {
@@ -242,6 +241,6 @@ public abstract class CommonAbstractValue {
     }
 
     protected static Expression equals(Expression v1, Expression v2) {
-        return Equals.equals(minimalEvaluationContext, v1, v2, ObjectFlow.NO_FLOW);
+        return Equals.equals(minimalEvaluationContext, v1, v2);
     }
 }

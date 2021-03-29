@@ -19,7 +19,6 @@ import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Primitives;
 
 import java.util.Map;
@@ -29,7 +28,6 @@ public interface ConstantExpression<T> extends Expression {
     @Override
     default EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
-        builder.createLiteralObjectFlow(returnType());
         return builder.setExpression(this).build();
     }
 
@@ -71,14 +69,14 @@ public interface ConstantExpression<T> extends Expression {
 
     static Expression nullValue(Primitives primitives, TypeInfo typeInfo) {
         if (typeInfo != null) {
-            if (Primitives.isBoolean(typeInfo)) return new BooleanConstant(primitives, false, ObjectFlow.NO_FLOW);
-            if (Primitives.isInt(typeInfo)) return new IntConstant(primitives, 0, ObjectFlow.NO_FLOW);
-            if (Primitives.isLong(typeInfo)) return new LongConstant(primitives, 0L, ObjectFlow.NO_FLOW);
-            if (Primitives.isShort(typeInfo)) return new ShortConstant(primitives, (short) 0, ObjectFlow.NO_FLOW);
-            if (Primitives.isByte(typeInfo)) return new ByteConstant(primitives, (byte) 0, ObjectFlow.NO_FLOW);
-            if (Primitives.isFloat(typeInfo)) return new FloatConstant(primitives, 0, ObjectFlow.NO_FLOW);
-            if (Primitives.isDouble(typeInfo)) return new DoubleConstant(primitives, 0, ObjectFlow.NO_FLOW);
-            if (Primitives.isChar(typeInfo)) return new CharConstant(primitives, '\0', ObjectFlow.NO_FLOW);
+            if (Primitives.isBoolean(typeInfo)) return new BooleanConstant(primitives, false);
+            if (Primitives.isInt(typeInfo)) return new IntConstant(primitives, 0);
+            if (Primitives.isLong(typeInfo)) return new LongConstant(primitives, 0L);
+            if (Primitives.isShort(typeInfo)) return new ShortConstant(primitives, (short) 0);
+            if (Primitives.isByte(typeInfo)) return new ByteConstant(primitives, (byte) 0);
+            if (Primitives.isFloat(typeInfo)) return new FloatConstant(primitives, 0);
+            if (Primitives.isDouble(typeInfo)) return new DoubleConstant(primitives, 0);
+            if (Primitives.isChar(typeInfo)) return new CharConstant(primitives, '\0');
         }
         return NullConstant.NULL_CONSTANT;
     }

@@ -17,7 +17,8 @@ package org.e2immu.analyser.parser;
 import org.e2immu.analyser.analyser.MethodLevelData;
 import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analyser.VariableProperty;
-import org.e2immu.analyser.config.*;
+import org.e2immu.analyser.config.AnalyserConfiguration;
+import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
@@ -25,7 +26,6 @@ import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.expression.ConstantExpression;
 import org.e2immu.analyser.model.expression.StringConstant;
 import org.e2immu.analyser.model.variable.FieldReference;
-import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
 
@@ -119,11 +119,6 @@ public class Test_08_EvaluateConstants extends CommonTestRunner {
                 if (d.iteration() > 0) {
                     assertTrue(d.evaluationResult().value().isInstanceOf(ConstantExpression.class));
                     assertEquals("\"b\"", d.evaluationResult().value().toString());
-                    assertEquals(4L, d.evaluationResult().getObjectFlowStream().count());
-                    ObjectFlow objectFlow = d.evaluationResult().getObjectFlowStream().findFirst().orElseThrow();
-                    // ee modified?
-
-                    assertFalse(objectFlow.isDelayed());
                 }
             }
         };
@@ -159,7 +154,6 @@ public class Test_08_EvaluateConstants extends CommonTestRunner {
                 if ("0".equals(d.statementId()) && d.iteration() > 0) {
                     assertNotNull(d.haveError(Message.INLINE_CONDITION_EVALUATES_TO_CONSTANT));
                     assertSame(DONE, d.result().analysisStatus);
-                    assertFalse(methodLevelData.internalObjectFlowNotYetFrozen()); // by apply
                 }
             }
         };
@@ -181,8 +175,6 @@ public class Test_08_EvaluateConstants extends CommonTestRunner {
                 }
             }
             if ("print2".equals(d.methodInfo().name) && d.iteration() > 2) {
-                MethodLevelData methodLevelData = d.methodAnalysis().methodLevelData();
-                assertFalse(methodLevelData.internalObjectFlowNotYetFrozen());
                 Expression srv = d.methodAnalysis().getSingleReturnValue();
                 assertTrue(srv instanceof StringConstant); // inline conditional works as advertised
             }

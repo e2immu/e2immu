@@ -22,7 +22,6 @@ import org.e2immu.analyser.model.expression.util.Inequality;
 import org.e2immu.analyser.model.expression.util.InequalityHelper;
 import org.e2immu.analyser.model.expression.util.LinearInequalityInTwoVariables;
 import org.e2immu.analyser.model.value.CommonAbstractValue;
-import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -35,7 +34,7 @@ public class TestLinearInequalityInTwoVariables extends CommonAbstractValue {
     public void test1() {
         // i+j >= 1
         Expression iPlusJGe1 = GreaterThanZero.greater(minimalEvaluationContext,
-                Sum.sum(minimalEvaluationContext, i, j, ObjectFlow.NO_FLOW), newInt(1), true);
+                Sum.sum(minimalEvaluationContext, i, j), newInt(1), true);
         Inequality inequality = InequalityHelper.extract((GreaterThanZero) iPlusJGe1);
         LinearInequalityInTwoVariables two = (LinearInequalityInTwoVariables) inequality;
         assertNotNull(two);
@@ -56,10 +55,10 @@ public class TestLinearInequalityInTwoVariables extends CommonAbstractValue {
     @Test
     public void test2() {
         // 2i-3j >= 1
-        Expression i2 = Product.product(minimalEvaluationContext, newInt(2), i, ObjectFlow.NO_FLOW);
-        Expression minusJ3 = negate(Product.product(minimalEvaluationContext, j, newInt(3), ObjectFlow.NO_FLOW));
+        Expression i2 = Product.product(minimalEvaluationContext, newInt(2), i);
+        Expression minusJ3 = negate(Product.product(minimalEvaluationContext, j, newInt(3)));
         Expression i2Minus3JGe1 = GreaterThanZero.greater(minimalEvaluationContext,
-                Sum.sum(minimalEvaluationContext, i2, minusJ3, ObjectFlow.NO_FLOW), newInt(1), true);
+                Sum.sum(minimalEvaluationContext, i2, minusJ3), newInt(1), true);
         assertEquals("2*i-(3*j)>=1", i2Minus3JGe1.toString());
         Inequality inequality = InequalityHelper.extract((GreaterThanZero) i2Minus3JGe1);
         LinearInequalityInTwoVariables two = (LinearInequalityInTwoVariables) inequality;

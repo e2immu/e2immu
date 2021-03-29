@@ -18,7 +18,6 @@ import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.Qualification;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
-import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.parser.Primitives;
@@ -28,13 +27,7 @@ import org.e2immu.annotation.NotNull;
 import java.util.Objects;
 
 @E2Container
-public record FloatConstant(Primitives primitives,
-                            float constant,
-                            ObjectFlow objectFlow) implements ConstantExpression<Float>, Numeric {
-
-    public FloatConstant(Primitives primitives, float constant) {
-        this(primitives, constant, ObjectFlow.NO_FLOW);
-    }
+public record FloatConstant(Primitives primitives, float constant) implements ConstantExpression<Float>, Numeric {
 
     @Override
     @NotNull
@@ -62,12 +55,7 @@ public record FloatConstant(Primitives primitives,
 
     @Override
     public int internalCompareTo(Expression v) {
-        return (int)Math.signum(constant - ((FloatConstant) v).constant);
-    }
-
-    @Override
-    public ObjectFlow getObjectFlow() {
-        return objectFlow;
+        return (int) Math.signum(constant - ((FloatConstant) v).constant);
     }
 
     @Override
@@ -92,7 +80,7 @@ public record FloatConstant(Primitives primitives,
 
     @Override
     public Expression negate() {
-        return new FloatConstant(primitives, -constant, objectFlow);
+        return new FloatConstant(primitives, -constant);
     }
 
     @Override

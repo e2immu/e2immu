@@ -17,10 +17,7 @@ package org.e2immu.analyser.model;
 import org.e2immu.analyser.analyser.AnalysisProvider;
 import org.e2immu.analyser.analyser.LinkedVariables;
 import org.e2immu.analyser.analyser.VariableProperty;
-import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Primitives;
-
-import java.util.Set;
 
 import static org.e2immu.analyser.analyser.VariableProperty.*;
 
@@ -39,10 +36,6 @@ public interface FieldAnalysis extends Analysis {
     // the values are either other fields (in which case these other fields are not linked to parameters)
     // or parameters
     LinkedVariables getLinkedVariables();
-
-    ObjectFlow getObjectFlow();
-
-    Set<ObjectFlow> getInternalObjectFlows();
 
     Boolean isOfImplicitlyImmutableDataType();
 

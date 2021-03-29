@@ -16,7 +16,6 @@ package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
-import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.output.Text;
@@ -33,13 +32,11 @@ import java.util.Objects;
 @E2Container
 public record ClassExpression(Primitives primitives,
                               ParameterizedType parameterizedType, // String
-                              ParameterizedType parameterizedClassType, // Class<String>
-                              ObjectFlow objectFlow) implements ConstantExpression<ParameterizedType> {
+                              ParameterizedType parameterizedClassType // Class<String>
+) implements ConstantExpression<ParameterizedType> {
 
     public ClassExpression(Primitives primitives, ParameterizedType parameterizedType) {
-        this(primitives, parameterizedType,
-                new ParameterizedType(primitives.classTypeInfo, List.of(parameterizedType)),
-                ObjectFlow.NO_FLOW);
+        this(primitives, parameterizedType, new ParameterizedType(primitives.classTypeInfo, List.of(parameterizedType)));
     }
 
     @Override
@@ -68,11 +65,6 @@ public record ClassExpression(Primitives primitives,
     @Override
     public int order() {
         return ExpressionComparator.ORDER_CONSTANT_CLASS;
-    }
-
-    @Override
-    public ObjectFlow getObjectFlow() {
-        return objectFlow;
     }
 
     @Override

@@ -20,13 +20,10 @@ import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.variable.This;
-import org.e2immu.analyser.objectflow.ObjectFlow;
-import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.parser.InspectionProvider;
-import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 
 import java.util.List;
@@ -65,11 +62,6 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
     @Override
     public int order() {
         return 0;
-    }
-
-    @Override
-    public ObjectFlow getObjectFlow() {
-        return ObjectFlow.NYE;
     }
 
     @Override
@@ -115,10 +107,6 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
         builder.compose(scopeResult);
         builder.setExpression(this);
         return builder.build();
-    }
-
-    private ParameterizedType makeParameterizedTypeFromContext(InspectionProvider inspectionProvider, TypeInfo typeInfo, ParameterizedType returnType) {
-        return typeInfo.asParameterizedType(inspectionProvider); //  TODO
     }
 
     @Override

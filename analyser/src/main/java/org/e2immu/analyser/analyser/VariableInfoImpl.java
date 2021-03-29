@@ -23,7 +23,6 @@ import org.e2immu.analyser.model.expression.DelayedVariableExpression;
 import org.e2immu.analyser.model.expression.Negation;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.Variable;
-import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.support.SetOnce;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,7 +51,6 @@ class VariableInfoImpl implements VariableInfo {
     private final VariableProperties properties = new VariableProperties();
     private final SetOnce<Expression> value = new SetOnce<>(); // may be written exactly once
     private Expression currentDelayedValue; // may be written multiple times
-    private final SetOnce<ObjectFlow> objectFlow = new SetOnce<>();
     private final SetOnce<LinkedVariables> linkedVariables = new SetOnce<>();
     private final SetOnce<Integer> statementTime = new SetOnce<>();
 
@@ -125,11 +123,6 @@ class VariableInfoImpl implements VariableInfo {
     }
 
     @Override
-    public ObjectFlow getObjectFlow() {
-        return objectFlow.getOrElse(ObjectFlow.NO_FLOW);
-    }
-
-    @Override
     public Expression getValue() {
         return value.getOrElse(currentDelayedValue);
     }
@@ -190,12 +183,6 @@ class VariableInfoImpl implements VariableInfo {
         } catch (RuntimeException e) {
             LOGGER.error("Error setting property {} of {} to {}", variableProperty, variable.fullyQualifiedName(), value);
             throw e;
-        }
-    }
-
-    void setObjectFlow(ObjectFlow objectFlow) {
-        if (!this.objectFlow.isSet() || !this.objectFlow.get().equals(objectFlow)) {
-            this.objectFlow.set(objectFlow);
         }
     }
 

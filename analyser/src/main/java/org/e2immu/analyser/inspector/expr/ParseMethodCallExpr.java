@@ -23,7 +23,6 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
-import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.resolver.ShallowMethodResolver;
 import org.e2immu.analyser.util.Pair;
@@ -108,8 +107,7 @@ public record ParseMethodCallExpr(InspectionProvider inspectionProvider) {
         }
         // TODO check that getConcreteReturnType() is correct here (20201204)
         return new MethodCall(objectIsImplicit, computedScope, methodInfo, mapExpansion.isEmpty() ? method.getConcreteReturnType() :
-                method.expand(mapExpansion).getConcreteReturnType(), newParameterExpressions,
-                ObjectFlow.NYE);
+                method.expand(mapExpansion).getConcreteReturnType(), newParameterExpressions);
     }
 
     MethodTypeParameterMap chooseCandidateAndEvaluateCall(ExpressionContext expressionContext,

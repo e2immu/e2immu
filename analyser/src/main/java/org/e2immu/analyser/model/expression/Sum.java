@@ -20,7 +20,6 @@ import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Qualification;
 import org.e2immu.analyser.model.TranslationMap;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
-import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.parser.Primitives;
@@ -31,70 +30,67 @@ public class Sum extends BinaryOperator {
 
     @Override
     public Expression translate(TranslationMap translationMap) {
-        return new Sum(primitives, lhs.translate(translationMap), rhs.translate(translationMap), objectFlow);
+        return new Sum(primitives, lhs.translate(translationMap), rhs.translate(translationMap));
     }
 
-    private Sum(Primitives primitives, Expression lhs, Expression rhs, ObjectFlow objectFlow) {
-        super(primitives, lhs, primitives.plusOperatorInt, rhs, Precedence.ADDITIVE, objectFlow);
+    private Sum(Primitives primitives, Expression lhs, Expression rhs) {
+        super(primitives, lhs, primitives.plusOperatorInt, rhs, Precedence.ADDITIVE);
     }
 
     public EvaluationResult reEvaluate(EvaluationContext evaluationContext, Map<Expression, Expression> translation) {
         EvaluationResult reLhs = lhs.reEvaluate(evaluationContext, translation);
         EvaluationResult reRhs = rhs.reEvaluate(evaluationContext, translation);
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext).compose(reLhs, reRhs);
-        return builder.setExpression(Sum.sum(evaluationContext, reLhs.getExpression(), reRhs.getExpression(), getObjectFlow())).build();
+        return builder.setExpression(Sum.sum(evaluationContext, reLhs.getExpression(), reRhs.getExpression())).build();
     }
 
     // we try to maintain a sum of products
-    public static Expression sum(EvaluationContext evaluationContext, Expression l, Expression r, ObjectFlow objectFlow) {
-        return sum(evaluationContext, l, r, objectFlow, true);
+    public static Expression sum(EvaluationContext evaluationContext, Expression l, Expression r) {
+        return sum(evaluationContext, l, r, true);
     }
 
-    private static Expression sum(EvaluationContext evaluationContext, Expression l, Expression r, ObjectFlow objectFlow, boolean tryAgain) {
+    private static Expression sum(EvaluationContext evaluationContext, Expression l, Expression r, boolean tryAgain) {
         Primitives primitives = evaluationContext.getPrimitives();
 
-        if (l.equals(r)) return Product.product(evaluationContext,
-                new IntConstant(primitives, 2, ObjectFlow.NO_FLOW), l, objectFlow);
+        if (l.equals(r)) return Product.product(evaluationContext, new IntConstant(primitives, 2), l);
         if (l instanceof IntConstant li && li.constant() == 0) return r;
         if (r instanceof IntConstant ri && ri.constant() == 0) return l;
         if (l instanceof Negation ln && ln.expression.equals(r) ||
                 r instanceof Negation rn && rn.expression.equals(l)) {
-            return new IntConstant(primitives, 0, ObjectFlow.NO_FLOW);
+            return new IntConstant(primitives, 0);
         }
         if (l instanceof Numeric ln && r instanceof Numeric rn)
-            return IntConstant.intOrDouble(primitives, ln.doubleValue() + rn.doubleValue(), objectFlow);
+            return IntConstant.intOrDouble(primitives, ln.doubleValue() + rn.doubleValue());
 
         // any unknown lingering
         //if (l.isUnknown() || r.isUnknown()) throw new UnsupportedOperationException();
 
         // a + (b+c)
         if (l instanceof Numeric ln && r instanceof Sum s && s.lhs instanceof Numeric l2) {
-            return Sum.sum(evaluationContext, IntConstant.intOrDouble(primitives, ln.doubleValue() + l2.doubleValue(), s.objectFlow),
-                    s.rhs, s.objectFlow);
+            return Sum.sum(evaluationContext, IntConstant.intOrDouble(primitives, ln.doubleValue() + l2.doubleValue()),
+                    s.rhs);
         }
 
         // a + x*a
         if (l instanceof Product lp && lp.lhs instanceof Numeric lpLn && r.equals(lp.rhs))
             return Product.product(evaluationContext,
-                    IntConstant.intOrDouble(primitives, 1 + lpLn.doubleValue(),
-                            lp.lhs.getObjectFlow()), r, objectFlow);
+                    IntConstant.intOrDouble(primitives, 1 + lpLn.doubleValue()), r);
         if (r instanceof Product rp && rp.lhs instanceof Numeric rpLn && l.equals(rp.rhs))
             return Product.product(evaluationContext, IntConstant.intOrDouble(primitives,
-                    1 + rpLn.doubleValue(), rp.lhs.getObjectFlow()), l, objectFlow);
+                    1 + rpLn.doubleValue()), l);
 
         // n*a + m*a
         if (l instanceof Product lp && r instanceof Product rp &&
                 lp.lhs instanceof Numeric lpLn && rp.lhs instanceof Numeric rpLn &&
                 lp.rhs.equals(rp.rhs)) {
             return Product.product(evaluationContext,
-                    IntConstant.intOrDouble(primitives, lpLn.doubleValue() + rpLn.doubleValue(), objectFlow),
-                    lp.rhs, objectFlow);
+                    IntConstant.intOrDouble(primitives, lpLn.doubleValue() + rpLn.doubleValue()), lp.rhs);
         }
-        Sum s = l.compareTo(r) < 0 ? new Sum(primitives, l, r, objectFlow) : new Sum(primitives, r, l, objectFlow);
+        Sum s = l.compareTo(r) < 0 ? new Sum(primitives, l, r) : new Sum(primitives, r, l);
 
         // re-running the sum to solve substitutions of variables to constants
         if (tryAgain) {
-            return Sum.sum(evaluationContext, s.lhs, s.rhs, s.objectFlow, false);
+            return Sum.sum(evaluationContext, s.lhs, s.rhs, false);
         }
 
         return s;
@@ -109,7 +105,7 @@ public class Sum extends BinaryOperator {
     public Expression negate(EvaluationContext evaluationContext) {
         return Sum.sum(evaluationContext,
                 Negation.negate(evaluationContext, lhs),
-                Negation.negate(evaluationContext, rhs), getObjectFlow());
+                Negation.negate(evaluationContext, rhs));
     }
 
     @Override

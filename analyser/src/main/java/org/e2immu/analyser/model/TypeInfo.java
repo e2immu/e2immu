@@ -14,7 +14,6 @@
 
 package org.e2immu.analyser.model;
 
-import org.e2immu.analyser.analyser.AnalysisProvider;
 import org.e2immu.analyser.inspector.ExpressionContext;
 import org.e2immu.analyser.inspector.MethodInspectionImpl;
 import org.e2immu.analyser.inspector.MethodTypeParameterMap;
@@ -24,7 +23,6 @@ import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ExpressionAsStatement;
 import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.analyser.model.variable.This;
-import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.output.*;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
@@ -504,7 +502,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
 
     private Expression methodCallNoParameters(ParameterInfo firstParameter, MethodInspection concreteMethod) {
         Expression newScope = new VariableExpression(firstParameter);
-        return new MethodCall(newScope, concreteMethod.getMethodInfo(), List.of(), ObjectFlow.NO_FLOW);
+        return new MethodCall(newScope, concreteMethod.getMethodInfo(), List.of());
     }
 
     private Expression methodCallCopyAllParameters(Expression scope, MethodInspection concreteMethod, MethodInspection interfaceMethod) {
@@ -520,7 +518,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
             i++;
         }
         // FIXME concreteTypes should be used somehow
-        return new MethodCall(scope, concreteMethod.getMethodInfo(), parameterExpressions, ObjectFlow.NO_FLOW);
+        return new MethodCall(scope, concreteMethod.getMethodInfo(), parameterExpressions);
     }
 
     public boolean isNestedType() {
@@ -549,35 +547,6 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
 
     public boolean isInterface() {
         return typeInspection.get().typeNature() == TypeNature.INTERFACE;
-    }
-
-    public Set<ObjectFlow> objectFlows(AnalysisProvider analysisProvider) {
-        Set<ObjectFlow> result = new HashSet<>(analysisProvider.getTypeAnalysis(this).getConstantObjectFlows());
-        for (MethodInfo methodInfo : typeInspection.get().methodsAndConstructors()) {
-            // set, because the returned object flow could equal either one of the non-returned, or parameter flows
-            for (ParameterInfo parameterInfo : methodInfo.methodInspection.get().getParameters()) {
-                result.add(analysisProvider.getParameterAnalysis(parameterInfo).getObjectFlow());
-            }
-            MethodAnalysis methodAnalysis = analysisProvider.getMethodAnalysis(methodInfo);
-            result.addAll(methodAnalysis.getInternalObjectFlows());
-
-            if (!methodInfo.isConstructor && !methodInfo.isVoid()) {
-                result.add(methodAnalysis.getObjectFlow());
-            }
-        }
-        // for fields we only add those owned by the field itself (i.e. with an initialiser)
-        for (FieldInfo fieldInfo : typeInspection.get().fields()) {
-            FieldAnalysis fieldAnalysis = analysisProvider.getFieldAnalysis(fieldInfo);
-            ObjectFlow objectFlow = fieldAnalysis.getObjectFlow();
-            if (objectFlow != null && objectFlow.location.info == fieldInfo) {
-                result.add(objectFlow);
-            }
-            result.addAll(fieldAnalysis.getInternalObjectFlows());
-        }
-        for (TypeInfo subType : typeInspection.get().subTypes()) {
-            result.addAll(subType.objectFlows(analysisProvider));
-        }
-        return result;
     }
 
     public boolean isEventual() {
@@ -744,8 +713,6 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
      */
     public static Map<NamedType, ParameterizedType> combineMaps(Map<NamedType, ParameterizedType> m1, Map<NamedType, ParameterizedType> m2) {
         assert m1 != null;
-        // if (m2.isEmpty()) return m1;
-        // if (m1.isEmpty()) return m2;
         return m2.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey,
                 e -> e.getValue().isTypeParameter() ? m1.getOrDefault(e.getValue().typeParameter, e.getValue()) : e.getValue(),
                 (v1, v2) -> {

@@ -18,17 +18,16 @@ import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
-import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Primitives;
 
 public class Divide extends BinaryOperator {
 
-    private Divide(Primitives primitives, Expression lhs, Expression rhs, ObjectFlow objectFlow) {
-        super(primitives, lhs, primitives.divideOperatorInt, rhs, Precedence.MULTIPLICATIVE, objectFlow);
+    private Divide(Primitives primitives, Expression lhs, Expression rhs) {
+        super(primitives, lhs, primitives.divideOperatorInt, rhs, Precedence.MULTIPLICATIVE);
     }
 
-    public static EvaluationResult divide(EvaluationContext evaluationContext, Expression l, Expression r, ObjectFlow objectFlow) {
+    public static EvaluationResult divide(EvaluationContext evaluationContext, Expression l, Expression r) {
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
 
         if (l instanceof Numeric ln && ln.doubleValue() == 0) return builder.setExpression(l).build();
@@ -40,12 +39,12 @@ public class Divide extends BinaryOperator {
         Primitives primitives = evaluationContext.getPrimitives();
 
         if (l instanceof IntConstant li && r instanceof IntConstant ri)
-            return builder.setExpression(new IntConstant(primitives, li.constant() / ri.constant(), objectFlow)).build();
+            return builder.setExpression(new IntConstant(primitives, li.constant() / ri.constant())).build();
 
         // any unknown lingering
         if (l.isUnknown() || r.isUnknown()) throw new UnsupportedOperationException();
 
-        return builder.setExpression(new Divide(primitives, l, r, objectFlow)).build();
+        return builder.setExpression(new Divide(primitives, l, r)).build();
     }
 
     @Override

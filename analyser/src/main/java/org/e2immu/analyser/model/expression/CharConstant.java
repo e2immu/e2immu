@@ -19,7 +19,6 @@ import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.Qualification;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
-import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.parser.Primitives;
@@ -29,13 +28,7 @@ import org.e2immu.annotation.NotNull;
 import java.util.Objects;
 
 @E2Container
-public record CharConstant(Primitives primitives,
-                           char constant,
-                           ObjectFlow objectFlow) implements ConstantExpression<Character> {
-
-    public CharConstant(Primitives primitives, char constant) {
-        this(primitives, constant, ObjectFlow.NO_FLOW);
-    }
+public record CharConstant(Primitives primitives, char constant) implements ConstantExpression<Character> {
 
     @Override
     @NotNull
@@ -89,11 +82,6 @@ public record CharConstant(Primitives primitives,
     @Override
     public int order() {
         return ExpressionComparator.ORDER_CONSTANT_CHAR;
-    }
-
-    @Override
-    public ObjectFlow getObjectFlow() {
-        return objectFlow;
     }
 
     @Override

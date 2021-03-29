@@ -25,7 +25,6 @@ import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
-import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.InspectionProvider;
 
 import java.util.List;
@@ -105,6 +104,6 @@ public record CreatePreconditionCompanion(InspectionProvider inspectionProvider,
 
     private MethodCall aspectCall(MethodInfo aspectMethod) {
         return new MethodCall(new VariableExpression(new This(inspectionProvider, aspectMethod.typeInfo)),
-                aspectMethod, List.of(), ObjectFlow.NO_FLOW);
+                aspectMethod, List.of());
     }
 }

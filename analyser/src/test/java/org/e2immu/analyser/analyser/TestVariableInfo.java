@@ -19,7 +19,6 @@ import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.expression.util.EvaluateInlineConditional;
 import org.e2immu.analyser.model.variable.Variable;
-import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.util.Logger;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -154,7 +153,7 @@ public class TestVariableInfo extends CommonVariableInfo {
         // this is not done in the merge, but in the level 3 evaluation of the return value
 
         Expression ret3 = EvaluateInlineConditional.conditionalValueConditionResolved(minimalEvaluationContext,
-                state, three, value2, ObjectFlow.NO_FLOW).getExpression();
+                state, three, value2).getExpression();
 
         assertEquals("instance type boolean?4:3", ret3.toString());
     }
@@ -172,7 +171,7 @@ public class TestVariableInfo extends CommonVariableInfo {
         viX.setValue(x, false);
 
         VariableInfoImpl viB = new VariableInfoImpl(makeLocalIntVar("b"));
-        Expression xEquals3 = Equals.equals(minimalEvaluationContext, x, three, ObjectFlow.NO_FLOW);
+        Expression xEquals3 = Equals.equals(minimalEvaluationContext, x, three);
         viB.setValue(four, false);
         viB.setProperty(IDENTITY, Level.TRUE);
 
@@ -191,7 +190,7 @@ public class TestVariableInfo extends CommonVariableInfo {
         // situation: if(x==3) return b; if(x==4) return a;
 
         VariableInfoImpl viA = new VariableInfoImpl(makeLocalIntVar("a"));
-        Expression xEquals4 = Equals.equals(minimalEvaluationContext, x, four, ObjectFlow.NO_FLOW);
+        Expression xEquals4 = Equals.equals(minimalEvaluationContext, x, four);
         assertEquals("4==instance type int", xEquals4.debugOutput());
         viA.setValue(three, false);
         viA.setProperty(IDENTITY, Level.TRUE);
@@ -217,7 +216,7 @@ public class TestVariableInfo extends CommonVariableInfo {
                         Negation.negate(minimalEvaluationContext, xEquals4));
 
         Expression ret4 = EvaluateInlineConditional.conditionalValueConditionResolved(minimalEvaluationContext,
-                combinedState, two, ret3.getValue(), ObjectFlow.NO_FLOW).getExpression();
+                combinedState, two, ret3.getValue()).getExpression();
 
         // IMPROVE actually the value should be 4 == x?3:3 == x?4:2
         assertEquals("3!=instance type int&&4!=instance type int?2:4==instance type int?3" +

@@ -21,7 +21,6 @@ import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.model.variable.Variable;
-import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.parser.Primitives;
@@ -34,25 +33,17 @@ import java.util.stream.Collectors;
 import static org.e2immu.analyser.util.Logger.LogTarget.CNF;
 import static org.e2immu.analyser.util.Logger.log;
 
-public record Or(Primitives primitives,
-                 List<Expression> expressions,
-                 ObjectFlow objectFlow) implements Expression {
+public record Or(Primitives primitives, List<Expression> expressions) implements Expression {
 
     public Or {
         Objects.requireNonNull(primitives);
         Objects.requireNonNull(expressions);
-        Objects.requireNonNull(objectFlow);
     }
 
     // testing only
     public Or(Primitives primitives) {
-        this(primitives, List.of(), ObjectFlow.NO_FLOW);
+        this(primitives, List.of());
     }
-
-    public Or(Primitives primitives, ObjectFlow objectFlow) {
-        this(primitives, List.of(), objectFlow);
-    }
-
 
     public Expression append(EvaluationContext evaluationContext, Expression... values) {
         return append(evaluationContext, Arrays.asList(values));
@@ -136,7 +127,7 @@ public record Or(Primitives primitives,
                     .map(v -> append(evaluationContext, ListUtil.immutableConcat(finalValues, List.of(v))))
                     .toArray(Expression[]::new);
             log(CNF, "Found And-clause {} in {}, components for new And are {}", firstAnd, this, Arrays.toString(components));
-            return new And(primitives, objectFlow).append(evaluationContext, components);
+            return new And(primitives).append(evaluationContext, components);
         }
         if (finalValues.size() == 1) return finalValues.get(0);
 
@@ -149,7 +140,7 @@ public record Or(Primitives primitives,
             return new BooleanConstant(primitives, false);
         }
 
-        return new Or(primitives, finalValues, objectFlow);
+        return new Or(primitives, finalValues);
     }
 
     private void recursivelyAdd(ArrayList<Expression> concat, List<Expression> collect) {
@@ -205,7 +196,7 @@ public record Or(Primitives primitives,
         Expression[] clauses = Arrays.stream(clauseResults).map(EvaluationResult::value).toArray(Expression[]::new);
         return new EvaluationResult.Builder()
                 .compose(clauseResults)
-                .setExpression(new Or(primitives, objectFlow).append(evaluationContext, clauses))
+                .setExpression(new Or(primitives).append(evaluationContext, clauses))
                 .build();
     }
 
@@ -225,11 +216,6 @@ public record Or(Primitives primitives,
         return expressions.stream().flatMap(v -> v.variables().stream()).collect(Collectors.toList());
     }
 
-    @Override
-    public ObjectFlow getObjectFlow() {
-        return objectFlow;
-    }
-
     // no implementation of any of the filters
 
     @Override
@@ -240,7 +226,7 @@ public record Or(Primitives primitives,
         Expression[] reClauses = reClauseERs.stream().map(EvaluationResult::value).toArray(Expression[]::new);
         return new EvaluationResult.Builder()
                 .compose(reClauseERs)
-                .setExpression(new Or(primitives, objectFlow).append(evaluationContext, reClauses))
+                .setExpression(new Or(primitives).append(evaluationContext, reClauses))
                 .build();
     }
 
@@ -265,7 +251,7 @@ public record Or(Primitives primitives,
     public Expression translate(TranslationMap translationMap) {
         List<Expression> translated = expressions.stream().map(e -> e.translate(translationMap))
                 .collect(Collectors.toUnmodifiableList());
-        return new Or(primitives, translated, objectFlow);
+        return new Or(primitives, translated);
     }
 
 }

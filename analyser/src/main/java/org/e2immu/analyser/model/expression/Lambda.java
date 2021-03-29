@@ -21,8 +21,6 @@ import org.e2immu.analyser.analyser.StatementAnalysis;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ReturnStatement;
-import org.e2immu.analyser.objectflow.ObjectFlow;
-import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.output.Guide;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
@@ -94,11 +92,6 @@ public class Lambda implements Expression {
         return 0;
     }
 
-    @Override
-    public ObjectFlow getObjectFlow() {
-        return ObjectFlow.NYE;
-    }
-
     private Expression singleExpression() {
         if (block.structure.statements().size() != 1) return null;
         Statement statement = block.structure.statements().get(0);
@@ -163,8 +156,6 @@ public class Lambda implements Expression {
     public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
         ParameterizedType parameterizedType = methodInfo.typeInfo.asParameterizedType(evaluationContext.getAnalyserContext());
-        Location location = evaluationContext.getLocation(this);
-        ObjectFlow objectFlow = builder.createInternalObjectFlow(location, parameterizedType, Origin.NEW_OBJECT_CREATION);
         Expression result;
 
         if (evaluationContext.getLocalPrimaryTypeAnalysers() == null) {
@@ -182,7 +173,7 @@ public class Lambda implements Expression {
             } else {
                 result = NewObject.forGetInstance(evaluationContext.newObjectIdentifier(),
                         parameterizedType, new BooleanConstant(evaluationContext.getPrimitives(), true),
-                        MultiLevel.EFFECTIVELY_NOT_NULL, objectFlow);
+                        MultiLevel.EFFECTIVELY_NOT_NULL);
             }
             builder.markVariablesFromSubMethod(methodAnalysis);
         }
@@ -194,7 +185,7 @@ public class Lambda implements Expression {
     @Override
     public NewObject getInstance(EvaluationResult evaluationResult) {
         return NewObject.forGetInstance(evaluationResult.evaluationContext().newObjectIdentifier(),
-                evaluationResult.evaluationContext().getPrimitives(), returnType(), getObjectFlow());
+                evaluationResult.evaluationContext().getPrimitives(), returnType());
     }
 
     @Override

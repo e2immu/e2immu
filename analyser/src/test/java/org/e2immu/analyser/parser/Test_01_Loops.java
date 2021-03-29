@@ -25,7 +25,6 @@ import org.e2immu.analyser.model.statement.ForEachStatement;
 import org.e2immu.analyser.model.statement.WhileStatement;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
-import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.visitor.EvaluationResultVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
@@ -240,8 +239,7 @@ public class Test_01_Loops extends CommonTestRunner {
                     Expression inline = EvaluateInlineConditional.conditionalValueConditionResolved(d.evaluationContext(),
                             GreaterThanZero.greater(d.evaluationContext(), NewObject.forTesting(primitives, primitives.intParameterizedType),
                                     new IntConstant(primitives, 0), true),
-                            new StringConstant(primitives, "abc"),
-                            string1Wrapped, ObjectFlow.NO_FLOW).value();
+                            new StringConstant(primitives, "abc"), string1Wrapped).value();
                     assertEquals(END_RESULT_NO_OPERATIONS, inline.toString());
                     assertEquals(MultiLevel.NULLABLE, inline.getProperty(d.evaluationContext(), VariableProperty.NOT_NULL_EXPRESSION, true));
                 }
@@ -408,7 +406,7 @@ public class Test_01_Loops extends CommonTestRunner {
                 if ("1".equals(d.statementId())) {
                     if (d.statementAnalysis().statement instanceof ForEachStatement forEachStatement) {
                         FlowData.Execution exec = forEachStatement.structure.statementExecution()
-                                .apply(new ArrayInitializer(d.evaluationContext().getAnalyserContext(), ObjectFlow.NO_FLOW,
+                                .apply(new ArrayInitializer(d.evaluationContext().getAnalyserContext(),
                                         List.of(), d.statementAnalysis().primitives.stringParameterizedType), d.evaluationContext());
                         assertSame(FlowData.Execution.NEVER, exec);
 

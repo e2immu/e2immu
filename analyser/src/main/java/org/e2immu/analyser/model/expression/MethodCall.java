@@ -19,9 +19,6 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.*;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
-import org.e2immu.analyser.objectflow.ObjectFlow;
-import org.e2immu.analyser.objectflow.Origin;
-import org.e2immu.analyser.objectflow.access.MethodAccess;
 import org.e2immu.analyser.output.*;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Message;
@@ -48,26 +45,22 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     public final boolean objectIsImplicit; // irrelevant after evaluation
     public final Expression object;
     public final List<Expression> parameterExpressions;
-    public final ObjectFlow objectFlow;
 
     public MethodCall(Expression object,
                       MethodInfo methodInfo,
-                      List<Expression> parameterExpressions,
-                      ObjectFlow objectFlow) {
-        this(false, object, methodInfo, methodInfo.returnType(), parameterExpressions, objectFlow);
+                      List<Expression> parameterExpressions) {
+        this(false, object, methodInfo, methodInfo.returnType(), parameterExpressions);
     }
 
     public MethodCall(boolean objectIsImplicit,
                       Expression object,
                       MethodInfo methodInfo,
                       ParameterizedType returnType,
-                      List<Expression> parameterExpressions,
-                      ObjectFlow objectFlow) {
+                      List<Expression> parameterExpressions) {
         super(methodInfo, returnType);
         this.object = Objects.requireNonNull(object);
         this.parameterExpressions = Objects.requireNonNull(parameterExpressions);
         this.objectIsImplicit = objectIsImplicit;
-        this.objectFlow = Objects.requireNonNull(objectFlow);
     }
 
     // only used in the inequality system
@@ -86,8 +79,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 translationMap.translateExpression(object),
                 translatedMethod,
                 translatedMethod.returnType(),
-                parameterExpressions.stream().map(translationMap::translateExpression).collect(Collectors.toList()),
-                objectFlow);
+                parameterExpressions.stream().map(translationMap::translateExpression).collect(Collectors.toList()));
     }
 
     @Override
@@ -99,12 +91,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     public NewObject getInstance(EvaluationResult evaluationResult) {
         if (Primitives.isPrimitiveExcludingVoid(returnType())) return null;
         return NewObject.forGetInstance(evaluationResult.evaluationContext().newObjectIdentifier(),
-                evaluationResult.evaluationContext().getPrimitives(), returnType(), objectFlow);
-    }
-
-    @Override
-    public ObjectFlow getObjectFlow() {
-        return objectFlow;
+                evaluationResult.evaluationContext().getPrimitives(), returnType());
     }
 
     @Override
@@ -228,7 +215,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         int modified = evaluationContext.getAnalyserContext()
                 .getMethodAnalysis(methodInfo).getProperty(VariableProperty.MODIFIED_METHOD);
         EvaluationResult mv = EvaluateMethodCall.methodValue(modified, evaluationContext, methodInfo,
-                evaluationContext.getAnalyserContext().getMethodAnalysis(methodInfo), reObject.value(), reParamValues, getObjectFlow());
+                evaluationContext.getAnalyserContext().getMethodAnalysis(methodInfo), reObject.value(), reParamValues);
         return new EvaluationResult.Builder(evaluationContext).compose(reParams).compose(reObject, mv)
                 .setExpression(mv.value()).build();
     }
@@ -343,20 +330,6 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                     contextModifiedDelay == Level.TRUE, parameterValues);
         }
 
-        // access
-        ObjectFlow objectFlow = objectValue.getObjectFlow();
-        if (objectFlow != ObjectFlow.NO_FLOW) {
-            if (modified == Level.DELAY) {
-                Logger.log(DELAYED, "Delaying flow access registration because modification status of {} not known",
-                        methodInfo.fullyQualifiedName());
-                objectFlow.delay();
-            } else {
-                List<ObjectFlow> flowsOfArguments = parameterValues.stream().map(Expression::getObjectFlow).collect(Collectors.toList());
-                MethodAccess methodAccess = new MethodAccess(methodInfo, flowsOfArguments);
-                builder.addAccess(modified == Level.TRUE, methodAccess, objectValue);
-            }
-        }
-
         // companion methods
         NewObject modifiedInstance;
         if (modified == Level.TRUE) {
@@ -367,22 +340,10 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         }
 
         // @Only check
-        checkOnly(evaluationContext, builder, objectValue, objectFlow);
+        checkOnly(evaluationContext, builder, objectValue);
 
         // return value
         Location location = evaluationContext.getLocation(this);
-        ObjectFlow objectFlowOfResult;
-        if (!Primitives.isVoid(methodInfo.returnType())) {
-            ObjectFlow returnedFlow = methodAnalysis.getObjectFlow();
-
-            objectFlowOfResult = builder.createInternalObjectFlow(location, methodInfo.returnType(), Origin.RESULT_OF_METHOD);
-            objectFlowOfResult.addPrevious(returnedFlow);
-            // cross-link, possible because returnedFlow is already permanent
-            // TODO ObjectFlow check cross-link
-            returnedFlow.addNext(objectFlowOfResult);
-        } else {
-            objectFlowOfResult = ObjectFlow.NO_FLOW;
-        }
 
         Expression result;
         boolean resultIsDelayed;
@@ -391,7 +352,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             complianceWithForwardRequirements(builder, methodAnalysis, methodInspection, forwardEvaluationInfo, contentNotNullRequired);
 
             EvaluationResult mv = EvaluateMethodCall.methodValue(modified, evaluationContext, methodInfo,
-                    methodAnalysis, objectValue, parameterValues, objectFlowOfResult);
+                    methodAnalysis, objectValue, parameterValues);
             builder.compose(mv);
             if (mv.value() == objectValue && mv.value() instanceof NewObject && modifiedInstance != null) {
                 result = modifiedInstance;
@@ -603,10 +564,10 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         return MultiLevel.EFFECTIVELY_NOT_NULL;
     }
 
+    // FIXME
     private void checkOnly(EvaluationContext evaluationContext, EvaluationResult.Builder builder,
-                           Expression objectValue,
-                           ObjectFlow objectFlow) {
-        Set<FieldInfo> marks = objectFlow.marks(evaluationContext.getCurrentType(), evaluationContext.getAnalyserContext());
+                           Expression objectValue) {
+        Set<FieldInfo> marks = Set.of();
         if (marks != null && !marks.isEmpty()
                 && objectValue instanceof VariableExpression ve && ve.variable() instanceof This) {
             MethodAnalysis methodAnalysis = evaluationContext.getAnalyserContext().getMethodAnalysis(methodInfo);

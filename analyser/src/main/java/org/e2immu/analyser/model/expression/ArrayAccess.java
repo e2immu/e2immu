@@ -18,7 +18,6 @@ import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.variable.DependentVariable;
 import org.e2immu.analyser.model.variable.Variable;
-import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.annotation.E2Container;
@@ -66,11 +65,6 @@ public class ArrayAccess implements Expression {
     }
 
     @Override
-    public boolean hasBeenEvaluated() {
-        return false;
-    }
-
-    @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
@@ -92,11 +86,6 @@ public class ArrayAccess implements Expression {
     @Override
     public int order() {
         return 0;
-    }
-
-    @Override
-    public ObjectFlow getObjectFlow() {
-        return ObjectFlow.NYE;
     }
 
     @Override
@@ -180,7 +169,7 @@ public class ArrayAccess implements Expression {
                         // the result is not known, lets return an unknown instance
                         Expression newObject = NewObject.genericArrayAccess(evaluationContext.newObjectIdentifier()
                                         + "-" + dependentVariable.fullyQualifiedName(), evaluationContext, array.value(),
-                                dependentVariable, ObjectFlow.NO_FLOW);
+                                dependentVariable);
                         builder.setExpression(newObject);
 
                         // NOTE (?): linked variables of a generic access to a known array -> links to ALL linked variables

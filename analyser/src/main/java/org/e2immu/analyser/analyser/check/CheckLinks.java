@@ -22,8 +22,10 @@ import org.e2immu.analyser.model.expression.ArrayInitializer;
 import org.e2immu.analyser.model.expression.MemberValuePair;
 import org.e2immu.analyser.model.expression.StringConstant;
 import org.e2immu.analyser.model.variable.Variable;
-import org.e2immu.analyser.objectflow.ObjectFlow;
-import org.e2immu.analyser.parser.*;
+import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
+import org.e2immu.analyser.parser.InspectionProvider;
+import org.e2immu.analyser.parser.Message;
+import org.e2immu.analyser.parser.Messages;
 import org.e2immu.annotation.Linked;
 
 import java.util.*;
@@ -36,8 +38,7 @@ public record CheckLinks(InspectionProvider inspectionProvider, E2ImmuAnnotation
         List<Expression> linkNameList = links.stream().map(variable -> new StringConstant(inspectionProvider.getPrimitives(),
                 variable.nameInLinkedAnnotation())).collect(Collectors.toList());
         Expression linksStringArray = new MemberValuePair("to",
-                new ArrayInitializer(inspectionProvider, ObjectFlow.NO_FLOW, linkNameList,
-                        inspectionProvider.getPrimitives().stringParameterizedType));
+                new ArrayInitializer(inspectionProvider, linkNameList, inspectionProvider.getPrimitives().stringParameterizedType));
         List<Expression> expressions = List.of(linksStringArray);
         return new AnnotationExpressionImpl(e2.linked.typeInfo(), expressions);
     }

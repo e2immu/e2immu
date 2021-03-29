@@ -18,7 +18,6 @@ import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.This;
-import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.support.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,33 +51,12 @@ public class MethodLevelData {
     // aggregates the preconditions on individual statements
     public final EventuallyFinal<Precondition> combinedPrecondition = new EventuallyFinal<>();
 
-    // no delays when frozen
-    private final AddOnceSet<ObjectFlow> internalObjectFlows = new AddOnceSet<>();
-
     // not for local processing, but so that we know in the method and field analyser that this process has been completed
     public final FlipSwitch linksHaveBeenEstablished = new FlipSwitch();
 
     public void addCircularCallOrUndeclaredFunctionalInterface() {
         if (!callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod.isSet()) {
             callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod.set(true);
-        }
-    }
-
-    public Stream<ObjectFlow> getInternalObjectFlowStream() {
-        return internalObjectFlows.stream();
-    }
-
-    public boolean internalObjectFlowNotYetFrozen() {
-        return !internalObjectFlows.isFrozen();
-    }
-
-    public void freezeInternalObjectFlows() {
-        internalObjectFlows.freeze();
-    }
-
-    public void ensureInternalObjectFlow(ObjectFlow objectFlow) {
-        if (!internalObjectFlows.contains(objectFlow)) {
-            internalObjectFlows.add(objectFlow);
         }
     }
 

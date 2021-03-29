@@ -21,36 +21,35 @@ import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
-import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Primitives;
 
 public class StringConcat extends BinaryOperator {
 
-    private StringConcat(Primitives primitives, Expression lhs, Expression rhs, ObjectFlow objectFlow) {
-        super(primitives, lhs, primitives.plusOperatorInt, rhs, Precedence.STRING_CONCAT, objectFlow);
+    private StringConcat(Primitives primitives, Expression lhs, Expression rhs) {
+        super(primitives, lhs, primitives.plusOperatorInt, rhs, Precedence.STRING_CONCAT);
     }
 
-    public static Expression stringConcat(EvaluationContext evaluationContext, Expression l, Expression r, ObjectFlow objectFlow) {
+    public static Expression stringConcat(EvaluationContext evaluationContext, Expression l, Expression r) {
         StringConstant lsv = l.asInstanceOf(StringConstant.class);
         StringConstant rsv = r.asInstanceOf(StringConstant.class);
         Primitives primitives = evaluationContext.getPrimitives();
 
         if (lsv != null && rsv != null) {
             return lsv.constant().isEmpty() ? r : rsv.constant().isEmpty() ? l :
-                    new StringConstant(primitives, lsv.constant() + rsv.constant(), objectFlow);
+                    new StringConstant(primitives, lsv.constant() + rsv.constant());
         }
         ConstantExpression<?> rcv = r.asInstanceOf(ConstantExpression.class);
         if (lsv != null && rcv != null) {
-            return new StringConstant(primitives, lsv.constant() + rcv.toString(), objectFlow);
+            return new StringConstant(primitives, lsv.constant() + rcv.toString());
         }
         ConstantExpression<?> lcv = l.asInstanceOf(ConstantExpression.class);
         if (rsv != null && lcv != null) {
-            return new StringConstant(primitives, lcv.toString() + rsv.constant(), objectFlow);
+            return new StringConstant(primitives, lcv.toString() + rsv.constant());
         }
         // any unknown lingering
         if (l.isUnknown() || r.isUnknown()) throw new UnsupportedOperationException();
 
-        return new StringConcat(primitives, l, r, objectFlow);
+        return new StringConcat(primitives, l, r);
     }
 
     @Override
@@ -80,6 +79,6 @@ public class StringConcat extends BinaryOperator {
     @Override
     public NewObject getInstance(EvaluationResult evaluationResult) {
         return NewObject.forGetInstance(evaluationResult.evaluationContext().newObjectIdentifier(),
-                evaluationResult.evaluationContext().getPrimitives(), returnType(), getObjectFlow());
+                evaluationResult.evaluationContext().getPrimitives(), returnType());
     }
 }

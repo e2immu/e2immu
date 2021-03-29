@@ -19,10 +19,6 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.statement.*;
 import org.e2immu.analyser.model.variable.*;
-import org.e2immu.analyser.objectflow.Access;
-import org.e2immu.analyser.objectflow.ObjectFlow;
-import org.e2immu.analyser.objectflow.Origin;
-import org.e2immu.analyser.objectflow.access.MethodAccess;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.InspectionProvider;
@@ -46,7 +42,6 @@ import java.util.stream.Stream;
 import static org.e2immu.analyser.analyser.VariableInfoContainer.Level.*;
 import static org.e2immu.analyser.analyser.VariableProperty.*;
 import static org.e2immu.analyser.util.Logger.LogTarget.ANALYSER;
-import static org.e2immu.analyser.util.Logger.LogTarget.OBJECT_FLOW;
 import static org.e2immu.analyser.util.Logger.log;
 import static org.e2immu.analyser.util.StringUtil.pad;
 
@@ -62,7 +57,6 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
     public final AddOnceSet<Message> messages = new AddOnceSet<>();
     public final NavigationData<StatementAnalysis> navigationData = new NavigationData<>();
     public final SetOnceMap<String, VariableInfoContainer> variables = new SetOnceMap<>();
-    public final AddOnceSet<ObjectFlow> internalObjectFlows = new AddOnceSet<>();
 
     public final MethodLevelData methodLevelData = new MethodLevelData();
     public final StateData stateData;
@@ -498,8 +492,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         // and StatementAnalyser (checkNotNullEscapesAndPreconditions)
         if (initialValue.expressionIsDelayed && notYetAssignedToWillBeAssignedToLater) {
             String objectId = index + "-" + fieldReference.fieldInfo.fullyQualifiedName();
-            Expression initial = NewObject.initialValueOfField(objectId, primitives, fieldReference.parameterizedType(),
-                    ObjectFlow.NO_FLOW);
+            Expression initial = NewObject.initialValueOfField(objectId, primitives, fieldReference.parameterizedType());
             initialValue = new ExpressionAndDelay(initial, false);
         }
 
@@ -573,8 +566,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                                 initial.getAssignmentId().compareTo(indexOfStatementTime) >= 0 ?
                                 initial.getValue() :
                                 NewObject.localCopyOfVariableField(index + "-" + localCopy.fullyQualifiedName(),
-                                        primitives, fieldReference.parameterizedType(),
-                                        fieldAnalysis.getObjectFlow());
+                                        primitives, fieldReference.parameterizedType());
                         assert initialValue != null && evaluationContext.isNotDelayed(initialValue);
                         Map<VariableProperty, Integer> valueMap = evaluationContext.getValueProperties(initialValue);
                         Map<VariableProperty, Integer> combined = new HashMap<>(propertyMap);
@@ -853,11 +845,9 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         ParameterAnalysis parameterAnalysis = analyserContext.getParameterAnalysis(parameterInfo);
         int notNull = MultiLevel.bestNotNull(parameterAnalysis.getProperty(NOT_NULL_PARAMETER),
                 parameterInfo.parameterizedType.defaultNotNull());
-        ObjectFlow objectFlow = createObjectFlowForNewVariable(analyserContext, parameterInfo);
         Expression state = new BooleanConstant(primitives, true);
-        return NewObject.initialValueOfParameter(
-                index + "-" + parameterInfo.fullyQualifiedName(),
-                parameterInfo.parameterizedType, state, notNull, objectFlow);
+        return NewObject.initialValueOfParameter(index + "-" + parameterInfo.fullyQualifiedName(),
+                parameterInfo.parameterizedType, state, notNull);
     }
 
     public int statementTimeForVariable(AnalyserContext analyserContext, Variable variable, int statementTime) {
@@ -934,7 +924,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
 
             // FIXME will crash when notNull==-1
             NewObject newObject = NewObject.initialValueOfFieldPartOfConstruction(
-                    newObjectIdentifier, evaluationContext, fieldReference, fieldAnalysis.getObjectFlow());
+                    newObjectIdentifier, evaluationContext, fieldReference);
             return new ExpressionAndDelay(newObject, false);
         }
 
@@ -975,37 +965,11 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             int minimalNotNull = Math.max(MultiLevel.NULLABLE,
                     analyserContext.getFieldAnalysis(fieldReference.fieldInfo).getProperty(EXTERNAL_NOT_NULL));
             newObject = NewObject.initialValueOfExternalField(newObjectIdentifier,
-                    primitives, fieldReference.parameterizedType(), minimalNotNull, ObjectFlow.NO_FLOW);
+                    primitives, fieldReference.parameterizedType(), minimalNotNull);
         } else {
-            newObject = NewObject.initialValueOfField(newObjectIdentifier,
-                    primitives, fieldReference.parameterizedType(), fieldAnalyser.fieldAnalysis.getObjectFlow());
+            newObject = NewObject.initialValueOfField(newObjectIdentifier, primitives, fieldReference.parameterizedType());
         }
         return new ExpressionAndDelay(newObject, false);
-    }
-
-    private ObjectFlow createObjectFlowForNewVariable(AnalyserContext analyserContext, Variable variable) {
-        if (variable instanceof ParameterInfo parameterInfo) {
-            ObjectFlow objectFlow = new ObjectFlow(new Location(parameterInfo),
-                    parameterInfo.parameterizedType, Origin.PARAMETER);
-            internalObjectFlows.add(objectFlow); // this will be a first
-            return objectFlow;
-        }
-
-        if (variable instanceof FieldReference fieldReference) {
-            ObjectFlow fieldObjectFlow = new ObjectFlow(new Location(fieldReference.fieldInfo),
-                    fieldReference.parameterizedType(), Origin.FIELD_ACCESS);
-            ObjectFlow objectFlow;
-            if (internalObjectFlows.contains(fieldObjectFlow)) {
-                objectFlow = internalObjectFlows.stream().filter(of -> of.equals(fieldObjectFlow)).findFirst().orElseThrow();
-            } else {
-                objectFlow = fieldObjectFlow;
-                internalObjectFlows.add(objectFlow);
-            }
-            FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(fieldReference.fieldInfo);
-            objectFlow.addPrevious(fieldAnalysis.getObjectFlow());
-            return objectFlow;
-        }
-        return ObjectFlow.NO_FLOW; // will be assigned to soon enough
     }
 
     public int statementTime(VariableInfoContainer.Level level) {
@@ -1218,74 +1182,6 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         return SetUtil.immutableUnion(fromFields, local);
     }
 
-    // ***************** OBJECT FLOW CODE ***************
-
-    public ObjectFlow getObjectFlow(Variable variable) {
-        VariableInfo aboutVariable = findOrThrow(variable);
-        return aboutVariable.getObjectFlow();
-    }
-
-    public ObjectFlow addAccess(boolean modifying, Access access, Expression value, EvaluationContext evaluationContext) {
-        if (value.getObjectFlow() == ObjectFlow.NO_FLOW) return value.getObjectFlow();
-        ObjectFlow potentiallySplit = splitIfNeeded(value, evaluationContext, false); // TODO check false
-        if (modifying) {
-            log(OBJECT_FLOW, "Set modifying access on {}", potentiallySplit);
-            potentiallySplit.setModifyingAccess((MethodAccess) access);
-        } else {
-            log(OBJECT_FLOW, "Added non-modifying access to {}", potentiallySplit);
-            potentiallySplit.addNonModifyingAccess(access);
-        }
-        return potentiallySplit;
-    }
-
-    public ObjectFlow addCallOut(boolean modifying, ObjectFlow callOut, Expression value, EvaluationContext evaluationContext) {
-        if (callOut == ObjectFlow.NO_FLOW || value.getObjectFlow() == ObjectFlow.NO_FLOW)
-            return value.getObjectFlow();
-        ObjectFlow potentiallySplit = splitIfNeeded(value, evaluationContext, false); // TODO check false
-        if (modifying) {
-            log(OBJECT_FLOW, "Set call-out on {}", potentiallySplit);
-            potentiallySplit.setModifyingCallOut(callOut);
-        } else {
-            log(OBJECT_FLOW, "Added non-modifying call-out to {}", potentiallySplit);
-            potentiallySplit.addNonModifyingCallOut(callOut);
-        }
-        return potentiallySplit;
-    }
-
-    private ObjectFlow splitIfNeeded(Expression value, EvaluationContext evaluationContext, boolean initialOrEvaluation) {
-        ObjectFlow objectFlow = value.getObjectFlow();
-        if (objectFlow == ObjectFlow.NO_FLOW) return objectFlow; // not doing anything
-        if (objectFlow.haveModifying()) {
-            // we'll need to split
-            ObjectFlow split = createInternalObjectFlow(objectFlow.type, evaluationContext);
-            objectFlow.addNext(split);
-            split.addPrevious(objectFlow);
-            VariableExpression variableValue;
-            if ((variableValue = value.asInstanceOf(VariableExpression.class)) != null) {
-                updateObjectFlow(variableValue.variable(), split, initialOrEvaluation);
-            }
-            log(OBJECT_FLOW, "Split {}", objectFlow);
-            return split;
-        }
-        return objectFlow;
-    }
-
-    private ObjectFlow createInternalObjectFlow(ParameterizedType parameterizedType, EvaluationContext evaluationContext) {
-        Location location = evaluationContext.getLocation();
-        ObjectFlow objectFlow = new ObjectFlow(location, parameterizedType, Origin.INTERNAL);
-        if (!internalObjectFlows.contains(objectFlow)) {
-            internalObjectFlows.add(objectFlow);
-            log(OBJECT_FLOW, "Created internal flow {}", objectFlow);
-            return objectFlow;
-        }
-        throw new UnsupportedOperationException("Object flow already exists"); // TODO
-    }
-
-    private void updateObjectFlow(Variable variable, ObjectFlow objectFlow, boolean initialOrEvaluation) {
-        VariableInfoContainer variableInfo = findForWriting(variable);
-        variableInfo.setObjectFlow(objectFlow, initialOrEvaluation);
-    }
-
     public Stream<VariableInfo> variableStream() {
         return variables.stream().map(Map.Entry::getValue).map(VariableInfoContainer::current);
     }
@@ -1324,7 +1220,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                 .filter(e -> e != null && (e.v == EXACTLY_NULL || e.v >= MultiLevel.EFFECTIVELY_NOT_NULL))
                 .map(e -> {
                     Expression equals = Equals.equals(evaluationContext, new VariableExpression(e.k.variable()),
-                            NullConstant.NULL_CONSTANT, ObjectFlow.NO_FLOW);
+                            NullConstant.NULL_CONSTANT);
                     if (e.v >= MultiLevel.EFFECTIVELY_NOT_NULL) {
                         return Negation.negate(evaluationContext, equals);
                     }

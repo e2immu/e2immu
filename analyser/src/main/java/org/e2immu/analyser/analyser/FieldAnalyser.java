@@ -25,7 +25,6 @@ import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
-import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.util.Logger;
@@ -203,28 +202,14 @@ public class FieldAnalyser extends AbstractAnalyser {
                 if (!evaluationResult.someValueWasDelayed()) {
                     fieldAnalysis.initialValue.set(initialiserValue);
                 }
-                AnalysisStatus resultOfObjectFlow = makeInternalObjectFlowsPermanent(evaluationResult);
                 log(FINAL, "Set initialiser of field {} to {}", fieldInfo.fullyQualifiedName(), evaluationResult.value());
-                return resultOfObjectFlow.combine(evaluationResult.someValueWasDelayed() ? DELAYS : DONE);
+                return evaluationResult.someValueWasDelayed() ? DELAYS : DONE;
             }
         }
         fieldAnalysis.initialValue.set(ConstantExpression.nullValue(analyserContext.getPrimitives(), fieldInfo.type.bestTypeInfo()));
         return DONE;
     }
 
-    private AnalysisStatus makeInternalObjectFlowsPermanent(EvaluationResult evaluationResult) {
-        if (fieldAnalysis.internalObjectFlows.isSet()) return DONE;
-        Set<ObjectFlow> internalObjectFlows = evaluationResult.getObjectFlowStream().collect(Collectors.toUnmodifiableSet());
-        boolean noDelays = internalObjectFlows.stream().noneMatch(ObjectFlow::isDelayed);
-        if (noDelays) {
-            internalObjectFlows.forEach(of -> of.finalize(null));
-            fieldAnalysis.internalObjectFlows.set(internalObjectFlows);
-            log(OBJECT_FLOW, "Set {} internal object flows on {}", internalObjectFlows.size(), fieldInfo.fullyQualifiedName());
-            return DONE;
-        }
-        log(DELAYED, "Not yet setting internal object flows on {}, delaying", fieldInfo.fullyQualifiedName());
-        return DELAYS;
-    }
 
     private AnalysisStatus computeImplicitlyImmutableDataType() {
         assert !fieldAnalysis.isOfImplicitlyImmutableDataTypeIsSet();
@@ -536,24 +521,8 @@ public class FieldAnalyser extends AbstractAnalyser {
         boolean downgradeFromNewInstanceWithConstructor = !fieldOfOwnType && !MultiLevel.isE2Immutable(immutable);
 
         // compute and set the combined value
-
-        if (!fieldAnalysis.internalObjectFlows.isSet()) {
-            log(DELAYED, "Delaying effectively final value because internal object flows not yet known, {}", fieldInfo.fullyQualifiedName());
-            //      return DELAYS; TODO see TestFieldNotRead, but for now waiting until we sort out internalObjectFlows
-        }
         Expression effectivelyFinalValue = determineEffectivelyFinalValue(fieldAnalysis.getValues(),
                 downgradeFromNewInstanceWithConstructor);
-
-        ObjectFlow objectFlow = effectivelyFinalValue.getObjectFlow();
-        if (objectFlow != ObjectFlow.NO_FLOW && !fieldAnalysis.objectFlow.isSet()) {
-            log(OBJECT_FLOW, "Set final object flow object for field {}: {}", fieldInfo.fullyQualifiedName(), objectFlow);
-            objectFlow.finalize(fieldAnalysis.objectFlow.getFirst());
-            fieldAnalysis.objectFlow.set(objectFlow);
-        }
-        if (!fieldAnalysis.objectFlow.isSet()) {
-            fieldAnalysis.objectFlow.set(fieldAnalysis.objectFlow.getFirst());
-            log(OBJECT_FLOW, "Confirming the initial object flow for {}", fieldInfo.fullyQualifiedName());
-        }
 
         // check constant, but before we set the effectively final value
         Boolean recursivelyConstant;
@@ -627,7 +596,7 @@ public class FieldAnalyser extends AbstractAnalyser {
             }
             return expression;
         }
-        return new MultiValue(analyserContext, ObjectFlow.NO_FLOW, values, fieldInfo.type);
+        return new MultiValue(analyserContext, values, fieldInfo.type);
     }
 
     private AnalysisStatus analyseLinked() {
@@ -806,13 +775,11 @@ public class FieldAnalyser extends AbstractAnalyser {
         FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalyser(fieldReference.fieldInfo).fieldAnalysis;
         int effectivelyFinal = fieldAnalysis.getProperty(VariableProperty.FINAL);
         if (effectivelyFinal == Level.DELAY) return DelayedVariableExpression.forField(fieldReference);
-        ObjectFlow objectFlow = fieldAnalysis.getObjectFlow();
         if (effectivelyFinal == Level.FALSE) {
-            return new VariableExpression(variable, objectFlow);
+            return new VariableExpression(variable);
         }
         Expression effectivelyFinalValue = fieldAnalysis.getEffectivelyFinalValue();
-        return Objects.requireNonNullElseGet(effectivelyFinalValue,
-                () -> new VariableExpression(variable, objectFlow));
+        return Objects.requireNonNullElseGet(effectivelyFinalValue, () -> new VariableExpression(variable));
     }
 
     @Override
@@ -907,11 +874,6 @@ public class FieldAnalyser extends AbstractAnalyser {
         }
 
         @Override
-        public ObjectFlow getObjectFlow(Variable variable, int statementTime) {
-            return currentValue(variable, statementTime, true).getObjectFlow();
-        }
-
-        @Override
         public int getProperty(Expression value, VariableProperty variableProperty, boolean duringEvaluation) {
             if (value instanceof VariableExpression variableValue) {
                 Variable variable = variableValue.variable();
@@ -957,11 +919,6 @@ public class FieldAnalyser extends AbstractAnalyser {
             }
 
             throw new UnsupportedOperationException("Variable of " + variable.getClass() + " not implemented here");
-        }
-
-        @Override
-        public Stream<ObjectFlow> getInternalObjectFlows() {
-            return internalObjectFlows.stream();
         }
 
         @Override

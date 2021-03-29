@@ -21,7 +21,6 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.expression.Equals;
 import org.e2immu.analyser.model.expression.Or;
-import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.output.*;
 import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.analyser.util.SMapList;
@@ -122,7 +121,7 @@ public class SwitchStatementOldStyle extends StatementWithExpression implements 
                         e.getValue().stream()
                                 .map(switchLabel ->
                                         switchLabel.expression == EmptyExpression.DEFAULT_EXPRESSION ? switchLabel.expression :
-                                                Equals.equals(evaluationContext, expression, switchLabel.expression, ObjectFlow.NO_FLOW))
+                                                Equals.equals(evaluationContext, expression, switchLabel.expression))
                                 .collect(Collectors.toList()))));
     }
 

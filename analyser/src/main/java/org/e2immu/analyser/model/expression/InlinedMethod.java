@@ -20,7 +20,6 @@ import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
-import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Text;
 
@@ -92,11 +91,6 @@ public record InlinedMethod(MethodInfo methodInfo, Expression expression,
     }
 
     @Override
-    public boolean hasBeenEvaluated() {
-        return true;
-    }
-
-    @Override
     public int order() {
         return ExpressionComparator.ORDER_INLINE_METHOD;
     }
@@ -144,11 +138,6 @@ public record InlinedMethod(MethodInfo methodInfo, Expression expression,
     @Override
     public String toString() {
         return minimalOutput();
-    }
-
-    @Override
-    public ObjectFlow getObjectFlow() {
-        return expression.getObjectFlow();
     }
 
     @Override

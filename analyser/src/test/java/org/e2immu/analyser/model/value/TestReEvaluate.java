@@ -17,7 +17,6 @@ package org.e2immu.analyser.model.value;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.expression.Product;
 import org.e2immu.analyser.model.expression.Sum;
-import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.junit.jupiter.api.Test;
 
 import java.util.Map;
@@ -28,7 +27,7 @@ public class TestReEvaluate extends CommonAbstractValue {
 
     @Test
     public void test1() {
-        Expression square = Product.product(minimalEvaluationContext, i, i, ObjectFlow.NO_FLOW);
+        Expression square = Product.product(minimalEvaluationContext, i, i);
         assertEquals("i*i", square.toString());
         Map<Expression, Expression> translate = Map.of(i, newInt(3));
         Expression re = square.reEvaluate(minimalEvaluationContext, translate).value();
@@ -38,8 +37,7 @@ public class TestReEvaluate extends CommonAbstractValue {
     @Test
     public void test2() {
         Expression value = Sum.sum(minimalEvaluationContext,
-                newInt(10), negate(Product.product(minimalEvaluationContext, i, j, ObjectFlow.NO_FLOW)),
-                ObjectFlow.NO_FLOW);
+                newInt(10), negate(Product.product(minimalEvaluationContext, i, j)));
         assertEquals("10-(i*j)", value.toString());
         Map<Expression, Expression> translate = Map.of(i, newInt(3));
         Expression re = value.reEvaluate(minimalEvaluationContext, translate).value();

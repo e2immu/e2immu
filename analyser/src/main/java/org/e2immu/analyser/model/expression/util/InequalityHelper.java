@@ -80,7 +80,7 @@ public class InequalityHelper {
 
     private static OneVariable extractOneVariable(Expression expression) {
         if (expression instanceof VariableExpression ve) return ve.variable();
-        if (expression instanceof MethodCall mc && mc.object instanceof VariableExpression ve) {
+        if (expression instanceof MethodCall mc && mc.object instanceof VariableExpression) {
             return mc;
         }
         return null;

@@ -21,7 +21,6 @@ import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
-import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Primitives;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -126,14 +125,14 @@ public class CompanionAnalyser {
                 // this is the aspect as a method call
                 MethodInfo aspectMethod = typeAnalysis.getAspects().get(companionMethodName.aspect());
                 Expression scope = new VariableExpression(new This(analyserContext, aspectMethod.typeInfo));
-                value = new MethodCall(scope, aspectMethod, List.of(), ObjectFlow.NO_FLOW);
+                value = new MethodCall(scope, aspectMethod, List.of());
             } else if (aspectVariables >= 2 && parameterInfo.index == 1) {
                 // this is the initial aspect value in a Modification$Aspect
                 MethodInfo aspectMethod = typeAnalysis.getAspects().get(companionMethodName.aspect());
                 ParameterizedType returnType = aspectMethod.returnType();
                 // the value that we store is the same as that for the post-variable (see previous if-statement)
                 Expression scope = new VariableExpression(new This(analyserContext, aspectMethod.typeInfo));
-                MethodCall methodValue = new MethodCall(scope, aspectMethod, List.of(), ObjectFlow.NO_FLOW);
+                MethodCall methodValue = new MethodCall(scope, aspectMethod, List.of());
                 value = new VariableExpression(new PreAspectVariable(returnType, methodValue));
                 companionAnalysis.preAspectVariableValue.set(value);
             } else {

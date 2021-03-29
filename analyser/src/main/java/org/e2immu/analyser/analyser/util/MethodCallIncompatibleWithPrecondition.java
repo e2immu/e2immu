@@ -56,7 +56,7 @@ public class MethodCallIncompatibleWithPrecondition {
                 return null;
             }
             if (variableInfo.getValue() instanceof NewObject newObject) {
-                Expression state = newObject.stateTranslateThisTo(evaluationContext, fieldReference);
+                Expression state = newObject.stateTranslateThisTo(fieldReference);
                 if (!state.isBoolValueTrue()) {
                     Expression stateWithInvariants = enrichWithInvariants(evaluationContext, state);
 

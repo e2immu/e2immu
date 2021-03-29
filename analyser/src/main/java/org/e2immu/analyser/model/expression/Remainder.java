@@ -18,17 +18,16 @@ import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
-import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Primitives;
 
 public class Remainder extends BinaryOperator {
 
-    private Remainder(Primitives primitives, Expression lhs, Expression rhs, ObjectFlow objectFlow) {
-        super(primitives, lhs, primitives.remainderOperatorInt, rhs, Precedence.MULTIPLICATIVE, objectFlow);
+    private Remainder(Primitives primitives, Expression lhs, Expression rhs) {
+        super(primitives, lhs, primitives.remainderOperatorInt, rhs, Precedence.MULTIPLICATIVE);
     }
 
-    public static EvaluationResult remainder(EvaluationContext evaluationContext, Expression l, Expression r, ObjectFlow objectFlow) {
+    public static EvaluationResult remainder(EvaluationContext evaluationContext, Expression l, Expression r) {
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
         if (l instanceof Numeric ln && ln.doubleValue() == 0) return builder.setExpression(l).build();
         if (r instanceof Numeric rn && rn.doubleValue() == 0) {
@@ -38,12 +37,12 @@ public class Remainder extends BinaryOperator {
         if (r instanceof Numeric rn && rn.doubleValue() == 1) return builder.setExpression(l).build();
         Primitives primitives = evaluationContext.getPrimitives();
         if (l instanceof IntConstant li && r instanceof IntConstant ri)
-            return builder.setExpression(new IntConstant(primitives, li.constant() % ri.constant(), objectFlow)).build();
+            return builder.setExpression(new IntConstant(primitives, li.constant() % ri.constant())).build();
 
         // any unknown lingering
         if (l.isUnknown() || r.isUnknown()) throw new UnsupportedOperationException();
 
-        return builder.setExpression(new Remainder(primitives, l, r, objectFlow)).build();
+        return builder.setExpression(new Remainder(primitives, l, r)).build();
     }
 
     @Override

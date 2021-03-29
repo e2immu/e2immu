@@ -19,7 +19,6 @@ import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
-import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.output.Text;
@@ -86,11 +85,6 @@ public record MemberValuePair(String name, Expression value) implements Expressi
     @Override
     public int order() {
         return ExpressionComparator.ORDER_MVP;
-    }
-
-    @Override
-    public ObjectFlow getObjectFlow() {
-        return ObjectFlow.NO_FLOW;
     }
 
     @Override

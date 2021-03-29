@@ -17,7 +17,6 @@ package org.e2immu.analyser.model.value;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.expression.Equals;
 import org.e2immu.analyser.model.expression.Sum;
-import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -33,31 +32,31 @@ public class TestEquals extends CommonAbstractValue {
     public void test() {
         Expression int3 = newInt(3);
         Expression int5 = newInt(5);
-        assertEquals("false", Equals.equals(minimalEvaluationContext, int3, int5, ObjectFlow.NO_FLOW).toString());
+        assertEquals("false", Equals.equals(minimalEvaluationContext, int3, int5).toString());
     }
 
     @Test
     public void testCommonTerms() {
         Expression int3 = newInt(3);
         Expression int5 = newInt(5);
-        Expression left = Sum.sum(minimalEvaluationContext, int3, i, ObjectFlow.NO_FLOW);
-        Expression right = Sum.sum(minimalEvaluationContext, int5, i, ObjectFlow.NO_FLOW);
-        assertEquals("false", Equals.equals(minimalEvaluationContext, left, right, ObjectFlow.NO_FLOW).toString());
+        Expression left = Sum.sum(minimalEvaluationContext, int3, i);
+        Expression right = Sum.sum(minimalEvaluationContext, int5, i);
+        assertEquals("false", Equals.equals(minimalEvaluationContext, left, right).toString());
     }
 
     @Test
     public void testCommonTerms2() {
         Expression int5 = newInt(5);
-        Expression left = Sum.sum(minimalEvaluationContext, i, int5, ObjectFlow.NO_FLOW);
-        Expression right = Sum.sum(minimalEvaluationContext, int5, i, ObjectFlow.NO_FLOW);
-        assertEquals("true", Equals.equals(minimalEvaluationContext, left, right, ObjectFlow.NO_FLOW).toString());
+        Expression left = Sum.sum(minimalEvaluationContext, i, int5);
+        Expression right = Sum.sum(minimalEvaluationContext, int5, i);
+        assertEquals("true", Equals.equals(minimalEvaluationContext, left, right).toString());
     }
 
     @Test
     public void testCommonTerms3() {
         Expression int5 = newInt(5);
-        Expression left = Sum.sum(minimalEvaluationContext, i, int5, ObjectFlow.NO_FLOW);
+        Expression left = Sum.sum(minimalEvaluationContext, i, int5);
         Expression right = i;
-        assertEquals("false", Equals.equals(minimalEvaluationContext, left, right, ObjectFlow.NO_FLOW).toString());
+        assertEquals("false", Equals.equals(minimalEvaluationContext, left, right).toString());
     }
 }

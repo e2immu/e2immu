@@ -15,8 +15,6 @@
 package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.variable.Variable;
-import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.annotation.NotNull;
 
 import java.util.List;
@@ -160,8 +158,6 @@ public interface VariableInfoContainer {
     by the apply method in the statement analyser.
      */
     void copy();
-
-    void setObjectFlow(ObjectFlow objectFlow, boolean writeInInitialOtherwiseEvaluation);
 
     void ensureEvaluation(String assignmentId, String readId, int statementTime, Set<Integer> readAtStatementTimes);
 

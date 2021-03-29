@@ -20,7 +20,6 @@ import org.e2immu.analyser.model.expression.Product;
 import org.e2immu.analyser.model.expression.Sum;
 import org.e2immu.analyser.model.expression.util.InequalitySolver;
 import org.e2immu.analyser.model.value.CommonAbstractValue;
-import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.junit.jupiter.api.Test;
 
 import java.util.stream.Collectors;
@@ -39,10 +38,10 @@ public class TestInequalitySolver extends CommonAbstractValue {
         assertEquals("i=[i>=1],j=[j<=-1]", inequalitySolver.getPerComponent()
                 .entrySet().stream().map(Object::toString).sorted().collect(Collectors.joining(",")));
 
-        Expression i2 = Product.product(minimalEvaluationContext, newInt(2), i, ObjectFlow.NO_FLOW);
-        Expression minusJ3 = negate(Product.product(minimalEvaluationContext, j, newInt(3), ObjectFlow.NO_FLOW));
+        Expression i2 = Product.product(minimalEvaluationContext, newInt(2), i);
+        Expression minusJ3 = negate(Product.product(minimalEvaluationContext, j, newInt(3)));
         Expression i2Minus3JGe1 = GreaterThanZero.greater(minimalEvaluationContext,
-                Sum.sum(minimalEvaluationContext, i2, minusJ3, ObjectFlow.NO_FLOW), newInt(1), true);
+                Sum.sum(minimalEvaluationContext, i2, minusJ3), newInt(1), true);
         assertEquals("2*i-(3*j)>=1", i2Minus3JGe1.toString());
 
         assertTrue(inequalitySolver.evaluate(i2Minus3JGe1));

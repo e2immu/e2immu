@@ -20,7 +20,6 @@ import org.e2immu.analyser.analyser.ShallowTypeAnalyser;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.variable.This;
-import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Primitives;
 
@@ -29,17 +28,15 @@ public class EvaluateInlineConditional {
     public static EvaluationResult conditionalValueCurrentState(EvaluationContext evaluationContext,
                                                                 Expression conditionBeforeState,
                                                                 Expression ifTrue,
-                                                                Expression ifFalse,
-                                                                ObjectFlow objectFlow) {
+                                                                Expression ifFalse) {
         Expression condition = evaluationContext.getConditionManager().evaluate(evaluationContext, conditionBeforeState);
-        return conditionalValueConditionResolved(evaluationContext, condition, ifTrue, ifFalse, objectFlow);
+        return conditionalValueConditionResolved(evaluationContext, condition, ifTrue, ifFalse);
     }
 
     public static EvaluationResult conditionalValueConditionResolved(EvaluationContext evaluationContext,
                                                                      Expression condition,
                                                                      Expression ifTrue,
-                                                                     Expression ifFalse,
-                                                                     ObjectFlow objectFlow) {
+                                                                     Expression ifFalse) {
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
         if (condition instanceof BooleanConstant bc) {
             boolean first = bc.constant();
@@ -50,7 +47,7 @@ public class EvaluateInlineConditional {
         // not x ? a: b --> x ? b: a
         Negation negatedCondition;
         if ((negatedCondition = condition.asInstanceOf(Negation.class)) != null) {
-            return conditionalValueConditionResolved(evaluationContext, negatedCondition.expression, ifFalse, ifTrue, objectFlow);
+            return conditionalValueConditionResolved(evaluationContext, negatedCondition.expression, ifFalse, ifTrue);
         }
 
         // isFact needs to be caught as soon as, because we're ONLY looking in the condition
@@ -69,11 +66,11 @@ public class EvaluateInlineConditional {
         if ((secondCv = ifTrue.asInstanceOf(InlineConditional.class)) != null) {
             // x ? (x? a: b): c === x ? a : c
             if (secondCv.condition.equals(condition)) {
-                return conditionalValueConditionResolved(evaluationContext, condition, secondCv.ifTrue, ifFalse, objectFlow);
+                return conditionalValueConditionResolved(evaluationContext, condition, secondCv.ifTrue, ifFalse);
             }
             // x ? (!x ? a: b): c === x ? b : c
             if (secondCv.condition.equals(Negation.negate(evaluationContext, condition))) {
-                return conditionalValueConditionResolved(evaluationContext, condition, secondCv.ifFalse, ifFalse, objectFlow);
+                return conditionalValueConditionResolved(evaluationContext, condition, secondCv.ifFalse, ifFalse);
             }
         }
         // x? a: (x? b:c) === x?a:c
@@ -81,11 +78,11 @@ public class EvaluateInlineConditional {
         if ((secondCv2 = ifFalse.asInstanceOf(InlineConditional.class)) != null) {
             // x ? a: (x ? b:c) === x?a:c
             if (secondCv2.condition.equals(condition)) {
-                return conditionalValueConditionResolved(evaluationContext, condition, ifTrue, secondCv2.ifFalse, objectFlow);
+                return conditionalValueConditionResolved(evaluationContext, condition, ifTrue, secondCv2.ifFalse);
             }
             // x ? a: (!x ? b:c) === x?a:b
             if (secondCv2.condition.equals(Negation.negate(evaluationContext, condition))) {
-                return conditionalValueConditionResolved(evaluationContext, condition, ifTrue, secondCv2.ifTrue, objectFlow);
+                return conditionalValueConditionResolved(evaluationContext, condition, ifTrue, secondCv2.ifTrue);
             }
         }
 
@@ -96,7 +93,7 @@ public class EvaluateInlineConditional {
         // this will result in  a != null ? a: x ==>  null == a ? x : a as the default form
 
         return builder.setExpression(new InlineConditional(evaluationContext.getAnalyserContext(),
-                condition, ifTrue, ifFalse, objectFlow)).build();
+                condition, ifTrue, ifFalse)).build();
         // TODO more advanced! if a "large" part of ifTrue or ifFalse appears in condition, we should create a temp variable
     }
 
@@ -159,7 +156,7 @@ public class EvaluateInlineConditional {
                 ShallowTypeAnalyser.IS_KNOWN_FQN.equals(methodValue.methodInfo.fullyQualifiedName) &&
                 methodValue.parameterExpressions.get(0) instanceof BooleanConstant boolValue && boolValue.constant()) {
             VariableExpression object = new VariableExpression(new This(evaluationContext.getAnalyserContext(), methodValue.methodInfo.typeInfo));
-            Expression knownValue = new MethodCall(object, methodValue.methodInfo, methodValue.parameterExpressions, methodValue.objectFlow);
+            Expression knownValue = new MethodCall(object, methodValue.methodInfo, methodValue.parameterExpressions);
             return inState(evaluationContext, knownValue) ? ifTrue : ifFalse;
         }
         return null;

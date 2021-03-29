@@ -29,7 +29,6 @@ import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.analyser.model.variable.FieldReference;
-import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
@@ -259,14 +258,14 @@ public class TypeInspector {
         expressionContext.typeContext.typeMapBuilder.registerMethodInspection(valueOfBuilder);
         builder.addMethod(valueOfBuilder.getMethodInfo());
 
-        ArrayInitializer arrayInitializer = new ArrayInitializer(expressionContext.typeContext, ObjectFlow.NO_FLOW,
+        ArrayInitializer arrayInitializer = new ArrayInitializer(expressionContext.typeContext,
                 enumFields.stream().map(fieldInfo -> new VariableExpression(new FieldReference(expressionContext.typeContext,
                         fieldInfo, null))).collect(Collectors.toUnmodifiableList()),
                 typeInfo.asParameterizedType(expressionContext.typeContext));
         ParameterizedType valuesReturnType = new ParameterizedType(typeInfo, 1);
         ReturnStatement returnNewArray = new ReturnStatement(NewObject.withArrayInitialiser(typeInfo.fullyQualifiedName,
                 null,
-                valuesReturnType, List.of(), arrayInitializer, new BooleanConstant(primitives, true), ObjectFlow.NO_FLOW));
+                valuesReturnType, List.of(), arrayInitializer, new BooleanConstant(primitives, true)));
         Block valuesBlock = new Block.BlockBuilder().addStatement(returnNewArray).build();
         MethodInspectionImpl.Builder valuesBuilder = new MethodInspectionImpl.Builder(typeInfo, "values")
                 .setSynthetic(true)

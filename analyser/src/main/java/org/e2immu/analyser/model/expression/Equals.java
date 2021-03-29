@@ -20,7 +20,6 @@ import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.TranslationMap;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
-import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.SetUtil;
 
@@ -29,15 +28,14 @@ import java.util.*;
 public class Equals extends BinaryOperator {
 
     // public for testing
-    public Equals(Primitives primitives,
-                  Expression lhs, Expression rhs, ObjectFlow objectFlow) {
+    public Equals(Primitives primitives, Expression lhs, Expression rhs) {
         super(primitives, lhs, lhs.isNumeric() ? primitives.equalsOperatorInt : primitives.equalsOperatorObject,
-                rhs, Precedence.EQUALITY, objectFlow);
+                rhs, Precedence.EQUALITY);
     }
 
     @Override
     public Expression translate(TranslationMap translationMap) {
-        return new Equals(primitives, translationMap.translateExpression(lhs), translationMap.translateExpression(rhs), objectFlow);
+        return new Equals(primitives, translationMap.translateExpression(lhs), translationMap.translateExpression(rhs));
     }
 
     @Override
@@ -45,24 +43,23 @@ public class Equals extends BinaryOperator {
         EvaluationResult reLhs = lhs.reEvaluate(evaluationContext, translation);
         EvaluationResult reRhs = rhs.reEvaluate(evaluationContext, translation);
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext).compose(reLhs, reRhs);
-        return builder.setExpression(Equals.equals(evaluationContext, reLhs.value(), reRhs.value(), objectFlow)).build();
+        return builder.setExpression(Equals.equals(evaluationContext, reLhs.value(), reRhs.value())).build();
     }
 
-    public static Expression equals(EvaluationContext evaluationContext, Expression l, Expression r, ObjectFlow objectFlow) {
-        return equals(evaluationContext, l, r, objectFlow, true);
+    public static Expression equals(EvaluationContext evaluationContext, Expression l, Expression r) {
+        return equals(evaluationContext, l, r, true);
     }
 
-    public static Expression equals(EvaluationContext evaluationContext, Expression l, Expression r, ObjectFlow objectFlow,
-                                    boolean checkForNull) {
+    public static Expression equals(EvaluationContext evaluationContext, Expression l, Expression r, boolean checkForNull) {
         Primitives primitives = evaluationContext.getPrimitives();
-        if (l.equals(r)) return new BooleanConstant(primitives, true, objectFlow);
+        if (l.equals(r)) return new BooleanConstant(primitives, true);
 
         //if (l.isUnknown() || r.isUnknown()) throw new UnsupportedOperationException();
 
         if (checkForNull) {
             if (l instanceof NullConstant && evaluationContext.isNotNull0(r, false) ||
                     r instanceof NullConstant && evaluationContext.isNotNull0(l, false))
-                return new BooleanConstant(primitives, false, objectFlow);
+                return new BooleanConstant(primitives, false);
         }
 
         if (l instanceof ConstantExpression<?> lc && r instanceof ConstantExpression<?> rc) {
@@ -82,16 +79,16 @@ public class Equals extends BinaryOperator {
         Set<Expression> rightTerms = terms(r);
         CommonTerms ct = computeCommonTerms(leftTerms, rightTerms);
 
-        if (ct.leftTerms.isEmpty() && ct.rightTerms.isEmpty()) return new BooleanConstant(primitives, true, objectFlow);
+        if (ct.leftTerms.isEmpty() && ct.rightTerms.isEmpty()) return new BooleanConstant(primitives, true);
         Expression newLeft = sum(evaluationContext, ct.leftTerms);
         Expression newRight = sum(evaluationContext, ct.rightTerms);
 
         if (ct.common.isEmpty()) {
-            return newLeft.compareTo(newRight) < 0 ? new Equals(primitives, newLeft, newRight, objectFlow) :
-                    new Equals(primitives, newRight, newLeft, objectFlow);
+            return newLeft.compareTo(newRight) < 0 ? new Equals(primitives, newLeft, newRight) :
+                    new Equals(primitives, newRight, newLeft);
         }
         // recurse
-        return Equals.equals(evaluationContext, newLeft, newRight, objectFlow);
+        return Equals.equals(evaluationContext, newLeft, newRight);
     }
 
     // null == a ? null: b with guaranteed b != null --> a
@@ -103,8 +100,8 @@ public class Equals extends BinaryOperator {
             // silly check a1?b1:c1 == a1?b2:c2 === b1 == b2 && c1 == c2
             if (inline2.condition.equals(inlineConditional.condition)) {
                 return new And(evaluationContext.getPrimitives()).append(evaluationContext,
-                        Equals.equals(evaluationContext, inlineConditional.ifTrue, inline2.ifTrue, ObjectFlow.NO_FLOW),
-                        Equals.equals(evaluationContext, inlineConditional.ifFalse, inline2.ifFalse, ObjectFlow.NO_FLOW));
+                        Equals.equals(evaluationContext, inlineConditional.ifTrue, inline2.ifTrue),
+                        Equals.equals(evaluationContext, inlineConditional.ifFalse, inline2.ifFalse));
             }
             return null;
         }
@@ -159,7 +156,7 @@ public class Equals extends BinaryOperator {
         if (terms.size() == 0) return new IntConstant(evaluationContext.getPrimitives(), 0);
         if (terms.size() == 1) return terms.get(0);
         Collections.sort(terms);
-        return terms.stream().reduce((t1, t2) -> Sum.sum(evaluationContext, t1, t2, ObjectFlow.NO_FLOW)).orElseThrow();
+        return terms.stream().reduce((t1, t2) -> Sum.sum(evaluationContext, t1, t2)).orElseThrow();
     }
 
     private static CommonTerms computeCommonTerms(Set<Expression> leftTerms, Set<Expression> rightTerms) {

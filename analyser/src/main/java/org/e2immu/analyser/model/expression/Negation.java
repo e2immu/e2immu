@@ -19,7 +19,6 @@ import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.variable.Variable;
-import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.annotation.NotNull;
@@ -31,7 +30,6 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 public class Negation extends UnaryOperator implements ExpressionWrapper {
-    public final ObjectFlow objectFlow;
 
     public Expression getExpression() {
         return expression;
@@ -44,7 +42,6 @@ public class Negation extends UnaryOperator implements ExpressionWrapper {
 
     private Negation(MethodInfo operator, Expression value) {
         super(operator, value, value.isNumeric() ? Precedence.PLUSPLUS : Precedence.UNARY);
-        this.objectFlow = value.getObjectFlow();
         if (value.isInstanceOf(Negation.class)) throw new UnsupportedOperationException();
     }
 
@@ -57,11 +54,6 @@ public class Negation extends UnaryOperator implements ExpressionWrapper {
     @Override
     public Expression translate(TranslationMap translationMap) {
         return new Negation(operator, translationMap.translateExpression(expression));
-    }
-
-    @Override
-    public ObjectFlow getObjectFlow() {
-        return expression.getObjectFlow();
     }
 
     public static Expression negate(EvaluationContext evaluationContext, @NotNull Expression v) {
@@ -79,14 +71,12 @@ public class Negation extends UnaryOperator implements ExpressionWrapper {
             Expression[] negated = or.expressions().stream()
                     .map(ov -> Negation.negate(evaluationContext, ov))
                     .toArray(Expression[]::new);
-            return new And(evaluationContext.getPrimitives(), v.getObjectFlow())
-                    .append(evaluationContext, negated);
+            return new And(evaluationContext.getPrimitives()).append(evaluationContext, negated);
         }
         if (v instanceof And and) {
             List<Expression> negated = and.expressions().stream()
                     .map(av -> Negation.negate(evaluationContext, av)).collect(Collectors.toList());
-            return new Or(evaluationContext.getPrimitives(), v.getObjectFlow())
-                    .append(evaluationContext, negated);
+            return new Or(evaluationContext.getPrimitives()).append(evaluationContext, negated);
         }
         if (v instanceof Sum sum) {
             return sum.negate(evaluationContext);

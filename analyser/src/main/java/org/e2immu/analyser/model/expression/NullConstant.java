@@ -20,7 +20,6 @@ import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
-import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.parser.Message;
@@ -28,7 +27,6 @@ import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.NotNull;
 
 import static org.e2immu.analyser.model.Level.FALSE;
-import static org.e2immu.analyser.model.Level.TRUE;
 
 @E2Container
 public class NullConstant implements ConstantExpression<Object> {
@@ -81,11 +79,6 @@ public class NullConstant implements ConstantExpression<Object> {
     @Override
     public int order() {
         return ExpressionComparator.ORDER_CONSTANT_NULL;
-    }
-
-    @Override
-    public ObjectFlow getObjectFlow() {
-        return ObjectFlow.NO_FLOW;
     }
 
     @Override

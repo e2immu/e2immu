@@ -16,33 +16,25 @@ package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.MultiExpression;
-import org.e2immu.analyser.objectflow.ObjectFlow;
-import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.AnnotationMode;
 import org.e2immu.annotation.NotModified;
-import org.e2immu.support.FirstThen;
 import org.e2immu.support.FlipSwitch;
 import org.e2immu.support.SetOnce;
 
 import java.util.Map;
-import java.util.Set;
 
 public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
 
     private final FieldInfo fieldInfo;
     public final boolean isOfImplicitlyImmutableDataType;
-    public final Set<ObjectFlow> internalObjectFlows;
-    public final ObjectFlow objectFlow;
     public final LinkedVariables variablesLinkedToMe;
     public final Expression effectivelyFinalValue;
     public final Expression initialValue;  // value from the initialiser
 
     private FieldAnalysisImpl(FieldInfo fieldInfo,
                               boolean isOfImplicitlyImmutableDataType,
-                              ObjectFlow objectFlow,
-                              Set<ObjectFlow> internalObjectFlows,
                               LinkedVariables variablesLinkedToMe,
                               Expression effectivelyFinalValue,
                               Expression initialValue,
@@ -51,8 +43,6 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
         super(properties, annotations);
         this.fieldInfo = fieldInfo;
         this.isOfImplicitlyImmutableDataType = isOfImplicitlyImmutableDataType;
-        this.objectFlow = objectFlow;
-        this.internalObjectFlows = internalObjectFlows;
         this.variablesLinkedToMe = variablesLinkedToMe;
         this.effectivelyFinalValue = effectivelyFinalValue;
         this.initialValue = initialValue;
@@ -66,16 +56,6 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
     @Override
     public LinkedVariables getLinkedVariables() {
         return variablesLinkedToMe;
-    }
-
-    @Override
-    public ObjectFlow getObjectFlow() {
-        return objectFlow;
-    }
-
-    @Override
-    public Set<ObjectFlow> getInternalObjectFlows() {
-        return internalObjectFlows;
     }
 
     @Override
@@ -132,9 +112,6 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
             type = fieldInfo.type;
             this.sam = !fieldInfo.fieldInspection.get().fieldInitialiserIsSet() ? null :
                     fieldInfo.fieldInspection.get().getFieldInitialiser().implementationOfSingleAbstractMethod();
-            ObjectFlow initialObjectFlow = new ObjectFlow(new Location(fieldInfo), type,
-                    Origin.INITIAL_FIELD_FLOW);
-            objectFlow = new FirstThen<>(initialObjectFlow);
             this.fieldInfo = fieldInfo;
         }
 
@@ -170,10 +147,6 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
         // or parameters
         public final SetOnce<LinkedVariables> linkedVariables = new SetOnce<>();
 
-        public final FirstThen<ObjectFlow, ObjectFlow> objectFlow;
-
-        public final SetOnce<Set<ObjectFlow>> internalObjectFlows = new SetOnce<>();
-
         private final SetOnce<Boolean> isOfImplicitlyImmutableDataType = new SetOnce<>();
 
         public void setImplicitlyImmutableDataType(boolean value) {
@@ -199,16 +172,6 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
         }
 
         @Override
-        public ObjectFlow getObjectFlow() {
-            return objectFlow.isFirst() ? objectFlow.getFirst() : objectFlow.get();
-        }
-
-        @Override
-        public Set<ObjectFlow> getInternalObjectFlows() {
-            return internalObjectFlows.getOrElse(null);
-        }
-
-        @Override
         public Boolean isOfImplicitlyImmutableDataType() {
             return isOfImplicitlyImmutableDataType.getOrElse(null);
         }
@@ -217,8 +180,6 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
         public Analysis build() {
             return new FieldAnalysisImpl(fieldInfo,
                     isOfImplicitlyImmutableDataType.getOrElse(false),
-                    getObjectFlow(),
-                    internalObjectFlows.getOrElse(Set.of()),
                     linkedVariables.getOrElse(LinkedVariables.EMPTY),
                     getEffectivelyFinalValue(),
                     getInitialValue(),

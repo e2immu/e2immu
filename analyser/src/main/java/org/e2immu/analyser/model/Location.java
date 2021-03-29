@@ -14,13 +14,9 @@
 
 package org.e2immu.analyser.model;
 
-import org.e2immu.analyser.objectflow.ObjectFlow;
-
 import java.util.Objects;
 
 public class Location {
-    public static final Location NO_LOCATION = new Location((WithInspectionAndAnalysis) null, null, null);
-
     public final WithInspectionAndAnalysis info;
     public final String statementWithinMethod;
     public final Expression expression; // in the same statement, there can be multiple identical flows starting...
@@ -60,8 +56,12 @@ public class Location {
 
     @Override
     public String toString() {
-        return info == null ? "<no location>" : ObjectFlow.typeLetter(info) + ":" + info.name()
+        return info == null ? "<no location>" : typeLetter(info) + ":" + info.name()
                 + (statementWithinMethod == null ? "" : ":" + statementWithinMethod)
                 + (expression == null ? "" : "#" + expression.toString());
+    }
+
+    public static String typeLetter(WithInspectionAndAnalysis info) {
+        return Character.toString(info.getClass().getSimpleName().charAt(0));
     }
 }

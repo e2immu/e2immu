@@ -43,6 +43,7 @@ public class EventuallyE2Immutable_1<T> {
      */
     public void error() {
         setT(getT()); // should cause an error
+        System.out.println(t);
     }
 
 }

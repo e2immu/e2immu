@@ -17,7 +17,6 @@ package org.e2immu.analyser.model.value;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.expression.SwitchExpression;
-import org.e2immu.analyser.objectflow.ObjectFlow;
 
 import java.util.*;
 

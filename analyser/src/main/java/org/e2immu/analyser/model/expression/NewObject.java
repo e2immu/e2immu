@@ -21,8 +21,6 @@ import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
-import org.e2immu.analyser.objectflow.ObjectFlow;
-import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Space;
 import org.e2immu.analyser.output.Symbol;
@@ -53,8 +51,7 @@ public record NewObject(
         int minimalNotNull,
         TypeInfo anonymousClass,
         ArrayInitializer arrayInitializer,
-        Expression state,
-        ObjectFlow objectFlow) implements HasParameterExpressions {
+        Expression state) implements HasParameterExpressions {
     // specific construction and copy methods: we explicitly name construction
 
     /*
@@ -65,11 +62,9 @@ public record NewObject(
                                                   ParameterizedType parameterizedType,
                                                   List<Expression> parameterExpressions,
                                                   ArrayInitializer arrayInitializer,
-                                                  Expression state,
-                                                  ObjectFlow objectFlow) {
+                                                  Expression state) {
         return new NewObject(identifier, arrayCreationConstructor, parameterizedType, Diamond.NO,
-                parameterExpressions, MultiLevel.EFFECTIVELY_NOT_NULL, null, arrayInitializer, state,
-                objectFlow);
+                parameterExpressions, MultiLevel.EFFECTIVELY_NOT_NULL, null, arrayInitializer, state);
     }
 
     /*
@@ -77,20 +72,19 @@ public record NewObject(
      */
     public NewObject copyWithNewState(Expression newState) {
         return new NewObject(identifier, constructor, parameterizedType, diamond, parameterExpressions,
-                MultiLevel.EFFECTIVELY_NOT_NULL,
-                anonymousClass, arrayInitializer, newState, objectFlow);
+                MultiLevel.EFFECTIVELY_NOT_NULL, anonymousClass, arrayInitializer, newState);
     }
 
     public NewObject copyAfterModifyingMethodOnConstructor(Expression newState) {
         return new NewObject(identifier, null, parameterizedType, diamond, List.of(),
                 MultiLevel.EFFECTIVELY_NOT_NULL, null, null,
-                newState, getObjectFlow());
+                newState);
     }
 
     public static NewObject forTesting(Primitives primitives, ParameterizedType parameterizedType) {
         return new NewObject("-", null, parameterizedType, Diamond.SHOW_ALL, List.of(),
                 MultiLevel.EFFECTIVELY_NOT_NULL, null, null,
-                new BooleanConstant(primitives, true), ObjectFlow.NO_FLOW);
+                new BooleanConstant(primitives, true));
     }
 
     // never null, never more interesting.
@@ -99,7 +93,7 @@ public record NewObject(
         Diamond diamond = parameterizedType.parameters.isEmpty() ? Diamond.NO : Diamond.SHOW_ALL;
         return new NewObject(identifier, null, parameterizedType, diamond, List.of(), MultiLevel.EFFECTIVELY_NOT_NULL,
                 null, null,
-                new BooleanConstant(primitives, true), ObjectFlow.NO_FLOW);
+                new BooleanConstant(primitives, true));
     }
 
     /*
@@ -111,55 +105,52 @@ public record NewObject(
                                                 Primitives primitives, ParameterizedType parameterizedType) {
         return new NewObject(identifier, null, parameterizedType, Diamond.SHOW_ALL, List.of(),
                 parameterizedType.defaultNotNull(), null, null,
-                new BooleanConstant(primitives, true), ObjectFlow.NO_FLOW);
+                new BooleanConstant(primitives, true));
     }
 
     public static NewObject localCopyOfVariableField(String identifier,
-                                                     Primitives primitives, ParameterizedType parameterizedType,
-                                                     ObjectFlow objectFlow) {
+                                                     Primitives primitives, ParameterizedType parameterizedType) {
         return new NewObject(identifier, null, parameterizedType, Diamond.SHOW_ALL, List.of(),
                 parameterizedType.defaultNotNull(), null, null,
-                new BooleanConstant(primitives, true), objectFlow);
+                new BooleanConstant(primitives, true));
     }
 
     /*
     not-null always in properties
      */
     public static NewObject initialValueOfParameter(String identifier,
-                                                    ParameterizedType parameterizedType, Expression state,
-                                                    int contractNotNull, ObjectFlow objectFlow) {
+                                                    ParameterizedType parameterizedType,
+                                                    Expression state,
+                                                    int contractNotNull) {
         return new NewObject(identifier, null, parameterizedType, Diamond.SHOW_ALL, List.of(), contractNotNull,
-                null, null, state, objectFlow);
+                null, null, state);
     }
 
     public static NewObject initialValueOfFieldPartOfConstruction(String identifier,
                                                                   EvaluationContext evaluationContext,
-                                                                  FieldReference fieldReference,
-                                                                  ObjectFlow objectFlow) {
+                                                                  FieldReference fieldReference) {
         int notNull = evaluationContext.getProperty(fieldReference, VariableProperty.NOT_NULL_EXPRESSION);
         return new NewObject(identifier, null, fieldReference.parameterizedType(), Diamond.SHOW_ALL, List.of(),
                 notNull, null, null,
-                new BooleanConstant(evaluationContext.getPrimitives(), true), objectFlow);
+                new BooleanConstant(evaluationContext.getPrimitives(), true));
     }
 
     /* like a local variable in loop*/
     public static NewObject initialValueOfField(String identifier,
                                                 Primitives primitives,
-                                                ParameterizedType parameterizedType,
-                                                ObjectFlow objectFlow) {
+                                                ParameterizedType parameterizedType) {
         return new NewObject(identifier, null, parameterizedType, Diamond.SHOW_ALL, List.of(),
                 parameterizedType.defaultNotNull(), null, null,
-                new BooleanConstant(primitives, true), objectFlow);
+                new BooleanConstant(primitives, true));
     }
 
     /* like a local variable in loop*/
     public static NewObject initialValueOfExternalField(String identifier,
                                                         Primitives primitives,
                                                         ParameterizedType parameterizedType,
-                                                        int minimalNotNull,
-                                                        ObjectFlow objectFlow) {
+                                                        int minimalNotNull) {
         return new NewObject(identifier, null, parameterizedType, Diamond.SHOW_ALL, List.of(), minimalNotNull,
-                null, null, new BooleanConstant(primitives, true), objectFlow);
+                null, null, new BooleanConstant(primitives, true));
     }
 
     // null-status derived from variable in evaluation context
@@ -169,7 +160,7 @@ public record NewObject(
                 variableInfo.variable().parameterizedType().defaultNotNull());
         return new NewObject(identifier, null, variableInfo.variable().parameterizedType(),
                 Diamond.SHOW_ALL, List.of(), notNull, null, null,
-                new BooleanConstant(primitives, true), variableInfo.getObjectFlow());
+                new BooleanConstant(primitives, true));
     }
 
     // null-status derived from variable in evaluation context
@@ -177,19 +168,18 @@ public record NewObject(
                                                Primitives primitives, VariableInfo variableInfo, int notNull) {
         return new NewObject(identifier, null, variableInfo.variable().parameterizedType(),
                 Diamond.SHOW_ALL, List.of(), notNull, null, null,
-                new BooleanConstant(primitives, true), variableInfo.getObjectFlow());
+                new BooleanConstant(primitives, true));
     }
 
     public static Expression genericArrayAccess(String identifier,
                                                 EvaluationContext evaluationContext,
                                                 Expression array,
-                                                Variable variable,
-                                                ObjectFlow objectFlow) {
+                                                Variable variable) {
         int notNull = evaluationContext.getProperty(array, VariableProperty.NOT_NULL_EXPRESSION, true);
         if (notNull == Level.DELAY) return DelayedExpression.forNewObject(variable.parameterizedType());
         return new NewObject(identifier, null, variable.parameterizedType(), Diamond.SHOW_ALL, List.of(), notNull,
                 null, null,
-                new BooleanConstant(evaluationContext.getPrimitives(), true), objectFlow);
+                new BooleanConstant(evaluationContext.getPrimitives(), true));
     }
 
     /*
@@ -202,7 +192,7 @@ public record NewObject(
                                                Diamond diamond) {
         return new NewObject(identifier, null, parameterizedType, diamond,
                 List.of(), MultiLevel.EFFECTIVELY_NOT_NULL, anonymousClass, null,
-                new BooleanConstant(primitives, true), ObjectFlow.NO_FLOW);
+                new BooleanConstant(primitives, true));
     }
 
     /*
@@ -212,11 +202,10 @@ public record NewObject(
      */
     public static NewObject forGetInstance(String identifier,
                                            Primitives primitives,
-                                           ParameterizedType parameterizedType,
-                                           ObjectFlow objectFlow) {
+                                           ParameterizedType parameterizedType) {
         return new NewObject(identifier, null, parameterizedType, Diamond.SHOW_ALL, List.of(),
                 MultiLevel.EFFECTIVELY_NOT_NULL, null, null,
-                new BooleanConstant(primitives, true), objectFlow);
+                new BooleanConstant(primitives, true));
     }
 
     /*
@@ -227,10 +216,9 @@ public record NewObject(
     */
     public static NewObject forGetInstance(String identifier,
                                            ParameterizedType parameterizedType, Expression state,
-                                           int minimalNotNull,
-                                           ObjectFlow objectFlow) {
+                                           int minimalNotNull) {
         return new NewObject(identifier, null, parameterizedType, Diamond.SHOW_ALL, List.of(),
-                minimalNotNull, null, null, state, objectFlow);
+                minimalNotNull, null, null, state);
     }
 
     /*
@@ -241,10 +229,9 @@ public record NewObject(
                                            MethodInfo constructor,
                                            ParameterizedType parameterizedType,
                                            Diamond diamond,
-                                           List<Expression> parameterExpressions,
-                                           ObjectFlow objectFlow) {
+                                           List<Expression> parameterExpressions) {
         return new NewObject(identifier, constructor, parameterizedType, diamond, parameterExpressions, MultiLevel.EFFECTIVELY_NOT_NULL,
-                null, null, new BooleanConstant(primitives, true), objectFlow);
+                null, null, new BooleanConstant(primitives, true));
     }
 
     public NewObject(String identifier,
@@ -255,8 +242,7 @@ public record NewObject(
                      int minimalNotNull,
                      TypeInfo anonymousClass,
                      ArrayInitializer arrayInitializer,
-                     Expression state,
-                     ObjectFlow objectFlow) {
+                     Expression state) {
         this.identifier = identifier;
         this.parameterizedType = Objects.requireNonNull(parameterizedType);
         this.parameterExpressions = Objects.requireNonNull(parameterExpressions);
@@ -264,7 +250,6 @@ public record NewObject(
         this.anonymousClass = anonymousClass;
         this.arrayInitializer = arrayInitializer;
         this.state = Objects.requireNonNull(state);
-        this.objectFlow = Objects.requireNonNull(objectFlow);
         this.minimalNotNull = minimalNotNull;
         assert minimalNotNull != Level.DELAY;
         this.diamond = parameterizedType.parameters.isEmpty() ? Diamond.NO : diamond;
@@ -307,7 +292,7 @@ public record NewObject(
                 minimalNotNull,
                 anonymousClass, // not translating this yet!
                 arrayInitializer == null ? null : TranslationMap.ensureExpressionType(arrayInitializer, ArrayInitializer.class),
-                state, objectFlow);
+                state);
     }
 
     @Override
@@ -435,11 +420,6 @@ public record NewObject(
     }
 
     @Override
-    public ObjectFlow getObjectFlow() {
-        return objectFlow;
-    }
-
-    @Override
     public MethodInfo getMethodInfo() {
         return constructor;
     }
@@ -524,9 +504,7 @@ public record NewObject(
                     .collect(Collectors.toList());
             builder.compose(results);
             List<Expression> values = results.stream().map(EvaluationResult::getExpression).collect(Collectors.toList());
-            ObjectFlow objectFlow = builder.createLiteralObjectFlow(arrayInitializer.returnType());
-            builder.setExpression(new ArrayInitializer(evaluationContext.getAnalyserContext(),
-                    objectFlow, values, arrayInitializer.returnType()));
+            builder.setExpression(new ArrayInitializer(evaluationContext.getAnalyserContext(), values, arrayInitializer.returnType()));
             return builder.build();
         }
 
@@ -535,10 +513,9 @@ public record NewObject(
         Pair<EvaluationResult.Builder, List<Expression>> res = EvaluateParameters.transform(parameterExpressions,
                 evaluationContext, constructor, Level.FALSE, null);
         Location location = evaluationContext.getLocation(this);
-        ObjectFlow objectFlow = res.k.createInternalObjectFlow(location, parameterizedType, Origin.NEW_OBJECT_CREATION);
 
         NewObject initialInstance = NewObject.objectCreation(identifier, evaluationContext.getPrimitives(),
-                constructor, parameterizedType, diamond, res.v, objectFlow);
+                constructor, parameterizedType, diamond, res.v);
         Expression instance;
         if (constructor != null) {
             // check state changes of companion methods
@@ -582,8 +559,7 @@ public record NewObject(
         return params;
     }
 
-
-    public Expression stateTranslateThisTo(EvaluationContext evaluationContext, FieldReference fieldReference) {
+    public Expression stateTranslateThisTo(FieldReference fieldReference) {
         if (state.isBooleanConstant()) return state;
         // the "this" in the state can belong to the type of the object, or any of its super types
         This thisVar = findThis();

@@ -15,7 +15,6 @@
 package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.analyser.*;
-import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 
@@ -23,7 +22,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 public interface MethodAnalysis extends Analysis {
 
@@ -78,14 +76,6 @@ public interface MethodAnalysis extends Analysis {
     }
 
     // ************* object flow
-
-    default Set<ObjectFlow> getInternalObjectFlows() {
-        return Set.of();
-    }
-
-    default ObjectFlow getObjectFlow() {
-        return ObjectFlow.NO_FLOW;
-    }
 
     default Map<CompanionMethodName, CompanionAnalysis> getCompanionAnalyses() {
         return null;
@@ -156,7 +146,7 @@ public interface MethodAnalysis extends Analysis {
 
     private int dynamicProperty(AnalysisProvider analysisProvider, int formalImmutableProperty, ParameterizedType returnType) {
         int immutableTypeAfterEventual = MultiLevel.eventual(formalImmutableProperty,
-                getObjectFlow().conditionsMetForEventual(getMethodInfo().typeInfo, InspectionProvider.DEFAULT, analysisProvider, returnType));
+               false); // FIXME
         return Level.best(internalGetProperty(VariableProperty.IMMUTABLE), immutableTypeAfterEventual);
     }
 

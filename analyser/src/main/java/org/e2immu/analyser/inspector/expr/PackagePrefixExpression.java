@@ -22,7 +22,6 @@ import org.e2immu.analyser.model.PackagePrefix;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.Qualification;
 import org.e2immu.analyser.model.expression.Precedence;
-import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.output.OutputBuilder;
 
 record PackagePrefixExpression(PackagePrefix packagePrefix) implements Expression {
@@ -50,10 +49,5 @@ record PackagePrefixExpression(PackagePrefix packagePrefix) implements Expressio
     @Override
     public int order() {
         return 0;
-    }
-
-    @Override
-    public ObjectFlow getObjectFlow() {
-        return ObjectFlow.NO_FLOW;
     }
 }

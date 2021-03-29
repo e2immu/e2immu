@@ -35,7 +35,7 @@ public class AnalyserComponents<T, S> {
         Arrays.fill(state, DELAYS);
     }
 
-    public AnalysisStatus getStatus(T t) {
+    public AnalysisStatus getStatus(String t) {
         return getStatusesAsMap().get(t);
     }
 

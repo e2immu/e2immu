@@ -22,7 +22,6 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.model.expression.util.InequalitySolver;
 import org.e2immu.analyser.model.variable.Variable;
-import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.parser.Primitives;
@@ -35,23 +34,16 @@ import java.util.stream.Collectors;
 import static org.e2immu.analyser.util.Logger.LogTarget.CNF;
 import static org.e2immu.analyser.util.Logger.log;
 
-public record And(Primitives primitives,
-                  List<Expression> expressions,
-                  ObjectFlow objectFlow) implements Expression {
+public record And(Primitives primitives, List<Expression> expressions) implements Expression {
 
     public And {
         Objects.requireNonNull(primitives);
         Objects.requireNonNull(expressions);
-        Objects.requireNonNull(objectFlow);
     }
 
     // testing only
     public And(Primitives primitives) {
-        this(primitives, List.of(), ObjectFlow.NO_FLOW);
-    }
-
-    public And(Primitives primitives, ObjectFlow objectFlow) {
-        this(primitives, List.of(), objectFlow);
+        this(primitives, List.of());
     }
 
     private enum Action {
@@ -141,7 +133,7 @@ public record And(Primitives primitives,
             log(CNF, "And reduced to 1 component: {}", concat.get(0));
             return concat.get(0);
         }
-        And res = new And(primitives, List.copyOf(concat), objectFlow);
+        And res = new And(primitives, List.copyOf(concat));
         log(CNF, "Constructed {}", res);
         return res;
     }
@@ -199,8 +191,7 @@ public record And(Primitives primitives,
                     return Action.FALSE;
                 }
                 // replace
-                Expression orValue = new Or(primitives, objectFlow)
-                        .append(evaluationContext, remaining);
+                Expression orValue = new Or(primitives).append(evaluationContext, remaining);
                 newConcat.add(orValue);
                 return Action.SKIP;
             }
@@ -234,7 +225,7 @@ public record And(Primitives primitives,
                 }
             }
             if (ok && !equal.isEmpty()) {
-                Expression orValue = new Or(primitives, objectFlow).append(evaluationContext, equal);
+                Expression orValue = new Or(primitives).append(evaluationContext, equal);
                 newConcat.set(newConcat.size() - 1, orValue);
                 return Action.SKIP;
             }
@@ -321,7 +312,7 @@ public record And(Primitives primitives,
                 // if b==y then the end result should be x>b
                 if (y == xb.b() && ge.allowEquals()) {
                     newConcat.remove(newConcat.size() - 1);
-                    newConcat.add(new GreaterThanZero(ge.booleanParameterizedType(), ge.expression(), false, ge.objectFlow()));
+                    newConcat.add(new GreaterThanZero(ge.booleanParameterizedType(), ge.expression(), false));
                     return Action.SKIP;
                 }
             }
@@ -358,8 +349,7 @@ public record And(Primitives primitives,
                 if (xb1.b() < xb2.b()) return !xb1.lessThan() ? Action.ADD : Action.FALSE;
                 if (ge1.allowEquals() && ge2.allowEquals()) {
                     Expression newValue = Equals.equals(evaluationContext,
-                            IntConstant.intOrDouble(primitives, xb1.b(), ge1.getObjectFlow()),
-                            xb1.x(), ge1.getObjectFlow()); // null-checks are irrelevant here
+                            IntConstant.intOrDouble(primitives, xb1.b()), xb1.x()); // null-checks are irrelevant here
                     newConcat.set(newConcat.size() - 1, newValue);
                     return Action.SKIP;
                 }
@@ -405,12 +395,6 @@ public record And(Primitives primitives,
         return minimalOutput();
     }
 
-    @Override
-    public boolean hasBeenEvaluated() {
-        assert objectFlow != ObjectFlow.NYE;
-        return true;
-    }
-
     public OutputBuilder output(Qualification qualification) {
         Precedence precedence = precedence();
         return new OutputBuilder()
@@ -450,7 +434,7 @@ public record And(Primitives primitives,
         Expression[] clauses = clauseResults.stream().map(EvaluationResult::value).toArray(Expression[]::new);
         return new EvaluationResult.Builder()
                 .compose(clauseResults)
-                .setExpression(new And(primitives, objectFlow).append(evaluationContext, clauses))
+                .setExpression(new And(primitives).append(evaluationContext, clauses))
                 .build();
     }
 
@@ -466,11 +450,6 @@ public record And(Primitives primitives,
     }
 
     @Override
-    public ObjectFlow getObjectFlow() {
-        return objectFlow;
-    }
-
-    @Override
     public List<Variable> variables() {
         return expressions.stream().flatMap(v -> v.variables().stream()).collect(Collectors.toList());
     }
@@ -482,7 +461,7 @@ public record And(Primitives primitives,
         Expression[] reClauses = reClauseERs.stream().map(EvaluationResult::value).toArray(Expression[]::new);
         return new EvaluationResult.Builder()
                 .compose(reClauseERs)
-                .setExpression(new And(primitives, objectFlow).append(evaluationContext, reClauses))
+                .setExpression(new And(primitives).append(evaluationContext, reClauses))
                 .build();
     }
 
@@ -500,10 +479,10 @@ public record And(Primitives primitives,
 
     @Override
     public Expression translate(TranslationMap translationMap) {
-        if(translationMap.isEmpty()) return this;
+        if (translationMap.isEmpty()) return this;
         List<Expression> translated = expressions.stream().map(e -> e.translate(translationMap))
                 .collect(Collectors.toUnmodifiableList());
-        return new And(primitives, translated, objectFlow);
+        return new And(primitives, translated);
     }
 
     @Override

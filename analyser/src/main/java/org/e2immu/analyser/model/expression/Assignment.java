@@ -24,7 +24,6 @@ import org.e2immu.analyser.model.variable.DependentVariable;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
-import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.parser.Primitives;
@@ -106,19 +105,10 @@ public class Assignment implements Expression {
     }
 
     @Override
-    public boolean hasBeenEvaluated() {
-        return false;
-    }
-
-    @Override
     public int order() {
         return 0;
     }
 
-    @Override
-    public ObjectFlow getObjectFlow() {
-        return ObjectFlow.NYE;
-    }
 
     @NotNull
     public static MethodInfo operator(Primitives primitives, @NotNull AssignExpr.Operator operator,
@@ -243,10 +233,6 @@ public class Assignment implements Expression {
             if (complainAboutAssignmentOutsideType &&
                     checkIllAdvisedAssignment(at, fieldInfo, evaluationContext.getCurrentType())) {
                 builder.addErrorAssigningToFieldOutsideType(fieldInfo);
-            }
-
-            if (resultOfExpression.getObjectFlow() != ObjectFlow.NO_FLOW) {
-                resultOfExpression.getObjectFlow().assignTo(fieldInfo);
             }
         } else if (at instanceof ParameterInfo parameterInfo) {
             builder.addParameterShouldNotBeAssignedTo(parameterInfo);

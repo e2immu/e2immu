@@ -19,7 +19,6 @@ import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.Qualification;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
-import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.parser.Primitives;
@@ -31,22 +30,18 @@ import java.util.Objects;
 
 @E2Container
 public record IntConstant(Primitives primitives,
-                          int constant,
-                          ObjectFlow objectFlow) implements ConstantExpression<Integer>, Negatable, Numeric {
+                          int constant) implements ConstantExpression<Integer>, Negatable, Numeric {
 
-    public IntConstant(Primitives primitives, int constant) {
-        this(primitives, constant, ObjectFlow.NO_FLOW);
-    }
 
-    public static Expression intOrDouble(Primitives primitives, double b, ObjectFlow objectFlow) {
+    public static Expression intOrDouble(Primitives primitives, double b) {
         if (IntUtil.isMathematicalInteger(b)) {
             long l = Math.round(b);
             if (l > Integer.MAX_VALUE || l < Integer.MIN_VALUE) {
-                return new LongConstant(primitives, l, objectFlow);
+                return new LongConstant(primitives, l);
             }
-            return new IntConstant(primitives, (int) l, objectFlow);
+            return new IntConstant(primitives, (int) l);
         }
-        return new DoubleConstant(primitives, b, objectFlow);
+        return new DoubleConstant(primitives, b);
     }
 
     @Override
@@ -79,11 +74,6 @@ public record IntConstant(Primitives primitives,
     }
 
     @Override
-    public ObjectFlow getObjectFlow() {
-        return objectFlow;
-    }
-
-    @Override
     public Integer getValue() {
         return constant;
     }
@@ -105,7 +95,7 @@ public record IntConstant(Primitives primitives,
 
     @Override
     public Expression negate() {
-        return new IntConstant(primitives, -constant, objectFlow);
+        return new IntConstant(primitives, -constant);
     }
 
     @Override

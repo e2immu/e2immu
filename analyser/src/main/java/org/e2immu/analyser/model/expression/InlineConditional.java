@@ -19,7 +19,6 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.EvaluateInlineConditional;
 import org.e2immu.analyser.model.expression.util.MultiExpression;
 import org.e2immu.analyser.model.variable.Variable;
-import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.parser.InspectionProvider;
@@ -36,25 +35,15 @@ public class InlineConditional implements Expression {
     public final Expression condition;
     public final Expression ifTrue;
     public final Expression ifFalse;
-    public final ObjectFlow objectFlow;
     public final InspectionProvider inspectionProvider;
 
     public InlineConditional(InspectionProvider inspectionProvider,
                              Expression condition,
                              Expression ifTrue,
                              Expression ifFalse) {
-        this(inspectionProvider, condition, ifTrue, ifFalse, ObjectFlow.NO_FLOW);
-    }
-
-    public InlineConditional(InspectionProvider inspectionProvider,
-                             Expression condition,
-                             Expression ifTrue,
-                             Expression ifFalse,
-                             ObjectFlow objectFlow) {
         this.condition = Objects.requireNonNull(condition);
         this.ifFalse = Objects.requireNonNull(ifFalse);
         this.ifTrue = Objects.requireNonNull(ifTrue);
-        this.objectFlow = Objects.requireNonNull(objectFlow);
         this.inspectionProvider = inspectionProvider;
     }
 
@@ -89,7 +78,7 @@ public class InlineConditional implements Expression {
         EvaluationResult reFalse = ifFalse.reEvaluate(evaluationContext, translation);
         EvaluationResult.Builder builder = new EvaluationResult.Builder().compose(reCondition, reTrue, reFalse);
         EvaluationResult res = EvaluateInlineConditional.conditionalValueConditionResolved(
-                evaluationContext, reCondition.value(), reTrue.value(), reFalse.value(), objectFlow);
+                evaluationContext, reCondition.value(), reTrue.value(), reFalse.value());
         return builder.setExpression(res.value()).build();
     }
 
@@ -185,12 +174,7 @@ public class InlineConditional implements Expression {
     public NewObject getInstance(EvaluationResult evaluationResult) {
         if (Primitives.isPrimitiveExcludingVoid(returnType())) return null;
         return NewObject.forGetInstance(evaluationResult.evaluationContext().newObjectIdentifier(),
-                evaluationResult.evaluationContext().getPrimitives(), returnType(), getObjectFlow());
-    }
-
-    @Override
-    public ObjectFlow getObjectFlow() {
-        return objectFlow;
+                evaluationResult.evaluationContext().getPrimitives(), returnType());
     }
 
     @Override
@@ -237,7 +221,7 @@ public class InlineConditional implements Expression {
 
         // TODO ObjectFlow
         EvaluationResult cv = EvaluateInlineConditional.conditionalValueCurrentState(evaluationContext,
-                c, t, f, ObjectFlow.NO_FLOW);
+                c, t, f);
         return builder.compose(cv).build();
     }
 
@@ -257,9 +241,9 @@ public class InlineConditional implements Expression {
         Expression f = ifFalse instanceof InlineConditional inlineFalse ? inlineFalse.optimise(copyForElse, true) : ifFalse;
 
         if (useState) {
-            return EvaluateInlineConditional.conditionalValueCurrentState(evaluationContext, condition, t, f, ObjectFlow.NO_FLOW).getExpression();
+            return EvaluateInlineConditional.conditionalValueCurrentState(evaluationContext, condition, t, f).getExpression();
         }
-        return EvaluateInlineConditional.conditionalValueConditionResolved(evaluationContext, condition, t, f, ObjectFlow.NO_FLOW).getExpression();
+        return EvaluateInlineConditional.conditionalValueConditionResolved(evaluationContext, condition, t, f).getExpression();
 
     }
 

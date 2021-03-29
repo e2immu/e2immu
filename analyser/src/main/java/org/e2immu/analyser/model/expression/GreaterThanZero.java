@@ -21,8 +21,6 @@ import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.model.variable.Variable;
-import org.e2immu.analyser.objectflow.ObjectFlow;
-import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.output.Text;
@@ -35,8 +33,7 @@ import java.util.function.Predicate;
 
 public record GreaterThanZero(ParameterizedType booleanParameterizedType,
                               Expression expression,
-                              boolean allowEquals,
-                              ObjectFlow objectFlow) implements Expression {
+                              boolean allowEquals) implements Expression {
 
 
     @Override
@@ -52,10 +49,10 @@ public record GreaterThanZero(ParameterizedType booleanParameterizedType,
     public EvaluationResult reEvaluate(EvaluationContext evaluationContext, Map<Expression, Expression> translation) {
         EvaluationResult reValue = expression.reEvaluate(evaluationContext, translation);
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext).compose(reValue);
-        return builder.setExpression(GreaterThanZero.greater(evaluationContext,
-                reValue.getExpression(),
-                new IntConstant(evaluationContext.getPrimitives(), 0, ObjectFlow.NO_FLOW),
-                allowEquals, getObjectFlow())).build();
+        Expression gt0 = GreaterThanZero.greater(evaluationContext,
+                reValue.getExpression(), new IntConstant(evaluationContext.getPrimitives(), 0),
+                allowEquals);
+        return builder.setExpression(gt0).build();
     }
 
     @Override
@@ -77,16 +74,14 @@ public record GreaterThanZero(ParameterizedType booleanParameterizedType,
                 // NOT (-3 + x >= 0) == NOT (x >= 3) == x < 3 == x <= 2 == 2 + -x >= 0
                 // NOT (3 + x >= 0) == NOT (x >= -3) == x < -3 == x <= -4 == -4 + -x >= 0
                 Expression minusSumPlusOne = IntConstant.intOrDouble(evaluationContext.getPrimitives(),
-                        -(ln.doubleValue() + 1.0), sum.lhs.getObjectFlow());
+                        -(ln.doubleValue() + 1.0));
                 return GreaterThanZero.greater(evaluationContext,
                         Sum.sum(evaluationContext, minusSumPlusOne,
-                                Negation.negate(evaluationContext, sum.rhs),
-                                expression.getObjectFlow()), zero, true, getObjectFlow());
+                                Negation.negate(evaluationContext, sum.rhs)), zero, true);
             }
         }
-        return GreaterThanZero.greater(evaluationContext,
-                Negation.negate(evaluationContext, expression), zero,
-                !allowEquals, getObjectFlow());
+        return GreaterThanZero.greater(evaluationContext, Negation.negate(evaluationContext, expression), zero,
+                !allowEquals);
     }
 
     /**
@@ -127,90 +122,72 @@ public record GreaterThanZero(ParameterizedType booleanParameterizedType,
         return new XB(x, 0.0d, lessThan);
     }
 
-    // testing only
     public static Expression greater(EvaluationContext evaluationContext, Expression l, Expression r, boolean allowEquals) {
-        return greater(evaluationContext, l, r, allowEquals, ObjectFlow.NO_FLOW);
-    }
-
-    public static Expression greater(EvaluationContext evaluationContext, Expression l, Expression r, boolean allowEquals, ObjectFlow objectFlow) {
         Primitives primitives = evaluationContext.getPrimitives();
         if (l.equals(r) && !allowEquals) return new BooleanConstant(primitives, false);
         if (l.isUnknown() || r.isUnknown()) throw new UnsupportedOperationException();
 
         if (l instanceof Numeric ln && r instanceof Numeric rn) {
             if (allowEquals)
-                return new BooleanConstant(primitives, ln.doubleValue() >= rn.doubleValue(), objectFlow);
-            return new BooleanConstant(primitives, ln.doubleValue() > rn.doubleValue(), objectFlow);
+                return new BooleanConstant(primitives, ln.doubleValue() >= rn.doubleValue());
+            return new BooleanConstant(primitives, ln.doubleValue() > rn.doubleValue());
         }
 
-        ParameterizedType intParameterizedType = evaluationContext.getPrimitives().intParameterizedType;
         ParameterizedType booleanParameterizedType = evaluationContext.getPrimitives().booleanParameterizedType;
-
-        ObjectFlow objectFlowSum = objectFlow == null ? null : new ObjectFlow(objectFlow.location, intParameterizedType, Origin.RESULT_OF_OPERATOR);
 
         if (l instanceof Numeric ln && !allowEquals && l.isDiscreteType()) {
             // 3 > x == 3 + (-x) > 0 transform to 2 >= x
-            Expression lMinusOne = IntConstant.intOrDouble(primitives, ln.doubleValue() - 1.0, l.getObjectFlow());
+            Expression lMinusOne = IntConstant.intOrDouble(primitives, ln.doubleValue() - 1.0);
             return new GreaterThanZero(booleanParameterizedType,
                     Sum.sum(evaluationContext, lMinusOne,
-                            Negation.negate(evaluationContext, r),
-                            objectFlowSum), true, objectFlow);
+                            Negation.negate(evaluationContext, r)), true);
         }
         if (r instanceof Numeric rn && !allowEquals && r.isDiscreteType()) {
             // x > 3 == -3 + x > 0 transform to x >= 4
-            Expression minusRPlusOne = IntConstant.intOrDouble(primitives, -(rn.doubleValue() + 1.0), r.getObjectFlow());
+            Expression minusRPlusOne = IntConstant.intOrDouble(primitives, -(rn.doubleValue() + 1.0));
             return new GreaterThanZero(booleanParameterizedType,
-                    Sum.sum(evaluationContext, l, minusRPlusOne, objectFlowSum), true, objectFlow);
+                    Sum.sum(evaluationContext, l, minusRPlusOne), true);
         }
 
         return new GreaterThanZero(booleanParameterizedType,
-                Sum.sum(evaluationContext, l, Negation.negate(evaluationContext, r), objectFlowSum),
-                allowEquals, objectFlow);
+                Sum.sum(evaluationContext, l, Negation.negate(evaluationContext, r)),
+                allowEquals);
     }
 
-    // testing only
     public static Expression less(EvaluationContext evaluationContext, Expression l, Expression r, boolean allowEquals) {
-        return less(evaluationContext, l, r, allowEquals, ObjectFlow.NO_FLOW);
-    }
-
-    public static Expression less(EvaluationContext evaluationContext, Expression l, Expression r, boolean allowEquals, ObjectFlow objectFlow) {
         Primitives primitives = evaluationContext.getPrimitives();
         if (l.equals(r) && !allowEquals) return new BooleanConstant(primitives, false);
         if (l.isUnknown() || r.isUnknown()) throw new UnsupportedOperationException();
 
         if (l instanceof Numeric ln && r instanceof Numeric rn) {
             if (allowEquals)
-                return new BooleanConstant(primitives, ln.doubleValue() <= rn.doubleValue(), objectFlow);
-            return new BooleanConstant(primitives, ln.doubleValue() < rn.doubleValue(), objectFlow);
+                return new BooleanConstant(primitives, ln.doubleValue() <= rn.doubleValue());
+            return new BooleanConstant(primitives, ln.doubleValue() < rn.doubleValue());
         }
 
-        ParameterizedType intParameterizedType = evaluationContext.getPrimitives().intParameterizedType;
         ParameterizedType booleanParameterizedType = evaluationContext.getPrimitives().booleanParameterizedType;
-
-        ObjectFlow objectFlowSum = objectFlow == null ? null : new ObjectFlow(objectFlow.location, intParameterizedType, Origin.RESULT_OF_OPERATOR);
 
         if (l instanceof Numeric ln && !allowEquals && l.isDiscreteType()) {
             // 3 < x == x > 3 == -3 + x > 0 transform to x >= 4
-            Expression minusLPlusOne = IntConstant.intOrDouble(primitives, -(ln.doubleValue() + 1.0), l.getObjectFlow());
+            Expression minusLPlusOne = IntConstant.intOrDouble(primitives, -(ln.doubleValue() + 1.0));
             return new GreaterThanZero(booleanParameterizedType,
-                    Sum.sum(evaluationContext, minusLPlusOne, r, objectFlowSum), true, objectFlow);
+                    Sum.sum(evaluationContext, minusLPlusOne, r), true);
         }
         if (r instanceof Numeric rn && !allowEquals && r.isDiscreteType()) {
             // x < 3 == 3 + -x > 0 transform to x <= 2 == 2 + -x >= 0
-            Expression rMinusOne = IntConstant.intOrDouble(primitives, rn.doubleValue() - 1.0, r.getObjectFlow());
+            Expression rMinusOne = IntConstant.intOrDouble(primitives, rn.doubleValue() - 1.0);
             return new GreaterThanZero(booleanParameterizedType,
-                    Sum.sum(evaluationContext, Negation.negate(evaluationContext, l), rMinusOne, objectFlowSum), true, objectFlow);
+                    Sum.sum(evaluationContext, Negation.negate(evaluationContext, l), rMinusOne), true);
         }
         // l < r <=> l-r < 0 <=> -l+r > 0
         if (l instanceof Numeric ln) {
-            return new GreaterThanZero(booleanParameterizedType,
-                    Sum.sum(evaluationContext, ln.negate(), r, objectFlowSum), allowEquals, objectFlow);
+            return new GreaterThanZero(booleanParameterizedType, Sum.sum(evaluationContext, ln.negate(), r), allowEquals);
         }
 
         // TODO add tautology call
 
         return new GreaterThanZero(primitives.booleanParameterizedType, Sum.sum(evaluationContext,
-                Negation.negate(evaluationContext, l), r, objectFlowSum), allowEquals, objectFlow);
+                Negation.negate(evaluationContext, l), r), allowEquals);
     }
 
     @Override
@@ -301,11 +278,6 @@ public record GreaterThanZero(ParameterizedType booleanParameterizedType,
     }
 
     @Override
-    public ObjectFlow getObjectFlow() {
-        return objectFlow;
-    }
-
-    @Override
     public List<Variable> variables() {
         return expression.variables();
     }
@@ -319,6 +291,6 @@ public record GreaterThanZero(ParameterizedType booleanParameterizedType,
 
     @Override
     public Expression translate(TranslationMap translationMap) {
-        return new GreaterThanZero(booleanParameterizedType, expression.translate(translationMap), allowEquals, objectFlow);
+        return new GreaterThanZero(booleanParameterizedType, expression.translate(translationMap), allowEquals);
     }
 }

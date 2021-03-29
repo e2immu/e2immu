@@ -18,7 +18,6 @@ import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.output.Text;
@@ -48,11 +47,6 @@ public record ArrayLength(Primitives primitives,
     }
 
     @Override
-    public boolean hasBeenEvaluated() {
-        return false;
-    }
-
-    @Override
     public int hashCode() {
         return Objects.hash(scope);
     }
@@ -65,11 +59,6 @@ public record ArrayLength(Primitives primitives,
     @Override
     public int order() {
         return 0;
-    }
-
-    @Override
-    public ObjectFlow getObjectFlow() {
-        return ObjectFlow.NYE;
     }
 
     @Override
@@ -103,8 +92,7 @@ public record ArrayLength(Primitives primitives,
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext).compose(result);
 
         if (result.value() instanceof ArrayInitializer arrayInitializer) {
-            Expression size = new IntConstant(evaluationContext.getPrimitives(), arrayInitializer.multiExpression.expressions().length,
-                    ObjectFlow.NO_FLOW);
+            Expression size = new IntConstant(evaluationContext.getPrimitives(), arrayInitializer.multiExpression.expressions().length);
             builder.setExpression(size);
         } else if (result.value().isDelayed(evaluationContext)) {
             builder.setExpression(DelayedExpression.forArrayLength(evaluationContext.getPrimitives()));

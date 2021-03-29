@@ -17,7 +17,6 @@ package org.e2immu.analyser.model.expression;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
-import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.parser.Primitives;
@@ -30,12 +29,7 @@ import java.util.Objects;
 
 @E2Container
 public record StringConstant(Primitives primitives,
-                             String constant,
-                             ObjectFlow objectFlow) implements ConstantExpression<String> {
-
-    public StringConstant(Primitives primitives, String constant) {
-        this(primitives, constant, ObjectFlow.NO_FLOW);
-    }
+                             String constant) implements ConstantExpression<String> {
 
     @Override
     @NotNull
@@ -67,11 +61,6 @@ public record StringConstant(Primitives primitives,
     }
 
     @Override
-    public ObjectFlow getObjectFlow() {
-        return objectFlow;
-    }
-
-    @Override
     public String getValue() {
         return constant;
     }
@@ -88,11 +77,9 @@ public record StringConstant(Primitives primitives,
 
     @Override
     public NewObject getInstance(EvaluationResult evaluationResult) {
-        // TODO static flow
         // TODO apply code from method call to produce a decent state
         return NewObject.objectCreation("StringConstant-" + constant,
-                primitives, oneParameterConstructor(), primitives.stringParameterizedType, Diamond.NO,
-                List.of(this), ObjectFlow.NO_FLOW);
+                primitives, oneParameterConstructor(), primitives.stringParameterizedType, Diamond.NO, List.of(this));
     }
 
     private MethodInfo oneParameterConstructor() {

@@ -31,7 +31,6 @@ import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
-import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.Pair;
 import org.e2immu.analyser.util.StringUtil;
@@ -655,7 +654,7 @@ public class ExpressionContext {
                 return ParseArrayCreationExpr.parse(this, expression.asArrayCreationExpr());
             }
             if (expression.isArrayInitializerExpr()) {
-                return new ArrayInitializer(typeContext, ObjectFlow.NO_FLOW, expression.asArrayInitializerExpr().getValues().stream()
+                return new ArrayInitializer(typeContext, expression.asArrayInitializerExpr().getValues().stream()
                         .map(this::parseExpression).collect(Collectors.toList()), impliedParameterizedType);
             }
             if (expression.isEnclosedExpr()) {
@@ -684,7 +683,7 @@ public class ExpressionContext {
                 InstanceOfExpr instanceOfExpr = expression.asInstanceOfExpr();
                 Expression e = parseExpression(instanceOfExpr.getExpression());
                 ParameterizedType type = ParameterizedTypeFactory.from(typeContext, instanceOfExpr.getType());
-                return new InstanceOf(typeContext.getPrimitives(), type, e, null, e.getObjectFlow());
+                return new InstanceOf(typeContext.getPrimitives(), type, e, null);
             }
             // new switch expression isn't there yet in JavaParser...
 

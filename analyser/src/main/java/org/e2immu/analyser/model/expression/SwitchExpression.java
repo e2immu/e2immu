@@ -21,7 +21,6 @@ import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.Qualification;
 import org.e2immu.analyser.model.statement.SwitchEntry;
-import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.output.*;
 
 import java.util.List;
@@ -29,26 +28,19 @@ import java.util.Objects;
 
 public record SwitchExpression(Expression selector,
                                List<SwitchEntry> switchEntries,
-                               ParameterizedType returnType,
-                               ObjectFlow objectFlow) implements Expression {
+                               ParameterizedType returnType) implements Expression {
 
     public SwitchExpression {
-        if (hasBeenEvaluated()) {
-            if (switchEntries.size() <= 2) {
-                throw new IllegalArgumentException("Expect at least 3 entries to have a bit of a reasonable switch value");
-            }
-            switchEntries.forEach(e -> {
-                Objects.requireNonNull(e.switchVariableAsExpression); // FIXME
-                Objects.requireNonNull(e.labels);
-                if (e.labels.contains(EmptyExpression.EMPTY_EXPRESSION) && e.labels.size() != 1)
-                    throw new UnsupportedOperationException();
-                if (e.labels.isEmpty()) throw new UnsupportedOperationException();
-            });
+        if (switchEntries.size() <= 2) {
+            throw new IllegalArgumentException("Expect at least 3 entries to have a bit of a reasonable switch value");
         }
-    }
-
-    public SwitchExpression(Expression selector, List<SwitchEntry> switchEntries, ParameterizedType returnType) {
-        this(selector, switchEntries, returnType, ObjectFlow.NYE);
+        switchEntries.forEach(e -> {
+            Objects.requireNonNull(e.switchVariableAsExpression); // FIXME
+            Objects.requireNonNull(e.labels);
+            if (e.labels.contains(EmptyExpression.EMPTY_EXPRESSION) && e.labels.size() != 1)
+                throw new UnsupportedOperationException();
+            if (e.labels.isEmpty()) throw new UnsupportedOperationException();
+        });
     }
 
     @Override
@@ -81,10 +73,5 @@ public record SwitchExpression(Expression selector,
     @Override
     public int order() {
         return 0;
-    }
-
-    @Override
-    public ObjectFlow getObjectFlow() {
-        return null;
     }
 }

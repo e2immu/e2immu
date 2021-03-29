@@ -18,8 +18,6 @@ import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.model.variable.Variable;
-import org.e2immu.analyser.objectflow.ObjectFlow;
-import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.parser.InspectionProvider;
@@ -36,18 +34,12 @@ import java.util.Objects;
 public record InstanceOf(Primitives primitives,
                          ParameterizedType parameterizedType,
                          Expression expression,
-                         Variable variable,
-                         ObjectFlow objectFlow) implements Expression {
+                         Variable variable) implements Expression {
 
     public InstanceOf {
-        Objects.requireNonNull(objectFlow);
         Objects.requireNonNull(parameterizedType);
         assert expression != null || variable != null;
         Objects.requireNonNull(primitives);
-    }
-
-    public InstanceOf(Primitives primitives, ParameterizedType parameterizedType, Expression expression) {
-        this(primitives, parameterizedType, expression, null, ObjectFlow.NO_FLOW);
     }
 
     @Override
@@ -74,8 +66,7 @@ public record InstanceOf(Primitives primitives,
         return new InstanceOf(primitives,
                 translationMap.translateType(parameterizedType),
                 expression == null ? null : expression.translate(translationMap),
-                variable == null ? null : translationMap.translateVariable(variable),
-                objectFlow);
+                variable == null ? null : translationMap.translateVariable(variable));
     }
 
     @Override
@@ -113,11 +104,6 @@ public record InstanceOf(Primitives primitives,
     }
 
     @Override
-    public ObjectFlow getObjectFlow() {
-        return objectFlow;
-    }
-
-    @Override
     public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
         EvaluationResult evaluationResult = expression.evaluate(evaluationContext, forwardEvaluationInfo);
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext).compose(evaluationResult);
@@ -135,15 +121,12 @@ public record InstanceOf(Primitives primitives,
 
         }
         if (value instanceof VariableExpression ve) {
-            Location location = evaluationContext.getLocation(this);
-            ObjectFlow objectFlow = builder.createInternalObjectFlow(location, primitives.booleanParameterizedType, Origin.RESULT_OF_OPERATOR);
-            InstanceOf instanceOf = new InstanceOf(primitives, parameterizedType, null, ve.variable(), objectFlow);
+            InstanceOf instanceOf = new InstanceOf(primitives, parameterizedType, null, ve.variable());
             return builder.setExpression(instanceOf).build();
         }
         if (value instanceof NewObject newObject) {
             EvaluationResult er = BooleanConstant.of(parameterizedType.isAssignableFrom(InspectionProvider.defaultFrom(primitives),
-                    newObject.parameterizedType()),
-                    evaluationContext.getLocation(this), evaluationContext, Origin.RESULT_OF_OPERATOR);
+                    newObject.parameterizedType()), evaluationContext);
             return builder.compose(er).setExpression(er.value()).build();
         }
         if (value instanceof MethodCall) {
@@ -151,7 +134,7 @@ public record InstanceOf(Primitives primitives,
         }
         if (value instanceof ClassExpression ce) {
             EvaluationResult er = BooleanConstant.of(parameterizedType.isAssignableFrom(InspectionProvider.defaultFrom(primitives),
-                    ce.parameterizedType()), evaluationContext.getLocation(this), evaluationContext, Origin.RESULT_OF_OPERATOR);
+                    ce.parameterizedType()), evaluationContext);
             return builder.compose(er).setExpression(er.value()).build();
         }
         // this error occurs with a TypeExpression, probably due to our code giving priority to types rather than

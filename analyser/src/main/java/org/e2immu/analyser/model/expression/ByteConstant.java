@@ -19,7 +19,6 @@ import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.Qualification;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
-import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.parser.Primitives;
@@ -29,18 +28,12 @@ import org.e2immu.annotation.NotNull;
 import java.util.Objects;
 
 @E2Container
-public record ByteConstant(Primitives primitives,
-                           byte constant,
-                           ObjectFlow objectFlow) implements ConstantExpression<Byte>, Numeric {
+public record ByteConstant(Primitives primitives, byte constant) implements ConstantExpression<Byte>, Numeric {
 
     @Override
     @NotNull
     public ParameterizedType returnType() {
         return primitives.byteParameterizedType;
-    }
-
-    public ByteConstant(Primitives primitives, byte constant) {
-        this(primitives, constant, ObjectFlow.NO_FLOW);
     }
 
     @Override
@@ -77,11 +70,6 @@ public record ByteConstant(Primitives primitives,
     }
 
     @Override
-    public ObjectFlow getObjectFlow() {
-        return objectFlow;
-    }
-
-    @Override
     public Byte getValue() {
         return constant;
     }
@@ -93,7 +81,7 @@ public record ByteConstant(Primitives primitives,
 
     @Override
     public Expression negate() {
-        return new ByteConstant(primitives, (byte) (-constant), objectFlow);
+        return new ByteConstant(primitives, (byte) (-constant));
     }
 
     @Override

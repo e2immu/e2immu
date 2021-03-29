@@ -18,7 +18,6 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.statement.*;
 import org.e2immu.analyser.model.variable.*;
-import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.pattern.PatternMatcher;
@@ -824,24 +823,6 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             statementAnalysis.stateData.precondition.setVariable(null);
         }
 
-        if (status == DONE && statementAnalysis.methodLevelData.internalObjectFlowNotYetFrozen()) {
-            boolean delays = false;
-            for (ObjectFlow objectFlow : evaluationResult.getObjectFlowStream().collect(Collectors.toSet())) {
-                if (objectFlow.isDelayed()) {
-                    delays = true;
-                } else {
-                    statementAnalysis.methodLevelData.ensureInternalObjectFlow(objectFlow);
-                }
-            }
-            if (delays) {
-                log(DELAYED, "Apply of {}, {} is delayed because of internal object flows",
-                        index(), myMethodAnalyser.methodInfo.fullyQualifiedName);
-                status = DELAYS;
-            } else {
-                statementAnalysis.methodLevelData.freezeInternalObjectFlows();
-            }
-        }
-
         // debugging...
 
         for (EvaluationResultVisitor evaluationResultVisitor : analyserContext.getConfiguration()
@@ -1515,9 +1496,6 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             if (statementAnalysis.flowData.timeAfterExecutionNotYetSet()) {
                 statementAnalysis.flowData.copyTimeAfterExecutionFromInitialTime();
             }
-            if (statementAnalysis.methodLevelData.internalObjectFlowNotYetFrozen()) {
-                statementAnalysis.methodLevelData.freezeInternalObjectFlows();
-            }
             if (statementAnalysis.statement instanceof BreakStatement breakStatement) {
                 if (statementAnalysis.parent.statement instanceof SwitchStatementOldStyle) {
                     return analysisStatus;
@@ -1694,8 +1672,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         List<String> never = new ArrayList<>();
         List<String> always = new ArrayList<>();
         switchStatement.labels().forEach(label -> {
-            Expression labelEqualsSwitchExpression = Equals.equals(sharedState.evaluationContext,
-                    label, switchExpression, ObjectFlow.NO_FLOW);
+            Expression labelEqualsSwitchExpression = Equals.equals(sharedState.evaluationContext, label, switchExpression);
             Expression evaluated = sharedState.localConditionManager.evaluate(sharedState.evaluationContext,
                     labelEqualsSwitchExpression);
             if (evaluated.isBoolValueTrue()) {
@@ -2100,7 +2077,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 conditionForSubStatementIsDelayed = false;
             } else if (statement() instanceof SwitchEntry switchEntry) {
                 Expression constant = switchEntry.switchVariableAsExpression.evaluate(evaluationContext, ForwardEvaluationInfo.DEFAULT).value();
-                conditionForSubStatement = Equals.equals(evaluationContext, value, constant, ObjectFlow.NO_FLOW);
+                conditionForSubStatement = Equals.equals(evaluationContext, value, constant);
                 conditionForSubStatementIsDelayed = evaluationContext.isDelayed(conditionForSubStatement);
             } else throw new UnsupportedOperationException();
 
@@ -2149,7 +2126,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         }
         Expression[] negated = previousConditions.stream().map(c -> Negation.negate(evaluationContext, c))
                 .toArray(Expression[]::new);
-        return new And(primitives, ObjectFlow.NO_FLOW).append(evaluationContext, negated);
+        return new And(primitives).append(evaluationContext, negated);
     }
 
     /**
@@ -2298,11 +2275,6 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         }
 
         @Override
-        public Set<String> allUnqualifiedVariableNames() {
-            return statementAnalysis.allUnqualifiedVariableNames(analyserContext, getCurrentType());
-        }
-
-        @Override
         public int getIteration() {
             return iteration;
         }
@@ -2315,11 +2287,6 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         @Override
         public MethodAnalyser getCurrentMethod() {
             return myMethodAnalyser;
-        }
-
-        @Override
-        public ObjectFlow getObjectFlow(Variable variable, int statementTime) {
-            return null;
         }
 
         @Override
@@ -2405,8 +2372,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 assert !Primitives.isPrimitiveExcludingVoid(value.returnType()) || directNN == MultiLevel.EFFECTIVELY_NOT_NULL;
 
                 if (directNN == MultiLevel.NULLABLE) {
-                    Expression valueIsNull = Equals.equals(this,
-                            value, NullConstant.NULL_CONSTANT, ObjectFlow.NO_FLOW, false);
+                    Expression valueIsNull = Equals.equals(this, value, NullConstant.NULL_CONSTANT, false);
                     Expression evaluation = conditionManager.evaluate(this, valueIsNull);
                     if (evaluation.isBoolValueFalse()) {
                         return MultiLevel.bestNotNull(MultiLevel.EFFECTIVELY_NOT_NULL, directNN);
@@ -2426,7 +2392,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         public boolean notNullAccordingToConditionManager(Variable variable) {
             Set<Variable> notNullVariablesInState = conditionManager.findIndividualNullInState(this, false);
             if (notNullVariablesInState.contains(variable)) return true;
-            Set<Variable> notNullVariablesInCondition = conditionManager.findIndividualNullInCondition(this, false);
+            Set<Variable> notNullVariablesInCondition = conditionManager
+                    .findIndividualNullInCondition(this, false);
             if (notNullVariablesInCondition.contains(variable)) return true;
             FieldReference fieldReference;
             if (variable instanceof FieldReference fr) {
@@ -2439,7 +2406,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 // but how to do that?
             } else return false;
 
-            Set<Variable> notNullVariablesInPrecondition = conditionManager.findIndividualNullInPrecondition(this, false);
+            Set<Variable> notNullVariablesInPrecondition = conditionManager
+                    .findIndividualNullInPrecondition(this, false);
             return notNullVariablesInPrecondition.contains(fieldReference);
         }
 
@@ -2466,8 +2434,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             Expression value = variableInfo.getValue();
             // important! do not use variable in the next statement, but vi.variable()
             // we could have redirected from a variable field to a local variable copy
-            return value instanceof NewObject ?
-                    new VariableExpression(variableInfo.variable(), variableInfo.getObjectFlow()) : value;
+            return value instanceof NewObject ? new VariableExpression(variableInfo.variable()) : value;
         }
 
         @Override
@@ -2500,11 +2467,6 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         @Override
         public AnalyserContext getAnalyserContext() {
             return analyserContext;
-        }
-
-        @Override
-        public Stream<ObjectFlow> getInternalObjectFlows() {
-            return Stream.empty(); // TODO
         }
 
         @Override

@@ -23,7 +23,6 @@ import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.Variable;
-import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 
@@ -59,9 +58,9 @@ public abstract class CommonVariableInfo {
         return new ReturnVariable(primitives.orOperatorBool);
     }
 
-    protected final IntConstant two = new IntConstant(primitives, 2, ObjectFlow.NO_FLOW);
-    protected final IntConstant three = new IntConstant(primitives, 3, ObjectFlow.NO_FLOW);
-    protected final IntConstant four = new IntConstant(primitives, 4, ObjectFlow.NO_FLOW);
+    protected final IntConstant two = new IntConstant(primitives, 2);
+    protected final IntConstant three = new IntConstant(primitives, 3);
+    protected final IntConstant four = new IntConstant(primitives, 4);
 
     protected final BooleanConstant TRUE = new BooleanConstant(primitives, true);
 

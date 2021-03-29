@@ -18,12 +18,9 @@ import org.e2immu.analyser.analyser.AbstractAnalysisBuilder;
 import org.e2immu.analyser.analyser.AnalysisImpl;
 import org.e2immu.analyser.analyser.AnalysisProvider;
 import org.e2immu.analyser.analyser.VariableProperty;
-import org.e2immu.analyser.objectflow.ObjectFlow;
-import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.AnnotationMode;
-import org.e2immu.support.FirstThen;
 import org.e2immu.support.FlipSwitch;
 import org.e2immu.support.SetOnceMap;
 
@@ -32,23 +29,20 @@ import java.util.Map;
 public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnalysis {
 
     private final ParameterInfo parameterInfo;
-    public final ObjectFlow objectFlow;
     public final Map<FieldInfo, AssignedOrLinked> assignedToField;
 
     private ParameterAnalysisImpl(ParameterInfo parameterInfo,
                                   Map<VariableProperty, Integer> properties,
                                   Map<AnnotationExpression, AnnotationCheck> annotations,
-                                  ObjectFlow objectFlow,
                                   Map<FieldInfo, AssignedOrLinked> assignedToField) {
         super(properties, annotations);
         this.parameterInfo = parameterInfo;
-        this.objectFlow = objectFlow;
         this.assignedToField = assignedToField;
     }
 
     @Override
     public int getProperty(VariableProperty variableProperty) {
-        return getParameterProperty(AnalysisProvider.DEFAULT_PROVIDER, parameterInfo, getObjectFlow(), variableProperty);
+        return getParameterProperty(AnalysisProvider.DEFAULT_PROVIDER, parameterInfo, variableProperty);
     }
 
     @Override
@@ -73,11 +67,6 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
         return parameterInfo.owner.typeInfo.typeInspection.get().annotationMode();
     }
 
-
-    public ObjectFlow getObjectFlow() {
-        return objectFlow;
-    }
-
     public static class Builder extends AbstractAnalysisBuilder implements ParameterAnalysis {
 
         private final ParameterInfo parameterInfo;
@@ -86,17 +75,10 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
         public final Location location;
         private final AnalysisProvider analysisProvider;
 
-        // initial flow object, used to collect call-outs
-        // at the end of the method analysis replaced by a "final" flow object
-        public final FirstThen<ObjectFlow, ObjectFlow> objectFlow;
-
         public Builder(Primitives primitives, AnalysisProvider analysisProvider, ParameterInfo parameterInfo) {
             super(primitives, parameterInfo.simpleName());
             this.parameterInfo = parameterInfo;
             this.location = new Location(parameterInfo);
-            ObjectFlow initialObjectFlow = new ObjectFlow(new Location(parameterInfo),
-                    parameterInfo.parameterizedType, Origin.INITIAL_PARAMETER_FLOW);
-            objectFlow = new FirstThen<>(initialObjectFlow);
             this.analysisProvider = analysisProvider;
         }
 
@@ -111,7 +93,7 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
 
         @Override
         public int getProperty(VariableProperty variableProperty) {
-            return getParameterProperty(analysisProvider, parameterInfo, getObjectFlow(), variableProperty);
+            return getParameterProperty(analysisProvider, parameterInfo, variableProperty);
         }
 
         @Override
@@ -125,11 +107,6 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
         }
 
         @Override
-        public ObjectFlow getObjectFlow() {
-            return objectFlow.isFirst() ? objectFlow.getFirst() : objectFlow.get();
-        }
-
-        @Override
         public Map<FieldInfo, AssignedOrLinked> getAssignedToField() {
             return assignedToField.toImmutableMap();
         }
@@ -137,7 +114,7 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
         @Override
         public Analysis build() {
             return new ParameterAnalysisImpl(parameterInfo, properties.toImmutableMap(),
-                    annotationChecks.toImmutableMap(), getObjectFlow(), getAssignedToField());
+                    annotationChecks.toImmutableMap(), getAssignedToField());
         }
 
         @Override

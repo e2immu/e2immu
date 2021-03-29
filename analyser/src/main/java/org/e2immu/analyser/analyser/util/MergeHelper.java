@@ -24,7 +24,6 @@ import org.e2immu.analyser.model.expression.And;
 import org.e2immu.analyser.model.expression.NewObject;
 import org.e2immu.analyser.model.expression.util.EvaluateInlineConditional;
 import org.e2immu.analyser.model.variable.ReturnVariable;
-import org.e2immu.analyser.objectflow.ObjectFlow;
 
 /*
 Different situations but they need to be dealt with in more or less the same way.
@@ -149,7 +148,7 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfo vi) 
 
     private Expression inlineConditional(Expression condition, Expression ifTrue, Expression ifFalse) {
         return safe(EvaluateInlineConditional.conditionalValueConditionResolved(evaluationContext,
-                condition, ifTrue, ifFalse, ObjectFlow.NO_FLOW));
+                condition, ifTrue, ifFalse));
     }
 
     private Expression safe(EvaluationResult result) {

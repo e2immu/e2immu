@@ -20,7 +20,6 @@ import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.Variable;
-import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.annotation.E2Immutable;
 
@@ -63,16 +62,6 @@ public record FieldAccess(Expression expression, Variable variable) implements E
     @Override
     public int order() {
         return 0;
-    }
-
-    @Override
-    public ObjectFlow getObjectFlow() {
-        return ObjectFlow.NYE;
-    }
-
-    @Override
-    public boolean hasBeenEvaluated() {
-        return false;
     }
 
     @Override

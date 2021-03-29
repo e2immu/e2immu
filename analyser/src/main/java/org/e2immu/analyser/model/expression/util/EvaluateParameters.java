@@ -17,7 +17,6 @@ package org.e2immu.analyser.model.expression.util;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.VariableExpression;
-import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.util.Logger;
 import org.e2immu.analyser.util.Pair;
 import org.slf4j.LoggerFactory;
@@ -122,18 +121,6 @@ public class EvaluateParameters {
                 ForwardEvaluationInfo forward = new ForwardEvaluationInfo(map, true);
                 parameterResult = parameterExpression.evaluate(evaluationContext, forward);
                 parameterValue = parameterResult.value();
-
-                ObjectFlow source = parameterValue.getObjectFlow();
-                int modified = map.getOrDefault(VariableProperty.CONTEXT_MODIFIED, Level.DELAY);
-                if (modified == Level.DELAY) {
-                    Logger.log(DELAYED, "Delaying flow access registration in param because modification status of {} not known",
-                            methodInfo.fullyQualifiedName());
-                    source.delay();
-                } else {
-                    ParameterAnalysis parameterAnalysis = evaluationContext.getAnalyserContext().getParameterAnalysis(parameterInfo);
-                    ObjectFlow destination = parameterAnalysis.getObjectFlow();
-                    builder.addCallOut(modified == Level.TRUE, destination, parameterValue);
-                }
             } else {
                 parameterResult = parameterExpression.evaluate(evaluationContext, ForwardEvaluationInfo.DEFAULT);
                 parameterValue = parameterResult.value();
@@ -155,18 +142,5 @@ public class EvaluateParameters {
                     MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL);
         }
         return new Pair<>(builder, parameterValues);
-    }
-
-
-    // we should normally look at the value, but there is a chicken and egg problem
-    public static Boolean tryToDetectUndeclared(EvaluationContext evaluationContext, int statementTime, Expression scope) {
-        if (scope instanceof VariableExpression variableExpression) {
-            if (variableExpression.variable() instanceof ParameterInfo) return true;
-            Expression expression = evaluationContext.currentValue(variableExpression.variable(), statementTime, true);
-            if (evaluationContext.isDelayed(expression)) return null;
-            // TODO
-            return true;
-        }
-        return false;
     }
 }

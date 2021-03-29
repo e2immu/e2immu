@@ -18,7 +18,6 @@ import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
-import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.parser.Primitives;
@@ -149,8 +148,6 @@ public interface Expression extends Element, Comparable<Expression> {
         return new EvaluationResult.Builder().setExpression(inMap == null ? this : inMap).build();
     }
 
-    ObjectFlow getObjectFlow();
-
     /**
      * Tests the value first, and only if true, visit deeper.
      *
@@ -165,6 +162,7 @@ public interface Expression extends Element, Comparable<Expression> {
         return clazz.isAssignableFrom(getClass());
     }
 
+    @SuppressWarnings("unchecked")
     default <T extends Expression> T asInstanceOf(Class<T> clazz) {
         if (clazz.isAssignableFrom(getClass())) {
             return (T) this;
@@ -177,10 +175,6 @@ public interface Expression extends Element, Comparable<Expression> {
             return new OutputBuilder().add(Symbol.LEFT_PARENTHESIS).add(expression.output(qualification)).add(Symbol.RIGHT_PARENTHESIS);
         }
         return expression.output(qualification);
-    }
-
-    default boolean hasBeenEvaluated() {
-        return getObjectFlow() != ObjectFlow.NYE;
     }
 
     default boolean isInitialReturnExpression() {

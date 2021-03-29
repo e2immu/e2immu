@@ -15,9 +15,7 @@
 package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.variable.Variable;
-import org.e2immu.analyser.objectflow.ObjectFlow;
 
 import java.util.Map;
 import java.util.Set;
@@ -39,8 +37,6 @@ public interface VariableInfo {
     default boolean linkedVariablesIsSet() {
         return getLinkedVariables() != LinkedVariables.DELAY;
     }
-
-    ObjectFlow getObjectFlow();
 
     Expression getValue();
 
@@ -87,10 +83,6 @@ public interface VariableInfo {
     This static assignment system is the non-null equivalent for linked variables and modification.
      */
     LinkedVariables getStaticallyAssignedVariables();
-
-    default boolean objectFlowIsSet() {
-        return getObjectFlow() != null;
-    }
 
     /*
     if statement time < 0, this means that statement time is irrelevant for this variable.

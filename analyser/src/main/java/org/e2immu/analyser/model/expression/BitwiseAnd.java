@@ -18,38 +18,36 @@ import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
-import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Primitives;
 
 import java.util.Map;
 
 public class BitwiseAnd extends BinaryOperator {
 
-    private BitwiseAnd(Primitives primitives, Expression lhs, Expression rhs, ObjectFlow objectFlow) {
-        super(primitives, lhs, primitives.bitwiseAndOperatorInt, rhs, Precedence.AND, objectFlow);
+    private BitwiseAnd(Primitives primitives, Expression lhs, Expression rhs) {
+        super(primitives, lhs, primitives.bitwiseAndOperatorInt, rhs, Precedence.AND);
     }
 
     public EvaluationResult reEvaluate(EvaluationContext evaluationContext, Map<Expression, Expression> translation) {
         EvaluationResult reLhs = lhs.reEvaluate(evaluationContext, translation);
         EvaluationResult reRhs = rhs.reEvaluate(evaluationContext, translation);
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext).compose(reLhs, reRhs);
-        return builder.setExpression(BitwiseAnd.bitwiseAnd(evaluationContext, reLhs.value(), reRhs.value(), getObjectFlow())).build();
+        return builder.setExpression(BitwiseAnd.bitwiseAnd(evaluationContext, reLhs.value(), reRhs.value())).build();
     }
 
     // we try to maintain a sum of products
-    public static Expression bitwiseAnd(EvaluationContext evaluationContext, Expression l, Expression r, ObjectFlow objectFlow) {
-        assert objectFlow != ObjectFlow.NYE;
+    public static Expression bitwiseAnd(EvaluationContext evaluationContext, Expression l, Expression r) {
         if (l instanceof Numeric ln && ln.doubleValue() == 0) return l;
         if (r instanceof Numeric rn && rn.doubleValue() == 0) return r;
         if (r instanceof Numeric rn && rn.doubleValue() == 1) return l;
         Primitives primitives = evaluationContext.getPrimitives();
         if (l instanceof IntConstant li && r instanceof IntConstant ri)
-            return new IntConstant(primitives, li.constant() & ri.constant(), objectFlow);
+            return new IntConstant(primitives, li.constant() & ri.constant());
 
         // any unknown lingering
         if (l.isUnknown() || r.isUnknown()) throw new UnsupportedOperationException();
 
-        return new BitwiseAnd(primitives, l, r, objectFlow);
+        return new BitwiseAnd(primitives, l, r);
     }
 
     @Override

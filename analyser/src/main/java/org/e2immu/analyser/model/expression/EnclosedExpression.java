@@ -18,7 +18,6 @@ import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.annotation.E2Container;
@@ -55,11 +54,6 @@ public record EnclosedExpression(Expression inner) implements Expression {
     @Override
     public NewObject getInstance(EvaluationResult evaluationContext) {
         return inner.getInstance(evaluationContext);
-    }
-
-    @Override
-    public ObjectFlow getObjectFlow() {
-        return inner.getObjectFlow();
     }
 
     @Override

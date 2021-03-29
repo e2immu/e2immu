@@ -15,10 +15,8 @@
 package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Primitives;
-import org.e2immu.analyser.util.SMapList;
 import org.e2immu.annotation.AnnotationMode;
 import org.e2immu.support.AddOnceSet;
 import org.e2immu.support.FlipSwitch;
@@ -26,12 +24,10 @@ import org.e2immu.support.SetOnce;
 import org.e2immu.support.SetOnceMap;
 
 import java.util.*;
-import java.util.stream.Stream;
 
 public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
 
     private final TypeInfo typeInfo;
-    private final Set<ObjectFlow> objectFlows;
     private final Map<FieldInfo, Expression> approvedPreconditionsE1;
     private final Map<FieldInfo, Expression> approvedPreconditionsE2;
 
@@ -42,7 +38,6 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
     private TypeAnalysisImpl(TypeInfo typeInfo,
                              Map<VariableProperty, Integer> properties,
                              Map<AnnotationExpression, AnnotationCheck> annotations,
-                             Set<ObjectFlow> objectFlows,
                              Map<FieldInfo, Expression> approvedPreconditionsE1,
                              Map<FieldInfo, Expression> approvedPreconditionsE2,
                              Set<FieldInfo> eventuallyImmutableFields,
@@ -52,7 +47,6 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
         this.typeInfo = typeInfo;
         this.approvedPreconditionsE1 = approvedPreconditionsE1;
         this.approvedPreconditionsE2 = approvedPreconditionsE2;
-        this.objectFlows = objectFlows;
         this.implicitlyImmutableDataTypes = implicitlyImmutableDataTypes;
         this.aspects = Objects.requireNonNull(aspects);
         this.eventuallyImmutableFields = eventuallyImmutableFields;
@@ -81,11 +75,6 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
     @Override
     public AnnotationMode annotationMode() {
         return typeInfo.typeInspection.get().annotationMode();
-    }
-
-    @Override
-    public Set<ObjectFlow> getConstantObjectFlows() {
-        return objectFlows;
     }
 
     @Override
@@ -125,7 +114,6 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
 
     public static class Builder extends AbstractAnalysisBuilder implements TypeAnalysis {
         public final TypeInfo typeInfo;
-        public final AddOnceSet<ObjectFlow> constantObjectFlows = new AddOnceSet<>();
 
         // from label to condition BEFORE (used by @Mark and @Only(before="label"))
         private final SetOnceMap<FieldInfo, Expression> approvedPreconditionsE1 = new SetOnceMap<>();
@@ -204,11 +192,6 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
         }
 
         @Override
-        public Set<ObjectFlow> getConstantObjectFlows() {
-            return constantObjectFlows.toImmutableSet();
-        }
-
-        @Override
         public Map<FieldInfo, Expression> getApprovedPreconditionsE1() {
             return approvedPreconditionsE1.toImmutableMap();
         }
@@ -261,7 +244,6 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
             return new TypeAnalysisImpl(typeInfo,
                     properties.toImmutableMap(),
                     annotationChecks.toImmutableMap(),
-                    constantObjectFlows.toImmutableSet(),
                     approvedPreconditionsE1.toImmutableMap(),
                     approvedPreconditionsE2.toImmutableMap(),
                     eventuallyImmutableFields.toImmutableSet(),

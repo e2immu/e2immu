@@ -16,8 +16,6 @@ package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.analyser.AnalysisProvider;
 import org.e2immu.analyser.analyser.VariableProperty;
-import org.e2immu.analyser.objectflow.ObjectFlow;
-import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 
 import java.util.Map;
@@ -30,14 +28,6 @@ public interface ParameterAnalysis extends Analysis {
     static ParameterAnalysis createEmpty(ParameterInfo parameterInfo) {
         return () -> new Location(parameterInfo);
     }
-
-    /**
-     * @return Null means: object not yet set (only in the building phase)
-     */
-    default ObjectFlow getObjectFlow() {
-        return ObjectFlow.NO_FLOW;
-    }
-
 
     enum AssignedOrLinked {
         ASSIGNED(Set.of(EXTERNAL_NOT_NULL, MODIFIED_OUTSIDE_METHOD)),
@@ -107,7 +97,6 @@ public interface ParameterAnalysis extends Analysis {
 
     default int getParameterProperty(AnalysisProvider analysisProvider,
                                      ParameterInfo parameterInfo,
-                                     ObjectFlow objectFlow,
                                      VariableProperty variableProperty) {
         switch (variableProperty) {
             case IDENTITY:
@@ -126,8 +115,8 @@ public interface ParameterAnalysis extends Analysis {
                 if (parameterInfo.owner.isAbstract()) {
                     return getParameterPropertyCheckOverrides(analysisProvider, parameterInfo, MODIFIED_VARIABLE);
                 }
-                int cm = getParameterProperty(analysisProvider, parameterInfo, objectFlow, CONTEXT_MODIFIED);
-                int mom = getParameterProperty(analysisProvider, parameterInfo, objectFlow, MODIFIED_OUTSIDE_METHOD);
+                int cm = getParameterProperty(analysisProvider, parameterInfo, CONTEXT_MODIFIED);
+                int mom = getParameterProperty(analysisProvider, parameterInfo, MODIFIED_OUTSIDE_METHOD);
                 if (cm == Level.DELAY || mom == Level.DELAY) return Level.DELAY;
                 return Math.max(cm, mom);
 
@@ -174,9 +163,7 @@ public interface ParameterAnalysis extends Analysis {
                     TypeAnalysis bestTypeAnalysis = analysisProvider.getTypeAnalysis(bestType);
                     int immutable = bestTypeAnalysis.getProperty(VariableProperty.IMMUTABLE);
                     if (immutable == Level.DELAY) return internalGetProperty(VariableProperty.IMMUTABLE);
-                    boolean objectFlowCondition = parameterInfo.owner.isPrivate() &&
-                            objectFlow != null && objectFlow.getPrevious().allMatch(of ->
-                            of.conditionsMetForEventual(parameterInfo.owner.typeInfo, bestTypeAnalysis, InspectionProvider.DEFAULT));
+                    boolean objectFlowCondition = false; // FIXME
                     immutableFromType = MultiLevel.eventual(immutable, objectFlowCondition);
                 } else {
                     immutableFromType = MultiLevel.MUTABLE;
@@ -190,8 +177,8 @@ public interface ParameterAnalysis extends Analysis {
             case NOT_NULL_PARAMETER:
                 int nnp = internalGetProperty(NOT_NULL_PARAMETER);
                 if (nnp != Level.DELAY) return nnp;
-                int cnn = getParameterProperty(analysisProvider, parameterInfo, objectFlow, CONTEXT_NOT_NULL);
-                int enn = getParameterProperty(analysisProvider, parameterInfo, objectFlow, EXTERNAL_NOT_NULL);
+                int cnn = getParameterProperty(analysisProvider, parameterInfo, CONTEXT_NOT_NULL);
+                int enn = getParameterProperty(analysisProvider, parameterInfo, EXTERNAL_NOT_NULL);
                 if (cnn == Level.DELAY || enn == Level.DELAY) return Level.DELAY;
                 // note that ENN can be MultiLevel.DELAY, but CNN cannot have that value; it must be at least NULLABLE
                 return MultiLevel.bestNotNull(cnn, enn);

@@ -20,7 +20,6 @@ import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.Qualification;
 import org.e2immu.analyser.model.variable.Variable;
-import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.output.Text;
@@ -42,12 +41,10 @@ public class PropertyWrapper implements Expression, ExpressionWrapper {
      */
     public final Expression expression;
     public final Map<VariableProperty, Integer> properties;
-    public final ObjectFlow overwriteObjectFlow;
 
-    private PropertyWrapper(Expression expression, Map<VariableProperty, Integer> properties, ObjectFlow objectFlow) {
+    private PropertyWrapper(Expression expression, Map<VariableProperty, Integer> properties) {
         this.expression = expression;
         this.properties = properties;
-        overwriteObjectFlow = objectFlow;
     }
 
     @Override
@@ -65,11 +62,11 @@ public class PropertyWrapper implements Expression, ExpressionWrapper {
         EvaluationResult reValue = expression.reEvaluate(evaluationContext, translation);
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext).compose(reValue);
         return builder.setExpression(PropertyWrapper.propertyWrapper(evaluationContext, reValue.value(),
-                properties, getObjectFlow())).build();
+                properties)).build();
     }
 
     public static Expression propertyWrapper(EvaluationContext evaluationContext, Expression value,
-                                             Map<VariableProperty, Integer> properties, ObjectFlow objectFlow) {
+                                             Map<VariableProperty, Integer> properties) {
         Map<VariableProperty, Integer> newMap = new HashMap<>();
         for (Map.Entry<VariableProperty, Integer> entry : properties.entrySet()) {
             int newPropertyValue = evaluationContext.getProperty(value, entry.getKey(), false);
@@ -78,17 +75,17 @@ public class PropertyWrapper implements Expression, ExpressionWrapper {
             }
         }
         // if I cannot contribute, there's no point being here...
-        if (newMap.isEmpty() && objectFlow == null) return value;
+        //if (newMap.isEmpty()) return value; FIXME there's something fishy here
 
         // second, we always want the negation to be on the outside
         if (value instanceof Negation) {
             throw new UnsupportedOperationException(); // this makes no sense!!
         }
-        return new PropertyWrapper(value, properties, objectFlow);
+        return new PropertyWrapper(value, properties);
     }
 
     public static Expression propertyWrapperForceProperties(Expression value, Map<VariableProperty, Integer> properties) {
-        return new PropertyWrapper(value, properties, value.getObjectFlow());
+        return new PropertyWrapper(value, properties);
     }
 
     @Override
@@ -154,11 +151,6 @@ public class PropertyWrapper implements Expression, ExpressionWrapper {
     @Override
     public List<Variable> variables() {
         return expression.variables();
-    }
-
-    @Override
-    public ObjectFlow getObjectFlow() {
-        return overwriteObjectFlow != null ? overwriteObjectFlow : expression.getObjectFlow();
     }
 
     @Override

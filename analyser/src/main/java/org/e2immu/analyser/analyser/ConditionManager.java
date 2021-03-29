@@ -18,7 +18,6 @@ import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.variable.Variable;
-import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Primitives;
 
 import java.util.List;
@@ -113,7 +112,7 @@ public record ConditionManager(Expression condition,
     adds a new layer (parent this)
     */
     public ConditionManager addState(Expression state, boolean stateIsDelayed) {
-        return new ConditionManager(condition, conditionIsDelayed,  state, stateIsDelayed,
+        return new ConditionManager(condition, conditionIsDelayed, state, stateIsDelayed,
                 precondition, preconditionIsDelayed, this);
     }
 
@@ -186,22 +185,21 @@ public record ConditionManager(Expression condition,
 
         // this one solves boolean problems; in a boolean context, there is no difference
         // between the value and the condition
-        Expression resultWithPrecondition = new And(evaluationContext.getPrimitives(), value.getObjectFlow())
+        Expression resultWithPrecondition = new And(evaluationContext.getPrimitives())
                 .append(evaluationContext, combinedWithPrecondition, value);
         if (resultWithPrecondition.equals(combinedWithPrecondition)) {
             // constant true: adding the value has no effect at all
             return new BooleanConstant(evaluationContext.getPrimitives(), true);
         }
         // return the result without precondition
-        return new And(evaluationContext.getPrimitives(), value.getObjectFlow())
-                .append(evaluationContext, absoluteState, value);
+        return new And(evaluationContext.getPrimitives()).append(evaluationContext, absoluteState, value);
     }
 
 
     private static Expression combine(EvaluationContext evaluationContext, Expression e1, Expression e2) {
         Objects.requireNonNull(e2);
         if (e1.isUnknown() || e2.isUnknown()) throw new UnsupportedOperationException();
-        return new And(evaluationContext.getPrimitives(), e2.getObjectFlow()).append(evaluationContext, e1, e2);
+        return new And(evaluationContext.getPrimitives()).append(evaluationContext, e1, e2);
     }
 
     /**
@@ -316,7 +314,7 @@ public record ConditionManager(Expression condition,
 
         @Override
         public Expression currentValue(Variable variable, int statementTime, boolean isNotAssignmentTarget) {
-           return  new VariableExpression(variable, ObjectFlow.NO_FLOW);
+            return new VariableExpression(variable);
         }
     }
 }

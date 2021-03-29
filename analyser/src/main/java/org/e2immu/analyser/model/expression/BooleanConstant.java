@@ -18,12 +18,9 @@ package org.e2immu.analyser.model.expression;
 import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.Location;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.Qualification;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
-import org.e2immu.analyser.objectflow.ObjectFlow;
-import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.parser.Primitives;
@@ -34,12 +31,7 @@ import java.util.Objects;
 
 @E2Container
 public record BooleanConstant(Primitives primitives,
-                              boolean constant,
-                              ObjectFlow objectFlow) implements ConstantExpression<Boolean>, Negatable {
-
-    public BooleanConstant(Primitives primitives, boolean constant) {
-        this(primitives, constant, ObjectFlow.NO_FLOW);
-    }
+                              boolean constant) implements ConstantExpression<Boolean>, Negatable {
 
     @Override
     @NotNull
@@ -55,11 +47,10 @@ public record BooleanConstant(Primitives primitives,
         return constant == that.constant;
     }
 
-    public static EvaluationResult of(boolean b, Location location, EvaluationContext evaluationContext, Origin origin) {
+    public static EvaluationResult of(boolean b, EvaluationContext evaluationContext) {
         Primitives primitives = evaluationContext.getPrimitives();
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
-        ObjectFlow objectFlow = builder.createInternalObjectFlow(location, primitives.booleanParameterizedType, origin);
-        return builder.setExpression(new BooleanConstant(primitives, b, objectFlow)).build();
+        return builder.setExpression(new BooleanConstant(primitives, b)).build();
     }
 
     @Override
@@ -90,16 +81,11 @@ public record BooleanConstant(Primitives primitives,
     }
 
     @Override
-    public ObjectFlow getObjectFlow() {
-        return objectFlow;
-    }
-
-    @Override
     public Boolean getValue() {
         return constant;
     }
 
     public Expression negate() {
-        return new BooleanConstant(primitives, !constant, objectFlow);
+        return new BooleanConstant(primitives, !constant);
     }
 }

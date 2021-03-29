@@ -18,13 +18,10 @@ import org.e2immu.analyser.analyser.util.CreatePreconditionCompanion;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.BooleanConstant;
 import org.e2immu.analyser.model.expression.ContractMark;
-import org.e2immu.analyser.objectflow.ObjectFlow;
-import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.AnnotationMode;
-import org.e2immu.support.FirstThen;
 import org.e2immu.support.SetOnce;
 import org.e2immu.support.SetOnceMap;
 import org.slf4j.Logger;
@@ -40,8 +37,6 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
     public final StatementAnalysis lastStatement;
     public final List<ParameterAnalysis> parameterAnalyses;
     public final MethodInfo methodInfo;
-    public final ObjectFlow objectFlow;
-    public final Set<ObjectFlow> internalObjectFlows;
     public final Precondition preconditionForEventual;
     public final Eventual eventual;
     public final Precondition precondition;
@@ -54,8 +49,6 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
                                StatementAnalysis lastStatement,
                                List<ParameterAnalysis> parameterAnalyses,
                                Expression singleReturnValue,
-                               ObjectFlow objectFlow,
-                               Set<ObjectFlow> internalObjectFlows,
                                Precondition preconditionForEventual,
                                Eventual eventual,
                                Precondition precondition,
@@ -68,8 +61,6 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
         this.firstStatement = firstStatement;
         this.lastStatement = lastStatement;
         this.parameterAnalyses = parameterAnalyses;
-        this.objectFlow = objectFlow;
-        this.internalObjectFlows = internalObjectFlows;
         this.preconditionForEventual = preconditionForEventual;
         this.eventual = eventual;
         this.precondition = Objects.requireNonNull(precondition);
@@ -134,16 +125,6 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
     }
 
     @Override
-    public Set<ObjectFlow> getInternalObjectFlows() {
-        return internalObjectFlows;
-    }
-
-    @Override
-    public ObjectFlow getObjectFlow() {
-        return objectFlow;
-    }
-
-    @Override
     public Precondition getPrecondition() {
         return precondition;
     }
@@ -178,12 +159,6 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
         public final SetOnce<Expression> singleReturnValue = new SetOnce<>();
         public final SetOnce<Integer> singleReturnValueImmutable = new SetOnce<>();
 
-        // ************* object flow
-
-        public final SetOnce<Set<ObjectFlow>> internalObjectFlows = new SetOnce<>();
-
-        public final FirstThen<ObjectFlow, ObjectFlow> objectFlow;
-
         // ************** PRECONDITION
 
         public final SetOnce<Precondition> precondition = new SetOnce<>();
@@ -196,10 +171,6 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
         @Override
         public boolean isBeingAnalysed() {
             return isBeingAnalysed;
-        }
-
-        public ObjectFlow getObjectFlow() {
-            return objectFlow.isFirst() ? objectFlow.getFirst() : objectFlow.get();
         }
 
         @Override
@@ -230,14 +201,6 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
             this.methodInfo = methodInfo;
             this.returnType = methodInfo.returnType();
             this.analysisProvider = analysisProvider;
-            if (methodInfo.isConstructor || methodInfo.isVoid()) {
-                // we set a NO_FLOW, non-modifiable
-                objectFlow = new FirstThen<>(ObjectFlow.NO_FLOW);
-                objectFlow.set(ObjectFlow.NO_FLOW);
-            } else {
-                ObjectFlow initialObjectFlow = new ObjectFlow(new Location(methodInfo), returnType, Origin.INITIAL_METHOD_FLOW);
-                objectFlow = new FirstThen<>(initialObjectFlow);
-            }
         }
 
         @Override
@@ -249,8 +212,6 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
                             .map(parameterAnalysis -> parameterAnalysis instanceof ParameterAnalysisImpl.Builder builder ?
                                     (ParameterAnalysis) builder.build() : parameterAnalysis).collect(Collectors.toList())),
                     getSingleReturnValue(),
-                    getObjectFlow(),
-                    Set.copyOf(internalObjectFlows.getOrElse(Set.of())),
                     preconditionForEventual.getOrElse(Optional.empty()).orElse(null),
                     eventual.getOrElse(NOT_EVENTUAL),
                     precondition.getOrElse(Precondition.empty(primitives)),
@@ -292,7 +253,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
 
         private int dynamicProperty(int formalImmutableProperty) {
             int immutableTypeAfterEventual = MultiLevel.eventual(formalImmutableProperty,
-                    getObjectFlow().conditionsMetForEventual(methodInfo.typeInfo, inspectionProvider, analysisProvider, returnType));
+                   false); //  FIXME
             return Level.best(super.getProperty(VariableProperty.IMMUTABLE), immutableTypeAfterEventual);
         }
 
@@ -399,11 +360,6 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
         @Override
         public Eventual getEventual() {
             return eventual.getOrElse(DELAYED_EVENTUAL);
-        }
-
-        @Override
-        public Set<ObjectFlow> getInternalObjectFlows() {
-            return null;
         }
 
         public void setFirstStatement(StatementAnalysis firstStatement) {

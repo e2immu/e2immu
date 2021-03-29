@@ -22,7 +22,6 @@ import org.e2immu.analyser.model.expression.BooleanConstant;
 import org.e2immu.analyser.model.expression.IntConstant;
 import org.e2immu.analyser.model.expression.NewObject;
 import org.e2immu.analyser.model.statement.Block;
-import org.e2immu.analyser.objectflow.ObjectFlow;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -31,7 +30,7 @@ public class ParseArrayCreationExpr {
     public static Expression parse(ExpressionContext expressionContext, ArrayCreationExpr arrayCreationExpr) {
         ParameterizedType parameterizedType = ParameterizedTypeFactory.from(expressionContext.typeContext, arrayCreationExpr.createdType());
         ArrayInitializer arrayInitializer = arrayCreationExpr.getInitializer().map(i ->
-                new ArrayInitializer(expressionContext.typeContext, ObjectFlow.NO_FLOW,
+                new ArrayInitializer(expressionContext.typeContext,
                         i.getValues().stream()
                                 .map(expressionContext::parseExpression).collect(Collectors.toList()),
                         parameterizedType.copyWithOneFewerArrays())).orElse(null);
@@ -41,7 +40,7 @@ public class ParseArrayCreationExpr {
         return NewObject.withArrayInitialiser("unevaluated array",
                 createArrayCreationConstructor(expressionContext.typeContext, parameterizedType),
                 parameterizedType, indexExpressions, arrayInitializer,
-                new BooleanConstant(expressionContext.typeContext.getPrimitives(), true), ObjectFlow.NO_FLOW);
+                new BooleanConstant(expressionContext.typeContext.getPrimitives(), true));
     }
 
     // new Type[3]; this method creates the constructor that makes this array, without attaching said constructor to the type
@@ -56,9 +55,6 @@ public class ParseArrayCreationExpr {
             builder.addParameter(p);
         }
         MethodInfo constructor = builder.build(typeContext).getMethodInfo();
-        //constructor.methodInspection.get().getParameters().forEach(p ->
-        //        p.setAnalysis(new ParameterAnalysisImpl.Builder(typeContext.getPrimitives(),
-        //                AnalysisProvider.DEFAULT_PROVIDER, p).build()));
         constructor.setAnalysis(MethodAnalysis.createEmpty(constructor, typeContext.getPrimitives()));
         constructor.methodResolution.set(new MethodResolution.Builder().build());
         return constructor;

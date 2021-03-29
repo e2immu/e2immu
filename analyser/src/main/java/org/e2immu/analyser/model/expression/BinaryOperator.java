@@ -22,8 +22,6 @@ import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.model.variable.Variable;
-import org.e2immu.analyser.objectflow.ObjectFlow;
-import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.parser.Message;
@@ -64,20 +62,14 @@ public class BinaryOperator implements Expression {
     public final Expression rhs;
     public final Precedence precedence;
     public final MethodInfo operator;
-    public final ObjectFlow objectFlow;
 
 
-    public BinaryOperator(Primitives primitives, Expression lhs, MethodInfo operator, Expression rhs, Precedence precedence, ObjectFlow objectFlow) {
+    public BinaryOperator(Primitives primitives, Expression lhs, MethodInfo operator, Expression rhs, Precedence precedence) {
         this.lhs = Objects.requireNonNull(lhs);
         this.rhs = Objects.requireNonNull(rhs);
         this.precedence = precedence;
         this.operator = Objects.requireNonNull(operator);
-        this.objectFlow = objectFlow;
         this.primitives = primitives;
-    }
-
-    public BinaryOperator(Primitives primitives, Expression lhs, MethodInfo operator, Expression rhs, Precedence precedence) {
-        this(primitives, lhs, operator, rhs, precedence, ObjectFlow.NYE);
     }
 
     @Override
@@ -91,16 +83,8 @@ public class BinaryOperator implements Expression {
     }
 
     @Override
-    public boolean hasBeenEvaluated() {
-        return objectFlow != ObjectFlow.NYE;
-    }
-
-    @Override
     public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty, boolean duringEvaluation) {
-        if (hasBeenEvaluated()) {
-            return UnknownExpression.primitiveGetProperty(variableProperty);
-        }
-        throw new UnsupportedOperationException("Not yet evaluated");
+        return UnknownExpression.primitiveGetProperty(variableProperty);
     }
 
     @Override
@@ -117,11 +101,6 @@ public class BinaryOperator implements Expression {
     @Override
     public int order() {
         return ExpressionComparator.ORDER_BINARY_OPERATOR; // not yet evaluated
-    }
-
-    @Override
-    public ObjectFlow getObjectFlow() {
-        return objectFlow;
     }
 
     @Override
@@ -182,14 +161,14 @@ public class BinaryOperator implements Expression {
             } else if (r == NullConstant.NULL_CONSTANT && left.isNotNull0(true) && l instanceof IsVariableExpression ve) {
                 builder.setProperty(ve.variable(), VariableProperty.CANDIDATE_FOR_NULL_PTR_WARNING, Level.TRUE);
             }
-            return Equals.equals(evaluationContext, l, r, booleanObjectFlow(primitives, evaluationContext));
+            return Equals.equals(evaluationContext, l, r);
         }
         if (operator == primitives.equalsOperatorInt) {
             if (l.equals(r)) return new BooleanConstant(primitives, true);
             if (l == NullConstant.NULL_CONSTANT || r == NullConstant.NULL_CONSTANT) {
                 // TODO need more resolution here to distinguish int vs Integer comparison throw new UnsupportedOperationException();
             }
-            return Equals.equals(evaluationContext, l, r, booleanObjectFlow(primitives, evaluationContext));
+            return Equals.equals(evaluationContext, l, r);
         }
         if (operator == primitives.notEqualsOperatorObject) {
             if (l.equals(r)) new BooleanConstant(primitives, false);
@@ -200,7 +179,7 @@ public class BinaryOperator implements Expression {
                 return new BooleanConstant(primitives, true);
             }
             return Negation.negate(evaluationContext,
-                    Equals.equals(evaluationContext, l, r, booleanObjectFlow(primitives, evaluationContext)));
+                    Equals.equals(evaluationContext, l, r));
         }
         if (operator == primitives.notEqualsOperatorInt) {
             if (l.equals(r)) return new BooleanConstant(primitives, false);
@@ -208,43 +187,43 @@ public class BinaryOperator implements Expression {
                 // TODO need more resolution throw new UnsupportedOperationException();
             }
             return Negation.negate(evaluationContext,
-                    Equals.equals(evaluationContext, l, r, booleanObjectFlow(primitives, evaluationContext)));
+                    Equals.equals(evaluationContext, l, r));
         }
 
         // from here on, straightforward operations
         if (operator == primitives.plusOperatorInt) {
-            return Sum.sum(evaluationContext, l, r, intObjectFlow(primitives, evaluationContext));
+            return Sum.sum(evaluationContext, l, r);
         }
         if (operator == primitives.minusOperatorInt) {
-            return Sum.sum(evaluationContext, l, Negation.negate(evaluationContext, r), intObjectFlow(primitives, evaluationContext));
+            return Sum.sum(evaluationContext, l, Negation.negate(evaluationContext, r));
         }
         if (operator == primitives.multiplyOperatorInt) {
-            return Product.product(evaluationContext, l, r, intObjectFlow(primitives, evaluationContext));
+            return Product.product(evaluationContext, l, r);
         }
         if (operator == primitives.divideOperatorInt) {
-            EvaluationResult er = Divide.divide(evaluationContext, l, r, intObjectFlow(primitives, evaluationContext));
+            EvaluationResult er = Divide.divide(evaluationContext, l, r);
             builder.compose(er);
             return er.value();
         }
         if (operator == primitives.remainderOperatorInt) {
-            EvaluationResult er = Remainder.remainder(evaluationContext, l, r, intObjectFlow(primitives, evaluationContext));
+            EvaluationResult er = Remainder.remainder(evaluationContext, l, r);
             builder.compose(er);
             return er.value();
         }
         if (operator == primitives.lessEqualsOperatorInt) {
-            return GreaterThanZero.less(evaluationContext, l, r, true, booleanObjectFlow(primitives, evaluationContext));
+            return GreaterThanZero.less(evaluationContext, l, r, true);
         }
         if (operator == primitives.lessOperatorInt) {
-            return GreaterThanZero.less(evaluationContext, l, r, false, booleanObjectFlow(primitives, evaluationContext));
+            return GreaterThanZero.less(evaluationContext, l, r, false);
         }
         if (operator == primitives.greaterEqualsOperatorInt) {
-            return GreaterThanZero.greater(evaluationContext, l, r, true, booleanObjectFlow(primitives, evaluationContext));
+            return GreaterThanZero.greater(evaluationContext, l, r, true);
         }
         if (operator == primitives.greaterOperatorInt) {
-            return GreaterThanZero.greater(evaluationContext, l, r, false, booleanObjectFlow(primitives, evaluationContext));
+            return GreaterThanZero.greater(evaluationContext, l, r, false);
         }
         if (operator == primitives.bitwiseAndOperatorInt) {
-            return BitwiseAnd.bitwiseAnd(evaluationContext, l, r, intObjectFlow(primitives, evaluationContext));
+            return BitwiseAnd.bitwiseAnd(evaluationContext, l, r);
         }
         /*
             if (operator == primitives.bitwiseOrOperatorInt) {
@@ -258,21 +237,9 @@ public class BinaryOperator implements Expression {
          TODO
          */
         if (operator == primitives.plusOperatorString) {
-            return StringConcat.stringConcat(evaluationContext, l, r, stringObjectFlow(primitives, evaluationContext));
+            return StringConcat.stringConcat(evaluationContext, l, r);
         }
         throw new UnsupportedOperationException("Operator " + operator.fullyQualifiedName());
-    }
-
-    private ObjectFlow stringObjectFlow(Primitives primitives, EvaluationContext evaluationContext) {
-        return new ObjectFlow(evaluationContext.getLocation(), primitives.stringParameterizedType, Origin.RESULT_OF_OPERATOR);
-    }
-
-    private ObjectFlow booleanObjectFlow(Primitives primitives, EvaluationContext evaluationContext) {
-        return new ObjectFlow(evaluationContext.getLocation(), primitives.booleanParameterizedType, Origin.RESULT_OF_OPERATOR);
-    }
-
-    private ObjectFlow intObjectFlow(Primitives primitives, EvaluationContext evaluationContext) {
-        return new ObjectFlow(evaluationContext.getLocation(), primitives.intParameterizedType, Origin.RESULT_OF_OPERATOR);
     }
 
     private EvaluationResult shortCircuit(EvaluationContext evaluationContext, boolean and) {
@@ -295,12 +262,10 @@ public class BinaryOperator implements Expression {
             builder.raiseError(Message.PART_OF_EXPRESSION_EVALUATES_TO_CONSTANT);
             return builder.build();
         }
-        ObjectFlow objectFlow = new ObjectFlow(evaluationContext.getLocation(),
-                evaluationContext.getPrimitives().booleanParameterizedType, Origin.RESULT_OF_OPERATOR);
         if (and) {
-            builder.setExpression(new And(primitives, objectFlow).append(evaluationContext, l.value(), r.value()));
+            builder.setExpression(new And(primitives).append(evaluationContext, l.value(), r.value()));
         } else {
-            builder.setExpression(new Or(primitives, objectFlow).append(evaluationContext, l.value(), r.value()));
+            builder.setExpression(new Or(primitives).append(evaluationContext, l.value(), r.value()));
         }
         return builder.build();
     }

@@ -21,7 +21,6 @@ import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.Qualification;
 import org.e2immu.analyser.model.TranslationMap;
-import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
 
@@ -93,10 +92,5 @@ public record CommaExpression(List<Expression> expressions) implements Expressio
     @Override
     public Expression translate(TranslationMap translationMap) {
         return new CommaExpression(expressions.stream().map(translationMap::translateExpression).collect(Collectors.toUnmodifiableList()));
-    }
-
-    @Override
-    public ObjectFlow getObjectFlow() {
-        return expressions.get(expressions.size() - 1).getObjectFlow();
     }
 }

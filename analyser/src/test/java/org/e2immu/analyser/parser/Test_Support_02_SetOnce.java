@@ -80,8 +80,6 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
                             .conditionManagerForNextStatement.get().precondition().isEmpty());
                 }
                 if ("1".equals(d.statementId())) {
-                    assertEquals(d.iteration() == 0,
-                            d.statementAnalysis().methodLevelData.internalObjectFlowNotYetFrozen());
                     assertEquals(0, d.statementAnalysis().flowData.getTimeAfterSubBlocks());
                 }
             }

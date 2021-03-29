@@ -18,7 +18,6 @@ import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
@@ -26,8 +25,7 @@ import org.e2immu.analyser.util.UpgradableBooleanMap;
 import java.util.List;
 import java.util.Objects;
 
-public record Cast(Expression expression,
-                   ParameterizedType parameterizedType) implements Expression {
+public record Cast(Expression expression, ParameterizedType parameterizedType) implements Expression {
 
     public Cast(Expression expression, ParameterizedType parameterizedType) {
         this.expression = Objects.requireNonNull(expression);
@@ -56,16 +54,6 @@ public record Cast(Expression expression,
     @Override
     public int order() {
         return 0;
-    }
-
-    @Override
-    public boolean hasBeenEvaluated() {
-        return false;
-    }
-
-    @Override
-    public ObjectFlow getObjectFlow() {
-        return ObjectFlow.NYE;
     }
 
     @Override

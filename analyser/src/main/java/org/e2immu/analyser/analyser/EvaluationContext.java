@@ -19,7 +19,6 @@ import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
-import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.NotNull;
 import org.slf4j.Logger;
@@ -95,15 +94,6 @@ public interface EvaluationContext {
                 : methodInfo.methodInspection.get().getParameters().stream().map(parameterInfo -> parameterInfo.parameterAnalysis.get());
     }
 
-    default Stream<ObjectFlow> getInternalObjectFlows() {
-        return Stream.empty();
-    }
-
-    default ObjectFlow getObjectFlow(Variable variable, int statementTime) {
-        Expression expression = currentValue(variable, statementTime, true);
-        return expression.getObjectFlow();
-    }
-
     /**
      * @param duringEvaluation true when this method is called during the EVAL process. It then reads variable's properties from the
      *                         INIT side, rather than current. Current may be MERGE, which is definitely wrong during the EVAL process.
@@ -139,11 +129,6 @@ public interface EvaluationContext {
 
     default int getPropertyFromPreviousOrInitial(Variable variable, VariableProperty variableProperty, int statementTime) {
         throw new UnsupportedOperationException();
-    }
-
-    // Replacer
-    default Set<String> allUnqualifiedVariableNames() {
-        return Set.of();
     }
 
     default ConditionManager getConditionManager() {

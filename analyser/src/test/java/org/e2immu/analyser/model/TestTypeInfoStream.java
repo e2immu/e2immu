@@ -18,7 +18,6 @@ import org.e2immu.analyser.inspector.*;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.statement.*;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
-import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 import org.junit.jupiter.api.BeforeAll;
@@ -133,7 +132,7 @@ public class TestTypeInfoStream {
                 .build();
         MethodInfo hashMapConstructor = new MethodInspectionImpl.Builder(hashMap).build(IP).getMethodInfo();
         Expression creationExpression = NewObject.objectCreation("-", primitives, hashMapConstructor,
-                hashMapParameterizedType, Diamond.NO, List.of(), ObjectFlow.NO_FLOW);
+                hashMapParameterizedType, Diamond.NO, List.of());
         ParameterInspectionImpl.Builder p0 = new ParameterInspectionImpl.Builder(typeT, "value", 0);
         MethodInfo put = new MethodInspectionImpl.Builder(testTypeInfo, "put")
                 .setReturnType(typeT)

@@ -17,7 +17,6 @@ package org.e2immu.analyser.analyser;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.variable.Variable;
-import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.support.Either;
 import org.e2immu.support.Freezable;
 import org.e2immu.support.SetOnce;
@@ -365,14 +364,6 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         return write;
     }
 
-    @Override
-    public void setObjectFlow(ObjectFlow objectFlow, boolean initialOrEvaluation) {
-        ensureNotFrozen();
-        Objects.requireNonNull(objectFlow);
-        VariableInfoImpl variableInfo = initialOrEvaluation ? previousOrInitial.getRight() : evaluation.get();
-        variableInfo.setObjectFlow(objectFlow);
-    }
-
     /*
     Copy from one statement to the next, iteration 1+, into 'evaluation'
     when reading and assigning don't do it. This occurs when another variable
@@ -397,9 +388,6 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
 
             if (previous.valueIsSet()) {
                 evaluation.setValue(previous.getValue(), previous.isDelayed());
-            }
-            if (previous.objectFlowIsSet()) {
-                evaluation.setObjectFlow(previous.getObjectFlow());
             }
             if (previous.linkedVariablesIsSet()) {
                 evaluation.setLinkedVariables(previous.getLinkedVariables());

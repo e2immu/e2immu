@@ -15,6 +15,7 @@
 
 package org.e2immu.analyser.parser;
 
+import org.e2immu.analyser.analyser.LinkedVariables;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.Level;
@@ -136,16 +137,29 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
             }
         };
 
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+
+        };
+
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("error".equals(d.methodInfo().name)) {
                 assertNull(d.methodAnalysis().getPreconditionForEventual());
             }
         };
 
+        FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+            if ("t".equals(d.fieldInfo().name)) {
+                assertEquals(Level.FALSE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
+                String expectLinked = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "";
+                assertEquals(expectLinked, d.fieldAnalysis().getLinkedVariables().toString());
+            }
+        };
+
         testClass("EventuallyE2Immutable_1", 1, 0, new DebugConfiguration.Builder()
-                //  .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
-                //   .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                //  .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build());
     }
 

@@ -97,7 +97,7 @@ public class EvaluatePreconditionFromMethod {
         int i = 0;
         for (Expression parameterValue : parameters) {
             ParameterInfo parameterInfo = methodInfo.methodInspection.get().getParameters().get(i);
-            Expression vv = new VariableExpression(parameterInfo, parameterValue.getObjectFlow());
+            Expression vv = new VariableExpression(parameterInfo);
             builder.put(vv, parameterValue);
             i++;
         }

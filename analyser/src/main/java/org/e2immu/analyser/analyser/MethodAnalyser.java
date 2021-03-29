@@ -27,8 +27,6 @@ import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
-import org.e2immu.analyser.objectflow.ObjectFlow;
-import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Primitives;
@@ -146,7 +144,6 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
 
             builder.add(STATEMENT_ANALYSER, statementAnalyser)
                     .add("obtainMostCompletePrecondition", (sharedState) -> obtainMostCompletePrecondition())
-                    .add("makeInternalObjectFlowsPermanent", this::makeInternalObjectFlowsPermanent)
                     .add("computeModified", (sharedState) -> methodInfo.isConstructor ? DONE : computeModified())
                     .add("computeModifiedCycles", (sharedState -> methodInfo.isConstructor ? DONE : computeModifiedInternalCycles()))
                     .add("computeReturnValue", (sharedState) -> methodInfo.noReturnValue() ? DONE : computeReturnValue(sharedState))
@@ -376,38 +373,6 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
         return DONE;
     }
 
-    private AnalysisStatus makeInternalObjectFlowsPermanent(SharedState sharedState) {
-        assert !methodAnalysis.internalObjectFlows.isSet();
-        MethodLevelData methodLevelData = methodAnalysis.methodLevelData();
-
-        boolean delays = methodLevelData.internalObjectFlowNotYetFrozen();
-        if (delays) {
-            log(DELAYED, "Delaying internal object flows of method {}, delay in MethodLevelData",
-                    methodInfo.distinguishingName());
-            return DELAYS;
-        }
-
-        Set<ObjectFlow> internalObjectFlowsWithoutParametersAndLiterals = Set.copyOf
-                (methodLevelData.getInternalObjectFlowStream()
-                        .filter(of -> of.origin != Origin.PARAMETER && of.origin != Origin.LITERAL)
-                        .collect(Collectors.toSet()));
-
-        internalObjectFlowsWithoutParametersAndLiterals.forEach(of -> of.finalize(null));
-        methodAnalysis.internalObjectFlows.set(internalObjectFlowsWithoutParametersAndLiterals);
-
-        methodLevelData.getInternalObjectFlowStream().filter(of -> of.origin == Origin.PARAMETER).forEach(of -> {
-            ParameterAnalysisImpl.Builder parameterAnalysis = getParameterAnalyser(((ParameterInfo) of.location.info)).parameterAnalysis;
-            if (!parameterAnalysis.objectFlow.isSet()) {
-                of.finalize(parameterAnalysis.objectFlow.getFirst());
-                parameterAnalysis.objectFlow.set(of);
-            }
-        });
-        // in the type analyser, we deal with the internal object flows of constant objects
-
-        log(OBJECT_FLOW, "Made permanent {} internal object flows in {}", internalObjectFlowsWithoutParametersAndLiterals.size(), methodInfo.distinguishingName());
-        return DONE;
-    }
-
     ParameterAnalyser getParameterAnalyser(ParameterInfo info) {
         ParameterAnalyser parameterAnalyser = parameterAnalysers.get(info.index);
         assert parameterAnalyser.parameterInfo == info;
@@ -621,19 +586,6 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
             }
             log(DELAYED, "Method {} has return value {}, delaying", methodInfo.distinguishingName(), value.debugOutput());
             return DELAYS;
-        }
-
-        if (!methodAnalysis.internalObjectFlows.isSet()) {
-            log(DELAYED, "Delaying single return value because internal object flows not yet known, {}", methodInfo.distinguishingName());
-            return DELAYS;
-        }
-        ObjectFlow objectFlow = value.getObjectFlow();
-        if (objectFlow == null)
-            throw new UnsupportedOperationException("Null object flow for value of " + value.getClass());
-        if (objectFlow != ObjectFlow.NO_FLOW && !methodAnalysis.objectFlow.isSet()) {
-            log(OBJECT_FLOW, "Set final object flow object for method {}: {}", methodInfo.distinguishingName(), objectFlow);
-            objectFlow.finalize(methodAnalysis.objectFlow.getFirst());
-            methodAnalysis.objectFlow.set(objectFlow);
         }
 
         // try to compute the dynamic immutable status of value
