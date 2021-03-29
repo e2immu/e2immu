@@ -35,9 +35,10 @@ import java.util.stream.Collectors;
 @E2Container
 public class TranslationMap {
 
-    public static final TranslationMap EMPTY_MAP = new TranslationMap(Map.of(), Map.of(), Map.of(), Map.of());
+    public static final TranslationMap EMPTY_MAP = new TranslationMap(Map.of(), Map.of(), Map.of(), Map.of(), Map.of());
 
     public final Map<? extends Variable, ? extends Variable> variables;
+    public final Map<MethodInfo, MethodInfo> methods;
     public final Map<? extends Expression, ? extends Expression> expressions;
     public final Map<? extends Statement, List<Statement>> statements;
     public final Map<ParameterizedType, ParameterizedType> types;
@@ -46,10 +47,12 @@ public class TranslationMap {
     public TranslationMap(Map<? extends Statement, List<Statement>> statements,
                           Map<? extends Expression, ? extends Expression> expressions,
                           Map<? extends Variable, ? extends Variable> variables,
+                          Map<MethodInfo, MethodInfo> methods,
                           Map<ParameterizedType, ParameterizedType> types) {
         this.variables = variables;
         this.expressions = expressions;
         this.statements = statements;
+        this.methods = methods;
         this.types = types;
         localVariables = variables.entrySet().stream()
                 .filter(e -> e.getKey() instanceof LocalVariableReference && e.getValue() instanceof LocalVariableReference)
@@ -67,23 +70,27 @@ public class TranslationMap {
     }
 
     public static TranslationMap fromVariableMap(Map<? extends Variable, ? extends Variable> map) {
-        return new TranslationMap(Map.of(), Map.of(), map, Map.of());
+        return new TranslationMap(Map.of(), Map.of(), map, Map.of(), Map.of());
     }
 
     public TranslationMap overwriteVariableMap(Map<? extends Variable, ? extends Variable> map) {
         Map<Variable, Variable> overwrittenMap = new HashMap<>(variables);
         overwrittenMap.putAll(map);
-        return new TranslationMap(statements, expressions, overwrittenMap, types);
+        return new TranslationMap(statements, expressions, overwrittenMap, methods, types);
     }
 
     public TranslationMap overwriteExpressionMap(Map<Expression, Expression> update) {
         Map<Expression, Expression> overwrittenExpressionMap = new HashMap<>(expressions);
         overwrittenExpressionMap.putAll(update);
-        return new TranslationMap(statements, overwrittenExpressionMap, variables, types);
+        return new TranslationMap(statements, overwrittenExpressionMap, variables, methods, types);
     }
 
     public Expression translateExpression(Expression expression) {
         return Objects.requireNonNullElse(expressions.get(expression), expression).translate(this);
+    }
+
+    public MethodInfo translateMethod(MethodInfo methodInfo) {
+        return methods.getOrDefault(methodInfo, methodInfo);
     }
 
     public Variable translateVariable(Variable variable) {
@@ -121,11 +128,13 @@ public class TranslationMap {
         return localVariables.getOrDefault(localVariable, localVariable).translate(this);
     }
 
+    @SuppressWarnings("unchecked")
     public static <T extends Expression> T ensureExpressionType(Expression expression, Class<T> clazz) {
         if (clazz.isAssignableFrom(expression.getClass())) return (T) expression;
         throw new UnsupportedOperationException();
     }
 
+    @SuppressWarnings("unchecked")
     public static <T extends Statement> T ensureStatementType(List<Statement> statements, Class<T> clazz) {
         if (statements.size() != 1) throw new UnsupportedOperationException();
         Statement statement = statements.get(0);
@@ -139,18 +148,19 @@ public class TranslationMap {
                     Variable inMap = variables.get(e.getKey());
                     return inMap == null ? e.getKey() : inMap;
                 }, Map.Entry::getValue));
-        return new TranslationMap(statements, expressions, updatedVariables, types);
+        return new TranslationMap(statements, expressions, updatedVariables, methods, types);
     }
 
     @Container(builds = TranslationMap.class)
     public static class TranslationMapBuilder {
         private final Map<Variable, Variable> variables = new HashMap<>();
         private final Map<Expression, Expression> expressions = new HashMap<>();
+        private final Map<MethodInfo, MethodInfo> methods = new HashMap<>();
         private final Map<Statement, List<Statement>> statements = new HashMap<>();
         private final Map<ParameterizedType, ParameterizedType> types = new HashMap<>();
 
         public TranslationMap build() {
-            return new TranslationMap(statements, expressions, variables, types);
+            return new TranslationMap(statements, expressions, variables, methods, types);
         }
 
         public TranslationMapBuilder put(Statement template, Statement actual) {
@@ -158,8 +168,13 @@ public class TranslationMap {
             return this;
         }
 
-        public TranslationMapBuilder put(Statement template, List<Statement> actuals) {
-            statements.put(template, actuals);
+        public TranslationMapBuilder put(MethodInfo template, MethodInfo actual) {
+            methods.put(template, actual);
+            return this;
+        }
+
+        public TranslationMapBuilder put(Statement template, List<Statement> statements) {
+            this.statements.put(template, statements);
             return this;
         }
 
@@ -176,6 +191,10 @@ public class TranslationMap {
         public TranslationMapBuilder put(Variable template, Variable actual) {
             variables.put(template, actual);
             return this;
+        }
+
+        public boolean translateMethod(MethodInfo methodInfo) {
+            return methods.containsKey(methodInfo);
         }
     }
 }

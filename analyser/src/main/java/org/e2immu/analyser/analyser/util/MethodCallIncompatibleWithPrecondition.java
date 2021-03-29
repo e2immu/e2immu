@@ -26,8 +26,10 @@ import org.e2immu.analyser.parser.InspectionProvider;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
+import static org.e2immu.analyser.util.Logger.LogTarget.COMPANION;
 import static org.e2immu.analyser.util.Logger.LogTarget.DELAYED;
 import static org.e2immu.analyser.util.Logger.log;
 
@@ -58,13 +60,39 @@ public class MethodCallIncompatibleWithPrecondition {
                 Expression state = newObject.stateTranslateThisTo(evaluationContext, fieldReference);
                 if (!state.isBoolValueTrue()) {
                     Expression stateWithInvariants = enrichWithInvariants(evaluationContext, state);
+
+                    /* Another issue that we have to deal with is that of overloaded methods
+                       the precondition contains references to Set.size() while the invariants have been
+                       computed on Collection.size()
+
+                       We have to normalise, and cannot easily do that at equality level
+                     */
+                    Expression normalisedPrecondition = normaliseMethods(evaluationContext, precondition);
+                    Expression normalisedStateWithInvariants = normaliseMethods(evaluationContext, stateWithInvariants);
                     Expression and = new And(evaluationContext.getPrimitives()).append(evaluationContext,
-                            precondition, stateWithInvariants);
+                            normalisedPrecondition, normalisedStateWithInvariants);
                     if (and.isBoolValueFalse()) return true;
                 }
             }
         }
         return false;
+    }
+
+    private static Expression normaliseMethods(EvaluationContext evaluationContext, Expression expression) {
+        TranslationMap.TranslationMapBuilder builder = new TranslationMap.TranslationMapBuilder();
+        expression.visit(e -> {
+            if (e instanceof MethodCall methodCall && !builder.translateMethod(methodCall.methodInfo)) {
+                MethodAnalysis methodAnalysis = evaluationContext.getAnalyserContext().getMethodAnalysis(methodCall.methodInfo);
+                if (methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD) == Level.FALSE) {
+                    // non-modifying method; from all overrides, choose the one that does not have an override
+                    // IMPROVE there could be multiple, but then, how do we choose?
+                    methodCall.methodInfo.methodResolution.get().overrides().stream()
+                            .filter(m -> m.methodResolution.get().overrides().isEmpty()).findFirst()
+                            .ifPresent(original -> builder.put(methodCall.methodInfo, original));
+                }
+            }
+        });
+        return expression.translate(builder.build());
     }
 
     private static Expression enrichWithInvariants(EvaluationContext evaluationContext, Expression expression) {
@@ -73,13 +101,23 @@ public class MethodCallIncompatibleWithPrecondition {
 
         expression.visit(e -> {
             if (e instanceof MethodCall methodCall && methodCall.object instanceof VariableExpression ve) {
+                // the first thing we need to know is if this methodCall.methodInfo is involved in an aspect
                 TypeInfo typeInfo = methodCall.methodInfo.typeInfo;
                 TypeAnalysis typeAnalysis = evaluationContext.getAnalyserContext().getTypeAnalysis(typeInfo);
-                for (Expression invariant : typeAnalysis.invariants(methodCall.methodInfo)) {
-                    TranslationMap translationMap = new TranslationMap.TranslationMapBuilder()
-                            .put(new This(InspectionProvider.DEFAULT, typeInfo), ve.variable()).build();
-                    Expression translated = invariant.translate(translationMap);
-                    additionalComponents.add(translated);
+                for (MethodInfo aspectMain : typeAnalysis.getAspects().values()) {
+                    MethodAnalysis aspectMainAnalysis = evaluationContext.getAnalyserContext().getMethodAnalysis(aspectMain);
+                    Optional<CompanionMethodName> oInvariant = aspectMainAnalysis.getCompanionAnalyses().keySet()
+                            .stream().filter(cmn -> cmn.action() == CompanionMethodName.Action.INVARIANT).findFirst();
+                    if (oInvariant.isPresent()) {
+                        CompanionAnalysis companionAnalysis = aspectMainAnalysis.getCompanionAnalyses().get(oInvariant.get());
+                        Expression invariant = companionAnalysis.getValue();
+                        log(COMPANION, "Found invariant expression {} for method call", invariant);
+
+                        TranslationMap translationMap = new TranslationMap.TranslationMapBuilder()
+                                .put(new This(InspectionProvider.DEFAULT, aspectMain.typeInfo), ve.variable()).build();
+                        Expression translated = invariant.translate(translationMap);
+                        additionalComponents.add(translated);
+                    }
                 }
             }
             return true;

@@ -27,8 +27,7 @@ public class TestLinearEqualityInOneVariable extends CommonAbstractValue {
     @Test
     public void test1() {
         // inequality is i >= 1, written as 1*i + (-1) >= 0
-        LinearInequalityInOneVariable l = new LinearInequalityInOneVariable(minimalEvaluationContext,
-                1, vi, -1, true);
+        LinearInequalityInOneVariable l = new LinearInequalityInOneVariable(1, vi, -1, true);
         assertFalse(l.accept(-1));
         Interval i1 = new Interval(Double.NEGATIVE_INFINITY, true, -1, false);
         assertFalse(l.accept(i1));
@@ -54,8 +53,7 @@ public class TestLinearEqualityInOneVariable extends CommonAbstractValue {
     @Test
     public void test2() {
         // inequality is 0.5i < 10 (or i<20), written as -0.5*i + 10 > 0
-        LinearInequalityInOneVariable l = new LinearInequalityInOneVariable(minimalEvaluationContext,
-                -0.5, vi, 10, false);
+        LinearInequalityInOneVariable l = new LinearInequalityInOneVariable(-0.5, vi, 10, false);
         assertFalse(l.accept(21));
         assertFalse(l.accept(20));
         assertTrue(l.accept(19));

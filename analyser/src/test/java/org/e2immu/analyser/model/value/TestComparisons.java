@@ -229,14 +229,14 @@ public class TestComparisons extends CommonAbstractValue {
         Expression jGt5 = GreaterThanZero.greater(minimalEvaluationContext, j, newInt(5), true);
 
         Expression or1 = newOrAppend(iLt0, jGt5);
-        assertEquals("j>=5||i<=-1", or1.toString());
+        assertEquals("i<=-1||j>=5", or1.toString());
         Expression or2 = newOrAppend(iLeM1, jGt5);
-        assertEquals("j>=5||i<=-1", or2.toString());
+        assertEquals("i<=-1||j>=5", or2.toString());
 
         assertEquals(or1, or2);
 
         Expression negOr1 = negate(or1);
-        assertEquals("j<=4&&i>=0", negOr1.toString());
+        assertEquals("i>=0&&j<=4", negOr1.toString());
     }
 
     @Test
@@ -268,5 +268,53 @@ public class TestComparisons extends CommonAbstractValue {
         // this should be incorporated into And
         Expression combination = newAndAppend(iGt0jLe0, jGeI);
         assertTrue(combination.isBoolValueFalse(), "Have " + combination);
+    }
+
+    @Test
+    public void testEvE2Imm7b() {
+        Expression iGe1 = GreaterThanZero.greater(minimalEvaluationContext, i, newInt(1), true);
+        Expression jEq0 = equals(j, newInt(0));
+        Expression jGeI = GreaterThanZero.greater(minimalEvaluationContext, j, i, true);
+        Expression and = newAndAppend(iGe1, jEq0, jGeI);
+        assertTrue(and.isBoolValueFalse(), "Have " + and);
+    }
+
+    @Test
+    public void testEvE2Imm7c() {
+        Expression iGe0 = GreaterThanZero.greater(minimalEvaluationContext, i, newInt(0), true);
+        Expression jGe0 = GreaterThanZero.greater(minimalEvaluationContext, j, newInt(0), true);
+        Expression jGeI = GreaterThanZero.greater(minimalEvaluationContext, j, i, true);
+        Expression and1 = newAndAppend(iGe0, jGe0, jGeI);
+        assertEquals("i>=0&&j>=0&&j>=i", and1.toString());
+        Expression iGe1 = GreaterThanZero.greater(minimalEvaluationContext, i, newInt(1), true);
+        Expression jLe0 = GreaterThanZero.less(minimalEvaluationContext, j, newInt(0), true);
+        Expression and2 = newAndAppend(iGe1, jLe0);
+        assertEquals("i>=1&&j<=0", and2.toString());
+        Expression and = newAndAppend(and1, and2);
+        assertTrue(and.isBoolValueFalse(), "Have " + and);
+    }
+
+    @Test
+    public void testEvE2Imm8a() {
+        Expression iNot0 = negate(equals(i, newInt(0)));
+        Expression iGe0 = GreaterThanZero.greater(minimalEvaluationContext, i, newInt(0), true);
+        Expression combined = newAndAppend(iNot0, iGe0);
+        assertEquals("i>0", combined.toString());
+    }
+
+    @Test
+    public void testEvE2Imm8() {
+        Expression iNot0 = negate(equals(i, newInt(0)));
+        Expression jEq0 = equals(j, newInt(0));
+        Expression iGe0 = GreaterThanZero.greater(minimalEvaluationContext, i, newInt(0), true);
+        Expression combined = newAndAppend(iNot0, jEq0, iGe0);
+        // currently: 0!=i && 0==j && i>=0
+        assertEquals("i>0&&0==j", combined.toString());
+
+        Expression jGeI = GreaterThanZero.greater(minimalEvaluationContext, j, i, true);
+        assertEquals("j>=i", jGeI.toString());
+        assertEquals(2, jGeI.variables().size());
+        Expression combo2 = newAndAppend(combined, jGeI);
+        assertTrue(combo2.isBoolValueFalse(), "Got: " + combo2);
     }
 }

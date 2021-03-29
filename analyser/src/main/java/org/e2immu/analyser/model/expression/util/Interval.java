@@ -14,7 +14,6 @@
 
 package org.e2immu.analyser.model.expression.util;
 
-import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.expression.GreaterThanZero;
 
@@ -57,21 +56,21 @@ public record Interval(double left, boolean leftIncluded, double right, boolean 
         throw new IllegalStateException();
     }
 
-    public static Interval extractInterval(EvaluationContext evaluationContext, List<Expression> expressions) {
+    public static Interval extractInterval(List<Expression> expressions) {
         if (expressions.size() == 1) {
-            return extractInterval(evaluationContext, expressions.get(0));
+            return extractInterval(expressions.get(0));
         }
         if (expressions.size() == 2) {
-            Interval i1 = extractInterval(evaluationContext, expressions.get(0));
-            Interval i2 = extractInterval(evaluationContext, expressions.get(1));
+            Interval i1 = extractInterval(expressions.get(0));
+            Interval i2 = extractInterval(expressions.get(1));
             return i1 == null || i2 == null ? null : i1.combine(i2);
         }
         return null;
     }
 
-    public static Interval extractInterval(EvaluationContext evaluationContext, Expression expression) {
+    public static Interval extractInterval(Expression expression) {
         if (expression instanceof GreaterThanZero ge) {
-            Inequality inequality = InequalityHelper.extract(evaluationContext, ge);
+            Inequality inequality = InequalityHelper.extract(ge);
             if (inequality instanceof LinearInequalityInOneVariable one) return one.interval();
         }
         return null;

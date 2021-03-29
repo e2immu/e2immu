@@ -14,7 +14,6 @@
 
 package org.e2immu.analyser.model.expression.util;
 
-import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.model.Expression;
 
 import java.util.List;
@@ -26,8 +25,7 @@ import static org.e2immu.analyser.model.expression.util.InequalityHelper.onlyNot
 av + b  >= 0 or av + b > 0
 (we're not using x because IntelliJ complains passing y onto x)
  */
-public record LinearInequalityInOneVariable(EvaluationContext evaluationContext,
-                                            double a,
+public record LinearInequalityInOneVariable(double a,
                                             OneVariable v,
                                             double b,
                                             boolean allowEquals) implements Inequality {
@@ -59,12 +57,10 @@ public record LinearInequalityInOneVariable(EvaluationContext evaluationContext,
     public Boolean accept(List<Expression> expressionsInV) {
         if (onlyNotEquals(expressionsInV)) return true; // v != some constant
         Double vEquals = extractEquals(expressionsInV); // v == some constant
-        if (vEquals != null) {
-            return accept(vEquals);
-        }
-        Interval intervalX = Interval.extractInterval(evaluationContext, expressionsInV);
-        if (intervalX == null) return null;
-        return accept(intervalX);
+        if (vEquals != null) return accept(vEquals);
+        Interval i = Interval.extractInterval(expressionsInV);
+        if (i != null) return accept(i);
+        return null;
     }
 
     public Boolean accept(Interval i) {

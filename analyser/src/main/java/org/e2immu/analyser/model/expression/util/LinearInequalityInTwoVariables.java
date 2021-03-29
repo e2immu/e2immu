@@ -14,7 +14,6 @@
 
 package org.e2immu.analyser.model.expression.util;
 
-import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.model.Expression;
 
 import java.util.List;
@@ -22,14 +21,12 @@ import java.util.List;
 import static org.e2immu.analyser.model.expression.util.InequalityHelper.extractEquals;
 import static org.e2immu.analyser.model.expression.util.InequalityHelper.onlyNotEquals;
 
-public record LinearInequalityInTwoVariables(EvaluationContext evaluationContext,
-                                             double a,
+public record LinearInequalityInTwoVariables(double a,
                                              OneVariable x,
                                              double b,
                                              OneVariable y,
                                              double c, boolean allowEquals) implements Inequality {
     public LinearInequalityInTwoVariables {
-        assert evaluationContext != null;
         assert a != 0.0;
         assert b != 0.0;
         assert x != null;
@@ -67,18 +64,18 @@ public record LinearInequalityInTwoVariables(EvaluationContext evaluationContext
         }
         if (xEquals != null) {
             // we have x to a constant, and inequalities for y => linear inequality in one variable
-            LinearInequalityInOneVariable inequality = new LinearInequalityInOneVariable(evaluationContext,
+            LinearInequalityInOneVariable inequality = new LinearInequalityInOneVariable(
                     b, y, a * xEquals + c, allowEquals);
             return inequality.accept(expressionsInY);
         }
         if (yEquals != null) {
-            LinearInequalityInOneVariable inequality = new LinearInequalityInOneVariable(evaluationContext,
+            LinearInequalityInOneVariable inequality = new LinearInequalityInOneVariable(
                     a, x, b * yEquals + c, allowEquals);
             return inequality.accept(expressionsInX);
         }
         // at least one inequality on x, at least one on y; they can be expressed as intervals
-        Interval intervalX = Interval.extractInterval(evaluationContext, expressionsInX);
-        Interval intervalY = Interval.extractInterval(evaluationContext, expressionsInY);
+        Interval intervalX = Interval.extractInterval( expressionsInX);
+        Interval intervalY = Interval.extractInterval( expressionsInY);
         if (intervalX == null || intervalY == null) return null;
 
         if (intervalX.isClosed() && intervalY.isClosed()) {

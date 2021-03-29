@@ -121,7 +121,7 @@ public class InequalitySolver {
 
     private Boolean accept(Expression expression) {
         if (expression instanceof GreaterThanZero gt0) {
-            Inequality inequality = InequalityHelper.extract(evaluationContext, gt0);
+            Inequality inequality = InequalityHelper.extract(gt0);
 
             if (inequality instanceof LinearInequalityInOneVariable oneVar) {
                 List<Expression> expressionsInV = perComponent.getOrDefault(oneVar.v(), List.of());

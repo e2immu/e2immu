@@ -33,9 +33,12 @@ import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.NotModified;
 import org.e2immu.annotation.NotNull;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import static org.e2immu.analyser.model.expression.Precedence.*;
 
@@ -482,16 +485,40 @@ public class BinaryOperator implements Expression {
             b = binaryOperator;
         } else if (v instanceof BinaryOperator binaryOperator) {
             b = binaryOperator;
+        } else if (v instanceof GreaterThanZero gt0) {
+            return compareBinaryToGt0(this, gt0);
         } else {
-            int c = lhs.compareTo(v);
-            if (c == 0) c = rhs.compareTo(v);
+            int c = rhs.compareTo(v);
+            if (c == 0) c = lhs.compareTo(v);
             return c;
         }
-        // comparing 2 or values...compare lhs
-        int c = lhs.compareTo(b.lhs);
+        int c0 = compareVariables(this, b);
+        if (c0 != 0) return c0;
+
+        // if there's a variable, it'll be in rhs
+        // so priority is on the right hand side!!!
+        int c = rhs.compareTo(b.rhs);
         if (c == 0) {
-            c = rhs.compareTo(b.rhs);
+            c = lhs.compareTo(b.lhs);
         }
         return c;
+    }
+
+    public static int compareBinaryToGt0(BinaryOperator e1, GreaterThanZero e2) {
+        int c = compareVariables(e1, e2);
+        if (c != 0) return c;
+        return -1;// binary operator (equals, e.g.) left of comparison
+    }
+
+    public static int compareVariables(Expression e1, Expression e2) {
+        Set<Variable> myVariables = new HashSet<>(e1.variables());
+        Set<Variable> otherVariables = new HashSet<>(e2.variables());
+        int varDiff = myVariables.size() - otherVariables.size();
+        if (varDiff != 0) return varDiff;
+        String myVarStr = myVariables.stream().map(vv -> vv.fullyQualifiedName())
+                .sorted().collect(Collectors.joining(","));
+        String otherVarStr = otherVariables.stream().map(vv -> vv.fullyQualifiedName())
+                .sorted().collect(Collectors.joining(","));
+        return myVarStr.compareTo(otherVarStr);
     }
 }

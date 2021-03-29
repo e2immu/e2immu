@@ -320,7 +320,6 @@ public class ShallowTypeAnalyser implements AnalyserContext {
                 false, true, typeInspection.getAnnotations(), e2ImmuAnnotationExpressions));
 
         TypeAnalyser.findAspects(typeAnalysisBuilder, typeInfo);
-        TypeAnalyser.findInvariants(typeAnalysisBuilder, typeInfo);
         typeAnalysisBuilder.freezeApprovedPreconditionsE1();
         typeAnalysisBuilder.freezeApprovedPreconditionsE2();
 

@@ -81,7 +81,7 @@ public record CreatePreconditionCompanion(InspectionProvider inspectionProvider,
             Map<Expression, Expression> expressionMap = Map.of(methodCall, new VariableExpression(newParameters.get(0)));
             Map<Variable, Variable> variableMap = mainInspection.getParameters().stream().collect(Collectors.toMap(pi -> pi, pi ->
                     newParameters.get(pi.index + 1)));
-            TranslationMap translationMap = new TranslationMap(Map.of(), expressionMap, variableMap, Map.of());
+            TranslationMap translationMap = new TranslationMap(Map.of(), expressionMap, variableMap, Map.of(), Map.of());
 
             return value.translate(translationMap);
         }

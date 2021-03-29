@@ -37,7 +37,6 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
 
     private final Set<ParameterizedType> implicitlyImmutableDataTypes;
     private final Map<String, MethodInfo> aspects;
-    private final Map<MethodInfo, List<Expression>> invariants;
     private final Set<FieldInfo> eventuallyImmutableFields;
 
     private TypeAnalysisImpl(TypeInfo typeInfo,
@@ -48,8 +47,7 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
                              Map<FieldInfo, Expression> approvedPreconditionsE2,
                              Set<FieldInfo> eventuallyImmutableFields,
                              Set<ParameterizedType> implicitlyImmutableDataTypes,
-                             Map<String, MethodInfo> aspects,
-                             Map<MethodInfo, List<Expression>> invariants) {
+                             Map<String, MethodInfo> aspects) {
         super(properties, annotations);
         this.typeInfo = typeInfo;
         this.approvedPreconditionsE1 = approvedPreconditionsE1;
@@ -57,18 +55,12 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
         this.objectFlows = objectFlows;
         this.implicitlyImmutableDataTypes = implicitlyImmutableDataTypes;
         this.aspects = Objects.requireNonNull(aspects);
-        this.invariants = invariants;
         this.eventuallyImmutableFields = eventuallyImmutableFields;
     }
 
     @Override
     public Set<FieldInfo> getEventuallyImmutableFields() {
         return eventuallyImmutableFields;
-    }
-
-    @Override
-    public List<Expression> invariants(MethodInfo methodInfo) {
-        return invariants.getOrDefault(methodInfo, List.of());
     }
 
     @Override
@@ -143,7 +135,6 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
         public final SetOnce<Set<ParameterizedType>> implicitlyImmutableDataTypes = new SetOnce<>();
 
         public final SetOnceMap<String, MethodInfo> aspects = new SetOnceMap<>();
-        private final Map<MethodInfo, List<Expression>> invariants = new HashMap<>();
 
         public final SetOnceMap<Set<MethodInfo>, CycleInfo> nonModifiedCountForMethodCallCycle = new SetOnceMap<>();
         public final SetOnce<Boolean> ignorePrivateConstructorsForFieldValues = new SetOnce<>();
@@ -195,19 +186,6 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
         @Override
         public Map<String, MethodInfo> getAspects() {
             return aspects.toImmutableMap();
-        }
-
-        @Override
-        public List<Expression> invariants(MethodInfo methodInfo) {
-            return List.copyOf(invariants.getOrDefault(methodInfo, List.of()));
-        }
-
-        public void addInvariant(MethodInfo methodInfo, Expression expression) {
-            SMapList.add(invariants, methodInfo, expression);
-        }
-
-        public Stream<Map.Entry<MethodInfo, List<Expression>>> invariantStream() {
-            return invariants.entrySet().stream();
         }
 
         @Override
@@ -288,8 +266,7 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
                     approvedPreconditionsE2.toImmutableMap(),
                     eventuallyImmutableFields.toImmutableSet(),
                     implicitlyImmutableDataTypes.isSet() ? implicitlyImmutableDataTypes.get() : Set.of(),
-                    getAspects(),
-                    SMapList.immutable(invariants));
+                    getAspects());
         }
     }
 }

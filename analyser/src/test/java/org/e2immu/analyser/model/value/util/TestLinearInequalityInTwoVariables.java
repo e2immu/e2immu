@@ -36,8 +36,7 @@ public class TestLinearInequalityInTwoVariables extends CommonAbstractValue {
         // i+j >= 1
         Expression iPlusJGe1 = GreaterThanZero.greater(minimalEvaluationContext,
                 Sum.sum(minimalEvaluationContext, i, j, ObjectFlow.NO_FLOW), newInt(1), true);
-        Inequality inequality =
-                InequalityHelper.extract(minimalEvaluationContext, (GreaterThanZero) iPlusJGe1);
+        Inequality inequality = InequalityHelper.extract((GreaterThanZero) iPlusJGe1);
         LinearInequalityInTwoVariables two = (LinearInequalityInTwoVariables) inequality;
         assertNotNull(two);
         assertEquals(1.0, two.a(), 0.00001);
@@ -62,8 +61,7 @@ public class TestLinearInequalityInTwoVariables extends CommonAbstractValue {
         Expression i2Minus3JGe1 = GreaterThanZero.greater(minimalEvaluationContext,
                 Sum.sum(minimalEvaluationContext, i2, minusJ3, ObjectFlow.NO_FLOW), newInt(1), true);
         assertEquals("2*i-(3*j)>=1", i2Minus3JGe1.toString());
-        Inequality inequality =
-                InequalityHelper.extract(minimalEvaluationContext, (GreaterThanZero) i2Minus3JGe1);
+        Inequality inequality = InequalityHelper.extract((GreaterThanZero) i2Minus3JGe1);
         LinearInequalityInTwoVariables two = (LinearInequalityInTwoVariables) inequality;
         assertNotNull(two);
         assertEquals(2.0, two.a(), 0.00001);

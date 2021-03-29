@@ -250,7 +250,14 @@ public record And(Primitives primitives,
             return Action.ADD;
         }
 
-        // combinations with equality
+        // combinations with equality and inequality (GE)
+
+        if (value instanceof GreaterThanZero gt0 && gt0.expression().variables().size() > 1) {
+            // it may be interesting to run the inequality solver
+            InequalitySolver inequalitySolver = new InequalitySolver(evaluationContext, newConcat);
+            Boolean resolve = inequalitySolver.evaluate(value);
+            if (resolve == Boolean.FALSE) return Action.FALSE;
+        }
 
         if (prev instanceof Negation negatedPrev && negatedPrev.expression instanceof Equals ev1) {
             if (value instanceof Equals ev2) {
@@ -311,14 +318,13 @@ public record And(Primitives primitives,
                 if (ge.allowEquals() && y < xb.b() || !ge.allowEquals() && y <= xb.b()) {
                     return Action.REPLACE;
                 }
+                // if b==y then the end result should be x>b
+                if (y == xb.b() && ge.allowEquals()) {
+                    newConcat.remove(newConcat.size() - 1);
+                    newConcat.add(new GreaterThanZero(ge.booleanParameterizedType(), ge.expression(), false, ge.objectFlow()));
+                    return Action.SKIP;
+                }
             }
-        }
-
-        if (value instanceof GreaterThanZero gt0 && gt0.expression().variables().size() > 1) {
-            // it may be interesting to run the inequality solver
-            InequalitySolver inequalitySolver = new InequalitySolver(evaluationContext, newConcat);
-            Boolean resolve = inequalitySolver.evaluate(value);
-            if (resolve == Boolean.FALSE) return Action.FALSE;
         }
 
         // GE and GE

@@ -14,7 +14,6 @@
 
 package org.e2immu.analyser.model.expression.util;
 
-import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.expression.*;
 
@@ -27,7 +26,7 @@ public class InequalityHelper {
     private record Term(double a, OneVariable v) {
     }
 
-    public static Inequality extract(EvaluationContext evaluationContext, GreaterThanZero gt0) {
+    public static Inequality extract(GreaterThanZero gt0) {
         List<Term> terms = new ArrayList<>();
         if (!recursivelyCollectTerms(gt0.expression(), terms)) return null;
         List<Term> withoutVariable = terms.stream().filter(t -> t.v == null).collect(Collectors.toUnmodifiableList());
@@ -37,12 +36,12 @@ public class InequalityHelper {
         List<Term> withVariable = terms.stream().filter(t -> t.v != null).collect(Collectors.toUnmodifiableList());
         if (withVariable.size() == 1) {
             Term t1 = withVariable.get(0);
-            return new LinearInequalityInOneVariable(evaluationContext, t1.a, t1.v, c, gt0.allowEquals());
+            return new LinearInequalityInOneVariable(t1.a, t1.v, c, gt0.allowEquals());
         }
         if (withVariable.size() == 2) {
             Term t1 = withVariable.get(0);
             Term t2 = withVariable.get(1);
-            return new LinearInequalityInTwoVariables(evaluationContext, t1.a, t1.v, t2.a, t2.v, c, gt0.allowEquals());
+            return new LinearInequalityInTwoVariables(t1.a, t1.v, t2.a, t2.v, c, gt0.allowEquals());
         }
         // not recognized
         return null;
@@ -101,7 +100,7 @@ public class InequalityHelper {
     public static Double extractEquals(List<Expression> expressions) {
         return expressions.stream().filter(e -> e instanceof Equals eq && eq.lhs instanceof ConstantExpression<?>
                 && eq.rhs instanceof VariableExpression)
-                .map(e -> ((Number) ((Equals) e).lhs).doubleValue())
+                .map(e -> extractDouble((Number) ((ConstantExpression<?>) ((Equals) e).lhs).getValue()))
                 .findFirst().orElse(null);
     }
 
