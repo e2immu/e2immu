@@ -24,28 +24,14 @@ import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.output.Text;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-public class PropertyWrapper implements Expression, ExpressionWrapper {
-
-    /*
-
-     We are essentially interested in value, but add extra properties.
-     Alternatively, we wrap a dedicated object flow
-
-     */
-    public final Expression expression;
-    public final Map<VariableProperty, Integer> properties;
-
-    private PropertyWrapper(Expression expression, Map<VariableProperty, Integer> properties) {
-        this.expression = expression;
-        this.properties = properties;
-    }
+public record PropertyWrapper(Expression expression,
+                              Map<VariableProperty, Integer> properties) implements Expression, ExpressionWrapper {
 
     @Override
     public Expression getExpression() {
@@ -61,26 +47,12 @@ public class PropertyWrapper implements Expression, ExpressionWrapper {
     public EvaluationResult reEvaluate(EvaluationContext evaluationContext, Map<Expression, Expression> translation) {
         EvaluationResult reValue = expression.reEvaluate(evaluationContext, translation);
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext).compose(reValue);
-        return builder.setExpression(PropertyWrapper.propertyWrapper(evaluationContext, reValue.value(),
+        return builder.setExpression(PropertyWrapper.propertyWrapper(reValue.value(),
                 properties)).build();
     }
 
-    public static Expression propertyWrapper(EvaluationContext evaluationContext, Expression value,
-                                             Map<VariableProperty, Integer> properties) {
-        Map<VariableProperty, Integer> newMap = new HashMap<>();
-        for (Map.Entry<VariableProperty, Integer> entry : properties.entrySet()) {
-            int newPropertyValue = evaluationContext.getProperty(value, entry.getKey(), false);
-            if (newPropertyValue < entry.getValue()) {
-                newMap.put(entry.getKey(), entry.getValue());
-            }
-        }
-        // if I cannot contribute, there's no point being here...
-        //if (newMap.isEmpty()) return value; FIXME there's something fishy here
-
-        // second, we always want the negation to be on the outside
-        if (value instanceof Negation) {
-            throw new UnsupportedOperationException(); // this makes no sense!!
-        }
+    public static Expression propertyWrapper(Expression value, Map<VariableProperty, Integer> properties) {
+        assert !(value instanceof Negation) : "we always want the negation to be on the outside";
         return new PropertyWrapper(value, properties);
     }
 

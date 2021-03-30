@@ -29,6 +29,8 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static org.e2immu.analyser.util.Logger.log;
+
 public abstract class AbstractAnalysisBuilder implements Analysis {
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractAnalysisBuilder.class);
 
@@ -248,11 +250,11 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
                 } else if (e2ImmuAnnotationExpressions.utilityClass.typeInfo() == t) {
                     setProperty(VariableProperty.UTILITY_CLASS, trueFalse);
                 } else if (e2ImmuAnnotationExpressions.linked.typeInfo() == t) {
-                    setProperty(VariableProperty.LINKED, trueFalse);
+                    log(org.e2immu.analyser.util.Logger.LogTarget.ANALYSER, "Ignoring informative annotation @Linked");
                 } else if (e2ImmuAnnotationExpressions.notModified1.typeInfo() == t) {
                     setProperty(VariableProperty.NOT_MODIFIED_1, trueFalse);
                 } else if (e2ImmuAnnotationExpressions.allowsInterrupt.typeInfo() == t) {
-                    // caught earlier on
+                    log(org.e2immu.analyser.util.Logger.LogTarget.ANALYSER, "@AllowsInterrupt caught earlier on");
                 } else if (e2ImmuAnnotationExpressions.propagateModification.typeInfo() == t) {
                     setProperty(VariableProperty.PROPAGATE_MODIFICATION, trueFalse);
                 } else {

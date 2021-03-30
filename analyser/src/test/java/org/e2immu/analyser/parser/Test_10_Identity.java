@@ -205,9 +205,9 @@ public class Test_10_Identity extends CommonTestRunner {
             if ("idem3".equals(d.methodInfo().name) && "1.0.0".equals(d.statementId()) && d.iteration() > 0) {
                 Expression value = d.statementAnalysis().stateData.valueOfExpression.get();
                 assertTrue(value instanceof PropertyWrapper);
-                Expression valueInside = ((PropertyWrapper) value).expression;
+                Expression valueInside = ((PropertyWrapper) value).expression();
                 assertTrue(valueInside instanceof PropertyWrapper);
-                Expression valueInside2 = ((PropertyWrapper) valueInside).expression;
+                Expression valueInside2 = ((PropertyWrapper) valueInside).expression();
                 assertTrue(valueInside2 instanceof VariableExpression);
                 // check that isInstanceOf bypasses the wrappers
                 assertTrue(value.isInstanceOf(VariableExpression.class));
@@ -267,7 +267,7 @@ public class Test_10_Identity extends CommonTestRunner {
             if ("idem4".equals(d.methodInfo().name)) {
                 int expectMm = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
                 assertEquals(expectMm, methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD));
-                int expectIdentity = d.iteration() <= 1 ? Level.DELAY : Level.TRUE;
+                int expectIdentity = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
                 assertEquals(expectIdentity, methodAnalysis.getProperty(VariableProperty.IDENTITY));
             }
         };

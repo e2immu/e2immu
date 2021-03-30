@@ -126,7 +126,7 @@ public class EvaluateMethodCall {
         }
 
         // @Identity as method annotation
-        Expression identity = computeIdentity(evaluationContext, methodInfo, methodAnalysis, parameters);
+        Expression identity = computeIdentity(methodInfo, methodAnalysis, parameters);
         if (identity != null) {
             return builder.setExpression(identity).build();
         }
@@ -428,8 +428,7 @@ public class EvaluateMethodCall {
 
     private final static VariableProperty[] PROPERTIES_IN_METHOD_RESULT_WRAPPER = {NOT_NULL_EXPRESSION, IMMUTABLE};
 
-    private static Expression computeIdentity(EvaluationContext evaluationContext,
-                                              MethodInfo methodInfo,
+    private static Expression computeIdentity(MethodInfo methodInfo,
                                               MethodAnalysis methodAnalysis,
                                               List<Expression> parameters) {
         int identity = methodAnalysis.getProperty(VariableProperty.IDENTITY);
@@ -445,7 +444,7 @@ public class EvaluateMethodCall {
             int v = methodAnalysis.getProperty(property);
             if (v != Level.DELAY) map.put(property, v);
         }
-        return PropertyWrapper.propertyWrapper(evaluationContext, parameters.get(0), map);
+        return PropertyWrapper.propertyWrapper(parameters.get(0), map);
     }
 
 }
