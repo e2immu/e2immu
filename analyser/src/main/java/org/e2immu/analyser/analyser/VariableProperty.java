@@ -22,6 +22,10 @@ import java.util.Set;
 
 public enum VariableProperty {
 
+    /*
+    "short-lived" properties of the EvaluationResult
+     */
+
     // single simple purpose: on `this` to see if local methods have been called
     METHOD_CALLED("method called"),
 
@@ -35,66 +39,121 @@ public enum VariableProperty {
     IN_NOT_NULL_CONTEXT("in not-null context"),
     CANDIDATE_FOR_NULL_PTR_WARNING("candidate for null pointer warning"),
 
-    // purpose: goes to false when a parameter occurs in a not_null context, but there is a delay
-    // goes to true when that delay has been resolved
+    /*
+    @NotNull, @Nullable property.
+    Multiple aspects worth mentioning. See MultiLevel for the different values this property can take.
+
+    NOT_NULL_PARAMETER: overarching property for parameters
+    EXTERNAL_NOT_NULL: in statement analyser, value coming in from field analyser; std in field analyser
+    NOT_NULL_EXPRESSION: the value in expressions, assignments
+    CONTEXT_NOT_NULL: the value caused by context (scope or arg of method calls)
+
+    NotNull values can be delayed: CONTEXT_NOT_NULL_DELAY
+
+    CONTEXT_NOT_NULL_FOR_PARENT and associated:  transfer property from a block that escapes to its parent;
+    see StatementAnalyser.checkNotNullEscapesAndPreconditions
+    and the corresponding code in StatementAnalysis.copyBackLocalCopies
+     */
+    NOT_NULL_PARAMETER("@NotNull parameter", MultiLevel.NULLABLE, MultiLevel.EFFECTIVELY_CONTENT2_NOT_NULL,
+            MultiLevel.NULLABLE, MultiLevel.EFFECTIVELY_NOT_NULL),
+    EXTERNAL_NOT_NULL("external @NotNull", MultiLevel.NULLABLE, MultiLevel.EFFECTIVELY_CONTENT2_NOT_NULL,
+            MultiLevel.NULLABLE, MultiLevel.EFFECTIVELY_NOT_NULL),
+    NOT_NULL_EXPRESSION("@NotNull", MultiLevel.NULLABLE, MultiLevel.EFFECTIVELY_CONTENT2_NOT_NULL,
+            MultiLevel.NULLABLE, MultiLevel.EFFECTIVELY_NOT_NULL),
     CONTEXT_NOT_NULL("not null in context", MultiLevel.NULLABLE, MultiLevel.EFFECTIVELY_CONTENT2_NOT_NULL,
             MultiLevel.NULLABLE, MultiLevel.EFFECTIVELY_NOT_NULL),
     CONTEXT_NOT_NULL_DELAY("not null in context delay"),
 
-    /*
-    transfer property from a block that escapes to its parent; see StatementAnalyser.checkNotNullEscapesAndPreconditions
-    and the corresponding code in StatementAnalysis.copyBackLocalCopies
-     */
     CONTEXT_NOT_NULL_FOR_PARENT("not null in context for parent", MultiLevel.NULLABLE, MultiLevel.EFFECTIVELY_CONTENT2_NOT_NULL,
             MultiLevel.NULLABLE, MultiLevel.EFFECTIVELY_NOT_NULL),
     CONTEXT_NOT_NULL_FOR_PARENT_DELAY("cnn4parent delay"),
     CONTEXT_NOT_NULL_FOR_PARENT_DELAY_RESOLVED("cnn4parent delay resolved"),
 
     /*
-    in fields, external not null is the truth
-    in statements in a method, external not null needs combined with context not null (not null variable) and not null expression
-    the method result is stored in not null expression
+    @E2Immutable, @E1Immutable property.
+    Multiple aspects worth mentioning. See MultiLevel for the different values this property can take.
 
+    In the case of parameters and fields of eventually immutable types, the current state (before or after) is held
+    by various properties in the same way as we hold @NotNull
+
+    IMMUTABLE: overarching property used in parameter analyser; expressions and assignments, std in method analyser
+    CONTEXT_IMMUTABLE: context property in statement analyser; we'll see increments from EVENTUAL to EVENTUAL_BEFORE and _AFTER
+    EXTERNAL_IMMUTABLE: external property in the statement analyser; std in the field analyser
+
+    immutable is computed at the static assignment level.
      */
-
-    CONTEXT_MODIFIED("modified in context"),
-    MODIFIED_OUTSIDE_METHOD("modified outside method"),
-
-    EXTERNAL_NOT_NULL("external @NotNull", MultiLevel.NULLABLE, MultiLevel.EFFECTIVELY_CONTENT2_NOT_NULL,
-            MultiLevel.NULLABLE, MultiLevel.EFFECTIVELY_NOT_NULL),
-
-    NOT_NULL_EXPRESSION("@NotNull", MultiLevel.NULLABLE, MultiLevel.EFFECTIVELY_CONTENT2_NOT_NULL,
-            MultiLevel.NULLABLE, MultiLevel.EFFECTIVELY_NOT_NULL),
-
-    // in parameter analyser, combination
-    NOT_NULL_PARAMETER("@NotNull parameter", MultiLevel.NULLABLE, MultiLevel.EFFECTIVELY_CONTENT2_NOT_NULL,
-            MultiLevel.NULLABLE, MultiLevel.EFFECTIVELY_NOT_NULL),
-
-    FINAL("@Final", Level.FALSE, Level.TRUE, Level.FALSE, Level.TRUE),
-
-    CONTAINER("@Container", Level.FALSE, Level.TRUE, Level.FALSE, Level.TRUE),
 
     IMMUTABLE("@Immutable", MultiLevel.MUTABLE, MultiLevel.EFFECTIVELY_E2IMMUTABLE, MultiLevel.MUTABLE,
             MultiLevel.MUTABLE),
+    CONTEXT_IMMUTABLE("context @Immutable", MultiLevel.MUTABLE, MultiLevel.EFFECTIVELY_E2IMMUTABLE, MultiLevel.MUTABLE,
+            MultiLevel.MUTABLE),
+    EXTERNAL_IMMUTABLE("external @Immutable", MultiLevel.MUTABLE, MultiLevel.EFFECTIVELY_E2IMMUTABLE, MultiLevel.MUTABLE,
+            MultiLevel.MUTABLE),
 
+    /*
+    Modification.
+
+    MODIFIED_VARIABLE: overarching value in parameters, combining MOM and CM
+    MODIFIED_OUTSIDE_METHOD: modification of parameter coming from fields (~EXTERNAL_NOT_NULL)
+    CONTEXT_MODIFIED: independent modification computation in the statement analyser
+
+    MODIFIED_METHOD: modification of methods
+    TEMP_MODIFIED_METHOD: used in the method analyser for methods that call each other in a cyclic way
+
+    Modification is computed on linked variables.
+    Delays on modification are governed by CONTEXT_MODIFIED_DELAY
+     */
     MODIFIED_VARIABLE("@Modified variable", Level.FALSE, Level.TRUE, Level.TRUE, Level.FALSE),
+    MODIFIED_OUTSIDE_METHOD("modified outside method"),
+    CONTEXT_MODIFIED("modified in context"),
     MODIFIED_METHOD("@Modified method", Level.FALSE, Level.TRUE, Level.TRUE, Level.FALSE),
     TEMP_MODIFIED_METHOD("@Modified method, temp", Level.FALSE, Level.TRUE, Level.TRUE, Level.FALSE),
 
+    /*
+    Higher level modifications @NotModified1 @Modified1
+    TODO: implement
+     */
+    NOT_MODIFIED_1("@NotModified1"),
+
+    /*
+    propagate modification: a parameter of abstract type can have this property when one of its abstract methods
+    has been called in the method. There are no delays, we know of abstract vs concrete immediately.
+    This parameter can be linked to a field, which then gets used in other methods. For that reason, similar to
+    modification and not null, we use the following properties:
+
+    PROPAGATE_MODIFICATION: as overarching property in the parameter analyser
+    CONTEXT_PROPAGATE_MOD: context property in statement analyser
+    EXTERNAL_PROPAGATE_MOD: external property in statement analyser, std in field analyser
+
+    propagation of modification is computed on linked variables; method return values are not relevant
+    @PropagateModification occurs on parameters and fields.
+    */
+    PROPAGATE_MODIFICATION("@PropagateModification"),
+    CONTEXT_PROPAGATE_MOD("context propagate modification"),
+    EXTERNAL_PROPAGATE_MOD("external propagate modification")
+
+    /*
+    @Dependent, @Independent, @Dependent1, @Dependent2
+    TODO: reverse the order and call it DEPENDENT, with MultiLevel.FALSE indicating @Independent at first level
+
+    DEPENDENT: overarching value at parameters and methods
+    CONTEXT_DEPENDENT: context property in the statement analyser
+
+     */,
     INDEPENDENT("@Independent", MultiLevel.FALSE, MultiLevel.EFFECTIVE, MultiLevel.FALSE, MultiLevel.EFFECTIVE),
 
+    /*
+    group of more simple properties
+     */
+    FINAL("@Final", Level.FALSE, Level.TRUE, Level.FALSE, Level.TRUE),
+    CONTAINER("@Container", Level.FALSE, Level.TRUE, Level.FALSE, Level.TRUE),
     CONSTANT("@Constant"),
-    EXTENSION_CLASS("@ExtensionClass"),
     FLUENT("@Fluent"),
     IDENTITY("@Identity"),
     IGNORE_MODIFICATIONS("@IgnoreModifications"),
-    LINKED("@Linked"),
-    MARK("@Mark"),
-    ONLY("@Only"),
-    PROPAGATE_MODIFICATION("@PropagateModification"),
     SINGLETON("@Singleton"),
-    NOT_MODIFIED_1("@NotModified1"),
-    UTILITY_CLASS("@UtilityClass");
+    UTILITY_CLASS("@UtilityClass"),
+    EXTENSION_CLASS("@ExtensionClass");
 
     /*
     Properties of return variables, initially set to false, finally copied to the method's properties.
