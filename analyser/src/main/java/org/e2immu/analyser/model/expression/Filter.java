@@ -212,6 +212,11 @@ public class Filter {
         if (value instanceof MethodCall mc) {
             MethodAnalysis methodAnalysis = analyserContext.getMethodAnalysis(mc.methodInfo);
             if (methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD) != Level.FALSE) return null;
+            // none of the arguments to the call can be a parameter
+            if(mc.parameterExpressions.stream().flatMap(e -> e.variables().stream())
+                .anyMatch(arg -> arg instanceof ParameterInfo)) {
+                return null;
+            }
             v = mc.object;
         }
         if (v instanceof VariableExpression ve

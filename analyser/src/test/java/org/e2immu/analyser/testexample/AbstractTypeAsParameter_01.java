@@ -155,7 +155,7 @@ public class AbstractTypeAsParameter_01 {
         list.forEach(sb -> sb.append("!")); // modifying on sb1, sb2
         print(list);
 
-        replace(list);
+        //replace(list); FIXME causes concurrent modification exception
         print(list);
     }
 }

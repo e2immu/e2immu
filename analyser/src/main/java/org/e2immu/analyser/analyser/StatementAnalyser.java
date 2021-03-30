@@ -794,12 +794,13 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
 
         // not checking on DONE anymore because any delay will also have crept into the precondition itself??
         if (evaluationResult.precondition() != null) {
-            if (evaluationResult.precondition().isEmpty()) {
+            Expression preconditionExpression = evaluationResult.precondition().expression();
+            boolean preconditionIsDelayed = sharedState.evaluationContext
+                    .isDelayed(preconditionExpression);
+            if (!preconditionIsDelayed && preconditionExpression.isBoolValueFalse()) {
                 statementAnalysis.ensure(Message.newMessage(getLocation(), Message.INCOMPATIBLE_PRECONDITION));
-                statementAnalysis.stateData.precondition.setFinal(evaluationResult.precondition());
+                statementAnalysis.stateData.precondition.setFinal(Precondition.empty(statementAnalysis.primitives));
             } else {
-                boolean preconditionIsDelayed = sharedState.evaluationContext
-                        .isDelayed(evaluationResult.precondition().expression());
                 Expression translated = sharedState.evaluationContext
                         .acceptAndTranslatePrecondition(evaluationResult.precondition().expression());
                 if (translated != null) {

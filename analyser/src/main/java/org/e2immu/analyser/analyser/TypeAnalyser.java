@@ -352,7 +352,7 @@ public class TypeAnalyser extends AbstractAnalyser {
             throw new UnsupportedOperationException("NYI");
         }
         if (variable instanceof This) {
-           return new VariableExpression(variable);
+            return new VariableExpression(variable);
         }
         throw new UnsupportedOperationException();
     }
@@ -813,6 +813,7 @@ public class TypeAnalyser extends AbstractAnalyser {
         }
 
         boolean haveToEnforcePrivateAndIndependenceRules = false;
+        boolean checkThatTheOnlyModifyingMethodsHaveBeenMarked = false;
 
         for (FieldAnalyser fieldAnalyser : myFieldAnalysers) {
             FieldAnalysis fieldAnalysis = fieldAnalyser.fieldAnalysis;
@@ -858,11 +859,18 @@ public class TypeAnalyser extends AbstractAnalyser {
                     log(DELAYED, "Field {} not known yet if @NotModified, delaying E2Immutable on type", fieldFQN);
                     return DELAYS;
                 }
-                if (modified == Level.TRUE && !typeAnalysis.getApprovedPreconditionsE2().containsKey(fieldInfo)) {
-                    log(E2IMMUTABLE, "{} is not an E2Immutable class, because field {} is not primitive, not @E2Immutable, and its content is modified",
-                            typeInfo.fullyQualifiedName, fieldInfo.name);
-                    typeAnalysis.setProperty(VariableProperty.IMMUTABLE, whenE2Fails);
-                    return DONE;
+                if (modified == Level.TRUE) {
+                    if (eventual) {
+                        if (!typeAnalysis.getApprovedPreconditionsE2().containsKey(fieldInfo)) {
+                            log(E2IMMUTABLE, "For {} to become eventually E2Immutable, modified field {} can only be modified in methods marked @Mark or @Only(before=)");
+                            checkThatTheOnlyModifyingMethodsHaveBeenMarked = true;
+                        }
+                    } else {
+                        log(E2IMMUTABLE, "{} is not an E2Immutable class, because field {} is not primitive, not @E2Immutable, and its content is modified",
+                                typeInfo.fullyQualifiedName, fieldInfo.name);
+                        typeAnalysis.setProperty(VariableProperty.IMMUTABLE, whenE2Fails);
+                        return DONE;
+                    }
                 }
 
                 // RULE 2: ALL @SupportData FIELDS NON-PRIMITIVE NON-E2IMMUTABLE MUST HAVE ACCESS MODIFIER PRIVATE
@@ -930,6 +938,24 @@ public class TypeAnalyser extends AbstractAnalyser {
                             typeAnalysis.setProperty(VariableProperty.IMMUTABLE, whenE2Fails);
                             return DONE;
                         }
+                    }
+                }
+            }
+        }
+
+        // IMPROVE I don't think this bit of code is necessary. provide a test
+        if(checkThatTheOnlyModifyingMethodsHaveBeenMarked) {
+            for (MethodAnalyser methodAnalyser : myMethodAnalysers) {
+                int modified = methodAnalyser.methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD);
+                if (modified == Level.TRUE) {
+                    MethodAnalysis.Eventual e = methodAnalyser.methodAnalysis.getEventual();
+                    log(DELAYED, "Need confirmation that method {} is @Mark or @Only(before)", methodAnalyser.methodInfo.fullyQualifiedName);
+                    if(e == MethodAnalysis.DELAYED_EVENTUAL) return DELAYS;
+                    if(e.notMarkOrBefore()) {
+                        log(E2IMMUTABLE, "{} is not an E2Immutable class, because method {} modifies after the precondition",
+                                typeInfo.fullyQualifiedName, methodAnalyser.methodInfo.name);
+                        typeAnalysis.setProperty(VariableProperty.IMMUTABLE, whenE2Fails);
+                        return DONE;
                     }
                 }
             }

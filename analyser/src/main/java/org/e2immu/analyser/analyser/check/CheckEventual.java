@@ -67,6 +67,7 @@ public class CheckEventual {
                 messages.add(Message.newMessage(new Location(methodInfo),
                         Message.ONLY_WRONG_MARK_LABEL, "Got before=\"" + before + "\" but computed before=\"" + eventual.markLabel() + "\""));
                 methodAnalysis.annotationChecks.put(annotationExpression, Analysis.AnnotationCheck.WRONG);
+                return;
             }
             methodAnalysis.annotationChecks.put(annotationExpression, Analysis.AnnotationCheck.OK);
             return;

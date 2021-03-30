@@ -19,19 +19,19 @@ import org.e2immu.annotation.*;
 /*
 similar to setOnce, to detect errors
  */
-@E2Container(after = "t")
+//@E2Container(after = "t")
 public class EventuallyE2Immutable_1<T> {
 
     private T t;
 
-    @Mark("t")
+    //@Mark("t")  missing: because of error, there's a modifying method without PC
     public void setT(T t) {
         if (t == null) throw new NullPointerException();
         if (this.t != null) throw new UnsupportedOperationException();
         this.t = t;
     }
 
-    @Only(after = "t")
+    //@Only(after = "t") missing: because of error, there's a modifying method without PC
     public T getT() {
         if (t == null) throw new UnsupportedOperationException();
         return t;
@@ -43,7 +43,5 @@ public class EventuallyE2Immutable_1<T> {
      */
     public void error() {
         setT(getT()); // should cause an error
-        System.out.println(t);
     }
-
 }

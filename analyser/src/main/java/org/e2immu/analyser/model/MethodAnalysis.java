@@ -216,6 +216,12 @@ public interface MethodAnalysis extends Analysis {
         public boolean consistentWith(Eventual other) {
             return fields.equals(other.fields);
         }
+
+        public boolean notMarkOrBefore() {
+            if(mark) return false;
+            if(test != null) return true;
+            return after;
+        }
     }
 
 }
