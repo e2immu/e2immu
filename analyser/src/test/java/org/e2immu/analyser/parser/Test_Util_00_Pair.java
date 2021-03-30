@@ -43,14 +43,14 @@ public class Test_Util_00_Pair extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("getV".equals(d.methodInfo().name)) {
-                int expectIndependent = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVE;
+                int expectIndependent = d.iteration() <= 1 ? Level.DELAY : MultiLevel.DEPENDENT_1;
                 assertEquals(expectIndependent, d.methodAnalysis().getProperty(VariableProperty.INDEPENDENT));
             }
         };
 
         // fields k and v do not link to the constructor's parameters because they are implicitly immutable
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
-            int expectIndependent = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVE;
+            int expectIndependent = d.iteration() == 0 ? Level.DELAY : MultiLevel.INDEPENDENT;
             assertEquals(expectIndependent, d.typeAnalysis().getProperty(VariableProperty.INDEPENDENT));
         };
 

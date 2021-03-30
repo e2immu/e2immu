@@ -79,6 +79,8 @@ public class ParameterAnalyser {
         check(NotNull2.class, e2.notNull2);
         check(NotModified1.class, e2.notModified1);
         check(PropagateModification.class, e2.propagateModification);
+        check(Dependent1.class, e2.dependent1);
+        check(Dependent2.class, e2.dependent2);
 
         // opposites
         check(Nullable.class, e2.nullable);
@@ -171,6 +173,12 @@ public class ParameterAnalyser {
             }
         }
 
+        int contractDependent = parameterAnalysis.getProperty(INDEPENDENT);
+        if (contractDependent != Level.DELAY && !parameterAnalysis.properties.isSet(INDEPENDENT)) {
+            parameterAnalysis.properties.put(INDEPENDENT, contractDependent);
+            changed = true;
+        }
+
         int contractPropMod = parameterAnalysis.getProperty(PROPAGATE_MODIFICATION);
         if (contractPropMod != Level.DELAY && !parameterAnalysis.properties.isSet(EXTERNAL_PROPAGATE_MOD)) {
             parameterAnalysis.properties.put(EXTERNAL_PROPAGATE_MOD, contractPropMod);
@@ -260,6 +268,19 @@ public class ParameterAnalyser {
                 }
             } else {
                 assert e.getValue() == NO;
+            }
+            if (e.getValue() == ASSIGNED) {
+                if (!fieldAnalyser.fieldAnalysis.linked1Variables.isSet()) {
+                    log(ANALYSER, "Delaying @Dependent1/2, waiting for linked1variables",
+                            parameterInfo.owner.typeInfo.fullyQualifiedName);
+                    delays = true;
+                } else if (fieldAnalyser.fieldAnalysis.linked1Variables.get().contains(parameterInfo)) {
+                    if (!parameterAnalysis.properties.isSet(INDEPENDENT)) {
+                        parameterAnalysis.properties.put(INDEPENDENT, MultiLevel.DEPENDENT_1);
+                        log(ANALYSER, "Set @Dependent1 on parameter {}: field {} linked or assigned; type is ImplicitlyImmutable",
+                                parameterInfo.fullyQualifiedName(), fieldInfo.name);
+                    }
+                }
             }
         }
 
@@ -361,7 +382,7 @@ public class ParameterAnalyser {
     }
 
     public static final VariableProperty[] CONTEXT_PROPERTIES = {VariableProperty.CONTEXT_NOT_NULL,
-            VariableProperty.CONTEXT_MODIFIED, CONTEXT_PROPAGATE_MOD};
+            VariableProperty.CONTEXT_MODIFIED, CONTEXT_PROPAGATE_MOD}; // FIXME, CONTEXT_DEPENDENT};
 
     private AnalysisStatus analyseContext(SharedState sharedState) {
         // no point, we need to have seen the statement+field analysers first.
@@ -423,6 +444,11 @@ public class ParameterAnalyser {
                 parameterAnalysis.setProperty(EXTERNAL_PROPAGATE_MOD, Level.FALSE);
             }
             parameterAnalysis.setProperty(CONTEXT_PROPAGATE_MOD, Level.FALSE);
+
+            // @Independent
+            if (!parameterAnalysis.properties.isSet(INDEPENDENT)) {
+                parameterAnalysis.setProperty(INDEPENDENT, parameterInfo.parameterizedType.defaultIndependent());
+            }
 
             if (lastStatementAnalysis != null && parameterInfo.owner.isNotOverridingAnyOtherMethod()
                     && !parameterInfo.owner.isCompanionMethod()) {

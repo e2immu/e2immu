@@ -134,13 +134,18 @@ public enum VariableProperty {
 
     /*
     @Dependent, @Independent, @Dependent1, @Dependent2
-    TODO: reverse the order and call it DEPENDENT, with MultiLevel.FALSE indicating @Independent at first level
 
-    DEPENDENT: overarching value at parameters and methods
+    INDEPENDENT: overarching value at parameters and methods
+        param: not linked to field? independent;  when assigned: dependent, dependent1 when Impl Imm, dependent2 when  II parts of me linked
+        constructor: independent if all parameters independent
+        method: @Mod+assignment to fields: independent when return value and parameters independent
+                @NM: computed on return value only (there can be no assignments, so no linked params to fields)
+
     CONTEXT_DEPENDENT: context property in the statement analyser
-
+        propagation: same assignment takes place via methods to (field.add(parameter))
      */,
-    INDEPENDENT("@Independent", MultiLevel.FALSE, MultiLevel.EFFECTIVE, MultiLevel.FALSE, MultiLevel.EFFECTIVE),
+    INDEPENDENT("@Independent", MultiLevel.DEPENDENT, MultiLevel.INDEPENDENT, MultiLevel.DEPENDENT, MultiLevel.INDEPENDENT),
+    CONTEXT_DEPENDENT("context dependent", MultiLevel.DEPENDENT, MultiLevel.INDEPENDENT, MultiLevel.DEPENDENT, MultiLevel.INDEPENDENT),
 
     /*
     group of more simple properties

@@ -124,7 +124,7 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
             if (Primitives.isPrimitiveExcludingVoid(parameterInfo.parameterizedType)) return;
 
             // @NotModified, @Modified
-            // implicitly @NotModified when E2Immutable, or functional interface
+            // implicitly @NotModified when E2Immutable
             int modified = getProperty(VariableProperty.MODIFIED_VARIABLE);
             if (parameterInfo.parameterizedType.isE2Immutable(analysisProvider) != Boolean.TRUE) {
                 AnnotationExpression ae = modified == Level.FALSE ? e2ImmuAnnotationExpressions.notModified :
@@ -139,7 +139,16 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
             doNotNull(e2ImmuAnnotationExpressions, getProperty(VariableProperty.NOT_NULL_PARAMETER));
 
             // @PropagateModification
-            annotations.put(e2ImmuAnnotationExpressions.propagateModification, getProperty(VariableProperty.PROPAGATE_MODIFICATION) == Level.TRUE);
+            annotations.put(e2ImmuAnnotationExpressions.propagateModification,
+                    getProperty(VariableProperty.PROPAGATE_MODIFICATION) == Level.TRUE);
+
+            // @Dependent1,2; @Independent, @Dependent not shown
+            int independent = getProperty(VariableProperty.INDEPENDENT);
+            if (independent == MultiLevel.DEPENDENT_1) {
+                annotations.put(e2ImmuAnnotationExpressions.dependent1, true);
+            } else if (independent == MultiLevel.DEPENDENT_2) {
+                annotations.put(e2ImmuAnnotationExpressions.dependent2, true);
+            }
         }
 
         public boolean addAssignedToField(FieldInfo fieldInfo, AssignedOrLinked assignedOrLinked) {

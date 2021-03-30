@@ -42,6 +42,15 @@ public class MultiLevel {
     public static final int NOT_NULL_2 = 2;
     public static final int NOT_NULL_3 = 3;
 
+    // DEPENDENT (only at the first level, nothing to do with eventual)
+
+    public static final int DEPENDENT = FALSE; // no need for more
+    public static final int DEPENDENT_1 = EVENTUAL_BEFORE;
+    public static final int DEPENDENT_2 = EVENTUAL_AFTER;
+    public static final int INDEPENDENT = EFFECTIVE;
+
+    // IMMUTABLE
+
     public static final int EVENTUALLY_CONTENT2_NOT_NULL_BEFORE_MARK = compose(EVENTUAL_BEFORE, EVENTUAL_BEFORE, EVENTUAL_BEFORE);
     public static final int EVENTUALLY_CONTENT_NOT_NULL_BEFORE_MARK = compose(EVENTUAL_BEFORE, EVENTUAL_BEFORE);
     public static final int EVENTUALLY_NOT_NULL_BEFORE_MARK = compose(EVENTUAL_BEFORE);

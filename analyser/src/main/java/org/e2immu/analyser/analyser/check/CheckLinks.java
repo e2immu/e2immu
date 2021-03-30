@@ -27,6 +27,7 @@ import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Messages;
 import org.e2immu.annotation.Linked;
+import org.e2immu.annotation.Linked1;
 
 import java.util.*;
 import java.util.function.Function;
@@ -34,13 +35,13 @@ import java.util.stream.Collectors;
 
 public record CheckLinks(InspectionProvider inspectionProvider, E2ImmuAnnotationExpressions e2) {
 
-    public AnnotationExpression createLinkAnnotation(E2ImmuAnnotationExpressions e2, Set<Variable> links) {
+    public AnnotationExpression createLinkAnnotation(TypeInfo typeInfo, Set<Variable> links) {
         List<Expression> linkNameList = links.stream().map(variable -> new StringConstant(inspectionProvider.getPrimitives(),
                 variable.nameInLinkedAnnotation())).collect(Collectors.toList());
         Expression linksStringArray = new MemberValuePair("to",
                 new ArrayInitializer(inspectionProvider, linkNameList, inspectionProvider.getPrimitives().stringParameterizedType));
         List<Expression> expressions = List.of(linksStringArray);
-        return new AnnotationExpressionImpl(e2.linked.typeInfo(), expressions);
+        return new AnnotationExpressionImpl(typeInfo, expressions);
     }
 
     public void checkLinksForFields(Messages messages, FieldInfo fieldInfo, FieldAnalysisImpl.Builder fieldAnalysis) {
@@ -58,6 +59,28 @@ public record CheckLinks(InspectionProvider inspectionProvider, E2ImmuAnnotation
                 Linked.class.getName(),
                 "@Linked",
                 e2.linked.typeInfo(),
+                extractInspected,
+                computedString,
+                fieldInfo.fieldInspection.get().getAnnotations(),
+                new Location(fieldInfo));
+    }
+
+
+    public void checkLink1sForFields(Messages messages, FieldInfo fieldInfo, FieldAnalysisImpl.Builder fieldAnalysis) {
+        Function<AnnotationExpression, String> extractInspected = ae -> {
+            String[] inspected = ae.extract("to", new String[]{});
+            return Arrays.stream(inspected).sorted().collect(Collectors.joining(","));
+        };
+        LinkedVariables linkedVariables = fieldAnalysis.getLinked1Variables();
+        String computedString = linkedVariables.isEmpty() ? null : linkedVariables.variables().stream()
+                .map(Variable::nameInLinkedAnnotation)
+                .sorted().collect(Collectors.joining(","));
+
+        checkAnnotationWithValue(messages,
+                fieldAnalysis,
+                Linked1.class.getName(),
+                "@Linked1",
+                e2.linked1.typeInfo(),
                 extractInspected,
                 computedString,
                 fieldInfo.fieldInspection.get().getAnnotations(),

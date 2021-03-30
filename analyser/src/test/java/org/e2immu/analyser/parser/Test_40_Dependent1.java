@@ -12,25 +12,22 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.testexample;
+package org.e2immu.analyser.parser;
 
-import org.e2immu.annotation.Dependent1;
-import org.e2immu.annotation.Final;
-import org.e2immu.annotation.Linked1;
+import org.e2immu.analyser.config.DebugConfiguration;
+import org.junit.jupiter.api.Test;
 
-public class Dependent1_0<T> {
+import java.io.IOException;
 
-    // and not @Linked, because T is implicitly immutable in this type
-    @Linked1(to = {"Dependent1_0:t"})
-    @Final
-    private T t;
-
-    public Dependent1_0(@Dependent1 T t) {
-        this.t = t;
+public class Test_40_Dependent1  extends CommonTestRunner {
+    public Test_40_Dependent1() {
+        super(false);
     }
 
-    @Dependent1
-    public T getT() {
-        return t;
+    @Test
+    public void test_0() throws IOException {
+        testClass("Dependent1_0", 0, 0,
+                new DebugConfiguration.Builder()
+                        .build());
     }
 }

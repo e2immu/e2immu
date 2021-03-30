@@ -97,19 +97,20 @@ public class FieldAnalyser extends AbstractAnalyser {
         haveInitialiser = fieldInspection.fieldInitialiserIsSet() && fieldInspection.getFieldInitialiser().initialiser() != EmptyExpression.EMPTY_EXPRESSION;
 
         analyserComponents = new AnalyserComponents.Builder<String, SharedState>()
-                .add(COMPUTE_IMPLICITLY_IMMUTABLE_DATA_TYPE, (sharedState) -> computeImplicitlyImmutableDataType())
+                .add(COMPUTE_IMPLICITLY_IMMUTABLE_DATA_TYPE, sharedState -> computeImplicitlyImmutableDataType())
                 .add(EVALUATE_INITIALISER, this::evaluateInitialiser)
                 .add(ANALYSE_FINAL, this::analyseFinal)
-                .add(ANALYSE_ASSIGNMENTS, (sharedState) -> allAssignmentsHaveBeenSet())
-                .add(ANALYSE_LINKS_HAVE_BEEN_ESTABLISHED, (sharedState) -> allLinksHaveBeenEstablished())
+                .add(ANALYSE_ASSIGNMENTS, sharedState -> allAssignmentsHaveBeenSet())
+                .add(ANALYSE_LINKS_HAVE_BEEN_ESTABLISHED, sharedState -> allLinksHaveBeenEstablished())
                 .add(ANALYSE_IMMUTABLE, this::analyseImmutable)
-                .add(ANALYSE_MODIFIED, (sharedState) -> analyseModified())
-                .add(ANALYSE_FINAL_VALUE, (sharedState) -> analyseFinalValue())
+                .add(ANALYSE_MODIFIED, sharedState -> analyseModified())
+                .add(ANALYSE_FINAL_VALUE, sharedState -> analyseFinalValue())
                 .add(ANALYSE_NOT_NULL, this::analyseNotNull)
-                .add(ANALYSE_NOT_MODIFIED_1, (sharedState) -> analyseNotModified1())
-                .add(ANALYSE_LINKED, (sharedState) -> analyseLinked())
-                .add("analysePropagateMo", (sharedState) -> analysePropagateModification())
-                .add(FIELD_ERRORS, (sharedState) -> fieldErrors())
+                .add(ANALYSE_NOT_MODIFIED_1, sharedState -> analyseNotModified1())
+                .add(ANALYSE_LINKED, sharedState -> analyseLinked())
+                .add("analyseLinked1", sharedState -> analyseLinked1())
+                .add("analysePropagateMo", sharedState -> analysePropagateModification())
+                .add(FIELD_ERRORS, sharedState -> fieldErrors())
                 .build();
     }
 
@@ -600,6 +601,47 @@ public class FieldAnalyser extends AbstractAnalyser {
         return new MultiValue(analyserContext, values, fieldInfo.type);
     }
 
+    private AnalysisStatus analyseLinked1() {
+        assert !fieldAnalysis.linked1Variables.isSet();
+
+        // we ONLY look at the linked variables of fields that have been assigned to
+        Optional<MethodInfo> notDefined = allMethodsAndConstructors.stream()
+                .filter(m -> {
+                    List<VariableInfo> variableInfoList = m.getFieldAsVariable(fieldInfo, false);
+                    return !variableInfoList.isEmpty() &&
+                            variableInfoList.stream().anyMatch(VariableInfo::isAssigned) &&
+                            !variableInfoList.stream().allMatch(VariableInfo::staticallyAssignedVariablesIsSet);
+                }).map(ma -> ma.methodInfo).findFirst();
+        if (notDefined.isPresent()) {
+            log(DELAYED, "Linked1Variables not yet set for {} in method (findFirst): {}",
+                    notDefined.get().fullyQualifiedName);
+            return DELAYS;
+        }
+
+        if (myTypeAnalyser.typeAnalysis.getImplicitlyImmutableDataTypes() == null) {
+            log(DELAYED, "Linked1Variables not yet set for {}, waiting on implicitly immutable types",
+                    fieldInfo.fullyQualifiedName());
+            return DELAYS;
+        }
+
+        Set<Variable> linked1Variables = allMethodsAndConstructors.stream()
+                .flatMap(m -> m.getFieldAsVariableStream(fieldInfo, false))
+                .filter(VariableInfo::staticallyAssignedVariablesIsSet)
+                .flatMap(vi -> vi.getStaticallyAssignedVariables().variables().stream())
+                .filter(v -> !(v instanceof LocalVariableReference)) // especially local variable copies of the field itself
+                .filter(v -> myTypeAnalyser.typeAnalysis.getImplicitlyImmutableDataTypes().contains(v.parameterizedType()))
+                .collect(Collectors.toSet());
+        fieldAnalysis.linked1Variables.set(new LinkedVariables(linked1Variables));
+        log(LINKED_VARIABLES, "FA: Set link1s of {} to [{}]", fieldInfo.fullyQualifiedName(),
+                Variable.fullyQualifiedName(linked1Variables));
+
+        // explicitly adding the annotation here; it will not be inspected.
+        E2ImmuAnnotationExpressions e2 = analyserContext.getE2ImmuAnnotationExpressions();
+        AnnotationExpression link1Annotation = checkLinks.createLinkAnnotation(e2.linked1.typeInfo(), linked1Variables);
+        fieldAnalysis.annotations.put(link1Annotation, !linked1Variables.isEmpty());
+        return DONE;
+    }
+
     private AnalysisStatus analyseLinked() {
         assert !fieldAnalysis.linkedVariables.isSet();
 
@@ -611,26 +653,16 @@ public class FieldAnalyser extends AbstractAnalyser {
         }
 
         // we ONLY look at the linked variables of fields that have been assigned to
-        boolean allDefined = allMethodsAndConstructors.stream()
-                .allMatch(m -> {
+        Optional<MethodInfo> notDefined = allMethodsAndConstructors.stream()
+                .filter(m -> {
                     List<VariableInfo> variableInfoList = m.getFieldAsVariable(fieldInfo, false);
-                    return variableInfoList.isEmpty() ||
-                            variableInfoList.stream().noneMatch(VariableInfo::isAssigned) ||
-                            variableInfoList.stream().allMatch(VariableInfo::linkedVariablesIsSet);
-                });
-        if (!allDefined) {
-            if (Logger.isLogEnabled(DELAYED)) {
-                log(DELAYED, "LinkedVariables not yet set for {} in methods: [{}]",
-                        fieldInfo.fullyQualifiedName(),
-                        allMethodsAndConstructors.stream()
-                                .filter(m -> {
-                                    List<VariableInfo> variableInfoList = m.getFieldAsVariable(fieldInfo, false);
-                                    return !variableInfoList.isEmpty() &&
-                                            variableInfoList.stream().allMatch(VariableInfo::isAssigned) &&
-                                            !variableInfoList.stream().allMatch(VariableInfo::linkedVariablesIsSet);
-                                })
-                                .map(m -> m.methodInfo.name).collect(Collectors.joining(", ")));
-            }
+                    return !variableInfoList.isEmpty() &&
+                            variableInfoList.stream().anyMatch(VariableInfo::isAssigned) &&
+                            !variableInfoList.stream().allMatch(VariableInfo::linkedVariablesIsSet);
+                }).map(ma -> ma.methodInfo).findFirst();
+        if (notDefined.isPresent()) {
+            log(DELAYED, "LinkedVariables not yet set for {} in method (findFirst): {}",
+                    notDefined.get().fullyQualifiedName);
             return DELAYS;
         }
 
@@ -645,7 +677,7 @@ public class FieldAnalyser extends AbstractAnalyser {
 
         // explicitly adding the annotation here; it will not be inspected.
         E2ImmuAnnotationExpressions e2 = analyserContext.getE2ImmuAnnotationExpressions();
-        AnnotationExpression linkAnnotation = checkLinks.createLinkAnnotation(e2, linkedVariables);
+        AnnotationExpression linkAnnotation = checkLinks.createLinkAnnotation(e2.linked.typeInfo(), linkedVariables);
         fieldAnalysis.annotations.put(linkAnnotation, !linkedVariables.isEmpty());
         return DONE;
     }
@@ -834,6 +866,8 @@ public class FieldAnalyser extends AbstractAnalyser {
         check(Nullable.class, e2.nullable);
 
         checkLinks.checkLinksForFields(messages, fieldInfo, fieldAnalysis);
+        checkLinks.checkLink1sForFields(messages, fieldInfo, fieldAnalysis);
+
         checkConstant.checkConstantForFields(messages, fieldInfo, fieldAnalysis);
     }
 

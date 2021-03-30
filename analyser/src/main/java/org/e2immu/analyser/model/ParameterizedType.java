@@ -40,6 +40,7 @@ public class ParameterizedType {
     public static final ParameterizedType WILDCARD_PARAMETERIZED_TYPE = new ParameterizedType(WildCard.UNBOUND);
 
 
+
     public enum WildCard {
         NONE, UNBOUND, SUPER, EXTENDS
     }
@@ -709,5 +710,9 @@ public class ParameterizedType {
 
     public int defaultNotNull() {
         return Primitives.isPrimitiveExcludingVoid(this) ? MultiLevel.EFFECTIVELY_NOT_NULL : MultiLevel.NULLABLE;
+    }
+
+    public int defaultIndependent() {
+        return Primitives.isPrimitiveExcludingVoid(this) ? MultiLevel.DEPENDENT: MultiLevel.INDEPENDENT;
     }
 }

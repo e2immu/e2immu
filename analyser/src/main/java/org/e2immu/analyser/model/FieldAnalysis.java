@@ -37,6 +37,8 @@ public interface FieldAnalysis extends Analysis {
     // or parameters
     LinkedVariables getLinkedVariables();
 
+    LinkedVariables getLinked1Variables();
+
     Boolean isOfImplicitlyImmutableDataType();
 
     FieldInfo getFieldInfo();
@@ -65,7 +67,7 @@ public interface FieldAnalysis extends Analysis {
             case CONTEXT_NOT_NULL:
             case NOT_NULL_PARAMETER:
             case PROPAGATE_MODIFICATION:
-                throw new UnsupportedOperationException("Property "+variableProperty);
+                throw new UnsupportedOperationException("Property " + variableProperty);
 
             case EXTERNAL_NOT_NULL:
                 if (Primitives.isPrimitiveExcludingVoid(fieldInfo.type)) return MultiLevel.EFFECTIVELY_NOT_NULL;

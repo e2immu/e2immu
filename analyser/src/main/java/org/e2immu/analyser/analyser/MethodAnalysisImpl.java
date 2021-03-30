@@ -253,7 +253,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
 
         private int dynamicProperty(int formalImmutableProperty) {
             int immutableTypeAfterEventual = MultiLevel.eventual(formalImmutableProperty,
-                   false); //  FIXME
+                    false); //  FIXME
             return Level.best(super.getProperty(VariableProperty.IMMUTABLE), immutableTypeAfterEventual);
         }
 
@@ -276,8 +276,12 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
             }
 
             // @Dependent @Independent
-            if (methodInfo.isConstructor || modified == Level.FALSE && allowIndependentOnMethod()) {
-                int independent = getProperty(VariableProperty.INDEPENDENT);
+            int independent = getProperty(VariableProperty.INDEPENDENT);
+            if (independent == MultiLevel.DEPENDENT_1) {
+                annotations.put(e2ImmuAnnotationExpressions.dependent1, true);
+            } else if (independent == MultiLevel.DEPENDENT_2) {
+                annotations.put(e2ImmuAnnotationExpressions.dependent2, true);
+            } else if (methodInfo.isConstructor || modified == Level.FALSE && allowIndependentOnMethod()) {
                 doIndependent(e2ImmuAnnotationExpressions, independent, methodInfo.typeInfo.isInterface());
             }
 

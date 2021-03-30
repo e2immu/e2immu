@@ -39,6 +39,8 @@ public class E2ImmuAnnotationExpressions {
     public final AnnotationExpression constant = create(Constant.class);
     public final AnnotationExpression container = create(Container.class);
     public final AnnotationExpression dependent = create(Dependent.class);
+    public final AnnotationExpression dependent1 = create(Dependent1.class);
+    public final AnnotationExpression dependent2 = create(Dependent2.class);
     public final AnnotationExpression e1Container = create(E1Container.class);
     public final AnnotationExpression e2Container = create(E2Container.class);
     public final AnnotationExpression extensionClass = create(ExtensionClass.class);
@@ -50,6 +52,7 @@ public class E2ImmuAnnotationExpressions {
     public final AnnotationExpression ignoreModifications = create(IgnoreModifications.class);
     public final AnnotationExpression independent = create(Independent.class);
     public final AnnotationExpression linked = create(Linked.class);
+    public final AnnotationExpression linked1 = create(Linked1.class);
     public final AnnotationExpression mark = create(Mark.class);
     public final AnnotationExpression modified = create(Modified.class);
     public final AnnotationExpression mutableModifiesArguments = create(MutableModifiesArguments.class);
@@ -70,10 +73,10 @@ public class E2ImmuAnnotationExpressions {
 
     public E2ImmuAnnotationExpressions() {
         Map<String, TypeInfo> builder = new HashMap<>();
-        add(builder, allowsInterrupt, beforeMark, constant, container, dependent, e1Container, e2Container,
-                extensionClass, e1Immutable, e2Immutable,
+        add(builder, allowsInterrupt, beforeMark, constant, container, dependent, dependent1, dependent2,
+                e1Container, e2Container, extensionClass, e1Immutable, e2Immutable,
                 effectivelyFinal, fluent, identity, ignoreModifications, independent,
-                linked, mark, modified, mutableModifiesArguments);
+                linked, linked1, mark, modified, mutableModifiesArguments);
         add(builder, notModified, notModified1, notNull, notNull1, notNull2, nullable, only, propagateModification,
                 singleton, testMark, utilityClass, variableField);
         annotationTypes = Map.copyOf(builder);

@@ -146,14 +146,14 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
     }
 
     protected void doIndependent(E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions, int independent, boolean isInterface) {
-        if (independent == MultiLevel.FALSE || !isInterface && independent == MultiLevel.DELAY) {
+        if (independent == MultiLevel.DEPENDENT || !isInterface && independent == MultiLevel.DELAY) {
             annotations.put(e2ImmuAnnotationExpressions.independent, false);
             annotations.put(e2ImmuAnnotationExpressions.dependent, true);
             return;
         }
-        if (independent <= MultiLevel.FALSE) return;
+        if (independent <= MultiLevel.DEPENDENT) return;
         annotations.put(e2ImmuAnnotationExpressions.dependent, false);
-        if (independent == MultiLevel.EFFECTIVE) {
+        if (independent == MultiLevel.INDEPENDENT) {
             annotations.put(e2ImmuAnnotationExpressions.independent, true);
             return;
         }
@@ -183,7 +183,7 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
         VariableProperty modified = analyserIdentification == Analyser.AnalyserIdentification.FIELD ||
                 analyserIdentification == Analyser.AnalyserIdentification.PARAMETER ? VariableProperty.MODIFIED_VARIABLE : VariableProperty.MODIFIED_METHOD;
         VariableProperty propagateModification = analyserIdentification == Analyser.AnalyserIdentification.FIELD ?
-                VariableProperty.EXTERNAL_PROPAGATE_MOD: VariableProperty.PROPAGATE_MODIFICATION;
+                VariableProperty.EXTERNAL_PROPAGATE_MOD : VariableProperty.PROPAGATE_MODIFICATION;
 
         for (AnnotationExpression annotationExpression : annotations) {
             AnnotationParameters parameters = annotationExpression.e2ImmuAnnotationParameters();
@@ -234,9 +234,13 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
                 } else if (e2ImmuAnnotationExpressions.ignoreModifications.typeInfo() == t) {
                     setProperty(VariableProperty.IGNORE_MODIFICATIONS, trueFalse);
                 } else if (e2ImmuAnnotationExpressions.independent.typeInfo() == t) {
-                    setProperty(VariableProperty.INDEPENDENT, MultiLevel.EFFECTIVE);
+                    setProperty(VariableProperty.INDEPENDENT, MultiLevel.INDEPENDENT);
                 } else if (e2ImmuAnnotationExpressions.dependent.typeInfo() == t) {
-                    setProperty(VariableProperty.INDEPENDENT, MultiLevel.FALSE);
+                    setProperty(VariableProperty.INDEPENDENT, MultiLevel.DEPENDENT);
+                } else if (e2ImmuAnnotationExpressions.dependent1.typeInfo() == t) {
+                    setProperty(VariableProperty.INDEPENDENT, MultiLevel.DEPENDENT_1);
+                } else if (e2ImmuAnnotationExpressions.dependent2.typeInfo() == t) {
+                    setProperty(VariableProperty.INDEPENDENT, MultiLevel.DEPENDENT_2);
                 } else if (e2ImmuAnnotationExpressions.mark.typeInfo() == t) {
                     mark = annotationExpression;
                 } else if (e2ImmuAnnotationExpressions.testMark.typeInfo() == t) {
