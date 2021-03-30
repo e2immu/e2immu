@@ -64,7 +64,7 @@ public class Logger {
         SIDE_EFFECT,
         CNF,
         DYNAMIC,
-        SIZE,
+        PROPAGATE_MODIFICATION,
         PATTERN,
 
         INSPECT,

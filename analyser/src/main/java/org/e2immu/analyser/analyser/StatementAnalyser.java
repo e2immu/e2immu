@@ -782,11 +782,11 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 CONTEXT_MODIFIED, groupPropertyValues.getMap(CONTEXT_MODIFIED), EVALUATION, Set.of());
         status = cmStatus.combine(status);
 
-        addToMap(groupPropertyValues, PROPAGATE_MODIFICATION, x -> Level.FALSE, true);
+        addToMap(groupPropertyValues, CONTEXT_PROPAGATE_MOD, x -> Level.FALSE, true);
         // the delay for PM is ignored (if any, it will come from CM)
         contextPropertyWriter.write(statementAnalysis, sharedState.evaluationContext,
                 VariableInfo::getLinkedVariables,
-                PROPAGATE_MODIFICATION, groupPropertyValues.getMap(PROPAGATE_MODIFICATION), EVALUATION, Set.of());
+                CONTEXT_PROPAGATE_MOD, groupPropertyValues.getMap(CONTEXT_PROPAGATE_MOD), EVALUATION, Set.of());
 
         // odds and ends
 
@@ -975,8 +975,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         groupPropertyValues.set(CONTEXT_NOT_NULL, variable, cnn == null ? MultiLevel.NULLABLE : cnn);
         Integer cm = res.remove(CONTEXT_MODIFIED);
         groupPropertyValues.set(CONTEXT_MODIFIED, variable, cm == null ? Level.FALSE : cm);
-        Integer pm = res.remove(PROPAGATE_MODIFICATION);
-        groupPropertyValues.set(PROPAGATE_MODIFICATION, variable, pm == null ? Level.FALSE : pm);
+        Integer pm = res.remove(CONTEXT_PROPAGATE_MOD);
+        groupPropertyValues.set(CONTEXT_PROPAGATE_MOD, variable, pm == null ? Level.FALSE : pm);
         return res;
     }
 
@@ -1010,7 +1010,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                             yield Level.DELAY;
                         }
                     }
-                    case PROPAGATE_MODIFICATION -> Math.max(Level.FALSE, Math.max(prev, change));
+                    case CONTEXT_PROPAGATE_MOD -> Math.max(Level.FALSE, Math.max(prev, change));
                     default -> throw new UnsupportedOperationException();
                 };
                 groupPropertyValues.set(k, variable, value);
@@ -1378,7 +1378,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
 
                     Map<VariableProperty, Integer> properties =
                             Map.of(CONTEXT_MODIFIED, Level.FALSE,
-                                    PROPAGATE_MODIFICATION, Level.FALSE,
+                                    CONTEXT_PROPAGATE_MOD, Level.FALSE,
                                     EXTERNAL_NOT_NULL, MultiLevel.NOT_INVOLVED,
                                     CONTEXT_NOT_NULL, lvr.parameterizedType().defaultNotNull());
 

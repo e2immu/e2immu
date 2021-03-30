@@ -195,7 +195,7 @@ public record VariableExpression(Variable variable, String name) implements Expr
             builder.markContextNotNullDelay(variable);
         }
 
-        int propagate = forwardEvaluationInfo.getProperty(VariableProperty.PROPAGATE_MODIFICATION);
+        int propagate = forwardEvaluationInfo.getProperty(VariableProperty.CONTEXT_PROPAGATE_MOD);
         if (propagate == Level.TRUE) {
             assert modified == Level.FALSE;
             builder.markPropagateModification(variable);

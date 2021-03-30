@@ -108,7 +108,7 @@ public class TypeAnalyser extends AbstractAnalyser {
         analyserComponents = builder.build();
 
         messages.addAll(typeAnalysis.fromAnnotationsIntoProperties(null,
-                false, typeInfo.isInterface(), typeInspection.getAnnotations(),
+                AnalyserIdentification.TYPE, typeInfo.isInterface(), typeInspection.getAnnotations(),
                 analyserContext.getE2ImmuAnnotationExpressions()));
     }
 
@@ -566,19 +566,27 @@ public class TypeAnalyser extends AbstractAnalyser {
         for (MethodAnalyser methodAnalyser : myMethodAndConstructorAnalysersExcludingSAMs) {
             if (!methodAnalyser.methodInfo.isPrivate()) {
                 for (ParameterAnalyser parameterAnalyser : methodAnalyser.getParameterAnalysers()) {
-                    int modified = parameterAnalyser.parameterAnalysis.getProperty(VariableProperty.MODIFIED_VARIABLE);
-                    if (modified == Level.DELAY && methodAnalyser.hasCode()) {
-                        log(DELAYED, "Delaying container, modification of parameter {} undecided",
+                    int propagate = parameterAnalyser.parameterAnalysis.getProperty(VariableProperty.PROPAGATE_MODIFICATION);
+                    if (propagate == Level.DELAY) {
+                        log(DELAYED, "Delaying container, propagate modification of parameter {} undecided",
                                 parameterAnalyser.parameterInfo.fullyQualifiedName());
                         return DELAYS; // cannot yet decide
                     }
-                    if (modified == Level.TRUE) {
-                        log(CONTAINER, "{} is not a @Container: the content of {} is modified in {}",
-                                typeInfo.fullyQualifiedName,
-                                parameterAnalyser.parameterInfo.fullyQualifiedName(),
-                                methodAnalyser.methodInfo.distinguishingName());
-                        typeAnalysis.setProperty(VariableProperty.CONTAINER, Level.FALSE);
-                        return DONE;
+                    if (propagate == Level.FALSE) {
+                        int modified = parameterAnalyser.parameterAnalysis.getProperty(VariableProperty.MODIFIED_VARIABLE);
+                        if (modified == Level.DELAY && methodAnalyser.hasCode()) {
+                            log(DELAYED, "Delaying container, modification of parameter {} undecided",
+                                    parameterAnalyser.parameterInfo.fullyQualifiedName());
+                            return DELAYS; // cannot yet decide
+                        }
+                        if (modified == Level.TRUE) {
+                            log(CONTAINER, "{} is not a @Container: the content of {} is modified in {}",
+                                    typeInfo.fullyQualifiedName,
+                                    parameterAnalyser.parameterInfo.fullyQualifiedName(),
+                                    methodAnalyser.methodInfo.distinguishingName());
+                            typeAnalysis.setProperty(VariableProperty.CONTAINER, Level.FALSE);
+                            return DONE;
+                        }
                     }
                 }
             }
@@ -944,14 +952,14 @@ public class TypeAnalyser extends AbstractAnalyser {
         }
 
         // IMPROVE I don't think this bit of code is necessary. provide a test
-        if(checkThatTheOnlyModifyingMethodsHaveBeenMarked) {
+        if (checkThatTheOnlyModifyingMethodsHaveBeenMarked) {
             for (MethodAnalyser methodAnalyser : myMethodAnalysers) {
                 int modified = methodAnalyser.methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD);
                 if (modified == Level.TRUE) {
                     MethodAnalysis.Eventual e = methodAnalyser.methodAnalysis.getEventual();
                     log(DELAYED, "Need confirmation that method {} is @Mark or @Only(before)", methodAnalyser.methodInfo.fullyQualifiedName);
-                    if(e == MethodAnalysis.DELAYED_EVENTUAL) return DELAYS;
-                    if(e.notMarkOrBefore()) {
+                    if (e == MethodAnalysis.DELAYED_EVENTUAL) return DELAYS;
+                    if (e.notMarkOrBefore()) {
                         log(E2IMMUTABLE, "{} is not an E2Immutable class, because method {} modifies after the precondition",
                                 typeInfo.fullyQualifiedName, methodAnalyser.methodInfo.name);
                         typeAnalysis.setProperty(VariableProperty.IMMUTABLE, whenE2Fails);

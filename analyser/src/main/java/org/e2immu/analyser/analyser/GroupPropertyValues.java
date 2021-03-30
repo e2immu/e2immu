@@ -23,7 +23,7 @@ import java.util.Set;
 
 public class GroupPropertyValues {
 
-    public static final Set<VariableProperty> PROPERTIES = Set.of(VariableProperty.PROPAGATE_MODIFICATION,
+    public static final Set<VariableProperty> PROPERTIES = Set.of(VariableProperty.CONTEXT_PROPAGATE_MOD,
             VariableProperty.CONTEXT_MODIFIED, VariableProperty.CONTEXT_NOT_NULL, VariableProperty.EXTERNAL_NOT_NULL);
 
     private final Map<VariableProperty, Map<Variable, Integer>> map = new HashMap<>();

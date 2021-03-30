@@ -52,7 +52,7 @@ public class Test_39_PropagateModification extends CommonTestRunner {
                     int expectCm = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
                     assertEquals(expectCm, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
                     int expectPm = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
-                    assertEquals(expectPm, d.getProperty(VariableProperty.PROPAGATE_MODIFICATION));
+                    assertEquals(expectPm, d.getProperty(VariableProperty.CONTEXT_PROPAGATE_MOD));
                 }
             }
         };
@@ -81,13 +81,13 @@ public class Test_39_PropagateModification extends CommonTestRunner {
                         int expectCm = d.iteration() <= 1 ? Level.DELAY : Level.FALSE;
                         assertEquals(expectCm, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
                         int expectPm = d.iteration() <= 1 ? Level.DELAY : Level.FALSE;
-                        assertEquals(expectPm, d.getProperty(VariableProperty.PROPAGATE_MODIFICATION));
+                        assertEquals(expectPm, d.getProperty(VariableProperty.CONTEXT_PROPAGATE_MOD));
                     }
                     if ("1".equals(d.statementId())) {
                         int expectCm = d.iteration() <= 1 ? Level.DELAY : Level.FALSE;
                         assertEquals(expectCm, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
                         int expectPm = d.iteration() <= 1 ? Level.DELAY : Level.TRUE;
-                        assertEquals(expectPm, d.getProperty(VariableProperty.PROPAGATE_MODIFICATION));
+                        assertEquals(expectPm, d.getProperty(VariableProperty.CONTEXT_PROPAGATE_MOD));
                     }
                 }
             }

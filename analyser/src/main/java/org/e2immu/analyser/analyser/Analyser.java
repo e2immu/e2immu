@@ -22,6 +22,10 @@ import java.util.stream.Stream;
 
 public interface Analyser {
 
+    enum AnalyserIdentification {
+        TYPE, FIELD, PARAMETER, METHOD;
+    }
+
     // four stages
 
     void initialize();

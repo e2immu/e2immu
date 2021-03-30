@@ -49,7 +49,8 @@ public class ShallowMethodAnalyser {
 
         methodInspection.getParameters().forEach(parameterInfo -> {
             ParameterAnalysisImpl.Builder builder = new ParameterAnalysisImpl.Builder(primitives, analysisProvider, parameterInfo);
-            messages.addAll(builder.fromAnnotationsIntoProperties(VariableProperty.NOT_NULL_PARAMETER, true, true,
+            messages.addAll(builder.fromAnnotationsIntoProperties(VariableProperty.NOT_NULL_PARAMETER,
+                    Analyser.AnalyserIdentification.PARAMETER, true,
                     map.getOrDefault(parameterInfo, Map.of()).keySet(), e2ImmuAnnotationExpressions));
             parameterAnalyses.add(builder); // building will take place when the method analysis is built
         });
@@ -57,7 +58,8 @@ public class ShallowMethodAnalyser {
         MethodAnalysisImpl.Builder methodAnalysisBuilder = new MethodAnalysisImpl.Builder(false, primitives,
                 analysisProvider, InspectionProvider.DEFAULT, methodInfo, parameterAnalyses);
 
-        messages.addAll(methodAnalysisBuilder.fromAnnotationsIntoProperties(VariableProperty.NOT_NULL_EXPRESSION, false, true, map.getOrDefault(methodInfo, Map.of()).keySet(),
+        messages.addAll(methodAnalysisBuilder.fromAnnotationsIntoProperties(VariableProperty.NOT_NULL_EXPRESSION,
+                Analyser.AnalyserIdentification.METHOD, true, map.getOrDefault(methodInfo, Map.of()).keySet(),
                 e2ImmuAnnotationExpressions));
         return methodAnalysisBuilder;
     }

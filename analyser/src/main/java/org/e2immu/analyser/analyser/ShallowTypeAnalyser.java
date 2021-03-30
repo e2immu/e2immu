@@ -277,8 +277,8 @@ public class ShallowTypeAnalyser implements AnalyserContext {
                         }
                     });
                     builder.fromAnnotationsIntoProperties(VariableProperty.NOT_NULL_EXPRESSION,
-                            false, true, methodInfo.methodInspection.get().getAnnotations(),
-                            e2ImmuAnnotationExpressions);
+                            Analyser.AnalyserIdentification.METHOD, true,
+                            methodInfo.methodInspection.get().getAnnotations(), e2ImmuAnnotationExpressions);
                 } else {
                     MethodAnalyser methodAnalyser = either.getLeft();
                     AnalysisStatus analysisStatus = methodAnalyser.analyse(effectivelyFinalIteration, null);
@@ -317,7 +317,8 @@ public class ShallowTypeAnalyser implements AnalyserContext {
                                              E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
         TypeInspection typeInspection = typeInfo.typeInspection.get();
         messages.addAll(typeAnalysisBuilder.fromAnnotationsIntoProperties(null,
-                false, true, typeInspection.getAnnotations(), e2ImmuAnnotationExpressions));
+                Analyser.AnalyserIdentification.METHOD, true, typeInspection.getAnnotations(),
+                e2ImmuAnnotationExpressions));
 
         TypeAnalyser.findAspects(typeAnalysisBuilder, typeInfo);
         typeAnalysisBuilder.freezeApprovedPreconditionsE1();
@@ -338,7 +339,8 @@ public class ShallowTypeAnalyser implements AnalyserContext {
         FieldAnalysisImpl.Builder fieldAnalysisBuilder = new FieldAnalysisImpl.Builder(primitives, AnalysisProvider.DEFAULT_PROVIDER,
                 fieldInfo, fieldInfo.owner.typeAnalysis.get());
 
-        messages.addAll(fieldAnalysisBuilder.fromAnnotationsIntoProperties(VariableProperty.EXTERNAL_NOT_NULL, true, true,
+        messages.addAll(fieldAnalysisBuilder.fromAnnotationsIntoProperties(VariableProperty.EXTERNAL_NOT_NULL,
+                Analyser.AnalyserIdentification.FIELD, true,
                 fieldInfo.fieldInspection.get().getAnnotations(), e2ImmuAnnotationExpressions));
 
         FieldInspection fieldInspection = getFieldInspection(fieldInfo);

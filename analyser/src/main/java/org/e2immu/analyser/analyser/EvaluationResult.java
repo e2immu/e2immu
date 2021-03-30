@@ -599,7 +599,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
         }
 
         public void markPropagateModification(Variable variable) {
-            setProperty(variable, VariableProperty.PROPAGATE_MODIFICATION, Level.TRUE);
+            setProperty(variable, VariableProperty.CONTEXT_PROPAGATE_MOD, Level.TRUE);
         }
     }
 }

@@ -222,7 +222,8 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
 
             // dynamic type annotation for types with abstract methods:
             doNotModified1(e2ImmuAnnotationExpressions);
-            doPropagateModification(e2ImmuAnnotationExpressions);
+
+            annotations.put(e2ImmuAnnotationExpressions.propagateModification, getProperty(VariableProperty.EXTERNAL_PROPAGATE_MOD) == Level.TRUE);
 
             // @NotNull
             doNotNull(e2ImmuAnnotationExpressions, getProperty(VariableProperty.EXTERNAL_NOT_NULL));

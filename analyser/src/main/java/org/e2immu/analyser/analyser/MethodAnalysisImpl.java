@@ -308,8 +308,6 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
 
             // dynamic type annotation for types with abstract methods: @NotModified1
             doNotModified1(e2ImmuAnnotationExpressions);
-            // dynamic type annotation for types with abstract methods: @PropagateModification
-            doPropagateModification(e2ImmuAnnotationExpressions);
 
             // dynamic type annotations: @E1Immutable, @E1Container, @E2Immutable, @E2Container
             int formallyImmutable = formalProperty();

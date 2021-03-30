@@ -288,7 +288,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 VariableProperty.METHOD_CALLED, Level.TRUE,
                 VariableProperty.CONTEXT_MODIFIED_DELAY, contextModifiedDelay,
                 VariableProperty.CONTEXT_MODIFIED, modified,
-                VariableProperty.PROPAGATE_MODIFICATION, Level.fromBool(propagateModification)), true));
+                VariableProperty.CONTEXT_PROPAGATE_MOD, Level.fromBool(propagateModification)), true));
 
         // null scope
         Expression objectValue = objectResult.value();

@@ -39,10 +39,10 @@ public class Test_Support_05_Lazy extends CommonTestRunner {
     }
 
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-        if ("get".equals(d.methodInfo().name) && d.variable() instanceof FieldReference s && "supplier".equals(s.fieldInfo.name)) {
-            assertFalse(d.variableInfo().isAssigned());
-        }
         if ("get".equals(d.methodInfo().name)) {
+            if (d.variable() instanceof FieldReference s && "supplier".equals(s.fieldInfo.name)) {
+                assertFalse(d.variableInfo().isAssigned());
+            }
             if (d.variable() instanceof FieldReference t && "t".equals(t.fieldInfo.name)) {
                 if ("1".equals(d.statementId())) {
                     if (d.iteration() > 0) {
@@ -61,9 +61,11 @@ public class Test_Support_05_Lazy extends CommonTestRunner {
         if ("t".equals(d.fieldInfo().name) && iteration > 0) {
             assertEquals(Level.FALSE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
         }
-        if ("supplier".equals(d.fieldInfo().name) && iteration > 0) {
+        if ("supplier".equals(d.fieldInfo().name)) {
             assertEquals(Level.TRUE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
-            assertNotNull(d.fieldAnalysis().getEffectivelyFinalValue());
+            if (iteration > 0) assertNotNull(d.fieldAnalysis().getEffectivelyFinalValue());
+            int expectEpm = iteration == 0 ? Level.DELAY : Level.TRUE;
+            assertEquals(expectEpm, d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_PROPAGATE_MOD));
         }
     };
 

@@ -64,6 +64,7 @@ public interface FieldAnalysis extends Analysis {
             case NOT_NULL_EXPRESSION:
             case CONTEXT_NOT_NULL:
             case NOT_NULL_PARAMETER:
+            case PROPAGATE_MODIFICATION:
                 throw new UnsupportedOperationException("Property "+variableProperty);
 
             case EXTERNAL_NOT_NULL:

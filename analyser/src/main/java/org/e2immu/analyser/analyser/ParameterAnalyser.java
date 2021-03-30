@@ -161,7 +161,7 @@ public class ParameterAnalyser {
             }
         } else {
             Set<ParameterizedType> implicitlyImmutableDataTypes = typeAnalysis.getImplicitlyImmutableDataTypes();
-            if(implicitlyImmutableDataTypes != null &&
+            if (implicitlyImmutableDataTypes != null &&
                     implicitlyImmutableDataTypes.contains(parameterInfo.parameterizedType)) {
                 if (!parameterAnalysis.properties.isSet(VariableProperty.MODIFIED_OUTSIDE_METHOD)) {
                     parameterAnalysis.setProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD, Level.FALSE);
@@ -169,6 +169,12 @@ public class ParameterAnalyser {
                 }
                 checkLinks = false;
             }
+        }
+
+        int contractPropMod = parameterAnalysis.getProperty(PROPAGATE_MODIFICATION);
+        if (contractPropMod != Level.DELAY && !parameterAnalysis.properties.isSet(EXTERNAL_PROPAGATE_MOD)) {
+            parameterAnalysis.properties.put(EXTERNAL_PROPAGATE_MOD, contractPropMod);
+            changed = true;
         }
 
         int contractModified = parameterAnalysis.getProperty(VariableProperty.MODIFIED_VARIABLE);
@@ -355,7 +361,7 @@ public class ParameterAnalyser {
     }
 
     public static final VariableProperty[] CONTEXT_PROPERTIES = {VariableProperty.CONTEXT_NOT_NULL,
-            VariableProperty.CONTEXT_MODIFIED, PROPAGATE_MODIFICATION};
+            VariableProperty.CONTEXT_MODIFIED, CONTEXT_PROPAGATE_MOD};
 
     private AnalysisStatus analyseContext(SharedState sharedState) {
         // no point, we need to have seen the statement+field analysers first.
@@ -402,13 +408,21 @@ public class ParameterAnalyser {
             }
             parameterAnalysis.setProperty(VariableProperty.CONTEXT_MODIFIED, Level.FALSE);
 
+            // @NotNull
             int notNull = parameterInfo.parameterizedType.defaultNotNull();
             if (!parameterAnalysis.properties.isSet(VariableProperty.EXTERNAL_NOT_NULL)) {
                 parameterAnalysis.setProperty(VariableProperty.EXTERNAL_NOT_NULL, notNull);
             }
             parameterAnalysis.setProperty(VariableProperty.CONTEXT_NOT_NULL, MultiLevel.NULLABLE);
+
+            // @NotNull1
             parameterAnalysis.setProperty(VariableProperty.NOT_MODIFIED_1, Level.FALSE);
-            parameterAnalysis.setProperty(PROPAGATE_MODIFICATION, Level.FALSE);
+
+            // @PropagateModification
+            if (!parameterAnalysis.properties.isSet(EXTERNAL_PROPAGATE_MOD)) {
+                parameterAnalysis.setProperty(EXTERNAL_PROPAGATE_MOD, Level.FALSE);
+            }
+            parameterAnalysis.setProperty(CONTEXT_PROPAGATE_MOD, Level.FALSE);
 
             if (lastStatementAnalysis != null && parameterInfo.owner.isNotOverridingAnyOtherMethod()
                     && !parameterInfo.owner.isCompanionMethod()) {

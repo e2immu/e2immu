@@ -119,11 +119,6 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
         annotations.put(e2ImmuAnnotationExpressions.notModified1, getProperty(VariableProperty.NOT_MODIFIED_1) == Level.TRUE);
     }
 
-    protected void doPropagateModification(E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
-        // @PropagateModification
-        annotations.put(e2ImmuAnnotationExpressions.propagateModification, getProperty(VariableProperty.PROPAGATE_MODIFICATION) == Level.TRUE);
-    }
-
     protected void doImmutableContainer(E2ImmuAnnotationExpressions e2, int immutable, boolean betterThanFormal) {
         int container = getProperty(VariableProperty.CONTAINER);
         String eventualFieldNames;
@@ -172,7 +167,7 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
 
     public Messages fromAnnotationsIntoProperties(
             VariableProperty notNullProperty,
-            boolean isVariable,
+            Analyser.AnalyserIdentification analyserIdentification,
             boolean acceptVerify,
             Collection<AnnotationExpression> annotations,
             E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
@@ -185,7 +180,10 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
         AnnotationExpression mark = null;
         AnnotationExpression testMark = null;
 
-        VariableProperty modified = isVariable ? VariableProperty.MODIFIED_VARIABLE : VariableProperty.MODIFIED_METHOD;
+        VariableProperty modified = analyserIdentification == Analyser.AnalyserIdentification.FIELD ||
+                analyserIdentification == Analyser.AnalyserIdentification.PARAMETER ? VariableProperty.MODIFIED_VARIABLE : VariableProperty.MODIFIED_METHOD;
+        VariableProperty propagateModification = analyserIdentification == Analyser.AnalyserIdentification.FIELD ?
+                VariableProperty.EXTERNAL_PROPAGATE_MOD: VariableProperty.PROPAGATE_MODIFICATION;
 
         for (AnnotationExpression annotationExpression : annotations) {
             AnnotationParameters parameters = annotationExpression.e2ImmuAnnotationParameters();
@@ -256,7 +254,7 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
                 } else if (e2ImmuAnnotationExpressions.allowsInterrupt.typeInfo() == t) {
                     log(org.e2immu.analyser.util.Logger.LogTarget.ANALYSER, "@AllowsInterrupt caught earlier on");
                 } else if (e2ImmuAnnotationExpressions.propagateModification.typeInfo() == t) {
-                    setProperty(VariableProperty.PROPAGATE_MODIFICATION, trueFalse);
+                    setProperty(propagateModification, trueFalse);
                 } else {
                     throw new UnsupportedOperationException("? " + t.fullyQualifiedName);
                 }

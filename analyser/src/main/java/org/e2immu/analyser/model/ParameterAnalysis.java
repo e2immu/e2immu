@@ -30,12 +30,13 @@ public interface ParameterAnalysis extends Analysis {
     }
 
     enum AssignedOrLinked {
-        ASSIGNED(Set.of(EXTERNAL_NOT_NULL, MODIFIED_OUTSIDE_METHOD)),
-        LINKED(Set.of(MODIFIED_OUTSIDE_METHOD)),
+        ASSIGNED(Set.of(EXTERNAL_NOT_NULL, MODIFIED_OUTSIDE_METHOD, EXTERNAL_PROPAGATE_MOD)),
+        LINKED(Set.of(MODIFIED_OUTSIDE_METHOD, EXTERNAL_PROPAGATE_MOD)),
         NO(Set.of()),
         DELAYED(null);
 
-        public static final Set<VariableProperty> PROPERTIES = Set.of(EXTERNAL_NOT_NULL, MODIFIED_OUTSIDE_METHOD);
+        public static final Set<VariableProperty> PROPERTIES = Set.of(EXTERNAL_NOT_NULL, MODIFIED_OUTSIDE_METHOD,
+                EXTERNAL_PROPAGATE_MOD);
         private final Set<VariableProperty> propertiesToCopy;
 
         AssignedOrLinked(Set<VariableProperty> propertiesToCopy) {
@@ -101,6 +102,15 @@ public interface ParameterAnalysis extends Analysis {
         switch (variableProperty) {
             case IDENTITY:
                 return parameterInfo.index == 0 ? Level.TRUE : Level.FALSE;
+
+            case PROPAGATE_MODIFICATION:
+                int pm = getPropertyAsIs(PROPAGATE_MODIFICATION);
+                if (pm != Level.DELAY) return pm; // contracted
+                int cpm = getParameterProperty(analysisProvider, parameterInfo, CONTEXT_PROPAGATE_MOD);
+                int epm = getParameterProperty(analysisProvider, parameterInfo, EXTERNAL_PROPAGATE_MOD);
+                if (cpm == Level.TRUE || epm == Level.TRUE) return Level.TRUE;
+                if (cpm == Level.DELAY || epm == Level.DELAY) return Level.DELAY;
+                return Level.FALSE;
 
             case MODIFIED_VARIABLE:
                 if (parameterInfo.parameterizedType.isE2Immutable(analysisProvider) == Boolean.TRUE) {

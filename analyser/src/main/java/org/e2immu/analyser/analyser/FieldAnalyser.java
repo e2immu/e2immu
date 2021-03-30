@@ -97,18 +97,19 @@ public class FieldAnalyser extends AbstractAnalyser {
         haveInitialiser = fieldInspection.fieldInitialiserIsSet() && fieldInspection.getFieldInitialiser().initialiser() != EmptyExpression.EMPTY_EXPRESSION;
 
         analyserComponents = new AnalyserComponents.Builder<String, SharedState>()
-                .add(COMPUTE_IMPLICITLY_IMMUTABLE_DATA_TYPE, (iteration) -> computeImplicitlyImmutableDataType())
+                .add(COMPUTE_IMPLICITLY_IMMUTABLE_DATA_TYPE, (sharedState) -> computeImplicitlyImmutableDataType())
                 .add(EVALUATE_INITIALISER, this::evaluateInitialiser)
                 .add(ANALYSE_FINAL, this::analyseFinal)
-                .add(ANALYSE_ASSIGNMENTS, (iteration) -> allAssignmentsHaveBeenSet())
-                .add(ANALYSE_LINKS_HAVE_BEEN_ESTABLISHED, (iteration) -> allLinksHaveBeenEstablished())
+                .add(ANALYSE_ASSIGNMENTS, (sharedState) -> allAssignmentsHaveBeenSet())
+                .add(ANALYSE_LINKS_HAVE_BEEN_ESTABLISHED, (sharedState) -> allLinksHaveBeenEstablished())
                 .add(ANALYSE_IMMUTABLE, this::analyseImmutable)
-                .add(ANALYSE_MODIFIED, (iteration) -> analyseModified())
-                .add(ANALYSE_FINAL_VALUE, (iteration) -> analyseFinalValue())
+                .add(ANALYSE_MODIFIED, (sharedState) -> analyseModified())
+                .add(ANALYSE_FINAL_VALUE, (sharedState) -> analyseFinalValue())
                 .add(ANALYSE_NOT_NULL, this::analyseNotNull)
-                .add(ANALYSE_NOT_MODIFIED_1, (iteration) -> analyseNotModified1())
-                .add(ANALYSE_LINKED, (iteration) -> analyseLinked())
-                .add(FIELD_ERRORS, (iteration) -> fieldErrors())
+                .add(ANALYSE_NOT_MODIFIED_1, (sharedState) -> analyseNotModified1())
+                .add(ANALYSE_LINKED, (sharedState) -> analyseLinked())
+                .add("analysePropagateMo", (sharedState) -> analysePropagateModification())
+                .add(FIELD_ERRORS, (sharedState) -> fieldErrors())
                 .build();
     }
 
@@ -146,7 +147,7 @@ public class FieldAnalyser extends AbstractAnalyser {
         List<MethodAnalyser> myMethodsAndConstructors = new LinkedList<>();
 
         messages.addAll(fieldAnalysis.fromAnnotationsIntoProperties(VariableProperty.EXTERNAL_NOT_NULL,
-                true, false,
+                AnalyserIdentification.FIELD, false,
                 fieldInfo.fieldInspection.get().getAnnotations(), analyserContext.getE2ImmuAnnotationExpressions()));
 
         analyserContext.methodAnalyserStream().forEach(analyser -> {
@@ -677,6 +678,29 @@ public class FieldAnalyser extends AbstractAnalyser {
         return DONE;
     }
 
+    private AnalysisStatus analysePropagateModification() {
+        int epm = fieldAnalysis.getProperty(VariableProperty.EXTERNAL_PROPAGATE_MOD);
+        if (epm != Level.DELAY) return DONE;
+        String fqn = fieldInfo.fullyQualifiedName();
+
+        if (!fieldAnalysis.allLinksHaveBeenEstablished.isSet()) {
+            log(DELAYED, "Delaying, have no linked variables yet for field {}", fqn);
+            return DELAYS;
+        }
+        int max = allMethodsAndConstructors.stream()
+                .filter(m -> m.methodAnalysis.getLastStatement() != null)
+                .filter(m -> m.methodAnalysis.getLastStatement().variables.isSet(fqn))
+                .mapToInt(m -> {
+                    VariableInfo variableInfo = m.methodAnalysis.getLastStatement().variables.get(fqn).current();
+                    return variableInfo.getProperty(VariableProperty.CONTEXT_PROPAGATE_MOD);
+                })
+                .max().orElse(Level.FALSE);
+        assert max != Level.DELAY : "There should not be a delay after links have been established";
+        fieldAnalysis.setProperty(VariableProperty.EXTERNAL_PROPAGATE_MOD, max);
+        log(PROPAGATE_MODIFICATION, "Set PM of field {} to {}", fqn, max);
+        return DONE;
+    }
+
     private AnalysisStatus analyseModified() {
         int contract = fieldAnalysis.getProperty(VariableProperty.MODIFIED_VARIABLE);
         if (contract != Level.DELAY) {
@@ -749,7 +773,7 @@ public class FieldAnalyser extends AbstractAnalyser {
     }
 
     /*
-    TODO at some point this should go beyond functional interfaces.
+    FIXME at some point this should go beyond functional interfaces.
 
     TODO at some point this should go beyond the initializer; it should look at all assignments
      */
