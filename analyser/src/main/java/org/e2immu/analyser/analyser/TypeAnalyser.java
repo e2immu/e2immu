@@ -566,27 +566,19 @@ public class TypeAnalyser extends AbstractAnalyser {
         for (MethodAnalyser methodAnalyser : myMethodAndConstructorAnalysersExcludingSAMs) {
             if (!methodAnalyser.methodInfo.isPrivate()) {
                 for (ParameterAnalyser parameterAnalyser : methodAnalyser.getParameterAnalysers()) {
-                    int propagate = parameterAnalyser.parameterAnalysis.getProperty(VariableProperty.PROPAGATE_MODIFICATION);
-                    if (propagate == Level.DELAY) {
-                        log(DELAYED, "Delaying container, propagate modification of parameter {} undecided",
+                    int modified = parameterAnalyser.parameterAnalysis.getProperty(VariableProperty.MODIFIED_VARIABLE);
+                    if (modified == Level.DELAY && methodAnalyser.hasCode()) {
+                        log(DELAYED, "Delaying container, modification of parameter {} undecided",
                                 parameterAnalyser.parameterInfo.fullyQualifiedName());
                         return DELAYS; // cannot yet decide
                     }
-                    if (propagate == Level.FALSE) {
-                        int modified = parameterAnalyser.parameterAnalysis.getProperty(VariableProperty.MODIFIED_VARIABLE);
-                        if (modified == Level.DELAY && methodAnalyser.hasCode()) {
-                            log(DELAYED, "Delaying container, modification of parameter {} undecided",
-                                    parameterAnalyser.parameterInfo.fullyQualifiedName());
-                            return DELAYS; // cannot yet decide
-                        }
-                        if (modified == Level.TRUE) {
-                            log(CONTAINER, "{} is not a @Container: the content of {} is modified in {}",
-                                    typeInfo.fullyQualifiedName,
-                                    parameterAnalyser.parameterInfo.fullyQualifiedName(),
-                                    methodAnalyser.methodInfo.distinguishingName());
-                            typeAnalysis.setProperty(VariableProperty.CONTAINER, Level.FALSE);
-                            return DONE;
-                        }
+                    if (modified == Level.TRUE) {
+                        log(CONTAINER, "{} is not a @Container: the content of {} is modified in {}",
+                                typeInfo.fullyQualifiedName,
+                                parameterAnalyser.parameterInfo.fullyQualifiedName(),
+                                methodAnalyser.methodInfo.distinguishingName());
+                        typeAnalysis.setProperty(VariableProperty.CONTAINER, Level.FALSE);
+                        return DONE;
                     }
                 }
             }

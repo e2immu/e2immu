@@ -107,6 +107,14 @@ public class E2ImmuAnnotationExpressions {
                 .build();
     }
 
+    public static AnnotationExpression createNegativeContract(Primitives primitives, AnnotationExpression original) {
+        return new AnnotationExpressionImpl.Builder()
+                .setTypeInfo(original.typeInfo())
+                .addExpression(new MemberValuePair("contract", new BooleanConstant(primitives, true)))
+                .addExpression(new MemberValuePair("absent", new BooleanConstant(primitives, true)))
+                .build();
+    }
+
     public TypeInfo immutableAnnotation(Class<?> key) {
         return Objects.requireNonNull(annotationTypes.get(key.getCanonicalName()));
     }

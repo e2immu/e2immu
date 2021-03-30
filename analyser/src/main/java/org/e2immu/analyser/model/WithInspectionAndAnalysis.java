@@ -53,7 +53,13 @@ public interface WithInspectionAndAnalysis {
     }
 
     default Optional<Boolean> error(AbstractAnalysisBuilder analysisBuilder, Class<?> annotation, AnnotationExpression expression) {
-        Optional<Boolean> mustBeAbsent = hasInspectedAnnotation(annotation).map(AnnotationExpression::e2ImmuAnnotationParameters).map(AnnotationParameters::isVerifyAbsent);
+        Optional<AnnotationParameters> optAp = hasInspectedAnnotation(annotation)
+                .map(AnnotationExpression::e2ImmuAnnotationParameters);
+        if (optAp.isPresent()) {
+            AnnotationParameters ap = optAp.get();
+            if (ap.contract()) return Optional.empty(); // DO NOTHING, CONTRACTED
+        }
+        Optional<Boolean> mustBeAbsent = optAp.map(AnnotationParameters::isVerifyAbsent);
         Boolean actual = analysisBuilder.annotations.getOtherwiseNull(expression);
         if (mustBeAbsent.isEmpty()) {
             analysisBuilder.annotationChecks.put(expression, actual == Boolean.TRUE ? Analysis.AnnotationCheck.COMPUTED :
@@ -107,7 +113,7 @@ public interface WithInspectionAndAnalysis {
                 }
             }
         }
-        if(hasBeenAnalysed()) {
+        if (hasBeenAnalysed()) {
             for (AnnotationExpression annotation : annotations) {
                 Analysis.AnnotationCheck annotationCheck = getAnalysis().getAnnotation(annotation);
                 if (annotationCheck != Analysis.AnnotationCheck.ABSENT) {

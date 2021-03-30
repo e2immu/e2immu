@@ -233,6 +233,7 @@ public class TypeInspector {
 
         AnnotationExpression notNullContract = E2ImmuAnnotationExpressions.createContract(primitives, e2.notNull);
         AnnotationExpression notModifiedContract = E2ImmuAnnotationExpressions.createContract(primitives, e2.notModified);
+        AnnotationExpression notPropagateMod = E2ImmuAnnotationExpressions.createNegativeContract(primitives, e2.propagateModification);
 
         MethodInspectionImpl.Builder nameBuilder = new MethodInspectionImpl.Builder(typeInfo, "name")
                 .setSynthetic(true)
@@ -252,7 +253,9 @@ public class TypeInspector {
                 .addAnnotation(notNullContract)
                 .addAnnotation(notModifiedContract);
         ParameterInspectionImpl.Builder valueOfP0B = new ParameterInspectionImpl.Builder(primitives.stringParameterizedType,
-                "name", 0).addAnnotation(notNullContract);
+                "name", 0)
+                .addAnnotation(notPropagateMod)
+                .addAnnotation(notNullContract);
         valueOfBuilder.addParameter(valueOfP0B);
         valueOfBuilder.readyToComputeFQN(expressionContext.typeContext);
         expressionContext.typeContext.typeMapBuilder.registerMethodInspection(valueOfBuilder);
