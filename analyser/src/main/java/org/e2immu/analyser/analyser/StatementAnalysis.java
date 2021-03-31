@@ -826,6 +826,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             vic.setLinkedVariables(LinkedVariables.EMPTY, true);
             Map<VariableProperty, Integer> valueProperties = evaluationContext.getValueProperties(initial);
             valueProperties.forEach((k, v) -> vic.setProperty(k, v, false, INITIAL));
+            vic.setProperty(CONTEXT_DEPENDENT, MultiLevel.DEPENDENT, INITIAL);
 
         } else if (variable instanceof FieldReference fieldReference) {
             ExpressionAndDelay initialValue = initialValueOfField(evaluationContext, fieldReference, false);

@@ -272,7 +272,9 @@ class VariableInfoImpl implements VariableInfo {
 
             new MergeOp(CONTEXT_PROPAGATE_MOD, MAX_CM, CONTEXT_PROPAGATE_MOD.falseValue),
             new MergeOp(CONTEXT_MODIFIED, MAX_CM, CONTEXT_MODIFIED.falseValue),
-            new MergeOp(MODIFIED_OUTSIDE_METHOD, MAX_CM, MODIFIED_OUTSIDE_METHOD.falseValue)
+            new MergeOp(MODIFIED_OUTSIDE_METHOD, MAX_CM, MODIFIED_OUTSIDE_METHOD.falseValue),
+
+            new MergeOp(CONTEXT_DEPENDENT, MAX, CONTEXT_DEPENDENT.falseValue)
     );
 
     // TESTING ONLY!!

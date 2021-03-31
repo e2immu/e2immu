@@ -14,20 +14,51 @@
 
 package org.e2immu.analyser.parser;
 
+import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
+import org.e2immu.analyser.model.Level;
+import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.model.ParameterInfo;
+import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
-public class Test_40_Dependent1  extends CommonTestRunner {
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+public class Test_40_Dependent1 extends CommonTestRunner {
     public Test_40_Dependent1() {
-        super(false);
+        super(true);
     }
 
     @Test
     public void test_0() throws IOException {
         testClass("Dependent1_0", 0, 0,
                 new DebugConfiguration.Builder()
+                        .build());
+    }
+
+    @Test
+    public void test_1() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("add2".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ParameterInfo t && "t".equals(t.name)) {
+                    if ("0".equals(d.statementId())) {
+                        assertTrue(d.variableInfoContainer().hasEvaluation());
+                        assertEquals(MultiLevel.DEPENDENT, d.getProperty(VariableProperty.CONTEXT_DEPENDENT));
+                    }
+                    if ("2".equals(d.statementId())) {
+                        assertTrue(d.variableInfoContainer().hasEvaluation());
+                        int expectDependent = d.iteration() == 0 ? Level.DELAY : MultiLevel.DEPENDENT_1;
+                        assertEquals(expectDependent, d.getProperty(VariableProperty.CONTEXT_DEPENDENT));
+                    }
+                }
+            }
+        };
+        testClass("Dependent1_1", 0, 0,
+                new DebugConfiguration.Builder()
+                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         .build());
     }
 }

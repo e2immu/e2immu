@@ -141,6 +141,7 @@ public enum VariableProperty {
         method: @Mod+assignment to fields: independent when return value and parameters independent
                 @NM: computed on return value only (there can be no assignments, so no linked params to fields)
 
+        static method: TODO List.of(), List.copyOf()
     CONTEXT_DEPENDENT: context property in the statement analyser
         propagation: same assignment takes place via methods to (field.add(parameter))
      */,

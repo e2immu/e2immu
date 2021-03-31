@@ -18,6 +18,9 @@ import org.e2immu.annotation.Dependent1;
 import org.e2immu.annotation.Final;
 import org.e2immu.annotation.Linked1;
 
+/*
+first test, direct assignment to fields
+ */
 public class Dependent1_0<T> {
 
     // and not @Linked, because T is implicitly immutable in this type

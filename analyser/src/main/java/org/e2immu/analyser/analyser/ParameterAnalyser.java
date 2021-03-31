@@ -382,7 +382,7 @@ public class ParameterAnalyser {
     }
 
     public static final VariableProperty[] CONTEXT_PROPERTIES = {VariableProperty.CONTEXT_NOT_NULL,
-            VariableProperty.CONTEXT_MODIFIED, CONTEXT_PROPAGATE_MOD}; // FIXME, CONTEXT_DEPENDENT};
+            VariableProperty.CONTEXT_MODIFIED, CONTEXT_PROPAGATE_MOD, CONTEXT_DEPENDENT};
 
     private AnalysisStatus analyseContext(SharedState sharedState) {
         // no point, we need to have seen the statement+field analysers first.

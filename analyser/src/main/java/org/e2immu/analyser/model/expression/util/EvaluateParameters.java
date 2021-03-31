@@ -14,10 +14,13 @@
 
 package org.e2immu.analyser.model.expression.util;
 
-import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.EvaluationContext;
+import org.e2immu.analyser.analyser.EvaluationResult;
+import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
+import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.expression.IsVariableExpression;
 import org.e2immu.analyser.model.expression.VariableExpression;
-import org.e2immu.analyser.util.Logger;
 import org.e2immu.analyser.util.Pair;
 import org.slf4j.LoggerFactory;
 
@@ -25,8 +28,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import static org.e2immu.analyser.util.Logger.LogTarget.DELAYED;
 
 public class EvaluateParameters {
     private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(EvaluateParameters.class);
@@ -64,11 +65,13 @@ public class EvaluateParameters {
                     parameterInfo = params.get(i);
                 }
                 // NOT_NULL, NOT_MODIFIED
+                int independent;
                 Map<VariableProperty, Integer> map;
                 try {
                     if (evaluationContext.getCurrentMethod() != null &&
                             evaluationContext.getCurrentMethod().methodInfo == methodInfo) {
                         map = new HashMap<>(RECURSIVE_CALL);
+                        independent = MultiLevel.FALSE;
                     } else {
                         // copy from parameter into map used for forwarding
                         ParameterAnalysis parameterAnalysis = evaluationContext.getAnalyserContext().getParameterAnalysis(parameterInfo);
@@ -76,6 +79,7 @@ public class EvaluateParameters {
                         map.put(VariableProperty.CONTEXT_MODIFIED, parameterAnalysis.getProperty(VariableProperty.MODIFIED_VARIABLE));
                         map.put(VariableProperty.CONTEXT_NOT_NULL, parameterAnalysis.getProperty(VariableProperty.NOT_NULL_PARAMETER));
                         map.put(VariableProperty.NOT_MODIFIED_1, parameterAnalysis.getProperty(VariableProperty.NOT_MODIFIED_1));
+                        independent = parameterAnalysis.getProperty(VariableProperty.INDEPENDENT);
                     }
                 } catch (RuntimeException e) {
                     LOGGER.error("Failed to obtain parameter analysis of {}", parameterInfo.fullyQualifiedName());
@@ -121,6 +125,16 @@ public class EvaluateParameters {
                 ForwardEvaluationInfo forward = new ForwardEvaluationInfo(map, true);
                 parameterResult = parameterExpression.evaluate(evaluationContext, forward);
                 parameterValue = parameterResult.value();
+
+                // @Dependent1 collection.add(t) t==parameterValue, collection=scopeObject
+                if (parameterValue instanceof IsVariableExpression veArg && scopeObject instanceof IsVariableExpression veScope) {
+                    if (independent == Level.DELAY) {
+                        builder.link1(veArg.variable(), null); // null indicates a delay
+                    } else if(independent == MultiLevel.DEPENDENT_1) {
+                        builder.link1(veArg.variable(), veScope.variable());
+                    }
+                }
+
             } else {
                 parameterResult = parameterExpression.evaluate(evaluationContext, ForwardEvaluationInfo.DEFAULT);
                 parameterValue = parameterResult.value();

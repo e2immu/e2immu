@@ -14,42 +14,51 @@
 
 package org.e2immu.analyser.testexample;
 
-import org.e2immu.annotation.Dependent;
-import org.e2immu.annotation.Dependent1;
+import org.e2immu.annotation.*;
 
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
-/*
-second test, by propagation (see JavaUtil, annotated methods)
- */
-public class Dependent1_1<T> {
+public class Dependent1_2<T> {
 
-    private final List<T> list;
+    private final Set<T> set ;
 
-    public Dependent1_1(Collection<? extends T> collection) {
-        list = new ArrayList<>(collection);
-    }
-
-    public void add(@Dependent1 T t) {
-        list.add(t); // trivial propagation
-    }
-
-    public void add2(@Dependent1 T t) {
-        List<T> theList = list;
-        T theT = t;
-
-        theList.add(theT); // propagation with a few redundant variables
+    @Independent
+    public Dependent1_2(Collection<? extends T> collection) {
+        set = new HashSet<>(collection);
     }
 
     @Dependent
-    public List<T> getList() {
-        return list;
+    public Dependent1_2(Set<T> set) {
+       this.set = set;
+    }
+
+    public void add(@Dependent1 T t) {
+        set.add(t); // trivial propagation
+    }
+
+    public void addAll(@Dependent2 Collection<? extends T> ts) {
+        this.set.addAll(ts); // trivial propagation
+    }
+
+    public void addAll2(@Dependent2 Collection<? extends T> ts) {
+        for (T t : ts) add(t); // other type of propagation
+    }
+
+    @Dependent
+    public Set<T> getSet() {
+        return set;
+    }
+
+    @Dependent2 // implying @Independent
+    @E2Container
+    public Set<T> getCopy() {
+        return Set.copyOf(set);
     }
 
     @Dependent1
-    public T getFirst() {
-        return list.get(0);
+    public T getSomeT() {
+        return set.stream().findFirst().orElse(null);
     }
 }

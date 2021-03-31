@@ -636,6 +636,9 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             return e1.getKey().fullyQualifiedName().compareTo(e2.getKey().fullyQualifiedName());
         });
 
+        boolean linked1Delays = false;
+        boolean linkedDelays = false;
+
         for (Map.Entry<Variable, EvaluationResult.ChangeData> entry : sortedEntries) {
             Variable variable = entry.getKey();
             existingVariablesNotVisited.remove(variable);
@@ -721,6 +724,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 vic.setLinkedVariables(mergedLinkedVariables, false);
             } else if (vi.getLinkedVariables() == LinkedVariables.DELAY) {
                 status = DELAYS;
+                linkedDelays = true;
             }
 
             // the method analyser must have both context not null and not null expression
@@ -732,6 +736,11 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                             index(), myMethodAnalyser.methodInfo.fullyQualifiedName);
                     status = DELAYS;
                 }
+            }
+
+            if (changeData.linked1Variables() == LinkedVariables.DELAY) {
+                status = DELAYS;
+                linked1Delays = true;
             }
         }
 
@@ -787,6 +796,13 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         contextPropertyWriter.write(statementAnalysis, sharedState.evaluationContext,
                 VariableInfo::getLinkedVariables,
                 CONTEXT_PROPAGATE_MOD, groupPropertyValues.getMap(CONTEXT_PROPAGATE_MOD), EVALUATION, Set.of());
+
+
+        if (!linked1Delays && !linkedDelays) {
+            AnalysisStatus linked1 = new Linked1Writer().write(statementAnalysis, sharedState.evaluationContext,
+                    VariableInfo::getStaticallyAssignedVariables, evaluationResult.changeData());
+            status = status.combine(linked1);
+        }
 
         // odds and ends
 

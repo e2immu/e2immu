@@ -64,10 +64,10 @@ public class JavaUtil extends AnnotatedAPI {
 
         boolean add$Postcondition(E e) { return contains(e); }
         @Modified
-        boolean add(@NotNull E e) { return true; }
+        boolean add(@Dependent1 @NotNull E e) { return true; }
 
         @Independent
-        boolean addAll(@NotNull1 java.util.Collection<? extends E> collection) { return true; }
+        boolean addAll(@Dependent2 @NotNull1 java.util.Collection<? extends E> collection) { return true; }
 
         boolean clear$Clear$Size(int i) { return i == 0; }
         @Modified
@@ -120,6 +120,7 @@ public class JavaUtil extends AnnotatedAPI {
         int stream$Transfer$Size(int i) { return i; }
         @NotNull1
         @NotModified
+        @Dependent2
         Stream<E> stream() { return null; }
 
         int toArray$Transfer$Size(int i) { return i; }
@@ -129,13 +130,13 @@ public class JavaUtil extends AnnotatedAPI {
 
         <T> int toArray$Transfer$Size(int i, T[] a) { return i; }
         @NotNull1
-        @Independent
+        @Dependent2
         @NotModified
-        <T> T[] toArray(@NotNull1 T[] a) { return null; }
+        <T> T[] toArray(@Dependent2 @NotNull1 T[] a) { return null; }
 
         <T> int toArray$Transfer$Size(int i, IntFunction<T[]> g) { return i; }
         @NotNull1
-        @Independent
+        @Dependent2
         @NotModified
         <T> T[] toArray(@NotNull IntFunction<T[]> generator) { return null; }
     }
@@ -149,15 +150,15 @@ public class JavaUtil extends AnnotatedAPI {
         boolean add$Value(E e, boolean retVal) { return true; }
         boolean add$Postcondition(E e) { return contains(e); }
         @Modified
-        boolean add(@NotNull E e) { return false; /* actually, true, see $Value */ }
+        boolean add(@Dependent1 @NotNull E e) { return false; /* actually, true, see $Value */ }
 
         boolean addAll$Modification$Size(int i, int j, java.util.Collection<? extends E> c) { return i == j + c.size(); }
         boolean addAll$Value(java.util.Collection<? extends E> c, boolean retVal) { return true; }
         // IMPROVE causes problems with method resolution
         // boolean addAll$Postcondition(java.util.Collection<? extends E> c) { return c.stream().allMatch(this::contains); }
-        @Independent
+        @Independent // IMPROVE should go
         @Modified
-        boolean addAll(@NotNull1 Collection<? extends E> collection) { return false; }
+        boolean addAll(@Dependent2 @NotNull1 Collection<? extends E> collection) { return false; }
 
         // needed here because it is used by a companion of 'add'.
         static boolean contains$Value$Size(int i, Object o, boolean retVal) { return i != 0 && retVal; }
@@ -166,15 +167,18 @@ public class JavaUtil extends AnnotatedAPI {
 
         @E2Container
         @NotNull1
+        @Dependent2
         static <E> List<E> copyOf(@NotNull1 Collection<? extends E> collection) { return null; }
 
         @NotNull1
         @NotModified
+        @Dependent2
         java.util.Iterator<E> iterator() { return null; }
 
         static boolean get$Precondition$Size(int size, int index) { return index < size; }
         @NotModified
         @NotNull
+        @Dependent1
         E get(int index) { return null; }
 
         int of$Transfer$Size() { return 0; }
@@ -188,7 +192,7 @@ public class JavaUtil extends AnnotatedAPI {
         @NotModified
         @NotNull1
         @E2Container
-        static <F> java.util.List<F> of(@NotNull F e1) { return null; }
+        static <F> java.util.List<F> of(@Dependent1 @NotNull F e1) { return null; }
 
         <F> int of$Transfer$Size(F f1, F f2) { return 2; }
         @NotModified
@@ -218,9 +222,9 @@ public class JavaUtil extends AnnotatedAPI {
         Object[] toArray() { return null; }
 
         @NotNull1
-        @Independent
+        @Dependent2
         @NotModified
-        <T> T[] toArray(@NotNull1 T[] a) { return null; }
+        <T> T[] toArray(@Dependent2 @NotNull1 T[] a) { return null; }
     }
 
     // IMPROVE for now we have to repeat the method+companions from Collection, as companions are not inherited

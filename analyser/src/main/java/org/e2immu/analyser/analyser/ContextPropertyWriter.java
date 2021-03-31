@@ -30,7 +30,6 @@ import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.AnalysisStatus.*;
 import static org.e2immu.analyser.util.Logger.LogTarget.DELAYED;
-import static org.e2immu.analyser.util.Logger.LogTarget.LINKED_VARIABLES;
 import static org.e2immu.analyser.util.Logger.log;
 
 public class ContextPropertyWriter {
@@ -38,6 +37,36 @@ public class ContextPropertyWriter {
     private static final Variable DELAY_VAR = Variable.fake();
 
     private final DependencyGraph<Variable> dependencyGraph = new DependencyGraph<>();
+
+    /*
+    method separate because reused by Linked1Writer
+     */
+    public static void fillDependencyGraph(StatementAnalysis statementAnalysis,
+                                           EvaluationContext evaluationContext,
+                                           Function<VariableInfo, LinkedVariables> connections,
+                                           VariableInfoContainer.Level level,
+                                           DependencyGraph<Variable> dependencyGraph,
+                                           AtomicReference<AnalysisStatus> analysisStatus) {
+        // delays in dependency graph
+        statementAnalysis.variableStream(level)
+                .forEach(variableInfo -> {
+                    LinkedVariables linkedVariables = connections.apply(variableInfo);
+                    if (linkedVariables == LinkedVariables.DELAY) {
+                        if (!(variableInfo.variable() instanceof LocalVariableReference) || variableInfo.isAssigned()) {
+                            log(DELAYED, "Delaying {} in MethodLevelData for {} in {}: linked variables not set",
+                                    variableInfo, variableInfo.variable().fullyQualifiedName(), evaluationContext.getLocation());
+                            analysisStatus.set(DELAYS);
+                            dependencyGraph.addNode(variableInfo.variable(), Set.of(DELAY_VAR), true);
+                        }
+                    } else {
+                        dependencyGraph.addNode(variableInfo.variable(), linkedVariables.variables(), true);
+                    }
+                });
+        if (analysisStatus.get() == DELAYS) {
+            // to make sure that the delay var is there too, in the unidirectional case
+            dependencyGraph.addNode(DELAY_VAR, Set.of(), true);
+        }
+    }
 
     /**
      * @param statementAnalysis the statement
@@ -54,29 +83,8 @@ public class ContextPropertyWriter {
                                 VariableInfoContainer.Level level,
                                 Set<Variable> doNotWrite) {
         final AtomicReference<AnalysisStatus> analysisStatus = new AtomicReference<>(DONE);
+        fillDependencyGraph(statementAnalysis, evaluationContext, connections, level, dependencyGraph, analysisStatus);
 
-        // delays in dependency graph
-        statementAnalysis.variableStream(level)
-                .forEach(variableInfo -> {
-                    LinkedVariables linkedVariables = connections.apply(variableInfo);
-                    if (linkedVariables == LinkedVariables.DELAY) {
-                        if (!(variableInfo.variable() instanceof LocalVariableReference) || variableInfo.isAssigned()) {
-                            log(DELAYED, "Delaying {} in MethodLevelData for {} in {}: linked variables not set",
-                                    variableInfo, variableInfo.variable().fullyQualifiedName(), evaluationContext.getLocation());
-                            analysisStatus.set(DELAYS);
-                            dependencyGraph.addNode(variableInfo.variable(), Set.of(DELAY_VAR), true);
-                        } else {
-                            log(LINKED_VARIABLES, "Local variable {} not yet assigned, so cannot yet be linked ({})",
-                                    variableInfo.variable().fullyQualifiedName(), variableProperty);
-                        }
-                    } else {
-                        dependencyGraph.addNode(variableInfo.variable(), linkedVariables.variables(), true);
-                    }
-                });
-        if (analysisStatus.get() == DELAYS) {
-            // to make sure that the delay var is there too, in the unidirectional case
-            dependencyGraph.addNode(DELAY_VAR, Set.of(), true);
-        }
         final AtomicBoolean progress = new AtomicBoolean();
 
         // we make a copy of the values, because in summarizeModification there is the possibility of adding to the map
