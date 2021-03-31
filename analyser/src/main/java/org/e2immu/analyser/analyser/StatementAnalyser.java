@@ -797,7 +797,6 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 VariableInfo::getLinkedVariables,
                 CONTEXT_PROPAGATE_MOD, groupPropertyValues.getMap(CONTEXT_PROPAGATE_MOD), EVALUATION, Set.of());
 
-
         if (!linked1Delays && !linkedDelays) {
             AnalysisStatus linked1 = new Linked1Writer(statementAnalysis, sharedState.evaluationContext,
                     VariableInfo::getStaticallyAssignedVariables).write(evaluationResult.changeData());
@@ -2616,6 +2615,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
 
         @Override
         public Boolean isCurrentlyLinkedToField(Expression objectValue) {
+            if (objectValue instanceof VariableExpression ve && ve.variable() instanceof This) return true;
             Linked1Writer linked1Writer = new Linked1Writer(statementAnalysis, this,
                     VariableInfo::getStaticallyAssignedVariables);
             return linked1Writer.isLinkedToField(objectValue);

@@ -103,10 +103,13 @@ public interface ParameterAnalysis extends Analysis {
             case IDENTITY:
                 return parameterInfo.index == 0 ? Level.TRUE : Level.FALSE;
 
-            case INDEPENDENT:
-                int i = getPropertyAsIs(INDEPENDENT);
-                if(i != Level.DELAY) return i;
-                return getParameterProperty(analysisProvider, parameterInfo, CONTEXT_DEPENDENT);
+            case INDEPENDENT_PARAMETER:
+                int ip = internalGetProperty(INDEPENDENT_PARAMETER);
+                if (ip != Level.DELAY) return ip;
+                int cd = getParameterProperty(analysisProvider, parameterInfo, CONTEXT_DEPENDENT);
+                int i = getParameterProperty(analysisProvider, parameterInfo, INDEPENDENT);
+                if (cd == Level.DELAY || i == Level.DELAY) return Level.DELAY;
+                return MultiLevel.bestNotNull(cd, i);
 
             case PROPAGATE_MODIFICATION:
                 int pm = getPropertyAsIs(PROPAGATE_MODIFICATION);

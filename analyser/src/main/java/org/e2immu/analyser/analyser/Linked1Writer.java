@@ -91,7 +91,8 @@ public class Linked1Writer {
                         analysisStatus.set(DELAYS);
                     } else {
                         Set<Variable> fieldsInScope = varsInScope.stream()
-                                .filter(v -> v instanceof FieldReference fr && fr.scope instanceof This)
+                                .filter(v -> v instanceof This ||
+                                        v instanceof FieldReference fr && fr.scope instanceof This)
                                 .collect(Collectors.toSet());
                         if (!fieldsInScope.isEmpty()) {
                             // we have a hit!
@@ -117,7 +118,9 @@ public class Linked1Writer {
         if (expression instanceof VariableExpression ve) {
             Set<Variable> set = dependencyGraph.dependencies(ve.variable());
             if (set.contains(DELAY_VAR)) return null;
-            return set.stream().anyMatch(v -> v instanceof FieldReference fr && fr.scope instanceof This);
+            return set.stream().anyMatch(v ->
+                    v instanceof This ||
+                    v instanceof FieldReference fr && fr.scope instanceof This);
         }
         return false;
     }

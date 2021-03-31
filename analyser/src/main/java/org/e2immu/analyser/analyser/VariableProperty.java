@@ -39,8 +39,6 @@ public enum VariableProperty {
     IN_NOT_NULL_CONTEXT("in not-null context"),
     CANDIDATE_FOR_NULL_PTR_WARNING("candidate for null pointer warning"),
 
-    TEMP_DEPENDENT_1("temp dependent1"),
-
     /*
     @NotNull, @Nullable property.
     Multiple aspects worth mentioning. See MultiLevel for the different values this property can take.
@@ -146,9 +144,12 @@ public enum VariableProperty {
         static method: TODO List.of(), List.copyOf()
     CONTEXT_DEPENDENT: context property in the statement analyser
         propagation: same assignment takes place via methods to (field.add(parameter))
+
+    INDEPENDENT_PARAMETER: on parameters, this one combines the value from linked1 fields, and _CONTEXT
      */,
     INDEPENDENT("@Independent", MultiLevel.DEPENDENT, MultiLevel.INDEPENDENT, MultiLevel.DEPENDENT, MultiLevel.INDEPENDENT),
     CONTEXT_DEPENDENT("context dependent", MultiLevel.DEPENDENT, MultiLevel.INDEPENDENT, MultiLevel.DEPENDENT, MultiLevel.INDEPENDENT),
+    INDEPENDENT_PARAMETER("@Independent parameter", MultiLevel.DEPENDENT, MultiLevel.INDEPENDENT, MultiLevel.DEPENDENT, MultiLevel.INDEPENDENT),
 
     /*
     group of more simple properties

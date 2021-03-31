@@ -626,8 +626,8 @@ public class FieldAnalyser extends AbstractAnalyser {
 
         Set<Variable> linked1Variables = allMethodsAndConstructors.stream()
                 .flatMap(m -> m.getFieldAsVariableStream(fieldInfo, false))
-                .filter(VariableInfo::staticallyAssignedVariablesIsSet)
-                .flatMap(vi -> vi.getStaticallyAssignedVariables().variables().stream())
+                .filter(vi -> vi.valueIsSet() && vi.getValue() instanceof VariableExpression)
+                .map(vi -> ((VariableExpression)vi.getValue()).variable())
                 .filter(v -> !(v instanceof LocalVariableReference)) // especially local variable copies of the field itself
                 .filter(v -> myTypeAnalyser.typeAnalysis.getImplicitlyImmutableDataTypes().contains(v.parameterizedType()))
                 .collect(Collectors.toSet());

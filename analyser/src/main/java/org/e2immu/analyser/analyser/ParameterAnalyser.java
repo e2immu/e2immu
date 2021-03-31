@@ -20,6 +20,7 @@ import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.statement.ExplicitConstructorInvocation;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.This;
+import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Messages;
@@ -29,10 +30,7 @@ import org.e2immu.annotation.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -173,9 +171,9 @@ public class ParameterAnalyser {
             }
         }
 
-        int contractDependent = parameterAnalysis.getProperty(INDEPENDENT);
-        if (contractDependent != Level.DELAY && !parameterAnalysis.properties.isSet(INDEPENDENT)) {
-            parameterAnalysis.properties.put(INDEPENDENT, contractDependent);
+        int contractDependent = parameterAnalysis.getProperty(INDEPENDENT_PARAMETER);
+        if (contractDependent != Level.DELAY && !parameterAnalysis.properties.isSet(INDEPENDENT_PARAMETER)) {
+            parameterAnalysis.properties.put(INDEPENDENT_PARAMETER, contractDependent);
             changed = true;
         }
 
@@ -266,19 +264,29 @@ public class ParameterAnalyser {
                         delays = true;
                     }
                 }
-            } else {
-                assert e.getValue() == NO;
-            }
-            if (e.getValue() == ASSIGNED) {
+
                 if (!fieldAnalyser.fieldAnalysis.linked1Variables.isSet()) {
                     log(ANALYSER, "Delaying @Dependent1/2, waiting for linked1variables",
                             parameterInfo.owner.typeInfo.fullyQualifiedName);
                     delays = true;
-                } else if (fieldAnalyser.fieldAnalysis.linked1Variables.get().contains(parameterInfo)) {
-                    if (!parameterAnalysis.properties.isSet(INDEPENDENT)) {
-                        parameterAnalysis.properties.put(INDEPENDENT, MultiLevel.DEPENDENT_1);
-                        log(ANALYSER, "Set @Dependent1 on parameter {}: field {} linked or assigned; type is ImplicitlyImmutable",
-                                parameterInfo.fullyQualifiedName(), fieldInfo.name);
+                } else {
+                    LinkedVariables lv1 = fieldAnalyser.fieldAnalysis.linked1Variables.get();
+                    if (lv1.contains(parameterInfo)) {
+                        if (!parameterAnalysis.properties.isSet(INDEPENDENT)) {
+                            parameterAnalysis.properties.put(INDEPENDENT, MultiLevel.DEPENDENT_1);
+                            log(ANALYSER, "Set @Dependent1 on parameter {}: field {} linked or assigned; type is ImplicitlyImmutable",
+                                    parameterInfo.fullyQualifiedName(), fieldInfo.name);
+                        }
+                    } else {
+                        Optional<Variable> ov = lv1.variables().stream().filter(v -> v instanceof FieldReference fr
+                                && fr.scope == parameterInfo).findFirst();
+                        ov.ifPresent(v -> {
+                            if (!parameterAnalysis.properties.isSet(INDEPENDENT)) {
+                                parameterAnalysis.properties.put(INDEPENDENT, MultiLevel.DEPENDENT_2);
+                                log(ANALYSER, "Set @Dependent2 on parameter {}: a field of {} linked or assigned; type is ImplicitlyImmutable",
+                                        parameterInfo.fullyQualifiedName(), fieldInfo.name);
+                            }
+                        });
                     }
                 }
             }
@@ -298,6 +306,11 @@ public class ParameterAnalyser {
                 changed = true;
             }
         }
+
+        if(!parameterAnalysis.properties.isSet(INDEPENDENT) && !delays) {
+            parameterAnalysis.properties.put(INDEPENDENT, MultiLevel.NOT_INVOLVED);
+        }
+
         assert delays || parameterAnalysis.properties.isSet(VariableProperty.MODIFIED_OUTSIDE_METHOD) &&
                 parameterAnalysis.properties.isSet(VariableProperty.EXTERNAL_NOT_NULL);
 
@@ -322,6 +335,9 @@ public class ParameterAnalyser {
             if (!parameterAnalysis.properties.isSet(variableProperty)) {
                 parameterAnalysis.setProperty(variableProperty, MultiLevel.NOT_INVOLVED);
             }
+        }
+        if(!parameterAnalysis.properties.isSet(INDEPENDENT)) {
+            parameterAnalysis.properties.put(INDEPENDENT, MultiLevel.NOT_INVOLVED);
         }
         parameterAnalysis.freezeAssignedToField();
         parameterAnalysis.resolveFieldDelays();
@@ -446,9 +462,10 @@ public class ParameterAnalyser {
             parameterAnalysis.setProperty(CONTEXT_PROPAGATE_MOD, Level.FALSE);
 
             // @Independent
-            if (!parameterAnalysis.properties.isSet(INDEPENDENT)) {
-                parameterAnalysis.setProperty(INDEPENDENT, parameterInfo.parameterizedType.defaultIndependent());
+            if(!parameterAnalysis.properties.isSet(INDEPENDENT)) {
+                parameterAnalysis.setProperty(INDEPENDENT, MultiLevel.NOT_INVOLVED);
             }
+            parameterAnalysis.setProperty(CONTEXT_DEPENDENT, parameterInfo.parameterizedType.defaultIndependent());
 
             if (lastStatementAnalysis != null && parameterInfo.owner.isNotOverridingAnyOtherMethod()
                     && !parameterInfo.owner.isCompanionMethod()) {

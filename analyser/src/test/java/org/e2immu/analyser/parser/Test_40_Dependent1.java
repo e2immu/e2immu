@@ -16,13 +16,14 @@ package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.model.Level;
-import org.e2immu.analyser.model.MultiLevel;
-import org.e2immu.analyser.model.ParameterInfo;
+import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
+import org.e2immu.analyser.visitor.TypeMapVisitor;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -56,9 +57,57 @@ public class Test_40_Dependent1 extends CommonTestRunner {
                 }
             }
         };
+        TypeMapVisitor typeMapVisitor = typeMap -> {
+            TypeInfo list = typeMap.get(List.class);
+            MethodInfo add = list.findUniqueMethod("add", 1);
+            int methodIndependent = add.methodAnalysis.get().getProperty(VariableProperty.INDEPENDENT);
+            assertEquals(MultiLevel.DEPENDENT, methodIndependent);
+            int paramIndependent = add.methodInspection.get().getParameters().get(0).parameterAnalysis.get()
+                    .getProperty(VariableProperty.INDEPENDENT_PARAMETER);
+            assertEquals(MultiLevel.DEPENDENT_1, paramIndependent);
+        };
+
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("add".equals(d.methodInfo().name)) {
+                ParameterAnalysis p0 = d.parameterAnalyses().get(0);
+                int expectIndependent = d.iteration() <= 1 ? Level.DELAY : MultiLevel.DEPENDENT_1;
+                assertEquals(expectIndependent, p0.getProperty(VariableProperty.CONTEXT_DEPENDENT));
+            }
+            if ("add2".equals(d.methodInfo().name)) {
+                ParameterAnalysis p0 = d.parameterAnalyses().get(0);
+                int expectIndependent = d.iteration() <= 1 ? Level.DELAY : MultiLevel.DEPENDENT_1;
+                assertEquals(expectIndependent, p0.getProperty(VariableProperty.CONTEXT_DEPENDENT));
+                assertEquals(expectIndependent, p0.getProperty(VariableProperty.INDEPENDENT_PARAMETER));
+            }
+        };
+
         testClass("Dependent1_1", 0, 0,
                 new DebugConfiguration.Builder()
+                        .addTypeMapVisitor(typeMapVisitor)
+                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                         .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        .build());
+    }
+
+    @Test
+    public void test_2() throws IOException {
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("add".equals(d.methodInfo().name)) {
+                ParameterAnalysis p0 = d.parameterAnalyses().get(0);
+                int expectIndependent = d.iteration() <= 1 ? Level.DELAY : MultiLevel.DEPENDENT_1;
+                assertEquals(expectIndependent, p0.getProperty(VariableProperty.INDEPENDENT_PARAMETER));
+            }
+            if ("addWithMessage".equals(d.methodInfo().name)) {
+                ParameterAnalysis p0 = d.parameterAnalyses().get(0);
+                int expectIndependent = d.iteration() <= 2 ? Level.DELAY : MultiLevel.DEPENDENT_1;
+                assertEquals(expectIndependent, p0.getProperty(VariableProperty.CONTEXT_DEPENDENT));
+                assertEquals(expectIndependent, p0.getProperty(VariableProperty.INDEPENDENT_PARAMETER));
+            }
+        };
+
+        testClass("Dependent1_2", 0, 0,
+                new DebugConfiguration.Builder()
+                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                         .build());
     }
 }

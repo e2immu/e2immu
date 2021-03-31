@@ -126,12 +126,12 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
                         String expectValue = switch (d.iteration()) {
                             case 0 -> "<m:get>";
                             case 1 -> "<f:t>";
-                            default -> "org.e2immu.support.SetOnce.t$0";
+                            default -> "org.e2immu.support.SetOnce.t$0/*@Dependent1*/";
                         };
                         assertEquals(expectValue, d.currentValue().toString());
                         int expectNne = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
                         assertEquals(expectNne, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
-                        int expectEnn = d.iteration() <= 1 ? Level.DELAY : MultiLevel.NULLABLE;
+                        int expectEnn = d.iteration() <= 1 ? Level.DELAY : MultiLevel.NOT_INVOLVED;
                         assertEquals(expectEnn, d.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
                     }
                     if (d.variable() instanceof FieldReference fr && "t".equals(fr.fieldInfo.name)) {
@@ -152,7 +152,7 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
                         String expectValue = switch (d.iteration()) {
                             case 0 -> "<m:isSet>?<m:get>:<return value>";
                             case 1 -> "null==<f:t>?<return value>:<f:t>";
-                            default -> "null==org.e2immu.support.SetOnce.t$0?<return value>:org.e2immu.support.SetOnce.t$0";
+                            default -> "null==org.e2immu.support.SetOnce.t$0?<return value>:org.e2immu.support.SetOnce.t$0/*@Dependent1*/";
                         };
                         assertEquals(expectValue, d.currentValue().toString());
                     }

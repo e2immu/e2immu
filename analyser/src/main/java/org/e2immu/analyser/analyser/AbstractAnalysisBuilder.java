@@ -184,6 +184,8 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
                 analyserIdentification == Analyser.AnalyserIdentification.PARAMETER ? VariableProperty.MODIFIED_VARIABLE : VariableProperty.MODIFIED_METHOD;
         VariableProperty propagateModification = analyserIdentification == Analyser.AnalyserIdentification.FIELD ?
                 VariableProperty.EXTERNAL_PROPAGATE_MOD : VariableProperty.PROPAGATE_MODIFICATION;
+        VariableProperty independent = analyserIdentification== Analyser.AnalyserIdentification.PARAMETER ?
+                VariableProperty.INDEPENDENT_PARAMETER: VariableProperty.INDEPENDENT;
 
         for (AnnotationExpression annotationExpression : annotations) {
             AnnotationParameters parameters = annotationExpression.e2ImmuAnnotationParameters();
@@ -234,13 +236,13 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
                 } else if (e2ImmuAnnotationExpressions.ignoreModifications.typeInfo() == t) {
                     setProperty(VariableProperty.IGNORE_MODIFICATIONS, trueFalse);
                 } else if (e2ImmuAnnotationExpressions.independent.typeInfo() == t) {
-                    setProperty(VariableProperty.INDEPENDENT, MultiLevel.INDEPENDENT);
+                    setProperty(independent, MultiLevel.INDEPENDENT);
                 } else if (e2ImmuAnnotationExpressions.dependent.typeInfo() == t) {
-                    setProperty(VariableProperty.INDEPENDENT, MultiLevel.DEPENDENT);
+                    setProperty(independent, MultiLevel.DEPENDENT);
                 } else if (e2ImmuAnnotationExpressions.dependent1.typeInfo() == t) {
-                    setProperty(VariableProperty.INDEPENDENT, MultiLevel.DEPENDENT_1);
+                    setProperty(independent, MultiLevel.DEPENDENT_1);
                 } else if (e2ImmuAnnotationExpressions.dependent2.typeInfo() == t) {
-                    setProperty(VariableProperty.INDEPENDENT, MultiLevel.DEPENDENT_2);
+                    setProperty(independent, MultiLevel.DEPENDENT_2);
                 } else if (e2ImmuAnnotationExpressions.mark.typeInfo() == t) {
                     mark = annotationExpression;
                 } else if (e2ImmuAnnotationExpressions.testMark.typeInfo() == t) {

@@ -143,7 +143,7 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
                     getProperty(VariableProperty.PROPAGATE_MODIFICATION) == Level.TRUE);
 
             // @Dependent1,2; @Independent, @Dependent not shown
-            int independent = getProperty(VariableProperty.INDEPENDENT);
+            int independent = getProperty(VariableProperty.INDEPENDENT_PARAMETER);
             if (independent == MultiLevel.DEPENDENT_1) {
                 annotations.put(e2ImmuAnnotationExpressions.dependent1, true);
             } else if (independent == MultiLevel.DEPENDENT_2) {

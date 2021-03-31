@@ -15,10 +15,7 @@
 package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.analyser.*;
-import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.Level;
-import org.e2immu.analyser.model.ParameterizedType;
-import org.e2immu.analyser.model.Qualification;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
@@ -72,7 +69,7 @@ public record PropertyWrapper(Expression expression,
 
     @Override
     public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
-        throw new UnsupportedOperationException();
+        return expression.evaluate(evaluationContext, forwardEvaluationInfo); // drop everything you have, it should come back
     }
 
     @Override
@@ -88,7 +85,7 @@ public record PropertyWrapper(Expression expression,
     @Override
     public OutputBuilder output(Qualification qualification) {
         String propertyString = properties.entrySet().stream().filter(e -> e.getValue() > e.getKey().falseValue)
-                .map(e -> e.getKey().toString()).sorted().collect(Collectors.joining(","));
+                .map(PropertyWrapper::stringValue).sorted().collect(Collectors.joining(","));
         OutputBuilder outputBuilder = new OutputBuilder().add(expression.output(qualification));
         if (!propertyString.isBlank()) {
             outputBuilder.add(Symbol.LEFT_BLOCK_COMMENT)
@@ -96,6 +93,16 @@ public record PropertyWrapper(Expression expression,
                     .add(Symbol.RIGHT_BLOCK_COMMENT);
         }
         return outputBuilder;
+    }
+
+    private static String stringValue(Map.Entry<VariableProperty, Integer> e) {
+        switch (e.getKey()) {
+            case INDEPENDENT, INDEPENDENT_PARAMETER, CONTEXT_DEPENDENT -> {
+                if (e.getValue() == MultiLevel.DEPENDENT_1) return "@Dependent1";
+                if (e.getValue() == MultiLevel.DEPENDENT_2) return "@Dependent2";
+            }
+        }
+        return e.getKey().toString();
     }
 
     @Override

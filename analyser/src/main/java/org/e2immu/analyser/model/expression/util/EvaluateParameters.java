@@ -79,7 +79,7 @@ public class EvaluateParameters {
                         map.put(VariableProperty.CONTEXT_MODIFIED, parameterAnalysis.getProperty(VariableProperty.MODIFIED_VARIABLE));
                         map.put(VariableProperty.CONTEXT_NOT_NULL, parameterAnalysis.getProperty(VariableProperty.NOT_NULL_PARAMETER));
                         map.put(VariableProperty.NOT_MODIFIED_1, parameterAnalysis.getProperty(VariableProperty.NOT_MODIFIED_1));
-                        independent = parameterAnalysis.getProperty(VariableProperty.INDEPENDENT);
+                        independent = parameterAnalysis.getProperty(VariableProperty.INDEPENDENT_PARAMETER);
                     }
                 } catch (RuntimeException e) {
                     LOGGER.error("Failed to obtain parameter analysis of {}", parameterInfo.fullyQualifiedName());

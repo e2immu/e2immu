@@ -16,49 +16,63 @@ package org.e2immu.analyser.testexample;
 
 import org.e2immu.annotation.*;
 
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.stream.Stream;
 
+/*
+Third test, from Road to immutability
+ */
 public class Dependent1_2<T> {
 
-    private final Set<T> set ;
+    @Linked1(to = { "Dependent1_2.x", "add:t" })
+    private T x;
+    @Linked1(to = { "Dependent1_2.y", "add:t" })
+    private T y;
+    private boolean next;
+
+    public Dependent1_2() {
+    }
 
     @Independent
-    public Dependent1_2(Collection<? extends T> collection) {
-        set = new HashSet<>(collection);
+    public Dependent1_2(@Dependent2 Dependent1_2<T> c) {
+        x = c.x;
+        y = c.y;
+        next = c.next;
     }
 
-    @Dependent
-    public Dependent1_2(Set<T> set) {
-       this.set = set;
+    /*
+    TODO extend fieldAnalysis.linked1Variables from Variable to Expression
+    @Independent
+    public Dependent1_2(@Dependent2 Dependent1_2<T> c, String msg) {
+        x = c.getX();
+        y = c.getY();
+        next = c.next;
+        System.out.println(msg);
     }
 
+     */
+
+    @Modified
     public void add(@Dependent1 T t) {
-        set.add(t); // trivial propagation
-    }
-
-    public void addAll(@Dependent2 Collection<? extends T> ts) {
-        this.set.addAll(ts); // trivial propagation
-    }
-
-    public void addAll2(@Dependent2 Collection<? extends T> ts) {
-        for (T t : ts) add(t); // other type of propagation
-    }
-
-    @Dependent
-    public Set<T> getSet() {
-        return set;
-    }
-
-    @Dependent2 // implying @Independent
-    @E2Container
-    public Set<T> getCopy() {
-        return Set.copyOf(set);
+        if (next) {
+            this.y = t;
+        } else {
+            this.x = t;
+        }
+        next = !next;
     }
 
     @Dependent1
-    public T getSomeT() {
-        return set.stream().findFirst().orElse(null);
+    public T getX() {
+        return x;
+    }
+
+    @Dependent1
+    public T getY() {
+        return y;
+    }
+
+    public void addWithMessage(@Dependent1 T t, String msg) {
+        System.out.println(msg);
+        add(t);
     }
 }
