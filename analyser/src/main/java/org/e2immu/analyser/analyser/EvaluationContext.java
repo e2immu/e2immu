@@ -154,7 +154,7 @@ public interface EvaluationContext {
         return LinkedVariables.EMPTY;
     }
 
-    Set<VariableProperty> VALUE_PROPERTIES = Set.of(IDENTITY, IMMUTABLE, CONTAINER, NOT_NULL_EXPRESSION);
+    Set<VariableProperty> VALUE_PROPERTIES = Set.of(IDENTITY, IMMUTABLE, CONTAINER, NOT_NULL_EXPRESSION, INDEPENDENT);
 
     /*
     computed/copied during assignment. Critical that NNE is present!
@@ -261,4 +261,6 @@ public interface EvaluationContext {
     default This currentThis() {
         return new This(getAnalyserContext(), getCurrentType());
     }
+
+    default Boolean isCurrentlyLinkedToField(Expression objectValue) { return false; }
 }

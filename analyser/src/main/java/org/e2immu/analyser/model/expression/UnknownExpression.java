@@ -78,6 +78,8 @@ public record UnknownExpression(ParameterizedType parameterizedType, String msg)
             case CONTEXT_MODIFIED_DELAY:
             case IDENTITY:
                 return Level.FALSE;
+            case INDEPENDENT:
+                return MultiLevel.INDEPENDENT;
         }
         throw new UnsupportedOperationException("No info about " + variableProperty + " for primitive");
     }

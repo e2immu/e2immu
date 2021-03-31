@@ -14,9 +14,12 @@
 
 package org.e2immu.analyser.analyser;
 
+import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
+import org.e2immu.analyser.model.expression.DelayedVariableExpression;
+import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
@@ -33,35 +36,43 @@ import static org.e2immu.analyser.analyser.AnalysisStatus.*;
 import static org.e2immu.analyser.analyser.VariableInfoContainer.Level.EVALUATION;
 import static org.e2immu.analyser.analyser.VariableProperty.CONTEXT_DEPENDENT;
 
+/*
+deals with 2 situations:
+1- linked1Variables in ChangeData contain scope, holding variable must be linked to parameter
+2- a variable which has a TEMP_DEPENDENT1 property, becomes dependent1 IF linked to field
+ */
 public class Linked1Writer {
 
     private static final Variable DELAY_VAR = Variable.fake();
 
+    private final AtomicReference<AnalysisStatus> analysisStatus = new AtomicReference<>(DONE);
+    private final StatementAnalysis statementAnalysis;
     private final DependencyGraph<Variable> dependencyGraph = new DependencyGraph<>();
 
-    public AnalysisStatus write(StatementAnalysis statementAnalysis,
-                                EvaluationContext evaluationContext,
-                                Function<VariableInfo, LinkedVariables> connections,
-                                Map<Variable, EvaluationResult.ChangeData> changeDataMap) {
-        final AtomicReference<AnalysisStatus> analysisStatus = new AtomicReference<>(DONE);
-        final AtomicBoolean progress = new AtomicBoolean();
-
+    public Linked1Writer(StatementAnalysis statementAnalysis,
+                         EvaluationContext evaluationContext,
+                         Function<VariableInfo, LinkedVariables> connections) {
+        this.statementAnalysis = statementAnalysis;
         ContextPropertyWriter.fillDependencyGraph(statementAnalysis, evaluationContext,
                 connections, EVALUATION, dependencyGraph, analysisStatus);
+    }
+
+    public AnalysisStatus write(Map<Variable, EvaluationResult.ChangeData> changeDataMap) {
+        final AtomicBoolean progress = new AtomicBoolean();
 
         statementAnalysis.variables.stream().map(Map.Entry::getValue).forEach(vic -> {
             VariableInfo best = vic.best(EVALUATION);
-            handleVic(vic, best, changeDataMap.get(best.variable()), analysisStatus, progress);
+            handleLinked1Variables(vic, best, changeDataMap.get(best.variable()), analysisStatus, progress);
         });
 
         return analysisStatus.get() == DELAYS ? (progress.get() ? PROGRESS : DELAYS) : DONE;
     }
 
-    private void handleVic(VariableInfoContainer vic,
-                           VariableInfo best,
-                           EvaluationResult.ChangeData changeData,
-                           AtomicReference<AnalysisStatus> analysisStatus,
-                           AtomicBoolean progress) {
+    private void handleLinked1Variables(VariableInfoContainer vic,
+                                        VariableInfo best,
+                                        EvaluationResult.ChangeData changeData,
+                                        AtomicReference<AnalysisStatus> analysisStatus,
+                                        AtomicBoolean progress) {
         Variable inArgument = best.variable();
 
         Set<Variable> dependenciesOfArgument = dependencyGraph.dependencies(inArgument);
@@ -101,4 +112,13 @@ public class Linked1Writer {
         }
     }
 
+    public Boolean isLinkedToField(Expression expression) {
+        if (expression instanceof DelayedVariableExpression) return null;
+        if (expression instanceof VariableExpression ve) {
+            Set<Variable> set = dependencyGraph.dependencies(ve.variable());
+            if (set.contains(DELAY_VAR)) return null;
+            return set.stream().anyMatch(v -> v instanceof FieldReference fr && fr.scope instanceof This);
+        }
+        return false;
+    }
 }

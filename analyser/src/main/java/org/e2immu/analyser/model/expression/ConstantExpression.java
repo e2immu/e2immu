@@ -63,6 +63,8 @@ public interface ConstantExpression<T> extends Expression {
             case IGNORE_MODIFICATIONS:
             case IDENTITY:
                 return Level.FALSE;
+            case INDEPENDENT:
+                return MultiLevel.INDEPENDENT;
         }
         throw new UnsupportedOperationException("No info about " + variableProperty + " for value " + getClass());
     }

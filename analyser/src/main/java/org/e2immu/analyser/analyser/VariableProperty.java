@@ -39,6 +39,8 @@ public enum VariableProperty {
     IN_NOT_NULL_CONTEXT("in not-null context"),
     CANDIDATE_FOR_NULL_PTR_WARNING("candidate for null pointer warning"),
 
+    TEMP_DEPENDENT_1("temp dependent1"),
+
     /*
     @NotNull, @Nullable property.
     Multiple aspects worth mentioning. See MultiLevel for the different values this property can take.

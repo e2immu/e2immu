@@ -341,10 +341,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
         // @Only check
         checkOnly(evaluationContext, builder, objectValue);
-
-        // return value
-        Location location = evaluationContext.getLocation(this);
-
+        
         Expression result;
         boolean resultIsDelayed;
         if (!methodInfo.isVoid()) {
@@ -365,7 +362,20 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             result = EmptyExpression.NO_RETURN_VALUE;
             resultIsDelayed = false;
         }
-        builder.setExpression(result);
+        Boolean objectValueIsLinkedToField = evaluationContext.isCurrentlyLinkedToField(objectValue);
+        int independent = methodAnalysis.getProperty(VariableProperty.INDEPENDENT);
+
+        if (objectValueIsLinkedToField == Boolean.TRUE &&
+                (independent == MultiLevel.DEPENDENT_1 || independent == MultiLevel.DEPENDENT_2)) {
+            Expression wrappedResult = PropertyWrapper.propertyWrapper(result, Map.of(VariableProperty.INDEPENDENT, independent));
+            builder.setExpression(wrappedResult);
+        /* IMPROVE we'll have to have some delay detection? but is rather sensitive
+           if (objectValueIsLinkedToField == null || independent == Level.DELAY) {
+            return delayedMethod(evaluationContext, builder, result, contextModifiedDelay==Level.TRUE, parameterValues);
+         */
+        } else {
+            builder.setExpression(result);
+        }
 
         // scope delay
         if (resultIsDelayed || contextModifiedDelay == Level.TRUE) {

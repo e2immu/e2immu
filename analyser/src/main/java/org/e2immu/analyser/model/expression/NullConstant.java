@@ -71,7 +71,7 @@ public class NullConstant implements ConstantExpression<Object> {
 
             // if this becomes a problem we'll have to add a parameterized type as the expression context, and
             // take the value of the parameterized type's best type analysis
-            case IMMUTABLE, CONTAINER -> Level.DELAY;
+            case IMMUTABLE, CONTAINER, INDEPENDENT -> Level.DELAY;
             default -> throw new UnsupportedOperationException("Asking for " + variableProperty);
         };
     }

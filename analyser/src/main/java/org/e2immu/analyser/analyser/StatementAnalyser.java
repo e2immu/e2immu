@@ -799,8 +799,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
 
 
         if (!linked1Delays && !linkedDelays) {
-            AnalysisStatus linked1 = new Linked1Writer().write(statementAnalysis, sharedState.evaluationContext,
-                    VariableInfo::getStaticallyAssignedVariables, evaluationResult.changeData());
+            AnalysisStatus linked1 = new Linked1Writer(statementAnalysis, sharedState.evaluationContext,
+                    VariableInfo::getStaticallyAssignedVariables).write(evaluationResult.changeData());
             status = status.combine(linked1);
         }
 
@@ -2598,7 +2598,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
 
         @Override
         public Stream<Map.Entry<String, VariableInfoContainer>> localVariableStream() {
-            return statementAnalysis.variables.stream().filter(e -> e.getValue().current().variable() instanceof LocalVariableReference);
+            return statementAnalysis.variables.stream().filter(e -> e.getValue().current()
+                    .variable() instanceof LocalVariableReference);
         }
 
         @Override
@@ -2611,6 +2612,13 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         public boolean variableIsDelayed(Variable variable) {
             VariableInfo vi = statementAnalysis.findOrNull(variable, EVALUATION);
             return vi == null || vi.isDelayed();
+        }
+
+        @Override
+        public Boolean isCurrentlyLinkedToField(Expression objectValue) {
+            Linked1Writer linked1Writer = new Linked1Writer(statementAnalysis, this,
+                    VariableInfo::getStaticallyAssignedVariables);
+            return linked1Writer.isLinkedToField(objectValue);
         }
     }
 }

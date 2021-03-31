@@ -1003,6 +1003,10 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
         if (returnValueLinkedToImplicitlyImmutableField) {
             return MultiLevel.DEPENDENT_1;
         }
+        int independent = returnVariable.getProperty(VariableProperty.INDEPENDENT);
+        if (independent == MultiLevel.DEPENDENT_1 || independent == MultiLevel.DEPENDENT_2) {
+            return independent;
+        }
 
         // @Independent
 
