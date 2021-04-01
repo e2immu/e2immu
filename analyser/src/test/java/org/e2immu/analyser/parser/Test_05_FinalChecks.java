@@ -120,8 +120,7 @@ public class Test_05_FinalChecks extends CommonTestRunner {
                     String expectValue = d.iteration() == 0 ? "null==<f:s5>?<s:String>:<s:>" : "\"abc\"";
                     assertEquals(expectValue, d.currentValue().toString());
                     VariableInfo viC = d.variableInfoContainer().getPreviousOrInitial();
-                    int expectC = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_E2IMMUTABLE;
-                    assertEquals(expectC, viC.getProperty(VariableProperty.IMMUTABLE));
+                    assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, viC.getProperty(VariableProperty.IMMUTABLE));
                     VariableInfo viM = d.variableInfoContainer().current();
                     int expectM = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_E2IMMUTABLE;
                     assertEquals(expectM, viM.getProperty(VariableProperty.IMMUTABLE));
@@ -130,8 +129,7 @@ public class Test_05_FinalChecks extends CommonTestRunner {
                     String expect = d.iteration() == 0 ? "<s:String>" : "\"abc\"";
                     assertEquals(expect, d.currentValue().toString());
                     VariableInfo viC = d.variableInfoContainer().getPreviousOrInitial();
-                    int expectImmutable = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_E2IMMUTABLE;
-                    assertEquals(expectImmutable, viC.getProperty(VariableProperty.IMMUTABLE));
+                    assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, viC.getProperty(VariableProperty.IMMUTABLE));
                     VariableInfo viE = d.variableInfoContainer().best(VariableInfoContainer.Level.EVALUATION);
                     int expectEval = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_E2IMMUTABLE;
                     assertEquals(expectEval, viE.getProperty(VariableProperty.IMMUTABLE));

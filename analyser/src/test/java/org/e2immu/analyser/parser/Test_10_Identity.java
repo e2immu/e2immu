@@ -83,7 +83,7 @@ public class Test_10_Identity extends CommonTestRunner {
                     assertEquals(expectValue, d.currentValue().toString());
                     assertEquals("", d.variableInfo().getLinkedVariables().toString());
 
-                    int expectNotNullExpression = d.iteration() <= 1 ? Level.DELAY : MultiLevel.NULLABLE;
+                    int expectNotNullExpression = d.iteration() <= 2 ? Level.DELAY : MultiLevel.NULLABLE;
                     assertEquals(expectNotNullExpression, d.getProperty(VariableProperty.NOT_NULL_PARAMETER));
                 } else fail();
             }

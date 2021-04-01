@@ -171,7 +171,8 @@ public interface EvaluationContext {
 
     default Map<VariableProperty, Integer> getVariableProperties(Expression valueToWrite, int statementTime) {
         if (valueToWrite instanceof IsVariableExpression ve) {
-            return Map.of(EXTERNAL_NOT_NULL, getPropertyFromPreviousOrInitial(ve.variable(), EXTERNAL_NOT_NULL, statementTime));
+            return Map.of(EXTERNAL_NOT_NULL, getPropertyFromPreviousOrInitial(ve.variable(), EXTERNAL_NOT_NULL, statementTime),
+                    EXTERNAL_IMMUTABLE, getPropertyFromPreviousOrInitial(ve.variable(), EXTERNAL_IMMUTABLE, statementTime));
         }
         return Map.of();
     }
@@ -263,5 +264,11 @@ public interface EvaluationContext {
         return new This(getAnalyserContext(), getCurrentType());
     }
 
-    default Boolean isCurrentlyLinkedToField(Expression objectValue) { return false; }
+    default Boolean isCurrentlyLinkedToField(Expression objectValue) {
+        return false;
+    }
+
+    default boolean cannotBeModified(Expression value) {
+        return false;
+    }
 }

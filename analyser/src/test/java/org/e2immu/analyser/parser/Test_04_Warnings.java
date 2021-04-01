@@ -284,7 +284,25 @@ public class Test_04_Warnings extends CommonTestRunner {
     // parameter should not be assigned to
     @Test
     public void test3() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("Warnings_3".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ParameterInfo b && "b".equals(b.name)) {
+                    int extImm = d.getProperty(VariableProperty.EXTERNAL_IMMUTABLE);
+                    assertEquals(MultiLevel.NOT_INVOLVED, extImm); // b is never assigned to a field; in constructor
+                }
+            }
+        };
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("Warnings_3".equals(d.methodInfo().name)) {
+                ParameterAnalysis b = d.methodAnalysis().getParameterAnalyses().get(1);
+                int expectExtImm = d.iteration() == 0 ? Level.DELAY : MultiLevel.NOT_INVOLVED;
+                assertEquals(expectExtImm, b.getProperty(VariableProperty.EXTERNAL_IMMUTABLE));
+            }
+        };
+
         testClass("Warnings_3", 2, 0, new DebugConfiguration.Builder()
+                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder().setSkipTransformations(true).build());
     }

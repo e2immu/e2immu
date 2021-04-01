@@ -1006,10 +1006,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         groupPropertyValues.set(CONTEXT_MODIFIED, variable, cm == null ? Level.FALSE : cm);
         Integer pm = res.remove(CONTEXT_PROPAGATE_MOD);
         groupPropertyValues.set(CONTEXT_PROPAGATE_MOD, variable, pm == null ? Level.FALSE : pm);
-
         Integer extImm = res.remove(EXTERNAL_IMMUTABLE);
-        groupPropertyValues.set(EXTERNAL_IMMUTABLE, variable, extImm == null ?
-                (valueIsDelayed ? Level.DELAY : MultiLevel.NOT_INVOLVED) : extImm);
+        groupPropertyValues.set(EXTERNAL_IMMUTABLE, variable, extImm == null ? (valueIsDelayed ? Level.DELAY : MultiLevel.NOT_INVOLVED)  : extImm);
         Integer cImm = res.remove(CONTEXT_IMMUTABLE);
         groupPropertyValues.set(CONTEXT_IMMUTABLE, variable, cImm == null ? MultiLevel.FALSE : cImm);
         return res;
@@ -1423,7 +1421,9 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                             Map.of(CONTEXT_MODIFIED, Level.FALSE,
                                     CONTEXT_PROPAGATE_MOD, Level.FALSE,
                                     EXTERNAL_NOT_NULL, MultiLevel.NOT_INVOLVED,
-                                    CONTEXT_NOT_NULL, lvr.parameterizedType().defaultNotNull());
+                                    CONTEXT_NOT_NULL, lvr.parameterizedType().defaultNotNull(),
+                                    EXTERNAL_IMMUTABLE, MultiLevel.NOT_INVOLVED,
+                                    CONTEXT_IMMUTABLE, lvr.parameterizedType().defaultImmutable(analyserContext));
 
                     vic.setValue(NewObject.forCatchOrThis(index() + "-" + name,
                             statementAnalysis.primitives, lvr.parameterizedType()), false,
@@ -2383,6 +2383,22 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 return notNullAccordingToConditionManager(ve.variable());
             }
             return MultiLevel.isEffectivelyNotNull(getProperty(value, NOT_NULL_EXPRESSION, true));
+        }
+
+        @Override
+        public boolean cannotBeModified(Expression value) {
+            if(value instanceof IsVariableExpression ve) {
+                VariableInfo variableInfo = findForReading(ve.variable(), getInitialStatementTime(), true);
+                int cImm = variableInfo.getProperty( CONTEXT_IMMUTABLE);
+                if (cImm >= MultiLevel.EVENTUALLY_E2IMMUTABLE_AFTER_MARK) return true;
+                int imm = variableInfo.getProperty(IMMUTABLE);
+                if (imm >= MultiLevel.EVENTUALLY_E2IMMUTABLE_AFTER_MARK) return true;
+                int extImm = variableInfo.getProperty(EXTERNAL_IMMUTABLE);
+                if (extImm >= MultiLevel.EVENTUALLY_E2IMMUTABLE_AFTER_MARK) return true;
+                int formal = variableInfo.variable().parameterizedType().defaultImmutable(analyserContext);
+                return formal >= MultiLevel.EVENTUALLY_E2IMMUTABLE_AFTER_MARK;
+            }
+            return getProperty(value, IMMUTABLE, true) >= MultiLevel.EVENTUALLY_E2IMMUTABLE_AFTER_MARK;
         }
 
         private int getVariableProperty(Variable variable, VariableProperty variableProperty, boolean duringEvaluation) {

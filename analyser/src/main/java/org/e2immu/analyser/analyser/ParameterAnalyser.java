@@ -318,7 +318,7 @@ public class ParameterAnalyser {
         for (VariableProperty variableProperty : PROPERTIES) {
             if (!parameterAnalysis.properties.isSet(variableProperty) && !propertiesDelayed.contains(variableProperty)) {
                 int v;
-                if (variableProperty == VariableProperty.EXTERNAL_NOT_NULL && notAssignedToField) {
+                if (isExternal(variableProperty) && notAssignedToField) {
                     v = MultiLevel.NOT_INVOLVED;
                 } else {
                     v = variableProperty.falseValue;
@@ -345,6 +345,10 @@ public class ParameterAnalyser {
         // can be executed multiple times
         parameterAnalysis.resolveFieldDelays();
         return DONE;
+    }
+
+    private static boolean isExternal(VariableProperty variableProperty) {
+        return variableProperty == EXTERNAL_NOT_NULL || variableProperty == EXTERNAL_IMMUTABLE;
     }
 
     private int combineImmutable(int formallyImmutable, int contractImmutable, boolean contractedBefore) {
@@ -538,7 +542,7 @@ public class ParameterAnalyser {
             if (!parameterAnalysis.properties.isSet(EXTERNAL_IMMUTABLE)) {
                 parameterAnalysis.setProperty(EXTERNAL_IMMUTABLE, NOT_INVOLVED);
             }
-            parameterAnalysis.setProperty(CONTEXT_IMMUTABLE, NOT_INVOLVED);
+            parameterAnalysis.setProperty(CONTEXT_IMMUTABLE, MUTABLE);
 
             if (lastStatementAnalysis != null && parameterInfo.owner.isNotOverridingAnyOtherMethod()
                     && !parameterInfo.owner.isCompanionMethod()) {
