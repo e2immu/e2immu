@@ -641,7 +641,7 @@ public class TypeAnalyser extends AbstractAnalyser {
 
         List<FieldAnalyser> nonPrivateFields = fieldsLinkedToParameters.stream().filter(fieldAnalyser -> !fieldAnalyser.fieldInfo.isPrivate()).collect(Collectors.toList());
         for (FieldAnalyser nonPrivateField : nonPrivateFields) {
-            int immutable = nonPrivateField.fieldAnalysis.getProperty(VariableProperty.IMMUTABLE);
+            int immutable = nonPrivateField.fieldAnalysis.getProperty(VariableProperty.EXTERNAL_IMMUTABLE);
             if (immutable == Level.DELAY) {
                 log(DELAYED, "Delay independence of type {}, field {} is not known to be immutable", typeInfo.fullyQualifiedName,
                         nonPrivateField.fieldInfo.name);

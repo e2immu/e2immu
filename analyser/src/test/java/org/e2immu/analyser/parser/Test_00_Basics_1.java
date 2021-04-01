@@ -83,7 +83,7 @@ public class Test_00_Basics_1 extends CommonTestRunner {
                 int expectEnn = d.iteration() == 0 ? Level.DELAY : MultiLevel.NULLABLE;
                 assertEquals(expectEnn, d.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
 
-                int expectExtImm = d.iteration() <= 1 ? Level.DELAY : MultiLevel.MUTABLE;
+                int expectExtImm = d.iteration() == 0 ? Level.DELAY : MultiLevel.MUTABLE;
                 assertEquals(expectExtImm, d.getProperty(VariableProperty.EXTERNAL_IMMUTABLE));
             }
             if (GET_F1_RETURN.equals(d.variableName())) {
@@ -121,11 +121,7 @@ public class Test_00_Basics_1 extends CommonTestRunner {
             assertEquals(expectModified, d.fieldAnalysis().getProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD));
             assertEquals(MultiLevel.NULLABLE, d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_NOT_NULL));
 
-            // wait until links have been established, while the formal value is MUTABLE, we may still end up
-            // with a dynamic EFFECTIVELY_E2IMMUTABLE
-            int expectImmutable = d.iteration() == 0 ? Level.DELAY: MultiLevel.MUTABLE;
-            assertEquals(expectImmutable,
-                    d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_IMMUTABLE));
+            assertEquals(MultiLevel.MUTABLE, d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_IMMUTABLE));
         }
     };
 

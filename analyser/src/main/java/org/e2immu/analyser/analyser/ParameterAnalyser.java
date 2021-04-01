@@ -385,6 +385,9 @@ public class ParameterAnalyser {
             }
             return formallyImmutable == EVENTUALLY_E1IMMUTABLE ? EVENTUALLY_E1IMMUTABLE_AFTER_MARK : EFFECTIVELY_E1IMMUTABLE;
         }
+        if(contractImmutable == MUTABLE) {
+            return formallyImmutable;
+        }
         throw new UnsupportedOperationException("Should have covered all the bases");
     }
 
