@@ -105,6 +105,7 @@ public class FieldAnalyser extends AbstractAnalyser {
                 .add(ANALYSE_IMMUTABLE, this::analyseImmutable)
                 .add(ANALYSE_MODIFIED, sharedState -> analyseModified())
                 .add(ANALYSE_FINAL_VALUE, sharedState -> analyseFinalValue())
+                .add("analyseConstant", sharedState -> analyseConstant())
                 .add(ANALYSE_NOT_NULL, this::analyseNotNull)
                 .add(ANALYSE_NOT_MODIFIED_1, sharedState -> analyseNotModified1())
                 .add(ANALYSE_LINKED, sharedState -> analyseLinked())
@@ -507,57 +508,98 @@ public class FieldAnalyser extends AbstractAnalyser {
     be computed in the first iteration either (it can if the type is immediately known to be @E2Immutable, such as for primitives)
      */
     private AnalysisStatus analyseFinalValue() {
-        if (fieldAnalysis.effectivelyFinalValue.isSet()) {
-            return DONE;
-        }
+        assert !fieldAnalysis.effectivelyFinalValue.isSet();
+
         if (fieldAnalysis.getProperty(VariableProperty.FINAL) != Level.TRUE) {
-            fieldAnalysis.setProperty(VariableProperty.CONSTANT, Level.FALSE);
+            fieldAnalysis.effectivelyFinalValue.set(new UnknownExpression(fieldInfo.type, UnknownExpression.VARIABLE));
             return DONE;
         }
         if (fieldAnalysis.valuesIsNotSet()) {
             log(DELAYED, "Delaying, have no values yet for field " + fieldInfo.fullyQualifiedName());
             return DELAYS;
         }
-        boolean fieldOfOwnType = fieldInfo.type.typeInfo == fieldInfo.owner;
+        MultiExpression values = fieldAnalysis.getValues();
 
-        int immutable = fieldAnalysis.getProperty(VariableProperty.IMMUTABLE);
-        if (immutable == Level.DELAY && !fieldOfOwnType) {
-            log(DELAYED, "Waiting with effectively final value  until decision on @E2Immutable for {}", fieldInfo.fullyQualifiedName());
-            return DELAYS;
-        }
-        boolean downgradeFromNewInstanceWithConstructor = !fieldOfOwnType && !MultiLevel.isE2Immutable(immutable);
 
         // compute and set the combined value
-        Expression effectivelyFinalValue = determineEffectivelyFinalValue(fieldAnalysis.getValues(),
-                downgradeFromNewInstanceWithConstructor);
+        Expression effectivelyFinalValue;
+
+        // suppose there are 2 constructors, and the field gets exactly the same value...
+        Set<Expression> set = new HashSet<>();
+        Collections.addAll(set, values.expressions());
+
+        if (set.size() == 1) {
+            Expression expression = values.expressions()[0];
+            BooleanConstant TRUE = new BooleanConstant(analyserContext.getPrimitives(), true);
+            if (expression instanceof NewObject newObject && newObject.constructor() != null) {
+                // now the state of the new object may survive if there are no modifying methods called,
+                // but that's too early to know now
+                int immutable = fieldAnalysis.getProperty(VariableProperty.IMMUTABLE);
+                boolean fieldOfOwnType = fieldInfo.type.typeInfo == fieldInfo.owner;
+
+                if (immutable == Level.DELAY && !fieldOfOwnType) {
+                    log(DELAYED, "Waiting with effectively final value  until decision on @E2Immutable for {}", fieldInfo.fullyQualifiedName());
+                    return DELAYS;
+                }
+                boolean downgradeFromNewInstanceWithConstructor = !fieldOfOwnType && !MultiLevel.isE2Immutable(immutable);
+                if (downgradeFromNewInstanceWithConstructor) {
+                    effectivelyFinalValue = newObject.copyAfterModifyingMethodOnConstructor(TRUE);
+                } else {
+                    effectivelyFinalValue = newObject.copyWithNewState(TRUE);
+                }
+            } else {
+                effectivelyFinalValue = expression;
+            }
+        } else {
+            effectivelyFinalValue = new MultiValue(analyserContext, values, fieldInfo.type);
+        }
 
         // check constant, but before we set the effectively final value
+
+        log(CONSTANT, "Setting initial value of effectively final of field {} to {}",
+                fieldInfo.fullyQualifiedName(), effectivelyFinalValue);
+        fieldAnalysis.effectivelyFinalValue.set(effectivelyFinalValue);
+        return DONE;
+    }
+
+    private AnalysisStatus analyseConstant() {
+        if (fieldAnalysis.getProperty(VariableProperty.CONSTANT) != Level.DELAY) return DONE;
+        if (!fieldAnalysis.effectivelyFinalValue.isSet()) {
+            log(DELAYED, "Delaying @Constant, effectively final value not yet set");
+            return DELAYS;
+        }
+
+        Expression effectivelyFinalValue = fieldAnalysis.effectivelyFinalValue.get();
+        if (effectivelyFinalValue.isUnknown()) {
+            fieldAnalysis.setProperty(VariableProperty.CONSTANT, Level.FALSE);
+            return DONE;
+        }
+
+        boolean fieldOfOwnType = fieldInfo.type.typeInfo == fieldInfo.owner;
+        int immutable = fieldAnalysis.getProperty(VariableProperty.IMMUTABLE);
+        if (immutable == Level.DELAY && !fieldOfOwnType) {
+            log(DELAYED, "Waiting with @Constant until decision on @E2Immutable for {}",
+                    fieldInfo.fullyQualifiedName());
+            return DELAYS;
+        }
+
         Boolean recursivelyConstant;
-        if (downgradeFromNewInstanceWithConstructor) recursivelyConstant = false;
+        if (!fieldOfOwnType && !MultiLevel.isE2Immutable(immutable)) recursivelyConstant = false;
         else recursivelyConstant = recursivelyConstant(effectivelyFinalValue);
         if (recursivelyConstant == null) {
-            log(DELAYED, "Delaying effectively final value because of recursively constant computation on value {} of {}",
+            log(DELAYED, "Delaying @Constant because of recursively constant computation on value {} of {}",
                     fieldInfo.fullyQualifiedName(), effectivelyFinalValue);
             return DELAYS;
         }
 
-        fieldAnalysis.effectivelyFinalValue.set(effectivelyFinalValue);
-
-        E2ImmuAnnotationExpressions e2 = analyserContext.getE2ImmuAnnotationExpressions();
         if (recursivelyConstant) {
             // directly adding the annotation; it will not be used for inspection
+            E2ImmuAnnotationExpressions e2 = analyserContext.getE2ImmuAnnotationExpressions();
             AnnotationExpression constantAnnotation = checkConstant.createConstantAnnotation(e2, effectivelyFinalValue);
             fieldAnalysis.annotations.put(constantAnnotation, true);
             fieldAnalysis.setProperty(VariableProperty.CONSTANT, Level.TRUE);
             log(CONSTANT, "Added @Constant annotation on field {}", fieldInfo.fullyQualifiedName());
-        } else {
-            log(CONSTANT, "Marked that field {} cannot be @Constant", fieldInfo.fullyQualifiedName());
-            fieldAnalysis.annotations.put(e2.constant, false);
-            fieldAnalysis.setProperty(VariableProperty.CONSTANT, Level.FALSE);
         }
-
-        log(CONSTANT, "Setting initial value of effectively final of field {} to {}",
-                fieldInfo.fullyQualifiedName(), effectivelyFinalValue);
 
         return DONE;
     }
@@ -584,26 +626,6 @@ public class FieldAnalyser extends AbstractAnalyser {
             return true;
         }
         return false;
-    }
-
-    private Expression determineEffectivelyFinalValue(MultiExpression values,
-                                                      boolean downgradeFromNewInstanceWithConstructor) {
-        // suppose there are 2 constructors, and the field gets exactly the same value...
-        Set<Expression> set = new HashSet<>();
-        Collections.addAll(set, values.expressions());
-
-        if (set.size() == 1) {
-            Expression expression = values.expressions()[0];
-            BooleanConstant TRUE = new BooleanConstant(analyserContext.getPrimitives(), true);
-            if (expression instanceof NewObject newObject) {
-                // now the state of the new object may survive if there are no modifying methods called,
-                // but that's too early to know now
-                return downgradeFromNewInstanceWithConstructor ?
-                        newObject.copyAfterModifyingMethodOnConstructor(TRUE) : newObject.copyWithNewState(TRUE);
-            }
-            return expression;
-        }
-        return new MultiValue(analyserContext, values, fieldInfo.type);
     }
 
     private AnalysisStatus analyseLinked1() {
@@ -940,8 +962,7 @@ public class FieldAnalyser extends AbstractAnalyser {
         public int getProperty(Expression value, VariableProperty variableProperty, boolean duringEvaluation) {
             if (value instanceof VariableExpression variableValue) {
                 Variable variable = variableValue.variable();
-                return getProperty(variable, variableProperty == VariableProperty.NOT_NULL_EXPRESSION ?
-                        VariableProperty.EXTERNAL_NOT_NULL : variableProperty);
+                return getProperty(variable, variableProperty);
             }
             return value.getProperty(this, variableProperty, true);
         }
@@ -949,8 +970,7 @@ public class FieldAnalyser extends AbstractAnalyser {
         @Override
         public int getProperty(Variable variable, VariableProperty variableProperty) {
             if (variable instanceof FieldReference fieldReference) {
-                VariableProperty vp = variableProperty == VariableProperty.NOT_NULL_EXPRESSION
-                        ? VariableProperty.EXTERNAL_NOT_NULL : variableProperty;
+                VariableProperty vp = replaceForFieldAnalyser(variableProperty);
                 return getAnalyserContext().getFieldAnalysis(fieldReference.fieldInfo).getProperty(vp);
             }
             if (variable instanceof This thisVariable) {
@@ -962,6 +982,12 @@ public class FieldAnalyser extends AbstractAnalyser {
                 return getAnalyserContext().getParameterAnalysis(parameterInfo).getProperty(vp);
             }
             throw new UnsupportedOperationException("?? variable of " + variable.getClass());
+        }
+
+        private VariableProperty replaceForFieldAnalyser(VariableProperty variableProperty) {
+            if (variableProperty == VariableProperty.NOT_NULL_EXPRESSION) return VariableProperty.EXTERNAL_NOT_NULL;
+            if (variableProperty == VariableProperty.IMMUTABLE) return VariableProperty.EXTERNAL_IMMUTABLE;
+            return variableProperty;
         }
 
         @Override

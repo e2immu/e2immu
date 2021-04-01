@@ -31,6 +31,7 @@ import java.util.Objects;
 public record UnknownExpression(ParameterizedType parameterizedType, String msg) implements Expression {
 
     public static final String RETURN_VALUE = "return value";
+    public static final String VARIABLE = "variable value";
 
     @Override
     public boolean equals(Object o) {

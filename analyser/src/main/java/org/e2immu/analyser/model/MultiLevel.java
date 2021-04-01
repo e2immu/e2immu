@@ -51,23 +51,14 @@ public class MultiLevel {
 
     // IMMUTABLE
 
-    public static final int EVENTUALLY_CONTENT2_NOT_NULL_BEFORE_MARK = compose(EVENTUAL_BEFORE, EVENTUAL_BEFORE, EVENTUAL_BEFORE);
-    public static final int EVENTUALLY_CONTENT_NOT_NULL_BEFORE_MARK = compose(EVENTUAL_BEFORE, EVENTUAL_BEFORE);
-    public static final int EVENTUALLY_NOT_NULL_BEFORE_MARK = compose(EVENTUAL_BEFORE);
-
     public static final int EVENTUALLY_E2IMMUTABLE_BEFORE_MARK = compose(EVENTUAL_BEFORE, EVENTUAL_BEFORE);
     public static final int EVENTUALLY_E1IMMUTABLE_BEFORE_MARK = compose(EVENTUAL_BEFORE);
 
     public static final int EVENTUALLY_CONTENT2_NOT_NULL = compose(EVENTUAL, EVENTUAL, EVENTUAL);
     public static final int EVENTUALLY_CONTENT_NOT_NULL = compose(EVENTUAL, EVENTUAL);
-    public static final int EVENTUALLY_NOT_NULL = compose(EVENTUAL);
 
     public static final int EVENTUALLY_E2IMMUTABLE = compose(EVENTUAL, EVENTUAL);
     public static final int EVENTUALLY_E1IMMUTABLE = compose(EVENTUAL, FALSE);
-
-    public static final int EVENTUALLY_CONTENT2_NOT_NULL_AFTER_MARK = compose(EVENTUAL_AFTER, EVENTUAL_AFTER, EVENTUAL_AFTER);
-    public static final int EVENTUALLY_CONTENT_NOT_NULL_AFTER_MARK = compose(EVENTUAL_AFTER, EVENTUAL_AFTER);
-    public static final int EVENTUALLY_NOT_NULL_AFTER_MARK = compose(EVENTUAL_AFTER);
 
     public static final int EVENTUALLY_E2IMMUTABLE_AFTER_MARK = compose(EVENTUAL_AFTER, EVENTUAL_AFTER);
     public static final int EVENTUALLY_E1IMMUTABLE_AFTER_MARK = compose(EVENTUAL_AFTER);
@@ -80,22 +71,11 @@ public class MultiLevel {
     public static final int EFFECTIVELY_E1IMMUTABLE = compose(EFFECTIVE);
     public static final int EFFECTIVELY_E1IMMUTABLE_NOT_E2IMMUTABLE = compose(EFFECTIVE, FALSE);
 
-    public static final int EFFECTIVELY_CONTENT_NOT_NULL_EVENTUALLY_CONTENT2_NOT_NULL = compose(EFFECTIVE, EFFECTIVE, EVENTUAL);
-    public static final int EFFECTIVELY_NOT_NULL_EVENTUALLY_CONTENT2_NOT_NULL = compose(EFFECTIVE, EVENTUAL, EVENTUAL);
-    public static final int EFFECTIVELY_CONTENT_NOT_NULL_EVENTUALLY_CONTENT2_NOT_NULL_BEFORE_MARK = compose(EFFECTIVE, EFFECTIVE, EVENTUAL_BEFORE);
-    public static final int EFFECTIVELY_NOT_NULL_EVENTUALLY_CONTENT2_NOT_NULL_BEFORE_MARK = compose(EFFECTIVE, EVENTUAL_BEFORE, EVENTUAL_BEFORE);
-    public static final int EFFECTIVELY_NOT_NULL_EVENTUALLY_CONTENT_NOT_NULL = compose(EFFECTIVE, EVENTUAL);
-    public static final int EFFECTIVELY_NOT_NULL_EVENTUALLY_CONTENT_NOT_NULL_BEFORE_MARK = compose(EFFECTIVE, EVENTUAL_BEFORE);
-    public static final int EFFECTIVELY_E1_EVENTUALLY_E2IMMUTABLE = compose(EFFECTIVE, EVENTUAL);
     public static final int EFFECTIVELY_E1_EVENTUALLY_E2IMMUTABLE_BEFORE_MARK = compose(EFFECTIVE, EVENTUAL_BEFORE);
 
     public static final int MUTABLE = FALSE;
     public static final int NULLABLE = FALSE;
     public static final int NOT_INVOLVED = DELAY;
-
-    public static int valueAtLevel(int value, int level) {
-        return value << (level * SHIFT);
-    }
 
     /**
      * make a value at a given level
@@ -146,6 +126,21 @@ public class MultiLevel {
         return level - 1;
     }
 
+
+    public static int levelBetterThanFalse(int i) {
+        assert i >= 0;
+        int level = 0;
+        int reduce = i;
+        int prevReduce = -1;
+        while (reduce > 0) {
+            level++;
+            prevReduce = reduce;
+            reduce = reduce >> SHIFT;
+        }
+        if (prevReduce == FALSE) return level - 2;
+        return level - 1;
+    }
+
     public static boolean isEventuallyE1Immutable(int immutable) {
         return value(immutable, 0) == EVENTUAL;
     }
@@ -156,10 +151,6 @@ public class MultiLevel {
 
     public static boolean isAtLeastEventuallyE2Immutable(int immutable) {
         return value(immutable, 1) >= EVENTUAL;
-    }
-
-    public static boolean isEffectivelyE1Immutable(int immutable) {
-        return value(immutable, 0) == EFFECTIVE;
     }
 
     public static boolean isE2Immutable(int immutable) {
@@ -224,24 +215,26 @@ public class MultiLevel {
 
     public static int before(int formalLevel) {
         if (formalLevel == E1IMMUTABLE) return EVENTUALLY_E1IMMUTABLE_BEFORE_MARK;
-        return EVENTUALLY_E2IMMUTABLE_BEFORE_MARK;
+        if (formalLevel == E2IMMUTABLE) return EVENTUALLY_E2IMMUTABLE_BEFORE_MARK;
+        throw new UnsupportedOperationException();
     }
 
     public static int after(int formalLevel) {
         if (formalLevel == E1IMMUTABLE) return EVENTUALLY_E1IMMUTABLE_AFTER_MARK;
-        return EVENTUALLY_E2IMMUTABLE_AFTER_MARK;
+        if (formalLevel == E2IMMUTABLE) return EVENTUALLY_E2IMMUTABLE_AFTER_MARK;
+        throw new UnsupportedOperationException();
     }
 
     public static boolean isAfter(int immutable) {
-        if(immutable == Level.DELAY) return false;
-        int level = level(immutable);
+        if (immutable == Level.DELAY) return false;
+        int level = levelBetterThanFalse(immutable);
         int value = value(immutable, level);
         return value == EVENTUAL_AFTER || value == EFFECTIVE;
     }
 
     public static boolean isBefore(int immutable) {
-        if(immutable == Level.DELAY) return false;
-        int level = level(immutable);
+        if (immutable == Level.DELAY) return false;
+        int level = levelBetterThanFalse(immutable);
         int value = value(immutable, level);
         return value == EVENTUAL_BEFORE || value == EVENTUAL;
     }

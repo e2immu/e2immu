@@ -24,7 +24,7 @@ import static org.e2immu.analyser.analyser.VariableProperty.*;
 public interface FieldAnalysis extends Analysis {
 
     /**
-     * @return null means: not decided yet, or field is not effectively final
+     * @return effectively final value; null when @Variable
      */
     Expression getEffectivelyFinalValue();
 

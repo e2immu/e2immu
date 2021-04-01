@@ -792,7 +792,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         AnalysisStatus cImmStatus = contextPropertyWriter.write(statementAnalysis, sharedState.evaluationContext,
                 VariableInfo::getStaticallyAssignedVariables,
                 CONTEXT_IMMUTABLE, groupPropertyValues.getMap(CONTEXT_IMMUTABLE), EVALUATION, Set.of());
-        if(cImmStatus != DONE) {
+        if (cImmStatus != DONE) {
             log(DELAYED, "Context immutable causes delay in {} {}", index(), myMethodAnalyser.methodInfo.fullyQualifiedName);
         }
         status = cImmStatus.combine(status);
@@ -998,7 +998,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         variableProps.forEach(res::put);
         changeData.forEach(res::put);
         Integer enn = res.remove(EXTERNAL_NOT_NULL);
-        groupPropertyValues.set(EXTERNAL_NOT_NULL, variable, enn == null ? (valueIsDelayed ? Level.DELAY : MultiLevel.NOT_INVOLVED) : enn);
+        groupPropertyValues.set(EXTERNAL_NOT_NULL, variable, enn == null ?
+                (valueIsDelayed ? Level.DELAY : MultiLevel.NOT_INVOLVED) : enn);
         Integer cnn = res.remove(CONTEXT_NOT_NULL);
         groupPropertyValues.set(CONTEXT_NOT_NULL, variable, cnn == null ? MultiLevel.NULLABLE : cnn);
         Integer cm = res.remove(CONTEXT_MODIFIED);
@@ -1007,7 +1008,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         groupPropertyValues.set(CONTEXT_PROPAGATE_MOD, variable, pm == null ? Level.FALSE : pm);
 
         Integer extImm = res.remove(EXTERNAL_IMMUTABLE);
-        groupPropertyValues.set(EXTERNAL_IMMUTABLE, variable, extImm == null ? MultiLevel.FALSE : extImm);// FIXME
+        groupPropertyValues.set(EXTERNAL_IMMUTABLE, variable, extImm == null ?
+                (valueIsDelayed ? Level.DELAY : MultiLevel.NOT_INVOLVED) : extImm);
         Integer cImm = res.remove(CONTEXT_IMMUTABLE);
         groupPropertyValues.set(CONTEXT_IMMUTABLE, variable, cImm == null ? MultiLevel.FALSE : cImm);
         return res;
@@ -1027,10 +1029,10 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             int change = changeData.getOrDefault(k, Level.DELAY);
             if (GroupPropertyValues.PROPERTIES.contains(k)) {
                 int value = switch (k) {
-                    case EXTERNAL_IMMUTABLE -> prev != Level.DELAY ? Math.max(MultiLevel.DELAY, prev): Level.DELAY;
+                    case EXTERNAL_IMMUTABLE -> prev != Level.DELAY ? Math.max(MultiLevel.DELAY, prev) : Level.DELAY;
                     case CONTEXT_IMMUTABLE -> {
                         if (changeData.getOrDefault(CONTEXT_IMMUTABLE_DELAY, Level.DELAY) != Level.TRUE && prev != Level.DELAY) {
-                            yield Math.max(variable.parameterizedType().defaultImmutable(analyserContext), Math.max(prev, change));
+                            yield Math.max(prev, change);
                         } else {
                             yield Level.DELAY;
                         }
@@ -2405,6 +2407,13 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                     int best = MultiLevel.bestNotNull(inMap, cnn);
                     boolean cmNn = notNullAccordingToConditionManager(ve.variable());
                     return MultiLevel.bestNotNull(cmNn ? MultiLevel.EFFECTIVELY_NOT_NULL : MultiLevel.NULLABLE, best);
+                }
+                if (variableProperty == IMMUTABLE) {
+                    int formally = ve.variable().parameterizedType().defaultImmutable(getAnalyserContext());
+                    if (formally == IMMUTABLE.best) return formally; // EFFECTIVELY_E2, for primitives etc.
+                    int cImm = getVariableProperty(ve.variable(), CONTEXT_IMMUTABLE, duringEvaluation);
+                    if (cImm == Level.DELAY || inMap == Level.DELAY) return Level.DELAY;
+                    return MultiLevel.bestImmutable(inMap, MultiLevel.bestImmutable(cImm, formally));
                 }
                 return inMap;
             }

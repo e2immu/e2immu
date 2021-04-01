@@ -52,12 +52,15 @@ public class Test_00_Basics_1 extends CommonTestRunner {
                     assertTrue(d.variableInfo().isAssigned());
                     String expectLinked = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "p0";
                     assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
+
+                    assertEquals(MultiLevel.MUTABLE, d.getProperty(VariableProperty.CONTEXT_IMMUTABLE));
                 }
             }
             if (d.variable() instanceof ParameterInfo p0 && "p0".equals(p0.name)) {
                 String expectValue = "nullable instance type Set<String>";
                 assertEquals(expectValue, d.currentValue().toString());
                 assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+                assertEquals(MultiLevel.MUTABLE, d.getProperty(VariableProperty.CONTEXT_IMMUTABLE));
 
                 int expectEnn = d.iteration() == 0 ? Level.DELAY : MultiLevel.NULLABLE;
                 assertEquals(expectEnn, d.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
@@ -80,7 +83,7 @@ public class Test_00_Basics_1 extends CommonTestRunner {
                 int expectEnn = d.iteration() == 0 ? Level.DELAY : MultiLevel.NULLABLE;
                 assertEquals(expectEnn, d.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
 
-                int expectExtImm = d.iteration() == 0 ? Level.DELAY : MultiLevel.MUTABLE;
+                int expectExtImm = d.iteration() <= 1 ? Level.DELAY : MultiLevel.MUTABLE;
                 assertEquals(expectExtImm, d.getProperty(VariableProperty.EXTERNAL_IMMUTABLE));
             }
             if (GET_F1_RETURN.equals(d.variableName())) {

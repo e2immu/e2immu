@@ -336,7 +336,7 @@ public class ParameterAnalyser {
 
         assert delays || parameterAnalysis.properties.isSet(VariableProperty.MODIFIED_OUTSIDE_METHOD) &&
                 parameterAnalysis.properties.isSet(VariableProperty.EXTERNAL_NOT_NULL) &&
-                parameterAnalysis.properties.isSet(IMMUTABLE);
+                parameterAnalysis.properties.isSet(EXTERNAL_IMMUTABLE);
 
         if (delays) {
             return changed ? PROGRESS : DELAYS;

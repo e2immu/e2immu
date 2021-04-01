@@ -53,6 +53,9 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
 
     @Override
     public Expression getEffectivelyFinalValue() {
+        if (effectivelyFinalValue.isUnknown()) {
+            return null;
+        }
         return effectivelyFinalValue;
     }
 
@@ -161,6 +164,7 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
         public void setImplicitlyImmutableDataType(boolean value) {
             isOfImplicitlyImmutableDataType.set(value);
         }
+
         public boolean isOfImplicitlyImmutableDataTypeIsSet() {
             return isOfImplicitlyImmutableDataType.isSet();
         }
@@ -172,7 +176,9 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
 
         @Override
         public Expression getEffectivelyFinalValue() {
-            return effectivelyFinalValue.getOrElse(null);
+            Expression v = effectivelyFinalValue.getOrElse(null);
+            if (v != null && v.isUnknown()) return null;
+            return v;
         }
 
         @Override

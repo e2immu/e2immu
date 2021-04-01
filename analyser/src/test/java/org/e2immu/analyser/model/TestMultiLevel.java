@@ -17,7 +17,7 @@ package org.e2immu.analyser.model;
 import org.junit.jupiter.api.Test;
 
 import static org.e2immu.analyser.model.MultiLevel.*;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class TestMultiLevel {
 
@@ -53,6 +53,16 @@ public class TestMultiLevel {
     }
 
     @Test
+    public void testLevelBetterThanFalse() {
+        assertEquals(E1IMMUTABLE, levelBetterThanFalse(EFFECTIVELY_E1IMMUTABLE));
+        assertEquals(NOT_NULL_1, levelBetterThanFalse(EFFECTIVELY_CONTENT_NOT_NULL));
+        assertEquals(NOT_NULL_2, levelBetterThanFalse(EFFECTIVELY_CONTENT2_NOT_NULL));
+        assertEquals(E2IMMUTABLE, levelBetterThanFalse(EVENTUALLY_E2IMMUTABLE));
+        assertEquals(E2IMMUTABLE, levelBetterThanFalse(EVENTUALLY_E2IMMUTABLE_BEFORE_MARK));
+        assertEquals(E1IMMUTABLE, levelBetterThanFalse(EVENTUALLY_E1IMMUTABLE));
+    }
+
+    @Test
     public void testValue() {
         assertEquals(EFFECTIVE, value(EFFECTIVELY_CONTENT2_NOT_NULL, NOT_NULL));
         assertEquals(EFFECTIVE, value(EFFECTIVELY_CONTENT2_NOT_NULL, NOT_NULL_1));
@@ -69,14 +79,40 @@ public class TestMultiLevel {
 
     @Test
     public void testDelayToFalse() {
-        assertEquals(FALSE, MultiLevel.delayToFalse(0));
+        assertEquals(FALSE, delayToFalse(0));
     }
 
     @Test
     public void testEventual() {
-        assertEquals(DELAY, MultiLevel.eventual(Level.DELAY, true));
-        assertEquals(DELAY, MultiLevel.eventual(Level.DELAY, false));
-        assertEquals(DELAY, MultiLevel.eventual(DELAY, true));
-        assertEquals(DELAY, MultiLevel.eventual(DELAY, false));
+        assertEquals(DELAY, eventual(Level.DELAY, true));
+        assertEquals(DELAY, eventual(Level.DELAY, false));
+        assertEquals(DELAY, eventual(DELAY, true));
+        assertEquals(DELAY, eventual(DELAY, false));
+    }
+
+    @Test
+    public void testIsBefore() {
+        assertTrue(isBefore(EVENTUALLY_E2IMMUTABLE));
+        assertTrue(isBefore(EVENTUALLY_E1IMMUTABLE));
+        assertTrue(isBefore(EVENTUALLY_E2IMMUTABLE_BEFORE_MARK));
+        assertTrue(isBefore(EVENTUALLY_E1IMMUTABLE_BEFORE_MARK));
+
+        assertFalse(isBefore(EFFECTIVELY_E2IMMUTABLE));
+        assertFalse(isBefore(EFFECTIVELY_E1IMMUTABLE));
+        assertFalse(isBefore(EVENTUALLY_E1IMMUTABLE_AFTER_MARK));
+        assertFalse(isBefore(EVENTUALLY_E2IMMUTABLE_AFTER_MARK));
+    }
+
+    @Test
+    public void testIsAfter() {
+        assertFalse(isAfter(EVENTUALLY_E2IMMUTABLE));
+        assertFalse(isAfter(EVENTUALLY_E1IMMUTABLE));
+        assertFalse(isAfter(EVENTUALLY_E2IMMUTABLE_BEFORE_MARK));
+        assertFalse(isAfter(EVENTUALLY_E1IMMUTABLE_BEFORE_MARK));
+
+        assertTrue(isAfter(EFFECTIVELY_E2IMMUTABLE));
+        assertTrue(isAfter(EFFECTIVELY_E1IMMUTABLE));
+        assertTrue(isAfter(EVENTUALLY_E1IMMUTABLE_AFTER_MARK));
+        assertTrue(isAfter(EVENTUALLY_E2IMMUTABLE_AFTER_MARK));
     }
 }
