@@ -195,6 +195,17 @@ public record VariableExpression(Variable variable, String name) implements Expr
             builder.markContextNotNullDelay(variable);
         }
 
+        int contextImmutable = forwardEvaluationInfo.getProperty(VariableProperty.CONTEXT_IMMUTABLE);
+        int nextImmutable =  forwardEvaluationInfo.getProperty(VariableProperty.NEXT_CONTEXT_IMMUTABLE);
+        if(contextImmutable > MultiLevel.MUTABLE) {
+            builder.variableOccursInEventuallyImmutableContext(variable, contextImmutable, nextImmutable);
+        }
+
+        int contextImmutableDelay = forwardEvaluationInfo.getProperty(VariableProperty.CONTEXT_IMMUTABLE_DELAY);
+        if (contextImmutableDelay == Level.TRUE) {
+            builder.markContextImmutableDelay(variable);
+        }
+
         int propagate = forwardEvaluationInfo.getProperty(VariableProperty.CONTEXT_PROPAGATE_MOD);
         if (propagate == Level.TRUE) {
             assert modified == Level.FALSE;

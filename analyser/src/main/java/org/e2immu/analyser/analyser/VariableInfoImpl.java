@@ -234,6 +234,8 @@ class VariableInfoImpl implements VariableInfo {
         setProperty(VariableProperty.CONTEXT_MODIFIED, Level.FALSE);
         setProperty(EXTERNAL_NOT_NULL, MultiLevel.NOT_INVOLVED);
         setProperty(CONTEXT_PROPAGATE_MOD, Level.FALSE);
+        setProperty(CONTEXT_IMMUTABLE, MultiLevel.MUTABLE); // even if the variable is a primitive...
+        setProperty(EXTERNAL_IMMUTABLE, MultiLevel.NOT_INVOLVED);
     }
 
     // ***************************** MERGE RELATED CODE *********************************
@@ -267,6 +269,9 @@ class VariableInfoImpl implements VariableInfo {
             new MergeOp(CONTEXT_NOT_NULL, MAX, CONTEXT_NOT_NULL.falseValue),
             new MergeOp(EXTERNAL_NOT_NULL, MIN, EXTERNAL_NOT_NULL.best),
             new MergeOp(IMMUTABLE, MIN, IMMUTABLE.best),
+            new MergeOp(EXTERNAL_IMMUTABLE, MIN, EXTERNAL_IMMUTABLE.best),
+            new MergeOp(CONTEXT_IMMUTABLE, MAX, CONTEXT_IMMUTABLE.falseValue),
+
             new MergeOp(CONTAINER, MIN, CONTAINER.best),
             new MergeOp(IDENTITY, MIN, IDENTITY.best),
 

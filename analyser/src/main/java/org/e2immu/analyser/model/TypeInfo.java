@@ -307,6 +307,12 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
                 .collect(Collectors.toUnmodifiableSet());
     }
 
+    public boolean isAbstract() {
+        TypeInspection inspection = typeInspection.get();
+        if (inspection.typeNature() == TypeNature.INTERFACE) return true;
+        return inspection.modifiers().contains(TypeModifier.ABSTRACT);
+    }
+
     private record ResultOfImportComputation(Set<String> imports, QualificationImpl qualification) {
     }
 

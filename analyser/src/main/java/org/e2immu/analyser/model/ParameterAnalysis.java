@@ -30,13 +30,13 @@ public interface ParameterAnalysis extends Analysis {
     }
 
     enum AssignedOrLinked {
-        ASSIGNED(Set.of(EXTERNAL_NOT_NULL, MODIFIED_OUTSIDE_METHOD, EXTERNAL_PROPAGATE_MOD)),
+        ASSIGNED(Set.of(EXTERNAL_NOT_NULL, MODIFIED_OUTSIDE_METHOD, EXTERNAL_PROPAGATE_MOD, EXTERNAL_IMMUTABLE)),
         LINKED(Set.of(MODIFIED_OUTSIDE_METHOD, EXTERNAL_PROPAGATE_MOD)),
         NO(Set.of()),
         DELAYED(null);
 
         public static final Set<VariableProperty> PROPERTIES = Set.of(EXTERNAL_NOT_NULL, MODIFIED_OUTSIDE_METHOD,
-                EXTERNAL_PROPAGATE_MOD);
+                EXTERNAL_PROPAGATE_MOD, EXTERNAL_IMMUTABLE);
         private final Set<VariableProperty> propertiesToCopy;
 
         AssignedOrLinked(Set<VariableProperty> propertiesToCopy) {
@@ -141,8 +141,8 @@ public interface ParameterAnalysis extends Analysis {
             case CONTEXT_MODIFIED:
             case MODIFIED_OUTSIDE_METHOD: {
                 // if the parameter is level 2 immutable, it cannot be modified
-                // if own type, eventually doesn't cut it FIXME eventual, or not?
-                if (parameterInfo.parameterizedType.isE2Immutable(analysisProvider) == Boolean.TRUE) {
+                int immutable = getParameterProperty(analysisProvider, parameterInfo, IMMUTABLE);
+                if (immutable >= MultiLevel.EVENTUALLY_E2IMMUTABLE_AFTER_MARK) {
                     return Level.FALSE;
                 }
                 if (!parameterInfo.owner.isPrivate() && analysisProvider.getTypeAnalysis(parameterInfo.owner.typeInfo)
@@ -168,25 +168,21 @@ public interface ParameterAnalysis extends Analysis {
                 }
                 return implicit == null && withoutImplicitDelay != Level.TRUE ? Level.DELAY : withoutImplicitDelay;
             }
-            // when can a parameter be immutable? it cannot be computed in the method
-            // (0) parameters of functional interface type are @E2Immutable
-            // (1) if the type is effectively immutable
-            // (2) if all the flows leading up to this parameter are flows where the mark has been set; but this
-            // we can only know when the method is private and the flows are known
-            // (3) when the user has contract-annotated the parameter with @E2Immutable
+
             case IMMUTABLE: {
                 TypeInfo bestType = parameterInfo.parameterizedType.bestTypeInfo();
-                int immutableFromType;
+                int formalImmutable;
                 if (bestType != null) {
                     TypeAnalysis bestTypeAnalysis = analysisProvider.getTypeAnalysis(bestType);
-                    int immutable = bestTypeAnalysis.getProperty(VariableProperty.IMMUTABLE);
-                    if (immutable == Level.DELAY) return internalGetProperty(VariableProperty.IMMUTABLE);
-                    boolean objectFlowCondition = false; // FIXME
-                    immutableFromType = MultiLevel.eventual(immutable, objectFlowCondition);
+                    formalImmutable = bestTypeAnalysis.getProperty(VariableProperty.IMMUTABLE);
                 } else {
-                    immutableFromType = MultiLevel.MUTABLE;
+                    formalImmutable = MultiLevel.NOT_INVOLVED;
                 }
-                return Math.max(immutableFromType, MultiLevel.delayToFalse(internalGetProperty(VariableProperty.IMMUTABLE)));
+                int external = getParameterProperty(analysisProvider, parameterInfo, EXTERNAL_IMMUTABLE);
+                int context = getParameterProperty(analysisProvider, parameterInfo, CONTEXT_IMMUTABLE);
+                if (external == Level.DELAY || context == Level.DELAY) return Level.DELAY;
+
+                return MultiLevel.bestImmutable(formalImmutable, MultiLevel.bestImmutable(external, context));
             }
 
             case NOT_NULL_EXPRESSION:

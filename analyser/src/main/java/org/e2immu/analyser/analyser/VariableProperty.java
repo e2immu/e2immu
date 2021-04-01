@@ -83,6 +83,11 @@ public enum VariableProperty {
     immutable is computed at the static assignment level.
      */
 
+    IMMUTABLE_BEFORE_CONTRACTED("immutable before contracted"),
+    CONTEXT_IMMUTABLE_DELAY("context immutable delay"),
+    NEXT_CONTEXT_IMMUTABLE("next context @Immutable", MultiLevel.MUTABLE, MultiLevel.EFFECTIVELY_E2IMMUTABLE, MultiLevel.MUTABLE,
+            MultiLevel.MUTABLE),
+
     IMMUTABLE("@Immutable", MultiLevel.MUTABLE, MultiLevel.EFFECTIVELY_E2IMMUTABLE, MultiLevel.MUTABLE,
             MultiLevel.MUTABLE),
     CONTEXT_IMMUTABLE("context @Immutable", MultiLevel.MUTABLE, MultiLevel.EFFECTIVELY_E2IMMUTABLE, MultiLevel.MUTABLE,
@@ -173,7 +178,8 @@ public enum VariableProperty {
     copy from field, parameter, this/type to variable, once a value has been determined.
      */
     public static final Set<VariableProperty> FROM_ANALYSER_TO_PROPERTIES
-            = Set.of(IDENTITY, FINAL, EXTERNAL_NOT_NULL, MODIFIED_OUTSIDE_METHOD, IMMUTABLE, CONTAINER, NOT_MODIFIED_1);
+            = Set.of(IDENTITY, FINAL, EXTERNAL_NOT_NULL, EXTERNAL_IMMUTABLE, MODIFIED_OUTSIDE_METHOD,
+            CONTAINER, NOT_MODIFIED_1);
 
     public final String name;
     public final int best;

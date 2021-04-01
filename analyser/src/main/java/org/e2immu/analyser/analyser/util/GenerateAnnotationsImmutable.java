@@ -62,9 +62,6 @@ public class GenerateAnnotationsImmutable {
         // BEFORE
         if (e1 == MultiLevel.EVENTUAL_BEFORE || e2 == MultiLevel.EVENTUAL_BEFORE) {
             if (isType) throw new UnsupportedOperationException(); // cannot have this on a type
-            if (e1 == MultiLevel.EFFECTIVE) {
-                res.put(e1(haveContainer), TRUE);
-            }
             res.put(BeforeMark.class, TRUE);
             return res;
         }

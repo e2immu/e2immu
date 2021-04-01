@@ -25,6 +25,7 @@ import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Space;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.output.Text;
+import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.Pair;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
@@ -382,7 +383,7 @@ public record NewObject(
 
             case INDEPENDENT: // meant for DEP1, DEP2
                 return Level.DELAY;
-                
+
             case CONTAINER: { // must be pretty similar to the code in ParameterAnalysis, because every parameter will be of this type
                 Boolean implicit = parameterizedType.isImplicitlyImmutable(evaluationContext.getAnalyserContext(),
                         evaluationContext.getCurrentType());
@@ -399,10 +400,12 @@ public record NewObject(
                 return implicit == null && withoutImplicitDelay != Level.TRUE ? Level.DELAY : withoutImplicitDelay;
             }
             case IMMUTABLE: {
-                TypeInfo bestType = parameterizedType.bestTypeInfo();
-                if (Primitives.isPrimitiveExcludingVoid(bestType)) return variableProperty.best;
-                return bestType == null ? variableProperty.falseValue :
-                        evaluationContext.getAnalyserContext().getTypeAnalysis(bestType).getProperty(variableProperty);
+                int immutable = parameterizedType.defaultImmutable(evaluationContext.getAnalyserContext());
+                if (immutable == MultiLevel.EVENTUALLY_E1IMMUTABLE)
+                    return MultiLevel.EVENTUALLY_E1IMMUTABLE_BEFORE_MARK;
+                if (immutable == MultiLevel.EVENTUALLY_E2IMMUTABLE)
+                    return MultiLevel.EVENTUALLY_E2IMMUTABLE_BEFORE_MARK;
+                return immutable;
             }
             default:
         }
@@ -542,6 +545,10 @@ public record NewObject(
                     .forEach(res.k::markVariablesFromPrimaryTypeAnalyser);
         }
 
+        int immutable = forwardEvaluationInfo.getProperty(VariableProperty.CONTEXT_IMMUTABLE);
+        if (MultiLevel.isAfter(immutable)) {
+            res.k.raiseError(Message.EVENTUAL_AFTER_REQUIRED);
+        }
         return res.k.build();
     }
 

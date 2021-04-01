@@ -422,14 +422,14 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
             // SECOND CRITERION: is there an eventually immutable field?
 
             boolean haveDelayOnImmutableFields = fieldAnalysesOfTypeInfo
-                    .stream().anyMatch(fa -> fa.getProperty(VariableProperty.IMMUTABLE) == Level.DELAY);
+                    .stream().anyMatch(fa -> fa.getProperty(VariableProperty.EXTERNAL_IMMUTABLE) == Level.DELAY);
             if (haveDelayOnImmutableFields) {
                 log(DELAYED, "Delaying eventual in {} until we know about @Immutable of fields", methodInfo.fullyQualifiedName);
                 return DELAYS;
             }
             boolean haveEventuallyImmutableFields = fieldAnalysesOfTypeInfo
                     .stream().anyMatch(fa -> {
-                        int immutable = fa.getProperty(VariableProperty.IMMUTABLE);
+                        int immutable = fa.getProperty(VariableProperty.EXTERNAL_IMMUTABLE);
                         return MultiLevel.isEventuallyE1Immutable(immutable) || MultiLevel.isEventuallyE2Immutable(immutable);
                     });
             if (haveEventuallyImmutableFields) {
@@ -448,7 +448,7 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
 
             boolean haveContentChangeableField = fieldAnalysesOfTypeInfo
                     .stream().anyMatch(fa -> {
-                        int immutable = fa.getProperty(VariableProperty.IMMUTABLE);
+                        int immutable = fa.getProperty(VariableProperty.EXTERNAL_IMMUTABLE);
                         return !MultiLevel.isE2Immutable(immutable)
                                 && !Primitives.isPrimitiveExcludingVoid(fa.getFieldInfo().type)
                                 && !fa.isOfImplicitlyImmutableDataType();
@@ -1019,13 +1019,13 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
         int e2ImmutableStatusOfFieldRefs = linkedVariables.variables().stream()
                 .filter(v -> v instanceof FieldReference)
                 .map(v -> analyserContext.getFieldAnalyser(((FieldReference) v).fieldInfo))
-                .mapToInt(fa -> MultiLevel.value(fa.fieldAnalysis.getProperty(VariableProperty.IMMUTABLE), MultiLevel.E2IMMUTABLE))
+                .mapToInt(fa -> MultiLevel.value(fa.fieldAnalysis.getProperty(VariableProperty.EXTERNAL_IMMUTABLE), MultiLevel.E2IMMUTABLE))
                 .min().orElse(MultiLevel.EFFECTIVE);
         if (e2ImmutableStatusOfFieldRefs == MultiLevel.DELAY) {
             log(DELAYED, "Have a dependency on a field whose E2Immutable status is not known: {}",
                     linkedVariables.variables().stream()
                             .filter(v -> MultiLevel.value(analyserContext.getFieldAnalyser(((FieldReference) v).fieldInfo)
-                                            .fieldAnalysis.getProperty(VariableProperty.IMMUTABLE),
+                                            .fieldAnalysis.getProperty(VariableProperty.EXTERNAL_IMMUTABLE),
                                     MultiLevel.E2IMMUTABLE) == MultiLevel.DELAY)
                             .map(Variable::fullyQualifiedName)
                             .collect(Collectors.joining(", ")));

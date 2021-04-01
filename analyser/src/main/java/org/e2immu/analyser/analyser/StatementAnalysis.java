@@ -349,8 +349,12 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         vic.setProperty(CONTEXT_NOT_NULL, notNull, INITIAL);
         vic.setProperty(NOT_NULL_EXPRESSION, notNull, INITIAL);
         vic.setProperty(EXTERNAL_NOT_NULL, MultiLevel.NOT_INVOLVED, INITIAL);
+
         vic.setProperty(CONTEXT_MODIFIED, Level.FALSE, INITIAL);
         vic.setProperty(CONTEXT_PROPAGATE_MOD, Level.FALSE, INITIAL);
+
+        vic.setProperty(CONTEXT_IMMUTABLE, MultiLevel.NOT_INVOLVED, INITIAL);
+        vic.setProperty(EXTERNAL_IMMUTABLE, MultiLevel.NOT_INVOLVED, INITIAL);
     }
 
     private void copyVariableFromPreviousInIteration0(Map.Entry<String, VariableInfoContainer> entry,
@@ -572,7 +576,8 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                         Map<VariableProperty, Integer> combined = new HashMap<>(propertyMap);
                         valueMap.forEach((k, v) -> combined.merge(k, v, Math::max));
                         for (VariableProperty vp : GroupPropertyValues.PROPERTIES) {
-                            combined.put(vp, vp == EXTERNAL_NOT_NULL ? MultiLevel.NOT_INVOLVED : vp.falseValue);
+                            combined.put(vp, vp == EXTERNAL_NOT_NULL
+                                     || vp == EXTERNAL_IMMUTABLE ? MultiLevel.NOT_INVOLVED : vp.falseValue);
                         }
                         lvrVic.setValue(initialValue, false, assignedToOriginal, combined, true);
                         lvrVic.setLinkedVariables(LinkedVariables.EMPTY, true);
@@ -730,6 +735,14 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                 VariableInfo::getStaticallyAssignedVariables, CONTEXT_NOT_NULL,
                 groupPropertyValues.getMap(CONTEXT_NOT_NULL), MERGE, doNotWrite);
 
+        AnalysisStatus extImmStatus = contextPropertyWriter.write(this, evaluationContext,
+                VariableInfo::getStaticallyAssignedVariables, EXTERNAL_IMMUTABLE,
+                groupPropertyValues.getMap(EXTERNAL_IMMUTABLE), MERGE, doNotWrite);
+
+        AnalysisStatus cImmStatus = contextPropertyWriter.write(this, evaluationContext,
+                VariableInfo::getStaticallyAssignedVariables, CONTEXT_IMMUTABLE,
+                groupPropertyValues.getMap(CONTEXT_IMMUTABLE), MERGE, doNotWrite);
+
         AnalysisStatus cmStatus = contextPropertyWriter.write(this, evaluationContext,
                 VariableInfo::getLinkedVariables, CONTEXT_MODIFIED,
                 groupPropertyValues.getMap(CONTEXT_MODIFIED), MERGE, doNotWrite);
@@ -738,7 +751,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                 VariableInfo::getLinkedVariables, CONTEXT_PROPAGATE_MOD,
                 groupPropertyValues.getMap(CONTEXT_PROPAGATE_MOD), MERGE, doNotWrite);
 
-        return ennStatus.combine(cnnStatus).combine(cmStatus);
+        return ennStatus.combine(cnnStatus).combine(cmStatus).combine(extImmStatus).combine(cImmStatus);
     }
 
     private boolean onlyOneCopy(EvaluationContext evaluationContext, FieldReference fr) {
@@ -817,7 +830,9 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             vic.setLinkedVariables(LinkedVariables.EMPTY, true);
             vic.setProperty(NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL, INITIAL);
             vic.setProperty(EXTERNAL_NOT_NULL, MultiLevel.NOT_INVOLVED, INITIAL);
+            vic.setProperty(EXTERNAL_IMMUTABLE, MultiLevel.NOT_INVOLVED, INITIAL);
             vic.setProperty(CONTEXT_PROPAGATE_MOD, Level.FALSE, INITIAL);
+            vic.setProperty(CONTEXT_IMMUTABLE, MultiLevel.NOT_INVOLVED, INITIAL);
 
         } else if ((variable instanceof ParameterInfo parameterInfo)) {
             Expression initial = initialValueOfParameter(analyserContext, parameterInfo);
@@ -827,6 +842,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             Map<VariableProperty, Integer> valueProperties = evaluationContext.getValueProperties(initial);
             valueProperties.forEach((k, v) -> vic.setProperty(k, v, false, INITIAL));
             vic.setProperty(CONTEXT_DEPENDENT, MultiLevel.DEPENDENT, INITIAL);
+            vic.setProperty(CONTEXT_IMMUTABLE, MultiLevel.NOT_INVOLVED, INITIAL);
 
         } else if (variable instanceof FieldReference fieldReference) {
             ExpressionAndDelay initialValue = initialValueOfField(evaluationContext, fieldReference, false);
@@ -869,8 +885,9 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
     }
 
     private static final Set<VariableProperty> FROM_ANALYSER_TO_PROPERTIES_AND_CUSTOM
-            = Set.of(IDENTITY, FINAL, EXTERNAL_NOT_NULL, MODIFIED_OUTSIDE_METHOD, IMMUTABLE, CONTAINER, NOT_MODIFIED_1,
-            CONTEXT_NOT_NULL, CONTEXT_MODIFIED, CONTEXT_PROPAGATE_MOD);
+            = Set.of(IDENTITY, FINAL, EXTERNAL_NOT_NULL, EXTERNAL_IMMUTABLE,
+            MODIFIED_OUTSIDE_METHOD, IMMUTABLE, CONTAINER, NOT_MODIFIED_1,
+            CONTEXT_NOT_NULL, CONTEXT_MODIFIED, CONTEXT_PROPAGATE_MOD, CONTEXT_IMMUTABLE);
 
     private Map<VariableProperty, Integer> propertyMap(AnalyserContext analyserContext,
                                                        WithInspectionAndAnalysis object,
@@ -889,6 +906,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         return FROM_ANALYSER_TO_PROPERTIES_AND_CUSTOM.stream()
                 .collect(Collectors.toUnmodifiableMap(vp -> vp, vp -> {
                     if (vp == CONTEXT_NOT_NULL) return defaultNotNull;
+                    if (vp == CONTEXT_IMMUTABLE) return MultiLevel.NOT_INVOLVED;
                     if (vp == CONTEXT_MODIFIED) return Level.FALSE;
                     if (vp == CONTEXT_PROPAGATE_MOD) return Level.FALSE;
                     return f.apply(vp);

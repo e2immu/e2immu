@@ -828,7 +828,7 @@ public class TypeAnalyser extends AbstractAnalyser {
 
             // this follows automatically if they are primitive or E2Immutable themselves
 
-            int fieldImmutable = fieldAnalysis.getProperty(VariableProperty.IMMUTABLE);
+            int fieldImmutable = fieldAnalysis.getProperty(VariableProperty.EXTERNAL_IMMUTABLE);
             int fieldE2Immutable = MultiLevel.value(fieldImmutable, MultiLevel.E2IMMUTABLE);
             // field is of the type of the class being analysed... it will not make the difference.
             if (fieldE2Immutable == MultiLevel.DELAY && typeInfo == fieldInfo.type.typeInfo) {

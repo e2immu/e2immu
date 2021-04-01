@@ -25,7 +25,6 @@ import java.util.Objects;
 @E2Container
 public class Message {
 
-
     public enum Severity {
         INFO,
         WARN,
@@ -91,6 +90,10 @@ public class Message {
 
     public static final String USELESS_LOCAL_CLASS_DECLARATION ="Unused local class declaration (no statements follow)";
     public static final String TRIVIAL_CASES_IN_SWITCH = "Trivial cases in switch";
+
+    public static final String INCOMPATIBLE_IMMUTABILITY_CONTRACT = "Incompatible immutability contract";
+    public static final String EVENTUAL_AFTER_REQUIRED = "Calling a method requiring @Only(after) on an object in state @Only(before)";
+    public static final String EVENTUAL_BEFORE_REQUIRED = "Calling a method requiring @Only(before) on an object in state @Only(after)";
 
     @NotNull1
     @E2Container

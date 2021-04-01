@@ -377,27 +377,32 @@ public class FieldAnalyser extends AbstractAnalyser {
     }
 
     private AnalysisStatus analyseImmutable(SharedState sharedState) {
-        if (fieldInfo.type.isFunctionalInterface()) return DONE; // not for me
+
         // not an assert, because the value is not directly determined by the actual property
-        if (fieldAnalysis.getProperty(VariableProperty.IMMUTABLE) != Level.DELAY) return DONE;
+        if (fieldAnalysis.getProperty(VariableProperty.EXTERNAL_IMMUTABLE) != Level.DELAY) return DONE;
+        TypeInfo bestType = fieldInfo.type.bestTypeInfo();
+        if (bestType == null) {
+            fieldAnalysis.setProperty(VariableProperty.EXTERNAL_IMMUTABLE, MultiLevel.NOT_INVOLVED);
+            return DONE; // implicitly immutable
+        }
 
         int isFinal = fieldAnalysis.getProperty(VariableProperty.FINAL);
         if (isFinal == Level.DELAY) {
-            log(DELAYED, "Delaying {} on {} until we know about @Final", VariableProperty.IMMUTABLE, fieldInfo.fullyQualifiedName());
+            log(DELAYED, "Delaying @Immutable on {} until we know about @Final", fieldInfo.fullyQualifiedName());
             return DELAYS;
         }
         if (isFinal == Level.FALSE && fieldCanBeWrittenFromOutsideThisPrimaryType) {
             log(NOT_NULL, "Field {} cannot be immutable: it is not @Final," +
                             " and it can be assigned to from outside this primary type",
                     fieldInfo.fullyQualifiedName());
-            fieldAnalysis.setProperty(VariableProperty.IMMUTABLE, MultiLevel.MUTABLE);
+            fieldAnalysis.setProperty(VariableProperty.EXTERNAL_IMMUTABLE, MultiLevel.MUTABLE);
             return DONE;
         }
 
         int staticallyImmutable = fieldInfo.type.getProperty(analyserContext, VariableProperty.IMMUTABLE);
         if (MultiLevel.isE2Immutable(staticallyImmutable)) {
             log(E2IMMUTABLE, "Field {} is statically @E2Immutable", fieldInfo.fullyQualifiedName());
-            fieldAnalysis.setProperty(VariableProperty.IMMUTABLE, staticallyImmutable);
+            fieldAnalysis.setProperty(VariableProperty.EXTERNAL_IMMUTABLE, staticallyImmutable);
             return DONE;
         }
 
@@ -413,15 +418,15 @@ public class FieldAnalyser extends AbstractAnalyser {
                 .mapToInt(expression -> evaluationContext.getProperty(expression, VariableProperty.IMMUTABLE, false))
                 .min()
                 .orElse(MultiLevel.MUTABLE);
-        int breakDelays = valueFromAssignment == Level.DELAY && allDelaysResolved ?
-                VariableProperty.IMMUTABLE.falseValue : valueFromAssignment;
+        int breakDelays = valueFromAssignment == Level.DELAY && allDelaysResolved ? MultiLevel.MUTABLE : valueFromAssignment;
+
         // compute the value of the assignments
         if (breakDelays == Level.DELAY) {
             log(DELAYED, "Delaying immutable on field {}, initialiser delayed", fieldInfo.fullyQualifiedName());
             return DELAYS; // delay
         }
         log(DYNAMIC, "Set immutable on field {} to value {}", fieldInfo.fullyQualifiedName(), breakDelays);
-        fieldAnalysis.setProperty(VariableProperty.IMMUTABLE, breakDelays);
+        fieldAnalysis.setProperty(VariableProperty.EXTERNAL_IMMUTABLE, breakDelays);
         return DONE;
     }
 
@@ -627,7 +632,7 @@ public class FieldAnalyser extends AbstractAnalyser {
         Set<Variable> linked1Variables = allMethodsAndConstructors.stream()
                 .flatMap(m -> m.getFieldAsVariableStream(fieldInfo, false))
                 .filter(vi -> vi.valueIsSet() && vi.getValue() instanceof VariableExpression)
-                .map(vi -> ((VariableExpression)vi.getValue()).variable())
+                .map(vi -> ((VariableExpression) vi.getValue()).variable())
                 .filter(v -> !(v instanceof LocalVariableReference)) // especially local variable copies of the field itself
                 .filter(v -> myTypeAnalyser.typeAnalysis.getImplicitlyImmutableDataTypes().contains(v.parameterizedType()))
                 .collect(Collectors.toSet());
@@ -645,7 +650,7 @@ public class FieldAnalyser extends AbstractAnalyser {
     private AnalysisStatus analyseLinked() {
         assert !fieldAnalysis.linkedVariables.isSet();
 
-        int immutable = fieldAnalysis.getProperty(VariableProperty.IMMUTABLE);
+        int immutable = fieldAnalysis.getProperty(VariableProperty.EXTERNAL_IMMUTABLE);
         if (immutable == MultiLevel.EFFECTIVELY_E2IMMUTABLE) {
             fieldAnalysis.linkedVariables.set(LinkedVariables.EMPTY);
             log(LINKED_VARIABLES, "Setting linked variables to empty for field {}, @E2Immutable type");

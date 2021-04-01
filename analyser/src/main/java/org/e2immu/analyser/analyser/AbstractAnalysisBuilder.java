@@ -184,8 +184,8 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
                 analyserIdentification == Analyser.AnalyserIdentification.PARAMETER ? VariableProperty.MODIFIED_VARIABLE : VariableProperty.MODIFIED_METHOD;
         VariableProperty propagateModification = analyserIdentification == Analyser.AnalyserIdentification.FIELD ?
                 VariableProperty.EXTERNAL_PROPAGATE_MOD : VariableProperty.PROPAGATE_MODIFICATION;
-        VariableProperty independent = analyserIdentification== Analyser.AnalyserIdentification.PARAMETER ?
-                VariableProperty.INDEPENDENT_PARAMETER: VariableProperty.INDEPENDENT;
+        VariableProperty independent = analyserIdentification == Analyser.AnalyserIdentification.PARAMETER ?
+                VariableProperty.INDEPENDENT_PARAMETER : VariableProperty.INDEPENDENT;
 
         for (AnnotationExpression annotationExpression : annotations) {
             AnnotationParameters parameters = annotationExpression.e2ImmuAnnotationParameters();
@@ -207,6 +207,8 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
                 } else if (e2ImmuAnnotationExpressions.e1Container.typeInfo() == t) {
                     immutable = Math.max(0, immutable);
                     container = true;
+                } else if (e2ImmuAnnotationExpressions.beforeMark.typeInfo() == t) {
+                    if (parameters.contract()) setProperty(VariableProperty.IMMUTABLE_BEFORE_CONTRACTED, trueFalse);
                 } else if (e2ImmuAnnotationExpressions.container.typeInfo() == t) {
                     container = true;
                 } else if (e2ImmuAnnotationExpressions.nullable.typeInfo() == t) {
@@ -255,6 +257,8 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
                     setProperty(VariableProperty.UTILITY_CLASS, trueFalse);
                 } else if (e2ImmuAnnotationExpressions.linked.typeInfo() == t) {
                     log(org.e2immu.analyser.util.Logger.LogTarget.ANALYSER, "Ignoring informative annotation @Linked");
+                } else if (e2ImmuAnnotationExpressions.linked1.typeInfo() == t) {
+                    log(org.e2immu.analyser.util.Logger.LogTarget.ANALYSER, "Ignoring informative annotation @Linked1");
                 } else if (e2ImmuAnnotationExpressions.notModified1.typeInfo() == t) {
                     setProperty(VariableProperty.NOT_MODIFIED_1, trueFalse);
                 } else if (e2ImmuAnnotationExpressions.allowsInterrupt.typeInfo() == t) {
@@ -268,6 +272,9 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
         }
         if (container) {
             setProperty(VariableProperty.CONTAINER, Level.TRUE);
+            if(immutable == -1) {
+                setProperty(VariableProperty.IMMUTABLE, MultiLevel.MUTABLE);
+            }
         }
         if (immutable >= 0) {
             int value = switch (immutable) {

@@ -17,15 +17,13 @@ package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.LinkedVariables;
 import org.e2immu.analyser.analyser.VariableProperty;
-import org.e2immu.analyser.config.*;
-import org.e2immu.analyser.model.Level;
-import org.e2immu.analyser.model.MultiLevel;
-import org.e2immu.analyser.model.ParameterAnalysis;
-import org.e2immu.analyser.model.ParameterInfo;
+import org.e2immu.analyser.config.DebugConfiguration;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -81,6 +79,9 @@ public class Test_00_Basics_1 extends CommonTestRunner {
 
                 int expectEnn = d.iteration() == 0 ? Level.DELAY : MultiLevel.NULLABLE;
                 assertEquals(expectEnn, d.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
+
+                int expectExtImm = d.iteration() == 0 ? Level.DELAY : MultiLevel.MUTABLE;
+                assertEquals(expectExtImm, d.getProperty(VariableProperty.EXTERNAL_IMMUTABLE));
             }
             if (GET_F1_RETURN.equals(d.variableName())) {
                 assertTrue(d.variableInfo().isAssigned());
@@ -116,6 +117,12 @@ public class Test_00_Basics_1 extends CommonTestRunner {
             int expectModified = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
             assertEquals(expectModified, d.fieldAnalysis().getProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD));
             assertEquals(MultiLevel.NULLABLE, d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_NOT_NULL));
+
+            // wait until links have been established, while the formal value is MUTABLE, we may still end up
+            // with a dynamic EFFECTIVELY_E2IMMUTABLE
+            int expectImmutable = d.iteration() == 0 ? Level.DELAY: MultiLevel.MUTABLE;
+            assertEquals(expectImmutable,
+                    d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_IMMUTABLE));
         }
     };
 
@@ -143,9 +150,14 @@ public class Test_00_Basics_1 extends CommonTestRunner {
     };
 
     TypeAnalyserVisitor typeAnalyserVisitor = d -> {
-        if("Basics_1".equals(d.typeInfo().simpleName)) {
+        if ("Basics_1".equals(d.typeInfo().simpleName)) {
             assertTrue(d.typeAnalysis().getImplicitlyImmutableDataTypes().isEmpty());
         }
+    };
+
+    TypeMapVisitor typeMapVisitor = typeMap -> {
+        TypeInfo set = typeMap.get(Set.class);
+        assertEquals(MultiLevel.MUTABLE, set.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE));
     };
 
     @Test
@@ -157,6 +169,7 @@ public class Test_00_Basics_1 extends CommonTestRunner {
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
+                .addTypeMapVisitor(typeMapVisitor)
                 .build());
     }
 

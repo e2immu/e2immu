@@ -777,12 +777,25 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         status = cnnStatus.combine(status);
 
         addToMap(groupPropertyValues, EXTERNAL_NOT_NULL, x -> MultiLevel.DELAY, false);
-        ContextPropertyWriter contextPropertyWriterEnn = new ContextPropertyWriter();
-        AnalysisStatus ennStatus = contextPropertyWriterEnn.write(statementAnalysis, sharedState.evaluationContext,
+        AnalysisStatus ennStatus = contextPropertyWriter.write(statementAnalysis, sharedState.evaluationContext,
                 VariableInfo::getStaticallyAssignedVariables,
                 EXTERNAL_NOT_NULL, groupPropertyValues.getMap(EXTERNAL_NOT_NULL), EVALUATION, Set.of());
 
         potentiallyRaiseErrorsOnNotNullInContext(evaluationResult.changeData());
+
+        addToMap(groupPropertyValues, EXTERNAL_IMMUTABLE, x -> MultiLevel.NOT_INVOLVED, false);
+        AnalysisStatus extImmStatus = contextPropertyWriter.write(statementAnalysis, sharedState.evaluationContext,
+                VariableInfo::getStaticallyAssignedVariables,
+                EXTERNAL_IMMUTABLE, groupPropertyValues.getMap(EXTERNAL_IMMUTABLE), EVALUATION, Set.of());
+
+        addToMap(groupPropertyValues, CONTEXT_IMMUTABLE, x -> MultiLevel.NOT_INVOLVED, true);
+        AnalysisStatus cImmStatus = contextPropertyWriter.write(statementAnalysis, sharedState.evaluationContext,
+                VariableInfo::getStaticallyAssignedVariables,
+                CONTEXT_IMMUTABLE, groupPropertyValues.getMap(CONTEXT_IMMUTABLE), EVALUATION, Set.of());
+        if(cImmStatus != DONE) {
+            log(DELAYED, "Context immutable causes delay in {} {}", index(), myMethodAnalyser.methodInfo.fullyQualifiedName);
+        }
+        status = cImmStatus.combine(status);
 
         addToMap(groupPropertyValues, CONTEXT_MODIFIED, x -> Level.FALSE, true);
         // we add the linked variables on top of the statically assigned variables
@@ -847,7 +860,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                     myMethodAnalyser.methodInfo, statementAnalysis.index, statementAnalysis, evaluationResult));
         }
 
-        return new ApplyStatusAndEnnStatus(status, ennStatus);
+        return new ApplyStatusAndEnnStatus(status, ennStatus.combine(extImmStatus));
     }
 
     private void checkPreconditionCompatibilityWithConditionManager(EvaluationContext evaluationContext,
@@ -992,6 +1005,11 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         groupPropertyValues.set(CONTEXT_MODIFIED, variable, cm == null ? Level.FALSE : cm);
         Integer pm = res.remove(CONTEXT_PROPAGATE_MOD);
         groupPropertyValues.set(CONTEXT_PROPAGATE_MOD, variable, pm == null ? Level.FALSE : pm);
+
+        Integer extImm = res.remove(EXTERNAL_IMMUTABLE);
+        groupPropertyValues.set(EXTERNAL_IMMUTABLE, variable, extImm == null ? MultiLevel.FALSE : extImm);// FIXME
+        Integer cImm = res.remove(CONTEXT_IMMUTABLE);
+        groupPropertyValues.set(CONTEXT_IMMUTABLE, variable, cImm == null ? MultiLevel.FALSE : cImm);
         return res;
     }
 
@@ -1009,6 +1027,14 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             int change = changeData.getOrDefault(k, Level.DELAY);
             if (GroupPropertyValues.PROPERTIES.contains(k)) {
                 int value = switch (k) {
+                    case EXTERNAL_IMMUTABLE -> prev != Level.DELAY ? Math.max(MultiLevel.DELAY, prev): Level.DELAY;
+                    case CONTEXT_IMMUTABLE -> {
+                        if (changeData.getOrDefault(CONTEXT_IMMUTABLE_DELAY, Level.DELAY) != Level.TRUE && prev != Level.DELAY) {
+                            yield Math.max(variable.parameterizedType().defaultImmutable(analyserContext), Math.max(prev, change));
+                        } else {
+                            yield Level.DELAY;
+                        }
+                    }
                     // values simply travel downward (delay until there's a value from another analyser)
                     case EXTERNAL_NOT_NULL -> prev != Level.DELAY ? Math.max(MultiLevel.DELAY, prev) : Level.DELAY;
                     case CONTEXT_NOT_NULL -> {
@@ -1587,7 +1613,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             statementAnalysis.stateData.setValueOfExpression(value, valueIsDelayed2);
 
             if (ennStatus != DONE) {
-                log(DELAYED, "Delaying statement {} in {} because of external not null",
+                log(DELAYED, "Delaying statement {} in {} because of external not null/external immutable",
                         index(), myMethodAnalyser.methodInfo.fullyQualifiedName);
             }
             return ennStatus.combine(statusPost);

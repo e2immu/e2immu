@@ -221,4 +221,28 @@ public class MultiLevel {
     public static boolean isBetterImmutable(int immutableDynamic, int immutableType) {
         return immutableDynamic > immutableType;
     }
+
+    public static int before(int formalLevel) {
+        if (formalLevel == E1IMMUTABLE) return EVENTUALLY_E1IMMUTABLE_BEFORE_MARK;
+        return EVENTUALLY_E2IMMUTABLE_BEFORE_MARK;
+    }
+
+    public static int after(int formalLevel) {
+        if (formalLevel == E1IMMUTABLE) return EVENTUALLY_E1IMMUTABLE_AFTER_MARK;
+        return EVENTUALLY_E2IMMUTABLE_AFTER_MARK;
+    }
+
+    public static boolean isAfter(int immutable) {
+        if(immutable == Level.DELAY) return false;
+        int level = level(immutable);
+        int value = value(immutable, level);
+        return value == EVENTUAL_AFTER || value == EFFECTIVE;
+    }
+
+    public static boolean isBefore(int immutable) {
+        if(immutable == Level.DELAY) return false;
+        int level = level(immutable);
+        int value = value(immutable, level);
+        return value == EVENTUAL_BEFORE || value == EVENTUAL;
+    }
 }

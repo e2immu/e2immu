@@ -36,6 +36,7 @@ import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.AnalysisStatus.*;
 import static org.e2immu.analyser.analyser.VariableProperty.*;
+import static org.e2immu.analyser.model.MultiLevel.*;
 import static org.e2immu.analyser.model.ParameterAnalysis.AssignedOrLinked.*;
 import static org.e2immu.analyser.util.Logger.LogTarget.ANALYSER;
 import static org.e2immu.analyser.util.Logger.log;
@@ -80,6 +81,12 @@ public class ParameterAnalyser {
         check(Dependent1.class, e2.dependent1);
         check(Dependent2.class, e2.dependent2);
 
+        check(BeforeMark.class, e2.beforeMark);
+        check(E1Immutable.class, e2.e1Immutable);
+        check(E1Container.class, e2.e1Container);
+        check(E2Immutable.class, e2.e2Immutable);
+        check(E2Container.class, e2.e2Container);
+
         // opposites
         check(Nullable.class, e2.nullable);
         check(Modified.class, e2.modified);
@@ -92,7 +99,7 @@ public class ParameterAnalyser {
     }
 
     private static final Set<VariableProperty> CHECK_WORSE_THAN_PARENT = Set.of(NOT_NULL_PARAMETER, MODIFIED_VARIABLE,
-            NOT_MODIFIED_1, PROPAGATE_MODIFICATION);
+            NOT_MODIFIED_1, PROPAGATE_MODIFICATION, IMMUTABLE);
 
     private void checkWorseThanParent() {
         for (VariableProperty variableProperty : CHECK_WORSE_THAN_PARENT) {
@@ -150,9 +157,10 @@ public class ParameterAnalyser {
         boolean checkLinks = true;
 
         TypeInfo bestType = parameterInfo.parameterizedType.bestTypeInfo();
+        int formallyImmutable;
         if (bestType != null) {
-            int immutable = analyserContext.getTypeAnalysis(bestType).getProperty(VariableProperty.IMMUTABLE);
-            if (immutable == MultiLevel.EFFECTIVELY_E2IMMUTABLE) {
+            formallyImmutable = analyserContext.getTypeAnalysis(bestType).getProperty(VariableProperty.IMMUTABLE);
+            if (formallyImmutable == EFFECTIVELY_E2IMMUTABLE) {
                 if (!parameterAnalysis.properties.isSet(VariableProperty.MODIFIED_OUTSIDE_METHOD)) {
                     parameterAnalysis.setProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD, Level.FALSE);
                     changed = true;
@@ -168,6 +176,19 @@ public class ParameterAnalyser {
                     changed = true;
                 }
                 checkLinks = false;
+            }
+            formallyImmutable = MultiLevel.NOT_INVOLVED;
+        }
+
+        int contractBefore = parameterAnalysis.getProperty(IMMUTABLE_BEFORE_CONTRACTED);
+        int contractImmutable = parameterAnalysis.getProperty(IMMUTABLE);
+        if (contractImmutable != Level.DELAY && !parameterAnalysis.properties.isSet(IMMUTABLE)) {
+            if (formallyImmutable == Level.DELAY) {
+                delays = true;
+            } else {
+                int combined = combineImmutable(formallyImmutable, contractImmutable, contractBefore == Level.TRUE);
+                parameterAnalysis.properties.put(IMMUTABLE, combined);
+                changed = true;
             }
         }
 
@@ -265,6 +286,8 @@ public class ParameterAnalyser {
                     }
                 }
 
+                // @Dependent1, @Dependent2
+
                 if (!fieldAnalyser.fieldAnalysis.linked1Variables.isSet()) {
                     log(ANALYSER, "Delaying @Dependent1/2, waiting for linked1variables",
                             parameterInfo.owner.typeInfo.fullyQualifiedName);
@@ -272,8 +295,8 @@ public class ParameterAnalyser {
                 } else {
                     LinkedVariables lv1 = fieldAnalyser.fieldAnalysis.linked1Variables.get();
                     if (lv1.contains(parameterInfo)) {
-                        if (!parameterAnalysis.properties.isSet(INDEPENDENT)) {
-                            parameterAnalysis.properties.put(INDEPENDENT, MultiLevel.DEPENDENT_1);
+                        if (!parameterAnalysis.properties.isSet(VariableProperty.INDEPENDENT)) {
+                            parameterAnalysis.properties.put(VariableProperty.INDEPENDENT, MultiLevel.DEPENDENT_1);
                             log(ANALYSER, "Set @Dependent1 on parameter {}: field {} linked or assigned; type is ImplicitlyImmutable",
                                     parameterInfo.fullyQualifiedName(), fieldInfo.name);
                         }
@@ -281,8 +304,8 @@ public class ParameterAnalyser {
                         Optional<Variable> ov = lv1.variables().stream().filter(v -> v instanceof FieldReference fr
                                 && fr.scope == parameterInfo).findFirst();
                         ov.ifPresent(v -> {
-                            if (!parameterAnalysis.properties.isSet(INDEPENDENT)) {
-                                parameterAnalysis.properties.put(INDEPENDENT, MultiLevel.DEPENDENT_2);
+                            if (!parameterAnalysis.properties.isSet(VariableProperty.INDEPENDENT)) {
+                                parameterAnalysis.properties.put(VariableProperty.INDEPENDENT, MultiLevel.DEPENDENT_2);
                                 log(ANALYSER, "Set @Dependent2 on parameter {}: a field of {} linked or assigned; type is ImplicitlyImmutable",
                                         parameterInfo.fullyQualifiedName(), fieldInfo.name);
                             }
@@ -307,12 +330,13 @@ public class ParameterAnalyser {
             }
         }
 
-        if(!parameterAnalysis.properties.isSet(INDEPENDENT) && !delays) {
-            parameterAnalysis.properties.put(INDEPENDENT, MultiLevel.NOT_INVOLVED);
+        if (!parameterAnalysis.properties.isSet(VariableProperty.INDEPENDENT) && !delays) {
+            parameterAnalysis.properties.put(VariableProperty.INDEPENDENT, MultiLevel.NOT_INVOLVED);
         }
 
         assert delays || parameterAnalysis.properties.isSet(VariableProperty.MODIFIED_OUTSIDE_METHOD) &&
-                parameterAnalysis.properties.isSet(VariableProperty.EXTERNAL_NOT_NULL);
+                parameterAnalysis.properties.isSet(VariableProperty.EXTERNAL_NOT_NULL) &&
+                parameterAnalysis.properties.isSet(IMMUTABLE);
 
         if (delays) {
             return changed ? PROGRESS : DELAYS;
@@ -321,6 +345,47 @@ public class ParameterAnalyser {
         // can be executed multiple times
         parameterAnalysis.resolveFieldDelays();
         return DONE;
+    }
+
+    private int combineImmutable(int formallyImmutable, int contractImmutable, boolean contractedBefore) {
+        if (contractedBefore) {
+            if (contractImmutable == EFFECTIVELY_E2IMMUTABLE) {
+                if (formallyImmutable != EVENTUALLY_E2IMMUTABLE) {
+                    messages.add(Message.newMessage(parameterAnalysis.location, Message.INCOMPATIBLE_IMMUTABILITY_CONTRACT,
+                            "Contracted to be @E2Immutable @BeforeMark, formal type is not eventually @E2Immutable"));
+                    return formallyImmutable;
+                }
+                return MultiLevel.EVENTUALLY_E2IMMUTABLE_BEFORE_MARK;
+            }
+            if (contractImmutable == EFFECTIVELY_E1IMMUTABLE) {
+                if (formallyImmutable != MultiLevel.EVENTUALLY_E1IMMUTABLE) {
+                    messages.add(Message.newMessage(parameterAnalysis.location, Message.INCOMPATIBLE_IMMUTABILITY_CONTRACT,
+                            "Contracted to be @E1Immutable @BeforeMark, formal type is not eventually @E1Immutable"));
+                    return formallyImmutable;
+                }
+                return MultiLevel.EVENTUALLY_E1IMMUTABLE_BEFORE_MARK;
+            }
+            messages.add(Message.newMessage(parameterAnalysis.location, Message.INCOMPATIBLE_IMMUTABILITY_CONTRACT,
+                    "Contracted to be @BeforeMark, formal type is not eventually immutable"));
+            return formallyImmutable;
+        }
+        if (contractImmutable == EFFECTIVELY_E2IMMUTABLE) {
+            if (formallyImmutable != EVENTUALLY_E2IMMUTABLE && formallyImmutable != EFFECTIVELY_E2IMMUTABLE) {
+                messages.add(Message.newMessage(parameterAnalysis.location, Message.INCOMPATIBLE_IMMUTABILITY_CONTRACT,
+                        "Contracted to be @E2Immutable after the mark, formal type is not (eventually) @E2Immutable"));
+                return formallyImmutable;
+            }
+            return formallyImmutable == EVENTUALLY_E2IMMUTABLE ? EVENTUALLY_E2IMMUTABLE_AFTER_MARK : EFFECTIVELY_E2IMMUTABLE;
+        }
+        if (contractImmutable == EFFECTIVELY_E1IMMUTABLE) {
+            if (formallyImmutable != EVENTUALLY_E1IMMUTABLE && formallyImmutable != EFFECTIVELY_E1IMMUTABLE) {
+                messages.add(Message.newMessage(parameterAnalysis.location, Message.INCOMPATIBLE_IMMUTABILITY_CONTRACT,
+                        "Contracted to be @E2Immutable after the mark, formal type is not (eventually) @E1Immutable"));
+                return formallyImmutable;
+            }
+            return formallyImmutable == EVENTUALLY_E1IMMUTABLE ? EVENTUALLY_E1IMMUTABLE_AFTER_MARK : EFFECTIVELY_E1IMMUTABLE;
+        }
+        throw new UnsupportedOperationException("Should have covered all the bases");
     }
 
     private boolean noAssignableFieldsForMethod() {
@@ -336,8 +401,8 @@ public class ParameterAnalyser {
                 parameterAnalysis.setProperty(variableProperty, MultiLevel.NOT_INVOLVED);
             }
         }
-        if(!parameterAnalysis.properties.isSet(INDEPENDENT)) {
-            parameterAnalysis.properties.put(INDEPENDENT, MultiLevel.NOT_INVOLVED);
+        if (!parameterAnalysis.properties.isSet(VariableProperty.INDEPENDENT)) {
+            parameterAnalysis.properties.put(VariableProperty.INDEPENDENT, MultiLevel.NOT_INVOLVED);
         }
         parameterAnalysis.freezeAssignedToField();
         parameterAnalysis.resolveFieldDelays();
@@ -398,7 +463,7 @@ public class ParameterAnalyser {
     }
 
     public static final VariableProperty[] CONTEXT_PROPERTIES = {VariableProperty.CONTEXT_NOT_NULL,
-            VariableProperty.CONTEXT_MODIFIED, CONTEXT_PROPAGATE_MOD, CONTEXT_DEPENDENT};
+            VariableProperty.CONTEXT_MODIFIED, CONTEXT_PROPAGATE_MOD, CONTEXT_DEPENDENT, CONTEXT_IMMUTABLE};
 
     private AnalysisStatus analyseContext(SharedState sharedState) {
         // no point, we need to have seen the statement+field analysers first.
@@ -462,10 +527,15 @@ public class ParameterAnalyser {
             parameterAnalysis.setProperty(CONTEXT_PROPAGATE_MOD, Level.FALSE);
 
             // @Independent
-            if(!parameterAnalysis.properties.isSet(INDEPENDENT)) {
-                parameterAnalysis.setProperty(INDEPENDENT, MultiLevel.NOT_INVOLVED);
+            if (!parameterAnalysis.properties.isSet(VariableProperty.INDEPENDENT)) {
+                parameterAnalysis.setProperty(VariableProperty.INDEPENDENT, MultiLevel.NOT_INVOLVED);
             }
             parameterAnalysis.setProperty(CONTEXT_DEPENDENT, parameterInfo.parameterizedType.defaultIndependent());
+
+            if (!parameterAnalysis.properties.isSet(EXTERNAL_IMMUTABLE)) {
+                parameterAnalysis.setProperty(EXTERNAL_IMMUTABLE, NOT_INVOLVED);
+            }
+            parameterAnalysis.setProperty(CONTEXT_IMMUTABLE, NOT_INVOLVED);
 
             if (lastStatementAnalysis != null && parameterInfo.owner.isNotOverridingAnyOtherMethod()
                     && !parameterInfo.owner.isCompanionMethod()) {

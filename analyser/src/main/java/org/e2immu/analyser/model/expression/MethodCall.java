@@ -282,12 +282,17 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         int notNullForward = notNullRequirementOnScope(forwardEvaluationInfo.getProperty(VariableProperty.CONTEXT_NOT_NULL));
         boolean contentNotNullRequired = notNullForward == MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL;
 
+        ImmutableData immutableData = computeContextImmutable(evaluationContext);
+
         // scope
         EvaluationResult objectResult = object.evaluate(evaluationContext, new ForwardEvaluationInfo(Map.of(
                 VariableProperty.CONTEXT_NOT_NULL, notNullForward,
                 VariableProperty.METHOD_CALLED, Level.TRUE,
                 VariableProperty.CONTEXT_MODIFIED_DELAY, contextModifiedDelay,
                 VariableProperty.CONTEXT_MODIFIED, modified,
+                VariableProperty.CONTEXT_IMMUTABLE_DELAY, immutableData.delay,
+                VariableProperty.CONTEXT_IMMUTABLE, immutableData.required,
+                VariableProperty.NEXT_CONTEXT_IMMUTABLE, immutableData.next,
                 VariableProperty.CONTEXT_PROPAGATE_MOD, Level.fromBool(propagateModification)), true));
 
         // null scope
@@ -341,7 +346,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
         // @Only check
         checkOnly(evaluationContext, builder, objectValue);
-        
+
         Expression result;
         boolean resultIsDelayed;
         if (!methodInfo.isVoid()) {
@@ -413,6 +418,38 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 }
             }
         });
+    }
+
+    private record ImmutableData(int delay, int required, int next) {
+    }
+
+    private static final ImmutableData NOT_EVENTUAL = new ImmutableData(Level.DELAY, Level.DELAY, Level.DELAY);
+    private static final ImmutableData IMMUTABLE_DELAYED = new ImmutableData(Level.TRUE, Level.DELAY, Level.DELAY);
+
+    private ImmutableData computeContextImmutable(EvaluationContext evaluationContext) {
+        int formalTypeImmutable = evaluationContext.getAnalyserContext().getTypeAnalysis(methodInfo.typeInfo).getProperty(VariableProperty.IMMUTABLE);
+        if (formalTypeImmutable == Level.DELAY) {
+            return IMMUTABLE_DELAYED;
+        }
+        int formalLevel = MultiLevel.level(formalTypeImmutable);
+        int formalValue = MultiLevel.value(formalTypeImmutable, formalLevel);
+        if (formalValue != MultiLevel.EVENTUAL) {
+            return NOT_EVENTUAL;
+        }
+        MethodAnalysis.Eventual eventual = evaluationContext.getAnalyserContext().getMethodAnalysis(methodInfo).getEventual();
+        if(eventual == null) {
+            return IMMUTABLE_DELAYED;
+        }
+        if(eventual.mark()) {
+            return new ImmutableData(Level.DELAY, MultiLevel.before(formalLevel), MultiLevel.after(formalLevel));
+        }
+        if(eventual.after() != null) {
+            if(eventual.after()) {
+                return new ImmutableData(Level.DELAY, MultiLevel.after(formalLevel), MultiLevel.after(formalLevel));
+            }
+            return new ImmutableData(Level.DELAY, MultiLevel.before(formalLevel), MultiLevel.before(formalLevel));
+        }
+        return NOT_EVENTUAL;
     }
 
     static NewObject checkCompanionMethodsModifying(

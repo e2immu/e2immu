@@ -14,7 +14,9 @@
 
 package org.e2immu.analyser.model;
 
+import org.e2immu.analyser.analyser.AnalyserContext;
 import org.e2immu.analyser.analyser.AnalysisProvider;
+import org.e2immu.analyser.analyser.ExpandableAnalyserContextImpl;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.inspector.MethodTypeParameterMap;
 import org.e2immu.analyser.inspector.TypeContext;
@@ -38,8 +40,6 @@ public class ParameterizedType {
     public static final ParameterizedType RETURN_TYPE_OF_CONSTRUCTOR = new ParameterizedType(WildCard.NONE);
     public static final ParameterizedType NO_TYPE_GIVEN_IN_LAMBDA = new ParameterizedType(WildCard.NONE);
     public static final ParameterizedType WILDCARD_PARAMETERIZED_TYPE = new ParameterizedType(WildCard.UNBOUND);
-
-
 
     public enum WildCard {
         NONE, UNBOUND, SUPER, EXTENDS
@@ -713,6 +713,14 @@ public class ParameterizedType {
     }
 
     public int defaultIndependent() {
-        return Primitives.isPrimitiveExcludingVoid(this) ? MultiLevel.DEPENDENT: MultiLevel.INDEPENDENT;
+        return Primitives.isPrimitiveExcludingVoid(this) ? MultiLevel.INDEPENDENT: MultiLevel.DEPENDENT;
+    }
+
+    public int defaultImmutable(AnalyserContext analyserContext) {
+        TypeInfo bestType = bestTypeInfo();
+        if(bestType == null) return MultiLevel.NOT_INVOLVED;
+        if(Primitives.isPrimitiveExcludingVoid(bestType)) return MultiLevel.EFFECTIVELY_E2IMMUTABLE;
+        TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(bestType);
+        return typeAnalysis.getProperty(VariableProperty.IMMUTABLE);
     }
 }
