@@ -53,9 +53,6 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
 
     @Override
     public Expression getEffectivelyFinalValue() {
-        if (effectivelyFinalValue.isUnknown()) {
-            return null;
-        }
         return effectivelyFinalValue;
     }
 

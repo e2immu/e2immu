@@ -353,7 +353,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         vic.setProperty(CONTEXT_MODIFIED, Level.FALSE, INITIAL);
         vic.setProperty(CONTEXT_PROPAGATE_MOD, Level.FALSE, INITIAL);
 
-        vic.setProperty(CONTEXT_IMMUTABLE, MultiLevel.NOT_INVOLVED, INITIAL);
+        vic.setProperty(CONTEXT_IMMUTABLE, MultiLevel.MUTABLE, INITIAL);
         vic.setProperty(EXTERNAL_IMMUTABLE, MultiLevel.NOT_INVOLVED, INITIAL);
     }
 
@@ -832,7 +832,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             vic.setProperty(EXTERNAL_NOT_NULL, MultiLevel.NOT_INVOLVED, INITIAL);
             vic.setProperty(EXTERNAL_IMMUTABLE, MultiLevel.NOT_INVOLVED, INITIAL);
             vic.setProperty(CONTEXT_PROPAGATE_MOD, Level.FALSE, INITIAL);
-            vic.setProperty(CONTEXT_IMMUTABLE, MultiLevel.NOT_INVOLVED, INITIAL);
+            vic.setProperty(CONTEXT_IMMUTABLE, MultiLevel.MUTABLE, INITIAL);
 
         } else if ((variable instanceof ParameterInfo parameterInfo)) {
             Expression initial = initialValueOfParameter(analyserContext, parameterInfo);
@@ -842,7 +842,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             Map<VariableProperty, Integer> valueProperties = evaluationContext.getValueProperties(initial);
             valueProperties.forEach((k, v) -> vic.setProperty(k, v, false, INITIAL));
             vic.setProperty(CONTEXT_DEPENDENT, MultiLevel.DEPENDENT, INITIAL);
-            vic.setProperty(CONTEXT_IMMUTABLE, MultiLevel.NOT_INVOLVED, INITIAL);
+            vic.setProperty(CONTEXT_IMMUTABLE, MultiLevel.MUTABLE, INITIAL);
 
         } else if (variable instanceof FieldReference fieldReference) {
             ExpressionAndDelay initialValue = initialValueOfField(evaluationContext, fieldReference, false);
@@ -906,7 +906,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         return FROM_ANALYSER_TO_PROPERTIES_AND_CUSTOM.stream()
                 .collect(Collectors.toUnmodifiableMap(vp -> vp, vp -> {
                     if (vp == CONTEXT_NOT_NULL) return defaultNotNull;
-                    if (vp == CONTEXT_IMMUTABLE) return MultiLevel.NOT_INVOLVED;
+                    if (vp == CONTEXT_IMMUTABLE) return MultiLevel.MUTABLE;
                     if (vp == CONTEXT_MODIFIED) return Level.FALSE;
                     if (vp == CONTEXT_PROPAGATE_MOD) return Level.FALSE;
                     return f.apply(vp);
