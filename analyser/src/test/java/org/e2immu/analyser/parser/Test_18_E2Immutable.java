@@ -60,7 +60,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
                     }
                 }
                 if (d.variable() instanceof ParameterInfo pi && pi.name.equals("parent2Param")) {
-                    int expectImmu = d.iteration() <= 2 ? Level.DELAY : MultiLevel.EFFECTIVELY_E2IMMUTABLE;
+                    int expectImmu = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EFFECTIVELY_E2IMMUTABLE;
                     assertEquals(expectImmu, d.getProperty(VariableProperty.IMMUTABLE));
                 }
             }

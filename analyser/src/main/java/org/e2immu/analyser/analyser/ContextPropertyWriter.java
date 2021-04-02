@@ -53,8 +53,8 @@ public class ContextPropertyWriter {
                     LinkedVariables linkedVariables = connections.apply(variableInfo);
                     if (linkedVariables == LinkedVariables.DELAY) {
                         if (!(variableInfo.variable() instanceof LocalVariableReference) || variableInfo.isAssigned()) {
-                            log(DELAYED, "Delaying {} in MethodLevelData for {} in {}: linked variables not set",
-                                    variableInfo, variableInfo.variable().fullyQualifiedName(), evaluationContext.getLocation());
+                            log(DELAYED, "Delaying MethodLevelData for {} in {}: linked variables not set",
+                                    variableInfo.variable().fullyQualifiedName(), evaluationContext.getLocation());
                             analysisStatus.set(DELAYS);
                             dependencyGraph.addNode(variableInfo.variable(), Set.of(DELAY_VAR), true);
                         }

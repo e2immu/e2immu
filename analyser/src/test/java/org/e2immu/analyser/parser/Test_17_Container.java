@@ -81,12 +81,24 @@ public class Test_17_Container extends CommonTestRunner {
                             d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL_EXPRESSION));
                 }
             }
+
+            if ("getS".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof FieldReference fr && "s".equals(fr.fieldInfo.name)) {
+                    assertEquals(S, d.variableName());
+                    int expectExtImm = d.iteration() <= 1 ? Level.DELAY : MultiLevel.MUTABLE;
+                //    assertEquals(expectExtImm, d.getProperty(VariableProperty.EXTERNAL_IMMUTABLE));
+                }
+            }
         };
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("s".equals(d.fieldInfo().name)) {
                 assertEquals(MultiLevel.NULLABLE, d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_NOT_NULL));
                 String expectLinked = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "p";
                 assertEquals(expectLinked, d.fieldAnalysis().getLinkedVariables().toString());
+
+                // s is of type Set<String>, so we wait for values
+                int expectExtImm = d.iteration() <= 1 ? Level.DELAY : MultiLevel.MUTABLE;
+                assertEquals(expectExtImm, d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_IMMUTABLE));
             }
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {

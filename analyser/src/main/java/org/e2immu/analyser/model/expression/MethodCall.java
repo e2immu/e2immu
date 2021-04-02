@@ -174,7 +174,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 if (guideGenerator != null) start = true;
             } else if (object instanceof VariableExpression ve && ve.variable() instanceof This thisVar) {
                 assert !methodInfo.methodInspection.get().isStatic() : "Have a static method with scope 'this'? "
-                        + methodInfo.fullyQualifiedName+"; this "+thisVar.typeInfo.fullyQualifiedName;
+                        + methodInfo.fullyQualifiedName + "; this " + thisVar.typeInfo.fullyQualifiedName;
                 TypeName typeName = new TypeName(thisVar.typeInfo, qualification.qualifierRequired(thisVar.typeInfo));
                 ThisName thisName = new ThisName(thisVar.writeSuper, typeName, qualification.qualifierRequired(thisVar));
                 outputBuilder.add(new QualifiedName(methodInfo.name, thisName,
@@ -345,9 +345,6 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             modifiedInstance = null;
         }
 
-        // @Only check
-        checkOnly(evaluationContext, builder, objectValue);
-
         Expression result;
         boolean resultIsDelayed;
         if (!methodInfo.isVoid()) {
@@ -428,8 +425,13 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     private static final ImmutableData IMMUTABLE_DELAYED = new ImmutableData(Level.TRUE, Level.DELAY, Level.DELAY);
 
     private ImmutableData computeContextImmutable(EvaluationContext evaluationContext) {
-        int formalTypeImmutable = evaluationContext.getAnalyserContext().getTypeAnalysis(methodInfo.typeInfo).getProperty(VariableProperty.IMMUTABLE);
+        int formalTypeImmutable = evaluationContext.getAnalyserContext().getTypeAnalysis(methodInfo.typeInfo)
+                .getProperty(VariableProperty.IMMUTABLE);
         if (formalTypeImmutable == Level.DELAY) {
+            boolean ownType = methodInfo.typeInfo == evaluationContext.getCurrentType();
+            if (ownType) { // IMPROVE this is probably too string
+                return NOT_EVENTUAL;
+            }
             return IMMUTABLE_DELAYED;
         }
         int formalLevel = MultiLevel.level(formalTypeImmutable);
@@ -610,34 +612,6 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             return MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL; // @NotNull1
         }
         return MultiLevel.EFFECTIVELY_NOT_NULL;
-    }
-
-    // FIXME
-    private void checkOnly(EvaluationContext evaluationContext, EvaluationResult.Builder builder,
-                           Expression objectValue) {
-        Set<FieldInfo> marks = Set.of();
-        if (marks != null && !marks.isEmpty()
-                && objectValue instanceof VariableExpression ve && ve.variable() instanceof This) {
-            MethodAnalysis methodAnalysis = evaluationContext.getAnalyserContext().getMethodAnalysis(methodInfo);
-            if (methodAnalysis.eventualIsSet()) {
-                MethodAnalysis.Eventual eventual = methodAnalysis.getEventual();
-                if (eventual != null) {
-                    if (eventual.after() == Boolean.FALSE) {
-                        Set<FieldInfo> before = eventual.fields();
-                        if (marks.containsAll(before)) {
-                            builder.raiseError(Message.ONLY_BEFORE, methodInfo.fullyQualifiedName() +
-                                    ", mark \"" + before + "\"");
-                        }
-                    } else if (eventual.after() == Boolean.TRUE) {
-                        Set<FieldInfo> after = eventual.fields();
-                        if (!marks.containsAll(after)) {
-                            builder.raiseError(Message.ONLY_AFTER, methodInfo.fullyQualifiedName() +
-                                    ", mark \"" + after + "\"");
-                        }
-                    }
-                }
-            }
-        }
     }
 
     private void checkCommonErrors(EvaluationResult.Builder builder, EvaluationContext evaluationContext, Expression objectValue) {

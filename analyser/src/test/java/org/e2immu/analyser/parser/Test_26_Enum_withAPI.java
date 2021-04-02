@@ -155,13 +155,53 @@ public class Test_26_Enum_withAPI extends CommonTestRunner {
 
     @Test
     public void test4() throws IOException {
-        testClass("Enum_4", 0, 0, new DebugConfiguration.Builder()
+        EvaluationResultVisitor evaluationResultVisitor = d -> {
+            if ("highest".equals(d.methodInfo().name)) {
+                if ("0".equals(d.statementId())) {
+                    assertEquals(d.iteration() == 0, d.evaluationResult().someValueWasDelayed());
+                    String expectValue = d.iteration() == 0 ? "1==<m:getCnt>" : "true";
+                    assertEquals(expectValue, d.evaluationResult().value().toString());
+                }
+            }
+        };
+
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("getCnt".equals(d.methodInfo().name)) {
+                assertEquals(Level.FALSE, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
+                if (d.iteration() == 0) {
+                    assertNull(d.methodAnalysis().getSingleReturnValue());
+                } else {
+                    assertEquals("cnt", d.methodAnalysis().getSingleReturnValue().toString());
+                }
+            }
+        };
+
+        FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+            if ("ONE".equals(d.fieldInfo().name)) {
+                assertEquals("new Enum_4(1)", d.fieldAnalysis().getEffectivelyFinalValue().toString());
+
+                int expectImm = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EFFECTIVELY_E2IMMUTABLE;
+                assertEquals(expectImm, d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_IMMUTABLE));
+            }
+        };
+
+        testClass("Enum_4", 0, 2, new DebugConfiguration.Builder()
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addEvaluationResultVisitor(evaluationResultVisitor)
                 .build());
     }
 
     @Test
     public void test5() throws IOException {
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("returnTwo".equals(d.methodInfo().name)) {
+                int expectImm = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EFFECTIVELY_E2IMMUTABLE;
+                assertEquals(expectImm, d.methodAnalysis().getProperty(VariableProperty.IMMUTABLE));
+            }
+        };
         testClass("Enum_5", 0, 0, new DebugConfiguration.Builder()
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 

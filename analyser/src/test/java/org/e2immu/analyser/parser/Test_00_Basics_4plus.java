@@ -269,7 +269,6 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
                 }
             }
 
-
             if ("test4".equals(d.methodInfo().name)) {
                 if ("1".equals(d.statementId())) {
                     assertEquals(0, timeI);
@@ -278,10 +277,11 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
                 }
                 if ("3".equals(d.statementId())) {
                     String msg = d.haveError(Message.ASSERT_EVALUATES_TO_CONSTANT_TRUE);
-                    if (d.iteration() <= 1) assertNull(msg);
+                    if (d.iteration() == 0) assertNull(msg);
                     else assertNotNull(msg);
                 }
             }
+
             if ("test3".equals(d.methodInfo().name)) {
                 assertEquals(0, timeI);
                 assertEquals(0, timeE);
@@ -291,6 +291,7 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
                     assertNotNull(d.haveError(Message.ASSERT_EVALUATES_TO_CONSTANT_TRUE));
                 }
             }
+
             if ("test6".equals(d.methodInfo().name)) {
                 if ("3".equals(d.statementId()) && d.iteration() > 0) {
                     assertNotNull(d.haveError(Message.ASSERT_EVALUATES_TO_CONSTANT_TRUE));

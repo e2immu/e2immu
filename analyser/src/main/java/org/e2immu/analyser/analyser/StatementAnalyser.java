@@ -1617,7 +1617,9 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             // the value can be delayed even if it is "true", for example (Basics_3)
             // see Precondition_3 for an example where different values arise, because preconditions kick in
             boolean valueIsDelayed2 = sharedState.evaluationContext.isDelayed(value) || statusPost != DONE;
-            statementAnalysis.stateData.setValueOfExpression(value, valueIsDelayed2);
+            if(statementAnalysis.stateData.valueOfExpression.isVariable()) { // FIXME this check should probably go; effect of another error
+                statementAnalysis.stateData.setValueOfExpression(value, valueIsDelayed2);
+            }
 
             if (ennStatus != DONE) {
                 log(DELAYED, "Delaying statement {} in {} because of external not null/external immutable",

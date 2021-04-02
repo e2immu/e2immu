@@ -38,4 +38,6 @@ public enum Enum_4 {
         assert 2 == TWO.cnt;      // warning: always true
         return THREE;
     }
+
+
 }

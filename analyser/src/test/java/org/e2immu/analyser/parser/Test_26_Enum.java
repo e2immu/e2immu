@@ -15,6 +15,8 @@
 
 package org.e2immu.analyser.parser;
 
+import org.e2immu.analyser.analyser.LinkedVariables;
+import org.e2immu.analyser.analyser.VariableInfoContainer;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.Level;
@@ -80,9 +82,16 @@ public class Test_26_Enum extends CommonTestRunner {
     @Test
     public void test1() throws IOException {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
-            if ("posInList".equals(d.methodInfo().name) & "0.0.0".equals(d.statementId())) {
-                String expectValue = d.iteration() == 0 ? "this==<v:<m:values>[<v:i>]>" : "instance type Enum_1==this";
-                assertEquals(expectValue, d.evaluationResult().value().toString());
+            if ("posInList".equals(d.methodInfo().name)) {
+                if ("0.0.0".equals(d.statementId())) {
+                    String expectValue = d.iteration() == 0 ? "this==<v:<m:values>[<v:i>]>" : "instance type Enum_1==this";
+                    assertEquals(expectValue, d.evaluationResult().value().toString());
+                }
+                if ("0".equals(d.statementId())) {
+                    String expectValue = d.iteration() == 0 ? "<delayed array length>><v:i>" : "i$0<=2";
+                    assertEquals(expectValue, d.evaluationResult().value().toString());
+                    assertEquals(d.iteration() == 0, d.evaluationResult().someValueWasDelayed());
+                }
             }
         };
 
@@ -93,7 +102,28 @@ public class Test_26_Enum extends CommonTestRunner {
                         String expectValue = d.iteration() == 0 ? "this==<new:Enum_1>?<v:Enum_1.values()[i]>:<new:Enum_1>" :
                                 "instance type Enum_1";
                         assertEquals(expectValue, d.currentValue().toString());
+                        assertTrue(d.variableInfo().getLinkedVariables().isEmpty());
                     }
+                    if ("0".equals(d.statementId())) {
+                        if (d.iteration() > 0) {
+                            assertNotSame(LinkedVariables.DELAY,
+                                    d.variableInfoContainer().best(VariableInfoContainer.Level.EVALUATION).getLinkedVariables());
+                        }
+                        assertTrue(d.variableInfo().getLinkedVariables().isEmpty());
+
+                        assertEquals(MultiLevel.NOT_INVOLVED, d.getProperty(VariableProperty.EXTERNAL_IMMUTABLE));
+                        assertEquals(MultiLevel.NOT_INVOLVED, d.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
+                        assertEquals(MultiLevel.MUTABLE, d.getProperty(VariableProperty.CONTEXT_IMMUTABLE));
+                        assertEquals(Level.FALSE, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
+                    }
+                }
+            }
+        };
+
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("posInList".equals(d.methodInfo().name)) {
+                if ("0".equals(d.statementId())) {
+                    assertTrue(d.statementAnalysis().methodLevelData.linksHaveBeenEstablished.isSet());
                 }
             }
         };
@@ -101,6 +131,7 @@ public class Test_26_Enum extends CommonTestRunner {
         testClass("Enum_1", 0, 0, new DebugConfiguration.Builder()
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build());
     }
 

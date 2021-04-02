@@ -30,7 +30,7 @@ public enum Enum_5 {
         return cnt;
     }
 
-    @E2Container
+    //@E2Container only write the annotation when better; test verifies
     public static Enum_5 returnTwo() {
         return Enum_5.valueOf("TWO");
     }
