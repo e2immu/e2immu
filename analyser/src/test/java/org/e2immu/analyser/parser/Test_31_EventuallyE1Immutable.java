@@ -89,7 +89,7 @@ public class Test_31_EventuallyE1Immutable extends CommonTestRunner {
                 int expectSize = d.iteration() == 0 ? 0 : 1;
                 assertEquals(expectSize, d.typeAnalysis().getApprovedPreconditionsE1().size());
 
-                int expectImmu = d.iteration() <= 2 ? Level.DELAY : MultiLevel.EVENTUALLY_E1IMMUTABLE;
+                int expectImmu = d.iteration() == 0 ? Level.DELAY : MultiLevel.EVENTUALLY_E1IMMUTABLE;
                 assertEquals(expectImmu, d.typeAnalysis().getProperty(VariableProperty.IMMUTABLE));
 
                 String expectFields = d.iteration() == 0 ? "" : "string";
@@ -155,7 +155,7 @@ public class Test_31_EventuallyE1Immutable extends CommonTestRunner {
                 int expectSize = d.iteration() == 0 ? 0 : 1;
                 assertEquals(expectSize, d.typeAnalysis().getApprovedPreconditionsE1().size());
                 assertEquals(0, d.typeAnalysis().getApprovedPreconditionsE2().size());
-                int expectImmu = d.iteration() <= 2 ? Level.DELAY : MultiLevel.EVENTUALLY_E1IMMUTABLE;
+                int expectImmu = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EVENTUALLY_E1IMMUTABLE;
                 assertEquals(expectImmu, d.typeAnalysis().getProperty(VariableProperty.IMMUTABLE));
             }
         };

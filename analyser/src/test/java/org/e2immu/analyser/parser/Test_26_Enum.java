@@ -239,4 +239,20 @@ public class Test_26_Enum extends CommonTestRunner {
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
+
+
+    @Test
+    public void test5() throws IOException {
+        testClass("Enum_5", 0, 0, new DebugConfiguration.Builder()
+                .build());
+    }
+
+    /*
+    without API, there'll be a conflict
+     */
+    @Test
+    public void test6() throws IOException {
+        testClass("Enum_6", 0, 0, new DebugConfiguration.Builder()
+                .build());
+    }
 }

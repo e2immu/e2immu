@@ -21,15 +21,9 @@ import com.github.javaparser.ast.expr.AnnotationExpr;
 import com.github.javaparser.ast.expr.Expression;
 import com.github.javaparser.ast.expr.ObjectCreationExpr;
 import com.github.javaparser.ast.type.ClassOrInterfaceType;
+import org.e2immu.analyser.inspector.util.EnumMethods;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.expression.ArrayInitializer;
-import org.e2immu.analyser.model.expression.BooleanConstant;
-import org.e2immu.analyser.model.expression.NewObject;
-import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.statement.Block;
-import org.e2immu.analyser.model.statement.ReturnStatement;
-import org.e2immu.analyser.model.variable.FieldReference;
-import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.TypeMapImpl;
@@ -228,57 +222,8 @@ public class TypeInspector {
             builder.addField(fieldInfo);
             enumFields.add(fieldInfo);
         });
-        Primitives primitives = expressionContext.typeContext.getPrimitives();
-        E2ImmuAnnotationExpressions e2 = expressionContext.typeContext.typeMapBuilder.getE2ImmuAnnotationExpressions();
 
-        AnnotationExpression notNullContract = E2ImmuAnnotationExpressions.createContract(primitives, e2.notNull);
-        AnnotationExpression notModifiedContract = E2ImmuAnnotationExpressions.createContract(primitives, e2.notModified);
-        AnnotationExpression notPropagateMod = E2ImmuAnnotationExpressions.createNegativeContract(primitives, e2.propagateModification);
-
-        MethodInspectionImpl.Builder nameBuilder = new MethodInspectionImpl.Builder(typeInfo, "name")
-                .setSynthetic(true)
-                .setReturnType(primitives.stringParameterizedType)
-                .addModifier(MethodModifier.PUBLIC)
-                .addAnnotation(notNullContract)
-                .addAnnotation(notModifiedContract);
-        nameBuilder.readyToComputeFQN(expressionContext.typeContext);
-        expressionContext.typeContext.typeMapBuilder.registerMethodInspection(nameBuilder);
-        builder.addMethod(nameBuilder.getMethodInfo());
-
-        MethodInspectionImpl.Builder valueOfBuilder = new MethodInspectionImpl.Builder(typeInfo, "valueOf")
-                .setSynthetic(true)
-                .setReturnType(typeInfo.asParameterizedType(expressionContext.typeContext))
-                .setStatic(true)
-                .addModifier(MethodModifier.PUBLIC)
-                .addAnnotation(notNullContract)
-                .addAnnotation(notModifiedContract);
-        ParameterInspectionImpl.Builder valueOfP0B = new ParameterInspectionImpl.Builder(primitives.stringParameterizedType,
-                "name", 0)
-                .addAnnotation(notPropagateMod)
-                .addAnnotation(notNullContract);
-        valueOfBuilder.addParameter(valueOfP0B);
-        valueOfBuilder.readyToComputeFQN(expressionContext.typeContext);
-        expressionContext.typeContext.typeMapBuilder.registerMethodInspection(valueOfBuilder);
-        builder.addMethod(valueOfBuilder.getMethodInfo());
-
-        ArrayInitializer arrayInitializer = new ArrayInitializer(expressionContext.typeContext,
-                enumFields.stream().map(fieldInfo -> new VariableExpression(new FieldReference(expressionContext.typeContext,
-                        fieldInfo, null))).collect(Collectors.toUnmodifiableList()),
-                typeInfo.asParameterizedType(expressionContext.typeContext));
-        ParameterizedType valuesReturnType = new ParameterizedType(typeInfo, 1);
-        ReturnStatement returnNewArray = new ReturnStatement(NewObject.withArrayInitialiser(typeInfo.fullyQualifiedName,
-                null,
-                valuesReturnType, List.of(), arrayInitializer, new BooleanConstant(primitives, true)));
-        Block valuesBlock = new Block.BlockBuilder().addStatement(returnNewArray).build();
-        MethodInspectionImpl.Builder valuesBuilder = new MethodInspectionImpl.Builder(typeInfo, "values")
-                .setSynthetic(true)
-                .setReturnType(valuesReturnType)
-                .setStatic(true)
-                .addModifier(MethodModifier.PUBLIC)
-                .setInspectedBlock(valuesBlock);
-        valuesBuilder.readyToComputeFQN(expressionContext.typeContext);
-        expressionContext.typeContext.typeMapBuilder.registerMethodInspection(valuesBuilder);
-        builder.addMethod(valuesBuilder.getMethodInfo());
+        EnumMethods.create(expressionContext, typeInfo, builder, enumFields);
     }
 
     private void doClassOrInterfaceDeclaration(ExpressionContext expressionContext, ClassOrInterfaceDeclaration cid) {
