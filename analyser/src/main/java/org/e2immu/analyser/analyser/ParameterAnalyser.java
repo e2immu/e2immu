@@ -281,7 +281,8 @@ public class ParameterAnalyser {
                         }
                     } else {
                         propertiesDelayed.add(variableProperty);
-                        log(ANALYSER, "Still delaying copiedFromFieldToParameters because of {}", variableProperty);
+                        log(org.e2immu.analyser.util.Logger.LogTarget.DELAYED,
+                                "Still delaying copiedFromFieldToParameters because of {}", variableProperty);
                         delays = true;
                     }
                 }
@@ -490,7 +491,8 @@ public class ParameterAnalyser {
                             parameterInfo.fullyQualifiedName(), value);
                     changed = true;
                 } else {
-                    log(ANALYSER, "Delays on {} not yet resolved for parameter {}, delaying", variableProperty,
+                    log(org.e2immu.analyser.util.Logger.LogTarget.DELAYED,
+                            "Delays on {} not yet resolved for parameter {}, delaying", variableProperty,
                             parameterInfo.fullyQualifiedName());
                     delayFromContext = true;
                 }

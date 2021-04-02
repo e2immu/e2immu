@@ -15,7 +15,7 @@
 package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.*;
-import org.e2immu.analyser.config.*;
+import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.MethodCall;
 import org.e2immu.analyser.model.expression.VariableExpression;
@@ -47,17 +47,20 @@ public class Test_16_Modification extends CommonTestRunner {
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("add".equals(d.methodInfo().name)) {
-                if ("org.e2immu.analyser.testexample.Modification_0.set1".equals(d.variableName())) {
+                if (d.variable() instanceof FieldReference fr && "set1".equals(fr.fieldInfo.name)) {
                     assertTrue(d.variableInfoContainer().hasEvaluation() && !d.variableInfoContainer().hasMerge());
                     assertTrue(d.variableInfo().isRead());
+                    String expectValue = d.iteration() == 0 ?
+                            "<field:org.e2immu.analyser.testexample.Modification_0.set1>" :
+                            "instance type HashSet<String>";
+                    assertEquals(expectValue, d.currentValue().debugOutput());
+                    String expectLinked = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "";
+                    assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
+
                     int expectContextModified = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
                     assertEquals(expectContextModified, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
                     int expectModified = d.iteration() <= 1 ? Level.DELAY : Level.TRUE;
                     assertEquals(expectModified, d.getProperty(VariableProperty.MODIFIED_VARIABLE));
-                    String expectLinked = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "";
-                    assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
-                    String expectValue = d.iteration() == 0 ? "<field:org.e2immu.analyser.testexample.Modification_0.set1>" : "instance type HashSet<String>";
-                    assertEquals(expectValue, d.currentValue().debugOutput());
                 }
             }
         };
@@ -66,6 +69,9 @@ public class Test_16_Modification extends CommonTestRunner {
             if ("set1".equals(d.fieldInfo().name)) {
                 int expect = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
                 assertEquals(expect, d.fieldAnalysis().getProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD));
+
+                Expression e = d.fieldAnalysis().getEffectivelyFinalValue();
+                assertEquals("instance type HashSet<String>", e.toString());
             }
         };
 
@@ -919,8 +925,9 @@ public class Test_16_Modification extends CommonTestRunner {
             if ("clear".equals(d.methodInfo().name) && "InnerOfChild".equals(d.methodInfo().typeInfo.simpleName)) {
                 if (d.variable() instanceof This thisVar && thisVar.writeSuper) {
                     assertEquals(CHILD_CLASS_SUPER, d.variableName());
-                    if (d.iteration() > 1) assertEquals(Level.TRUE,
-                            d.getProperty(VariableProperty.MODIFIED_VARIABLE));
+                    if (d.iteration() > 1) {
+                        assertEquals(Level.TRUE, d.getProperty(VariableProperty.MODIFIED_VARIABLE));
+                    }
                 }
             }
         };
@@ -1033,7 +1040,7 @@ public class Test_16_Modification extends CommonTestRunner {
             if ("Modification_14".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo input && "input".equals(input.name)) {
                     if ("0".equals(d.statementId())) {
-                        int expectEnn = d.iteration() <= 2 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
+                        int expectEnn = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
                         assertTrue(d.variableInfoContainer().hasEvaluation());
                         VariableInfo eval = d.variableInfoContainer().best(VariableInfoContainer.Level.EVALUATION);
                         assertEquals(expectEnn, eval.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
@@ -1041,9 +1048,10 @@ public class Test_16_Modification extends CommonTestRunner {
                         assertEquals(expectEnn, d.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
                     }
                 }
-                if (d.variable() instanceof FieldReference fieldReference && "input".equals(fieldReference.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fieldReference
+                        && "input".equals(fieldReference.fieldInfo.name)) {
                     if ("1".equals(d.statementId())) {
-                        int expectEnn = d.iteration() <= 2 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
+                        int expectEnn = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
                         assertEquals(expectEnn, d.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
                     }
                 }
@@ -1054,12 +1062,14 @@ public class Test_16_Modification extends CommonTestRunner {
             if ("input".equals(d.fieldInfo().name)) {
                 assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL,
                         d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_NOT_NULL));
-                if (d.iteration() <= 1) {
-                    // delayed because of IMMUTABLE
-                    assertNull(d.fieldAnalysis().getEffectivelyFinalValue());
-                } else {
-                    assertEquals("input", d.fieldAnalysis().getEffectivelyFinalValue().toString());
-                }
+                assertEquals("input", d.fieldAnalysis().getEffectivelyFinalValue().toString());
+            }
+        };
+
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("TwoIntegers".equals(d.typeInfo().simpleName)) {
+                int expectImmutable = d.iteration() == 0 ? Level.DELAY : MultiLevel.MUTABLE;
+                assertEquals(expectImmutable, d.typeAnalysis().getProperty(VariableProperty.IMMUTABLE));
             }
         };
 
@@ -1067,6 +1077,7 @@ public class Test_16_Modification extends CommonTestRunner {
         testClass("Modification_14", 0, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
                 .build());
     }
 

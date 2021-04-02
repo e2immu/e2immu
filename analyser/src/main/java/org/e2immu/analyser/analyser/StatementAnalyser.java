@@ -639,6 +639,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         boolean linked1Delays = false;
         boolean linkedDelays = false;
 
+        updateValuePropertiesOfVariablesNotAssigned(sortedEntries);
+
         for (Map.Entry<Variable, EvaluationResult.ChangeData> entry : sortedEntries) {
             Variable variable = entry.getKey();
             existingVariablesNotVisited.remove(variable);
@@ -863,6 +865,32 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         return new ApplyStatusAndEnnStatus(status, ennStatus.combine(extImmStatus));
     }
 
+    /*
+    variables that are not marked for assignment, get no update of their @Immutable property
+    In the mean time, however, this value may have changed from DELAY to MUTABLE (as is the case in Modification_14)
+
+     */
+    private static final Set<VariableProperty> UPDATE = Set.of(IMMUTABLE, VariableProperty.INDEPENDENT);
+
+    private void updateValuePropertiesOfVariablesNotAssigned(List<Map.Entry<Variable, EvaluationResult.ChangeData>> sortedEntries) {
+        for (Map.Entry<Variable, EvaluationResult.ChangeData> entry : sortedEntries) {
+            EvaluationResult.ChangeData changeData = entry.getValue();
+            if (!changeData.markAssignment()) {
+                Variable variable = entry.getKey();
+                VariableInfoContainer vic = statementAnalysis.variables.get(variable.fullyQualifiedName());
+                for (VariableProperty vp : UPDATE) {
+                    //update @Immutable, @Independent
+                    int formalImmutable = variable.parameterizedType().defaultImmutable(analyserContext);
+                    VariableInfo vi = vic.best(EVALUATION);
+                    int currentImmutable = vi.getProperty(vp);
+                    if (currentImmutable < formalImmutable) {
+                        vic.setProperty(vp, formalImmutable, EVALUATION);
+                    }
+                }
+            }
+        }
+    }
+
     private void checkPreconditionCompatibilityWithConditionManager(EvaluationContext evaluationContext,
                                                                     Expression untranslated,
                                                                     ConditionManager localConditionManager) {
@@ -1007,7 +1035,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         Integer pm = res.remove(CONTEXT_PROPAGATE_MOD);
         groupPropertyValues.set(CONTEXT_PROPAGATE_MOD, variable, pm == null ? Level.FALSE : pm);
         Integer extImm = res.remove(EXTERNAL_IMMUTABLE);
-        groupPropertyValues.set(EXTERNAL_IMMUTABLE, variable, extImm == null ? (valueIsDelayed ? Level.DELAY : MultiLevel.NOT_INVOLVED)  : extImm);
+        groupPropertyValues.set(EXTERNAL_IMMUTABLE, variable, extImm == null ? (valueIsDelayed ? Level.DELAY : MultiLevel.NOT_INVOLVED) : extImm);
         Integer cImm = res.remove(CONTEXT_IMMUTABLE);
         groupPropertyValues.set(CONTEXT_IMMUTABLE, variable, cImm == null ? MultiLevel.FALSE : cImm);
         return res;
@@ -2387,9 +2415,9 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
 
         @Override
         public boolean cannotBeModified(Expression value) {
-            if(value instanceof IsVariableExpression ve) {
+            if (value instanceof IsVariableExpression ve) {
                 VariableInfo variableInfo = findForReading(ve.variable(), getInitialStatementTime(), true);
-                int cImm = variableInfo.getProperty( CONTEXT_IMMUTABLE);
+                int cImm = variableInfo.getProperty(CONTEXT_IMMUTABLE);
                 if (cImm >= MultiLevel.EVENTUALLY_E2IMMUTABLE_AFTER_MARK) return true;
                 int imm = variableInfo.getProperty(IMMUTABLE);
                 if (imm >= MultiLevel.EVENTUALLY_E2IMMUTABLE_AFTER_MARK) return true;
@@ -2554,13 +2582,12 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             // if implicit is null, we can only return EMPTY or DELAY!
             TypeInfo typeInfo = variable.parameterizedType().bestTypeInfo();
             boolean notSelf = typeInfo != getCurrentType();
+            VariableInfo variableInfo = statementAnalysis.initialValueForReading(variable, getInitialStatementTime(), true);
             if (notSelf) {
-                VariableInfo variableInfo = statementAnalysis.initialValueForReading(variable, getInitialStatementTime(), true);
                 int immutable = variableInfo.getProperty(IMMUTABLE);
                 if (immutable == Level.DELAY) return LinkedVariables.DELAY;
                 if (MultiLevel.isE2Immutable(immutable)) return LinkedVariables.EMPTY;
             }
-            VariableInfo variableInfo = statementAnalysis.initialValueForReading(variable, getInitialStatementTime(), true);
             // we've encountered the variable before
             if (variableInfo.linkedVariablesIsSet() && implicit != null) {
                 return variableInfo.getLinkedVariables().merge(new LinkedVariables(Set.of(variable)));

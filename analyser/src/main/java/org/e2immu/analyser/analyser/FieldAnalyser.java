@@ -439,7 +439,7 @@ public class FieldAnalyser extends AbstractAnalyser {
                 log(DELAYED, "Delay @Immutable on {}, waiting for context immutable", fqn);
                 return DELAYS;
             }
-            if(bestOverContext < MultiLevel.EVENTUALLY_E2IMMUTABLE_AFTER_MARK) {
+            if (bestOverContext < MultiLevel.EVENTUALLY_E2IMMUTABLE_AFTER_MARK) {
                 if (fieldAnalysis.valuesIsNotSet()) {
                     log(DELAYED, "Delaying @Immutable of field {}, parameter values not yet known", fqn);
                     return DELAYS;
@@ -459,7 +459,10 @@ public class FieldAnalyser extends AbstractAnalyser {
                 log(DELAYED, "Delaying @Immutable of field {}, non-parameter values not yet known", fqn);
                 return DELAYS;
             }
-            if(!fieldAnalysis.allLinksHaveBeenEstablished.isSet()) {
+            if (!fieldAnalysis.allLinksHaveBeenEstablished.isSet() && isFinal == Level.FALSE) {
+                /* if the field is effectively final, we don't need links established because all assignment
+                 occurs in the constructor
+                 */
                 log(DELAYED, "Delaying @Immutable of field {}, not all links have been established", fqn);
                 return DELAYS;
             }
