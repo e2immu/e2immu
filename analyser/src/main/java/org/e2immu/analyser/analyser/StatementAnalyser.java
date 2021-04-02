@@ -21,6 +21,7 @@ import org.e2immu.analyser.model.variable.*;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.pattern.PatternMatcher;
+import org.e2immu.analyser.resolver.SortedType;
 import org.e2immu.analyser.util.StringUtil;
 import org.e2immu.analyser.visitor.EvaluationResultVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
@@ -512,15 +513,19 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         if (!localAnalysers.isSet()) {
             Stream<TypeInfo> locallyDefinedTypes = Stream.concat(statementAnalysis.statement.getStructure().findTypeDefinedInStatement().stream(),
                     statement() instanceof LocalClassDeclaration lcd ? Stream.of(lcd.typeInfo) : Stream.empty());
-            List<PrimaryTypeAnalyser> analysers = locallyDefinedTypes.map(typeInfo -> {
-                PrimaryTypeAnalyser primaryTypeAnalyser = new PrimaryTypeAnalyser(analyserContext,
-                        typeInfo.typeResolution.get().sortedType(),
-                        analyserContext.getConfiguration(),
-                        analyserContext.getPrimitives(),
-                        analyserContext.getE2ImmuAnnotationExpressions());
-                primaryTypeAnalyser.initialize();
-                return primaryTypeAnalyser;
-            }).collect(Collectors.toUnmodifiableList());
+            List<PrimaryTypeAnalyser> analysers = locallyDefinedTypes
+                    // those without a sorted type are already in the current primary type's sorted type!!
+                    .filter(typeInfo -> typeInfo.typeResolution.get().sortedType() != null)
+                    .map(typeInfo -> {
+                        SortedType sortedType = typeInfo.typeResolution.get().sortedType();
+                        PrimaryTypeAnalyser primaryTypeAnalyser = new PrimaryTypeAnalyser(analyserContext,
+                                sortedType,
+                                analyserContext.getConfiguration(),
+                                analyserContext.getPrimitives(),
+                                analyserContext.getE2ImmuAnnotationExpressions());
+                        primaryTypeAnalyser.initialize();
+                        return primaryTypeAnalyser;
+                    }).collect(Collectors.toUnmodifiableList());
             localAnalysers.set(analysers);
             analysers.forEach(analyserContext::addPrimaryTypeAnalyser);
 

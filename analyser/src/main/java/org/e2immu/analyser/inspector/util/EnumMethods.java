@@ -23,17 +23,22 @@ import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.analyser.resolver.SortedType;
 
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import static org.e2immu.analyser.inspector.TypeInspectionImpl.InspectionState.BY_HAND;
 
 public class EnumMethods {
 
     public static void create(ExpressionContext expressionContext,
-                              TypeInfo typeInfo,
+                              TypeInfo enumType,
                               TypeInspectionImpl.Builder builder, List<FieldInfo> enumFields) {
         Primitives primitives = expressionContext.typeContext.getPrimitives();
         E2ImmuAnnotationExpressions e2 = expressionContext.typeContext.typeMapBuilder.getE2ImmuAnnotationExpressions();
@@ -45,7 +50,7 @@ public class EnumMethods {
 
         // name()
 
-        MethodInspectionImpl.Builder nameBuilder = new MethodInspectionImpl.Builder(typeInfo, "name")
+        MethodInspectionImpl.Builder nameBuilder = new MethodInspectionImpl.Builder(enumType, "name")
                 .setSynthetic(true)
                 .setReturnType(primitives.stringParameterizedType)
                 .addModifier(MethodModifier.PUBLIC)
@@ -61,13 +66,13 @@ public class EnumMethods {
         ArrayInitializer arrayInitializer = new ArrayInitializer(expressionContext.typeContext,
                 enumFields.stream().map(fieldInfo -> new VariableExpression(new FieldReference(expressionContext.typeContext,
                         fieldInfo, null))).collect(Collectors.toUnmodifiableList()),
-                typeInfo.asParameterizedType(expressionContext.typeContext));
-        ParameterizedType valuesReturnType = new ParameterizedType(typeInfo, 1);
-        ReturnStatement returnNewArray = new ReturnStatement(NewObject.withArrayInitialiser(typeInfo.fullyQualifiedName,
+                enumType.asParameterizedType(expressionContext.typeContext));
+        ParameterizedType valuesReturnType = new ParameterizedType(enumType, 1);
+        ReturnStatement returnNewArray = new ReturnStatement(NewObject.withArrayInitialiser(enumType.fullyQualifiedName,
                 null,
                 valuesReturnType, List.of(), arrayInitializer, new BooleanConstant(primitives, true)));
         Block valuesBlock = new Block.BlockBuilder().addStatement(returnNewArray).build();
-        MethodInspectionImpl.Builder valuesBuilder = new MethodInspectionImpl.Builder(typeInfo, "values")
+        MethodInspectionImpl.Builder valuesBuilder = new MethodInspectionImpl.Builder(enumType, "values")
                 .setSynthetic(true)
                 .setReturnType(valuesReturnType)
                 .setStatic(true)
@@ -79,19 +84,13 @@ public class EnumMethods {
 
         // valueOf()
 
-        MethodInspectionImpl.Builder valueOfBuilder = new MethodInspectionImpl.Builder(typeInfo, "valueOf")
+        MethodInspectionImpl.Builder valueOfBuilder = new MethodInspectionImpl.Builder(enumType, "valueOf")
                 .setSynthetic(true)
-                .setReturnType(typeInfo.asParameterizedType(expressionContext.typeContext))
+                .setReturnType(enumType.asParameterizedType(expressionContext.typeContext))
                 .setStatic(true)
                 .addModifier(MethodModifier.PUBLIC)
                 .addAnnotation(notNullContract)
                 .addAnnotation(notModifiedContract);
-        if (insertCode(expressionContext.typeContext)) {
-            Block codeBlock = returnValueOf(expressionContext.typeContext, valuesBuilder);
-            valueOfBuilder.setInspectedBlock(codeBlock);
-        } else {
-            valueOfBuilder.addAnnotation(e2Container);
-        }
         ParameterInspectionImpl.Builder valueOfP0B = new ParameterInspectionImpl.Builder(primitives.stringParameterizedType,
                 "name", 0)
                 .addAnnotation(notPropagateMod)
@@ -99,6 +98,15 @@ public class EnumMethods {
                 .addAnnotation(notNullContract);
         valueOfBuilder.addParameter(valueOfP0B);
         valueOfBuilder.readyToComputeFQN(expressionContext.typeContext);
+
+        if (insertCode(expressionContext.typeContext)) {
+            Block codeBlock = returnValueOf(expressionContext, enumType, builder, valuesBuilder,
+                    nameBuilder, valueOfBuilder.getParameters().get(0), notModifiedContract);
+            valueOfBuilder.setInspectedBlock(codeBlock);
+        } else {
+            valueOfBuilder.addAnnotation(e2Container);
+        }
+
         expressionContext.typeContext.typeMapBuilder.registerMethodInspection(valueOfBuilder);
         builder.addMethod(valueOfBuilder.getMethodInfo());
     }
@@ -115,7 +123,15 @@ public class EnumMethods {
 
      Later we can add a filter
      */
-    private static Block returnValueOf(TypeContext typeContext, MethodInspectionImpl.Builder valuesMethod) {
+    private static Block returnValueOf(ExpressionContext expressionContext,
+                                       TypeInfo enumType,
+                                       TypeInspectionImpl.Builder enumTypeBuilder,
+                                       MethodInspectionImpl.Builder valuesMethod,
+                                       MethodInspectionImpl.Builder nameMethod,
+                                       ParameterInfo nameParameter,
+                                       AnnotationExpression notModifiedContract) {
+        TypeContext typeContext = expressionContext.typeContext;
+
         VariableExpression thisVe = new VariableExpression(new This(typeContext, valuesMethod.getMethodInfo().typeInfo));
         MethodCall values = new MethodCall(true, thisVe, valuesMethod.getMethodInfo(), valuesMethod.getReturnType(), List.of());
         TypeInfo arrays = typeContext.getFullyQualified(Arrays.class);
@@ -125,13 +141,85 @@ public class EnumMethods {
         TypeExpression arraysType = new TypeExpression(arrays.asParameterizedType(typeContext), Diamond.NO);
         MethodCall callStream = new MethodCall(arraysType, streamArray, List.of(values));
 
+        ParameterizedType functionalInterfaceType = enumPredicate(typeContext, enumType);
+        MethodInspectionImpl.Builder predicateBuilder = predicate(functionalInterfaceType,
+                expressionContext, enumType, enumTypeBuilder, notModifiedContract, nameMethod, nameParameter);
+        ParameterizedType implementationMethod = predicateBuilder.getMethodInfo()
+                .typeInfo.asParameterizedType(typeContext);
+        Lambda lambda = new Lambda(typeContext, functionalInterfaceType, implementationMethod);
+
         TypeInfo stream = typeContext.getFullyQualified(Stream.class);
+        MethodInfo filter = stream.findUniqueMethod("filter", 1);
+        MethodCall callFilter = new MethodCall(callStream, filter, List.of(lambda));
+
         MethodInfo findFirst = stream.findUniqueMethod("findFirst", 0);
-        MethodCall callFindFirst = new MethodCall(callStream, findFirst, List.of());
+        MethodCall callFindFirst = new MethodCall(callFilter, findFirst, List.of());
 
         TypeInfo optional = typeContext.getFullyQualified(Optional.class);
         MethodInfo orElseThrow = optional.findUniqueMethod("orElseThrow", 0);
         MethodCall callOrElseThrow = new MethodCall(callFindFirst, orElseThrow, List.of());
         return new Block.BlockBuilder().addStatement(new ReturnStatement(callOrElseThrow)).build();
     }
+
+    private static ParameterizedType enumPredicate(TypeContext typeContext, TypeInfo enumType) {
+        TypeInfo predicate = typeContext.getFullyQualified(Predicate.class);
+        return new ParameterizedType(predicate, List.of(enumType.asParameterizedType(typeContext)));
+    }
+
+    private static MethodInspectionImpl.Builder predicate(ParameterizedType functionalInterfaceType,
+                                                          ExpressionContext expressionContext,
+                                                          TypeInfo enumType,
+                                                          TypeInspectionImpl.Builder enumTypeBuilder,
+                                                          AnnotationExpression notModifiedContract,
+                                                          MethodInspectionImpl.Builder nameMethod,
+                                                          ParameterInfo nameParameter) {
+        Primitives primitives = expressionContext.typeContext.getPrimitives();
+        ParameterizedType enumPt = enumType.asParameterizedType(expressionContext.typeContext);
+
+        TypeInfo lambdaType = new TypeInfo(enumType,
+                expressionContext.anonymousTypeCounters.newIndex(expressionContext.primaryType));
+        TypeInspectionImpl.Builder builder = expressionContext.typeContext.typeMapBuilder.add(lambdaType, BY_HAND);
+        builder.setTypeNature(TypeNature.CLASS);
+        builder.addInterfaceImplemented(functionalInterfaceType);
+        builder.setParentClass(primitives.objectParameterizedType);
+
+        MethodInspectionImpl.Builder predicate = new MethodInspectionImpl.Builder(lambdaType, "predicate")
+                .setSynthetic(true)
+                .setReturnType(primitives.booleanParameterizedType)
+                .addModifier(MethodModifier.PUBLIC)
+                .addAnnotation(notModifiedContract);
+
+        ParameterInspectionImpl.Builder predicate0Builder =
+                new ParameterInspectionImpl.Builder(enumPt, "v", 0);
+        predicate.addParameter(predicate0Builder);
+        predicate.readyToComputeFQN(expressionContext.typeContext);
+
+        ParameterInfo predicate0 = predicate.getParameters().get(0);
+        Block codeBlock = returnEquals(expressionContext.typeContext, nameMethod, nameParameter, predicate0);
+        predicate.setInspectedBlock(codeBlock);
+
+        expressionContext.typeContext.typeMapBuilder.registerMethodInspection(predicate);
+        builder.addMethod(predicate.getMethodInfo());
+
+        enumTypeBuilder.addSubType(lambdaType);
+        return predicate;
+    }
+
+    // v.name().equals(name)
+    private static Block returnEquals(TypeContext typeContext,
+                                      MethodInspectionImpl.Builder nameMethod,
+                                      ParameterInfo nameParameter,
+                                      ParameterInfo v) {
+
+        MethodCall vName = new MethodCall(false,
+                new VariableExpression(v), nameMethod.getMethodInfo(), nameMethod.getReturnType(), List.of());
+
+        TypeInfo object = typeContext.getFullyQualified(Object.class);
+        MethodInfo equals = object.findUniqueMethod("equals", 1);
+        MethodCall callEquals = new MethodCall(false, vName, equals, equals.returnType(),
+                List.of(new VariableExpression(nameParameter)));
+
+        return new Block.BlockBuilder().addStatement(new ReturnStatement(callEquals)).build();
+    }
+
 }
