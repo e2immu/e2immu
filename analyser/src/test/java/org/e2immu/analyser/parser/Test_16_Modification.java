@@ -925,9 +925,8 @@ public class Test_16_Modification extends CommonTestRunner {
             if ("clear".equals(d.methodInfo().name) && "InnerOfChild".equals(d.methodInfo().typeInfo.simpleName)) {
                 if (d.variable() instanceof This thisVar && thisVar.writeSuper) {
                     assertEquals(CHILD_CLASS_SUPER, d.variableName());
-                    if (d.iteration() > 1) {
-                        assertEquals(Level.TRUE, d.getProperty(VariableProperty.MODIFIED_VARIABLE));
-                    }
+                    int expectCm = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
+                    assertEquals(expectCm, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
                 }
             }
         };
@@ -999,6 +998,8 @@ public class Test_16_Modification extends CommonTestRunner {
             }
             if ("InnerOfChild".equals(typeInfo.simpleName)) {
                 assertEquals("ChildClass", typeInfo.packageNameOrEnclosingType.getRight().simpleName);
+                int expectImm = d.iteration() <= 2 ? Level.DELAY : MultiLevel.EFFECTIVELY_E1IMMUTABLE_NOT_E2IMMUTABLE;
+                assertEquals(expectImm, d.typeAnalysis().getProperty(VariableProperty.IMMUTABLE));
             }
             if ("ModifiedThis".equals(typeInfo.simpleName)) {
                 assertEquals("org.e2immu.analyser.testexample", typeInfo.packageNameOrEnclosingType.getLeft());

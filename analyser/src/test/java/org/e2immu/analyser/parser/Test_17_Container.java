@@ -370,15 +370,18 @@ public class Test_17_Container extends CommonTestRunner {
         final String CONTAINER_5 = "Container_5";
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-            if (CONTAINER_5.equals(d.methodInfo().name) && d.variable() instanceof ParameterInfo p && "coll5".equals(p.name)) {
+            if (CONTAINER_5.equals(d.methodInfo().name) &&
+                    d.variable() instanceof ParameterInfo p && "coll5".equals(p.name)) {
                 assertEquals("nullable instance type Collection<String>", d.currentValue().toString());
                 assertEquals("", d.variableInfo().getLinkedVariables().toString());
                 if ("0".equals(d.statementId())) {
                     assertEquals(Level.DELAY, d.getProperty(VariableProperty.CONTEXT_MODIFIED_DELAY));
                 }
                 if ("1".equals(d.statementId())) {
-                    int expectModified = d.iteration() <= 2 ? Level.DELAY : Level.FALSE;
-                    assertEquals(expectModified, d.getProperty(VariableProperty.MODIFIED_VARIABLE));
+                    int expectCm = d.iteration() <= 1 ? Level.DELAY : Level.FALSE;
+                    assertEquals(expectCm, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
+                    int expectMom = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
+                    assertEquals(expectMom, d.getProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD));
                 }
             }
             int n = d.methodInfo().methodInspection.get().getParameters().size();
