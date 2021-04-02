@@ -419,6 +419,38 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         variables.toImmutableMap().values().forEach(vic -> ensureLocalCopiesOfConfirmedVariableFields(evaluationContext, vic));
     }
 
+
+    /*
+    variables that are not marked for assignment, get no update of their @Immutable property
+    In the mean time, however, this value may have changed from DELAY to MUTABLE (as is the case in Modification_14)
+
+     */
+    private void updateValuePropertiesOfParameter(AnalyserContext analyserContext, VariableInfoContainer vic) {
+        //update @Immutable
+        VariableInfo vi = vic.getPreviousOrInitial();
+        Variable variable = vi.variable();
+        assert variable instanceof ParameterInfo;
+        int currentImmutable = vi.getProperty(IMMUTABLE);
+        if (currentImmutable == Level.DELAY) {
+            int formalImmutable = variable.parameterizedType().defaultImmutable(analyserContext);
+            if (formalImmutable != Level.DELAY) {
+                vic.setProperty(IMMUTABLE, formalImmutable, INITIAL);
+            }
+        }
+        // update @Independent
+        TypeInfo bestType = variable.parameterizedType().bestTypeInfo();
+        if (bestType != null) {
+            TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(bestType);
+            int currentIndependent = vi.getProperty(VariableProperty.INDEPENDENT);
+            if (currentIndependent == Level.DELAY) {
+                int independent = typeAnalysis.getProperty(VariableProperty.INDEPENDENT);
+                if (independent != Level.DELAY) {
+                    vic.setProperty(VariableProperty.INDEPENDENT, independent, INITIAL);
+                }
+            }
+        }
+    }
+
     /* explicitly copy local variables from above or previous (they cannot be created on demand)
        loop variables at the statement are not copied to the next one
        Some fields only become visible in a later iteration (see e.g. Enum_3 test, field inside constant result
@@ -456,6 +488,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             VariableInfo prevIteration = findOrNull(parameterInfo, INITIAL);
             if (prevIteration != null) {
                 VariableInfoContainer vic = findForWriting(parameterInfo);
+                updateValuePropertiesOfParameter(analyserContext, vic);
                 ParameterAnalysis parameterAnalysis = analyserContext.getParameterAnalysis(parameterInfo);
                 for (VariableProperty variableProperty : FROM_ANALYSER_TO_PROPERTIES) {
                     int value = parameterAnalysis.getProperty(variableProperty);
@@ -577,7 +610,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                         valueMap.forEach((k, v) -> combined.merge(k, v, Math::max));
                         for (VariableProperty vp : GroupPropertyValues.PROPERTIES) {
                             combined.put(vp, vp == EXTERNAL_NOT_NULL
-                                     || vp == EXTERNAL_IMMUTABLE ? MultiLevel.NOT_INVOLVED : vp.falseValue);
+                                    || vp == EXTERNAL_IMMUTABLE ? MultiLevel.NOT_INVOLVED : vp.falseValue);
                         }
                         lvrVic.setValue(initialValue, false, assignedToOriginal, combined, true);
                         lvrVic.setLinkedVariables(LinkedVariables.EMPTY, true);

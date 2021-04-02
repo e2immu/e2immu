@@ -1083,7 +1083,15 @@ public class Test_16_Modification extends CommonTestRunner {
 
     @Test
     public void test15() throws IOException {
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("TwoIntegers".equals(d.typeInfo().simpleName)) {
+                int expectImmutable = d.iteration() == 0 ? Level.DELAY : MultiLevel.MUTABLE;
+                assertEquals(expectImmutable, d.typeAnalysis().getProperty(VariableProperty.IMMUTABLE));
+            }
+        };
+
         testClass("Modification_15", 1, 0, new DebugConfiguration.Builder()
+                .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
                 .build());
     }
 

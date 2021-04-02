@@ -639,8 +639,6 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         boolean linked1Delays = false;
         boolean linkedDelays = false;
 
-        updateValuePropertiesOfVariablesNotAssigned(sortedEntries);
-
         for (Map.Entry<Variable, EvaluationResult.ChangeData> entry : sortedEntries) {
             Variable variable = entry.getKey();
             existingVariablesNotVisited.remove(variable);
@@ -863,32 +861,6 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         }
 
         return new ApplyStatusAndEnnStatus(status, ennStatus.combine(extImmStatus));
-    }
-
-    /*
-    variables that are not marked for assignment, get no update of their @Immutable property
-    In the mean time, however, this value may have changed from DELAY to MUTABLE (as is the case in Modification_14)
-
-     */
-    private static final Set<VariableProperty> UPDATE = Set.of(IMMUTABLE, VariableProperty.INDEPENDENT);
-
-    private void updateValuePropertiesOfVariablesNotAssigned(List<Map.Entry<Variable, EvaluationResult.ChangeData>> sortedEntries) {
-        for (Map.Entry<Variable, EvaluationResult.ChangeData> entry : sortedEntries) {
-            EvaluationResult.ChangeData changeData = entry.getValue();
-            if (!changeData.markAssignment()) {
-                Variable variable = entry.getKey();
-                VariableInfoContainer vic = statementAnalysis.variables.get(variable.fullyQualifiedName());
-                for (VariableProperty vp : UPDATE) {
-                    //update @Immutable, @Independent
-                    int formalImmutable = variable.parameterizedType().defaultImmutable(analyserContext);
-                    VariableInfo vi = vic.best(EVALUATION);
-                    int currentImmutable = vi.getProperty(vp);
-                    if (currentImmutable < formalImmutable) {
-                        vic.setProperty(vp, formalImmutable, EVALUATION);
-                    }
-                }
-            }
-        }
     }
 
     private void checkPreconditionCompatibilityWithConditionManager(EvaluationContext evaluationContext,
