@@ -339,6 +339,8 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         }
     }
 
+    private final static Set<VariableProperty> READ_FROM_RETURN_VALUE_PROPERTIES = Set.of(IDENTITY, IMMUTABLE, CONTAINER); // +NOT_NULL by hand
+
     private void createReturnVariableAtBeginningOfEachBlock(EvaluationContext evaluationContext) {
         Variable retVar = new ReturnVariable(methodAnalysis.getMethodInfo());
         VariableInfoContainer vic = createVariable(evaluationContext, retVar, 0, VariableInLoop.NOT_IN_LOOP);

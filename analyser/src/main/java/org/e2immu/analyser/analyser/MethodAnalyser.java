@@ -45,6 +45,12 @@ import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.AnalysisStatus.DELAYS;
 import static org.e2immu.analyser.analyser.AnalysisStatus.DONE;
+import static org.e2immu.analyser.analyser.VariableProperty.CONTAINER;
+import static org.e2immu.analyser.analyser.VariableProperty.IDENTITY;
+import static org.e2immu.analyser.analyser.VariableProperty.*;
+import static org.e2immu.analyser.util.Logger.LogTarget.CONSTANT;
+import static org.e2immu.analyser.util.Logger.LogTarget.FLUENT;
+import static org.e2immu.analyser.util.Logger.LogTarget.INDEPENDENT;
 import static org.e2immu.analyser.util.Logger.LogTarget.*;
 import static org.e2immu.analyser.util.Logger.isLogEnabled;
 import static org.e2immu.analyser.util.Logger.log;
@@ -147,6 +153,7 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
                     .add("computeModified", (sharedState) -> methodInfo.isConstructor ? DONE : computeModified())
                     .add("computeModifiedCycles", (sharedState -> methodInfo.isConstructor ? DONE : computeModifiedInternalCycles()))
                     .add("computeReturnValue", (sharedState) -> methodInfo.noReturnValue() ? DONE : computeReturnValue(sharedState))
+                    .add("computeImmutable", sharedState -> methodInfo.noReturnValue() ? DONE : computeImmutable(sharedState))
                     .add("detectMissingStaticModifier", (iteration) -> methodInfo.isConstructor ? DONE : detectMissingStaticModifier())
                     .add("eventualPrepWork", (sharedState) -> methodInfo.isConstructor ? DONE : eventualPrepWork(sharedState))
                     .add("annotateEventual", (sharedState) -> methodInfo.isConstructor ? DONE : annotateEventual(sharedState))
@@ -552,6 +559,8 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
         return null;
     }
 
+    private final static Set<VariableProperty> READ_FROM_RETURN_VALUE_PROPERTIES = Set.of(IDENTITY, CONTAINER);
+
     // singleReturnValue is associated with @Constant; to be able to grab the actual Value object
     // but we cannot assign this value too early: first, there should be no evaluation anymore with NO_VALUES in them
     private AnalysisStatus computeReturnValue(SharedState sharedState) {
@@ -588,10 +597,7 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
 
         // try to compute the dynamic immutable status of value
         Expression valueBeforeInlining = value;
-        int immutable;
-        if (value.isConstant()) {
-            immutable = MultiLevel.EFFECTIVELY_E2IMMUTABLE;
-        } else {
+        if (!value.isConstant()) {
             int modified = methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD);
             if (modified == Level.DELAY) {
                 log(DELAYED, "Delaying return value of {}, waiting for MODIFIED (we may try to inline!)", methodInfo.distinguishingName);
@@ -601,12 +607,7 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
                 InlinedMethod.Applicability applicability = applicability(value);
                 if (applicability != InlinedMethod.Applicability.NONE) {
                     value = new InlinedMethod(methodInfo, replaceFields(sharedState.evaluationContext, value), applicability);
-                    immutable = methodAnalysis.getProperty(VariableProperty.IMMUTABLE);
-                } else {
-                    immutable = MultiLevel.MUTABLE; // no idea
                 }
-            } else {
-                immutable = MultiLevel.MUTABLE; // no idea
             }
         }
         int notNull = variableInfo.getProperty(VariableProperty.NOT_NULL_EXPRESSION);
@@ -632,7 +633,6 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
         boolean isConstant = value.isConstant() || valueIsConstantField;
 
         methodAnalysis.singleReturnValue.set(value);
-        methodAnalysis.singleReturnValueImmutable.set(immutable);
         E2ImmuAnnotationExpressions e2 = analyserContext.getE2ImmuAnnotationExpressions();
         if (isConstant) {
             AnnotationExpression constantAnnotation = checkConstant.createConstantAnnotation(e2, value);
@@ -649,13 +649,37 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
         methodAnalysis.setProperty(VariableProperty.FLUENT, Level.fromBool(isFluent));
         log(FLUENT, "Mark method {} as @Fluent? {}", methodInfo.fullyQualifiedName(), isFluent);
 
-        for (VariableProperty variableProperty : VariableProperty.READ_FROM_RETURN_VALUE_PROPERTIES) {
+        for (VariableProperty variableProperty : READ_FROM_RETURN_VALUE_PROPERTIES) {
             int v = variableInfo.getProperty(variableProperty);
             if (v == Level.DELAY) v = variableProperty.falseValue;
             methodAnalysis.setProperty(variableProperty, v);
             log(NOT_NULL, "Set {} of {} to value {}", variableProperty, methodInfo.fullyQualifiedName, v);
         }
 
+        return DONE;
+    }
+
+    private AnalysisStatus computeImmutable(SharedState sharedState) {
+        if (!methodAnalysis.singleReturnValue.isSet()) {
+            log(DELAYED, "Delaying @Immutable on {} until return value is set", methodInfo.fullyQualifiedName);
+            return DELAYS;
+        }
+        int formalImmutable = methodInfo.returnType().defaultImmutable(analyserContext);
+        Expression expression = methodAnalysis.singleReturnValue.get();
+        int immutable;
+        if (expression.isConstant()) {
+            immutable = MultiLevel.EFFECTIVELY_E2IMMUTABLE;
+        } else if (expression instanceof InlinedMethod inlinedMethod) {
+            immutable = sharedState.evaluationContext.getProperty(inlinedMethod.expression(), IMMUTABLE, false);
+        } else {
+            immutable = formalImmutable;
+        }
+        if (immutable == Level.DELAY) {
+            log(DELAYED, "Delaying @Immutable on {}", methodInfo.fullyQualifiedName);
+            return DELAYS;
+        }
+        methodAnalysis.setProperty(IMMUTABLE, immutable);
+        log(E2IMMUTABLE, "Set @Immutable to {} on {}", immutable, methodInfo.fullyQualifiedName);
         return DONE;
     }
 
@@ -1033,28 +1057,18 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
         }
 
         if (e2ImmutableStatusOfFieldRefs == MultiLevel.EFFECTIVE) return MultiLevel.INDEPENDENT;
+        int immutable = methodAnalysis.getProperty(IMMUTABLE);
         ParameterizedType returnType = methodInfo.returnType();
-        int immutable = returnType.getProperty(analyserContext, VariableProperty.IMMUTABLE);
-        int formalE2ImmutableStatusOfReturnType = MultiLevel.value(immutable, MultiLevel.E2IMMUTABLE);
-        boolean notMyOwnType = returnType.typeInfo != methodInfo.typeInfo;
-        if (formalE2ImmutableStatusOfReturnType == MultiLevel.DELAY && notMyOwnType) {
-            log(DELAYED, "Have formal return type, no idea if E2Immutable: {}", methodInfo.distinguishingName());
+        boolean myOwnType = returnType.typeInfo == methodInfo.typeInfo;
+        if (immutable == MultiLevel.DELAY && !myOwnType) {
+            log(DELAYED, "Delaying @Independent of {}, waiting for @Immutable", methodInfo.fullyQualifiedName);
             return Level.DELAY;
         }
-        if (formalE2ImmutableStatusOfReturnType >= MultiLevel.EVENTUAL_AFTER) {
+        if (immutable >= MultiLevel.EVENTUALLY_E2IMMUTABLE_AFTER_MARK) {
             log(INDEPENDENT, "Method {} is independent, formal return type is E2Immutable", methodInfo.distinguishingName());
             return MultiLevel.INDEPENDENT;
         }
-
-        if (methodAnalysis.singleReturnValue.isSet()) {
-            int imm = methodAnalysis.singleReturnValueImmutable.get();
-            int dynamicE2ImmutableStatusOfReturnType = MultiLevel.value(imm, MultiLevel.E2IMMUTABLE);
-            if (dynamicE2ImmutableStatusOfReturnType >= MultiLevel.EVENTUAL_AFTER) {
-                log(INDEPENDENT, "Method {} is independent, dynamic return type is E2Immutable", methodInfo.distinguishingName());
-                return MultiLevel.INDEPENDENT;
-            }
-        }
-        return MultiLevel.DEPENDENT;
+        return myOwnType ? MultiLevel.INDEPENDENT : MultiLevel.DEPENDENT;
     }
 
     public static boolean isImplicitlyImmutableDataTypeSet(Variable v, AnalysisProvider analysisProvider) {
@@ -1137,8 +1151,7 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
         @Override
         public int getProperty(Variable variable, VariableProperty variableProperty) {
             if (variable instanceof FieldReference fieldReference) {
-                VariableProperty vp = variableProperty == VariableProperty.NOT_NULL_EXPRESSION
-                        ? VariableProperty.EXTERNAL_NOT_NULL : variableProperty;
+                VariableProperty vp = external(variableProperty);
                 return getAnalyserContext().getFieldAnalysis(fieldReference.fieldInfo).getProperty(vp);
             }
             if (variable instanceof ParameterInfo parameterInfo) {
@@ -1146,11 +1159,24 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
                         ? VariableProperty.NOT_NULL_PARAMETER : variableProperty;
                 return getAnalyserContext().getParameterAnalysis(parameterInfo).getProperty(vp);
             }
+            if(variable instanceof This thisVar) {
+                TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(thisVar.typeInfo);
+                return typeAnalysis.getProperty(variableProperty);
+            }
             throw new UnsupportedOperationException();
+        }
+
+        private VariableProperty external(VariableProperty variableProperty) {
+            if (variableProperty == NOT_NULL_EXPRESSION) return EXTERNAL_NOT_NULL;
+            if (variableProperty == IMMUTABLE) return EXTERNAL_IMMUTABLE;
+            return variableProperty;
         }
 
         @Override
         public int getProperty(Expression value, VariableProperty variableProperty, boolean duringEvaluation) {
+            if (value instanceof VariableExpression ve) {
+                return getProperty(ve.variable(), variableProperty);
+            }
             return value.getProperty(this, variableProperty, true);
         }
 

@@ -22,14 +22,14 @@ import org.e2immu.analyser.model.FieldInfo;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
+import org.e2immu.analyser.model.expression.InlinedMethod;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_18_E2Immutable extends CommonTestRunner {
     public Test_18_E2Immutable() {
@@ -60,7 +60,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
                     }
                 }
                 if (d.variable() instanceof ParameterInfo pi && pi.name.equals("parent2Param")) {
-                    int expectImmu = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EFFECTIVELY_E2IMMUTABLE;
+                    int expectImmu = d.iteration() <= 2 ? Level.DELAY : MultiLevel.EFFECTIVELY_E2IMMUTABLE;
                     assertEquals(expectImmu, d.getProperty(VariableProperty.IMMUTABLE));
                 }
             }
@@ -82,6 +82,8 @@ public class Test_18_E2Immutable extends CommonTestRunner {
             if ("strings4".equals(d.fieldInfo().name)) {
                 assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL,
                         d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_NOT_NULL));
+                assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE,
+                        d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_IMMUTABLE));
             }
         };
 
@@ -116,6 +118,16 @@ public class Test_18_E2Immutable extends CommonTestRunner {
                 // method not null
                 int expectNN = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL;
                 assertEquals(expectNN, d.methodAnalysis().getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+
+                if (d.iteration() == 0) {
+                    assertNull(d.methodAnalysis().getSingleReturnValue());
+                } else {
+                    assertEquals("strings4", d.methodAnalysis().getSingleReturnValue().toString());
+                    assertTrue(d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod);
+                }
+
+                int expectImm = MultiLevel.MUTABLE;
+                //assertEquals(expectImm, d.methodAnalysis().getProperty(VariableProperty.IMMUTABLE));
             }
         };
 
@@ -124,6 +136,13 @@ public class Test_18_E2Immutable extends CommonTestRunner {
                     "strings4".equals(fieldReference.fieldInfo.name)) {
                 assertEquals("Set.copyOf(input4)", d.currentValue().toString());
                 assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, d.getProperty(VariableProperty.IMMUTABLE));
+            }
+
+            if ("getStrings4".equals(d.methodInfo().name) && d.variable() instanceof FieldReference fr &&
+                    "strings4".equals(fr.fieldInfo.name)) {
+                int expectExtImm = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_E2IMMUTABLE;
+                assertEquals(expectExtImm, d.getProperty(VariableProperty.EXTERNAL_IMMUTABLE));
             }
         };
 

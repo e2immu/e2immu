@@ -126,13 +126,7 @@ public interface MethodAnalysis extends Analysis {
                 int fluent = getProperty(VariableProperty.FLUENT);
                 if (fluent == Level.TRUE) return MultiLevel.EFFECTIVELY_NOT_NULL;
                 return getPropertyCheckOverrides(analysisProvider, VariableProperty.NOT_NULL_EXPRESSION);
-
-            case IMMUTABLE:
-                assert returnType != ParameterizedType.RETURN_TYPE_OF_CONSTRUCTOR : "void method";
-                int immutableType = returnType.getProperty(analysisProvider, VariableProperty.IMMUTABLE);
-                int immutableDynamic = dynamicProperty(analysisProvider, immutableType, returnType);
-                return MultiLevel.bestImmutable(immutableType, immutableDynamic);
-
+                
             case CONTAINER:
                 assert returnType != ParameterizedType.RETURN_TYPE_OF_CONSTRUCTOR : "void method";
                 int container = returnType.getProperty(analysisProvider, VariableProperty.CONTAINER);

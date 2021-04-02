@@ -128,7 +128,6 @@ public class ShallowTypeAnalyser implements AnalyserContext {
         builder.setProperty(VariableProperty.IMMUTABLE, MultiLevel.MUTABLE);
         builder.setProperty(VariableProperty.CONTAINER, Level.FALSE);
         builder.companionAnalyses.freeze();
-        builder.singleReturnValueImmutable.set(MultiLevel.MUTABLE);
         builder.singleReturnValue.set(new InlinedMethod(methodInfo, new VariableExpression(parameterInfo), InlinedMethod.Applicability.EVERYWHERE));
         log(ANALYSER, "Provided analysis of dedicated method {}", methodInfo.fullyQualifiedName());
         methodInfo.setAnalysis(builder.build());
@@ -157,7 +156,6 @@ public class ShallowTypeAnalyser implements AnalyserContext {
         builder.setProperty(VariableProperty.IMMUTABLE, MultiLevel.EFFECTIVELY_E2IMMUTABLE);
         builder.setProperty(VariableProperty.CONTAINER, Level.FALSE);
         builder.companionAnalyses.freeze();
-        builder.singleReturnValueImmutable.set(MultiLevel.EFFECTIVELY_E2IMMUTABLE);
         builder.singleReturnValue.set(new UnknownExpression(primitives.booleanParameterizedType, "isKnown return value"));
         log(ANALYSER, "Provided analysis of dedicated method {}", methodInfo.fullyQualifiedName());
         methodInfo.setAnalysis(builder.build());

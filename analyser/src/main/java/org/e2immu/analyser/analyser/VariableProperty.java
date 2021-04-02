@@ -170,11 +170,6 @@ public enum VariableProperty {
     EXTENSION_CLASS("@ExtensionClass");
 
     /*
-    Properties of return variables, initially set to false, finally copied to the method's properties.
-    NotNull is handled separately, because the property changes from NOT_NULL_EXPRESSION to NOT_NULL_EXPRESSION
-     */
-    public final static Set<VariableProperty> READ_FROM_RETURN_VALUE_PROPERTIES = Set.of(IDENTITY, IMMUTABLE, CONTAINER); // +NOT_NULL by hand
-    /*
     copy from field, parameter, this/type to variable, once a value has been determined.
      */
     public static final Set<VariableProperty> FROM_ANALYSER_TO_PROPERTIES

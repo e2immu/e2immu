@@ -157,7 +157,6 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
         private final SetOnce<Eventual> eventual = new SetOnce<>();
 
         public final SetOnce<Expression> singleReturnValue = new SetOnce<>();
-        public final SetOnce<Integer> singleReturnValueImmutable = new SetOnce<>();
 
         // ************** PRECONDITION
 
