@@ -19,7 +19,7 @@ import java.util.List;
 
 public interface Inspection {
 
-    default boolean isSynthetic() { return false; }
+    boolean isSynthetic();
 
     List<AnnotationExpression> getAnnotations();
 

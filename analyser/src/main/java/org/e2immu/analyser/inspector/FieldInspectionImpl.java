@@ -41,7 +41,6 @@ public class FieldInspectionImpl extends InspectionImpl implements FieldInspecti
         }
     };
 
-    private final boolean synthetic;
     private final Set<FieldModifier> modifiers;
     private final FieldInspection.FieldInitialiser fieldInitialiser;
     private final FieldModifier access;
@@ -51,17 +50,11 @@ public class FieldInspectionImpl extends InspectionImpl implements FieldInspecti
                                 @NotNull List<AnnotationExpression> annotations,
                                 @NotNull FieldModifier access,
                                 boolean synthetic) {
-        super(annotations);
+        super(annotations, synthetic);
         Objects.requireNonNull(modifiers);
         this.fieldInitialiser = fieldInitialiser;
         this.modifiers = modifiers;
         this.access = Objects.requireNonNull(access);
-        this.synthetic = synthetic;
-    }
-
-    @Override
-    public boolean isSynthetic() {
-        return synthetic;
     }
 
     @Override
@@ -84,15 +77,13 @@ public class FieldInspectionImpl extends InspectionImpl implements FieldInspecti
         private com.github.javaparser.ast.expr.Expression initialiserExpression;
         private Expression inspectedInitialiserExpression;
         private FieldInspection.FieldInitialiser fieldInitialiser;
-        private boolean isSynthetic;
 
         public com.github.javaparser.ast.expr.Expression getInitialiserExpression() {
             return initialiserExpression;
         }
 
-        public Builder setInitialiserExpression(com.github.javaparser.ast.expr.Expression initialiserExpression) {
+        public void setInitialiserExpression(com.github.javaparser.ast.expr.Expression initialiserExpression) {
             this.initialiserExpression = initialiserExpression;
-            return this;
         }
 
         public Builder setInspectedInitialiserExpression(Expression inspectedInitialiser) {
@@ -119,17 +110,13 @@ public class FieldInspectionImpl extends InspectionImpl implements FieldInspecti
             this.fieldInitialiser = fieldInitialiser;
         }
 
-        public void setSynthetic(boolean synthetic) {
-            isSynthetic = synthetic;
-        }
-
         @NotNull
         public FieldInspectionImpl build() {
             return new FieldInspectionImpl(getModifiers(),
                     fieldInitialiser != null ? fieldInitialiser :
                             inspectedInitialiserExpression == null ? null : new FieldInspection.FieldInitialiser
                                     (inspectedInitialiserExpression, null, false),
-                    getAnnotations(), getAccess(), isSynthetic);
+                    getAnnotations(), getAccess(), isSynthetic());
         }
 
         @Override

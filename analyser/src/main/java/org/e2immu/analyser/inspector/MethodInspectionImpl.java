@@ -59,7 +59,6 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
     private final Map<CompanionMethodName, MethodInfo> companionMethods;
     private final boolean isStatic;
     private final boolean isDefault;
-    private final boolean synthetic;
 
     private MethodInspectionImpl(MethodInfo methodInfo,
                                  String fullyQualifiedName,
@@ -76,7 +75,7 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
                                  List<MethodInfo> implementationOf,
                                  Map<CompanionMethodName, MethodInfo> companionMethods,
                                  Block methodBody) {
-        super(annotations);
+        super(annotations, synthetic);
         this.fullyQualifiedName = fullyQualifiedName;
         this.distinguishingName = distinguishingName;
         this.companionMethods = companionMethods;
@@ -90,12 +89,6 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
         this.implementationOf = implementationOf;
         this.isDefault = isDefault;
         this.isStatic = isStatic;
-        this.synthetic = synthetic;
-    }
-
-    @Override
-    public boolean isSynthetic() {
-        return synthetic;
     }
 
     @Override
@@ -199,7 +192,6 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
         private MethodInfo methodInfo;
         private List<ParameterInfo> immutableParameters;
         private List<ParameterInfo> mutableParameters;
-        private boolean synthetic;
 
         public Builder(TypeInfo owner, String name) {
             this.owner = owner;
@@ -211,11 +203,6 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
             this.owner = owner;
             this.name = owner.simpleName;
             this.isConstructor = true;
-        }
-
-        @Override
-        public boolean isSynthetic() {
-            return synthetic;
         }
 
         @Fluent
@@ -335,7 +322,7 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
                     getDistinguishingName(),
                     isStatic(),
                     isDefault(),
-                    synthetic,
+                    isSynthetic(),
                     Set.copyOf(modifiers),
                     List.copyOf(immutableParameters),
                     returnType,
@@ -463,11 +450,6 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
 
         public List<ParameterInspectionImpl.Builder> getParameterBuilders() {
             return parameters;
-        }
-
-        public Builder setSynthetic(boolean synthetic) {
-            this.synthetic = synthetic;
-            return this;
         }
 
         public boolean isVoid() {

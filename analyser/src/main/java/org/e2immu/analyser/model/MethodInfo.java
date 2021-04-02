@@ -302,14 +302,6 @@ public class MethodInfo implements WithInspectionAndAnalysis {
         return methodResolution.get().overrides().isEmpty();
     }
 
-    public boolean cannotBeOverridden() {
-        MethodInspection inspection = methodInspection.get();
-        return inspection.isStatic() ||
-                inspection.getModifiers().contains(MethodModifier.FINAL)
-                || inspection.getModifiers().contains(MethodModifier.PRIVATE)
-                || typeInfo.typeInspection.get().modifiers().contains(TypeModifier.FINAL);
-    }
-
     public boolean isPrivate() {
         return methodInspection.get().getModifiers().contains(MethodModifier.PRIVATE);
     }

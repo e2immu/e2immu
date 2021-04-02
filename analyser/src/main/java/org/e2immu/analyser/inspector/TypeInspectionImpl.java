@@ -53,8 +53,9 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
                                Set<TypeModifier> modifiers,
                                List<TypeInfo> subTypes,
                                List<AnnotationExpression> annotations,
-                               AnnotationMode annotationMode) {
-        super(annotations);
+                               AnnotationMode annotationMode,
+                               boolean synthetic) {
+        super(annotations, synthetic);
         this.parentClass = parentClass;
         this.interfacesImplemented = interfacesImplemented;
         this.typeParameters = typeParameters;
@@ -307,7 +308,8 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
                     modifiers(),
                     subTypes(),
                     getAnnotations(),
-                    annotationMode());
+                    annotationMode(),
+                    isSynthetic());
         }
 
         private static final Set<String> OFFENSIVE_ANNOTATIONS = Set.of(

@@ -219,7 +219,9 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
                 fields.stream()
                         .filter(f -> !f.fieldInspection.get().isSynthetic())
                         .map(f -> f.output(insideType))),
-                subTypes.stream().map(ti -> ti.output(insideType, true))),
+                subTypes.stream()
+                        .filter(st -> !st.typeInspection.get().isSynthetic())
+                        .map(ti -> ti.output(insideType, true))),
                 constructors.stream()
                         .filter(c -> !c.methodInspection.get().isSynthetic()).map(c -> c.output(insideType, guideGenerator))),
                 methods.stream()

@@ -436,9 +436,16 @@ public class JavaUtil extends AnnotatedAPI {
     @UtilityClass
     static class Arrays$ {
         @NotNull
+        @NotModified
+        @Dependent2
         static IntStream stream(@NotNull int[] array) {
             return null;
         }
+
+        @NotNull
+        @NotModified
+        @Dependent2
+        static <T> Stream<T> stream(@NotNull T[] array) { return null; }
     }
 
     @UtilityClass

@@ -24,10 +24,17 @@ import java.util.Objects;
 public abstract class InspectionImpl implements Inspection {
 
     private final List<AnnotationExpression> annotations;
+    private final boolean synthetic;
 
-    protected InspectionImpl(List<AnnotationExpression> annotations) {
+    protected InspectionImpl(List<AnnotationExpression> annotations, boolean synthetic) {
         Objects.requireNonNull(annotations);
         this.annotations = annotations;
+        this.synthetic = synthetic;
+    }
+
+    @Override
+    public boolean isSynthetic() {
+        return synthetic;
     }
 
     @Override
@@ -39,4 +46,6 @@ public abstract class InspectionImpl implements Inspection {
     public boolean hasAnnotation(AnnotationExpression annotationExpression) {
         return annotations.contains(annotationExpression);
     }
+
+
 }

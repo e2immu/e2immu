@@ -20,15 +20,12 @@ import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.analyser.model.variable.FieldReference;
-import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Primitives;
-import org.e2immu.analyser.resolver.SortedType;
 
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -132,8 +129,10 @@ public class EnumMethods {
                                        AnnotationExpression notModifiedContract) {
         TypeContext typeContext = expressionContext.typeContext;
 
-        VariableExpression thisVe = new VariableExpression(new This(typeContext, valuesMethod.getMethodInfo().typeInfo));
-        MethodCall values = new MethodCall(true, thisVe, valuesMethod.getMethodInfo(), valuesMethod.getReturnType(), List.of());
+        TypeExpression enumTypeExpression = new TypeExpression(valuesMethod.getMethodInfo().typeInfo
+                .asParameterizedType(typeContext), Diamond.NO);
+        MethodCall values = new MethodCall(true, enumTypeExpression,
+                valuesMethod.getMethodInfo(), valuesMethod.getReturnType(), List.of());
         TypeInfo arrays = typeContext.getFullyQualified(Arrays.class);
         MethodInfo streamArray = arrays.typeInspection.get().methodStream(TypeInspection.Methods.THIS_TYPE_ONLY)
                 .filter(m -> "stream".equals(m.name) && m.methodInspection.get().getParameters().size() == 1 &&
@@ -179,11 +178,12 @@ public class EnumMethods {
         TypeInfo lambdaType = new TypeInfo(enumType,
                 expressionContext.anonymousTypeCounters.newIndex(expressionContext.primaryType));
         TypeInspectionImpl.Builder builder = expressionContext.typeContext.typeMapBuilder.add(lambdaType, BY_HAND);
-        builder.setTypeNature(TypeNature.CLASS);
-        builder.addInterfaceImplemented(functionalInterfaceType);
-        builder.setParentClass(primitives.objectParameterizedType);
+        builder.setTypeNature(TypeNature.CLASS)
+                .setSynthetic(true)
+                .addInterfaceImplemented(functionalInterfaceType)
+                .setParentClass(primitives.objectParameterizedType);
 
-        MethodInspectionImpl.Builder predicate = new MethodInspectionImpl.Builder(lambdaType, "predicate")
+        MethodInspectionImpl.Builder predicate = new MethodInspectionImpl.Builder(lambdaType, "test")
                 .setSynthetic(true)
                 .setReturnType(primitives.booleanParameterizedType)
                 .addModifier(MethodModifier.PUBLIC)

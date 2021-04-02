@@ -24,6 +24,7 @@ import java.util.List;
 public abstract class AbstractInspectionBuilder<B> implements Inspection {
 
     protected final AddOnceSet<AnnotationExpression> annotations = new AddOnceSet<>();
+    private boolean synthetic;
 
     @SuppressWarnings("unchecked")
     public B addAnnotation(AnnotationExpression annotationExpression) {
@@ -41,5 +42,16 @@ public abstract class AbstractInspectionBuilder<B> implements Inspection {
     @Override
     public boolean hasAnnotation(AnnotationExpression annotationExpression) {
         return annotations.contains(annotationExpression);
+    }
+
+    @Override
+    public boolean isSynthetic() {
+        return synthetic;
+    }
+
+    @SuppressWarnings("unchecked")
+    public B setSynthetic(boolean synthetic) {
+        this.synthetic = synthetic;
+        return (B) this; // saves us copies
     }
 }

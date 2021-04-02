@@ -389,8 +389,6 @@ public class FieldAnalyser extends AbstractAnalyser {
 
     /*
     method modelled to that of analyseNotNull.
-
-    TODO verify that not incl
      */
     private AnalysisStatus analyseImmutable(SharedState sharedState) {
         // not an assert, because the value is not directly determined by the actual property
@@ -484,7 +482,12 @@ public class FieldAnalyser extends AbstractAnalyser {
     private int immutableBreakParameterDelay(EvaluationContext evaluationContext, Expression expression) {
         int imm = evaluationContext.getProperty(expression, VariableProperty.IMMUTABLE, false);
         if (imm != Level.DELAY) return imm;
-        if (expression.variables().stream().allMatch(v -> v instanceof ParameterInfo)) {
+        if (expression.returnType().bestTypeInfo() == fieldInfo.owner) {
+            // we cannot break a delay for our own type
+            return Level.DELAY;
+        }
+        List<Variable> variables = expression.variables();
+        if (!variables.isEmpty() && variables.stream().allMatch(v -> v instanceof ParameterInfo)) {
             return MultiLevel.MUTABLE;
         }
         return Level.DELAY;

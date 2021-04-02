@@ -173,7 +173,8 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                         qualification.qualifierRequired(methodInfo) ? YES : NO_METHOD));
                 if (guideGenerator != null) start = true;
             } else if (object instanceof VariableExpression ve && ve.variable() instanceof This thisVar) {
-                assert !methodInfo.methodInspection.get().isStatic();
+                assert !methodInfo.methodInspection.get().isStatic() : "Have a static method with scope 'this'? "
+                        + methodInfo.fullyQualifiedName+"; this "+thisVar.typeInfo.fullyQualifiedName;
                 TypeName typeName = new TypeName(thisVar.typeInfo, qualification.qualifierRequired(thisVar.typeInfo));
                 ThisName thisName = new ThisName(thisVar.writeSuper, typeName, qualification.qualifierRequired(thisVar));
                 outputBuilder.add(new QualifiedName(methodInfo.name, thisName,
@@ -437,14 +438,14 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             return NOT_EVENTUAL;
         }
         MethodAnalysis.Eventual eventual = evaluationContext.getAnalyserContext().getMethodAnalysis(methodInfo).getEventual();
-        if(eventual == null) {
+        if (eventual == null) {
             return IMMUTABLE_DELAYED;
         }
-        if(eventual.mark()) {
+        if (eventual.mark()) {
             return new ImmutableData(Level.DELAY, MultiLevel.before(formalLevel), MultiLevel.after(formalLevel));
         }
-        if(eventual.after() != null) {
-            if(eventual.after()) {
+        if (eventual.after() != null) {
+            if (eventual.after()) {
                 return new ImmutableData(Level.DELAY, MultiLevel.after(formalLevel), MultiLevel.after(formalLevel));
             }
             return new ImmutableData(Level.DELAY, MultiLevel.before(formalLevel), MultiLevel.before(formalLevel));

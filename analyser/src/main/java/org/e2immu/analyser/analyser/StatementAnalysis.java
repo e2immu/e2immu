@@ -41,8 +41,6 @@ import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.VariableInfoContainer.Level.*;
 import static org.e2immu.analyser.analyser.VariableProperty.*;
-import static org.e2immu.analyser.util.Logger.LogTarget.ANALYSER;
-import static org.e2immu.analyser.util.Logger.log;
 import static org.e2immu.analyser.util.StringUtil.pad;
 
 @Container
@@ -395,7 +393,8 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
      * @param evaluationContext overview object for the analysis of this primary type
      * @param previous          the previous statement, or null if there is none (start of block)
      */
-    public void initIteration1Plus(EvaluationContext evaluationContext, MethodInfo currentMethod,
+    public void initIteration1Plus(EvaluationContext evaluationContext,
+                                   MethodInfo currentMethod,
                                    StatementAnalysis previous) {
 
         /* the reason we do this for all statements in the method's block is that in a subsequent iteration,
@@ -419,38 +418,6 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         }
         // this comes AFTER explicitly propagating already existing local copies of confirmed variables
         variables.toImmutableMap().values().forEach(vic -> ensureLocalCopiesOfConfirmedVariableFields(evaluationContext, vic));
-    }
-
-
-    /*
-    variables that are not marked for assignment, get no update of their @Immutable property
-    In the mean time, however, this value may have changed from DELAY to MUTABLE (as is the case in Modification_14)
-
-     */
-    private void updateValuePropertiesOfParameter(AnalyserContext analyserContext, VariableInfoContainer vic) {
-        //update @Immutable
-        VariableInfo vi = vic.getPreviousOrInitial();
-        Variable variable = vi.variable();
-        assert variable instanceof ParameterInfo;
-        int currentImmutable = vi.getProperty(IMMUTABLE);
-        if (currentImmutable == Level.DELAY) {
-            int formalImmutable = variable.parameterizedType().defaultImmutable(analyserContext);
-            if (formalImmutable != Level.DELAY) {
-                vic.setProperty(IMMUTABLE, formalImmutable, INITIAL);
-            }
-        }
-        // update @Independent
-        TypeInfo bestType = variable.parameterizedType().bestTypeInfo();
-        if (bestType != null) {
-            TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(bestType);
-            int currentIndependent = vi.getProperty(VariableProperty.INDEPENDENT);
-            if (currentIndependent == Level.DELAY) {
-                int independent = typeAnalysis.getProperty(VariableProperty.INDEPENDENT);
-                if (independent != Level.DELAY) {
-                    vic.setProperty(VariableProperty.INDEPENDENT, independent, INITIAL);
-                }
-            }
-        }
     }
 
     /* explicitly copy local variables from above or previous (they cannot be created on demand)
@@ -484,22 +451,54 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         return assignmentId == null || !assignmentId.startsWith(parent.index);
     }
 
-
+    /*
+    assume that all parameters, also those from closures, are already present
+     */
     private void init1PlusStartOfMethodDoParametersAndThis(AnalyserContext analyserContext, MethodInfo currentMethod) {
-        for (ParameterInfo parameterInfo : currentMethod.methodInspection.get().getParameters()) {
-            VariableInfo prevIteration = findOrNull(parameterInfo, INITIAL);
-            if (prevIteration != null) {
-                VariableInfoContainer vic = findForWriting(parameterInfo);
-                updateValuePropertiesOfParameter(analyserContext, vic);
-                ParameterAnalysis parameterAnalysis = analyserContext.getParameterAnalysis(parameterInfo);
-                for (VariableProperty variableProperty : FROM_ANALYSER_TO_PROPERTIES) {
-                    int value = parameterAnalysis.getProperty(variableProperty);
-                    if (value != Level.DELAY) {
-                        vic.setProperty(variableProperty, value, INITIAL);
+        variables.stream().map(Map.Entry::getValue)
+                .filter(vic -> vic.getPreviousOrInitial().variable() instanceof ParameterInfo)
+                .forEach(vic -> {
+                    VariableInfo prevInitial = vic.getPreviousOrInitial();
+                    ParameterInfo parameterInfo = (ParameterInfo) prevInitial.variable();
+                    updateValuePropertiesOfParameter(analyserContext, vic, prevInitial, parameterInfo);
+                    ParameterAnalysis parameterAnalysis = analyserContext.getParameterAnalysis(parameterInfo);
+                    for (VariableProperty variableProperty : FROM_ANALYSER_TO_PROPERTIES) {
+                        int value = parameterAnalysis.getProperty(variableProperty);
+                        if (value != Level.DELAY) {
+                            vic.setProperty(variableProperty, value, INITIAL);
+                        }
                     }
+                });
+    }
+
+    /*
+    variables that are not marked for assignment, get no update of their @Immutable property
+    In the mean time, however, this value may have changed from DELAY to MUTABLE (as is the case in Modification_14)
+
+     */
+    private void updateValuePropertiesOfParameter(AnalyserContext analyserContext,
+                                                  VariableInfoContainer vic,
+                                                  VariableInfo vi,
+                                                  Variable variable) {
+        //update @Immutable
+        assert variable instanceof ParameterInfo;
+        int currentImmutable = vi.getProperty(IMMUTABLE);
+        if (currentImmutable == Level.DELAY) {
+            int formalImmutable = variable.parameterizedType().defaultImmutable(analyserContext);
+            if (formalImmutable != Level.DELAY) {
+                vic.setProperty(IMMUTABLE, formalImmutable, INITIAL);
+            }
+        }
+        // update @Independent
+        TypeInfo bestType = variable.parameterizedType().bestTypeInfo();
+        if (bestType != null) {
+            TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(bestType);
+            int currentIndependent = vi.getProperty(VariableProperty.INDEPENDENT);
+            if (currentIndependent == Level.DELAY) {
+                int independent = typeAnalysis.getProperty(VariableProperty.INDEPENDENT);
+                if (independent != Level.DELAY) {
+                    vic.setProperty(VariableProperty.INDEPENDENT, independent, INITIAL);
                 }
-            } else {
-                log(ANALYSER, "Skipping parameter {}, not read, assigned", parameterInfo.fullyQualifiedName());
             }
         }
     }

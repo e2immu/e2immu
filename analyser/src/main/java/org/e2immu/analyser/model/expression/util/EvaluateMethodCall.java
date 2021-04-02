@@ -138,6 +138,10 @@ public class EvaluateMethodCall {
             return builder.setExpression(fluent).build();
         }
 
+        Expression nameInEnum = computeNameInEnum(evaluationContext, methodInfo, objectValue);
+        if (nameInEnum != null) {
+            return builder.setExpression(nameInEnum).build();
+        }
 
         InlinedMethod inlineValue;
         if (methodInfo.typeInfo.typeInspection.get().isFunctionalInterface() &&
@@ -178,6 +182,23 @@ public class EvaluateMethodCall {
         // normal method value
         MethodCall methodValue = new MethodCall(objectValue, methodInfo, parameters);
         return builder.setExpression(methodValue).build();
+    }
+
+    /*
+    dedicated code, because we cannot easily provide an inspected block in EnumMethods
+     */
+    private static Expression computeNameInEnum(EvaluationContext evaluationContext,
+                                                MethodInfo methodInfo,
+                                                Expression objectValue) {
+        if (!"name".equals(methodInfo.name)) return null;
+        TypeInspection typeInspection = evaluationContext.getAnalyserContext().getTypeInspection(methodInfo.typeInfo);
+        if (typeInspection.typeNature() != TypeNature.ENUM) return null;
+        if (objectValue instanceof VariableExpression ve && ve.variable() instanceof FieldReference fr &&
+                fr.fieldInfo.owner == methodInfo.typeInfo) {
+            return new StringConstant(evaluationContext.getPrimitives(), fr.fieldInfo.name);
+        }
+        return NewObject.forGetInstance(evaluationContext.newObjectIdentifier(), evaluationContext.getPrimitives(),
+                evaluationContext.getPrimitives().stringParameterizedType);
     }
 
     /*

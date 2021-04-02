@@ -26,7 +26,7 @@ public class ParameterInspectionImpl extends InspectionImpl implements Parameter
     public final boolean varArgs;
 
     private ParameterInspectionImpl(List<AnnotationExpression> annotations, boolean varArgs) {
-        super(annotations);
+        super(annotations, false);
         this.varArgs = varArgs;
     }
 
