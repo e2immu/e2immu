@@ -465,6 +465,7 @@ public class FieldAnalyser extends AbstractAnalyser {
                 return DELAYS;
             }
             int worstOverValuesBreakParameterDelay = fieldAnalysis.getValues().stream()
+                    .filter(expression -> !(expression instanceof NullConstant))
                     .mapToInt(expression -> immutableBreakParameterDelay(evaluationContext, expression))
                     .min().orElse(MultiLevel.MUTABLE);
             if (worstOverValuesBreakParameterDelay == Level.DELAY) {
