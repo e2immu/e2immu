@@ -800,7 +800,6 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         if (cImmStatus != DONE) {
             log(DELAYED, "Context immutable causes delay in {} {}", index(), myMethodAnalyser.methodInfo.fullyQualifiedName);
         }
-        status = cImmStatus.combine(status);
 
         addToMap(groupPropertyValues, CONTEXT_MODIFIED, x -> Level.FALSE, true);
         // we add the linked variables on top of the statically assigned variables
@@ -865,7 +864,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                     myMethodAnalyser.methodInfo, statementAnalysis.index, statementAnalysis, evaluationResult));
         }
 
-        return new ApplyStatusAndEnnStatus(status, ennStatus.combine(extImmStatus));
+        return new ApplyStatusAndEnnStatus(status, ennStatus.combine(extImmStatus.combine(cImmStatus)));
     }
 
     private void checkPreconditionCompatibilityWithConditionManager(EvaluationContext evaluationContext,
@@ -2406,20 +2405,23 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             return MultiLevel.isEffectivelyNotNull(getProperty(value, NOT_NULL_EXPRESSION, true));
         }
 
+        /*
+        this one is meant for non-eventual types (for now). After/before errors are caught in EvaluationResult
+         */
         @Override
         public boolean cannotBeModified(Expression value) {
             if (value instanceof IsVariableExpression ve) {
                 VariableInfo variableInfo = findForReading(ve.variable(), getInitialStatementTime(), true);
                 int cImm = variableInfo.getProperty(CONTEXT_IMMUTABLE);
-                if (cImm >= MultiLevel.EVENTUALLY_E2IMMUTABLE_AFTER_MARK) return true;
+                if (cImm >= MultiLevel.EFFECTIVELY_E2IMMUTABLE) return true;
                 int imm = variableInfo.getProperty(IMMUTABLE);
-                if (imm >= MultiLevel.EVENTUALLY_E2IMMUTABLE_AFTER_MARK) return true;
+                if (imm >= MultiLevel.EFFECTIVELY_E2IMMUTABLE) return true;
                 int extImm = variableInfo.getProperty(EXTERNAL_IMMUTABLE);
-                if (extImm >= MultiLevel.EVENTUALLY_E2IMMUTABLE_AFTER_MARK) return true;
+                if (extImm >= MultiLevel.EFFECTIVELY_E2IMMUTABLE) return true;
                 int formal = variableInfo.variable().parameterizedType().defaultImmutable(analyserContext);
-                return formal >= MultiLevel.EVENTUALLY_E2IMMUTABLE_AFTER_MARK;
+                return formal >= MultiLevel.EFFECTIVELY_E2IMMUTABLE;
             }
-            return getProperty(value, IMMUTABLE, true) >= MultiLevel.EVENTUALLY_E2IMMUTABLE_AFTER_MARK;
+            return getProperty(value, IMMUTABLE, true) >= MultiLevel.EFFECTIVELY_E2IMMUTABLE;
         }
 
         private int getVariableProperty(Variable variable, VariableProperty variableProperty, boolean duringEvaluation) {

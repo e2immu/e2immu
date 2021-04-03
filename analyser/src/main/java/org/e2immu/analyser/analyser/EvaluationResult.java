@@ -428,23 +428,16 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             setProperty(variable, VariableProperty.CONTEXT_IMMUTABLE_DELAY, Level.TRUE);
         }
 
-
-        /*
-        called when a @Only() or @Mark method is called on a variable of eventually immutable type.
-        If the immutability of the formal type has not yet been established, TODO
-        if the eventual status of the method has not yet been established, markContextImmutableDelay is called instead.
-
-        Say we call a @Mark method. Then requiredImmutable = BEFORE, next is AFTER. If current is AFTER, we have a problem.
-        If we call @Only(before), then next is BEFORE; required can be EVENTUAL or BEFORE
-
-         */
-
         public void variableOccursInEventuallyImmutableContext(Variable variable, int requiredImmutable, int nextImmutable) {
+            // context immutable starts at 1, but this code only kicks in once it has received a value
+            // before that value (before the first eventual call, the precondition system reigns
             int currentImmutable = getPropertyFromInitial(variable, VariableProperty.CONTEXT_IMMUTABLE);
-            if (MultiLevel.isBefore(requiredImmutable) && !MultiLevel.isBefore(currentImmutable)) {
-                raiseError(Message.EVENTUAL_BEFORE_REQUIRED);
-            } else if (MultiLevel.isAfter(requiredImmutable) && !MultiLevel.isAfter(currentImmutable)) {
-                raiseError(Message.EVENTUAL_AFTER_REQUIRED);
+            if (currentImmutable >= MultiLevel.EVENTUALLY_E1IMMUTABLE_BEFORE_MARK) {
+                if (MultiLevel.isBefore(requiredImmutable) && !MultiLevel.isBefore(currentImmutable)) {
+                    raiseError(Message.EVENTUAL_BEFORE_REQUIRED);
+                } else if (MultiLevel.isAfter(requiredImmutable) && !MultiLevel.isAfter(currentImmutable)) {
+                    raiseError(Message.EVENTUAL_AFTER_REQUIRED);
+                }
             }
             // everything proceeds as normal
             setProperty(variable, VariableProperty.CONTEXT_IMMUTABLE, nextImmutable);

@@ -428,10 +428,6 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         int formalTypeImmutable = evaluationContext.getAnalyserContext().getTypeAnalysis(methodInfo.typeInfo)
                 .getProperty(VariableProperty.IMMUTABLE);
         if (formalTypeImmutable == Level.DELAY) {
-            boolean ownType = methodInfo.typeInfo == evaluationContext.getCurrentType();
-            if (ownType) { // IMPROVE this is probably too string
-                return NOT_EVENTUAL;
-            }
             return IMMUTABLE_DELAYED;
         }
         int formalLevel = MultiLevel.level(formalTypeImmutable);
@@ -629,6 +625,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         } else {
             method = methodInfo;
         }
+
         MethodAnalysis methodAnalysis = evaluationContext.getAnalyserContext().getMethodAnalysis(method);
         int modified = methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD);
         if (modified == Level.TRUE && evaluationContext.cannotBeModified(objectValue)) {

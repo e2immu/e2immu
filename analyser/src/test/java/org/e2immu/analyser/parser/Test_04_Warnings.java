@@ -331,7 +331,7 @@ public class Test_04_Warnings extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("methodMustNotBeStatic5".equals(d.methodInfo().name) && d.variable() instanceof ParameterInfo) {
                 if ("0".equals(d.statementId())) {
-                    int expectDelay = d.iteration() <= 1 ? Level.TRUE : Level.DELAY;
+                    int expectDelay = d.iteration() <= 2 ? Level.TRUE : Level.DELAY;
                     assertEquals(expectDelay, d.getProperty(VariableProperty.CONTEXT_MODIFIED_DELAY));
                 }
             }
