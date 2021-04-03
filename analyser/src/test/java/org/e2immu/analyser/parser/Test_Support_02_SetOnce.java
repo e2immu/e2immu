@@ -55,17 +55,16 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("t".equals(d.fieldInfo().name)) {
-                assertNull(d.fieldAnalysis().getEffectivelyFinalValue());
+                assertEquals("<variable value>", d.fieldAnalysis().getEffectivelyFinalValue().toString());
                 assertEquals(Level.FALSE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
                 String expectValues = d.iteration() == 0 ? "[null,<s:T>]" : "[null,t]";
                 assertEquals(expectValues,
                         ((FieldAnalysisImpl.Builder) d.fieldAnalysis()).getValues().toString());
-                int expectImmu = d.iteration() <= 1 ? Level.DELAY : MultiLevel.MUTABLE;
+                int expectImmu = d.iteration() <= 2 ? Level.DELAY : MultiLevel.MUTABLE;
                 assertEquals(expectImmu, d.fieldAnalysis().getProperty(VariableProperty.IMMUTABLE));
                 assertEquals(MultiLevel.NULLABLE, d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_NOT_NULL));
 
-                String expectLinked = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "";
-                assertEquals(expectLinked, d.fieldAnalysis().getLinkedVariables().toString());
+                assertEquals("", d.fieldAnalysis().getLinkedVariables().toString());
             }
         };
 

@@ -664,15 +664,25 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
             log(DELAYED, "Delaying @Immutable on {} until return value is set", methodInfo.fullyQualifiedName);
             return DELAYS;
         }
-        int formalImmutable = methodInfo.returnType().defaultImmutable(analyserContext);
         Expression expression = methodAnalysis.singleReturnValue.get();
         int immutable;
         if (expression.isConstant()) {
             immutable = MultiLevel.EFFECTIVELY_E2IMMUTABLE;
-        } else if (expression instanceof InlinedMethod inlinedMethod) {
-            immutable = sharedState.evaluationContext.getProperty(inlinedMethod.expression(), IMMUTABLE, false);
         } else {
-            immutable = formalImmutable;
+            VariableInfo variableInfo = getReturnAsVariable();
+            ParameterizedType pt = variableInfo.variable().parameterizedType();
+            if (pt.arrays == 0 && pt.typeInfo == methodInfo.typeInfo ) {
+                /* the reason we introduce this "hack" is that IMMUTABLE of my own type often comes late
+                it really is a hack because other types that come late are missed as well.
+                 */
+                immutable = typeAnalysis.getProperty(IMMUTABLE);
+            } else {
+                int dynamic = variableInfo.getProperty(IMMUTABLE);
+                int dynamicExt = variableInfo.getProperty(EXTERNAL_IMMUTABLE);
+                int formalImmutable = methodInfo.returnType().defaultImmutable(analyserContext);
+                immutable = dynamic == Level.DELAY || dynamicExt == Level.DELAY || formalImmutable == Level.DELAY ?
+                        Level.DELAY : Math.max(formalImmutable, Math.max(dynamicExt, dynamic));
+            }
         }
         if (immutable == Level.DELAY) {
             log(DELAYED, "Delaying @Immutable on {}", methodInfo.fullyQualifiedName);
@@ -1159,11 +1169,11 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
                         ? VariableProperty.NOT_NULL_PARAMETER : variableProperty;
                 return getAnalyserContext().getParameterAnalysis(parameterInfo).getProperty(vp);
             }
-            if(variable instanceof This thisVar) {
+            if (variable instanceof This thisVar) {
                 TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(thisVar.typeInfo);
                 return typeAnalysis.getProperty(variableProperty);
             }
-            throw new UnsupportedOperationException();
+            throw new UnsupportedOperationException("Variable: " + variable.fullyQualifiedName() + " type " + variable.getClass());
         }
 
         private VariableProperty external(VariableProperty variableProperty) {

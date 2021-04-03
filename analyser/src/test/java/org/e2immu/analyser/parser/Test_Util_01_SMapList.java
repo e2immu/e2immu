@@ -16,10 +16,9 @@
 package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.*;
-import org.e2immu.analyser.config.*;
+import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.variable.ReturnVariable;
-import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
 
@@ -179,6 +178,16 @@ public class Test_Util_01_SMapList extends CommonTestRunner {
                 }
             }
         }
+        if ("immutable".equals(d.methodInfo().name)) {
+            if (d.variable() instanceof ReturnVariable) {
+                if ("2".equals(d.statementId())) {
+                    String expectValue = d.iteration() == 0 ? "<m:copyOf>" : "Map.copyOf(tmp)";
+                    assertEquals(expectValue, d.currentValue().toString());
+                    int expectImm = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_E2IMMUTABLE;
+                    assertEquals(expectImm, d.getProperty(VariableProperty.IMMUTABLE));
+                }
+            }
+        }
     };
 
     StatementAnalyserVisitor statementAnalyserVisitor = d -> {
@@ -188,7 +197,7 @@ public class Test_Util_01_SMapList extends CommonTestRunner {
             }
             if ("1".equals(d.statementId())) {
                 // a != null is in the property of parameter, not in precondition
-                assertTrue( d.localConditionManager().precondition().isEmpty());
+                assertTrue(d.localConditionManager().precondition().isEmpty());
             }
             if ("2.0.0".equals(d.statementId())) {
                 assertEquals("null==map.get(a)", d.condition().toString());
@@ -243,6 +252,15 @@ public class Test_Util_01_SMapList extends CommonTestRunner {
                 assertEquals(expectCmB, modifiedB);
             }
         }
+        if ("immutable".equals(d.methodInfo().name)) {
+            if (d.iteration() == 0) {
+                assertNull(d.methodAnalysis().getSingleReturnValue());
+            } else {
+                assertEquals("Map.copyOf(tmp)", d.methodAnalysis().getSingleReturnValue().toString());
+            }
+            int expectImm = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_E2IMMUTABLE;
+            assertEquals(expectImm, d.methodAnalysis().getProperty(VariableProperty.IMMUTABLE));
+        }
     };
 
     TypeMapVisitor typeMapVisitor = typeMap -> {
@@ -250,6 +268,8 @@ public class Test_Util_01_SMapList extends CommonTestRunner {
         MethodInfo entrySet = map.findUniqueMethod("entrySet", 0);
         assertEquals(MultiLevel.EFFECTIVELY_CONTENT2_NOT_NULL,
                 entrySet.methodAnalysis.get().getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+        MethodInfo copyOf = map.findUniqueMethod("copyOf", 1);
+        assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, copyOf.methodAnalysis.get().getProperty(VariableProperty.IMMUTABLE));
     };
 
     @Test

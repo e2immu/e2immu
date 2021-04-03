@@ -58,6 +58,8 @@ public record Cast(Expression expression, ParameterizedType parameterizedType) i
     @Override
     public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
         EvaluationResult er = expression.evaluate(evaluationContext, forwardEvaluationInfo);
+        // the cast to myself is not going to change the outcome of the IMMUTABLE computation
+        if(parameterizedType.typeInfo == evaluationContext.getCurrentType()) return er;
         int immutableExpression = er.getProperty(expression, VariableProperty.IMMUTABLE);
         int immutableType = parameterizedType.defaultImmutable(evaluationContext.getAnalyserContext());
         Expression result;

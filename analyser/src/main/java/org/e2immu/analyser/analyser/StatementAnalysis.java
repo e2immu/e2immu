@@ -696,7 +696,10 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                 if (merged.add(fqn)) {
                     VariableInfoContainer destination;
                     if (!variables.isSet(fqn)) {
-                        destination = createVariable(evaluationContext, variable, statementTime, VariableInLoop.CREATED_IN_MERGE);
+                        VariableInLoop vil = vic.getVariableInLoop();
+                        // created in merge: see Enum_1, a dependent variable created inside the loop
+                        VariableInLoop newVil = vil == VariableInLoop.NOT_IN_LOOP ? VariableInLoop.CREATED_IN_MERGE : vil;
+                        destination = createVariable(evaluationContext, variable, statementTime, newVil);
                         if (variable.needsNewVariableWithoutValueCall()) destination.newVariableWithoutValue();
                     } else {
                         destination = vic;

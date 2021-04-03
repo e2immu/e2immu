@@ -96,7 +96,7 @@ public class Test_39_PropagateModification extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("forEach".equals(d.methodInfo().name)) {
                 ParameterAnalysis myConsumer = d.parameterAnalyses().get(0);
-                int expectMv = d.iteration() <= 1 ? Level.DELAY : Level.FALSE;
+                int expectMv = d.iteration() <= 2 ? Level.DELAY : Level.FALSE;
                 assertEquals(expectMv, myConsumer.getProperty(VariableProperty.MODIFIED_VARIABLE));
             }
         };

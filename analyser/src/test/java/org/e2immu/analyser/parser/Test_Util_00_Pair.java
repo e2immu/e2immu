@@ -50,8 +50,7 @@ public class Test_Util_00_Pair extends CommonTestRunner {
 
         // fields k and v do not link to the constructor's parameters because they are implicitly immutable
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
-            int expectIndependent = d.iteration() == 0 ? Level.DELAY : MultiLevel.INDEPENDENT;
-            assertEquals(expectIndependent, d.typeAnalysis().getProperty(VariableProperty.INDEPENDENT));
+            assertEquals(MultiLevel.INDEPENDENT, d.typeAnalysis().getProperty(VariableProperty.INDEPENDENT));
         };
 
         testUtilClass(List.of("Pair"), 0, 0, new DebugConfiguration.Builder()

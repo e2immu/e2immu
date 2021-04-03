@@ -288,7 +288,25 @@ public class Test_26_Enum extends CommonTestRunner {
 
     @Test
     public void test5() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("returnTwo".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ReturnVariable) {
+                    // the result of the hard-coded method call valueOf
+                    assertEquals("instance type Enum_5", d.currentValue().toString());
+                    int expectImm = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_E2IMMUTABLE;
+                    assertEquals(expectImm, d.getProperty(VariableProperty.IMMUTABLE));
+                }
+            }
+        };
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("valueOf".equals(d.methodInfo().name)) {
+                // immediate, because no Annotated API so hard-coded
+                assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, d.methodAnalysis().getProperty(VariableProperty.IMMUTABLE));
+            }
+        };
         testClass("Enum_5", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 

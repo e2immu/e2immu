@@ -228,6 +228,7 @@ public class MultiLevel {
     public static boolean isAfter(int immutable) {
         if (immutable == Level.DELAY) return false;
         int level = levelBetterThanFalse(immutable);
+        if (level < 0) throw new UnsupportedOperationException("Not eventual");
         int value = value(immutable, level);
         return value == EVENTUAL_AFTER || value == EFFECTIVE;
     }
@@ -235,6 +236,9 @@ public class MultiLevel {
     public static boolean isBefore(int immutable) {
         if (immutable == Level.DELAY) return false;
         int level = levelBetterThanFalse(immutable);
+        if (level < 0) {
+            throw new UnsupportedOperationException("Not eventual");
+        }
         int value = value(immutable, level);
         return value == EVENTUAL_BEFORE || value == EVENTUAL;
     }
