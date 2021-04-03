@@ -121,9 +121,9 @@ public interface ParameterAnalysis extends Analysis {
                 return Level.FALSE;
 
             case MODIFIED_VARIABLE:
-                if (parameterInfo.parameterizedType.isE2Immutable(analysisProvider) == Boolean.TRUE) {
-                    return Level.FALSE;
-                }
+                //if (parameterInfo.parameterizedType.isE2Immutable(analysisProvider) == Boolean.TRUE) {
+                //    return Level.FALSE; FIXME shortcut
+                //}
                 if (!parameterInfo.owner.isPrivate() && analysisProvider.getTypeAnalysis(parameterInfo.owner.typeInfo)
                         .getProperty(VariableProperty.CONTAINER) == Level.TRUE) {
                     return Level.FALSE;
@@ -141,10 +141,10 @@ public interface ParameterAnalysis extends Analysis {
             case CONTEXT_MODIFIED:
             case MODIFIED_OUTSIDE_METHOD: {
                 // if the parameter is level 2 immutable, it cannot be modified
-                int immutable = getParameterProperty(analysisProvider, parameterInfo, IMMUTABLE);
-                if (immutable >= MultiLevel.EVENTUALLY_E2IMMUTABLE_AFTER_MARK) {
-                    return Level.FALSE;
-                }
+               // int immutable = getParameterProperty(analysisProvider, parameterInfo, IMMUTABLE);
+               // if (immutable >= MultiLevel.EVENTUALLY_E2IMMUTABLE_AFTER_MARK) {
+               //     return Level.FALSE;
+               // }FIXME shortcut
                 if (!parameterInfo.owner.isPrivate() && analysisProvider.getTypeAnalysis(parameterInfo.owner.typeInfo)
                         .getProperty(VariableProperty.CONTAINER) == Level.TRUE) {
                     return Level.FALSE;

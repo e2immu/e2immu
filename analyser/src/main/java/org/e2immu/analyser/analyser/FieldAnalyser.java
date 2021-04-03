@@ -27,6 +27,7 @@ import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Message;
+import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.Logger;
 import org.e2immu.analyser.visitor.FieldAnalyserVisitor;
 import org.e2immu.annotation.*;
@@ -843,12 +844,10 @@ public class FieldAnalyser extends AbstractAnalyser {
             return analyseNotModifiedFunctionalInterface();
         }
 
-        // the reason we intercept this here is that while the type may be dynamically level 2 immutable, the user
-        // may still try to call a modifying method. This will cause an error, however, it would also change the modification status
-        // of the field, which is not good.
-        int immutable = fieldAnalysis.getProperty(VariableProperty.EXTERNAL_IMMUTABLE);
-        if (MultiLevel.isE2Immutable(immutable)) {
-            log(NOT_MODIFIED, "Field {} is @NotModified, since it is @Final and @E2Immutable", fqn);
+        boolean isPrimitive = Primitives.isPrimitiveExcludingVoid(fieldInfo.type);
+        // too dangerous to catch @E2Immutable because of down-casts
+        if (isPrimitive) {
+            log(NOT_MODIFIED, "Field {} is @NotModified, since it is final and primitive", fqn);
             fieldAnalysis.setProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD, Level.FALSE);
             return DONE;
         }

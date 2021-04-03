@@ -22,6 +22,8 @@ public record VariableInLoop(String statementId, String assignmentId, VariableTy
     public static final VariableInLoop NOT_IN_LOOP = new VariableInLoop(null, null, VariableType.NOT_IN_LOOP);
     public static final VariableInLoop COPY_FROM_ENCLOSING_METHOD = new VariableInLoop(null, null, VariableType.COPY_FROM_ENCLOSING_METHOD);
 
+    public static final VariableInLoop CREATED_IN_MERGE = new VariableInLoop(null, null, VariableType.CREATED_IN_MERGE);
+
     public String statementId(VariableType type) {
         return variableType == type ? statementId : null;
     }
@@ -31,6 +33,6 @@ public record VariableInLoop(String statementId, String assignmentId, VariableTy
     }
 
     public enum VariableType {
-        NOT_IN_LOOP, LOOP, LOOP_COPY, IN_LOOP_DEFINED_OUTSIDE, COPY_FROM_ENCLOSING_METHOD;
+        NOT_IN_LOOP, LOOP, LOOP_COPY, IN_LOOP_DEFINED_OUTSIDE, COPY_FROM_ENCLOSING_METHOD, CREATED_IN_MERGE;
     }
 }

@@ -696,7 +696,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                 if (merged.add(fqn)) {
                     VariableInfoContainer destination;
                     if (!variables.isSet(fqn)) {
-                        destination = createVariable(evaluationContext, variable, statementTime, vic.getVariableInLoop());
+                        destination = createVariable(evaluationContext, variable, statementTime, VariableInLoop.CREATED_IN_MERGE);
                         if (variable.needsNewVariableWithoutValueCall()) destination.newVariableWithoutValue();
                     } else {
                         destination = vic;
@@ -715,8 +715,9 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                     boolean ignoreCurrent;
                     if (toMerge.size() == 1 && (toMerge.get(0).variableInLoop.assignmentId() != null
                             && toMerge.get(0).variableInLoop.assignmentId().startsWith(index) && !atLeastOneBlockExecuted ||
-                            variable instanceof FieldReference fr && onlyOneCopy(evaluationContext, fr))) {
-                        ignoreCurrent = true; // the
+                            variable instanceof FieldReference fr && onlyOneCopy(evaluationContext, fr)) ||
+                            destination.getVariableInLoop().variableType() == VariableInLoop.VariableType.CREATED_IN_MERGE) {
+                        ignoreCurrent = true;
                     } else {
                         ignoreCurrent = atLeastOneBlockExecuted;
                     }

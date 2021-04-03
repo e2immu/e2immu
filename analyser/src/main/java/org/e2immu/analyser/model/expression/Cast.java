@@ -14,15 +14,14 @@
 
 package org.e2immu.analyser.model.expression;
 
-import org.e2immu.analyser.analyser.EvaluationContext;
-import org.e2immu.analyser.analyser.EvaluationResult;
-import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
+import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 public record Cast(Expression expression, ParameterizedType parameterizedType) implements Expression {
@@ -58,9 +57,24 @@ public record Cast(Expression expression, ParameterizedType parameterizedType) i
 
     @Override
     public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
-        // for now, casting will simply keep the value
-        // TODO should we not wrap in PropertyWrapper, with explicit type?
-        return expression.evaluate(evaluationContext, forwardEvaluationInfo);
+        EvaluationResult er = expression.evaluate(evaluationContext, forwardEvaluationInfo);
+        int immutableExpression = er.getProperty(expression, VariableProperty.IMMUTABLE);
+        int immutableType = parameterizedType.defaultImmutable(evaluationContext.getAnalyserContext());
+        Expression result;
+        if (immutableType == Level.DELAY) {
+            result = DelayedExpression.forCast(parameterizedType);
+        } else if (immutableExpression == Level.DELAY) {
+            result = DelayedExpression.forImmutable(expression.returnType());
+        } else {
+            if (immutableExpression == immutableType) return er;
+            result = PropertyWrapper.propertyWrapper(expression, Map.of(VariableProperty.IMMUTABLE, immutableType));
+        }
+        return new EvaluationResult.Builder(evaluationContext).compose(er).setExpression(result).build();
+    }
+
+    @Override
+    public LinkedVariables linkedVariables(EvaluationContext evaluationContext) {
+        return expression.linkedVariables(evaluationContext);
     }
 
     @Override

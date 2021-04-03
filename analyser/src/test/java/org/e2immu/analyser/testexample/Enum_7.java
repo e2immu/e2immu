@@ -14,48 +14,20 @@
 
 package org.e2immu.analyser.testexample;
 
-import org.e2immu.annotation.E1Immutable;
-import org.e2immu.annotation.Modified;
-import org.e2immu.annotation.NotModified;
+import org.e2immu.annotation.E2Container;
+import org.e2immu.annotation.NotNull1;
 
-/*
-so while T is implicitly immutable, this promise is broken by the use
-of a cast in the incrementedT method
- */
-@E1Immutable
-public class Cast_1<T> {
+@E2Container
+public enum Enum_7 {
+    ONE, TWO, THREE;
 
-    static class Counter {
-        private int i = 0;
-
-        public int increment() {
-            return ++i;
-        }
-    }
-
-    @Modified
-    private final T t;
-
-    public Cast_1(@Modified T input) {
-        t = input;
-    }
-
-    @NotModified
-    public T getT() {
-        return t;
-    }
-
-    @NotModified
-    public String getTAsString() {
-        return (String) t;
-    }
-
-    @Modified
-    public int incrementedT() {
-        return ((Counter) t).increment();
-    }
-
-    public Counter getTAsCounter() {
-        return (Counter) t;
+    @NotNull1
+    public static Enum_7[] rearranged() {
+        Enum_7[] v = values();
+        Enum_7 tmp = v[0];
+        v[0] = v[1];
+        v[1] = v[2];
+        v[2] = tmp;
+        return v;
     }
 }

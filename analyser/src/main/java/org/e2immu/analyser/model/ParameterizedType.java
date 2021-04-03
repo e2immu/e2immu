@@ -16,7 +16,6 @@ package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.analyser.AnalyserContext;
 import org.e2immu.analyser.analyser.AnalysisProvider;
-import org.e2immu.analyser.analyser.ExpandableAnalyserContextImpl;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.inspector.MethodTypeParameterMap;
 import org.e2immu.analyser.inspector.TypeContext;
@@ -634,12 +633,14 @@ public class ParameterizedType {
         if (otherIsPrimitive && this == ParameterizedType.NULL_CONSTANT) {
             return inspectionProvider.getPrimitives().boxed(otherBestType).asParameterizedType(inspectionProvider);
         }
-        if (isPrimitive || otherIsPrimitive) return inspectionProvider.getPrimitives().objectParameterizedType; // no common type
+        if (isPrimitive || otherIsPrimitive)
+            return inspectionProvider.getPrimitives().objectParameterizedType; // no common type
 
-        if(other == ParameterizedType.NULL_CONSTANT) return this;
-        if(this == ParameterizedType.NULL_CONSTANT) return other;
+        if (other == ParameterizedType.NULL_CONSTANT) return this;
+        if (this == ParameterizedType.NULL_CONSTANT) return other;
 
-        if (bestType == null || otherBestType == null) return inspectionProvider.getPrimitives().objectParameterizedType; // no common type
+        if (bestType == null || otherBestType == null)
+            return inspectionProvider.getPrimitives().objectParameterizedType; // no common type
         if (isAssignableFrom(inspectionProvider, other)) {
             return this;
         }
@@ -713,13 +714,16 @@ public class ParameterizedType {
     }
 
     public int defaultIndependent() {
-        return Primitives.isPrimitiveExcludingVoid(this) ? MultiLevel.INDEPENDENT: MultiLevel.DEPENDENT;
+        return Primitives.isPrimitiveExcludingVoid(this) ? MultiLevel.INDEPENDENT : MultiLevel.DEPENDENT;
     }
 
     public int defaultImmutable(AnalyserContext analyserContext) {
+        if (Primitives.isPrimitiveExcludingVoid(this)) return MultiLevel.EFFECTIVELY_E2IMMUTABLE;
+        if (arrays > 0) return MultiLevel.EVENTUALLY_E1IMMUTABLE;
         TypeInfo bestType = bestTypeInfo();
-        if(bestType == null) return MultiLevel.NOT_INVOLVED;
-        if(Primitives.isPrimitiveExcludingVoid(bestType)) return MultiLevel.EFFECTIVELY_E2IMMUTABLE;
+        if (bestType == null) {
+            return MultiLevel.EFFECTIVELY_E2IMMUTABLE;
+        }
         TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(bestType);
         return typeAnalysis.getProperty(VariableProperty.IMMUTABLE);
     }

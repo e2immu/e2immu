@@ -155,6 +155,18 @@ public record EvaluationResult(EvaluationContext evaluationContext,
         }
     }
 
+    public int getProperty(Expression expression, VariableProperty variableProperty) {
+        if (expression instanceof VariableExpression ve) {
+            ChangeData changeData = changeData().get(ve.variable());
+            if (changeData != null) {
+                Integer inChangeData = changeData.properties.getOrDefault(variableProperty, null);
+                if (inChangeData != null) return inChangeData;
+            }
+            return evaluationContext.getPropertyFromPreviousOrInitial(ve.variable(), variableProperty, statementTime);
+        }
+        return expression.getProperty(evaluationContext, variableProperty, true);
+    }
+
     // lazy creation of lists
     public static class Builder {
         private final EvaluationContext evaluationContext;

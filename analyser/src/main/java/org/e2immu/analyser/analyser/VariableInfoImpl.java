@@ -23,6 +23,7 @@ import org.e2immu.analyser.model.expression.DelayedVariableExpression;
 import org.e2immu.analyser.model.expression.Negation;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.Variable;
+import org.e2immu.support.EventuallyFinal;
 import org.e2immu.support.SetOnce;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,8 +50,7 @@ class VariableInfoImpl implements VariableInfo {
     private final Set<Integer> readAtStatementTimes;
 
     private final VariableProperties properties = new VariableProperties();
-    private final SetOnce<Expression> value = new SetOnce<>(); // may be written exactly once
-    private Expression currentDelayedValue; // may be written multiple times
+    private final EventuallyFinal<Expression> value = new EventuallyFinal<>();
     private final SetOnce<LinkedVariables> linkedVariables = new SetOnce<>();
     private final SetOnce<Integer> statementTime = new SetOnce<>();
 
@@ -67,7 +67,7 @@ class VariableInfoImpl implements VariableInfo {
         this.assignmentId = assignmentId;
         this.readId = readId;
         this.readAtStatementTimes = Set.of();
-        currentDelayedValue = DelayedVariableExpression.forVariable(variable);
+        value.setVariable(DelayedVariableExpression.forVariable(variable));
     }
 
     // normal one for creating an initial or evaluation
@@ -79,12 +79,12 @@ class VariableInfoImpl implements VariableInfo {
             this.statementTime.set(statementTime);
         }
         this.readAtStatementTimes = Objects.requireNonNull(readAtStatementTimes);
-        currentDelayedValue = DelayedVariableExpression.forVariable(variable);
+        value.setVariable(DelayedVariableExpression.forVariable(variable));
     }
 
     @Override
     public boolean valueIsSet() {
-        return value.isSet();
+        return value.isFinal();
     }
 
     @Override
@@ -124,7 +124,7 @@ class VariableInfoImpl implements VariableInfo {
 
     @Override
     public Expression getValue() {
-        return value.getOrElse(currentDelayedValue);
+        return value.get();
     }
 
     @Override
@@ -141,7 +141,7 @@ class VariableInfoImpl implements VariableInfo {
     public String toString() {
         final StringBuilder sb = new StringBuilder();
         sb.append("[name=").append(name()).append(", props=").append(properties);
-        if (value.isSet()) {
+        if (value.isFinal()) {
             sb.append(", value=").append(value.get());
         }
         return sb.append("]").toString();
@@ -209,11 +209,17 @@ class VariableInfoImpl implements VariableInfo {
             throw new UnsupportedOperationException("Cannot redirect to myself");
         }
         if (valueIsDelayed) {
-            currentDelayedValue = value;
+            try {
+                this.value.setVariable(value);
+            } catch (IllegalStateException ise) {
+                LOGGER.error("Variable {}: value '{}' is delayed, but final value '{}' already present",
+                        variable.fullyQualifiedName(), value, this.value.get());
+                throw ise;
+            }
         } else {
             assert !(value instanceof DelayedExpression); // simple safe-guard, others are more difficult to check
-            if (!this.value.isSet() || !this.value.get().equals(value)) { // crash if different, keep same
-                this.value.set(value);
+            if (this.value.isVariable() || !this.value.get().equals(value)) { // crash if different, keep same
+                this.value.setFinal(value);
             }
         }
     }

@@ -156,30 +156,15 @@ public class ParameterAnalyser {
         boolean delays = false;
         boolean checkLinks = true;
 
-        TypeInfo bestType = parameterInfo.parameterizedType.bestTypeInfo();
-        int formallyImmutable;
-        if (bestType != null) {
-            formallyImmutable = analyserContext.getTypeAnalysis(bestType).getProperty(VariableProperty.IMMUTABLE);
-            if (formallyImmutable == EFFECTIVELY_E2IMMUTABLE) {
-                if (!parameterAnalysis.properties.isSet(VariableProperty.MODIFIED_OUTSIDE_METHOD)) {
-                    parameterAnalysis.setProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD, Level.FALSE);
-                    changed = true;
-                }
-                checkLinks = false;
-            }
-        } else {
-            Set<ParameterizedType> implicitlyImmutableDataTypes = typeAnalysis.getImplicitlyImmutableDataTypes();
-            if (implicitlyImmutableDataTypes != null &&
-                    implicitlyImmutableDataTypes.contains(parameterInfo.parameterizedType)) {
-                if (!parameterAnalysis.properties.isSet(VariableProperty.MODIFIED_OUTSIDE_METHOD)) {
-                    parameterAnalysis.setProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD, Level.FALSE);
-                    changed = true;
-                }
-                checkLinks = false;
-            }
-            formallyImmutable = MultiLevel.NOT_INVOLVED;
+        if (Primitives.isPrimitiveExcludingVoid(parameterInfo.parameterizedType) &&
+                !parameterAnalysis.properties.isSet(VariableProperty.MODIFIED_OUTSIDE_METHOD)) {
+            parameterAnalysis.setProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD, Level.FALSE);
+            changed = true;
         }
 
+        // NOTE: a shortcut on immutable to set modification to false is not possible because of casts, see Cast_1
+
+        int formallyImmutable = parameterInfo.parameterizedType.defaultImmutable(analyserContext);
         int contractBefore = parameterAnalysis.getProperty(IMMUTABLE_BEFORE_CONTRACTED);
         int contractImmutable = parameterAnalysis.getProperty(IMMUTABLE);
         if (contractImmutable != Level.DELAY && !parameterAnalysis.properties.isSet(IMMUTABLE)) {
@@ -390,7 +375,7 @@ public class ParameterAnalyser {
             }
             return formallyImmutable == EVENTUALLY_E1IMMUTABLE ? EVENTUALLY_E1IMMUTABLE_AFTER_MARK : EFFECTIVELY_E1IMMUTABLE;
         }
-        if(contractImmutable == MUTABLE) {
+        if (contractImmutable == MUTABLE) {
             return formallyImmutable;
         }
         throw new UnsupportedOperationException("Should have covered all the bases");

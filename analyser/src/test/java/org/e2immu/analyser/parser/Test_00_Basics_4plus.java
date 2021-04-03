@@ -327,7 +327,8 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
                 assertEquals(expectContextNotNull, p0.getProperty(VariableProperty.CONTEXT_NOT_NULL));
 
                 assertEquals(Level.FALSE, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
-                assertEquals(Level.FALSE, p0.getProperty(VariableProperty.MODIFIED_VARIABLE));
+                int expectMv = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
+                assertEquals(expectMv, p0.getProperty(VariableProperty.MODIFIED_VARIABLE));
             }
             if ("nonPrivateMethod".equals(d.methodInfo().name)) {
                 assertTrue(d.methodInfo().methodResolution.get().allowsInterrupts());

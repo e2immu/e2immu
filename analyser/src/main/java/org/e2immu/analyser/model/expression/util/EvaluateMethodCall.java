@@ -186,19 +186,33 @@ public class EvaluateMethodCall {
 
     /*
     dedicated code, because we cannot easily provide an inspected block in EnumMethods
+
+    name is always dedicated.
+    valueOf is only dedicated when there are no annotated APIs (it "implementation" uses the Stream class)
      */
     private static Expression computeNameInEnum(EvaluationContext evaluationContext,
                                                 MethodInfo methodInfo,
                                                 Expression objectValue) {
-        if (!"name".equals(methodInfo.name)) return null;
+        boolean isName = "name".equals(methodInfo.name);
+        boolean isValueOf = "valueOf".equals(methodInfo.name);
+        if (!isName && !isValueOf) return null;
         TypeInspection typeInspection = evaluationContext.getAnalyserContext().getTypeInspection(methodInfo.typeInfo);
         if (typeInspection.typeNature() != TypeNature.ENUM) return null;
-        if (objectValue instanceof VariableExpression ve && ve.variable() instanceof FieldReference fr &&
-                fr.fieldInfo.owner == methodInfo.typeInfo) {
-            return new StringConstant(evaluationContext.getPrimitives(), fr.fieldInfo.name);
+        if (isName) {
+            if (objectValue instanceof VariableExpression ve && ve.variable() instanceof FieldReference fr &&
+                    fr.fieldInfo.owner == methodInfo.typeInfo) {
+                return new StringConstant(evaluationContext.getPrimitives(), fr.fieldInfo.name);
+            }
+            return NewObject.forGetInstance(evaluationContext.newObjectIdentifier(), evaluationContext.getPrimitives(),
+                    evaluationContext.getPrimitives().stringParameterizedType);
         }
+        MethodInspection methodInspection = evaluationContext.getAnalyserContext().getMethodInspection(methodInfo);
+        if (methodInspection.getMethodBody().structure.haveStatements()) {
+            return null; // implementation present
+        }
+        // no implementation, we'll provide something (we could actually implement the method, but why?)
         return NewObject.forGetInstance(evaluationContext.newObjectIdentifier(), evaluationContext.getPrimitives(),
-                evaluationContext.getPrimitives().stringParameterizedType);
+                objectValue.returnType());
     }
 
     /*

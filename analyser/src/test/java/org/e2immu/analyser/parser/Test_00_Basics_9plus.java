@@ -66,23 +66,32 @@ public class Test_00_Basics_9plus extends CommonTestRunner {
                         "Method: " + d.methodInfo().name);
             }
             if ("setContainsValueHelper".equals(d.methodInfo().name)) {
-                assertEquals(Level.FALSE, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
+                int expectMm = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
+                assertEquals(expectMm, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
                 assertEquals(1, d.methodAnalysis().getLastStatement().statementTime(VariableInfoContainer.Level.MERGE));
 
-                assertEquals("Basics_9.isFact(containsE)?containsE:!Basics_9.isKnown(true)&&retVal&&size>=1",
-                        d.methodAnalysis().getSingleReturnValue().toString());
-                assertTrue(d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod,
-                        "class is " + d.methodAnalysis().getSingleReturnValue().getClass());
+                if (d.iteration() == 0) {
+                    assertNull(d.methodAnalysis().getSingleReturnValue());
+                } else {
+                    assertEquals("Basics_9.isFact(containsE)?containsE:!Basics_9.isKnown(true)&&retVal&&size>=1",
+                            d.methodAnalysis().getSingleReturnValue().toString());
+                    assertTrue(d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod,
+                            "class is " + d.methodAnalysis().getSingleReturnValue().getClass());
+                }
             }
             if ("test1".equals(d.methodInfo().name)) {
-                assertEquals(Level.FALSE, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
+                int expectMm = d.iteration() <= 1 ? Level.DELAY : Level.FALSE;
+                assertEquals(expectMm, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
                 assertEquals(1, d.methodAnalysis().getLastStatement().statementTime(VariableInfoContainer.Level.MERGE));
 
-                assertEquals("Basics_9.isFact(contains)?contains:!Basics_9.isKnown(true)&&isEmpty",
-                        d.methodAnalysis().getSingleReturnValue().toString());
-                assertTrue(d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod,
-                        "class is " + d.methodAnalysis().getSingleReturnValue().getClass());
-
+                if (d.iteration() <= 1) {
+                    assertNull(d.methodAnalysis().getSingleReturnValue());
+                } else {
+                    assertEquals("Basics_9.isFact(contains)?contains:!Basics_9.isKnown(true)&&isEmpty",
+                            d.methodAnalysis().getSingleReturnValue().toString());
+                    assertTrue(d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod,
+                            "class is " + d.methodAnalysis().getSingleReturnValue().getClass());
+                }
                 ParameterAnalysis contains = d.parameterAnalyses().get(0);
                 assertEquals(MultiLevel.NOT_INVOLVED, contains.getProperty(VariableProperty.EXTERNAL_IMMUTABLE));
             }

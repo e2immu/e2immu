@@ -827,6 +827,8 @@ public class TypeAnalyser extends AbstractAnalyser {
             // RULE 1: ALL FIELDS MUST BE NOT MODIFIED
 
             // this follows automatically if they are primitive or E2Immutable themselves
+            // because of down-casts on non-primitives, e.g. from ImplicitlyImmutable to explicit, we cannot rely on the static type
+            boolean isPrimitive = Primitives.isPrimitiveExcludingVoid(fieldInfo.type);
 
             int fieldImmutable = fieldAnalysis.getProperty(VariableProperty.EXTERNAL_IMMUTABLE);
             int fieldE2Immutable = MultiLevel.value(fieldImmutable, MultiLevel.E2IMMUTABLE);
@@ -844,12 +846,8 @@ public class TypeAnalyser extends AbstractAnalyser {
                 if (!typeAnalysis.eventuallyImmutableFields.contains(fieldInfo)) {
                     typeAnalysis.eventuallyImmutableFields.add(fieldInfo);
                 }
-            }
-
-            // we're allowing eventualities to cascade!
-            if (fieldE2Immutable < MultiLevel.EVENTUAL) {
-
-                boolean fieldRequiresRules = !fieldAnalysis.isOfImplicitlyImmutableDataType();
+            } else if (!isPrimitive) {
+                boolean fieldRequiresRules = !fieldAnalysis.isOfImplicitlyImmutableDataType() && fieldE2Immutable != MultiLevel.EFFECTIVE;
                 haveToEnforcePrivateAndIndependenceRules |= fieldRequiresRules;
 
                 int modified = fieldAnalysis.getProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD);

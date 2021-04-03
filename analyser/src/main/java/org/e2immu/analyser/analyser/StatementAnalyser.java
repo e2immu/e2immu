@@ -1617,7 +1617,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             // the value can be delayed even if it is "true", for example (Basics_3)
             // see Precondition_3 for an example where different values arise, because preconditions kick in
             boolean valueIsDelayed2 = sharedState.evaluationContext.isDelayed(value) || statusPost != DONE;
-            if(statementAnalysis.stateData.valueOfExpression.isVariable()) { // FIXME this check should probably go; effect of another error
+            if (statementAnalysis.stateData.valueOfExpression.isVariable()) { // FIXME this check should probably go; effect of another error
                 statementAnalysis.stateData.setValueOfExpression(value, valueIsDelayed2);
             }
 
@@ -2205,7 +2205,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                     .map(e -> e.getValue().current())
                     .filter(vi -> !(vi.variable() instanceof ReturnVariable)) // that's for the compiler!
                     .forEach(variableInfo -> {
-                        if (variableInfo.notReadAfterAssignment()) {
+                        if (variableInfo.notReadAfterAssignment() && uselessForDependentVariable(variableInfo)) {
                             boolean isLocalAndLocalToThisBlock = statementAnalysis.isLocalVariableAndLocalToThisBlock(variableInfo.name());
                             if (bestAlwaysInterrupt == InterruptsFlow.ESCAPE ||
                                     isLocalAndLocalToThisBlock ||
@@ -2217,6 +2217,19 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                     });
         }
         return DONE;
+    }
+
+    private boolean uselessForDependentVariable(VariableInfo variableInfo) {
+        if (variableInfo.variable() instanceof DependentVariable dv) {
+            return dv.arrayVariable != null && !variableHasBeenReadAfter(dv.arrayVariable, variableInfo.getAssignmentId());
+        }
+        return true;
+    }
+
+    private boolean variableHasBeenReadAfter(Variable variable, String assignment) {
+        VariableInfo variableInfo = statementAnalysis.findOrThrow(variable);
+        int c = variableInfo.getReadId().compareTo(assignment);
+        return c > 0;
     }
 
     private boolean localVariableAssignmentInThisBlock(VariableInfo variableInfo) {
@@ -2233,6 +2246,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                     .filter(e -> e.getValue().getStatementIndexOfThisLoopVariable() == null &&
                             e.getValue().getVariableInLoop() != VariableInLoop.COPY_FROM_ENCLOSING_METHOD)
                     .map(e -> e.getValue().current())
+                    .filter(vi -> !(vi.variable() instanceof DependentVariable))
                     .filter(vi -> statementAnalysis.isLocalVariableAndLocalToThisBlock(vi.name()) && !vi.isRead())
                     .forEach(vi -> statementAnalysis.ensure(Message.newMessage(getLocation(),
                             Message.UNUSED_LOCAL_VARIABLE, vi.name())));

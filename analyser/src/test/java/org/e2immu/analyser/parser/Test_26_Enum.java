@@ -15,8 +15,6 @@
 
 package org.e2immu.analyser.parser;
 
-import org.e2immu.analyser.analyser.LinkedVariables;
-import org.e2immu.analyser.analyser.VariableInfoContainer;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.Level;
@@ -25,10 +23,12 @@ import org.e2immu.analyser.model.ParameterAnalysis;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.ReturnVariable;
+import org.e2immu.analyser.testexample.Enum_7;
 import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.util.Arrays;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -62,6 +62,8 @@ public class Test_26_Enum extends CommonTestRunner {
                 } else {
                     assertEquals("{ONE,TWO,THREE}", d.methodAnalysis().getSingleReturnValue().toString());
                 }
+                int expectExtImm = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_E1IMMUTABLE;
+                assertEquals(expectExtImm, d.methodAnalysis().getProperty(VariableProperty.IMMUTABLE));
             }
         };
 
@@ -69,6 +71,16 @@ public class Test_26_Enum extends CommonTestRunner {
             if ("ONE".equals(d.fieldInfo().name)) {
                 assertEquals(Level.TRUE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
                 assertEquals("new Enum_0()", d.fieldAnalysis().getEffectivelyFinalValue().toString());
+
+                int expectExtImm = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EFFECTIVELY_E2IMMUTABLE;
+                assertEquals(expectExtImm, d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_IMMUTABLE));
+            }
+        };
+
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("Enum_0".equals(d.typeInfo().simpleName)) {
+                int expectExtImm = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_E2IMMUTABLE;
+                assertEquals(expectExtImm, d.typeAnalysis().getProperty(VariableProperty.IMMUTABLE));
             }
         };
 
@@ -76,6 +88,7 @@ public class Test_26_Enum extends CommonTestRunner {
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
                 .build());
     }
 
@@ -98,18 +111,19 @@ public class Test_26_Enum extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("posInList".equals(d.methodInfo().name)) {
                 if ("Enum_1.values()[i]".equals(d.variableName())) {
+                    assertTrue(d.iteration() > 0);
+
                     if ("0.0.0".equals(d.statementId())) {
-                        String expectValue = d.iteration() == 0 ? "this==<new:Enum_1>?<v:Enum_1.values()[i]>:<new:Enum_1>" :
-                                "instance type Enum_1";
-                        assertEquals(expectValue, d.currentValue().toString());
+                        assertEquals("instance type Enum_1", d.currentValue().toString());
                         assertTrue(d.variableInfo().getLinkedVariables().isEmpty());
                     }
+
                     if ("0".equals(d.statementId())) {
-                        if (d.iteration() > 0) {
-                            assertNotSame(LinkedVariables.DELAY,
-                                    d.variableInfoContainer().best(VariableInfoContainer.Level.EVALUATION).getLinkedVariables());
-                        }
+                        assertFalse(d.variableInfoContainer().hasEvaluation()); // doesn't exist at EVAL level
                         assertTrue(d.variableInfo().getLinkedVariables().isEmpty());
+
+                        assertEquals("instance type Enum_1", d.currentValue().toString());
+                        assertTrue(d.variableInfo().valueIsSet());
 
                         assertEquals(MultiLevel.NOT_INVOLVED, d.getProperty(VariableProperty.EXTERNAL_IMMUTABLE));
                         assertEquals(MultiLevel.NOT_INVOLVED, d.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
@@ -286,4 +300,23 @@ public class Test_26_Enum extends CommonTestRunner {
         testClass("Enum_6", 0, 0, new DebugConfiguration.Builder()
                 .build());
     }
+
+    @Test
+    public void test7() throws IOException {
+        assertEquals("[TWO, THREE, ONE]", Arrays.toString(Enum_7.rearranged()));
+
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("rearranged".equals(d.methodInfo().name)) {
+                if ("v[0]".equals(d.variableName())) {
+                    if ("1".equals(d.statementId())) {
+                        assertTrue(d.variableInfo().isRead());
+                    }
+                }
+            }
+        };
+        testClass("Enum_7", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .build());
+    }
+
 }

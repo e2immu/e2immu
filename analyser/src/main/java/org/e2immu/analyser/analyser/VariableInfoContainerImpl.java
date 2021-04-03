@@ -195,6 +195,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         assert !hasEvaluation();
         assert isInitial();
         ((VariableInfoImpl) getPreviousOrInitial()).newVariable();
+        setLinkedVariables(LinkedVariables.EMPTY, true);
     }
 
     @Override

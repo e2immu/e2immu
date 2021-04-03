@@ -126,6 +126,10 @@ public class ArrayInitializer implements Expression {
             if (notNull == Level.DELAY) return Level.DELAY;
             return MultiLevel.shift(MultiLevel.EFFECTIVE, notNull); // default = @NotNull level 0
         }
+        if (VariableProperty.EXTERNAL_IMMUTABLE == variableProperty || VariableProperty.IMMUTABLE == variableProperty) {
+            // it is an array
+            return MultiLevel.EFFECTIVELY_E1IMMUTABLE;
+        }
         // default is to refer to each of the components
         return multiExpression.getProperty(evaluationContext, variableProperty, duringEvaluation);
     }

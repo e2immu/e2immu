@@ -14,7 +14,6 @@
 
 package org.e2immu.analyser.testexample;
 
-import org.e2immu.annotation.Constant;
 import org.e2immu.annotation.NotModified;
 
 public enum Enum_1 {
