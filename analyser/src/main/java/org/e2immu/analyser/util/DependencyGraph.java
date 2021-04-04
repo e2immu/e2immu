@@ -20,6 +20,8 @@ import org.e2immu.support.Freezable;
 import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 /**
  * In-house implementation of a directed graph that can be used to model dependencies between objects.
@@ -34,6 +36,11 @@ public class DependencyGraph<T> extends Freezable {
 
         private Node(T t) {
             this.t = t;
+        }
+
+        private Node(T t, List<T> dependsOn) {
+            this.t = t;
+            this.dependsOn = dependsOn;
         }
     }
 
@@ -178,5 +185,18 @@ public class DependencyGraph<T> extends Freezable {
             }
         }
         return result;
+    }
+
+    public DependencyGraph<T> copyRemove(Predicate<T> accept) {
+        DependencyGraph<T> copy = new DependencyGraph<>();
+        nodeMap.forEach((t, node) -> {
+            if (accept.test(t)) {
+                List<T> newDependsOn = node.dependsOn == null ? null :
+                        node.dependsOn.stream().filter(accept).collect(Collectors.toUnmodifiableList());
+                copy.nodeMap.put(t, new Node<>(t, newDependsOn));
+            }
+        });
+        copy.freeze();
+        return copy;
     }
 }

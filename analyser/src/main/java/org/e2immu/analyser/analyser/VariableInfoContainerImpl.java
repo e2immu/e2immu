@@ -20,6 +20,8 @@ import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.support.Either;
 import org.e2immu.support.Freezable;
 import org.e2immu.support.SetOnce;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Map;
@@ -27,6 +29,7 @@ import java.util.Objects;
 import java.util.Set;
 
 public class VariableInfoContainerImpl extends Freezable implements VariableInfoContainer {
+    private static final Logger LOGGER = LoggerFactory.getLogger(VariableInfoContainerImpl.class);
 
     private final VariableInLoop variableInLoop;
 
@@ -246,8 +249,13 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         ensureNotFrozen();
         Objects.requireNonNull(value);
         VariableInfoImpl variableInfo = initialOrEvaluation ? previousOrInitial.getRight() : evaluation.get();
-        variableInfo.setValue(value, valueIsDelayed);
-
+        try {
+            variableInfo.setValue(value, valueIsDelayed);
+        } catch (IllegalStateException ise) {
+            LOGGER.error("Variable {}: try to write value {}, already have {}", variableInfo.variable().fullyQualifiedName(),
+                    value, variableInfo.getValue());
+            throw ise;
+        }
         propertiesToSet.forEach((vp, v) -> {
             int inMap = variableInfo.getProperty(vp, org.e2immu.analyser.model.Level.DELAY);
             if (v > inMap) variableInfo.setProperty(vp, v);

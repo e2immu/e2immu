@@ -502,6 +502,8 @@ public class Resolver {
 
                     MethodResolution.Builder methodResolutionBuilder = new MethodResolution.Builder();
                     methodResolutionBuilder.setMethodsOfOwnClassReached(methodsReached);
+                    boolean iHelpBreakTheCycle = AnalyseCycle.analyseCycle(methodInfo, methodsReached, methodGraph);
+                    methodResolutionBuilder.isIgnoreMeBecauseOfPartOfCallCycle.set(iHelpBreakTheCycle);
 
                     methodCreatesObjectOfSelf(methodInfo, methodResolutionBuilder);
                     computeStaticMethodCallsOnly(methodInfo, methodResolutionBuilder);

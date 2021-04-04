@@ -39,6 +39,7 @@ public class EvaluateParameters {
                                                                              EvaluationContext evaluationContext,
                                                                              MethodInfo methodInfo,
                                                                              int notModified1Scope,
+                                                                             boolean recursiveOrPartOfCallCycle,
                                                                              Expression scopeObject) {
         int n = methodInfo == null ? 10 : methodInfo.methodInspection.get().getParameters().size();
         List<Expression> parameterValues = new ArrayList<>(n);
@@ -46,7 +47,6 @@ public class EvaluateParameters {
         int minNotNullOverParameters = MultiLevel.EFFECTIVELY_NOT_NULL;
 
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
-        boolean partOfCallCycle = methodInfo != null && methodInfo.partOfCallCycle();
 
         for (Expression parameterExpression : parameterExpressions) {
             Expression parameterValue;
@@ -91,7 +91,7 @@ public class EvaluateParameters {
                 {
                     int contextModified = map.getOrDefault(VariableProperty.CONTEXT_MODIFIED, Level.DELAY);
                     if (contextModified == Level.DELAY) {
-                        if (parameterInfo.owner.isAbstract()) {
+                        if (parameterInfo.owner.isAbstract() || recursiveOrPartOfCallCycle) {
                             // we explicitly allow for a delay on CM, it triggers PROPAGATE_MODIFICATION; locally, it is non-modifying
                             map.put(VariableProperty.CONTEXT_MODIFIED, Level.FALSE);
                         } else {
@@ -101,7 +101,7 @@ public class EvaluateParameters {
                 }
                 int contextNotNull = map.getOrDefault(VariableProperty.CONTEXT_NOT_NULL, Level.DELAY);
                 if (contextNotNull == Level.DELAY) {
-                    if (partOfCallCycle) {
+                    if (recursiveOrPartOfCallCycle) {
                         map.put(VariableProperty.CONTEXT_NOT_NULL, MultiLevel.NULLABLE); // won't be me to rock the boat
                     } else {
                         map.put(VariableProperty.CONTEXT_NOT_NULL_DELAY, Level.TRUE);

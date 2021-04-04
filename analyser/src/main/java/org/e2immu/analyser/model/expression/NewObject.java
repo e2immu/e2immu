@@ -517,8 +517,7 @@ public record NewObject(
         // "normal"
 
         Pair<EvaluationResult.Builder, List<Expression>> res = EvaluateParameters.transform(parameterExpressions,
-                evaluationContext, constructor, Level.FALSE, null);
-        Location location = evaluationContext.getLocation(this);
+                evaluationContext, constructor, Level.FALSE, false, null);
 
         NewObject initialInstance = NewObject.objectCreation(identifier, evaluationContext.getPrimitives(),
                 constructor, parameterizedType, diamond, res.v);

@@ -236,7 +236,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
 
         boolean alwaysModifying;
-        boolean neverModifying;
+        boolean partOfCallCycle;
         boolean abstractMethod;
         boolean recursiveCall;
 
@@ -249,7 +249,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                     !ShallowTypeAnalyser.IS_FACT_FQN.equals(methodInfo.fullyQualifiedName());
 
             // internal circular dependency (as opposed to one outside the primary type)
-            neverModifying = methodInfo.partOfCallCycle();
+            partOfCallCycle = methodInfo.methodResolution.get().ignoreMeBecauseOfPartOfCallCycle();
 
             abstractMethod = methodInfo.isAbstract();
 
@@ -261,7 +261,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         } else {
             alwaysModifying = false;
             abstractMethod = false;
-            neverModifying = false;
+            partOfCallCycle = false;
             recursiveCall = false;
         }
 
@@ -275,7 +275,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         // is the method modifying, do we need to wait?
         int modifiedMethod = methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD);
         boolean propagateModification = abstractMethod && modifiedMethod == Level.DELAY;
-        int modified = alwaysModifying ? Level.TRUE : recursiveCall || neverModifying ||
+        int modified = alwaysModifying ? Level.TRUE : recursiveCall || partOfCallCycle ||
                 propagateModification ? Level.FALSE : modifiedMethod;
         int contextModifiedDelay = Level.fromBool(modified == Level.DELAY);
 
@@ -283,7 +283,8 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         int notNullForward = notNullRequirementOnScope(forwardEvaluationInfo.getProperty(VariableProperty.CONTEXT_NOT_NULL));
         boolean contentNotNullRequired = notNullForward == MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL;
 
-        ImmutableData immutableData = computeContextImmutable(evaluationContext);
+        ImmutableData immutableData = recursiveCall || partOfCallCycle ? NOT_EVENTUAL :
+                computeContextImmutable(evaluationContext);
 
         // scope
         EvaluationResult objectResult = object.evaluate(evaluationContext, new ForwardEvaluationInfo(Map.of(
@@ -305,7 +306,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         // process parameters
         int notModified1Scope = evaluationContext.getProperty(objectValue, VariableProperty.NOT_MODIFIED_1, true);
         Pair<EvaluationResult.Builder, List<Expression>> res = EvaluateParameters.transform(parameterExpressions,
-                evaluationContext, methodInfo, notModified1Scope, objectValue);
+                evaluationContext, methodInfo, notModified1Scope, recursiveCall || partOfCallCycle, objectValue);
         List<Expression> parameterValues = res.v;
         builder.compose(objectResult, res.k.build());
 

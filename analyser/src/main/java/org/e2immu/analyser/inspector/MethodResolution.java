@@ -27,7 +27,8 @@ public record MethodResolution(Set<MethodInfo> overrides,
                                CallStatus partOfConstruction,
                                boolean createObjectOfSelf,
                                boolean staticMethodCallsOnly,
-                               boolean allowsInterrupts) {
+                               boolean allowsInterrupts,
+                               boolean ignoreMeBecauseOfPartOfCallCycle) {
 
     public enum CallStatus {
         PART_OF_CONSTRUCTION,
@@ -50,7 +51,8 @@ public record MethodResolution(Set<MethodInfo> overrides,
                     getPartOfConstruction(),
                     isCreateObjectOfSelf(),
                     isStaticMethodCallsOnly(),
-                    isAllowsInterrupts());
+                    isAllowsInterrupts(),
+                    isIgnoreMeBecauseOfPartOfCallCycle.getOrElse(false));
         }
 
         public final SetOnce<Set<MethodInfo>> overrides = new SetOnce<>();
@@ -101,6 +103,8 @@ public record MethodResolution(Set<MethodInfo> overrides,
         public boolean isAllowsInterrupts() {
             return allowsInterrupts.getOrElse(true);
         }
+
+        public final  SetOnce<Boolean> isIgnoreMeBecauseOfPartOfCallCycle = new SetOnce<>();
 
         // ***************
 

@@ -40,7 +40,7 @@ public class EvaluatePreconditionFromMethod {
         MethodAnalysis methodAnalysis = evaluationContext.getAnalyserContext().getMethodAnalysis(methodInfo);
         Precondition precondition = methodAnalysis.getPrecondition();
         if (precondition == null) {
-            boolean partOfCallCycle = methodInfo != null && methodInfo.partOfCallCycle();
+            boolean partOfCallCycle = methodInfo != null && methodInfo.methodResolution.get().ignoreMeBecauseOfPartOfCallCycle();
             boolean callingMyself = evaluationContext.getCurrentMethod() != null &&
                     methodInfo == evaluationContext.getCurrentMethod().methodInfo;
             if (!partOfCallCycle && !callingMyself) builder.addDelayOnPrecondition();

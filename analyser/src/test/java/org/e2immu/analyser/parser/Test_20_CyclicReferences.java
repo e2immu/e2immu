@@ -17,6 +17,7 @@ package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
+import org.e2immu.analyser.inspector.MethodResolution;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.variable.ReturnVariable;
@@ -27,8 +28,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_20_CyclicReferences extends CommonTestRunner {
     public Test_20_CyclicReferences() {
@@ -75,7 +75,7 @@ public class Test_20_CyclicReferences extends CommonTestRunner {
             if ("methodB".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ReturnVariable) {
                     if ("0.0.0".equals(d.statementId())) {
-                        String expectValue = d.iteration() == 0 ? "<m:methodA>" : "\"a\".equals(paramB)&&!\"b\".equals(paramB)";
+                        String expectValue = d.iteration() == 0 ? "<m:methodA>" : "CyclicReferences_2.methodA(paramB)";
                         assertEquals(expectValue, d.currentValue().toString());
                     }
                     if ("1".equals(d.statementId())) {
@@ -84,10 +84,28 @@ public class Test_20_CyclicReferences extends CommonTestRunner {
                     }
                 }
             }
+            if ("methodA".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ReturnVariable) {
+                    if ("0.0.0".equals(d.statementId())) {
+                        String expectValue = d.iteration() <= 1 ? "<m:methodB>" : "!\"a\".equals(paramA)&&\"b\".equals(paramA)";
+                        assertEquals(expectValue, d.currentValue().toString());
+                    }
+                    if ("1".equals(d.statementId())) {
+                        String expectValue = d.iteration() <= 1 ? "<m:equals>&&!<m:equals>" : "\"a\".equals(paramA)&&!\"b\".equals(paramA)";
+                        assertEquals(expectValue, d.currentValue().toString());
+                    }
+                }
+            }
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
-            if ("methodB".equals(d.methodInfo().name) || "methodA".equals(d.methodInfo().name)) {
-                assertTrue(d.methodInfo().methodResolution.get().methodsOfOwnClassReached().contains(d.methodInfo()));
+            MethodResolution methodResolution = d.methodInfo().methodResolution.get();
+            if ("methodB".equals(d.methodInfo().name) ) {
+                assertTrue(methodResolution.methodsOfOwnClassReached().contains(d.methodInfo()));
+                assertFalse(methodResolution.ignoreMeBecauseOfPartOfCallCycle());
+            }
+            if( "methodA".equals(d.methodInfo().name)) {
+                assertTrue(methodResolution.methodsOfOwnClassReached().contains(d.methodInfo()));
+                assertTrue(methodResolution.ignoreMeBecauseOfPartOfCallCycle());
             }
         };
 

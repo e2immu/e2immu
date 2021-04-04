@@ -153,7 +153,7 @@ public class EvaluateMethodCall {
             return builder.compose(reInline).setExpression(reInline.value()).build();
         }
 
-        if (methodAnalysis.isBeingAnalysed()) {
+        if (methodAnalysis.isBeingAnalysed() && !methodInfo.methodResolution.get().ignoreMeBecauseOfPartOfCallCycle()) {
             // singleReturnValue implies non-modifying
             if (methodAnalysis.getSingleReturnValue() != null) {
                 // if this method was identity?
@@ -172,7 +172,7 @@ public class EvaluateMethodCall {
                 if (srv.isConstant()) {
                     return builder.setExpression(srv).build();
                 }
-            } else if (!methodInfo.partOfCallCycle()) {
+            } else {
                 // we will, at some point, analyse this method, but in case of cycles, this is a bit risky
                 log(Logger.LogTarget.DELAYED, "Delaying method value on {}", methodInfo.fullyQualifiedName);
                 return builder.setExpression(DelayedExpression.forMethod(methodInfo)).build();
