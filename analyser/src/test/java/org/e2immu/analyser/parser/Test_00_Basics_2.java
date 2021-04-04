@@ -150,8 +150,6 @@ public class Test_00_Basics_2 extends CommonTestRunner {
                 assertEquals(Level.FALSE, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
 
                 // property of the field as variable info in the method
-                int expectFieldModified = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
-                assertEquals(expectFieldModified, fieldAsVariable.getProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD));
                 assertEquals(Level.FALSE, fieldAsVariable.getProperty(VariableProperty.CONTEXT_MODIFIED));
             }
             if ("setString".equals(d.methodInfo().name)) {

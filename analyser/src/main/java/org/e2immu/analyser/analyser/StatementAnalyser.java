@@ -453,7 +453,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         if (sharedState.evaluationContext.getIteration() == 0) {
             statementAnalysis.initIteration0(sharedState.evaluationContext, myMethodAnalyser.methodInfo, sharedState.previous);
         } else {
-            statementAnalysis.initIteration1Plus(sharedState.evaluationContext, myMethodAnalyser.methodInfo, sharedState.previous);
+            statementAnalysis.initIteration1Plus(sharedState.evaluationContext, sharedState.previous);
         }
 
         if (statementAnalysis.flowData.initialTimeNotYetSet()) {

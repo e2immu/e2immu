@@ -215,9 +215,6 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                     int expectNotNull = d.iteration() == 0 ? Level.DELAY : MultiLevel.NULLABLE;
                     assertEquals(expectNotNull, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
                     assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
-
-                    int expectModifiedOutside = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
-                    assertEquals(expectModifiedOutside, d.getProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD));
                     assertEquals(Level.FALSE, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
                 }
                 if (S_0.equals(d.variableName())) {

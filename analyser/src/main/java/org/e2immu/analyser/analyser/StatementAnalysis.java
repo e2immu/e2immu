@@ -21,12 +21,9 @@ import org.e2immu.analyser.model.statement.*;
 import org.e2immu.analyser.model.variable.*;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
-import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Primitives;
-import org.e2immu.analyser.resolver.Resolver;
 import org.e2immu.analyser.util.Pair;
-import org.e2immu.analyser.util.SetUtil;
 import org.e2immu.annotation.AnnotationMode;
 import org.e2immu.annotation.Container;
 import org.e2immu.annotation.NotNull;
@@ -35,7 +32,6 @@ import org.e2immu.support.SetOnceMap;
 
 import java.util.*;
 import java.util.function.BiFunction;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -394,14 +390,13 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
      * @param previous          the previous statement, or null if there is none (start of block)
      */
     public void initIteration1Plus(EvaluationContext evaluationContext,
-                                   MethodInfo currentMethod,
                                    StatementAnalysis previous) {
 
         /* the reason we do this for all statements in the method's block is that in a subsequent iteration,
          the first statements may already be DONE, so the code doesn't reach here!
          */
         if (parent == null) {
-            init1PlusStartOfMethodDoParametersAndThis(evaluationContext.getAnalyserContext(), currentMethod);
+            init1PlusStartOfMethodDoParametersAndThis(evaluationContext.getAnalyserContext());
         }
 
         StatementAnalysis copyFrom = previous == null ? parent : previous;
@@ -454,7 +449,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
     /*
     assume that all parameters, also those from closures, are already present
      */
-    private void init1PlusStartOfMethodDoParametersAndThis(AnalyserContext analyserContext, MethodInfo currentMethod) {
+    private void init1PlusStartOfMethodDoParametersAndThis(AnalyserContext analyserContext) {
         variables.stream().map(Map.Entry::getValue)
                 .filter(vic -> vic.getPreviousOrInitial().variable() instanceof ParameterInfo)
                 .forEach(vic -> {
@@ -534,8 +529,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             initialValue = new ExpressionAndDelay(initial, false);
         }
 
-        Map<VariableProperty, Integer> map = propertyMap(evaluationContext.getAnalyserContext(), fieldReference.fieldInfo,
-                fieldReference.fieldInfo.type.defaultNotNull());
+        Map<VariableProperty, Integer> map = fieldPropertyMap(evaluationContext.getAnalyserContext(), fieldReference.fieldInfo);
         Map<VariableProperty, Integer> valueMap = evaluationContext.getValueProperties(initialValue.expression);
         Map<VariableProperty, Integer> combined = new HashMap<>(map);
         valueMap.forEach((k, v) -> combined.merge(k, v, Math::max));
@@ -864,7 +858,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             vic.setValue(NewObject.forCatchOrThis(
                     index + "-" + variable.fullyQualifiedName(),
                     primitives, variable.parameterizedType()), false, LinkedVariables.EMPTY,
-                    propertyMap(analyserContext, methodAnalysis.getMethodInfo().typeInfo, MultiLevel.EFFECTIVELY_NOT_NULL), true);
+                    typePropertyMap(analyserContext, methodAnalysis.getMethodInfo().typeInfo), true);
             vic.setLinkedVariables(LinkedVariables.EMPTY, true);
             vic.setProperty(NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL, INITIAL);
             vic.setProperty(EXTERNAL_NOT_NULL, MultiLevel.NOT_INVOLVED, INITIAL);
@@ -875,7 +869,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         } else if ((variable instanceof ParameterInfo parameterInfo)) {
             Expression initial = initialValueOfParameter(analyserContext, parameterInfo);
             vic.setValue(initial, false, LinkedVariables.EMPTY,
-                    propertyMap(analyserContext, parameterInfo, parameterInfo.parameterizedType.defaultNotNull()), true);
+                    parameterPropertyMap(analyserContext, parameterInfo), true);
             vic.setLinkedVariables(LinkedVariables.EMPTY, true);
             Map<VariableProperty, Integer> valueProperties = evaluationContext.getValueProperties(initial);
             valueProperties.forEach((k, v) -> vic.setProperty(k, v, false, INITIAL));
@@ -884,10 +878,18 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
 
         } else if (variable instanceof FieldReference fieldReference) {
             ExpressionAndDelay initialValue = initialValueOfField(evaluationContext, fieldReference, false);
-            vic.setValue(initialValue.expression, initialValue.expressionIsDelayed,
-                    LinkedVariables.EMPTY, propertyMap(analyserContext, fieldReference.fieldInfo,
-                            fieldReference.fieldInfo.type.defaultNotNull()), true);
+
+            // from field analyser
+            // EXTERNAL_NOT_NULL, EXTERNAL_IMMUTABLE,
+            // initialises CONTEXT*
+            Map<VariableProperty, Integer> propertyMap = fieldPropertyMap(analyserContext, fieldReference.fieldInfo);
+
+            // from initial value
+            // IDENTITY, IMMUTABLE,CONTAINER, NOT_NULL_EXPRESSION, INDEPENDENT
             Map<VariableProperty, Integer> valueProperties = evaluationContext.getValueProperties(initialValue.expression);
+
+            vic.setValue(initialValue.expression, initialValue.expressionIsDelayed,
+                    LinkedVariables.EMPTY, propertyMap, true);
             valueProperties.forEach((k, v) -> vic.setProperty(k, v, false, INITIAL));
 
             vic.setLinkedVariables(LinkedVariables.EMPTY, true);
@@ -922,33 +924,59 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         return VariableInfoContainer.NOT_A_VARIABLE_FIELD;
     }
 
-    private static final Set<VariableProperty> FROM_ANALYSER_TO_PROPERTIES_AND_CUSTOM
-            = Set.of(IDENTITY, FINAL, EXTERNAL_NOT_NULL, EXTERNAL_IMMUTABLE,
-            MODIFIED_OUTSIDE_METHOD, IMMUTABLE, CONTAINER, NOT_MODIFIED_1,
-            CONTEXT_NOT_NULL, CONTEXT_MODIFIED, CONTEXT_PROPAGATE_MOD, CONTEXT_IMMUTABLE);
+    private static final Set<VariableProperty> FROM_TYPE_ANALYSER_TO_PROPERTIES
+            = Set.of(CONTAINER, IMMUTABLE);
 
-    private Map<VariableProperty, Integer> propertyMap(AnalyserContext analyserContext,
-                                                       WithInspectionAndAnalysis object,
-                                                       int defaultNotNull) {
-        Function<VariableProperty, Integer> f;
-        if (object instanceof TypeInfo typeInfo) {
-            TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(typeInfo);
-            f = typeAnalysis::getProperty;
-        } else if (object instanceof ParameterInfo parameterInfo) {
-            ParameterAnalysis parameterAnalysis = analyserContext.getParameterAnalysis(parameterInfo);
-            f = parameterAnalysis::getPropertyVerifyContracted;
-        } else if (object instanceof FieldInfo fieldInfo) {
-            FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(fieldInfo);
-            f = fieldAnalysis::getPropertyVerifyContracted;
-        } else throw new UnsupportedOperationException();
-        return FROM_ANALYSER_TO_PROPERTIES_AND_CUSTOM.stream()
-                .collect(Collectors.toUnmodifiableMap(vp -> vp, vp -> {
-                    if (vp == CONTEXT_NOT_NULL) return defaultNotNull;
-                    if (vp == CONTEXT_IMMUTABLE) return MultiLevel.MUTABLE;
-                    if (vp == CONTEXT_MODIFIED) return Level.FALSE;
-                    if (vp == CONTEXT_PROPAGATE_MOD) return Level.FALSE;
-                    return f.apply(vp);
-                }));
+    private Map<VariableProperty, Integer> typePropertyMap(AnalyserContext analyserContext,
+                                                           TypeInfo typeInfo) {
+        TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(typeInfo);
+        Map<VariableProperty, Integer> result = sharedContext(MultiLevel.EFFECTIVELY_NOT_NULL);
+
+        for (VariableProperty vp : FROM_TYPE_ANALYSER_TO_PROPERTIES) {
+            int value = typeAnalysis.getProperty(vp);
+            result.put(vp, value);
+        }
+        return result;
+    }
+
+    private Map<VariableProperty, Integer> sharedContext(int contextNotNull) {
+        Map<VariableProperty, Integer> result = new HashMap<>();
+        result.put(CONTEXT_NOT_NULL, contextNotNull);
+        result.put(CONTEXT_IMMUTABLE, MultiLevel.MUTABLE);
+        result.put(CONTEXT_MODIFIED, Level.FALSE);
+        result.put(CONTEXT_PROPAGATE_MOD, Level.FALSE);
+        return result;
+    }
+
+    private static final Set<VariableProperty> FROM_PARAMETER_ANALYSER_TO_PROPERTIES
+            = Set.of(IDENTITY, CONTAINER, EXTERNAL_NOT_NULL, EXTERNAL_IMMUTABLE, NOT_MODIFIED_1, MODIFIED_METHOD);
+
+    private Map<VariableProperty, Integer> parameterPropertyMap(AnalyserContext analyserContext,
+                                                                ParameterInfo parameterInfo) {
+        ParameterAnalysis parameterAnalysis = analyserContext.getParameterAnalysis(parameterInfo);
+        Map<VariableProperty, Integer> result = sharedContext(parameterInfo.parameterizedType.defaultNotNull());
+
+        for (VariableProperty vp : FROM_PARAMETER_ANALYSER_TO_PROPERTIES) {
+            int value = parameterAnalysis.getPropertyVerifyContracted(vp);
+            result.put(vp, value);
+        }
+        return result;
+    }
+
+    // TODO explain why container has to be present here
+    private static final Set<VariableProperty> FROM_FIELD_ANALYSER_TO_PROPERTIES
+            = Set.of(CONTAINER, EXTERNAL_NOT_NULL, EXTERNAL_IMMUTABLE);
+
+    private Map<VariableProperty, Integer> fieldPropertyMap(AnalyserContext analyserContext,
+                                                            FieldInfo fieldInfo) {
+        FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(fieldInfo);
+        Map<VariableProperty, Integer> result = sharedContext(fieldInfo.type.defaultNotNull());
+
+        for (VariableProperty vp : FROM_FIELD_ANALYSER_TO_PROPERTIES) {
+            int value = fieldAnalysis.getPropertyVerifyContracted(vp);
+            result.put(vp, value);
+        }
+        return result;
     }
 
     record ExpressionAndDelay(Expression expression, boolean expressionIsDelayed) {
@@ -979,7 +1007,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             }
             if (initialValue instanceof NewObject) return new ExpressionAndDelay(initialValue, false);
 
-            // FIXME will crash when notNull==-1
+            // TODO will crash when notNull==-1
             NewObject newObject = NewObject.initialValueOfFieldPartOfConstruction(
                     newObjectIdentifier, evaluationContext, fieldReference);
             return new ExpressionAndDelay(newObject, false);
@@ -1232,13 +1260,6 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         return variables.get(variable.fullyQualifiedName());
     }
 
-    public Set<String> allUnqualifiedVariableNames(InspectionProvider inspectionProvider, TypeInfo currentType) {
-        Set<String> fromFields = Resolver.accessibleFieldsStream(inspectionProvider, currentType, currentType.primaryType())
-                .map(fieldInfo -> fieldInfo.name).collect(Collectors.toSet());
-        Set<String> local = variableStream().map(vi -> vi.variable().simpleName()).collect(Collectors.toSet());
-        return SetUtil.immutableUnion(fromFields, local);
-    }
-
     public Stream<VariableInfo> variableStream() {
         return variables.stream().map(Map.Entry::getValue).map(VariableInfoContainer::current);
     }
@@ -1249,10 +1270,6 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
 
     public Stream<Map.Entry<String, VariableInfoContainer>> variableEntryStream() {
         return variables.stream();
-    }
-
-    public Stream<VariableInfo> safeVariableStream(VariableInfoContainer.Level level) {
-        return variables.toImmutableMap().values().stream().map(vic -> vic.best(level));
     }
 
     // this is a safe constant (delay == -1)
@@ -1284,14 +1301,5 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                     return equals;
                 })
                 .toArray(Expression[]::new));
-    }
-
-    public boolean isAssignedToOtherVariable(Variable variable) {
-        return variables.stream().anyMatch(e ->
-                e.getValue().getPreviousOrInitial().getStaticallyAssignedVariables().contains(variable));
-    }
-
-    public boolean isLinkedToOtherVariable(Variable variable) {
-        return variables.stream().anyMatch(e -> e.getValue().getPreviousOrInitial().getLinkedVariables().contains(variable));
     }
 }
