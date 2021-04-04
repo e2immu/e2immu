@@ -54,6 +54,7 @@ public class E2InContext_0 {
         return eventually;
     }
 
+    @E2Container
     public static Eventually<String> error() {
         Eventually<String> eventually = new Eventually<>();
         eventually.set("hello");

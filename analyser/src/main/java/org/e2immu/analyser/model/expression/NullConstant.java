@@ -18,7 +18,10 @@ import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.analyser.VariableProperty;
-import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.Level;
+import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.model.ParameterizedType;
+import org.e2immu.analyser.model.Qualification;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Text;
@@ -71,7 +74,8 @@ public class NullConstant implements ConstantExpression<Object> {
 
             // if this becomes a problem we'll have to add a parameterized type as the expression context, and
             // take the value of the parameterized type's best type analysis
-            case IMMUTABLE, CONTAINER, INDEPENDENT -> Level.DELAY;
+            case CONTAINER, INDEPENDENT -> Level.DELAY;
+            case IMMUTABLE -> MultiLevel.NOT_INVOLVED;
             default -> throw new UnsupportedOperationException("Asking for " + variableProperty);
         };
     }

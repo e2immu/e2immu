@@ -643,6 +643,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
 
         boolean linked1Delays = false;
         boolean linkedDelays = false;
+        AnalysisStatus immutableAtAssignment = DONE;
 
         for (Map.Entry<Variable, EvaluationResult.ChangeData> entry : sortedEntries) {
             Variable variable = entry.getKey();
@@ -669,6 +670,12 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 remapStaticallyAssignedVariables.put(variable, vi1.getStaticallyAssignedVariables());
                 vic.setValue(valueToWrite, valueToWriteIsDelayed, changeData.staticallyAssignedVariables(),
                         merged, false);
+
+                int immutable = merged.getOrDefault(IMMUTABLE, Level.DELAY);
+                if(immutable == Level.DELAY) {
+                    // we want to revisit this one without blocking everything
+                    immutableAtAssignment = DELAYS;
+                }
 
                 if (vic.isLocalVariableInLoopDefinedOutside()) {
                     VariableInfoContainer local = addToAssignmentsInLoop(vic, variable.fullyQualifiedName());
@@ -864,7 +871,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                     myMethodAnalyser.methodInfo, statementAnalysis.index, statementAnalysis, evaluationResult));
         }
 
-        return new ApplyStatusAndEnnStatus(status, ennStatus.combine(extImmStatus.combine(cImmStatus)));
+        return new ApplyStatusAndEnnStatus(status, ennStatus.combine(extImmStatus
+                .combine(cImmStatus.combine(immutableAtAssignment))));
     }
 
     private void checkPreconditionCompatibilityWithConditionManager(EvaluationContext evaluationContext,

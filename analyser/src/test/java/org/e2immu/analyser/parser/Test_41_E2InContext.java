@@ -15,13 +15,17 @@
 
 package org.e2immu.analyser.parser;
 
+import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
+import org.e2immu.analyser.model.Level;
+import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.visitor.TypeAnalyserVisitor;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class Test_41_E2InContext extends CommonTestRunner {
 
@@ -32,7 +36,27 @@ public class Test_41_E2InContext extends CommonTestRunner {
 
     @Test
     public void test_0() throws IOException {
-        testClass("E2InContext_0", 0, 0, new DebugConfiguration.Builder()
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("Eventually".equals(d.typeInfo().simpleName)) {
+                int expectImm = d.iteration() == 0 ? Level.DELAY : MultiLevel.EVENTUALLY_E2IMMUTABLE;
+                assertEquals(expectImm, d.typeAnalysis().getProperty(VariableProperty.IMMUTABLE));
+            }
+        };
+
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("error".equals(d.methodInfo().name)) {
+                if ("eventually".equals(d.variableName())) {
+                    if ("0".equals(d.statementId())) {
+                        int expectImm = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EVENTUALLY_E2IMMUTABLE_BEFORE_MARK;
+                        assertEquals(expectImm, d.getProperty(VariableProperty.IMMUTABLE));
+                    }
+                }
+            }
+        };
+
+        testClass("E2InContext_0", 1, 0, new DebugConfiguration.Builder()
+                .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 
