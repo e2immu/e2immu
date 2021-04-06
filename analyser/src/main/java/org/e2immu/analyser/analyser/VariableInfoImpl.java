@@ -36,6 +36,7 @@ import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.VariableInfoContainer.*;
 import static org.e2immu.analyser.analyser.VariableProperty.*;
+import static org.e2immu.analyser.util.EventuallyFinalExtension.setFinalAllowEquals;
 
 class VariableInfoImpl implements VariableInfo {
     private static final Logger LOGGER = LoggerFactory.getLogger(VariableInfoImpl.class);
@@ -218,9 +219,7 @@ class VariableInfoImpl implements VariableInfo {
             }
         } else {
             assert !(value instanceof DelayedExpression); // simple safe-guard, others are more difficult to check
-            if (this.value.isVariable() || !this.value.get().equals(value)) { // crash if different, keep same
-                this.value.setFinal(value);
-            }
+            setFinalAllowEquals(this.value, value);
         }
     }
 

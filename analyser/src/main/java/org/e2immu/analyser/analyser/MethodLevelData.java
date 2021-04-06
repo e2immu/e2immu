@@ -18,7 +18,10 @@ import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.This;
-import org.e2immu.support.*;
+import org.e2immu.support.EventuallyFinal;
+import org.e2immu.support.FlipSwitch;
+import org.e2immu.support.SetOnce;
+import org.e2immu.support.SetOnceMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,6 +31,7 @@ import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.AnalysisStatus.DELAYS;
 import static org.e2immu.analyser.analyser.AnalysisStatus.DONE;
+import static org.e2immu.analyser.util.EventuallyFinalExtension.setFinalAllowEquals;
 import static org.e2immu.analyser.util.Logger.LogTarget.DELAYED;
 import static org.e2immu.analyser.util.Logger.log;
 
@@ -114,7 +118,7 @@ public class MethodLevelData {
 
         delays |= sharedState.evaluationContext.isDelayed(all.expression());
         if (delays) combinedPrecondition.setVariable(all);
-        else combinedPrecondition.setFinal(all);
+        else setFinalAllowEquals(combinedPrecondition, all);
 
         return delays ? DELAYS : DONE;
     }

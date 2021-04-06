@@ -20,6 +20,8 @@ import org.e2immu.support.SetOnceMap;
 
 import java.util.stream.Stream;
 
+import static org.e2immu.analyser.util.EventuallyFinalExtension.setFinalAllowEquals;
+
 public class StateData {
 
     /*
@@ -38,7 +40,7 @@ public class StateData {
 
     public void setPrecondition(Precondition expression, boolean isDelayed) {
         if (isDelayed) precondition.setVariable(expression);
-        else precondition.setFinal(expression);
+        else setFinalAllowEquals(precondition, expression);
     }
 
     /*
@@ -54,14 +56,14 @@ public class StateData {
 
     public void setLocalConditionManagerForNextStatement(ConditionManager localConditionManager) {
         if (localConditionManager.isDelayed()) conditionManagerForNextStatement.setVariable(localConditionManager);
-        else conditionManagerForNextStatement.setFinal(localConditionManager);
+        else setFinalAllowEquals(conditionManagerForNextStatement, localConditionManager);
     }
 
     public final EventuallyFinal<Expression> valueOfExpression = new EventuallyFinal<>();
 
     public void setValueOfExpression(Expression value, boolean isDelayed) {
         if (isDelayed) valueOfExpression.setVariable(value);
-        else valueOfExpression.setFinal(value);
+        else setFinalAllowEquals(valueOfExpression, value);
     }
 
     private final SetOnceMap<String, EventuallyFinal<Expression>> statesOfInterrupts;
@@ -77,7 +79,7 @@ public class StateData {
         if (stateIsDelayed) {
             cd.setVariable(state);
         } else {
-            cd.setFinal(state);
+            setFinalAllowEquals(cd, state);
         }
     }
 

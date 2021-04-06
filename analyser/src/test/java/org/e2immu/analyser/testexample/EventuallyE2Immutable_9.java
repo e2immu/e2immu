@@ -24,7 +24,7 @@ import java.util.Objects;
 /*
 Variant on EventuallyFinal in the support classes
  */
-@E2Container(after = "set")
+@E2Container(after = "isFinal")
 public class EventuallyE2Immutable_9<T> {
 
     private T value;
@@ -43,6 +43,8 @@ public class EventuallyE2Immutable_9<T> {
         this.value = value;
     }
 
+    // IMPORTANT: this method does not have the correct semantics!!
+    @Mark("isFinal")
     public void setFinalAllowEquals(T value) {
         if (!Objects.equals(value, this.value)) setFinal(value);
     }

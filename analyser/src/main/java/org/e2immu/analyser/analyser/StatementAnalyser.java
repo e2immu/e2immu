@@ -41,6 +41,7 @@ import static org.e2immu.analyser.analyser.AnalysisStatus.*;
 import static org.e2immu.analyser.analyser.FlowData.Execution.*;
 import static org.e2immu.analyser.analyser.VariableInfoContainer.Level.EVALUATION;
 import static org.e2immu.analyser.analyser.VariableProperty.*;
+import static org.e2immu.analyser.util.EventuallyFinalExtension.setFinalAllowEquals;
 import static org.e2immu.analyser.util.Logger.LogTarget.*;
 import static org.e2immu.analyser.util.Logger.log;
 import static org.e2immu.analyser.util.StringUtil.pad;
@@ -672,7 +673,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                         merged, false);
 
                 int immutable = merged.getOrDefault(IMMUTABLE, Level.DELAY);
-                if(immutable == Level.DELAY) {
+                if (immutable == Level.DELAY) {
                     // we want to revisit this one without blocking everything
                     immutableAtAssignment = DELAYS;
                 }
@@ -837,7 +838,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                     .isDelayed(preconditionExpression);
             if (!preconditionIsDelayed && preconditionExpression.isBoolValueFalse()) {
                 statementAnalysis.ensure(Message.newMessage(getLocation(), Message.INCOMPATIBLE_PRECONDITION));
-                statementAnalysis.stateData.precondition.setFinal(Precondition.empty(statementAnalysis.primitives));
+                setFinalAllowEquals(statementAnalysis.stateData.precondition, Precondition.empty(statementAnalysis.primitives));
             } else {
                 Expression translated = sharedState.evaluationContext
                         .acceptAndTranslatePrecondition(evaluationResult.precondition().expression());
@@ -1346,7 +1347,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         }
         if (statementAnalysis.stateData.preconditionIsEmpty()) {
             // it could have been set from the assert (step4) or apply via a method call
-            statementAnalysis.stateData.precondition.setFinal(Precondition.empty(statementAnalysis.primitives));
+            setFinalAllowEquals(statementAnalysis.stateData.precondition, Precondition.empty(statementAnalysis.primitives));
         } else if (statementAnalysis.stateData.precondition.isVariable()) {
             return DELAYS;
         }
@@ -1546,7 +1547,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         if (structure.expression() == EmptyExpression.EMPTY_EXPRESSION && expressionsFromInitAndUpdate.isEmpty()) {
             // try-statement has no main expression, and it may not have initialisers; break; continue; ...
             if (statementAnalysis.stateData.valueOfExpression.isVariable()) {
-                statementAnalysis.stateData.valueOfExpression.setFinal(EmptyExpression.EMPTY_EXPRESSION);
+                setFinalAllowEquals(statementAnalysis.stateData.valueOfExpression, EmptyExpression.EMPTY_EXPRESSION);
             }
             if (statementAnalysis.flowData.timeAfterExecutionNotYetSet()) {
                 statementAnalysis.flowData.copyTimeAfterExecutionFromInitialTime();
