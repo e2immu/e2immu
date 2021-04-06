@@ -1,4 +1,5 @@
-=== In the analyser itself
+[#in-the-analyser]
+=== Support classes in the analyser
 
 Practice what you preach, and all that.
 The {e2immu} analyser relies heavily on support classes such as `SetOnce`, and on the builder pattern described in the previous section.

@@ -1,3 +1,5 @@
+
+[#preconditions-and-instance-state]
 == Preconditions and instance state
 
 The {e2immu} analyser needs pretty strong support for determining preconditions on methods to be able to compute eventual immutability.

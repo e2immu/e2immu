@@ -1,0 +1,152 @@
+[#modification-part2]
+== Modification, part2
+
+This section goes deeper into modification, linking and independence.
+We start with cyclic references.
+
+=== Cyclic references
+
+We need to study the situation of seemingly non-modifying methods with modifying parameters.
+Up to now, a method is only modifying when it assigns to a field, calls a modifying method on one of the fields, or directly calls a modifying method on `this`.
+However, there could be indirect modifications, as in:
+
+.Indirect modifications
+[source,java]
+----
+@E2Container
+public class ModificationGraphChecks {
+
+    @MutableModifiesArguments
+    static class C1 {
+
+        @Variable
+        private int i;
+
+        @Modified
+        public int incrementAndGet() {
+            return ++i;
+        }
+
+        @Modified // <1>
+        public int useC2(@Modified C2 c2) {
+            return i + c2.incrementAndGetWithI();
+        }
+
+    }
+
+    @E1Immutable
+    static class C2 {
+
+        private final int j;
+
+        @Modified
+        private final C1 c1;
+
+        public C2(int j, @Modified C1 c1) {
+            this.c1 = c1;
+            this.j = j;
+        }
+
+        @Modified
+        public int incrementAndGetWithI() {
+            return c1.incrementAndGet() + j;
+        }
+    }
+}
+----
+<1> `useC2` does not directly modify `i`, but `incrementAndGetWithI` does so indirectly.
+
+This observation forces us to tighten the definition of a non-modifying method: on top of the definition given above, we have to ensure that none of the modifying methods called on a parameter which is {modified}, call one of 'our' modifying methods.
+These rules are mostly, but not easily, enforceable when all code is visible.
+
+An additional interface can help to remove the circular dependency between the types.
+This has the advantage of simplicity, both for the programmer and the analyser, which at this point doesn't handle circular dependencies too well.
+It imposes more annotation work on the programmer, however, because the interface's methods need contracting.
+
+=== Linking, formally
+
+To compute linking, the analyser tries to track actual objects, with the aim of knowing if a field links to another field or a parameter.
+It computes a dependency graph of variables depending on other variables, with the following four basic rules:
+
+****
+Rule 1: in an assignment `v = w`, variable `v` links to variable `w`.
+****
+
+****
+Rule 2: in an assignment `v = a.method(b)`,`v` potentially links to `a` and `b`.
+****
+
+Note that saying `v` links to `a` is the same as saying that the return value of `method` links to some field inside `A`, the type of `a`.
+This is especially clear when `a == this`.
+
+We discern a number of special cases:
+
+. When `v` is of primitive or {e2immutable} type, there cannot be any linking; `v` does not link to `a` nor `b`.
+. If `b` is of primitive or {e2immutable} type, `v` cannot link to `b`.
+. When `method` has the annotation {independent}, `v` cannot link to `a`.
+. If `a` is of {independent} type (which includes all {e2immutable} types), all its methods are independent; therefore, `v` cannot link to `a`.
+
+It is important to note that the analyser only computes independence for non-modifying methods, and that all methods returning non-support-data types are automatically independent.
+
+****
+Rule 3: in an assignment `v = new A(b)`, `v` potentially links to `b`.
+****
+
+Noting that independence is automatic for non-support-data types, we observe:
+
+. When the constructor `A` is independent, `v` cannot link to `b`.
+. When `b` is of primitive or {e2immutable} type, `v` cannot link to `b`.
+. If `A` is {e2immutable}, then `v` cannot link to `b` nor `c`, because all constructors are independent.
+
+Most of the other linking computations are consequences of the basic rules above.
+For example,
+
+. in an assignment `v = condition ? a : b`, `v` links to both `a` and `b`.
+. type casting does not prevent linking: in `v = (Type)w`, `v` links to `w`
+. Binary operators return primitives or `java.lang.String`, which prevents linking: in `v = a + b`, `v` does not link to `a` nor `b`.
+
+****
+Rule 4: in an array access `v = a[index]`, `v` links to `a`.
+****
+
+Note: links between `b`, `c`, and `d` are possible, but are covered by the {modified} annotation:
+when a parameter is {nm}, no modifications at all are possible, not even indirectly.
+#TODO more explanation#
+
+=== Abstract methods and functional interfaces
+
+Explicit classes and implicitly immutable parts of a class.
+
+Functional interfaces are interfaces with a single abstract method.
+The following table lists some frequently used examples:
+
+[options=header]
+|===
+
+| Name | single abstract method
+| `Consumer<T>` | `void accept(T t);`
+| `Function<T,R>` | `R apply(T t);`
+| `BiFunction<T, U, R>` | `R apply(T t, U u);`
+| `Supplier<R>` | `R get();`
+| `Predicate<T>` | `boolean test(T t);`
+|===
+
+It is important not to forget that _any_ interface defining a single abstract method can be seen as a functional interface.
+While the examples above all employ generics, generics are not a requirement for functional interfaces.
+The Java language offers syntactic sugar for functional programming, but the types remain Java types.
+As such we have to ensure that definitions for functional interfaces which we will present in this section, are compatible with the definitions for general types.
+
+We will also have to introduce one extra provision for dealing with code for which no declaration is readily available.
+This is the case for interface types and abstract classes.
+Because the actual implementation of such types cannot be known beforehand #TODO#
+
+The case of overriding implementations
+
+=== Known functional interface implementations
+
+When a functional interface comes into a class as a parameter of a public method, the only way of restriction the modification actions of its SAM is by ensuring that there are no public modifying methods, and the objects passed on to the SAM are either implicitly immutable or level 2 immutable.
+When the functional interface is locally defined, it becomes a substitute for a method, which we can analyse.
+We discuss the latter situation here, deferring the former to <<higher-level-modifications>>.
+
+
+

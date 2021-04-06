@@ -27,15 +27,14 @@ include::{includedir}/road-to-immutability/050-e2immutable.adoc[]
 
 include::{includedir}/road-to-immutability/060-eventual.adoc[]
 
-include::{includedir}/road-to-immutability/070-indirect-modification.adoc[]
-include::{includedir}/road-to-immutability/073-abstract-methods-as-parameter.adoc[]
-include::{includedir}/road-to-immutability/075-linking-formally.adoc[]
+include::{includedir}/road-to-immutability/070-modification-part2.adoc[]
 include::{includedir}/road-to-immutability/077-higher-level-modifications.adoc[]
 
 include::{includedir}/road-to-immutability/080-support-classes.adoc[]
-include::{includedir}/road-to-immutability/086-examples.adoc[]
-include::{includedir}/road-to-immutability/087-builders.adoc[]
-include::{includedir}/road-to-immutability/088-analyser.adoc[]
+include::{includedir}/road-to-immutability/081-use-in-analyser.adoc[]
+
+//include::{includedir}/road-to-immutability/086-examples.adoc[]
+//include::{includedir}/road-to-immutability/087-builders.adoc[]
 
 include::{includedir}/road-to-immutability/090-other-annotations.adoc[]
 include::{includedir}/road-to-immutability/095-preconditions.adoc[]

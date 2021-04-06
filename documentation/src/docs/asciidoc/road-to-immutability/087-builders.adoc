@@ -1,4 +1,5 @@
 
+[#builder-with-interface]
 === Builders
 
 Class `Foo` creates holds an object of type `Bar`, which is mutable for some period, after which it stabilises and becomes immutable.

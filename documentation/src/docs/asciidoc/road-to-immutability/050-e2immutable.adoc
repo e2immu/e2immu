@@ -348,3 +348,21 @@ Whilst `Set` in general is not {e2immutable}, the `data` field itself is.
 
 The computations that the analyser needs to track dynamic type annotations, are similar to those it needs to compute eventual immutability.
 We introduce them in the next chapter.
+
+[#inheritance]
+=== Inheritance
+
+Deriving from a class that is level 2 immutable, is the most normal situation: since `java.lang.Object` is a level 2 immutable container, every class will do so.
+Clearly, the property is not inherited.
+Most importantly, the analyser prohibits changing the modification status of methods: once a method is non-modifying, it cannot become modifying in a derived class.
+This means, for example, that the analyser will block a modifying `equals()` method!
+Note that this rule applies to implementations of methods of all super-types: no implementation of `java.util.Collection.size()`
+will be allowed to be modifying.
+
+The guiding principle here is that of _consistency_ or _expectation_: software developers are expecting that `equals` is non-modifying.
+They know that a setter will make an assignment, but they'll expect a getter to simply return a value.
+No getter should ever be modifying.
+
+The other direction is more interesting, while equally simple to explain: deriving from a parent class cannot increase the immutability level.
+Explicitly changing a modifying method into a non-modifying one is not allowed by the analyser.
+

@@ -213,5 +213,8 @@ Again, note that {dependent2} implies independence, because it deals with the im
 We're now properly armed to see how a for-each loop can be defined as an iterator whose implicitly immutable content
 links to that of a container.
 
-=== Iterator, Iterable, for-each
+=== Iterator, Iterable, loops
+
+=== Implications for immutability
+
 
