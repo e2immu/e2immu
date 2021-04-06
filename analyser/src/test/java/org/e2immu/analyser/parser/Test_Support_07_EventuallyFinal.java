@@ -64,7 +64,7 @@ public class Test_Support_07_EventuallyFinal extends CommonTestRunner {
                 }
                 if (d.variable() instanceof FieldReference fr && "value".equals(fr.fieldInfo.name)) {
                     if ("2".equals(d.statementId())) {
-                        String expectValue = d.iteration() == 0 ? "<p:value>" : "value";
+                        String expectValue = d.iteration() == 0 ? "<s:T>" : "value";
                         assertEquals(expectValue, d.currentValue().toString());
                     }
                 }
