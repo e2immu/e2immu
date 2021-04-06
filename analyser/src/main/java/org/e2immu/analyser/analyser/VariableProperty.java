@@ -160,6 +160,7 @@ public enum VariableProperty {
     group of more simple properties
      */
     FINAL("@Final", Level.FALSE, Level.TRUE, Level.FALSE, Level.TRUE),
+    FINALIZER("@Finalizer"),
     CONTAINER("@Container", Level.FALSE, Level.TRUE, Level.FALSE, Level.TRUE),
     CONSTANT("@Constant"),
     FLUENT("@Fluent"),

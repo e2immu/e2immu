@@ -88,12 +88,20 @@ public class Message {
 
     public static final String CONTRADICTING_ANNOTATIONS = "Contradicting annotations";
 
-    public static final String USELESS_LOCAL_CLASS_DECLARATION ="Unused local class declaration (no statements follow)";
+    public static final String USELESS_LOCAL_CLASS_DECLARATION = "Unused local class declaration (no statements follow)";
     public static final String TRIVIAL_CASES_IN_SWITCH = "Trivial cases in switch";
 
     public static final String INCOMPATIBLE_IMMUTABILITY_CONTRACT = "Incompatible immutability contract";
     public static final String EVENTUAL_AFTER_REQUIRED = "Calling a method requiring @Only(after) on an object in state @Only(before)";
     public static final String EVENTUAL_BEFORE_REQUIRED = "Calling a method requiring @Only(before) on an object in state @Only(after)";
+
+    public static final String TYPES_WITH_FINALIZER_ONLY_EFFECTIVELY_FINAL =
+            "Fields of types with a @Finalizer method can only be assigned to fields that are effectively final (@Final)";
+    public static final String FIELD_OF_TYPE_WITH_FINALIZER_LINKED_TO_PARAMETER =
+            "Fields of types with a @Finalizer method cannot be assigned to parameters or variables linked to a parameter";
+    public static final String FINALIZER_METHOD_CALLED_ON_PARAMETER = "Finalizer method cannot be called on a parameter";
+    public static final String FINALIZER_METHOD_CALLED_ON_FIELD_NOT_IN_FINALIZER = "Finalizer method can only be called on a field in a finalizer method";
+
 
     @NotNull1
     @E2Container

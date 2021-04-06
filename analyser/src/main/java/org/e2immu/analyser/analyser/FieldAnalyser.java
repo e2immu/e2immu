@@ -51,7 +51,7 @@ public class FieldAnalyser extends AbstractAnalyser {
     public static final String EVALUATE_INITIALISER = "evaluateInitialiser";
     public static final String ANALYSE_FINAL = "analyseFinal";
     public static final String ANALYSE_FINAL_VALUE = "analyseFinalValue";
-    public static final String ANALYSE_IMMUTABLE = "analyseDynamicTypeAnnotation:IMMUTABLE";
+    public static final String ANALYSE_IMMUTABLE = "analyseImmutable";
     public static final String ANALYSE_NOT_NULL = "analyseNotNull";
     public static final String ANALYSE_MODIFIED = "analyseModified";
     public static final String ANALYSE_NOT_MODIFIED_1 = "analyseNotModified1";
@@ -413,7 +413,7 @@ public class FieldAnalyser extends AbstractAnalyser {
         }
 
         int staticallyImmutable = fieldInfo.type.defaultImmutable(analyserContext);
-        if (MultiLevel.isE2Immutable(staticallyImmutable)) {
+        if (staticallyImmutable == MultiLevel.EFFECTIVELY_E2IMMUTABLE) {
             log(E2IMMUTABLE, "Field {} is statically @E2Immutable", fqn);
             fieldAnalysis.setProperty(VariableProperty.EXTERNAL_IMMUTABLE, staticallyImmutable);
             return DONE;
@@ -475,9 +475,19 @@ public class FieldAnalyser extends AbstractAnalyser {
             }
             finalImmutable = worstOverValuesBreakParameterDelay;
         }
+        // See E2InContext_1 (field is not private, so if it's before, someone else can change it into after)
+        int correctForNonPrivateBefore;
+        if ((finalImmutable == MultiLevel.EVENTUALLY_E1IMMUTABLE_BEFORE_MARK || finalImmutable == MultiLevel.EVENTUALLY_E2IMMUTABLE_BEFORE_MARK)
+                && !fieldInfo.isPrivate()) {
+            correctForNonPrivateBefore = finalImmutable == MultiLevel.EVENTUALLY_E1IMMUTABLE_BEFORE_MARK ? MultiLevel.EVENTUALLY_E1IMMUTABLE :
+                    MultiLevel.EVENTUALLY_E2IMMUTABLE;
+        } else {
+            correctForNonPrivateBefore = finalImmutable;
+        }
 
-        log(DYNAMIC, "Set immutable on field {} to value {}", fqn, finalImmutable);
-        fieldAnalysis.setProperty(VariableProperty.EXTERNAL_IMMUTABLE, finalImmutable);
+        log(DYNAMIC, "Set immutable on field {} to value {}", fqn, correctForNonPrivateBefore);
+        fieldAnalysis.setProperty(VariableProperty.EXTERNAL_IMMUTABLE, correctForNonPrivateBefore);
+
         return DONE;
     }
 
@@ -605,7 +615,7 @@ public class FieldAnalyser extends AbstractAnalyser {
                     log(DELAYED, "Waiting with effectively final value  until decision on @E2Immutable for {}", fqn);
                     return DELAYS;
                 }
-                boolean downgradeFromNewInstanceWithConstructor = !fieldOfOwnType && !MultiLevel.isE2Immutable(immutable);
+                boolean downgradeFromNewInstanceWithConstructor = !fieldOfOwnType && immutable != MultiLevel.EFFECTIVELY_E2IMMUTABLE;
                 if (downgradeFromNewInstanceWithConstructor) {
                     effectivelyFinalValue = newObject.copyAfterModifyingMethodOnConstructor(TRUE);
                 } else {
@@ -648,7 +658,7 @@ public class FieldAnalyser extends AbstractAnalyser {
         }
 
         Boolean recursivelyConstant;
-        if (!fieldOfOwnType && !MultiLevel.isE2Immutable(immutable)) recursivelyConstant = false;
+        if (!fieldOfOwnType && !MultiLevel.isAtLeastEventuallyE2Immutable(immutable)) recursivelyConstant = false;
         else recursivelyConstant = recursivelyConstant(effectivelyFinalValue);
         if (recursivelyConstant == null) {
             log(DELAYED, "Delaying @Constant because of recursively constant computation on value {} of {}",
@@ -741,6 +751,7 @@ public class FieldAnalyser extends AbstractAnalyser {
         if (immutable == MultiLevel.EFFECTIVELY_E2IMMUTABLE) {
             fieldAnalysis.linkedVariables.set(LinkedVariables.EMPTY);
             log(LINKED_VARIABLES, "Setting linked variables to empty for field {}, @E2Immutable type");
+            // finalizer check at assignment only
             return DONE;
         }
 
@@ -771,6 +782,7 @@ public class FieldAnalyser extends AbstractAnalyser {
         E2ImmuAnnotationExpressions e2 = analyserContext.getE2ImmuAnnotationExpressions();
         AnnotationExpression linkAnnotation = checkLinks.createLinkAnnotation(e2.linked.typeInfo(), linkedVariables);
         fieldAnalysis.annotations.put(linkAnnotation, !linkedVariables.isEmpty());
+
         return DONE;
     }
 
@@ -794,11 +806,21 @@ public class FieldAnalyser extends AbstractAnalyser {
                     .noneMatch(VariableInfo::isAssigned);
         }
         fieldAnalysis.setProperty(VariableProperty.FINAL, Level.fromBool(isFinal));
-        if (isFinal && fieldInfo.type.isRecordType()) {
+        if (isFinal && fieldInfo.type.isRecordType()) { // FIXME rename
             messages.add(Message.newMessage(new Location(fieldInfo), Message.EFFECTIVELY_FINAL_FIELD_NOT_RECORD));
         }
         log(FINAL, "Mark field {} as " + (isFinal ? "" : "not ") +
                 "effectively final", fqn);
+
+        if (!isFinal) {
+            TypeInfo bestType = fieldInfo.type.bestTypeInfo();
+            if(bestType != null) {
+                TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(bestType);
+                if (typeAnalysis.getProperty(VariableProperty.FINALIZER) == Level.TRUE) {
+                    messages.add(Message.newMessage(new Location(fieldInfo), Message.TYPES_WITH_FINALIZER_ONLY_EFFECTIVELY_FINAL));
+                }
+            }
+        }
         return DONE;
     }
 

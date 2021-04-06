@@ -233,6 +233,8 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
                     setProperty(VariableProperty.EXTENSION_CLASS, trueFalse);
                 } else if (e2ImmuAnnotationExpressions.fluent.typeInfo() == t) {
                     setProperty(VariableProperty.FLUENT, trueFalse);
+                } else if (e2ImmuAnnotationExpressions.finalizer.typeInfo() == t) {
+                    setProperty(VariableProperty.FINALIZER, trueFalse);
                 } else if (e2ImmuAnnotationExpressions.identity.typeInfo() == t) {
                     setProperty(VariableProperty.IDENTITY, trueFalse);
                 } else if (e2ImmuAnnotationExpressions.ignoreModifications.typeInfo() == t) {

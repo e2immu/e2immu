@@ -19,6 +19,7 @@ import org.e2immu.analyser.analyser.LinkedVariables;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
 
@@ -64,6 +65,21 @@ public class Test_00_Basics_1 extends CommonTestRunner {
 
                 int expectEnn = d.iteration() == 0 ? Level.DELAY : MultiLevel.NULLABLE;
                 assertEquals(expectEnn, d.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
+            }
+
+            if (d.variable() instanceof This) {
+                if ("0".equals(d.statementId())) {
+                    assertTrue(d.variableInfoContainer().isInitial());
+                    assertTrue(d.variableInfoContainer().hasEvaluation());
+                    assertFalse(d.variableInfoContainer().hasMerge());
+                    int expectImm = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EFFECTIVELY_E1IMMUTABLE_NOT_E2IMMUTABLE;
+                    assertEquals(expectImm, d.getProperty(VariableProperty.IMMUTABLE));
+                    assertEquals(expectImm, d.variableInfoContainer().getPreviousOrInitial().getProperty(VariableProperty.IMMUTABLE));
+                }
+                if("1".equals(d.statementId())) {
+                    int expectImm = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EFFECTIVELY_E1IMMUTABLE_NOT_E2IMMUTABLE;
+                    assertEquals(expectImm, d.variableInfoContainer().getPreviousOrInitial().getProperty(VariableProperty.IMMUTABLE));
+                }
             }
         }
 
@@ -151,6 +167,8 @@ public class Test_00_Basics_1 extends CommonTestRunner {
     TypeAnalyserVisitor typeAnalyserVisitor = d -> {
         if ("Basics_1".equals(d.typeInfo().simpleName)) {
             assertTrue(d.typeAnalysis().getImplicitlyImmutableDataTypes().isEmpty());
+            int expectImm = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_E1IMMUTABLE_NOT_E2IMMUTABLE;
+            assertEquals(expectImm, d.typeAnalysis().getProperty(VariableProperty.IMMUTABLE));
         }
     };
 

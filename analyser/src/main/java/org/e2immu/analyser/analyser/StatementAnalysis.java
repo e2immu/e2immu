@@ -404,6 +404,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         variables.toImmutableMap().values().forEach(vic -> {
             if (vic.isInitial()) {
                 fromFieldAnalyserIntoInitial(evaluationContext, vic);
+                fromTypeAnalyserIntoInitialThis(evaluationContext, vic);
             } else {
                 if (vic.hasEvaluation()) vic.copy(); //otherwise, variable not assigned, not read
             }
@@ -496,6 +497,13 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                 }
             }
         }
+    }
+
+    private void fromTypeAnalyserIntoInitialThis(EvaluationContext evaluationContext, VariableInfoContainer vic) {
+        VariableInfo variableInfo = vic.current();
+        if (!(variableInfo.variable() instanceof This thisVar)) return;
+        Map<VariableProperty, Integer> map = typePropertyMap(evaluationContext.getAnalyserContext(), thisVar.typeInfo);
+        map.forEach((k, v) -> vic.setProperty(k, v, INITIAL));
     }
 
     private void fromFieldAnalyserIntoInitial(EvaluationContext evaluationContext, VariableInfoContainer vic) {

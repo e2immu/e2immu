@@ -695,7 +695,6 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             } else {
                 Map<VariableProperty, Integer> merged = mergePreviousAndChange(variable, vi1.getProperties().toImmutableMap(),
                         changeData.properties(), groupPropertyValues);
-
                 if (changeData.value() != null) {
                     // a modifying method caused an updated instance value
                     // for statically assigned variables, EMPTY means: take the value of the initial, unless it has no value
@@ -2589,7 +2588,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             if (notSelf) {
                 int immutable = variableInfo.getProperty(IMMUTABLE);
                 if (immutable == Level.DELAY) return LinkedVariables.DELAY;
-                if (MultiLevel.isE2Immutable(immutable)) return LinkedVariables.EMPTY;
+                if (MultiLevel.isAtLeastEventuallyE2Immutable(immutable)) return LinkedVariables.EMPTY;
             }
             // we've encountered the variable before
             if (variableInfo.linkedVariablesIsSet() && implicit != null) {

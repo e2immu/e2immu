@@ -14,8 +14,9 @@
 
 package org.e2immu.analyser.model;
 
+import org.e2immu.analyser.analyser.AnnotationParameters;
 import org.e2immu.analyser.model.statement.Block;
-import org.e2immu.analyser.parser.InspectionProvider;
+import org.e2immu.annotation.Finalizer;
 
 import java.util.List;
 import java.util.Map;
@@ -68,5 +69,14 @@ public interface MethodInspection extends Inspection {
             return getParameters().get(index).parameterizedType;
         }
         return getParameters().get(formalParams - 1).parameterizedType.copyWithOneFewerArrays();
+    }
+
+    default boolean hasContractedFinalizer() {
+        return getAnnotations().stream()
+                .filter(ae -> {
+                    AnnotationParameters ap = ae.e2ImmuAnnotationParameters();
+                    return ap != null && ap.contract();
+                })
+                .anyMatch(ae -> ae.typeInfo().fullyQualifiedName.equals(Finalizer.class.getCanonicalName()));
     }
 }

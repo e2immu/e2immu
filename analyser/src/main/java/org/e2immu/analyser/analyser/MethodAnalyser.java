@@ -456,7 +456,7 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
             boolean haveContentChangeableField = fieldAnalysesOfTypeInfo
                     .stream().anyMatch(fa -> {
                         int immutable = fa.getProperty(VariableProperty.EXTERNAL_IMMUTABLE);
-                        return !MultiLevel.isE2Immutable(immutable)
+                        return !MultiLevel.isAtLeastEventuallyE2Immutable(immutable)
                                 && !Primitives.isPrimitiveExcludingVoid(fa.getFieldInfo().type)
                                 && !fa.isOfImplicitlyImmutableDataType();
                     });

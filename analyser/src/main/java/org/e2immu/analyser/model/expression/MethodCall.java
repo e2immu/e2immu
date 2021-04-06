@@ -17,6 +17,7 @@ package org.e2immu.analyser.model.expression;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.*;
+import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.*;
@@ -332,7 +333,9 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             if (increment) builder.incrementStatementTime();
         }
 
-        if (parameterValues.stream().anyMatch(evaluationContext::isDelayed)) {
+        boolean delayedFinalizer = checkFinalizer(evaluationContext, builder, methodAnalysis, objectValue);
+
+        if (parameterValues.stream().anyMatch(evaluationContext::isDelayed) || delayedFinalizer) {
             return delayedMethod(evaluationContext, builder, objectValue,
                     contextModifiedDelay == Level.TRUE, parameterValues);
         }
@@ -388,6 +391,40 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
         checkCommonErrors(builder, evaluationContext, objectValue);
         return builder.build();
+    }
+
+    private boolean checkFinalizer(EvaluationContext evaluationContext,
+                                   EvaluationResult.Builder builder,
+                                   MethodAnalysis methodAnalysis,
+                                   Expression objectValue) {
+        if (methodAnalysis.getProperty(VariableProperty.FINALIZER) == Level.TRUE) {
+            if (objectValue instanceof IsVariableExpression ve) {
+                if (raiseErrorForFinalizer(evaluationContext, builder, ve.variable())) return false;
+                // check links of this variable
+                LinkedVariables linked = evaluationContext.linkedVariables(ve.variable());
+                if (linked == LinkedVariables.DELAY) {
+                    // we'll have to come back, we need to know the linked variables
+                    return true;
+                }
+                return linked.variables().stream().anyMatch(v -> raiseErrorForFinalizer(evaluationContext, builder, v));
+            }
+        }
+        return false;
+    }
+
+    private boolean raiseErrorForFinalizer(EvaluationContext evaluationContext,
+                                           EvaluationResult.Builder builder, Variable variable) {
+        if (variable instanceof FieldReference && (evaluationContext.getCurrentMethod() == null ||
+                evaluationContext.getCurrentMethod().methodAnalysis.getProperty(VariableProperty.FINALIZER) != Level.TRUE)) {
+            // ensure that the current method has been marked @Finalizer
+            builder.raiseError(Message.FINALIZER_METHOD_CALLED_ON_FIELD_NOT_IN_FINALIZER);
+            return true;
+        }
+        if (variable instanceof ParameterInfo) {
+            builder.raiseError(Message.FINALIZER_METHOD_CALLED_ON_PARAMETER);
+            return true;
+        }
+        return false;
     }
 
     private EvaluationResult delayedMethod(EvaluationContext evaluationContext,

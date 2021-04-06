@@ -76,7 +76,7 @@ public class Test_35_EventuallyImmutableUtil extends CommonTestRunner {
         testSupportAndUtilClasses(List.of("EventuallyImmutableUtil_2"), FLIP_SWITCH_SET_ONCE, ORG_E2IMMU_SUPPORT,
                 0, 0, new DebugConfiguration.Builder()
                         .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                        .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
+                     //   .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
                         .build());
     }
 

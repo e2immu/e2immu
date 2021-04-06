@@ -220,6 +220,11 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
                 annotations.put(e2ImmuAnnotationExpressions.extensionClass, true);
             }
 
+            // @Finalizer
+            if (getProperty(VariableProperty.FINALIZER) == Level.TRUE) {
+                annotations.put(e2ImmuAnnotationExpressions.finalizer, true);
+            }
+
             // @UtilityClass
             if (getProperty(VariableProperty.UTILITY_CLASS) == Level.TRUE) {
                 annotations.put(e2ImmuAnnotationExpressions.utilityClass, true);

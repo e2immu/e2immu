@@ -64,9 +64,9 @@ public class ShallowTypeAnalyser implements AnalyserContext {
         typeAnalyses = new LinkedHashMap<>(); // we keep the order provided
         Map<MethodInfo, MethodAnalysis> methodAnalysesBuilder = new HashMap<>();
         for (TypeInfo typeInfo : types) {
-            TypeAnalysis typeAnalysis = new TypeAnalysisImpl.Builder(primitives, typeInfo);
+            TypeAnalysisImpl.Builder typeAnalysis = new TypeAnalysisImpl.Builder(primitives, typeInfo);
             typeAnalyses.put(typeInfo, typeAnalysis);
-
+            AtomicBoolean hasFinalizers = new AtomicBoolean();
             typeInfo.typeInspection.get().methodsAndConstructors(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM).forEach(methodInfo -> {
                 try {
                     if (IS_FACT_FQN.equals(methodInfo.fullyQualifiedName())) {
@@ -75,8 +75,9 @@ public class ShallowTypeAnalyser implements AnalyserContext {
                         analyseIsKnown(methodInfo);
                     } else {
                         MethodAnalysisImpl.Builder methodAnalysisBuilder;
-
-                        boolean hasNoCompanionMethods = methodInfo.methodInspection.get().getCompanionMethods().isEmpty();
+                        MethodInspection methodInspection = methodInfo.methodInspection.get();
+                        if(methodInspection.hasContractedFinalizer()) hasFinalizers.set(true);
+                        boolean hasNoCompanionMethods = methodInspection.getCompanionMethods().isEmpty();
                         if (hasNoCompanionMethods && methodInfo.hasStatements()) {
                             // normal method analysis
 
@@ -102,6 +103,7 @@ public class ShallowTypeAnalyser implements AnalyserContext {
                     throw rte;
                 }
             });
+            typeAnalysis.setProperty(VariableProperty.FINALIZER, Level.fromBool(hasFinalizers.get()));
         }
         methodAnalyses = Map.copyOf(methodAnalysesBuilder);
     }

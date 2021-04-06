@@ -142,7 +142,7 @@ Because the actual implementation of such types cannot be known beforehand #TODO
 
 The case of overriding implementations
 
-=== Known functional interface implementations
+=== Visible functional interface implementations
 
 When a functional interface comes into a class as a parameter of a public method, the only way of restriction the modification actions of its SAM is by ensuring that there are no public modifying methods, and the objects passed on to the SAM are either implicitly immutable or level 2 immutable.
 When the functional interface is locally defined, it becomes a substitute for a method, which we can analyse.

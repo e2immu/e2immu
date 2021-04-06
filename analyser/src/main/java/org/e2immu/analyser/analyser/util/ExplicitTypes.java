@@ -121,7 +121,7 @@ public class ExplicitTypes {
                         int immu = typeAnalysis.getProperty(VariableProperty.IMMUTABLE);
                         if (immu == Level.DELAY) {
                             add(expressionType, UsedAs.CAST_DELAY);
-                        } else if (MultiLevel.isE2Immutable(immu)) {
+                        } else if (MultiLevel.isAtLeastEventuallyE2Immutable(immu)) {
                             add(expressionType, UsedAs.CAST_TO_E2IMMU);
                         } else {
                             add(expressionType, UsedAs.CAST);

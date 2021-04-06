@@ -314,7 +314,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
 
             // dynamic type annotations: @E1Immutable, @E1Container, @E2Immutable, @E2Container
             int formallyImmutable = formalProperty();
-            int dynamicallyImmutable = dynamicProperty(formallyImmutable);
+            int dynamicallyImmutable = getProperty(VariableProperty.IMMUTABLE);
             if (MultiLevel.isBetterImmutable(dynamicallyImmutable, formallyImmutable)) {
                 doImmutableContainer(e2ImmuAnnotationExpressions, dynamicallyImmutable, true);
             }

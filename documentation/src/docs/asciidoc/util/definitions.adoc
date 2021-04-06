@@ -21,6 +21,8 @@
 :e2immutable: pass:normal[ `@E2Immutable` ]
 :exposed: pass:normal[ `@Exposed` ]
 :final:  pass:normal[ `@Final` ]
+:finalizer:  pass:normal[ `@Finalizer` ]
+:fluent: pass:normal[ `@Fluent` ]
 :identity:  pass:normal[ `@Identity` ]
 :independent:  pass:normal[ `@Independent` ]
 :only:  pass:normal[ `@Only` ]
@@ -36,5 +38,6 @@
 :nullable: pass:normal[ `@Nullable` ]
 :propagateModification: pass:normal[ `@PropagateModification` ]
 :supportData: pass:normal[ `@SupportData` ]
+:testMark: pass:normal[ `@TestMark` ]
 :variable:  pass:normal[ `@Variable` ]
 

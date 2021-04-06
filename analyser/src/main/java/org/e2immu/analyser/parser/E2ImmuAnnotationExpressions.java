@@ -48,6 +48,7 @@ public class E2ImmuAnnotationExpressions {
     public final AnnotationExpression e2Immutable = create(E2Immutable.class);
     public final AnnotationExpression effectivelyFinal = create(Final.class);
     public final AnnotationExpression fluent = create(Fluent.class);
+    public final AnnotationExpression finalizer = create(Finalizer.class);
     public final AnnotationExpression identity = create(Identity.class);
     public final AnnotationExpression ignoreModifications = create(IgnoreModifications.class);
     public final AnnotationExpression independent = create(Independent.class);
@@ -75,7 +76,7 @@ public class E2ImmuAnnotationExpressions {
         Map<String, TypeInfo> builder = new HashMap<>();
         add(builder, allowsInterrupt, beforeMark, constant, container, dependent, dependent1, dependent2,
                 e1Container, e2Container, extensionClass, e1Immutable, e2Immutable,
-                effectivelyFinal, fluent, identity, ignoreModifications, independent,
+                effectivelyFinal, fluent, finalizer, identity, ignoreModifications, independent,
                 linked, linked1, mark, modified, mutableModifiesArguments);
         add(builder, notModified, notModified1, notNull, notNull1, notNull2, nullable, only, propagateModification,
                 singleton, testMark, utilityClass, variableField);

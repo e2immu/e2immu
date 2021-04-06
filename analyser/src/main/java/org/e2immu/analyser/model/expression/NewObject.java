@@ -335,7 +335,7 @@ public record NewObject(
                     .getMethodAnalysis(constructor);
             int independent = methodAnalysisOfConstructor.getProperty(VariableProperty.INDEPENDENT);
 
-            if (MultiLevel.isE2Immutable(immutable) || independent == MultiLevel.EFFECTIVE
+            if (MultiLevel.isAtLeastEventuallyE2Immutable(immutable) || independent == MultiLevel.EFFECTIVE
                     || typeIndependent == MultiLevel.EFFECTIVE) { // RULE 3
                 return LinkedVariables.EMPTY;
             }
@@ -401,10 +401,12 @@ public record NewObject(
             }
             case IMMUTABLE: {
                 int immutable = parameterizedType.defaultImmutable(evaluationContext.getAnalyserContext());
-                if (immutable == MultiLevel.EVENTUALLY_E1IMMUTABLE)
-                    return MultiLevel.EVENTUALLY_E1IMMUTABLE_BEFORE_MARK;
-                if (immutable == MultiLevel.EVENTUALLY_E2IMMUTABLE)
-                    return MultiLevel.EVENTUALLY_E2IMMUTABLE_BEFORE_MARK;
+                if(constructor != null) {
+                    if (immutable == MultiLevel.EVENTUALLY_E1IMMUTABLE)
+                        return MultiLevel.EVENTUALLY_E1IMMUTABLE_BEFORE_MARK;
+                    if (immutable == MultiLevel.EVENTUALLY_E2IMMUTABLE)
+                        return MultiLevel.EVENTUALLY_E2IMMUTABLE_BEFORE_MARK;
+                }
                 return immutable;
             }
             default:
