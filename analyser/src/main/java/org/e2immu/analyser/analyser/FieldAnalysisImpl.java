@@ -57,6 +57,15 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
     }
 
     @Override
+    public ParameterizedType concreteTypeNullWhenDelayed() {
+        if(fieldInfo.type.isUnboundParameterType()) return fieldInfo.type;
+        if (effectivelyFinalValue != null) {
+            return effectivelyFinalValue.returnType();
+        }
+        return fieldInfo.type;
+    }
+
+    @Override
     public LinkedVariables getLinkedVariables() {
         return variablesLinkedToMe;
     }
@@ -121,6 +130,19 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
             this.sam = !fieldInfo.fieldInspection.get().fieldInitialiserIsSet() ? null :
                     fieldInfo.fieldInspection.get().getFieldInitialiser().implementationOfSingleAbstractMethod();
             this.fieldInfo = fieldInfo;
+        }
+
+        @Override
+        public ParameterizedType concreteTypeNullWhenDelayed() {
+            if(fieldInfo.type.isUnboundParameterType()) return fieldInfo.type;
+            if (effectivelyFinalValue.isSet()) {
+                Expression efv = effectivelyFinalValue.get();
+                if (!efv.isUnknown()) {
+                    return efv.returnType();
+                }
+                return fieldInfo.type;
+            }
+            return null;
         }
 
         @Override

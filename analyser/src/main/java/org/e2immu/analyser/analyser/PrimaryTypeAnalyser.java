@@ -116,7 +116,8 @@ public class PrimaryTypeAnalyser implements AnalyserContext, Analyser, HoldsAnal
                     FieldInspection.FieldInitialiser fieldInitialiser = fieldInfo.fieldInspection.get().getFieldInitialiser();
                     MethodInfo sam = fieldInitialiser.implementationOfSingleAbstractMethod();
                     if (sam != null) {
-                        samAnalyser = Objects.requireNonNull(methodAnalysers.get(sam));
+                        samAnalyser = Objects.requireNonNull(methodAnalysers.get(sam),
+                                "No method analyser for "+sam.fullyQualifiedName);
                     } else samAnalyser = null;
                 } else samAnalyser = null;
                 TypeAnalysis ownerTypeAnalysis = typeAnalysers.get(fieldInfo.owner).typeAnalysis;

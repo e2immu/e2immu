@@ -43,16 +43,14 @@ public interface FieldAnalysis extends Analysis {
 
     FieldInfo getFieldInfo();
 
+    ParameterizedType concreteTypeNullWhenDelayed();
+
     default int getFieldProperty(AnalysisProvider analysisProvider,
                                  FieldInfo fieldInfo,
                                  TypeInfo bestType,
                                  VariableProperty variableProperty) {
         switch (variableProperty) {
             case IMMUTABLE:
-                // dynamic type annotation not relevant here
-                if (bestType != null && bestType.typeInspection.get().isFunctionalInterface()) {
-                    return MultiLevel.FALSE;
-                }
                 if (fieldInfo.type.arrays > 0) return MultiLevel.MUTABLE;
                 int fieldImmutable = internalGetProperty(variableProperty);
                 if (fieldImmutable == Level.DELAY) return Level.DELAY;
@@ -61,7 +59,10 @@ public interface FieldAnalysis extends Analysis {
 
             // container is, for fields, a property purely on the type
             case CONTAINER:
-                return bestType == null ? Level.TRUE : analysisProvider.getTypeAnalysis(bestType).getProperty(VariableProperty.CONTAINER);
+                ParameterizedType concreteType = concreteTypeNullWhenDelayed();
+                if(concreteType == null) return Level.DELAY;
+                return concreteType.typeInfo == null ? Level.TRUE :
+                        analysisProvider.getTypeAnalysis(concreteType.typeInfo).getProperty(VariableProperty.CONTAINER);
 
             case NOT_NULL_EXPRESSION:
             case CONTEXT_NOT_NULL:

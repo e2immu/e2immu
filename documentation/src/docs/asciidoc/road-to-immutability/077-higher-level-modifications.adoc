@@ -50,25 +50,25 @@ class Circular<T> {
 }
 ----
 
-We also make use of the `MyConsumer` functional interface:
+We also make use of the `Consumer` functional interface:
 
-.MyConsumer
+.Consumer
 [source,java]
 ----
 @FunctionalInterface
-interface MyConsumer<T> {
+interface Consumer<T> {
     void accept(T t);
 }
 ----
 
 Note that method and parameter remain unmarked in terms of modification.
-Using the `MyConsumer` we introduce a `forEach` method which iterates over the two elements:
+Using the `Consumer` we introduce a `forEach` method which iterates over the two elements:
 
 .forEach in Circular
 [source,java]
 ----
 @NotModified
-public void forEach(@PropagateModification MyConsumer<T> consumer) {
+public void forEach(@PropagateModification Consumer<T> consumer) {
     consumer.accept(x);
     consumer.accept(y);
 }
@@ -219,4 +219,5 @@ links to that of a container.
 
 === Implications for immutability
 
-
+This leads us to the question of determining the static immutability type of abstract types.
+We need this information for fields of abstract type, because of the definition of immutability of the #TODO#

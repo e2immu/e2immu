@@ -113,7 +113,7 @@ public class FieldAnalyser extends AbstractAnalyser {
                 .add(ANALYSE_NOT_MODIFIED_1, sharedState -> analyseNotModified1())
                 .add(ANALYSE_LINKED, sharedState -> analyseLinked())
                 .add("analyseLinked1", sharedState -> analyseLinked1())
-                .add("analysePropagateMo", sharedState -> analysePropagateModification())
+                .add("analysePropagateModification", sharedState -> analysePropagateModification())
                 .add(FIELD_ERRORS, sharedState -> fieldErrors())
                 .build();
     }
@@ -806,7 +806,7 @@ public class FieldAnalyser extends AbstractAnalyser {
                     .noneMatch(VariableInfo::isAssigned);
         }
         fieldAnalysis.setProperty(VariableProperty.FINAL, Level.fromBool(isFinal));
-        if (isFinal && fieldInfo.type.isRecordType()) { // FIXME rename
+        if (isFinal && fieldInfo.type.isScratchPadType()) {
             messages.add(Message.newMessage(new Location(fieldInfo), Message.EFFECTIVELY_FINAL_FIELD_NOT_RECORD));
         }
         log(FINAL, "Mark field {} as " + (isFinal ? "" : "not ") +
@@ -862,10 +862,6 @@ public class FieldAnalyser extends AbstractAnalyser {
             return DONE;
         }
 
-        if (fieldInfo.type.isFunctionalInterface()) {
-            return analyseNotModifiedFunctionalInterface();
-        }
-
         boolean isPrimitive = Primitives.isPrimitiveExcludingVoid(fieldInfo.type);
         // too dangerous to catch @E2Immutable because of down-casts
         if (isPrimitive) {
@@ -913,27 +909,6 @@ public class FieldAnalyser extends AbstractAnalyser {
                     .forEach(m -> log(DELAYED, "... method {} reads the field, but we're still waiting on links to be established", m.methodInfo.name));
         }
         return DELAYS;
-    }
-
-    /*
-    FIXME at some point this should go beyond functional interfaces.
-
-    TODO at some point this should go beyond the initializer; it should look at all assignments
-     */
-    private AnalysisStatus analyseNotModifiedFunctionalInterface() {
-        if (sam != null) {
-            int modified = sam.methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD);
-            if (modified == Level.DELAY) {
-                log(DELAYED, "Field {} of functional interface type: waiting for MODIFIED on SAM", fqn);
-                return DELAYS;
-            }
-            log(NOT_MODIFIED, "Field {} of functional interface type: copying MODIFIED {} from SAM", fqn, modified);
-            fieldAnalysis.setProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD, modified);
-            return DONE;
-        }
-        log(NOT_MODIFIED, "Field {} of functional interface type: undeclared, so not modified", fqn);
-        fieldAnalysis.setProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD, Level.FALSE);
-        return DONE;
     }
 
     @Override

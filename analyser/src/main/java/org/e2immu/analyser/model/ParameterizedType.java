@@ -599,12 +599,12 @@ public class ParameterizedType {
         return null;
     }
 
-    public boolean isRecordType() {
+    public boolean isScratchPadType() {
         if (typeInfo != null) {
             return typeInfo.isPrivateNested();
         }
         if (typeParameter != null && wildCard == WildCard.EXTENDS && parameters.size() == 1) {
-            return parameters.get(0).isRecordType();
+            return parameters.get(0).isScratchPadType();
         }
         return false;
     }

@@ -153,24 +153,17 @@ class ApplyLocalFunctions {
         public int increment() {
             return ++counter;
         }
-
-        @Modified
-        public int add(int step) {
-            counter += step;
-            return counter;
-        }
     }
 
     @Modified
     private final Counter myCounter = new Counter();
 
-    @Modified // <1>
+    @Modified
     private final Supplier<Integer> getAndIncrement = myCounter::increment;
 
-    @Modified // <1>
+    @Modified
     private final Supplier<Integer> explicitGetAndIncrement = new Supplier<Integer>() {
-
-        @Override @Modified // <2>
+        @Override @Modified
         public Integer get() {
             return myCounter.increment();
         }
@@ -187,6 +180,10 @@ class ApplyLocalFunctions {
     }
 }
 ----
-<1> Consider these fields to be methods, which modify `myCounter`. It is immaterial whether the SAMs are called, or not.
-<2> Here we explicitly mark a SAM as {modified}.
 
+The fields `getAndIncrement` and `explicitGetAndIncrement` hold instances of anonymous _inner classes_ of `ApplyLocalFunctions`: these inner classes hold data, they have access to the `myCounter` field.
+Their concrete implementations of `get` each modify `myCounter`.
+A straightforward application of the rules of modification of fields makes  `getAndIncrement` and `explicitGetAndIncrement` {modified}:
+in `myIncrementer`, a modifying method is applied to `getAndIncrement`, and in `myExplicitIncrementer`, a modifying method is applied to `explicitGetAndIncrement`.
+
+Given that `ApplyLocalFunctions` is clearly {e1container}, and the inner classes hold no other data, the inner classes are {e1container} as well.

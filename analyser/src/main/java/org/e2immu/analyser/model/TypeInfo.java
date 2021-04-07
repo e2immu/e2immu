@@ -231,7 +231,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         afterAnnotations.add(main);
 
         // annotations and the rest of the type are at the same level
-        Stream<OutputBuilder> annotationStream = buildAnnotationOutput(insideType);
+        Stream<OutputBuilder> annotationStream = doTypeDeclaration ? buildAnnotationOutput(insideType) : Stream.of();
         return packageAndImports.add(Stream.concat(annotationStream, Stream.of(afterAnnotations))
                 .collect(OutputBuilder.joining(Space.ONE_REQUIRED_EASY_SPLIT,
                         Guide.generatorForAnnotationList())));
@@ -313,6 +313,21 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         TypeInspection inspection = typeInspection.get();
         if (inspection.typeNature() == TypeNature.INTERFACE) return true;
         return inspection.modifiers().contains(TypeModifier.ABSTRACT);
+    }
+
+    /*
+    they'll be waiting on each other to define IMMUTABLE
+     */
+    public TypeInfo topOfInterdependentClassHierarchy() {
+        TypeInspection inspection = typeInspection.get();
+        if (inspection.isStatic()) return this;
+        // first go to enclosing type
+        if(packageNameOrEnclosingType.isRight()) {
+            return packageNameOrEnclosingType.getRight().topOfInterdependentClassHierarchy();
+        }
+        // or to parent type, but only if in the same file TODO
+        if (Primitives.isJavaLangObject(inspection.parentClass())) return this;
+        return inspection.parentClass().typeInfo.topOfInterdependentClassHierarchy();
     }
 
     private record ResultOfImportComputation(Set<String> imports, QualificationImpl qualification) {
@@ -562,9 +577,27 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
     }
 
     public MethodInfo findUniqueMethod(String methodName, int parameters) {
-        return typeInspection.get().methodStream(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM).
-                filter(m -> m.name.equals(methodName) && m.methodInspection.get().getParameters().size() == parameters)
+        return typeInspection.get().methodStream(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM)
+                .filter(m -> m.name.equals(methodName) && m.methodInspection.get().getParameters().size() == parameters)
                 .findAny().orElseThrow();
+    }
+
+    public MethodInfo findMethodImplementing(MethodInfo abstractMethodInfo) {
+        if (abstractMethodInfo.typeInfo == this) return null;
+        MethodInfo foundHere = typeInspection.get().methodStream(TypeInspection.Methods.THIS_TYPE_ONLY)
+                .filter(m -> m.methodResolution.get().overrides().contains(abstractMethodInfo))
+                .findFirst().orElse(null);
+        if (foundHere != null && !foundHere.isAbstract()) return foundHere;
+        TypeInspection inspection = typeInspection.get();
+        if (!Primitives.isJavaLangObject(inspection.parentClass())) {
+            MethodInfo foundInParent = inspection.parentClass().typeInfo.findMethodImplementing(abstractMethodInfo);
+            if (foundInParent != null) return foundInParent;
+        }
+        for (ParameterizedType interfaceType : inspection.interfacesImplemented()) {
+            MethodInfo foundInInterface = interfaceType.typeInfo.findMethodImplementing(abstractMethodInfo);
+            if (foundInInterface != null) return foundInInterface;
+        }
+        return null;
     }
 
     public Set<ParameterizedType> typesOfMethodsAndConstructors() {

@@ -271,4 +271,8 @@ public interface EvaluationContext {
     default boolean cannotBeModified(Expression value) {
         return false;
     }
+
+    default MethodInfo concreteMethod(Variable variable, MethodInfo methodInfo) {
+        return null;
+    }
 }

@@ -12,16 +12,16 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parserfailing;
+package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.MethodLevelData;
 import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analyser.VariableProperty;
-import org.e2immu.analyser.config.*;
+import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ReturnStatement;
-import org.e2immu.analyser.parser.CommonTestRunner;
+import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
 
@@ -32,10 +32,54 @@ import java.util.function.Consumer;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class Test_40_FunctionalInterface extends CommonTestRunner {
+public class Test_43_FunctionalInterface extends CommonTestRunner {
 
-    public Test_40_FunctionalInterface() {
+    public Test_43_FunctionalInterface() {
         super(true);
+    }
+
+    @Test
+    public void test_0() throws IOException {
+
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("$1".equals(d.typeInfo().simpleName)) {
+                int expectContainer = d.iteration() <= 2 ? Level.DELAY : Level.TRUE;
+                assertEquals(expectContainer, d.typeAnalysis().getProperty(VariableProperty.CONTAINER));
+            }
+            if ("FunctionalInterface_0".equals(d.typeInfo().simpleName)) {
+                int expectImm = d.iteration() <= 2 ? Level.DELAY : MultiLevel.EFFECTIVELY_E1IMMUTABLE_NOT_E2IMMUTABLE;
+                assertEquals(expectImm, d.typeAnalysis().getProperty(VariableProperty.IMMUTABLE));
+                int expectContainer = d.iteration() <= 1 ? Level.DELAY : Level.TRUE;
+                assertEquals(expectContainer, d.typeAnalysis().getProperty(VariableProperty.CONTAINER));
+            }
+        };
+
+        FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+            if ("explicitGetAndIncrement".equals(d.fieldInfo().name)) {
+                int expectContainer = d.iteration() <= 3 ? Level.DELAY : Level.TRUE;
+                assertEquals(expectContainer, d.fieldAnalysis().getProperty(VariableProperty.CONTAINER));
+            }
+        };
+
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("myExplicitIncrementer".equals(d.methodInfo().name) && "0".equals(d.statementId())) {
+                if (d.variable() instanceof FieldReference fr && fr.fieldInfo.name.equals("explicitGetAndIncrement")) {
+                    int expectContainer = d.iteration() <= 3 ? Level.DELAY : Level.TRUE;
+                    assertEquals(expectContainer, d.getProperty(VariableProperty.CONTAINER));
+
+                    int expectExtNn = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
+                    assertEquals(expectExtNn, d.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
+                    int expectExtImm = d.iteration() <= 5 ? Level.DELAY : MultiLevel.EFFECTIVELY_E1IMMUTABLE_NOT_E2IMMUTABLE;
+                    assertEquals(expectExtImm, d.getProperty(VariableProperty.EXTERNAL_IMMUTABLE));
+                }
+            }
+        };
+
+        testClass("FunctionalInterface_0", 0, 0, new DebugConfiguration.Builder()
+                .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .build());
     }
 
     @Test

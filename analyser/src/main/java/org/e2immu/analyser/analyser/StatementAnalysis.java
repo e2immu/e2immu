@@ -971,7 +971,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         return result;
     }
 
-    // TODO explain why container has to be present here
+    // @Container also important, see e.g. FunctionalInterface_0
     private static final Set<VariableProperty> FROM_FIELD_ANALYSER_TO_PROPERTIES
             = Set.of(CONTAINER, EXTERNAL_NOT_NULL, EXTERNAL_IMMUTABLE);
 
