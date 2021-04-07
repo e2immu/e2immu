@@ -414,28 +414,40 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
         while (true) {
             // FIRST CRITERION: is there a non-@Final field?
 
-            boolean haveDelayOnFinalFields = fieldAnalysesOfTypeInfo
-                    .stream().anyMatch(fa -> fa.getProperty(VariableProperty.FINAL) == Level.DELAY);
-            if (haveDelayOnFinalFields) {
-                log(DELAYED, "Delaying eventual in {} until we know about @Final of fields", methodInfo.fullyQualifiedName);
+            Optional<FieldAnalysis> haveDelayOnFinalFields = fieldAnalysesOfTypeInfo
+                    .stream().filter(fa -> fa.getProperty(VariableProperty.FINAL) == Level.DELAY).findFirst();
+            if (haveDelayOnFinalFields.isPresent()) {
+                log(DELAYED, "Delaying eventual in {} until we know about @Final of (findFirst) field",
+                        methodInfo.fullyQualifiedName, haveDelayOnFinalFields.get());
                 return DELAYS;
             }
+
             boolean haveNonFinalFields = fieldAnalysesOfTypeInfo
                     .stream().anyMatch(fa -> fa.getProperty(VariableProperty.FINAL) == Level.FALSE);
             if (haveNonFinalFields) {
                 break;
             }
 
-            // SECOND CRITERION: is there an eventually immutable field?
+            // SECOND CRITERION: is there an eventually immutable field? We can ignore delays if the concrete type of the field
+            // is the same as the owner
 
-            boolean haveDelayOnImmutableFields = fieldAnalysesOfTypeInfo
-                    .stream().anyMatch(fa -> fa.getProperty(VariableProperty.EXTERNAL_IMMUTABLE) == Level.DELAY);
-            if (haveDelayOnImmutableFields) {
-                log(DELAYED, "Delaying eventual in {} until we know about @Immutable of fields", methodInfo.fullyQualifiedName);
+            Optional<FieldAnalysis> delayOnImmutableFields = fieldAnalysesOfTypeInfo
+                    .stream()
+                    .filter(fa -> {
+                        ParameterizedType concreteType = fa.concreteTypeNullWhenDelayed();
+                        boolean acceptDelay = concreteType == null || concreteType.typeInfo != null &&
+                                concreteType.typeInfo.topOfInterdependentClassHierarchy() != fa.getFieldInfo().owner.topOfInterdependentClassHierarchy();
+                        return acceptDelay && fa.getProperty(VariableProperty.EXTERNAL_IMMUTABLE) == Level.DELAY;
+                    }).findFirst();
+            if (delayOnImmutableFields.isPresent()) {
+                log(DELAYED, "Delaying eventual in {} until we know about @Immutable of (findFirst) field {}",
+                        methodInfo.fullyQualifiedName, delayOnImmutableFields.get().getFieldInfo().name);
                 return DELAYS;
             }
+
             boolean haveEventuallyImmutableFields = fieldAnalysesOfTypeInfo
-                    .stream().anyMatch(fa -> {
+                    .stream()
+                    .anyMatch(fa -> {
                         int immutable = fa.getProperty(VariableProperty.EXTERNAL_IMMUTABLE);
                         return MultiLevel.isEventuallyE1Immutable(immutable) || MultiLevel.isEventuallyE2Immutable(immutable);
                     });
@@ -445,11 +457,11 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
 
             // THIRD CRITERION: is there a field whose content can change? Non-primitive, not implicitly immutable, not E2
 
-            boolean haveDelayOnImplicitlyImmutableType = fieldAnalysesOfTypeInfo
-                    .stream().anyMatch(fa -> fa.isOfImplicitlyImmutableDataType() == null);
-            if (haveDelayOnImplicitlyImmutableType) {
-                log(DELAYED, "Delaying eventual in {} until we know about implicitly immutable type of fields",
-                        methodInfo.fullyQualifiedName);
+            Optional<FieldAnalysis> haveDelayOnImplicitlyImmutableType = fieldAnalysesOfTypeInfo
+                    .stream().filter(fa -> fa.isOfImplicitlyImmutableDataType() == null).findFirst();
+            if (haveDelayOnImplicitlyImmutableType.isPresent()) {
+                log(DELAYED, "Delaying eventual in {} until we know about implicitly immutable type of (findFirst) field {}",
+                        methodInfo.fullyQualifiedName, haveDelayOnImplicitlyImmutableType.get().getFieldInfo().name);
                 return DELAYS;
             }
 
@@ -671,7 +683,7 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
         } else {
             VariableInfo variableInfo = getReturnAsVariable();
             ParameterizedType pt = variableInfo.variable().parameterizedType();
-            if (pt.arrays == 0 && pt.typeInfo == methodInfo.typeInfo ) {
+            if (pt.arrays == 0 && pt.typeInfo == methodInfo.typeInfo) {
                 /* the reason we introduce this "hack" is that IMMUTABLE of my own type often comes late
                 it really is a hack because other types that come late are missed as well.
                  */

@@ -401,7 +401,7 @@ public record NewObject(
             }
             case IMMUTABLE: {
                 int immutable = parameterizedType.defaultImmutable(evaluationContext.getAnalyserContext());
-                if(constructor != null) {
+                if (constructor != null) {
                     if (immutable == MultiLevel.EVENTUALLY_E1IMMUTABLE)
                         return MultiLevel.EVENTUALLY_E1IMMUTABLE_BEFORE_MARK;
                     if (immutable == MultiLevel.EVENTUALLY_E2IMMUTABLE)
@@ -445,7 +445,7 @@ public record NewObject(
     @Override
     public OutputBuilder output(Qualification qualification) {
         OutputBuilder outputBuilder = new OutputBuilder();
-        if (constructor != null) {
+        if (constructor != null || anonymousClass != null) {
             outputBuilder.add(new Text("new")).add(Space.ONE)
                     .add(parameterizedType.output(qualification, false, diamond));
             if (arrayInitializer == null) {
@@ -464,7 +464,7 @@ public record NewObject(
             outputBuilder.add(text);
         }
         if (anonymousClass != null) {
-            outputBuilder.add(anonymousClass.output(qualification, true));
+            outputBuilder.add(anonymousClass.output(qualification, false));
         }
         if (arrayInitializer != null) {
             outputBuilder.add(arrayInitializer.output(qualification));
@@ -521,8 +521,14 @@ public record NewObject(
         Pair<EvaluationResult.Builder, List<Expression>> res = EvaluateParameters.transform(parameterExpressions,
                 evaluationContext, constructor, Level.FALSE, false, null);
 
+        ParameterizedType pt;
+        if (anonymousClass != null) {
+            pt = anonymousClass.asParameterizedType(evaluationContext.getAnalyserContext());
+        } else {
+            pt = parameterizedType;
+        }
         NewObject initialInstance = NewObject.objectCreation(identifier, evaluationContext.getPrimitives(),
-                constructor, parameterizedType, diamond, res.v);
+                constructor, pt, diamond, res.v);
         Expression instance;
         if (constructor != null) {
             // check state changes of companion methods

@@ -469,16 +469,19 @@ public class TypeAnalyser extends AbstractAnalyser {
             return DELAYS;
         }
 
-        boolean allPreconditionsOnModifyingMethodsSet = myMethodAnalysersExcludingSAMs.stream()
-                .filter(methodAnalyser -> methodAnalyser.methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD) == Level.TRUE)
-                .allMatch(methodAnalyser -> methodAnalyser.methodAnalysis.preconditionForEventual.isSet());
-        if (!allPreconditionsOnModifyingMethodsSet) {
-            log(DELAYED, "Not all precondition preps on modifying methods have been set in {}, delaying", typeInfo.fullyQualifiedName);
+        Optional<MethodAnalyser> preconditionForEventualNotYetSet = myMethodAnalysersExcludingSAMs.stream()
+                .filter(ma -> ma.methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD) == Level.TRUE)
+                .filter(ma -> !ma.methodAnalysis.preconditionForEventual.isSet())
+                .findFirst();
+        if (preconditionForEventualNotYetSet.isPresent()) {
+            log(DELAYED, "Not all precondition preps on modifying methods have been set in {}, delaying; findFirst: {}",
+                    typeInfo.fullyQualifiedName, preconditionForEventualNotYetSet.get().methodInfo.fullyQualifiedName);
             return DELAYS;
         }
-        Optional<MethodAnalyser> optEmptyPreconditions = myMethodAnalysersExcludingSAMs.stream().filter(methodAnalyser ->
-                methodAnalyser.methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD) == Level.TRUE &&
-                        methodAnalyser.methodAnalysis.preconditionForEventual.get().isEmpty()).findFirst();
+        Optional<MethodAnalyser> optEmptyPreconditions = myMethodAnalysersExcludingSAMs.stream()
+                .filter(ma -> ma.methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD) == Level.TRUE &&
+                        ma.methodAnalysis.preconditionForEventual.get().isEmpty())
+                .findFirst();
         if (optEmptyPreconditions.isPresent()) {
             log(MARK, "Not all modifying methods have a valid precondition in {}: (findFirst) {}",
                     typeInfo.fullyQualifiedName, optEmptyPreconditions.get().methodInfo.fullyQualifiedName);
@@ -832,15 +835,31 @@ public class TypeAnalyser extends AbstractAnalyser {
 
             int fieldImmutable = fieldAnalysis.getProperty(VariableProperty.EXTERNAL_IMMUTABLE);
             int fieldE2Immutable = MultiLevel.value(fieldImmutable, MultiLevel.E2IMMUTABLE);
+
             // field is of the type of the class being analysed... it will not make the difference.
             if (fieldE2Immutable == MultiLevel.DELAY && typeInfo == fieldInfo.type.typeInfo) {
                 fieldE2Immutable = MultiLevel.EFFECTIVE;
             }
+
+            // field is of a type that is very closely related to the type being analysed; we're looking to break a delay
+            // here by requiring the rules, and saying that it is not eventual; see FunctionInterface_0
+            if (fieldE2Immutable == MultiLevel.DELAY) {
+                ParameterizedType concreteType = fieldAnalysis.concreteTypeNullWhenDelayed();
+                if (concreteType != null && concreteType.typeInfo != null &&
+                        concreteType.typeInfo.topOfInterdependentClassHierarchy() == typeInfo.topOfInterdependentClassHierarchy()) {
+                    fieldE2Immutable = MultiLevel.EVENTUAL_AFTER; // must follow rules, but is not eventual
+                }
+            }
+
             // part of rule 2: we now need to check that @NotModified is on the field
             if (fieldE2Immutable == MultiLevel.DELAY) {
                 log(DELAYED, "Field {} not known yet if @E2Immutable, delaying @E2Immutable on type", fieldFQN);
                 return DELAYS;
             }
+
+            // NOTE: the 2 values that matter now are EVENTUAL and EFFECTIVE; any other will lead to a field
+            // that needs to follow the additional rules
+
             if (fieldE2Immutable == MultiLevel.EVENTUAL) {
                 eventual = true;
                 if (!typeAnalysis.eventuallyImmutableFields.contains(fieldInfo)) {

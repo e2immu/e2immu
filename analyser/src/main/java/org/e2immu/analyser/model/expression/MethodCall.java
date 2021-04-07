@@ -295,8 +295,8 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 VariableProperty.CONTEXT_MODIFIED, modified,
                 VariableProperty.CONTEXT_IMMUTABLE_DELAY, immutableData.delay,
                 VariableProperty.CONTEXT_IMMUTABLE, immutableData.required,
-                VariableProperty.NEXT_CONTEXT_IMMUTABLE, immutableData.next,
-                VariableProperty.CONTEXT_PROPAGATE_MOD, Level.fromBool(propagateModification)), true));
+                VariableProperty.NEXT_CONTEXT_IMMUTABLE, immutableData.next), true));
+        // VariableProperty.CONTEXT_PROPAGATE_MOD, Level.fromBool(propagateModification) deferred to separate piece of code
 
         // null scope
         Expression objectValue = objectResult.value();
@@ -310,6 +310,26 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 evaluationContext, methodInfo, notModified1Scope, recursiveCall || partOfCallCycle, objectValue);
         List<Expression> parameterValues = res.v;
         builder.compose(objectResult, res.k.build());
+
+        // revisit abstract method, check if object value pointed to a concrete, modifying method
+        if (abstractMethod && objectValue instanceof VariableExpression ve) {
+            MethodInfo pointsToConcreteMethod = evaluationContext.concreteMethod(variable(), methodInfo);
+            if (pointsToConcreteMethod != null) {
+                MethodAnalysis concreteMethodAnalysis = evaluationContext.getAnalyserContext().getMethodAnalysis(pointsToConcreteMethod);
+                int modifyingConcreteMethod = concreteMethodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD);
+                EvaluationResult.Builder pmBuilder = new EvaluationResult.Builder(evaluationContext);
+                if (modifyingConcreteMethod != Level.DELAY) {
+                    pmBuilder.markContextModified(ve.variable(), modifyingConcreteMethod);
+                } else {
+                    pmBuilder.markContextModifiedDelay(ve.variable());
+                }
+                builder.composeIgnoreExpression(pmBuilder.build());
+            } else if (propagateModification) {
+                EvaluationResult.Builder pmBuilder = new EvaluationResult.Builder(evaluationContext);
+                pmBuilder.markPropagateModification(ve.variable());
+                builder.composeIgnoreExpression(pmBuilder.build());
+            }
+        }
 
         // precondition
         EvaluatePreconditionFromMethod.evaluate(evaluationContext, builder, methodInfo, objectValue, parameterValues);
