@@ -85,6 +85,8 @@ public class ContextPropertyWriter {
         final AtomicReference<AnalysisStatus> analysisStatus = new AtomicReference<>(DONE);
         fillDependencyGraph(statementAnalysis, evaluationContext, connections, level, dependencyGraph, analysisStatus);
 
+        if(analysisStatus.get() == DELAYS) return analysisStatus.get();
+
         final AtomicBoolean progress = new AtomicBoolean();
 
         // we make a copy of the values, because in summarizeModification there is the possibility of adding to the map

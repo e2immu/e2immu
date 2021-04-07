@@ -52,6 +52,7 @@ public class JavaUtil extends AnnotatedAPI {
         boolean hasNext();
 
         @Modified
+        @Dependent1
         T next();
 
         @Modified

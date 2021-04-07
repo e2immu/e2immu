@@ -192,7 +192,8 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                     assertEquals("", d.variableInfo().getLinkedVariables().toString());
                     assertTrue(d.variableInfo().isAssigned());
 
-                    assertEquals(Level.FALSE, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
+                    int expectCm = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
+                    assertEquals(expectCm, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
                     assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
                 }
             }

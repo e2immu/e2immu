@@ -50,7 +50,8 @@ public class Test_12_IfStatement extends CommonTestRunner {
                 }
             }
             if ("get2".equals(d.methodInfo().name) && d.variable() instanceof This) {
-                assertEquals(Level.FALSE, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
+                int expectCm = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
+                assertEquals(expectCm, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
             }
         };
 

@@ -91,7 +91,8 @@ public class Test_00_Basics_2 extends CommonTestRunner {
                 assertEquals(expectValue, d.currentValue().toString());
                 // string occurs in a not-null context, even if its value is delayed
                 assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
-                assertEquals(Level.FALSE, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
+                int expectCm = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
+                assertEquals(expectCm, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
 
                 int expectEnn = d.iteration() == 0 ? Level.DELAY : MultiLevel.NULLABLE;
                 assertEquals(expectEnn, d.getProperty(VariableProperty.EXTERNAL_NOT_NULL));

@@ -23,6 +23,7 @@ import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.util.Iterator;
 import java.util.Set;
 import java.util.function.Function;
 
@@ -138,6 +139,12 @@ public class Test_22_SubTypes extends CommonTestRunner {
             ParameterInfo apply0 = apply.methodInspection.get().getParameters().get(0);
             int modified = apply0.parameterAnalysis.get().getProperty(VariableProperty.MODIFIED_VARIABLE);
             assertEquals(Level.DELAY, modified);
+
+            TypeInfo iterator = typeMap.get(Iterator.class);
+            MethodInfo hasNext = iterator.findUniqueMethod("hasNext", 0);
+            assertEquals(Level.TRUE, hasNext.methodAnalysis.get().getProperty(VariableProperty.MODIFIED_METHOD));
+            MethodInfo next = iterator.findUniqueMethod("next", 0);
+            assertEquals(Level.TRUE, next.methodAnalysis.get().getProperty(VariableProperty.MODIFIED_METHOD));
         };
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
@@ -148,17 +155,14 @@ public class Test_22_SubTypes extends CommonTestRunner {
                         assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("1".equals(d.statementId())) {
-                        int expectPm = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
-                        assertEquals(expectPm, d.getProperty(VariableProperty.PROPAGATE_MODIFICATION));
-                        String expectLinked = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "";
+                        // the link should not simply disappear
+                        String expectLinked = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "set2";
                         assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
                 if (d.variable() instanceof ParameterInfo p && "set2".equals(p.name)) {
                     if ("0".equals(d.statementId())) {
-                        int expectPm = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
-                        // FIXME the issue here is that linking is first "" then set2 (should have been delay!)
-                        // assertEquals(expectPm, d.getProperty(VariableProperty.PROPAGATE_MODIFICATION));
+                        // the link is symmetric, but only shows in one direction
                         assertEquals("", d.variableInfo().getLinkedVariables().toString());
                     }
                 }

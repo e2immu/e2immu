@@ -749,7 +749,8 @@ public class Test_16_Modification extends CommonTestRunner {
                     assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
                 }
                 if (d.variable() instanceof ParameterInfo setC && "setC".equals(setC.name)) {
-                    assertEquals(Level.FALSE, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
+                    int expectCm = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
+                    assertEquals(expectCm, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
                 }
             }
 
@@ -1020,7 +1021,8 @@ public class Test_16_Modification extends CommonTestRunner {
         final String INNER_THIS = "org.e2immu.analyser.testexample.Modification_13.Inner.this";
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("clearIfExceeds".equals(d.methodInfo().name) && INNER_THIS.equals(d.variableName())) {
-                assertEquals(Level.FALSE, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
+                int expectCm = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
+                assertEquals(expectCm, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
             }
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
