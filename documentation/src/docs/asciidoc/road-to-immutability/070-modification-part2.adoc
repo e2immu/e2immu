@@ -14,7 +14,7 @@ However, there could be indirect modifications, as in:
 [source,java]
 ----
 @E2Container
-public class ModificationGraphChecks {
+public class CyclicReferences {
 
     @MutableModifiesArguments
     static class C1 {
@@ -63,6 +63,7 @@ An additional interface can help to remove the circular dependency between the t
 This has the advantage of simplicity, both for the programmer and the analyser, which at this point doesn't handle circular dependencies too well.
 It imposes more annotation work on the programmer, however, because the interface's methods need contracting.
 
+[#linking-formally]
 === Linking, formally
 
 To compute linking, the analyser tries to track actual objects, with the aim of knowing if a field links to another field or a parameter.
@@ -86,13 +87,11 @@ We discern a number of special cases:
 . When `method` has the annotation {independent}, `v` cannot link to `a`.
 . If `a` is of {independent} type (which includes all {e2immutable} types), all its methods are independent; therefore, `v` cannot link to `a`.
 
-It is important to note that the analyser only computes independence for non-modifying methods, and that all methods returning non-support-data types are automatically independent.
+It is important to note that the analyser only computes independence for non-modifying methods, so that all methods of implicitly immutable return type are automatically independent.
 
 ****
 Rule 3: in an assignment `v = new A(b)`, `v` potentially links to `b`.
 ****
-
-Noting that independence is automatic for non-support-data types, we observe:
 
 . When the constructor `A` is independent, `v` cannot link to `b`.
 . When `b` is of primitive or {e2immutable} type, `v` cannot link to `b`.
@@ -111,19 +110,19 @@ Rule 4: in an array access `v = a[index]`, `v` links to `a`.
 
 Note: links between `b`, `c`, and `d` are possible, but are covered by the {modified} annotation:
 when a parameter is {nm}, no modifications at all are possible, not even indirectly.
-#TODO more explanation#
 
 === Abstract methods and functional interfaces
 
-Explicit classes and implicitly immutable parts of a class.
+Abstract methods are present in interfaces, and abstract classes.
+Their very definition is that no implementation is present at the place of definition: only the ins (parameters) and outs (return type) are pre-defined.
 
-Functional interfaces are interfaces with a single abstract method.
-The following table lists some frequently used examples:
+Functional interfaces are interfaces with a single abstract method; any other methods in the interface are required to have a `default` implementation.
+The following table lists some frequently used ones:
 
 [options=header]
 |===
 
-| Name | single abstract method
+| Name | single abstract method (SAM)
 | `Consumer<T>` | `void accept(T t);`
 | `Function<T,R>` | `R apply(T t);`
 | `BiFunction<T, U, R>` | `R apply(T t, U u);`
@@ -132,21 +131,62 @@ The following table lists some frequently used examples:
 |===
 
 It is important not to forget that _any_ interface defining a single abstract method can be seen as a functional interface.
-While the examples above all employ generics, generics are not a requirement for functional interfaces.
-The Java language offers syntactic sugar for functional programming, but the types remain Java types.
-As such we have to ensure that definitions for functional interfaces which we will present in this section, are compatible with the definitions for general types.
+While the examples above all employ generics (more specifically, unbound type parameters), generics are not a requirement for functional interfaces.
+The Java language offers syntactic sugar for functional programming, but the types remain abstract Java types.
 
-We will also have to introduce one extra provision for dealing with code for which no declaration is readily available.
-This is the case for interface types and abstract classes.
-Because the actual implementation of such types cannot be known beforehand #TODO#
+We will not make any distinction between a functional interface and an abstract type.
+If one were forced to make one, the _intention to hold data_ would be the dividing line between a functional interface, which conveys no such intention, and an abstract type, which does.
 
-The case of overriding implementations
+In this section we want to discuss a limited application of functional interfaces: that where the SAMs have a local implementation.
+The general case, where abstract types come in via a parameter, will be taken up in <<higher-level-modifications>>.
+Consider the following example:
 
-=== Visible functional interface implementations
+[source,java]
+----
+class ApplyLocalFunctions {
 
-When a functional interface comes into a class as a parameter of a public method, the only way of restriction the modification actions of its SAM is by ensuring that there are no public modifying methods, and the objects passed on to the SAM are either implicitly immutable or level 2 immutable.
-When the functional interface is locally defined, it becomes a substitute for a method, which we can analyse.
-We discuss the latter situation here, deferring the former to <<higher-level-modifications>>.
+    @Container
+    static class Counter {
+        private int counter;
 
+        @Modified
+        public int increment() {
+            return ++counter;
+        }
 
+        @Modified
+        public int add(int step) {
+            counter += step;
+            return counter;
+        }
+    }
+
+    @Modified
+    private final Counter myCounter = new Counter();
+
+    @Modified // <1>
+    private final Supplier<Integer> getAndIncrement = myCounter::increment;
+
+    @Modified // <1>
+    private final Supplier<Integer> explicitGetAndIncrement = new Supplier<Integer>() {
+
+        @Override @Modified // <2>
+        public Integer get() {
+            return myCounter.increment();
+        }
+    };
+
+    @Modified
+    public int myIncrementer() {
+        return getAndIncrement.get();
+    }
+
+    @Modified
+    public int myExplicitIncrementer() {
+        return explicitGetAndIncrement.get();
+    }
+}
+----
+<1> Consider these fields to be methods, which modify `myCounter`. It is immaterial whether the SAMs are called, or not.
+<2> Here we explicitly mark a SAM as {modified}.
 

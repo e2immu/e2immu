@@ -249,32 +249,25 @@ import org.e2immu.annotation.*;
 import java.util.Objects;
 import java.util.function.Supplier;
 
-@E2Container(after = "get")
+@E2Container(after = "t")
 public class Lazy<T> {
 
-    @NotNull1
-    @NotModified
+    @NotNull1 @PropagateModification @Dependent1
     private final Supplier<T> supplier;
 
-    @Final(after = "get")
+    @Final(after = "t")
     private volatile T t;
 
-    public Lazy(@NotNull1 @NotModified Supplier<T> supplier) { // <1>
+    public Lazy(@NotNull1 @PropagateModification @Dependent1 Supplier<T> supplier) { // <1>
         this.supplier = supplier;
     }
 
     @NotNull
-    @Mark("get", type = CONTRACT) // <2>
+    @Mark("t") // <2>
     public T get() {
-        T localT = t;
-        if (localT != null) return localT;
-
-        synchronized (this) {
-            if (t == null) {
-                t = Objects.requireNonNull(supplier.get()); // <3>
-            }
-            return t;
-        }
+        if (t != null) return t;
+        t = Objects.requireNonNull(supplier.get()); // <3>
+        return t;
     }
 
     @NotModified
@@ -283,12 +276,10 @@ public class Lazy<T> {
     }
 }
 ----
-<1> Note that {nm1} is irrelevant: suppliers do not take parameters, so they cannot modify them.
-The annotation {nm} comes naturally, because `T` is of unbound generic type and `Lazy` cannot change its content.
-<2> The `@Mark("xx")` annotation as detected by the analyser currently implies `@Only(before="xx")`.
-This cannot be the case here, as users will call the `get` method repeatedly.
-For now, the {mark} annotation will have to be added by hand.
-<3> Here `t` links to `supplier`, as explained in <<linking-part2>>.
+<1> The {propagateModification} annotation has travelled from the field to the parameter;
+so has {dependent1}.
+<2> The {mark} annotation is conditional; the transition is triggered by nullity of `t`
+<3> Here `t` content links to `supplier`, as explained in <<content-linking>>.
 The statement also causes the {nn1} annotation, as defined in <<nullable-section>>.
 
 After calling the marker method `get()`, `t` cannot be assigned anymore, and it becomes {final}.

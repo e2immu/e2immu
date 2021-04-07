@@ -82,7 +82,7 @@ Let us summarize by:
 Intuitively, linking two variables means that modifying the content of one variable implies that the content of the linked variable may be modified too.
 ****
 
-We will discuss linking formally in <<linking-part2>>.
+We will discuss linking formally in <<linking-formally>>.
 For now, assume that a field links to another field, or to a parameter, if there is a possibility that both variables represent (part of) the same object (their object graphs overlap).
 
 The opposite of linking is independence.
@@ -97,8 +97,7 @@ The independence (or dependence) is marked with {independent} (or {dependent}) o
 It follows immediately that:
 
 * empty constructors of top-level types and static sub-types (but not necessarily inner classes, sub-types that are not static) are always independent;
-* non-modifying methods that return primitives or deeply immutable objects are independent, since no assignments take place, and the returned objects cannot be modified.
+* non-modifying methods that return primitives or deeply immutable objects are independent, since no assignments to fields take place, and the returned objects cannot be modified.
 
 Examples follow soon, once immutability has been defined in more detail.
-We discuss the special case of (in)dependence in the context of parameters of types with abstract methods in <<functional-interfaces>>.
-
+Note that we will mark a constructor as {independent} when all its parameters are {independent}, and {dependent} when at least one parameter is {dependent}.

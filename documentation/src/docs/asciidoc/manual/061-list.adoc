@@ -13,12 +13,14 @@ Parameter:: does the annotation occur on parameters?
 This classification helps to see the wood for the trees in the long list.
 We explain the green and red mode in #TODO#.
 
+[#beforeMark-annotation]
 ==== @BeforeMark
 
 |===
 | Basic {n} | Immu {y}| Contract {n}| Type {n} | Field {y} | Method {y} | Param {y}
 |===
 
+[#constant-annotation]
 ==== @Constant
 
 |===
@@ -29,12 +31,14 @@ Summary:: The analyser emits this annotation when a field has a constant final v
 Its primary purpose is to help debug the analyser.
 Mode:: This annotation has no opposite.
 
+[#container-annotation]
 ==== @Container
 
 |===
 | Basic {y} | Immu {y}| Contract {y}| Type {y} | Field {n} | Method {n} | Param {n}
 |===
 
+[#dependent-annotation]
 ==== @Dependent
 
 |===
@@ -105,6 +109,7 @@ class ExampleManualEventuallyE1Container {
 }
 ----
 
+[#e1immutable-annotation]
 ==== @E1Immutable
 
 |===
@@ -114,6 +119,7 @@ class ExampleManualEventuallyE1Container {
 Summary:: This annotation indicates that a type is level 1 immutable, effectively or eventually, meaning all fields are effectively or eventually final.
 Mode:: This annotation sits in between {mutableModifiesArguments} and {e2immutable}.
 
+[#e2container-annotation]
 ==== @E2Container
 
 |===
@@ -123,6 +129,7 @@ Mode:: This annotation sits in between {mutableModifiesArguments} and {e2immutab
 Summary:: This annotation is a short-hand for the combination of {e2immutable} and {container}.
 Mode:: This annotation is the default in the red mode.
 
+[#e2immutable-annotation]
 ==== @E2Immutable
 
 |===
@@ -142,22 +149,7 @@ Details:: Level 2 immutability adds extra restrictions on top of level 1 immutab
 .. in the case of methods, neither the return value nor the parameters must link to the fields of support data types.
 A consequence of requirement of not modified fields, is that non-private methods cannot be modifying.
 
-==== @Exposed
-
-|===
-| Basic {n} | Immu {y} | Contract {y}| Type {n} | Field {y} | Method {y} | Param {y}
-|===
-
-Summary:: On a parameter of functional interface type, this annotation indicates that the function exposes part of the object graph of the fields.
-It can take a parameter index when it exposes other parameters rather than fields.
-The annotation has a helper role on fields.
-
-Mode:: The annotation has no opposite.
-
-Parameters:: The annotation takes a default `value` parameter, if integer array type, holding parameter indices that it exposes.
-Index values start counting from `0`.
-The index value of `-1` represents fields rather than parameters.
-
+[#extensionClass-annotation]
 ==== @ExtensionClass
 
 |===

@@ -151,11 +151,11 @@ For example, if `java.util.List` is a container, then we want any implementation
 
 Frequently used JDK classes such as `java.lang.String` are marked `final` themselves, so that they cannot be subclassed.
 But in general, it seems a bad idea to weaken contracts.
-On the other hand, we can mark `java.lang.Object` as <<e2immutable-annotation>>, while obviously not all its derived classes can be of that type.
+On the other hand, we can mark `java.lang.Object` as {e2immutable}, while obviously not all its derived classes can be of that type.
 
 But the marks for eventually final and immutable classes push us to add some rules.
 Consider the `Verticle` interface and parts of its default implementation `AbstractVerticle`
-(please refer the section <<vertx-integration>> for an in-depth treatment):
+(please refer the section on Vertx integration #TODO# for an in-depth treatment):
 
 .Excerpts and annotations of Verticle.java and AbstractVerticle.java
 [source]
@@ -235,7 +235,7 @@ The two fields in this subclass will become effectively final, but, crucially, l
 The `handleRequest` method will be only be called after the `start` method logically ends.
 
 Should we treat the effective finality `AbstractVerticle` and `MyVerticle` as independent?
-Or do we want to impose <<e2final-annotation>> on any concrete implementation of `AbstractVerticle`?
+Or do we want to impose <<final-annotation>> on any concrete implementation of `AbstractVerticle`?
 My intuition would say _yes_, we should do that, because of the nature of the class imposed on `MyVerticle` by the `Verticle` interface:
 it is going to be a class which has a start/stop lifecycle, instantiated by a framework, where code runs in the context of the framework and services started in that framework.
 Instances of this class should not be passed on; public methods should not be available for 'outsiders'.
@@ -251,7 +251,7 @@ An interface that extends another interface does not inherit the annotations fro
 
 However, methods inherit the annotations of methods they override.
 
-Marks for <<e2final-annotation>> and <<e2immutable-annotation>> annotations are restricted to the methods listed in the type that has the annotation, and the fields linked to them.
+Marks for <<final-annotation>> and <<e2immutable-annotation>> annotations are restricted to the methods listed in the type that has the annotation, and the fields linked to them.
 --
 
 === Annotation types

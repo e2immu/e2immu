@@ -55,7 +55,6 @@ class Polygon {
 If your code can live with two different types (`Polygon.Builder`, `Polygon`) to represent polygons in their different stages (mutable, immutable), the builder paradigm is great.
 If, on the other hand, you want to hold polygons in a type that spans both stages of the polygon lifecycle, it becomes difficult to do this with an eye on immutability.
 One solution is the use of an interface that is implemented both by the builder and the immutable type.
-We will explore this in <<builder-with-interface>>.
 
 The <<support-firstthen>> type can also assist in this situation: it holds an initial object (the _first_) until a state change occurs, and it is forced to hold a second object (the _then_).
 Once it is in the final state, it cannot change anymore.
@@ -173,6 +172,21 @@ In each of these annotations, the actual value of the `...` in the `after=` or `
 
 In case there are multiple fields involved, their names are represented in a comma-separated fashion.
 
+The {mark} and {only} annotations can also be assigned to parameters, in the event that marked methods are called on a parameter of eventually immutable type.
+Consider the following utility method for <<support-eventuallyfinal>>, frequently used in the analyser:
+
+.Code fragment from EventuallyFinalExtension
+[source,java]
+----
+public static <T> void setFinalAllowEquals(@Mark("isFinal") EventuallyFinal<T> eventuallyFinal, T t) {
+    if (eventuallyFinal.isVariable() || !Objects.equals(eventuallyFinal.get(), t)) {
+        eventuallyFinal.setFinal(t);
+    }
+}
+----
+
+Here, the `setFinal` method's {mark} annotation travels to the parameter, where it is applied to the argument each time the static method is applied.
+
 === Propagation
 
 The support types detailed in <<support-classes>> can be used as building blocks to make ever more complex eventually immutable classes.
@@ -204,7 +218,7 @@ This situation must occur in a type with a {finalizer}, as explained in <<finali
 === Extensions of annotations
 
 When a type is eventually level 1 immutable, should the field(s) of the state transition be {variable} or {final}?
-Similarly, when a type is eventually level 2 immutable, should the analyser mark the support data fields {modified} or {nm}?
+Similarly, when a type is eventually level 2 immutable, should the analyser mark the initially mutable or assignable fields {modified} or {nm}?
 
 Basically, we propose to mark with the end state, qualifying with the parameter `after`:
 

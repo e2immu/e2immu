@@ -50,11 +50,12 @@ class Circular<T> {
 }
 ----
 
-We also revisit the `MyConsumer` functional interface from <<functional-interfaces>>:
+We also make use of the `MyConsumer` functional interface:
 
 .MyConsumer
 [source,java]
 ----
+@FunctionalInterface
 interface MyConsumer<T> {
     void accept(T t);
 }
@@ -141,6 +142,7 @@ static String useAddNewLine(@Modified StringBuilder sb1,
 Proper propagation of the modifications relies on knowing that `circular` holds the parameters `sb1`, `sb2` and `sb3`.
 (We will assume it is too complicated to assess whether `sb1` is still held by `circular` or not.) This will be accomplished by computing 'content links', which give rise to 'content (in)dependence', all in a way very similar to ordinary linking and (in)dependence.
 
+[#content-linking]
 === Content linking
 
 Going back to `Circular`, we see that the `add` method binds the parameter `t` to the instance by means of assignment.
