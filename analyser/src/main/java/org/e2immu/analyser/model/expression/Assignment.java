@@ -32,6 +32,7 @@ import org.e2immu.annotation.NotNull;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Predicate;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.LINKED_VARIABLES;
 import static org.e2immu.analyser.util.Logger.LogTarget.VARIABLE_PROPERTIES;
@@ -173,6 +174,14 @@ public class Assignment implements Expression {
             return SideEffect.SIDE_EFFECT;
         }
         return SideEffect.LOCAL;
+    }
+
+    @Override
+    public void visit(Predicate<Expression> predicate) {
+        if (predicate.test(this)) {
+            value.visit(predicate);
+            target.visit(predicate);
+        }
     }
 
     @Override

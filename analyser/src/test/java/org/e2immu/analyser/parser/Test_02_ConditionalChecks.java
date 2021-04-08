@@ -372,7 +372,7 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                 }
                 if ("3".equals(d.statementId())) {
                     AnalysisStatus expectStatus = d.iteration() == 0 ? AnalysisStatus.PROGRESS : AnalysisStatus.DONE;
-                    assertEquals(expectStatus, d.result().analysisStatus);
+                    assertEquals(expectStatus, d.result().analysisStatus());
                 }
             }
         };

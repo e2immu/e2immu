@@ -340,7 +340,7 @@ public class EvaluateMethodCall {
         // we might encounter isFact or isKnown, so we add the instance's state to the context
         EvaluationContext child = evaluationContext.child(instance.state(), true);
         Expression resultingValue = companionValue.reEvaluate(child, translationMap).value();
-        // FIXME
+
         if (instance.state() != EmptyExpression.EMPTY_EXPRESSION && resultingValue != EmptyExpression.EMPTY_EXPRESSION) {
             if (Primitives.isBoolean(methodInfo.returnType().typeInfo)) {
                 // State is: (org.e2immu.annotatedapi.AnnotatedAPI.this.isKnown(true) and 0 == java.util.Collection.this.size())
@@ -353,11 +353,13 @@ public class EvaluateMethodCall {
                     // only truths have been added
                     return new BooleanConstant(evaluationContext.getPrimitives(), true);
                 }
-            } else if (resultingValue instanceof InlineConditional inlineConditional) {
+            } else if (resultingValue instanceof InlineConditional || resultingValue instanceof And) {
                 // resulting value is expected to be an inline operator, its condition to be combined with the instance state
                 return resultingValue;
 
-            } else throw new UnsupportedOperationException();
+            } else {
+                throw new UnsupportedOperationException();
+            }
             // unsuccessful
         }
         return null;

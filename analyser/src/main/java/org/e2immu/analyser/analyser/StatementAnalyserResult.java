@@ -17,24 +17,23 @@ package org.e2immu.analyser.analyser;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Messages;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.stream.Stream;
 
-public class StatementAnalyserResult {
-    public final AnalysisStatus analysisStatus;
-    public final Messages messages;
-
-    private StatementAnalyserResult(AnalysisStatus analysisStatus, Messages messages) {
-        this.analysisStatus = analysisStatus;
-        this.messages = messages;
-    }
+public record StatementAnalyserResult(AnalysisStatus analysisStatus,
+                                      Messages messages,
+                                      List<PrimaryTypeAnalyser> localAnalysers) {
 
     public static class Builder {
         private AnalysisStatus analysisStatus;
         public final Messages messages = new Messages();
+        private final List<PrimaryTypeAnalyser> localAnalysers = new ArrayList<>();
 
         public Builder add(StatementAnalyserResult other) {
             analysisStatus = analysisStatus == null ? other.analysisStatus : analysisStatus.combine(other.analysisStatus);
             messages.addAll(other.messages);
+            localAnalysers.addAll(other.localAnalysers);
             return this;
         }
 
@@ -49,14 +48,19 @@ public class StatementAnalyserResult {
             return this;
         }
 
-        public StatementAnalyserResult build() {
-            assert analysisStatus != null;
-            return new StatementAnalyserResult(analysisStatus, messages);
-        }
-
         public Builder addMessages(Stream<Message> messageStream) {
             this.messages.addAll(messageStream);
             return this;
+        }
+
+        public Builder addTypeAnalysers(List<PrimaryTypeAnalyser> primaryTypeAnalysers) {
+            this.localAnalysers.addAll(primaryTypeAnalysers);
+            return this;
+        }
+
+        public StatementAnalyserResult build() {
+            assert analysisStatus != null;
+            return new StatementAnalyserResult(analysisStatus, messages, List.copyOf(localAnalysers));
         }
     }
 }

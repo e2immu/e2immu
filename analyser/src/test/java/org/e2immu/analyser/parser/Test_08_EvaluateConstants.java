@@ -65,7 +65,7 @@ public class Test_08_EvaluateConstants extends CommonTestRunner {
                     assertTrue(vi.isDelayed());
                 } else if (d.iteration() == 1) {
                     assertEquals("effectivelyFinal", vi.getValue().toString());
-                    assertSame(DONE, d.result().analysisStatus);
+                    assertSame(DONE, d.result().analysisStatus());
                 } else fail();
             }
             if ("EvaluateConstants_0".equals(d.methodInfo().name)) {
@@ -153,7 +153,7 @@ public class Test_08_EvaluateConstants extends CommonTestRunner {
             if ("print2".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId()) && d.iteration() > 0) {
                     assertNotNull(d.haveError(Message.INLINE_CONDITION_EVALUATES_TO_CONSTANT));
-                    assertSame(DONE, d.result().analysisStatus);
+                    assertSame(DONE, d.result().analysisStatus());
                 }
             }
         };

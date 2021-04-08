@@ -393,10 +393,11 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             AnalysisStatus overallStatus = analyserComponents.run(sharedState);
 
             StatementAnalyserResult result = sharedState.builder()
+                    .addTypeAnalysers(localAnalysers.get())
                     .addMessages(statementAnalysis.messages.stream())
                     .setAnalysisStatus(overallStatus)
                     .combineAnalysisStatus(wasReplacement ? PROGRESS : DONE).build();
-            analysisStatus = result.analysisStatus;
+            analysisStatus = result.analysisStatus();
 
             visitStatementVisitors(statementAnalysis.index, result, sharedState);
 
@@ -1895,7 +1896,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                     StatementAnalyserResult result = executionOfBlock.startOfBlock.analyseAllStatementsInBlock(evaluationContext.getIteration(),
                             forward, evaluationContext.getClosure());
                     sharedState.builder.add(result);
-                    analysisStatus = analysisStatus.combine(result.analysisStatus);
+                    analysisStatus = analysisStatus.combine(result.analysisStatus());
                     blocksExecuted++;
                 } else {
                     // ensure that the first statement is unreachable

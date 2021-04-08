@@ -144,8 +144,9 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
                 StatementAnalyserResult result = firstStatementAnalyser.analyseAllStatementsInBlock(sharedState.evaluationContext.getIteration(),
                         ForwardAnalysisInfo.startOfMethod(analyserContext.getPrimitives()),
                         sharedState.evaluationContext.getClosure());
-                this.messages.addAll(result.messages);
-                return result.analysisStatus;
+                this.messages.addAll(result.messages());
+                this.copyLocallyCreatedTypeAnalysersToFieldAnalysers(result.localAnalysers());
+                return result.analysisStatus();
             };
 
             builder.add(STATEMENT_ANALYSER, statementAnalyser)
@@ -163,6 +164,12 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
             methodAnalysis.minimalInfoForEmptyMethod(methodAnalysis.primitives);
         }
         analyserComponents = builder.build();
+    }
+
+    private void copyLocallyCreatedTypeAnalysersToFieldAnalysers(List<PrimaryTypeAnalyser> primaryTypeAnalysers) {
+        if(!primaryTypeAnalysers.isEmpty()) {
+            myFieldAnalysers.values().forEach(fa -> fa.receiveAdditionalTypeAnalysers(primaryTypeAnalysers));
+        }
     }
 
     @Override

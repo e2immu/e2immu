@@ -51,7 +51,7 @@ public class Test_04_Warnings extends CommonTestRunner {
                 assertEquals("ERROR in M:" + TYPE + ":1: Unused local variable: a", d.haveError(Message.UNUSED_LOCAL_VARIABLE));
                 assertEquals("ERROR in M:" + TYPE + ":1: Useless assignment: a", d.haveError(Message.USELESS_ASSIGNMENT));
 
-                assertEquals(AnalysisStatus.DONE, d.result().analysisStatus);
+                assertEquals(AnalysisStatus.DONE, d.result().analysisStatus());
             }
         };
 
@@ -77,7 +77,7 @@ public class Test_04_Warnings extends CommonTestRunner {
         final String E = VariableInfoContainer.Level.EVALUATION.toString();
 
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
-            AnalysisStatus analysisStatus = d.result().analysisStatus;
+            AnalysisStatus analysisStatus = d.result().analysisStatus();
             if ("method1".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
                     assertEquals("true", d.state().toString());

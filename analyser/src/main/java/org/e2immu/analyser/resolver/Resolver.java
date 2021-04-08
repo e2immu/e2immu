@@ -336,6 +336,13 @@ public class Resolver {
                         sam = convertMethodReferenceIntoAnonymous(fieldInfo.type, fieldInfo.owner,
                                 (MethodReference) parsedExpression, expressionContext);
                         doType(sam.typeInfo, subContext, methodFieldSubTypeGraph);
+                    } else if (parsedExpression instanceof VariableExpression ve) {
+                        if (ve.variable() instanceof FieldReference fr) {
+                            sam = null; // we can't know, there'll be an indirection
+                        } else {
+                            throw new UnsupportedOperationException("Can only deal with fields at the moment: " +
+                                    ve.variable().fullyQualifiedName());
+                        }
                     } else {
                         throw new UnsupportedOperationException("Cannot (yet) deal with " + parsedExpression.getClass());
                     }

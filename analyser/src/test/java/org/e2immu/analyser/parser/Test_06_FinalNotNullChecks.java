@@ -90,7 +90,7 @@ public class Test_06_FinalNotNullChecks extends CommonTestRunner {
                 FieldInfo input = d.methodInfo().typeInfo.getFieldByName("input", true);
                 if (d.iteration() == 0) {
                     assertEquals(INPUT_DELAYED, d.getFieldAsVariable(input).getValue().toString());
-                    assertEquals(AnalysisStatus.PROGRESS, d.result().analysisStatus);
+                    assertEquals(AnalysisStatus.PROGRESS, d.result().analysisStatus());
                 } else {
                     int notNull = d.getFieldAsVariable(input).getProperty(VariableProperty.CONTEXT_NOT_NULL);
                     assertEquals(MultiLevel.NULLABLE, notNull);
@@ -101,7 +101,7 @@ public class Test_06_FinalNotNullChecks extends CommonTestRunner {
                 FieldInfo input = d.methodInfo().typeInfo.getFieldByName("input", true);
                 if (d.iteration() == 0) {
                     assertEquals(INPUT_DELAYED, d.getFieldAsVariable(input).getValue().toString());
-                    assertEquals(AnalysisStatus.PROGRESS, d.result().analysisStatus);
+                    assertEquals(AnalysisStatus.PROGRESS, d.result().analysisStatus());
                 } else {
                     int notNull = d.getFieldAsVariable(input).getProperty(VariableProperty.CONTEXT_NOT_NULL);
                     assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, notNull);
