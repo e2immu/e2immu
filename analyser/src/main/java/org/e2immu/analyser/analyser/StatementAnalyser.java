@@ -614,8 +614,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                                           EvaluationResult evaluationResult) {
         AnalysisStatus status = evaluationResult.someValueWasDelayed() ? DELAYS : DONE;
 
-        if (evaluationResult.addCircularCallOrUndeclaredFunctionalInterface()) {
-            statementAnalysis.methodLevelData.addCircularCallOrUndeclaredFunctionalInterface();
+        if (evaluationResult.addCircularCall()) {
+            statementAnalysis.methodLevelData.addCircularCall();
         }
         GroupPropertyValues groupPropertyValues = new GroupPropertyValues();
         Map<Variable, LinkedVariables> remapStaticallyAssignedVariables = new HashMap<>();

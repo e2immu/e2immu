@@ -33,6 +33,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static org.e2immu.analyser.model.util.ConvertMethodReference.convertMethodReferenceIntoAnonymous;
 import static org.e2immu.analyser.util.Logger.LogTarget.RESOLVE;
 import static org.e2immu.analyser.util.Logger.LogTarget.STATIC_METHOD_CALLS;
 import static org.e2immu.analyser.util.Logger.isLogEnabled;
@@ -297,15 +298,20 @@ public class Resolver {
             ExpressionContext subContext = expressionContext.newTypeContext(fieldInfo);
 
             // fieldInfo.type can have concrete types; but the abstract method will not have them filled in
-            MethodTypeParameterMap singleAbstractMethod = fieldInfo.type.findSingleAbstractMethodOfInterface(expressionContext.typeContext);
+            MethodTypeParameterMap singleAbstractMethod = fieldInfo.type
+                    .findSingleAbstractMethodOfInterface(expressionContext.typeContext);
             if (singleAbstractMethod != null) {
-                singleAbstractMethod = singleAbstractMethod.expand(fieldInfo.type.initialTypeParameterMap(expressionContext.typeContext));
-                log(RESOLVE, "Passing on functional interface method to field initializer of {}: {}", fieldInfo.name, singleAbstractMethod);
+                singleAbstractMethod = singleAbstractMethod
+                        .expand(fieldInfo.type.initialTypeParameterMap(expressionContext.typeContext));
+                log(RESOLVE, "Passing on functional interface method to field initializer of {}: {}",
+                        fieldInfo.name, singleAbstractMethod);
             }
-            org.e2immu.analyser.model.Expression parsedExpression = subContext.parseExpression(expression, fieldInfo.type, singleAbstractMethod);
+            org.e2immu.analyser.model.Expression parsedExpression = subContext.parseExpression(expression,
+                    fieldInfo.type, singleAbstractMethod);
             // here we decide how to resolve the anonymous types created as we go along
             // the current implementation treats the anonymous types as subtypes in the current type, which is what we want to do
-            subContext.streamNewlyCreatedTypes().forEach(anonymousType -> doType(anonymousType, subContext, methodFieldSubTypeGraph));
+            subContext.streamNewlyCreatedTypes().forEach(anonymousType -> doType(anonymousType, subContext,
+                    methodFieldSubTypeGraph));
 
             MethodInfo sam;
             boolean artificial;
@@ -314,7 +320,8 @@ public class Resolver {
                 artificial = newObjects.stream().filter(no -> no.parameterizedType().isFunctionalInterface()).count() != 1L;
 
                 if (!artificial) {
-                    NewObject newObject = newObjects.stream().filter(no -> no.parameterizedType().isFunctionalInterface()).findFirst().orElseThrow();
+                    NewObject newObject = newObjects.stream()
+                            .filter(no -> no.parameterizedType().isFunctionalInterface()).findFirst().orElseThrow();
                     TypeInfo anonymousType = Objects.requireNonNull(newObject.anonymousClass());
                     sam = anonymousType.findOverriddenSingleAbstractMethod();
                 } else {
@@ -326,8 +333,9 @@ public class Resolver {
                         assert lambda.implementation.typeInfo != null; // to keep IntelliJ happy
                         sam = lambda.implementation.typeInfo.findOverriddenSingleAbstractMethod();
                     } else if (parsedExpression instanceof MethodReference) {
-                        sam = fieldInfo.owner.convertMethodReferenceIntoLambda(fieldInfo.type, fieldInfo.owner,
+                        sam = convertMethodReferenceIntoAnonymous(fieldInfo.type, fieldInfo.owner,
                                 (MethodReference) parsedExpression, expressionContext);
+                        doType(sam.typeInfo, subContext, methodFieldSubTypeGraph);
                     } else {
                         throw new UnsupportedOperationException("Cannot (yet) deal with " + parsedExpression.getClass());
                     }

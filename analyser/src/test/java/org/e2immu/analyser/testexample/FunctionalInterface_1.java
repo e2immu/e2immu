@@ -69,13 +69,13 @@ public class FunctionalInterface_1 {
     // the following two functions are here to test that the translation from method reference to anonymous
     // type + method works properly
 
-    @Modified
+    //@Modified
     public final Function<Integer, Integer> getAndAdd = myCounter::add;
 
-    @Modified
+    //@Modified
     public final Function<Integer, Integer> getAndAdd2 = t -> myCounter.add(t);
 
-    @Modified
+    //@Modified
     public final Function<Integer, Integer> getAndAdd3 = t -> {
         return myCounter.add(t);
     };

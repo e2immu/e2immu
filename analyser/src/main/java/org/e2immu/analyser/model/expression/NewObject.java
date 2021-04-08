@@ -68,6 +68,13 @@ public record NewObject(
                 parameterExpressions, MultiLevel.EFFECTIVELY_NOT_NULL, null, arrayInitializer, state);
     }
 
+    public static Expression instanceFromSam(Primitives primitives,
+                                             MethodInfo sam,
+                                             ParameterizedType parameterizedType) {
+        return new NewObject(sam.fullyQualifiedName, null, parameterizedType, Diamond.NO, List.of(),
+                MultiLevel.EFFECTIVELY_NOT_NULL, sam.typeInfo, null, new BooleanConstant(primitives, true));
+    }
+
     /*
     used in MethodCall and Field analyser (in the former to enrich with, in the latter to get rid of, state)
      */

@@ -202,9 +202,16 @@ public class FieldAnalyser extends AbstractAnalyser {
         if (fieldInspection.fieldInitialiserIsSet()) {
             FieldInspection.FieldInitialiser fieldInitialiser = fieldInspection.getFieldInitialiser();
             if (fieldInitialiser.initialiser() != EmptyExpression.EMPTY_EXPRESSION) {
+                Expression initializer;
+                if (fieldInitialiser.initialiser() instanceof MethodReference) {
+                    initializer = NewObject.instanceFromSam(fieldAnalysis.primitives,
+                            fieldInitialiser.implementationOfSingleAbstractMethod(), fieldInfo.type);
+                } else {
+                    initializer = fieldInitialiser.initialiser();
+                }
                 EvaluationContext evaluationContext = new EvaluationContextImpl(sharedState.iteration(),
                         ConditionManager.initialConditionManager(analyserContext.getPrimitives()), sharedState.closure());
-                EvaluationResult evaluationResult = fieldInitialiser.initialiser().evaluate(evaluationContext, ForwardEvaluationInfo.DEFAULT);
+                EvaluationResult evaluationResult = initializer.evaluate(evaluationContext, ForwardEvaluationInfo.DEFAULT);
                 Expression initialiserValue = evaluationResult.value();
                 if (!evaluationResult.someValueWasDelayed()) {
                     fieldAnalysis.initialValue.set(initialiserValue);

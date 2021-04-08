@@ -52,11 +52,11 @@ public class TestModificationGraph extends CommonTestRunner {
         String name = d.methodInfo().name;
         if ("incrementAndGetWithI".equals(name)) {
             assertTrue(d.methodAnalysis().methodLevelData()
-                    .getCallsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod());
+                    .getCallsPotentiallyCircularMethod());
         }
         if ("useC2".equals(name) && d.iteration() > 1) {
             assertTrue(d.methodAnalysis().methodLevelData()
-                    .getCallsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod());
+                    .getCallsPotentiallyCircularMethod());
         }
         if ("C2".equals(name)) {
             ParameterInfo c1 = d.methodInfo().methodInspection.get().getParameters().get(1);

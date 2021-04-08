@@ -19,6 +19,7 @@ import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.expression.NewObject;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.analyser.model.variable.FieldReference;
@@ -85,9 +86,34 @@ public class Test_43_FunctionalInterface extends CommonTestRunner {
     @Test
     public void test_1() throws IOException {
 
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("$1".equals(d.methodInfo().typeInfo.simpleName) && "get".equals(d.methodInfo().name)) {
+                int expectMm = d.iteration() <= 2 ? Level.DELAY : Level.TRUE;
+                assertEquals(expectMm, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
+            }
+
+            if ("myIncrementer".equals(d.methodInfo().name)) {
+                int expectMm = d.iteration() <= 2 ? Level.DELAY : Level.TRUE;
+                assertEquals(expectMm, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
+            }
+        };
+
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("myIncrementer".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof FieldReference fr && "getAndIncrement".equals(fr.fieldInfo.name)) {
+                    String expectValue = d.iteration() == 0 ? "<f:getAndIncrement>" : "instance type $1";
+                    assertEquals(expectValue, d.currentValue().toString());
+                    if (d.iteration() > 0) {
+                        NewObject newObject = (NewObject) d.currentValue();
+                        assertEquals("Type org.e2immu.analyser.testexample.FunctionalInterface_1.$1",
+                                newObject.parameterizedType().toString());
+                    }
+                }
+            }
+        };
+
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             FieldInfo fieldInfo = d.fieldInfo();
-            int iteration = d.iteration();
 
             if ("getAndAdd".equals(fieldInfo.name) || "getAndAdd2".equals(fieldInfo.name) || "getAndAdd3".equals(fieldInfo.name)) {
                 MethodInfo sam = fieldInfo.fieldInspection.get().getFieldInitialiser().implementationOfSingleAbstractMethod();
@@ -97,38 +123,47 @@ public class Test_43_FunctionalInterface extends CommonTestRunner {
                 assertEquals("myCounter.add(t)", returnStatement.structure.expression().minimalOutput());
             }
 
-            if ("getAndAdd".equals(fieldInfo.name)) {
-                MethodInfo sam = fieldInfo.fieldInspection.get().getFieldInitialiser().implementationOfSingleAbstractMethod();
-                int modified = sam.methodAnalysis.get().getProperty(VariableProperty.MODIFIED_METHOD);
-                assertEquals(Level.TRUE, modified); // STEP 1 CHECKED
-                if (iteration > 0) {
-                    int modifiedOnField = d.fieldAnalysis().getProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD);
-                    assertEquals(Level.TRUE, modifiedOnField); // STEP 2
-                }
-            }
-
             if ("getAndIncrement".equals(fieldInfo.name)) {
                 MethodInfo sam = fieldInfo.fieldInspection.get().getFieldInitialiser().implementationOfSingleAbstractMethod();
                 Block block = sam.methodInspection.get().getMethodBody();
                 assertEquals(1, block.structure.statements().size());
                 ReturnStatement returnStatement = (ReturnStatement) block.structure.statements().get(0);
                 assertEquals("myCounter.increment()", returnStatement.structure.expression().minimalOutput());
+
+                assertEquals("instance type $1", d.fieldAnalysis().getEffectivelyFinalValue().toString());
+
+                MethodAnalysis methodAnalysis = d.evaluationContext().getAnalyserContext().getMethodAnalysis(sam);
+                int getMethodModified = methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD);
+                int expectMm = d.iteration() <= 2 ? Level.DELAY : Level.TRUE;
+                assertEquals(expectMm, getMethodModified);
+                int fieldModified = d.fieldAnalysis().getProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD);
+                int expectMom = d.iteration() <= 2 ? Level.DELAY : Level.TRUE;
+                assertEquals(expectMom, fieldModified);
             }
+
             if ("explicitGetAndIncrement".equals(fieldInfo.name)) {
                 MethodInfo get = fieldInfo.fieldInspection.get().getFieldInitialiser().implementationOfSingleAbstractMethod();
                 assertEquals("get", get.name);
-                if (iteration > 0) {
-                    int getMethodModified = get.methodAnalysis.get().getProperty(VariableProperty.MODIFIED_METHOD);
-                    assertEquals(Level.TRUE, getMethodModified); // STEP 1 CHECKED
-                    int fieldModified = d.fieldAnalysis().getProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD);
-                    assertEquals(Level.TRUE, fieldModified); // STEP 2
-                }
+
+                assertEquals("instance type $2", d.fieldAnalysis().getEffectivelyFinalValue().toString());
+                assertEquals("Type org.e2immu.analyser.testexample.FunctionalInterface_1.$2",
+                        d.fieldAnalysis().getEffectivelyFinalValue().returnType().toString());
+
+                MethodAnalysis methodAnalysis = d.evaluationContext().getAnalyserContext().getMethodAnalysis(get);
+                int getMethodModified = methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD);
+                int expectMm = d.iteration() <= 2 ? Level.DELAY : Level.TRUE;
+                assertEquals(expectMm, getMethodModified); // STEP 1 CHECKED
+                int fieldModified = d.fieldAnalysis().getProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD);
+                int expectMom = d.iteration() <= 2 ? Level.DELAY : Level.TRUE;
+                assertEquals(expectMom, fieldModified); // STEP 2
             }
 
         };
 
         testClass("FunctionalInterface_1", 0, 0, new DebugConfiguration.Builder()
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 
@@ -149,7 +184,7 @@ public class Test_43_FunctionalInterface extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if (Set.of("acceptMyCounter1", "acceptMyCounter2", "acceptInt1").contains(d.methodInfo().name)) {
                 assertTrue(d.methodAnalysis().methodLevelData()
-                        .getCallsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod());
+                        .getCallsPotentiallyCircularMethod());
             }
         };
 
@@ -162,17 +197,17 @@ public class Test_43_FunctionalInterface extends CommonTestRunner {
         TypeMapVisitor typeMapVisitor = typeMap -> {
             TypeInfo consumer = typeMap.get(Consumer.class);
             MethodInfo accept = consumer.findUniqueMethod("accept", 1);
-            assertEquals(Level.TRUE, accept.methodAnalysis.get().getProperty(VariableProperty.MODIFIED_METHOD));
+            assertEquals(Level.DELAY, accept.methodAnalysis.get().getProperty(VariableProperty.MODIFIED_METHOD));
             ParameterInfo t = accept.methodInspection.get().getParameters().get(0);
-            assertEquals(Level.TRUE, t.parameterAnalysis.get().getProperty(VariableProperty.MODIFIED_VARIABLE));
+            assertEquals(Level.DELAY, t.parameterAnalysis.get().getProperty(VariableProperty.MODIFIED_VARIABLE));
         };
 
 
         testClass("FunctionalInterface_2", 0, 0, new DebugConfiguration.Builder()
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+              //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addTypeMapVisitor(typeMapVisitor)
-                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
+              //  .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+             //   .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
                 .build());
     }
 

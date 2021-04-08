@@ -62,7 +62,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                                Map<Variable, ChangeData> changeData,
                                Precondition precondition,
                                Expression untranslatedPrecondition,
-                               boolean addCircularCallOrUndeclaredFunctionalInterface) {
+                               boolean addCircularCall) {
 
     public EvaluationResult {
         assert changeData.values().stream().noneMatch(ecd -> ecd.linkedVariables == null);
@@ -545,6 +545,18 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             valueChanges.put(variable, newEcd);
         }
 
+        public void eraseContextModified(Variable variable) {
+            ChangeData ecd = valueChanges.get(variable);
+            if(ecd != null) {
+                Map<VariableProperty,Integer> propertiesWithoutContextModified = new HashMap<>(ecd.properties);
+                propertiesWithoutContextModified.remove(VariableProperty.CONTEXT_MODIFIED);
+                ChangeData newChangeData = new ChangeData(ecd.value, ecd.stateIsDelayed, ecd.markAssignment,
+                        ecd.readAtStatementTime, ecd.linkedVariables, ecd.staticallyAssignedVariables,
+                        ecd.linked1Variables, Map.copyOf(propertiesWithoutContextModified));
+                valueChanges.put(variable, newChangeData);
+            }
+        }
+
         private Map<VariableProperty, Integer> mergeProperties
                 (Map<VariableProperty, Integer> m1, Map<VariableProperty, Integer> m2) {
             Map<VariableProperty, Integer> res = new HashMap<>(m1);
@@ -606,7 +618,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                     parameterInfo.fullyQualifiedName()));
         }
 
-        public void addCircularCallOrUndeclaredFunctionalInterface() {
+        public void addCircularCall() {
             addCircularCallOrUndeclaredFunctionalInterface = true;
         }
 

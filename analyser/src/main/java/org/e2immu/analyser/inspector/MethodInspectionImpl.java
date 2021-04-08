@@ -384,9 +384,10 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
         }
 
         private List<ParameterInfo> getMutableParameters() {
+            MethodInfo localMethodInfo = getMethodInfo();
             if (mutableParameters == null) {
                 mutableParameters = parameters.stream()
-                        .map(b -> b.build(methodInfo)).sorted().collect(Collectors.toList());
+                        .map(b -> b.build(localMethodInfo)).sorted().collect(Collectors.toList());
             }
             return mutableParameters;
         }

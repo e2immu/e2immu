@@ -889,7 +889,7 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
             // this will be due to calling undeclared SAMs, or calling non-modifying methods in a circular type situation
             // (A.nonModifying() calls B.modifying() on a parameter (NOT a field, so nonModifying is just that) which itself calls A.modifying()
             // NOTE that in this situation we cannot have a container, as we require a modifying! (TODO check this statement is correct)
-            Boolean circular = methodLevelData.getCallsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod();
+            Boolean circular = methodLevelData.getCallsPotentiallyCircularMethod();
             if (circular == null) {
                 log(DELAYED, "Delaying modification on method {}, waiting for calls to undeclared functional interfaces",
                         methodInfo.distinguishingName());
@@ -931,8 +931,8 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
         Optional<MethodInfo> someOtherMethodNotYetDecided = methodInfo.typeInfo.typeInspection.get()
                 .methodStream(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM)
                 .filter(mi ->
-                        analyserContext.getMethodAnalysis(mi).methodLevelData().getCallsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod() == null ||
-                                (analyserContext.getMethodAnalysis(mi).methodLevelData().getCallsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod() && (
+                        analyserContext.getMethodAnalysis(mi).methodLevelData().getCallsPotentiallyCircularMethod() == null ||
+                                (analyserContext.getMethodAnalysis(mi).methodLevelData().getCallsPotentiallyCircularMethod() && (
                                         analyserContext.getMethodAnalysis(mi).getProperty(VariableProperty.MODIFIED_METHOD) == Level.DELAY ||
                                                 mi.returnType().isImplicitlyOrAtLeastEventuallyE2Immutable(analyserContext, methodInfo.typeInfo) == null ||
                                                 analyserContext.getMethodAnalysis(mi).getProperty(VariableProperty.INDEPENDENT) == Level.DELAY)))

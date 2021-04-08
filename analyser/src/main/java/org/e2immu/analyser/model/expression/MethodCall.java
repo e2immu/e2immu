@@ -255,7 +255,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             abstractMethod = methodInfo.isAbstract();
 
             if (circularCallOutsidePrimaryType) {
-                builder.addCircularCallOrUndeclaredFunctionalInterface();
+                builder.addCircularCall();
             }
             alwaysModifying = circularCallOutsidePrimaryType;
             recursiveCall = evaluationContext.getCurrentMethod().methodInfo == this.methodInfo; // recursive call
@@ -321,6 +321,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                     pmBuilder.markContextModified(ve.variable(), modifyingConcreteMethod);
                 } else {
                     pmBuilder.markContextModifiedDelay(ve.variable());
+                    pmBuilder.eraseContextModified(ve.variable());
                 }
                 builder.composeIgnoreExpression(pmBuilder.build());
             } else if (propagateModification) {

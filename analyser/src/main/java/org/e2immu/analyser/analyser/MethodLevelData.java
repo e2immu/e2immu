@@ -43,11 +43,11 @@ import static org.e2immu.analyser.util.Logger.log;
 public class MethodLevelData {
     private static final Logger LOGGER = LoggerFactory.getLogger(MethodLevelData.class);
 
-    // part of modification status for methods dealing with SAMs
-    private final SetOnce<Boolean> callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod = new SetOnce<>();
+    // part of modification status for dealing with circular methods
+    private final SetOnce<Boolean> callsPotentiallyCircularMethod = new SetOnce<>();
 
-    public Boolean getCallsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod() {
-        return callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod.getOrElse(null);
+    public Boolean getCallsPotentiallyCircularMethod() {
+        return callsPotentiallyCircularMethod.getOrElse(null);
     }
 
     public final SetOnceMap<MethodInfo, Boolean> copyModificationStatusFrom = new SetOnceMap<>();
@@ -58,9 +58,9 @@ public class MethodLevelData {
     // not for local processing, but so that we know in the method and field analyser that this process has been completed
     public final FlipSwitch linksHaveBeenEstablished = new FlipSwitch();
 
-    public void addCircularCallOrUndeclaredFunctionalInterface() {
-        if (!callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod.isSet()) {
-            callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod.set(true);
+    public void addCircularCall() {
+        if (!callsPotentiallyCircularMethod.isSet()) {
+            callsPotentiallyCircularMethod.set(true);
         }
     }
 
@@ -147,8 +147,8 @@ public class MethodLevelData {
      * @return if any change happened to methodAnalysis
      */
     private AnalysisStatus ensureThisProperties() {
-        if (!callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod.isSet()) {
-            callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod.set(false);
+        if (!callsPotentiallyCircularMethod.isSet()) {
+            callsPotentiallyCircularMethod.set(false);
         }
         return DONE;
     }
