@@ -12,18 +12,45 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser;
+package org.e2immu.analyser.testexample;
 
-import org.e2immu.analyser.config.DebugConfiguration;
-import org.junit.jupiter.api.Test;
+import org.e2immu.annotation.*;
 
-import java.io.IOException;
+/* direct COPY-PASTE into the manual, @Final annotation */
 
-public class Test_11_Final_M extends CommonTestRunner {
-    @Test
-    public void test() throws IOException {
-        testClass("ExampleManualVariableFinal", 0, 0, new DebugConfiguration.Builder()
-                .build());
+@Container
+class Final_1 {
+
+    @Final
+    private int i;
+
+    @Variable
+    private int j;
+
+    public final int k; // <1>
+
+    public Final_1(int p, int q) {
+        setI(p);
+        this.k = q;
     }
 
+    @NotModified
+    public int getI() {
+        return i;
+    }
+
+    @Modified // <2>
+    private void setI(int i) {
+        this.i = i;
+    }
+
+    @NotModified
+    public int getJ() {
+        return j;
+    }
+
+    @Modified
+    public void setJ(int j) {
+        this.j = j;
+    }
 }

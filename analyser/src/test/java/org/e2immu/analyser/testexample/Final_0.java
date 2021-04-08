@@ -24,7 +24,7 @@ import org.e2immu.annotation.*;
 
 @E1Immutable(absent = true)
 @Container
-public class FinalChecks {
+public class Final_0 {
 
     @Final
     private String s3 = "abc";
@@ -41,7 +41,7 @@ public class FinalChecks {
     @Final
     private String s5;
 
-    FinalChecks(String s1, String s2) {
+    Final_0(String s1, String s2) {
         if (s5 == null) {
             s5 = "abc";
         } else {
@@ -56,7 +56,7 @@ public class FinalChecks {
         this.s1 = s1 + s3;
     }
 
-    FinalChecks(String s1) {
+    Final_0(String s1) {
         this.s1 = s1;
     }
 

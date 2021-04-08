@@ -402,9 +402,9 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         StatementAnalysis copyFrom = previous == null ? parent : previous;
 
         variables.toImmutableMap().values().forEach(vic -> {
+            fromTypeAnalyserIntoInitialThis(evaluationContext, vic);
             if (vic.isInitial()) {
                 fromFieldAnalyserIntoInitial(evaluationContext, vic);
-                fromTypeAnalyserIntoInitialThis(evaluationContext, vic);
             } else {
                 if (vic.hasEvaluation()) vic.copy(); //otherwise, variable not assigned, not read
             }
@@ -502,7 +502,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
     private void fromTypeAnalyserIntoInitialThis(EvaluationContext evaluationContext, VariableInfoContainer vic) {
         VariableInfo variableInfo = vic.current();
         if (!(variableInfo.variable() instanceof This thisVar)) return;
-        Map<VariableProperty, Integer> map = typePropertyMap(evaluationContext.getAnalyserContext(), thisVar.typeInfo);
+        Map<VariableProperty, Integer> map = typePropertyMap(evaluationContext.getAnalyserContext(), thisVar.typeInfo, false);
         map.forEach((k, v) -> vic.setProperty(k, v, INITIAL));
     }
 
@@ -866,7 +866,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             vic.setValue(NewObject.forCatchOrThis(
                     index + "-" + variable.fullyQualifiedName(),
                     primitives, variable.parameterizedType()), false, LinkedVariables.EMPTY,
-                    typePropertyMap(analyserContext, methodAnalysis.getMethodInfo().typeInfo), true);
+                    typePropertyMap(analyserContext, methodAnalysis.getMethodInfo().typeInfo, true), true);
             vic.setLinkedVariables(LinkedVariables.EMPTY, true);
             vic.setProperty(NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL, INITIAL);
             vic.setProperty(EXTERNAL_NOT_NULL, MultiLevel.NOT_INVOLVED, INITIAL);
@@ -936,9 +936,11 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             = Set.of(CONTAINER, IMMUTABLE);
 
     private Map<VariableProperty, Integer> typePropertyMap(AnalyserContext analyserContext,
-                                                           TypeInfo typeInfo) {
+                                                           TypeInfo typeInfo,
+                                                           boolean addSharedContext) {
         TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(typeInfo);
-        Map<VariableProperty, Integer> result = sharedContext(MultiLevel.EFFECTIVELY_NOT_NULL);
+        Map<VariableProperty, Integer> result = addSharedContext ? sharedContext(MultiLevel.EFFECTIVELY_NOT_NULL)
+                : new HashMap<>();
 
         for (VariableProperty vp : FROM_TYPE_ANALYSER_TO_PROPERTIES) {
             int value = typeAnalysis.getProperty(vp);
