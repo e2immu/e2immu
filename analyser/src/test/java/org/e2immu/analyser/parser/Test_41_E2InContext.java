@@ -19,6 +19,7 @@ import org.e2immu.analyser.analyser.LinkedVariables;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.Level;
+import org.e2immu.analyser.model.MethodAnalysis;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
@@ -30,8 +31,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_41_E2InContext extends CommonTestRunner {
 
@@ -112,6 +112,14 @@ public class Test_41_E2InContext extends CommonTestRunner {
                 int expectIndependent = d.iteration() <= 3 ? Level.DELAY : MultiLevel.DEPENDENT;
                 assertEquals(expectIndependent, d.methodAnalysis().getProperty(VariableProperty.INDEPENDENT));
             }
+            if ("set".equals(d.methodInfo().name)) {
+                MethodAnalysis.Eventual eventual = d.methodAnalysis().getEventual();
+                if (d.iteration() <= 1) {
+                    assertSame(MethodAnalysis.DELAYED_EVENTUAL, eventual);
+                } else {
+                    assertTrue(eventual.mark());
+                }
+            }
         };
 
         testClass("E2InContext_1", 0, 0, new DebugConfiguration.Builder()
@@ -123,7 +131,31 @@ public class Test_41_E2InContext extends CommonTestRunner {
 
     @Test
     public void test_2() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("E2InContext_2".equals(d.methodInfo().name) && "0".equals(d.statementId())) {
+                if (d.variable() instanceof FieldReference fr && "eventually".equals(fr.fieldInfo.name)) {
+                    int expectImm = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EVENTUALLY_E2IMMUTABLE_BEFORE_MARK;
+                    assertEquals(expectImm, d.getProperty(VariableProperty.IMMUTABLE));
+                    int expectCImm = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EVENTUALLY_E2IMMUTABLE_AFTER_MARK;
+                    assertEquals(expectCImm, d.getProperty(VariableProperty.CONTEXT_IMMUTABLE));
+                }
+            }
+        };
+
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("set".equals(d.methodInfo().name)) {
+                MethodAnalysis.Eventual eventual = d.methodAnalysis().getEventual();
+                if (d.iteration() <= 1) {
+                    assertSame(MethodAnalysis.DELAYED_EVENTUAL, eventual);
+                } else {
+                    assertTrue(eventual.mark());
+                }
+            }
+        };
+
         testClass("E2InContext_2", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 

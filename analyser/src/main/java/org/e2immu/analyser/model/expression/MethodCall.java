@@ -296,7 +296,6 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 VariableProperty.CONTEXT_IMMUTABLE_DELAY, immutableData.delay,
                 VariableProperty.CONTEXT_IMMUTABLE, immutableData.required,
                 VariableProperty.NEXT_CONTEXT_IMMUTABLE, immutableData.next), true));
-        // VariableProperty.CONTEXT_PROPAGATE_MOD, Level.fromBool(propagateModification) deferred to separate piece of code
 
         // null scope
         Expression objectValue = objectResult.value();
@@ -476,6 +475,12 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         });
     }
 
+    /*
+    next => after the call; required => before the call.
+    @Mark goes from BEFORE to AFTER
+    @Only(before) goes from BEFORE to BEFORE
+    @Only(after) goes from AFTER to AFTER
+     */
     private record ImmutableData(int delay, int required, int next) {
     }
 

@@ -244,4 +244,14 @@ public class MultiLevel {
         int value = value(immutable, level);
         return value == EVENTUAL_BEFORE || value == EVENTUAL;
     }
+
+    public static boolean isBeforeAllowNotEventual(int immutable) {
+        if (immutable == Level.DELAY) return false;
+        int level = levelBetterThanFalse(immutable);
+        if (level < 0) {
+            return false;
+        }
+        int value = value(immutable, level);
+        return value == EVENTUAL_BEFORE || value == EVENTUAL;
+    }
 }

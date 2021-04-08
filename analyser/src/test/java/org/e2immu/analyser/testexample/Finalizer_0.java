@@ -14,20 +14,21 @@
 
 package org.e2immu.analyser.testexample;
 
-import org.e2immu.annotation.Container;
 import org.e2immu.annotation.Finalizer;
+import org.e2immu.annotation.Fluent;
+import org.e2immu.annotation.Modified;
 import org.e2immu.annotation.MutableModifiesArguments;
 
-import java.util.concurrent.atomic.AtomicReference;
-
-@MutableModifiesArguments // because of the error method
+@MutableModifiesArguments // because of the error method, would have been @Container otherwise
 public class Finalizer_0 {
 
     private int count;
-    private final AtomicReference<String> string = new AtomicReference<>();
+    private String string;
 
+    @Modified
+    @Fluent
     public Finalizer_0 set(String s) {
-        string.set(s);
+        string = s;
         count++;
         return this;
     }
@@ -45,6 +46,9 @@ public class Finalizer_0 {
         return new Finalizer_0().set("a").set("b").done("c");
     }
 
+    /*
+    error because a @Finalizer method is called on a parameter
+     */
     public static String error(Finalizer_0 finalizer_0) {
         return finalizer_0.set("a").set("b").done("c");
     }

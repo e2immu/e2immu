@@ -17,6 +17,7 @@ package org.e2immu.analyser.analyser;
 import org.e2immu.analyser.analyser.check.CheckConstant;
 import org.e2immu.analyser.analyser.check.CheckFinalNotModified;
 import org.e2immu.analyser.analyser.check.CheckLinks;
+import org.e2immu.analyser.inspector.MethodResolution;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
@@ -473,7 +474,24 @@ public class FieldAnalyser extends AbstractAnalyser {
                 log(DELAYED, "Delay @Immutable on {}, waiting for values", fqn);
                 return DELAYS;
             }
-            finalImmutable = worstOverValuesBreakParameterDelay;
+
+            // if we have an assignment to an eventually immutable variable, but somehow the construction context enforces "after"
+            // that should be taken into account (see EventuallyImmutableUtil_2 vs E2InContext_2)
+            if(MultiLevel.isBeforeAllowNotEventual(worstOverValuesBreakParameterDelay)) {
+                int bestOverContext = allMethodsAndConstructors.stream()
+                        .filter(m -> m.methodInfo.isConstructor || m.methodInfo.methodResolution.get().partOfConstruction()
+                                == MethodResolution.CallStatus.PART_OF_CONSTRUCTION)
+                        .flatMap(m -> m.getFieldAsVariableStream(fieldInfo, true))
+                        .mapToInt(vi -> vi.getProperty(VariableProperty.CONTEXT_IMMUTABLE))
+                        .reduce(MultiLevel.MUTABLE, MAX);
+                if (bestOverContext == Level.DELAY) {
+                    log(DELAYED, "Delay @Immutable on {}, waiting for context immutable", fqn);
+                      return DELAYS;
+                }
+                finalImmutable = Math.max(worstOverValuesBreakParameterDelay, bestOverContext);
+            } else {
+                finalImmutable = worstOverValuesBreakParameterDelay;
+            }
         }
         // See E2InContext_0,1 (field is not private, so if it's before, someone else can change it into after)
         int correctedImmutable = correctForExposureBefore(finalImmutable);

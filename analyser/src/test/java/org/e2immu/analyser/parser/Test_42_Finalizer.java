@@ -51,6 +51,8 @@ public class Test_42_Finalizer extends CommonTestRunner {
                     if ("2".equals(d.statementId())) {
                         int expectImm = d.iteration() <= 1 ? Level.DELAY : MultiLevel.MUTABLE;
                         assertEquals(expectImm, d.getProperty(VariableProperty.IMMUTABLE));
+
+                        assertEquals(MultiLevel.NOT_INVOLVED, d.getProperty(VariableProperty.EXTERNAL_IMMUTABLE));
                     }
                 }
             }

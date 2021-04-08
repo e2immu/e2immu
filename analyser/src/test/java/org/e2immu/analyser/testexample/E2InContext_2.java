@@ -21,7 +21,7 @@ import org.e2immu.annotation.TestMark;
 
 /*
 Testing the immutability properties as statements progress: create an eventually immutable object,
-modify it, and cause an error by modifying again.
+and set its final value in the constructor
  */
 public class E2InContext_2 {
 
