@@ -97,6 +97,7 @@ public class ParameterInspectionImpl extends InspectionImpl implements Parameter
         @NotModified
         @NotNull
         public ParameterInfo build(MethodInfo owner) {
+            assert owner != null : "No owner for parameter " + name;
             assert index >= 0 : "Forgot to set index";
             ParameterInspectionImpl inspection = new ParameterInspectionImpl(getAnnotations(), varArgs);
             ParameterInfo parameterInfo = new ParameterInfo(owner, parameterizedType, name, index);

@@ -12,7 +12,7 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parserfailing;
+package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
@@ -31,8 +31,8 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-public class Test_39_MethodReferences extends CommonTestRunner {
-    public Test_39_MethodReferences() {
+public class Test_11_MethodReferences extends CommonTestRunner {
+    public Test_11_MethodReferences() {
         super(true);
     }
 
@@ -55,7 +55,7 @@ public class Test_39_MethodReferences extends CommonTestRunner {
 
     @Test
     public void test_1() throws IOException {
-        testClass("MethodReferences_1", 0, 2, new DebugConfiguration.Builder()
+        testClass("MethodReferences_1", 0, 0, new DebugConfiguration.Builder()
                 .build());
     }
 
@@ -69,7 +69,7 @@ public class Test_39_MethodReferences extends CommonTestRunner {
             assertEquals(Level.FALSE, forEach.methodAnalysis.get().getProperty(VariableProperty.MODIFIED_METHOD));
         };
 
-        testClass("MethodReferences_2", 0, 2, new DebugConfiguration.Builder()
+        testClass("MethodReferences_2", 0, 0, new DebugConfiguration.Builder()
                 .addTypeMapVisitor(typeMapVisitor)
                 .build());
     }

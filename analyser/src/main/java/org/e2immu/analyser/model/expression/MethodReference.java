@@ -27,6 +27,7 @@ import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 public class MethodReference extends ExpressionWithMethodReferenceResolution {
@@ -103,7 +104,24 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
     public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
 
-        EvaluationResult scopeResult = scope.evaluate(evaluationContext, ForwardEvaluationInfo.NOT_NULL);
+        int propagateMod = forwardEvaluationInfo.getProperty(VariableProperty.PROPAGATE_MODIFICATION);
+        ForwardEvaluationInfo scopeForward;
+        if (propagateMod == Level.TRUE) {
+            MethodAnalysis methodAnalysis = evaluationContext.getAnalyserContext().getMethodAnalysis(methodInfo);
+            int modified = methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD);
+            Map<VariableProperty, Integer> map;
+            if (modified == Level.DELAY) {
+                map = Map.of(VariableProperty.CONTEXT_MODIFIED_DELAY, Level.TRUE,
+                        VariableProperty.CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
+            } else {
+                map = Map.of(VariableProperty.CONTEXT_MODIFIED, modified,
+                        VariableProperty.CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
+            }
+            scopeForward = new ForwardEvaluationInfo(map, true);
+        } else {
+            scopeForward = ForwardEvaluationInfo.NOT_NULL;
+        }
+        EvaluationResult scopeResult = scope.evaluate(evaluationContext, scopeForward);
         builder.compose(scopeResult);
         builder.setExpression(this);
         return builder.build();
@@ -131,7 +149,8 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
             case IMMUTABLE -> MultiLevel.EFFECTIVELY_E2IMMUTABLE;
 
             case IDENTITY, FLUENT, CONTEXT_MODIFIED -> Level.FALSE;
-            default -> throw new UnsupportedOperationException("Property: "+variableProperty);
+            case INDEPENDENT -> MultiLevel.INDEPENDENT;
+            default -> throw new UnsupportedOperationException("Property: " + variableProperty);
         };
     }
 }

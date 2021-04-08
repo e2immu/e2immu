@@ -20,6 +20,9 @@ import org.e2immu.annotation.Modified;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+/*
+superset of FunctionalInterface_0
+ */
 public class FunctionalInterface_1 {
 
     @Container

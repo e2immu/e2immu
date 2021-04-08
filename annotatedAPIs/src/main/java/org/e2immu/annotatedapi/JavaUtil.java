@@ -45,7 +45,7 @@ public class JavaUtil extends AnnotatedAPI {
     // Note: we can use T instead of E (in the byte-code), since we use distinguishingName instead of fullyQualifiedName
     interface Iterator$<T> {
         @Modified
-        default void forEachRemaining(Consumer<? super T> action) {
+        default void forEachRemaining(@PropagateModification Consumer<? super T> action) {
         }
 
         @Modified
@@ -82,18 +82,13 @@ public class JavaUtil extends AnnotatedAPI {
         @NotModified
         boolean containsAll(@NotNull1 java.util.Collection<?> c) { return true; }
 
-        // there is a "default forEach" in Iterable, but here we can guarantee that consumer is @NotNull1 (its
-        // arguments will not be null either)
-        // IMPROVE allow for "overrides" (copies)
-        //void forEach(@NotNull1 Consumer<? super E> action) {}
-
         boolean isEmpty$Value$Size(int i, boolean retVal) { return i == 0; }
         @NotModified
         boolean isEmpty() { return true; }
 
         // there is a "default forEach" in Iterable, but here we can guarantee that consumer is @NotNull1 (its
         // arguments will not be null either)
-        void forEach(@NotNull1 Consumer<? super E> action) {}
+        void forEach(@PropagateModification @NotNull1 Consumer<? super E> action) {}
 
         boolean remove$Modification$Size(int i, int j) { return i <= j && i >= j - 1; }
         boolean remove$Value$Size(int i, Object object, boolean retVal) { return i != 0 && retVal; }
@@ -496,7 +491,7 @@ public class JavaUtil extends AnnotatedAPI {
         Set<K> keySet() { return null; }
 
         @NotModified
-        void forEach(@NotNull BiConsumer<? super K, ? super V> action) { }
+        void forEach(@NotNull @PropagateModification BiConsumer<? super K, ? super V> action) { }
 
         @NotModified
         //@Independent implicit!
