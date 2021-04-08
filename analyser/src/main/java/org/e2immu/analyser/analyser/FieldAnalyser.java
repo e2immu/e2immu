@@ -470,25 +470,58 @@ public class FieldAnalyser extends AbstractAnalyser {
                     .mapToInt(expression -> immutableBreakParameterDelay(evaluationContext, expression))
                     .min().orElse(MultiLevel.MUTABLE);
             if (worstOverValuesBreakParameterDelay == Level.DELAY) {
-                log(DELAYED, "Delay @NotNull on {}, waiting for values", fqn);
+                log(DELAYED, "Delay @Immutable on {}, waiting for values", fqn);
                 return DELAYS;
             }
             finalImmutable = worstOverValuesBreakParameterDelay;
         }
-        // See E2InContext_1 (field is not private, so if it's before, someone else can change it into after)
-        int correctForNonPrivateBefore;
-        if ((finalImmutable == MultiLevel.EVENTUALLY_E1IMMUTABLE_BEFORE_MARK || finalImmutable == MultiLevel.EVENTUALLY_E2IMMUTABLE_BEFORE_MARK)
-                && !fieldInfo.isPrivate()) {
-            correctForNonPrivateBefore = finalImmutable == MultiLevel.EVENTUALLY_E1IMMUTABLE_BEFORE_MARK ? MultiLevel.EVENTUALLY_E1IMMUTABLE :
-                    MultiLevel.EVENTUALLY_E2IMMUTABLE;
-        } else {
-            correctForNonPrivateBefore = finalImmutable;
+        // See E2InContext_0,1 (field is not private, so if it's before, someone else can change it into after)
+        int correctedImmutable = correctForExposureBefore(finalImmutable);
+        if (correctedImmutable == Level.DELAY) {
+            log(DELAYED, "Delay @Immutable on {}, waiting for exposure to decide on @BeforeMark", fqn);
+            // still, we're already marking
+            fieldAnalysis.setProperty(VariableProperty.PARTIAL_EXTERNAL_IMMUTABLE, finalImmutable);
+            return DELAYS;
         }
-
-        log(DYNAMIC, "Set immutable on field {} to value {}", fqn, correctForNonPrivateBefore);
-        fieldAnalysis.setProperty(VariableProperty.EXTERNAL_IMMUTABLE, correctForNonPrivateBefore);
+        log(DYNAMIC, "Set immutable on field {} to value {}", fqn, correctedImmutable);
+        fieldAnalysis.setProperty(VariableProperty.EXTERNAL_IMMUTABLE, correctedImmutable);
 
         return DONE;
+    }
+
+    private int correctForExposureBefore(int immutable) {
+        if (immutable != MultiLevel.EVENTUALLY_E1IMMUTABLE_BEFORE_MARK && immutable != MultiLevel.EVENTUALLY_E2IMMUTABLE_BEFORE_MARK) {
+            return immutable;
+        }
+        int corrected = immutable == MultiLevel.EVENTUALLY_E1IMMUTABLE_BEFORE_MARK ? MultiLevel.EVENTUALLY_E1IMMUTABLE :
+                MultiLevel.EVENTUALLY_E2IMMUTABLE;
+        if (!fieldInfo.isPrivate()) {
+            return corrected;
+        }
+        // check exposed via return values of methods
+        Optional<MethodAnalyser> delayLinkedVariables = myMethodsAndConstructors.stream()
+                .filter(ma -> !ma.methodInfo.isPrivate() && ma.methodLevelData() != null)
+                .filter(ma -> !ma.methodLevelData().linksHaveBeenEstablished.isSet())
+                .findFirst();
+        if (delayLinkedVariables.isPresent()) {
+            log(DELAYED, "Exposure computation on {} delayed by links of {}", fqn,
+                    delayLinkedVariables.get().methodInfo.fullyQualifiedName);
+            return Level.DELAY;
+        }
+        This thisVar = new This(analyserContext, myTypeAnalyser.typeInfo);
+        FieldReference me = new FieldReference(analyserContext, fieldInfo, thisVar);
+        boolean linkedToMe = myMethodsAndConstructors.stream()
+                .filter(ma -> !ma.methodInfo.isPrivate() && ma.methodLevelData() != null)
+                .anyMatch(ma -> {
+                    if (ma.methodInfo.hasReturnValue()) {
+                        LinkedVariables linkedVariables = ma.getReturnAsVariable().getLinkedVariables();
+                        if (linkedVariables.variables().contains(me)) return true;
+                    }
+                    return ma.methodAnalysis.getLastStatement().variableStream()
+                            .filter(vi -> vi.variable() instanceof ParameterInfo)
+                            .anyMatch(vi -> vi.getLinkedVariables().contains(me));
+                });
+        return linkedToMe ? corrected : immutable;
     }
 
     private int immutableBreakParameterDelay(EvaluationContext evaluationContext, Expression expression) {
@@ -609,6 +642,12 @@ public class FieldAnalyser extends AbstractAnalyser {
                 // now the state of the new object may survive if there are no modifying methods called,
                 // but that's too early to know now
                 int immutable = fieldAnalysis.getProperty(VariableProperty.EXTERNAL_IMMUTABLE);
+                if (immutable == Level.DELAY) {
+                    int partialResultForImmutable = fieldAnalysis.getProperty(VariableProperty.PARTIAL_EXTERNAL_IMMUTABLE);
+                    if (partialResultForImmutable != Level.DELAY) {
+                        immutable = partialResultForImmutable;
+                    }
+                }
                 boolean fieldOfOwnType = fieldInfo.type.typeInfo == fieldInfo.owner;
 
                 if (immutable == Level.DELAY && !fieldOfOwnType) {
@@ -814,7 +853,7 @@ public class FieldAnalyser extends AbstractAnalyser {
 
         if (!isFinal) {
             TypeInfo bestType = fieldInfo.type.bestTypeInfo();
-            if(bestType != null) {
+            if (bestType != null) {
                 TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(bestType);
                 if (typeAnalysis.getProperty(VariableProperty.FINALIZER) == Level.TRUE) {
                     messages.add(Message.newMessage(new Location(fieldInfo), Message.TYPES_WITH_FINALIZER_ONLY_EFFECTIVELY_FINAL));

@@ -1079,7 +1079,7 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
             return Level.DELAY;
         }
 
-        if (e2ImmutableStatusOfFieldRefs == MultiLevel.EFFECTIVE) return MultiLevel.INDEPENDENT;
+        if (e2ImmutableStatusOfFieldRefs >= MultiLevel.EVENTUAL_AFTER) return MultiLevel.INDEPENDENT;
         int immutable = methodAnalysis.getProperty(IMMUTABLE);
         ParameterizedType returnType = methodInfo.returnType();
         boolean myOwnType = returnType.typeInfo == methodInfo.typeInfo;

@@ -21,6 +21,7 @@ import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.util.SetUtil;
 
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -53,6 +54,19 @@ public record LinkedVariables(Set<Variable> variables) {
 
         return variables.stream().map(v -> v.output(Qualification.EMPTY))
                 .collect(OutputBuilder.joining(Symbol.COMMA)).debug();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        LinkedVariables that = (LinkedVariables) o;
+        return variables.equals(that.variables);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(variables);
     }
 
     public LinkedVariables removeAllButLocalCopiesOf(Variable variable) {

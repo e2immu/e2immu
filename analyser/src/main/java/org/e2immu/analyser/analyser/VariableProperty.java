@@ -95,6 +95,9 @@ public enum VariableProperty {
     EXTERNAL_IMMUTABLE("external @Immutable", MultiLevel.MUTABLE, MultiLevel.EFFECTIVELY_E2IMMUTABLE, MultiLevel.MUTABLE,
             MultiLevel.MUTABLE),
 
+    // internal, temporary
+    PARTIAL_EXTERNAL_IMMUTABLE("partial external @Immutable", MultiLevel.MUTABLE, MultiLevel.EFFECTIVELY_E2IMMUTABLE, MultiLevel.MUTABLE,
+            MultiLevel.MUTABLE),
     /*
     Modification.
 

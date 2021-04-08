@@ -155,6 +155,10 @@ public class MultiLevel {
         return value(immutable, 1) >= EVENTUAL;
     }
 
+    public static boolean isAtLeastEventuallyE2ImmutableAfter(int immutable) {
+        return value(immutable, 1) >= EVENTUAL_AFTER;
+    }
+
     // gets rid of eventual, by adding or subtracting one in each block
     public static int eventual(int i, boolean conditionsMetForEventual) {
         return modifyEachComponent(i, c -> eventualComponent(c, conditionsMetForEventual));

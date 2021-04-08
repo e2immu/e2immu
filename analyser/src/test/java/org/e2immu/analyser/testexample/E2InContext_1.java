@@ -14,14 +14,11 @@
 
 package org.e2immu.analyser.testexample;
 
-import org.e2immu.annotation.BeforeMark;
-import org.e2immu.annotation.E2Container;
-import org.e2immu.annotation.Mark;
-import org.e2immu.annotation.TestMark;
+import org.e2immu.annotation.*;
 
 /*
-Testing the immutability properties as statements progress: create an eventually immutable object,
-modify it, and cause an error by modifying again.
+Distinction between eventually immutable and eventually immutable before the mark.
+Here we cannot decide on before or after for eventually, because it is exposed to the outside world.
  */
 public class E2InContext_1 {
 
