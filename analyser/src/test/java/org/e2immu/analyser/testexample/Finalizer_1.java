@@ -17,7 +17,7 @@ package org.e2immu.analyser.testexample;
 import org.e2immu.annotation.*;
 import org.e2immu.support.EventuallyFinal;
 
-@Container
+@E1Immutable(after = "eventuallyFinal")
 public class Finalizer_1 {
 
     /*

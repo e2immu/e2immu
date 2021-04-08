@@ -477,7 +477,7 @@ public class FieldAnalyser extends AbstractAnalyser {
 
             // if we have an assignment to an eventually immutable variable, but somehow the construction context enforces "after"
             // that should be taken into account (see EventuallyImmutableUtil_2 vs E2InContext_2)
-            if(MultiLevel.isBeforeAllowNotEventual(worstOverValuesBreakParameterDelay)) {
+            if (MultiLevel.isBeforeAllowNotEventual(worstOverValuesBreakParameterDelay)) {
                 int bestOverContext = allMethodsAndConstructors.stream()
                         .filter(m -> m.methodInfo.isConstructor || m.methodInfo.methodResolution.get().partOfConstruction()
                                 == MethodResolution.CallStatus.PART_OF_CONSTRUCTION)
@@ -486,7 +486,7 @@ public class FieldAnalyser extends AbstractAnalyser {
                         .reduce(MultiLevel.MUTABLE, MAX);
                 if (bestOverContext == Level.DELAY) {
                     log(DELAYED, "Delay @Immutable on {}, waiting for context immutable", fqn);
-                      return DELAYS;
+                    return DELAYS;
                 }
                 finalImmutable = Math.max(worstOverValuesBreakParameterDelay, bestOverContext);
             } else {
@@ -519,6 +519,7 @@ public class FieldAnalyser extends AbstractAnalyser {
         // check exposed via return values of methods
         Optional<MethodAnalyser> delayLinkedVariables = myMethodsAndConstructors.stream()
                 .filter(ma -> !ma.methodInfo.isPrivate() && ma.methodLevelData() != null)
+                .filter(ma -> ma.methodAnalysis.getProperty(VariableProperty.FINALIZER) != Level.TRUE)
                 .filter(ma -> !ma.methodLevelData().linksHaveBeenEstablished.isSet())
                 .findFirst();
         if (delayLinkedVariables.isPresent()) {
@@ -530,6 +531,7 @@ public class FieldAnalyser extends AbstractAnalyser {
         FieldReference me = new FieldReference(analyserContext, fieldInfo, thisVar);
         boolean linkedToMe = myMethodsAndConstructors.stream()
                 .filter(ma -> !ma.methodInfo.isPrivate() && ma.methodLevelData() != null)
+                .filter(ma -> ma.methodAnalysis.getProperty(VariableProperty.FINALIZER) != Level.TRUE)
                 .anyMatch(ma -> {
                     if (ma.methodInfo.hasReturnValue()) {
                         LinkedVariables linkedVariables = ma.getReturnAsVariable().getLinkedVariables();
@@ -575,20 +577,22 @@ public class FieldAnalyser extends AbstractAnalyser {
         boolean occursInAllConstructors = true;
         if (!(fieldInfo.isExplicitlyFinal() && haveInitialiser)) {
             for (MethodAnalyser methodAnalyser : myMethodsAndConstructors) {
-                if (!methodAnalyser.methodInfo.isPrivate() || !ignorePrivateConstructors) {
-                    boolean added = false;
-                    for (VariableInfo vi : methodAnalyser.getFieldAsVariable(fieldInfo, false)) {
-                        if (vi.isAssigned()) {
-                            values.add(vi.getValue());
-                            added = true;
-                            if (vi.isDelayed()) {
-                                log(DELAYED, "Delay consistent value for field {}", fqn);
-                                delays = true;
+                if (methodAnalyser.methodAnalysis.getProperty(VariableProperty.FINALIZER) != Level.TRUE) {
+                    if (!methodAnalyser.methodInfo.isPrivate() || !ignorePrivateConstructors) {
+                        boolean added = false;
+                        for (VariableInfo vi : methodAnalyser.getFieldAsVariable(fieldInfo, false)) {
+                            if (vi.isAssigned()) {
+                                values.add(vi.getValue());
+                                added = true;
+                                if (vi.isDelayed()) {
+                                    log(DELAYED, "Delay consistent value for field {}", fqn);
+                                    delays = true;
+                                }
                             }
                         }
-                    }
-                    if (!added && methodAnalyser.methodInfo.isConstructor) {
-                        occursInAllConstructors = false;
+                        if (!added && methodAnalyser.methodInfo.isConstructor) {
+                            occursInAllConstructors = false;
+                        }
                     }
                 }
             }

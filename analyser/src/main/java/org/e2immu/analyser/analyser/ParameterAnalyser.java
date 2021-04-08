@@ -47,7 +47,6 @@ public class ParameterAnalyser {
     private final Messages messages = new Messages();
     public final ParameterInfo parameterInfo;
     public final ParameterAnalysisImpl.Builder parameterAnalysis;
-    private final TypeAnalysis typeAnalysis;
 
     private Map<FieldInfo, FieldAnalyser> fieldAnalysers;
     private final E2ImmuAnnotationExpressions e2;
@@ -58,7 +57,6 @@ public class ParameterAnalyser {
         this.parameterInfo = parameterInfo;
         parameterAnalysis = new ParameterAnalysisImpl.Builder(analyserContext.getPrimitives(), analyserContext, parameterInfo);
         this.analyserContext = analyserContext;
-        this.typeAnalysis = analyserContext.getTypeAnalysis(parameterInfo.owner.typeInfo);
     }
 
     public ParameterAnalysis getParameterAnalysis() {
@@ -359,6 +357,15 @@ public class ParameterAnalyser {
                     "Contracted to be @BeforeMark, formal type is not eventually immutable"));
             return formallyImmutable;
         }
+
+        if (contractImmutable == EVENTUALLY_E2IMMUTABLE_AFTER_MARK && formallyImmutable == EVENTUALLY_E2IMMUTABLE) {
+            return contractImmutable;
+        }
+
+        if (contractImmutable == EVENTUALLY_E1IMMUTABLE_AFTER_MARK && formallyImmutable == EVENTUALLY_E1IMMUTABLE) {
+            return contractImmutable;
+        }
+
         if (contractImmutable == EFFECTIVELY_E2IMMUTABLE) {
             if (formallyImmutable != EVENTUALLY_E2IMMUTABLE && formallyImmutable != EFFECTIVELY_E2IMMUTABLE) {
                 messages.add(Message.newMessage(parameterAnalysis.location, Message.INCOMPATIBLE_IMMUTABILITY_CONTRACT,
