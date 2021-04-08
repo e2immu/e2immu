@@ -114,6 +114,14 @@ public record CompanionMethodName(String methodName, Action action,
         return methodName + "$" + action.action + (aspect == null ? "" : "$" + aspect);
     }
 
+    @Override
+    public String toString() {
+        return "CompanionMethodName{" +
+                "methodName='" + methodName + '\'' +
+                ", action=" + action +
+                ", aspect='" + aspect + '\'' +
+                '}';
+    }
 
     @Override
     public boolean equals(Object o) {

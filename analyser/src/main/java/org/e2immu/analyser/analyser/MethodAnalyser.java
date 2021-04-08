@@ -386,9 +386,8 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
     private AnalysisStatus annotateEventual(SharedState sharedState) {
         assert !methodAnalysis.eventualIsSet();
 
-        Set<FieldInfo> visibleFields = Set.copyOf(methodInfo.typeInfo.visibleFields(analyserContext));
         DetectEventual detectEventual = new DetectEventual(methodInfo, methodAnalysis,
-                (TypeAnalysisImpl.Builder) typeAnalysis, visibleFields, analyserContext);
+                (TypeAnalysisImpl.Builder) typeAnalysis, analyserContext);
         MethodAnalysis.Eventual eventual = detectEventual.detect(sharedState.evaluationContext);
         if (eventual == MethodAnalysis.DELAYED_EVENTUAL) {
             return DELAYS;
@@ -436,7 +435,8 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
                     .filter(fa -> {
                         ParameterizedType concreteType = fa.concreteTypeNullWhenDelayed();
                         boolean acceptDelay = concreteType == null || concreteType.typeInfo != null &&
-                                concreteType.typeInfo.topOfInterdependentClassHierarchy() != fa.getFieldInfo().owner.topOfInterdependentClassHierarchy();
+                                concreteType.typeInfo.topOfInterdependentClassHierarchy() !=
+                                        fa.getFieldInfo().owner.topOfInterdependentClassHierarchy();
                         return acceptDelay && fa.getProperty(VariableProperty.EXTERNAL_IMMUTABLE) == Level.DELAY;
                     }).findFirst();
             if (delayOnImmutableFields.isPresent()) {
@@ -501,7 +501,8 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
             Precondition combinedPrecondition = null;
             for (FieldAnalyser fieldAnalyser : myFieldAnalysers.values()) {
                 if (fieldAnalyser.fieldAnalysis.getProperty(VariableProperty.FINAL) == Level.FALSE) {
-                    FieldReference fr = new FieldReference(analyserContext, fieldAnalyser.fieldInfo, new This(analyserContext, methodInfo.typeInfo));
+                    This newThis = new This(analyserContext, methodInfo.typeInfo);
+                    FieldReference fr = new FieldReference(analyserContext, fieldAnalyser.fieldInfo, newThis);
                     StatementAnalysis beforeAssignment = statementBeforeAssignment(fr);
                     if (beforeAssignment != null) {
                         ConditionManager cm = beforeAssignment.stateData.conditionManagerForNextStatement.get();

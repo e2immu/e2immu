@@ -15,6 +15,7 @@
 package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.AnnotationMode;
@@ -23,26 +24,30 @@ import org.e2immu.support.FlipSwitch;
 import org.e2immu.support.SetOnce;
 import org.e2immu.support.SetOnceMap;
 
-import java.util.*;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 
 public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
 
     private final TypeInfo typeInfo;
-    private final Map<FieldInfo, Expression> approvedPreconditionsE1;
-    private final Map<FieldInfo, Expression> approvedPreconditionsE2;
+    private final Map<FieldReference, Expression> approvedPreconditionsE1;
+    private final Map<FieldReference, Expression> approvedPreconditionsE2;
 
     private final Set<ParameterizedType> implicitlyImmutableDataTypes;
     private final Map<String, MethodInfo> aspects;
     private final Set<FieldInfo> eventuallyImmutableFields;
+    private final Set<FieldInfo> visibleFields;
 
     private TypeAnalysisImpl(TypeInfo typeInfo,
                              Map<VariableProperty, Integer> properties,
                              Map<AnnotationExpression, AnnotationCheck> annotations,
-                             Map<FieldInfo, Expression> approvedPreconditionsE1,
-                             Map<FieldInfo, Expression> approvedPreconditionsE2,
+                             Map<FieldReference, Expression> approvedPreconditionsE1,
+                             Map<FieldReference, Expression> approvedPreconditionsE2,
                              Set<FieldInfo> eventuallyImmutableFields,
                              Set<ParameterizedType> implicitlyImmutableDataTypes,
-                             Map<String, MethodInfo> aspects) {
+                             Map<String, MethodInfo> aspects,
+                             Set<FieldInfo> visibleFields) {
         super(properties, annotations);
         this.typeInfo = typeInfo;
         this.approvedPreconditionsE1 = approvedPreconditionsE1;
@@ -50,6 +55,17 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
         this.implicitlyImmutableDataTypes = implicitlyImmutableDataTypes;
         this.aspects = Objects.requireNonNull(aspects);
         this.eventuallyImmutableFields = eventuallyImmutableFields;
+        this.visibleFields = visibleFields;
+    }
+
+    @Override
+    public boolean approvedPreconditionsE2IsEmpty() {
+        return approvedPreconditionsE2.isEmpty();
+    }
+
+    @Override
+    public boolean containsApprovedPreconditionsE2(FieldReference fieldReference) {
+        return approvedPreconditionsE2.containsKey(fieldReference);
     }
 
     @Override
@@ -78,23 +94,23 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
     }
 
     @Override
-    public Map<FieldInfo, Expression> getApprovedPreconditionsE1() {
+    public Map<FieldReference, Expression> getApprovedPreconditionsE1() {
         return approvedPreconditionsE1;
     }
 
     @Override
-    public Map<FieldInfo, Expression> getApprovedPreconditionsE2() {
+    public Map<FieldReference, Expression> getApprovedPreconditionsE2() {
         return approvedPreconditionsE2;
     }
 
     @Override
-    public Expression getApprovedPreconditions(boolean e2, FieldInfo fieldInfo) {
-        return e2 ? approvedPreconditionsE2.get(fieldInfo) : approvedPreconditionsE1.get(fieldInfo);
+    public Expression getApprovedPreconditions(boolean e2, FieldReference fieldReference) {
+        return e2 ? approvedPreconditionsE2.get(fieldReference) : approvedPreconditionsE1.get(fieldReference);
     }
 
     @Override
-    public boolean approvedPreconditionsIsSet(boolean e2, FieldInfo fieldInfo) {
-        return e2 ? approvedPreconditionsE2.containsKey(fieldInfo) : approvedPreconditionsE1.containsKey(fieldInfo);
+    public boolean approvedPreconditionsIsSet(boolean e2, FieldReference fieldReference) {
+        return e2 ? approvedPreconditionsE2.containsKey(fieldReference) : approvedPreconditionsE1.containsKey(fieldReference);
     }
 
     @Override
@@ -107,17 +123,28 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
         return implicitlyImmutableDataTypes;
     }
 
+    @Override
+    public FieldInfo translateToVisibleField(FieldReference fieldReference) {
+        return translateToVisibleField(visibleFields, fieldReference);
+    }
+
     public static class CycleInfo {
         public final AddOnceSet<MethodInfo> nonModified = new AddOnceSet<>();
         public final FlipSwitch modified = new FlipSwitch();
+    }
+
+    static FieldInfo translateToVisibleField(Set<FieldInfo> visibleFields, FieldReference fieldReference) {
+        if (visibleFields.contains(fieldReference.fieldInfo)) return fieldReference.fieldInfo;
+        if (fieldReference.scope instanceof FieldReference fr) return translateToVisibleField(visibleFields, fr);
+        return null; // not one of ours, i
     }
 
     public static class Builder extends AbstractAnalysisBuilder implements TypeAnalysis {
         public final TypeInfo typeInfo;
 
         // from label to condition BEFORE (used by @Mark and @Only(before="label"))
-        private final SetOnceMap<FieldInfo, Expression> approvedPreconditionsE1 = new SetOnceMap<>();
-        private final SetOnceMap<FieldInfo, Expression> approvedPreconditionsE2 = new SetOnceMap<>();
+        private final SetOnceMap<FieldReference, Expression> approvedPreconditionsE1 = new SetOnceMap<>();
+        private final SetOnceMap<FieldReference, Expression> approvedPreconditionsE2 = new SetOnceMap<>();
         public final AddOnceSet<FieldInfo> eventuallyImmutableFields = new AddOnceSet<>();
 
         public final SetOnce<Set<ParameterizedType>> implicitlyImmutableDataTypes = new SetOnce<>();
@@ -127,19 +154,40 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
         public final SetOnceMap<Set<MethodInfo>, CycleInfo> nonModifiedCountForMethodCallCycle = new SetOnceMap<>();
         public final SetOnce<Boolean> ignorePrivateConstructorsForFieldValues = new SetOnce<>();
 
-        public Builder(Primitives primitives, TypeInfo typeInfo) {
+        private final Set<FieldInfo> visibleFields;
+
+        /*
+        analyser context can be null for Primitives, ShallowTypeAnalyser
+         */
+        public Builder(Primitives primitives, TypeInfo typeInfo, AnalyserContext analyserContext) {
             super(primitives, typeInfo.simpleName);
             this.typeInfo = typeInfo;
+            this.visibleFields = analyserContext == null ? Set.of() : Set.copyOf(typeInfo.visibleFields(analyserContext));
         }
 
         @Override
-        public Expression getApprovedPreconditions(boolean e2, FieldInfo fieldInfo) {
-            return e2 ? approvedPreconditionsE2.get(fieldInfo) : approvedPreconditionsE1.get(fieldInfo);
+        public boolean approvedPreconditionsE2IsEmpty() {
+            return approvedPreconditionsE2.isEmpty();
         }
 
         @Override
-        public boolean approvedPreconditionsIsSet(boolean e2, FieldInfo fieldInfo) {
-            return e2 ? approvedPreconditionsE2.isSet(fieldInfo) : approvedPreconditionsE1.isSet(fieldInfo);
+        public boolean containsApprovedPreconditionsE2(FieldReference fieldReference) {
+            return approvedPreconditionsE2.isSet(fieldReference);
+        }
+
+        @Override
+        public FieldInfo translateToVisibleField(FieldReference fieldReference) {
+            return TypeAnalysisImpl.translateToVisibleField(visibleFields, fieldReference);
+        }
+
+        @Override
+        public Expression getApprovedPreconditions(boolean e2, FieldReference fieldReference) {
+            return e2 ? approvedPreconditionsE2.get(fieldReference) : approvedPreconditionsE1.get(fieldReference);
+        }
+
+        @Override
+        public boolean approvedPreconditionsIsSet(boolean e2, FieldReference fieldReference) {
+            return e2 ? approvedPreconditionsE2.isSet(fieldReference) : approvedPreconditionsE1.isSet(fieldReference);
         }
 
         public void freezeApprovedPreconditionsE1() {
@@ -150,8 +198,8 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
             return e2 ? !approvedPreconditionsE2.isEmpty() : !approvedPreconditionsE1.isEmpty();
         }
 
-        public void putInApprovedPreconditionsE1(FieldInfo fieldInfo, Expression expression) {
-            approvedPreconditionsE1.put(fieldInfo, expression);
+        public void putInApprovedPreconditionsE1(FieldReference fieldReference, Expression expression) {
+            approvedPreconditionsE1.put(fieldReference, expression);
         }
 
         public boolean approvedPreconditionsIsFrozen(boolean e2) {
@@ -162,8 +210,8 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
             approvedPreconditionsE2.freeze();
         }
 
-        public void putInApprovedPreconditionsE2(FieldInfo fieldInfo, Expression expression) {
-            approvedPreconditionsE2.put(fieldInfo, expression);
+        public void putInApprovedPreconditionsE2(FieldReference fieldReference, Expression expression) {
+            approvedPreconditionsE2.put(fieldReference, expression);
         }
 
         @Override
@@ -192,12 +240,12 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
         }
 
         @Override
-        public Map<FieldInfo, Expression> getApprovedPreconditionsE1() {
+        public Map<FieldReference, Expression> getApprovedPreconditionsE1() {
             return approvedPreconditionsE1.toImmutableMap();
         }
 
         @Override
-        public Map<FieldInfo, Expression> getApprovedPreconditionsE2() {
+        public Map<FieldReference, Expression> getApprovedPreconditionsE2() {
             return approvedPreconditionsE2.toImmutableMap();
         }
 
@@ -253,7 +301,8 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
                     approvedPreconditionsE2.toImmutableMap(),
                     eventuallyImmutableFields.toImmutableSet(),
                     implicitlyImmutableDataTypes.isSet() ? implicitlyImmutableDataTypes.get() : Set.of(),
-                    getAspects());
+                    getAspects(),
+                    visibleFields);
         }
     }
 }

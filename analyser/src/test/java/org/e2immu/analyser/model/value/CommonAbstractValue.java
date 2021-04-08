@@ -170,7 +170,7 @@ public abstract class CommonAbstractValue {
                     .build());
         }
         TypeInfo someType = new TypeInfo("some", "type");
-        someType.typeAnalysis.set(new TypeAnalysisImpl.Builder(PRIMITIVES, someType).build());
+        someType.typeAnalysis.set(new TypeAnalysisImpl.Builder(PRIMITIVES, someType, null).build());
         MethodInspectionImpl.Builder methodBuilder = new MethodInspectionImpl.Builder(someType, "type");
         ParameterInspectionImpl.Builder pi = new ParameterInspectionImpl.Builder(PRIMITIVES.stringParameterizedType, "p", 0);
         methodBuilder.setReturnType(PRIMITIVES.stringParameterizedType).addParameter(pi);

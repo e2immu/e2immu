@@ -20,6 +20,7 @@ import org.e2immu.analyser.parser.Primitives;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -126,7 +127,7 @@ public interface MethodAnalysis extends Analysis {
                 int fluent = getProperty(VariableProperty.FLUENT);
                 if (fluent == Level.TRUE) return MultiLevel.EFFECTIVELY_NOT_NULL;
                 return getPropertyCheckOverrides(analysisProvider, VariableProperty.NOT_NULL_EXPRESSION);
-                
+
             case CONTAINER:
                 assert returnType != ParameterizedType.RETURN_TYPE_OF_CONSTRUCTOR : "void method";
                 int container = returnType.getProperty(analysisProvider, VariableProperty.CONTAINER);
@@ -140,7 +141,7 @@ public interface MethodAnalysis extends Analysis {
 
     private int dynamicProperty(AnalysisProvider analysisProvider, int formalImmutableProperty, ParameterizedType returnType) {
         int immutableTypeAfterEventual = MultiLevel.eventual(formalImmutableProperty,
-               false); // FIXME
+                false); // FIXME
         return Level.best(internalGetProperty(VariableProperty.IMMUTABLE), immutableTypeAfterEventual);
     }
 
@@ -191,7 +192,7 @@ public interface MethodAnalysis extends Analysis {
             assert !fields.isEmpty() || !mark && after == null && test == null;
         }
 
-        @Override
+        //@Override FIXME is this an IntelliJ error?
         public String toString() {
             if (mark) return "@Mark: " + fields;
             if (test != null) return "@TestMark: " + fields;
@@ -212,8 +213,9 @@ public interface MethodAnalysis extends Analysis {
         }
 
         public boolean notMarkOrBefore() {
-            if(mark) return false;
-            if(test != null) return true;
+            if (mark) return false;
+            if (test != null) return true;
+            if (after == null) return true;
             return after;
         }
     }

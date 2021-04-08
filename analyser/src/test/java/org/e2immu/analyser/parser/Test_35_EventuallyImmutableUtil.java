@@ -64,19 +64,21 @@ public class Test_35_EventuallyImmutableUtil extends CommonTestRunner {
                 assertEquals(d.iteration() <= 1, d.statementAnalysis().stateData.precondition.isVariable());
             }
         };
+
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("EventuallyImmutableUtil_2".equals(d.typeInfo().simpleName)) {
                 assertTrue(d.typeAnalysis().getApprovedPreconditionsE1().isEmpty());
-                String expectFields = d.iteration() <= 1 ? "[]" : "[value]";
-                assertEquals(expectFields, d.typeAnalysis().getEventuallyImmutableFields().toString());
-                String expectE2 = d.iteration() <= 1 ? "{}" : "{t=null==value.t}";
+                String expectFields = d.iteration() <= 2 ? "[]" : "[value]";
+                assertEquals("[]", d.typeAnalysis().getEventuallyImmutableFields().toString());
+                String expectE2 = d.iteration() <= 1 ? "{}" : "{value.t=null==value.t}";
                 assertEquals(expectE2, d.typeAnalysis().getApprovedPreconditionsE2().toString());
             }
         };
+
         testSupportAndUtilClasses(List.of("EventuallyImmutableUtil_2"), FLIP_SWITCH_SET_ONCE, ORG_E2IMMU_SUPPORT,
                 0, 0, new DebugConfiguration.Builder()
                         .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                     //   .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
+                        .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
                         .build());
     }
 

@@ -64,7 +64,7 @@ public class ShallowTypeAnalyser implements AnalyserContext {
         typeAnalyses = new LinkedHashMap<>(); // we keep the order provided
         Map<MethodInfo, MethodAnalysis> methodAnalysesBuilder = new HashMap<>();
         for (TypeInfo typeInfo : types) {
-            TypeAnalysisImpl.Builder typeAnalysis = new TypeAnalysisImpl.Builder(primitives, typeInfo);
+            TypeAnalysisImpl.Builder typeAnalysis = new TypeAnalysisImpl.Builder(primitives, typeInfo, null);
             typeAnalyses.put(typeInfo, typeAnalysis);
             AtomicBoolean hasFinalizers = new AtomicBoolean();
             typeInfo.typeInspection.get().methodsAndConstructors(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM).forEach(methodInfo -> {

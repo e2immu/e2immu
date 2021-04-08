@@ -307,7 +307,7 @@ public class Primitives {
                     .setTypeNature(TypeNature.CLASS)
                     .setParentClass(objectParameterizedType)
                     .build());
-            TypeAnalysisImpl.Builder builder = new TypeAnalysisImpl.Builder(this, ti);
+            TypeAnalysisImpl.Builder builder = new TypeAnalysisImpl.Builder(this, ti, null);
             builder.properties.put(VariableProperty.CONTAINER, Level.TRUE);
             builder.properties.put(VariableProperty.IMMUTABLE, MultiLevel.EFFECTIVELY_E2IMMUTABLE);
             builder.freezeApprovedPreconditionsE2(); // cannot change these anymore; will never be eventual
@@ -326,7 +326,7 @@ public class Primitives {
                     .setParentClass(objectParameterizedType)
                     .build());
             primitiveByName.put(ti.simpleName, ti);
-            TypeAnalysisImpl.Builder builder = new TypeAnalysisImpl.Builder(this, ti);
+            TypeAnalysisImpl.Builder builder = new TypeAnalysisImpl.Builder(this, ti, null);
             ti.typeAnalysis.set(builder);
             builder.properties.put(VariableProperty.CONTAINER, Level.TRUE);
             builder.properties.put(VariableProperty.IMMUTABLE, MultiLevel.EFFECTIVELY_E2IMMUTABLE);

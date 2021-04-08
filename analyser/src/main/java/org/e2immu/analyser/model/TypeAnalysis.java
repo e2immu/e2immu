@@ -15,6 +15,7 @@
 package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.analyser.VariableProperty;
+import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.util.SetUtil;
 
 import java.util.HashSet;
@@ -24,22 +25,27 @@ import java.util.stream.Collectors;
 
 public interface TypeAnalysis extends Analysis {
 
-    Map<FieldInfo, Expression> getApprovedPreconditionsE1();
+    Map<FieldReference, Expression> getApprovedPreconditionsE1();
 
-    Map<FieldInfo, Expression> getApprovedPreconditionsE2();
+    Map<FieldReference, Expression> getApprovedPreconditionsE2();
 
-    Expression getApprovedPreconditions(boolean e2, FieldInfo fieldInfo);
+    boolean containsApprovedPreconditionsE2(FieldReference fieldReference);
 
-    default Map<FieldInfo, Expression> getApprovedPreconditions(boolean e2) {
+    boolean approvedPreconditionsE2IsEmpty();
+
+    Expression getApprovedPreconditions(boolean e2, FieldReference fieldInfo);
+
+    default Map<FieldReference, Expression> getApprovedPreconditions(boolean e2) {
         return e2 ? getApprovedPreconditionsE2() : getApprovedPreconditionsE1();
     }
 
-    boolean approvedPreconditionsIsSet(boolean e2, FieldInfo fieldInfo);
+    boolean approvedPreconditionsIsSet(boolean e2, FieldReference fieldInfo);
 
     boolean approvedPreconditionsIsFrozen(boolean e2);
 
     Set<FieldInfo> getEventuallyImmutableFields();
 
+    FieldInfo translateToVisibleField(FieldReference fieldReference);
 
     default String markLabel() {
         return marksRequiredForImmutable().stream().map(f -> f.name).sorted().collect(Collectors.joining(","));
@@ -56,37 +62,9 @@ public interface TypeAnalysis extends Analysis {
      */
     default Set<FieldInfo> marksRequiredForImmutable() {
         Set<FieldInfo> res = new HashSet<>(getEventuallyImmutableFields());
-        if (res.isEmpty()) {
-            return SetUtil.immutableUnion(getApprovedPreconditionsE1().keySet(), getApprovedPreconditionsE2().keySet());
-        }
-
-        for (FieldInfo e1 : getApprovedPreconditionsE1().keySet()) {
-            for (FieldInfo fieldInfo : res) {
-                if (!isPartOf(e1, fieldInfo)) {
-                    res.add(e1);
-                }
-            }
-        }
-        for (FieldInfo e2 : getApprovedPreconditionsE2().keySet()) {
-            for (FieldInfo fieldInfo : res) {
-                if (!isPartOf(e2, fieldInfo)) {
-                    res.add(e2);
-                }
-            }
-        }
+        getApprovedPreconditionsE1().keySet().stream().map(this::translateToVisibleField).forEach(res::add);
+        getApprovedPreconditionsE2().keySet().stream().map(this::translateToVisibleField).forEach(res::add);
         return res;
-    }
-
-    static boolean isPartOf(FieldInfo target, FieldInfo field) {
-        if (target.equals(field)) return true;
-        if (field.type.typeInfo != null && field.type.typeInfo != field.owner) {
-            for (FieldInfo subField : field.type.typeInfo.typeInspection.get().fields()) {
-                if (isPartOf(target, subField)) {
-                    return true;
-                }
-            }
-        }
-        return false;
     }
 
     /**

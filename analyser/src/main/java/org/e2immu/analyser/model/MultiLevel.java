@@ -142,11 +142,13 @@ public class MultiLevel {
     }
 
     public static boolean isEventuallyE1Immutable(int immutable) {
-        return value(immutable, 0) == EVENTUAL;
+        int v = value(immutable, 0);
+        return v == EVENTUAL || v == EVENTUAL_BEFORE;
     }
 
     public static boolean isEventuallyE2Immutable(int immutable) {
-        return value(immutable, 1) == EVENTUAL;
+        int v = value(immutable, 1);
+        return v == EVENTUAL || v == EVENTUAL_BEFORE;
     }
 
     public static boolean isAtLeastEventuallyE2Immutable(int immutable) {

@@ -91,7 +91,7 @@ public class TypeAnalyser extends AbstractAnalyser {
         this.primaryType = primaryType;
         typeInspection = typeInfo.typeInspection.get();
 
-        typeAnalysis = new TypeAnalysisImpl.Builder(analyserContext.getPrimitives(), typeInfo);
+        typeAnalysis = new TypeAnalysisImpl.Builder(analyserContext.getPrimitives(), typeInfo, analyserContext);
         AnalyserComponents.Builder<String, Integer> builder = new AnalyserComponents.Builder<String, Integer>()
                 .add("findAspects", (iteration) -> findAspects())
                 .add("analyseImplicitlyImmutableTypes", (iteration) -> analyseImplicitlyImmutableTypes());
@@ -379,7 +379,7 @@ public class TypeAnalyser extends AbstractAnalyser {
             return DONE;
         }
 
-        Map<FieldInfo, Expression> tempApproved = new HashMap<>();
+        Map<FieldReference, Expression> tempApproved = new HashMap<>();
         for (MethodAnalyser methodAnalyser : assigningMethods) {
             Optional<Precondition> precondition = methodAnalyser.methodAnalysis.preconditionForEventual.get();
             if (precondition.isPresent()) {
@@ -390,12 +390,12 @@ public class TypeAnalyser extends AbstractAnalyser {
                 }
                 for (FieldToCondition fieldToCondition : fields) {
                     Expression inMap = fieldToCondition.overwrite ?
-                            tempApproved.put(fieldToCondition.fieldInfo, fieldToCondition.condition) :
-                            !tempApproved.containsKey(fieldToCondition.fieldInfo) ?
-                                    tempApproved.put(fieldToCondition.fieldInfo, fieldToCondition.condition) : null;
+                            tempApproved.put(fieldToCondition.fieldReference, fieldToCondition.condition) :
+                            !tempApproved.containsKey(fieldToCondition.fieldReference) ?
+                                    tempApproved.put(fieldToCondition.fieldReference, fieldToCondition.condition) : null;
                     if (inMap != null && !inMap.equals(fieldToCondition.condition) && !inMap.equals(fieldToCondition.negatedCondition)) {
-                        messages.add(Message.newMessage(new Location(fieldToCondition.fieldInfo), Message.DUPLICATE_MARK_CONDITION,
-                                "Field: " + fieldToCondition.fieldInfo));
+                        messages.add(Message.newMessage(new Location(fieldToCondition.fieldReference.fieldInfo),
+                                Message.DUPLICATE_MARK_CONDITION, "Field: " + fieldToCondition.fieldReference));
                     }
                 }
             }
@@ -409,12 +409,12 @@ public class TypeAnalyser extends AbstractAnalyser {
         return DONE;
     }
 
-    private Map<FieldInfo, Expression> approvedPreconditionsFromParent(TypeInfo typeInfo, boolean e2) {
+    private Map<FieldReference, Expression> approvedPreconditionsFromParent(TypeInfo typeInfo, boolean e2) {
         TypeInspection typeInspection = analyserContext.getTypeInspection(typeInfo);
         if (!Primitives.isJavaLangObject(typeInspection.parentClass())) {
             TypeInfo parent = typeInspection.parentClass().typeInfo;
             TypeAnalysis parentAnalysis = analyserContext.getTypeAnalysis(parent);
-            Map<FieldInfo, Expression> map = new HashMap<>(parentAnalysis.getApprovedPreconditions(e2));
+            Map<FieldReference, Expression> map = new HashMap<>(parentAnalysis.getApprovedPreconditions(e2));
             map.putAll(approvedPreconditionsFromParent(parent, e2));
             return map;
         }
@@ -489,7 +489,7 @@ public class TypeAnalyser extends AbstractAnalyser {
             return DONE;
         }
 
-        Map<FieldInfo, Expression> tempApproved = new HashMap<>();
+        Map<FieldReference, Expression> tempApproved = new HashMap<>();
         for (MethodAnalyser methodAnalyser : myMethodAnalysersExcludingSAMs) {
             int modified = methodAnalyser.methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD);
             if (modified == Level.TRUE) {
@@ -502,12 +502,12 @@ public class TypeAnalyser extends AbstractAnalyser {
                     }
                     for (FieldToCondition fieldToCondition : fields) {
                         Expression inMap = fieldToCondition.overwrite ?
-                                tempApproved.put(fieldToCondition.fieldInfo, fieldToCondition.condition) :
-                                !tempApproved.containsKey(fieldToCondition.fieldInfo) ?
-                                        tempApproved.put(fieldToCondition.fieldInfo, fieldToCondition.condition) : null;
+                                tempApproved.put(fieldToCondition.fieldReference, fieldToCondition.condition) :
+                                !tempApproved.containsKey(fieldToCondition.fieldReference) ?
+                                        tempApproved.put(fieldToCondition.fieldReference, fieldToCondition.condition) : null;
                         if (inMap != null && !inMap.equals(fieldToCondition.condition) && !inMap.equals(fieldToCondition.negatedCondition)) {
-                            messages.add(Message.newMessage(new Location(fieldToCondition.fieldInfo), Message.DUPLICATE_MARK_CONDITION,
-                                    "Field: " + fieldToCondition.fieldInfo));
+                            messages.add(Message.newMessage(new Location(fieldToCondition.fieldReference.fieldInfo),
+                                    Message.DUPLICATE_MARK_CONDITION, "Field: " + fieldToCondition.fieldReference));
                         }
                     }
                 }
@@ -522,7 +522,7 @@ public class TypeAnalyser extends AbstractAnalyser {
         return DONE;
     }
 
-    private record FieldToCondition(FieldInfo fieldInfo, Expression condition, Expression negatedCondition,
+    private record FieldToCondition(FieldReference fieldReference, Expression condition, Expression negatedCondition,
                                     boolean overwrite) {
     }
 
@@ -537,11 +537,11 @@ public class TypeAnalyser extends AbstractAnalyser {
         List<FieldToCondition> fieldToConditions = new ArrayList<>();
 
         for (Map.Entry<FieldReference, Expression> e : filterResult.accepted().entrySet()) {
-            FieldInfo fieldInfo = e.getKey().fieldInfo;
             Precondition pc = new Precondition(e.getValue(), List.of());
             Boolean isMark = AssignmentIncompatibleWithPrecondition.isMark(analyserContext, pc, methodAnalyser);
             if (isMark == null) return null;
-            fieldToConditions.add(new FieldToCondition(fieldInfo, e.getValue(),
+            FieldReference adjustedFieldReference = analyserContext.adjustThis(e.getKey());
+            fieldToConditions.add(new FieldToCondition(adjustedFieldReference, e.getValue(),
                     Negation.negate(evaluationContext, e.getValue()), isMark));
         }
         return fieldToConditions;
@@ -802,7 +802,7 @@ public class TypeAnalyser extends AbstractAnalyser {
             myWhenE2Fails = MultiLevel.compose(MultiLevel.EFFECTIVE, MultiLevel.FALSE);
             e1Component = MultiLevel.EFFECTIVE;
             // it is possible that all fields are final, yet some field's content is used as the precondition
-            eventual = !typeAnalysis.getApprovedPreconditionsE2().isEmpty();
+            eventual = !typeAnalysis.approvedPreconditionsE2IsEmpty();
         }
 
         int whenE2Fails = Math.min(fromParentOrEnclosing, myWhenE2Fails);
@@ -817,10 +817,10 @@ public class TypeAnalyser extends AbstractAnalyser {
 
         boolean haveToEnforcePrivateAndIndependenceRules = false;
         boolean checkThatTheOnlyModifyingMethodsHaveBeenMarked = false;
-
         for (FieldAnalyser fieldAnalyser : myFieldAnalysers) {
             FieldAnalysis fieldAnalysis = fieldAnalyser.fieldAnalysis;
             FieldInfo fieldInfo = fieldAnalyser.fieldInfo;
+            FieldReference thisFieldInfo = new FieldReference(analyserContext, fieldInfo, new This(analyserContext, typeInfo));
             String fieldFQN = fieldInfo.fullyQualifiedName();
 
             if (fieldAnalysis.isOfImplicitlyImmutableDataType() == null) {
@@ -878,7 +878,7 @@ public class TypeAnalyser extends AbstractAnalyser {
                 }
                 if (modified == Level.TRUE) {
                     if (eventual) {
-                        if (!typeAnalysis.getApprovedPreconditionsE2().containsKey(fieldInfo)) {
+                        if (!typeAnalysis.containsApprovedPreconditionsE2(thisFieldInfo)) {
                             log(E2IMMUTABLE, "For {} to become eventually E2Immutable, modified field {} can only be modified in methods marked @Mark or @Only(before=)");
                             checkThatTheOnlyModifyingMethodsHaveBeenMarked = true;
                         }

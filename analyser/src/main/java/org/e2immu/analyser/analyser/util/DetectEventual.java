@@ -30,7 +30,6 @@ import static org.e2immu.analyser.util.Logger.log;
 public record DetectEventual(MethodInfo methodInfo,
                              MethodAnalysisImpl.Builder methodAnalysis,
                              TypeAnalysisImpl.Builder typeAnalysis,
-                             Set<FieldInfo> visibleFields,
                              AnalyserContext analyserContext) {
 
     public MethodAnalysis.Eventual detect(EvaluationContext evaluationContext) {
@@ -128,24 +127,11 @@ public record DetectEventual(MethodInfo methodInfo,
         }
         Boolean isMarkViaModifyingMethod = MethodCallIncompatibleWithPrecondition.isMark(evaluationContext,
                 fieldsAndBefore.fields, methodAnalyser);
+        if (isMarkViaModifyingMethod == null) return MethodAnalysis.DELAYED_EVENTUAL;
         if (isMarkViaModifyingMethod) {
             return new MethodAnalysis.Eventual(fieldsAndBefore.fields, true, null, null);
         }
         return new MethodAnalysis.Eventual(fieldsAndBefore.fields, false, false, null);
-    }
-
-    /*
-    Given a field reference in a precondition, select the field that fits to our type.
-    e.g., the field could be this.x.y.t, with x being the field in this type;
-    alternatively, x.y.t could result in y where y is a field of this type, and x is another
-    local instance of the type itself.
-    Important is that t may be an eventually final variable in a utility class such as SetOnce,
-    not relevant to the type's instance of SetOnce
-     */
-    private FieldInfo selectField(FieldReference fieldReference) {
-        if (visibleFields.contains(fieldReference.fieldInfo)) return fieldReference.fieldInfo;
-        if (fieldReference.scope instanceof FieldReference fr) return selectField(fr);
-        return null; // not one of ours, ignore
     }
 
     public AnnotationExpression makeAnnotation(MethodAnalysis.Eventual eventual) {
@@ -223,7 +209,7 @@ public record DetectEventual(MethodInfo methodInfo,
             Set<FieldInfo> fields;
             if (ve.variable() instanceof This) fields = mao.fields();
             else if (ve.variable() instanceof FieldReference fr) {
-                FieldInfo selected = selectField(fr);
+                FieldInfo selected = typeAnalysis().translateToVisibleField(fr);
                 if (selected == null) {
                     return MethodAnalysis.NOT_EVENTUAL;
                 }
@@ -247,9 +233,10 @@ public record DetectEventual(MethodInfo methodInfo,
         boolean allBefore = true;
         Set<FieldInfo> fields = new HashSet<>();
         for (Map.Entry<FieldReference, Expression> e : filterResult.accepted().entrySet()) {
-            if (typeAnalysis.approvedPreconditionsIsSet(e2, e.getKey().fieldInfo)) {
-                Expression approvedPreconditionBefore = typeAnalysis.getApprovedPreconditions(e2, e.getKey().fieldInfo);
-                FieldInfo field = selectField(e.getKey());
+            FieldReference adjustedFieldReference = analyserContext.adjustThis(e.getKey());
+            if (typeAnalysis.approvedPreconditionsIsSet(e2, adjustedFieldReference)) {
+                Expression approvedPreconditionBefore = typeAnalysis.getApprovedPreconditions(e2, adjustedFieldReference);
+                FieldInfo field = typeAnalysis.translateToVisibleField(e.getKey());
                 if (field != null) {
                     if (approvedPreconditionBefore.equals(e.getValue())) {
                         allAfter = false;

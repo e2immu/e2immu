@@ -103,7 +103,7 @@ public class Test_Support_04_FirstThen extends CommonTestRunner {
             assertEquals(expectModified, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
 
             ParameterAnalysis o = d.parameterAnalyses().get(0);
-            int expectMv = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
+            int expectMv = d.iteration() <= 2 ? Level.DELAY : Level.FALSE;
             assertEquals(expectMv, o.getProperty(VariableProperty.MODIFIED_VARIABLE));
         }
     };
