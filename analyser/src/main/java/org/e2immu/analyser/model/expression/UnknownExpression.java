@@ -78,6 +78,7 @@ public record UnknownExpression(ParameterizedType parameterizedType, String msg)
             case CONTEXT_MODIFIED:
             case CONTEXT_MODIFIED_DELAY:
             case IDENTITY:
+            case NOT_MODIFIED_1:
                 return Level.FALSE;
             case INDEPENDENT:
                 return MultiLevel.INDEPENDENT;

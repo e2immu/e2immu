@@ -381,7 +381,7 @@ public record ParseMethodCallExpr(InspectionProvider inspectionProvider) {
                     MethodInspection mi = mc.method().methodInspection;
                     if (i < mi.getParameters().size()) {
                         ParameterInfo pi = mi.getParameters().get(i);
-                        boolean isFunctionalInterface = pi.parameterizedType.isFunctionalInterface();
+                        boolean isFunctionalInterface = pi.parameterizedType.isFunctionalInterface(inspectionProvider);
                         if (isFunctionalInterface) {
                             if (functionalInterface == null) {
                                 functionalInterface = pi.parameterizedType;
