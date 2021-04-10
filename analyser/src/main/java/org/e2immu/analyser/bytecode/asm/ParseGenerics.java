@@ -28,23 +28,13 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
-class ParseGenerics {
+record ParseGenerics(TypeContext typeContext, TypeInfo typeInfo,
+                     TypeInspectionImpl.Builder typeInspectionBuilder,
+                     FindType findType) {
     public static final char COLON = ':';
     public static final char GT_END_TYPE_PARAMS = '>';
     public static final char CARET_THROWS = '^';
     public static final char CLOSE_BRACKET = ')';
-
-    private final TypeContext typeContext;
-    private final TypeInfo typeInfo;
-    private final TypeInspectionImpl.Builder typeInspectionBuilder;
-    private final FindType findType; // getOrCreateTypeInfo for method-related generics; mustFindTypeInfo for type generics
-
-    ParseGenerics(TypeContext typeContext, TypeInfo typeInfo, TypeInspectionImpl.Builder typeInspectionBuilder, FindType findType) {
-        this.typeContext = typeContext;
-        this.typeInfo = typeInfo;
-        this.typeInspectionBuilder = typeInspectionBuilder;
-        this.findType = findType;
-    }
 
     private static class IterativeParsing<R> {
         int startPos;
@@ -82,10 +72,10 @@ class ParseGenerics {
     }
 
     private IterativeParsing<TypeParameter> iterativelyParseGenerics(String signature,
-                                                      IterativeParsing<TypeParameter> iterativeParsing,
-                                                      Function<String, TypeParameterImpl> createTypeParameterAndAddToContext,
-                                                      TypeContext typeContext,
-                                                      FindType findType) {
+                                                                     IterativeParsing<TypeParameter> iterativeParsing,
+                                                                     Function<String, TypeParameterImpl> createTypeParameterAndAddToContext,
+                                                                     TypeContext typeContext,
+                                                                     FindType findType) {
         int end = signature.indexOf(COLON, iterativeParsing.startPos);
         char atEnd = COLON;
 

@@ -36,7 +36,7 @@ In descending order of priority, we are now focusing on
 
 - fixing bugs and crashes;
 - enabling the analyser to process its own code base. This partially depends on advances in
-  the [JavaParser](http://javaparser.org/) library, since the analyser uses Java 15 syntax and constructs;
+  the [JavaParser](http://javaparser.org/) library, since the analyser uses Java 16 syntax and constructs;
 - providing one working, informative IDE plugin;
 - determining a selection of the most important Java APIs, and providing annotations for them.
 

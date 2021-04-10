@@ -36,9 +36,11 @@ public class TestGenerateAnnotationsImmutable {
                 generate(EVENTUALLY_E2IMMUTABLE_BEFORE_MARK, 0, false));
         assertEquals(Map.of(BeforeMark.class, TRUE),
                 generate(EVENTUALLY_E2IMMUTABLE_BEFORE_MARK, 1, false));
-        assertEquals(Map.of(BeforeMark.class, TRUE, E1Immutable.class, TRUE),
+
+        // note that we make no distinction between the different BEFORE_MARKs:
+        assertEquals(Map.of(BeforeMark.class, TRUE),
                 generate(EFFECTIVELY_E1_EVENTUALLY_E2IMMUTABLE_BEFORE_MARK, 0, false));
-        assertEquals(Map.of(BeforeMark.class, TRUE, E1Container.class, TRUE),
+        assertEquals(Map.of(BeforeMark.class, TRUE),
                 generate(EFFECTIVELY_E1_EVENTUALLY_E2IMMUTABLE_BEFORE_MARK, 1, false));
         try {
             assertEquals(Map.of(BeforeMark.class, TRUE),

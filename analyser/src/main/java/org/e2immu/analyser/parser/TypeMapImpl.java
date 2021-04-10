@@ -79,7 +79,7 @@ public class TypeMapImpl implements TypeMap {
 
     @Override
     public boolean isPackagePrefix(PackagePrefix packagePrefix) {
-        return trie.isStrictPrefix(packagePrefix.prefix);
+        return trie.isStrictPrefix(packagePrefix.prefix());
     }
 
     @Override
@@ -308,7 +308,7 @@ public class TypeMapImpl implements TypeMap {
 
         @Override
         public boolean isPackagePrefix(PackagePrefix packagePrefix) {
-            return trie.isStrictPrefix(packagePrefix.prefix);
+            return trie.isStrictPrefix(packagePrefix.prefix());
         }
 
         @Override

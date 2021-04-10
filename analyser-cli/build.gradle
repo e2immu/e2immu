@@ -19,10 +19,10 @@ plugins {
 }
 
 group 'org.e2immu'
-version '0.1.0a'
+version '0.1.2'
 
 dependencies {
-    implementation group: 'org.e2immu', name: 'e2immu-support', version: '0.1.0'      // LGPL 3.0
+    implementation group: 'org.e2immu', name: 'e2immu-support', version: '0.1.2'      // LGPL 3.0
 
     implementation project(':analyser')
     implementation project(':analyser-store-uploader')
@@ -35,26 +35,16 @@ dependencies {
 }
 
 test {
-    jvmArgs("--enable-preview")
     useJUnitPlatform()
 }
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_15
-    targetCompatibility = JavaVersion.VERSION_15
-}
-
-compileJava {
-    options.compilerArgs.add("--enable-preview")
-}
-
-compileTestJava {
-    options.compilerArgs.add("--enable-preview")
+    sourceCompatibility = JavaVersion.VERSION_16
+    targetCompatibility = JavaVersion.VERSION_16
 }
 
 application {
     mainClass.set('org.e2immu.analyser.cli.Main')
-    applicationDefaultJvmArgs = ['--enable-preview']
 }
 
 jar {
@@ -99,6 +89,11 @@ publishing {
                     }
                 }
             }
+        }
+        mavenJava(MavenPublication) {
+            groupId = 'org.e2immu'
+            artifactId = 'analyser-cli'
+            from components.java
         }
     }
 }

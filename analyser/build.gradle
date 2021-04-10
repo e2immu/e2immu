@@ -19,28 +19,19 @@ plugins {
 }
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_15
-    targetCompatibility = JavaVersion.VERSION_15
-}
-
-compileJava {
-    options.compilerArgs.add("--enable-preview")
+    sourceCompatibility = JavaVersion.VERSION_16
+    targetCompatibility = JavaVersion.VERSION_16
 }
 
 test {
     exclude '**/parserfailing/*.class'
 
     maxHeapSize = "2G"
-    jvmArgs("--enable-preview")
     useJUnitPlatform()
 }
 
-compileTestJava {
-    options.compilerArgs.add("--enable-preview")
-}
-
 dependencies {
-    implementation group: 'org.e2immu', name: 'e2immu-support', version: '0.1.1a'      // LGPL 3.0
+    implementation group: 'org.e2immu', name: 'e2immu-support', version: '0.1.2'      // LGPL 3.0
 
     implementation group: 'org.slf4j', name: 'slf4j-api', version: '1.7.25'           // MIT X-11 License
     implementation group: 'ch.qos.logback', name: 'logback-classic', version: '1.2.3' // EPL v1.0 and the LGPL 2.1
@@ -55,7 +46,7 @@ dependencies {
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
 }
 
-version = '0.1.0a'
+version = '0.1.2'
 group 'org.e2immu'
 
 application {
@@ -71,7 +62,6 @@ task generateAnnotationXml(type: JavaExec) {
     Set<File> reducedClassPath = sourceSets.main.runtimeClasspath.toList()
     reducedClassPath += sourceSets.test.runtimeClasspath
     reducedClassPath.removeIf({ f -> f.path.contains("build/classes") || f.path.contains("build/resources") })
-    jvmArgs("--enable-preview")
     args('--classpath=' + reducedClassPath.join(":") + ":src/main/resources/annotatedAPIs:jmods/java.base.jmod",
             '--source=non_existing_dir',
             '-w',
@@ -130,6 +120,11 @@ publishing {
                     }
                 }
             }
+        }
+        mavenJava(MavenPublication) {
+            groupId = 'org.e2immu'
+            artifactId = 'analyser'
+            from components.java
         }
     }
 }

@@ -15,10 +15,10 @@
 
 plugins {
     id 'java'
-  //  id 'maven-publish'
+    id 'maven-publish'
 }
 
-version '0.1.0'
+version '0.1.2'
 group 'org.e2immu'
 
 java {
@@ -32,14 +32,11 @@ jar {
 
 
 dependencies {
-    implementation group: 'org.e2immu', name: 'e2immu-support', version: '0.1.1a'      // LGPL 3.0
+    implementation group: 'org.e2immu', name: 'e2immu-support', version: '0.1.2'      // LGPL 3.0
 
     implementation group: 'org.slf4j', name: 'slf4j-api', version: '1.7.25'   // MIT X-11 License
 }
 
-// the reason the groupId is 'e2immu' and not 'org.e2immu' is that this reflects Gradle's project structure.
-// we push to mavenLocal() so that we can use/test the gradle-plugin locally
-/*
 publishing {
     repositories {
         mavenLocal()
@@ -54,7 +51,7 @@ publishing {
     }
     publications {
         mavenJava(MavenPublication) {
-            groupId = 'e2immu'
+            groupId = 'org.2immu'
             artifactId = 'annotatedAPIs'
             from components.java
         }
@@ -65,5 +62,3 @@ publishing {
         }
     }
 }
-
-*/

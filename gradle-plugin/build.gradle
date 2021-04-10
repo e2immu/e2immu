@@ -18,16 +18,16 @@ plugins {
     id 'maven-publish'
 }
 
-version '0.1.0b';
+version '0.1.2';
 group 'org.e2immu'
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_15
-    targetCompatibility = JavaVersion.VERSION_15
+    sourceCompatibility = JavaVersion.VERSION_16
+    targetCompatibility = JavaVersion.VERSION_16
 }
 
 dependencies {
-    implementation group: 'org.e2immu', name: 'e2immu-support', version: '0.1.0'      // LGPL 3.0
+    implementation group: 'org.e2immu', name: 'e2immu-support', version: '0.1.2'      // LGPL 3.0
 
     implementation(project(':analyser')) {
         exclude group: 'ch.qos.logback'
@@ -37,10 +37,6 @@ dependencies {
     // GRADLE PLUGIN
     implementation(gradleApi())
 
-}
-
-compileJava {
-    options.compilerArgs.add("--enable-preview")
 }
 
 publishing {
@@ -79,6 +75,11 @@ publishing {
                     }
                 }
             }
+        }
+        mavenJava(MavenPublication) {
+            groupId = 'org.e2immu'
+            artifactId = 'gradle-plugin'
+            from components.java
         }
     }
 }

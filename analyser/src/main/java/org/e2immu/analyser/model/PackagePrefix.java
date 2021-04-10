@@ -14,12 +14,7 @@
 
 package org.e2immu.analyser.model;
 
-public class PackagePrefix implements NamedType {
-    public final String[] prefix;
-
-    public PackagePrefix(String[] prefix) {
-        this.prefix = prefix;
-    }
+public record PackagePrefix(String[] prefix) implements NamedType {
 
     public PackagePrefix append(String component) {
         String[] newPrefix = new String[prefix.length + 1];

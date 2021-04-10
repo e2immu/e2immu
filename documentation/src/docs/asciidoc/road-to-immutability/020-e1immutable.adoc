@@ -130,8 +130,10 @@ We use this as the basis for the first level of immutability:
 ****
 
 The code analyser annotates level 1 immutable types with {e1immutable}.
-Types that are not {e1immutable} because they have at least one {variable} field, are annotated either {mutableModifiesArguments} or {container},
-depending on properties of the methods' parameters to be explained later.
+Types that are not {e1immutable} because they have at least one {variable} field, are annotated either {mutableModifiesArguments} or {container}, depending on properties of the methods' parameters to be explained later.
+
+Note that as of more recent versions of Java, the `record` type enforces explicitly final fields, along with additional support for equality and visibility.
+Any `record` will at least be {e1immutable}.
 
 As above with effective finality, the term _effective_ is present to make a distinction between formal immutability, and immutability that the code analyser computes.
 It will also serve to distinguish from _eventual_ immutability, where (in this case) the finality will be achieved only after the code reaches a certain state.
@@ -162,7 +164,7 @@ class SetOnce<T> {
 Once a value has been set, the field `t` cannot be assigned anymore.
 
 We have just observed that if one restricts to primitives and types like `java.lang.String`, level 1 immutability is sufficient to guarantee deep immutability.
-It is not feasible (and we do not wish to) work only with deeply immutable objects.
+It is not feasible, and we do not wish to, work only with deeply immutable objects.
 Moreover, it is easy to see that level 1 immutability is not enough to guarantee what we intuitively may think immutability stands for:
 
 .Example 5, level 1 immutability does not guarantee intuitive immutability

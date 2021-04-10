@@ -42,7 +42,7 @@ public class ParseFieldAccessExpr {
             if (expressionContext.typeContext.isPackagePrefix(combined)) {
                 return new PackagePrefixExpression(combined);
             }
-            String fullyQualifiedName = String.join(".", packagePrefix.prefix) + "." + name;
+            String fullyQualifiedName = String.join(".", packagePrefix.prefix()) + "." + name;
             TypeInfo typeInfo = expressionContext.typeContext.getFullyQualified(fullyQualifiedName, true);
             ParameterizedType objectType = new ParameterizedType(typeInfo, 0);
             return new TypeExpression(objectType, Diamond.NO);
