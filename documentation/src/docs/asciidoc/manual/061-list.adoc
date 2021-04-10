@@ -691,7 +691,9 @@ Summary:: Essential annotation for methods in <<concept-eventual,eventually immu
 
 Mode:: There is no opposite.
 
-Example::
+Example:: The following example shows a useful `@Only(before="...")` method.
+Please find an example with a useful `@Only(after="...")` method in <<testMark-annotation>>.
+
 [source,java]
 ----
 
