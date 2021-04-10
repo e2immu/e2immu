@@ -393,7 +393,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             AnalysisStatus overallStatus = analyserComponents.run(sharedState);
 
             StatementAnalyserResult result = sharedState.builder()
-                    .addTypeAnalysers(localAnalysers.get())
+                    .addTypeAnalysers(localAnalysers.getOrElse(List.of())) // unreachable statement...
                     .addMessages(statementAnalysis.messages.stream())
                     .setAnalysisStatus(overallStatus)
                     .combineAnalysisStatus(wasReplacement ? PROGRESS : DONE).build();

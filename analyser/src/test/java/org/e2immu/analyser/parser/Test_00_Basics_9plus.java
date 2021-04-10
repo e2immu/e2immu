@@ -120,6 +120,18 @@ public class Test_00_Basics_9plus extends CommonTestRunner {
                             d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
                 }
             }
+            if ("getString".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof FieldReference fr && "string".equals(fr.fieldInfo.name)) {
+                    int expectEnn = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
+                    assertEquals(expectEnn, d.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
+
+                    String expectValue = d.iteration() == 0 ? "<f:string>" : "instance type String";
+                    assertEquals(expectValue, d.currentValue().toString());
+
+                    int expectNne = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
+                    assertEquals(expectNne, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                }
+            }
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("Basics_10".equals(d.methodInfo().name)) {
@@ -131,6 +143,7 @@ public class Test_00_Basics_9plus extends CommonTestRunner {
             if ("string".equals(d.fieldInfo().name)) {
                 assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL,
                         d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_NOT_NULL));
+                assertEquals("in", d.fieldAnalysis().getEffectivelyFinalValue().toString());
             }
         };
         testClass("Basics_10", 0, 0, new DebugConfiguration.Builder()

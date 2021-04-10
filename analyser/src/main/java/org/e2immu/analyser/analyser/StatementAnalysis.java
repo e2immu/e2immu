@@ -1052,18 +1052,8 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                 }
             }
         }
-        // variable field, some cases of effectively final field
-        NewObject newObject;
-        FieldAnalyser fieldAnalyser = analyserContext.getFieldAnalyser(fieldReference.fieldInfo);
-        if (fieldAnalyser == null) {
-            // not a local field
-            int minimalNotNull = Math.max(MultiLevel.NULLABLE,
-                    analyserContext.getFieldAnalysis(fieldReference.fieldInfo).getProperty(EXTERNAL_NOT_NULL));
-            newObject = NewObject.initialValueOfExternalField(newObjectIdentifier,
-                    primitives, fieldReference.parameterizedType(), minimalNotNull);
-        } else {
-            newObject = NewObject.initialValueOfField(newObjectIdentifier, primitives, fieldReference.parameterizedType());
-        }
+        NewObject newObject = NewObject.initialValueOfExternalField(newObjectIdentifier,
+                primitives, fieldReference.parameterizedType(), notNull);
         return new ExpressionAndDelay(newObject, false);
     }
 
