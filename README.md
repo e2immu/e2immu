@@ -17,10 +17,10 @@ IntelliJ is in development. Support for Eclipse and Visual Studio Code are plann
 
 The following links point towards in-depth reading material:
 
-- [The Road to Immutability](http://) A gentle introduction to the concepts of effective and eventual immutability
-- [_e2immu_ manual](http://) The manual of the _e2immu_ project
-- [_e2immu_ - Effective and Eventual Immutability](http://) A PowerPoint presentation for those who prefer their text in
-  bullet points.
+- [The Road to Immutability](https://www.e2immu.org/road-to-immutability/000-main.html) A gentle introduction to the concepts of effective and eventual immutability
+- [_e2immu_ manual](https://www.e2immu.org/manual/000-main.html) The manual of the _e2immu_ project.
+
+More information on the project website [https://www.e2immu.org](https://www.e2immu.org).
 
 ## Current status
 
@@ -29,8 +29,8 @@ if you "just" want to use the analyser.
 
 All core concepts are solid, however. There is a full tutorial about the how and why of effective and eventual
 immutability, and all related properties. There are more than 200 code snippets running green, so there is a ton of
-example material already present. You can already improve your code by introducing eventually immutable constructs. The
-analyser is "nothing but" a support tool to help you along.
+example material already present. **You can already improve your code by introducing eventually immutable constructs. The
+analyser is "nothing but" a support tool to help you along.**
 
 In descending order of priority, we are now focusing on
 
@@ -70,96 +70,3 @@ The most immediate consequence is that
 
 *you are completely free to use the analyser where and when you like, insert e2immu annotations in your proprietary
 code, and build on the immutability stepping stones such as the `SetOnce` type*.
-
-## Project Governance
-
-The e2immu project is sponsored by IBTECH BV, a limited liability company under Belgian law. The project welcomes
-contributions from the community.
-
-### Goal
-
-IBTECH aims for the e2immu analyser to become a solid, dependable tool in promoting and enforcing immutability
-constraints in recent versions of Java. Until this goal is reached, it will try to avoid widening the scope of the
-analyser in the direction of, for example, a general code analyser, or the ability to analyser other programming
-languages.
-
-### Contributions
-
-All contributors are expected to sign a [Contributor License Agreement](http://) (CLA) that protects their intellectual
-property rights, and at the same time gives IBTECH the legal means to manage the project.
-
-The CLA contains a provision that prevents IBTECH from making the license more restrictive. It does allow IBTECH to make
-the license more permissive (e.g. from LGPLv3 to Apache License v2).
-
-Git and Github will be used to track individual contributions.
-
-### Copyright
-
-At the point of introduction of the project to the open source community, all source code is "(C) IBTECH BV and Bart
-Naudts, 2020-2021."
-
-Other contributors will be mentioned explicitly for major contributions, as in
-"(C) IBTECH BV and Jane Doe"
-or, for minor contributions,
-"(C) IBTECH BV and contributors to the e2immu project".
-
-## Covenant
-
-The project will be managed by IBTECH and community project leads according the professional and civil collaboration
-rules described in the [Contributor Covenant](https://www.contributor-covenant.org/version/2/0/code_of_conduct/).
-
-## How to contribute
-
-Once you have agreed to the CLA, there are many parts of the analyser ecosystem where you can make valuable
-contributions, according to your specialisation, interests or capabilities.
-
-Always use issues to attach a merge request, and try to be as concise as possible in defining issues.
-
-### Bug reports, minor fixes, and test examples
-
-Especially now in the early phase, this area offers rich pickings, as the analyser is not that stable yet. Make sure
-you're testing against the latest version of the analyser.
-
-It is important to write test examples that are as concise as possible.
-
-### Library annotations
-
-The topic of library annotations can be worked on indefinitely. Once the analyser is sufficiently stable, it can propose
-an annotated API, which can then be improved manually.
-
-### User interfaces
-
-This topic can generally be split into two important aspects: design, and the different implementations.
-
-The design aspect centers around the most informative and least intrusive way of conveying the analyser's information.
-
-Implementations focus on the different IDEs, and the infrastructure necessary to run the analyser in the background.
-
-### Documentation and tutorials
-
-The educational aspect of the analyser is important. I'd almost say there cannot be sufficient material to promote good
-software engineering practices.
-
-Secondly, the analyser is a living piece of code, and catching up with the technical specification is a task in itself.
-
-Translations of key documents are welcomed as well, especially to promote the immutability concepts to aspiring or
-starting software developers. No one should be constrained in their programming skills by a lack of understanding of
-English.
-
-Finally, because many non-native speakers contribute in their second or third language, we welcome improved re-phrasings
-in case the text deviates too much from natural language.
-
-### The analyser core
-
-Contributing to the analyser core is not for the faint of heart, and probably requires a decent investment in time and
-effort before you can make meaningful improvements or extensions.
-
-## Coding Guidelines
-
-Contributions are expected to follow the coding guidelines promoted by the e2immu project itself as described in
-the [Road to Immutability](http://). This includes:
-
-- making use of immutable or eventually immutable types as much as possible
-- avoiding types that cannot be marked `@Container`
-
-Code formatting follows the default rules of the IntelliJ IDEA. IntelliJ's green tick box is mandatory.

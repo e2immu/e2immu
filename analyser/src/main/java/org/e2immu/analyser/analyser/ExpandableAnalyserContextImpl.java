@@ -114,6 +114,15 @@ public class ExpandableAnalyserContextImpl implements AnalyserContext {
     }
 
     @Override
+    public FieldAnalyser getFieldAnalyser(FieldInfo fieldInfo) {
+        FieldAnalyser fa = this.fieldAnalysers.getOrDefault(fieldInfo, null);
+        if(fa == null) {
+            return parent.getFieldAnalyser(fieldInfo);
+        }
+        return fa;
+    }
+
+    @Override
     public TypeAnalysis getTypeAnalysis(TypeInfo typeInfo) {
         TypeAnalyser ta = this.typeAnalysers.getOrDefault(typeInfo, null);
         if (ta != null) return ta.typeAnalysis;

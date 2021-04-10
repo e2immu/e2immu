@@ -14,7 +14,11 @@ The inspector removes the dollar silently.
 
 Note that the name of the primary type holding the sub-types is completely irrelevant.
 
-=== Analysis
+=== Resolution
+
+
+
+=== Analyser implementation
 
 ==== Code structure
 

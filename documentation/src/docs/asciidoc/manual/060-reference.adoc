@@ -1,6 +1,22 @@
 == Overview of annotations
 
-=== Inheritance of method annotations
+=== Annotation modes
+
+Depending on where you find yourself in the continuum between object-oriented programming and functional programming, or, put differently, almost never following the container and level 2 immutable rules, or mostly adhering to them, you may wish to be either notified for following the rules, or warned by the analyser for breaking the rules.
+It is in this spirit that we envisage working in
+
+Green mode:: we assume that containers and level 2 immutable objects are sparse, and want to highlight when you follow the rules.
+
+Red mode:: when the majority of your types are level 2 immutable, and non-containers are rare, it may be more interesting to be warned when a type is _not_ following the rules.
+
+Because annotations often occur in an opposing pair, the choice of a mode can help to reduce information overload.
+For example, in red mode, <<mutableModifiesArguments-annotation>> will be prominently displayed, and
+<<e2container-annotation>> will be "invisible".
+In green mode, we want <<container-annotation>> and <<e2container-annotation>> to be visible, while "normal" types are unmarked in black.
+
+=== Inheritance of annotations
 
 In general, the analyser allows a method to do better than the method it overrides.
 It will raise an error when the overriding method is {modified}, where the original is {nm}.
+
+// empty line

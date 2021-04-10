@@ -14,6 +14,7 @@
 
 plugins {
     id 'org.asciidoctor.jvm.convert' 
+    id 'org.asciidoctor.jvm.pdf' version '3.1.0'
 }
 
 asciidoctor {
@@ -28,5 +29,33 @@ asciidoctor {
     }
 }
 
-build.dependsOn 'asciidoctor' 
+build.dependsOn ('asciidoctor', 'asciidoctorPdf')
+
+task copyManualToSite(type: Copy) {
+    from 'build/docs/asciidoc/manual/'
+    into '../../e2immu-site/static/manual/'
+    dependsOn(asciidoctor)
+}
+task copyManualPDFToSite(type: Copy) {
+    from file('build/docs/asciidocPdf/manual/000-main.pdf')
+    into '../../e2immu-site/static/'
+    rename '.*', 'manual.pdf'
+    dependsOn(asciidoctorPdf)
+}
+
+task copyRoadToSite(type: Copy) {
+    from 'build/docs/asciidoc/road-to-immutability/'
+    into '../../e2immu-site/static/road-to-immutability/'
+    dependsOn(asciidoctor)
+}
+task copyRoadPDFToSite(type: Copy) {
+    from file('build/docs/asciidocPdf/road-to-immutability/000-main.pdf')
+    into '../../e2immu-site/static/'
+    rename '.*', 'road-to-immutability.pdf'
+    dependsOn(asciidoctorPdf)
+}
+
+task copyToSite {
+    dependsOn(copyManualToSite, copyRoadToSite, copyManualPDFToSite, copyRoadPDFToSite)
+}
 

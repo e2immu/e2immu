@@ -25,6 +25,7 @@ include::{includedir}/manual/030-use.adoc[]
 
 == _Reference_
 :sectnums:
+include::{includedir}/manual/040-concepts.adoc[]
 
 include::{includedir}/manual/060-reference.adoc[]
 include::{includedir}/manual/061-list.adoc[]

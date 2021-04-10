@@ -275,11 +275,14 @@ class Finisher {
 Using the simple and common definition:
 
 ****
-*Definition*: a *utility class* is a class which cannot be instantiated: it has no non-static fields, and has a single, private, unused constructor.
+*Definition*: a *utility class* is a level 2 immutable class which cannot be instantiated.
 ****
 
-the code analyser recognizes classes that only contain an assortment of static fields and methods.
-The value of recognizing this type is twofold: firstly, it enforces the private constructor; secondly, it allows for the detection of extension classes.
+These definitions imply
+
+. a utility class has no non-static fields,
+. it has a single, private, unused constructor,
+. and its static fields (if it has any) are sufficiently immutable.
 
 In Java, many classes cannot easily be extended.
 Implementations of extensions typically use a utility class with the convention that the first parameter of the static method is the object of the extended method call:

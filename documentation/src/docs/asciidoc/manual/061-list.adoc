@@ -10,15 +10,35 @@ Field:: does the annotation occur on (static) fields?
 Method:: does the annotation occur on methods and constructors?
 Parameter:: does the annotation occur on parameters?
 
-This classification helps to see the wood for the trees in the long list.
-We explain the green and red mode in #TODO#.
+This classification hopefully helps to see the wood for the trees in the long list.
+
+[#allowsInterrupt-annotation]
+==== @AllowsInterrupt
+
+|===
+| Basic {n} | Immu {n}| Contract {y}| Type {n} | Field {n} | Method {y} | Param {n}
+|===
+
+Contract-only annotation indicating that this method or constructor increases the statement time (<<concept-statement-time>>), or allows the execution to be interrupted.
+
+Default value is true.
+Methods can be annotated with `@AllowsInterrupt(false)` to explicitly mark that they do not interrupt.
+
+External methods not annotated will not interrupt.
 
 [#beforeMark-annotation]
 ==== @BeforeMark
 
 |===
-| Basic {n} | Immu {y}| Contract {n}| Type {n} | Field {y} | Method {y} | Param {y}
+| Basic {n} | Immu {y}| Contract {y}| Type {n} | Field {y} | Method {y} | Param {y}
 |===
+
+Summary:: Annotation computed when an eventually immutable type is guaranteed to be in its _before_ state, i.e., none of the marked methods have been called yet.
+As a dynamic type annotation (<<technical-dynamic-type-annotations>>), it is the opposite of {e1immutable},
+{e2immutable}, or its container variants {e1container}, {e2container}.
+They guarantee that an eventually immutable object is in its _after_ state, i.e., a marked method has been called and the object has become immutable.
+
+Mode:: not immediately relevant
 
 [#constant-annotation]
 ==== @Constant
@@ -29,7 +49,30 @@ We explain the green and red mode in #TODO#.
 
 Summary:: The analyser emits this annotation when a field has a constant final value, or a method returns a constant value.
 Its primary purpose is to help debug the analyser.
+More details in <<concept-constant>>.
+
 Mode:: This annotation has no opposite.
+
+Example:: In this simple example, an `enum` constant is returned by the `highest` method:
+
+[source,java]
+----
+@E2Container
+public enum Enum_3 {
+    ONE(1), TWO(2), THREE(3);
+
+    public final int cnt;
+
+    Enum_3(int cnt) {
+        this.cnt = cnt;
+    }
+
+    @Constant("THREE")
+    public static Enum_3 highest() {
+        return THREE;
+    }
+}
+----
 
 [#container-annotation]
 ==== @Container
@@ -38,19 +81,122 @@ Mode:: This annotation has no opposite.
 | Basic {y} | Immu {y}| Contract {y}| Type {y} | Field {n} | Method {n} | Param {n}
 |===
 
+Summary:: The analyser computes this essential annotation for types which do not modify the parameters of their methods.
+See <<concept-containers>> for an in-depth discussion.
+
+Mode:: Use this annotation in green mode.
+The opposite is {mutableModifiesArguments} if the type has {variable} fields, or {e1immutable} if all the type's fields are effectively final.
+
+Example::
+The following examples present containers: <<constant-annotation>>, <<dependent-annotation>>, <<e1container-annotation>>.
+Non-containers are in <<e1immutable-annotation>> and <<mutableModifiesArguments-annotation>>.
+
 [#dependent-annotation]
 ==== @Dependent
 
 |===
-| Basic {y} | Immu {y}| Contract {y}| Type {n} | Field {n} | Method {y} | Param {n}
+| Basic {y} | Immu {y}| Contract {y}| Type {y} | Field {n} | Method {y} | Param {y}
 |===
 
-Summary:: Annotation used to indicate that the type's fields link to the method's parameter or return value, or the constructor's parameters.
-This annotation is only present when there are support data fields.
+Summary:: Annotation used to indicate that the type's fields <<concept-linking,link>> to the method's parameter or return value, or the constructor's parameters.
+This annotation is only present for fields that are not of <<concept-implicitly-immutable,implicitly immutable type>>.
 Additionally, on methods, the analyser only computes the annotation when the method is {nm}.
 
 Mode:: Use this annotation in the red mode.
 Its opposite is {independent}.
+
+Example::
+
+The assignment of a mutable set to a field typically causes a dependency:
+
+[source,java]
+----
+class Dependent<String> {
+    private final Set<String> set;
+
+    public Dependent(@Dependent Set<String> set) {
+        this.set = set;
+    }
+
+    @Dependent
+    public Set<String> getSet() {
+        return set;
+    }
+}
+----
+
+A similar example is in <<e1immutable-annotation>>.
+
+[#dependent1-annotation]
+==== @Dependent1
+
+|===
+| Basic {n} | Immu {n} | Contract {n}| Type {n} | Field {n} | Method {y} | Param {y}
+|===
+
+Summary:: As one of the <<concept-higher-order-modification>> annotations, {dependent1}
+on a parameter, of <<concept-implicitly-immutable,implicitly immutable type>>, indicates that this parameter is assigned to one of the fields, or assigned into the object graph of one of the fields.
+When computed on a method, the return value of the method, again of implicitly immutable type, is known to be part of the object graph of the fields.
+
+Mode:: This annotation has no opposite.
+It implies {independent} because it appears on implicitly immutable types only.
+
+Example:: This annotation has been contracted in many collection-framework methods, such as
+
+[source,java]
+----
+Collections.add(@Dependent1 E e);
+
+@Dependent1
+E List.get(int index);
+----
+
+The most direct example explaining the definition is:
+
+[source,java]
+----
+public class Dependent1_0<T> {
+    @Linked1(to = {"Dependent1_0:t"})
+    private final T t;
+
+    public Dependent1_0(@Dependent1 T t) {
+        this.t = t;
+    }
+
+    @Dependent1
+    public T getT() {
+        return t;
+    }
+}
+----
+
+[#dependent2-annotation]
+==== @Dependent2
+
+|===
+| Basic {n} | Immu {n} | Contract {n} | Type {n} | Field {n} | Method {y} | Param {y}
+|===
+
+Summary:: This annotation is one of the <<concept-higher-order-modification>> annotations.
+It is only computed for <<concept-linking,independent>> parameters or methods.
+When computed on a parameter, it indicates that part of the <<concept-implicitly-immutable,implicitly immutable content>>
+of the argument will be assigned to the fields of the method's type.
+When computed on a method, it signifies that part of the implicitly immutable content of the return value is assigned to the fields of the method's type.
+
+This annotation is central to iteration over the implicitly immutable content of a type.
+
+Mode:: This annotation has no opposite.
+By definition, implies {independent}.
+
+Example:: This annotation has been contracted in many collection-framework methods, such as
+
+[source,java]
+----
+boolean Collections.addAll(@Dependent2 Collection<? extends E> coll);
+
+@Dependent2
+Stream<E> Collections.stream();
+----
 
 [#e1container-annotation]
 ==== @E1Container
@@ -59,30 +205,38 @@ Its opposite is {independent}.
 | Basic {y} | Immu {y}| Contract {y}| Type {y} | Field {y} | Method {y} | Param {y}
 |===
 
-Summary:: This annotation is a short-hand for the combination of {e1immutable} and {container}.
+Summary:: This annotation is a short-hand for the combination of {e1immutable} and {container}, as described in <<concept-e1immutable>> and <<concept-containers>>.
+
 Mode:: This annotation sits in between {mutableModifiesArguments}, {container} and {e2container}.
 
-Example:: In the following example, the field `j` remains variable until the user of the class calls `setPositiveJ`.
+Example:: In the following example of an eventually level 1 immutable type, the field `j` remains variable until the user of the class calls `setPositiveJ`.
 
-.Example of eventual @E1Container
+.Example of an eventually @E1Container type
 [source,java]
 ----
-@E1Container(after = "mark")
-class ExampleManualEventuallyE1Container {
+@E1Container(after = "j")
+class EventuallyE1Immutable_2_M {
 
-    @Final
-    private int i;
+    @Modified
+    private final Set<Integer> integers = new HashSet<>();
 
-    @Final(after = "mark")
+    @Final(after = "j")
     private int j;
 
-    public ExampleManualEventuallyE1Container(int i) {
-        this.i = i;
+    @Modified
+    @Only(after = "j")
+    public boolean addIfGreater(int i) {
+        if (this.j <= 0) throw new UnsupportedOperationException("Not yet set");
+        if (i >= this.j) {
+            integers.add(i);
+            return true;
+        }
+        return false;
     }
 
     @NotModified
-    public int getI() {
-        return i;
+    public Set<Integer> getIntegers() {
+        return integers;
     }
 
     @NotModified
@@ -91,7 +245,7 @@ class ExampleManualEventuallyE1Container {
     }
 
     @Modified
-    @Mark("mark")
+    @Mark("j")
     public void setPositiveJ(int j) {
         if (j <= 0) throw new UnsupportedOperationException();
         if (this.j > 0) throw new UnsupportedOperationException("Already set");
@@ -100,7 +254,7 @@ class ExampleManualEventuallyE1Container {
     }
 
     @Modified
-    @Only(before = "mark")
+    @Only(before = "j")
     public void setNegativeJ(int j) {
         if (j > 0) throw new UnsupportedOperationException();
         if (this.j > 0) throw new UnsupportedOperationException("Already set");
@@ -116,8 +270,27 @@ class ExampleManualEventuallyE1Container {
 | Basic {y} | Immu {y}| Contract {y}| Type {y} | Field {y} | Method {y} | Param {y}
 |===
 
-Summary:: This annotation indicates that a type is level 1 immutable, effectively or eventually, meaning all fields are effectively or eventually final.
+Summary:: This annotation indicates that a type is <<concept-e1immutable,level 1 immutable>>, effectively or eventually, meaning all fields are effectively or eventually final.
 Mode:: This annotation sits in between {mutableModifiesArguments} and {e2immutable}.
+
+Example:: The `add` method modifies its parameter `input`; at the same time, the dependence between the constructor's parameter and the field prevents the type from being level 2 immutable:
+
+[source,java]
+----
+@E1Immutable
+class AddToSet {
+    private final Set<String> stringsToAdd;
+
+    @Dependent
+    public AddToSet(Set<String> set) {
+        this.stringsToAdd = set;
+    }
+
+    public void add(@Modified @NotNull1 Set<String> input) {
+        input.addAll(set);
+    }
+}
+----
 
 [#e2container-annotation]
 ==== @E2Container
@@ -126,8 +299,11 @@ Mode:: This annotation sits in between {mutableModifiesArguments} and {e2immutab
 | Basic {y} | Immu {y}| Contract {y}| Type {y} | Field {y} | Method {y} | Param {y}
 |===
 
-Summary:: This annotation is a short-hand for the combination of {e2immutable} and {container}.
+Summary:: This annotation is a short-hand for the combination of {e2immutable} and {container}, as described in <<concept-e2immutable>> and <<concept-containers>>.
+
 Mode:: This annotation is the default in the red mode.
+
+Example::
 
 [#e2immutable-annotation]
 ==== @E2Immutable
@@ -221,6 +397,8 @@ class ExampleManualVariableFinal {
 <.> This field is effectively final, but there is no annotation because of the `final` modifier.
 <.> Note that only the constructor accesses this method.
 
+==== @Finalizer
+
 ==== @Fluent
 
 |===
@@ -279,6 +457,8 @@ Its opposite is {dependent}.
 Summary:: Annotation to help debug the dependence system.
 Mode:: There is no opposite.
 
+==== @Linked1
+
 ==== @Mark
 
 |===
@@ -294,6 +474,20 @@ Mode:: There is no opposite.
 Summary:: Core annotation which indicates that content modifications take place.
 Mode:: It is the default in the green mode, when {nm} is not present.
 
+==== @Modified1
+
+|===
+| Basic {n} | Immu {n}| Contract {n}| Type {y} | Field {n} | Method {n} | Param {y}
+|===
+
+Summary:: This annotation is part of the <<higher-level-modifications>>.
+
+Mode:: the opposite annotation is {nm1}.
+In green mode, this one is the default; in red mode, {nm1} is the default.
+
+Example:: Applying a c
+
+[#mutableModifiesArguments-annotation]
 ==== @MutableModifiesArguments
 
 |===
@@ -302,9 +496,28 @@ Mode:: It is the default in the green mode, when {nm} is not present.
 
 Summary::
 This annotation appears on types which are not a container and not level 1 immutable: at least one method will modify its parameters, and at least one field will be variable.
+Definitions are in <<concept-containers>> and <<concept-e1immutable>>.
 
 Mode:: It is the default in the green mode when none of {container}, {e1immutable}, {e1container}, {e2immutable}, {e2container} is present.
 Use it for contracting in the red mode.
+
+Example:: Types with non-private fields cannot be level 1 immutable.
+Here we combine that with a parameter modifying method:
+
+[source,java]
+----
+@MutableModifiesArguments
+class Mutate {
+    @Variable
+    public int count;
+
+    public void add(@Modified List<String> list) {
+        for(int i=0; i<count; i++) {
+            list.add("item "+i);
+        }
+    }
+}
+----
 
 ==== @NotModified
 
@@ -312,9 +525,17 @@ Use it for contracting in the red mode.
 | Basic {y} | Immu {y}| Contract {y}| Type {n} | Field {y} | Method {y} | Param {y}
 |===
 
-Summary:: Core annotation which indicates that no content modifications take place.
+Summary:: Core annotation which indicates that no <<concept-modified,modifications>> take place on a field, parameter, or in a method.
 
-Mode:: It is the default in the red mode, when {modified} is not present.
+Mode:: It is the default in the red mode, when its opposite {modified} is not present.
+
+Example::
+
+[source,java]
+----
+
+
+----
 
 ==== @NotModified1
 
@@ -322,8 +543,10 @@ Mode:: It is the default in the red mode, when {modified} is not present.
 | Basic {n} | Immu {y}| Contract {y}| Type {n} | Field {y} | Method {y} | Param {y}
 |===
 
-Summary:: The {nm1} annotation is a dynamic type annotation which exists for functional interface types only.
-It indicates that the single abstract method of the interface does not modify its arguments.
+Summary:: This annotation is part of the <<higher-level-modifications>>.
+Contracted to a parameter of an abstract type, it indicates that the abstract method cannot be implemented in a modifying way.
+Computed on parameters of any type with <<concept-implicitly-immutable,implicitly immutable content>>, it signifies that
+
 
 Mode:: It exists only in the green mode; there is no opposite.
 It can only be used for contracting, the analyser cannot generate it.
@@ -333,6 +556,22 @@ The analyser can compute it in certain circumstances; in other cases, the user c
 
 Note that because suppliers have no parameters, only modifications to the closure apply.
 Functional interfaces are always normally {nm}: there are no modifying methods on them apart from the abstract method.
+
+Example:: We first show an example of a {nm1} contract:
+
+[source,java]
+----
+
+
+----
+
+Here, the analyser computes the annotation:
+
+[source,java]
+----
+
+
+----
 
 ==== @NotNull
 
@@ -373,14 +612,14 @@ Use it to contract in the red mode.
 | Basic {n} | Immu {y}| Contract {y}| Type {n} | Field {n} | Method {y} | Param {n}
 |===
 
-==== @Precondition
+==== @PropagateModification
 
 |===
 | Basic {n} | Immu {n} | Contract {n}| Type {n} | Field {n} | Method {y} | Param {n}
 |===
 
-Summary:: The analyser emits this annotation to describe any preconditions to a method, i.e., boolean expressions of the parameters or fields which cause an exception.
-Mode:: This annotation cannot be used for contracting.
+Summary::
+Mode::
 
 ==== @Singleton
 
@@ -391,100 +630,17 @@ Mode:: This annotation cannot be used for contracting.
 Summary:: This annotation indicates that the class is a singleton: only one instance can exist.
 Mode:: There is no opposite for this annotation.
 
-==== @Size
+==== @TestMark
 
 |===
 | Basic {n} | Immu {n}| Contract {y}| Type {n} | Field {y} | Method {y} | Param {y}
 |===
 
-Summary:: The annotation indicates that the type, typically a container, has a `size` method which gives an indication of the amount of elements it holds.
-It can be used to request minimal size, and to indicate that resulting objects have the same size as incoming objects.
+Summary::
 Mode:: There is no opposite for this annotation.
 
-Details:: A type becomes _sizable_ when it has at least one non-modifying method returning an `int`, or a `long`, annotated with `@Size`.
-It is this method that will return the size of the type.
-In practice, we're looking at the `size()` method of the collection classes:
-
-[source,java]
-----
-@Size
-int size();
-----
-
-Non-modifying methods that return a boolean can have their value explained:
-
-[source,java]
-----
-@Size(equals = 0) // or @Size, given that equals=0 is the default
-boolean isEmpty();
-
-@Size(min = 1)
-boolean isNotEmpty();
-----
-
-Non-modifying methods that return a sizable object can have their value explained as well:
-
-[source,java]
-----
-@Size(equals = 2)
-Set<Integer> returnSetOf2(int i1, int i2) { return Set.of(i1, i2); }
-----
-
-In modifying methods, the annotation describes how the size of the object in scope changes:
-
-[source,java]
-----
-@Size(equals = 0)
-void clear(); // empties the collection
-
-@Size(min = 1)
-boolean add(T t); // after adding, there will be at least one element in the collection
-----
-
-As a second option in modifying methods, we can transfer the size restriction of a parameter to the object itself:
-
-[source,java]
-----
-boolean addAll(@Size(copyMin = true) Collection<? extends E> collection);
-----
-
-This indicates that after a call to `addAll`, the minimum size of the object combines with the current minimum.
-In other words, if the size of the argument is `size >= 2`, then the current object will also have `size >= 2` assuming it started with a `size >= i` with `0 \<= i \<= 2`.
-The analyser allows only one `copyMin` or `copyEquals` annotation per (modifying) method.
-If a modifying method has a `copyMin` or `copyEquals` annotation on a parameter, then the potential `@Size` annotation on the method will be interpreted as size information on the return value.
-
-A parameter annotated with `@Size(min = n)` or `@Size(equals = n)` sets a size requirement, regardless the type of method:
-
-[source,java]
-----
-@Identity
-static <T> Collection<T> requireNotEmpty(@Size(min = 1) Collection<T> ts) {
-    if(ts.isEmpty()) throw new UnsupportedOperationException();
-    return ts;
-}
-----
-
-The analyser can infer `@Size` annotations on fields and return values of non-modifying methods.
-It can also infer `@Size` restriction on parameters (like the one in the above example).
-The analyser switches from 'restriction mode' into 'size computation mode' as soon as one modifying method has been applied to the sizable object.
-
-==== @SupportData
-
-|===
-| Basic {n} | Immu {y}| Contract {y}| Type {n} | Field {y} | Method {n} | Param {n}
-|===
-
-Summary:: This annotation is present to highlight fields which need to satisfy rules 2 and 3 of level 2 immutability.
-Mode:: There is no opposite for this annotation.
-The analyser generally computes it, but the user can override these decisions in contract mode, using `AnnotationType.CONTRACT` to enforce presence and `AnnotationType.CONTRACT_ABSENT`
-to enforce absence.
-
-Details:: The analyser marks a field as {supportData} only when
-
-. the type declaring the field is {e1immutable}, and
-. the field classifies as support data, and
-. it is {nm}, and
-. at least one of {e2immutable}'s rule 2 and rule 3 is not satisfied in relation to this field.
+Details::
+xxx
 
 ==== @UtilityClass
 
@@ -492,7 +648,9 @@ Details:: The analyser marks a field as {supportData} only when
 | Basic {y} | Immu {n}| Contract {n}| Type {y} | Field {n} | Method {n} | Param {n}
 |===
 
-Summary:: This annotation indicates that the type is a utility class: it is eventually level 2 immutable, it cannot be instantiated, and only has static methods.
+Summary:: This annotation indicates that the type is a <<concept-utility-class,utility class>>: its static side is eventually level 2 immutable, and it cannot be instantiated.
+As a consequence, should only have static methods.
+
 Mode:: There is no opposite for this annotation.
 Details::
 The level 2 immutability ensures that the (static) fields are sufficiently immutable.
