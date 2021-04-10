@@ -900,6 +900,12 @@ public class FieldAnalyser extends AbstractAnalyser {
     private AnalysisStatus analysePropagateModification() {
         int epm = fieldAnalysis.getProperty(VariableProperty.EXTERNAL_PROPAGATE_MOD);
         if (epm != Level.DELAY) return DONE;
+        TypeInfo bestTypeInfo = fieldInfo.type.bestTypeInfo();
+        if (bestTypeInfo == null || !bestTypeInfo.isAbstract()) {
+            log(PROPAGATE_MODIFICATION, "Type of field {} is not abstract, cannot hold @PropagateModification", fqn);
+            fieldAnalysis.setProperty(VariableProperty.EXTERNAL_PROPAGATE_MOD, Level.FALSE);
+            return DONE;
+        }
 
         if (!fieldAnalysis.allLinksHaveBeenEstablished.isSet()) {
             log(DELAYED, "Delaying, have no linked variables yet for field {}", fqn);

@@ -2281,15 +2281,22 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
      * Can be delayed
      */
     private AnalysisStatus checkUnusedReturnValueOfMethodCall() {
-        if (statementAnalysis.statement instanceof ExpressionAsStatement eas && eas.expression instanceof MethodCall) {
-            MethodCall methodCall = (MethodCall) (((ExpressionAsStatement) statementAnalysis.statement).expression);
+        if (statementAnalysis.statement instanceof ExpressionAsStatement eas && eas.expression instanceof MethodCall methodCall) {
             if (Primitives.isVoid(methodCall.methodInfo.returnType())) return DONE;
             MethodAnalysis methodAnalysis = getMethodAnalysis(methodCall.methodInfo);
             int identity = methodAnalysis.getProperty(VariableProperty.IDENTITY);
-            if (identity == Level.DELAY) return DELAYS;
+            if (identity == Level.DELAY) {
+                log(DELAYED, "Delaying unused return value in {} {}, waiting for @Identity of {}",
+                        index(), myMethodAnalyser.methodInfo.fullyQualifiedName, methodCall.methodInfo.fullyQualifiedName);
+                return DELAYS;
+            }
             if (identity == Level.TRUE) return DONE;
             int modified = methodAnalysis.getProperty(MODIFIED_METHOD);
-            if (modified == Level.DELAY) return DELAYS;
+            if (modified == Level.DELAY && !methodCall.methodInfo.isAbstract()) {
+                log(DELAYED, "Delaying unused return value in {} {}, waiting for @Modified of {}",
+                        index(), myMethodAnalyser.methodInfo.fullyQualifiedName, methodCall.methodInfo.fullyQualifiedName);
+                return DELAYS;
+            }
             if (modified == Level.FALSE) {
                 statementAnalysis.ensure(Message.newMessage(getLocation(), Message.IGNORING_RESULT_OF_METHOD_CALL,
                         methodCall.getMethodInfo().fullyQualifiedName()));

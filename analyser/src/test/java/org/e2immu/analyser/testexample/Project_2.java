@@ -14,31 +14,31 @@
 
 package org.e2immu.analyser.testexample;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /*
-Small excerpt from Project_0.
-Was an error (infinite loop) because there was no @Modified information on Map.put (no annotated API).
+Another excerpt from Project_0, causes infinite loop
  */
 
-public class Project_1 {
+public class Project_2 {
 
     static class Container {
+        final String value;
+
+        public Container(String value) {
+            this.value = value;
+        }
     }
 
     private final Map<String, Container> kvStore = new ConcurrentHashMap<>();
 
-    public String set(String key) {
-        Container container = new Container();
-        kvStore.put(key, container);
-        return key;
+    public String set(String key, String value) {
+        Container prev = kvStore.get(key);
+        if (prev == null) {
+            new Container(value); // removing container also solves the problem
+        }
+        return prev.value; // cause of the problem (change to key or constant solves the issue)
     }
 
 }

@@ -17,6 +17,7 @@ package org.e2immu.analyser.parser;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.Level;
+import org.e2immu.analyser.visitor.FieldAnalyserVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
 import org.junit.jupiter.api.Test;
@@ -43,6 +44,20 @@ public class Test_45_Project extends CommonTestRunner {
     @Test
     public void test_1() throws IOException {
         testClass("Project_1", 0, 0, new DebugConfiguration.Builder()
+                .build());
+    }
+
+    @Test
+    public void test_2() throws IOException {
+        FieldAnalyserVisitor fieldAnalyserVisitor  = d -> {
+            if("value".equals(d.fieldInfo().name)) {
+                int expectPm = Level.FALSE;
+                assertEquals(expectPm, d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_PROPAGATE_MOD));
+            }
+        };
+
+        testClass("Project_2", 0, 0, new DebugConfiguration.Builder()
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build());
     }
 
