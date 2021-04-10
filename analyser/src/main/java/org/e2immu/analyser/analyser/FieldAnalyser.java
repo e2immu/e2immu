@@ -96,7 +96,7 @@ public class FieldAnalyser extends AbstractAnalyser {
         fieldAnalysis = new FieldAnalysisImpl.Builder(analyserContext.getPrimitives(), analyserContext, fieldInfo, ownerTypeAnalysis);
         this.primaryType = primaryType;
         this.sam = sam;
-        fieldCanBeWrittenFromOutsideThisPrimaryType = !fieldInfo.isPrivate() &&
+        fieldCanBeWrittenFromOutsideThisPrimaryType = fieldInfo.isNotPrivate() &&
                 !fieldInfo.isExplicitlyFinal() && !fieldInfo.owner.isPrivateOrEnclosingIsPrivate();
         haveInitialiser = fieldInspection.fieldInitialiserIsSet() && fieldInspection.getFieldInitialiser().initialiser() != EmptyExpression.EMPTY_EXPRESSION;
 
@@ -525,7 +525,7 @@ public class FieldAnalyser extends AbstractAnalyser {
         }
         int corrected = immutable == MultiLevel.EVENTUALLY_E1IMMUTABLE_BEFORE_MARK ? MultiLevel.EVENTUALLY_E1IMMUTABLE :
                 MultiLevel.EVENTUALLY_E2IMMUTABLE;
-        if (!fieldInfo.isPrivate()) {
+        if (fieldInfo.isNotPrivate()) {
             return corrected;
         }
         // check exposed via return values of methods
@@ -984,8 +984,7 @@ public class FieldAnalyser extends AbstractAnalyser {
         return DELAYS;
     }
 
-    @Override
-    protected Expression getVariableValue(Variable variable) {
+    private Expression getVariableValue(Variable variable) {
         FieldReference fieldReference = (FieldReference) variable;
         FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalyser(fieldReference.fieldInfo).fieldAnalysis;
         int effectivelyFinal = fieldAnalysis.getProperty(VariableProperty.FINAL);

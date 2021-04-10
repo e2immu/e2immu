@@ -117,7 +117,6 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
                     annotationChecks.toImmutableMap(), getAssignedToField());
         }
 
-        @Override
         public void transferPropertiesToAnnotations(AnalysisProvider analysisProvider, E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
 
             // no annotations can be added to primitives

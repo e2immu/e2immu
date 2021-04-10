@@ -90,7 +90,7 @@ public enum SideEffect {
 
     private final int level;
 
-    private SideEffect(int level) {
+    SideEffect(int level) {
         this.level = level;
     }
 

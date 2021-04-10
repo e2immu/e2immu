@@ -928,7 +928,7 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
     private Boolean findOtherModifyingElements() {
         boolean nonPrivateFields = myFieldAnalysers.values().stream()
                 .filter(fa -> fa.fieldInfo.type.isFunctionalInterface() && fa.fieldAnalysis.isDeclaredFunctionalInterface())
-                .anyMatch(fa -> !fa.fieldInfo.isPrivate());
+                .anyMatch(fa -> fa.fieldInfo.isNotPrivate());
         if (nonPrivateFields) {
             return true;
         }

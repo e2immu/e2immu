@@ -54,10 +54,6 @@ public interface AnalyserContext extends AnalysisProvider, InspectionProvider {
         return null;
     }
 
-    default TypeInfo getPrimaryType() {
-        return null;
-    }
-
     default Stream<MethodAnalyser> methodAnalyserStream() {
         return null;
     }

@@ -58,7 +58,7 @@ public class Location {
     public String toString() {
         return info == null ? "<no location>" : typeLetter(info) + ":" + info.name()
                 + (statementWithinMethod == null ? "" : ":" + statementWithinMethod)
-                + (expression == null ? "" : "#" + expression.toString());
+                + (expression == null ? "" : "#" + expression);
     }
 
     public static String typeLetter(WithInspectionAndAnalysis info) {

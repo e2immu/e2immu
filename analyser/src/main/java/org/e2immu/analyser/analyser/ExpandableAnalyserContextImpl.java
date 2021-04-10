@@ -63,11 +63,6 @@ public class ExpandableAnalyserContextImpl implements AnalyserContext {
     }
 
     @Override
-    public TypeInfo getPrimaryType() {
-        return parent.getPrimaryType();
-    }
-
-    @Override
     public Stream<MethodAnalyser> methodAnalyserStream() {
         return Stream.concat(parent.methodAnalyserStream(), this.methodAnalysers.stream().map(Map.Entry::getValue));
     }

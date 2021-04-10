@@ -139,12 +139,6 @@ public interface MethodAnalysis extends Analysis {
         return internalGetProperty(variableProperty);
     }
 
-    private int dynamicProperty(AnalysisProvider analysisProvider, int formalImmutableProperty, ParameterizedType returnType) {
-        int immutableTypeAfterEventual = MultiLevel.eventual(formalImmutableProperty,
-                false); // FIXME
-        return Level.best(internalGetProperty(VariableProperty.IMMUTABLE), immutableTypeAfterEventual);
-    }
-
     default int valueFromOverrides(AnalysisProvider analysisProvider, VariableProperty variableProperty) {
         Set<MethodAnalysis> overrides = getOverrides(analysisProvider);
         return overrides.stream()

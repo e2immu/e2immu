@@ -46,8 +46,7 @@ public class AnnotatedAPIConfiguration {
         return new StringJoiner("\n")
                 .add("write annotatedAPIs: " + writeAnnotatedAPIs)
                 .add("write annotatedAPIs restrict to packages: " + writeAnnotatedAPIsPackages)
-                .add("write annotatedAPIs directory: '" + writeAnnotatedAPIsDir + "'")
-                .toString() + "\n";
+                .add("write annotatedAPIs directory: '" + writeAnnotatedAPIsDir + "'") + "\n";
     }
 
     @Override

@@ -38,10 +38,6 @@ public abstract class AbstractAnalyser implements Analyser {
         return messages.getMessageStream();
     }
 
-    protected Expression getVariableValue(Variable variable) {
-        throw new UnsupportedOperationException();
-    }
-
     @Override
     public String getName() {
         return name;

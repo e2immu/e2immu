@@ -334,7 +334,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
     }
 
     private static class PerPackage {
-        List<TypeInfo> types = new LinkedList<>();
+        final List<TypeInfo> types = new LinkedList<>();
         boolean allowStar = true;
     }
 

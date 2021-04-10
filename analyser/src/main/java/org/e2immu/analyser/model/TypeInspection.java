@@ -77,8 +77,8 @@ public interface TypeInspection extends Inspection {
             this.nonRecursiveVariant = nonRecursiveVariant;
         }
 
-        boolean recurse;
-        Methods nonRecursiveVariant;
+        final boolean recurse;
+        final Methods nonRecursiveVariant;
     }
 
     default Stream<MethodInfo> methodsAndConstructors(Methods methodsMode) {

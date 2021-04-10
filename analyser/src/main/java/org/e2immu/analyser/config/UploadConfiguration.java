@@ -51,8 +51,7 @@ public class UploadConfiguration {
                 .add("upload: " + upload)
                 .add("uploadPackages: " + uploadPackages)
                 .add("annotationServerUrl: " + annotationServerUrl)
-                .add("projectName: " + projectName)
-                .toString() + "\n";
+                .add("projectName: " + projectName) + "\n";
     }
 
     @Override

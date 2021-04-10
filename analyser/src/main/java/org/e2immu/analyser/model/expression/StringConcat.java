@@ -40,11 +40,11 @@ public class StringConcat extends BinaryOperator {
         }
         ConstantExpression<?> rcv = r.asInstanceOf(ConstantExpression.class);
         if (lsv != null && rcv != null) {
-            return new StringConstant(primitives, lsv.constant() + rcv.toString());
+            return new StringConstant(primitives, lsv.constant() + rcv);
         }
         ConstantExpression<?> lcv = l.asInstanceOf(ConstantExpression.class);
         if (rsv != null && lcv != null) {
-            return new StringConstant(primitives, lcv.toString() + rsv.constant());
+            return new StringConstant(primitives, lcv + rsv.constant());
         }
         // any unknown lingering
         if (l.isUnknown() || r.isUnknown()) throw new UnsupportedOperationException();

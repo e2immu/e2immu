@@ -158,7 +158,7 @@ public class MethodInspector {
      */
     static boolean sameType(ParameterizedType ptSub, ParameterizedType ptSuper, ParameterizedType superTypeDefinition) {
         if (ptSub.isType() && ptSuper.isType()) {
-            if (ptSub.typeInfo != ptSuper.typeInfo) return false;
+            return ptSub.typeInfo == ptSuper.typeInfo;
         }
         return true; // FIXME need more code here! and this probably exists somewhere?
     }

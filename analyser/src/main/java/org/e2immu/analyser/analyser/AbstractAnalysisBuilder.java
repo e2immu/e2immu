@@ -82,9 +82,6 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
         return annotationChecks.get(annotationExpression);
     }
 
-    public abstract void transferPropertiesToAnnotations(AnalysisProvider analysisProvider,
-                                                         E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions);
-
     protected void doNotNull(E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions, int notNull) {
 
         // not null

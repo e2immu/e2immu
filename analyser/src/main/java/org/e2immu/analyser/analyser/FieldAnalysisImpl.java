@@ -227,7 +227,6 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
                     annotationChecks.toImmutableMap());
         }
 
-        @Override
         public void transferPropertiesToAnnotations(AnalysisProvider analysisProvider,
                                                     E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
             int effectivelyFinal = getProperty(VariableProperty.FINAL);

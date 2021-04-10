@@ -20,7 +20,6 @@ import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.statement.*;
 import org.e2immu.analyser.model.variable.*;
 import org.e2immu.analyser.output.OutputBuilder;
-import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.Pair;
@@ -259,12 +258,6 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
 
     @Override
     public AnnotationMode annotationMode() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void transferPropertiesToAnnotations(AnalysisProvider analysisProvider,
-                                                E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
         throw new UnsupportedOperationException();
     }
 

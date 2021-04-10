@@ -180,7 +180,7 @@ public class DependencyGraph<T> extends Freezable {
                 result.add(key);
                 reportPartOfCycle.accept(key);
             } else {
-                toDo.keySet().removeAll(keys);
+                keys.forEach(toDo.keySet()::remove);
                 result.addAll(keys);
             }
         }

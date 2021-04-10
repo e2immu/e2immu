@@ -31,10 +31,6 @@ public record ForwardAnalysisInfo(FlowData.Execution execution, ConditionManager
                 null, null, null, false);
     }
 
-    public ForwardAnalysisInfo startOfSwitchOldStyle(Map<String, Expression> switchIdToLabels, Expression switchSelector, boolean switchSelectorIsDelayed) {
-        return new ForwardAnalysisInfo(execution, conditionManager, null, switchIdToLabels, switchSelector, switchSelectorIsDelayed);
-    }
-
     public ForwardAnalysisInfo otherConditionManager(ConditionManager conditionManager) {
         return new ForwardAnalysisInfo(execution, conditionManager, catchVariable, switchIdToLabels, switchSelector, switchSelectorIsDelayed);
     }

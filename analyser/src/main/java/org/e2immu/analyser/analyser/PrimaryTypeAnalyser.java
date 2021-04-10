@@ -247,11 +247,6 @@ public class PrimaryTypeAnalyser implements AnalyserContext, Analyser, HoldsAnal
     }
 
     @Override
-    public TypeInfo getPrimaryType() {
-        return primaryType;
-    }
-
-    @Override
     public PatternMatcher<StatementAnalyser> getPatternMatcher() {
         return patternMatcher;
     }

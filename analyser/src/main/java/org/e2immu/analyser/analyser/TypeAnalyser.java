@@ -346,7 +346,6 @@ public class TypeAnalyser extends AbstractAnalyser {
         return DONE;
     }
 
-    @Override
     protected Expression getVariableValue(Variable variable) {
         if (variable instanceof DependentVariable) {
             throw new UnsupportedOperationException("NYI");
@@ -642,7 +641,7 @@ public class TypeAnalyser extends AbstractAnalyser {
 
         // RULE 2
 
-        List<FieldAnalyser> nonPrivateFields = fieldsLinkedToParameters.stream().filter(fieldAnalyser -> !fieldAnalyser.fieldInfo.isPrivate()).collect(Collectors.toList());
+        List<FieldAnalyser> nonPrivateFields = fieldsLinkedToParameters.stream().filter(fieldAnalyser -> fieldAnalyser.fieldInfo.isNotPrivate()).collect(Collectors.toList());
         for (FieldAnalyser nonPrivateField : nonPrivateFields) {
             int immutable = nonPrivateField.fieldAnalysis.getProperty(VariableProperty.EXTERNAL_IMMUTABLE);
             if (immutable == Level.DELAY) {

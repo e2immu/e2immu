@@ -178,9 +178,7 @@ public class ParseMethodReferenceExpr {
             boolean scopeIsType = scopeIsAType(scope);
             boolean addOne = scopeIsType && !methodInspection.getMethodInfo().isConstructor && !methodInspection.isStatic(); // && !methodInspection.returnType.isPrimitive();
             int n = methodInspection.getParameters().size() + (addOne ? 1 : 0);
-            if (!numberOfParameters.add(n)) {
-                // throw new UnsupportedOperationException("Multiple candidates with the same amount of parameters");
-            }
+            numberOfParameters.add(n);
         }
         log(METHOD_CALL, "End parsing unevaluated method reference {}, found parameter set {}", methodReferenceExpr, numberOfParameters);
         return new UnevaluatedLambdaExpression(numberOfParameters, null);

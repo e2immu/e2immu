@@ -299,7 +299,7 @@ public class ShallowTypeAnalyser implements AnalyserContext {
                 }
             }));
 
-            buildersForCompanionAnalysis.keySet().removeAll(keysToRemove);
+            keysToRemove.forEach(buildersForCompanionAnalysis.keySet()::remove);
             if (delayed.get() && !progress.get()) {
                 throw new UnsupportedOperationException("No changes after iteration " + iteration + "; have left: " + buildersForCompanionAnalysis.size());
             }

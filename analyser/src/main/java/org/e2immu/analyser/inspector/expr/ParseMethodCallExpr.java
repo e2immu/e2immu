@@ -532,8 +532,6 @@ public record ParseMethodCallExpr(InspectionProvider inspectionProvider) {
             }
             return abstractInterfaceMethod.expand(links);
         }
-        // Map<NamedType, ParameterizedType> newMap = makeTranslationMap(method, p, singleAbstractMethod);
-        // return new MethodTypeParameterMap(abstractInterfaceMethod.methodInfo, abstractInterfaceMethod.expand(newMap).concreteTypes);
         return abstractInterfaceMethod;
     }
 

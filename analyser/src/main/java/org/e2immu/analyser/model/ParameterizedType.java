@@ -452,7 +452,7 @@ public class ParameterizedType {
         List<? super Integer> foo3 = new ArrayList<Number>();   // Number is a superclass of Integer
         List<? super Integer> foo3 = new ArrayList<Object>();   // Object is a superclass of Integer
      */
-    public static int NOT_ASSIGNABLE = -1;
+    public static final int NOT_ASSIGNABLE = -1;
 
     public boolean isAssignableFrom(InspectionProvider inspectionProvider, ParameterizedType type) {
         return numericIsAssignableFrom(inspectionProvider, type) != NOT_ASSIGNABLE;
@@ -527,7 +527,7 @@ public class ParameterizedType {
                 }
                 return arrays <= type.arrays ? ARRAY_DIFFERENCE_TYPE_PARAMS : NOT_ASSIGNABLE; // normally the wildcard is NONE, <T>, so anything goes
             } catch (RuntimeException rte) {
-                LOGGER.warn("Caught exception examining type bounds of {}", typeParameter.toString());
+                LOGGER.warn("Caught exception examining type bounds of {}", typeParameter);
                 throw rte;
             }
         }

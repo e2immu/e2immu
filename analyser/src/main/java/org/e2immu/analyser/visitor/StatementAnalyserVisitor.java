@@ -47,31 +47,12 @@ public interface StatementAnalyserVisitor {
             return evaluationContext.getProperty(value, variableProperty, false);
         }
 
-        @Override
-        public String toString() {
-            return "Data{" +
-                    "iteration=" + iteration +
-                    ", methodInfo=" + methodInfo +
-                    ", statementAnalysis=" + statementAnalysis +
-                    ", statementId='" + statementId + '\'' +
-                    ", condition=" + condition +
-                    ", state=" + state +
-                    ", statusesAsMap=" + statusesAsMap +
-                    ", evaluationContext=" + evaluationContext +
-                    ", result=" + result +
-                    '}';
-        }
-
         public VariableInfo getFieldAsVariable(FieldInfo fieldInfo) {
             return statementAnalysis.getLatestVariableInfo(fieldInfo.fullyQualifiedName());
         }
 
         public VariableInfo getReturnAsVariable() {
             return statementAnalysis.getLatestVariableInfo(methodInfo.fullyQualifiedName());
-        }
-
-        public VariableInfo getThisAsVariable() {
-            return statementAnalysis.getLatestVariableInfo(methodInfo.typeInfo.fullyQualifiedName() + ".this");
         }
     }
 

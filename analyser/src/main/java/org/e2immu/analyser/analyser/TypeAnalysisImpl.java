@@ -259,7 +259,6 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
             return eventuallyImmutableFields.toImmutableSet();
         }
 
-        @Override
         public void transferPropertiesToAnnotations(AnalysisProvider analysisProvider,
                                                     E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
 

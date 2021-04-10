@@ -332,11 +332,6 @@ public class EvaluateMethodCall {
         // we do not bother with the retVal (which is of type VariableValue(ReturnVariable))
         ListUtil.joinLists(companionAnalysis.getParameterValues(), parameterValues)
                 .forEach(pair -> translationMap.put(pair.k, pair.v));
-        /*
-        translationMap.put(new VariableValue(new ReturnVariable(methodInfo)),
-                new MethodValue(methodInfo, new VariableValue(new This(evaluationContext.getAnalyserContext(), methodInfo.typeInfo)),
-                        parameterValues));
-        */
         // we might encounter isFact or isKnown, so we add the instance's state to the context
         EvaluationContext child = evaluationContext.child(instance.state(), true);
         Expression resultingValue = companionValue.reEvaluate(child, translationMap).value();

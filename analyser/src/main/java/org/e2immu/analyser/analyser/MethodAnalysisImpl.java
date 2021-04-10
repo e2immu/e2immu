@@ -260,7 +260,6 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
             return returnType.getProperty(analysisProvider, VariableProperty.IMMUTABLE);
         }
 
-        @Override
         public void transferPropertiesToAnnotations(AnalysisProvider analysisProvider, E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
             int modified = getProperty(VariableProperty.MODIFIED_METHOD);
 

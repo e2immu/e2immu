@@ -44,8 +44,7 @@ public class AnnotationXmlConfiguration {
         return new StringJoiner("\n")
                 .add("write annotationXml: " + writeAnnotationXml)
                 .add("write annotationXml restrict to packages: " + writeAnnotationXmlPackages)
-                .add("write annotationXml directory: " + writeAnnotationXmlDir)
-                .toString() + "\n";
+                .add("write annotationXml directory: " + writeAnnotationXmlDir) + "\n";
     }
 
     @Override
