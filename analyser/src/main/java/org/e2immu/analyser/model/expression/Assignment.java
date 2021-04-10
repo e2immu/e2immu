@@ -169,14 +169,6 @@ public class Assignment implements Expression {
     }
 
     @Override
-    public SideEffect sideEffect(EvaluationContext evaluationContext) {
-        if (target instanceof FieldAccess) {
-            return SideEffect.SIDE_EFFECT;
-        }
-        return SideEffect.LOCAL;
-    }
-
-    @Override
     public void visit(Predicate<Expression> predicate) {
         if (predicate.test(this)) {
             value.visit(predicate);

@@ -235,11 +235,6 @@ public record VariableExpression(Variable variable, String name) implements Expr
     }
 
     @Override
-    public SideEffect sideEffect(EvaluationContext evaluationContext) {
-        return variable.sideEffect(Objects.requireNonNull(evaluationContext));
-    }
-
-    @Override
     public OutputBuilder output(Qualification qualification) {
         return new OutputBuilder().add(variable.output(qualification));
     }

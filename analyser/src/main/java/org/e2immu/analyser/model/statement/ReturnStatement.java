@@ -49,29 +49,6 @@ public class ReturnStatement extends StatementWithExpression {
         return new ReturnStatement(translationMap.translateExpression(expression));
     }
 
-    @Override
-    public SideEffect sideEffect(EvaluationContext evaluationContext) {
-        if (expression == EmptyExpression.EMPTY_EXPRESSION || isThis() || isFirstParameter(expression)) {
-            return SideEffect.STATIC_ONLY;
-        }
-        // at least NONE_PURE... unless the expression is tagged as "@Identity", then STATIC_ONLY is allowed
-        int identity = identityForSideEffect(evaluationContext.getAnalyserContext(), expression);
-        if (identity == Level.DELAY) return SideEffect.DELAYED;
-        SideEffect base = identity == Level.TRUE ? SideEffect.STATIC_ONLY : SideEffect.NONE_PURE;
-        return base.combine(expression.sideEffect(evaluationContext));
-    }
-
-    private static int identityForSideEffect(AnalysisProvider analysisProvider, Expression expression) {
-        if (isFirstParameter(expression)) return Level.TRUE;
-        if (expression instanceof MethodCall methodCall) {
-            if (methodCall.parameterExpressions.size() == 0) return Level.FALSE;
-            int identity = analysisProvider.getMethodAnalysis(methodCall.methodInfo).getProperty(VariableProperty.IDENTITY);
-            if (identity != Level.TRUE) return identity;
-            return identityForSideEffect(analysisProvider, methodCall.parameterExpressions.get(0));
-        }
-        return Level.FALSE;
-    }
-
     private static boolean isFirstParameter(Expression expression) {
         return expression instanceof VariableExpression ve && ve.variable() instanceof ParameterInfo pi &&
                 pi.index == 0;

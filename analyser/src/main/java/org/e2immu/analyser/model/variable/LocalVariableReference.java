@@ -84,11 +84,6 @@ public class LocalVariableReference extends VariableWithConcreteReturnType {
     }
 
     @Override
-    public SideEffect sideEffect(EvaluationContext evaluationContext) {
-        return assignmentExpressions.stream().map(e -> e.sideEffect(evaluationContext)).reduce(SideEffect.LOCAL, SideEffect::combine);
-    }
-
-    @Override
     public boolean isLocal() {
         return true;
     }

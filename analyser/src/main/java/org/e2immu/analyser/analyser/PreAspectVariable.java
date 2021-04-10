@@ -55,11 +55,6 @@ public record PreAspectVariable(ParameterizedType returnType,
     }
 
     @Override
-    public SideEffect sideEffect(EvaluationContext evaluationContext) {
-        return SideEffect.NONE_CONTEXT;
-    }
-
-    @Override
     public boolean isLocal() {
         return true;
     }

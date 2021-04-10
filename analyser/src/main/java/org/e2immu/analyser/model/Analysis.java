@@ -26,9 +26,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import static org.e2immu.analyser.analyser.VariableProperty.*;
-import static org.e2immu.analyser.analyser.VariableProperty.MODIFIED_VARIABLE;
-
 public interface Analysis {
 
     default Stream<Map.Entry<AnnotationExpression, AnnotationCheck>> getAnnotationStream() {

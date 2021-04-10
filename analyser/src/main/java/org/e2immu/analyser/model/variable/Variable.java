@@ -14,14 +14,11 @@
 
 package org.e2immu.analyser.model.variable;
 
-import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.Qualification;
-import org.e2immu.analyser.model.SideEffect;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.expression.util.OneVariable;
 import org.e2immu.analyser.output.OutputBuilder;
-import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 
 import java.util.Set;
@@ -58,8 +55,6 @@ public interface Variable extends OneVariable {
 
     boolean isStatic();
 
-    SideEffect sideEffect(EvaluationContext evaluationContext);
-
     default UpgradableBooleanMap<TypeInfo> typesReferenced(boolean explicit) {
         return parameterizedType().typesReferenced(explicit);
     }
@@ -69,46 +64,6 @@ public interface Variable extends OneVariable {
     }
 
     OutputBuilder output(Qualification qualification);
-
-    static Variable fake() {
-        return new Variable() {
-            @Override
-            public ParameterizedType concreteReturnType() {
-                return ParameterizedType.RETURN_TYPE_OF_CONSTRUCTOR;
-            }
-
-            @Override
-            public ParameterizedType parameterizedType() {
-                return ParameterizedType.RETURN_TYPE_OF_CONSTRUCTOR;
-            }
-
-            @Override
-            public String simpleName() {
-                return "fake variable";
-            }
-
-            @Override
-            public String fullyQualifiedName() {
-                return "fake variable";
-            }
-
-            @Override
-            public boolean isStatic() {
-                return false;
-            }
-
-            @Override
-            public SideEffect sideEffect(EvaluationContext evaluationContext) {
-                return null;
-            }
-
-            @Override
-            public OutputBuilder output(Qualification qualification) {
-                return new OutputBuilder().add(new Text("fake variable"));
-            }
-
-        };
-    }
 
     /*
     Used to determine which evaluation context the variable belongs to: the normal one, or a closure?

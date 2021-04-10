@@ -15,7 +15,6 @@
 package org.e2immu.analyser.util;
 
 import org.e2immu.annotation.E2Container;
-import org.e2immu.annotation.Linked;
 
 /**
  * Classic key-value object, typical example of level 2 immutable class

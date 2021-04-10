@@ -14,20 +14,12 @@
 
 package org.e2immu.analyser.model;
 
-import org.e2immu.analyser.inspector.ExpressionContext;
-import org.e2immu.analyser.inspector.MethodInspectionImpl;
-import org.e2immu.analyser.inspector.MethodTypeParameterMap;
-import org.e2immu.analyser.inspector.TypeInspectionImpl;
 import org.e2immu.analyser.model.expression.*;
-import org.e2immu.analyser.model.statement.Block;
-import org.e2immu.analyser.model.statement.ExpressionAsStatement;
-import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.output.*;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.ListUtil;
-import org.e2immu.analyser.util.Logger;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.NotNull;
 import org.e2immu.support.Either;
@@ -36,10 +28,6 @@ import org.e2immu.support.SetOnce;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import static org.e2immu.analyser.inspector.TypeInspectionImpl.InspectionState.BY_HAND;
-import static org.e2immu.analyser.util.Logger.LogTarget.LAMBDA;
-import static org.e2immu.analyser.util.Logger.log;
 
 public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
 

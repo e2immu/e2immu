@@ -186,11 +186,6 @@ public class ParameterInfo implements Variable, WithInspectionAndAnalysis, Compa
     }
 
     @Override
-    public SideEffect sideEffect(EvaluationContext evaluationContext) {
-        return SideEffect.NONE_PURE;
-    }
-
-    @Override
     public UpgradableBooleanMap<TypeInfo> typesReferenced() {
         return typesReferenced(false);
     }

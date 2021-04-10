@@ -141,12 +141,6 @@ public class LocalVariableCreation implements Expression {
     }
 
     @Override
-    public SideEffect sideEffect(EvaluationContext evaluationContext) {
-        // the creation itself is local; the assignment references in LocalVariableReference are what matters
-        return SideEffect.LOCAL;
-    }
-
-    @Override
     public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
         if (expression == EmptyExpression.EMPTY_EXPRESSION) {
             return new EvaluationResult.Builder(evaluationContext)

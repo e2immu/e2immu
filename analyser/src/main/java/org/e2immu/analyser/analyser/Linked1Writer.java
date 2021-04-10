@@ -43,8 +43,6 @@ deals with 2 situations:
  */
 public class Linked1Writer {
 
-    private static final Variable DELAY_VAR = Variable.fake();
-
     private final AtomicReference<AnalysisStatus> analysisStatus = new AtomicReference<>(DONE);
     private final StatementAnalysis statementAnalysis;
     private final DependencyGraph<Variable> dependencyGraph = new DependencyGraph<>();
@@ -59,6 +57,7 @@ public class Linked1Writer {
 
     public AnalysisStatus write(Map<Variable, EvaluationResult.ChangeData> changeDataMap) {
         final AtomicBoolean progress = new AtomicBoolean();
+        if (analysisStatus.get() == DELAYS) return analysisStatus.get();
 
         statementAnalysis.variables.stream().map(Map.Entry::getValue).forEach(vic -> {
             VariableInfo best = vic.best(EVALUATION);
@@ -76,40 +75,34 @@ public class Linked1Writer {
         Variable inArgument = best.variable();
 
         Set<Variable> dependenciesOfArgument = dependencyGraph.dependencies(inArgument);
-        if (dependenciesOfArgument.contains(DELAY_VAR)) {
-            analysisStatus.set(DELAYS);
-        } else {
-            Set<Variable> paramsInArgument = dependenciesOfArgument.stream()
-                    .filter(v -> v instanceof ParameterInfo).collect(Collectors.toSet());
-            boolean setProperty = false;
 
-            if (!paramsInArgument.isEmpty() && changeData != null) {
-                LinkedVariables inScope = changeData.linked1Variables();
-                for (Variable varInScope : inScope.variables()) {
-                    Set<Variable> varsInScope = dependencyGraph.dependencies(varInScope);
-                    if (varsInScope.contains(DELAY_VAR)) {
-                        analysisStatus.set(DELAYS);
-                    } else {
-                        Set<Variable> fieldsInScope = varsInScope.stream()
-                                .filter(v -> v instanceof This ||
-                                        v instanceof FieldReference fr && fr.scope instanceof This)
-                                .collect(Collectors.toSet());
-                        if (!fieldsInScope.isEmpty()) {
-                            // we have a hit!
-                            setProperty = true;
-                            vic.setProperty(CONTEXT_DEPENDENT, MultiLevel.DEPENDENT_1, EVALUATION);
-                        }
-                    }
+        Set<Variable> paramsInArgument = dependenciesOfArgument.stream()
+                .filter(v -> v instanceof ParameterInfo).collect(Collectors.toSet());
+        boolean setProperty = false;
+
+        if (!paramsInArgument.isEmpty() && changeData != null) {
+            LinkedVariables inScope = changeData.linked1Variables();
+            for (Variable varInScope : inScope.variables()) {
+                Set<Variable> varsInScope = dependencyGraph.dependencies(varInScope);
+
+                Set<Variable> fieldsInScope = varsInScope.stream()
+                        .filter(v -> v instanceof This ||
+                                v instanceof FieldReference fr && fr.scope instanceof This)
+                        .collect(Collectors.toSet());
+                if (!fieldsInScope.isEmpty()) {
+                    // we have a hit!
+                    setProperty = true;
+                    vic.setProperty(CONTEXT_DEPENDENT, MultiLevel.DEPENDENT_1, EVALUATION);
                 }
             }
+        }
 
-            if (setProperty) {
-                progress.set(true);
-            } else if (inArgument instanceof ParameterInfo && vic.hasEvaluation() &&
-                    best.getProperty(CONTEXT_DEPENDENT) == Level.DELAY) {
-                vic.setProperty(CONTEXT_DEPENDENT, MultiLevel.DEPENDENT, EVALUATION);
-                progress.set(true);
-            }
+        if (setProperty) {
+            progress.set(true);
+        } else if (inArgument instanceof ParameterInfo && vic.hasEvaluation() &&
+                best.getProperty(CONTEXT_DEPENDENT) == Level.DELAY) {
+            vic.setProperty(CONTEXT_DEPENDENT, MultiLevel.DEPENDENT, EVALUATION);
+            progress.set(true);
         }
     }
 
@@ -117,10 +110,9 @@ public class Linked1Writer {
         if (expression instanceof DelayedVariableExpression) return null;
         if (expression instanceof VariableExpression ve) {
             Set<Variable> set = dependencyGraph.dependencies(ve.variable());
-            if (set.contains(DELAY_VAR)) return null;
             return set.stream().anyMatch(v ->
                     v instanceof This ||
-                    v instanceof FieldReference fr && fr.scope instanceof This);
+                            v instanceof FieldReference fr && fr.scope instanceof This);
         }
         return false;
     }

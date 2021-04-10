@@ -87,19 +87,6 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
         return UpgradableBooleanMap.of(methodInfo.returnType().typesReferenced(false), scope.typesReferenced());
     }
 
-    // if we pass on one of our own methods to some other method, we need to take into account our exposure to the
-    // outside world...
-    @Override
-    public SideEffect sideEffect(EvaluationContext evaluationContext) {
-        Objects.requireNonNull(evaluationContext);
-        // we know the method we're passing on...
-        if (evaluationContext.getCurrentType().inTypeInnerOuterHierarchy(methodInfo.typeInfo).isPresent()) {
-            return SideEffect.NONE_CONTEXT;
-        }
-        // no idea which method we're passing on... should not be a problem
-        return SideEffect.LOCAL;
-    }
-
     @Override
     public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);

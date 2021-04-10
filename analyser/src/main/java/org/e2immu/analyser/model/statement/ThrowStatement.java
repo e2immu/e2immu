@@ -45,10 +45,4 @@ public class ThrowStatement extends StatementWithExpression {
                 .add(Space.ONE).add(expression.output(qualification))
                 .add(Symbol.SEMICOLON).addIfNotNull(messageComment(statementAnalysis));
     }
-
-    @Override
-    public SideEffect sideEffect(EvaluationContext evaluationContext) {
-        // at least static only
-        return SideEffect.STATIC_ONLY.combine(expression.sideEffect(evaluationContext));
-    }
 }

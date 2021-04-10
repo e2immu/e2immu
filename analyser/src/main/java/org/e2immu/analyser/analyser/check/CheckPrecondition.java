@@ -15,16 +15,12 @@
 package org.e2immu.analyser.analyser.check;
 
 import org.e2immu.analyser.analyser.CompanionAnalysis;
-import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.BooleanConstant;
-import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Messages;
-import org.e2immu.analyser.util.ListUtil;
 
 import java.util.Map;
-import java.util.stream.Collectors;
 
 public class CheckPrecondition {
 

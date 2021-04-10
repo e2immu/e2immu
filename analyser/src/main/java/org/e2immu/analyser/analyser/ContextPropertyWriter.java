@@ -34,8 +34,6 @@ import static org.e2immu.analyser.util.Logger.log;
 
 public class ContextPropertyWriter {
 
-    private static final Variable DELAY_VAR = Variable.fake();
-
     private final DependencyGraph<Variable> dependencyGraph = new DependencyGraph<>();
 
     /*
@@ -56,16 +54,11 @@ public class ContextPropertyWriter {
                             log(DELAYED, "Delaying MethodLevelData for {} in {}: linked variables not set",
                                     variableInfo.variable().fullyQualifiedName(), evaluationContext.getLocation());
                             analysisStatus.set(DELAYS);
-                            dependencyGraph.addNode(variableInfo.variable(), Set.of(DELAY_VAR), true);
                         }
                     } else {
                         dependencyGraph.addNode(variableInfo.variable(), linkedVariables.variables(), true);
                     }
                 });
-        if (analysisStatus.get() == DELAYS) {
-            // to make sure that the delay var is there too, in the unidirectional case
-            dependencyGraph.addNode(DELAY_VAR, Set.of(), true);
-        }
     }
 
     /**
@@ -85,7 +78,7 @@ public class ContextPropertyWriter {
         final AtomicReference<AnalysisStatus> analysisStatus = new AtomicReference<>(DONE);
         fillDependencyGraph(statementAnalysis, evaluationContext, connections, level, dependencyGraph, analysisStatus);
 
-        if(analysisStatus.get() == DELAYS) return analysisStatus.get();
+        if (analysisStatus.get() == DELAYS) return analysisStatus.get();
 
         final AtomicBoolean progress = new AtomicBoolean();
 
@@ -98,18 +91,15 @@ public class ContextPropertyWriter {
                     Variable baseVariable = variableInfo.variable();
                     Set<Variable> variablesBaseLinksTo =
                             Stream.concat(Stream.of(baseVariable), dependencyGraph.dependencies(baseVariable).stream())
-                                    .filter(v -> v == DELAY_VAR || statementAnalysis.variables.isSet(v.fullyQualifiedName()))
+                                    .filter(v -> statementAnalysis.variables.isSet(v.fullyQualifiedName()))
                                     .collect(Collectors.toSet());
-                    boolean containsDelayVar = variablesBaseLinksTo.stream().anyMatch(v -> v == DELAY_VAR);
-                    if (!containsDelayVar) {
-                        int summary = summarizeContext(variablesBaseLinksTo, variableProperty, propertyValues);
-                        if (summary == Level.DELAY) analysisStatus.set(DELAYS);
-                        // this loop is critical, see Container_3, do not remove it again :-)
-                        for (Variable linkedVariable : variablesBaseLinksTo) {
-                            if (!doNotWrite.contains(linkedVariable)) {
-                                assignToLinkedVariable(statementAnalysis, progress, summary, linkedVariable,
-                                        variableProperty, level, valuesToSet);
-                            }
+                    int summary = summarizeContext(variablesBaseLinksTo, variableProperty, propertyValues);
+                    if (summary == Level.DELAY) analysisStatus.set(DELAYS);
+                    // this loop is critical, see Container_3, do not remove it again :-)
+                    for (Variable linkedVariable : variablesBaseLinksTo) {
+                        if (!doNotWrite.contains(linkedVariable)) {
+                            assignToLinkedVariable(statementAnalysis, progress, summary, linkedVariable,
+                                    variableProperty, level, valuesToSet);
                         }
                     }
                 });

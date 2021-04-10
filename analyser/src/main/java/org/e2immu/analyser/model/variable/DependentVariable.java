@@ -102,11 +102,6 @@ public class DependentVariable extends VariableWithConcreteReturnType {
     }
 
     @Override
-    public SideEffect sideEffect(EvaluationContext evaluationContext) {
-        return SideEffect.LOCAL;
-    }
-
-    @Override
     public boolean isLocal() {
         return arrayVariable != null && arrayVariable.isLocal();
     }

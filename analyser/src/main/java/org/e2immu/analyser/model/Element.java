@@ -58,14 +58,6 @@ public interface Element {
         return this;
     }
 
-    // side effect
-
-    default SideEffect sideEffect(EvaluationContext evaluationContext) {
-        return subElements().stream()
-                .map(e -> e.sideEffect(evaluationContext))
-                .reduce(SideEffect.LOCAL, SideEffect::combine);
-    }
-
     // types referenced (used for imports, uploading annotations, dependency tree between types)
     // the boolean distinguishes between an explicit mention (used for import) and an implicit one.
     default UpgradableBooleanMap<TypeInfo> typesReferenced() {

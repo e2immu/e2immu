@@ -566,23 +566,6 @@ public record NewObject(
         return res.k.build();
     }
 
-    @Override
-    public SideEffect sideEffect(EvaluationContext evaluationContext) {
-        SideEffect params = parameterExpressions.stream()
-                .map(e -> e.sideEffect(evaluationContext))
-                .reduce(SideEffect.LOCAL, SideEffect::combine);
-
-        if (constructor != null) {
-            int modified = constructor.atLeastOneParameterModified();
-            if (modified == Level.FALSE && params.lessThan(SideEffect.SIDE_EFFECT)) {
-                return SideEffect.STATIC_ONLY;
-            }
-            if (modified == Level.DELAY) return SideEffect.DELAYED;
-        }
-
-        return params;
-    }
-
     public Expression stateTranslateThisTo(FieldReference fieldReference) {
         if (state.isBooleanConstant()) return state;
         // the "this" in the state can belong to the type of the object, or any of its super types

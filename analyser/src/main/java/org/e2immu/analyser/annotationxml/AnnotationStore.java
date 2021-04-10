@@ -16,8 +16,6 @@ package org.e2immu.analyser.annotationxml;
 
 import org.e2immu.analyser.annotationxml.model.TypeItem;
 
-import java.util.Collection;
-
 public interface AnnotationStore {
 
     TypeItem typeItemsByFQName(String fqTypeName);

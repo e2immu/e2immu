@@ -14,10 +14,8 @@
 
 package org.e2immu.analyser.model.variable;
 
-import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.Qualification;
-import org.e2immu.analyser.model.SideEffect;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.ThisName;
@@ -101,11 +99,6 @@ public class This implements Variable {
     @Override
     public boolean isStatic() {
         return false;
-    }
-
-    @Override
-    public SideEffect sideEffect(EvaluationContext evaluationContext) {
-        return SideEffect.LOCAL;
     }
 
     @Override

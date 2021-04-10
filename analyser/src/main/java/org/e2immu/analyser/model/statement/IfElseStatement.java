@@ -85,18 +85,6 @@ public class IfElseStatement extends StatementWithExpression {
     }
 
     @Override
-    public SideEffect sideEffect(EvaluationContext evaluationContext) {
-        SideEffect blocksSideEffect = structure.block().sideEffect(evaluationContext);
-        if (elseBlock != Block.EMPTY_BLOCK) {
-            blocksSideEffect = blocksSideEffect.combine(elseBlock.sideEffect(evaluationContext));
-        }
-        SideEffect conditionSideEffect = expression.sideEffect(evaluationContext);
-        if (blocksSideEffect == SideEffect.STATIC_ONLY && conditionSideEffect.lessThan(SideEffect.SIDE_EFFECT))
-            return SideEffect.STATIC_ONLY;
-        return conditionSideEffect.combine(blocksSideEffect);
-    }
-
-    @Override
     public List<? extends Element> subElements() {
         if (elseBlock == Block.EMPTY_BLOCK) {
             return List.of(expression, structure.block());

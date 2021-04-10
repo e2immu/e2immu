@@ -729,59 +729,6 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     }
 
     @Override
-    public SideEffect sideEffect(EvaluationContext evaluationContext) {
-        Objects.requireNonNull(evaluationContext);
-
-        SideEffect params = parameterExpressions.stream()
-                .map(e -> e.sideEffect(evaluationContext))
-                .reduce(SideEffect.LOCAL, SideEffect::combine);
-
-        // look at the object... if it is static, we're in the same boat
-        if (object instanceof FieldAccess fieldAccess) {
-            if (fieldAccess.variable().isStatic() && params.lessThan(SideEffect.SIDE_EFFECT))
-                return SideEffect.STATIC_ONLY;
-        }
-        if (object instanceof VariableExpression variableExpression) {
-            if (variableExpression.variable().isStatic() && params.lessThan(SideEffect.SIDE_EFFECT))
-                return SideEffect.STATIC_ONLY;
-        }
-        if (object != null) {
-            SideEffect sideEffect = object.sideEffect(evaluationContext);
-            if (sideEffect == SideEffect.STATIC_ONLY && params.lessThan(SideEffect.SIDE_EFFECT)) {
-                return SideEffect.STATIC_ONLY;
-            }
-        }
-
-        SideEffect methodsSideEffect = sideEffectNotTakingEventualIntoAccount(evaluationContext);
-        if (methodsSideEffect == SideEffect.STATIC_ONLY && params.lessThan(SideEffect.SIDE_EFFECT)) {
-            return SideEffect.STATIC_ONLY;
-        }
-        return methodsSideEffect.combine(params);
-    }
-
-    private SideEffect sideEffectNotTakingEventualIntoAccount(EvaluationContext evaluationContext) {
-        MethodAnalysis methodAnalysis = evaluationContext.getAnalyserContext().getMethodAnalysis(methodInfo);
-        int modified = methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD);
-
-        TypeAnalysis typeAnalysis = evaluationContext.getAnalyserContext().getTypeAnalysis(methodInfo.typeInfo);
-        int immutable = typeAnalysis.getProperty(VariableProperty.IMMUTABLE);
-
-        boolean effectivelyE2Immutable = immutable == MultiLevel.EFFECTIVELY_E2IMMUTABLE;
-        if (!effectivelyE2Immutable && modified == Level.DELAY) return SideEffect.DELAYED;
-        if (effectivelyE2Immutable || modified == Level.FALSE) {
-            if (methodInfo.methodInspection.get().isStatic()) {
-                if (methodInfo.isVoid()) {
-                    return SideEffect.STATIC_ONLY;
-                }
-                return SideEffect.NONE_PURE;
-            }
-            return SideEffect.NONE_CONTEXT;
-        }
-        return SideEffect.SIDE_EFFECT;
-    }
-
-
-    @Override
     public int internalCompareTo(Expression v) {
         MethodCall mv = (MethodCall) v;
         int c = methodInfo.fullyQualifiedName().compareTo(mv.methodInfo.fullyQualifiedName());

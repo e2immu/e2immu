@@ -17,7 +17,6 @@ package org.e2immu.analyser.model.variable;
 import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.output.OutputBuilder;
-import org.e2immu.analyser.output.Space;
 import org.e2immu.analyser.output.Text;
 
 import java.util.Objects;
@@ -87,10 +86,5 @@ public class ReturnVariable implements Variable {
     @Override
     public boolean isStatic() {
         return false;
-    }
-
-    @Override
-    public SideEffect sideEffect(EvaluationContext evaluationContext) {
-        return null;
     }
 }

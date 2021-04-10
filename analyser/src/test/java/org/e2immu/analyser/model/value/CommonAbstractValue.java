@@ -130,11 +130,6 @@ public abstract class CommonAbstractValue {
             }
 
             @Override
-            public SideEffect sideEffect(EvaluationContext evaluationContext) {
-                return null;
-            }
-
-            @Override
             public OutputBuilder output(Qualification qualification) {
                 return new OutputBuilder().add(new QualifiedName(name));
             }

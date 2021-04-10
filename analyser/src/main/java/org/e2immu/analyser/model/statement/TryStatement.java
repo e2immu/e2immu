@@ -155,11 +155,6 @@ public class TryStatement extends StatementWithStructure {
     }
 
     @Override
-    public SideEffect sideEffect(EvaluationContext evaluationContext) {
-        return structure.block().sideEffect(evaluationContext);
-    }
-
-    @Override
     public List<? extends Element> subElements() {
         return subElements;
     }

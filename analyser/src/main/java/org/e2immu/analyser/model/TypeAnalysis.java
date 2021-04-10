@@ -16,7 +16,6 @@ package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.variable.FieldReference;
-import org.e2immu.analyser.util.SetUtil;
 
 import java.util.HashSet;
 import java.util.Map;

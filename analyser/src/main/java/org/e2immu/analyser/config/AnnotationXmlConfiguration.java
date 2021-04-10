@@ -20,8 +20,6 @@ import org.e2immu.annotation.Fluent;
 
 import java.util.*;
 
-import static org.e2immu.analyser.config.Configuration.*;
-
 @E2Immutable
 public class AnnotationXmlConfiguration {
 

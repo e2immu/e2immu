@@ -18,7 +18,6 @@ import org.e2immu.analyser.analyser.StatementAnalysis;
 import org.e2immu.analyser.model.Qualification;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
-import org.e2immu.analyser.util.StringUtil;
 
 public class EmptyStatement extends StatementWithStructure {
     public static final EmptyStatement EMPTY_STATEMENT = new EmptyStatement();

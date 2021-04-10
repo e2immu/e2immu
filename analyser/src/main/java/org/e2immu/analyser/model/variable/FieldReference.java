@@ -118,9 +118,4 @@ public class FieldReference extends VariableWithConcreteReturnType {
     public boolean isStatic() {
         return fieldInfo.isStatic();
     }
-
-    @Override
-    public SideEffect sideEffect(EvaluationContext evaluationContext) {
-        return isStatic() ? SideEffect.STATIC_ONLY : SideEffect.NONE_CONTEXT;
-    }
 }
