@@ -1,21 +1,7 @@
 [#annotation-hierarchy]
-=== Annotation hierarchy
+=== Relations between annotations
 
-The purpose of "opposite" annotations is to be able to work in a "mode" that suits the code:
-
-Green mode:: in the green mode, the default is mutable, and immutable is special.
-
-Red mode:: in the red mode, the default is immutable, and any form of mutability has to be marked.
-
-This can save a lot of time when marking libraries.
-
-Because the analyser also deals with nullability and a whole host of other annotations, the user can create custom modes.
-
-We aim to restrict the amount of annotations per object as much as possible.
-However, the analyser will emit at least one annotation per declaration, so that the highlighter can color properly.
-An exception to this rule are the implicit annotations, marked below.
-
-The analyser takes the implications from type to field, method, and parameter, account when annotating by hand.
+In this section we summarize the relations between annotations.
 
 ==== On types
 
@@ -24,45 +10,38 @@ Note that:
 * {e2container} is a shorthand for the combination of {e2immutable} and {container};
 * {e1container} is a shorthand for the combination of {e1immutable} and {container};
 * {e2immutable} requires {e1immutable};
-* a type is {mutableModifiesArguments} (red) if and only if it is not {e1immutable} (green) and not {container} (green);
+* a type is {mutableModifiesArguments} if and only if it is not {e1immutable} and not {container};
 * when a type is {mutableModifiesArguments}, there will be at least one field marked {variable}, and at least one parameter marked {modified};
 * by definition, types without fields are {e2immutable};
 * all primitive types are implicitly {e2container}; the analyser will not mark them.
 
 ==== On fields
 
-Support data fields, marked {supportData}, require {nm} in an owning type that is {e1immutable}; it fails rules 2 and 3 of {e2immutable}.
-
 Note that {variable} fields can be {nn}!
 This obviously requires a not-null initialiser to be present; all other assignments must be not-null as well.
-The opposite, a {final} field that is {nullable}, is not that useful.
-It seems difficult to forbid, though, so we do not issue a formal implication.
+The opposite, a {final} field that is {nullable}, can only occur when the effectively final value is the `null` constant.
 
-Opposites:
+The following opposites are easily seen:
 
-* a field is either {final} (green) or {variable} (red)
-* a field is either {nm} or (green) {modified} (red)
-* a field is either {nn} (or {nn1}, or {nn2}) (green), or {nullable} (red)
+* a field is either {final} or {variable}
+* a field is either {nm} or {modified}
+* a field is either {nn} (or {nn1}, or {nn2}), or {nullable} (see also <<nullability>>).
 
-For modifiable types, all the combinations {variable}-{final} and {nm}-{modified} can occur:
+Note that:
 
-* {variable} {modified}: impossible for unmodifiable types
-* {variable} {nm}
-* {final} {modified}: part of {e1immutable}
-* {final} {nm}: part of {e2immutable}; only in this combination, with the type {e1immutable}, the field can be marked {supportData}
-when it does not satisfy both rule 2 and 3 for level 2 immutability
-
-For unmodifiable types, there is only {variable}-{final}.
+* {variable} implies {modified}, whether modifying methods exist for the field or not;
+* {final} {modified}: part of {e1immutable};
+* {final} {nm}: part of {e2immutable}; sufficient for implicitly immutable types; for other types, the visibility and dependence rules kick in.
 
 From the field's owning type, following the definitions, we obtain:
 
-* if a type is effectively {e2immutable} (green), all its fields are {nm} (green);
-* if a type is effectively {e1immutable} (green), all its fields are {final} (green);
-* if a type is {mutableModifiesArguments} (red), at least one of its field is {variable} (red).
+* if a type is effectively {e2immutable}, all its fields are {final} {nm};
+* if a type is effectively {e1immutable}, all its fields are {final};
+* if a type is {mutableModifiesArguments}, at least one of its field is {variable}.
 
 Further, note that:
 
-* fields of a primitive type are always {nn}, but this is not marked.
+* fields of a primitive type are always {nn} and {nm}, but neither are marked.
 
 ==== On constructors
 
@@ -105,6 +84,7 @@ Note that:
 * if a type is {mutableModifiesArguments} (red), at least one of its parameters is {modified} (red), which will be marked;
 * quite trivially, parameters of a primitive type are always {nn}  and {nm}, but we will not mark parameters of a primitive type.
 
+[#nullability]
 ==== Nullability
 
 By convention,

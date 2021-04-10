@@ -23,7 +23,7 @@ Effectively final field:: marked {e1immutable} or {e1container}.
 Eventually final field:: marked {e1immutable} or {e1container}, with `after=xxx` parameter
 
 A type is level 1 immutable when all its fields are effectively final.
-A type is <<eventual-immutability,eventually>> level 1 immutable when after executing a marked method, the fields become effectively final.
+A type is <<concept-eventual,eventually>> level 1 immutable when after executing a marked method, the fields become effectively final.
 This transition is best understood as the removal of a number of methods, marked either {mark} or {only} with parameter `before`, which make the field variable.
 
 [#concept-implicitly-immutable]
@@ -43,7 +43,7 @@ A type is level 2 immutable when
 . if a field is not of implicitly immutable type, it must be either private, or level 2 immutable
 . all constructors and non-private methods are independent of the fields
 
-A type is <<eventual-immutability,eventually>> level 2 immutable when after executing a marked method, the fields become effectively final and or not modified.
+A type is <<concept-eventual,eventually>> level 2 immutable when after executing a marked method, the fields become effectively final and or not modified.
 This transition is best understood as the removal of a number of methods, marked either {mark} or {only} with parameter `before`, which make the field variable or modify the fields.
 
 [#technical-dynamic-type-annotations]
@@ -68,6 +68,9 @@ Typical examples of a constant instances are found in parameterized `enum` field
 ==== Statement time
 
 Technically important for variable fields (<<concept-e1immutable>>).
+
+[#concept-singleton]
+==== Singleton classes
 
 [#concept-utility-class]
 ==== Utility classes

@@ -12,6 +12,8 @@ Parameter:: does the annotation occur on parameters?
 
 This classification hopefully helps to see the wood for the trees in the long list.
 
+// ********************************************************************************************************************
+
 [#allowsInterrupt-annotation]
 ==== @AllowsInterrupt
 
@@ -26,6 +28,8 @@ Methods can be annotated with `@AllowsInterrupt(false)` to explicitly mark that 
 
 External methods not annotated will not interrupt.
 
+// ********************************************************************************************************************
+
 [#beforeMark-annotation]
 ==== @BeforeMark
 
@@ -39,6 +43,8 @@ As a dynamic type annotation (<<technical-dynamic-type-annotations>>), it is the
 They guarantee that an eventually immutable object is in its _after_ state, i.e., a marked method has been called and the object has become immutable.
 
 Mode:: not immediately relevant
+
+// ********************************************************************************************************************
 
 [#constant-annotation]
 ==== @Constant
@@ -74,6 +80,8 @@ public enum Enum_3 {
 }
 ----
 
+// ********************************************************************************************************************
+
 [#container-annotation]
 ==== @Container
 
@@ -90,6 +98,8 @@ The opposite is {mutableModifiesArguments} if the type has {variable} fields, or
 Example::
 The following examples present containers: <<constant-annotation>>, <<dependent-annotation>>, <<e1container-annotation>>.
 Non-containers are in <<e1immutable-annotation>> and <<mutableModifiesArguments-annotation>>.
+
+// ********************************************************************************************************************
 
 [#dependent-annotation]
 ==== @Dependent
@@ -126,6 +136,8 @@ class Dependent<String> {
 ----
 
 A similar example is in <<e1immutable-annotation>>.
+
+// ********************************************************************************************************************
 
 [#dependent1-annotation]
 ==== @Dependent1
@@ -170,6 +182,8 @@ public class Dependent1_0<T> {
 }
 ----
 
+// ********************************************************************************************************************
+
 [#dependent2-annotation]
 ==== @Dependent2
 
@@ -197,6 +211,8 @@ boolean Collections.addAll(@Dependent2 Collection<? extends E> coll);
 @Dependent2
 Stream<E> Collections.stream();
 ----
+
+// ********************************************************************************************************************
 
 [#e1container-annotation]
 ==== @E1Container
@@ -263,6 +279,8 @@ class EventuallyE1Immutable_2_M {
 }
 ----
 
+// ********************************************************************************************************************
+
 [#e1immutable-annotation]
 ==== @E1Immutable
 
@@ -292,6 +310,8 @@ class AddToSet {
 }
 ----
 
+// ********************************************************************************************************************
+
 [#e2container-annotation]
 ==== @E2Container
 
@@ -304,6 +324,13 @@ Summary:: This annotation is a short-hand for the combination of {e2immutable} a
 Mode:: This annotation is the default in the red mode.
 
 Example::
+
+[source,java]
+----
+
+----
+
+// ********************************************************************************************************************
 
 [#e2immutable-annotation]
 ==== @E2Immutable
@@ -325,12 +352,16 @@ Details:: Level 2 immutability adds extra restrictions on top of level 1 immutab
 .. in the case of methods, neither the return value nor the parameters must link to the fields of support data types.
 A consequence of requirement of not modified fields, is that non-private methods cannot be modifying.
 
+// ********************************************************************************************************************
+
 [#extensionClass-annotation]
 ==== @ExtensionClass
 
 |===
 | Basic {y} | Immu {n}| Contract {n}| Type {y} | Field {n} | Method {n} | Param {n}
 |===
+
+// ********************************************************************************************************************
 
 [#final-annotation]
 ==== @Final
@@ -397,7 +428,11 @@ class ExampleManualVariableFinal {
 <.> This field is effectively final, but there is no annotation because of the `final` modifier.
 <.> Note that only the constructor accesses this method.
 
+// ********************************************************************************************************************
+
 ==== @Finalizer
+
+// ********************************************************************************************************************
 
 ==== @Fluent
 
@@ -410,6 +445,8 @@ Mode:: There is no opposite for this annotation.
 Details:: Fluent methods do not return a real value.
 This is of consequence in the definition of independence for methods, as dependence on `this` is ignored.
 
+// ********************************************************************************************************************
+
 ==== @Identity
 
 |===
@@ -419,6 +456,8 @@ This is of consequence in the definition of independence for methods, as depende
 Summary:: This annotation indicates that a method returns its first parameter.
 Mode:: There is no opposite for this annotation.
 Details:: Apart for all the obvious consequences, this annotation has an explicit effect on the linking of variables: a method marked {identity} only links to the first parameter.
+
+// ********************************************************************************************************************
 
 ==== @IgnoreModifications
 
@@ -431,6 +470,8 @@ Mode:: There is no opposite for this annotation.
 It can only be used for contracting, the analyser cannot generate it.
 Example:: The only current use is on `System.out` and `System.err`.
 The `print` method family is obviously modifying to these fields, however, we judge it to be outside the scope of the application.
+
+// ********************************************************************************************************************
 
 ==== @Independent
 
@@ -448,6 +489,8 @@ Its opposite is {dependent}.
 * #TODO# check definition for methods, parameters dependent as well?
 * #TODO# why do we ignore dependence on this?
 
+// ********************************************************************************************************************
+
 ==== @Linked
 
 |===
@@ -457,7 +500,11 @@ Its opposite is {dependent}.
 Summary:: Annotation to help debug the dependence system.
 Mode:: There is no opposite.
 
+// ********************************************************************************************************************
+
 ==== @Linked1
+
+// ********************************************************************************************************************
 
 ==== @Mark
 
@@ -465,27 +512,34 @@ Mode:: There is no opposite.
 | Basic {n} | Immu {y}| Contract {y}| Type {n} | Field {n} | Method {y} | Param {n}
 |===
 
+[#modified-annotation]
 ==== @Modified
 
 |===
 | Basic {y} | Immu {y}| Contract {y}| Type {n} | Field {y} | Method {y} | Param {y}
 |===
 
-Summary:: Core annotation which indicates that content modifications take place.
-Mode:: It is the default in the green mode, when {nm} is not present.
+Summary:: Core annotation which indicates that <<concept-modified,modifications>> take place on a field, parameter, or in a method.
 
+Mode:: It is the default in the green mode, when {nm} is not visible.
+
+// ********************************************************************************************************************
+
+[#modified1-annotation]
 ==== @Modified1
 
 |===
 | Basic {n} | Immu {n}| Contract {n}| Type {y} | Field {n} | Method {n} | Param {y}
 |===
 
-Summary:: This annotation is part of the <<higher-level-modifications>>.
+Summary:: This annotation is part of the <<concept-higher-order-modification,higher-order modifications>>.
 
 Mode:: the opposite annotation is {nm1}.
 In green mode, this one is the default; in red mode, {nm1} is the default.
 
 Example:: Applying a c
+
+// ********************************************************************************************************************
 
 [#mutableModifiesArguments-annotation]
 ==== @MutableModifiesArguments
@@ -519,6 +573,9 @@ class Mutate {
 }
 ----
 
+// ********************************************************************************************************************
+
+[#notModified-annotation]
 ==== @NotModified
 
 |===
@@ -537,13 +594,16 @@ Example::
 
 ----
 
+// ********************************************************************************************************************
+
+[#notModified1-annotation]
 ==== @NotModified1
 
 |===
 | Basic {n} | Immu {y}| Contract {y}| Type {n} | Field {y} | Method {y} | Param {y}
 |===
 
-Summary:: This annotation is part of the <<higher-level-modifications>>.
+Summary:: This annotation is part of the <<concept-higher-order-modification,higher-order modifications>>.
 Contracted to a parameter of an abstract type, it indicates that the abstract method cannot be implemented in a modifying way.
 Computed on parameters of any type with <<concept-implicitly-immutable,implicitly immutable content>>, it signifies that
 
@@ -573,6 +633,9 @@ Here, the analyser computes the annotation:
 
 ----
 
+// ********************************************************************************************************************
+
+[#notNull-annotation]
 ==== @NotNull
 
 |===
@@ -583,18 +646,27 @@ Summary:: Core annotation to indicate that a field, parameter, or result of a me
 Mode:: Use this annotation for contracting in the green mode.
 It is the opposite of {nullable}.
 
+// ********************************************************************************************************************
+
+[#notNull1-annotation]
 ==== @NotNull1
 
 |===
 | Basic {n} | Immu {n}| Contract {y}| Type {n} | Field {y} | Method {y} | Param {y}
 |===
 
+// ********************************************************************************************************************
+
+[#notNull2-annotation]
 ==== @NotNull2
 
 |===
 | Basic {n} | Immu {n}| Contract {y}| Type {n} | Field {y} | Method {y} | Param {y}
 |===
 
+// ********************************************************************************************************************
+
+[#nullable-annotation]
 ==== @Nullable
 
 |===
@@ -606,42 +678,139 @@ Summary:: This annotation indicates that the field, parameter, or result of a me
 Mode:: This is the default in the green mode, when {nn} is not present.
 Use it to contract in the red mode.
 
+// ********************************************************************************************************************
+
+[#only-annotation]
 ==== @Only
 
 |===
 | Basic {n} | Immu {y}| Contract {y}| Type {n} | Field {n} | Method {y} | Param {n}
 |===
 
+Summary:: Essential annotation for methods in <<concept-eventual,eventually immutable>> types.
+
+Mode:: There is no opposite.
+
+Example::
+[source,java]
+----
+
+
+----
+
+// ********************************************************************************************************************
+
+[#propagateModification-annotation]
 ==== @PropagateModification
 
 |===
-| Basic {n} | Immu {n} | Contract {n}| Type {n} | Field {n} | Method {y} | Param {n}
+| Basic {n} | Immu {n} | Contract {n}| Type {n} | Field {y} | Method {n} | Param {y}
 |===
 
-Summary::
-Mode::
+Summary:: This annotation is part of the <<concept-higher-order-modification,higher-order modifications>>.
+The analyser adds this annotation when an abstract method without modification information is called on a parameter.
+This abstract method can be modifying or not, and in general it cannot be known which is the case.
+The annotation then informs the analyser that modifications need computing at caller-time.
++
+The annotation is also possible on fields, in case the parameter becomes the effectively final value of a field.
 
+Mode:: There is no opposite.
+
+Example:: A typical implementation of `forEach` is a nice example:
+
+[source,java]
+----
+@FunctionalInterface
+public interface Consumer<T> {
+    void accept(T t); // <1>
+    ...
+}
+@Container
+public interface Set<T> {
+    default void forEach(@PropagateModification Consumer<T> consumer) {
+      for(T t: this) consumer.accept(t);
+    }
+    ...
+}
+----
+<1> No modification information present on `accept`.
+
+// ********************************************************************************************************************
+
+[#singleton-annotation]
 ==== @Singleton
 
 |===
 | Basic {y} | Immu {n}| Contract {n} | Type {y} | Field {n} | Method {n} | Param {n}
 |===
 
-Summary:: This annotation indicates that the class is a singleton: only one instance can exist.
+Summary:: This annotation indicates that the class is a <<concept-singleton, singleton>>: only one instance can exist.
 Mode:: There is no opposite for this annotation.
 
+Example:: There are many ways to ensure that a type has only one instance.
+This is the simplest example:
+
+[source,java]
+----
+@Singleton
+public class OnlyOne {
+  public static final INSTANCE = new OnlyOne();
+
+  public final int value;
+
+  private OnlyOne() {
+      value = new Random().nextInt(10);
+  }
+}
+----
+
+// ********************************************************************************************************************
+
+[#testMark-annotation]
 ==== @TestMark
 
 |===
-| Basic {n} | Immu {n}| Contract {y}| Type {n} | Field {y} | Method {y} | Param {y}
+| Basic {n} | Immu {y}| Contract {y} | Type {n} | Field {n} | Method {y} | Param {n}
 |===
 
-Summary::
+Summary:: Part of the <<concept-eventual,eventual>> system, this annotation is computed for methods which return the state of the object with respect to eventuality: _after_ is `true`, while _before_ is `false`.
+
+Parameters:: a parameter `before` exists to reverse the values: when `before` is true, the method returns `true` when the state is _before_ and `false` when the state is _after_.
+
 Mode:: There is no opposite for this annotation.
 
-Details::
-xxx
+Example:: The {testMark} annotation in the following example returns `true` when `t != null`, i.e., _after_ the marked method `setT` has been called:
 
+[source,java]
+----
+@E2Immutable(after = "t")
+public class EventuallyE2Immutable_2<T> {
+
+    private T t;
+
+    @Mark("t")
+    public void setT(T t) {
+        if (t == null) throw new NullPointerException();
+        if (this.t != null) throw new UnsupportedOperationException();
+        this.t = t;
+    }
+
+    @Only(after = "t")
+    public T getT() {
+        if (t == null) throw new UnsupportedOperationException();
+        return t;
+    }
+
+    @TestMark("t")
+    public boolean isSet() {
+        return t != null;
+    }
+}
+----
+
+// ********************************************************************************************************************
+
+[#utilityClass-annotation]
 ==== @UtilityClass
 
 |===
@@ -660,13 +829,53 @@ The fact that it cannot be instantiated is verified by
 . there should be at least one private constructor;
 . no method or field can use the constructors instantiate objects of this type.
 
+Example:: The following utility class is copied from the analyser:
+
+[source,java]
+----
+@UtilityClass
+public class IntUtil {
+
+    private IntUtil() {
+    }
+
+    // copied from Guava, DoubleMath class
+    public static boolean isMathematicalInteger(double x) {
+        return !Double.isNaN(x) && !Double.isInfinite(x) && x == Math.rint(x);
+    }
+}
+----
+
+// ********************************************************************************************************************
+
+[#variable-annotation]
 ==== @Variable
 
 |===
 | Basic {y} | Immu {y}| Contract {n} | Type {n} | Field {y} | Method {n} | Param {n}
 |===
 
-Summary:: This annotation indicates that a field is not effectively or eventually final, i.e., it is assigned to in methods accessible from non-private non-constructor methods in the type.
-Mode:: Use this annotation when contracting in the red mode.
+Summary:: This annotation indicates that a field is not <<concept-e1immutable,effectively or eventually final>>, i.e., it is assigned to in methods accessible from non-private non-constructor methods in the type.
+
+Mode:: This annotation is the default in the green mode.
 It is the opposite of {final}.
-Example:: Please refer to the example of <<final-annotation>>.
+
+Example:: Any non-eventual type with setters will have fields marked {variable}:
+
+[source,java]
+----
+@Container
+class HoldsOneInteger {
+
+  @Variable
+  private int i;
+
+  public void set(int i) {
+    this.i = i;
+  }
+
+  public int get() {
+    return i;
+  }
+}
+----

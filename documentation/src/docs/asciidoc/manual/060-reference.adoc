@@ -12,11 +12,15 @@ Red mode:: when the majority of your types are level 2 immutable, and non-contai
 Because annotations often occur in an opposing pair, the choice of a mode can help to reduce information overload.
 For example, in red mode, <<mutableModifiesArguments-annotation>> will be prominently displayed, and
 <<e2container-annotation>> will be "invisible".
+Similarly, <<modified-annotation>> is highlighted and <<notModified-annotation>> will be plain.
+
 In green mode, we want <<container-annotation>> and <<e2container-annotation>> to be visible, while "normal" types are unmarked in black.
+The <<notModified-annotation>> will be highlighted, while <<modified-annotation>> remains plain.
 
 === Inheritance of annotations
 
 In general, the analyser allows a method to do better than the method it overrides.
 It will raise an error when the overriding method is {modified}, where the original is {nm}.
+#TODO#
 
 // empty line

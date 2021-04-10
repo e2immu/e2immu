@@ -14,7 +14,13 @@
 
 package org.e2immu.analyser.util;
 
+import org.e2immu.annotation.UtilityClass;
+
+@UtilityClass
 public class IntUtil {
+
+    private IntUtil() {
+    }
 
     // copied from Guava, DoubleMath class
     public static boolean isMathematicalInteger(double x) {
