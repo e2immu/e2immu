@@ -208,10 +208,18 @@ public class ParameterizedType {
     }
 
     /*
-    used in ASM, comparators, unevaluated method call
+    used in comparators, unevaluated method call
      */
     public String detailedString() {
         return ParameterizedTypePrinter.print(InspectionProvider.DEFAULT, Qualification.FULLY_QUALIFIED_NAME,
+                this, false, Diamond.SHOW_ALL, false).toString();
+    }
+
+    /*
+     used in ASM
+     */
+    public String detailedString(InspectionProvider inspectionProvider) {
+        return ParameterizedTypePrinter.print(inspectionProvider, Qualification.FULLY_QUALIFIED_NAME,
                 this, false, Diamond.SHOW_ALL, false).toString();
     }
 

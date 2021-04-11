@@ -96,10 +96,10 @@ public class MyClassVisitor extends ClassVisitor {
         return TypeNature.CLASS;
     }
 
-    private static String makeMethodSignature(String name, TypeInfo typeInfo, List<ParameterizedType> types) {
+    private String makeMethodSignature(String name, TypeInfo typeInfo, List<ParameterizedType> types) {
         String methodName = "<init>".equals(name) ? typeInfo.simpleName : name;
         return methodName + "(" +
-                types.stream().map(ParameterizedType::detailedString).collect(Collectors.joining(", ")) +
+                types.stream().map(pt -> pt.detailedString(typeContext)).collect(Collectors.joining(", ")) +
                 ")";
     }
 
@@ -380,12 +380,24 @@ public class MyClassVisitor extends ClassVisitor {
                 methodItem = typeItem.getMethodItems().get(methodSignature);
                 if (methodItem != null && !methodItem.getAnnotations().isEmpty()) {
                     jetBrainsAnnotationTranslator.mapAnnotations(methodItem.getAnnotations(), methodInspectionBuilder);
+                    for (MethodItem companionMethod : methodItem.getCompanionMethods()) {
+                        addCompanionMethod(currentType, methodInspectionBuilder, companionMethod);
+                    }
                 }
             }
         }
 
         return new MyMethodVisitor(methodContext, methodInspectionBuilder, typeInspectionBuilder, types,
                 lastParameterIsVarargs, methodItem, jetBrainsAnnotationTranslator);
+    }
+
+    private void addCompanionMethod(TypeInfo currentType,
+                                    MethodInspectionImpl.Builder methodInspectionBuilder,
+                                    MethodItem companionMethod) {
+        String name = companionMethod.name.substring(0, companionMethod.name.indexOf('('));
+        MethodInspectionImpl.Builder companionBuilder = new MethodInspectionImpl.Builder(currentType, name);
+        companionBuilder.setStatic(true);
+        // FIXME more code
     }
 
     @Override
