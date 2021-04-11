@@ -53,6 +53,8 @@ jar {
     }
 }
 
+// ********************************* Publishing
+
 publishing {
     repositories {
         mavenLocal()

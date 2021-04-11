@@ -185,7 +185,7 @@ public abstract class CommonTestRunner {
     private TypeContext execute(Configuration configuration, int errorsToExpect, int warningsToExpect) throws IOException {
         configuration.initializeLoggers();
         Parser parser = new Parser(configuration);
-        List<SortedType> types = parser.run();
+        List<SortedType> types = parser.run().sourceSortedTypes();
         for (SortedType sortedType : types) {
             OutputBuilder outputBuilder = sortedType.primaryType().output();
             Formatter formatter = new Formatter(FormattingOptions.DEFAULT);

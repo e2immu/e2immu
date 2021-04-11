@@ -26,15 +26,18 @@ public class AnnotationXmlConfiguration {
     // write a Xml
     public final boolean writeAnnotationXml;
     public final List<String> writeAnnotationXmlPackages;
+    public final List<String> readAnnotationXmlPackages;
     public final String writeAnnotationXmlDir;
 
     public AnnotationXmlConfiguration(
             boolean writeAnnotationXml,
             List<String> writeAnnotationXmlPackages,
+            List<String> readAnnotationXmlPackages,
             String writeAnnotationXmlDir) {
         this.writeAnnotationXml = writeAnnotationXml;
         this.writeAnnotationXmlPackages = writeAnnotationXmlPackages;
         this.writeAnnotationXmlDir = writeAnnotationXmlDir;
+        this.readAnnotationXmlPackages = readAnnotationXmlPackages;
     }
 
     @Override
@@ -42,6 +45,7 @@ public class AnnotationXmlConfiguration {
         return new StringJoiner("\n")
                 .add("write annotationXml: " + writeAnnotationXml)
                 .add("write annotationXml restrict to packages: " + writeAnnotationXmlPackages)
+                .add("read annotationXml restrict to packages: " + readAnnotationXmlPackages)
                 .add("write annotationXml directory: " + writeAnnotationXmlDir) + "\n";
     }
 
@@ -60,17 +64,23 @@ public class AnnotationXmlConfiguration {
         return Objects.hash(writeAnnotationXml, writeAnnotationXmlPackages, writeAnnotationXmlDir);
     }
 
+    public boolean isReadAnnotationXmlPackages() {
+        return readAnnotationXmlPackages.isEmpty() || !"none".equalsIgnoreCase(readAnnotationXmlPackages.get(0));
+    }
+
     @Container
     public static class Builder {
 
         private boolean writeAnnotationXml;
         private final List<String> writeAnnotationXmlPackages = new ArrayList<>();
+        private final List<String> readAnnotationXmlPackages = new ArrayList<>();
         private String writeAnnotationXmlDir;
 
         public AnnotationXmlConfiguration build() {
             return new AnnotationXmlConfiguration(
                     writeAnnotationXml,
                     List.copyOf(writeAnnotationXmlPackages),
+                    List.copyOf(readAnnotationXmlPackages),
                     writeAnnotationXmlDir
             );
         }
@@ -88,8 +98,14 @@ public class AnnotationXmlConfiguration {
         }
 
         @Fluent
-        public Builder addAnnotationXmlPackages(String... packages) {
+        public Builder addAnnotationXmlWritePackages(String... packages) {
             writeAnnotationXmlPackages.addAll(Arrays.asList(packages));
+            return this;
+        }
+
+        @Fluent
+        public Builder addAnnotationXmlReadPackages(String... packages) {
+            readAnnotationXmlPackages.addAll(Arrays.asList(packages));
             return this;
         }
     }

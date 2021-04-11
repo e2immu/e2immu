@@ -12,20 +12,17 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.visitor;
+package org.e2immu.annotatedapi.test;
 
-import org.e2immu.analyser.config.Configuration;
-import org.e2immu.analyser.parser.Input;
-import org.e2immu.analyser.resolver.SortedType;
+import org.junit.jupiter.api.Test;
 
+import java.io.IOException;
 import java.util.List;
 
-public interface SortedTypeListVisitor {
-    void visit(Data data);
+public class Test_Set extends CommonTest {
 
-    record Data(Configuration configuration,
-                Input input,
-                List<SortedType> sortedTypes) {
-
+    @Test
+    public void test_0() throws IOException {
+        test(List.of("Set_0"), 0, 0);
     }
 }

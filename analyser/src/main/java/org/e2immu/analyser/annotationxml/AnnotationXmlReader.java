@@ -15,6 +15,7 @@
 package org.e2immu.analyser.annotationxml;
 
 import org.e2immu.analyser.annotationxml.model.*;
+import org.e2immu.analyser.config.AnnotationXmlConfiguration;
 import org.e2immu.analyser.util.Resources;
 import org.e2immu.annotation.E2Immutable;
 import org.slf4j.Logger;
@@ -44,27 +45,41 @@ public class AnnotationXmlReader implements AnnotationStore {
     public final int numberOfAnnotations;
     private static final Pattern TYPE = Pattern.compile("\\S+");
     private static final Pattern CONSTRUCTOR = Pattern.compile("(\\S+) ([^\\s()]+\\([^)]*\\))( (\\d+))?");
-    private static final Pattern METHOD = Pattern.compile("(\\S+) ([^()]+) ([^\\s()]+\\([^)]*\\))( (\\d+))?");
+    private static final Pattern METHOD = Pattern.compile("(\\S+) ([^()]+) ([^\\s()]+\\([^)]*\\))\s?(\\d+|:: (([^()]+) ([^\\s()]+\\([^)]*\\))))?");
     private static final Pattern FIELD = Pattern.compile("(\\S+) ([^\\s()]+)");
 
     public AnnotationXmlReader(Resources classPath) {
+        this(classPath, new AnnotationXmlConfiguration.Builder().build());
+    }
+
+    public AnnotationXmlReader(Resources classPath, AnnotationXmlConfiguration configuration) {
         Map<String, TypeItem> typeItemMap = new HashMap<>();
 
         int countAnnotations = 0;
-        for (URL url : classPath.expandURLs("annotations.xml")) {
-            try {
-                countAnnotations += parse(url, typeItemMap);
-            } catch (IOException io) {
-                LOGGER.warn("Skipping {}: IOException {}", url, io.getMessage());
-            } catch (SAXException e) {
-                LOGGER.warn("Skipping {}: SAXException {}", url, e.getMessage());
-            } catch (ParserConfigurationException e) {
-                LOGGER.warn("Skipping {}: Parser config exception {}", url, e.getMessage());
+        if (configuration.isReadAnnotationXmlPackages()) {
+            for (URL url : classPath.expandURLs("annotations.xml")) {
+                try {
+                    if (accept(url, configuration.readAnnotationXmlPackages)) {
+                        countAnnotations += parse(url, typeItemMap);
+                    }
+                } catch (IOException io) {
+                    LOGGER.warn("Skipping {}: IOException {}", url, io.getMessage());
+                } catch (SAXException e) {
+                    LOGGER.warn("Skipping {}: SAXException {}", url, e.getMessage());
+                } catch (ParserConfigurationException e) {
+                    LOGGER.warn("Skipping {}: Parser config exception {}", url, e.getMessage());
+                }
             }
         }
         this.numberOfAnnotations = countAnnotations;
         this.typeItemMap = Map.copyOf(typeItemMap);
         this.typeItemMap.values().forEach(TypeItem::freeze);
+    }
+
+    private boolean accept(URL url, List<String> restrictToPackages) {
+        if (restrictToPackages.isEmpty()) return true;
+        // FIXME
+        return false;
     }
 
     public AnnotationXmlReader(URL annotationXml) throws IOException, ParserConfigurationException, SAXException {
@@ -96,35 +111,47 @@ public class AnnotationXmlReader implements AnnotationStore {
             if (node.getNodeType() == Node.ELEMENT_NODE && node.getNodeName().equals("item")) {
                 String name = node.getAttributes().getNamedItem("name").getNodeValue();
 
-                HasAnnotations theType;
+                HasAnnotations theItem;
                 Matcher typeMatcher = TYPE.matcher(name);
                 if (typeMatcher.matches()) {
-                    theType = typeItem(typeItemMap, typeMatcher.group());
+                    theItem = typeItem(typeItemMap, typeMatcher.group());
                 } else {
                     Matcher constructorMatcher = CONSTRUCTOR.matcher(name);
                     if (constructorMatcher.matches()) {
                         TypeItem typeItem = typeItem(typeItemMap, constructorMatcher.group(1));
+                        String constructorName = constructorMatcher.group(2);
+                        MethodItem methodItem = methodItem(typeItem, constructorName, null);
                         String paramIndex = constructorMatcher.group(4);
                         if (paramIndex != null) {
-                            theType = parameterItem(typeItem, constructorMatcher.group(2), null, paramIndex);
+                            theItem = parameterItem(methodItem, paramIndex);
                         } else {
-                            theType = methodItem(typeItem, constructorMatcher.group(2), null);
+                            theItem = methodItem;
                         }
                     } else {
                         Matcher methodMatcher = METHOD.matcher(name);
                         if (methodMatcher.matches()) {
                             TypeItem typeItem = typeItem(typeItemMap, methodMatcher.group(1));
-                            String paramIndex = methodMatcher.group(5);
-                            if (paramIndex != null) {
-                                theType = parameterItem(typeItem, methodMatcher.group(3), methodMatcher.group(2), paramIndex);
+                            String methodType = methodMatcher.group(2);
+                            String methodName = methodMatcher.group(3);
+                            MethodItem methodItem = methodItem(typeItem, methodName, methodType);
+                            String companion = methodMatcher.group(5);
+                            if (companion != null) {
+                                String companionType = methodMatcher.group(6);
+                                String companionName = methodMatcher.group(7);
+                                theItem = companionMethodItem(methodItem, companionName, companionType);
                             } else {
-                                theType = methodItem(typeItem, methodMatcher.group(3), methodMatcher.group(2));
+                                String paramIndex = methodMatcher.group(4);
+                                if (paramIndex != null) {
+                                    theItem = parameterItem(methodItem, paramIndex);
+                                } else {
+                                    theItem = methodItem;
+                                }
                             }
                         } else {
                             Matcher fieldMatcher = FIELD.matcher(name);
                             if (fieldMatcher.matches()) {
                                 TypeItem typeItem = typeItem(typeItemMap, fieldMatcher.group(1));
-                                theType = fieldItem(typeItem, fieldMatcher.group(2));
+                                theItem = fieldItem(typeItem, fieldMatcher.group(2));
                             } else {
                                 throw new NoSuchElementException("Have name that is not matched at all: " + name);
                             }
@@ -161,7 +188,7 @@ public class AnnotationXmlReader implements AnnotationStore {
                                     }
                                 }
                             }
-                            theType.getAnnotations().add(annotationBuilder.build());
+                            theItem.getAnnotations().add(annotationBuilder.build());
                         } else {
                             LOGGER.warn("Attribute 'name' missing?");
                         }
@@ -173,8 +200,7 @@ public class AnnotationXmlReader implements AnnotationStore {
     }
 
 
-    private static ParameterItem parameterItem(TypeItem typeItem, String methodName, String returnType, String parameterIndex) {
-        MethodItem methodItem = methodItem(typeItem, methodName, returnType);
+    private static ParameterItem parameterItem(MethodItem methodItem, String parameterIndex) {
         ParameterItem parameterItem = new ParameterItem(Integer.parseInt(parameterIndex));
         methodItem.getParameterItems().add(parameterItem);
         return parameterItem;
@@ -186,6 +212,17 @@ public class AnnotationXmlReader implements AnnotationStore {
             methodItem = new MethodItem(methodName, returnType);
             typeItem.getMethodItems().put(methodName, methodItem);
             log(ANNOTATION_XML_READER, "Created method {} returns {}", methodName, returnType);
+        }
+        return methodItem;
+    }
+
+
+    private static MethodItem companionMethodItem(MethodItem methodItem, String companionName, String companionReturnType) {
+        MethodItem companionItem = methodItem.getCompanionMethod(companionName);
+        if (companionItem == null) {
+            companionItem = new MethodItem(companionName, companionReturnType);
+            methodItem.putCompanionMethod(companionItem);
+            log(ANNOTATION_XML_READER, "Created companion method {} returns {}", companionName, companionReturnType);
         }
         return methodItem;
     }

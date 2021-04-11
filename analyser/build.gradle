@@ -53,37 +53,6 @@ application {
     mainClass.set('org.e2immu.analyser.cli.Main')
 }
 
-/*
-task generateAnnotationXml(type: JavaExec) {
-    group = "Execution"
-    description = "Convert all annotations in the annotatedAPIs to annotation.xml files"
-    classpath = sourceSets.main.runtimeClasspath
-    main = 'org.e2immu.analyser.cli.Main'
-    Set<File> reducedClassPath = sourceSets.main.runtimeClasspath.toList()
-    reducedClassPath += sourceSets.test.runtimeClasspath
-    reducedClassPath.removeIf({ f -> f.path.contains("build/classes") || f.path.contains("build/resources") })
-    args('--classpath=' + reducedClassPath.join(":") + ":src/main/resources/annotatedAPIs:jmods/java.base.jmod",
-            '--source=non_existing_dir',
-            '-w',
-            '--write-annotation-xml-dir=build/annotations',
-            '--debug=INSPECT,ANNOTATION_XML_WRITER'
-    )
-}
-
-task annotationXmlJar(type: Jar) {
-    from(buildDir.path + "/annotations")
-    archivesBaseName = buildDir.path + "/annotation-xml"
-
-    dependsOn(generateAnnotationXml)
-}
-
-def annotationXmlJar = file(buildDir.path + "/annotation-xml-" + project.version + ".jar")
-def annotationXmlArtifact = artifacts.add('archives', annotationXmlJar, {
-    type ('jar')
-    builtBy ('annotationXmlJar')
-})
-*/
-
 publishing {
     repositories {
         mavenLocal()

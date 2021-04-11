@@ -14,7 +14,6 @@
 
 package org.e2immu.analyser.analyser;
 
-import org.e2immu.analyser.visitor.CompanionAnalyserVisitor;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.statement.ReturnStatement;
@@ -27,7 +26,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
-import static org.e2immu.analyser.analyser.AnalysisStatus.DELAYS;
 import static org.e2immu.analyser.analyser.AnalysisStatus.DONE;
 import static org.e2immu.analyser.util.Logger.LogTarget.*;
 import static org.e2immu.analyser.util.Logger.log;
@@ -62,7 +60,6 @@ public class CompanionAnalyser {
                 if (iteration == 0) {
                     log(DELAYED, "Delaying companion analysis of {} of {}, aspect function not known",
                             companionMethodName, mainMethod.fullyQualifiedName());
-                    visit(iteration, DELAYS, null, null);
                     return AnalysisStatus.DELAYS;
                 }
                 throw new UnsupportedOperationException("Aspect function not found in type " + mainMethod.typeInfo.fullyQualifiedName);
@@ -70,7 +67,6 @@ public class CompanionAnalyser {
             if (CompanionMethodName.NO_CODE.contains(companionMethodName.action())) {
                 // there is no code, and the type analyser deals with it
                 companionAnalysis.value.set(EmptyExpression.EMPTY_EXPRESSION);
-                visit(iteration, DONE, null, null);
                 return DONE;
             }
             int modifyingMainMethod = analyserContext.getMethodAnalysis(mainMethod).getProperty(VariableProperty.MODIFIED_METHOD);
@@ -79,7 +75,6 @@ public class CompanionAnalyser {
                 // its companion methods need processing
                 log(DELAYED, "Delaying companion analysis of {} of {}, modification of main method delayed",
                         companionMethodName, mainMethod.fullyQualifiedName());
-                visit(iteration, DELAYS, null, null);
                 return AnalysisStatus.DELAYS;
             }
             computeRemapParameters(!mainMethod.isConstructor && modifyingMainMethod == Level.TRUE);
@@ -92,24 +87,15 @@ public class CompanionAnalyser {
             if (evaluationContext.isDelayed(evaluationResult.value())) {
                 log(DELAYED, "Delaying companion analysis of {} of {}, delay in evaluation",
                         companionMethodName, mainMethod.fullyQualifiedName());
-                visit(iteration, DELAYS, evaluationContext, evaluationResult);
                 return AnalysisStatus.DELAYS;
             }
             companionAnalysis.value.set(evaluationResult.value());
 
             log(ANALYSER, "Finished companion analysis of {} in {}", companionMethodName, mainMethod.fullyQualifiedName());
-            visit(iteration, DONE, evaluationContext, evaluationResult);
             return DONE;
         } catch (RuntimeException e) {
             LOGGER.error("Caught runtime exception in companion analyser of {} of {}", companionMethodName, mainMethod.fullyQualifiedName());
             throw e;
-        }
-    }
-
-    private void visit(int iteration, AnalysisStatus analysisStatus, EvaluationContext evaluationContext, EvaluationResult evaluationResult) {
-        for (CompanionAnalyserVisitor companionAnalyserVisitor : analyserContext.getConfiguration().debugConfiguration.afterCompanionAnalyserVisitors) {
-            companionAnalyserVisitor.visit(new CompanionAnalyserVisitor.Data(iteration, analysisStatus, evaluationContext, evaluationResult,
-                    mainMethod, companionMethodName, companionMethod, companionAnalysis));
         }
     }
 

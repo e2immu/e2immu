@@ -15,15 +15,22 @@
 package org.e2immu.analyser.cli;
 
 import org.apache.commons.cli.*;
+import org.e2immu.analyser.annotationxml.AnnotationXmlWriter;
 import org.e2immu.analyser.config.*;
+import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.parser.Parser;
+import org.e2immu.analyser.upload.AnnotationUploader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Consumer;
+
+import static org.e2immu.analyser.util.Logger.LogTarget.CONFIGURATION;
+import static org.e2immu.analyser.util.Logger.log;
 
 public class Main {
     private static final Logger LOGGER = LoggerFactory.getLogger(Main.class);
@@ -39,14 +46,16 @@ public class Main {
     public static final String WRITE_ANNOTATION_XML_DIR = "write-annotation-xml-dir";
     public static final String WRITE_ANNOTATED_API_DIR = "write-annotated-api-dir";
     public static final String WRITE_ANNOTATION_XML_PACKAGES = "write-annotation-xml-packages";
+    public static final String READ_ANNOTATION_XML_PACKAGES = "read-annotation-xml-packages";
     public static final String WRITE_ANNOTATED_API_PACKAGES = "write-annotated-api-packages";
     public static final String COMMA = ",";
     public static final String SOURCE_PACKAGES = "source-packages";
     public static final String JRE = "jre";
     public static final String CLASSPATH = "classpath";
-    public static final String TEST_CLASSPATH = "test-classpath";
+    public static final String TEST_CLASSPATH = "test-classpath"; // TODO
     public static final String SOURCE = "source";
-    public static final String TEST_SOURCE = "test-source";
+    public static final String TEST_SOURCE = "test-source"; // TODO
+    public static final String ANNOTATED_API_SOURCE = "annotated-api-source";
     public static final String SOURCE_ENCODING = "source-encoding";
     public static final String HELP = "help";
     public static final String DEBUG = "debug";
@@ -55,10 +64,10 @@ public class Main {
     public static final String SKIP_ANALYSIS = "skip-analysis"; // not available on CMD line
 
     public static void main(String[] args) {
-        CommandLineParser parser = new DefaultParser();
+        CommandLineParser commandLineParser = new DefaultParser();
         Options options = createOptions();
         try {
-            CommandLine cmd = parser.parse(options, args);
+            CommandLine cmd = commandLineParser.parse(options, args);
             if (cmd.hasOption(HELP)) {
                 HelpFormatter formatter = new HelpFormatter();
                 formatter.setOptionComparator(null);
@@ -70,6 +79,8 @@ public class Main {
             InputConfiguration.Builder inputBuilder = new InputConfiguration.Builder();
             String[] sources = cmd.getOptionValues(SOURCE);
             splitAndAdd(sources, PATH_SEPARATOR, inputBuilder::addSources);
+            String[] annotatedAPISources = cmd.getOptionValues(ANNOTATED_API_SOURCE);
+            splitAndAdd(annotatedAPISources, PATH_SEPARATOR, inputBuilder::addAnnotatedAPISources);
             String[] classPaths = cmd.getOptionValues(CLASSPATH);
             splitAndAdd(classPaths, PATH_SEPARATOR, inputBuilder::addClassPath);
 
@@ -104,8 +115,10 @@ public class Main {
             boolean writeAnnotationXml = cmd.hasOption(WRITE_ANNOTATION_XML);
             xmlBuilder.setAnnotationXml(writeAnnotationXml);
             xmlBuilder.setWriteAnnotationXmlDir(cmd.getOptionValue(WRITE_ANNOTATION_XML_DIR));
-            String[] annotationXmlPackages = cmd.getOptionValues(WRITE_ANNOTATION_XML_PACKAGES);
-            splitAndAdd(annotationXmlPackages, COMMA, xmlBuilder::addAnnotationXmlPackages);
+            String[] annotationXmlWritePackages = cmd.getOptionValues(WRITE_ANNOTATION_XML_PACKAGES);
+            splitAndAdd(annotationXmlWritePackages, COMMA, xmlBuilder::addAnnotationXmlWritePackages);
+            String[] annotationXmlReadPackages = cmd.getOptionValues(READ_ANNOTATION_XML_PACKAGES);
+            splitAndAdd(annotationXmlReadPackages, COMMA, xmlBuilder::addAnnotationXmlReadPackages);
             builder.setWriteAnnotationXmConfiguration(xmlBuilder.build());
 
             AnnotatedAPIConfiguration.Builder apiBuilder = new AnnotatedAPIConfiguration.Builder();
@@ -118,8 +131,23 @@ public class Main {
 
             Configuration configuration = builder.build();
             configuration.initializeLoggers();
-            new Parser(configuration).run();
+            // the following will be output if the CONFIGURATION logger is active!
+            log(CONFIGURATION, "Configuration:\n{}", configuration);
 
+            Parser parser = new Parser(configuration);
+            Parser.RunResult runResult = parser.run();
+            Set<TypeInfo> allTypes = configuration.annotationXmlConfiguration.writeAnnotationXml ||
+                    configuration.uploadConfiguration.upload ? runResult.allTypes() : Set.of();
+
+            if (configuration.annotationXmlConfiguration.writeAnnotationXml) {
+                AnnotationXmlWriter.write(configuration.annotationXmlConfiguration, allTypes);
+            }
+            if (configuration.uploadConfiguration.upload) {
+                AnnotationUploader annotationUploader = new AnnotationUploader(configuration.uploadConfiguration,
+                        parser.getTypeContext().typeMapBuilder.getE2ImmuAnnotationExpressions());
+                Map<String, String> map = annotationUploader.createMap(allTypes);
+                annotationUploader.writeMap(map);
+            }
         } catch (ParseException parseException) {
             parseException.printStackTrace();
             System.err.println("Caught parse exception: " + parseException.getMessage());
@@ -154,6 +182,10 @@ public class Main {
                         PATH_SEPARATOR + "' to separate directories, " +
                         "or use this options multiple times. Default, when this option is absent, is '"
                         + InputConfiguration.DEFAULT_SOURCE_DIRS + "'.").build());
+        options.addOption(Option.builder("aas").longOpt(ANNOTATED_API_SOURCE).hasArg().argName("DIRS")
+                .desc("Add a directory where the Annotated API source files can be found. Use the Java path separator '" +
+                        PATH_SEPARATOR + "' to separate directories, " +
+                        "or use this options multiple times. Default, when this option is absent, is empty.").build());
         options.addOption(Option.builder("cp").longOpt(CLASSPATH).hasArg().argName("CLASSPATH")
                 .desc("Add classpath components, separated by the Java path separator '" + PATH_SEPARATOR +
                         "'. Default, when this option is absent, is '"
@@ -210,6 +242,13 @@ public class Main {
                         " Use a dot at the end of a package name to accept sub-packages." +
                         "The default is to write annotation.xml files for all the packages of .java files parsed.").build());
         options.addOption(Option.builder()
+                .longOpt(READ_ANNOTATION_XML_PACKAGES)
+                .hasArg().argName("PACKAGES")
+                .desc("A comma-separated list of package names for" +
+                        " which annotation.xml files are to be read." +
+                        " Use a dot at the end of a package name to accept sub-packages." +
+                        "The default is to read all annotation.xml files. Write 'none' to refuse all.").build());
+        options.addOption(Option.builder()
                 .longOpt(WRITE_ANNOTATION_XML_DIR)
                 .hasArg().argName("DIR")
                 .desc("Alternative location to write the Xml files." +
@@ -264,7 +303,7 @@ public class Main {
         AnnotationXmlConfiguration.Builder builder = new AnnotationXmlConfiguration.Builder();
         setBooleanProperty(analyserProperties, WRITE_ANNOTATION_XML, builder::setAnnotationXml);
         setStringProperty(analyserProperties, WRITE_ANNOTATION_XML_DIR, builder::setWriteAnnotationXmlDir);
-        setSplitStringProperty(analyserProperties, COMMA, WRITE_ANNOTATION_XML_PACKAGES, builder::addAnnotationXmlPackages);
+        setSplitStringProperty(analyserProperties, COMMA, WRITE_ANNOTATION_XML_PACKAGES, builder::addAnnotationXmlWritePackages);
         return builder.build();
     }
 
@@ -273,6 +312,7 @@ public class Main {
         setStringProperty(analyserProperties, JRE, builder::setAlternativeJREDirectory);
         setStringProperty(analyserProperties, SOURCE_ENCODING, builder::setSourceEncoding);
         setSplitStringProperty(analyserProperties, PATH_SEPARATOR, SOURCE, builder::addSources);
+        setSplitStringProperty(analyserProperties, PATH_SEPARATOR, ANNOTATED_API_SOURCE, builder::addAnnotatedAPISources);
         setSplitStringProperty(analyserProperties, PATH_SEPARATOR, CLASSPATH, builder::addClassPath);
         setSplitStringProperty(analyserProperties, COMMA, SOURCE_PACKAGES, builder::addRestrictSourceToPackages);
         return builder.build();

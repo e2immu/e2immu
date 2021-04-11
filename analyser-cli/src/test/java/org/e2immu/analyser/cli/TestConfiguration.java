@@ -49,12 +49,12 @@ public class TestConfiguration {
                 .setUploadConfiguration(new UploadConfiguration.Builder()
                         .setUpload(true).build())
                 .addDebugLogTargets(BYTECODE_INSPECTOR.toString())
-                .addDebugLogTargets(INSPECT.toString() + "," + ANALYSER.toString())
+                .addDebugLogTargets(INSPECT + "," + ANALYSER)
                 .build();
         log(CONFIGURATION, "Config1:\n{}", configuration);
 
         Map<String, String> properties = new HashMap<>();
-        properties.put(DEBUG, BYTECODE_INSPECTOR.toString() + "," + INSPECT.toString() + "," + ANALYSER.toString());
+        properties.put(DEBUG, BYTECODE_INSPECTOR + "," + INSPECT + "," + ANALYSER);
         properties.put(SOURCE, "src/main/java");
         properties.put(SOURCE_PACKAGES, "org.e2immu.analyser.util");
         properties.put(CLASSPATH, "build/resources/main/annotatedAPIs" + PATH_SEPARATOR + "build/resources/main/annotations/jdkAnnotations" + PATH_SEPARATOR + "jmods/java.base.jmod");

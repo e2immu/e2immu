@@ -17,12 +17,15 @@ package org.e2immu.analyser.annotationxml;
 import org.e2immu.analyser.config.AnnotationXmlConfiguration;
 import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.config.InputConfiguration;
+import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.parser.Input;
 import org.e2immu.analyser.parser.Parser;
+import org.e2immu.analyser.resolver.SortedType;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.ANNOTATION_XML_READER;
@@ -49,14 +52,12 @@ public class TestAnnotationXmlWriter {
         InputConfiguration.Builder inputConfigurationBuilder = new InputConfiguration.Builder()
                 .addSources("some/empty/dir")
                 .addClassPath(InputConfiguration.DEFAULT_CLASSPATH)
-                .addClassPath(Input.JAR_WITH_PATH_PREFIX + "com/google/common/collect")
                 .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/junit/jupiter/api")
                 .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/slf4j")
                 .addClassPath(Input.JAR_WITH_PATH_PREFIX + "ch/qos/logback/core/spi")
-                .addClassPath(Input.JAR_WITH_PATH_PREFIX + "io/vertx/core")
                 .addAnnotatedAPISources("../annotatedAPIs/src/main/java");
         AnnotationXmlConfiguration.Builder annotationXml = new AnnotationXmlConfiguration.Builder()
-                .addAnnotationXmlPackages("java.lang", "java.util")
+                .addAnnotationXmlWritePackages("java.", "org.slf4j.")
                 .setWriteAnnotationXmlDir("build/annotations")
                 .setAnnotationXml(true);
         Configuration configuration = new Configuration.Builder()
@@ -66,6 +67,8 @@ public class TestAnnotationXmlWriter {
                 .setWriteAnnotationXmConfiguration(annotationXml.build())
                 .build();
         configuration.initializeLoggers();
-        new Parser(configuration).run();
+        List<SortedType> res = new Parser(configuration).run().annotatedAPISortedTypes();
+        Set<TypeInfo> types = res.stream().map(SortedType::primaryType).collect(Collectors.toSet());
+        AnnotationXmlWriter.write(configuration.annotationXmlConfiguration, types);
     }
 }

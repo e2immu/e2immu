@@ -63,7 +63,7 @@ public record Input(Configuration configuration,
 
     public static Input create(Configuration configuration) throws IOException {
         Resources classPath = assemblePath(configuration, true, "Classpath", configuration.inputConfiguration.classPathParts);
-        AnnotationStore annotationStore = new AnnotationXmlReader(classPath);
+        AnnotationStore annotationStore = new AnnotationXmlReader(classPath, configuration.annotationXmlConfiguration);
         LOGGER.info("Read {} annotations from 'annotation.xml' files in classpath", annotationStore.getNumberOfAnnotations());
         TypeContext globalTypeContext = new TypeContext(new TypeMapImpl.Builder());
         ByteCodeInspector byteCodeInspector = new ByteCodeInspector(classPath, annotationStore, globalTypeContext);

@@ -12,27 +12,29 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.visitor;
+package org.e2immu.annotatedapi.testexample;
 
-import org.e2immu.analyser.analyser.AnalysisStatus;
-import org.e2immu.analyser.analyser.CompanionAnalysis;
-import org.e2immu.analyser.model.CompanionMethodName;
-import org.e2immu.analyser.analyser.EvaluationContext;
-import org.e2immu.analyser.analyser.EvaluationResult;
-import org.e2immu.analyser.model.MethodInfo;
+import org.e2immu.annotation.Independent;
+import org.e2immu.annotation.NotModified;
 
-public interface CompanionAnalyserVisitor {
-    void visit(Data data);
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
 
-    record Data(int iteration,
-                AnalysisStatus analysisStatus,
-                EvaluationContext evaluationContext,
-                EvaluationResult evaluationResult,
-                MethodInfo mainMethod,
-                CompanionMethodName companionMethodName,
-                MethodInfo companionMethod,
-                CompanionAnalysis companionAnalysis) {
+/*
+test example which renders no errors/warnings IF used correctly with AnnotatedAPIs converted into AnnotatedXML
+ */
+public class Set_0 {
 
+    private final Set<String> set;
+
+    @Independent
+    public Set_0(Collection<String> collection) {
+        set = new HashSet<>(collection);
     }
 
+    @NotModified
+    public int size() {
+        return set.size();
+    }
 }

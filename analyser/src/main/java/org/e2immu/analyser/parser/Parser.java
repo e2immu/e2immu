@@ -25,7 +25,6 @@ import org.e2immu.analyser.model.TypeInspection;
 import org.e2immu.analyser.resolver.Resolver;
 import org.e2immu.analyser.resolver.SortedType;
 import org.e2immu.analyser.util.Trie;
-import org.e2immu.analyser.visitor.SortedTypeListVisitor;
 import org.e2immu.analyser.visitor.TypeMapVisitor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,7 +58,16 @@ public class Parser {
         input = Input.create(configuration);
     }
 
-    public List<SortedType> run() {
+    public record RunResult(List<SortedType> annotatedAPISortedTypes, List<SortedType> sourceSortedTypes) {
+
+        public Set<TypeInfo> allTypes() {
+            return Stream.concat(annotatedAPISortedTypes.stream(), sourceSortedTypes.stream())
+                    .map(SortedType::primaryType).collect(Collectors.toSet());
+        }
+
+    }
+
+    public RunResult run() {
         LOGGER.info("Running with configuration: {}", configuration);
 
         // at this point, bytecode inspection has been run on the Java base packages,
@@ -84,22 +92,14 @@ public class Parser {
 
         // finally, there is an analysis step
 
-
         if (!configuration.skipAnalysis) {
             // we pass on the Java sources for the PrimaryTypeAnalyser, while all other loaded types
             // will be sent to the ShallowAnalyser
             runShallowAnalyser(typeMap, sortedAnnotatedAPITypes);
-            for (SortedTypeListVisitor sortedTypeListVisitor : configuration.analyserConfiguration.sortedTypeListVisitors) {
-                sortedTypeListVisitor.visit(new SortedTypeListVisitor.Data(configuration, input, sortedAnnotatedAPITypes));
-            }
-
             runPrimaryTypeAnalyser(typeMap, resolvedSourceTypes);
-            for (SortedTypeListVisitor sortedTypeListVisitor : configuration.analyserConfiguration.sortedTypeListVisitors) {
-                sortedTypeListVisitor.visit(new SortedTypeListVisitor.Data(configuration, input, resolvedSourceTypes));
-            }
         }
 
-        return resolvedSourceTypes;
+        return new RunResult(sortedAnnotatedAPITypes, resolvedSourceTypes);
     }
 
     public List<SortedType> inspectAndResolve(Map<TypeInfo, URL> urls, Trie<TypeInfo> typesForWildcardImport,

@@ -1,9 +1,8 @@
 
 rootProject.name = 'org.e2immu'
-include 'annotatedAPIs'
 include 'documentation'
 include 'analyser'
 include 'gradle-plugin'
 include 'analyser-cli'
 include 'analyser-store-uploader'
-
+include 'annotatedAPIs'

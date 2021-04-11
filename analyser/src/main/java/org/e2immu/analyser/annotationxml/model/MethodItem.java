@@ -23,9 +23,7 @@ import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.annotation.E2Immutable;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @E2Immutable(after = "freeze")
@@ -33,7 +31,7 @@ public class MethodItem extends HasAnnotations implements Comparable<MethodItem>
     public final String name;
     public final String returnType;
     private List<ParameterItem> parameterItems = new ArrayList<>();
-    private List<MethodItem> companionMethods = new ArrayList<>();
+    private Map<String, MethodItem> companionMethods = new HashMap<>();
     public final String companionValue;
     public final String paramNamesCsv;
 
@@ -64,7 +62,7 @@ public class MethodItem extends HasAnnotations implements Comparable<MethodItem>
                 companionValue = "";
                 for (MethodInfo companionMethod : methodInfo.methodInspection.get().getCompanionMethods().values()) {
                     MethodItem companionItem = new MethodItem(companionMethod, extractExpression(companionMethod));
-                    companionMethods.add(companionItem);
+                    companionMethods.put(companionItem.name, companionItem);
                 }
             }
         } else {
@@ -96,16 +94,25 @@ public class MethodItem extends HasAnnotations implements Comparable<MethodItem>
         return parameterItems;
     }
 
-    public List<MethodItem> getCompanionMethods() {
-        return companionMethods;
+    public void putCompanionMethod(MethodItem methodItem) {
+        companionMethods.put(methodItem.name, methodItem);
+        assert methodItem.companionMethods.isEmpty();
+    }
+
+    public MethodItem getCompanionMethod(String name) {
+        return companionMethods.get(name);
+    }
+
+    public Collection<MethodItem> getCompanionMethods() {
+        return companionMethods.values();
     }
 
     void freeze() {
         super.freeze();
         parameterItems = List.copyOf(parameterItems);
         parameterItems.forEach(ParameterItem::freeze);
-        companionMethods = List.copyOf(companionMethods);
-        companionMethods.forEach(MethodItem::freeze);
+        companionMethods = Map.copyOf(companionMethods);
+        companionMethods.values().forEach(MethodItem::freeze);
     }
 
     @Override

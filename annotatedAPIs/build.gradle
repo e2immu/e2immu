@@ -22,8 +22,8 @@ version '0.1.2'
 group 'org.e2immu'
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_1_8
-    targetCompatibility = JavaVersion.VERSION_1_8
+    sourceCompatibility = JavaVersion.VERSION_16
+    targetCompatibility = JavaVersion.VERSION_16
 }
 
 jar {
@@ -33,9 +33,64 @@ jar {
 
 dependencies {
     implementation group: 'org.e2immu', name: 'e2immu-support', version: '0.1.2'      // LGPL 3.0
+    implementation project(':analyser')
+    implementation project(':analyser-store-uploader')
+    implementation project(':analyser-cli')
 
     implementation group: 'org.slf4j', name: 'slf4j-api', version: '1.7.25'   // MIT X-11 License
+
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.6.0'                           // EPL v2
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
 }
+
+test {
+    useJUnitPlatform()
+}
+
+// ********************************* Generate AnnotationXML from AnnotatedAPI files in annotatedAPIs project
+
+task generateAnnotationXml(type: JavaExec) {
+    group = "Execution"
+    description = "Convert all annotations in the annotatedAPIs to annotation.xml files"
+    classpath = sourceSets.main.runtimeClasspath
+    main = 'org.e2immu.analyser.cli.Main'
+    Set<File> reducedClassPath = sourceSets.main.runtimeClasspath.toList()
+    reducedClassPath += sourceSets.test.runtimeClasspath
+    reducedClassPath.removeIf({ f -> f.path.contains("build/classes") || f.path.contains("build/resources") })
+    args('--classpath=' + reducedClassPath.join(":") + ":jmods/java.base.jmod",
+
+            '--source=non_existing_dir',
+            '--annotated-api-source=src/main/java',
+
+            '-w',
+            '--write-annotation-xml-dir=build/annotations',
+            '--write-annotation-xml-packages=java.,org.slf4j.',
+            '--read-annotation-xml-packages=none',
+            '--debug=ANNOTATION_XML_WRITER,ANNOTATION_XML_READER,CONFIGURATION'
+    )
+}
+
+
+// TODO no idea how to make the same file, but then with a .jar extension
+// the Jar task 'hijacks' the Zip, and adds other content :-(
+
+task annotationXmlJar(type: Zip) {
+    from(buildDir.path + "/annotations/")
+    archivesBaseName = buildDir.path + "/annotation-xml"
+    archiveExtension.set("zip")
+
+    dependsOn generateAnnotationXml
+}
+
+def annotationXmlJar = file(buildDir.path + "/annotation-xml-" + project.version + ".jar")
+
+// TODO upload the annotation-xml jar/zip file
+def annotationXmlArtifact = artifacts.add('archives', annotationXmlJar, {
+    type ('jar')
+    builtBy ('annotationXmlJar')
+})
+
+// ********************************* Publishing
 
 publishing {
     repositories {
