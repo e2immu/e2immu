@@ -112,6 +112,9 @@ public class AnnotationXmlReader implements AnnotationStore {
                 String name = node.getAttributes().getNamedItem("name").getNodeValue();
 
                 HasAnnotations theItem;
+                String companionType = null;
+                String companionName = null;
+
                 Matcher typeMatcher = TYPE.matcher(name);
                 if (typeMatcher.matches()) {
                     theItem = typeItem(typeItemMap, typeMatcher.group());
@@ -136,9 +139,9 @@ public class AnnotationXmlReader implements AnnotationStore {
                             MethodItem methodItem = methodItem(typeItem, methodName, methodType);
                             String companion = methodMatcher.group(5);
                             if (companion != null) {
-                                String companionType = methodMatcher.group(6);
-                                String companionName = methodMatcher.group(7);
-                                theItem = companionMethodItem(methodItem, companionName, companionType);
+                                companionType = methodMatcher.group(6);
+                                companionName = methodMatcher.group(7);
+                                theItem = methodItem;
                             } else {
                                 String paramIndex = methodMatcher.group(4);
                                 if (paramIndex != null) {
@@ -162,15 +165,17 @@ public class AnnotationXmlReader implements AnnotationStore {
                 // now read the annotations
                 NodeList annotationNodes = node.getChildNodes();
                 for (int j = 0; j < annotationNodes.getLength(); j++) {
-                    Node annotationNode = annotationNodes.item(j);
-                    if (annotationNode.getNodeType() == Node.ELEMENT_NODE) {
-                        Node nameAttribute = annotationNode.getAttributes() == null ? null : annotationNode.getAttributes().getNamedItem("name");
+                    Node subNode = annotationNodes.item(j);
+                    if (subNode.getNodeType() == Node.ELEMENT_NODE &&
+                            "annotation".equalsIgnoreCase(subNode.getNodeName())) {
+                        Node nameAttribute = subNode.getAttributes() == null ? null :
+                                subNode.getAttributes().getNamedItem("name");
                         if (nameAttribute != null) {
                             String annotationType = nameAttribute.getNodeValue();
                             Annotation.Builder annotationBuilder = new Annotation.Builder(annotationType);
 
                             countAnnotations++;
-                            NodeList valueNodes = annotationNode.getChildNodes();
+                            NodeList valueNodes = subNode.getChildNodes();
                             for (int k = 0; k < valueNodes.getLength(); k++) {
                                 Node valueNode = valueNodes.item(k);
                                 if (valueNode.getNodeType() == Node.ELEMENT_NODE && valueNode.getAttributes() != null) {
@@ -191,6 +196,26 @@ public class AnnotationXmlReader implements AnnotationStore {
                             theItem.getAnnotations().add(annotationBuilder.build());
                         } else {
                             LOGGER.warn("Attribute 'name' missing?");
+                        }
+                    } else if (subNode.getNodeType() == Node.ELEMENT_NODE &&
+                            "definition".equalsIgnoreCase(subNode.getNodeName())) {
+                        Node paramNamesAttribute = subNode.getAttributes() == null ? null :
+                                subNode.getAttributes().getNamedItem("paramNames");
+                        String paramNamesCsv;
+                        if (paramNamesAttribute != null) {
+                            paramNamesCsv = paramNamesAttribute.getNodeValue();
+                        } else {
+                            paramNamesCsv = "";
+                        }
+                        String function = subNode.getTextContent();
+                        if (function == null) {
+                            LOGGER.error("No function value in {}", companionName);
+                        } else {
+                            assert theItem instanceof MethodItem;
+                            assert companionName != null;
+                            assert companionType != null;
+                            MethodItem methodItem = (MethodItem) theItem;
+                            addCompanionMethodItem(methodItem, companionName, companionType, paramNamesCsv, function);
                         }
                     }
                 }
@@ -216,15 +241,18 @@ public class AnnotationXmlReader implements AnnotationStore {
         return methodItem;
     }
 
-
-    private static MethodItem companionMethodItem(MethodItem methodItem, String companionName, String companionReturnType) {
+    private static void addCompanionMethodItem(MethodItem methodItem,
+                                               String companionName,
+                                               String companionReturnType,
+                                               String parameterNamesCsv,
+                                               String function) {
         MethodItem companionItem = methodItem.getCompanionMethod(companionName);
-        if (companionItem == null) {
-            companionItem = new MethodItem(companionName, companionReturnType);
-            methodItem.putCompanionMethod(companionItem);
-            log(ANNOTATION_XML_READER, "Created companion method {} returns {}", companionName, companionReturnType);
+        if (companionItem != null) {
+            throw new UnsupportedOperationException("?duplicating " + companionName);
         }
-        return methodItem;
+        companionItem = new MethodItem(companionName, companionReturnType, parameterNamesCsv, function);
+        methodItem.putCompanionMethod(companionItem);
+        log(ANNOTATION_XML_READER, "Created companion method {} returns {}", companionName, companionReturnType);
     }
 
     private static FieldItem fieldItem(TypeItem typeItem, String fieldName) {

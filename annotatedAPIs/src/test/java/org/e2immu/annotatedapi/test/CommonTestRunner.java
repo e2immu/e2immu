@@ -14,7 +14,6 @@
 
 package org.e2immu.annotatedapi.test;
 
-import org.e2immu.analyser.config.AnnotationXmlConfiguration;
 import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.config.InputConfiguration;
 import org.e2immu.analyser.config.UploadConfiguration;
@@ -35,8 +34,8 @@ import static org.e2immu.analyser.util.Logger.LogTarget.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
-public abstract class CommonTest {
-    private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(CommonTest.class);
+public abstract class CommonTestRunner {
+    private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(CommonTestRunner.class);
 
     public static final String TESTS = "org.e2immu.annotatedapi.testexample";
 

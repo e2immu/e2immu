@@ -19,7 +19,7 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.util.List;
 
-public class Test_Set extends CommonTest {
+public class Test_Set extends CommonTestRunner {
 
     @Test
     public void test_0() throws IOException {

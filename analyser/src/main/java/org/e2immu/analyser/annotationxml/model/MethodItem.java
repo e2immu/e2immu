@@ -36,10 +36,14 @@ public class MethodItem extends HasAnnotations implements Comparable<MethodItem>
     public final String paramNamesCsv;
 
     public MethodItem(String name, String returnType) {
+        this(name, returnType, "", "");
+    }
+
+    public MethodItem(String name, String returnType, String paramNamesCsv, String companionValue) {
         this.name = name;
         this.returnType = returnType;
-        companionValue = "";
-        paramNamesCsv = "";
+        this.companionValue = companionValue;
+        this.paramNamesCsv = paramNamesCsv;
     }
 
     //@Mark("freeze")
@@ -113,6 +117,11 @@ public class MethodItem extends HasAnnotations implements Comparable<MethodItem>
         parameterItems.forEach(ParameterItem::freeze);
         companionMethods = Map.copyOf(companionMethods);
         companionMethods.values().forEach(MethodItem::freeze);
+    }
+
+    @Override
+    public String toString() {
+        return "MethodItem " + name;
     }
 
     @Override
