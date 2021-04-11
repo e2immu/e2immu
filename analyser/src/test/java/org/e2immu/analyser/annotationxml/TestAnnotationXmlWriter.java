@@ -64,7 +64,7 @@ public class TestAnnotationXmlWriter {
                 .addDebugLogTargets(List.of(ANNOTATION_XML_READER, ANNOTATION_XML_WRITER)
                         .stream().map(Enum::toString).collect(Collectors.joining(",")))
                 .setInputConfiguration(inputConfigurationBuilder.build())
-                .setWriteAnnotationXmConfiguration(annotationXml.build())
+                .setAnnotationXmConfiguration(annotationXml.build())
                 .build();
         configuration.initializeLoggers();
         List<SortedType> res = new Parser(configuration).run().annotatedAPISortedTypes();

@@ -381,7 +381,7 @@ public class MyClassVisitor extends ClassVisitor {
                 if (methodItem != null && !methodItem.getAnnotations().isEmpty()) {
                     jetBrainsAnnotationTranslator.mapAnnotations(methodItem.getAnnotations(), methodInspectionBuilder);
                     for (MethodItem companionMethod : methodItem.getCompanionMethods()) {
-                        addCompanionMethod(currentType, methodInspectionBuilder, companionMethod);
+                        CreateCompanionMethod.add(currentType, methodInspectionBuilder, companionMethod);
                     }
                 }
             }
@@ -389,15 +389,6 @@ public class MyClassVisitor extends ClassVisitor {
 
         return new MyMethodVisitor(methodContext, methodInspectionBuilder, typeInspectionBuilder, types,
                 lastParameterIsVarargs, methodItem, jetBrainsAnnotationTranslator);
-    }
-
-    private void addCompanionMethod(TypeInfo currentType,
-                                    MethodInspectionImpl.Builder methodInspectionBuilder,
-                                    MethodItem companionMethod) {
-        String name = companionMethod.name.substring(0, companionMethod.name.indexOf('('));
-        MethodInspectionImpl.Builder companionBuilder = new MethodInspectionImpl.Builder(currentType, name);
-        companionBuilder.setStatic(true);
-        // FIXME more code
     }
 
     @Override

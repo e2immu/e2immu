@@ -113,6 +113,9 @@ public class AnnotationXmlWriter {
     }
 
     private static void addType(Document document, Element root, TypeItem typeItem) {
+        log(ANNOTATION_XML_WRITER, "Type {} has {} annots, {} fields, {} methods",
+                typeItem.name, typeItem.getAnnotations().size(),
+                typeItem.getFieldItems().size(), typeItem.getMethodItems().size());
         if (!typeItem.getAnnotations().isEmpty()) {
             emit(document, root, typeItem.name, typeItem.getAnnotations(), null, null);
         }
@@ -130,8 +133,8 @@ public class AnnotationXmlWriter {
     }
 
     private static void addMethod(Document document, Element root, String typeName, MethodItem methodItem) {
-        String methodName = typeName + (methodItem.returnType != null ? " " + methodItem.returnType : "")
-                + " " + methodItem.name;
+        String returnType = methodItem.returnType != null ? (" " + methodItem.returnType) : "";
+        String methodName = typeName + returnType + " " + methodItem.name;
         if (!methodItem.getAnnotations().isEmpty()) {
             emit(document, root, methodName, methodItem.getAnnotations(), null, null);
         }
@@ -141,11 +144,14 @@ public class AnnotationXmlWriter {
         }
         for (MethodItem companionItem : methodItem.getCompanionMethods()) {
             // companions don't have annotations; we also make it obvious they belong to a method
-            String companionName = (companionItem.returnType != null ? companionItem.returnType + " " : "")
-                    + companionItem.name;
+            String companionName = (companionItem.isStatic ? "static " : "") +
+                    (companionItem.typeParametersCsv.isEmpty() ? "" : "<" + companionItem.typeParametersCsv + "> ") +
+                    (companionItem.returnType != null ? companionItem.returnType + " " : "") +
+                    companionItem.name;
             emit(document, root, methodName + " :: " + companionName, List.of(),
                     companionItem.companionValue, companionItem.paramNamesCsv);
         }
+        assert !methodName.contains("  ");
     }
 
     private static void addParameter(Document document, Element root, String methodName, ParameterItem parameterItem) {

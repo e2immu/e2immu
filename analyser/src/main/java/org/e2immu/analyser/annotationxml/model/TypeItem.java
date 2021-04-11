@@ -17,20 +17,15 @@ package org.e2immu.analyser.annotationxml.model;
 import org.e2immu.analyser.model.FieldInfo;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.TypeInfo;
-import org.e2immu.analyser.model.TypeInspection;
-import org.e2immu.annotation.E2Immutable;
-import org.e2immu.annotation.Mark;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-@E2Immutable(after = "freeze")
 public class TypeItem extends HasAnnotations implements Comparable<TypeItem> {
     public final String name;
 
-    //@Mark("freeze")
     public TypeItem(TypeInfo typeInfo) {
         this.name = typeInfo.fullyQualifiedName;
         boolean haveTypeInspection = typeInfo.typeInspection.isSet();
@@ -40,7 +35,7 @@ public class TypeItem extends HasAnnotations implements Comparable<TypeItem> {
                                 .map(Map.Entry::getKey)
                                 .collect(Collectors.toList()) : List.of());
         if (haveTypeInspection) {
-            for (MethodInfo methodInfo : typeInfo.typeInspection.get().methods(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM)) {
+            for (MethodInfo methodInfo : typeInfo.typeInspection.get().methodsAndConstructors()) {
                 MethodItem methodItem = new MethodItem(methodInfo, null);
                 methodItems.put(methodItem.name, methodItem);
             }
@@ -59,7 +54,6 @@ public class TypeItem extends HasAnnotations implements Comparable<TypeItem> {
     private Map<String, MethodItem> methodItems = new HashMap<>();
     private Map<String, FieldItem> fieldItems = new HashMap<>();
 
-    @Mark("freeze")
     public void freeze() {
         super.freeze();
         methodItems = Map.copyOf(methodItems);

@@ -197,7 +197,7 @@ public class Configuration {
         }
 
         @Fluent
-        public Builder setWriteAnnotationXmConfiguration(AnnotationXmlConfiguration annotationXmConfiguration) {
+        public Builder setAnnotationXmConfiguration(AnnotationXmlConfiguration annotationXmConfiguration) {
             this.annotationXmlConfiguration = annotationXmConfiguration;
             return this;
         }

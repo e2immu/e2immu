@@ -12,17 +12,25 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.annotatedapi.test;
+package org.e2immu.annotatedapi.testexample;
 
-import org.junit.jupiter.api.Test;
+import org.e2immu.annotation.Constant;
+import org.e2immu.annotation.Independent;
+import org.e2immu.annotation.NotModified;
 
-import java.io.IOException;
-import java.util.List;
+import java.util.*;
 
-public class Test_Set extends CommonTestRunner {
+/*
+test example which renders no errors/warnings IF used correctly with AnnotatedAPIs converted into AnnotatedXML
+ */
+public class List_0 {
 
-    @Test
-    public void test_0() throws IOException {
-        test(List.of("Set_0"), 0, 0);
+    @Constant("4")
+    static int test() {
+        List<String> list = new ArrayList<>();
+        if (list.size() > 0) { // evaluates to constant
+            return 3; // never reached!
+        }
+        return list.size() + 4;
     }
 }

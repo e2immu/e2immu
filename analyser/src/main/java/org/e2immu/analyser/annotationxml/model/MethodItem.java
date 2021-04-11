@@ -14,10 +14,7 @@
 
 package org.e2immu.analyser.annotationxml.model;
 
-import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.MethodInfo;
-import org.e2immu.analyser.model.ParameterInfo;
-import org.e2immu.analyser.model.Statement;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ReturnStatement;
@@ -34,47 +31,68 @@ public class MethodItem extends HasAnnotations implements Comparable<MethodItem>
     private Map<String, MethodItem> companionMethods = new HashMap<>();
     public final String companionValue;
     public final String paramNamesCsv;
+    public final boolean isStatic;
+    public final String typeParametersCsv;
 
     public MethodItem(String name, String returnType) {
-        this(name, returnType, "", "");
+        this(false, "", returnType, name, "", "");
     }
 
-    public MethodItem(String name, String returnType, String paramNamesCsv, String companionValue) {
-        this.name = name;
-        this.returnType = returnType;
+    public MethodItem(boolean isStatic,
+                      String typeParametersCsv,
+                      String returnType,
+                      String name,
+                      String paramNamesCsv,
+                      String companionValue) {
+        this.isStatic = isStatic;
+        this.typeParametersCsv = typeParametersCsv;
+        this.name = Objects.requireNonNull(name);
+        this.returnType = checkReturnType(returnType);
         this.companionValue = companionValue;
         this.paramNamesCsv = paramNamesCsv;
     }
 
-    //@Mark("freeze")
+    private static String checkReturnType(String s) {
+        assert s == null || s.trim().equals(s) && s.length() > 0;
+        return s;
+    }
+
     public MethodItem(MethodInfo methodInfo, Expression companionExpression) {
-        returnType = methodInfo.returnType().print();
+        returnType = methodInfo.isConstructor ? null :
+                methodInfo.hasReturnValue() ? checkReturnType(methodInfo.returnType().print()) : "void";
         String parameters;
         if (methodInfo.methodInspection.isSet()) {
+            MethodInspection inspection = methodInfo.methodInspection.get();
             List<String> parameterTypes = new ArrayList<>();
-            for (ParameterInfo parameterInfo : methodInfo.methodInspection.get().getParameters()) {
+            for (ParameterInfo parameterInfo : inspection.getParameters()) {
                 ParameterItem parameterItem = new ParameterItem(parameterInfo);
                 parameterItems.add(parameterItem);
                 parameterTypes.add(parameterInfo.parameterizedType.print());
             }
             parameters = String.join(", ", parameterTypes);
-            paramNamesCsv = methodInfo.methodInspection.get().getParameters().stream()
+            paramNamesCsv = inspection.getParameters().stream()
                     .map(ParameterInfo::name).collect(Collectors.joining(","));
             if (companionExpression != null) {
                 companionValue = companionExpression.minimalOutput();
             } else {
                 companionValue = "";
-                for (MethodInfo companionMethod : methodInfo.methodInspection.get().getCompanionMethods().values()) {
+                for (MethodInfo companionMethod : inspection.getCompanionMethods().values()) {
                     MethodItem companionItem = new MethodItem(companionMethod, extractExpression(companionMethod));
                     companionMethods.put(companionItem.name, companionItem);
                 }
             }
+            isStatic = inspection.isStatic();
+            typeParametersCsv = inspection.getTypeParameters().stream()
+                    .map(tp -> tp.output(Qualification.FULLY_QUALIFIED_NAME).toString())
+                    .collect(Collectors.joining(","));
         } else {
             parameters = "";
             companionValue = "";
             paramNamesCsv = "";
+            isStatic = false; // NOT RELEVANT
+            typeParametersCsv = ""; // NOT RELEVANT
         }
-        name = methodInfo.name + "(" + parameters + ")";
+        name = checkReturnType(methodInfo.name + "(" + parameters + ")");
         addAnnotations(methodInfo.methodInspection.isSet() ? methodInfo.methodInspection.get().getAnnotations() : List.of(),
                 methodInfo.methodAnalysis.isSet() ?
                         methodInfo.methodAnalysis.get().getAnnotationStream().filter(e -> e.getValue().isPresent())

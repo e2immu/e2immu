@@ -119,7 +119,7 @@ public class Main {
             splitAndAdd(annotationXmlWritePackages, COMMA, xmlBuilder::addAnnotationXmlWritePackages);
             String[] annotationXmlReadPackages = cmd.getOptionValues(READ_ANNOTATION_XML_PACKAGES);
             splitAndAdd(annotationXmlReadPackages, COMMA, xmlBuilder::addAnnotationXmlReadPackages);
-            builder.setWriteAnnotationXmConfiguration(xmlBuilder.build());
+            builder.setAnnotationXmConfiguration(xmlBuilder.build());
 
             AnnotatedAPIConfiguration.Builder apiBuilder = new AnnotatedAPIConfiguration.Builder();
             boolean writeAnnotatedAPIs = cmd.hasOption(WRITE_ANNOTATED_API);
@@ -279,7 +279,7 @@ public class Main {
         builder.setInputConfiguration(inputConfigurationFromProperties(analyserProperties));
         builder.setUploadConfiguration(uploadConfigurationFromProperties(analyserProperties));
         builder.setAnnotatedAPIConfiguration(annotatedAPIConfigurationFromProperties(analyserProperties));
-        builder.setWriteAnnotationXmConfiguration(annotationXmlConfigurationFromProperties(analyserProperties));
+        builder.setAnnotationXmConfiguration(annotationXmlConfigurationFromProperties(analyserProperties));
 
         setBooleanProperty(analyserProperties, QUIET, builder::setQuiet);
         setBooleanProperty(analyserProperties, IGNORE_ERRORS, builder::setIgnoreErrors);

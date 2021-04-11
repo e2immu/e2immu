@@ -14,6 +14,7 @@
 
 package org.e2immu.annotatedapi.test;
 
+import org.e2immu.analyser.config.AnnotationXmlConfiguration;
 import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.config.InputConfiguration;
 import org.e2immu.analyser.config.UploadConfiguration;
@@ -52,8 +53,12 @@ public abstract class CommonTestRunner {
 
         testClasses.forEach(className -> inputConfigurationBuilder.addRestrictSourceToPackages(TESTS + "." + className));
 
+        AnnotationXmlConfiguration axc = new AnnotationXmlConfiguration.Builder()
+                .addAnnotationXmlReadPackages("java.", "org.slf4j")
+                .build();
         Configuration configuration = new Configuration.Builder()
                 .setInputConfiguration(inputConfigurationBuilder.build())
+                .setAnnotationXmConfiguration(axc)
                 .setUploadConfiguration(new UploadConfiguration.Builder()
                         .setUpload(true).build())
                 .addDebugLogTargets(INSPECT + "," + ANALYSER + "," + CONFIGURATION)

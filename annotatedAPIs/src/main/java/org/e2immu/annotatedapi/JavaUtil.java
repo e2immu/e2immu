@@ -70,7 +70,7 @@ public class JavaUtil extends AnnotatedAPI {
         @Independent
         boolean addAll(@Dependent2 @NotNull1 java.util.Collection<? extends E> collection) { return true; }
 
-        boolean clear$Clear$Size(int i) { return i == 0; }
+        static boolean clear$Clear$Size(int i) { return i == 0; }
         @Modified
         void clear() { }
 

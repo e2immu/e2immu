@@ -78,4 +78,14 @@ public class TestAnnotationXmlReader {
                 .sorted()
                 .collect(Collectors.joining("\n")));
     }
+
+    @Test
+    public void testPattern() {
+        assertTrue(AnnotationXmlReader.METHOD_WITH_COMPANION
+                .matcher("java.util.ArrayList ArrayList() :: boolean ArrayList$Modification$Size(int)").matches());
+        assertTrue(AnnotationXmlReader.METHOD
+                .matcher("java.util.ArrayList ArrayList()").matches());
+        assertTrue(AnnotationXmlReader.METHOD
+                .matcher("boolean ArrayList$Modification$Size(int)").matches());
+    }
 }
