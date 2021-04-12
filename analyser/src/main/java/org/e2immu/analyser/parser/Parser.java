@@ -81,7 +81,7 @@ public class Parser {
             sortedAnnotatedAPITypes = List.of();
         } else {
             sortedAnnotatedAPITypes = inspectAndResolve(input.annotatedAPIs(), input.annotatedAPITypes(),
-                    configuration.annotatedAPIConfiguration.reportWarnings, true);
+                    configuration.annotatedAPIConfiguration.reportWarnings(), true);
         }
 
         // and the the inspection and resolution of Java sources (Java parser)
@@ -243,6 +243,27 @@ public class Parser {
         assert types.stream().allMatch(typeInfo -> typeInfo.typeAnalysis.isSet() &&
                 typeInfo.typeInspection.get().methodsAndConstructors(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM)
                         .allMatch(methodInfo -> methodInfo.methodAnalysis.isSet())) : "All method analysis set";
+    }
+
+    public record ComposerData(Collection<TypeInfo> primaryTypes, TypeMap typeMap) {
+    }
+
+    public ComposerData primaryTypesForAnnotatedAPIComposing() {
+        TypeMap typeMap = input.globalTypeContext().typeMapBuilder.build();
+        Set<TypeInfo> typesToWrite = new HashSet<>();
+        // ensure that all types in the packages to write have been byte code inspected
+        for (String packagePrefix : configuration.annotatedAPIConfiguration.writeAnnotatedAPIsPackages()) {
+            String[] packagePrefixArray = packagePrefix.split("\\.");
+            boolean allowSubPackages = packagePrefix.endsWith(".");
+            typeMap.visit(packagePrefixArray, (prefix, types) -> {
+                if (allowSubPackages || packagePrefixArray.length == prefix.length) {
+                    types.stream().filter(t ->
+                            t.typeInspection.isSet() &&
+                            t.isPrimaryType() && t.isPublic()).forEach(typesToWrite::add);
+                }
+            });
+        }
+        return new ComposerData(typesToWrite, typeMap);
     }
 
 

@@ -45,7 +45,7 @@ public class CreateCompanionMethod {
 
         MethodInspectionImpl.Builder companionBuilder = new MethodInspectionImpl.Builder(currentType, name);
         companionBuilder.setStatic(true);
-        // FIXME more code
+        // FIXME more code; ticket https://github.com/e2immu/e2immu/issues/39
 
 
     }

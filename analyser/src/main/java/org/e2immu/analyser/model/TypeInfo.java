@@ -14,7 +14,7 @@
 
 package org.e2immu.analyser.model;
 
-import org.e2immu.analyser.model.expression.*;
+import org.e2immu.analyser.model.expression.NewObject;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.output.*;
 import org.e2immu.analyser.parser.InspectionProvider;
@@ -310,7 +310,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         TypeInspection inspection = typeInspection.get();
         if (inspection.isStatic()) return this;
         // first go to enclosing type
-        if(packageNameOrEnclosingType.isRight()) {
+        if (packageNameOrEnclosingType.isRight()) {
             return packageNameOrEnclosingType.getRight().topOfInterdependentClassHierarchy();
         }
         // or to parent type, but only if in the same file TODO
@@ -457,6 +457,10 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
 
     public boolean isPrivate() {
         return typeInspection.get().modifiers().contains(TypeModifier.PRIVATE);
+    }
+
+    public boolean isPublic() {
+        return typeInspection.get().modifiers().contains(TypeModifier.PUBLIC);
     }
 
     public boolean isEnclosedIn(TypeInfo typeInfo) {

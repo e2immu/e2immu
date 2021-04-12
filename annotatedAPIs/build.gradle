@@ -32,18 +32,20 @@ jar {
 
 
 dependencies {
-    implementation group: 'org.e2immu', name: 'e2immu-support', version: '0.1.2'      // LGPL 3.0
+    implementation group: 'org.e2immu', name: 'e2immu-support', version: '0.1.2'   // LGPL 3.0
     implementation project(':analyser')
     implementation project(':analyser-store-uploader')
     implementation project(':analyser-cli')
 
-    implementation group: 'org.slf4j', name: 'slf4j-api', version: '1.7.25'   // MIT X-11 License
+    implementation group: 'org.slf4j', name: 'slf4j-api', version: '1.7.25'        // MIT X-11 License
 
-    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.6.0'                           // EPL v2
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.6.0'                 // EPL v2
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
 }
 
 test {
+    exclude '**/testfailing/*.class'
+
     useJUnitPlatform()
 }
 

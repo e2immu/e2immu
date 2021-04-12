@@ -18,51 +18,18 @@ import org.e2immu.annotation.Container;
 import org.e2immu.annotation.E2Immutable;
 import org.e2immu.annotation.Fluent;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 @E2Immutable
-public class AnnotatedAPIConfiguration {
+public record AnnotatedAPIConfiguration(boolean reportWarnings, boolean writeAnnotatedAPIs,
+                                        List<String> writeAnnotatedAPIsPackages,
+                                        String writeAnnotatedAPIsDir, String destinationPackage,
+                                        boolean analyse) {
 
-    public final boolean reportWarnings;
-
-    // write AA
-    public final boolean writeAnnotatedAPIs;
-    public final List<String> writeAnnotatedAPIsPackages;
-    public final String writeAnnotatedAPIsDir;
-
-    public AnnotatedAPIConfiguration(
-            boolean reportWarnings,
-            boolean writeAnnotatedAPIs,
-            List<String> writeAnnotatedAPIsPackages,
-            String writeAnnotatedAPIsDir) {
-        this.writeAnnotatedAPIs = writeAnnotatedAPIs;
-        this.writeAnnotatedAPIsPackages = writeAnnotatedAPIsPackages;
-        this.writeAnnotatedAPIsDir = writeAnnotatedAPIsDir;
-        this.reportWarnings = reportWarnings;
-    }
-
-    @Override
-    public String toString() {
-        return new StringJoiner("\n")
-                .add("write annotatedAPIs: " + writeAnnotatedAPIs)
-                .add("write annotatedAPIs restrict to packages: " + writeAnnotatedAPIsPackages)
-                .add("write annotatedAPIs directory: '" + writeAnnotatedAPIsDir + "'") + "\n";
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        AnnotatedAPIConfiguration that = (AnnotatedAPIConfiguration) o;
-        return writeAnnotatedAPIs == that.writeAnnotatedAPIs &&
-                writeAnnotatedAPIsPackages.equals(that.writeAnnotatedAPIsPackages) &&
-                Objects.equals(writeAnnotatedAPIsDir, that.writeAnnotatedAPIsDir);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(writeAnnotatedAPIs, writeAnnotatedAPIsPackages, writeAnnotatedAPIsDir);
-    }
+    public static final String DEFAULT_DESTINATION_PACKAGE = "annotatedapi";
+    public static final String DEFAULT_DESTINATION_DIRECTORY = "build/annotatedAPIs";
 
     @Container
     public static class Builder {
@@ -70,18 +37,29 @@ public class AnnotatedAPIConfiguration {
         private boolean writeAnnotatedAPIs;
         private final List<String> writeAnnotatedAPIsPackages = new ArrayList<>();
         private String writeAnnotatedAPIsDir;
-
+        private String destinationPackage;
+        private boolean analyse;
 
         public AnnotatedAPIConfiguration build() {
             return new AnnotatedAPIConfiguration(reportWarnings,
                     writeAnnotatedAPIs,
                     List.copyOf(writeAnnotatedAPIsPackages),
-                    writeAnnotatedAPIsDir);
+                    writeAnnotatedAPIsDir == null || writeAnnotatedAPIsDir.isBlank() ?
+                            DEFAULT_DESTINATION_DIRECTORY : writeAnnotatedAPIsDir,
+                    destinationPackage == null || destinationPackage.isBlank() ?
+                            DEFAULT_DESTINATION_PACKAGE : destinationPackage.trim(),
+                    analyse);
         }
 
         @Fluent
         public Builder setWriteAnnotatedAPIsDir(String writeAnnotatedAPIsDir) {
             this.writeAnnotatedAPIsDir = writeAnnotatedAPIsDir;
+            return this;
+        }
+
+        @Fluent
+        public Builder setDestinationPackage(String destinationPackage) {
+            this.destinationPackage = destinationPackage;
             return this;
         }
 
@@ -94,6 +72,12 @@ public class AnnotatedAPIConfiguration {
         @Fluent
         public Builder setReportWarnings(boolean reportWarnings) {
             this.reportWarnings = reportWarnings;
+            return this;
+        }
+
+        @Fluent
+        public Builder setAnalyse(boolean analyse) {
+            this.analyse = analyse;
             return this;
         }
 

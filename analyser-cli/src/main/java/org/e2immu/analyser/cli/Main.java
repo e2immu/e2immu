@@ -15,6 +15,7 @@
 package org.e2immu.analyser.cli;
 
 import org.apache.commons.cli.*;
+import org.e2immu.analyser.annotatedapi.Composer;
 import org.e2immu.analyser.annotationxml.AnnotationXmlWriter;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.TypeInfo;
@@ -25,6 +26,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -42,9 +44,11 @@ public class Main {
     public static final String UPLOAD_URL = "upload-url";
     public static final String UPLOAD = "upload";
     public static final String WRITE_ANNOTATED_API = "write-annotated-api";
+    public static final String WRITE_ANNOTATED_API_ANALYSED = "write-annotated-api-analysed";
     public static final String WRITE_ANNOTATION_XML = "write-annotation-xml";
     public static final String WRITE_ANNOTATION_XML_DIR = "write-annotation-xml-dir";
     public static final String WRITE_ANNOTATED_API_DIR = "write-annotated-api-dir";
+    public static final String WRITE_ANNOTATED_API_DESTINATION_PACKAGE = "write-annotated-api-dir";
     public static final String WRITE_ANNOTATION_XML_PACKAGES = "write-annotation-xml-packages";
     public static final String READ_ANNOTATION_XML_PACKAGES = "read-annotation-xml-packages";
     public static final String WRITE_ANNOTATED_API_PACKAGES = "write-annotated-api-packages";
@@ -124,10 +128,14 @@ public class Main {
             AnnotatedAPIConfiguration.Builder apiBuilder = new AnnotatedAPIConfiguration.Builder();
             boolean writeAnnotatedAPIs = cmd.hasOption(WRITE_ANNOTATED_API);
             apiBuilder.setAnnotatedAPIs(writeAnnotatedAPIs);
+            boolean analyseAnnotatedAPIs = cmd.hasOption(WRITE_ANNOTATED_API_ANALYSED);
+            apiBuilder.setAnalyse(analyseAnnotatedAPIs);
             apiBuilder.setWriteAnnotatedAPIsDir(cmd.getOptionValue(WRITE_ANNOTATED_API_DIR));
+            apiBuilder.setDestinationPackage(cmd.getOptionValue(WRITE_ANNOTATED_API_DESTINATION_PACKAGE));
             String[] annotatedAPIPackages = cmd.getOptionValues(WRITE_ANNOTATED_API_PACKAGES);
             splitAndAdd(annotatedAPIPackages, COMMA, apiBuilder::addAnnotatedAPIPackages);
-            builder.setAnnotatedAPIConfiguration(apiBuilder.build());
+            AnnotatedAPIConfiguration api = apiBuilder.build();
+            builder.setAnnotatedAPIConfiguration(api);
 
             Configuration configuration = builder.build();
             configuration.initializeLoggers();
@@ -135,18 +143,30 @@ public class Main {
             log(CONFIGURATION, "Configuration:\n{}", configuration);
 
             Parser parser = new Parser(configuration);
-            Parser.RunResult runResult = parser.run();
-            Set<TypeInfo> allTypes = configuration.annotationXmlConfiguration.writeAnnotationXml ||
-                    configuration.uploadConfiguration.upload ? runResult.allTypes() : Set.of();
 
-            if (configuration.annotationXmlConfiguration.writeAnnotationXml) {
-                AnnotationXmlWriter.write(configuration.annotationXmlConfiguration, allTypes);
-            }
-            if (configuration.uploadConfiguration.upload) {
-                AnnotationUploader annotationUploader = new AnnotationUploader(configuration.uploadConfiguration,
-                        parser.getTypeContext().typeMapBuilder.getE2ImmuAnnotationExpressions());
-                Map<String, String> map = annotationUploader.createMap(allTypes);
-                annotationUploader.writeMap(map);
+            if (api.writeAnnotatedAPIs()) {
+                if (api.analyse()) {
+                    throw new UnsupportedOperationException("Not yet implemented!");
+                }
+                Parser.ComposerData composerData = parser.primaryTypesForAnnotatedAPIComposing();
+                Composer composer = new Composer(composerData.typeMap(),
+                        api.destinationPackage());
+                Collection<TypeInfo> apiTypes = composer.compose(composerData.primaryTypes());
+                composer.write(apiTypes, api.writeAnnotatedAPIsDir());
+            } else {
+                Parser.RunResult runResult = parser.run();
+                Set<TypeInfo> allTypes = configuration.annotationXmlConfiguration.writeAnnotationXml ||
+                        configuration.uploadConfiguration.upload ? runResult.allTypes() : Set.of();
+
+                if (configuration.annotationXmlConfiguration.writeAnnotationXml) {
+                    AnnotationXmlWriter.write(configuration.annotationXmlConfiguration, allTypes);
+                }
+                if (configuration.uploadConfiguration.upload) {
+                    AnnotationUploader annotationUploader = new AnnotationUploader(configuration.uploadConfiguration,
+                            parser.getTypeContext().typeMapBuilder.getE2ImmuAnnotationExpressions());
+                    Map<String, String> map = annotationUploader.createMap(allTypes);
+                    annotationUploader.writeMap(map);
+                }
             }
         } catch (ParseException parseException) {
             parseException.printStackTrace();
@@ -258,6 +278,10 @@ public class Main {
 
         options.addOption("a", WRITE_ANNOTATED_API, false, "Write annotated API files.");
         options.addOption(Option.builder()
+                .longOpt(WRITE_ANNOTATED_API_ANALYSED)
+                .desc("Create annotated API files from analysed Java sources, rather than inspected byte-code." +
+                        "Default false.").build());
+        options.addOption(Option.builder()
                 .longOpt(WRITE_ANNOTATED_API_PACKAGES)
                 .hasArg().argName("PACKAGES")
                 .desc("A comma-separated list of package names for" +
@@ -268,9 +292,12 @@ public class Main {
                 .longOpt(WRITE_ANNOTATED_API_DIR)
                 .hasArg().argName("DIR")
                 .desc("Alternative location to write the annotated API files." +
-                        " The default is the user working directory set by the Java System property 'user.dir', currently '"
-                        + System.getProperty("user.dir") + "'.").build());
-
+                        " The default is '" + AnnotatedAPIConfiguration.DEFAULT_DESTINATION_DIRECTORY + "'").build());
+        options.addOption(Option.builder()
+                .longOpt(WRITE_ANNOTATED_API_DESTINATION_PACKAGE)
+                .hasArg().argName("DIR")
+                .desc("Destination package for annotated API files to be written. Default: '" +
+                        AnnotatedAPIConfiguration.DEFAULT_DESTINATION_PACKAGE + "'.").build());
         return options;
     }
 

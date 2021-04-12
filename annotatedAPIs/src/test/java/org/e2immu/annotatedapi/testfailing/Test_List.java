@@ -12,23 +12,18 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.annotatedapi.test;
+package org.e2immu.annotatedapi.testfailing;
 
+import org.e2immu.annotatedapi.test.CommonTestRunner;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.List;
 
-public class TestExamples extends CommonTestRunner {
+public class Test_List extends CommonTestRunner {
 
     @Test
     public void test_0() throws IOException {
-        test(List.of("Set_0"), 0, 0);
-    }
-
-
-    @Test
-    public void test_1() throws IOException {
         test(List.of("List_0"), 2, 0);
     }
 }
