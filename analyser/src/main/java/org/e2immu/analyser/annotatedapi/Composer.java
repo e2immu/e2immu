@@ -39,6 +39,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import static org.e2immu.analyser.inspector.TypeInspectionImpl.InspectionState.BY_HAND;
@@ -76,7 +77,7 @@ public class NameOfPackageWithoutDots {
 public record Composer(TypeMap typeMap, String destinationPackage) {
     private static final Logger LOGGER = LoggerFactory.getLogger(Composer.class);
 
-    public Collection<TypeInfo> compose(Collection<TypeInfo> primaryTypes) {
+    public Collection<TypeInfo> compose(Collection<TypeInfo> primaryTypes, Predicate<WithInspectionAndAnalysis> predicate) {
         Map<String, TypeInspectionImpl.Builder> buildersPerPackage = new HashMap<>();
         for (TypeInfo primaryType : primaryTypes) {
             assert primaryType.isPrimaryType();

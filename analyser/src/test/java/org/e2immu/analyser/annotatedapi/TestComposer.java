@@ -45,7 +45,7 @@ public class TestComposer {
                 .addSources("none")
                 .addClassPath("jmods/java.base.jmod");
         AnnotatedAPIConfiguration annotatedAPIConfiguration = new AnnotatedAPIConfiguration.Builder()
-                .setAnnotatedAPIs(true)
+                .setAnnotatedAPIs(AnnotatedAPIConfiguration.WriteMode.INSPECTED)
                 .addAnnotatedAPIPackages("java.util.", "java.lang")
                 .setWriteAnnotatedAPIsDir("build/annotatedApi")
                 .build();

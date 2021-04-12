@@ -23,32 +23,38 @@ import java.util.Arrays;
 import java.util.List;
 
 @E2Immutable
-public record AnnotatedAPIConfiguration(boolean reportWarnings, boolean writeAnnotatedAPIs,
+public record AnnotatedAPIConfiguration(boolean reportWarnings,
+                                        WriteMode writeAnnotatedAPIs,
                                         List<String> writeAnnotatedAPIsPackages,
-                                        String writeAnnotatedAPIsDir, String destinationPackage,
-                                        boolean analyse) {
+                                        String writeAnnotatedAPIsDir,
+                                        String destinationPackage) {
 
     public static final String DEFAULT_DESTINATION_PACKAGE = "annotatedapi";
     public static final String DEFAULT_DESTINATION_DIRECTORY = "build/annotatedAPIs";
 
+    public enum WriteMode {
+        DO_NOT_WRITE,  // do not write annotated apis
+        INSPECTED, // use the byte code inspector
+        ANALYSED, // use the analyser to do better than the inspector, pre-populate
+        USAGE, // limited to the methods, types and fields used in the parsed source code.
+    }
+
     @Container
     public static class Builder {
         private boolean reportWarnings;
-        private boolean writeAnnotatedAPIs;
+        private WriteMode writeAnnotatedAPIs;
         private final List<String> writeAnnotatedAPIsPackages = new ArrayList<>();
         private String writeAnnotatedAPIsDir;
         private String destinationPackage;
-        private boolean analyse;
 
         public AnnotatedAPIConfiguration build() {
             return new AnnotatedAPIConfiguration(reportWarnings,
-                    writeAnnotatedAPIs,
+                    writeAnnotatedAPIs == null ? WriteMode.DO_NOT_WRITE : writeAnnotatedAPIs,
                     List.copyOf(writeAnnotatedAPIsPackages),
                     writeAnnotatedAPIsDir == null || writeAnnotatedAPIsDir.isBlank() ?
                             DEFAULT_DESTINATION_DIRECTORY : writeAnnotatedAPIsDir,
                     destinationPackage == null || destinationPackage.isBlank() ?
-                            DEFAULT_DESTINATION_PACKAGE : destinationPackage.trim(),
-                    analyse);
+                            DEFAULT_DESTINATION_PACKAGE : destinationPackage.trim());
         }
 
         @Fluent
@@ -64,7 +70,7 @@ public record AnnotatedAPIConfiguration(boolean reportWarnings, boolean writeAnn
         }
 
         @Fluent
-        public Builder setAnnotatedAPIs(boolean writeAnnotatedAPIs) {
+        public Builder setAnnotatedAPIs(WriteMode writeAnnotatedAPIs) {
             this.writeAnnotatedAPIs = writeAnnotatedAPIs;
             return this;
         }
@@ -72,12 +78,6 @@ public record AnnotatedAPIConfiguration(boolean reportWarnings, boolean writeAnn
         @Fluent
         public Builder setReportWarnings(boolean reportWarnings) {
             this.reportWarnings = reportWarnings;
-            return this;
-        }
-
-        @Fluent
-        public Builder setAnalyse(boolean analyse) {
-            this.analyse = analyse;
             return this;
         }
 

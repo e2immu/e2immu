@@ -58,7 +58,9 @@ public class Parser {
         input = Input.create(configuration);
     }
 
-    public record RunResult(List<SortedType> annotatedAPISortedTypes, List<SortedType> sourceSortedTypes) {
+    public record RunResult(List<SortedType> annotatedAPISortedTypes,
+                            List<SortedType> sourceSortedTypes,
+                            TypeMap typeMap) {
 
         public Set<TypeInfo> allTypes() {
             return Stream.concat(annotatedAPISortedTypes.stream(), sourceSortedTypes.stream())
@@ -99,7 +101,7 @@ public class Parser {
             runPrimaryTypeAnalyser(typeMap, resolvedSourceTypes);
         }
 
-        return new RunResult(sortedAnnotatedAPITypes, resolvedSourceTypes);
+        return new RunResult(sortedAnnotatedAPITypes, resolvedSourceTypes, typeMap);
     }
 
     public List<SortedType> inspectAndResolve(Map<TypeInfo, URL> urls, Trie<TypeInfo> typesForWildcardImport,

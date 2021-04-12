@@ -19,8 +19,11 @@ import org.e2immu.analyser.annotatedapi.Composer;
 import org.e2immu.analyser.annotationxml.AnnotationXmlWriter;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.model.WithInspectionAndAnalysis;
 import org.e2immu.analyser.parser.Parser;
+import org.e2immu.analyser.resolver.SortedType;
 import org.e2immu.analyser.upload.AnnotationUploader;
+import org.e2immu.analyser.usage.CollectUsages;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,6 +33,7 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.CONFIGURATION;
 import static org.e2immu.analyser.util.Logger.log;
@@ -126,10 +130,10 @@ public class Main {
             builder.setAnnotationXmConfiguration(xmlBuilder.build());
 
             AnnotatedAPIConfiguration.Builder apiBuilder = new AnnotatedAPIConfiguration.Builder();
-            boolean writeAnnotatedAPIs = cmd.hasOption(WRITE_ANNOTATED_API);
-            apiBuilder.setAnnotatedAPIs(writeAnnotatedAPIs);
-            boolean analyseAnnotatedAPIs = cmd.hasOption(WRITE_ANNOTATED_API_ANALYSED);
-            apiBuilder.setAnalyse(analyseAnnotatedAPIs);
+            String writeAnnotatedAPIs = cmd.getOptionValue(WRITE_ANNOTATED_API);
+            if (writeAnnotatedAPIs != null) {
+                apiBuilder.setAnnotatedAPIs(AnnotatedAPIConfiguration.WriteMode.valueOf(writeAnnotatedAPIs.trim().toUpperCase()));
+            }
             apiBuilder.setWriteAnnotatedAPIsDir(cmd.getOptionValue(WRITE_ANNOTATED_API_DIR));
             apiBuilder.setDestinationPackage(cmd.getOptionValue(WRITE_ANNOTATED_API_DESTINATION_PACKAGE));
             String[] annotatedAPIPackages = cmd.getOptionValues(WRITE_ANNOTATED_API_PACKAGES);
@@ -144,14 +148,14 @@ public class Main {
 
             Parser parser = new Parser(configuration);
 
-            if (api.writeAnnotatedAPIs()) {
-                if (api.analyse()) {
-                    throw new UnsupportedOperationException("Not yet implemented!");
-                }
+            if (api.writeAnnotatedAPIs() == AnnotatedAPIConfiguration.WriteMode.ANALYSED) {
+                throw new UnsupportedOperationException("Not yet implemented!");
+            }
+            if (api.writeAnnotatedAPIs() == AnnotatedAPIConfiguration.WriteMode.INSPECTED) {
                 Parser.ComposerData composerData = parser.primaryTypesForAnnotatedAPIComposing();
                 Composer composer = new Composer(composerData.typeMap(),
                         api.destinationPackage());
-                Collection<TypeInfo> apiTypes = composer.compose(composerData.primaryTypes());
+                Collection<TypeInfo> apiTypes = composer.compose(composerData.primaryTypes(), w -> true);
                 composer.write(apiTypes, api.writeAnnotatedAPIsDir());
             } else {
                 Parser.RunResult runResult = parser.run();
@@ -166,6 +170,16 @@ public class Main {
                             parser.getTypeContext().typeMapBuilder.getE2ImmuAnnotationExpressions());
                     Map<String, String> map = annotationUploader.createMap(allTypes);
                     annotationUploader.writeMap(map);
+                }
+                if (api.writeAnnotatedAPIs() == AnnotatedAPIConfiguration.WriteMode.USAGE) {
+                    CollectUsages collectUsages = new CollectUsages(api.writeAnnotatedAPIsPackages());
+                    Set<WithInspectionAndAnalysis> usage = collectUsages.collect(runResult.sourceSortedTypes()
+                            .stream().map(SortedType::primaryType).collect(Collectors.toSet()));
+                    Composer composer = new Composer(runResult.typeMap(), api.destinationPackage());
+                    Set<TypeInfo> types = usage.stream().filter(w -> w instanceof TypeInfo)
+                            .map(WithInspectionAndAnalysis::primaryType).collect(Collectors.toSet());
+                    Collection<TypeInfo> apiTypes = composer.compose(types, usage::contains);
+                    composer.write(apiTypes, api.writeAnnotatedAPIsDir());
                 }
             }
         } catch (ParseException parseException) {
@@ -276,11 +290,15 @@ public class Main {
 
         // output options: annotated_api
 
-        options.addOption("a", WRITE_ANNOTATED_API, false, "Write annotated API files.");
+        options.addOption(Option.builder("a")
+                .longOpt(WRITE_ANNOTATED_API)
+                .hasArg(true)
+                .desc("Write mode for annotated API files. Must be one of the following four values: "
+                        + "DO_NOT_WRITE (default), INSPECTED, ANALYSED, USAGE.").build());
         options.addOption(Option.builder()
                 .longOpt(WRITE_ANNOTATED_API_ANALYSED)
                 .desc("Create annotated API files from analysed Java sources, rather than inspected byte-code." +
-                        "Default false.").build());
+                        "Default DO_NOT_WRITE.").build());
         options.addOption(Option.builder()
                 .longOpt(WRITE_ANNOTATED_API_PACKAGES)
                 .hasArg().argName("PACKAGES")
@@ -347,12 +365,20 @@ public class Main {
 
     public static AnnotatedAPIConfiguration annotatedAPIConfigurationFromProperties(Map<String, String> analyserProperties) {
         AnnotatedAPIConfiguration.Builder builder = new AnnotatedAPIConfiguration.Builder();
-        setBooleanProperty(analyserProperties, Main.WRITE_ANNOTATED_API, builder::setAnnotatedAPIs);
+        setWriteModeProperty(analyserProperties, builder::setAnnotatedAPIs);
         setStringProperty(analyserProperties, Main.WRITE_ANNOTATED_API_DIR, builder::setWriteAnnotatedAPIsDir);
         setSplitStringProperty(analyserProperties, Main.COMMA, Main.WRITE_ANNOTATED_API_PACKAGES, builder::addAnnotatedAPIPackages);
         return builder.build();
     }
 
+    static void setWriteModeProperty(Map<String, String> properties,
+                                     Consumer<AnnotatedAPIConfiguration.WriteMode> consumer) {
+        String value = properties.get(Main.WRITE_ANNOTATED_API);
+        if (value != null) {
+            String trimToUpper = value.trim().toUpperCase();
+            consumer.accept(AnnotatedAPIConfiguration.WriteMode.valueOf(trimToUpper));
+        }
+    }
 
     static void setStringProperty(Map<String, String> properties, String key, Consumer<String> consumer) {
         String value = properties.get(key);
