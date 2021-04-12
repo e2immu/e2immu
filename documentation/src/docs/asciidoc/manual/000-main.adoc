@@ -20,6 +20,10 @@ include::{includedir}/manual/010-intro.adoc[]
 include::{includedir}/manual/020-install.adoc[]
 
 include::{includedir}/manual/030-use.adoc[]
+include::{includedir}/manual/032-cli.adoc[]
+include::{includedir}/manual/034-gradle.adoc[]
+include::{includedir}/manual/036-annotatedapis.adoc[]
+include::{includedir}/manual/038-visualising.adoc[]
 
 :sectnums!:
 

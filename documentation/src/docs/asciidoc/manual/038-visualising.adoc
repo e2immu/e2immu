@@ -1,0 +1,114 @@
+
+== Visualising immutability
+
+[#inheritance-rules]
+=== Inheritance rules of annotations
+
+As a general rule, we would like to impose that any class that implements an interface, inherits all the annotations of that interface.
+For example, if `java.util.List` is a container, then we want any implementation of that interface to be a container too.
+
+Frequently used JDK classes such as `java.lang.String` are marked `final` themselves, so that they cannot be subclassed.
+But in general, it seems a bad idea to weaken contracts.
+On the other hand, we can mark `java.lang.Object` as {e2immutable}, while obviously not all its derived classes can be of that type.
+
+But the marks for eventually final and immutable classes push us to add some rules.
+Consider the `Verticle` interface and parts of its default implementation `AbstractVerticle`
+(please refer the section on Vertx integration #TODO# for an in-depth treatment):
+
+.Excerpts and annotations of Verticle.java and AbstractVerticle.java
+[source]
+----
+@EventuallyFinal(after = "init", framework = true)
+interface Verticle {
+
+    @Mark("init")
+    void init(@NullNotAllowed Vertx vertx, @NullNotAllowed Context context);
+
+    @NotAllowed(before = "init")
+    @NotModified
+    Vertx getVertx();
+
+    @NotAllowed(before = "init")
+    void start(Promise<Void> startPromise) throws Exception;
+
+    @NotAllowed(before = "init")
+    void stop(Promise<Void> startPromise) throws Exception;
+}
+
+public abstract class AbstractVerticle implements Verticle {
+    protected Vertx vertx;
+    protected Context context;
+
+    @Override
+    public Vertx getVertx() {
+        return vertx;
+    }
+
+    @Override
+    public void init(Vertx vertx, Context context) {
+        this.vertx = vertx;
+        this.context = context;
+    }
+    ...
+}
+----
+
+Our primary motivation here is to make sure that `vertx` and `context` are never assigned to in code derived from `AbstractVerticle`: the code analyser will ensure they become effectively final.
+On top of that, we can try to monitor calls the `getVertx` method before the verticle has been registered, and calls to `init` from outside the framework.
+
+Now, inside a class that derives from `AbstractVerticle`, a similar situation arises:
+
+.MyVerticle.java
+[source]
+----
+@EventuallyFinal(after = "start", framework = true)
+public class MyVerticle extends AbstractVerticle {
+    private HttpServer server;
+    private JsonObject configuration;
+
+    @Override
+    @Mark("start")
+    public void start(Promise<Void> startPromise) {
+        server = vertx.createHttpServer(); // <1>
+        ConfigRetriever retriever = ConfigRetriever.create(vertx, options); // <1>
+        retriever.getConfig(ar -> {
+            if (ar.failed()) {
+                startPromise.fail("Cannot read config");
+            } else {
+                configuration = ar.result();
+                startPromise.complete(); // <2>
+            }
+        });
+    }
+
+    private void handleRequest(RoutingContext routingContext) {
+        textResult(routingContext, "a=" + configuration.a);
+    }
+}
+----
+<1> The `vertx` field has been initialised, is effectively final, and is non-null.
+<2> Logical exit point of the method: only after having executed this handler, which assigns to `configuration`, the rest of the program can continue.
+
+The two fields in this subclass will become effectively final, but, crucially, later than the `vertx` field.
+The `handleRequest` method will be only be called after the `start` method logically ends.
+
+Should we treat the effective finality `AbstractVerticle` and `MyVerticle` as independent?
+Or do we want to impose <<final-annotation>> on any concrete implementation of `AbstractVerticle`?
+My intuition would say _yes_, we should do that, because of the nature of the class imposed on `MyVerticle` by the `Verticle` interface:
+it is going to be a class which has a start/stop lifecycle, instantiated by a framework, where code runs in the context of the framework and services started in that framework.
+Instances of this class should not be passed on; public methods should not be available for 'outsiders'.
+In most situations, the start/stop nature is binary, and while it may have a protracted starting phase, it will not become a start/phase 1/phase 2/stop lifecycle.
+But there are too many other examples where this would seem impractical.
+Therefore, we'll stick to
+
+[sidebar]
+.Summary of inheritance rules
+--
+As a general rule, a class inherits all annotations from directly implemented interfaces, but not from a possible parent class and its interfaces implemented.
+An interface that extends another interface does not inherit the annotations from its ancestor.
+
+However, methods inherit the annotations of methods they override.
+
+Marks for <<final-annotation>> and <<e2immutable-annotation>> annotations are restricted to the methods listed in the type that has the annotation, and the fields linked to them.
+--
+

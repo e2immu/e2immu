@@ -1,0 +1,36 @@
+
+=== Using the Gradle plugin
+
+The easiest way to use the analyser is via the Gradle plugin.
+
+[source]
+.Example of `build.gradle` file
+----
+plugins {
+    id 'java'
+    id 'org.e2immu.analyser'
+}
+
+...
+
+repositories {
+    ...
+}
+
+dependencies {
+   ...
+}
+
+e2immu {
+    skipProject = false
+    sourcePackages = 'org.e2immu.'
+    jmods = 'java.base.jmod,java.se.jmod'
+    jre = '/Library/Java/JavaVirtualMachines/openjdk-11.0.2.jdk/Contents/Home/'
+    writeAnnotatedAPIPackages = 'org.e2immu.'
+    writeAnnotationXMLPackages = 'org.e2immu.'
+}
+----
+
+The list of properties configurable differs slightly from the one of the command line.
+Gradle takes care of source and class path.
+
