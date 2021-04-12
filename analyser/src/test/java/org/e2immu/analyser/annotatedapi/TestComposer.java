@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.annotatedapi;
 
+import org.apache.commons.io.FileUtils;
 import org.e2immu.analyser.config.AnnotatedAPIConfiguration;
 import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.config.InputConfiguration;
@@ -27,10 +28,13 @@ import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.*;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class TestComposer {
     private static final Logger LOGGER = LoggerFactory.getLogger(TestComposer.class);
@@ -42,7 +46,7 @@ public class TestComposer {
                 .addClassPath("jmods/java.base.jmod");
         AnnotatedAPIConfiguration annotatedAPIConfiguration = new AnnotatedAPIConfiguration.Builder()
                 .setAnnotatedAPIs(true)
-                .addAnnotatedAPIPackages("java.util.")
+                .addAnnotatedAPIPackages("java.util.", "java.lang")
                 .setWriteAnnotatedAPIsDir("build/annotatedApi")
                 .build();
 
@@ -67,6 +71,14 @@ public class TestComposer {
             LOGGER.info("Stream:\n{}\n", formatter.write(outputBuilder));
         }
 
+        File defaultDestination = new File(AnnotatedAPIConfiguration.DEFAULT_DESTINATION_DIRECTORY);
+        FileUtils.deleteDirectory(defaultDestination);
         composer.write(apiTypes, AnnotatedAPIConfiguration.DEFAULT_DESTINATION_DIRECTORY);
+
+        // should not exist, there is no dot after java.lang in the package filter
+        File javaLangAnnotations = new File(defaultDestination, "org/e2immu/testannotatedapi/JavaLangAnnotation.java");
+        assertFalse(javaLangAnnotations.exists());
+        File javaLang = new File(defaultDestination, "org/e2immu/testannotatedapi/JavaLang.java");
+        assertTrue(javaLang.exists());
     }
 }

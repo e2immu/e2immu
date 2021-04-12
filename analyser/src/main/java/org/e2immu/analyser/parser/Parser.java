@@ -249,20 +249,25 @@ public class Parser {
     }
 
     public ComposerData primaryTypesForAnnotatedAPIComposing() {
+        for (String packagePrefix : configuration.annotatedAPIConfiguration.writeAnnotatedAPIsPackages()) {
+            Input.preload(input.globalTypeContext(), input.byteCodeInspector(), input.classPath(), packagePrefix);
+        }
+        LOGGER.info("Building TypeMap, fixing inspections");
         TypeMap typeMap = input.globalTypeContext().typeMapBuilder.build();
+
         Set<TypeInfo> typesToWrite = new HashSet<>();
         // ensure that all types in the packages to write have been byte code inspected
         for (String packagePrefix : configuration.annotatedAPIConfiguration.writeAnnotatedAPIsPackages()) {
             String[] packagePrefixArray = packagePrefix.split("\\.");
             boolean allowSubPackages = packagePrefix.endsWith(".");
             typeMap.visit(packagePrefixArray, (prefix, types) -> {
-                if (allowSubPackages || packagePrefixArray.length == prefix.length) {
-                    types.stream().filter(t ->
-                            t.typeInspection.isSet() &&
-                            t.isPrimaryType() && t.isPublic()).forEach(typesToWrite::add);
-                }
+                types.stream().filter(t ->
+                        (allowSubPackages || t.primaryType().packageName().equals(packagePrefix)) &&
+                                t.typeInspection.isSet() &&
+                                t.isPrimaryType() && t.isPublic()).forEach(typesToWrite::add);
             });
         }
+        LOGGER.info("Returning composer data with {} types", typesToWrite.size());
         return new ComposerData(typesToWrite, typeMap);
     }
 
