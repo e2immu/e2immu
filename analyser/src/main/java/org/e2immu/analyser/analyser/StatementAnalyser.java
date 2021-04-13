@@ -1040,7 +1040,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             int change = changeData.getOrDefault(k, Level.DELAY);
             if (GroupPropertyValues.PROPERTIES.contains(k)) {
                 int value = switch (k) {
-                    case EXTERNAL_IMMUTABLE -> prev != Level.DELAY ? Math.max(MultiLevel.DELAY, prev) : Level.DELAY;
+                    case EXTERNAL_IMMUTABLE -> delayOrAtLeastMultiDelay(prev);
                     case CONTEXT_IMMUTABLE -> {
                         if (changeData.getOrDefault(CONTEXT_IMMUTABLE_DELAY, Level.DELAY) != Level.TRUE && prev != Level.DELAY) {
                             yield Math.max(prev, change);
@@ -1049,7 +1049,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                         }
                     }
                     // values simply travel downward (delay until there's a value from another analyser)
-                    case EXTERNAL_NOT_NULL -> prev != Level.DELAY ? Math.max(MultiLevel.DELAY, prev) : Level.DELAY;
+                    case EXTERNAL_NOT_NULL -> delayOrAtLeastMultiDelay(prev);
                     case CONTEXT_NOT_NULL -> {
                         if (changeData.getOrDefault(CONTEXT_NOT_NULL_DELAY, Level.DELAY) != Level.TRUE && prev != Level.DELAY) {
                             yield Math.max(variable.parameterizedType().defaultNotNull(), Math.max(prev, change));
@@ -1059,12 +1059,12 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                     }
                     case CONTEXT_MODIFIED -> {
                         if (changeData.getOrDefault(CONTEXT_MODIFIED_DELAY, Level.DELAY) != Level.TRUE && prev != Level.DELAY) {
-                            yield Math.max(Level.FALSE, Math.max(prev, change));
+                            yield maxAtLeastFalse(prev, change);
                         } else {
                             yield Level.DELAY;
                         }
                     }
-                    case CONTEXT_PROPAGATE_MOD -> Math.max(Level.FALSE, Math.max(prev, change));
+                    case CONTEXT_PROPAGATE_MOD -> maxAtLeastFalse(prev, change);
                     default -> throw new UnsupportedOperationException();
                 };
                 groupPropertyValues.set(k, variable, value);
@@ -1083,6 +1083,14 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         });
         res.keySet().removeAll(GroupPropertyValues.PROPERTIES);
         return res;
+    }
+
+    private static int delayOrAtLeastMultiDelay(int prev) {
+        return prev != Level.DELAY ? Math.max(MultiLevel.DELAY, prev) : Level.DELAY;
+    }
+
+    private static int maxAtLeastFalse(int i1, int i2) {
+        return Math.max(Level.FALSE, Math.max(i1, i2));
     }
 
     /*
