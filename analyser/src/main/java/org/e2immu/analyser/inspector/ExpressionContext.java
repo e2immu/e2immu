@@ -399,7 +399,7 @@ public class ExpressionContext {
             String name = parameter.getName().asString();
             LocalVariable localVariable = new LocalVariable.Builder()
                     .setOwningType(enclosingType)
-                    .setName(name).setParameterizedType(typeOfVariable).build();
+                    .setName(name).setSimpleName(name).setParameterizedType(typeOfVariable).build();
             LocalVariableCreation lvc = new LocalVariableCreation(typeContext, localVariable);
             TryStatement.CatchParameter catchParameter = new TryStatement.CatchParameter(lvc, unionOfTypes);
             ExpressionContext catchExpressionContext = newVariableContext("catch-clause");
@@ -452,9 +452,10 @@ public class ExpressionContext {
     private org.e2immu.analyser.model.Statement forEachStatement(String label, ForEachStmt forEachStmt) {
         VariableContext newVariableContext = VariableContext.dependentVariableContext(variableContext);
         VariableDeclarationExpr vde = forEachStmt.getVariable();
+        String name = vde.getVariables().get(0).getNameAsString();
         LocalVariable localVariable = new LocalVariable.Builder()
                 .setOwningType(enclosingType)
-                .setName(vde.getVariables().get(0).getNameAsString())
+                .setName(name).setSimpleName(name)
                 .setParameterizedType(ParameterizedTypeFactory.from(typeContext, vde.getVariables().get(0).getType()))
                 .build();
         org.e2immu.analyser.model.Expression expression = parseExpression(forEachStmt.getIterable());
@@ -606,7 +607,7 @@ public class ExpressionContext {
                 VariableDeclarator var = vde.getVariable(0);
                 ParameterizedType parameterizedType = ParameterizedTypeFactory.from(typeContext, var.getType());
                 LocalVariable.Builder localVariable = new LocalVariable.Builder()
-                        .setName(var.getNameAsString())
+                        .setName(var.getNameAsString()).setSimpleName(var.getNameAsString())
                         .setParameterizedType(parameterizedType);
                 vde.getAnnotations().forEach(ae -> localVariable.addAnnotation(AnnotationInspector.inspect(this, ae)));
                 vde.getModifiers().forEach(m -> localVariable.addModifier(LocalVariableModifier.from(m)));

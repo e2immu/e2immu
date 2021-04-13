@@ -50,7 +50,7 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("increment".equals(d.methodInfo().name) && "0".equals(d.statementId())) {
                 if (I.equals(d.variableName())) {
-                    String expect = d.iteration() == 0 ? "1+<f:i>" : "1+org.e2immu.analyser.testexample.Basics_4.i$0";
+                    String expect = d.iteration() == 0 ? "1+<f:i>" : "1+i$0";
                     assertEquals(expect, d.currentValue().toString());
                 }
             }
@@ -91,8 +91,9 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
         };
         final String TYPE = "org.e2immu.analyser.testexample.Basics_6";
         final String FIELD = TYPE + ".field";
-        final String FIELD_0 = TYPE + ".field$0";
-        final String FIELD_1 = TYPE + ".field$1";
+        final String FIELD_0 = "field$0";
+        final String FIELD_1 = "field$1";
+        final String FIELD_0_FQN = FIELD + "$0";
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("setField".equals(d.methodInfo().name) && d.variableInfo().variable() instanceof ParameterInfo) {
@@ -187,7 +188,7 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
 
                 if (d.variable() instanceof ReturnVariable) {
                     if ("4".equals(d.statementId())) {
-                        String expectValue = d.iteration() == 0 ? "<v:v3>" : "Basics_6.someMinorMethod(org.e2immu.analyser.testexample.Basics_6.field$0)";
+                        String expectValue = d.iteration() == 0 ? "<v:v3>" : "Basics_6.someMinorMethod(field$0)";
                         assertEquals(expectValue, d.currentValue().toString());
                         int expectNotNull = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
                         assertEquals(expectNotNull, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
@@ -343,14 +344,14 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
                 EvaluationResult.ChangeData changeDataV1 = d.findValueChange("v1");
                 assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, changeDataV1.getProperty(VariableProperty.CONTEXT_NOT_NULL));
 
-                assertEquals(d.iteration() > 0, d.haveValueChange(FIELD_0));
+                assertEquals(d.iteration() >= 1, d.haveValueChange(FIELD_0_FQN));
             }
             if ("test3".equals(d.methodInfo().name) && "1".equals(d.statementId())) {
                 if (d.iteration() == 0) {
                     EvaluationResult.ChangeData cdField = d.findValueChange("v1");
                     assertEquals(Level.TRUE, cdField.getProperty(VariableProperty.CONTEXT_NOT_NULL_DELAY));
                 } else {
-                    EvaluationResult.ChangeData cdField0 = d.findValueChange(FIELD_0);
+                    EvaluationResult.ChangeData cdField0 = d.findValueChange(FIELD_0_FQN);
                     assertEquals(Level.DELAY, cdField0.getProperty(VariableProperty.CONTEXT_NOT_NULL_DELAY));
                     //    assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, cdField0.getProperty(VariableProperty.CONTEXT_NOT_NULL));
                 }
@@ -382,9 +383,9 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
     @Test
     public void test7() throws IOException {
         final String I = "org.e2immu.analyser.testexample.Basics_7.i";
-        final String I0 = I + "$0";
-        final String I1 = I + "$1";
-        final String I101 = I + "$1$1_0_1-E";
+        final String I0 = "i$0";
+        final String I1 = "i$1";
+        final String I101 = "i$1$1_0_1-E";
         final String INC3_RETURN_VAR = "org.e2immu.analyser.testexample.Basics_7.increment3()";
         final String I_DELAYED = "<f:i>";
         final String I_EXPR = "<f:i>==<v:j>";
@@ -575,9 +576,9 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
     public void test8() throws IOException {
         final String TYPE = "org.e2immu.analyser.testexample.Basics_8";
         final String I = TYPE + ".i";
-        final String I0 = TYPE + ".i$0";
-        final String I1 = TYPE + ".i$1";
-        final String I2 = TYPE + ".i$2";
+        final String I0 = "i$0";
+        final String I1 = "i$1";
+        final String I2 = "i$2";
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("test1".equals(d.methodInfo().name)) {

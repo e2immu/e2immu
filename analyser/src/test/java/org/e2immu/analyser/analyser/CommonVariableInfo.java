@@ -48,6 +48,7 @@ public abstract class CommonVariableInfo {
         return new LocalVariableReference(inspectionProvider,
                 new LocalVariable.Builder()
                         .setName("x")
+                        .setSimpleName("x")
                         .setParameterizedType(primitives.booleanParameterizedType)
                         .setOwningType(primitives.stringTypeInfo)
                         .build(),

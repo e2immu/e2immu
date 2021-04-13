@@ -16,7 +16,6 @@
 package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.FieldAnalysisImpl;
-import org.e2immu.analyser.analyser.LinkedVariables;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.Level;
@@ -57,7 +56,7 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
             if ("t".equals(d.fieldInfo().name)) {
                 assertEquals("<variable value>", d.fieldAnalysis().getEffectivelyFinalValue().toString());
                 assertEquals(Level.FALSE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
-                String expectValues = d.iteration() == 0 ? "[null,<s:T>]" : "[null,t]";
+                String expectValues = "[null,t]";
                 assertEquals(expectValues,
                         ((FieldAnalysisImpl.Builder) d.fieldAnalysis()).getValues().toString());
                 int expectImmu = d.iteration() <= 2 ? Level.DELAY : MultiLevel.MUTABLE;
@@ -92,12 +91,13 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             final String TYPE = "org.e2immu.support.SetOnce";
-            final String T0 = TYPE + ".t$0";
+            final String T0_FQN = TYPE + ".t$0";
+            final String T0 = "t$0";
             int n = d.methodInfo().methodInspection.get().getParameters().size();
 
             if ("get".equals(d.methodInfo().name) && n == 0) {
                 if ("0".equals(d.statementId())) {
-                    if (T0.equals(d.variableName())) {
+                    if (T0_FQN.equals(d.variableName())) {
                         assertTrue(d.iteration() > 0);
                         assertEquals("nullable instance type T", d.currentValue().toString());
                         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
@@ -111,7 +111,7 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
                         assertEquals(expectCnn, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
                         //  assertEquals(expectCnn, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
                     }
-                    if (T0.equals(d.variableName())) {
+                    if (T0_FQN.equals(d.variableName())) {
                         assertTrue(d.iteration() > 0);
                         assertTrue(d.variableInfoContainer().isPrevious());
                         assertEquals("nullable instance type T", d.currentValue().toString());
@@ -125,7 +125,7 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
                         String expectValue = switch (d.iteration()) {
                             case 0 -> "<m:get>";
                             case 1 -> "<f:t>";
-                            default -> "org.e2immu.support.SetOnce.t$0/*@Dependent1*/";
+                            default -> "t$0/*@Dependent1*/";
                         };
                         assertEquals(expectValue, d.currentValue().toString());
                         int expectNne = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
@@ -139,7 +139,7 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
                         assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
                         assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
                     }
-                    if (T0.equals(d.variableName())) {
+                    if (T0_FQN.equals(d.variableName())) {
                         assertTrue(d.iteration() > 1);
                         assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
                         assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
@@ -151,7 +151,7 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
                         String expectValue = switch (d.iteration()) {
                             case 0 -> "<m:isSet>?<m:get>:<return value>";
                             case 1 -> "null==<f:t>?<return value>:<f:t>";
-                            default -> "null==org.e2immu.support.SetOnce.t$0?<return value>:org.e2immu.support.SetOnce.t$0/*@Dependent1*/";
+                            default -> "null==t$0?<return value>:t$0/*@Dependent1*/";
                         };
                         assertEquals(expectValue, d.currentValue().toString());
                     }
@@ -161,7 +161,7 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
                         String expectValue = switch (d.iteration()) {
                             case 0 -> "<m:isSet>?<m:get>:alternative";
                             case 1 -> "null==<f:t>?alternative:<f:t>";
-                            default -> "null==org.e2immu.support.SetOnce.t$0?alternative:org.e2immu.support.SetOnce.t$0";
+                            default -> "null==t$0?alternative:t$0";
                         };
                         assertEquals(expectValue, d.currentValue().toString());
                     }

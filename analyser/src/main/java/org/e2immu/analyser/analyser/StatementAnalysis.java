@@ -525,9 +525,9 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         // see FirstThen_0: this is here to break an chicken-and-egg problem between the FieldAnalyser (allAssignmentsHaveBeenSet)
         // and StatementAnalyser (checkNotNullEscapesAndPreconditions)
         // FIXME problem with Singleton_7, I really need the delay here
-       // if (initialValue.expressionIsDelayed && notYetAssignedToWillBeAssignedToLater) {
-       //     String objectId = index + "-" + fieldReference.fieldInfo.fullyQualifiedName();
-       //     Expression initial = NewObject.initialValueOfField(objectId, primitives, fieldReference.parameterizedType());
+        // if (initialValue.expressionIsDelayed && notYetAssignedToWillBeAssignedToLater) {
+        //     String objectId = index + "-" + fieldReference.fieldInfo.fullyQualifiedName();
+        //     Expression initial = NewObject.initialValueOfField(objectId, primitives, fieldReference.parameterizedType());
         //    initialValue = new ExpressionAndDelay(initial, false);
         //}
 
@@ -1076,19 +1076,19 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         VariableInfo vi = vic.getPreviousOrInitial();
         if (isNotAssignmentTarget) {
             if (vi.variable() instanceof FieldReference fieldReference && vi.isConfirmedVariableField()) {
-                String localVariableFqn = createLocalFieldCopyFQN(vi, fieldReference, statementTime);
-                if (!variables.isSet(localVariableFqn)) {
+                NameSimpleName localVariableFqn = createLocalFieldCopyFQN(vi, fieldReference, statementTime);
+                if (!variables.isSet(localVariableFqn.name)) {
                     // it is possible that the field has been assigned to, so it exists, but the local copy does not yet
                     return new VariableInfoImpl(variable);
                 }
-                return variables.get(localVariableFqn).getPreviousOrInitial();
+                return variables.get(localVariableFqn.name).getPreviousOrInitial();
             }
             if (vic.isLocalVariableInLoopDefinedOutside()) {
                 StatementAnalysis relevantLoop = mostEnclosingLoop();
                 if (relevantLoop.localVariablesAssignedInThisLoop.isFrozen()) {
                     if (relevantLoop.localVariablesAssignedInThisLoop.contains(fqn)) {
-                        String localCopyFqn = createLocalLoopCopyFQN(vic, vi);
-                        VariableInfoContainer newVic = variables.get(localCopyFqn);
+                        NameSimpleName localCopyFqn = createLocalLoopCopyFQN(vic, vi);
+                        VariableInfoContainer newVic = variables.get(localCopyFqn.name);
                         return newVic.getPreviousOrInitial();
                     }
                     return vi; // we don't participate in the modification process?
@@ -1136,24 +1136,34 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
     statement times, we simply use this statement time in the name: $st.
     Only when statement time hasn't increased, but assignments have, we use the combination $st$assignment id.
      */
-    private String createLocalFieldCopyFQN(VariableInfo fieldVi, FieldReference fieldReference, int statementTime) {
-        String indexOfStatementTime = flowData.assignmentIdOfStatementTime.get(statementTime);
-        String prefix = fieldReference.fullyQualifiedName() + "$" + statementTime;
-        if (statementTime == fieldVi.getStatementTime() && fieldVi.getAssignmentId().compareTo(indexOfStatementTime) >= 0) {
-            // return a local variable with the current field value, numbered as the statement time + assignment ID
-            return prefix + "$" + fieldVi.getAssignmentId().replace(".", "_");
-        }
-        return prefix;
+
+    record NameSimpleName(String name, String simpleName) {
     }
 
-    public String createLocalLoopCopyFQN(VariableInfoContainer vic, VariableInfo vi) {
+    private NameSimpleName createLocalFieldCopyFQN(VariableInfo fieldVi,
+                                                   FieldReference fieldReference,
+                                                   int statementTime) {
+        String indexOfStatementTime = flowData.assignmentIdOfStatementTime.get(statementTime);
+        String prefix = fieldReference.fullyQualifiedName() + "$" + statementTime;
+        String simplePrefix = fieldReference.simpleName() + "$" + statementTime;
+        if (statementTime == fieldVi.getStatementTime() && fieldVi.getAssignmentId().compareTo(indexOfStatementTime) >= 0) {
+            // return a local variable with the current field value, numbered as the statement time + assignment ID
+            String suffix = fieldVi.getAssignmentId().replace(".", "_");
+            return new NameSimpleName(prefix + "$" + suffix, simplePrefix + "$" + suffix);
+        }
+        return new NameSimpleName(prefix, simplePrefix);
+    }
+
+    public NameSimpleName createLocalLoopCopyFQN(VariableInfoContainer vic, VariableInfo vi) {
         assert vic.isLocalVariableInLoopDefinedOutside();
 
         String prefix = vi.name() + "$" + vic.getVariableInLoop().statementId();
+        String simplePrefix = vi.variable().simpleName() + "$" + vic.getVariableInLoop().statementId();
         if (vi.getAssignmentId().compareTo(vic.getVariableInLoop().statementId()) > 0) {
-            return prefix + "$" + vi.getAssignmentId().replace(".", "_");
+            String suffix = vi.getAssignmentId().replace(".", "_");
+            return new NameSimpleName(prefix + "$" + suffix, simplePrefix + "$" + suffix);
         }
-        return prefix;
+        return new NameSimpleName(prefix, simplePrefix);
     }
 
     public LocalVariableReference variableInfoOfFieldWhenReading(AnalyserContext analyserContext,
@@ -1168,12 +1178,13 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         // (we temporarily treat the field as a local variable)
         // so we need to know: have there been assignments AFTER the latest statement time increase?
 
-        String localVariableFqn = createLocalFieldCopyFQN(fieldVi, fieldReference, statementTime);
+        NameSimpleName localVariableFqn = createLocalFieldCopyFQN(fieldVi, fieldReference, statementTime);
 
         // the statement time of the field indicates the time of the latest assignment
         LocalVariable lv = new LocalVariable.Builder()
                 .addModifier(LocalVariableModifier.FINAL)
-                .setName(localVariableFqn)
+                .setName(localVariableFqn.name)
+                .setSimpleName(localVariableFqn.simpleName)
                 .setParameterizedType(fieldReference.parameterizedType())
                 .setIsLocalCopyOf(fieldReference)
                 .setOwningType(methodAnalysis.getMethodInfo().typeInfo)

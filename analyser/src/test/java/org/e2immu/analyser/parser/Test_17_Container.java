@@ -197,11 +197,11 @@ public class Test_17_Container extends CommonTestRunner {
     public void test_3() throws IOException {
         final String TYPE = "org.e2immu.analyser.testexample.Container_3";
         final String S = TYPE + ".s";
-        final String S_0 = TYPE + ".s$0";
+        final String S_0 = "s$0";
 
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("add".equals(d.methodInfo().name) && "1.0.0".equals(d.statementId())) {
-                String expectValue = d.iteration() == 0 ? "<m:add>" : "org.e2immu.analyser.testexample.Container_3.s$0.add(s3)";
+                String expectValue = d.iteration() == 0 ? "<m:add>" : "s$0.add(s3)";
                 assertEquals(expectValue, d.evaluationResult().value().toString());
             }
         };
@@ -213,7 +213,7 @@ public class Test_17_Container extends CommonTestRunner {
                         if (d.iteration() == 0) {
                             assertSame(LinkedVariables.DELAY, d.variableInfo().getLinkedVariables());
                         } else {
-                            assertEquals("org.e2immu.analyser.testexample.Container_3.s$0",
+                            assertEquals("s$0",
                                     d.variableInfo().getLinkedVariables().toString());
                         }
                     }
@@ -224,8 +224,7 @@ public class Test_17_Container extends CommonTestRunner {
                         if (d.iteration() == 0) {
                             assertSame(LinkedVariables.DELAY, d.variableInfo().getLinkedVariables());
                         } else {
-                            assertEquals("org.e2immu.analyser.testexample.Container_3.s$0",
-                                    d.variableInfo().getLinkedVariables().toString());
+                            assertEquals("s$0", d.variableInfo().getLinkedVariables().toString());
                         }
                     }
 

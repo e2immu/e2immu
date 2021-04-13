@@ -45,7 +45,7 @@ public class Test_05_Final extends CommonTestRunner {
 
         final String S1 = TYPE + ".s1";
         final String S4 = TYPE + ".s4";
-        final String S4_0 = TYPE + ".s4$0";
+        final String S4_0 = "s4$0";
         final String S5 = TYPE + ".s5";
         final String THIS = TYPE + ".this";
 

@@ -127,7 +127,7 @@ public class TestTypeInfoStream {
                 .build());
         LocalVariable mapLocalVariable = new LocalVariable.Builder()
                 .setOwningType(testTypeInfo)
-                .setName("map")
+                .setName("map").setSimpleName("map")
                 .setParameterizedType(new ParameterizedType(map, List.of(primitives.stringParameterizedType, typeT)))
                 .build();
         MethodInfo hashMapConstructor = new MethodInspectionImpl.Builder(hashMap).build(IP).getMethodInfo();
@@ -153,7 +153,7 @@ public class TestTypeInfoStream {
                                                 new LocalVariableCreation(inspectionProvider,
                                                         new LocalVariable.Builder()
                                                                 .setOwningType(testTypeInfo)
-                                                                .setName("entry")
+                                                                .setName("entry").setSimpleName("entry")
                                                                 .setParameterizedType(new ParameterizedType(mapEntry, List.of(primitives.stringParameterizedType, typeT)))
                                                                 .build()),
                                                 new VariableExpression(new LocalVariableReference(inspectionProvider,

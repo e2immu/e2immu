@@ -18,10 +18,7 @@ package org.e2immu.analyser.parser;
 import org.e2immu.analyser.analyser.LinkedVariables;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.model.Level;
-import org.e2immu.analyser.model.MultiLevel;
-import org.e2immu.analyser.model.ParameterAnalysis;
-import org.e2immu.analyser.model.ParameterInfo;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
@@ -228,7 +225,7 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
                         case 1 -> "null==<f:t>";
                         default -> "null==" + OTHER_T_0;
                     };
-                    assertEquals(expectCondition, d.condition().toString());
+                    assertEquals(expectCondition, d.condition().output(Qualification.FULLY_QUALIFIED_NAME).toString());
                 }
             }
         };

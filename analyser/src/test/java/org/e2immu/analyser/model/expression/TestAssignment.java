@@ -36,7 +36,7 @@ public class TestAssignment {
 
     private LocalVariable makeLocalVariableInt() {
         return new LocalVariable.Builder()
-                .setName("i")
+                .setName("i").setSimpleName("i")
                 .setParameterizedType(primitives.intParameterizedType)
                 .setOwningType(primitives.stringTypeInfo)
                 .build();

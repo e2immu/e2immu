@@ -41,7 +41,7 @@ public class Test_Support_04_FirstThen extends CommonTestRunner {
         }
         if ("set".equals(d.methodInfo().name)) {
             if ("1.0.0.0.0".equals(d.statementId())) {
-                String expectCondition = d.iteration() == 0 ? "null==<f:first>" : "null==org.e2immu.support.FirstThen.first$0";
+                String expectCondition = d.iteration() == 0 ? "null==<f:first>" : "null==first$0";
                 assertEquals(expectCondition, d.condition().toString());
             }
         }
@@ -94,16 +94,16 @@ public class Test_Support_04_FirstThen extends CommonTestRunner {
             assertTrue(vi.isRead());
             assertEquals(Level.DELAY, vi.getProperty(VariableProperty.METHOD_CALLED));
 
-            int expectModified = d.iteration() <= 1 ? Level.DELAY : Level.FALSE;
+            int expectModified = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
             assertEquals(expectModified, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
         }
 
         if ("equals".equals(name)) {
-            int expectModified = d.iteration() <= 1 ? Level.DELAY : Level.FALSE;
+            int expectModified = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
             assertEquals(expectModified, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
 
             ParameterAnalysis o = d.parameterAnalyses().get(0);
-            int expectMv = d.iteration() <= 2 ? Level.DELAY : Level.FALSE;
+            int expectMv = d.iteration() <= 1 ? Level.DELAY : Level.FALSE;
             assertEquals(expectMv, o.getProperty(VariableProperty.MODIFIED_VARIABLE));
         }
     };

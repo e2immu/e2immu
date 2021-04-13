@@ -19,6 +19,7 @@ import org.e2immu.analyser.model.variable.Variable;
 import java.util.*;
 
 public record LocalVariable(Set<LocalVariableModifier> modifiers,
+                            String simpleName,
                             String name,
                             ParameterizedType parameterizedType,
                             List<AnnotationExpression> annotations,
@@ -31,7 +32,8 @@ public record LocalVariable(Set<LocalVariableModifier> modifiers,
     }
 
     public LocalVariable translate(TranslationMap translationMap) {
-        return new LocalVariable(modifiers, name, translationMap.translateType(parameterizedType), annotations, owningType, isLocalCopyOf);
+        return new LocalVariable(modifiers, simpleName,
+                name, translationMap.translateType(parameterizedType), annotations, owningType, isLocalCopyOf);
     }
 
     @Override
@@ -52,11 +54,16 @@ public record LocalVariable(Set<LocalVariableModifier> modifiers,
         return "LocalVariable " + name + " of " + parameterizedType;
     }
 
+    public String simpleName() {
+        return simpleName;
+    }
+
     public static class Builder {
         private final List<AnnotationExpression> annotations = new ArrayList<>();
         private final Set<LocalVariableModifier> modifiers = new HashSet<>();
         private ParameterizedType parameterizedType;
         private String name;
+        private String simpleName;
         private TypeInfo owningType;
         private Variable isLocalCopyOf;
 
@@ -67,6 +74,10 @@ public record LocalVariable(Set<LocalVariableModifier> modifiers,
 
         public Builder setName(String name) {
             this.name = name;
+            return this;
+        }
+        public Builder setSimpleName(String name) {
+            this.simpleName = name;
             return this;
         }
 
@@ -91,7 +102,8 @@ public record LocalVariable(Set<LocalVariableModifier> modifiers,
         }
 
         public LocalVariable build() {
-            return new LocalVariable(modifiers, name, parameterizedType, annotations, owningType, isLocalCopyOf);
+            return new LocalVariable(modifiers, simpleName,
+                    name, parameterizedType, annotations, owningType, isLocalCopyOf);
         }
     }
 }

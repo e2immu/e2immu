@@ -14,7 +14,6 @@
 
 package org.e2immu.analyser.model.variable;
 
-import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.QualifiedName;
@@ -60,7 +59,7 @@ public class LocalVariableReference extends VariableWithConcreteReturnType {
 
     @Override
     public String simpleName() {
-        return variable.name();
+        return variable.simpleName();
     }
 
     @Override
@@ -75,7 +74,8 @@ public class LocalVariableReference extends VariableWithConcreteReturnType {
 
     @Override
     public OutputBuilder output(Qualification qualification) {
-        return new OutputBuilder().add(new QualifiedName(simpleName(), null, QualifiedName.Required.NEVER));
+        String name = qualification == Qualification.FULLY_QUALIFIED_NAME ? fullyQualifiedName() : simpleName();
+        return new OutputBuilder().add(new QualifiedName(name, null, QualifiedName.Required.NEVER));
     }
 
     @Override

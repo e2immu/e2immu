@@ -94,7 +94,7 @@ public class Test_14_Precondition extends CommonTestRunner {
                         assertFalse(d.statementAnalysis().stateData.preconditionIsFinal());
                         assertTrue(d.statementAnalysis().methodLevelData.combinedPrecondition.isVariable());
                     } else if (d.iteration() == 1) {
-                        assertEquals("org.e2immu.analyser.testexample.Precondition_1.i$0<=-1", d.condition().toString());
+                        assertEquals("i$0<=-1", d.condition().toString());
                         assertEquals("i>=0", d.statementAnalysis().stateData
                                 .getPrecondition().expression().toString());
                         assertEquals("i>=0", d.statementAnalysis().methodLevelData
@@ -201,8 +201,7 @@ public class Test_14_Precondition extends CommonTestRunner {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("setInteger".equals(d.methodInfo().name)) {
                 if ("0.0.1".equals(d.statementId())) {
-                    String expect = d.iteration() == 0 ? "null!=<f:integer>" :
-                            "null!=org.e2immu.analyser.testexample.Precondition_3.integer$0";
+                    String expect = d.iteration() == 0 ? "null!=<f:integer>" : "null!=integer$0";
                     assertEquals(expect, d.evaluationResult().value().toString());
                 }
                 if ("0.0.2".equals(d.statementId())) {
@@ -228,8 +227,7 @@ public class Test_14_Precondition extends CommonTestRunner {
                     assertEquals("ii<=-1", d.condition().toString());
                 }
                 if ("0.0.1.0.0".equals(d.statementId())) {
-                    String expectCondition = d.iteration() == 0 ? "null!=<f:integer>" :
-                            "null!=org.e2immu.analyser.testexample.Precondition_3.integer$0";
+                    String expectCondition = d.iteration() == 0 ? "null!=<f:integer>" : "null!=integer$0";
                     assertEquals(expectCondition, d.condition().toString());
                 }
                 if ("0.0.2".equals(d.statementId())) {

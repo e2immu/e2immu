@@ -386,7 +386,9 @@ public class Test_00_Basics_9plus extends CommonTestRunner {
                     }
                 }
                 if ("t$0".equals(d.variableInfo().variable().simpleName())) {
-                    assertEquals(MultiLevel.NULLABLE, cnn);
+                    if("1".equals(d.statementId())) {
+                        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, cnn);
+                    }
                     assertEquals(MultiLevel.NULLABLE, enn);
                 }
             }

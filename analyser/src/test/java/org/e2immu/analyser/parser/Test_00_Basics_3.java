@@ -53,7 +53,7 @@ public class Test_00_Basics_3 extends CommonTestRunner {
     public void test() throws IOException {
         final String TYPE = "org.e2immu.analyser.testexample.Basics_3";
         final String S = TYPE + ".s";
-        final String S_0 = TYPE + ".s$0";
+        final String S_0 = "s$0";
         final String THIS = TYPE + ".this";
         final String OUT = "java.lang.System.out";
         final String GET_S_RET_VAR = TYPE + ".getS()";

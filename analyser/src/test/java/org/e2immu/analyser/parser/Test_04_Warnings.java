@@ -51,7 +51,8 @@ public class Test_04_Warnings extends CommonTestRunner {
                 assertEquals("ERROR in M:" + TYPE + ":1: Unused local variable: a", d.haveError(Message.UNUSED_LOCAL_VARIABLE));
                 assertEquals("ERROR in M:" + TYPE + ":1: Useless assignment: a", d.haveError(Message.USELESS_ASSIGNMENT));
 
-                assertEquals(AnalysisStatus.DONE, d.result().analysisStatus());
+                AnalysisStatus expectStatus = d.iteration() == 0 ? AnalysisStatus.PROGRESS: AnalysisStatus.DONE;
+                assertEquals(expectStatus, d.result().analysisStatus());
             }
         };
 
