@@ -609,7 +609,7 @@ public class FieldAnalyser extends AbstractAnalyser {
                 }
             }
         }
-        if (!haveInitialiser && !occursInAllConstructors) {
+        if (!haveInitialiser && (!occursInAllConstructors || fieldInfo.isStatic())) {
             values.add(0, nullValue);
         }
         // order does not matter for this class, but is handy for testing

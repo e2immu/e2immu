@@ -18,9 +18,7 @@ import org.e2immu.analyser.analyser.check.CheckE1E2Immutable;
 import org.e2immu.analyser.analyser.util.AssignmentIncompatibleWithPrecondition;
 import org.e2immu.analyser.analyser.util.ExplicitTypes;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.expression.Filter;
-import org.e2immu.analyser.model.expression.Negation;
-import org.e2immu.analyser.model.expression.VariableExpression;
+import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.variable.DependentVariable;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.This;
@@ -93,17 +91,18 @@ public class TypeAnalyser extends AbstractAnalyser {
 
         typeAnalysis = new TypeAnalysisImpl.Builder(analyserContext.getPrimitives(), typeInfo, analyserContext);
         AnalyserComponents.Builder<String, Integer> builder = new AnalyserComponents.Builder<String, Integer>()
-                .add("findAspects", (iteration) -> findAspects())
-                .add("analyseImplicitlyImmutableTypes", (iteration) -> analyseImplicitlyImmutableTypes());
+                .add("findAspects", iteration -> findAspects())
+                .add("analyseImplicitlyImmutableTypes", iteration -> analyseImplicitlyImmutableTypes());
 
         if (!typeInfo.isInterface()) {
             builder.add("computeApprovedPreconditionsE1", this::computeApprovedPreconditionsE1)
                     .add("computeApprovedPreconditionsE2", this::computeApprovedPreconditionsE2)
-                    .add("analyseIndependent", (iteration) -> analyseIndependent())
-                    .add("analyseEffectivelyEventuallyE2Immutable", (iteration) -> analyseEffectivelyEventuallyE2Immutable())
-                    .add("analyseContainer", (iteration) -> analyseContainer())
-                    .add("analyseUtilityClass", (iteration) -> analyseUtilityClass())
-                    .add("analyseExtensionClass", (iteration) -> analyseExtensionClass());
+                    .add("analyseIndependent", iteration -> analyseIndependent())
+                    .add("analyseEffectivelyEventuallyE2Immutable", iteration -> analyseEffectivelyEventuallyE2Immutable())
+                    .add("analyseContainer", iteration -> analyseContainer())
+                    .add("analyseUtilityClass", iteration -> analyseUtilityClass())
+                    .add("analyseSingleton", iteration -> analyseSingleton())
+                    .add("analyseExtensionClass", iteration -> analyseExtensionClass());
         }
         analyserComponents = builder.build();
 
@@ -205,6 +204,7 @@ public class TypeAnalyser extends AbstractAnalyser {
         check(typeInfo, ExtensionClass.class, e2.extensionClass);
         check(typeInfo, Independent.class, e2.independent);
         check(typeInfo, Container.class, e2.container);
+        check(typeInfo, Singleton.class, e2.singleton);
 
         CheckE1E2Immutable.check(messages, typeInfo, E1Immutable.class, e2.e1Immutable, typeAnalysis);
         CheckE1E2Immutable.check(messages, typeInfo, E1Container.class, e2.e1Container, typeAnalysis);
@@ -987,6 +987,97 @@ public class TypeAnalyser extends AbstractAnalyser {
     private boolean typeContainsMyselfAndE2ImmutableComponents(ParameterizedType parameterizedType) {
         return parameterizedType.typeInfo == typeInfo;
         // TODO make more complicated
+    }
+
+    /* we will implement two schemas
+
+    1/ no non-private constructors, exactly one occurrence in a non-array type field initialiser, no occurrences
+       in any methods
+    2/ one constructor, a static boolean with a precondition, which gets flipped inside the constructor
+
+     */
+    private AnalysisStatus analyseSingleton() {
+        int singleton = typeAnalysis.getProperty(VariableProperty.SINGLETON);
+        if (singleton != Level.DELAY) return DONE;
+
+        // system 1: private constructors
+
+        boolean allConstructorsPrivate = typeInspection.constructors().stream().allMatch(MethodInfo::isPrivate);
+        if (allConstructorsPrivate) {
+            // no method can call the constructor(s)
+            boolean doNotCallMyOwnConstructFromMethod = typeInspection.methodStream(TypeInspection.Methods.INCLUDE_SUBTYPES)
+                    .allMatch(m -> Collections.disjoint(m.methodResolution.get().methodsOfOwnClassReached(),
+                            typeInspection.constructors()));
+            if (doNotCallMyOwnConstructFromMethod) {
+                // exactly one field has an initialiser with a constructor
+                long fieldsWithInitialiser = typeInspection.fields().stream().filter(fieldInfo ->
+                        fieldInfo.fieldInspection.get().fieldInitialiserIsSet() &&
+                                fieldInfo.fieldInspection.get().getFieldInitialiser().initialiser() instanceof NewObject no &&
+                                no.constructor() != null &&
+                                typeInspection.constructors().contains(no.constructor())).count();
+                if (fieldsWithInitialiser == 1L) {
+                    log(SINGLETON, "Type {} is @Singleton, found exactly one new object creation in field initialiser",
+                            typeInfo.fullyQualifiedName);
+                    typeAnalysis.setProperty(VariableProperty.SINGLETON, Level.TRUE);
+                    return DONE;
+                }
+            }
+        }
+
+        // system 2: boolean precondition with static private field, single constructor
+
+        if (typeInspection.constructors().size() == 1) {
+            MethodInfo constructor = typeInspection.constructors().get(0);
+            MethodAnalyser constructorAnalyser = myConstructors.stream().filter(ma -> ma.methodInfo == constructor).findFirst().orElseThrow();
+            MethodAnalysisImpl.Builder constructorAnalysis = constructorAnalyser.methodAnalysis;
+            if (!constructorAnalysis.precondition.isSet()) {
+                log(DELAYED, "Delaying @Singleton on {} until precondition known");
+                return DELAYS;
+            }
+            Precondition precondition = constructorAnalysis.precondition.get();
+            VariableExpression ve;
+            if (!precondition.isEmpty() && (ve = variableExpressionOrNegated(precondition.expression())) != null
+                    && ve.variable() instanceof FieldReference fr
+                    && fr.fieldInfo.isStatic()
+                    && fr.fieldInfo.isPrivate()
+                    && Primitives.isBoolean(fr.fieldInfo.type)) {
+                // one thing that's left is that there is an assignment in the constructor, and no assignment anywhere else
+                boolean wantAssignmentToTrue = precondition.expression() instanceof Negation;
+                String fieldFqn = ve.variable().fullyQualifiedName();
+                boolean notAssignedInMethods = typeInspection.methods().stream().noneMatch(methodInfo -> {
+                    MethodAnalysis methodAnalysis = analyserContext.getMethodAnalysis(methodInfo);
+                    StatementAnalysis lastStatement = methodAnalysis.getLastStatement();
+                    if (lastStatement == null) return false;
+                    VariableInfo variableInfo = lastStatement.getLatestVariableInfo(fieldFqn);
+                    if (variableInfo == null) return false;
+                    return variableInfo.isAssigned();
+                });
+                if (notAssignedInMethods) {
+                    StatementAnalysis lastStatement = constructorAnalysis.getLastStatement();
+                    if (lastStatement == null) throw new UnsupportedOperationException("? have precondition");
+                    VariableInfo variableInfo = lastStatement.getLatestVariableInfo(fieldFqn);
+                    if (variableInfo == null) throw new UnsupportedOperationException("? have precondition");
+                    if (variableInfo.isAssigned() && variableInfo.getValue() instanceof BooleanConstant booleanConstant &&
+                            booleanConstant.getValue() == wantAssignmentToTrue) {
+                        log(SINGLETON, "Type {} is a  @Singleton, found boolean variable with precondition",
+                                typeInfo.fullyQualifiedName);
+                        typeAnalysis.setProperty(VariableProperty.SINGLETON, Level.TRUE);
+                        return DONE;
+                    }
+                }
+            }
+        }
+
+        // no hit
+        log(SINGLETON, "Type {} is not a  @Singleton", typeInfo.fullyQualifiedName);
+        typeAnalysis.setProperty(VariableProperty.SINGLETON, Level.FALSE);
+        return DONE;
+    }
+
+    private static VariableExpression variableExpressionOrNegated(Expression expression) {
+        if (expression instanceof VariableExpression ve) return ve;
+        if (expression instanceof Negation negation && negation.expression instanceof VariableExpression ve) return ve;
+        return null;
     }
 
     private AnalysisStatus analyseExtensionClass() {

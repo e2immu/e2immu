@@ -16,11 +16,13 @@ package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.output.*;
-import org.e2immu.support.SetOnce;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.NotNull;
+import org.e2immu.support.SetOnce;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 public class FieldInfo implements WithInspectionAndAnalysis {
@@ -170,5 +172,9 @@ public class FieldInfo implements WithInspectionAndAnalysis {
 
     public boolean isPublic() {
         return fieldInspection.get().getModifiers().contains(FieldModifier.PUBLIC);
+    }
+
+    public boolean isPrivate() {
+        return fieldInspection.get().getModifiers().contains(FieldModifier.PRIVATE);
     }
 }

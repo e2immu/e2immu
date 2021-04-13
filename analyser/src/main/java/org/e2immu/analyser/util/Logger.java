@@ -61,7 +61,7 @@ public class Logger {
         IDENTITY,
         FINAL,
         ASSIGNMENT,
-        SIDE_EFFECT,
+        SINGLETON,
         CNF,
         DYNAMIC,
         PROPAGATE_MODIFICATION,

@@ -16,12 +16,14 @@ package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.variable.FieldReference;
+import org.e2immu.analyser.visitor.FieldAnalyserVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 public class Test_46_Singleton extends CommonTestRunner {
 
@@ -35,6 +37,9 @@ public class Test_46_Singleton extends CommonTestRunner {
                 .build());
     }
 
+    /*
+    EventuallyE2Immutable_10 is a non-constructor version of Singleton_1.
+     */
     @Test
     public void test_1() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
@@ -42,14 +47,25 @@ public class Test_46_Singleton extends CommonTestRunner {
                 if (d.variable() instanceof FieldReference fr && "created".equals(fr.fieldInfo.name)) {
                     if ("0".equals(d.statementId())) {
                         String expectValue = d.iteration() == 0 ? "<f:created>" : "instance type boolean";
-                        // FIXME in iteration 2, value 'true'
                         assertEquals(expectValue, d.currentValue().toString());
                     }
                 }
             }
         };
+
+        FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+            if ("created".equals(d.fieldInfo().name)) {
+                if (d.iteration() == 0) {
+                    assertNull(d.fieldAnalysis().getEffectivelyFinalValue());
+                } else {
+                    assertEquals("[true,false]", d.fieldAnalysis().getEffectivelyFinalValue().toString());
+                }
+            }
+        };
+
         testClass("Singleton_1", 0, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build());
     }
 
@@ -63,6 +79,34 @@ public class Test_46_Singleton extends CommonTestRunner {
     @Test
     public void test_3() throws IOException {
         testClass("Singleton_3", 0, 0, new DebugConfiguration.Builder()
+                .build());
+    }
+
+    // counter-example to the technique of test 0
+    @Test
+    public void test_4() throws IOException {
+        testClass("Singleton_4", 0, 0, new DebugConfiguration.Builder()
+                .build());
+    }
+
+    // counter-example to the technique of test 1
+    @Test
+    public void test_5() throws IOException {
+        testClass("Singleton_5", 0, 0, new DebugConfiguration.Builder()
+                .build());
+    }
+
+    // counter-example to the technique of test 1
+    @Test
+    public void test_6() throws IOException {
+        testClass("Singleton_6", 0, 0, new DebugConfiguration.Builder()
+                .build());
+    }
+    
+    // counter-example to the technique of test 1
+    @Test
+    public void test_7() throws IOException {
+        testClass("Singleton_7", 0, 0, new DebugConfiguration.Builder()
                 .build());
     }
 }

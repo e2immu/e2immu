@@ -2205,7 +2205,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
 
         boolean alwaysInterrupts = bestAlwaysInterrupt != InterruptsFlow.NO;
         boolean atEndOfBlock = navigationData.next.get().isEmpty();
-        if (atEndOfBlock || alwaysInterrupts) {
+        if ((atEndOfBlock || alwaysInterrupts) && !myMethodAnalyser.methodInfo.isTestMethod()) {
             statementAnalysis.variables.stream()
                     .filter(e -> e.getValue().getVariableInLoop() != VariableInLoop.COPY_FROM_ENCLOSING_METHOD)
                     .map(e -> e.getValue().current())
@@ -2245,7 +2245,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
     }
 
     private AnalysisStatus checkUnusedLocalVariables() {
-        if (navigationData.next.get().isEmpty()) {
+        if (navigationData.next.get().isEmpty() && !myMethodAnalyser.methodInfo.isTestMethod()) {
             // at the end of the block, check for variables created in this block
             // READ is set in the first iteration, so there is no reason to expect delays
             statementAnalysis.variables.stream()
@@ -2261,7 +2261,9 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
     }
 
     private AnalysisStatus checkUnusedLoopVariables() {
-        if (statement() instanceof LoopStatement && !statementAnalysis.containsMessage(Message.EMPTY_LOOP)) {
+        if (statement() instanceof LoopStatement
+                && !statementAnalysis.containsMessage(Message.EMPTY_LOOP)
+                && !myMethodAnalyser.methodInfo.isTestMethod()) {
             statementAnalysis.variables.stream()
                     .filter(e -> index().equals(e.getValue().getStatementIndexOfThisLoopVariable()))
                     .forEach(e -> {
@@ -2281,7 +2283,9 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
      * Can be delayed
      */
     private AnalysisStatus checkUnusedReturnValueOfMethodCall() {
-        if (statementAnalysis.statement instanceof ExpressionAsStatement eas && eas.expression instanceof MethodCall methodCall) {
+        if (statementAnalysis.statement instanceof ExpressionAsStatement eas
+                && eas.expression instanceof MethodCall methodCall
+                && !myMethodAnalyser.methodInfo.isTestMethod()) {
             if (Primitives.isVoid(methodCall.methodInfo.returnType())) return DONE;
             MethodAnalysis methodAnalysis = getMethodAnalysis(methodCall.methodInfo);
             int identity = methodAnalysis.getProperty(VariableProperty.IDENTITY);
