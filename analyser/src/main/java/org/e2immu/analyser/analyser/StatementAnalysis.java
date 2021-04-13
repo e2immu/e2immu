@@ -249,7 +249,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
     }
 
     public List<VariableInfo> latestInfoOfVariablesReferringTo(FieldInfo fieldInfo, boolean allowLocalCopies) {
-        return streamOfLatestInfoOfVariablesReferringTo(fieldInfo, allowLocalCopies).collect(Collectors.toUnmodifiableList());
+        return streamOfLatestInfoOfVariablesReferringTo(fieldInfo, allowLocalCopies).toList();
     }
 
     public boolean containsMessage(String messageString) {
@@ -524,11 +524,12 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         boolean notYetAssignedToWillBeAssignedToLater = notYetAssignedToWillBeAssignedToLater(variableInfo, fieldReference);
         // see FirstThen_0: this is here to break an chicken-and-egg problem between the FieldAnalyser (allAssignmentsHaveBeenSet)
         // and StatementAnalyser (checkNotNullEscapesAndPreconditions)
-        if (initialValue.expressionIsDelayed && notYetAssignedToWillBeAssignedToLater) {
-            String objectId = index + "-" + fieldReference.fieldInfo.fullyQualifiedName();
-            Expression initial = NewObject.initialValueOfField(objectId, primitives, fieldReference.parameterizedType());
-            initialValue = new ExpressionAndDelay(initial, false);
-        }
+        // FIXME problem with Singleton_7, I really need the delay here
+       // if (initialValue.expressionIsDelayed && notYetAssignedToWillBeAssignedToLater) {
+       //     String objectId = index + "-" + fieldReference.fieldInfo.fullyQualifiedName();
+       //     Expression initial = NewObject.initialValueOfField(objectId, primitives, fieldReference.parameterizedType());
+        //    initialValue = new ExpressionAndDelay(initial, false);
+        //}
 
         Map<VariableProperty, Integer> map = fieldPropertyMap(evaluationContext.getAnalyserContext(), fieldReference.fieldInfo);
         Map<VariableProperty, Integer> valueMap = evaluationContext.getValueProperties(initialValue.expression);
@@ -708,8 +709,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                                 return new ConditionAndVariableInfo(e2.condition,
                                         vic2.current(), e2.alwaysEscapes, vic2.getVariableInLoop(), e2.firstStatementIndexForOldStyleSwitch);
                             })
-                            .filter(cav -> acceptVariableForMerging(cav, inSwitchStatementOldStyle))
-                            .collect(Collectors.toUnmodifiableList());
+                            .filter(cav -> acceptVariableForMerging(cav, inSwitchStatementOldStyle)).toList();
                     boolean ignoreCurrent;
                     if (toMerge.size() == 1 && (toMerge.get(0).variableInLoop.assignmentId() != null
                             && toMerge.get(0).variableInLoop.assignmentId().startsWith(index) && !atLeastOneBlockExecuted ||

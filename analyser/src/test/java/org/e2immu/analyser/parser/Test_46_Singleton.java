@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.parser;
 
+import org.e2immu.analyser.analyser.FieldAnalysisImpl;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.visitor.FieldAnalyserVisitor;
@@ -22,8 +23,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_46_Singleton extends CommonTestRunner {
 
@@ -102,11 +102,47 @@ public class Test_46_Singleton extends CommonTestRunner {
         testClass("Singleton_6", 0, 0, new DebugConfiguration.Builder()
                 .build());
     }
-    
+
     // counter-example to the technique of test 1
     @Test
     public void test_7() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("Singleton_7".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof FieldReference fr && "created".equals(fr.fieldInfo.name)) {
+                    if ("0".equals(d.statementId())) {
+                        String expectValue = d.iteration() <= 1 ? "<f:created>" : "false";
+                    //    assertEquals(expectValue, d.currentValue().toString());
+                    }
+                    if ("1".equals(d.statementId())) {
+                   //     assertEquals("false", d.currentValue().toString());
+                    }
+                }
+            }
+        };
+
+        FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+            if ("created".equals(d.fieldInfo().name)) {
+                FieldAnalysisImpl.Builder builder = (FieldAnalysisImpl.Builder) d.fieldAnalysis();
+                if (d.iteration() <= 1) {
+                //    assertNull(d.fieldAnalysis().getEffectivelyFinalValue());
+                //    assertTrue(builder.valuesIsNotSet());
+                } else {
+                //    assertEquals("false", d.fieldAnalysis().getEffectivelyFinalValue().toString());
+                //    assertEquals("[false,false]", builder.getValues().toString());
+                }
+            }
+        };
+
         testClass("Singleton_7", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .build());
+    }
+
+    // counter-example to the technique of test 1
+    @Test
+    public void test_8() throws IOException {
+        testClass("Singleton_8", 1, 0, new DebugConfiguration.Builder()
                 .build());
     }
 }

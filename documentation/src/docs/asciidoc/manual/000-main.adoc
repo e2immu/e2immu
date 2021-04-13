@@ -41,6 +41,7 @@ include::{includedir}/manual/067-annotation-hierarchy.adoc[]
 :sectnums:
 
 include::{includedir}/manual/070-technical.adoc[]
+include::{includedir}/manual/071-variables.adoc[]
 
 == Supporting tools
 

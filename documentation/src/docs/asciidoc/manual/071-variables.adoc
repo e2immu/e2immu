@@ -13,7 +13,6 @@ Four main aspects control delays in the statement analyser:
 . the linked variable set of variables
 . the three expressions in the condition manager: condition, state, pre-condition
 
-
 === Variables
 
 We recognize the following types of variables:
@@ -213,3 +212,76 @@ We don't have to wait for modification since the field is public.
 
 Iteration 1, statement analyser in `add`: Value, linked variables, and `@Modified` determined.
 
+==== Breaking delays
+
+Break that only works partially, in iteration 1+ assignment from analyser to variable:
+
+[source,java]
+----
+ if (initialValue.expressionIsDelayed && notYetAssignedToWillBeAssignedToLater) {
+    String objectId = index + "-" + fieldReference.fieldInfo.fullyQualifiedName();
+    Expression initial = NewObject.initialValueOfField(objectId,
+        primitives, fieldReference.parameterizedType());
+    initialValue = new ExpressionAndDelay(initial, false);
+}
+----
+
+Infinite when break not present, with break the analyser works fine:
+
+[source,java]
+----
+public class FirstThen_0<S> {
+
+    private S first;
+
+    public FirstThen_0(@NotNull S first) {
+        this.first = Objects.requireNonNull(first);
+    }
+
+    public void set() {
+        if (first == null) throw new UnsupportedOperationException("Already set");
+        first = null;
+    }
+}
+----
+
+Infinite when break not present, too early with break:
+
+[source,java]
+----
+public class Singleton_7 {
+
+    private static boolean created;
+
+    public Singleton_7(int k) {
+        if (created) throw new UnsupportedOperationException();
+        created = false;
+    }
+}
+----
+
+Infinite either way:
+
+[source,java]
+----
+public class Project_2 {
+
+    static class Container {
+        final String value;
+
+        public Container(String value) {
+            this.value = value;
+        }
+    }
+
+    private final Map<String, Container> kvStore = new ConcurrentHashMap<>();
+
+    public String set(String key, String value) {
+        Container prev = kvStore.get(key);
+        if (prev == null) {
+            new Container(value); // removing container also solves the problem
+        }
+        return prev.value; // cause of the problem (change to key or constant solves the issue)
+    }
+}
+----
