@@ -15,7 +15,10 @@
 package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.expression.*;
+import org.e2immu.analyser.model.expression.DelayedVariableExpression;
+import org.e2immu.analyser.model.expression.EmptyExpression;
+import org.e2immu.analyser.model.expression.MethodCall;
+import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.This;
@@ -185,15 +188,15 @@ public class CompanionAnalyser {
 
         @Override
         public EvaluationContext child(Expression condition) {
-            boolean conditionIsDelayed = isDelayed(condition);
+            Set<Variable> conditionIsDelayed = isDelayedSet(condition);
             ConditionManager cm = conditionManager.newAtStartOfNewBlock(getPrimitives(), condition, conditionIsDelayed,
-                    Precondition.empty(getPrimitives()), false);
+                    Precondition.empty(getPrimitives()), null);
             return new EvaluationContextImpl(iteration, cm);
         }
 
         @Override
         public EvaluationContext childState(Expression state) {
-            boolean stateIsDelayed = isDelayed(state);
+            Set<Variable> stateIsDelayed = isDelayedSet(state);
             ConditionManager cm = conditionManager.addState(state, stateIsDelayed);
             return new EvaluationContextImpl(iteration, cm);
         }

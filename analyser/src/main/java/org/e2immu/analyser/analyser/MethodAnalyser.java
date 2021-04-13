@@ -513,7 +513,7 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
                     StatementAnalysis beforeAssignment = statementBeforeAssignment(fr);
                     if (beforeAssignment != null) {
                         ConditionManager cm = beforeAssignment.stateData.conditionManagerForNextStatement.get();
-                        if (cm.stateIsDelayed()) {
+                        if (cm.stateIsDelayed() != null) {
                             log(DELAYED, "Delaying compute @Only, @Mark, delay in state {} {}", beforeAssignment.index,
                                     methodInfo.fullyQualifiedName);
                             return DELAYS;

@@ -19,11 +19,12 @@ import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.visitor.FieldAnalyserVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
+import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class Test_46_Singleton extends CommonTestRunner {
 
@@ -55,11 +56,7 @@ public class Test_46_Singleton extends CommonTestRunner {
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("created".equals(d.fieldInfo().name)) {
-                if (d.iteration() == 0) {
-                    assertNull(d.fieldAnalysis().getEffectivelyFinalValue());
-                } else {
-                    assertEquals("[true,false]", d.fieldAnalysis().getEffectivelyFinalValue().toString());
-                }
+                assertEquals("[true,false]", d.fieldAnalysis().getEffectivelyFinalValue().toString());
             }
         };
 
@@ -110,12 +107,29 @@ public class Test_46_Singleton extends CommonTestRunner {
             if ("Singleton_7".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof FieldReference fr && "created".equals(fr.fieldInfo.name)) {
                     if ("0".equals(d.statementId())) {
-                        String expectValue = d.iteration() <= 1 ? "<f:created>" : "false";
-                    //    assertEquals(expectValue, d.currentValue().toString());
+                        String expectValue = d.iteration() == 0 ? "<f:created>" : "false";
+                        assertEquals(expectValue, d.currentValue().toString());
                     }
                     if ("1".equals(d.statementId())) {
-                   //     assertEquals("false", d.currentValue().toString());
+                        assertEquals("false", d.currentValue().toString());
                     }
+                }
+            }
+        };
+
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("Singleton_7".equals(d.methodInfo().name)) {
+                if ("0.0.0".equals(d.statementId())) {
+                    assertEquals("!<f:created>",
+                            d.statementAnalysis().stateData.getPrecondition().expression().toString());
+                    assertEquals("<f:created>",
+                            d.statementAnalysis().stateData.conditionManagerForNextStatement.get().condition().toString());
+                }
+                if ("0".equals(d.statementId())) {
+                    assertEquals(d.iteration() > 0, d.statementAnalysis().methodLevelData.combinedPrecondition.isFinal());
+                    String expectValue = d.iteration() == 0 ? "!<f:created>" : "true";
+                    assertEquals(expectValue,
+                            d.statementAnalysis().methodLevelData.combinedPrecondition.get().expression().toString());
                 }
             }
         };
@@ -123,18 +137,14 @@ public class Test_46_Singleton extends CommonTestRunner {
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("created".equals(d.fieldInfo().name)) {
                 FieldAnalysisImpl.Builder builder = (FieldAnalysisImpl.Builder) d.fieldAnalysis();
-                if (d.iteration() <= 1) {
-                //    assertNull(d.fieldAnalysis().getEffectivelyFinalValue());
-                //    assertTrue(builder.valuesIsNotSet());
-                } else {
-                //    assertEquals("false", d.fieldAnalysis().getEffectivelyFinalValue().toString());
-                //    assertEquals("[false,false]", builder.getValues().toString());
-                }
+                assertEquals("false", d.fieldAnalysis().getEffectivelyFinalValue().toString());
+                assertEquals("[false,false]", builder.getValues().toString());
             }
         };
 
-        testClass("Singleton_7", 0, 0, new DebugConfiguration.Builder()
+        testClass("Singleton_7", 2, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build());
     }

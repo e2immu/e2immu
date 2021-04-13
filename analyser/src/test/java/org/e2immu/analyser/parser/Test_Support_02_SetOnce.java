@@ -86,7 +86,7 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
                 assertEquals(d.iteration() > 1,
                         d.statementAnalysis().methodLevelData.linksHaveBeenEstablished.isSet());
                 String expectState = d.iteration() == 0 ? "<precondition>" : "true";
-                assertEquals(expectState, d.statementAnalysis().stateData.precondition.get().expression().toString());
+                assertEquals(expectState, d.statementAnalysis().stateData.getPrecondition().expression().toString());
             }
         };
 

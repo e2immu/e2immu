@@ -511,7 +511,11 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             boolean markAssignment = resultOfExpression != EmptyExpression.EMPTY_EXPRESSION;
 
             // in case both state and result of expression are delayed, we give preference to the result
-            Expression value = stateIsDelayed && !resultOfExpressionIsDelayed
+            // we do NOT take the delayed state into account when the assignment target is the reason for the delay
+            // see FirstThen_0 and Singleton_7
+            Expression value = stateIsDelayed
+                    && !resultOfExpressionIsDelayed
+                    && !evaluationContext.getConditionManager().isReasonForDelay(assignmentTarget)
                     ? DelayedExpression.forState(resultOfExpression.returnType()) : resultOfExpression;
 
             ChangeData newEcd;
@@ -547,8 +551,8 @@ public record EvaluationResult(EvaluationContext evaluationContext,
 
         public void eraseContextModified(Variable variable) {
             ChangeData ecd = valueChanges.get(variable);
-            if(ecd != null) {
-                Map<VariableProperty,Integer> propertiesWithoutContextModified = new HashMap<>(ecd.properties);
+            if (ecd != null) {
+                Map<VariableProperty, Integer> propertiesWithoutContextModified = new HashMap<>(ecd.properties);
                 propertiesWithoutContextModified.remove(VariableProperty.CONTEXT_MODIFIED);
                 ChangeData newChangeData = new ChangeData(ecd.value, ecd.stateIsDelayed, ecd.markAssignment,
                         ecd.readAtStatementTime, ecd.linkedVariables, ecd.staticallyAssignedVariables,

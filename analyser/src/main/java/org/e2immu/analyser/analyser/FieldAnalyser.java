@@ -1089,9 +1089,9 @@ public class FieldAnalyser extends AbstractAnalyser {
 
         @Override
         public EvaluationContext child(Expression condition) {
-            boolean conditionIsDelayed = isDelayed(condition);
+            Set<Variable> conditionIsDelayed = isDelayedSet(condition);
             ConditionManager cm = conditionManager.newAtStartOfNewBlock(getPrimitives(), condition, conditionIsDelayed,
-                    Precondition.empty(getPrimitives()), false);
+                    Precondition.empty(getPrimitives()), null);
             return FieldAnalyser.this.new EvaluationContextImpl(iteration, cm, closure);
         }
 

@@ -19,6 +19,7 @@ import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.analyser.util.SetUtil;
 
 import java.util.List;
 import java.util.Map;
@@ -40,11 +41,11 @@ Default value: true
 Concerning delays: only condition and state are recursively combined, precondition is not.
  */
 public record ConditionManager(Expression condition,
-                               boolean conditionIsDelayed,
+                               Set<Variable> conditionIsDelayed,
                                Expression state,
-                               boolean stateIsDelayed,
+                               Set<Variable> stateIsDelayed,
                                Precondition precondition,
-                               boolean preconditionIsDelayed,
+                               Set<Variable> preconditionIsDelayed,
                                ConditionManager parent) {
 
     public ConditionManager {
@@ -54,7 +55,13 @@ public record ConditionManager(Expression condition,
     }
 
     public boolean isDelayed() {
-        return stateIsDelayed || conditionIsDelayed || preconditionIsDelayed;
+        return stateIsDelayed != null || conditionIsDelayed != null || preconditionIsDelayed != null;
+    }
+
+    public boolean isReasonForDelay(Variable variable) {
+        return stateIsDelayed != null && stateIsDelayed.contains(variable)
+                || conditionIsDelayed != null && conditionIsDelayed.contains(variable)
+                || preconditionIsDelayed != null && preconditionIsDelayed.contains(variable);
     }
 
     /*
@@ -69,14 +76,20 @@ public record ConditionManager(Expression condition,
 
     public static ConditionManager initialConditionManager(Primitives primitives) {
         BooleanConstant TRUE = new BooleanConstant(primitives, true);
-        return new ConditionManager(TRUE, false, TRUE, false,
-                Precondition.empty(TRUE), false, null);
+        return new ConditionManager(TRUE, null, TRUE, null,
+                Precondition.empty(TRUE), null, null);
     }
 
     public static ConditionManager impossibleConditionManager(Primitives primitives) {
         BooleanConstant FALSE = new BooleanConstant(primitives, true);
-        return new ConditionManager(FALSE, false, FALSE, false,
-                new Precondition(FALSE, List.of()), false, null);
+        return new ConditionManager(FALSE, null, FALSE, null,
+                new Precondition(FALSE, List.of()), null, null);
+    }
+
+    private static Set<Variable> combineDelays(Set<Variable> set1, Set<Variable> set2) {
+        if (set1 == null) return set2;
+        if (set2 == null) return set1;
+        return SetUtil.immutableUnion(set1, set2);
     }
 
     /*
@@ -84,34 +97,37 @@ public record ConditionManager(Expression condition,
      */
     public ConditionManager newAtStartOfNewBlock(Primitives primitives,
                                                  Expression condition,
-                                                 boolean conditionIsDelayed,
+                                                 Set<Variable> conditionIsDelayed,
                                                  Precondition precondition,
-                                                 boolean preconditionIsDelayed) {
+                                                 Set<Variable> preconditionIsDelayed) {
         return new ConditionManager(condition, conditionIsDelayed,
-                new BooleanConstant(primitives, true), false,
+                new BooleanConstant(primitives, true), null,
                 precondition, preconditionIsDelayed, this);
     }
 
     /*
     we guarantee a parent so that the condition counts!
      */
-    public ConditionManager withCondition(EvaluationContext evaluationContext, Expression switchCondition, boolean switchExpressionIsDelayed) {
-        return new ConditionManager(combine(evaluationContext, condition, switchCondition), conditionIsDelayed || switchExpressionIsDelayed,
+    public ConditionManager withCondition(EvaluationContext evaluationContext, Expression switchCondition, Set<Variable> switchExpressionIsDelayed) {
+        return new ConditionManager(combine(evaluationContext, condition, switchCondition),
+                combineDelays(conditionIsDelayed, switchExpressionIsDelayed),
                 state, stateIsDelayed, precondition, preconditionIsDelayed, this);
     }
 
     /*
     adds a new layer (parent this)
     */
-    public ConditionManager newAtStartOfNewBlockDoNotChangePrecondition(Primitives primitives, Expression condition, boolean conditionIsDelayed) {
-        return new ConditionManager(condition, conditionIsDelayed || this.conditionIsDelayed,
-                new BooleanConstant(primitives, true), stateIsDelayed, precondition, preconditionIsDelayed, this);
+    public ConditionManager newAtStartOfNewBlockDoNotChangePrecondition(Primitives primitives, Expression condition, Set<Variable> conditionIsDelayed) {
+        return new ConditionManager(condition,
+                combineDelays(conditionIsDelayed, this.conditionIsDelayed),
+                new BooleanConstant(primitives, true),
+                stateIsDelayed, precondition, preconditionIsDelayed, this);
     }
 
     /*
     adds a new layer (parent this)
     */
-    public ConditionManager addState(Expression state, boolean stateIsDelayed) {
+    public ConditionManager addState(Expression state, Set<Variable> stateIsDelayed) {
         return new ConditionManager(condition, conditionIsDelayed, state, stateIsDelayed,
                 precondition, preconditionIsDelayed, this);
     }
@@ -119,7 +135,7 @@ public record ConditionManager(Expression condition,
     /*
     stays at the same level (parent parent)
      */
-    public ConditionManager withPrecondition(Precondition combinedPrecondition, boolean combinedPreconditionIsDelayed) {
+    public ConditionManager withPrecondition(Precondition combinedPrecondition, Set<Variable> combinedPreconditionIsDelayed) {
         return new ConditionManager(condition, conditionIsDelayed, state, stateIsDelayed, combinedPrecondition,
                 combinedPreconditionIsDelayed, parent);
     }
@@ -128,19 +144,21 @@ public record ConditionManager(Expression condition,
     stays at the same level
      */
     public ConditionManager withoutState(Primitives primitives) {
-        return new ConditionManager(condition, conditionIsDelayed, new BooleanConstant(primitives, true), false, precondition,
-                preconditionIsDelayed, parent);
+        return new ConditionManager(condition, conditionIsDelayed, new BooleanConstant(primitives, true),
+                null, precondition, preconditionIsDelayed, parent);
     }
 
     /*
     stays at the same level (parent parent)
      */
-    public ConditionManager newForNextStatementDoNotChangePrecondition(EvaluationContext evaluationContext, Expression addToState) {
+    public ConditionManager newForNextStatementDoNotChangePrecondition(EvaluationContext evaluationContext,
+                                                                       Expression addToState) {
         Objects.requireNonNull(addToState);
         if (addToState.isBoolValueTrue()) return this;
         Expression newState = combine(evaluationContext, state, addToState);
-        boolean newStateIsDelayed = evaluationContext.isDelayed(newState);
-        return new ConditionManager(condition, conditionIsDelayed, newState, newStateIsDelayed || stateIsDelayed,
+        Set<Variable> newStateIsDelayed = evaluationContext.isDelayedSet(newState);
+        return new ConditionManager(condition, conditionIsDelayed, newState,
+                combineDelays(newStateIsDelayed, stateIsDelayed),
                 precondition, preconditionIsDelayed, parent);
     }
 

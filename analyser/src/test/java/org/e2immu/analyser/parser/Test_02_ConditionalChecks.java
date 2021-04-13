@@ -189,13 +189,13 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                 if ("0.0.0".equals(d.statementId())) {
                     assertEquals("null==a||null==b", d.absoluteState().toString());
                     assertEquals("null==a||null==b", d.condition().toString());
-                    assertTrue(d.statementAnalysis().stateData.precondition.get().isEmpty());
+                    assertTrue(d.statementAnalysis().stateData.getPrecondition().isEmpty());
                 }
                 if ("0".equals(d.statementId()) || "1".equals(d.statementId())) {
                     if (d.iteration() > 0) {
                         assertEquals("true", d.state().toString());
                         assertEquals("true", d.condition().toString());
-                        assertEquals("true", d.statementAnalysis().stateData.precondition.get().toString());
+                        assertEquals("true", d.statementAnalysis().stateData.getPrecondition().toString());
                         assertTrue(d.statementAnalysis().methodLevelData.combinedPrecondition.get().isEmpty());
                     }
                 }
@@ -244,7 +244,7 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                         assertEquals("null==a", d.condition().toString());
                         assertEquals("null==a", d.absoluteState().toString());
                         // not-null does not contribute to the precondition
-                        assertEquals("true", d.statementAnalysis().stateData.precondition.get().toString());
+                        assertEquals("true", d.statementAnalysis().stateData.getPrecondition().toString());
                     }
                     if ("1".equals(d.statementId())) {
                         assertEquals("true", d.condition().toString());
@@ -255,7 +255,7 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                     if ("1.0.0".equals(d.statementId())) {
                         assertEquals("null==b", d.condition().toString());
                         assertEquals("null==b", d.absoluteState().toString()); // null!=a in parameter @NotNull
-                        assertEquals("true", d.statementAnalysis().stateData.precondition.get().toString());
+                        assertEquals("true", d.statementAnalysis().stateData.getPrecondition().toString());
                     }
                 }
             }

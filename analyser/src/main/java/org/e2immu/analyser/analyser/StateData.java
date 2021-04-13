@@ -15,9 +15,12 @@
 package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.expression.DelayedVariableExpression;
+import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.support.EventuallyFinal;
 import org.e2immu.support.SetOnceMap;
 
+import java.util.Set;
 import java.util.stream.Stream;
 
 import static org.e2immu.analyser.util.EventuallyFinalExtension.setFinalAllowEquals;
@@ -32,7 +35,7 @@ public class StateData {
      this variable contains the precondition of one single statement; an aggregate is computed in MethodLevelData
      */
 
-    public final EventuallyFinal<Precondition> precondition = new EventuallyFinal<>();
+    private final EventuallyFinal<Precondition> precondition = new EventuallyFinal<>();
 
     public boolean preconditionIsEmpty() {
         return precondition.isVariable() && precondition.get() == null;
@@ -41,6 +44,18 @@ public class StateData {
     public void setPrecondition(Precondition expression, boolean isDelayed) {
         if (isDelayed) precondition.setVariable(expression);
         else setFinalAllowEquals(precondition, expression);
+    }
+
+    public void setPreconditionAllowEquals(Precondition expression) {
+        setFinalAllowEquals(precondition, expression);
+    }
+
+    public Precondition getPrecondition() {
+        return precondition.get();
+    }
+
+    public boolean preconditionIsFinal() {
+        return precondition.isFinal();
     }
 
     /*
@@ -85,5 +100,14 @@ public class StateData {
 
     public Stream<Expression> statesOfInterruptsStream() {
         return statesOfInterrupts.stream().map(e -> e.getValue().get());
+    }
+
+    public Set<Variable> valueOfExpressionIsDelayed() {
+        if (valueOfExpression.isFinal()) return null;
+        Expression value = valueOfExpression.get();
+        if (value instanceof DelayedVariableExpression dve) {
+            return Set.of(dve.variable());
+        }
+        return Set.of();
     }
 }

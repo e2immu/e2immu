@@ -18,6 +18,7 @@ import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.This;
+import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.support.EventuallyFinal;
 import org.e2immu.support.FlipSwitch;
 import org.e2immu.support.SetOnce;
@@ -27,6 +28,8 @@ import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.AnalysisStatus.DELAYS;
@@ -62,6 +65,13 @@ public class MethodLevelData {
         if (!callsPotentiallyCircularMethod.isSet()) {
             callsPotentiallyCircularMethod.set(true);
         }
+    }
+
+    public Set<Variable> combinedPreconditionIsDelayedSet() {
+        if (combinedPrecondition.isFinal()) return null;
+        Precondition cp = combinedPrecondition.get();
+        if(cp == null) return Set.of();
+        return combinedPrecondition.get().expression().variables().stream().collect(Collectors.toUnmodifiableSet());
     }
 
     record SharedState(StatementAnalyserResult.Builder builder,
@@ -102,17 +112,17 @@ public class MethodLevelData {
 
         List<StatementAnalysis> subBlocks = sharedState.statementAnalysis.lastStatementsOfNonEmptySubBlocks();
         delays |= subBlocks.stream().anyMatch(sa -> sa.methodLevelData.combinedPrecondition.isVariable());
-        delays |= sharedState.stateData.precondition.isVariable();
+        delays |= !sharedState.stateData.preconditionIsFinal();
 
-        Stream<Precondition> fromMyStateData = sharedState.stateData.precondition.isFinal() ?
-                Stream.of(sharedState.stateData.precondition.get()) : Stream.of();
-        Stream<Precondition> fromPrevious = sharedState.previous != null && sharedState.previous.combinedPrecondition.isFinal() ?
+        Stream<Precondition> fromMyStateData =
+                Stream.of(sharedState.stateData.getPrecondition());
+        Stream<Precondition> fromPrevious = sharedState.previous != null ?
                 Stream.of(sharedState.previous.combinedPrecondition.get()) : Stream.of();
         Stream<Precondition> fromBlocks = sharedState.statementAnalysis.lastStatementsOfNonEmptySubBlocks().stream()
                 .map(sa -> sa.methodLevelData.combinedPrecondition)
-                .filter(EventuallyFinal::isFinal)
                 .map(EventuallyFinal::get);
         Precondition all = Stream.concat(fromMyStateData, Stream.concat(fromBlocks, fromPrevious))
+                .map(pc -> pc == null ? Precondition.empty(sharedState.evaluationContext.getPrimitives()) : pc)
                 .reduce((pc1, pc2) -> pc1.combine(sharedState.evaluationContext, pc2))
                 .orElse(Precondition.empty(sharedState.evaluationContext.getPrimitives()));
 

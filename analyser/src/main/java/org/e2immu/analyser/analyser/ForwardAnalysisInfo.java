@@ -16,19 +16,21 @@ package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.expression.LocalVariableCreation;
+import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.Primitives;
 
 import java.util.Map;
+import java.util.Set;
 
 public record ForwardAnalysisInfo(FlowData.Execution execution, ConditionManager conditionManager,
                                   LocalVariableCreation catchVariable,
                                   Map<String, Expression> switchIdToLabels,
                                   Expression switchSelector,
-                                  boolean switchSelectorIsDelayed) {
+                                  Set<Variable> switchSelectorIsDelayed) {
 
     public static ForwardAnalysisInfo startOfMethod(Primitives primitives) {
         return new ForwardAnalysisInfo(FlowData.Execution.ALWAYS, ConditionManager.initialConditionManager(primitives),
-                null, null, null, false);
+                null, null, null, null);
     }
 
     public ForwardAnalysisInfo otherConditionManager(ConditionManager conditionManager) {

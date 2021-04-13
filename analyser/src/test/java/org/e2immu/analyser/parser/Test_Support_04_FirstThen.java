@@ -48,7 +48,7 @@ public class Test_Support_04_FirstThen extends CommonTestRunner {
         if ("get".equals(d.methodInfo().name)) {
             if ("1".equals(d.statementId())) {
                 String expectPre = d.iteration() == 0 ? "null!=<f:then>" : "null!=then";
-                assertEquals(expectPre, d.statementAnalysis().stateData.precondition.get().expression().toString());
+                assertEquals(expectPre, d.statementAnalysis().stateData.getPrecondition().expression().toString());
             }
         }
     };

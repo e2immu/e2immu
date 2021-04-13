@@ -96,7 +96,7 @@ public class Test_12_IfStatement extends CommonTestRunner {
                     assertEquals("\"3\".equals(label1)", d.condition().toString());
                     assertEquals("true", d.state().toString());
                     assertEquals("!\"3\".equals(label1)", d.statementAnalysis().stateData
-                            .precondition.get().expression().toString());
+                            .getPrecondition().expression().toString());
                     assertEquals("!\"3\".equals(label1)", d.statementAnalysis().methodLevelData
                             .combinedPrecondition.get().expression().toString());
                     assertTrue(d.conditionManagerForNextStatement().precondition().isEmpty());
@@ -106,7 +106,7 @@ public class Test_12_IfStatement extends CommonTestRunner {
                     assertEquals("true", d.state().toString());
                     assertEquals("!\"3\".equals(label1)",
                             d.statementAnalysis().methodLevelData.combinedPrecondition.get().expression().toString());
-                    assertTrue(d.statementAnalysis().stateData.precondition.get().isEmpty());
+                    assertTrue(d.statementAnalysis().stateData.getPrecondition().isEmpty());
                     assertTrue(d.conditionManagerForNextStatement().precondition().isEmpty());
                 }
                 if ("1".equals(d.statementId())) {

@@ -117,7 +117,7 @@ public class Test_05_Final extends CommonTestRunner {
                     }
 
                     if ("0".equals(d.statementId())) {
-                        String expectValue = d.iteration() == 0 ? "null==<f:s5>?<s:String>:<s:>" : "\"abc\"";
+                        String expectValue = d.iteration() == 0 ? "null==<f:s5>?<s:String>:null" : "\"abc\"";
                         assertEquals(expectValue, d.currentValue().toString());
                         VariableInfo viC = d.variableInfoContainer().getPreviousOrInitial();
                         assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, viC.getProperty(VariableProperty.IMMUTABLE));

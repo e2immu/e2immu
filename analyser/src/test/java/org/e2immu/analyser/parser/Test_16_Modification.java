@@ -951,11 +951,11 @@ public class Test_16_Modification extends CommonTestRunner {
                     } else fail();
                 } else fail();
                 if (d.iteration() == 0) {
-                    assertTrue(d.statementAnalysis().stateData.precondition.isVariable());
+                    assertFalse(d.statementAnalysis().stateData.preconditionIsFinal());
                     assertFalse(d.statementAnalysis().stateData.preconditionIsEmpty());
                 } else {
-                    assertTrue(d.statementAnalysis().stateData.precondition.isFinal());
-                    assertTrue(d.statementAnalysis().stateData.precondition.get().isEmpty());
+                    assertTrue(d.statementAnalysis().stateData.preconditionIsFinal());
+                    assertTrue(d.statementAnalysis().stateData.getPrecondition().isEmpty());
                 }
             }
         };

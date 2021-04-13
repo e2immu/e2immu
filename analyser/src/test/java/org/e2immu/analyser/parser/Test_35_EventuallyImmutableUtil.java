@@ -60,15 +60,14 @@ public class Test_35_EventuallyImmutableUtil extends CommonTestRunner {
                     case 1 -> "null==<f:t>";
                     default -> "null==value.t";
                 };
-                assertEquals(expectPre, d.statementAnalysis().stateData.precondition.get().expression().toString());
-                assertEquals(d.iteration() <= 1, d.statementAnalysis().stateData.precondition.isVariable());
+                assertEquals(expectPre, d.statementAnalysis().stateData.getPrecondition().expression().toString());
+                assertEquals(d.iteration() > 1, d.statementAnalysis().stateData.preconditionIsFinal());
             }
         };
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("EventuallyImmutableUtil_2".equals(d.typeInfo().simpleName)) {
                 assertTrue(d.typeAnalysis().getApprovedPreconditionsE1().isEmpty());
-                String expectFields = d.iteration() <= 2 ? "[]" : "[value]";
                 assertEquals("[]", d.typeAnalysis().getEventuallyImmutableFields().toString());
                 String expectE2 = d.iteration() <= 1 ? "{}" : "{value.t=null==value.t}";
                 assertEquals(expectE2, d.typeAnalysis().getApprovedPreconditionsE2().toString());
@@ -87,7 +86,7 @@ public class Test_35_EventuallyImmutableUtil extends CommonTestRunner {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("isReady".equals(d.methodInfo().name)) {
                 // preconditions have nothing to do with this
-                assertTrue(d.statementAnalysis().stateData.precondition.get().isEmpty());
+                assertTrue(d.statementAnalysis().stateData.getPrecondition().isEmpty());
             }
         };
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {

@@ -20,6 +20,7 @@ import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.analyser.util.SetUtil;
 import org.e2immu.annotation.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -248,6 +249,27 @@ public interface EvaluationContext {
         if (expression instanceof DelayedExpression || expression instanceof DelayedVariableExpression) return true;
         try {
             return expression.subElements().stream().anyMatch(e -> e instanceof Expression expr && isDelayed(expr));
+        } catch (RuntimeException runtimeException) {
+            LOGGER.error("Error computing isDelayed on type " + expression.getClass());
+            throw runtimeException;
+        }
+    }
+
+    default Set<Variable> isDelayedSet(Expression expression) {
+        if (expression instanceof DelayedExpression) return Set.of();
+        if (expression instanceof DelayedVariableExpression dve) return Set.of(dve.variable());
+        try {
+            Set<Variable> set = null;
+            for (Element element : expression.subElements()) {
+                if (element instanceof Expression ex) {
+                    Set<Variable> delayed = isDelayedSet(ex);
+                    if (delayed != null) {
+                        if (set == null) set = delayed;
+                        else set = SetUtil.immutableUnion(set, delayed);
+                    }
+                }
+            }
+            return set;
         } catch (RuntimeException runtimeException) {
             LOGGER.error("Error computing isDelayed on type " + expression.getClass());
             throw runtimeException;
