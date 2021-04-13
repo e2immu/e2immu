@@ -290,6 +290,13 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
                     e2ImmuAnnotationExpressions.modified;
             annotations.put(ae, true);
 
+            // dynamic type annotations: @E1Immutable, @E1Container, @E2Immutable, @E2Container
+            int formallyImmutable = formalProperty();
+            int dynamicallyImmutable = getProperty(VariableProperty.IMMUTABLE);
+            if (MultiLevel.isBetterImmutable(dynamicallyImmutable, formallyImmutable)) {
+                doImmutableContainer(e2ImmuAnnotationExpressions, dynamicallyImmutable, true);
+            }
+
             if (Primitives.isVoid(returnType)) return;
 
             // @Identity
@@ -310,13 +317,6 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
 
             // dynamic type annotation for types with abstract methods: @NotModified1
             doNotModified1(e2ImmuAnnotationExpressions);
-
-            // dynamic type annotations: @E1Immutable, @E1Container, @E2Immutable, @E2Container
-            int formallyImmutable = formalProperty();
-            int dynamicallyImmutable = getProperty(VariableProperty.IMMUTABLE);
-            if (MultiLevel.isBetterImmutable(dynamicallyImmutable, formallyImmutable)) {
-                doImmutableContainer(e2ImmuAnnotationExpressions, dynamicallyImmutable, true);
-            }
         }
 
         private boolean allowIndependentOnMethod() {

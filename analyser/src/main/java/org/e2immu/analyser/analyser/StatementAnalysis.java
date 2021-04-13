@@ -1000,7 +1000,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         boolean myOwn = fieldReference.scope instanceof This thisVariable && thisVariable.typeInfo.equals(methodAnalysis.getMethodInfo().typeInfo);
         String newObjectIdentifier = index + "-" + fieldReference.fieldInfo.fullyQualifiedName();
 
-        if (inPartOfConstruction() && myOwn) { // field that must be initialised
+        if (inPartOfConstruction() && myOwn && !fieldReference.fieldInfo.isStatic()) { // instance field that must be initialised
             Expression initialValue = analyserContext.getFieldAnalysis(fieldReference.fieldInfo).getInitialValue();
             if (initialValue == null) { // initialiser value not yet evaluated
                 return new ExpressionAndDelay(DelayedVariableExpression.forField(fieldReference), true);

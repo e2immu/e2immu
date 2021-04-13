@@ -15,10 +15,7 @@
 package org.e2immu.analyser.usage;
 
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.expression.MethodCall;
-import org.e2immu.analyser.model.expression.MethodReference;
-import org.e2immu.analyser.model.expression.TypeExpression;
-import org.e2immu.analyser.model.expression.VariableExpression;
+import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.variable.FieldReference;
 
 import java.util.Collection;
@@ -106,12 +103,20 @@ public record CollectUsages(List<String> packagePrefixes, Set<String> packagesAc
             } else if (e instanceof MethodReference mr && accept(mr.methodInfo.typeInfo.packageName())) {
                 result.add(mr.methodInfo);
                 result.add(mr.methodInfo.typeInfo);
+            } else if (e instanceof NewObject no && no.constructor() != null &&
+                    accept(no.constructor().typeInfo.packageName())) {
+                result.add(no.constructor());
+                result.add(no.constructor().typeInfo);
             } else if (e instanceof VariableExpression ve) {
                 if (ve.variable() instanceof FieldReference fr) {
                     collect(result, fr.fieldInfo);
                 } else {
                     collect(result, ve.variable().parameterizedType());
                 }
+            } else if (e instanceof FieldAccess fa) {
+                if (fa.variable() instanceof FieldReference fr) {
+                    collect(result, fr.fieldInfo);
+                } else throw new UnsupportedOperationException("?");
             } else if (e instanceof TypeExpression te) {
                 collect(result, te.parameterizedType);
             }

@@ -74,10 +74,10 @@ public class NameOfPackageWithoutDots {
 - Only public methods, types and fields will be shown.
 
  */
-public record Composer(TypeMap typeMap, String destinationPackage) {
+public record Composer(TypeMap typeMap, String destinationPackage, Predicate<WithInspectionAndAnalysis> predicate) {
     private static final Logger LOGGER = LoggerFactory.getLogger(Composer.class);
 
-    public Collection<TypeInfo> compose(Collection<TypeInfo> primaryTypes, Predicate<WithInspectionAndAnalysis> predicate) {
+    public Collection<TypeInfo> compose(Collection<TypeInfo> primaryTypes) {
         Map<String, TypeInspectionImpl.Builder> buildersPerPackage = new HashMap<>();
         for (TypeInfo primaryType : primaryTypes) {
             assert primaryType.isPrimaryType();
@@ -97,6 +97,7 @@ public record Composer(TypeMap typeMap, String destinationPackage) {
     }
 
     private void appendType(TypeInfo primaryType, TypeInspectionImpl.Builder packageBuilder, boolean topLevel) {
+        if (!acceptTypeOrAnySubType(primaryType)) return;
         TypeInspection typeInspection = primaryType.typeInspection.get();
         TypeInspectionImpl.Builder typeBuilder = newTypeBuilder(packageBuilder.typeInfo(), typeInspection, topLevel);
 
@@ -104,21 +105,31 @@ public record Composer(TypeMap typeMap, String destinationPackage) {
             appendType(subType, typeBuilder, false);
         }
         for (FieldInfo fieldInfo : typeInspection.fields()) {
-            if (fieldInfo.isPublic()) {
+            if (fieldInfo.isPublic() && predicate.test(fieldInfo)) {
                 typeBuilder.addField(createField(fieldInfo, typeBuilder.typeInfo()));
             }
         }
         for (MethodInfo constructor : typeInspection.constructors()) {
-            typeBuilder.addMethod(createMethod(constructor, typeBuilder.typeInfo()));
+            if (predicate.test(constructor)) {
+                typeBuilder.addMethod(createMethod(constructor, typeBuilder.typeInfo()));
+            }
         }
         for (MethodInfo methodInfo : typeInspection.methods()) {
-            typeBuilder.addMethod(createMethod(methodInfo, typeBuilder.typeInfo()));
+            if (predicate.test(methodInfo)) {
+                typeBuilder.addMethod(createMethod(methodInfo, typeBuilder.typeInfo()));
+            }
         }
 
         TypeInspection builtType = typeBuilder.build();
         TypeInfo typeInfo = builtType.typeInfo();
         typeInfo.typeInspection.set(builtType);
         packageBuilder.addSubType(typeInfo);
+    }
+
+    private boolean acceptTypeOrAnySubType(TypeInfo typeInfo) {
+        if (predicate().test(typeInfo)) return true;
+        TypeInspection inspection = typeInfo.typeInspection.get();
+        return inspection.subTypes().stream().anyMatch(this::acceptTypeOrAnySubType);
     }
 
     private FieldInfo createField(FieldInfo fieldInfo, TypeInfo owner) {

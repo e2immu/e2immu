@@ -466,4 +466,10 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
                 .build());
     }
 
+
+    @Test
+    public void test_10() throws IOException {
+        testClass("EventuallyE2Immutable_10", 0, 0, new DebugConfiguration.Builder()
+                .build());
+    }
 }

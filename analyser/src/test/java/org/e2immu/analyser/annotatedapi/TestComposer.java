@@ -62,7 +62,7 @@ public class TestComposer {
         Parser parser = new Parser(configuration);
 
         Parser.ComposerData composerData = parser.primaryTypesForAnnotatedAPIComposing();
-        Composer composer = new Composer(composerData.typeMap(), "org.e2immu.testannotatedapi");
+        Composer composer = new Composer(composerData.typeMap(), "org.e2immu.testannotatedapi", w -> true);
         Collection<TypeInfo> apiTypes = composer.compose(composerData.primaryTypes());
         for (TypeInfo apiType : apiTypes) {
 

@@ -80,6 +80,8 @@ public class Logger {
         ANNOTATION_XML_READER,
         ANNOTATION_XML_WRITER,
 
+        ANNOTATED_API_WRITER,
+
         ANNOTATION_EXPRESSION,
         MERGE_ANNOTATIONS,
 

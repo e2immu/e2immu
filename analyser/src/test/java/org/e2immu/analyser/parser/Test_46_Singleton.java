@@ -14,10 +14,9 @@
 
 package org.e2immu.analyser.parser;
 
-import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.model.Level;
-import org.e2immu.analyser.visitor.FieldAnalyserVisitor;
+import org.e2immu.analyser.model.variable.FieldReference;
+import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -38,14 +37,32 @@ public class Test_46_Singleton extends CommonTestRunner {
 
     @Test
     public void test_1() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("Singleton_1".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof FieldReference fr && "created".equals(fr.fieldInfo.name)) {
+                    if ("0".equals(d.statementId())) {
+                        String expectValue = d.iteration() == 0 ? "<f:created>" : "instance type boolean";
+                        // FIXME in iteration 2, value 'true'
+                        assertEquals(expectValue, d.currentValue().toString());
+                    }
+                }
+            }
+        };
         testClass("Singleton_1", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 
     @Test
     public void test_2() throws IOException {
-         testClass("Singleton_2", 0, 0, new DebugConfiguration.Builder()
+        testClass("Singleton_2", 0, 0, new DebugConfiguration.Builder()
                 .build());
     }
 
+    // counter-example to the technique of test 0
+    @Test
+    public void test_3() throws IOException {
+        testClass("Singleton_3", 0, 0, new DebugConfiguration.Builder()
+                .build());
+    }
 }
