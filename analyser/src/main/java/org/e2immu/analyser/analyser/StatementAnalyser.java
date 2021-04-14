@@ -807,20 +807,30 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 CONTEXT_NOT_NULL, groupPropertyValues.getMap(CONTEXT_NOT_NULL), EVALUATION, Set.of());
         status = cnnStatus.combine(status);
 
+        ContextPropertyWriter contextPropertyWriter2 = new ContextPropertyWriter();
         addToMap(groupPropertyValues, EXTERNAL_NOT_NULL, x -> MultiLevel.DELAY, false);
-        AnalysisStatus ennStatus = contextPropertyWriter.write(statementAnalysis, sharedState.evaluationContext,
+        AnalysisStatus ennStatus = contextPropertyWriter2.write(statementAnalysis, sharedState.evaluationContext,
                 VariableInfo::getStaticallyAssignedVariables,
                 EXTERNAL_NOT_NULL, groupPropertyValues.getMap(EXTERNAL_NOT_NULL), EVALUATION, Set.of());
 
         potentiallyRaiseErrorsOnNotNullInContext(evaluationResult.changeData());
 
+        ContextPropertyWriter contextPropertyWriter3 = new ContextPropertyWriter();
         addToMap(groupPropertyValues, EXTERNAL_IMMUTABLE, x -> MultiLevel.NOT_INVOLVED, false);
-        AnalysisStatus extImmStatus = contextPropertyWriter.write(statementAnalysis, sharedState.evaluationContext,
+        AnalysisStatus extImmStatus = contextPropertyWriter3.write(statementAnalysis, sharedState.evaluationContext,
                 VariableInfo::getStaticallyAssignedVariables,
                 EXTERNAL_IMMUTABLE, groupPropertyValues.getMap(EXTERNAL_IMMUTABLE), EVALUATION, Set.of());
 
+        addToMap(groupPropertyValues, CONTEXT_PROPAGATE_MOD, x -> Level.FALSE, true);
+        // the delay for PM is ignored (if any, it will come from CM)
+        // we add the linked variables on top of the statically assigned variables
+        contextPropertyWriter3.write(statementAnalysis, sharedState.evaluationContext,
+                VariableInfo::getLinkedVariables,
+                CONTEXT_PROPAGATE_MOD, groupPropertyValues.getMap(CONTEXT_PROPAGATE_MOD), EVALUATION, Set.of());
+
+        ContextPropertyWriter contextPropertyWriter4 = new ContextPropertyWriter();
         addToMap(groupPropertyValues, CONTEXT_IMMUTABLE, x -> MultiLevel.NOT_INVOLVED, true);
-        AnalysisStatus cImmStatus = contextPropertyWriter.write(statementAnalysis, sharedState.evaluationContext,
+        AnalysisStatus cImmStatus = contextPropertyWriter4.write(statementAnalysis, sharedState.evaluationContext,
                 VariableInfo::getStaticallyAssignedVariables,
                 CONTEXT_IMMUTABLE, groupPropertyValues.getMap(CONTEXT_IMMUTABLE), EVALUATION, Set.of());
         if (cImmStatus != DONE) {
@@ -829,16 +839,11 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
 
         addToMap(groupPropertyValues, CONTEXT_MODIFIED, x -> Level.FALSE, true);
         // we add the linked variables on top of the statically assigned variables
-        AnalysisStatus cmStatus = contextPropertyWriter.write(statementAnalysis, sharedState.evaluationContext,
+        AnalysisStatus cmStatus = contextPropertyWriter4.write(statementAnalysis, sharedState.evaluationContext,
                 VariableInfo::getLinkedVariables,
                 CONTEXT_MODIFIED, groupPropertyValues.getMap(CONTEXT_MODIFIED), EVALUATION, Set.of());
         status = cmStatus.combine(status);
 
-        addToMap(groupPropertyValues, CONTEXT_PROPAGATE_MOD, x -> Level.FALSE, true);
-        // the delay for PM is ignored (if any, it will come from CM)
-        contextPropertyWriter.write(statementAnalysis, sharedState.evaluationContext,
-                VariableInfo::getLinkedVariables,
-                CONTEXT_PROPAGATE_MOD, groupPropertyValues.getMap(CONTEXT_PROPAGATE_MOD), EVALUATION, Set.of());
 
         if (!linked1Delays && !linkedDelays) {
             AnalysisStatus linked1 = new Linked1Writer(statementAnalysis, sharedState.evaluationContext,
