@@ -15,12 +15,15 @@
 package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.LinkedVariables;
+import org.e2immu.analyser.analyser.VariableInfo;
+import org.e2immu.analyser.analyser.VariableInfoContainer;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.AnnotatedAPIConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MethodInfo;
+import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.visitor.TypeMapVisitor;
@@ -58,16 +61,20 @@ public class Test_48_Store extends CommonTestRunner {
             if ("handleMultiSet".equals(d.methodInfo().name)) {
                 if ("entry".equals(d.variableName())) {
                     if ("0.0.0".equals(d.statementId())) {
+                        // EVAL level
+                        VariableInfo eval = d.variableInfoContainer().best(VariableInfoContainer.Level.EVALUATION);
                         String expectLinks = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "";
-                        assertEquals(expectLinks, d.variableInfo().getLinkedVariables().toString());
-                        int expectPm = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
-                        assertEquals(expectPm, d.getProperty(VariableProperty.CONTEXT_PROPAGATE_MOD));
+                        assertEquals(expectLinks, eval.getLinkedVariables().toString());
+                        String expectValue = d.iteration() == 0 ? "<v:entry>" : "instance type Entry<String,Object>";
+                        assertEquals(expectValue, eval.getValue().toString());
+                        assertEquals(Level.TRUE, eval.getProperty(VariableProperty.CONTEXT_PROPAGATE_MOD));
+                        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, eval.getProperty(VariableProperty.CONTEXT_NOT_NULL));
                     }
                 }
             }
         };
 
-        testClass("Store_1", 1, 7, new DebugConfiguration.Builder()
+        testClass("Store_1", 0, 3, new DebugConfiguration.Builder()
                 .addTypeMapVisitor(typeMapVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());

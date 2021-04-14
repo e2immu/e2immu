@@ -311,23 +311,19 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         builder.compose(objectResult, res.k.build());
 
         // revisit abstract method, check if object value pointed to a concrete, modifying method
-        if (abstractMethod && objectValue instanceof VariableExpression ve) {
+        if (abstractMethod && objectValue instanceof IsVariableExpression ve) {
             MethodInfo pointsToConcreteMethod = evaluationContext.concreteMethod(variable(), methodInfo);
             if (pointsToConcreteMethod != null) {
                 MethodAnalysis concreteMethodAnalysis = evaluationContext.getAnalyserContext().getMethodAnalysis(pointsToConcreteMethod);
                 int modifyingConcreteMethod = concreteMethodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD);
-                EvaluationResult.Builder pmBuilder = new EvaluationResult.Builder(evaluationContext);
-                if (modifyingConcreteMethod != Level.DELAY) {
-                    pmBuilder.markContextModified(ve.variable(), modifyingConcreteMethod);
+               if (modifyingConcreteMethod != Level.DELAY) {
+                    builder.markContextModified(ve.variable(), modifyingConcreteMethod);
                 } else {
-                    pmBuilder.markContextModifiedDelay(ve.variable());
-                    pmBuilder.eraseContextModified(ve.variable());
+                    builder.markContextModifiedDelay(ve.variable());
+                    builder.eraseContextModified(ve.variable());
                 }
-                builder.composeIgnoreExpression(pmBuilder.build());
             } else if (propagateModification) {
-                EvaluationResult.Builder pmBuilder = new EvaluationResult.Builder(evaluationContext);
-                pmBuilder.markPropagateModification(ve.variable());
-                builder.composeIgnoreExpression(pmBuilder.build());
+                builder.markPropagateModification(ve.variable());
             }
         }
 
