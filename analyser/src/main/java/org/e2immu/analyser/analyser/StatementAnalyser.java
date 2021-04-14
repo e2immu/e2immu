@@ -1039,7 +1039,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         groupPropertyValues.set(EXTERNAL_NOT_NULL, variable, enn == null ?
                 (valueIsDelayed ? Level.DELAY : MultiLevel.NOT_INVOLVED) : enn);
         Integer cnn = res.remove(CONTEXT_NOT_NULL);
-        groupPropertyValues.set(CONTEXT_NOT_NULL, variable, cnn == null ? MultiLevel.NULLABLE : cnn);
+        groupPropertyValues.set(CONTEXT_NOT_NULL, variable, cnn == null ? variable.parameterizedType().defaultNotNull() : cnn);
         Integer cm = res.remove(CONTEXT_MODIFIED);
         groupPropertyValues.set(CONTEXT_MODIFIED, variable, cm == null ? Level.FALSE : cm);
         Integer pm = res.remove(CONTEXT_PROPAGATE_MOD);

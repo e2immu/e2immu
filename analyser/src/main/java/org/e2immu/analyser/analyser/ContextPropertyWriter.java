@@ -18,6 +18,8 @@ import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.util.DependencyGraph;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -33,6 +35,7 @@ import static org.e2immu.analyser.util.Logger.LogTarget.DELAYED;
 import static org.e2immu.analyser.util.Logger.log;
 
 public class ContextPropertyWriter {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ContextPropertyWriter.class);
 
     private final DependencyGraph<Variable> dependencyGraph = new DependencyGraph<>();
 
@@ -96,11 +99,16 @@ public class ContextPropertyWriter {
                     int summary = summarizeContext(variablesBaseLinksTo, variableProperty, propertyValues);
                     if (summary == Level.DELAY) analysisStatus.set(DELAYS);
                     // this loop is critical, see Container_3, do not remove it again :-)
-                    for (Variable linkedVariable : variablesBaseLinksTo) {
-                        if (!doNotWrite.contains(linkedVariable)) {
-                            assignToLinkedVariable(statementAnalysis, progress, summary, linkedVariable,
-                                    variableProperty, level, valuesToSet);
+                    try {
+                        for (Variable linkedVariable : variablesBaseLinksTo) {
+                            if (!doNotWrite.contains(linkedVariable)) {
+                                assignToLinkedVariable(statementAnalysis, progress, summary, linkedVariable,
+                                        variableProperty, level, valuesToSet);
+                            }
                         }
+                    } catch (RuntimeException re) {
+                        LOGGER.error("Summary {}, vars: {}", summary, variablesBaseLinksTo);
+                        throw re;
                     }
                 });
         valuesToSet.forEach((k, v) -> {

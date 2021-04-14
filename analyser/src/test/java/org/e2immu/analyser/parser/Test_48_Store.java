@@ -25,6 +25,7 @@ import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.visitor.EvaluationResultVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.visitor.TypeMapVisitor;
 import org.junit.jupiter.api.Test;
@@ -76,6 +77,37 @@ public class Test_48_Store extends CommonTestRunner {
 
         testClass("Store_1", 0, 3, new DebugConfiguration.Builder()
                 .addTypeMapVisitor(typeMapVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .build());
+    }
+
+    @Test
+    public void test_2() throws IOException {
+        EvaluationResultVisitor evaluationResultVisitor = d -> {
+            if ("1.0.0.0.0.0.0.0.0".equals(d.statementId())) {
+                assertEquals(d.iteration() == 0 ? 1 : 2, d.evaluationResult().changeData().size());
+            }
+        };
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("handleMultiSet".equals(d.methodInfo().name)) {
+                if ("countRemoved".equals(d.variableName())) {
+                    if ("1".equals(d.statementId())) {
+                        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+                        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                    }
+                    if ("1.0.0.0.0.0.0.0.0".equals(d.statementId())) {
+                        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+                    }
+                }
+                if ("countRemoved$1.0.0".equals(d.variableName())) {
+                    if ("1.0.0.0.0.0.0.0.0".equals(d.statementId())) {
+                        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+                    }
+                }
+            }
+        };
+        testClass("Store_2", 0, 2, new DebugConfiguration.Builder()
+                .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
