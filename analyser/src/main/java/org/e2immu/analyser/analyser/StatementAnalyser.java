@@ -1185,7 +1185,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         }
 
         if (vi.getStatementTime() == VariableInfoContainer.VARIABLE_FIELD_DELAY) {
-            log(DELAYED, "Apply of step {}, {} is delayed because of variable field delay",
+            log(DELAYED, "Apply of statement {}, {} is delayed because of variable field delay",
                     index(), myMethodAnalyser.methodInfo.fullyQualifiedName);
             return LinkedVariables.DELAY;
         }
@@ -1381,7 +1381,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             if (delays) return DELAYS;
         }
         if (statementAnalysis.stateData.preconditionIsEmpty()) {
-            // it could have been set from the assert (step4) or apply via a method call
+            // it could have been set from the assert (subBlocks) or apply via a method call
             statementAnalysis.stateData.setPreconditionAllowEquals(Precondition.empty(statementAnalysis.primitives));
         } else if (!statementAnalysis.stateData.preconditionIsFinal()) {
             return DELAYS;
@@ -1390,7 +1390,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
     }
 
     /*
-    we create the variable(s), to make sure they exist in INIT level, but defer computation of their value to step 3.
+    we create the variable(s), to make sure they exist in INIT level, but defer computation of their value to evaluation.
     In effect, we split int i=3; into int i (INIT); i=3 (EVAL);
 
     Loop and catch variables are special in that their scope is restricted to the statement and its block.
@@ -1616,6 +1616,12 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                     return applyResult.combine(analysisStatus);
                 }
             }
+            if (analysisStatus == DONE) {
+                if (statementAnalysis.methodLevelData.causesOfContextModificationDelayIsVariable()) {
+                    //    assert statementAnalysis.methodLevelData.causesOfContextModificationDelayIsEmpty();
+                    statementAnalysis.methodLevelData.causesOfContextModificationDelaySetFinal();
+                }
+            }
             return analysisStatus;
         }
 
@@ -1656,9 +1662,9 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
 
             if (!valueIsDelayed && (statementAnalysis.statement instanceof IfElseStatement ||
                     statementAnalysis.statement instanceof AssertStatement)) {
-                value = step3_IfElse_Assert(sharedState, value);
+                value = eval_IfElse_Assert(sharedState, value);
             } else if (!valueIsDelayed && statementAnalysis.statement instanceof SwitchStatement switchStatement) {
-                step3_Switch(sharedState, value, switchStatement);
+                eval_Switch(sharedState, value, switchStatement);
             }
 
             // the value can be delayed even if it is "true", for example (Basics_3)
@@ -1679,7 +1685,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             }
             return overall;
         } catch (RuntimeException rte) {
-            LOGGER.warn("Failed to evaluate main expression (step 3) in statement {}", statementAnalysis.index);
+            LOGGER.warn("Failed to evaluate main expression in statement {}", statementAnalysis.index);
             throw rte;
         }
     }
@@ -1770,7 +1776,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
     /*
     goal: raise errors, exclude branches, etc.
      */
-    private void step3_Switch(SharedState sharedState, Expression switchExpression, SwitchStatement switchStatement) {
+    private void eval_Switch(SharedState sharedState, Expression switchExpression, SwitchStatement switchStatement) {
         assert switchExpression != null;
         List<String> never = new ArrayList<>();
         List<String> always = new ArrayList<>();
@@ -1793,7 +1799,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         }
     }
 
-    private Expression step3_IfElse_Assert(SharedState sharedState, Expression value) {
+    private Expression eval_IfElse_Assert(SharedState sharedState, Expression value) {
         assert value != null;
 
         Expression evaluated = sharedState.localConditionManager.evaluate(sharedState.evaluationContext, value);
@@ -1848,7 +1854,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         AnalysisStatus analysisStatus = sharedState.localConditionManager.isDelayed() ? DELAYS : DONE;
 
         if (!startOfBlocks.isEmpty()) {
-            return step4_haveSubBlocks(sharedState, startOfBlocks).combine(analysisStatus);
+            return haveSubBlocks(sharedState, startOfBlocks).combine(analysisStatus);
         }
 
         if (statementAnalysis.statement instanceof AssertStatement) {
@@ -1917,10 +1923,10 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         }
     }
 
-    private AnalysisStatus step4_haveSubBlocks(SharedState sharedState, List<Optional<StatementAnalyser>> startOfBlocks) {
+    private AnalysisStatus haveSubBlocks(SharedState sharedState, List<Optional<StatementAnalyser>> startOfBlocks) {
         EvaluationContext evaluationContext = sharedState.evaluationContext;
 
-        List<ExecutionOfBlock> executions = step4a_determineExecution(sharedState, startOfBlocks);
+        List<ExecutionOfBlock> executions = subBlocks_determineExecution(sharedState, startOfBlocks);
         AnalysisStatus analysisStatus = DONE;
 
 
@@ -2138,7 +2144,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
     }
 
 
-    private List<ExecutionOfBlock> step4a_determineExecution(SharedState sharedState, List<Optional<StatementAnalyser>> startOfBlocks) {
+    private List<ExecutionOfBlock> subBlocks_determineExecution(SharedState sharedState, List<Optional<StatementAnalyser>> startOfBlocks) {
         List<ExecutionOfBlock> executions = new ArrayList<>(startOfBlocks.size());
 
         Expression value = statementAnalysis.stateData.valueOfExpression.get();

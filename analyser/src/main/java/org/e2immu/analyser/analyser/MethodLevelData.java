@@ -128,7 +128,7 @@ public class MethodLevelData {
     private AnalysisStatus mergeCausesOfContextModificationDelay(SharedState sharedState) {
         if (causesOfContextModificationDelay.isFinal()) return DONE;
         if (sharedState.previous != null && sharedState.previous.causesOfContextModificationDelay.isVariable()) {
-            if(causesOfContextModificationDelay.get() == null) {
+            if (causesOfContextModificationDelay.get() == null) {
                 causesOfContextModificationDelay.setVariable(new HashSet<>());
             }
             causesOfContextModificationDelay.get().addAll(sharedState.previous.causesOfContextModificationDelay.get());
@@ -139,7 +139,8 @@ public class MethodLevelData {
                 .forEach(set -> {
                     if (set != null) causesOfContextModificationDelay.get().add(set);
                 });
-        if(causesOfContextModificationDelay.get() == null || causesOfContextModificationDelay.get().isEmpty()) {
+        if (causesOfContextModificationDelay.get() == null || causesOfContextModificationDelay.get().isEmpty()) {
+            causesOfContextModificationDelaySetFinal();
             return DONE;
         }
         log(DELAYED, "Still have causes of context modification delay: {}",
