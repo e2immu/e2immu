@@ -23,6 +23,7 @@ import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.inspector.MethodResolution;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.GreaterThanZero;
+import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.testexample.Warnings_1;
@@ -35,6 +36,8 @@ import java.util.stream.Stream;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_04_Warnings extends CommonTestRunner {
+
+    public static final String NULLABLE_INSTANCE_TYPE_STRING = "nullable instance type String";
 
     public Test_04_Warnings() {
         super(true);
@@ -51,7 +54,7 @@ public class Test_04_Warnings extends CommonTestRunner {
                 assertEquals("ERROR in M:" + TYPE + ":1: Unused local variable: a", d.haveError(Message.UNUSED_LOCAL_VARIABLE));
                 assertEquals("ERROR in M:" + TYPE + ":1: Useless assignment: a", d.haveError(Message.USELESS_ASSIGNMENT));
 
-                AnalysisStatus expectStatus = d.iteration() == 0 ? AnalysisStatus.PROGRESS: AnalysisStatus.DONE;
+                AnalysisStatus expectStatus = d.iteration() == 0 ? AnalysisStatus.PROGRESS : AnalysisStatus.DONE;
                 assertEquals(expectStatus, d.result().analysisStatus());
             }
         };
@@ -330,6 +333,12 @@ public class Test_04_Warnings extends CommonTestRunner {
         final String T = "org.e2immu.analyser.testexample.Warnings_5.ChildClass.t";
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("methodMustNotBeStatic2".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof FieldReference fr && "s".equals(fr.fieldInfo.name)) {
+                    String expectValue = d.iteration() == 0 ? "<f:s>" : NULLABLE_INSTANCE_TYPE_STRING;
+                    assertEquals(expectValue, d.currentValue().toString());
+                }
+            }
             if ("methodMustNotBeStatic5".equals(d.methodInfo().name) && d.variable() instanceof ParameterInfo) {
                 if ("0".equals(d.statementId())) {
                     int expectDelay = d.iteration() <= 2 ? Level.TRUE : Level.DELAY;
@@ -339,11 +348,10 @@ public class Test_04_Warnings extends CommonTestRunner {
             if ("apply".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo p && "s".equals(p.name)) {
                     if ("0".equals(d.statementId())) {
-                        assertEquals("nullable instance type String", d.currentValue().toString());
+                        assertEquals(NULLABLE_INSTANCE_TYPE_STRING, d.currentValue().toString());
                     }
                     if ("1".equals(d.statementId())) {
-                        String expectValue = d.iteration() == 0 ?
-                                "<p:s>" : "nullable instance type String";
+                        String expectValue = d.iteration() == 0 ? "<p:s>" : NULLABLE_INSTANCE_TYPE_STRING;
                         assertEquals(expectValue, d.currentValue().toString());
                     }
                 }
@@ -352,7 +360,7 @@ public class Test_04_Warnings extends CommonTestRunner {
                         fail();
                     }
                     if ("1".equals(d.statementId())) {
-                        String expectValue = d.iteration() == 0 ? "<f:t>" : "nullable instance type String";
+                        String expectValue = d.iteration() == 0 ? "<f:t>" : NULLABLE_INSTANCE_TYPE_STRING;
                         assertEquals(expectValue, d.currentValue().toString());
                     }
                 }
@@ -408,7 +416,8 @@ public class Test_04_Warnings extends CommonTestRunner {
                 if (d.iteration() == 0) {
                     assertNull(d.methodAnalysis().getSingleReturnValue());
                 } else {
-                    assertEquals("Stream.of(input).map(null==s?\"null\":s+\"something\"+t).findAny().get()", d.methodAnalysis().getSingleReturnValue().toString());
+                    assertEquals("Stream.of(input).map(null==s?\"null\":s+\"something\"+t).findAny().get()",
+                            d.methodAnalysis().getSingleReturnValue().toString());
                 }
             }
             if ("methodMustNotBeStatic5".equals(d.methodInfo().name)) {

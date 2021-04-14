@@ -40,6 +40,7 @@ import java.util.stream.Stream;
 import static org.e2immu.analyser.analyser.AnalysisStatus.*;
 import static org.e2immu.analyser.analyser.FlowData.Execution.*;
 import static org.e2immu.analyser.analyser.VariableInfoContainer.Level.EVALUATION;
+import static org.e2immu.analyser.analyser.VariableInfoContainer.Level.INITIAL;
 import static org.e2immu.analyser.analyser.VariableProperty.*;
 import static org.e2immu.analyser.util.EventuallyFinalExtension.setFinalAllowEquals;
 import static org.e2immu.analyser.util.Logger.LogTarget.*;
@@ -2745,7 +2746,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
 
         @Override
         public boolean variableIsDelayed(Variable variable) {
-            VariableInfo vi = statementAnalysis.findOrNull(variable, EVALUATION);
+            VariableInfo vi = statementAnalysis.findOrNull(variable, INITIAL);
             return vi == null || vi.isDelayed();
         }
 
