@@ -92,10 +92,6 @@ public class MethodLevelData {
         causesOfContextModificationDelay.get().addAll(set);
     }
 
-    public boolean causesOfContextModificationDelayIsEmpty() {
-        return causesOfContextModificationDelay.get().isEmpty();
-    }
-
     public void causesOfContextModificationDelaySetFinal() {
         causesOfContextModificationDelay.setFinal(Set.of());
     }
@@ -107,7 +103,7 @@ public class MethodLevelData {
     public boolean acceptLinksHaveBeenEstablished(Predicate<WithInspectionAndAnalysis> canBeIgnored) {
         if (linksHaveBeenEstablished.isSet()) return true;
         Set<WithInspectionAndAnalysis> causes = causesOfContextModificationDelay.get();
-        if (!causes.isEmpty() && causes.stream().allMatch(canBeIgnored)) {
+        if (causes != null && !causes.isEmpty() && causes.stream().allMatch(canBeIgnored)) {
             log(ANALYSER, "Accepting a limited version of linksHaveBeenEstablished to break delay cycle");
             return true;
         }

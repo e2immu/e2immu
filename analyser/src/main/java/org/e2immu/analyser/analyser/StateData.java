@@ -70,7 +70,7 @@ public class StateData {
     public final EventuallyFinal<ConditionManager> conditionManagerForNextStatement = new EventuallyFinal<>();
 
     public void setLocalConditionManagerForNextStatement(ConditionManager localConditionManager) {
-        if (localConditionManager.isDelayed()) conditionManagerForNextStatement.setVariable(localConditionManager);
+        if (localConditionManager.isSafeDelayed()) conditionManagerForNextStatement.setVariable(localConditionManager);
         else setFinalAllowEquals(conditionManagerForNextStatement, localConditionManager);
     }
 

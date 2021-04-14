@@ -316,7 +316,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             if (pointsToConcreteMethod != null) {
                 MethodAnalysis concreteMethodAnalysis = evaluationContext.getAnalyserContext().getMethodAnalysis(pointsToConcreteMethod);
                 int modifyingConcreteMethod = concreteMethodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD);
-               if (modifyingConcreteMethod != Level.DELAY) {
+                if (modifyingConcreteMethod != Level.DELAY) {
                     builder.markContextModified(ve.variable(), modifyingConcreteMethod);
                 } else {
                     builder.markContextModifiedDelay(ve.variable());
@@ -755,62 +755,83 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         return evaluationContext.getAnalyserContext().getMethodAnalysis(methodInfo).getProperty(variableProperty);
     }
 
+    /*
+    In general, the method result a, in a = b.method(c, d), can link to b, c and/or d.
+    Independence and level 2 immutability restrict the ability to link.
+
+    The current implementation is heavily focused on understanding links towards the fields of a type,
+    i.e., in sub = list.subList(0, 10), we want to link sub to list.
+
+    links from the parameters to the result (from c to a, from d to a) have currently only
+    been implemented for @Identity methods (i.e., between a and c).
+
+    So we implement
+    1/ void methods cannot link
+    2/ if the method is @Identity, the result is linked to the 1st parameter c
+
+    all other rules now determine whether we return an empty set, or the set {a}.
+
+    3/ if the return type of the method is level 2 immutable, there is no linking.
+    4/ if the return type of the method is implicitly immutable in the type, there is no linking.
+       (there may be a @Dependent1 or @Dependent2, but that's not relevant here)
+    5/ if a (the object) is @E2Immutable, the method must be @Independent, so it cannot link
+    6/ if the method is @Independent, then it does not link to the fields -> empty.
+       Note that in the *current* implementation, all modifying methods are @Dependent
+       (independence is implemented only to compute level 2 immutability)
+
+     */
+
     @Override
     public LinkedVariables linkedVariables(EvaluationContext evaluationContext) {
 
-        // RULE 0: void method cannot link
+        // RULE 1: void method cannot link
         ParameterizedType returnType = methodInfo.returnType();
         if (Primitives.isVoid(returnType)) return LinkedVariables.EMPTY; // no assignment
 
         MethodAnalysis methodAnalysis = evaluationContext.getAnalyserContext().getMethodAnalysis(methodInfo);
 
-        // RULE 1: if the return type is E2IMMU, then no links at all
+        // RULE 2: @Identity links to the 1st parameter
+        int identity = methodAnalysis.getProperty(VariableProperty.IDENTITY);
+        if (identity == Level.TRUE) return evaluationContext.linkedVariables(parameterExpressions.get(0));
+
+        // RULE 3: if the return type is E2IMMU, then no links at all
         boolean notSelf = returnType.typeInfo != evaluationContext.getCurrentType();
         if (notSelf) {
             int immutable = MultiLevel.value(methodAnalysis.getProperty(VariableProperty.IMMUTABLE), MultiLevel.E2IMMUTABLE);
             if (immutable == MultiLevel.DELAY) return LinkedVariables.DELAY;
-            if (immutable >= MultiLevel.EVENTUAL) {
+            if (immutable >= MultiLevel.EVENTUAL_AFTER) {
                 return LinkedVariables.EMPTY;
             }
         }
 
-        // RULE 2: @Identity links to the 1st parameter, TODO generalised @Identity(param=3) to the 4th...
-
-        int identity = methodAnalysis.getProperty(VariableProperty.IDENTITY);
-        if (identity == Level.TRUE) return evaluationContext.linkedVariables(parameterExpressions.get(0));
-
-        // rule 2 bis: TODO additional @Linked({ multiple parameters })
-
-        // RULE 3: E2IMMU object cannot link, neither can implicitly immutable types
-
-        int immutable = evaluationContext.getProperty(object, VariableProperty.IMMUTABLE, true, false);
-        int objectE2Immutable = MultiLevel.value(immutable, MultiLevel.E2IMMUTABLE);
-        if (objectE2Immutable >= MultiLevel.EVENTUAL_AFTER) {
-            return LinkedVariables.EMPTY;
-        }
-
-        // ignore object if return type is implicitly immutable in the type of the method
-        // in Map<K,V>, V get(K key) has a return type V which is implicitly immutable in Map
+        // RULE 4: neither can implicitly immutable types
         TypeAnalysis typeAnalysis = evaluationContext.getAnalyserContext().getTypeAnalysis(methodInfo.typeInfo);
         Set<ParameterizedType> implicitlyImmutable = typeAnalysis.getImplicitlyImmutableDataTypes();
         if (implicitlyImmutable != null && implicitlyImmutable.contains(methodInfo.returnType())) {
             return LinkedVariables.EMPTY;
         }
 
-        // RULE 4: independent method: no link to object
+        // RULE 5: level 2 immutable object cannot link
+        int objectImmutable = evaluationContext.getProperty(object, VariableProperty.IMMUTABLE, true, false);
+        int objectE2Immutable = MultiLevel.value(objectImmutable, MultiLevel.E2IMMUTABLE);
+        if (objectE2Immutable >= MultiLevel.EVENTUAL_AFTER) {
+            return LinkedVariables.EMPTY;
+        }
 
+        // RULE 6: independent method: no link to object
         int independent = methodAnalysis.getProperty(VariableProperty.INDEPENDENT);
         if (independent == MultiLevel.EFFECTIVE) {
             return LinkedVariables.EMPTY;
         }
 
+        // delays
+        if (independent == Level.DELAY || objectE2Immutable == MultiLevel.DELAY ||
+                identity == Level.DELAY || implicitlyImmutable == null) {
+            return LinkedVariables.DELAY;
+        }
 
-        // TODO objects of the same type
-        if (independent == Level.DELAY || objectE2Immutable == MultiLevel.DELAY || identity == Level.DELAY ||
-                typeAnalysis.getImplicitlyImmutableDataTypes() == null) return LinkedVariables.DELAY;
-        LinkedVariables b = evaluationContext.linkedVariables(object);
-        if (b == LinkedVariables.DELAY) return LinkedVariables.DELAY;
-        return new LinkedVariables(b.variables());
+        // link to the object
+        return evaluationContext.linkedVariables(object);
     }
 
     @Override

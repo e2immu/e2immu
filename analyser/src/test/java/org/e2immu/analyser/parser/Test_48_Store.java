@@ -21,21 +21,17 @@ import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.AnnotatedAPIConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.model.Level;
-import org.e2immu.analyser.model.MethodInfo;
-import org.e2immu.analyser.model.MultiLevel;
-import org.e2immu.analyser.model.TypeInfo;
-import org.e2immu.analyser.visitor.EvaluationResultVisitor;
-import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
-import org.e2immu.analyser.visitor.TypeMapVisitor;
+import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.expression.VariableExpression;
+import org.e2immu.analyser.model.variable.This;
+import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_48_Store extends CommonTestRunner {
 
@@ -110,5 +106,70 @@ public class Test_48_Store extends CommonTestRunner {
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
+    }
+
+
+    @Test
+    public void test_3() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("handleMultiSet".equals(d.methodInfo().name)) {
+                if ("project".equals(d.variableName())) {
+                    String expectValue = d.iteration() == 0 ? "<m:getOrCreate>" : "this.getOrCreate()";
+                    assertEquals(expectValue, d.currentValue().toString());
+
+                    // it 1: Store_3 is still immutable delayed
+                    String expectLinked = d.iteration() <= 1 ? LinkedVariables.DELAY_STRING : "";
+                    assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
+                }
+                if(d.variable() instanceof This) {
+                    int expectModified = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
+                    assertEquals(expectModified, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
+                }
+            }
+        };
+
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("getOrCreate".equals(d.methodInfo().name)) {
+                // modified, because .get() is modifying (there is no annotated API)
+                int expectModified = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
+                assertEquals(expectModified, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
+
+                // dependent, because only independent if non-modifying (current rule, we may want to get rid of this)
+                int expectIndependent = d.iteration() == 0 ? Level.DELAY : MultiLevel.DEPENDENT;
+                assertEquals(expectIndependent, d.methodAnalysis().getProperty(VariableProperty.INDEPENDENT));
+
+                if (d.iteration() == 0) assertNull(d.methodAnalysis().getSingleReturnValue());
+                else {
+                    Expression value = d.methodAnalysis().getSingleReturnValue();
+                    assertEquals("newProject", value.toString());
+                    assertTrue(value instanceof VariableExpression, "Have " + value.getClass());
+                }
+            }
+            if("handleMultiSet".equals(d.methodInfo().name)) {
+                int expectModified = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
+                assertEquals(expectModified, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
+            }
+        };
+
+        FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+            if ("projects".equals(d.fieldInfo().name) && "Store_3".equals(d.fieldInfo().owner.simpleName)) {
+                int expectMom = d.iteration() == 0 ? Level.DELAY: Level.TRUE;
+                assertEquals(expectMom, d.fieldAnalysis().getProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD));
+            }
+        };
+
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if("Store_3".equals(d.typeInfo().simpleName)) {
+                int expectImm = d.iteration() == 0 ? Level.DELAY : MultiLevel.MUTABLE;
+                assertEquals(expectImm, d.typeAnalysis().getProperty(VariableProperty.IMMUTABLE));
+            }
+        };
+
+        testClass(List.of("Project_0", "Store_3"), 1, 7, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
+                .build(), new AnalyserConfiguration.Builder().build(), new AnnotatedAPIConfiguration.Builder().build());
     }
 }

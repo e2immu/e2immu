@@ -308,6 +308,15 @@ public record ConditionManager(Expression condition,
         return filterResult.accepted().getOrDefault(variable, filter.getDefaultRest());
     }
 
+    /*
+    why a separate version? because preconditions do not work 'cumulatively', preconditionIsDelayed
+    has no info about delays in the parent. This is not compatible with writing an eventually final version.
+    See Project_0 ...
+     */
+    public boolean isSafeDelayed() {
+        return isDelayed() || parent != null && parent.isDelayed();
+    }
+
     public static record EvaluationContextImpl(AnalyserContext analyserContext) implements EvaluationContext {
 
         @Override

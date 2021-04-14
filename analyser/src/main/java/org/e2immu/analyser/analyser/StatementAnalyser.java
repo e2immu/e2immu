@@ -2637,13 +2637,19 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             return value.linkedVariables(this);
         }
 
+        /*
+        1/ variables of implicitly immutable type cannot link.
+        2/ level 2 immutable types cannot link.
+
+         */
         @Override
         public LinkedVariables linkedVariables(Variable variable) {
-            Boolean implicit = variable.parameterizedType().isImplicitlyImmutable(analyserContext, myMethodAnalyser.methodInfo.typeInfo);
+            Boolean implicit = variable.parameterizedType()
+                    .isImplicitlyImmutable(analyserContext, myMethodAnalyser.methodInfo.typeInfo);
             if (implicit == Boolean.TRUE) {
                 return LinkedVariables.EMPTY;
             }
-            // if implicit is null, we can only return EMPTY or DELAY!
+            // first try immutable
             TypeInfo typeInfo = variable.parameterizedType().bestTypeInfo();
             boolean notSelf = typeInfo != getCurrentType();
             VariableInfo variableInfo = statementAnalysis.initialValueForReading(variable, getInitialStatementTime(), true);
@@ -2652,11 +2658,13 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 if (immutable == Level.DELAY) return LinkedVariables.DELAY;
                 if (MultiLevel.isAtLeastEventuallyE2ImmutableAfter(immutable)) return LinkedVariables.EMPTY;
             }
-            // we've encountered the variable before
-            if (variableInfo.linkedVariablesIsSet() && implicit != null) {
-                return variableInfo.getLinkedVariables().merge(new LinkedVariables(Set.of(variable)));
-            }
-            return LinkedVariables.DELAY; // delay
+            if (implicit == null) return LinkedVariables.DELAY;
+
+            if (variableInfo.linkedVariablesIsSet()) {
+                LinkedVariables linkToMe = new LinkedVariables(Set.of(variable));
+                return variableInfo.getLinkedVariables().merge(linkToMe);
+            } // otherwise, there's delays already, so keep on delaying
+            return LinkedVariables.DELAY;
         }
 
         @Override

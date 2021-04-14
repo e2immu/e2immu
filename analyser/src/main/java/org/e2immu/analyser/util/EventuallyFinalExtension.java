@@ -14,20 +14,29 @@
 
 package org.e2immu.analyser.util;
 
+
 import org.e2immu.annotation.ExtensionClass;
 import org.e2immu.support.EventuallyFinal;
+import org.slf4j.LoggerFactory;
 
 import java.util.Objects;
 
 @ExtensionClass(of = EventuallyFinal.class)
 public class EventuallyFinalExtension {
+    private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(EventuallyFinalExtension.class);
+
     private EventuallyFinalExtension() {
         throw new UnsupportedOperationException();
     }
 
     public static <T> void setFinalAllowEquals(EventuallyFinal<T> eventuallyFinal, T t) {
         if (eventuallyFinal.isVariable() || !Objects.equals(eventuallyFinal.get(), t)) {
-            eventuallyFinal.setFinal(t);
+            try {
+                eventuallyFinal.setFinal(t);
+            } catch (RuntimeException re) {
+                LOGGER.error("Overwriting effectively value: old: {}, new {}", eventuallyFinal.get(), t);
+                throw re;
+            }
         }
     }
 }
