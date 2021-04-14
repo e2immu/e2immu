@@ -50,7 +50,7 @@ public class Test_00_Basics_9plus extends CommonTestRunner {
                         d.evaluationResult().value().toString());
                 assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL,
                         d.evaluationResult().evaluationContext().getProperty(d.evaluationResult().value(),
-                                VariableProperty.NOT_NULL_EXPRESSION, false));
+                                VariableProperty.NOT_NULL_EXPRESSION, false, false));
             }
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {

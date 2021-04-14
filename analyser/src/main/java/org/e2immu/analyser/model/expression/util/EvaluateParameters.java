@@ -106,6 +106,7 @@ public class EvaluateParameters {
                         map.put(VariableProperty.CONTEXT_NOT_NULL, MultiLevel.NULLABLE); // won't be me to rock the boat
                     } else {
                         map.put(VariableProperty.CONTEXT_NOT_NULL_DELAY, Level.TRUE);
+                        builder.causeOfContextModificationDelay(methodInfo);
                     }
                 }
 

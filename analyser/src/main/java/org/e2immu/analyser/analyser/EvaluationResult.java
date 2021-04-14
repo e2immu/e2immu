@@ -62,7 +62,8 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                                Map<Variable, ChangeData> changeData,
                                Precondition precondition,
                                Expression untranslatedPrecondition,
-                               boolean addCircularCall) {
+                               boolean addCircularCall,
+                               Set<WithInspectionAndAnalysis> causesOfContextModificationDelay) {
 
     public EvaluationResult {
         assert changeData.values().stream().noneMatch(ecd -> ecd.linkedVariables == null);
@@ -179,6 +180,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
         private Expression untranslatedPrecondition;
         private boolean addCircularCallOrUndeclaredFunctionalInterface;
         private boolean someValueWasDelayed;
+        private final Set<WithInspectionAndAnalysis> causesOfContextModificationDelays = new HashSet<>();
 
         // for a constant EvaluationResult
         public Builder() {
@@ -245,6 +247,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                     untranslatedPrecondition = combinePrecondition(untranslatedPrecondition, evaluationResult.untranslatedPrecondition);
                 }
             }
+            causesOfContextModificationDelays.addAll(evaluationResult.causesOfContextModificationDelay);
         }
 
         public void incrementStatementTime() {
@@ -275,7 +278,8 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                     someValueWasDelayed,
                     messages, valueChanges, precondition,
                     untranslatedPrecondition,
-                    addCircularCallOrUndeclaredFunctionalInterface);
+                    addCircularCallOrUndeclaredFunctionalInterface,
+                    Set.copyOf(causesOfContextModificationDelays));
         }
 
         /**
@@ -297,7 +301,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                 return; // great, no problem, no reason to complain nor increase the property
             }
 
-            int notNullValue = evaluationContext.getProperty(value, VariableProperty.NOT_NULL_EXPRESSION, true);
+            int notNullValue = evaluationContext.getProperty(value, VariableProperty.NOT_NULL_EXPRESSION, true, false);
             if (notNullValue < notNullRequired) { // also do delayed values
                 // so intrinsically we can have null.
                 // if context not null is already high enough, don't complain
@@ -314,7 +318,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             if (expression instanceof VariableExpression variableExpression) {
                 return getPropertyFromInitial(variableExpression.variable(), VariableProperty.NOT_MODIFIED_1);
             }
-            return evaluationContext.getProperty(expression, VariableProperty.NOT_MODIFIED_1, true);
+            return evaluationContext.getProperty(expression, VariableProperty.NOT_MODIFIED_1, true, false);
         }
 
         /*
@@ -676,6 +680,10 @@ public record EvaluationResult(EvaluationContext evaluationContext,
 
         public void markPropagateModification(Variable variable) {
             setProperty(variable, VariableProperty.CONTEXT_PROPAGATE_MOD, Level.TRUE);
+        }
+
+        public void causeOfContextModificationDelay(MethodInfo methodInfo) {
+            causesOfContextModificationDelays.add(methodInfo);
         }
     }
 }

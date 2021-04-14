@@ -114,7 +114,7 @@ public record InlinedMethod(MethodInfo methodInfo, Expression expression,
         if(NOT_NULL_EXPRESSION.equals(variableProperty)) {
             return MultiLevel.EFFECTIVELY_NOT_NULL;
         }
-        return evaluationContext.getProperty(expression, variableProperty, duringEvaluation);
+        return evaluationContext.getProperty(expression, variableProperty, duringEvaluation, false);
     }
 
     @Override

@@ -137,11 +137,11 @@ public class InlineConditional implements Expression {
                 Expression rhs = equalsValue.rhs;
                 if (ifTrue.equals(rhs)) {
                     // null == a ? a : something;  null != a ? a : something
-                    return not ? evaluationContext.getProperty(ifFalse, variableProperty, true) : MultiLevel.NULLABLE;
+                    return not ? evaluationContext.getProperty(ifFalse, variableProperty, true, false) : MultiLevel.NULLABLE;
                 }
                 if (ifFalse.equals(rhs)) {
                     // null == a ? something: a
-                    return not ? MultiLevel.NULLABLE : evaluationContext.getProperty(ifTrue, variableProperty, true);
+                    return not ? MultiLevel.NULLABLE : evaluationContext.getProperty(ifTrue, variableProperty, true, false);
                 }
             }
         }

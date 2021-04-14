@@ -33,12 +33,16 @@ public class Project_2 {
 
     private final Map<String, Container> kvStore = new ConcurrentHashMap<>();
 
+    /*
+    Problematic if we access both the field and the constructor.
+    Removing either breaks the cycle.
+     */
     public String set(String key, String value) {
         Container prev = kvStore.get(key);
         if (prev == null) {
-            new Container(value); // removing container also solves the problem
+            prev = new Container(value);
         }
-        return prev.value; // cause of the problem (change to key or constant solves the issue)
+        return prev.value;
     }
 
 }

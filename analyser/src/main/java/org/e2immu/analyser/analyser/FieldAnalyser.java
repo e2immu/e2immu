@@ -36,6 +36,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.function.IntBinaryOperator;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -81,6 +82,9 @@ public class FieldAnalyser extends AbstractAnalyser {
     private record SharedState(int iteration, EvaluationContext closure) {
     }
 
+
+    private final Predicate<WithInspectionAndAnalysis> ignoreMyConstructors;
+
     public FieldAnalyser(FieldInfo fieldInfo,
                          TypeInfo primaryType,
                          TypeAnalysis ownerTypeAnalysis,
@@ -91,6 +95,9 @@ public class FieldAnalyser extends AbstractAnalyser {
         this.checkLinks = new CheckLinks(analyserContext, analyserContext.getE2ImmuAnnotationExpressions());
 
         this.fieldInfo = fieldInfo;
+        ignoreMyConstructors = w -> w instanceof MethodInfo methodInfo
+                && methodInfo.isConstructor
+                && methodInfo.typeInfo == fieldInfo.owner;
         fqn = fieldInfo.fullyQualifiedName();
         fieldInspection = fieldInfo.fieldInspection.get();
         fieldAnalysis = new FieldAnalysisImpl.Builder(analyserContext.getPrimitives(), analyserContext, fieldInfo, ownerTypeAnalysis);
@@ -306,7 +313,7 @@ public class FieldAnalyser extends AbstractAnalyser {
 
                 int worstOverValues = fieldAnalysis.getValues().stream()
                         .mapToInt(expression -> evaluationContext
-                                .getProperty(expression, VariableProperty.NOT_NULL_EXPRESSION, false))
+                                .getProperty(expression, VariableProperty.NOT_NULL_EXPRESSION, false, false))
                         .min().orElse(MultiLevel.NULLABLE);
                 // IMPORTANT: we do not take delays into account!
                 finalNotNullValue = Math.max(worstOverValues, bestOverContext);
@@ -360,7 +367,7 @@ public class FieldAnalyser extends AbstractAnalyser {
     }
 
     private int notNullBreakParameterDelay(EvaluationContext evaluationContext, Expression expression) {
-        int nne = evaluationContext.getProperty(expression, VariableProperty.NOT_NULL_EXPRESSION, false);
+        int nne = evaluationContext.getProperty(expression, VariableProperty.NOT_NULL_EXPRESSION, false, false);
         if (nne != Level.DELAY) return nne;
         if (expression.variables().stream().allMatch(v -> v instanceof ParameterInfo)) {
             return MultiLevel.NULLABLE;
@@ -459,7 +466,7 @@ public class FieldAnalyser extends AbstractAnalyser {
                 assert fieldAnalysis.getValues().expressions().length > 0;
 
                 int worstOverValues = fieldAnalysis.getValues().stream()
-                        .mapToInt(expression -> evaluationContext.getProperty(expression, VariableProperty.IMMUTABLE, false))
+                        .mapToInt(expression -> evaluationContext.getProperty(expression, VariableProperty.IMMUTABLE, false, false))
                         .min()
                         .orElse(MultiLevel.MUTABLE);
                 finalImmutable = Math.max(staticallyImmutable, Math.max(worstOverValues, bestOverContext));
@@ -532,7 +539,7 @@ public class FieldAnalyser extends AbstractAnalyser {
         Optional<MethodAnalyser> delayLinkedVariables = myMethodsAndConstructors.stream()
                 .filter(ma -> !ma.methodInfo.isPrivate() && ma.methodLevelData() != null)
                 .filter(ma -> ma.methodAnalysis.getProperty(VariableProperty.FINALIZER) != Level.TRUE)
-                .filter(ma -> !ma.methodLevelData().linksHaveBeenEstablished.isSet())
+                .filter(ma -> !ma.methodLevelData().acceptLinksHaveBeenEstablished(ignoreMyConstructors))
                 .findFirst();
         if (delayLinkedVariables.isPresent()) {
             log(DELAYED, "Exposure computation on {} delayed by links of {}", fqn,
@@ -557,7 +564,7 @@ public class FieldAnalyser extends AbstractAnalyser {
     }
 
     private int immutableBreakParameterDelay(EvaluationContext evaluationContext, Expression expression) {
-        int imm = evaluationContext.getProperty(expression, VariableProperty.IMMUTABLE, false);
+        int imm = evaluationContext.getProperty(expression, VariableProperty.IMMUTABLE, false, false);
         if (imm != Level.DELAY) return imm;
         if (expression.returnType().bestTypeInfo() == fieldInfo.owner) {
             // we cannot break a delay for our own type
@@ -622,7 +629,7 @@ public class FieldAnalyser extends AbstractAnalyser {
         assert !fieldAnalysis.allLinksHaveBeenEstablished.isSet();
         boolean res = allMethodsAndConstructors.stream()
                 .filter(m -> !m.getFieldAsVariable(fieldInfo, false).isEmpty())
-                .allMatch(m -> m.methodLevelData().linksHaveBeenEstablished.isSet());
+                .allMatch(m -> m.methodLevelData().acceptLinksHaveBeenEstablished(ignoreMyConstructors));
         if (res) {
             fieldAnalysis.allLinksHaveBeenEstablished.set();
             return DONE;
@@ -763,7 +770,7 @@ public class FieldAnalyser extends AbstractAnalyser {
                 if (!parameter.isConstant()) {
                     EvaluationContext evaluationContext = new EvaluationContextImpl(0, // IMPROVE
                             ConditionManager.initialConditionManager(fieldAnalysis.primitives), null);
-                    int immutable = evaluationContext.getProperty(parameter, VariableProperty.IMMUTABLE, false);
+                    int immutable = evaluationContext.getProperty(parameter, VariableProperty.IMMUTABLE, false, false);
                     if (immutable == Level.DELAY) return null;
                     if (!MultiLevel.isEffectivelyNotNull(immutable)) return false;
                     Boolean recursively = recursivelyConstant(parameter);
@@ -969,7 +976,7 @@ public class FieldAnalyser extends AbstractAnalyser {
                     List<VariableInfo> variableInfoList = m.getFieldAsVariable(fieldInfo, true);
                     return variableInfoList.isEmpty() ||
                             variableInfoList.stream().noneMatch(VariableInfo::isRead) ||
-                            m.methodLevelData().linksHaveBeenEstablished.isSet();
+                            m.methodLevelData().acceptLinksHaveBeenEstablished(ignoreMyConstructors);
                 });
 
         if (allContextModificationsDefined) {
@@ -984,7 +991,7 @@ public class FieldAnalyser extends AbstractAnalyser {
             allMethodsAndConstructors.stream().filter(m -> !m.methodInfo.isConstructor &&
                     !m.getFieldAsVariable(fieldInfo, true).isEmpty() &&
                     m.getFieldAsVariable(fieldInfo, true).stream().anyMatch(VariableInfo::isRead) &&
-                    !m.methodLevelData().linksHaveBeenEstablished.isSet())
+                    !m.methodLevelData().acceptLinksHaveBeenEstablished(ignoreMyConstructors))
                     .forEach(m -> log(DELAYED, "... method {} reads the field, but we're still waiting on links to be established", m.methodInfo.name));
         }
         return DELAYS;
@@ -1096,7 +1103,10 @@ public class FieldAnalyser extends AbstractAnalyser {
         }
 
         @Override
-        public int getProperty(Expression value, VariableProperty variableProperty, boolean duringEvaluation) {
+        public int getProperty(Expression value,
+                               VariableProperty variableProperty,
+                               boolean duringEvaluation,
+                               boolean ignoreConditionManager) {
             if (value instanceof VariableExpression variableValue) {
                 Variable variable = variableValue.variable();
                 return getProperty(variable, variableProperty);

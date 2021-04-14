@@ -1203,7 +1203,10 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
         }
 
         @Override
-        public int getProperty(Expression value, VariableProperty variableProperty, boolean duringEvaluation) {
+        public int getProperty(Expression value,
+                               VariableProperty variableProperty,
+                               boolean duringEvaluation,
+                               boolean ignoreConditionManager) {
             if (value instanceof VariableExpression ve) {
                 return getProperty(ve.variable(), variableProperty);
             }

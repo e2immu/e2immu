@@ -183,7 +183,7 @@ public record NewObject(
                                                 EvaluationContext evaluationContext,
                                                 Expression array,
                                                 Variable variable) {
-        int notNull = evaluationContext.getProperty(array, VariableProperty.NOT_NULL_EXPRESSION, true);
+        int notNull = evaluationContext.getProperty(array, VariableProperty.NOT_NULL_EXPRESSION, true, false);
         if (notNull == Level.DELAY) return DelayedExpression.forNewObject(variable.parameterizedType());
         return new NewObject(identifier, null, variable.parameterizedType(), Diamond.SHOW_ALL, List.of(), notNull,
                 null, null,

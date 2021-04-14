@@ -119,7 +119,7 @@ public record PropertyWrapper(Expression expression,
     public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty, boolean duringEvaluation) {
         int inMap = properties.getOrDefault(variableProperty, Level.DELAY);
         if (inMap != Level.DELAY) return inMap;
-        return evaluationContext.getProperty(expression, variableProperty, duringEvaluation);
+        return evaluationContext.getProperty(expression, variableProperty, duringEvaluation, false);
     }
 
     @Override

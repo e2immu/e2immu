@@ -139,7 +139,7 @@ public class Negation extends UnaryOperator implements ExpressionWrapper {
 
     @Override
     public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty, boolean duringEvaluation) {
-        return evaluationContext.getProperty(expression, variableProperty, duringEvaluation);
+        return evaluationContext.getProperty(expression, variableProperty, duringEvaluation, false);
     }
 
     @Override

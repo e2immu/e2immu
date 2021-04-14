@@ -618,6 +618,10 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         if (evaluationResult.addCircularCall()) {
             statementAnalysis.methodLevelData.addCircularCall();
         }
+        if (statementAnalysis.methodLevelData.causesOfContextModificationDelayIsVariable()) {
+            statementAnalysis.methodLevelData.causesOfContextModificationDelayAddVariable(evaluationResult
+                    .causesOfContextModificationDelay());
+        }
         GroupPropertyValues groupPropertyValues = new GroupPropertyValues();
         Map<Variable, LinkedVariables> remapStaticallyAssignedVariables = new HashMap<>();
 
@@ -666,8 +670,11 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
 
                 log(ANALYSER, "Write value {} to variable {}", valueToWrite, variable.fullyQualifiedName());
                 // first do the properties that come with the value; later, we'll write the ones in changeData
-                Map<VariableProperty, Integer> valueProperties = sharedState.evaluationContext.getValueProperties(valueToWrite);
-                Map<VariableProperty, Integer> varProperties = sharedState.evaluationContext.getVariableProperties(valueToWrite, statementAnalysis.statementTime(EVALUATION));
+                Map<VariableProperty, Integer> valueProperties = sharedState.evaluationContext
+                        .getValueProperties(valueToWrite, variable instanceof ReturnVariable);
+                Map<VariableProperty, Integer> varProperties =
+                        sharedState.evaluationContext.getVariableProperties(valueToWrite,
+                                statementAnalysis.statementTime(EVALUATION));
                 Map<VariableProperty, Integer> merged = mergeAssignment(variable, valueToWriteIsDelayed,
                         valueProperties, varProperties, changeData.properties(), groupPropertyValues);
 
@@ -940,7 +947,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                                                                  Map<Variable, Integer> externalNotNull,
                                                                  Map<Variable, Integer> contextNotNull,
                                                                  Expression value) {
-        boolean variableNotNull = evaluationContext.getProperty(value, NOT_NULL_EXPRESSION, false)
+        boolean variableNotNull = evaluationContext.getProperty(value, NOT_NULL_EXPRESSION, false, false)
                 >= MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL;
         if (variableNotNull) {
             Structure structure = statementAnalysis.statement.getStructure();
@@ -1657,7 +1664,14 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 log(DELAYED, "Delaying statement {} in {} because of external not null/external immutable",
                         index(), myMethodAnalyser.methodInfo.fullyQualifiedName);
             }
-            return ennStatus.combine(statusPost);
+            AnalysisStatus overall = ennStatus.combine(statusPost);
+            if (overall == DONE) {
+                if (statementAnalysis.methodLevelData.causesOfContextModificationDelayIsVariable()) {
+                    //    assert statementAnalysis.methodLevelData.causesOfContextModificationDelayIsEmpty();
+                    statementAnalysis.methodLevelData.causesOfContextModificationDelaySetFinal();
+                }
+            }
+            return overall;
         } catch (RuntimeException rte) {
             LOGGER.warn("Failed to evaluate main expression (step 3) in statement {}", statementAnalysis.index);
             throw rte;
@@ -2450,7 +2464,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 if (nne >= MultiLevel.EFFECTIVELY_NOT_NULL) return true;
                 return notNullAccordingToConditionManager(ve.variable());
             }
-            return MultiLevel.isEffectivelyNotNull(getProperty(value, NOT_NULL_EXPRESSION, true));
+            return MultiLevel.isEffectivelyNotNull(getProperty(value, NOT_NULL_EXPRESSION, true, false));
         }
 
         /*
@@ -2469,7 +2483,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 int formal = variableInfo.variable().parameterizedType().defaultImmutable(analyserContext);
                 return formal >= MultiLevel.EFFECTIVELY_E2IMMUTABLE;
             }
-            return getProperty(value, IMMUTABLE, true) >= MultiLevel.EFFECTIVELY_E2IMMUTABLE;
+            return getProperty(value, IMMUTABLE, true, false) >= MultiLevel.EFFECTIVELY_E2IMMUTABLE;
         }
 
         private int getVariableProperty(Variable variable, VariableProperty variableProperty, boolean duringEvaluation) {
@@ -2480,7 +2494,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         }
 
         @Override
-        public int getProperty(Expression value, VariableProperty variableProperty, boolean duringEvaluation) {
+        public int getProperty(Expression value, VariableProperty variableProperty, boolean duringEvaluation,
+                               boolean ignoreConditionManager) {
             // IMPORTANT: here we do not want to catch VariableValues wrapped in the PropertyWrapper
             if (value instanceof IsVariableExpression ve) {
                 // read what's in the property map (all values should be there) at initial or current level
@@ -2505,7 +2520,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 return inMap;
             }
 
-            if (NOT_NULL_EXPRESSION == variableProperty) {
+            if (NOT_NULL_EXPRESSION == variableProperty && !ignoreConditionManager) {
                 int directNN = value.getProperty(this, NOT_NULL_EXPRESSION, true);
                 assert !Primitives.isPrimitiveExcludingVoid(value.returnType()) || directNN == MultiLevel.EFFECTIVELY_NOT_NULL;
 
@@ -2664,7 +2679,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                         .forEach(e -> {
                             VariableInfo eval = e.getValue().best(EVALUATION);
                             Variable variable = eval.variable();
-                            int nne = getProperty(eval.getValue(), NOT_NULL_EXPRESSION, true);
+                            int nne = getProperty(eval.getValue(), NOT_NULL_EXPRESSION, true, false);
                             if (nne != Level.DELAY) {
                                 Expression newObject = NewObject.genericMergeResult(index() + "-" + variable.fullyQualifiedName(),
                                         getPrimitives(), e.getValue().current(), nne);

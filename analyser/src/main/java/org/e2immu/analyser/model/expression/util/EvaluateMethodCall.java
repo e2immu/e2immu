@@ -286,7 +286,7 @@ public class EvaluateMethodCall {
 
     private static Boolean nonModifying(EvaluationContext evaluationContext, Expression expression) {
         if (expression instanceof MethodCall) {
-            int modified = evaluationContext.getProperty(expression, VariableProperty.MODIFIED_METHOD, false);
+            int modified = evaluationContext.getProperty(expression, VariableProperty.MODIFIED_METHOD, false, false);
             if (modified == Level.DELAY) {
                 return null;
             }

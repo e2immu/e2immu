@@ -44,7 +44,7 @@ public record MultiExpression(Expression... expressions) {
     public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty, boolean duringEvaluation) {
         return Arrays.stream(expressions)
                 .filter(Expression::isComputeProperties) // <return value> does NOT contribute!
-                .mapToInt(value -> evaluationContext.getProperty(value, variableProperty, duringEvaluation))
+                .mapToInt(value -> evaluationContext.getProperty(value, variableProperty, duringEvaluation, false))
                 .min().orElse(Level.DELAY);
     }
 

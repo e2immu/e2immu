@@ -99,7 +99,9 @@ public interface EvaluationContext {
      * @param duringEvaluation true when this method is called during the EVAL process. It then reads variable's properties from the
      *                         INIT side, rather than current. Current may be MERGE, which is definitely wrong during the EVAL process.
      */
-    default int getProperty(Expression value, VariableProperty variableProperty, boolean duringEvaluation) {
+    default int getProperty(Expression value, VariableProperty variableProperty,
+                            boolean duringEvaluation,
+                            boolean ignoreConditionManager) {
         if (value instanceof VariableExpression variableValue) {
             Variable variable = variableValue.variable();
             if (variable instanceof ParameterInfo parameterInfo) {
@@ -158,13 +160,16 @@ public interface EvaluationContext {
     Set<VariableProperty> VALUE_PROPERTIES = Set.of(IDENTITY, IMMUTABLE, CONTAINER,
             NOT_NULL_EXPRESSION, INDEPENDENT);
 
+    default Map<VariableProperty, Integer> getValueProperties(Expression value) {
+        return getValueProperties(value, false);
+    }
     /*
     computed/copied during assignment. Critical that NNE is present!
      */
-    default Map<VariableProperty, Integer> getValueProperties(Expression value) {
+    default Map<VariableProperty, Integer> getValueProperties(Expression value, boolean ignoreConditionManager) {
         Map<VariableProperty, Integer> builder = new HashMap<>();
         for (VariableProperty property : VALUE_PROPERTIES) {
-            int v = getProperty(value, property, true);
+            int v = getProperty(value, property, true, ignoreConditionManager);
             if (v != Level.DELAY) builder.put(property, v);
         }
         return Map.copyOf(builder);

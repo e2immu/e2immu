@@ -47,7 +47,7 @@ public interface StatementAnalyserVariableVisitor {
         }
 
         public int getPropertyOfCurrentValue(VariableProperty variableProperty) {
-            return evaluationContext.getProperty(currentValue, variableProperty, false);
+            return evaluationContext.getProperty(currentValue, variableProperty, false, false);
         }
     }
 

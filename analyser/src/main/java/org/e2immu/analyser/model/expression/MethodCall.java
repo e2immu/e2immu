@@ -304,7 +304,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         }
 
         // process parameters
-        int notModified1Scope = evaluationContext.getProperty(objectValue, VariableProperty.NOT_MODIFIED_1, true);
+        int notModified1Scope = evaluationContext.getProperty(objectValue, VariableProperty.NOT_MODIFIED_1, true, false);
         Pair<EvaluationResult.Builder, List<Expression>> res = EvaluateParameters.transform(parameterExpressions,
                 evaluationContext, methodInfo, notModified1Scope, recursiveCall || partOfCallCycle, objectValue);
         List<Expression> parameterValues = res.v;
@@ -787,7 +787,8 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
         // RULE 3: E2IMMU object cannot link, neither can implicitly immutable types
 
-        int objectE2Immutable = MultiLevel.value(evaluationContext.getProperty(object, VariableProperty.IMMUTABLE, true), MultiLevel.E2IMMUTABLE);
+        int immutable = evaluationContext.getProperty(object, VariableProperty.IMMUTABLE, true, false);
+        int objectE2Immutable = MultiLevel.value(immutable, MultiLevel.E2IMMUTABLE);
         if (objectE2Immutable >= MultiLevel.EVENTUAL_AFTER) {
             return LinkedVariables.EMPTY;
         }

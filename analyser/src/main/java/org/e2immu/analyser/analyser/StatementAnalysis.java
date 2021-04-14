@@ -1290,7 +1290,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                             return new Pair<>(vi, EXACTLY_NULL);
                         }
                         int notNull = evaluationContext.getProperty(new VariableExpression(fieldReference),
-                                NOT_NULL_EXPRESSION, false);
+                                NOT_NULL_EXPRESSION, false, false);
                         return new Pair<>(vi, notNull);
                     }
                     return null;
