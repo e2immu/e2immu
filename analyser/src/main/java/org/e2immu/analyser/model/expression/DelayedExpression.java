@@ -63,6 +63,11 @@ public record DelayedExpression(String msg, String debug, ParameterizedType para
                 "<immutable:" + parameterizedType.detailedString() + ">", parameterizedType);
     }
 
+    public static Expression forInstanceOf(Primitives primitives, ParameterizedType parameterizedType) {
+        return new DelayedExpression("<instanceOf:" + parameterizedType.printSimple() + ">",
+                "<instanceOf:" + parameterizedType.detailedString() + ">", primitives.booleanParameterizedType);
+    }
+
     /*
     variable fields have different values according to statement time, but then, at this point we cannot know yet
     whether the field will be variable or not.

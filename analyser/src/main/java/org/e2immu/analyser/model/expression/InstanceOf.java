@@ -113,8 +113,12 @@ public record InstanceOf(Primitives primitives,
     private EvaluationResult localEvaluation(EvaluationResult.Builder builder, EvaluationContext evaluationContext, Expression value) {
         Primitives primitives = evaluationContext.getPrimitives();
 
-        if (value.isUnknown() || value.isDelayed(evaluationContext)) {
+        if (value.isUnknown()) {
             return builder.setExpression(value).build();
+        }
+        if (value.isDelayed(evaluationContext)) {
+            return builder.setExpression(DelayedExpression
+                    .forInstanceOf(evaluationContext.getPrimitives(), parameterizedType)).build();
         }
         if (value instanceof NullConstant) {
             return builder.setExpression(new BooleanConstant(evaluationContext.getPrimitives(), false)).build();
