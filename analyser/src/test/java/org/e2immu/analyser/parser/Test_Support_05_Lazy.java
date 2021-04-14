@@ -19,16 +19,14 @@ import org.e2immu.analyser.analyser.MethodLevelData;
 import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.model.FieldInfo;
-import org.e2immu.analyser.model.Level;
-import org.e2immu.analyser.model.MultiLevel;
-import org.e2immu.analyser.model.ParameterInfo;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -73,7 +71,7 @@ public class Test_Support_05_Lazy extends CommonTestRunner {
         if (d.iteration() > 0 && "get".equals(d.methodInfo().name)) {
             if ("1".equals(d.statementId())) {
                 // this can be picked up as a precondition for the method
-                assertEquals("null==org.e2immu.support.Lazy.t$0", d.state().toString());
+                assertEquals("null==t$0", d.state().toString());
             }
         }
     };
@@ -107,7 +105,9 @@ public class Test_Support_05_Lazy extends CommonTestRunner {
 
     TypeAnalyserVisitor typeAnalyserVisitor = d -> {
         if ("Lazy".equals(d.typeInfo().simpleName)) {
-            assertEquals("[Type param T]", d.typeAnalysis().getImplicitlyImmutableDataTypes().toString());
+            assertEquals("Type java.util.function.Supplier<T>,Type param T",
+                    d.typeAnalysis().getImplicitlyImmutableDataTypes()
+                            .stream().map(ParameterizedType::toString).sorted().collect(Collectors.joining(",")));
         }
     };
 

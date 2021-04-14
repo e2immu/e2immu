@@ -32,6 +32,8 @@ import java.util.function.Consumer;
 
 /*
 Compute the list of types which cannot be replaced by an unbound parameter type (which are not implicitly immutable)
+
+Extra: abstract types on which ONLY abstract methods without modification status are called, are also implicitly immutable.
 */
 public class ExplicitTypes {
 
@@ -78,9 +80,14 @@ public class ExplicitTypes {
     private void explicitTypes(Element start) {
         Consumer<Element> visitor = element -> {
 
-            // a.method() -> type of a cannot be replaced by unbound type parameter
+            /* a.method() -> type of a cannot be replaced by unbound type parameter,
+
+             UNLESS the method is abstract, (hence the type is abstract), and the modification status is not set
+             */
             if (element instanceof MethodCall mc) {
-                add(mc.object.returnType(), UsedAs.METHOD);
+                if (notAbstractNoModificationStatus(mc.methodInfo)) {
+                    add(mc.object.returnType(), UsedAs.METHOD);
+                }
                 addTypesFromParameters(mc.methodInfo, UsedAs.METHOD);
             }
 
@@ -133,6 +140,14 @@ public class ExplicitTypes {
             }
         };
         start.visit(visitor);
+    }
+
+    private boolean notAbstractNoModificationStatus(MethodInfo methodInfo) {
+        if (methodInfo.isAbstract()) {
+            int modified = analysisProvider.getMethodAnalysis(methodInfo).getProperty(VariableProperty.MODIFIED_METHOD);
+            return modified != Level.DELAY;
+        }
+        return true;
     }
 
     private void add(ParameterizedType type, UsedAs usedAs) {
