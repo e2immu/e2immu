@@ -118,7 +118,7 @@ public class Test_48_Store extends CommonTestRunner {
                     assertEquals(expectValue, d.currentValue().toString());
 
                     // it 1: Store_3 is still immutable delayed
-                    String expectLinked = d.iteration() <= 1 ? LinkedVariables.DELAY_STRING : "";
+                    String expectLinked = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "";
                     assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
                 }
                 if(d.variable() instanceof This) {
@@ -160,12 +160,12 @@ public class Test_48_Store extends CommonTestRunner {
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if("Store_3".equals(d.typeInfo().simpleName)) {
-                int expectImm = d.iteration() == 0 ? Level.DELAY : MultiLevel.MUTABLE;
+                int expectImm = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EFFECTIVELY_E1IMMUTABLE_NOT_E2IMMUTABLE;
                 assertEquals(expectImm, d.typeAnalysis().getProperty(VariableProperty.IMMUTABLE));
             }
         };
 
-        testClass(List.of("Project_0", "Store_3"), 1, 7, new DebugConfiguration.Builder()
+        testClass(List.of("Project_0", "Store_3"), 5, 11, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)

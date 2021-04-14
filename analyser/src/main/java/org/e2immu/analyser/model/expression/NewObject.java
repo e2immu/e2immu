@@ -317,7 +317,7 @@ public record NewObject(
     /*
      * Rules, assuming the notation b = new B(c, d)
      *
-     * 1. no explicit constructor, no parameters on a static type: independent
+     * 1. no explicit constructor, no parameters: independent (static or not, doesn't matter)
      * 2. constructor is @Independent: independent
      * 3. B is @E2Immutable: independent
      *
@@ -327,7 +327,7 @@ public record NewObject(
     public LinkedVariables linkedVariables(EvaluationContext evaluationContext) {
         // RULE 1
         if (constructor == null) return LinkedVariables.EMPTY;
-        if (parameterExpressions.isEmpty() && constructor.typeInfo.isStatic()) {
+        if (parameterExpressions.isEmpty()) {
             return LinkedVariables.EMPTY;
         }
 

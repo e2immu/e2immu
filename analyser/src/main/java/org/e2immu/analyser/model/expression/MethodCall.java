@@ -771,11 +771,14 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
     all other rules now determine whether we return an empty set, or the set {a}.
 
-    3/ if the return type of the method is level 2 immutable, there is no linking.
-    4/ if the return type of the method is implicitly immutable in the type, there is no linking.
+    3/ In case that a == this, we're calling methods of our own type.
+       If they are non-modifying, the method result can be substituted, sometimes in terms of fields.
+       In our implementation, linking to 'this' is not needed, we catch modifying methods on this directly
+    4/ if the return type of the method is level 2 immutable, there is no linking.
+    5/ if the return type of the method is implicitly immutable in the type, there is no linking.
        (there may be a @Dependent1 or @Dependent2, but that's not relevant here)
-    5/ if a (the object) is @E2Immutable, the method must be @Independent, so it cannot link
-    6/ if the method is @Independent, then it does not link to the fields -> empty.
+    6/ if a (the object) is @E2Immutable, the method must be @Independent, so it cannot link
+    7/ if the method is @Independent, then it does not link to the fields -> empty.
        Note that in the *current* implementation, all modifying methods are @Dependent
        (independence is implemented only to compute level 2 immutability)
 
@@ -794,7 +797,12 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         int identity = methodAnalysis.getProperty(VariableProperty.IDENTITY);
         if (identity == Level.TRUE) return evaluationContext.linkedVariables(parameterExpressions.get(0));
 
-        // RULE 3: if the return type is E2IMMU, then no links at all
+        // RULE 3: the current implementation doesn't link to "this" as object.
+        if(object instanceof VariableExpression ve && ve.variable() instanceof This) {
+            return LinkedVariables.EMPTY;
+        }
+
+        // RULE 4: if the return type is E2IMMU, then no links at all
         boolean notSelf = returnType.typeInfo != evaluationContext.getCurrentType();
         if (notSelf) {
             int immutable = MultiLevel.value(methodAnalysis.getProperty(VariableProperty.IMMUTABLE), MultiLevel.E2IMMUTABLE);
@@ -804,21 +812,21 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             }
         }
 
-        // RULE 4: neither can implicitly immutable types
+        // RULE 5: neither can implicitly immutable types
         TypeAnalysis typeAnalysis = evaluationContext.getAnalyserContext().getTypeAnalysis(methodInfo.typeInfo);
         Set<ParameterizedType> implicitlyImmutable = typeAnalysis.getImplicitlyImmutableDataTypes();
         if (implicitlyImmutable != null && implicitlyImmutable.contains(methodInfo.returnType())) {
             return LinkedVariables.EMPTY;
         }
 
-        // RULE 5: level 2 immutable object cannot link
+        // RULE 6: level 2 immutable object cannot link
         int objectImmutable = evaluationContext.getProperty(object, VariableProperty.IMMUTABLE, true, false);
         int objectE2Immutable = MultiLevel.value(objectImmutable, MultiLevel.E2IMMUTABLE);
         if (objectE2Immutable >= MultiLevel.EVENTUAL_AFTER) {
             return LinkedVariables.EMPTY;
         }
 
-        // RULE 6: independent method: no link to object
+        // RULE 7: independent method: no link to object
         int independent = methodAnalysis.getProperty(VariableProperty.INDEPENDENT);
         if (independent == MultiLevel.EFFECTIVE) {
             return LinkedVariables.EMPTY;

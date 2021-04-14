@@ -212,10 +212,14 @@ Again, note that {dependent2} implies independence, because it deals with the im
 {dependent2} => {independent}
 ====
 
-We're now properly armed to see how a for-each loop can be defined as an iterator whose implicitly immutable content
-links to that of a container.
+We're now properly armed to see how a for-each loop can be defined as an iterator whose implicitly immutable content links to that of a container.
 
 === Iterator, Iterable, loops
+
+=== Extending implicitly immutable types
+
+With all abstract types on which only abstract methods without modification status are called.
+See the <<support-lazy>> example.
 
 === Implications for immutability
 
