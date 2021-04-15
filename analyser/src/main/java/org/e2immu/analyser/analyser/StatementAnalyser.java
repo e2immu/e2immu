@@ -799,7 +799,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         if (statement() instanceof ForEachStatement) {
             potentiallyUpgradeCnnOfLocalLoopVariableAndCopy(sharedState.evaluationContext,
                     groupPropertyValues.getMap(EXTERNAL_NOT_NULL),
-                    groupPropertyValues.getMap(CONTEXT_NOT_NULL), evaluationResult.value());
+                    groupPropertyValues.getMap(CONTEXT_NOT_NULL), evaluationResult.value(),
+                    evaluationResult.someValueWasDelayed());
         }
         ContextPropertyWriter contextPropertyWriter = new ContextPropertyWriter();
         AnalysisStatus cnnStatus = contextPropertyWriter.write(statementAnalysis, sharedState.evaluationContext,
@@ -952,24 +953,34 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
     private void potentiallyUpgradeCnnOfLocalLoopVariableAndCopy(EvaluationContext evaluationContext,
                                                                  Map<Variable, Integer> externalNotNull,
                                                                  Map<Variable, Integer> contextNotNull,
-                                                                 Expression value) {
-        boolean variableNotNull = evaluationContext.getProperty(value, NOT_NULL_EXPRESSION, false, false)
-                >= MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL;
-        if (variableNotNull) {
-            Structure structure = statementAnalysis.statement.getStructure();
-            LocalVariableCreation lvc = (LocalVariableCreation) structure.initialisers().get(0);
-            Variable loopVar = lvc.localVariableReference;
-            assert contextNotNull.containsKey(loopVar); // must be present!
-            contextNotNull.put(loopVar, MultiLevel.EFFECTIVELY_NOT_NULL);
-            externalNotNull.put(loopVar, MultiLevel.NOT_INVOLVED);
+                                                                 Expression value,
+                                                                 boolean someValueWasDelayed) {
+        Structure structure = statementAnalysis.statement.getStructure();
+        LocalVariableCreation lvc = (LocalVariableCreation) structure.initialisers().get(0);
+        Variable loopVar = lvc.localVariableReference;
+        assert contextNotNull.containsKey(loopVar); // must be present!
 
-            String copy = lvc.localVariable.name() + "$" + index();
-            String simple = lvc.localVariable.simpleName() + "$" + index();
-            LocalVariableReference copyVar = createLocalCopyOfLoopVariable(loopVar,
-                    new StatementAnalysis.NameSimpleName(copy, simple));
-            if (contextNotNull.containsKey(copyVar)) {
-                // can be delayed to the next iteration
-                contextNotNull.put(copyVar, MultiLevel.EFFECTIVELY_NOT_NULL);
+        if (someValueWasDelayed) {
+            // we want to avoid a particular value on EVAL for the loop variable
+            contextNotNull.put(loopVar, Level.DELAY);
+            externalNotNull.put(loopVar, MultiLevel.NOT_INVOLVED);
+        } else {
+            int nne = evaluationContext.getProperty(value, NOT_NULL_EXPRESSION, false, false);
+            boolean variableNotNull = nne >= MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL;
+            if (variableNotNull) {
+                int oneLevelLess = MultiLevel.oneLevelLess(nne);
+
+                contextNotNull.put(loopVar, oneLevelLess);
+                externalNotNull.put(loopVar, MultiLevel.NOT_INVOLVED);
+
+                String copy = lvc.localVariable.name() + "$" + index();
+                String simple = lvc.localVariable.simpleName() + "$" + index();
+                LocalVariableReference copyVar = createLocalCopyOfLoopVariable(loopVar,
+                        new StatementAnalysis.NameSimpleName(copy, simple));
+                if (contextNotNull.containsKey(copyVar)) {
+                    // can be delayed to the next iteration
+                    contextNotNull.put(copyVar, MultiLevel.EFFECTIVELY_NOT_NULL);
+                }
             }
         }
     }

@@ -12,14 +12,25 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-allprojects {
-    repositories {
-        mavenLocal()
-        jcenter()
-        mavenCentral()
-        maven {
-            name = "GitHubPackages"
-            url = uri("https://maven.pkg.github.com/e2immu/e2immu-support")
-        }
+package org.e2immu.analyser.testexample;
+
+import java.util.Set;
+
+public class IfStatement_6 {
+
+    public static String method1(Set<String> set) {
+        if (set == null || alwaysNull(set) == null) return null;
+        return set.contains("1") ? "one" : "two";
+    }
+
+    public static String method2(Set<String> set) {
+        if (set == null || alwaysNull(set) != null) return null;
+        return set.contains("1") ? "one" : "two";
+    }
+
+    public static Set<String> alwaysNull(Set<String> in) {
+        System.out.println(in);
+        return null;
     }
 }
+

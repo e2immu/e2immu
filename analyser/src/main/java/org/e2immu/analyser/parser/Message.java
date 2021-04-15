@@ -153,6 +153,10 @@ public class Message {
         return severity + " in " + location + ": " + message;
     }
 
+    public String detailedMessage() {
+        return severity + " in " + location.detailedLocation() + ": " + message;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

@@ -34,6 +34,30 @@ public class Test_12_IfStatement extends CommonTestRunner {
         super(true);
     }
 
+    @Test
+    public void test_0() throws IOException {
+        testClass("IfStatement_0", 0, 0, new DebugConfiguration.Builder()
+                .build());
+    }
+
+    @Test
+    public void test_1() throws IOException {
+        testClass("IfStatement_1", 0, 0, new DebugConfiguration.Builder()
+                .build());
+    }
+
+    @Test
+    public void test_2() throws IOException {
+        testClass("IfStatement_2", 0, 0, new DebugConfiguration.Builder()
+                .build());
+    }
+
+    @Test
+    public void test_3() throws IOException {
+        testClass("IfStatement_3", 0, 0, new DebugConfiguration.Builder()
+                .build());
+    }
+
     /*
     Linked variables come later in get2 and get3 as compared to get1.
     Should we be worried about this?
@@ -140,4 +164,10 @@ public class Test_12_IfStatement extends CommonTestRunner {
                 .build());
     }
 
+    @Test
+    public void test_6() throws IOException {
+        // 4 errors, 3 in method1, 1 in method2
+        testClass("IfStatement_6", 4, 0, new DebugConfiguration.Builder()
+                .build());
+    }
 }

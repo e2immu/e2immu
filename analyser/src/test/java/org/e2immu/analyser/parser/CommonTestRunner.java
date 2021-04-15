@@ -71,12 +71,12 @@ public abstract class CommonTestRunner {
 
     protected TypeContext testClass(String className, int errorsToExpect, int warningsToExpect, DebugConfiguration debugConfiguration,
                                     AnalyserConfiguration analyserConfiguration) throws IOException {
-        AnnotatedAPIConfiguration.Builder builder = new AnnotatedAPIConfiguration.Builder();
+        AnnotatedAPIConfiguration.Builder apiBuilder = new AnnotatedAPIConfiguration.Builder();
         if (withAnnotatedAPIs) {
-            builder.addAnnotatedAPISourceDirs(DEFAULT_ANNOTATED_API_DIRS);
+            apiBuilder.addAnnotatedAPISourceDirs(DEFAULT_ANNOTATED_API_DIRS);
         }
         return testClass(List.of(className), errorsToExpect, warningsToExpect, debugConfiguration, analyserConfiguration,
-                new AnnotatedAPIConfiguration.Builder().build());
+                apiBuilder.build());
     }
 
     protected TypeContext testClass(List<String> classNames, int errorsToExpect, int warningsToExpect,

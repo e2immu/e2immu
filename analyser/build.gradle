@@ -15,7 +15,6 @@
 plugins {
     id 'java'
     id 'maven-publish'
-    id 'application'
 }
 
 java {
@@ -48,10 +47,6 @@ dependencies {
 
 version = '0.1.2'
 group 'org.e2immu'
-
-application {
-    mainClass.set('org.e2immu.analyser.cli.Main')
-}
 
 publishing {
     repositories {

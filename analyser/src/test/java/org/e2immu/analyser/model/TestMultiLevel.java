@@ -115,4 +115,11 @@ public class TestMultiLevel {
         assertTrue(isAfter(EVENTUALLY_E1IMMUTABLE_AFTER_MARK));
         assertTrue(isAfter(EVENTUALLY_E2IMMUTABLE_AFTER_MARK));
     }
+
+    @Test
+    public void testOneLevelLess() {
+        assertEquals(EFFECTIVELY_CONTENT_NOT_NULL, oneLevelLess(EFFECTIVELY_CONTENT2_NOT_NULL));
+        assertEquals(EFFECTIVELY_NOT_NULL, oneLevelLess(EFFECTIVELY_CONTENT_NOT_NULL));
+        assertEquals(EFFECTIVELY_E1IMMUTABLE, oneLevelLess(EFFECTIVELY_E2IMMUTABLE));
+    }
 }

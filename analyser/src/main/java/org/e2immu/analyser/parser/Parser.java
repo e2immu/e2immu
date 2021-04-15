@@ -70,7 +70,7 @@ public class Parser {
     }
 
     public RunResult run() {
-        LOGGER.info("Starting parser.\n{}", configuration);
+        LOGGER.info("Starting parser.");
 
         // at this point, bytecode inspection has been run on the Java base packages,
         // and some of our own annotations.

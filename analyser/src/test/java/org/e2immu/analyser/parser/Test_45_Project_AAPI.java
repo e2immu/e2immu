@@ -26,11 +26,12 @@ import java.io.IOException;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class Test_45_Project extends CommonTestRunner {
+public class Test_45_Project_AAPI extends CommonTestRunner {
 
-    public Test_45_Project() {
-        super(false);
+    public Test_45_Project_AAPI() {
+        super(true);
     }
 
     @Test
@@ -66,7 +67,7 @@ public class Test_45_Project extends CommonTestRunner {
             assertEquals(MultiLevel.NULLABLE, get.methodAnalysis.get().getProperty(VariableProperty.NOT_NULL_EXPRESSION));
         };
 
-        testClass("Project_0", 1, 11, new DebugConfiguration.Builder()
+        testClass("Project_0", 1, 4, new DebugConfiguration.Builder()
                 .addTypeMapVisitor(typeMapVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
@@ -88,7 +89,7 @@ public class Test_45_Project extends CommonTestRunner {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("set".equals(d.methodInfo().name)) {
                 if ("1.0.0".equals(d.statementId())) {
-                    String expect = d.iteration() == 0 ? CONTAINER: "[]";
+                    String expect = d.iteration() == 0 ? CONTAINER : "[]";
                     assertEquals(expect, d.evaluationResult().causesOfContextModificationDelay().toString());
                 }
             }
@@ -97,17 +98,17 @@ public class Test_45_Project extends CommonTestRunner {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("set".equals(d.methodInfo().name)) {
                 if ("1.0.0".equals(d.statementId())) {
-                    String expect = d.iteration() <= 1 ? CONTAINER: "[]";
+                    String expect = d.iteration() <= 1 ? CONTAINER : "[]";
                     assertEquals(expect, d.statementAnalysis().methodLevelData
                             .getCausesOfContextModificationDelay().toString());
                 }
                 if ("1".equals(d.statementId())) { // test the merge
-                    String expect = d.iteration() == 0 ? CONTAINER: "[]";
+                    String expect = d.iteration() == 0 ? CONTAINER : "[]";
                     assertEquals(expect, d.statementAnalysis().methodLevelData
                             .getCausesOfContextModificationDelay().toString());
                 }
                 if ("2".equals(d.statementId())) { // test the normal propagation
-                    String expect = d.iteration() == 0 ? CONTAINER: "[]";
+                    String expect = d.iteration() == 0 ? CONTAINER : "[]";
                     assertEquals(expect, d.statementAnalysis().methodLevelData
                             .getCausesOfContextModificationDelay().toString());
                 }
@@ -133,7 +134,7 @@ public class Test_45_Project extends CommonTestRunner {
                 int expectCm = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
                 assertEquals(expectCm, p0.getProperty(VariableProperty.CONTEXT_MODIFIED));
                 int expectMv = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
-                 assertEquals(expectMv, p0.getProperty(VariableProperty.MODIFIED_VARIABLE));
+                assertEquals(expectMv, p0.getProperty(VariableProperty.MODIFIED_VARIABLE));
             }
         };
 
@@ -148,7 +149,25 @@ public class Test_45_Project extends CommonTestRunner {
 
     @Test
     public void test_3() throws IOException {
-        testClass("Project_3", 1, 3, new DebugConfiguration.Builder()
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("visit".equals(d.methodInfo().name)) {
+                if ("entry".equals(d.variableName())) {
+                    if ("0".equals(d.statementId())) {
+                        // for(Map.Entry entry: ... .entrySet())
+                        int expectCnn = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL;
+                        assertEquals(expectCnn, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+                    }
+                }
+                if ("entry$0".equals(d.variableName())) {
+                    if ("0".equals(d.statementId())) {
+                        assertTrue(d.iteration() > 0);
+                        assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+                    }
+                }
+            }
+        };
+        testClass("Project_3", 1, 1, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 

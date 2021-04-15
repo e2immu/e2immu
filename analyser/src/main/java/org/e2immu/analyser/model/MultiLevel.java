@@ -254,4 +254,9 @@ public class MultiLevel {
         int value = value(immutable, level);
         return value == EVENTUAL_BEFORE || value == EVENTUAL;
     }
+
+    // E2Container -> E1Container; Content2 NN -> content NN
+    public static int oneLevelLess(int value) {
+        return value >> SHIFT;
+    }
 }

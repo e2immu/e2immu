@@ -64,4 +64,16 @@ public class Location {
     public static String typeLetter(WithInspectionAndAnalysis info) {
         return Character.toString(info.getClass().getSimpleName().charAt(0));
     }
+
+    public String detailedLocation() {
+        String type;
+        if (info instanceof TypeInfo) type = "Type";
+        else if (info instanceof FieldInfo) type = "Field";
+        else if (info instanceof MethodInfo mi) {
+            if (mi.isConstructor) type = "Constructor";
+            else type = "Method";
+        } else if (info instanceof ParameterInfo) type = "Parameter";
+        else throw new UnsupportedOperationException();
+        return type + " " + info.fullyQualifiedName() + (statementWithinMethod == null ? "" : ", statement " + statementWithinMethod);
+    }
 }

@@ -168,6 +168,8 @@ public class Main {
     }
 
     public static void go(Configuration configuration) throws IOException {
+        LOGGER.info(configuration.toString());
+
         Parser parser = new Parser(configuration);
         AnnotatedAPIConfiguration api = configuration.annotatedAPIConfiguration();
         if (api.writeMode() == AnnotatedAPIConfiguration.WriteMode.ANALYSED) {
@@ -186,9 +188,9 @@ public class Main {
             Parser.RunResult runResult = parser.run();
             LOGGER.info("Have {} messages from analyser", parser.countMessages());
             parser.getMessages().forEach(m -> {
-                LOGGER.info(m.toString());
+                LOGGER.info(m.detailedMessage());
             });
-            
+
             Set<TypeInfo> allTypes = configuration.annotationXmlConfiguration().writeAnnotationXml() ||
                     configuration.uploadConfiguration().upload() ? runResult.allTypes() : Set.of();
 

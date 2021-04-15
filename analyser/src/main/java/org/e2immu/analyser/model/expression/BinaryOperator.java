@@ -256,6 +256,7 @@ public class BinaryOperator implements Expression {
 
         Expression state = and ? l.value() : Negation.negate(evaluationContext, l.value());
         EvaluationContext child = evaluationContext.childState(state);
+        assert child != null; // FIXME constant evaluation to true on RHS should transform OR into LHS only
         EvaluationResult r = rhs.evaluate(child, forward);
         builder.compose(l, r);
         if (r.value().isInstanceOf(BooleanConstant.class)) {
