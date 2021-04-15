@@ -66,7 +66,7 @@ public class AnnotationXmlReader implements AnnotationStore {
         Map<String, TypeItem> typeItemMap = new HashMap<>();
         int countAnnotations = 0;
         if (configuration.isReadAnnotationXmlPackages()) {
-            List<Pattern> restrictToPatterns = computeRestrictionPatterns(configuration.readAnnotationXmlPackages);
+            List<Pattern> restrictToPatterns = computeRestrictionPatterns(configuration.readAnnotationXmlPackages());
             for (URL url : classPath.expandURLs(ANNOTATIONS_XML)) {
                 try {
                     if (accept(url, restrictToPatterns)) {

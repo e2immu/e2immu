@@ -20,16 +20,37 @@ public class AnalyserExtension {
     public static final String ANALYSER_EXTENSION_NAME = "e2immu";
     public static final String ANALYSER_TASK_NAME = "e2immu-analyser";
 
+    /* local to the plugin */
+    /* for Gradle multi-project builds; allows a project to be skipped. */
     private boolean skipProject;
-    private String jmods;
+
+    /* from InputConfiguration -- sources taken from Gradle */
+    private String jmods; // part of the class path
     private String jre;
     private String sourcePackages;
+
+    /* from AnnotatedAPIConfiguration -- sources taken from Gradle */
+    private String readAnnotatedAPIPackages;
+    private String annotatedAPIWriteMode;
     private String writeAnnotatedAPIPackages;
+    private String writeAnnotatedAPIDestinationPackage;
+    private String writeAnnotatedAPIDir;
+
+    /* from AnnotationXMLConfiguration */
+    private String readAnnotationXMLPackages;
+    private boolean writeAnnotationXML;
     private String writeAnnotationXMLPackages;
+    private String writeAnnotationXMLDir;
+
+    /* from UploadConfiguration */
     private Boolean upload;
     private String uploadUrl;
     private String uploadPackages;
+    private String uploadProject;
+
+    /* from the general Configuration -- Quiet taken from Gradle */
     private String debug;
+    private boolean ignoreErrors;
 
     private final ActionBroadcast<AnalyserProperties> propertiesActions;
 
@@ -40,6 +61,8 @@ public class AnalyserExtension {
     public void properties(Action<? super AnalyserProperties> action) {
         propertiesActions.add(action);
     }
+
+    /* ********* getters and setters ************* */
 
     public boolean isSkipProject() {
         return skipProject;
@@ -53,8 +76,8 @@ public class AnalyserExtension {
         return jmods;
     }
 
-    public void setJmods(String jmods) {
-        this.jmods = jmods;
+    public void setJmods(String jMods) {
+        this.jmods = jMods;
     }
 
     public String getJre() {
@@ -119,5 +142,77 @@ public class AnalyserExtension {
 
     public void setDebug(String debug) {
         this.debug = debug;
+    }
+
+    public String getReadAnnotationXMLPackages() {
+        return readAnnotationXMLPackages;
+    }
+
+    public void setReadAnnotationXMLPackages(String readAnnotationXMLPackages) {
+        this.readAnnotationXMLPackages = readAnnotationXMLPackages;
+    }
+
+    public boolean isWriteAnnotationXML() {
+        return writeAnnotationXML;
+    }
+
+    public void setWriteAnnotationXML(boolean writeAnnotationXML) {
+        this.writeAnnotationXML = writeAnnotationXML;
+    }
+
+    public String getWriteAnnotationXMLDir() {
+        return writeAnnotationXMLDir;
+    }
+
+    public void setWriteAnnotationXMLDir(String writeAnnotationXMLDir) {
+        this.writeAnnotationXMLDir = writeAnnotationXMLDir;
+    }
+
+    public String getReadAnnotatedAPIPackages() {
+        return readAnnotatedAPIPackages;
+    }
+
+    public void setReadAnnotatedAPIPackages(String readAnnotatedAPIPackages) {
+        this.readAnnotatedAPIPackages = readAnnotatedAPIPackages;
+    }
+
+    public String getAnnotatedAPIWriteMode() {
+        return annotatedAPIWriteMode;
+    }
+
+    public void setAnnotatedAPIWriteMode(String annotatedAPIWriteMode) {
+        this.annotatedAPIWriteMode = annotatedAPIWriteMode;
+    }
+
+    public String getWriteAnnotatedAPIDestinationPackage() {
+        return writeAnnotatedAPIDestinationPackage;
+    }
+
+    public void setWriteAnnotatedAPIDestinationPackage(String writeAnnotatedAPIDestinationPackage) {
+        this.writeAnnotatedAPIDestinationPackage = writeAnnotatedAPIDestinationPackage;
+    }
+
+    public String getWriteAnnotatedAPIDir() {
+        return writeAnnotatedAPIDir;
+    }
+
+    public void setWriteAnnotatedAPIDir(String writeAnnotatedAPIDir) {
+        this.writeAnnotatedAPIDir = writeAnnotatedAPIDir;
+    }
+
+    public String getUploadProject() {
+        return uploadProject;
+    }
+
+    public void setUploadProject(String uploadProject) {
+        this.uploadProject = uploadProject;
+    }
+
+    public boolean isIgnoreErrors() {
+        return ignoreErrors;
+    }
+
+    public void setIgnoreErrors(boolean ignoreErrors) {
+        this.ignoreErrors = ignoreErrors;
     }
 }

@@ -69,7 +69,7 @@ public class TestAnnotationUploader {
         UpgradableBooleanMap<TypeInfo> typesReferredTo = basics.typesReferenced();
         assertTrue(typesReferredTo.get(typeContext.getPrimitives().stringTypeInfo));
 
-        AnnotationUploader annotationUploader = new AnnotationUploader(configuration.uploadConfiguration,
+        AnnotationUploader annotationUploader = new AnnotationUploader(configuration.uploadConfiguration(),
                 parser.getTypeContext().typeMapBuilder.getE2ImmuAnnotationExpressions());
         Map<String, String> map = annotationUploader.createMap(Set.of(basics));
         map.forEach((k, v) -> System.out.println(k + " --> " + v));

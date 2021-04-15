@@ -23,10 +23,8 @@ import java.util.Objects;
 import java.util.function.Supplier;
 
 @E2Container
-public class AnalyserConfiguration {
-
-    public final boolean skipTransformations;
-    private final Supplier<PatternMatcher<StatementAnalyser>> patternMatcherSupplier;
+public record AnalyserConfiguration(boolean skipTransformations,
+                                    Supplier<PatternMatcher<StatementAnalyser>> patternMatcherSupplier) {
 
     public AnalyserConfiguration(boolean skipTransformations,
                                  Supplier<PatternMatcher<StatementAnalyser>> patternMatcherSupplier) {
@@ -57,5 +55,11 @@ public class AnalyserConfiguration {
             return new AnalyserConfiguration(skipTransformations, patternMatcherSupplier == null ?
                     () -> PatternMatcher.NO_PATTERN_MATCHER : patternMatcherSupplier);
         }
+    }
+
+    @Override
+    public String toString() {
+        return "AnalyserConfiguration:" +
+                "\n    skipTransformations=" + skipTransformations;
     }
 }

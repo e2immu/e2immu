@@ -23,14 +23,18 @@ import java.util.Arrays;
 import java.util.List;
 
 @E2Immutable
-public record AnnotatedAPIConfiguration(boolean reportWarnings,
-                                        WriteMode writeAnnotatedAPIs,
-                                        List<String> writeAnnotatedAPIsPackages,
+public record AnnotatedAPIConfiguration(List<String> annotatedAPISourceDirs,
+                                        List<String> readAnnotatedAPIPackages,
+                                        // writing fields
+                                        boolean reportWarnings,
+                                        WriteMode writeMode,
+                                        List<String> writeAnnotatedAPIPackages,
                                         String writeAnnotatedAPIsDir,
                                         String destinationPackage) {
 
     public static final String DEFAULT_DESTINATION_PACKAGE = "annotatedapi";
     public static final String DEFAULT_DESTINATION_DIRECTORY = "build/annotatedAPIs";
+    public static final String DO_NOT_READ_ANNOTATED_API = "do not read"; // is invalid anyway
 
     public enum WriteMode {
         DO_NOT_WRITE,  // do not write annotated apis
@@ -41,15 +45,23 @@ public record AnnotatedAPIConfiguration(boolean reportWarnings,
 
     @Container
     public static class Builder {
+        private final List<String> readAnnotatedAPIPackages = new ArrayList<>();
+        private final List<String> annotatedAPISourceDirs = new ArrayList<>();
+
+        private WriteMode writeMode;
         private boolean reportWarnings;
-        private WriteMode writeAnnotatedAPIs;
         private final List<String> writeAnnotatedAPIsPackages = new ArrayList<>();
         private String writeAnnotatedAPIsDir;
         private String destinationPackage;
 
         public AnnotatedAPIConfiguration build() {
-            return new AnnotatedAPIConfiguration(reportWarnings,
-                    writeAnnotatedAPIs == null ? WriteMode.DO_NOT_WRITE : writeAnnotatedAPIs,
+            return new AnnotatedAPIConfiguration(
+                    // reading fields
+                    List.copyOf(annotatedAPISourceDirs),
+                    List.copyOf(readAnnotatedAPIPackages),
+                    // writing fields
+                    reportWarnings,
+                    writeMode == null ? WriteMode.DO_NOT_WRITE : writeMode,
                     List.copyOf(writeAnnotatedAPIsPackages),
                     writeAnnotatedAPIsDir == null || writeAnnotatedAPIsDir.isBlank() ?
                             DEFAULT_DESTINATION_DIRECTORY : writeAnnotatedAPIsDir,
@@ -70,8 +82,8 @@ public record AnnotatedAPIConfiguration(boolean reportWarnings,
         }
 
         @Fluent
-        public Builder setAnnotatedAPIs(WriteMode writeAnnotatedAPIs) {
-            this.writeAnnotatedAPIs = writeAnnotatedAPIs;
+        public Builder setWriteMode(WriteMode writeMode) {
+            this.writeMode = writeMode;
             return this;
         }
 
@@ -82,9 +94,33 @@ public record AnnotatedAPIConfiguration(boolean reportWarnings,
         }
 
         @Fluent
-        public Builder addAnnotatedAPIPackages(String... packages) {
+        public Builder addWriteAnnotatedAPIPackages(String... packages) {
             writeAnnotatedAPIsPackages.addAll(Arrays.asList(packages));
             return this;
         }
+
+        @Fluent
+        public Builder addReadAnnotatedAPIPackages(String... packages) {
+            readAnnotatedAPIPackages.addAll(Arrays.asList(packages));
+            return this;
+        }
+
+        @Fluent
+        public Builder addAnnotatedAPISourceDirs(String... packages) {
+            annotatedAPISourceDirs.addAll(Arrays.asList(packages));
+            return this;
+        }
+    }
+
+    @Override
+    public String toString() {
+        return "AnnotatedAPIConfiguration:" +
+                "\n    annotatedAPISourceDirs=" + annotatedAPISourceDirs +
+                ",\n    readAnnotatedAPIPackages=" + readAnnotatedAPIPackages +
+                ",\n    reportWarnings=" + reportWarnings +
+                ",\n    writeMode=" + writeMode +
+                ",\n    writeAnnotatedAPIPackages=" + writeAnnotatedAPIPackages +
+                ",\n    writeAnnotatedAPIsDir='" + writeAnnotatedAPIsDir + '\'' +
+                ",\n    destinationPackage='" + destinationPackage + '\'';
     }
 }

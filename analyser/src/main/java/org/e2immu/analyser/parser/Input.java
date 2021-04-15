@@ -62,8 +62,9 @@ public record Input(Configuration configuration,
     public static final String JAR_WITH_PATH_PREFIX = "jar-on-classpath:";
 
     public static Input create(Configuration configuration) throws IOException {
-        Resources classPath = assemblePath(configuration, true, "Classpath", configuration.inputConfiguration.classPathParts);
-        AnnotationStore annotationStore = new AnnotationXmlReader(classPath, configuration.annotationXmlConfiguration);
+        Resources classPath = assemblePath(configuration, true, "Classpath",
+                configuration.inputConfiguration().classPathParts());
+        AnnotationStore annotationStore = new AnnotationXmlReader(classPath, configuration.annotationXmlConfiguration());
         LOGGER.info("Read {} annotations from 'annotation.xml' files in classpath", annotationStore.getNumberOfAnnotations());
         TypeContext globalTypeContext = new TypeContext(new TypeMapImpl.Builder());
         ByteCodeInspector byteCodeInspector = new ByteCodeInspector(classPath, annotationStore, globalTypeContext);
@@ -74,15 +75,20 @@ public record Input(Configuration configuration,
             preload(globalTypeContext, byteCodeInspector, classPath, packageName); // needed for our own stuff
         }
 
-        Resources sourcePath = assemblePath(configuration, false, "Source path", configuration.inputConfiguration.sources);
+        Resources sourcePath = assemblePath(configuration, false, "Source path",
+                configuration.inputConfiguration().sources());
         Trie<TypeInfo> sourceTypes = new Trie<>();
-        Map<TypeInfo, URL> sourceURLs = computeSourceURLs(sourcePath, globalTypeContext, configuration.inputConfiguration.restrictSourceToPackages, sourceTypes, "source path");
+        Map<TypeInfo, URL> sourceURLs = computeSourceURLs(sourcePath, globalTypeContext,
+                configuration.inputConfiguration().restrictSourceToPackages(), sourceTypes, "source path");
 
-        Resources annotatedAPIsPath = assemblePath(configuration, false, "Annotated APIs path", configuration.inputConfiguration.sourcesAnnotatedAPIs);
+        Resources annotatedAPIsPath = assemblePath(configuration, false, "Annotated APIs path",
+                configuration.annotatedAPIConfiguration().annotatedAPISourceDirs());
         Trie<TypeInfo> annotatedAPITypes = new Trie<>();
-        Map<TypeInfo, URL> annotatedAPIs = computeSourceURLs(annotatedAPIsPath, globalTypeContext, List.of(), annotatedAPITypes, "annotated API path");
+        Map<TypeInfo, URL> annotatedAPIs = computeSourceURLs(annotatedAPIsPath, globalTypeContext, List.of(),
+                annotatedAPITypes, "annotated API path");
 
-        return new Input(configuration, globalTypeContext, byteCodeInspector, annotatedAPIs, sourceURLs, sourceTypes, annotatedAPITypes, classPath);
+        return new Input(configuration, globalTypeContext, byteCodeInspector, annotatedAPIs, sourceURLs, sourceTypes,
+                annotatedAPITypes, classPath);
     }
 
     private static Map<TypeInfo, URL> computeSourceURLs(Resources sourcePath,
@@ -179,10 +185,10 @@ public record Input(Configuration configuration,
                         url = new URL("jar:file:" + part + "!/");
                     } else {
                         String jre;
-                        if (configuration.inputConfiguration.alternativeJREDirectory == null) {
+                        if (configuration.inputConfiguration().alternativeJREDirectory() == null) {
                             jre = System.getProperty("java.home");
                         } else {
-                            jre = configuration.inputConfiguration.alternativeJREDirectory;
+                            jre = configuration.inputConfiguration().alternativeJREDirectory();
                         }
                         if (!jre.endsWith("/")) jre = jre + "/";
                         url = new URL("jar:file:" + jre + part + "!/");

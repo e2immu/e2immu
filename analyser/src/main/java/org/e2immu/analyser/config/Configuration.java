@@ -33,67 +33,30 @@ import java.util.stream.Collectors;
  * Upload activated, not writing XML, not writing annotation API files
  */
 @E2Immutable
-public class Configuration {
+public record Configuration(InputConfiguration inputConfiguration,
+                            Set<org.e2immu.analyser.util.Logger.LogTarget> logTargets,
+                            boolean quiet,
+                            boolean ignoreErrors,
+                            boolean skipAnalysis,
+                            AnalyserConfiguration analyserConfiguration,
+                            UploadConfiguration uploadConfiguration,
+                            AnnotatedAPIConfiguration annotatedAPIConfiguration,
+                            AnnotationXmlConfiguration annotationXmlConfiguration,
+                            DebugConfiguration debugConfiguration) {
     private static final Logger LOGGER = LoggerFactory.getLogger(Configuration.class);
     public static final String PATH_SEPARATOR = System.getProperty("path.separator");
 
-    // input options
-    public final InputConfiguration inputConfiguration;
-
-    // common options
-    public final Set<org.e2immu.analyser.util.Logger.LogTarget> logTargets;
-    public final boolean quiet;
-    public final boolean ignoreErrors;
-    public final boolean skipAnalysis;
-
-    // analyser
-    public final AnalyserConfiguration analyserConfiguration;
-
-    // upload
-    public final UploadConfiguration uploadConfiguration;
-
-    // write AA
-    public final AnnotatedAPIConfiguration annotatedAPIConfiguration;
-
-    // write a Xml
-    public final AnnotationXmlConfiguration annotationXmlConfiguration;
-
-    // for debugging purposes
-    public final DebugConfiguration debugConfiguration;
-
-    private Configuration(InputConfiguration inputConfiguration,
-
-                          Set<org.e2immu.analyser.util.Logger.LogTarget> logTargets,
-                          boolean quiet,
-                          boolean ignoreErrors,
-                          boolean skipAnalysis,
-
-                          AnalyserConfiguration analyserConfiguration,
-                          UploadConfiguration uploadConfiguration,
-                          AnnotatedAPIConfiguration annotatedAPIConfiguration,
-                          AnnotationXmlConfiguration annotationXmlConfiguration,
-                          DebugConfiguration debugConfiguration) {
-        this.inputConfiguration = inputConfiguration;
-        this.logTargets = logTargets;
-        this.quiet = quiet;
-        this.ignoreErrors = ignoreErrors;
-        this.skipAnalysis = skipAnalysis;
-        this.uploadConfiguration = uploadConfiguration;
-        this.annotatedAPIConfiguration = annotatedAPIConfiguration;
-        this.annotationXmlConfiguration = annotationXmlConfiguration;
-        this.debugConfiguration = debugConfiguration;
-        this.analyserConfiguration = analyserConfiguration;
-    }
-
     @Override
     public String toString() {
-        return inputConfiguration +
-                "logTargets: " + logTargets.stream().map(org.e2immu.analyser.util.Logger.LogTarget::toString).collect(Collectors.joining(", ")) +
-                "\nquiet: " + quiet +
-                "\nignoreErrors: " + ignoreErrors +
+        return "Configuration:" +
+                "\n    logTargets: " + logTargets.stream().map(org.e2immu.analyser.util.Logger.LogTarget::toString)
+                .collect(Collectors.joining(", ")) +
+                "\n    quiet: " + quiet +
+                "\n    ignoreErrors: " + ignoreErrors +
                 "\n" +
-                uploadConfiguration +
-                annotatedAPIConfiguration +
+                inputConfiguration + "\n" +
+                uploadConfiguration + "\n" +
+                annotatedAPIConfiguration + "\n" +
                 annotationXmlConfiguration;
     }
 

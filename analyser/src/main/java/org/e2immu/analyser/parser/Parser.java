@@ -70,7 +70,7 @@ public class Parser {
     }
 
     public RunResult run() {
-        LOGGER.info("Running with configuration: {}", configuration);
+        LOGGER.info("Starting parser.\n{}", configuration);
 
         // at this point, bytecode inspection has been run on the Java base packages,
         // and some of our own annotations.
@@ -83,7 +83,7 @@ public class Parser {
             sortedAnnotatedAPITypes = List.of();
         } else {
             sortedAnnotatedAPITypes = inspectAndResolve(input.annotatedAPIs(), input.annotatedAPITypes(),
-                    configuration.annotatedAPIConfiguration.reportWarnings(), true);
+                    configuration.annotatedAPIConfiguration().reportWarnings(), true);
         }
 
         // and the the inspection and resolution of Java sources (Java parser)
@@ -94,7 +94,7 @@ public class Parser {
 
         // finally, there is an analysis step
 
-        if (!configuration.skipAnalysis) {
+        if (!configuration.skipAnalysis()) {
             // we pass on the Java sources for the PrimaryTypeAnalyser, while all other loaded types
             // will be sent to the ShallowAnalyser
             runShallowAnalyser(typeMap, sortedAnnotatedAPITypes);
@@ -154,7 +154,8 @@ public class Parser {
 
                 TypeContext inspectionTypeContext = new TypeContext(getTypeContext());
 
-                InputStreamReader isr = new InputStreamReader(url.openStream(), configuration.inputConfiguration.sourceEncoding);
+                InputStreamReader isr = new InputStreamReader(url.openStream(),
+                        configuration.inputConfiguration().sourceEncoding());
                 String source = IOUtils.toString(isr);
                 ParseAndInspect parseAndInspect = new ParseAndInspect(input.classPath(),
                         input.globalTypeContext().typeMapBuilder, typesForWildcardImport, anonymousTypeCounters);
@@ -174,7 +175,7 @@ public class Parser {
     }
 
     private void runPrimaryTypeAnalyser(TypeMap typeMap, List<SortedType> sortedPrimaryTypes) {
-        for (TypeMapVisitor typeMapVisitor : configuration.debugConfiguration.typeMapVisitors) {
+        for (TypeMapVisitor typeMapVisitor : configuration.debugConfiguration().typeMapVisitors()) {
             typeMapVisitor.visit(typeMap);
         }
         log(org.e2immu.analyser.util.Logger.LogTarget.ANALYSER, "Analysing primary types:\n{}",
@@ -251,7 +252,7 @@ public class Parser {
     }
 
     public ComposerData primaryTypesForAnnotatedAPIComposing() {
-        for (String packagePrefix : configuration.annotatedAPIConfiguration.writeAnnotatedAPIsPackages()) {
+        for (String packagePrefix : configuration.annotatedAPIConfiguration().writeAnnotatedAPIPackages()) {
             Input.preload(input.globalTypeContext(), input.byteCodeInspector(), input.classPath(), packagePrefix);
         }
         LOGGER.info("Building TypeMap, fixing inspections");
@@ -259,7 +260,7 @@ public class Parser {
 
         Set<TypeInfo> typesToWrite = new HashSet<>();
         // ensure that all types in the packages to write have been byte code inspected
-        for (String packagePrefix : configuration.annotatedAPIConfiguration.writeAnnotatedAPIsPackages()) {
+        for (String packagePrefix : configuration.annotatedAPIConfiguration().writeAnnotatedAPIPackages()) {
             String[] packagePrefixArray = packagePrefix.split("\\.");
             boolean allowSubPackages = packagePrefix.endsWith(".");
             typeMap.visit(packagePrefixArray, (prefix, types) -> {

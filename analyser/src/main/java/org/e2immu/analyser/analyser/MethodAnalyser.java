@@ -326,7 +326,8 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
         try {
             AnalysisStatus analysisStatus = analyserComponents.run(sharedState);
 
-            List<MethodAnalyserVisitor> visitors = analyserContext.getConfiguration().debugConfiguration.afterMethodAnalyserVisitors;
+            List<MethodAnalyserVisitor> visitors = analyserContext.getConfiguration()
+                    .debugConfiguration().afterMethodAnalyserVisitors();
             if (!visitors.isEmpty()) {
                 for (MethodAnalyserVisitor methodAnalyserVisitor : visitors) {
                     methodAnalyserVisitor.visit(new MethodAnalyserVisitor.Data(iteration,

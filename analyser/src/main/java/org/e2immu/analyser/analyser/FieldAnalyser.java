@@ -183,7 +183,8 @@ public class FieldAnalyser extends AbstractAnalyser {
             SharedState sharedState = new SharedState(iteration, closure);
             AnalysisStatus analysisStatus = analyserComponents.run(sharedState);
 
-            List<FieldAnalyserVisitor> visitors = analyserContext.getConfiguration().debugConfiguration.afterFieldAnalyserVisitors;
+            List<FieldAnalyserVisitor> visitors = analyserContext.getConfiguration()
+                    .debugConfiguration().afterFieldAnalyserVisitors();
             if (!visitors.isEmpty()) {
                 EvaluationContext evaluationContext = new EvaluationContextImpl(iteration,
                         ConditionManager.initialConditionManager(analyserContext.getPrimitives()), closure);

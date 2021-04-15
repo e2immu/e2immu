@@ -204,10 +204,10 @@ public class Test_43_FunctionalInterface extends CommonTestRunner {
 
 
         testClass("FunctionalInterface_2", 0, 0, new DebugConfiguration.Builder()
-              //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addTypeMapVisitor(typeMapVisitor)
-              //  .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-             //   .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
+                //  .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                //   .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
                 .build());
     }
 
@@ -227,8 +227,8 @@ public class Test_43_FunctionalInterface extends CommonTestRunner {
         };
 
         // two potential null pointer warnings
-        testClass("FunctionalInterfaceModified3", 0, 2, new DebugConfiguration.Builder()
-                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+        testClass("FunctionalInterface_3", 0, 2, new DebugConfiguration.Builder()
+                //   .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 
@@ -274,8 +274,8 @@ public class Test_43_FunctionalInterface extends CommonTestRunner {
         };
 
         testClass("FunctionalInterface_4", 0, 0, new DebugConfiguration.Builder()
-                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                //     .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                //     .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 
@@ -287,7 +287,29 @@ public class Test_43_FunctionalInterface extends CommonTestRunner {
 
     @Test
     public void test_6() throws IOException {
+        FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+            if ("function1".equals(d.fieldInfo().name)) {
+                //  assertEquals("s.l", FIXME problem with companion objects
+                //          d.fieldAnalysis().getEffectivelyFinalValue().toString());
+            }
+            if ("function2".equals(d.fieldInfo().name)) {
+                assertEquals("1+c>=0&&this.length()!c>=1", // FIXME see 1
+                        d.fieldAnalysis().getEffectivelyFinalValue().toString());
+            }
+            if ("function3".equals(d.fieldInfo().name)) {
+                assertEquals("instance type $1", d.fieldAnalysis().getEffectivelyFinalValue().toString());
+            }
+            if ("function4".equals(d.fieldInfo().name)) {
+                // assertEquals("1+c>=0&&this.length()!c>=1", // FIXME
+                //         d.fieldAnalysis().getEffectivelyFinalValue().toString());
+            }
+            if ("function5".equals(d.fieldInfo().name)) {
+                //   assertEquals("1+c>=0&&this.length()!c>=1", // FIXME see 1
+                //           d.fieldAnalysis().getEffectivelyFinalValue().toString());
+            }
+        };
         testClass("FunctionalInterface_6", 0, 0, new DebugConfiguration.Builder()
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build());
     }
 }

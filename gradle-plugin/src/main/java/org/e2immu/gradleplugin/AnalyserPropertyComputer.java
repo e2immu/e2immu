@@ -15,6 +15,7 @@
 package org.e2immu.gradleplugin;
 
 import org.e2immu.analyser.cli.Main;
+import org.e2immu.analyser.config.AnnotatedAPIConfiguration;
 import org.gradle.api.Project;
 import org.gradle.api.internal.plugins.DslObject;
 import org.gradle.api.logging.Logger;
@@ -25,34 +26,15 @@ import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.compile.JavaCompile;
 
 import java.io.File;
-import java.util.*;
+import java.util.Arrays;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
  * Property names are identical to those of the CLI (.cli.Main). In the system properties,
  * they have to be prefixed by the PREFIX defined in this class.
- * <p>
- * The following properties are set by the plugin:
- *
- * <ol>
- *     <li>SOURCE_ENCODING: the source encoding</li>
- *
- *     <li>SOURCE: the source path of the 'main' group</li>
- *     <li>CLASSPATH: the path for all libraries for the 'main' group</li>
- *
- *     <li>TEST_SOURCE: the source path for the 'test' group</li>
- *     <li>TEST_CLASSPATH: the path for all libraries for the 'test' group</li>
- *
- *     <li>UPLOAD_PROJECT: the name of the project when uploading to the annotation server</li>
- *
- *     <li>WRITE_ANNOTATION_XML: set to true</li>
- *     <li>WRITE_ANNOTATION_XML_DIR: set to ${work.dir}/annotationXml</li>
- *
- *     <li>WRITE_ANNOTATED_API: set to true</li>
- *     <li>WRITE_ANNOTATED_API_DIR: set to ${work.dir}/annotatedAPIs</li>
- *
- *     <li></li>
- * </ol>
  */
 public class AnalyserPropertyComputer {
 
@@ -121,6 +103,7 @@ public class AnalyserPropertyComputer {
         properties.put(Main.DEBUG, extension.getDebug());
         properties.put(Main.SOURCE_PACKAGES, extension.getSourcePackages());
         properties.put(Main.JRE, extension.getJre());
+        properties.put(Main.IGNORE_ERRORS, extension.isIgnoreErrors());
 
         properties.put(Main.UPLOAD, extension.getUpload() == null || extension.getUpload());
         properties.put(Main.UPLOAD_PROJECT, project.getName());
@@ -128,12 +111,19 @@ public class AnalyserPropertyComputer {
         properties.put(Main.UPLOAD_PACKAGES, extension.getUploadPackages());
 
         String workDir = project.getProjectDir().getAbsolutePath();
-        properties.put(Main.WRITE_ANNOTATED_API, "true");
-        properties.put(Main.WRITE_ANNOTATED_API_DIR, workDir + Main.PATH_SEPARATOR + "annotatedAPIs");
+        properties.put(Main.READ_ANNOTATED_API_PACKAGES, getOrDefault(extension.getReadAnnotatedAPIPackages(),
+                AnnotatedAPIConfiguration.DO_NOT_READ_ANNOTATED_API));
+        properties.put(Main.ANNOTATED_API_WRITE_MODE, getOrDefault(extension.getAnnotatedAPIWriteMode(),
+                AnnotatedAPIConfiguration.WriteMode.DO_NOT_WRITE.toString()));
+        properties.put(Main.WRITE_ANNOTATED_API_DIR, getOrDefault(extension.getWriteAnnotatedAPIDir(),
+                workDir + Main.PATH_SEPARATOR + "annotatedAPIs"));
         properties.put(Main.WRITE_ANNOTATED_API_PACKAGES, extension.getWriteAnnotatedAPIPackages());
+        properties.put(Main.WRITE_ANNOTATED_API_DESTINATION_PACKAGE, extension.getWriteAnnotatedAPIDestinationPackage());
 
-        properties.put(Main.WRITE_ANNOTATION_XML, "true");
-        properties.put(Main.WRITE_ANNOTATION_XML_DIR, workDir + Main.PATH_SEPARATOR + "annotationXml");
+        properties.put(Main.READ_ANNOTATION_XML_PACKAGES, extension.getReadAnnotationXMLPackages());
+        properties.put(Main.WRITE_ANNOTATION_XML, extension.isWriteAnnotationXML());
+        properties.put(Main.WRITE_ANNOTATION_XML_DIR, getOrDefault(extension.getWriteAnnotationXMLDir(),
+                workDir + Main.PATH_SEPARATOR + "annotationXml"));
         properties.put(Main.WRITE_ANNOTATION_XML_PACKAGES, extension.getWriteAnnotationXMLPackages());
 
         project.getPlugins().withType(JavaPlugin.class, javaPlugin -> {
@@ -142,6 +132,10 @@ public class AnalyserPropertyComputer {
                 detectSourceEncoding(project, properties);
             }
         });
+    }
+
+    private static String getOrDefault(String property, String defaultValue) {
+        return property == null || property.isBlank() ? defaultValue : property;
     }
 
     private static void detectSourceEncoding(Project project, final Map<String, Object> properties) {
@@ -159,6 +153,7 @@ public class AnalyserPropertyComputer {
         SourceSet main = javaPluginConvention.getSourceSets().getAt("main");
         String sourceDirectoriesPathSeparated = sourcePathFromSourceSet(main);
         properties.put(Main.SOURCE, sourceDirectoriesPathSeparated);
+        properties.put(Main.ANNOTATED_API_SOURCE, sourceDirectoriesPathSeparated);
 
         SourceSet test = javaPluginConvention.getSourceSets().getAt("test");
         String testDirectoriesPathSeparated = sourcePathFromSourceSet(test);

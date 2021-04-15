@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.parserfailing;
 
+import org.e2immu.analyser.config.AnnotatedAPIConfiguration;
 import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.config.InputConfiguration;
 import org.e2immu.analyser.parser.Input;
@@ -43,9 +44,11 @@ public class TestInput {
         Input input = Input.create(new Configuration.Builder()
                 .setInputConfiguration(new InputConfiguration.Builder()
                         .addSources("src/main/java")
-                        .addAnnotatedAPISources("../annotatedAPIs/src/main/java")
                         .addRestrictSourceToPackages("org.e2immu.analyser.util")
                         .addClassPath("jmods/java.base.jmod")
+                        .build())
+                .setAnnotatedAPIConfiguration(new AnnotatedAPIConfiguration.Builder()
+                        .addAnnotatedAPISourceDirs("../annotatedAPIs/src/main/java")
                         .build())
                 .build());
         assertTrue(15 <= input.sourceURLs().size(), "Have at least 15 classes in util package");

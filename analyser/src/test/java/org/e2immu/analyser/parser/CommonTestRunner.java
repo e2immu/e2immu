@@ -42,6 +42,7 @@ public abstract class CommonTestRunner {
     public static final String ORG_E2IMMU_SUPPORT = "org.e2immu.support";
     public static final String ORG_E2IMMU_ANALYSER_UTIL = "org.e2immu.analyser.util";
     public static final String ORG_E2IMMU_ANALYSER_TESTEXAMPLE = "org.e2immu.analyser.testexample";
+    public static final String DEFAULT_ANNOTATED_API_DIRS = "../annotatedAPIs/src/main/java";
 
     public final boolean withAnnotatedAPIs;
 
@@ -60,12 +61,20 @@ public abstract class CommonTestRunner {
     }
 
     protected TypeContext testClass(String className, int errorsToExpect, int warningsToExpect, DebugConfiguration debugConfiguration) throws IOException {
+        AnnotatedAPIConfiguration.Builder builder = new AnnotatedAPIConfiguration.Builder();
+        if (withAnnotatedAPIs) {
+            builder.addAnnotatedAPISourceDirs(DEFAULT_ANNOTATED_API_DIRS);
+        }
         return testClass(List.of(className), errorsToExpect, warningsToExpect, debugConfiguration, new AnalyserConfiguration.Builder().build(),
-                new AnnotatedAPIConfiguration.Builder().build());
+                builder.build());
     }
 
     protected TypeContext testClass(String className, int errorsToExpect, int warningsToExpect, DebugConfiguration debugConfiguration,
                                     AnalyserConfiguration analyserConfiguration) throws IOException {
+        AnnotatedAPIConfiguration.Builder builder = new AnnotatedAPIConfiguration.Builder();
+        if (withAnnotatedAPIs) {
+            builder.addAnnotatedAPISourceDirs(DEFAULT_ANNOTATED_API_DIRS);
+        }
         return testClass(List.of(className), errorsToExpect, warningsToExpect, debugConfiguration, analyserConfiguration,
                 new AnnotatedAPIConfiguration.Builder().build());
     }
@@ -83,9 +92,7 @@ public abstract class CommonTestRunner {
                 .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/slf4j")
                 .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/junit/jupiter/api")
                 .addClassPath(Input.JAR_WITH_PATH_PREFIX + "ch/qos/logback/core/spi");
-        if (withAnnotatedAPIs) {
-            inputConfigurationBuilder.addAnnotatedAPISources("../annotatedAPIs/src/main/java");
-        }
+
         classNames.forEach(className -> inputConfigurationBuilder.addRestrictSourceToPackages(ORG_E2IMMU_ANALYSER_TESTEXAMPLE + "." + className));
 
         Configuration configuration = new Configuration.Builder()
@@ -145,7 +152,6 @@ public abstract class CommonTestRunner {
                 .addSources("src/main/java")
                 .addSources("src/test/java")
                 .addSources("../../e2immu-support/src/main/java")
-                .addAnnotatedAPISources("../annotatedAPIs/src/main/java")
                 .addClassPath(InputConfiguration.DEFAULT_CLASSPATH)
                 .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/slf4j")
                 .addClassPath(Input.JAR_WITH_PATH_PREFIX + "ch/qos/logback/core/spi")
@@ -154,7 +160,12 @@ public abstract class CommonTestRunner {
         testClasses.forEach(className -> builder.addRestrictSourceToPackages(ORG_E2IMMU_ANALYSER_TESTEXAMPLE + "." + className));
         utilClasses.forEach(className -> builder.addRestrictSourceToPackages(packageString + "." + className));
 
+        AnnotatedAPIConfiguration annotatedAPIConfiguration = new AnnotatedAPIConfiguration.Builder()
+                .addAnnotatedAPISourceDirs(DEFAULT_ANNOTATED_API_DIRS)
+                .build();
+
         Configuration configuration = new Configuration.Builder()
+                .setAnnotatedAPIConfiguration(annotatedAPIConfiguration)
                 .addDebugLogTargets(List.of(ANALYSER,
                         TRANSFORM,
                         LAMBDA,

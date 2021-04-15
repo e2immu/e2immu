@@ -23,31 +23,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 @E2Container
-public class DebugConfiguration {
-
-    public final List<TypeMapVisitor> typeMapVisitors;
-    public final List<FieldAnalyserVisitor> afterFieldAnalyserVisitors;
-    public final List<MethodAnalyserVisitor> afterMethodAnalyserVisitors;
-    public final List<TypeAnalyserVisitor> afterTypePropertyComputations;
-    public final List<StatementAnalyserVisitor> statementAnalyserVisitors;
-    public final List<StatementAnalyserVariableVisitor> statementAnalyserVariableVisitors;
-    public final List<EvaluationResultVisitor> evaluationResultVisitors;
-
-    private DebugConfiguration(List<TypeMapVisitor> typeMapVisitors,
-                               List<TypeAnalyserVisitor> afterTypePropertyComputations,
-                               List<FieldAnalyserVisitor> afterFieldAnalyserVisitors,
-                               List<MethodAnalyserVisitor> afterMethodAnalyserVisitors,
-                               List<StatementAnalyserVisitor> statementAnalyserVisitors,
-                               List<StatementAnalyserVariableVisitor> statementAnalyserVariableVisitors,
-                               List<EvaluationResultVisitor> evaluationResultVisitors) {
-        this.afterFieldAnalyserVisitors = afterFieldAnalyserVisitors;
-        this.afterMethodAnalyserVisitors = afterMethodAnalyserVisitors;
-        this.statementAnalyserVisitors = statementAnalyserVisitors;
-        this.statementAnalyserVariableVisitors = statementAnalyserVariableVisitors;
-        this.afterTypePropertyComputations = afterTypePropertyComputations;
-        this.typeMapVisitors = typeMapVisitors;
-        this.evaluationResultVisitors = evaluationResultVisitors;
-    }
+public record DebugConfiguration(List<TypeMapVisitor> typeMapVisitors,
+                                 List<TypeAnalyserVisitor> afterTypePropertyComputations,
+                                 List<FieldAnalyserVisitor> afterFieldAnalyserVisitors,
+                                 List<MethodAnalyserVisitor> afterMethodAnalyserVisitors,
+                                 List<StatementAnalyserVisitor> statementAnalyserVisitors,
+                                 List<StatementAnalyserVariableVisitor> statementAnalyserVariableVisitors,
+                                 List<EvaluationResultVisitor> evaluationResultVisitors) {
 
     @Container(builds = DebugConfiguration.class)
     public static class Builder {

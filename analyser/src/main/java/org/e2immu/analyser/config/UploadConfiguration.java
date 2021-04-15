@@ -21,53 +21,23 @@ import org.e2immu.annotation.Fluent;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 @E2Immutable
-public class UploadConfiguration {
+public record UploadConfiguration(boolean upload, String annotationServerUrl, String projectName,
+                                  List<String> uploadPackages) {
     public static final String DEFAULT_ANNOTATION_SERVER_URL = "http://localhost:8281/v1";
     public static final String DEFAULT_PROJECT = "default";
 
-    // upload
-    public final boolean upload;
-    public final List<String> uploadPackages;
-    public final String annotationServerUrl;
-    public final String projectName;
-
-    public UploadConfiguration(boolean upload,
-                               String annotationServerUrl,
-                               String projectName,
-                               List<String> uploadPackages) {
-
-        this.annotationServerUrl = annotationServerUrl;
-        this.projectName = projectName;
-        this.upload = upload;
-        this.uploadPackages = uploadPackages;
-    }
-
     @Override
     public String toString() {
-        return new StringJoiner("\n")
-                .add("upload: " + upload)
-                .add("uploadPackages: " + uploadPackages)
-                .add("annotationServerUrl: " + annotationServerUrl)
-                .add("projectName: " + projectName) + "\n";
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        UploadConfiguration that = (UploadConfiguration) o;
-        return upload == that.upload &&
-                uploadPackages.equals(that.uploadPackages) &&
-                annotationServerUrl.equals(that.annotationServerUrl) &&
-                projectName.equals(that.projectName);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(upload, uploadPackages, annotationServerUrl, projectName);
+        return "UploadConfiguration:" +
+                "\n    upload=" + upload +
+                ",\n    annotationServerUrl='" + annotationServerUrl + '\'' +
+                ",\n    projectName='" + projectName + '\'' +
+                ",\n    uploadPackages=" + uploadPackages;
     }
 
     public String createUrlWithProjectName(String action) {

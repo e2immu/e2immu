@@ -61,7 +61,7 @@ public class AnalyserTask extends ConventionTask {
 
         Configuration configuration = Main.fromProperties(properties);
         log(CONFIGURATION, "Configuration:\n{}", configuration);
-        org.e2immu.analyser.util.Logger.activate(AnalyserTask::logMessage, configuration.logTargets);
+        org.e2immu.analyser.util.Logger.activate(AnalyserTask::logMessage, configuration.logTargets());
 
         try {
             Parser parser = new Parser(configuration);

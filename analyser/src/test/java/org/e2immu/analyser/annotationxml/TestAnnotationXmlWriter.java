@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.annotationxml;
 
+import org.e2immu.analyser.config.AnnotatedAPIConfiguration;
 import org.e2immu.analyser.config.AnnotationXmlConfiguration;
 import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.config.InputConfiguration;
@@ -54,21 +55,24 @@ public class TestAnnotationXmlWriter {
                 .addClassPath(InputConfiguration.DEFAULT_CLASSPATH)
                 .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/junit/jupiter/api")
                 .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/slf4j")
-                .addClassPath(Input.JAR_WITH_PATH_PREFIX + "ch/qos/logback/core/spi")
-                .addAnnotatedAPISources("../annotatedAPIs/src/main/java");
+                .addClassPath(Input.JAR_WITH_PATH_PREFIX + "ch/qos/logback/core/spi");
         AnnotationXmlConfiguration.Builder annotationXml = new AnnotationXmlConfiguration.Builder()
                 .addAnnotationXmlWritePackages("java.", "org.slf4j.")
                 .setWriteAnnotationXmlDir("build/annotations")
                 .setAnnotationXml(true);
+        AnnotatedAPIConfiguration.Builder annotatedAPI = new AnnotatedAPIConfiguration.Builder()
+                .addAnnotatedAPISourceDirs("../annotatedAPIs/src/main/java")
+                .setWriteMode(AnnotatedAPIConfiguration.WriteMode.DO_NOT_WRITE);
         Configuration configuration = new Configuration.Builder()
                 .addDebugLogTargets(List.of(ANNOTATION_XML_READER, ANNOTATION_XML_WRITER)
                         .stream().map(Enum::toString).collect(Collectors.joining(",")))
                 .setInputConfiguration(inputConfigurationBuilder.build())
                 .setAnnotationXmConfiguration(annotationXml.build())
+                .setAnnotatedAPIConfiguration(annotatedAPI.build())
                 .build();
         configuration.initializeLoggers();
         List<SortedType> res = new Parser(configuration).run().annotatedAPISortedTypes();
         Set<TypeInfo> types = res.stream().map(SortedType::primaryType).collect(Collectors.toSet());
-        AnnotationXmlWriter.write(configuration.annotationXmlConfiguration, types);
+        AnnotationXmlWriter.write(configuration.annotationXmlConfiguration(), types);
     }
 }

@@ -43,29 +43,35 @@ public class Main {
     private static final Logger LOGGER = LoggerFactory.getLogger(Main.class);
 
     public static final String PATH_SEPARATOR = System.getProperty("path.separator");
+    public static final String COMMA = ",";
 
     public static final String UPLOAD_PROJECT = "upload-project";
     public static final String UPLOAD_PACKAGES = "upload-packages";
     public static final String UPLOAD_URL = "upload-url";
     public static final String UPLOAD = "upload";
-    public static final String WRITE_ANNOTATED_API = "write-annotated-api";
+
+    public static final String READ_ANNOTATION_XML_PACKAGES = "read-annotation-xml-packages";
     public static final String WRITE_ANNOTATION_XML = "write-annotation-xml";
     public static final String WRITE_ANNOTATION_XML_DIR = "write-annotation-xml-dir";
+    public static final String WRITE_ANNOTATION_XML_PACKAGES = "write-annotation-xml-packages";
+
+    public static final String ANNOTATED_API_SOURCE = "annotated-api-source";
+    public static final String READ_ANNOTATED_API_PACKAGES = "read-annotated-api-packages";
+    public static final String ANNOTATED_API_WRITE_MODE = "write-annotated-api";
     public static final String WRITE_ANNOTATED_API_DIR = "write-annotated-api-dir";
     public static final String WRITE_ANNOTATED_API_DESTINATION_PACKAGE = "write-annotated-api-destination-package";
-    public static final String WRITE_ANNOTATION_XML_PACKAGES = "write-annotation-xml-packages";
-    public static final String READ_ANNOTATION_XML_PACKAGES = "read-annotation-xml-packages";
     public static final String WRITE_ANNOTATED_API_PACKAGES = "write-annotated-api-packages";
-    public static final String COMMA = ",";
+
     public static final String SOURCE_PACKAGES = "source-packages";
     public static final String JRE = "jre";
     public static final String CLASSPATH = "classpath";
-    public static final String TEST_CLASSPATH = "test-classpath"; // TODO
+    public static final String TEST_CLASSPATH = "test-classpath"; // TODO available in Gradle plugin
     public static final String SOURCE = "source";
-    public static final String TEST_SOURCE = "test-source"; // TODO
-    public static final String ANNOTATED_API_SOURCE = "annotated-api-source";
+    public static final String TEST_SOURCE = "test-source"; // TODO available in Gradle plugin
     public static final String SOURCE_ENCODING = "source-encoding";
+
     public static final String HELP = "help";
+
     public static final String DEBUG = "debug";
     public static final String IGNORE_ERRORS = "ignore-errors";
     public static final String QUIET = "quiet";
@@ -87,8 +93,6 @@ public class Main {
             InputConfiguration.Builder inputBuilder = new InputConfiguration.Builder();
             String[] sources = cmd.getOptionValues(SOURCE);
             splitAndAdd(sources, PATH_SEPARATOR, inputBuilder::addSources);
-            String[] annotatedAPISources = cmd.getOptionValues(ANNOTATED_API_SOURCE);
-            splitAndAdd(annotatedAPISources, PATH_SEPARATOR, inputBuilder::addAnnotatedAPISources);
             String[] classPaths = cmd.getOptionValues(CLASSPATH);
             splitAndAdd(classPaths, PATH_SEPARATOR, inputBuilder::addClassPath);
 
@@ -130,14 +134,19 @@ public class Main {
             builder.setAnnotationXmConfiguration(xmlBuilder.build());
 
             AnnotatedAPIConfiguration.Builder apiBuilder = new AnnotatedAPIConfiguration.Builder();
-            String writeAnnotatedAPIs = cmd.getOptionValue(WRITE_ANNOTATED_API);
+            String[] annotatedAPISources = cmd.getOptionValues(ANNOTATED_API_SOURCE);
+            splitAndAdd(annotatedAPISources, PATH_SEPARATOR, apiBuilder::addAnnotatedAPISourceDirs);
+
+            String writeAnnotatedAPIs = cmd.getOptionValue(ANNOTATED_API_WRITE_MODE);
             if (writeAnnotatedAPIs != null) {
-                apiBuilder.setAnnotatedAPIs(AnnotatedAPIConfiguration.WriteMode.valueOf(writeAnnotatedAPIs.trim().toUpperCase()));
+                apiBuilder.setWriteMode(AnnotatedAPIConfiguration.WriteMode.valueOf(writeAnnotatedAPIs.trim().toUpperCase()));
             }
             apiBuilder.setWriteAnnotatedAPIsDir(cmd.getOptionValue(WRITE_ANNOTATED_API_DIR));
             apiBuilder.setDestinationPackage(cmd.getOptionValue(WRITE_ANNOTATED_API_DESTINATION_PACKAGE));
-            String[] annotatedAPIPackages = cmd.getOptionValues(WRITE_ANNOTATED_API_PACKAGES);
-            splitAndAdd(annotatedAPIPackages, COMMA, apiBuilder::addAnnotatedAPIPackages);
+            String[] writeAnnotatedAPIPackages = cmd.getOptionValues(WRITE_ANNOTATED_API_PACKAGES);
+            splitAndAdd(writeAnnotatedAPIPackages, COMMA, apiBuilder::addWriteAnnotatedAPIPackages);
+            String[] readAnnotatedAPIPackages = cmd.getOptionValues(READ_ANNOTATED_API_PACKAGES);
+            splitAndAdd(readAnnotatedAPIPackages, COMMA, apiBuilder::addReadAnnotatedAPIPackages);
             AnnotatedAPIConfiguration api = apiBuilder.build();
             builder.setAnnotatedAPIConfiguration(api);
 
@@ -148,10 +157,10 @@ public class Main {
 
             Parser parser = new Parser(configuration);
 
-            if (api.writeAnnotatedAPIs() == AnnotatedAPIConfiguration.WriteMode.ANALYSED) {
+            if (api.writeMode() == AnnotatedAPIConfiguration.WriteMode.ANALYSED) {
                 throw new UnsupportedOperationException("Not yet implemented!");
             }
-            if (api.writeAnnotatedAPIs() == AnnotatedAPIConfiguration.WriteMode.INSPECTED) {
+            if (api.writeMode() == AnnotatedAPIConfiguration.WriteMode.INSPECTED) {
                 log(ANNOTATED_API_WRITER, "Writing annotated API files based on inspection");
                 Parser.ComposerData composerData = parser.primaryTypesForAnnotatedAPIComposing();
                 Composer composer = new Composer(composerData.typeMap(),
@@ -161,24 +170,24 @@ public class Main {
                 composer.write(apiTypes, api.writeAnnotatedAPIsDir());
             } else {
                 Parser.RunResult runResult = parser.run();
-                Set<TypeInfo> allTypes = configuration.annotationXmlConfiguration.writeAnnotationXml ||
-                        configuration.uploadConfiguration.upload ? runResult.allTypes() : Set.of();
+                Set<TypeInfo> allTypes = configuration.annotationXmlConfiguration().writeAnnotationXml() ||
+                        configuration.uploadConfiguration().upload() ? runResult.allTypes() : Set.of();
 
-                if (configuration.annotationXmlConfiguration.writeAnnotationXml) {
-                    AnnotationXmlWriter.write(configuration.annotationXmlConfiguration, allTypes);
+                if (configuration.annotationXmlConfiguration().writeAnnotationXml()) {
+                    AnnotationXmlWriter.write(configuration.annotationXmlConfiguration(), allTypes);
                 }
-                if (configuration.uploadConfiguration.upload) {
-                    AnnotationUploader annotationUploader = new AnnotationUploader(configuration.uploadConfiguration,
+                if (configuration.uploadConfiguration().upload()) {
+                    AnnotationUploader annotationUploader = new AnnotationUploader(configuration.uploadConfiguration(),
                             parser.getTypeContext().typeMapBuilder.getE2ImmuAnnotationExpressions());
                     Map<String, String> map = annotationUploader.createMap(allTypes);
                     annotationUploader.writeMap(map);
                 }
-                if (api.writeAnnotatedAPIs() == AnnotatedAPIConfiguration.WriteMode.USAGE) {
+                if (api.writeMode() == AnnotatedAPIConfiguration.WriteMode.USAGE) {
                     Set<TypeInfo> sourceTypes = runResult.sourceSortedTypes()
                             .stream().map(SortedType::primaryType).collect(Collectors.toSet());
                     log(ANNOTATED_API_WRITER, "Writing annotated API files for usage of {} Java sources",
                             sourceTypes.size());
-                    CollectUsages collectUsages = new CollectUsages(api.writeAnnotatedAPIsPackages());
+                    CollectUsages collectUsages = new CollectUsages(api.writeAnnotatedAPIPackages());
                     Set<WithInspectionAndAnalysis> usage = collectUsages.collect(sourceTypes);
                     log(ANNOTATED_API_WRITER, "Found {} objects in usage set", usage.size());
                     Set<TypeInfo> types = usage.stream().filter(w -> w instanceof TypeInfo)
@@ -299,7 +308,7 @@ public class Main {
         // output options: annotated_api
 
         options.addOption(Option.builder("a")
-                .longOpt(WRITE_ANNOTATED_API)
+                .longOpt(ANNOTATED_API_WRITE_MODE)
                 .hasArg(true)
                 .desc("Write mode for annotated API files. Must be one of the following four values: "
                         + "DO_NOT_WRITE (default), INSPECTED, ANALYSED, USAGE.").build());
@@ -310,6 +319,13 @@ public class Main {
                         " which annotated API files are to be generated." +
                         " Use a dot at the end of a package name to accept sub-packages." +
                         "The default is to write annotated API files for all the packages of .java files parsed.").build());
+        options.addOption(Option.builder()
+                .longOpt(READ_ANNOTATED_API_PACKAGES)
+                .hasArg().argName("PACKAGES")
+                .desc("A comma-separated list of package names for" +
+                        " which annotated API files are to be read." +
+                        " Use a dot at the end of a package name to accept sub-packages." +
+                        "The default is to read annotated API files from all the packages of .java files parsed.").build());
         options.addOption(Option.builder()
                 .longOpt(WRITE_ANNOTATED_API_DIR)
                 .hasArg().argName("DIR")
@@ -361,7 +377,6 @@ public class Main {
         setStringProperty(analyserProperties, JRE, builder::setAlternativeJREDirectory);
         setStringProperty(analyserProperties, SOURCE_ENCODING, builder::setSourceEncoding);
         setSplitStringProperty(analyserProperties, PATH_SEPARATOR, SOURCE, builder::addSources);
-        setSplitStringProperty(analyserProperties, PATH_SEPARATOR, ANNOTATED_API_SOURCE, builder::addAnnotatedAPISources);
         setSplitStringProperty(analyserProperties, PATH_SEPARATOR, CLASSPATH, builder::addClassPath);
         setSplitStringProperty(analyserProperties, COMMA, SOURCE_PACKAGES, builder::addRestrictSourceToPackages);
         return builder.build();
@@ -369,16 +384,18 @@ public class Main {
 
     public static AnnotatedAPIConfiguration annotatedAPIConfigurationFromProperties(Map<String, String> analyserProperties) {
         AnnotatedAPIConfiguration.Builder builder = new AnnotatedAPIConfiguration.Builder();
-        setWriteModeProperty(analyserProperties, builder::setAnnotatedAPIs);
+        setWriteModeProperty(analyserProperties, builder::setWriteMode);
         setStringProperty(analyserProperties, Main.WRITE_ANNOTATED_API_DESTINATION_PACKAGE, builder::setDestinationPackage);
         setStringProperty(analyserProperties, Main.WRITE_ANNOTATED_API_DIR, builder::setWriteAnnotatedAPIsDir);
-        setSplitStringProperty(analyserProperties, Main.COMMA, Main.WRITE_ANNOTATED_API_PACKAGES, builder::addAnnotatedAPIPackages);
+        setSplitStringProperty(analyserProperties, Main.COMMA, Main.WRITE_ANNOTATED_API_PACKAGES, builder::addWriteAnnotatedAPIPackages);
+        setSplitStringProperty(analyserProperties, Main.COMMA, Main.READ_ANNOTATED_API_PACKAGES, builder::addReadAnnotatedAPIPackages);
+        setSplitStringProperty(analyserProperties, PATH_SEPARATOR, ANNOTATED_API_SOURCE, builder::addAnnotatedAPISourceDirs);
         return builder.build();
     }
 
     static void setWriteModeProperty(Map<String, String> properties,
                                      Consumer<AnnotatedAPIConfiguration.WriteMode> consumer) {
-        String value = properties.get(Main.WRITE_ANNOTATED_API);
+        String value = properties.get(Main.ANNOTATED_API_WRITE_MODE);
         if (value != null) {
             String trimToUpper = value.trim().toUpperCase();
             consumer.accept(AnnotatedAPIConfiguration.WriteMode.valueOf(trimToUpper));

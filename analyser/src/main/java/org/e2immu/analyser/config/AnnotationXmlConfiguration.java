@@ -18,50 +18,23 @@ import org.e2immu.annotation.Container;
 import org.e2immu.annotation.E2Immutable;
 import org.e2immu.annotation.Fluent;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 @E2Immutable
-public class AnnotationXmlConfiguration {
-
-    // write a Xml
-    public final boolean writeAnnotationXml;
-    public final List<String> writeAnnotationXmlPackages;
-    public final List<String> readAnnotationXmlPackages;
-    public final String writeAnnotationXmlDir;
-
-    public AnnotationXmlConfiguration(
-            boolean writeAnnotationXml,
-            List<String> writeAnnotationXmlPackages,
-            List<String> readAnnotationXmlPackages,
-            String writeAnnotationXmlDir) {
-        this.writeAnnotationXml = writeAnnotationXml;
-        this.writeAnnotationXmlPackages = writeAnnotationXmlPackages;
-        this.writeAnnotationXmlDir = writeAnnotationXmlDir;
-        this.readAnnotationXmlPackages = readAnnotationXmlPackages;
-    }
+public record AnnotationXmlConfiguration(boolean writeAnnotationXml,
+                                         List<String> writeAnnotationXmlPackages,
+                                         List<String> readAnnotationXmlPackages,
+                                         String writeAnnotationXmlDir) {
 
     @Override
     public String toString() {
-        return new StringJoiner("\n")
-                .add("write annotationXml: " + writeAnnotationXml)
-                .add("write annotationXml restrict to packages: " + writeAnnotationXmlPackages)
-                .add("read annotationXml restrict to packages: " + readAnnotationXmlPackages)
-                .add("write annotationXml directory: " + writeAnnotationXmlDir) + "\n";
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        AnnotationXmlConfiguration that = (AnnotationXmlConfiguration) o;
-        return writeAnnotationXml == that.writeAnnotationXml &&
-                writeAnnotationXmlPackages.equals(that.writeAnnotationXmlPackages) &&
-                Objects.equals(writeAnnotationXmlDir, that.writeAnnotationXmlDir);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(writeAnnotationXml, writeAnnotationXmlPackages, writeAnnotationXmlDir);
+        return "AnnotationXmlConfiguration:" +
+                "\n    writeAnnotationXml=" + writeAnnotationXml +
+                ",\n    writeAnnotationXmlPackages=" + writeAnnotationXmlPackages +
+                ",\n    readAnnotationXmlPackages=" + readAnnotationXmlPackages +
+                ",\n    writeAnnotationXmlDir='" + writeAnnotationXmlDir + '\'';
     }
 
     public boolean isReadAnnotationXmlPackages() {

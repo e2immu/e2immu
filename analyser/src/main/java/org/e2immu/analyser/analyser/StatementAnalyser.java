@@ -188,7 +188,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             do {
                 boolean wasReplacement;
                 EvaluationContext evaluationContext = new EvaluationContextImpl(iteration, forwardAnalysisInfo.conditionManager(), closure);
-                if (analyserContext.getConfiguration().analyserConfiguration.skipTransformations) {
+                if (analyserContext.getConfiguration().analyserConfiguration().skipTransformations()) {
                     wasReplacement = false;
                 } else {
                     // first attempt at detecting a transformation
@@ -319,7 +319,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
 
     private boolean checkForPatterns(EvaluationContext evaluationContext) {
         PatternMatcher<StatementAnalyser> patternMatcher = analyserContext.getPatternMatcher();
-        if (!analyserContext.getConfiguration().analyserConfiguration.skipTransformations) {
+        if (!analyserContext.getConfiguration().analyserConfiguration().skipTransformations()) {
             MethodInfo methodInfo = myMethodAnalyser.methodInfo;
             return patternMatcher.matchAndReplace(methodInfo, this, evaluationContext);
         }
@@ -475,7 +475,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
 
     private void visitStatementVisitors(String statementId, StatementAnalyserResult result, SharedState sharedState) {
         for (StatementAnalyserVariableVisitor statementAnalyserVariableVisitor :
-                analyserContext.getConfiguration().debugConfiguration.statementAnalyserVariableVisitors) {
+                analyserContext.getConfiguration().debugConfiguration().statementAnalyserVariableVisitors()) {
             statementAnalysis.variables.stream()
                     .map(Map.Entry::getValue)
                     .forEach(variableInfoContainer -> statementAnalyserVariableVisitor.visit(
@@ -493,7 +493,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                                     variableInfoContainer)));
         }
         for (StatementAnalyserVisitor statementAnalyserVisitor :
-                analyserContext.getConfiguration().debugConfiguration.statementAnalyserVisitors) {
+                analyserContext.getConfiguration().debugConfiguration().statementAnalyserVisitors()) {
             ConditionManager cm = statementAnalysis.stateData.conditionManagerForNextStatement.get();
             statementAnalyserVisitor.visit(
                     new StatementAnalyserVisitor.Data(
@@ -890,7 +890,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         // debugging...
 
         for (EvaluationResultVisitor evaluationResultVisitor : analyserContext.getConfiguration()
-                .debugConfiguration.evaluationResultVisitors) {
+                .debugConfiguration().evaluationResultVisitors()) {
             evaluationResultVisitor.visit(new EvaluationResultVisitor.Data(evaluationResult.evaluationContext().getIteration(),
                     myMethodAnalyser.methodInfo, statementAnalysis.index, statementAnalysis, evaluationResult));
         }

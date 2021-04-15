@@ -50,8 +50,8 @@ public class AnnotationXmlWriter {
 
     public static void write(AnnotationXmlConfiguration configuration, Set<TypeInfo> typesToWrite) throws IOException {
         File base;
-        if (configuration.writeAnnotationXmlDir != null) {
-            base = new File(configuration.writeAnnotationXmlDir);
+        if (configuration.writeAnnotationXmlDir() != null) {
+            base = new File(configuration.writeAnnotationXmlDir());
             if (!base.isDirectory()) {
                 LOGGER.info("Creating directory {}", base);
                 if (!base.mkdirs()) {
@@ -62,12 +62,12 @@ public class AnnotationXmlWriter {
             base = new File(System.getProperty("user.dir"));
         }
         Map<String, List<TypeItem>> typeItemsPerPackage = new HashMap<>();
-        boolean isEmpty = configuration.writeAnnotationXmlPackages.isEmpty();
+        boolean isEmpty = configuration.writeAnnotationXmlPackages().isEmpty();
         typesToWrite.forEach(typeInfo -> {
             boolean accept = isEmpty;
             String packageName = typeInfo.packageName();
             if (packageName != null) {
-                for (String prefix : configuration.writeAnnotationXmlPackages) {
+                for (String prefix : configuration.writeAnnotationXmlPackages()) {
                     if (prefix.endsWith(".")) {
                         accept = packageName.startsWith(prefix.substring(0, prefix.length() - 1));
                     } else {

@@ -103,7 +103,8 @@ public class Test_03_CompanionMethods extends CommonTestRunner {
                         .build(),
                 new AnalyserConfiguration.Builder().build(),
                 new AnnotatedAPIConfiguration.Builder()
-                        .setReportWarnings(true)
+                        .addAnnotatedAPISourceDirs(CommonTestRunner.DEFAULT_ANNOTATED_API_DIRS)
+                        .setWriteMode(AnnotatedAPIConfiguration.WriteMode.DO_NOT_WRITE)
                         .build());
     }
 

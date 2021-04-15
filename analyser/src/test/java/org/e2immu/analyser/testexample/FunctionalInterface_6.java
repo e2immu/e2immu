@@ -87,7 +87,7 @@ public class FunctionalInterface_6 {
 
     @Modified
     public int index6(String s) {
-        return function5.apply(s);
+        return function6.apply(s);
     }
 
     @NotModified
