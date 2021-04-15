@@ -90,10 +90,8 @@ public class ParseLambdaExpr {
         applyMethodInspectionBuilder.getParameters().forEach(newVariableContext::add);
 
         TypeInfo anonymousType = applyMethodInspectionBuilder.owner;
-        ExpressionContext newExpressionContext = expressionContext
-                .newVariableContext(newVariableContext, "lambda");
-              //  .newLambdaContext(anonymousType, applyMethodInspectionBuilder.getMethodInfo(),
-              //          newVariableContext);
+        ExpressionContext newExpressionContext = expressionContext.newLambdaContext(anonymousType,
+                newVariableContext);
 
         Evaluation evaluation = evaluate(lambdaExpr, newExpressionContext, singleAbstractMethod, inspectionProvider);
         if (evaluation == null) {
@@ -103,7 +101,7 @@ public class ParseLambdaExpr {
         ParameterizedType functionalType = singleAbstractMethod.inferFunctionalType(inspectionProvider,
                 types, evaluation.inferredReturnType);
         continueCreationOfAnonymousType(expressionContext.typeContext.typeMapBuilder,
-                functionalType, applyMethodInspectionBuilder, evaluation.block, evaluation.inferredReturnType);
+                applyMethodInspectionBuilder, functionalType, evaluation.block, evaluation.inferredReturnType);
         log(LAMBDA, "End parsing lambda as block, inferred functional type {}, new type {}",
                 functionalType, anonymousType.fullyQualifiedName);
 
@@ -148,17 +146,19 @@ public class ParseLambdaExpr {
     // experimental: we look at the parameters, and return an expression which is superficial, with only
     // the return type as functional type of importance
     private static Expression partiallyParse(LambdaExpr lambdaExpr) {
-        return new UnevaluatedLambdaExpression(Set.of(lambdaExpr.getParameters().size()), lambdaExpr.getExpressionBody().isPresent() ? true : null);
+        return new UnevaluatedLambdaExpression(Set.of(lambdaExpr.getParameters().size()),
+                lambdaExpr.getExpressionBody().isPresent() ? true : null);
     }
 
-    private static MethodInspectionImpl.Builder createAnonymousTypeAndApplyMethod(String name, TypeInfo enclosingType, int nextId) {
+    private static MethodInspectionImpl.Builder createAnonymousTypeAndApplyMethod(String name,
+                                                                                  TypeInfo enclosingType, int nextId) {
         TypeInfo typeInfo = new TypeInfo(enclosingType, nextId);
         return new MethodInspectionImpl.Builder(typeInfo, name);
     }
 
     private static void continueCreationOfAnonymousType(TypeMapImpl.Builder typeMapBuilder,
-                                                        ParameterizedType functionalInterfaceType,
                                                         MethodInspectionImpl.Builder builder,
+                                                        ParameterizedType functionalInterfaceType,
                                                         Block block,
                                                         ParameterizedType returnType) {
         MethodTypeParameterMap sam = functionalInterfaceType.findSingleAbstractMethodOfInterface(typeMapBuilder);

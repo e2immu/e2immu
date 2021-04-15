@@ -230,7 +230,7 @@ public class Test_48_Store extends CommonTestRunner {
             }
         };
 
-        testClass("Store_6", 0, 1, new DebugConfiguration.Builder()
+        testClass("Store_6", 2, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
