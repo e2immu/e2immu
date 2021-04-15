@@ -34,7 +34,6 @@ import static org.e2immu.analyser.model.Level.FALSE;
 @E2Container
 public class NullConstant implements ConstantExpression<Object> {
     public static final NullConstant NULL_CONSTANT = new NullConstant();
-    public static final EvaluationResult NULL_RESULT = new EvaluationResult.Builder().setExpression(NULL_CONSTANT).build();
 
     @Override
     @NotNull
@@ -59,11 +58,11 @@ public class NullConstant implements ConstantExpression<Object> {
 
     @Override
     public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
+        EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
         if (forwardEvaluationInfo.getProperty(VariableProperty.NOT_NULL_EXPRESSION) > MultiLevel.NULLABLE) {
-            return new EvaluationResult.Builder().raiseError(Message.NULL_POINTER_EXCEPTION)
-                    .setExpression(NULL_CONSTANT).build();
+            builder.raiseError(Message.NULL_POINTER_EXCEPTION);
         }
-        return NULL_RESULT;
+        return builder.setExpression(NULL_CONSTANT).build();
     }
 
     @Override

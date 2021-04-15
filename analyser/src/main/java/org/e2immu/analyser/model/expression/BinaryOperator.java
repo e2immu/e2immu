@@ -256,11 +256,18 @@ public class BinaryOperator implements Expression {
 
         Expression state = and ? l.value() : Negation.negate(evaluationContext, l.value());
         EvaluationContext child = evaluationContext.childState(state);
-        assert child != null; // FIXME constant evaluation to true on RHS should transform OR into LHS only
+        assert child != null;
         EvaluationResult r = rhs.evaluate(child, forward);
         builder.compose(l, r);
-        if (r.value().isInstanceOf(BooleanConstant.class)) {
+        if (r.value() instanceof BooleanConstant booleanConstant) {
             builder.raiseError(Message.PART_OF_EXPRESSION_EVALUATES_TO_CONSTANT);
+            if (and && booleanConstant.getValue() || !and && !booleanConstant.getValue()) {
+                // x && true, x || false
+                builder.setExpression(l.value());
+            } else {
+                // x && false, x || true
+                builder.setExpression(r.value());
+            }
             return builder.build();
         }
         if (and) {

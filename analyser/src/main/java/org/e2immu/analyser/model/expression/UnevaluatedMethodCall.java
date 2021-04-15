@@ -71,7 +71,7 @@ public record UnevaluatedMethodCall(String methodName) implements Expression {
 
     @Override
     public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
-        return NullConstant.NULL_RESULT;
+        throw new UnsupportedOperationException();
     }
 
     @Override

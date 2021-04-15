@@ -79,7 +79,7 @@ public record UnevaluatedLambdaExpression(Set<Integer> numberOfParameters,
 
     @Override
     public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
-        return NullConstant.NULL_RESULT;
+        throw new UnsupportedOperationException();
     }
 
     @Override
