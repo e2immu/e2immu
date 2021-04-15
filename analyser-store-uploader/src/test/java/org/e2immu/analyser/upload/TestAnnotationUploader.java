@@ -75,5 +75,7 @@ public class TestAnnotationUploader {
         map.forEach((k, v) -> System.out.println(k + " --> " + v));
 
         assertEquals("notmodified-m", map.get(BASICS_0 + ".getExplicitlyFinal()"));
+
+        annotationUploader.writeMap(map);
     }
 }

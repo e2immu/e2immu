@@ -27,7 +27,6 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.util.Pair;
 import org.e2immu.analyser.util.SMapList;
-import org.e2immu.annotation.Variable;
 import org.e2immu.annotation.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -77,13 +76,13 @@ public class AnnotationUploader {
                 new Pair<>(lc(Independent.class), e2ImmuAnnotationExpressions.independent),
                 new Pair<>(lc(Dependent.class), e2ImmuAnnotationExpressions.dependent),
                 new Pair<>(lc(NotModified.class), e2ImmuAnnotationExpressions.notModified),
-                new Pair<>(lc(Modified.class), e2ImmuAnnotationExpressions.notModified)
+                new Pair<>(lc(Modified.class), e2ImmuAnnotationExpressions.modified)
         );
 
         fieldPairs = List.of(
                 new Pair<>(lc(Variable.class), e2ImmuAnnotationExpressions.variableField),
                 new Pair<>(lc(Modified.class), e2ImmuAnnotationExpressions.modified),
-                new Pair<>(lc(Final.class), e2ImmuAnnotationExpressions.modified),
+                new Pair<>(lc(Final.class), e2ImmuAnnotationExpressions.effectivelyFinal),
                 new Pair<>(lc(NotModified.class), e2ImmuAnnotationExpressions.notModified)
         );
 
@@ -122,6 +121,26 @@ public class AnnotationUploader {
                 .collect(Collectors.toMap(Map.Entry::getKey, e -> String.join(",", e.getValue())));
     }
 
+    private static boolean typeAnnotatedWith(TypeInfo typeInfo, AnnotationExpression ae) {
+        TypeAnalysis typeAnalysis = typeInfo.typeAnalysis.getOrElse(null);
+        return typeAnalysis != null && typeInfo.annotatedWith(typeAnalysis, ae) == Boolean.TRUE;
+    }
+
+    private static boolean methodAnnotatedWith(MethodInfo methodInfo, AnnotationExpression ae) {
+        MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.getOrElse(null);
+        return methodAnalysis != null && methodInfo.annotatedWith(methodAnalysis, ae) == Boolean.TRUE;
+    }
+
+    private static boolean fieldAnnotatedWith(FieldInfo fieldInfo, AnnotationExpression ae) {
+        FieldAnalysis fieldAnalysis = fieldInfo.fieldAnalysis.getOrElse(null);
+        return fieldAnalysis != null && fieldInfo.annotatedWith(fieldAnalysis, ae) == Boolean.TRUE;
+    }
+
+    private static boolean parameterAnnotatedWith(ParameterInfo parameterInfo, AnnotationExpression ae) {
+        ParameterAnalysis parameterAnalysis = parameterInfo.parameterAnalysis.getOrElse(null);
+        return parameterAnalysis != null && parameterInfo.annotatedWith(parameterAnalysis, ae) == Boolean.TRUE;
+    }
+
     private void add(Map<String, List<String>> map, TypeInfo type) {
         String typeQn = type.fullyQualifiedName;
         if (!configuration.accept(type.packageName())) {
@@ -129,51 +148,54 @@ public class AnnotationUploader {
             return;
         }
         for (Pair<String, AnnotationExpression> pair : typePairs) {
-            if (type.annotatedWith(type.typeAnalysis.get(), pair.v) == Boolean.TRUE) {
+            if (typeAnnotatedWith(type, pair.v)) {
                 SMapList.add(map, typeQn, pair.k + "-t");
                 log(UPLOAD, "Added {} as type", pair.k);
                 break;
             }
         }
-        type.typeInspection.get().methodsAndConstructors(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_ARTIFICIAL_SAM).forEach(methodInfo -> {
-            String methodQn = methodInfo.distinguishingName();
-            for (Pair<String, AnnotationExpression> pair : methodPairs) {
-                if (methodInfo.annotatedWith(methodInfo.methodAnalysis.get(), pair.v) == Boolean.TRUE) {
-                    SMapList.add(map, methodQn, pair.k + "-m");
-                    log(UPLOAD, "Added {} as method", pair.k);
-                    break;
-                }
-            }
-            int i = 0;
-            for (ParameterInfo parameterInfo : methodInfo.methodInspection.get().getParameters()) {
-                String parameterQn = methodQn + "#" + i;
-                for (Pair<String, AnnotationExpression> pair : parameterPairs) {
-                    if (parameterInfo.annotatedWith(parameterInfo.parameterAnalysis.get(), pair.v) == Boolean.TRUE) {
-                        SMapList.add(map, parameterQn, pair.k + "-p");
-                        break;
-                    }
-                }
-                i++;
-            }
-            if (!methodInfo.isConstructor && !methodInfo.isVoid()) {
-                TypeInfo bestType = methodInfo.returnType().bestTypeInfo();
-                if (bestType != null) {
-                    String methodsTypeQn = bestType.fullyQualifiedName;
-                    for (Pair<String, AnnotationExpression> pair : dynamicTypeAnnotations) {
-                        if (methodInfo.annotatedWith(methodInfo.methodAnalysis.get(), pair.v) == Boolean.TRUE) {
-                            SMapList.add(map, methodQn + " " + methodsTypeQn, pair.k + "-mt");
+        TypeInspection inspection = type.typeInspection.getOrElse(null);
+        if (inspection == null) return;
+        inspection.methodsAndConstructors(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_ARTIFICIAL_SAM)
+                .forEach(methodInfo -> {
+                    String methodQn = methodInfo.distinguishingName();
+                    for (Pair<String, AnnotationExpression> pair : methodPairs) {
+                        if (methodAnnotatedWith(methodInfo, pair.v)) {
+                            SMapList.add(map, methodQn, pair.k + "-m");
+                            log(UPLOAD, "Added {} as method", pair.k);
                             break;
                         }
                     }
-                }
-            }
-        });
-        for (FieldInfo fieldInfo : type.typeInspection.get().fields()) {
+                    int i = 0;
+                    for (ParameterInfo parameterInfo : methodInfo.methodInspection.get(methodQn).getParameters()) {
+                        String parameterQn = methodQn + "#" + i;
+                        for (Pair<String, AnnotationExpression> pair : parameterPairs) {
+                            if (parameterAnnotatedWith(parameterInfo, pair.v)) {
+                                SMapList.add(map, parameterQn, pair.k + "-p");
+                                break;
+                            }
+                        }
+                        i++;
+                    }
+                    if (!methodInfo.isConstructor && !methodInfo.isVoid()) {
+                        TypeInfo bestType = methodInfo.returnType().bestTypeInfo();
+                        if (bestType != null) {
+                            String methodsTypeQn = bestType.fullyQualifiedName;
+                            for (Pair<String, AnnotationExpression> pair : dynamicTypeAnnotations) {
+                                if (methodAnnotatedWith(methodInfo, pair.v)) {
+                                    SMapList.add(map, methodQn + " " + methodsTypeQn, pair.k + "-mt");
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                });
+        for (FieldInfo fieldInfo : inspection.fields()) {
             String fieldQn = typeQn + ":" + fieldInfo.name;
             TypeInfo bestType = fieldInfo.type.bestTypeInfo();
 
             for (Pair<String, AnnotationExpression> pair : fieldPairs) {
-                if (fieldInfo.annotatedWith(fieldInfo.fieldAnalysis.get(), pair.v) == Boolean.TRUE) {
+                if (fieldAnnotatedWith(fieldInfo, pair.v)) {
                     SMapList.add(map, fieldQn, pair.k + "-f");
                     break;
                 }
@@ -181,7 +203,7 @@ public class AnnotationUploader {
             if (bestType != null) {
                 String fieldsTypeQn = bestType.fullyQualifiedName;
                 for (Pair<String, AnnotationExpression> pair : dynamicTypeAnnotations) {
-                    if (fieldInfo.annotatedWith(fieldInfo.fieldAnalysis.get(), pair.v) == Boolean.TRUE) {
+                    if (fieldAnnotatedWith(fieldInfo, pair.v)) {
                         SMapList.add(map, fieldQn + " " + fieldsTypeQn, pair.k + "-mf");
                         break;
                     }
