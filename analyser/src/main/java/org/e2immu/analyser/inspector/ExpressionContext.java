@@ -134,6 +134,13 @@ public class ExpressionContext {
                 primaryType, typeContext, newVariableContext, anonymousTypeCounters);
     }
 
+    public ExpressionContext newLambdaContext(TypeInfo subType,MethodInfo sam,  VariableContext variableContext) {
+        log(CONTEXT, "Creating a new type context for lambda, sub-type {}", subType.fullyQualifiedName);
+        return new ExpressionContext(subType, sam, null,
+                null, null, primaryType,
+                typeContext, variableContext, anonymousTypeCounters);
+    }
+
     public ExpressionContext newSubType(@NotNull TypeInfo subType) {
         log(CONTEXT, "Creating a new type context for subtype {}", subType.simpleName);
         return new ExpressionContext(subType, null, null, null, null, primaryType,
@@ -142,13 +149,6 @@ public class ExpressionContext {
 
     public ExpressionContext newTypeContext(String reason) {
         log(CONTEXT, "Creating a new type context for {}", reason);
-        return new ExpressionContext(enclosingType, enclosingMethod, returnTypeSAM,
-                enclosingField, typeOfEnclosingSwitchExpression, primaryType,
-                new TypeContext(typeContext), variableContext, anonymousTypeCounters);
-    }
-
-    public ExpressionContext newTypeContext(ParameterizedType typeOfEnclosingSwitchExpression) {
-        log(CONTEXT, "Creating a new type context for switch expression, with type {}", typeOfEnclosingSwitchExpression);
         return new ExpressionContext(enclosingType, enclosingMethod, returnTypeSAM,
                 enclosingField, typeOfEnclosingSwitchExpression, primaryType,
                 new TypeContext(typeContext), variableContext, anonymousTypeCounters);

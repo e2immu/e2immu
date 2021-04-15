@@ -22,6 +22,7 @@ import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.AnnotatedAPIConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.expression.MethodCall;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.This;
@@ -42,7 +43,7 @@ public class Test_48_Store extends CommonTestRunner {
 
     @Test
     public void test_0() throws IOException {
-        testClass(List.of("Project_0", "Store_0"), 1, 15, new DebugConfiguration.Builder()
+        testClass(List.of("Project_0", "Store_0"), 1, 16, new DebugConfiguration.Builder()
                 .build(), new AnalyserConfiguration.Builder().build(), new AnnotatedAPIConfiguration.Builder().build());
     }
 
@@ -187,6 +188,49 @@ public class Test_48_Store extends CommonTestRunner {
             }
         };
         testClass("Store_4", 0, 1, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .build());
+    }
+
+
+    @Test
+    public void test_5() throws IOException {
+
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("flexible".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ParameterInfo object && "object".equals(object.name)) {
+                    String expectValue = d.iteration() == 0 ? "<p:object>" : "nullable instance type Object";
+                    assertEquals(expectValue, d.currentValue().toString());
+                }
+                if ("s".equals(d.variableName())) {
+                    if ("2".equals(d.statementId()) || "3".equals(d.statementId())) {
+                        String expectValue = d.iteration() == 0 ? "<m:toString>" : "object.toString()";
+                        assertEquals(expectValue, d.currentValue().toString());
+                    }
+                }
+            }
+        };
+        testClass("Store_5", 0, 1, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .build());
+    }
+
+
+    @Test
+    public void test_6() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("accept".equals(d.methodInfo().name) && "$1".equals(d.methodInfo().typeInfo.simpleName)) {
+                if ("config".equals(d.variableName())) {
+                    if ("0.0.0".equals(d.statementId())) {
+                        assertEquals("ar.result()", d.currentValue().toString());
+                        assertTrue(d.variableInfo().valueIsSet());
+                        assertTrue(d.currentValue() instanceof MethodCall);
+                    }
+                }
+            }
+        };
+
+        testClass("Store_6", 0, 1, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
