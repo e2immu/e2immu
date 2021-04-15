@@ -46,4 +46,7 @@ public class Messages {
         return messages.stream();
     }
 
+    public int size() {
+        return messages.size();
+    }
 }

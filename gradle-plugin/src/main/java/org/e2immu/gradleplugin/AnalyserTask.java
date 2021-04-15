@@ -64,8 +64,7 @@ public class AnalyserTask extends ConventionTask {
         org.e2immu.analyser.util.Logger.activate(AnalyserTask::logMessage, configuration.logTargets());
 
         try {
-            Parser parser = new Parser(configuration);
-            parser.run();
+            Main.go(configuration);
         } catch (IOException ioe) {
             LOGGER.error("Caught IOException {}", ioe.getMessage());
         }

@@ -149,7 +149,7 @@ public class Parser {
             URL url = Objects.requireNonNull(urls.get(typeInfo),
                     "Cannot find URL for " + typeInfo.fullyQualifiedName + " in " + urls);
             try {
-                LOGGER.info("Starting Java parser inspection of {}", url);
+                LOGGER.info("Starting Java parser inspection of '{}'", url);
                 typeInspectionBuilder.setInspectionState(STARTING_JAVA_PARSER);
 
                 TypeContext inspectionTypeContext = new TypeContext(getTypeContext());
@@ -165,10 +165,10 @@ public class Parser {
                 typeInspectionBuilder.setInspectionState(FINISHED_JAVA_PARSER);
 
             } catch (RuntimeException rte) {
-                LOGGER.error("Caught runtime exception parsing and inspecting URL {}", url);
+                LOGGER.error("Caught runtime exception parsing and inspecting URL '{}'", url);
                 throw rte;
             } catch (IOException ioe) {
-                LOGGER.error("Stopping runnable because of an IOException parsing URL {}", url);
+                LOGGER.error("Stopping runnable because of an IOException parsing URL '{}'", url);
                 throw new RuntimeException(ioe);
             }
         }
@@ -287,5 +287,8 @@ public class Parser {
 
     public Stream<Message> getMessages() {
         return messages.getMessageStream();
+    }
+    public int countMessages() {
+        return messages.size();
     }
 }

@@ -84,7 +84,8 @@ public record Input(Configuration configuration,
         Resources annotatedAPIsPath = assemblePath(configuration, false, "Annotated APIs path",
                 configuration.annotatedAPIConfiguration().annotatedAPISourceDirs());
         Trie<TypeInfo> annotatedAPITypes = new Trie<>();
-        Map<TypeInfo, URL> annotatedAPIs = computeSourceURLs(annotatedAPIsPath, globalTypeContext, List.of(),
+        Map<TypeInfo, URL> annotatedAPIs = computeSourceURLs(annotatedAPIsPath, globalTypeContext,
+                configuration.annotatedAPIConfiguration().readAnnotatedAPIPackages(),
                 annotatedAPITypes, "annotated API path");
 
         return new Input(configuration, globalTypeContext, byteCodeInspector, annotatedAPIs, sourceURLs, sourceTypes,

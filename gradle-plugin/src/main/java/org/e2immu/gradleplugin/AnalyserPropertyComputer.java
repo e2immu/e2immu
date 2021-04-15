@@ -111,19 +111,20 @@ public class AnalyserPropertyComputer {
         properties.put(Main.UPLOAD_PACKAGES, extension.getUploadPackages());
 
         String workDir = project.getProjectDir().getAbsolutePath();
+        File buildDir = project.getBuildDir();
         properties.put(Main.READ_ANNOTATED_API_PACKAGES, getOrDefault(extension.getReadAnnotatedAPIPackages(),
                 AnnotatedAPIConfiguration.DO_NOT_READ_ANNOTATED_API));
         properties.put(Main.ANNOTATED_API_WRITE_MODE, getOrDefault(extension.getAnnotatedAPIWriteMode(),
                 AnnotatedAPIConfiguration.WriteMode.DO_NOT_WRITE.toString()));
         properties.put(Main.WRITE_ANNOTATED_API_DIR, getOrDefault(extension.getWriteAnnotatedAPIDir(),
-                workDir + Main.PATH_SEPARATOR + "annotatedAPIs"));
+                new File(buildDir, "annotatedAPIs").getAbsolutePath()));
         properties.put(Main.WRITE_ANNOTATED_API_PACKAGES, extension.getWriteAnnotatedAPIPackages());
         properties.put(Main.WRITE_ANNOTATED_API_DESTINATION_PACKAGE, extension.getWriteAnnotatedAPIDestinationPackage());
 
         properties.put(Main.READ_ANNOTATION_XML_PACKAGES, extension.getReadAnnotationXMLPackages());
         properties.put(Main.WRITE_ANNOTATION_XML, extension.isWriteAnnotationXML());
         properties.put(Main.WRITE_ANNOTATION_XML_DIR, getOrDefault(extension.getWriteAnnotationXMLDir(),
-                workDir + Main.PATH_SEPARATOR + "annotationXml"));
+                new File(buildDir, "annotationXml").getAbsolutePath()));
         properties.put(Main.WRITE_ANNOTATION_XML_PACKAGES, extension.getWriteAnnotationXMLPackages());
 
         project.getPlugins().withType(JavaPlugin.class, javaPlugin -> {

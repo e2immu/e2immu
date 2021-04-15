@@ -155,50 +155,8 @@ public class Main {
             // the following will be output if the CONFIGURATION logger is active!
             log(CONFIGURATION, "Configuration:\n{}", configuration);
 
-            Parser parser = new Parser(configuration);
+            go(configuration);
 
-            if (api.writeMode() == AnnotatedAPIConfiguration.WriteMode.ANALYSED) {
-                throw new UnsupportedOperationException("Not yet implemented!");
-            }
-            if (api.writeMode() == AnnotatedAPIConfiguration.WriteMode.INSPECTED) {
-                log(ANNOTATED_API_WRITER, "Writing annotated API files based on inspection");
-                Parser.ComposerData composerData = parser.primaryTypesForAnnotatedAPIComposing();
-                Composer composer = new Composer(composerData.typeMap(),
-                        api.destinationPackage(), w -> true);
-                Collection<TypeInfo> apiTypes = composer.compose(composerData.primaryTypes());
-                log(ANNOTATED_API_WRITER, "Created {} java types, one for each package", apiTypes.size());
-                composer.write(apiTypes, api.writeAnnotatedAPIsDir());
-            } else {
-                Parser.RunResult runResult = parser.run();
-                Set<TypeInfo> allTypes = configuration.annotationXmlConfiguration().writeAnnotationXml() ||
-                        configuration.uploadConfiguration().upload() ? runResult.allTypes() : Set.of();
-
-                if (configuration.annotationXmlConfiguration().writeAnnotationXml()) {
-                    AnnotationXmlWriter.write(configuration.annotationXmlConfiguration(), allTypes);
-                }
-                if (configuration.uploadConfiguration().upload()) {
-                    AnnotationUploader annotationUploader = new AnnotationUploader(configuration.uploadConfiguration(),
-                            parser.getTypeContext().typeMapBuilder.getE2ImmuAnnotationExpressions());
-                    Map<String, String> map = annotationUploader.createMap(allTypes);
-                    annotationUploader.writeMap(map);
-                }
-                if (api.writeMode() == AnnotatedAPIConfiguration.WriteMode.USAGE) {
-                    Set<TypeInfo> sourceTypes = runResult.sourceSortedTypes()
-                            .stream().map(SortedType::primaryType).collect(Collectors.toSet());
-                    log(ANNOTATED_API_WRITER, "Writing annotated API files for usage of {} Java sources",
-                            sourceTypes.size());
-                    CollectUsages collectUsages = new CollectUsages(api.writeAnnotatedAPIPackages());
-                    Set<WithInspectionAndAnalysis> usage = collectUsages.collect(sourceTypes);
-                    log(ANNOTATED_API_WRITER, "Found {} objects in usage set", usage.size());
-                    Set<TypeInfo> types = usage.stream().filter(w -> w instanceof TypeInfo)
-                            .map(WithInspectionAndAnalysis::primaryType).collect(Collectors.toSet());
-                    log(ANNOTATED_API_WRITER, "Found {} primary types in usage set", types.size());
-                    Composer composer = new Composer(runResult.typeMap(), api.destinationPackage(), usage::contains);
-                    Collection<TypeInfo> apiTypes = composer.compose(types);
-                    log(ANNOTATED_API_WRITER, "Created {} java types, one for each package", apiTypes.size());
-                    composer.write(apiTypes, api.writeAnnotatedAPIsDir());
-                }
-            }
         } catch (ParseException parseException) {
             parseException.printStackTrace();
             System.err.println("Caught parse exception: " + parseException.getMessage());
@@ -206,6 +164,60 @@ public class Main {
         } catch (IOException e) {
             System.err.println("Caught IO exception during run: " + e.getMessage());
             System.exit(1);
+        }
+    }
+
+    public static void go(Configuration configuration) throws IOException {
+        Parser parser = new Parser(configuration);
+        AnnotatedAPIConfiguration api = configuration.annotatedAPIConfiguration();
+        if (api.writeMode() == AnnotatedAPIConfiguration.WriteMode.ANALYSED) {
+            throw new UnsupportedOperationException("Not yet implemented!");
+        }
+        if (api.writeMode() == AnnotatedAPIConfiguration.WriteMode.INSPECTED) {
+            log(ANNOTATED_API_WRITER, "Writing annotated API files based on inspection");
+            Parser.ComposerData composerData = parser.primaryTypesForAnnotatedAPIComposing();
+            Composer composer = new Composer(composerData.typeMap(),
+                    api.destinationPackage(), w -> true);
+            Collection<TypeInfo> apiTypes = composer.compose(composerData.primaryTypes());
+            log(ANNOTATED_API_WRITER, "Created {} java types, one for each package", apiTypes.size());
+            composer.write(apiTypes, api.writeAnnotatedAPIsDir());
+        } else {
+            /* normal run */
+            Parser.RunResult runResult = parser.run();
+            LOGGER.info("Have {} messages from analyser", parser.countMessages());
+            parser.getMessages().forEach(m -> {
+                LOGGER.info(m.toString());
+            });
+            
+            Set<TypeInfo> allTypes = configuration.annotationXmlConfiguration().writeAnnotationXml() ||
+                    configuration.uploadConfiguration().upload() ? runResult.allTypes() : Set.of();
+
+            if (configuration.annotationXmlConfiguration().writeAnnotationXml()) {
+                LOGGER.info("Write AnnotationXML");
+                AnnotationXmlWriter.write(configuration.annotationXmlConfiguration(), allTypes);
+            }
+            if (configuration.uploadConfiguration().upload()) {
+                AnnotationUploader annotationUploader = new AnnotationUploader(configuration.uploadConfiguration(),
+                        parser.getTypeContext().typeMapBuilder.getE2ImmuAnnotationExpressions());
+                Map<String, String> map = annotationUploader.createMap(allTypes);
+                annotationUploader.writeMap(map);
+            }
+            if (api.writeMode() == AnnotatedAPIConfiguration.WriteMode.USAGE) {
+                Set<TypeInfo> sourceTypes = runResult.sourceSortedTypes()
+                        .stream().map(SortedType::primaryType).collect(Collectors.toSet());
+                log(ANNOTATED_API_WRITER, "Writing annotated API files for usage of {} Java sources",
+                        sourceTypes.size());
+                CollectUsages collectUsages = new CollectUsages(api.writeAnnotatedAPIPackages());
+                Set<WithInspectionAndAnalysis> usage = collectUsages.collect(sourceTypes);
+                log(ANNOTATED_API_WRITER, "Found {} objects in usage set", usage.size());
+                Set<TypeInfo> types = usage.stream().filter(w -> w instanceof TypeInfo)
+                        .map(WithInspectionAndAnalysis::primaryType).collect(Collectors.toSet());
+                log(ANNOTATED_API_WRITER, "Found {} primary types in usage set", types.size());
+                Composer composer = new Composer(runResult.typeMap(), api.destinationPackage(), usage::contains);
+                Collection<TypeInfo> apiTypes = composer.compose(types);
+                log(ANNOTATED_API_WRITER, "Created {} java types, one for each package", apiTypes.size());
+                composer.write(apiTypes, api.writeAnnotatedAPIsDir());
+            }
         }
     }
 
