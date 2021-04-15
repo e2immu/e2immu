@@ -23,6 +23,7 @@ import org.e2immu.analyser.config.AnnotatedAPIConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.VariableExpression;
+import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
@@ -121,7 +122,7 @@ public class Test_48_Store extends CommonTestRunner {
                     String expectLinked = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "";
                     assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
                 }
-                if(d.variable() instanceof This) {
+                if (d.variable() instanceof This) {
                     int expectModified = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
                     assertEquals(expectModified, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
                 }
@@ -145,7 +146,7 @@ public class Test_48_Store extends CommonTestRunner {
                     assertTrue(value instanceof VariableExpression, "Have " + value.getClass());
                 }
             }
-            if("handleMultiSet".equals(d.methodInfo().name)) {
+            if ("handleMultiSet".equals(d.methodInfo().name)) {
                 int expectModified = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
                 assertEquals(expectModified, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
             }
@@ -153,13 +154,13 @@ public class Test_48_Store extends CommonTestRunner {
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("projects".equals(d.fieldInfo().name) && "Store_3".equals(d.fieldInfo().owner.simpleName)) {
-                int expectMom = d.iteration() == 0 ? Level.DELAY: Level.TRUE;
+                int expectMom = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
                 assertEquals(expectMom, d.fieldAnalysis().getProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD));
             }
         };
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
-            if("Store_3".equals(d.typeInfo().simpleName)) {
+            if ("Store_3".equals(d.typeInfo().simpleName)) {
                 int expectImm = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EFFECTIVELY_E1IMMUTABLE_NOT_E2IMMUTABLE;
                 assertEquals(expectImm, d.typeAnalysis().getProperty(VariableProperty.IMMUTABLE));
             }
@@ -172,4 +173,22 @@ public class Test_48_Store extends CommonTestRunner {
                 .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
                 .build(), new AnalyserConfiguration.Builder().build(), new AnnotatedAPIConfiguration.Builder().build());
     }
+
+    @Test
+    public void test_4() throws IOException {
+
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("flexible".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof FieldReference fr && "LOGGER".equals(fr.fieldInfo.name)) {
+                    // OK in 0, 1.0.0, 1.1.0, problem in 1
+                    String expectValue = d.iteration() == 0 ? "<f:LOGGER>" : "nullable instance type Logger";
+                    assertEquals(expectValue, d.currentValue().toString(), "At statement " + d.statementId());
+                }
+            }
+        };
+        testClass("Store_4", 0, 1, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .build());
+    }
+
 }

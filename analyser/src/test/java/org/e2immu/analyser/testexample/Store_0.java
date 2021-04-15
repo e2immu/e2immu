@@ -40,6 +40,18 @@ public class Store_0 {
         return newProject;
     }
 
+    private static long flexible(Object object, long defaultValue) {
+        LOGGER.info("Parsing " + object);
+        if (object == null) return defaultValue;
+        String s = object.toString();
+        try {
+            double d = Double.parseDouble(s);
+            return (long) d;
+        } catch (NumberFormatException nfe) {
+            return defaultValue;
+        }
+    }
+
     public void handleMultiSet(String projectName, Map<String, Object> body) {
         Project_0 project = getOrCreate(projectName);
         int countUpdated = 0;

@@ -500,11 +500,12 @@ class VariableInfoImpl implements VariableInfo {
 
         // here is the correct point to remove dead branches
         List<StatementAnalysis.ConditionAndVariableInfo> reduced =
-                mergeSources.stream().filter(cav -> !cav.alwaysEscapes()).collect(Collectors.toUnmodifiableList());
+                mergeSources.stream().filter(cav -> !cav.alwaysEscapes()).toList();
 
         boolean allValuesIdentical = reduced.stream().allMatch(cav -> currentValue.equals(cav.variableInfo().getValue()));
         if (allValuesIdentical) return currentValue;
-        boolean allReducedIdentical = atLeastOneBlockExecuted && reduced.stream().skip(1).allMatch(cav -> reduced.get(0).variableInfo().getValue().equals(cav.variableInfo().getValue()));
+        boolean allReducedIdentical = atLeastOneBlockExecuted && reduced.stream().skip(1)
+                .allMatch(cav -> specialEquals(reduced.get(0).variableInfo().getValue(), cav.variableInfo().getValue()));
         if (allReducedIdentical) return reduced.get(0).variableInfo().getValue();
 
         MergeHelper mergeHelper = new MergeHelper(evaluationContext, this);
@@ -539,5 +540,19 @@ class VariableInfoImpl implements VariableInfo {
 
         // no clue
         return mergeHelper.noConclusion();
+    }
+
+    /*
+    there is the special situation of multiple delayed versions of the same field.
+    we cannot have an idea yet if the result is equals (certainly when effectively final) or not (possibly
+    when variable, with different statement times).
+
+     */
+    private boolean specialEquals(Expression e1, Expression e2) {
+        if (e1 instanceof DelayedVariableExpression dve1 && e2 instanceof DelayedVariableExpression dve2 &&
+                dve1.variable().equals(dve2.variable())) {
+            return true;
+        }
+        return e1.equals(e2);
     }
 }

@@ -665,9 +665,13 @@ public class Resolver {
                     AtomicBoolean found = new AtomicBoolean();
                     fieldInitialiser.initialiser().visit(elt -> {
                         if (elt instanceof MethodCall methodCall) {
-                            if (methodCall.methodInfo == methodInfo ||
-                                    builders.get(methodCall.methodInfo).getMethodsOfOwnClassReached().contains(methodInfo)) {
+                            if (methodCall.methodInfo == methodInfo) {
                                 found.set(true);
+                            } else {
+                                MethodResolution.Builder builder = builders.get(methodCall.methodInfo);
+                                if (builder != null && builder.getMethodsOfOwnClassReached().contains(methodInfo)) {
+                                    found.set(true);
+                                }
                             }
                         }
                     });

@@ -49,7 +49,7 @@ public class Test_45_Project extends CommonTestRunner {
                 }
                 if (d.variable() instanceof ReturnVariable && "3".equals(d.statementId())) {
                     String expectValue = switch (d.iteration()) {
-                        case 0 -> "null==<m:get>?<v:return set>:<m:equals>?<f:value>:<f:value>";
+                        case 0 -> "null==<m:get>?<v:return set>:<f:value>";
                         case 1, 2 -> "null==<m:get>?null:prev.value";
                         default -> "null==kvStore.get(key)?null:prev.value";
                     };

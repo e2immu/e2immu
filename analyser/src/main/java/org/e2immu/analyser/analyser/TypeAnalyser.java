@@ -319,7 +319,16 @@ public class TypeAnalyser extends AbstractAnalyser {
 
             boolean explicit = explicitTypesAsSet.contains(type);
             boolean assignableFrom = !type.isUnboundParameterType() &&
-                    explicitTypesAsSet.stream().anyMatch(t -> type.isAssignableFrom(analyserContext, t));
+                    explicitTypesAsSet.stream().anyMatch(t -> {
+                        try {
+                            return type.isAssignableFrom(analyserContext, t);
+                        } catch (IllegalStateException illegalStateException) {
+                            LOGGER.warn("Cannot determine if {} is assignable from {}", type, t);
+                            /* this is a type which is implicitly present somewhere,
+                             but not directly in the hierarchy */
+                            return false;
+                        }
+                    });
             return explicit || assignableFrom;
         });
 
