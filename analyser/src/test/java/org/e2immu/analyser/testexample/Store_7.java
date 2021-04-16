@@ -16,27 +16,18 @@ package org.e2immu.analyser.testexample;
 
 import org.e2immu.annotation.Fluent;
 import org.e2immu.annotation.Modified;
+import org.e2immu.annotation.NotModified;
 import org.e2immu.annotation.NotNull;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class Store_7 {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(Store_7.class);
-
-    private final Vertx vertx;
-    private static final int readWithinMillis = 3;
-
-    public Store_7(Vertx vertx) {
-        this.vertx = vertx;
-    }
-
-    public void initServer(int port) {
+    public static HttpServer initServer() {
+        Vertx vertx = new Vertx();
         HttpServer server = vertx.createHttpServer();
-        Router router = Router.router(vertx);
+        Router router = Router.router();
 
-        server.requestHandler(router).listen(port);
-        LOGGER.info("Started kv server on port " + port + "; read-within-millis " + readWithinMillis);
+        // removing the next statement breaks the infinite loop
+        return server.requestHandler(router);
     }
 
     interface HttpServerRequest {
@@ -44,60 +35,40 @@ public class Store_7 {
 
     interface HttpServer {
         @Fluent
-        @Modified
-        HttpServer requestHandler(@NotNull Handler<HttpServerRequest> handler);
-
-        void listen(int port);
+        @Modified // removing the @NotModified on the parameter causes an infinite loop
+        HttpServer requestHandler(@NotModified @NotNull Handler<HttpServerRequest> handler);
     }
 
     static class Vertx {
         @NotNull
-        @Modified
-        Vertx vertx() {
-            return new Vertx();
-        }
-
-        @NotNull
-        @Modified
-        HttpServer createHttpServer() {
+        static HttpServer createHttpServer() {
             return new HttpServer() {
+                private Handler<HttpServerRequest> myHandler;
                 @Override
                 public HttpServer requestHandler(Handler<HttpServerRequest> handler) {
-                    return this;
+                    this.myHandler = handler;
+                    return this; // PART OF @Fluent test: anonymous is assignable to HttpServer
                 }
 
-                @Override
-                public void listen(int port) {
+                public Handler<HttpServerRequest> getMyHandler() {
+                    return myHandler;
                 }
             };
         }
     }
 
-    @FunctionalInterface
     interface Handler<E> {
-        void handle(@NotNull E event); // no modification annotation!
-    }
-
-    static class Route {
-        //  @Fluent
-        //  @Modified
-        // Route handler(@NotNull Handler<RoutingContext> handler) { return null; }
+        void handle(E e);
     }
 
     static class Router implements Handler<HttpServerRequest> {
-        static Router router(Vertx vertx) {
+        static Router router() {
             return new Router();
         }
 
-        @Modified
-        @NotNull
-        static Route route() {
-            return new Route();
-        }
-
         @Override
-        public void handle(HttpServerRequest event) {
-
+        public void handle(HttpServerRequest httpServerRequest) {
+            // nothing here
         }
     }
 }

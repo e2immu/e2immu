@@ -244,7 +244,16 @@ public class Test_48_Store extends CommonTestRunner {
     @Test
     public void test_7() throws IOException {
 
-        testClass("Store_7", 2, 0, new DebugConfiguration.Builder()
+        // implicitly immutable types have nothing to do with this, given that there is only one
+        // field, of type int
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("Store_7".equals(d.typeInfo().simpleName)) {
+                assertTrue(d.typeAnalysis().getImplicitlyImmutableDataTypes().isEmpty());
+            }
+        };
+
+        testClass("Store_7", 0, 0, new DebugConfiguration.Builder()
+                .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
                 .build());
     }
 }
