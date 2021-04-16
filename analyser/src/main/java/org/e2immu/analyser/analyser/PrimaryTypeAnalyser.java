@@ -50,6 +50,7 @@ public class PrimaryTypeAnalyser implements AnalyserContext, Analyser, HoldsAnal
     private final Messages messages = new Messages();
     private final Primitives primitives;
     private final AnalyserContext parent;
+    private final Set<PrimaryTypeAnalyser> localPrimaryTypeAnalysers = new HashSet<>();
 
     private final AnalyserComponents<Analyser, SharedState> analyserComponents;
 
@@ -117,7 +118,7 @@ public class PrimaryTypeAnalyser implements AnalyserContext, Analyser, HoldsAnal
                     MethodInfo sam = fieldInitialiser.implementationOfSingleAbstractMethod();
                     if (sam != null) {
                         samAnalyser = Objects.requireNonNull(methodAnalysers.get(sam),
-                                "No method analyser for "+sam.fullyQualifiedName);
+                                "No method analyser for " + sam.fullyQualifiedName);
                     } else samAnalyser = null;
                 } else samAnalyser = null;
                 TypeAnalysis ownerTypeAnalysis = typeAnalysers.get(fieldInfo.owner).typeAnalysis;
@@ -149,7 +150,16 @@ public class PrimaryTypeAnalyser implements AnalyserContext, Analyser, HoldsAnal
 
         AnalyserComponents.Builder<Analyser, SharedState> builder = new AnalyserComponents.Builder<>();
         for (Analyser analyser : analysers) {
-            builder.add(analyser, sharedState -> analyser.analyse(sharedState.iteration, sharedState.closure));
+            AnalysisStatus.AnalysisResultSupplier<SharedState> supplier = sharedState -> {
+                analyser.receiveAdditionalTypeAnalysers(localPrimaryTypeAnalysers);
+                AnalysisStatus status = analyser.analyse(sharedState.iteration, sharedState.closure);
+                if (analyser instanceof MethodAnalyser methodAnalyser) {
+                    methodAnalyser.getLocallyCreatedPrimaryTypeAnalysers().forEach(localPrimaryTypeAnalysers::add);
+                }
+                return status;
+            };
+
+            builder.add(analyser, supplier);
         }
         analyserComponents = builder.build();
     }
@@ -289,5 +299,10 @@ public class PrimaryTypeAnalyser implements AnalyserContext, Analyser, HoldsAnal
     @Override
     public ParameterAnalyser getParameterAnalyser(ParameterInfo parameterInfo) {
         return parameterAnalysers.get(parameterInfo);
+    }
+
+    @Override
+    public void receiveAdditionalTypeAnalysers(Collection<PrimaryTypeAnalyser> typeAnalysers) {
+        throw new UnsupportedOperationException();
     }
 }

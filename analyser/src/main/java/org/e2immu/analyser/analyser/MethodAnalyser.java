@@ -73,6 +73,7 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
     public final StatementAnalyser firstStatementAnalyser;
     private final AnalyserComponents<String, SharedState> analyserComponents;
     private final CheckConstant checkConstant;
+    private final Set<PrimaryTypeAnalyser> locallyCreatedPrimaryTypeAnalysers = new HashSet<>();
 
     private Map<FieldInfo, FieldAnalyser> myFieldAnalysers;
 
@@ -86,8 +87,8 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
     public MethodAnalyser(MethodInfo methodInfo,
                           TypeAnalysis typeAnalysis,
                           boolean isSAM,
-                          AnalyserContext analyserContext) {
-        super("Method " + methodInfo.name, analyserContext);
+                          AnalyserContext analyserContextInput) {
+        super("Method " + methodInfo.name, new ExpandableAnalyserContextImpl(analyserContextInput));
         this.checkConstant = new CheckConstant(analyserContext.getPrimitives(), analyserContext.getE2ImmuAnnotationExpressions());
         this.methodInfo = methodInfo;
         methodInspection = methodInfo.methodInspection.get();
@@ -106,7 +107,7 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
             parameterAnalysersBuilder.add(new ParameterAnalyser(analyserContext, parameterInfo));
         }
         parameterAnalysers = List.copyOf(parameterAnalysersBuilder);
-        parameterAnalyses = parameterAnalysers.stream().map(pa -> pa.parameterAnalysis).collect(Collectors.toUnmodifiableList());
+        parameterAnalyses = parameterAnalysers.stream().map(pa -> (ParameterAnalysis) pa.parameterAnalysis).toList();
 
         this.typeAnalysis = typeAnalysis;
         Block block = methodInspection.getMethodBody();
@@ -145,7 +146,7 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
                         ForwardAnalysisInfo.startOfMethod(analyserContext.getPrimitives()),
                         sharedState.evaluationContext.getClosure());
                 this.messages.addAll(result.messages());
-                this.copyLocallyCreatedTypeAnalysersToFieldAnalysers(result.localAnalysers());
+                this.locallyCreatedPrimaryTypeAnalysers.addAll(result.localAnalysers());
                 return result.analysisStatus();
             };
 
@@ -154,7 +155,7 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
                     .add("computeModified", (sharedState) -> methodInfo.isConstructor ? DONE : computeModified())
                     .add("computeModifiedCycles", (sharedState -> methodInfo.isConstructor ? DONE : computeModifiedInternalCycles()))
                     .add("computeReturnValue", (sharedState) -> methodInfo.noReturnValue() ? DONE : computeReturnValue(sharedState))
-                    .add("computeImmutable", sharedState -> methodInfo.noReturnValue() ? DONE : computeImmutable(sharedState))
+                    .add("computeImmutable", sharedState -> methodInfo.noReturnValue() ? DONE : computeImmutable())
                     .add("detectMissingStaticModifier", (iteration) -> methodInfo.isConstructor ? DONE : detectMissingStaticModifier())
                     .add("eventualPrepWork", (sharedState) -> methodInfo.isConstructor ? DONE : eventualPrepWork(sharedState))
                     .add("annotateEventual", (sharedState) -> methodInfo.isConstructor ? DONE : annotateEventual(sharedState))
@@ -166,10 +167,8 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
         analyserComponents = builder.build();
     }
 
-    private void copyLocallyCreatedTypeAnalysersToFieldAnalysers(List<PrimaryTypeAnalyser> primaryTypeAnalysers) {
-        if(!primaryTypeAnalysers.isEmpty()) {
-            myFieldAnalysers.values().forEach(fa -> fa.receiveAdditionalTypeAnalysers(primaryTypeAnalysers));
-        }
+    public Stream<PrimaryTypeAnalyser> getLocallyCreatedPrimaryTypeAnalysers() {
+        return locallyCreatedPrimaryTypeAnalysers.stream();
     }
 
     @Override
@@ -416,7 +415,7 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
 
         TypeInfo typeInfo = methodInfo.typeInfo;
         List<FieldAnalysis> fieldAnalysesOfTypeInfo = myFieldAnalysers.values().stream()
-                .map(fa -> fa.fieldAnalysis).collect(Collectors.toUnmodifiableList());
+                .map(fa -> (FieldAnalysis) fa.fieldAnalysis).toList();
 
         while (true) {
             // FIRST CRITERION: is there a non-@Final field?
@@ -494,8 +493,7 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
             }
             typeInfo = parentClass.bestTypeInfo();
             TypeInspection typeInspection = analyserContext.getTypeInspection(typeInfo);
-            fieldAnalysesOfTypeInfo = typeInspection.fields().stream().map(analyserContext::getFieldAnalysis)
-                    .collect(Collectors.toUnmodifiableList());
+            fieldAnalysesOfTypeInfo = typeInspection.fields().stream().map(analyserContext::getFieldAnalysis).toList();
         }
 
         if (!methodAnalysis.precondition.isSet()) {
@@ -681,7 +679,7 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
         return DONE;
     }
 
-    private AnalysisStatus computeImmutable(SharedState sharedState) {
+    private AnalysisStatus computeImmutable() {
         if (!methodAnalysis.singleReturnValue.isSet()) {
             log(DELAYED, "Delaying @Immutable on {} until return value is set", methodInfo.fullyQualifiedName);
             return DELAYS;

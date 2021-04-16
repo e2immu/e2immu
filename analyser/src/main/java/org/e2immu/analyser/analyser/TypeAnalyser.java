@@ -83,8 +83,8 @@ public class TypeAnalyser extends AbstractAnalyser {
 
     public TypeAnalyser(@NotModified TypeInfo typeInfo,
                         TypeInfo primaryType,
-                        AnalyserContext analyserContext) {
-        super("Type " + typeInfo.simpleName, analyserContext);
+                        AnalyserContext analyserContextInput) {
+        super("Type " + typeInfo.simpleName, new ExpandableAnalyserContextImpl(analyserContextInput));
         this.typeInfo = typeInfo;
         this.primaryType = primaryType;
         typeInspection = typeInfo.typeInspection.get();

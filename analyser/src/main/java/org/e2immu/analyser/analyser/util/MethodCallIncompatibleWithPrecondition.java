@@ -109,15 +109,17 @@ public class MethodCallIncompatibleWithPrecondition {
                         CompanionMethodName companionMethodName = entry.getKey();
                         CompanionAnalysis companionAnalysis = entry.getValue();
                         Expression value = companionAnalysis.getValue();
-                        log(COMPANION, "Found value expression {} for aspect {} for method call", value, companionMethodName.aspect());
+                        if(companionMethodName.aspect() != null) {
+                            log(COMPANION, "Found value expression {} for aspect {} for method call", value, companionMethodName.aspect());
 
-                        TypeAnalysis typeAnalysis = evaluationContext.getAnalyserContext().getTypeAnalysis(methodCall.methodInfo.typeInfo);
-                        MethodInfo aspectMethod = typeAnalysis.getAspects().get(companionMethodName.aspect());
-                        This thisVar = new This(InspectionProvider.DEFAULT, aspectMethod.typeInfo);
-                        TranslationMap translationMap = new TranslationMap.TranslationMapBuilder()
-                                .put(thisVar, ve.variable()).build();
-                        Expression translated = value.translate(translationMap);
-                        builder.put(e, translated);
+                            TypeAnalysis typeAnalysis = evaluationContext.getAnalyserContext().getTypeAnalysis(methodCall.methodInfo.typeInfo);
+                            MethodInfo aspectMethod = typeAnalysis.getAspects().get(companionMethodName.aspect());
+                            This thisVar = new This(InspectionProvider.DEFAULT, aspectMethod.typeInfo);
+                            TranslationMap translationMap = new TranslationMap.TranslationMapBuilder()
+                                    .put(thisVar, ve.variable()).build();
+                            Expression translated = value.translate(translationMap);
+                            builder.put(e, translated);
+                        }
                     }
                 }
             }

@@ -89,8 +89,8 @@ public class FieldAnalyser extends AbstractAnalyser {
                          TypeInfo primaryType,
                          TypeAnalysis ownerTypeAnalysis,
                          MethodAnalyser sam,
-                         AnalyserContext analyserContext) {
-        super("Field " + fieldInfo.name, new ExpandableAnalyserContextImpl(analyserContext));
+                         AnalyserContext nonExpandableAnalyserContext) {
+        super("Field " + fieldInfo.name, new ExpandableAnalyserContextImpl(nonExpandableAnalyserContext));
         this.checkConstant = new CheckConstant(analyserContext.getPrimitives(), analyserContext.getE2ImmuAnnotationExpressions());
         this.checkLinks = new CheckLinks(analyserContext, analyserContext.getE2ImmuAnnotationExpressions());
 
@@ -200,15 +200,11 @@ public class FieldAnalyser extends AbstractAnalyser {
         }
     }
 
+    @Override
     public void write() {
         // before we check, we copy the properties into annotations
         E2ImmuAnnotationExpressions e2 = analyserContext.getE2ImmuAnnotationExpressions();
         fieldAnalysis.transferPropertiesToAnnotations(analyserContext, e2);
-    }
-
-    public void receiveAdditionalTypeAnalysers(List<PrimaryTypeAnalyser> typeAnalysers) {
-        ExpandableAnalyserContextImpl expandable = (ExpandableAnalyserContextImpl) analyserContext;
-        typeAnalysers.forEach(expandable::addPrimaryTypeAnalyser);
     }
 
     private AnalysisStatus evaluateInitialiser(SharedState sharedState) {

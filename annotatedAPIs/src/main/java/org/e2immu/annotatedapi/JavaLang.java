@@ -195,10 +195,6 @@ class JavaLang {
             return false;
         }
 
-        boolean indexOf$Value$Len(int len, int retVal) {
-            return retVal >= -1 && retVal < len;
-        }
-
         int indexOf(int ch) {
             return 0;
         }
@@ -211,10 +207,6 @@ class JavaLang {
         @NotNull
         String intern() {
             return null;
-        }
-
-        boolean lastIndexOf$Value$Len(int len, int retVal) {
-            return retVal >= -1 && retVal < len;
         }
 
         int lastIndexOf(int ch) {

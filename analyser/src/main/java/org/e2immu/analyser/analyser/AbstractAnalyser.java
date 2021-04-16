@@ -17,6 +17,8 @@ package org.e2immu.analyser.analyser;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Messages;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Objects;
 import java.util.stream.Stream;
 
@@ -46,4 +48,10 @@ public abstract class AbstractAnalyser implements Analyser {
         return name;
     }
 
+
+    @Override
+    public void receiveAdditionalTypeAnalysers(Collection<PrimaryTypeAnalyser> typeAnalysers) {
+        ExpandableAnalyserContextImpl expandable = (ExpandableAnalyserContextImpl) analyserContext;
+        typeAnalysers.forEach(expandable::addPrimaryTypeAnalyser);
+    }
 }

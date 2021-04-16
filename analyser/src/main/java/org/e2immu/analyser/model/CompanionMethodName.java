@@ -30,18 +30,47 @@ public record CompanionMethodName(String methodName, Action action,
 
     public enum Action {
 
-        // define
+        /**
+         * Used to define an aspect of the type. At the moment, aspects are numeric summaries, such as size or length.
+         * They allow for simple computations to help verify common mistakes.
+         *
+         * The companion method should be void, as in 'void size$Aspect$Size() {}', companion to 'Collection.size()'.
+         * Must be added to a @NotModified method.
+         */
         ASPECT(0, true, true, "Aspect", 0, 0),
 
+        /**
+         * Clears the instance state. If accompanied by an aspect, the value is added to the instance state after clearing.
+         * Example: `static boolean clear$Clear$Size(int i) { return i == 0; }` on `Collection.clear()` removes any
+         * clauses present, and adds to the instance state that `this.size()==0`.
+         *
+         * Must be on a @Modified method.
+         */
         CLEAR(1, false, true, "Clear", 1, 1),
 
-        // a clause that is valid at all times, e.g. size() >= 0,
+        /**
+         * An invariant is a boolean expression which is true at all times, e.g., this.size() >= 0.
+         * This knowledge is used, at the moment, to convert size()!=0 into size()>0 in preconditions.
+         *
+         * Must sit next to the aspect definition, on a @NotModified method.
+         */
         INVARIANT(2, false, true, "Invariant", 1, 1),
 
-        // a clause that must be true before the method starts; otherwise an exception is thrown
+        /**
+         * A precondition is a clause that must be true before the method starts; otherwise an exception is thrown.
+         * For now, only implemented as a system without aspects, to verify that computed preconditions are correct.
+         *
+         * NOT YET IMPLEMENTED: preconditions on aspects.
+         */
         PRECONDITION(3, false, true, "Precondition", 1, 1), // pre-mod
 
-        // return value of a primitive type, aspect or not
+        /**
+         * Compute the return value of a primitive type, potentially making use of an aspect.
+         * As `int compareTo$Value(T t, int retVal) {  return equals(t) || t.equals(this) ? 0 : retVal; }` shows, the normal return value
+         * is the last parameter called `retVal`.
+         *
+         * NOTE: this one does not add aspect information to the state!
+         */
         VALUE(4, false, true, "Value", 1, 1), // current (non-modifying)
 
         // return value of the SAME type of object, change in aspect

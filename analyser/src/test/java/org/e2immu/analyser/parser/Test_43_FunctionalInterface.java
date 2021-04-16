@@ -19,6 +19,8 @@ import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.expression.InlinedMethod;
+import org.e2immu.analyser.model.expression.MethodCall;
 import org.e2immu.analyser.model.expression.NewObject;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ReturnStatement;
@@ -30,8 +32,7 @@ import java.io.IOException;
 import java.util.Set;
 import java.util.function.Consumer;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_43_FunctionalInterface extends CommonTestRunner {
 
@@ -287,25 +288,42 @@ public class Test_43_FunctionalInterface extends CommonTestRunner {
 
     @Test
     public void test_6() throws IOException {
+        final String TYPE = "org.e2immu.analyser.testexample.FunctionalInterface_6";
+
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+            // s -> s.lastIndexOf(c);
             if ("function1".equals(d.fieldInfo().name)) {
-                //  assertEquals("s.l", FIXME problem with companion objects
-                //          d.fieldAnalysis().getEffectivelyFinalValue().toString());
+                assertEquals("s.lastIndexOf(c)", d.fieldAnalysis().getEffectivelyFinalValue().toString());
+                if (d.fieldAnalysis().getEffectivelyFinalValue() instanceof InlinedMethod inlinedMethod) {
+                    assertEquals(TYPE + ".$4.apply(java.lang.String)", inlinedMethod.methodInfo().fullyQualifiedName);
+                } else fail();
             }
+
             if ("function2".equals(d.fieldInfo().name)) {
-                assertEquals("1+c>=0&&this.length()!c>=1", // FIXME see 1
-                        d.fieldAnalysis().getEffectivelyFinalValue().toString());
+                assertEquals("s.lastIndexOf(c)", d.fieldAnalysis().getEffectivelyFinalValue().toString());
+                if (d.fieldAnalysis().getEffectivelyFinalValue() instanceof InlinedMethod inlinedMethod) {
+                    assertEquals(TYPE + ".$4.apply(java.lang.String)", inlinedMethod.methodInfo().fullyQualifiedName);
+                } else fail();
             }
+
             if ("function3".equals(d.fieldInfo().name)) {
                 assertEquals("instance type $1", d.fieldAnalysis().getEffectivelyFinalValue().toString());
             }
+
             if ("function4".equals(d.fieldInfo().name)) {
-                // assertEquals("1+c>=0&&this.length()!c>=1", // FIXME
-                //         d.fieldAnalysis().getEffectivelyFinalValue().toString());
+                assertEquals("s.lastIndexOf(s.charAt(0))", d.fieldAnalysis().getEffectivelyFinalValue().toString());
+                if (d.fieldAnalysis().getEffectivelyFinalValue() instanceof InlinedMethod inlinedMethod) {
+                    assertEquals(TYPE + ".$2.apply(java.lang.String)", inlinedMethod.methodInfo().fullyQualifiedName);
+                } else fail();
             }
+
             if ("function5".equals(d.fieldInfo().name)) {
-                //   assertEquals("1+c>=0&&this.length()!c>=1", // FIXME see 1
-                //           d.fieldAnalysis().getEffectivelyFinalValue().toString());
+                assertEquals("s.lastIndexOf(s.charAt(0))", d.fieldAnalysis().getEffectivelyFinalValue().toString());
+                assertTrue(d.fieldAnalysis().getEffectivelyFinalValue() instanceof MethodCall);
+            }
+
+            if ("function6".equals(d.fieldInfo().name)) {
+                assertEquals("instance type $5", d.fieldAnalysis().getEffectivelyFinalValue().toString());
             }
         };
         testClass("FunctionalInterface_6", 0, 0, new DebugConfiguration.Builder()

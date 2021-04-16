@@ -18,6 +18,8 @@ import org.e2immu.analyser.model.Analysis;
 import org.e2immu.analyser.model.WithInspectionAndAnalysis;
 import org.e2immu.analyser.parser.Message;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.stream.Stream;
 
 public interface Analyser {
@@ -51,4 +53,6 @@ public interface Analyser {
     String getName();
 
     AnalyserComponents<String, ?> getAnalyserComponents();
+
+    void receiveAdditionalTypeAnalysers(Collection<PrimaryTypeAnalyser> typeAnalysers);
 }

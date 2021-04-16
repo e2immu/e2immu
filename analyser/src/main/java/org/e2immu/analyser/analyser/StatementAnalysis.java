@@ -959,7 +959,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         Map<VariableProperty, Integer> result = sharedContext(fieldInfo.type.defaultNotNull());
 
         for (VariableProperty vp : FROM_FIELD_ANALYSER_TO_PROPERTIES) {
-            int value = fieldAnalysis.getPropertyVerifyContracted(vp);
+            int value = fieldAnalysis.getPropertyVerifyContracted(vp); // FIXME we're not passing on 'our' analyserContext instead relying on that of the field, which does not now the lambda we're in at the moment
             result.put(vp, value);
         }
         return result;
