@@ -528,6 +528,8 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         } else if (objectValue instanceof TypeExpression) {
             assert methodInfo.methodInspection.get().isStatic();
             return null; // static method
+        } else if(objectValue instanceof NullConstant) {
+            return null; // has already caused an error earlier on
         } else {
             newObject = objectValue.getInstance(builder.build());
         }

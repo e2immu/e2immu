@@ -588,7 +588,8 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
         assert !methodAnalysis.singleReturnValue.isSet();
 
         // some immediate short-cuts
-        if (methodInfo.typeInfo != methodInspection.getReturnType().typeInfo) {
+        if (!methodInspection.getReturnType().isAssignableFrom(analyserContext,
+                methodInfo.typeInfo.asParameterizedType(analyserContext))) {
             methodAnalysis.setProperty(VariableProperty.FLUENT, Level.FALSE);
         }
         if (methodInspection.getParameters().isEmpty() ||

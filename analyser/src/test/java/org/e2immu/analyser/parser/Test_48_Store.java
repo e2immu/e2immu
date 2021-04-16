@@ -235,4 +235,16 @@ public class Test_48_Store extends CommonTestRunner {
                 .build());
     }
 
+    /*
+    used to catch 3 bugs
+    - check for null constant in method call modification
+    - @Fluent
+    - infinite delay loop
+     */
+    @Test
+    public void test_7() throws IOException {
+
+        testClass("Store_7", 2, 0, new DebugConfiguration.Builder()
+                .build());
+    }
 }
