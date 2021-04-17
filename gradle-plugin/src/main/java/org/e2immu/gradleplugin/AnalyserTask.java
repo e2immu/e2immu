@@ -15,16 +15,15 @@
 package org.e2immu.gradleplugin;
 
 import org.e2immu.analyser.cli.Main;
+import org.e2immu.analyser.cli.RunAnalyser;
 import org.e2immu.analyser.config.Configuration;
-import org.e2immu.analyser.parser.Parser;
+import org.e2immu.analyser.util.Logger.LogTarget;
 import org.gradle.api.internal.ConventionTask;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.logging.Logging;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.TaskAction;
-import org.e2immu.analyser.util.Logger.LogTarget;
 
-import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
@@ -63,10 +62,13 @@ public class AnalyserTask extends ConventionTask {
         log(CONFIGURATION, "Configuration:\n{}", configuration);
         org.e2immu.analyser.util.Logger.activate(AnalyserTask::logMessage, configuration.logTargets());
 
-        try {
-            Main.go(configuration);
-        } catch (IOException ioe) {
-            LOGGER.error("Caught IOException {}", ioe.getMessage());
+        RunAnalyser runAnalyser = new RunAnalyser(configuration);
+        runAnalyser.run();
+        // print to standard out = QUIET level
+        runAnalyser.getMessageStream().forEach(m -> System.out.println(m.detailedMessage()));
+        int exitValue = runAnalyser.getExitValue();
+        if (exitValue != 0) {
+            throw new RuntimeException("Analyser exited with error value " + exitValue + ": " + Main.exitMessage(exitValue));
         }
     }
 

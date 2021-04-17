@@ -174,7 +174,10 @@ public record ParseAndInspect(Resources classPath,
         if (inSourceTypes != null) return inSourceTypes;
 
         String path = classPath.fqnToPath(fqn, ".class");
-        if (path == null) throw new UnsupportedOperationException("Cannot find " + fqn);
+        if (path == null) {
+            LOGGER.error("ERROR: Cannot find type '{}'", fqn);
+            throw new TypeNotFoundException(fqn);
+        }
         return typeMapBuilder.getOrCreateFromPath(StringUtil.stripDotClass(path), TRIGGER_BYTECODE_INSPECTION);
     }
 
@@ -185,7 +188,7 @@ public record ParseAndInspect(Resources classPath,
     private List<TypeInfo> importType(String fqn) {
         TypeInfo typeInfo = importTypeNoSubTypes(fqn);
         TypeInspection inspection = typeMapBuilder.getTypeInspection(typeInfo);
-        if(inspection != null) {
+        if (inspection != null) {
             return ListUtil.concatImmutable(List.of(typeInfo), inspection.subTypes());
         }
         return List.of(typeInfo);

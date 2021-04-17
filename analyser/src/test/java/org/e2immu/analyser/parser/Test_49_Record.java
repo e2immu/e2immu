@@ -12,30 +12,30 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.upload.example;
+package org.e2immu.analyser.parser;
 
-import org.e2immu.annotation.*;
+import com.github.javaparser.ParseProblemException;
+import org.e2immu.analyser.config.DebugConfiguration;
+import org.junit.jupiter.api.Test;
 
-import java.util.Set;
+import java.io.IOException;
 
-@E1Immutable
-public class Basics_0 {
+import static org.junit.jupiter.api.Assertions.fail;
 
-    private final Set<String> strings;
-    private final String explicitlyFinal = "abc";
+public class Test_49_Record extends CommonTestRunner {
 
-    @Dependent
-    public Basics_0(@Modified Set<String> in) {
-        strings = in;
+    public Test_49_Record() {
+        super(false);
     }
 
-    @Modified
-    public void add(String s) {
-        strings.add(s);
-    }
-
-    @NotModified
-    public String getExplicitlyFinal() {
-        return explicitlyFinal;
+    @Test
+    public void test_0() throws IOException {
+        try {
+            testClass("Record_0", 0, 0, new DebugConfiguration.Builder()
+                    .build());
+            fail();
+        } catch (ParseProblemException parseProblemException) {
+            // ok, we cannot parse records yet
+        }
     }
 }

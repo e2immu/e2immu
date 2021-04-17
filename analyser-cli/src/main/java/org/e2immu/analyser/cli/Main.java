@@ -15,33 +15,18 @@
 package org.e2immu.analyser.cli;
 
 import org.apache.commons.cli.*;
-import org.e2immu.analyser.annotatedapi.Composer;
-import org.e2immu.analyser.annotationxml.AnnotationXmlWriter;
 import org.e2immu.analyser.config.*;
-import org.e2immu.analyser.model.TypeInfo;
-import org.e2immu.analyser.model.WithInspectionAndAnalysis;
-import org.e2immu.analyser.parser.Parser;
-import org.e2immu.analyser.resolver.SortedType;
-import org.e2immu.analyser.upload.AnnotationUploader;
-import org.e2immu.analyser.usage.CollectUsages;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 
-import static org.e2immu.analyser.util.Logger.LogTarget.ANNOTATED_API_WRITER;
 import static org.e2immu.analyser.util.Logger.LogTarget.CONFIGURATION;
 import static org.e2immu.analyser.util.Logger.log;
 
 public class Main {
-    private static final Logger LOGGER = LoggerFactory.getLogger(Main.class);
-
     public static final String PATH_SEPARATOR = System.getProperty("path.separator");
     public static final String COMMA = ",";
 
@@ -77,7 +62,39 @@ public class Main {
     public static final String QUIET = "quiet";
     public static final String SKIP_ANALYSIS = "skip-analysis"; // not available on CMD line
 
+    public static final int EXIT_OK = 0;
+    public static final int EXIT_INTERNAL_EXCEPTION = 1;
+    public static final int EXIT_PARSER_ERROR = 2;
+    public static final int EXIT_INSPECTION_ERROR = 3;
+    public static final int EXIT_IO_EXCEPTION = 4;
+    public static final int EXIT_ANALYSER_ERROR = 5; // analyser found errors
+
+    public static String exitMessage(int exitValue) {
+        return switch (exitValue) {
+            case EXIT_OK -> "OK";
+            case EXIT_INTERNAL_EXCEPTION -> "Internal exception";
+            case EXIT_PARSER_ERROR -> "Parser error(s)";
+            case EXIT_INSPECTION_ERROR -> "Inspection error(s)";
+            case EXIT_IO_EXCEPTION -> "IO exception";
+            case EXIT_ANALYSER_ERROR -> "Analyser error(s)";
+            default -> throw new UnsupportedOperationException("don't know value " + exitValue);
+        };
+    }
+
     public static void main(String[] args) {
+        Configuration configuration = parseConfiguration(args);
+        configuration.initializeLoggers();
+        // the following will be output if the CONFIGURATION logger is active!
+        log(CONFIGURATION, "Configuration:\n{}", configuration);
+        RunAnalyser runAnalyser = new RunAnalyser(configuration);
+        runAnalyser.run();
+        if (!configuration.quiet()) {
+            runAnalyser.getMessageStream().forEach(m -> System.out.println(m.detailedMessage()));
+        }
+        System.exit(runAnalyser.getExitValue());
+    }
+
+    public static Configuration parseConfiguration(String[] args) {
         CommandLineParser commandLineParser = new DefaultParser();
         Options options = createOptions();
         try {
@@ -87,7 +104,7 @@ public class Main {
                 formatter.setOptionComparator(null);
                 formatter.setWidth(128);
                 formatter.printHelp("e2immu-analyser", options);
-                System.exit(0);
+                System.exit(EXIT_OK);
             }
             Configuration.Builder builder = new Configuration.Builder();
             InputConfiguration.Builder inputBuilder = new InputConfiguration.Builder();
@@ -109,8 +126,6 @@ public class Main {
             splitAndAdd(debugLogTargets, COMMA, builder::addDebugLogTargets);
             boolean ignoreErrors = cmd.hasOption(IGNORE_ERRORS);
             builder.setIgnoreErrors(ignoreErrors);
-            boolean quiet = cmd.hasOption(QUIET);
-            builder.setQuiet(quiet);
 
             UploadConfiguration.Builder uploadBuilder = new UploadConfiguration.Builder();
             boolean upload = cmd.hasOption(UPLOAD);
@@ -150,76 +165,12 @@ public class Main {
             AnnotatedAPIConfiguration api = apiBuilder.build();
             builder.setAnnotatedAPIConfiguration(api);
 
-            Configuration configuration = builder.build();
-            configuration.initializeLoggers();
-            // the following will be output if the CONFIGURATION logger is active!
-            log(CONFIGURATION, "Configuration:\n{}", configuration);
-
-            go(configuration);
-
+            return builder.build();
         } catch (ParseException parseException) {
             parseException.printStackTrace();
             System.err.println("Caught parse exception: " + parseException.getMessage());
-            System.exit(1);
-        } catch (IOException e) {
-            System.err.println("Caught IO exception during run: " + e.getMessage());
-            System.exit(1);
-        }
-    }
-
-    public static void go(Configuration configuration) throws IOException {
-        LOGGER.info(configuration.toString());
-
-        Parser parser = new Parser(configuration);
-        AnnotatedAPIConfiguration api = configuration.annotatedAPIConfiguration();
-        if (api.writeMode() == AnnotatedAPIConfiguration.WriteMode.ANALYSED) {
-            throw new UnsupportedOperationException("Not yet implemented!");
-        }
-        if (api.writeMode() == AnnotatedAPIConfiguration.WriteMode.INSPECTED) {
-            log(ANNOTATED_API_WRITER, "Writing annotated API files based on inspection");
-            Parser.ComposerData composerData = parser.primaryTypesForAnnotatedAPIComposing();
-            Composer composer = new Composer(composerData.typeMap(),
-                    api.destinationPackage(), w -> true);
-            Collection<TypeInfo> apiTypes = composer.compose(composerData.primaryTypes());
-            log(ANNOTATED_API_WRITER, "Created {} java types, one for each package", apiTypes.size());
-            composer.write(apiTypes, api.writeAnnotatedAPIsDir());
-        } else {
-            /* normal run */
-            Parser.RunResult runResult = parser.run();
-            LOGGER.info("Have {} messages from analyser", parser.countMessages());
-            parser.getMessages().forEach(m -> {
-                LOGGER.info(m.detailedMessage());
-            });
-
-            Set<TypeInfo> allTypes = configuration.annotationXmlConfiguration().writeAnnotationXml() ||
-                    configuration.uploadConfiguration().upload() ? runResult.allTypes() : Set.of();
-
-            if (configuration.annotationXmlConfiguration().writeAnnotationXml()) {
-                LOGGER.info("Write AnnotationXML");
-                AnnotationXmlWriter.write(configuration.annotationXmlConfiguration(), allTypes);
-            }
-            if (configuration.uploadConfiguration().upload()) {
-                AnnotationUploader annotationUploader = new AnnotationUploader(configuration.uploadConfiguration(),
-                        parser.getTypeContext().typeMapBuilder.getE2ImmuAnnotationExpressions());
-                Map<String, String> map = annotationUploader.createMap(allTypes);
-                annotationUploader.writeMap(map);
-            }
-            if (api.writeMode() == AnnotatedAPIConfiguration.WriteMode.USAGE) {
-                Set<TypeInfo> sourceTypes = runResult.sourceSortedTypes()
-                        .stream().map(SortedType::primaryType).collect(Collectors.toSet());
-                log(ANNOTATED_API_WRITER, "Writing annotated API files for usage of {} Java sources",
-                        sourceTypes.size());
-                CollectUsages collectUsages = new CollectUsages(api.writeAnnotatedAPIPackages());
-                Set<WithInspectionAndAnalysis> usage = collectUsages.collect(sourceTypes);
-                log(ANNOTATED_API_WRITER, "Found {} objects in usage set", usage.size());
-                Set<TypeInfo> types = usage.stream().filter(w -> w instanceof TypeInfo)
-                        .map(WithInspectionAndAnalysis::primaryType).collect(Collectors.toSet());
-                log(ANNOTATED_API_WRITER, "Found {} primary types in usage set", types.size());
-                Composer composer = new Composer(runResult.typeMap(), api.destinationPackage(), usage::contains);
-                Collection<TypeInfo> apiTypes = composer.compose(types);
-                log(ANNOTATED_API_WRITER, "Created {} java types, one for each package", apiTypes.size());
-                composer.write(apiTypes, api.writeAnnotatedAPIsDir());
-            }
+            System.exit(EXIT_INTERNAL_EXCEPTION);
+            return null; // unreachable statement
         }
     }
 
@@ -426,7 +377,6 @@ public class Main {
 
     public static void setSplitStringProperty(Map<String, String> properties, String separator, String key, Consumer<String> consumer) {
         String value = properties.get(key);
-        LOGGER.debug("Have {}: {}", key, value);
         if (value != null) {
             String[] parts = value.split(separator);
             for (String part : parts) {

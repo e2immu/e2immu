@@ -164,6 +164,8 @@ public class Parser {
 
                 typeInspectionBuilder.setInspectionState(FINISHED_JAVA_PARSER);
 
+            } catch (TypeNotFoundException typeNotFoundException) {
+                throw typeNotFoundException;
             } catch (RuntimeException rte) {
                 LOGGER.error("Caught runtime exception parsing and inspecting URL '{}'", url);
                 throw rte;
@@ -288,6 +290,7 @@ public class Parser {
     public Stream<Message> getMessages() {
         return messages.getMessageStream();
     }
+
     public int countMessages() {
         return messages.size();
     }

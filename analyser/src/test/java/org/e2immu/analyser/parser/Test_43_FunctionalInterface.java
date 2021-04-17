@@ -14,15 +14,18 @@
 
 package org.e2immu.analyser.parser;
 
+import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.MethodLevelData;
 import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.expression.Assignment;
 import org.e2immu.analyser.model.expression.InlinedMethod;
 import org.e2immu.analyser.model.expression.MethodCall;
 import org.e2immu.analyser.model.expression.NewObject;
 import org.e2immu.analyser.model.statement.Block;
+import org.e2immu.analyser.model.statement.ExpressionAsStatement;
 import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.visitor.*;
@@ -325,9 +328,76 @@ public class Test_43_FunctionalInterface extends CommonTestRunner {
             if ("function6".equals(d.fieldInfo().name)) {
                 assertEquals("instance type $5", d.fieldAnalysis().getEffectivelyFinalValue().toString());
             }
+
+            if ("field1".equals(d.fieldInfo().name)) {
+                //assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL,
+                //        d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_NOT_NULL));
+            }
         };
+
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("FunctionalInterface_6".equals(d.methodInfo().name)) {
+                if ("1".equals(d.statementId())) {
+                    assertTrue(d.statementAnalysis().statement instanceof ExpressionAsStatement expression &&
+                            expression.expression instanceof Assignment assignment &&
+                            assignment.value instanceof NewObject newObject &&
+                            newObject.anonymousClass() != null);
+                }
+            }
+        };
+
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("apply".equals(d.methodInfo().name) && "$5".equals(d.methodInfo().typeInfo.simpleName)) {
+                if (d.variable() instanceof ParameterInfo s && "s".equals(s.name)) {
+                    if ("0".equals(d.statementId())) {
+                        int expectCnn = MultiLevel.NULLABLE;
+                        assertEquals(expectCnn, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+                    }
+                    if ("1".equals(d.statementId())) {
+                        int expectCnn = MultiLevel.EFFECTIVELY_NOT_NULL;
+                        assertEquals(expectCnn, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+                    }
+                }
+                if (d.variable() instanceof FieldReference fr && "field1".equals(fr.fieldInfo.name)) {
+                    assertEquals("s", d.currentValue().toString());
+                }
+            }
+            if ("FunctionalInterface_6".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof FieldReference fr && "field1".equals(fr.fieldInfo.name)) {
+                    fail("Field1 should not be visible here, it should be visible in apply");
+                }
+            }
+        };
+
+        EvaluationResultVisitor evaluationResultVisitor = d -> {
+            if ("FunctionalInterface_6".equals(d.methodInfo().name)) {
+                if ("1".equals(d.statementId()) && d.iteration() == 1) {
+                  //  EvaluationResult.ChangeData changeData = d.findValueChange(TYPE + ".field1");
+                 //   assertNotNull(changeData);
+                }
+            }
+        };
+
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("apply".equals(d.methodInfo().name) && "$5".equals(d.methodInfo().typeInfo.simpleName)) {
+                ParameterAnalysis p0 = d.parameterAnalyses().get(0);
+                int expectCnn = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
+                assertEquals(expectCnn, p0.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+
+                int expectNnp = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
+                assertEquals(expectNnp, p0.getProperty(VariableProperty.NOT_NULL_PARAMETER));
+
+                // not assigned to field
+                assertEquals(MultiLevel.NOT_INVOLVED, p0.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
+            }
+        };
+
         testClass("FunctionalInterface_6", 0, 0, new DebugConfiguration.Builder()
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 }

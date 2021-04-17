@@ -12,30 +12,7 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.upload.example;
+package org.e2immu.analyser.testexample;
 
-import org.e2immu.annotation.*;
-
-import java.util.Set;
-
-@E1Immutable
-public class Basics_0 {
-
-    private final Set<String> strings;
-    private final String explicitlyFinal = "abc";
-
-    @Dependent
-    public Basics_0(@Modified Set<String> in) {
-        strings = in;
-    }
-
-    @Modified
-    public void add(String s) {
-        strings.add(s);
-    }
-
-    @NotModified
-    public String getExplicitlyFinal() {
-        return explicitlyFinal;
-    }
+public record Record_0(String string, int integer) {
 }

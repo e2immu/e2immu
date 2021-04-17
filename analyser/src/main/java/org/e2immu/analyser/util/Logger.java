@@ -38,6 +38,16 @@ public class Logger {
     }
 
     public enum LogTarget {
+        CONFIGURATION,
+
+        BYTECODE_INSPECTOR,
+        BYTECODE_INSPECTOR_DEBUG,
+        ANNOTATION_XML_READER,
+        ANNOTATION_XML_WRITER,
+        ANNOTATED_API_WRITER,
+
+        OUTPUT,
+
         LAMBDA,      // understanding a lambda
         METHOD_CALL, // understanding a method call
         RESOLVE,     // parsing of method bodies
@@ -74,13 +84,6 @@ public class Logger {
         RESOURCES,
         UPLOAD,
 
-        CONFIGURATION,
-        BYTECODE_INSPECTOR,
-        BYTECODE_INSPECTOR_DEBUG,
-        ANNOTATION_XML_READER,
-        ANNOTATION_XML_WRITER,
-
-        ANNOTATED_API_WRITER,
 
         ANNOTATION_EXPRESSION,
         MERGE_ANNOTATIONS,

@@ -46,6 +46,12 @@ import static org.e2immu.analyser.util.Logger.log;
 @E1Immutable
 public class AnnotationUploader {
     private static final Logger LOGGER = LoggerFactory.getLogger(AnnotationUploader.class);
+    public static final String TYPE_SUFFIX = "-t";
+    public static final String PARAMETER_SUFFIX = "-p";
+    public static final String METHOD_SUFFIX = "-m";
+    public static final String FIELD_SUFFIX = "-f";
+    public static final String TYPE_OF_METHOD_SUFFIX = "-mt";
+    public static final String TYPE_OF_FIELD_SUFFIX = "-ft";
 
     private final UploadConfiguration configuration;
     private final CloseableHttpClient httpClient = HttpClients.createDefault();
@@ -96,7 +102,7 @@ public class AnnotationUploader {
                 new Pair<>(lc(E2Immutable.class), e2ImmuAnnotationExpressions.e2Immutable),
                 new Pair<>(lc(E1Container.class), e2ImmuAnnotationExpressions.e1Container),
                 new Pair<>(lc(E1Immutable.class), e2ImmuAnnotationExpressions.e1Immutable),
-                new Pair<>(lc(BeforeMark.class), e2ImmuAnnotationExpressions.e1Immutable)
+                new Pair<>(lc(BeforeMark.class), e2ImmuAnnotationExpressions.beforeMark)
         );
     }
 
@@ -149,7 +155,7 @@ public class AnnotationUploader {
         }
         for (Pair<String, AnnotationExpression> pair : typePairs) {
             if (typeAnnotatedWith(type, pair.v)) {
-                SMapList.add(map, typeQn, pair.k + "-t");
+                SMapList.add(map, typeQn, pair.k + TYPE_SUFFIX);
                 log(UPLOAD, "Added {} as type", pair.k);
                 break;
             }
@@ -161,7 +167,7 @@ public class AnnotationUploader {
                     String methodQn = methodInfo.distinguishingName();
                     for (Pair<String, AnnotationExpression> pair : methodPairs) {
                         if (methodAnnotatedWith(methodInfo, pair.v)) {
-                            SMapList.add(map, methodQn, pair.k + "-m");
+                            SMapList.add(map, methodQn, pair.k + METHOD_SUFFIX);
                             log(UPLOAD, "Added {} as method", pair.k);
                             break;
                         }
@@ -171,7 +177,7 @@ public class AnnotationUploader {
                         String parameterQn = methodQn + "#" + i;
                         for (Pair<String, AnnotationExpression> pair : parameterPairs) {
                             if (parameterAnnotatedWith(parameterInfo, pair.v)) {
-                                SMapList.add(map, parameterQn, pair.k + "-p");
+                                SMapList.add(map, parameterQn, pair.k + PARAMETER_SUFFIX);
                                 break;
                             }
                         }
@@ -183,7 +189,7 @@ public class AnnotationUploader {
                             String methodsTypeQn = bestType.fullyQualifiedName;
                             for (Pair<String, AnnotationExpression> pair : dynamicTypeAnnotations) {
                                 if (methodAnnotatedWith(methodInfo, pair.v)) {
-                                    SMapList.add(map, methodQn + " " + methodsTypeQn, pair.k + "-mt");
+                                    SMapList.add(map, methodQn + " " + methodsTypeQn, pair.k + TYPE_OF_METHOD_SUFFIX);
                                     break;
                                 }
                             }
@@ -196,7 +202,7 @@ public class AnnotationUploader {
 
             for (Pair<String, AnnotationExpression> pair : fieldPairs) {
                 if (fieldAnnotatedWith(fieldInfo, pair.v)) {
-                    SMapList.add(map, fieldQn, pair.k + "-f");
+                    SMapList.add(map, fieldQn, pair.k + FIELD_SUFFIX);
                     break;
                 }
             }
@@ -204,7 +210,7 @@ public class AnnotationUploader {
                 String fieldsTypeQn = bestType.fullyQualifiedName;
                 for (Pair<String, AnnotationExpression> pair : dynamicTypeAnnotations) {
                     if (fieldAnnotatedWith(fieldInfo, pair.v)) {
-                        SMapList.add(map, fieldQn + " " + fieldsTypeQn, pair.k + "-mf");
+                        SMapList.add(map, fieldQn + " " + fieldsTypeQn, pair.k + TYPE_OF_FIELD_SUFFIX);
                         break;
                     }
                 }

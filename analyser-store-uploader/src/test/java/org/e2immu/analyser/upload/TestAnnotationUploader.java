@@ -15,26 +15,33 @@
 package org.e2immu.analyser.upload;
 
 import org.e2immu.analyser.analyser.VariableProperty;
+import org.e2immu.analyser.config.AnnotatedAPIConfiguration;
 import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.config.InputConfiguration;
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.output.Formatter;
+import org.e2immu.analyser.output.FormattingOptions;
+import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.parser.Input;
 import org.e2immu.analyser.parser.Parser;
+import org.e2immu.analyser.resolver.SortedType;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.analyser.visitor.TypeMapVisitor;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.Map;
 import java.util.Set;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class TestAnnotationUploader {
+    private static final Logger LOGGER = LoggerFactory.getLogger(TestAnnotationUploader.class);
 
     public static final String BASICS_0 = "org.e2immu.analyser.upload.example.Basics_0";
     public static final String[] CLASSPATH_WITHOUT_ANNOTATED_APIS = {"build/classes/java/main",
@@ -51,6 +58,9 @@ public class TestAnnotationUploader {
                 .setDebugConfiguration(new DebugConfiguration.Builder()
                         .addTypeMapVisitor(typeMapVisitor).build())
                 .addDebugLogTargets("ANALYSER,INSPECT,RESOLVE,DELAYED")
+                .setAnnotatedAPIConfiguration(new AnnotatedAPIConfiguration.Builder()
+                        .addAnnotatedAPISourceDirs("../annotatedAPIs/src/main/java")
+                        .build())
                 .setInputConfiguration(new InputConfiguration.Builder()
                         .addSources("src/test/java")
                         .addRestrictSourceToPackages(BASICS_0)
@@ -62,7 +72,13 @@ public class TestAnnotationUploader {
                 .build();
         configuration.initializeLoggers();
         Parser parser = new Parser(configuration);
-        parser.run();
+        Parser.RunResult runResult = parser.run();
+        for (SortedType sortedType : runResult.sourceSortedTypes()) {
+            OutputBuilder outputBuilder = sortedType.primaryType().output();
+            Formatter formatter = new Formatter(FormattingOptions.DEFAULT);
+            LOGGER.info("Stream:\n{}\n", formatter.write(outputBuilder));
+        }
+
         TypeContext typeContext = parser.getTypeContext();
 
         TypeInfo basics = typeContext.typeMapBuilder.get(BASICS_0);
@@ -75,7 +91,17 @@ public class TestAnnotationUploader {
         map.forEach((k, v) -> System.out.println(k + " --> " + v));
 
         assertEquals("notmodified-m", map.get(BASICS_0 + ".getExplicitlyFinal()"));
+        assertEquals("modified-m", map.get(BASICS_0 + ".add(java.lang.String)"));
+        assertEquals("dependent-m", map.get(BASICS_0 + ".Basics_0(java.util.Set<java.lang.String>)"));
+        assertEquals("modified-f", map.get(BASICS_0 + ":strings"));
+     //   assertNull(map.get(BASICS_0 + ":strings java.util.Set")); // container, but that's not a dynamic type
 
+        assertEquals("final-f", map.get(BASICS_0 + ":explicitlyFinal"));
+     //   assertEquals("e2container-tf", map.get(BASICS_0 + ":explicitlyFinal java.lang.String"));
+
+        assertEquals("modified-p", map.get(BASICS_0 + ".Basics_0(java.util.Set<java.lang.String>)#0"));
+
+        assertEquals("e1immutable-t", map.get(BASICS_0));
         annotationUploader.writeMap(map);
     }
 }

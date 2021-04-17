@@ -27,6 +27,8 @@ dependencies {
     implementation project(':analyser')
     implementation project(':analyser-store-uploader')
 
+    implementation group: 'com.github.javaparser', name: 'javaparser-core', version: '3.18.0'
+
     implementation group: 'commons-cli', name: 'commons-cli', version: '1.4' // Apache License 2.0
     implementation group: 'org.slf4j', name: 'slf4j-api', version: '1.7.25'  // MIT X-11 License
 
