@@ -150,15 +150,18 @@ public record AnnotationExpressionImpl(TypeInfo typeInfo,
             return ce.getValue();
         }
 
-        // direct reference with import static
+        // direct reference with import static, or local Enum or constant
         if (expression instanceof VariableExpression ve && ve.variable() instanceof FieldReference fieldReference) {
-            return enumInstance(returnType, fieldReference.fieldInfo.owner, fieldReference.fieldInfo.name);
+            if (returnType.typeInfo.typeInspection.get().typeNature() == TypeNature.ENUM) {
+                return enumField(returnType, fieldReference.fieldInfo.owner, fieldReference.fieldInfo.name);
+            }
+            return inspectFieldValue(returnType, fieldReference);
         }
 
         // Type.CONSTANT
         if (expression instanceof FieldAccess fieldAccess) {
             if (fieldAccess.expression() instanceof TypeExpression typeExpression) {
-                return enumInstance(returnType, typeExpression.parameterizedType.typeInfo, fieldAccess.variable().simpleName());
+                return enumField(returnType, typeExpression.parameterizedType.typeInfo, fieldAccess.variable().simpleName());
             } else throw new UnsupportedOperationException("? did not expect " + fieldAccess.expression().getClass());
         }
 
@@ -172,10 +175,12 @@ public record AnnotationExpressionImpl(TypeInfo typeInfo,
         throw new UnsupportedOperationException("Not implemented: " + expression.getClass());
     }
 
-    private static Object enumInstance(ParameterizedType type, TypeInfo observedType, String name) {
-        if (type.typeInfo.typeInspection.get().typeNature() != TypeNature.ENUM) {
-            throw new UnsupportedOperationException();
-        }
+    private static Object inspectFieldValue(ParameterizedType parameterizedType, FieldReference fieldReference) {
+        Expression initialiser = fieldReference.fieldInfo.fieldInspection.get().getFieldInitialiser().initialiser();
+        return returnValueOfNonArrayExpression(parameterizedType, initialiser);
+    }
+
+    private static Object enumField(ParameterizedType type, TypeInfo observedType, String name) {
         if (observedType != type.typeInfo) throw new UnsupportedOperationException("??");
         try {
             return Arrays.stream(Class.forName(observedType.fullyQualifiedName).getEnumConstants())

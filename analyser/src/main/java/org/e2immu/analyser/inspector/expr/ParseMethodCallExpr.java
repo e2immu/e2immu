@@ -524,8 +524,12 @@ public record ParseMethodCallExpr(InspectionProvider inspectionProvider) {
                 .equals(method.methodInspection.getMethodInfo().typeInfo)) {
             Map<NamedType, ParameterizedType> links = new HashMap<>();
             int pos = 0;
-            for (TypeParameter key : singleAbstractMethod.methodInspection.getMethodInfo().typeInfo.typeInspection.get().typeParameters()) {
-                NamedType abstractTypeInCandidate = method.methodInspection.getMethodInfo().methodInspection.get().getReturnType().parameters.get(pos).typeParameter;
+            TypeInspection typeInspection = inspectionProvider.getTypeInspection(singleAbstractMethod
+                    .methodInspection.getMethodInfo().typeInfo);
+            for (TypeParameter key : typeInspection.typeParameters()) {
+                MethodInspection methodInspection = inspectionProvider.getMethodInspection(method
+                        .methodInspection.getMethodInfo());
+                NamedType abstractTypeInCandidate = methodInspection.getReturnType().parameters.get(pos).typeParameter;
                 ParameterizedType valueOfKey = singleAbstractMethod.applyMap(key);
                 links.put(abstractTypeInCandidate, valueOfKey);
                 pos++;

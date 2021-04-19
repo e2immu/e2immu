@@ -138,6 +138,11 @@ public record Composer(TypeMap typeMap, String destinationPackage, Predicate<Wit
         FieldInspectionImpl.Builder builder = new FieldInspectionImpl.Builder();
         inspection.getModifiers()
                 .stream().filter(m -> m != FieldModifier.PUBLIC).forEach(builder::addModifier);
+        if (inspection.getModifiers().contains(FieldModifier.FINAL)) {
+            TypeInfo bestType = fieldInfo.type.bestTypeInfo();
+            builder.setInspectedInitialiserExpression(bestType == null ?
+                    NullConstant.NULL_CONSTANT : ConstantExpression.nullValue(typeMap.getPrimitives(), bestType));
+        }
         newField.fieldInspection.set(builder.build());
         return newField;
     }
@@ -147,6 +152,8 @@ public record Composer(TypeMap typeMap, String destinationPackage, Predicate<Wit
         MethodInspectionImpl.Builder builder;
         if (methodInfo.isConstructor) builder = new MethodInspectionImpl.Builder(owner);
         else builder = new MethodInspectionImpl.Builder(owner, methodInfo.name);
+
+        if (methodInspection.isStatic()) builder.addModifier(MethodModifier.STATIC);
 
         ParameterizedType returnType = methodInspection.getReturnType();
         builder.setReturnType(returnType);

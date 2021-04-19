@@ -24,10 +24,8 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.e2immu.analyser.config.UploadConfiguration;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
-import org.e2immu.analyser.util.Pair;
+import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.util.SMapList;
-import org.e2immu.annotation.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,13 +35,11 @@ import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.UPLOAD;
 import static org.e2immu.analyser.util.Logger.log;
 
-// cannot be E2Immu... fields get modified
-@Container
-@E1Immutable
 public class AnnotationUploader {
     private static final Logger LOGGER = LoggerFactory.getLogger(AnnotationUploader.class);
     public static final String TYPE_SUFFIX = "-t";
@@ -56,166 +52,107 @@ public class AnnotationUploader {
     private final UploadConfiguration configuration;
     private final CloseableHttpClient httpClient = HttpClients.createDefault();
 
-    private final List<Pair<String, AnnotationExpression>> typePairs;
-    private final List<Pair<String, AnnotationExpression>> methodPairs;
-    private final List<Pair<String, AnnotationExpression>> fieldPairs;
-    private final List<Pair<String, AnnotationExpression>> parameterPairs;
-    private final List<Pair<String, AnnotationExpression>> dynamicTypeAnnotations;
-
-    private static String lc(Class<?> clazz) {
-        return clazz.getSimpleName().toLowerCase();
-    }
-
-    public AnnotationUploader(UploadConfiguration configuration, E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
+    public AnnotationUploader(UploadConfiguration configuration) {
         this.configuration = configuration;
-
-        typePairs = List.of(
-                new Pair<>(lc(E2Container.class), e2ImmuAnnotationExpressions.e2Container),
-                new Pair<>(lc(E2Immutable.class), e2ImmuAnnotationExpressions.e2Immutable),
-                new Pair<>(lc(E1Container.class), e2ImmuAnnotationExpressions.e1Container),
-                new Pair<>(lc(E1Immutable.class), e2ImmuAnnotationExpressions.e1Immutable),
-                new Pair<>(lc(Container.class), e2ImmuAnnotationExpressions.container),
-                new Pair<>(lc(MutableModifiesArguments.class), e2ImmuAnnotationExpressions.mutableModifiesArguments)
-        );
-
-        methodPairs = List.of(
-                new Pair<>(lc(Independent.class), e2ImmuAnnotationExpressions.independent),
-                new Pair<>(lc(Dependent.class), e2ImmuAnnotationExpressions.dependent),
-                new Pair<>(lc(NotModified.class), e2ImmuAnnotationExpressions.notModified),
-                new Pair<>(lc(Modified.class), e2ImmuAnnotationExpressions.modified)
-        );
-
-        fieldPairs = List.of(
-                new Pair<>(lc(Variable.class), e2ImmuAnnotationExpressions.variableField),
-                new Pair<>(lc(Modified.class), e2ImmuAnnotationExpressions.modified),
-                new Pair<>(lc(Final.class), e2ImmuAnnotationExpressions.effectivelyFinal),
-                new Pair<>(lc(NotModified.class), e2ImmuAnnotationExpressions.notModified)
-        );
-
-        parameterPairs = List.of(
-                new Pair<>(lc(NotModified.class), e2ImmuAnnotationExpressions.notModified),
-                new Pair<>(lc(Modified.class), e2ImmuAnnotationExpressions.modified)
-        );
-
-        dynamicTypeAnnotations = List.of(
-                new Pair<>(lc(E2Container.class), e2ImmuAnnotationExpressions.e2Container),
-                new Pair<>(lc(E2Immutable.class), e2ImmuAnnotationExpressions.e2Immutable),
-                new Pair<>(lc(E1Container.class), e2ImmuAnnotationExpressions.e1Container),
-                new Pair<>(lc(E1Immutable.class), e2ImmuAnnotationExpressions.e1Immutable),
-                new Pair<>(lc(BeforeMark.class), e2ImmuAnnotationExpressions.beforeMark)
-        );
     }
 
-    public Map<String, String> createMap(Collection<TypeInfo> types) {
+    public Map<String, String> createMap(Collection<TypeInfo> types, Stream<Message> messageStream) {
         LOGGER.info("Uploading annotations of {} types", types.size());
         Set<TypeInfo> referredTo = new HashSet<>();
         Map<String, List<String>> map = new HashMap<>();
         for (TypeInfo type : types) {
-            add(map, type);
+            map.putAll(add(type));
             log(UPLOAD, "Adding annotations of {}", type.fullyQualifiedName);
             type.typesReferenced().stream().map(Map.Entry::getKey).forEach(referredTo::add);
         }
         referredTo.removeAll(types);
 
-        log(UPLOAD, "Uploading annotations of {} types referred to", referredTo.size());
+        log(UPLOAD, "Adding annotations of {} types referred to", referredTo.size());
         for (TypeInfo type : referredTo) {
             log(UPLOAD, "Adding annotations of {}", type.fullyQualifiedName);
-            add(map, type);
+            map.putAll(add(type));
         }
+
+        messageStream.filter(message -> message.severity == Message.Severity.ERROR)
+                .filter(message -> message.location.statementWithinMethod == null) // only type, field, method errors
+                .forEach(message -> SMapList.add(map, fqn(message.location.info),
+                        "error" + suffix(message.location.info)));
+
         log(UPLOAD, "Writing {} annotations", map.size());
         return map.entrySet().stream()
                 .collect(Collectors.toMap(Map.Entry::getKey, e -> String.join(",", e.getValue())));
     }
 
-    private static boolean typeAnnotatedWith(TypeInfo typeInfo, AnnotationExpression ae) {
-        TypeAnalysis typeAnalysis = typeInfo.typeAnalysis.getOrElse(null);
-        return typeAnalysis != null && typeInfo.annotatedWith(typeAnalysis, ae) == Boolean.TRUE;
+    private static String fqn(WithInspectionAndAnalysis info) {
+        if (info instanceof TypeInfo t) return t.fullyQualifiedName;
+        if (info instanceof FieldInfo f) return f.owner.fullyQualifiedName + ":" + f.name;
+        if (info instanceof ParameterInfo p) return p.owner.fullyQualifiedName + "#" + p.index;
+        if (info instanceof MethodInfo m) return m.fullyQualifiedName;
+        throw new UnsupportedOperationException("Have "+info.getClass());
     }
 
-    private static boolean methodAnnotatedWith(MethodInfo methodInfo, AnnotationExpression ae) {
-        MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.getOrElse(null);
-        return methodAnalysis != null && methodInfo.annotatedWith(methodAnalysis, ae) == Boolean.TRUE;
+    private static String suffix(WithInspectionAndAnalysis info) {
+        if (info instanceof TypeInfo) return TYPE_SUFFIX;
+        if (info instanceof FieldInfo) return FIELD_SUFFIX;
+        if (info instanceof ParameterInfo) return PARAMETER_SUFFIX;
+        if (info instanceof MethodInfo) return METHOD_SUFFIX;
+        throw new UnsupportedOperationException("Have "+info.getClass());
     }
 
-    private static boolean fieldAnnotatedWith(FieldInfo fieldInfo, AnnotationExpression ae) {
-        FieldAnalysis fieldAnalysis = fieldInfo.fieldAnalysis.getOrElse(null);
-        return fieldAnalysis != null && fieldInfo.annotatedWith(fieldAnalysis, ae) == Boolean.TRUE;
-    }
-
-    private static boolean parameterAnnotatedWith(ParameterInfo parameterInfo, AnnotationExpression ae) {
-        ParameterAnalysis parameterAnalysis = parameterInfo.parameterAnalysis.getOrElse(null);
-        return parameterAnalysis != null && parameterInfo.annotatedWith(parameterAnalysis, ae) == Boolean.TRUE;
-    }
-
-    private void add(Map<String, List<String>> map, TypeInfo type) {
-        String typeQn = type.fullyQualifiedName;
+    private Map<String, List<String>> add(TypeInfo type) {
         if (!configuration.accept(type.packageName())) {
-            log(UPLOAD, "Rejecting type {} because of upload package configuration", typeQn);
-            return;
+            log(UPLOAD, "Rejecting type {} because of upload package configuration", type.fullyQualifiedName);
+            return Map.of();
         }
-        for (Pair<String, AnnotationExpression> pair : typePairs) {
-            if (typeAnnotatedWith(type, pair.v)) {
-                SMapList.add(map, typeQn, pair.k + TYPE_SUFFIX);
-                log(UPLOAD, "Added {} as type", pair.k);
-                break;
-            }
-        }
+        Map<String, List<String>> map = new HashMap<>(annotations(type, type.fullyQualifiedName, TYPE_SUFFIX));
+
         TypeInspection inspection = type.typeInspection.getOrElse(null);
-        if (inspection == null) return;
+        if (inspection == null) return map;
         inspection.methodsAndConstructors(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_ARTIFICIAL_SAM)
                 .forEach(methodInfo -> {
-                    String methodQn = methodInfo.distinguishingName();
-                    for (Pair<String, AnnotationExpression> pair : methodPairs) {
-                        if (methodAnnotatedWith(methodInfo, pair.v)) {
-                            SMapList.add(map, methodQn, pair.k + METHOD_SUFFIX);
-                            log(UPLOAD, "Added {} as method", pair.k);
-                            break;
-                        }
-                    }
-                    int i = 0;
-                    for (ParameterInfo parameterInfo : methodInfo.methodInspection.get(methodQn).getParameters()) {
-                        String parameterQn = methodQn + "#" + i;
-                        for (Pair<String, AnnotationExpression> pair : parameterPairs) {
-                            if (parameterAnnotatedWith(parameterInfo, pair.v)) {
-                                SMapList.add(map, parameterQn, pair.k + PARAMETER_SUFFIX);
-                                break;
-                            }
-                        }
-                        i++;
+                    map.putAll(annotations(methodInfo, methodInfo.fullyQualifiedName, METHOD_SUFFIX));
+                    for (ParameterInfo parameterInfo : methodInfo.methodInspection
+                            .get(methodInfo.fullyQualifiedName).getParameters()) {
+                        String parameterQn = fqn(parameterInfo);
+                        map.putAll(annotations(parameterInfo, parameterQn, PARAMETER_SUFFIX));
                     }
                     if (!methodInfo.isConstructor && !methodInfo.isVoid()) {
                         TypeInfo bestType = methodInfo.returnType().bestTypeInfo();
                         if (bestType != null) {
-                            String methodsTypeQn = bestType.fullyQualifiedName;
-                            for (Pair<String, AnnotationExpression> pair : dynamicTypeAnnotations) {
-                                if (methodAnnotatedWith(methodInfo, pair.v)) {
-                                    SMapList.add(map, methodQn + " " + methodsTypeQn, pair.k + TYPE_OF_METHOD_SUFFIX);
-                                    break;
-                                }
-                            }
+                            map.putAll(annotations(bestType, bestType.fullyQualifiedName, TYPE_OF_METHOD_SUFFIX));
                         }
                     }
                 });
         for (FieldInfo fieldInfo : inspection.fields()) {
-            String fieldQn = typeQn + ":" + fieldInfo.name;
+            String fieldQn = fqn(fieldInfo);
+            map.putAll(annotations(fieldInfo, fieldQn, FIELD_SUFFIX));
             TypeInfo bestType = fieldInfo.type.bestTypeInfo();
-
-            for (Pair<String, AnnotationExpression> pair : fieldPairs) {
-                if (fieldAnnotatedWith(fieldInfo, pair.v)) {
-                    SMapList.add(map, fieldQn, pair.k + FIELD_SUFFIX);
-                    break;
-                }
-            }
             if (bestType != null) {
-                String fieldsTypeQn = bestType.fullyQualifiedName;
-                for (Pair<String, AnnotationExpression> pair : dynamicTypeAnnotations) {
-                    if (fieldAnnotatedWith(fieldInfo, pair.v)) {
-                        SMapList.add(map, fieldQn + " " + fieldsTypeQn, pair.k + TYPE_OF_FIELD_SUFFIX);
-                        break;
-                    }
-                }
+                map.putAll(annotations(bestType, bestType.fullyQualifiedName, TYPE_OF_FIELD_SUFFIX));
             }
         }
+        return map;
+    }
+
+    private Map<String, List<String>> annotations(WithInspectionAndAnalysis type, String qualifiedName, String suffix) {
+        Analysis analysis = type.hasBeenAnalysed() ? type.getAnalysis() : null;
+        Set<AnnotationExpression> annotations = new HashSet<>();
+        if (analysis != null) {
+            analysis.getAnnotationStream()
+                    .filter(e -> e.getValue().isPresent())
+                    .map(Map.Entry::getKey)
+                    .forEach(annotations::add);
+        }
+        if (type.hasBeenInspected()) {
+            type.getInspection().getAnnotations().stream()
+                    .filter(ae -> !annotations.contains(ae) && ae.e2ImmuAnnotationParameters() != null
+                            && !ae.e2ImmuAnnotationParameters().absent())
+                    .forEach(annotations::add);
+        }
+        List<String> annotationStrings = new ArrayList<>(annotations.stream()
+                .map(ae -> ae.typeInfo().simpleName.toLowerCase() + suffix).
+                        sorted().toList()); // we might be adding to the list
+        return Map.of(qualifiedName, annotationStrings);
     }
 
     public void writeMap(Map<String, String> map) {

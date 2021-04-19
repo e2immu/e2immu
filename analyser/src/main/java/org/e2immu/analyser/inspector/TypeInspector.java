@@ -24,6 +24,8 @@ import com.github.javaparser.ast.type.ClassOrInterfaceType;
 import org.e2immu.analyser.inspector.util.EnumMethods;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.statement.Block;
+import org.e2immu.analyser.model.variable.FieldReference;
+import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.TypeMapImpl;
@@ -348,6 +350,7 @@ public class TypeInspector {
         }
 
         // then, do fields
+        This thisVar = new This(expressionContext.typeContext, typeInfo);
 
         for (BodyDeclaration<?> bodyDeclaration : members) {
             bodyDeclaration.ifFieldDeclaration(fd -> {
@@ -361,6 +364,7 @@ public class TypeInspector {
 
                     String name = vd.getNameAsString();
                     FieldInfo fieldInfo = new FieldInfo(pt, name, typeInfo);
+                    expressionContext.variableContext.add(new FieldReference(expressionContext.typeContext, fieldInfo, thisVar));
                     FieldInspection inMap = expressionContext.typeContext.getFieldInspection(fieldInfo);
                     FieldInspectionImpl.Builder fieldInspectionBuilder;
                     if (inMap == null) {

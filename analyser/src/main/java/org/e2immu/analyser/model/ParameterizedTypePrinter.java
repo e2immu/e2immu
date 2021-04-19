@@ -62,15 +62,7 @@ public class ParameterizedTypePrinter {
         }
         TypeParameter tp = parameterizedType.typeParameter;
         if (tp != null) {
-            if (qualification.useNumericTypeParameters()) {
-                outputBuilder.add(new Text((tp.isMethodTypeParameter() ? "M" : "T") + tp.getIndex()));
-            } else {
-                if (visitedTypeParameters.add(tp)) {
-                    outputBuilder.add(tp.output(inspectionProvider, qualification, visitedTypeParameters));
-                } else {
-                    outputBuilder.add(new Text(tp.simpleName()));
-                }
-            }
+            outputBuilder.add(tp.output(inspectionProvider, qualification, visitedTypeParameters));
         } else if (parameterizedType.typeInfo != null) {
             if (parameterizedType.parameters.isEmpty()) {
                 outputBuilder.add(new TypeName(parameterizedType.typeInfo, qualification.qualifierRequired(parameterizedType.typeInfo)));

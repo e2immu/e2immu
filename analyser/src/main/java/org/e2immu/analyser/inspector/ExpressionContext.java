@@ -701,6 +701,12 @@ public class ExpressionContext {
                 ParameterizedType type = ParameterizedTypeFactory.from(typeContext, instanceOfExpr.getType());
                 return new InstanceOf(typeContext.getPrimitives(), type, e, null);
             }
+            if (expression.isSingleMemberAnnotationExpr()) {
+                SingleMemberAnnotationExpr sma = expression.asSingleMemberAnnotationExpr();
+                return parseExpression(sma.getMemberValue(), null, null);
+                // expect a field access or variable expression to show up
+                // TODO write tests
+            }
             // new switch expression isn't there yet in JavaParser...
 
             throw new UnsupportedOperationException("Unknown expression type " + expression +

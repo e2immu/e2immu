@@ -108,9 +108,8 @@ public class RunAnalyser implements Runnable {
                     AnnotationXmlWriter.write(configuration.annotationXmlConfiguration(), allTypes);
                 }
                 if (configuration.uploadConfiguration().upload()) {
-                    AnnotationUploader annotationUploader = new AnnotationUploader(configuration.uploadConfiguration(),
-                            parser.getTypeContext().typeMapBuilder.getE2ImmuAnnotationExpressions());
-                    Map<String, String> map = annotationUploader.createMap(allTypes);
+                    AnnotationUploader annotationUploader = new AnnotationUploader(configuration.uploadConfiguration());
+                    Map<String, String> map = annotationUploader.createMap(allTypes, messages.getMessageStream());
                     annotationUploader.writeMap(map);
                 }
                 if (api.writeMode() == AnnotatedAPIConfiguration.WriteMode.USAGE) {

@@ -93,8 +93,12 @@ public class TypeParameterImpl implements TypeParameter {
                                 Qualification qualification,
                                 Set<TypeParameter> visitedTypeParameters) {
         List<ParameterizedType> typeBounds = getTypeBounds();
-        OutputBuilder outputBuilder = new OutputBuilder().add(new Text(getName()));
-        if (!typeBounds.isEmpty()) {
+        String name = qualification.useNumericTypeParameters()
+                ? (isMethodTypeParameter() ? "M" : "T") + getIndex()
+                : getName();
+        OutputBuilder outputBuilder = new OutputBuilder().add(new Text(name));
+        if (!typeBounds.isEmpty() && !visitedTypeParameters.contains(this)) {
+            visitedTypeParameters.add(this);
             outputBuilder.add(Space.ONE).add(new Text("extends")).add(Space.ONE);
             outputBuilder.add(getTypeBounds()
                     .stream()

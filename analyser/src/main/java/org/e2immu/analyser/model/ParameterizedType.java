@@ -476,10 +476,13 @@ public class ParameterizedType {
     private static final int UNBOUND_WILDCARD = 1000;
 
     public int numericIsAssignableFrom(InspectionProvider inspectionProvider, ParameterizedType type) {
-        return numericIsAssignableFrom(inspectionProvider, type, false);
+        return numericIsAssignableFrom(inspectionProvider, type, false, null);
     }
 
-    private int numericIsAssignableFrom(InspectionProvider inspectionProvider, ParameterizedType type, boolean ignoreArrays) {
+    private int numericIsAssignableFrom(InspectionProvider inspectionProvider,
+                                        ParameterizedType type,
+                                        boolean ignoreArrays,
+                                        Set<TypeParameter> typeParametersVisited) {
         Objects.requireNonNull(type);
         if (type == this || equals(type)) return 0;
         if (type == ParameterizedType.NULL_CONSTANT) {
@@ -510,26 +513,35 @@ public class ParameterizedType {
 
                 TypeInspection typeInspection = inspectionProvider.getTypeInspection(type.typeInfo);
                 for (ParameterizedType interfaceImplemented : typeInspection.interfacesImplemented()) {
-                    int scoreInterface = numericIsAssignableFrom(inspectionProvider, interfaceImplemented, true);
+                    int scoreInterface = numericIsAssignableFrom(inspectionProvider, interfaceImplemented,
+                            true, typeParametersVisited);
                     if (scoreInterface != NOT_ASSIGNABLE) return IN_HIERARCHY + scoreInterface;
                 }
                 ParameterizedType parentClass = typeInspection.parentClass();
                 if (parentClass != null && !Primitives.isJavaLangObject(parentClass)) {
-                    int scoreParent = numericIsAssignableFrom(inspectionProvider, parentClass, true);
+                    int scoreParent = numericIsAssignableFrom(inspectionProvider, parentClass, true,
+                            typeParametersVisited);
                     if (scoreParent != NOT_ASSIGNABLE) return IN_HIERARCHY + scoreParent;
                 }
             }
         }
-        if (typeParameter != null) {
+        if (typeParameter != null && (typeParametersVisited == null || !typeParametersVisited.contains(typeParameter))) {
             // T extends Comparable<...> & Serializable
             try {
                 List<ParameterizedType> typeBounds = typeParameter.getTypeBounds();
                 if (!typeBounds.isEmpty()) {
+                    Set<TypeParameter> visited = typeParametersVisited == null ? new HashSet<>() : typeParametersVisited;
+                    visited.add(typeParameter);
                     if (wildCard == WildCard.EXTENDS) {
-                        return typeBounds.stream().mapToInt(pt -> numericIsAssignableFrom(inspectionProvider, pt)).reduce(IN_HIERARCHY, REDUCER);
+                        return typeBounds.stream()
+                                .mapToInt(pt -> pt.numericIsAssignableFrom(inspectionProvider, type, ignoreArrays, visited))
+                                .reduce(IN_HIERARCHY, REDUCER);
                     }
                     if (wildCard == WildCard.SUPER) {
-                        return typeBounds.stream().mapToInt(tb -> tb.numericIsAssignableFrom(inspectionProvider, this)).reduce(IN_HIERARCHY, REDUCER);
+                        return typeBounds.stream()
+                                // FIXME this will be wrong; need proper test
+                                .mapToInt(tb -> tb.numericIsAssignableFrom(inspectionProvider, this, ignoreArrays, visited))
+                                .reduce(IN_HIERARCHY, REDUCER);
                     }
                     throw new UnsupportedOperationException("?");
                 }

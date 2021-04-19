@@ -37,6 +37,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -57,7 +58,7 @@ public class TestAnnotationUploader {
         Configuration configuration = new Configuration.Builder()
                 .setDebugConfiguration(new DebugConfiguration.Builder()
                         .addTypeMapVisitor(typeMapVisitor).build())
-                .addDebugLogTargets("ANALYSER,INSPECT,RESOLVE,DELAYED")
+                .addDebugLogTargets("UPLOAD")
                 .setAnnotatedAPIConfiguration(new AnnotatedAPIConfiguration.Builder()
                         .addAnnotatedAPISourceDirs("../annotatedAPIs/src/main/java")
                         .build())
@@ -85,22 +86,22 @@ public class TestAnnotationUploader {
         UpgradableBooleanMap<TypeInfo> typesReferredTo = basics.typesReferenced();
         assertTrue(typesReferredTo.get(typeContext.getPrimitives().stringTypeInfo));
 
-        AnnotationUploader annotationUploader = new AnnotationUploader(configuration.uploadConfiguration(),
-                parser.getTypeContext().typeMapBuilder.getE2ImmuAnnotationExpressions());
-        Map<String, String> map = annotationUploader.createMap(Set.of(basics));
-        map.forEach((k, v) -> System.out.println(k + " --> " + v));
+        AnnotationUploader annotationUploader = new AnnotationUploader(configuration.uploadConfiguration());
+        Map<String, String> map = annotationUploader.createMap(Set.of(basics), Stream.of());
+        map.entrySet().stream()
+                .filter(e -> !e.getValue().isBlank())
+                .map(e -> e.getKey() + " --> " + e.getValue())
+                .sorted()
+                .forEach(System.out::println);
 
-        assertEquals("notmodified-m", map.get(BASICS_0 + ".getExplicitlyFinal()"));
+        assertEquals("constant-m,notmodified-m,notnull-m", map.get(BASICS_0 + ".getExplicitlyFinal()"));
         assertEquals("modified-m", map.get(BASICS_0 + ".add(java.lang.String)"));
         assertEquals("dependent-m", map.get(BASICS_0 + ".Basics_0(java.util.Set<java.lang.String>)"));
-        assertEquals("modified-f", map.get(BASICS_0 + ":strings"));
-     //   assertNull(map.get(BASICS_0 + ":strings java.util.Set")); // container, but that's not a dynamic type
-
-        assertEquals("final-f", map.get(BASICS_0 + ":explicitlyFinal"));
-     //   assertEquals("e2container-tf", map.get(BASICS_0 + ":explicitlyFinal java.lang.String"));
-
-        assertEquals("modified-p", map.get(BASICS_0 + ".Basics_0(java.util.Set<java.lang.String>)#0"));
-
+        assertEquals("linked-f,modified-f,notnull-f", map.get(BASICS_0 + ":strings"));
+        assertNull(map.get(BASICS_0 + ":strings java.util.Set")); // container, but that's not a dynamic type
+        assertEquals("constant-f,notnull-f", map.get(BASICS_0 + ":explicitlyFinal"));
+        assertNull(map.get(BASICS_0 + ":explicitlyFinal java.lang.String")); // not dynamic type
+        assertEquals("modified-p,notnull-p", map.get(BASICS_0 + ".Basics_0(java.util.Set<java.lang.String>)#0"));
         assertEquals("e1immutable-t", map.get(BASICS_0));
         annotationUploader.writeMap(map);
     }

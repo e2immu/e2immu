@@ -126,7 +126,8 @@ public record Input(Configuration configuration,
         if (restrictions.isEmpty()) return true;
         for (String packageString : restrictions) {
             if (packageString.endsWith(".")) {
-                if (packageName.startsWith(packageString)) return true;
+                if (packageName.startsWith(packageString) ||
+                        packageName.equals(packageString.substring(0, packageString.length()-1))) return true;
             } else if (packageName.equals(packageString) || packageString.equals(packageName + "." + typeName))
                 return true;
         }

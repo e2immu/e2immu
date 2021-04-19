@@ -34,7 +34,8 @@ public record CollectUsages(List<String> packagePrefixes, Set<String> packagesAc
 
     public CollectUsages(List<String> packagePrefixes) {
         this(packagePrefixes.stream().filter(pp -> pp.endsWith(".")).toList(),
-                packagePrefixes.stream().filter(pp -> !pp.endsWith(".")).collect(Collectors.toUnmodifiableSet()));
+                packagePrefixes.stream().map(pp -> pp.endsWith(".") ? pp.substring(0, pp.length() - 1) : pp)
+                        .collect(Collectors.toUnmodifiableSet()));
     }
 
     public Set<WithInspectionAndAnalysis> collect(Collection<TypeInfo> types) {
