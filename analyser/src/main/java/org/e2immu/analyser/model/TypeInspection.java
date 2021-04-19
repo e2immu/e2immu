@@ -15,6 +15,7 @@
 package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.inspector.TypeInspectionImpl;
+import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
@@ -125,13 +126,16 @@ public interface TypeInspection extends Inspection {
 
     TypeInspectionImpl.InspectionState getInspectionState();
 
-    default boolean haveNonStaticNonDefaultMethods() {
+    default boolean haveNonStaticNonDefaultMethods(InspectionProvider inspectionProvider) {
         if (methodStream(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM)
-                .anyMatch(m -> !m.methodInspection.get().isStatic() && !m.methodInspection.get().isDefault()))
+                .anyMatch(m -> {
+                    MethodInspection inspection = inspectionProvider.getMethodInspection(m);
+                    return !inspection.isStatic() && !inspection.isDefault();
+                }))
             return true;
         for (ParameterizedType superInterface : interfacesImplemented()) {
             assert superInterface.typeInfo != null && superInterface.typeInfo.hasBeenInspected();
-            if (superInterface.typeInfo.typeInspection.get().haveNonStaticNonDefaultMethods()) {
+            if (superInterface.typeInfo.typeInspection.get().haveNonStaticNonDefaultMethods(inspectionProvider)) {
                 return true;
             }
         }

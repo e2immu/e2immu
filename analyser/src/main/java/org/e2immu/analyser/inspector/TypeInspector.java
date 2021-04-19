@@ -439,7 +439,8 @@ public class TypeInspector {
             boolean haveNonStaticNonDefaultsInSuperType = false;
             for (ParameterizedType superInterface : builder.getInterfacesImplemented()) {
                 assert superInterface.typeInfo != null;
-                if (superInterface.typeInfo.typeInspection.get().haveNonStaticNonDefaultMethods()) {
+                if (superInterface.typeInfo.typeInspection.get()
+                        .haveNonStaticNonDefaultMethods(expressionContext.typeContext)) {
                     haveNonStaticNonDefaultsInSuperType = true;
                     break;
                 }

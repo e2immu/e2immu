@@ -437,12 +437,12 @@ public class Primitives {
         return ti;
     }
 
-    public int isAssignableFromTo(ParameterizedType from, ParameterizedType to) {
+    public int isAssignableFromTo(ParameterizedType from, ParameterizedType to, boolean covariant) {
         int fromOrder = primitiveTypeOrder(from);
         if (fromOrder <= 1 || fromOrder >= 9) return NOT_ASSIGNABLE;
         int toOrder = primitiveTypeOrder(to);
         if (toOrder <= 1 || toOrder >= 9) return NOT_ASSIGNABLE;
-        int diff = toOrder - fromOrder;
+        int diff = covariant ? toOrder - fromOrder : fromOrder - toOrder;
         return diff < 0 ? NOT_ASSIGNABLE : diff;
     }
 

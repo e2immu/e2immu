@@ -292,6 +292,7 @@ public class TestIsAssignableFromGenerics {
 
     @Test
     public void testSub4() {
+        // FIXME how do we translate this to a test??
         ParameterizedType extendsNode = new ParameterizedType(node, EXTENDS);
         ParameterizedType nodePt = new ParameterizedType(node, List.of());
         ParameterizedType sub1Pt = new ParameterizedType(sub1, List.of());
@@ -325,11 +326,18 @@ public class TestIsAssignableFromGenerics {
     }
 
 
-    public void testMyList(MyList1<? extends Node> myList1ExtendsNode, MyList1<Node> myList1Node) {
+    public void testMyList(MyList1<? extends Node> myList1ExtendsNode,
+                           MyList1<Node> myList1Node,
+                           MyList1<Sub1> myList1Sub1,
+                           MyList1<? super Sub1> myList1SuperSub1,
+                           MyList1<? extends Sub1> myList1ExtendsSub1) {
         // FAILS MyList1<Sub1> subs1 = myList1ExtendsNode;
         // FAILS MyList1<Node> nodes = myList1ExtendsNode;
         myList1ExtendsNode = myList1Node;
         // FAILS myList1ExtendsNode.compareTo(myList1Node);
+        myList1ExtendsNode = myList1Sub1;
+        myList1ExtendsNode = myList1SuperSub1;
+        myList1ExtendsNode = myList1ExtendsSub1;
     }
 
     @Test
