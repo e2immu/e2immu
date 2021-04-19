@@ -62,7 +62,7 @@ public class ParameterizedTypePrinter {
         }
         TypeParameter tp = parameterizedType.typeParameter;
         if (tp != null) {
-            outputBuilder.add(tp.output(inspectionProvider, qualification, visitedTypeParameters));
+            outputBuilder.add(tp.output(inspectionProvider, qualification, null));
         } else if (parameterizedType.typeInfo != null) {
             if (parameterizedType.parameters.isEmpty()) {
                 outputBuilder.add(new TypeName(parameterizedType.typeInfo, qualification.qualifierRequired(parameterizedType.typeInfo)));

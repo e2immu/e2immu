@@ -358,7 +358,7 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
     }
 
     private AnalysisStatus detectMissingStaticModifier() {
-        if (!methodInfo.methodInspection.get().isStatic() && !methodInfo.typeInfo.isInterface() && !methodInfo.isTestMethod()) {
+        if (!methodInfo.methodInspection.get().isStatic() && !methodInfo.typeInfo.isInterface() && methodInfo.isNotATestMethod()) {
             // we need to check if there's fields being read/assigned/
             if (absentUnlessStatic(VariableInfo::isRead) &&
                     absentUnlessStatic(VariableInfo::isAssigned) &&

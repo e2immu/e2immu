@@ -18,6 +18,7 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ReturnStatement;
+import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.annotation.E2Immutable;
 
 import java.util.*;
@@ -83,7 +84,8 @@ public class MethodItem extends HasAnnotations implements Comparable<MethodItem>
             }
             isStatic = inspection.isStatic();
             typeParametersCsv = inspection.getTypeParameters().stream()
-                    .map(tp -> tp.output(Qualification.FULLY_QUALIFIED_NAME).toString())
+                    .map(tp -> tp.output(InspectionProvider.DEFAULT,
+                            Qualification.FULLY_QUALIFIED_NAME, new HashSet<>()).toString())
                     .collect(Collectors.joining(","));
         } else {
             parameters = "";

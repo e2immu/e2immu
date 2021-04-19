@@ -97,7 +97,7 @@ public class TypeParameterImpl implements TypeParameter {
                 ? (isMethodTypeParameter() ? "M" : "T") + getIndex()
                 : getName();
         OutputBuilder outputBuilder = new OutputBuilder().add(new Text(name));
-        if (!typeBounds.isEmpty() && !visitedTypeParameters.contains(this)) {
+        if (!typeBounds.isEmpty() && visitedTypeParameters != null && !visitedTypeParameters.contains(this)) {
             visitedTypeParameters.add(this);
             outputBuilder.add(Space.ONE).add(new Text("extends")).add(Space.ONE);
             outputBuilder.add(getTypeBounds()

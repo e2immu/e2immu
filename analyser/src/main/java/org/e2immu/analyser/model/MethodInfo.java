@@ -15,7 +15,6 @@
 package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.analyser.StatementAnalysis;
-import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.inspector.MethodResolution;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
@@ -182,7 +181,8 @@ public class MethodInfo implements WithInspectionAndAnalysis {
 
         if (!inspection.getTypeParameters().isEmpty()) {
             afterAnnotations.add(Symbol.LEFT_ANGLE_BRACKET);
-            afterAnnotations.add(inspection.getTypeParameters().stream().map(tp -> tp.output(qualification))
+            afterAnnotations.add(inspection.getTypeParameters().stream()
+                    .map(tp -> tp.output(InspectionProvider.DEFAULT, qualification, new HashSet<>()))
                     .collect(OutputBuilder.joining(Symbol.COMMA)));
             afterAnnotations.add(Symbol.RIGHT_ANGLE_BRACKET).add(Space.ONE);
         }
@@ -283,16 +283,6 @@ public class MethodInfo implements WithInspectionAndAnalysis {
         return name;
     }
 
-    public int atLeastOneParameterModified() {
-        int max = Level.FALSE;
-        for (ParameterInfo parameterInfo : methodInspection.get().getParameters()) {
-            int modified = parameterInfo.parameterAnalysis.get().getProperty(VariableProperty.MODIFIED_VARIABLE);
-            if (modified == Level.DELAY) return modified;
-            max = Math.max(max, modified);
-        }
-        return max;
-    }
-
     @Override
     public String toString() {
         return fullyQualifiedName();
@@ -331,9 +321,9 @@ public class MethodInfo implements WithInspectionAndAnalysis {
                 !inspection.isStatic() && !inspection.isDefault();
     }
 
-    public boolean isTestMethod() {
-        return hasInspectedAnnotation("org.junit.Test").isPresent() ||
-                hasInspectedAnnotation("org.junit.jupiter.api.Test").isPresent();
+    public boolean isNotATestMethod() {
+        return hasInspectedAnnotation("org.junit.Test").isEmpty() &&
+                hasInspectedAnnotation("org.junit.jupiter.api.Test").isEmpty();
     }
 
     public boolean noReturnValue() {

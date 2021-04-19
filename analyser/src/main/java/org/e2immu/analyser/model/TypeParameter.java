@@ -33,11 +33,16 @@ public interface TypeParameter extends NamedType {
 
     List<ParameterizedType> getTypeBounds();
 
-    default OutputBuilder output(Qualification qualification) {
-        return output(InspectionProvider.DEFAULT, qualification, new HashSet<>());
-    }
-
-    OutputBuilder output(InspectionProvider inspectionProvider, Qualification qualification, Set<TypeParameter> visitedTypeParameters);
+    /**
+     * @param inspectionProvider    to dig deeper recursively
+     * @param qualification         distinguishing name, FQN?
+     * @param visitedTypeParameters if not null, we're in the definition, and need to provide the type bounds;
+     *                              a set to avoid duplication inside the type bounds
+     * @return output object
+     */
+    OutputBuilder output(InspectionProvider inspectionProvider,
+                         Qualification qualification,
+                         Set<TypeParameter> visitedTypeParameters);
 
     @Override
     default String simpleName() {

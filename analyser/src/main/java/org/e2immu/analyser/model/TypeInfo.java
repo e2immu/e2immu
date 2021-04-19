@@ -188,7 +188,8 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
 
             if (!typeParameters.isEmpty()) {
                 afterAnnotations.add(Symbol.LEFT_ANGLE_BRACKET);
-                afterAnnotations.add(typeParameters.stream().map(tp -> tp.output(insideType))
+                afterAnnotations.add(typeParameters.stream().map(tp ->
+                        tp.output(InspectionProvider.DEFAULT, insideType, new HashSet<>()))
                         .collect(OutputBuilder.joining(Symbol.COMMA)));
                 afterAnnotations.add(Symbol.RIGHT_ANGLE_BRACKET);
             }
@@ -395,28 +396,8 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         return Optional.empty();
     }
 
-    public Optional<TypeInfo> inTypeInnerOuterHierarchy(TypeInfo typeInfo) {
-        return inTypeInnerOuterHierarchy(typeInfo, new HashSet<>());
-    }
-
     public boolean parentIsNotJavaLangObject() {
         return !Primitives.isJavaLangObject(typeInspection.get().parentClass());
-    }
-
-    private Optional<TypeInfo> inTypeInnerOuterHierarchy(TypeInfo typeInfo, Set<TypeInfo> visited) {
-        if (typeInfo == this) return Optional.of(this);
-        if (visited.contains(this)) return Optional.empty();
-        visited.add(this);
-        if (packageNameOrEnclosingType.isRight()) {
-            TypeInfo parentClass = packageNameOrEnclosingType.getRight();
-            Optional<TypeInfo> viaParent = parentClass.inTypeInnerOuterHierarchy(typeInfo, visited);
-            if (viaParent.isPresent()) return viaParent;
-        }
-        for (TypeInfo subType : typeInspection.get().subTypes()) {
-            Optional<TypeInfo> viaSubType = subType.inTypeInnerOuterHierarchy(typeInfo, visited);
-            if (viaSubType.isPresent()) return viaSubType;
-        }
-        return Optional.empty();
     }
 
     public ParameterizedType asParameterizedType(InspectionProvider inspectionProvider) {
