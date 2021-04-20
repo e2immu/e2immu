@@ -181,7 +181,7 @@ public class ParseMethodReferenceExpr {
             numberOfParameters.add(n);
         }
         log(METHOD_CALL, "End parsing unevaluated method reference {}, found parameter set {}", methodReferenceExpr, numberOfParameters);
-        return new UnevaluatedLambdaExpression(numberOfParameters, null);
+        return new UnevaluatedLambdaExpression(numberOfParameters, null, expressionContext.getLocation());
     }
 
     private static MethodReference arrayConstruction(ExpressionContext expressionContext, ParameterizedType parameterizedType) {

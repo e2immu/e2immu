@@ -29,10 +29,12 @@ import java.util.Set;
 
 @E2Immutable
 public record UnevaluatedLambdaExpression(Set<Integer> numberOfParameters,
-                                          Boolean nonVoid) implements Expression {
-    public UnevaluatedLambdaExpression(Set<Integer> numberOfParameters, Boolean nonVoid) {
+                                          Boolean nonVoid,
+                                          Location location) implements Expression {
+    public UnevaluatedLambdaExpression(Set<Integer> numberOfParameters, Boolean nonVoid, Location location) {
         this.numberOfParameters = Set.copyOf(numberOfParameters);
         this.nonVoid = nonVoid;
+        this.location = location;
     }
 
     @Override
@@ -53,7 +55,7 @@ public record UnevaluatedLambdaExpression(Set<Integer> numberOfParameters,
     @Override
     @NotNull
     public ParameterizedType returnType() {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException("Location: "+location.detailedLocation());
     }
 
 
@@ -74,17 +76,17 @@ public record UnevaluatedLambdaExpression(Set<Integer> numberOfParameters,
 
     @Override
     public UpgradableBooleanMap<TypeInfo> typesReferenced() {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException("Location: "+location.detailedLocation());
     }
 
     @Override
     public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException("Location: "+location.detailedLocation());
     }
 
     @Override
     public Expression translate(TranslationMap translationMap) {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException("Location: "+location.detailedLocation());
     }
 
     @Override

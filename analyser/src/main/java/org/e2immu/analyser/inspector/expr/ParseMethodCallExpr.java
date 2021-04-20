@@ -88,9 +88,6 @@ public record ParseMethodCallExpr(InspectionProvider inspectionProvider) {
             log(METHOD_CALL, "Creating unevaluated method call for {} after failing to choose a candidate", methodName);
             return new UnevaluatedMethodCall(methodName);
         }
-        log(METHOD_CALL, "End parsing method call {}, return types of method parameters [{}], concrete type {}, mapExpansion {}",
-                methodCallExpr, StringUtil.join(newParameterExpressions, Expression::returnType),
-                method.getConcreteReturnType().detailedStringLogDuringInspection(inspectionProvider), mapExpansion);
 
         MethodInfo methodInfo = method.methodInspection.getMethodInfo();
         Expression computedScope;
@@ -162,27 +159,6 @@ public record ParseMethodCallExpr(InspectionProvider inspectionProvider) {
             trimMethodsWithBestScore(methodCandidates, compatibilityScore);
             if (methodCandidates.size() > 1) {
                 trimVarargsVsMethodsWithFewerParameters(methodCandidates);
-                if (methodCandidates.size() > 1) {
-                    //methodCandidates.sort(inspectionProvider::compareMethodCandidates);
-                    TypeContext.MethodCandidate mc0 = methodCandidates.get(0);
-                    // we cannot rely on methodResolution yet...
-                    Set<MethodInfo> overrides = ShallowMethodResolver.overrides(inspectionProvider, mc0.method().methodInspection.getMethodInfo());
-                    for (TypeContext.MethodCandidate mcN : methodCandidates.subList(1, methodCandidates.size())) {
-                        if (!overrides.contains(mcN.method().methodInspection.getMethodInfo()) &&
-                                mcN.method().methodInspection.getMethodInfo() != mc0.method().methodInspection.getMethodInfo()) {
-                            for (TypeContext.MethodCandidate mc : methodCandidates) {
-                                log(METHOD_CALL, "Candidate: {} score {}", mc.method().methodInspection.getFullyQualifiedName(),
-                                        compatibilityScore.get(mc.method().methodInspection.getMethodInfo()));
-                            }
-                            for (MethodInfo override : overrides) {
-                                log(METHOD_CALL, "Overrides of 1st: {}", override.distinguishingName());
-                            }
-                            log(METHOD_CALL, "Not all candidates of {} are overrides of the 1st one! {} at position {}", methodNameForErrorReporting,
-                                    startingPointForErrorReporting.detailedString(), positionForErrorReporting);
-                            return null;
-                        }
-                    }
-                }
             }
         }
         MethodTypeParameterMap method = methodCandidates.get(0).method();

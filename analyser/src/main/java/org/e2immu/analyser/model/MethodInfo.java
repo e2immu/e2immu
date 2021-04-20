@@ -340,7 +340,7 @@ public class MethodInfo implements WithInspectionAndAnalysis {
      * @return true when we can skip the analysers
      */
     public boolean shallowAnalysis() {
-        return methodInspection.get().getMethodBody() == Block.EMPTY_BLOCK;
+        return methodInspection.isSet() && methodInspection.get().getMethodBody() == Block.EMPTY_BLOCK;
     }
 
     public boolean hasStatements() {

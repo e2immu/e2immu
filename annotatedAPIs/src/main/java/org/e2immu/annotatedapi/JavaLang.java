@@ -312,7 +312,7 @@ class JavaLang {
             return post == string.length();
         }
 
-        StringBuilder$(String string) {
+        StringBuilder$(@NotNull String string) {
         }
 
         @Fluent

@@ -652,9 +652,13 @@ public class ExpressionContext {
             }
             if (expression.isConditionalExpr()) {
                 ConditionalExpr conditionalExpr = (ConditionalExpr) expression;
-                org.e2immu.analyser.model.Expression condition = parseExpression(conditionalExpr.getCondition());
-                org.e2immu.analyser.model.Expression ifTrue = parseExpression(conditionalExpr.getThenExpr());
-                org.e2immu.analyser.model.Expression ifFalse = parseExpression(conditionalExpr.getElseExpr());
+                org.e2immu.analyser.model.Expression condition = parseExpression(conditionalExpr.getCondition(),
+                        typeContext.typeMapBuilder.getPrimitives().booleanParameterizedType,
+                        null);
+                org.e2immu.analyser.model.Expression ifTrue = parseExpression(conditionalExpr.getThenExpr(),
+                        impliedParameterizedType, singleAbstractMethod);
+                org.e2immu.analyser.model.Expression ifFalse = parseExpression(conditionalExpr.getElseExpr(),
+                        impliedParameterizedType, singleAbstractMethod);
                 return new InlineConditional(typeContext, condition, ifTrue, ifFalse);
             }
             if (expression.isFieldAccessExpr()) {
@@ -725,5 +729,11 @@ public class ExpressionContext {
 
     private TypeInfo owningType() {
         return uninspectedEnclosingType != null ? uninspectedEnclosingType : enclosingType;
+    }
+
+    public Location getLocation() {
+        if (enclosingMethod != null) return new Location(enclosingMethod);
+        if (enclosingField != null) return new Location(enclosingField);
+        return new Location(enclosingType);
     }
 }

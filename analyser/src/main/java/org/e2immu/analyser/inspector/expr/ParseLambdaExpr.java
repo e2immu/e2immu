@@ -44,7 +44,7 @@ public class ParseLambdaExpr {
                                    LambdaExpr lambdaExpr,
                                    MethodTypeParameterMap singleAbstractMethod) {
         if (singleAbstractMethod == null || !singleAbstractMethod.isSingleAbstractMethod()) {
-            return partiallyParse(lambdaExpr);
+            return partiallyParse(lambdaExpr, expressionContext.getLocation());
         }
         log(LAMBDA, "Start parsing lambda {}, single abstract method context {}", lambdaExpr, singleAbstractMethod);
 
@@ -95,7 +95,7 @@ public class ParseLambdaExpr {
 
         Evaluation evaluation = evaluate(lambdaExpr, newExpressionContext, singleAbstractMethod, inspectionProvider);
         if (evaluation == null) {
-            return partiallyParse(lambdaExpr);
+            return partiallyParse(lambdaExpr, expressionContext.getLocation());
         }
 
         ParameterizedType functionalType = singleAbstractMethod.inferFunctionalType(inspectionProvider,
@@ -145,9 +145,9 @@ public class ParseLambdaExpr {
 
     // experimental: we look at the parameters, and return an expression which is superficial, with only
     // the return type as functional type of importance
-    private static Expression partiallyParse(LambdaExpr lambdaExpr) {
+    private static Expression partiallyParse(LambdaExpr lambdaExpr, Location location) {
         return new UnevaluatedLambdaExpression(Set.of(lambdaExpr.getParameters().size()),
-                lambdaExpr.getExpressionBody().isPresent() ? true : null);
+                lambdaExpr.getExpressionBody().isPresent() ? true : null, location);
     }
 
     private static MethodInspectionImpl.Builder createAnonymousTypeAndApplyMethod(String name,

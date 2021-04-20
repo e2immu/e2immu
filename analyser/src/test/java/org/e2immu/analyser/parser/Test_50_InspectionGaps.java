@@ -97,11 +97,22 @@ public class Test_50_InspectionGaps extends CommonTestRunner {
         testClass("InspectionGaps_5", 0, 1, new DebugConfiguration.Builder()
                 .build());
     }
-    
+
     @Test
     public void test_6() throws IOException {
         testClass("InspectionGaps_6", 0, 0, new DebugConfiguration.Builder()
                 .build());
     }
 
+    @Test
+    public void test_7() throws IOException {
+        testClass("InspectionGaps_7", 0, 0, new DebugConfiguration.Builder()
+                .build());
+    }
+
+    @Test
+    public void test_8() throws IOException {
+        testClass("InspectionGaps_8", 0, 2, new DebugConfiguration.Builder()
+                .build());
+    }
 }

@@ -89,7 +89,9 @@ public interface TypeInspection extends Inspection {
     default Stream<MethodInfo> methodStream(Methods methodsMode) {
         if (methodsMode.recurse) {
             return Stream.concat(nonRecursiveMethodStream(methodsMode.nonRecursiveVariant),
-                    subTypes().stream().flatMap(subType -> subType.typeInspection.get().methodStream(methodsMode)));
+                    subTypes().stream()
+                            .filter(subType -> subType.typeInspection.isSet())
+                            .flatMap(subType -> subType.typeInspection.get().methodStream(methodsMode)));
         }
         return nonRecursiveMethodStream(methodsMode);
     }
@@ -103,7 +105,8 @@ public interface TypeInspection extends Inspection {
     default Stream<MethodInfo> constructorStream(Methods methodsMode) {
         if (methodsMode.recurse) {
             return Stream.concat(constructors().stream(), subTypes().stream()
-                    .flatMap(subType -> subType.typeInspection.get().constructorStream(methodsMode)));
+                    .filter(subType -> subType.typeInspection.isSet())
+                    .flatMap(subType -> subType.typeInspection.get(subType.fullyQualifiedName).constructorStream(methodsMode)));
         }
         return constructors().stream();
     }
