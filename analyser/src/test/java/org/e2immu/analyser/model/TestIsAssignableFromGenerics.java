@@ -288,20 +288,22 @@ public class TestIsAssignableFromGenerics {
         // FAILS myList1.add(sub1);
         // FAILS myList1.add(sub2);
         // FAILS myList1.add(new Object());
+
+        //TODO no idea how to translate this into a test
     }
 
     @Test
     public void testSub4() {
-        // FIXME how do we translate this to a test??
         ParameterizedType extendsNode = new ParameterizedType(node, EXTENDS);
         ParameterizedType nodePt = new ParameterizedType(node, List.of());
         ParameterizedType sub1Pt = new ParameterizedType(sub1, List.of());
         ParameterizedType sub2Pt = new ParameterizedType(sub2, List.of());
 
-        assertFalse(extendsNode.isAssignableFrom(IP, nodePt));
-        assertFalse(extendsNode.isAssignableFrom(IP, sub1Pt));
-        assertFalse(extendsNode.isAssignableFrom(IP, sub2Pt));
+        assertTrue(extendsNode.isAssignableFrom(IP, nodePt));
+        assertTrue(extendsNode.isAssignableFrom(IP, sub1Pt));
+        assertTrue(extendsNode.isAssignableFrom(IP, sub2Pt));
         assertFalse(extendsNode.isAssignableFrom(IP, primitives.objectParameterizedType));
+
     }
 
 
@@ -330,11 +332,14 @@ public class TestIsAssignableFromGenerics {
                            MyList1<Node> myList1Node,
                            MyList1<Sub1> myList1Sub1,
                            MyList1<? super Sub1> myList1SuperSub1,
-                           MyList1<? extends Sub1> myList1ExtendsSub1) {
+                           MyList1<? extends Sub1> myList1ExtendsSub1,
+                           MyList1<? super Node> myList1SuperNode) {
         // FAILS MyList1<Sub1> subs1 = myList1ExtendsNode;
         // FAILS MyList1<Node> nodes = myList1ExtendsNode;
+        // FAILS MyList1<Node> nodes = myList1SuperNode;
+
         myList1ExtendsNode = myList1Node;
-        // FAILS myList1ExtendsNode.compareTo(myList1Node);
+        myList1SuperNode = myList1Node;
         myList1ExtendsNode = myList1Sub1;
         myList1ExtendsNode = myList1SuperSub1;
         myList1ExtendsNode = myList1ExtendsSub1;
@@ -344,11 +349,20 @@ public class TestIsAssignableFromGenerics {
     public void testMyList() {
         ParameterizedType myListNode = new ParameterizedType(myList1, List.of(new ParameterizedType(node, List.of())));
         ParameterizedType myListExtendsNode = new ParameterizedType(myList1, List.of(new ParameterizedType(node, EXTENDS)));
+        ParameterizedType myListSuperNode = new ParameterizedType(myList1, List.of(new ParameterizedType(node, SUPER)));
         ParameterizedType myListSub1 = new ParameterizedType(myList1, List.of(new ParameterizedType(sub1, List.of())));
+        ParameterizedType myListSuperSub1 = new ParameterizedType(myList1, List.of(new ParameterizedType(sub1, SUPER)));
+        ParameterizedType myListExtendsSub1 = new ParameterizedType(myList1, List.of(new ParameterizedType(sub1, EXTENDS)));
 
         assertFalse(myListSub1.isAssignableFrom(IP, myListExtendsNode));
         assertFalse(myListNode.isAssignableFrom(IP, myListExtendsNode));
+        assertFalse(myListNode.isAssignableFrom(IP, myListSuperNode));
+
         assertTrue(myListExtendsNode.isAssignableFrom(IP, myListNode));
+        assertTrue(myListSuperNode.isAssignableFrom(IP, myListNode));
+        assertTrue(myListExtendsNode.isAssignableFrom(IP, myListSub1));
+        assertTrue(myListExtendsNode.isAssignableFrom(IP, myListSuperSub1));
+        assertTrue(myListExtendsNode.isAssignableFrom(IP, myListExtendsSub1));
     }
 
     public void test1(MyList1<Node> myList1Node, MyList1<Sub1> myList1Sub1, MyList1<Sub2> myList1Sub2) {
@@ -401,43 +415,53 @@ public class TestIsAssignableFromGenerics {
         // FAILS myList2Node.compareTo(myList2Sub1);
     }
 
-    public void test2bis(MyComparable<? extends MyList1<? super Node>> cNode,
+    public void test2bis(MyComparable<? extends MyList1<? super Node>> cSuperNode,
                          MyComparable<? extends MyList1<? super Sub1>> cSub1,
-                         MyComparable<? extends MyList1<? super Sub2>> cSub2) {
+                         MyComparable<? extends MyList1<? super Sub2>> cSub2,
+                         MyComparable<? extends MyList1<Node>> cNode) {
         cSub1 = cSub1;
         // FAILS cSub1 = cSub2;
         cSub1 = cNode;
+        cSub1 = cSuperNode;
         // FAILS cNode = cSub1;
     }
 
 
     @Test
     public void test2() {
+        ParameterizedType nodePt = new ParameterizedType(node, List.of());
         ParameterizedType superNode = new ParameterizedType(node, SUPER);
         ParameterizedType superSub1 = new ParameterizedType(sub1, SUPER);
         ParameterizedType superSub2 = new ParameterizedType(sub2, SUPER);
-        ParameterizedType extendsMyList1ExtendsNode = new ParameterizedType(myList1, 0, EXTENDS,
+        ParameterizedType extendsMyList1Node = new ParameterizedType(myList1, 0, EXTENDS,
+                List.of(nodePt));
+        ParameterizedType extendsMyList1SuperNode = new ParameterizedType(myList1, 0, EXTENDS,
                 List.of(superNode));
-        ParameterizedType extendsMyList1ExtendsSub1 = new ParameterizedType(myList1, 0, EXTENDS,
+        ParameterizedType extendsMyList1SuperSub1 = new ParameterizedType(myList1, 0, EXTENDS,
                 List.of(superSub1));
-        ParameterizedType extendsMyList1ExtendsSub2 = new ParameterizedType(myList1, 0, EXTENDS,
+        ParameterizedType extendsMyList1SuperSub2 = new ParameterizedType(myList1, 0, EXTENDS,
                 List.of(superSub2));
 
+        ParameterizedType cExtendsMyList1Node = new ParameterizedType(myComparable,
+                List.of(extendsMyList1Node));
+        assertEquals("MyComparable<? extends MyList1<Node>>",
+                cExtendsMyList1Node.output(Qualification.EMPTY).toString());
         ParameterizedType cExtendsMyList1SuperNode = new ParameterizedType(myComparable,
-                List.of(extendsMyList1ExtendsNode));
+                List.of(extendsMyList1SuperNode));
         assertEquals("MyComparable<? extends MyList1<? super Node>>",
                 cExtendsMyList1SuperNode.output(Qualification.EMPTY).toString());
         ParameterizedType cExtendsMyList1SuperSub1 = new ParameterizedType(myComparable,
-                List.of(extendsMyList1ExtendsSub1));
+                List.of(extendsMyList1SuperSub1));
         assertEquals("MyComparable<? extends MyList1<? super Sub1>>",
                 cExtendsMyList1SuperSub1.output(Qualification.EMPTY).toString());
         ParameterizedType cExtendsMyList1SuperSub2 = new ParameterizedType(myComparable,
-                List.of(extendsMyList1ExtendsSub2));
+                List.of(extendsMyList1SuperSub2));
         assertEquals("MyComparable<? extends MyList1<? super Sub2>>",
                 cExtendsMyList1SuperSub2.output(Qualification.EMPTY).toString());
 
         assertTrue(cExtendsMyList1SuperSub1.isAssignableFrom(IP, cExtendsMyList1SuperSub1));
         assertFalse(cExtendsMyList1SuperSub1.isAssignableFrom(IP, cExtendsMyList1SuperSub2));
+        assertTrue(cExtendsMyList1SuperSub1.isAssignableFrom(IP, cExtendsMyList1Node));
         assertTrue(cExtendsMyList1SuperSub1.isAssignableFrom(IP, cExtendsMyList1SuperNode));
         assertFalse(cExtendsMyList1SuperNode.isAssignableFrom(IP, cExtendsMyList1SuperSub1));
     }
@@ -471,20 +495,20 @@ public class TestIsAssignableFromGenerics {
         ParameterizedType superMyList1SuperSub1 = new ParameterizedType(myList1, 0, SUPER, List.of(superSub1));
         ParameterizedType superMyList1SuperSub2 = new ParameterizedType(myList1, 0, SUPER, List.of(superSub2));
 
-        ParameterizedType cSuperMyList1ExtendsNode = new ParameterizedType(myComparable, List.of(superMyList1SuperNode));
+        ParameterizedType cSuperMyList1SuperNode = new ParameterizedType(myComparable, List.of(superMyList1SuperNode));
         assertEquals("MyComparable<? super MyList1<? super Node>>",
-                cSuperMyList1ExtendsNode.output(Qualification.EMPTY).toString());
-        ParameterizedType cSuperMyList1ExtendsSub1 = new ParameterizedType(myComparable, List.of(superMyList1SuperSub1));
+                cSuperMyList1SuperNode.output(Qualification.EMPTY).toString());
+        ParameterizedType cSuperMyList1SuperSub1 = new ParameterizedType(myComparable, List.of(superMyList1SuperSub1));
         assertEquals("MyComparable<? super MyList1<? super Sub1>>",
-                cSuperMyList1ExtendsSub1.output(Qualification.EMPTY).toString());
-        ParameterizedType cSuperMyList1ExtendsSub2 = new ParameterizedType(myComparable, List.of(superMyList1SuperSub2));
+                cSuperMyList1SuperSub1.output(Qualification.EMPTY).toString());
+        ParameterizedType cSuperMyList1SuperSub2 = new ParameterizedType(myComparable, List.of(superMyList1SuperSub2));
         assertEquals("MyComparable<? super MyList1<? super Sub2>>",
-                cSuperMyList1ExtendsSub2.output(Qualification.EMPTY).toString());
+                cSuperMyList1SuperSub2.output(Qualification.EMPTY).toString());
 
-        assertTrue(cSuperMyList1ExtendsSub1.isAssignableFrom(IP, cSuperMyList1ExtendsSub1));
-        assertFalse(cSuperMyList1ExtendsSub1.isAssignableFrom(IP, cSuperMyList1ExtendsSub2));
-        assertFalse(cSuperMyList1ExtendsSub1.isAssignableFrom(IP, cSuperMyList1ExtendsNode));
-        assertTrue(cSuperMyList1ExtendsNode.isAssignableFrom(IP, cSuperMyList1ExtendsSub1));
+        assertTrue(cSuperMyList1SuperSub1.isAssignableFrom(IP, cSuperMyList1SuperSub1));
+        assertFalse(cSuperMyList1SuperSub1.isAssignableFrom(IP, cSuperMyList1SuperSub2));
+        assertFalse(cSuperMyList1SuperSub1.isAssignableFrom(IP, cSuperMyList1SuperNode)); // FIXME fails
+        assertTrue(cSuperMyList1SuperNode.isAssignableFrom(IP, cSuperMyList1SuperSub1)); // FIXME fails
     }
 
 
@@ -519,8 +543,8 @@ public class TestIsAssignableFromGenerics {
 
         assertTrue(cSuperMyList1ExtendsSub1.isAssignableFrom(IP, cSuperMyList1ExtendsSub1));
         assertFalse(cSuperMyList1ExtendsSub1.isAssignableFrom(IP, cSuperMyList1ExtendsSub2));
-        assertTrue(cSuperMyList1ExtendsSub1.isAssignableFrom(IP, cSuperMyList1ExtendsNode));
-        assertFalse(cSuperMyList1ExtendsNode.isAssignableFrom(IP, cSuperMyList1ExtendsSub1));
+        assertTrue(cSuperMyList1ExtendsSub1.isAssignableFrom(IP, cSuperMyList1ExtendsNode)); // FIXME fails
+        assertFalse(cSuperMyList1ExtendsNode.isAssignableFrom(IP, cSuperMyList1ExtendsSub1)); // FIXME fails
     }
 
     public void test5bis(MyComparable<? extends MyList1<? extends Node>> cNode,

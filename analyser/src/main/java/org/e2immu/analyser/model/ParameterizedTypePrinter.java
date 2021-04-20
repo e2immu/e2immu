@@ -25,6 +25,8 @@ public class ParameterizedTypePrinter {
      * It is important not too use the inspection provider too eagerly. During bootstrap of the java.lang classes,
      * there are a lot of interdependencies, and this printer does not have an auto-inspect system.
      *
+     * Default: no explicit type parameter definitions.
+     *
      * @param inspectionProvider Needed to study the type parameters.
      * @param parameterizedType  to be printed
      * @param varargs            in a context where [] becomes ... ?
@@ -37,9 +39,20 @@ public class ParameterizedTypePrinter {
                                       boolean varargs,
                                       Diamond diamond,
                                       boolean withoutArrays) {
-        return print(inspectionProvider, qualification, parameterizedType, varargs, diamond, withoutArrays, new HashSet<>());
+        return print(inspectionProvider, qualification, parameterizedType, varargs, diamond, withoutArrays, null);
     }
 
+    /**
+     *
+     * @param inspectionProvider needed to inspect the type parameters
+     * @param qualification fully qualified, partially, simple...?
+     * @param parameterizedType the type to print
+     * @param varargs print, or don't print ...
+     * @param diamond print, or don't print the diamond operator < ... >
+     * @param withoutArrays don't print or print []
+     * @param visitedTypeParameters when not null, allow for one definition of a type parameter
+     * @return printed result
+     */
     public static OutputBuilder print(InspectionProvider inspectionProvider,
                                       Qualification qualification,
                                       ParameterizedType parameterizedType,
@@ -62,7 +75,7 @@ public class ParameterizedTypePrinter {
         }
         TypeParameter tp = parameterizedType.typeParameter;
         if (tp != null) {
-            outputBuilder.add(tp.output(inspectionProvider, qualification, null));
+            outputBuilder.add(tp.output(inspectionProvider, qualification, visitedTypeParameters));
         } else if (parameterizedType.typeInfo != null) {
             if (parameterizedType.parameters.isEmpty()) {
                 outputBuilder.add(new TypeName(parameterizedType.typeInfo, qualification.qualifierRequired(parameterizedType.typeInfo)));

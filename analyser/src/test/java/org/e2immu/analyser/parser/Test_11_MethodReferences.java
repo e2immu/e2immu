@@ -36,8 +36,6 @@ public class Test_11_MethodReferences extends CommonTestRunner {
         super(true);
     }
 
-
-
     @Test
     public void test_0() throws IOException {
         TypeMapVisitor typeMapVisitor = typeMap -> {

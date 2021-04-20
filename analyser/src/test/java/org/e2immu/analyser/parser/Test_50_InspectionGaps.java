@@ -87,7 +87,7 @@ public class Test_50_InspectionGaps extends CommonTestRunner {
     // FIXME the output of this test is not good enough (though correct!)
     @Test
     public void test_3() throws IOException {
-        testClass("InspectionGaps_3", 0, 0, new DebugConfiguration.Builder()
+        testClass("InspectionGaps_3", 2, 0, new DebugConfiguration.Builder()
                 .build());
     }
 }

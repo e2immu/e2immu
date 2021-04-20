@@ -19,9 +19,6 @@ import org.e2immu.analyser.bytecode.ByteCodeInspector;
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.inspector.TypeInspectionImpl;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.output.Formatter;
-import org.e2immu.analyser.output.FormattingOptions;
-import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.parser.Input;
 import org.e2immu.analyser.parser.TypeMapImpl;
 import org.e2immu.analyser.util.Logger;
@@ -60,9 +57,12 @@ public class TestParseGenerics {
     @Test
     public void testNormalTypeParameter() {
         TypeInfo typeInfo = typeContext.getFullyQualified(Spliterator.class);
-        assertEquals("java.util.Spliterator<T>", typeInfo.asParameterizedType(typeContext).printForMethodFQN(typeContext, false, Diamond.SHOW_ALL));
-        assertEquals("java.util.Spliterator<>", typeInfo.asParameterizedType(typeContext).printForMethodFQN(typeContext, false, Diamond.YES));
-        assertEquals("java.util.Spliterator", typeInfo.asParameterizedType(typeContext).printForMethodFQN(typeContext, false, Diamond.NO));
+        assertEquals("java.util.Spliterator<T>", typeInfo.asParameterizedType(typeContext)
+                .printForMethodFQN(typeContext, false, Diamond.SHOW_ALL));
+        assertEquals("java.util.Spliterator<>", typeInfo.asParameterizedType(typeContext).
+                printForMethodFQN(typeContext, false, Diamond.YES));
+        assertEquals("java.util.Spliterator", typeInfo.asParameterizedType(typeContext)
+                .printForMethodFQN(typeContext, false, Diamond.NO));
     }
 
     @Test
@@ -87,9 +87,11 @@ public class TestParseGenerics {
     @Test
     public void testExtends2() {
         TypeInfo typeInfo = typeContext.getFullyQualified(EnumMap.class);
-        TypeInspectionImpl.Builder typeInspectionBuilder = (TypeInspectionImpl.Builder) typeContext.getTypeInspection(typeInfo);
+        TypeInspectionImpl.Builder typeInspectionBuilder = (TypeInspectionImpl.Builder)
+                typeContext.getTypeInspection(typeInfo);
         TypeContext newTypeContext = new TypeContext(typeContext);
-        FindType findType = (fqn, path) -> newTypeContext.typeMapBuilder.getOrCreateFromPath(path, TRIGGER_BYTECODE_INSPECTION);
+        FindType findType = (fqn, path) -> newTypeContext.typeMapBuilder.getOrCreateFromPath(path,
+                TRIGGER_BYTECODE_INSPECTION);
 
         String signature = "<K:Ljava/lang/Enum<TK;>;V:Ljava/lang/Object;>Ljava/util/AbstractMap<TK;TV;>;Ljava/io/Serializable;Ljava/lang/Cloneable;";
         ParseGenerics parseGenerics = new ParseGenerics(newTypeContext, typeInfo, typeInspectionBuilder,
@@ -106,25 +108,24 @@ public class TestParseGenerics {
         Set<TypeParameter> visited = new HashSet<>();
         visited.add(K);
         assertEquals("java.lang.Enum<K>", ParameterizedTypePrinter.print(newTypeContext,
-                Qualification.FULLY_QUALIFIED_NAME, typeBoundK, false, Diamond.SHOW_ALL, false, visited).toString());
+                Qualification.FULLY_QUALIFIED_NAME, typeBoundK, false, Diamond.SHOW_ALL,
+                false, visited).toString());
         assertSame(K, typeBoundK.parameters.get(0).typeParameter);
 
-        OutputBuilder outputBuilder = ParameterizedTypePrinter.print(typeContext, Qualification.FULLY_QUALIFIED_NAME,
-                typeInfo.asParameterizedType(typeContext), false, Diamond.SHOW_ALL, false);
-        System.out.println(outputBuilder.generateJavaForDebugging());
-        FormattingOptions options = FormattingOptions.DEFAULT;
-        org.e2immu.analyser.output.Formatter formatter = new Formatter(options);
-        assertEquals("java.util.EnumMap<K extends java.lang.Enum<K>, V>\n", formatter.write(outputBuilder));
-        assertEquals("java.util.EnumMap<K extends java.lang.Enum<K>,V>", outputBuilder.toString());
+        ParameterizedType pt = typeInfo.asParameterizedType(typeContext);
+        assertEquals("java.util.EnumMap<K extends java.lang.Enum<K>,V>",
+                pt.printForMethodFQN(typeContext, false, Diamond.SHOW_ALL));
     }
 
     @Test
     public void testSuper() {
         TypeInfo sortedSet = typeContext.getFullyQualified(SortedSet.class);
         TypeInspection typeInspection = typeContext.getTypeInspection(sortedSet);
-        MethodInfo comparator = typeInspection.methods().stream().filter(m -> m.name.equals("comparator")).findFirst().orElseThrow();
+        MethodInfo comparator = typeInspection.methods().stream().filter(m -> m.name.equals("comparator"))
+                .findFirst().orElseThrow();
         MethodInspection comparatorInspection = typeContext.getMethodInspection(comparator);
-        assertEquals("java.util.Comparator<? super E>", comparatorInspection.getReturnType().printForMethodFQN(typeContext, false, Diamond.SHOW_ALL));
+        assertEquals("java.util.Comparator<? super E>",
+                comparatorInspection.getReturnType().printForMethodFQN(typeContext, false, Diamond.SHOW_ALL));
     }
 
     /*

@@ -41,6 +41,11 @@ public class MethodReferences_0 {
         strings = input.stream().map(C::new).collect(Collectors.toList());
     }
 
+    @Modified
+    public String removeFirst() {
+        return strings.remove(0).s;
+    }
+
     @Dependent
     public List<C> getStrings() {
         return strings;

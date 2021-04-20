@@ -205,6 +205,10 @@ public class JavaUtil extends AnnotatedAPI {
         @Modified
         boolean remove(@NotNull Object object) { return false; }
 
+        @Modified
+        @NotNull // but there may be an index exception! TODO add precondition
+        E remove(int index) { return null; }
+
         @Independent
         @Modified
         boolean removeAll(@NotNull1 Collection<?> c) { return false; }
