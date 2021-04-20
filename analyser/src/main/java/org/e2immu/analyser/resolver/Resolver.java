@@ -195,7 +195,7 @@ public class Resolver {
                 new HashSet<>(superTypesExcludingJavaLangObject(expressionContextOfFile.typeContext, typeInfo)) :
                 typeInfo.typesReferenced().stream().map(Map.Entry::getKey).collect(Collectors.toCollection(HashSet::new));
 
-        typeDependencies.removeAll(typeAndAllSubTypes);
+        typeAndAllSubTypes.forEach(typeDependencies::remove);
         typeDependencies.remove(typeInfo);
         typeDependencies.retainAll(stayWithin);
 
@@ -337,7 +337,7 @@ public class Resolver {
                                 (MethodReference) parsedExpression, expressionContext);
                         doType(sam.typeInfo, subContext, methodFieldSubTypeGraph);
                     } else if (parsedExpression instanceof VariableExpression ve) {
-                        if (ve.variable() instanceof FieldReference fr) {
+                        if (ve.variable() instanceof FieldReference) {
                             sam = null; // we can't know, there'll be an indirection
                         } else {
                             throw new UnsupportedOperationException("Can only deal with fields at the moment: " +

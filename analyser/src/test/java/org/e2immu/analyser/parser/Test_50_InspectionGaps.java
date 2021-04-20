@@ -90,4 +90,18 @@ public class Test_50_InspectionGaps extends CommonTestRunner {
         testClass("InspectionGaps_3", 2, 0, new DebugConfiguration.Builder()
                 .build());
     }
+
+    // IMPROVE the MyFieldVisitor can make the decision that the field is @NotNull (but maybe not @NotNull1, ...)
+    @Test
+    public void test_5() throws IOException {
+        testClass("InspectionGaps_5", 0, 1, new DebugConfiguration.Builder()
+                .build());
+    }
+    
+    @Test
+    public void test_6() throws IOException {
+        testClass("InspectionGaps_6", 0, 0, new DebugConfiguration.Builder()
+                .build());
+    }
+
 }

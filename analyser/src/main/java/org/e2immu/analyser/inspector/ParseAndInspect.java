@@ -101,7 +101,7 @@ public record ParseAndInspect(Resources classPath,
             } else {
                 // types
                 if (importDeclaration.isAsterisk()) {
-                    // lower priority names (so allowOverwrite = false
+                    // lower priority names (so allowOverwrite = false)
                     log(INSPECT, "Need to parse folder {}", fullyQualified);
                     if (!fullyQualified.equals(packageName)) { // would be our own package; they are already there
                         sourceTypes.visit(fullyQualified.split("\\."), (expansion, typeInfoList) -> {

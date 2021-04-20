@@ -182,7 +182,7 @@ public class TypeContext implements InspectionProvider {
             String memberName = entry.getKey();
             TypeInspection typeInspection = getTypeInspection(typeInfo);
             typeInspection.fields().stream()
-                    .filter(FieldInfo::isStatic)
+                    .filter(fieldInfo -> getFieldInspection(fieldInfo).getModifiers().contains(FieldModifier.STATIC))
                     .filter(f -> f.name.equals(memberName))
                     .findFirst()
                     .ifPresent(fieldInfo -> map.put(memberName, new FieldReference(this, fieldInfo, null)));
@@ -190,7 +190,7 @@ public class TypeContext implements InspectionProvider {
         for (TypeInfo typeInfo : importStaticAsterisk) {
             TypeInspection typeInspection = getTypeInspection(typeInfo);
             typeInspection.fields().stream()
-                    .filter(FieldInfo::isStatic)
+                    .filter(fieldInfo -> getFieldInspection(fieldInfo).getModifiers().contains(FieldModifier.STATIC))
                     .forEach(fieldInfo -> map.put(fieldInfo.name, new FieldReference(this, fieldInfo, null)));
         }
         return map;

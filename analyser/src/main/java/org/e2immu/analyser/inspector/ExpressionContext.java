@@ -683,6 +683,10 @@ public class ExpressionContext {
             }
             if (expression.isDoubleLiteralExpr()) {
                 String valueWithD = expression.asDoubleLiteralExpr().getValue();
+                if (valueWithD.endsWith("f") || valueWithD.endsWith("F")) {
+                    String value = valueWithD.substring(0, valueWithD.length() - 1);
+                    return new FloatConstant(typeContext.getPrimitives(), Float.parseFloat(value));
+                }
                 String value = valueWithD.endsWith("D") || valueWithD.endsWith("d") ? valueWithD.substring(0, valueWithD.length() - 1) : valueWithD;
                 return new DoubleConstant(typeContext.getPrimitives(), Double.parseDouble(value));
             }
