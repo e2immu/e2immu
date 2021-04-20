@@ -14,9 +14,15 @@
 
 package org.e2immu.analyser.testexample;
 
+import org.e2immu.annotation.Dependent;
+
+import java.util.LinkedList;
+import java.util.List;
+
 public class Basics_15 {
 
     private StringBuilder builder;
+    private List<String> list;
 
     public void createStringBuilder(String in) {
         StringBuilder sb = new StringBuilder(in);
@@ -25,7 +31,19 @@ public class Basics_15 {
         builder = sb;
     }
 
+    public void createSet(String s1, String s2) {
+        List<String> l1 = new LinkedList<>();
+        l1.add(s1);
+        l1.add(s2);
+        List<String> l2 = l1.subList(0, 1); // explicitly have a link to a local variable
+        this.list = l2;
+    }
+
     public StringBuilder getBuilder() {
         return builder;
+    }
+
+    public List<String> getList() {
+        return list;
     }
 }

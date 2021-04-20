@@ -576,7 +576,8 @@ public class FieldAnalyser extends AbstractAnalyser {
 
     private AnalysisStatus allAssignmentsHaveBeenSet() {
         assert fieldAnalysis.valuesIsNotSet();
-        Expression nullValue = ConstantExpression.nullValue(analyserContext.getPrimitives(), fieldInfo.type.bestTypeInfo());
+        Expression nullValue = ConstantExpression.nullValue(analyserContext.getPrimitives(),
+                fieldInfo.type.bestTypeInfo());
         List<Expression> values = new LinkedList<>();
         boolean delays = false;
         if (haveInitialiser) {
@@ -598,7 +599,12 @@ public class FieldAnalyser extends AbstractAnalyser {
                         boolean added = false;
                         for (VariableInfo vi : methodAnalyser.getFieldAsVariable(fieldInfo, false)) {
                             if (vi.isAssigned()) {
-                                values.add(vi.getValue());
+                                Expression expression = vi.getValue();
+                                if (expression instanceof VariableExpression ve && ve.variable() instanceof LocalVariableReference) {
+                                    throw new UnsupportedOperationException("Method " + methodAnalyser.methodInfo.fullyQualifiedName + ": " +
+                                            fieldInfo.fullyQualifiedName() + " is local variable " + expression);
+                                }
+                                values.add(expression);
                                 added = true;
                                 if (vi.isDelayed()) {
                                     log(DELAYED, "Delay consistent value for field {}", fqn);
@@ -1125,7 +1131,7 @@ public class FieldAnalyser extends AbstractAnalyser {
                         ? VariableProperty.NOT_NULL_PARAMETER : variableProperty;
                 return getAnalyserContext().getParameterAnalysis(parameterInfo).getProperty(vp);
             }
-            throw new UnsupportedOperationException("?? variable of " + variable.getClass());
+            throw new UnsupportedOperationException("?? variable " + variable.fullyQualifiedName() + " of " + variable.getClass());
         }
 
         private VariableProperty replaceForFieldAnalyser(VariableProperty variableProperty) {
