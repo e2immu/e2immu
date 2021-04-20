@@ -21,11 +21,15 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.StringJoiner;
 
-public record ForwardEvaluationInfo(Map<VariableProperty, Integer> properties, boolean notAssignmentTarget) {
+public record ForwardEvaluationInfo(Map<VariableProperty, Integer> properties,
+                                    boolean notAssignmentTarget,
+                                    boolean assignToField) {
 
-    public ForwardEvaluationInfo(Map<VariableProperty, Integer> properties, boolean notAssignmentTarget) {
+    public ForwardEvaluationInfo(Map<VariableProperty, Integer> properties, boolean notAssignmentTarget,
+                                 boolean assignToField) {
         this.properties = Map.copyOf(properties);
         this.notAssignmentTarget = notAssignmentTarget;
+        this.assignToField = assignToField;
     }
 
     public int getProperty(VariableProperty variableProperty) {
@@ -44,22 +48,26 @@ public record ForwardEvaluationInfo(Map<VariableProperty, Integer> properties, b
     }
 
     public static ForwardEvaluationInfo DEFAULT = new ForwardEvaluationInfo(
-            Map.of(VariableProperty.CONTEXT_NOT_NULL, MultiLevel.NULLABLE), true);
+            Map.of(VariableProperty.CONTEXT_NOT_NULL, MultiLevel.NULLABLE), true, false);
 
     // the FALSE on not-null is because we intend to set it, so it really does not matter what the current value is
     public static ForwardEvaluationInfo ASSIGNMENT_TARGET = new ForwardEvaluationInfo(
             Map.of(VariableProperty.CONTEXT_NOT_NULL, MultiLevel.NULLABLE),
-            false);
+            false, false);
 
     public static ForwardEvaluationInfo NOT_NULL = new ForwardEvaluationInfo(
             Map.of(VariableProperty.CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL),
-            true);
+            true, false);
 
     public ForwardEvaluationInfo copyModificationEnsureNotNull() {
         Map<VariableProperty, Integer> map = new HashMap<>();
         map.put(VariableProperty.CONTEXT_MODIFIED,
                 properties.getOrDefault(VariableProperty.CONTEXT_MODIFIED, Level.DELAY));
         map.put(VariableProperty.CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
-        return new ForwardEvaluationInfo(map, true);
+        return new ForwardEvaluationInfo(map, true, assignToField);
+    }
+
+    public ForwardEvaluationInfo copyAddAssignToField() {
+        return new ForwardEvaluationInfo(properties, notAssignmentTarget, true);
     }
 }

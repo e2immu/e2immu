@@ -1267,7 +1267,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         if (state != null) {
             // do not take vi1 itself, but "the" local copy of the variable
             Expression valueOfVariablePreAssignment = sharedState.evaluationContext.currentValue(vi1.variable(),
-                    statementAnalysis.statementTime(VariableInfoContainer.Level.INITIAL), true);
+                    statementAnalysis.statementTime(VariableInfoContainer.Level.INITIAL),
+                    ForwardEvaluationInfo.DEFAULT);
             InlineConditional inlineConditional = new InlineConditional(analyserContext, state, value, valueOfVariablePreAssignment);
             return inlineConditional.optimise(sharedState.evaluationContext);
         }
@@ -2605,12 +2606,14 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
 
         // we pass on the information about the potential newly created local variable copy
         @Override
-        public Expression currentValue(Variable variable, int statementTime, boolean isNotAssignmentTarget) {
-            VariableInfo variableInfo = findForReading(variable, statementTime, isNotAssignmentTarget);
+        public Expression currentValue(Variable variable, int statementTime, ForwardEvaluationInfo forwardEvaluationInfo) {
+            VariableInfo variableInfo = findForReading(variable, statementTime, forwardEvaluationInfo.isNotAssignmentTarget());
             Expression value = variableInfo.getValue();
             // important! do not use variable in the next statement, but vi.variable()
             // we could have redirected from a variable field to a local variable copy
-            return value instanceof NewObject ? new VariableExpression(variableInfo.variable()) : value;
+            return value instanceof NewObject && (!forwardEvaluationInfo.assignToField() ||
+                    !(variable instanceof LocalVariableReference lvr && lvr.variable.isLocalCopyOf() == null))
+                    ? new VariableExpression(variableInfo.variable()) : value;
         }
 
         @Override

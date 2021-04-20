@@ -104,7 +104,7 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
                 map = Map.of(VariableProperty.CONTEXT_MODIFIED, modified,
                         VariableProperty.CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
             }
-            scopeForward = new ForwardEvaluationInfo(map, true);
+            scopeForward = new ForwardEvaluationInfo(map, true, false);
         } else {
             scopeForward = ForwardEvaluationInfo.NOT_NULL;
         }

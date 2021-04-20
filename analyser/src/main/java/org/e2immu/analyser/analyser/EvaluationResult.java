@@ -382,11 +382,11 @@ public record EvaluationResult(EvaluationContext evaluationContext,
            when this happens, we need to link the field to this local copy
            this linking takes place in the value changes map, so that the linked variables can be set once, correctly.
          */
-        public Expression currentExpression(Variable variable, boolean isNotAssignmentTarget) {
+        public Expression currentExpression(Variable variable, ForwardEvaluationInfo forwardEvaluationInfo) {
             ChangeData currentExpression = valueChanges.get(variable);
             if (currentExpression == null || currentExpression.value == null) {
                 assert evaluationContext != null;
-                return evaluationContext.currentValue(variable, statementTime, isNotAssignmentTarget);
+                return evaluationContext.currentValue(variable, statementTime, forwardEvaluationInfo);
             }
             return currentExpression.value;
         }

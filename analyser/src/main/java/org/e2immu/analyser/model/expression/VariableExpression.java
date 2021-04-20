@@ -135,7 +135,7 @@ public record VariableExpression(Variable variable, String name) implements Expr
                                             ForwardEvaluationInfo forwardEvaluationInfo,
                                             Variable variable) {
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
-        Expression currentValue = builder.currentExpression(variable, forwardEvaluationInfo.isNotAssignmentTarget());
+        Expression currentValue = builder.currentExpression(variable, forwardEvaluationInfo);
         builder.setExpression(currentValue);
 
         // no statement analyser... we're in the shallow analyser

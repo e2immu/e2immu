@@ -295,7 +295,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 VariableProperty.CONTEXT_MODIFIED, modified,
                 VariableProperty.CONTEXT_IMMUTABLE_DELAY, immutableData.delay,
                 VariableProperty.CONTEXT_IMMUTABLE, immutableData.required,
-                VariableProperty.NEXT_CONTEXT_IMMUTABLE, immutableData.next), true));
+                VariableProperty.NEXT_CONTEXT_IMMUTABLE, immutableData.next), true, false));
 
         // null scope
         Expression objectValue = objectResult.value();

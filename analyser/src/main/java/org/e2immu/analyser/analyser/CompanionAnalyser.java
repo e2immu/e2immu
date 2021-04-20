@@ -202,7 +202,7 @@ public class CompanionAnalyser {
         }
 
         @Override
-        public Expression currentValue(Variable variable, int statementTime, boolean isNotAssignmentTarget) {
+        public Expression currentValue(Variable variable, int statementTime, ForwardEvaluationInfo forwardEvaluationInfo) {
             if (variable instanceof ParameterInfo parameterInfo) {
                 Map<String, Expression> remapping = companionAnalysis.remapParameters.getOrElse(null);
                 if (remapping == null) return DelayedVariableExpression.forParameter(parameterInfo);

@@ -81,7 +81,7 @@ public interface EvaluationContext {
         throw new UnsupportedOperationException();
     }
 
-    default Expression currentValue(Variable variable, int statementTime, boolean isNotAssignmentTarget) {
+    default Expression currentValue(Variable variable, int statementTime, ForwardEvaluationInfo forwardEvaluationInfo) {
         throw new UnsupportedOperationException();
     }
 

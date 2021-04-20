@@ -75,7 +75,7 @@ public abstract class CommonVariableInfo {
         }
 
         @Override
-        public Expression currentValue(Variable variable, int statementTime, boolean isNotAssignmentTarget) {
+        public Expression currentValue(Variable variable, int statementTime, ForwardEvaluationInfo forwardEvaluationInfo) {
             return new VariableExpression(variable);
         }
 

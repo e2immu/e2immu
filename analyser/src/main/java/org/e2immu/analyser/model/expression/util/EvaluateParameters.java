@@ -124,7 +124,7 @@ public class EvaluateParameters {
 
                 minNotNullOverParameters = Math.min(minNotNullOverParameters, contextNotNull);
 
-                ForwardEvaluationInfo forward = new ForwardEvaluationInfo(map, true);
+                ForwardEvaluationInfo forward = new ForwardEvaluationInfo(map, true, false);
                 parameterResult = parameterExpression.evaluate(evaluationContext, forward);
                 parameterValue = parameterResult.value();
 

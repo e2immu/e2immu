@@ -179,7 +179,9 @@ public class Assignment implements Expression {
     @Override
     public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
-        EvaluationResult valueResult = value.evaluate(evaluationContext, forwardEvaluationInfo);
+        ForwardEvaluationInfo fwd = target instanceof VariableExpression ve && ve.variable() instanceof FieldReference ?
+                forwardEvaluationInfo.copyAddAssignToField(): forwardEvaluationInfo;
+        EvaluationResult valueResult = value.evaluate(evaluationContext, fwd);
         EvaluationResult targetResult = target.evaluate(evaluationContext, ForwardEvaluationInfo.ASSIGNMENT_TARGET);
         builder.compose(valueResult);
         builder.composeIgnoreExpression(targetResult);

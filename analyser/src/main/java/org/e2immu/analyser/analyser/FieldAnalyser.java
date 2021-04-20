@@ -1135,7 +1135,7 @@ public class FieldAnalyser extends AbstractAnalyser {
         }
 
         @Override
-        public Expression currentValue(Variable variable, int statementTime, boolean isNotAssignmentTarget) {
+        public Expression currentValue(Variable variable, int statementTime, ForwardEvaluationInfo forwardEvaluationInfo) {
             if (variable instanceof FieldReference) {
                 return getVariableValue(variable);
             }
@@ -1148,7 +1148,7 @@ public class FieldAnalyser extends AbstractAnalyser {
                  see test SubTypes_5
                  */
                 assert closure != null;
-                return closure.currentValue(variable, statementTime, isNotAssignmentTarget);
+                return closure.currentValue(variable, statementTime, forwardEvaluationInfo);
             }
 
             throw new UnsupportedOperationException("Variable of " + variable.getClass() + " not implemented here");
