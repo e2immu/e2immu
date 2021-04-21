@@ -14,8 +14,10 @@
 
 package org.e2immu.analyser.inspector;
 
-public class TypeNotFoundException extends RuntimeException {
-    public TypeNotFoundException(String msg) {
+public class NotFoundInClassPathException extends RuntimeException {
+    public NotFoundInClassPathException() {}
+
+    public NotFoundInClassPathException(String msg) {
         super(msg);
     }
 }

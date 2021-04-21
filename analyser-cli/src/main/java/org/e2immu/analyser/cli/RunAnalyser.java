@@ -39,10 +39,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.e2immu.analyser.inspector.NotFoundInClassPathException;
 
-import org.e2immu.analyser.inspector.TypeNotFoundException;
-
-import static org.e2immu.analyser.cli.Main.*;
 import static org.e2immu.analyser.util.Logger.LogTarget.ANNOTATED_API_WRITER;
 import static org.e2immu.analyser.util.Logger.LogTarget.OUTPUT;
 import static org.e2immu.analyser.util.Logger.log;
@@ -82,11 +80,11 @@ public class RunAnalyser implements Runnable {
                 Parser.RunResult runResult;
                 try {
                     runResult = parser.run();
-                } catch (TypeNotFoundException typeNotFoundException) {
-                    exitValue = EXIT_INSPECTION_ERROR;
+                } catch (NotFoundInClassPathException typeNotFoundException) {
+                    exitValue = Main.EXIT_INSPECTION_ERROR;
                     return;
                 } catch (ParseProblemException re) {
-                    exitValue = EXIT_PARSER_ERROR;
+                    exitValue = Main.EXIT_PARSER_ERROR;
                     return;
                 }
                 LOGGER.info("Have {} messages from analyser", parser.countMessages());
@@ -130,14 +128,14 @@ public class RunAnalyser implements Runnable {
                 }
                 if (!configuration.ignoreErrors()
                         && parser.getMessages().anyMatch(m -> m.severity == Message.Severity.ERROR)) {
-                    exitValue = EXIT_ANALYSER_ERROR;
+                    exitValue = Main.EXIT_ANALYSER_ERROR;
                     return;
                 }
             }
-            exitValue = EXIT_OK;
+            exitValue = Main.EXIT_OK;
         } catch (IOException e) {
             LOGGER.error("ERROR: Caught IO exception during run: " + e.getMessage());
-            exitValue = EXIT_IO_EXCEPTION;
+            exitValue = Main.EXIT_IO_EXCEPTION;
         }
     }
 

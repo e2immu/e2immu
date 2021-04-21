@@ -176,7 +176,7 @@ public record ParseAndInspect(Resources classPath,
         String path = classPath.fqnToPath(fqn, ".class");
         if (path == null) {
             LOGGER.error("ERROR: Cannot find type '{}'", fqn);
-            throw new TypeNotFoundException(fqn);
+            throw new NotFoundInClassPathException(fqn);
         }
         return typeMapBuilder.getOrCreateFromPath(StringUtil.stripDotClass(path), TRIGGER_BYTECODE_INSPECTION);
     }

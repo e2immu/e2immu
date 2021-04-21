@@ -164,7 +164,7 @@ public class Parser {
 
                 typeInspectionBuilder.setInspectionState(FINISHED_JAVA_PARSER);
 
-            } catch (TypeNotFoundException typeNotFoundException) {
+            } catch (NotFoundInClassPathException typeNotFoundException) {
                 throw typeNotFoundException;
             } catch (RuntimeException rte) {
                 LOGGER.error("Caught runtime exception parsing and inspecting URL '{}'", url);
