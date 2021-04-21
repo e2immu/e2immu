@@ -14,34 +14,14 @@
 
 package org.e2immu.analyser.testexample;
 
-import java.util.LinkedList;
-import java.util.List;
+import org.e2immu.annotation.*;
 
-public class Basics_15 {
+import java.util.*;
+import java.util.function.Consumer;
 
-    private StringBuilder builder;
-    private List<String> list;
+public interface Container_6 {
 
-    public void createStringBuilder(String in) {
-        StringBuilder sb = new StringBuilder(in);
-        sb.append(" = ");
-        sb.append(34);
-        builder = sb;
-    }
-
-    public void createSet(String s1, String s2) {
-        List<String> l1 = new LinkedList<>();
-        l1.add(s1);
-        l1.add(s2);
-        List<String> l2 = l1.subList(0, 1); // explicitly have a link to a local variable
-        this.list = l2;
-    }
-
-    public StringBuilder getBuilder() {
-        return builder;
-    }
-
-    public List<String> getList() {
-        return list;
-    }
+    Map<String, Integer> MAP = Map.copyOf(new HashMap<>());
 }
+
+

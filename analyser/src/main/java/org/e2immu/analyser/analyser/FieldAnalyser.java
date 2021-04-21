@@ -1002,7 +1002,7 @@ public class FieldAnalyser extends AbstractAnalyser {
 
     private Expression getVariableValue(Variable variable) {
         FieldReference fieldReference = (FieldReference) variable;
-        FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalyser(fieldReference.fieldInfo).fieldAnalysis;
+        FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(fieldReference.fieldInfo);
         int effectivelyFinal = fieldAnalysis.getProperty(VariableProperty.FINAL);
         if (effectivelyFinal == Level.DELAY) return DelayedVariableExpression.forField(fieldReference);
         if (effectivelyFinal == Level.FALSE) {

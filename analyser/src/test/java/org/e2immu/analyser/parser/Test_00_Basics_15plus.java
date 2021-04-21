@@ -20,14 +20,20 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
-public class Test_00_Basics_15 extends CommonTestRunner {
-    public Test_00_Basics_15() {
+public class Test_00_Basics_15plus extends CommonTestRunner {
+    public Test_00_Basics_15plus() {
         super(true);
     }
 
     @Test
     public void test_15() throws IOException {
         testClass("Basics_15", 0, 0, new DebugConfiguration.Builder()
+                .build());
+    }
+
+    @Test
+    public void test_16() throws IOException {
+        testClass("Basics_16", 0, 1, new DebugConfiguration.Builder()
                 .build());
     }
 }

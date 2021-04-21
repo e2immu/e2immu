@@ -103,7 +103,11 @@ public class TypeAnalyser extends AbstractAnalyser {
                     .add("analyseUtilityClass", iteration -> analyseUtilityClass())
                     .add("analyseSingleton", iteration -> analyseSingleton())
                     .add("analyseExtensionClass", iteration -> analyseExtensionClass());
+        } else {
+            typeAnalysis.freezeApprovedPreconditionsE1();
+            typeAnalysis.freezeApprovedPreconditionsE2();
         }
+
         analyserComponents = builder.build();
 
         messages.addAll(typeAnalysis.fromAnnotationsIntoProperties(null,
@@ -394,7 +398,7 @@ public class TypeAnalyser extends AbstractAnalyser {
             if (precondition.isPresent()) {
                 List<FieldToCondition> fields = handlePrecondition(methodAnalyser, precondition.get(), iteration);
                 if (fields == null) {
-                    log(MARK, "Delaying approved preconditions (no incompatible found yet) in {}", typeInfo.fullyQualifiedName);
+                    log(DELAYED, "Delaying approved preconditions (no incompatible found yet) in {}", typeInfo.fullyQualifiedName);
                     return DELAYS;
                 }
                 for (FieldToCondition fieldToCondition : fields) {

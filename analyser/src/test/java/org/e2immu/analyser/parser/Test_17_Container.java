@@ -471,4 +471,10 @@ public class Test_17_Container extends CommonTestRunner {
     }
 
 
+
+    @Test
+    public void test_6() throws IOException {
+        testClass("Container_6", 0, 0, new DebugConfiguration.Builder()
+                .build());
+    }
 }

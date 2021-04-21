@@ -83,17 +83,13 @@ public interface AnalyserContext extends AnalysisProvider, InspectionProvider {
     }
 
     default FieldAnalysis getFieldAnalysis(FieldInfo fieldInfo) {
-        try {
-            FieldAnalyser fieldAnalyser = getFieldAnalyser(fieldInfo);
-            if (fieldAnalyser == null) {
-                AnalyserContext parent = getParent();
-                if (parent != null) return parent.getFieldAnalysis(fieldInfo);
-                return fieldInfo.fieldAnalysis.get();
-            }
-            return fieldAnalyser.fieldAnalysis;
-        } catch (UnsupportedOperationException e) {
-            throw new UnsupportedOperationException("Field analysis of " + fieldInfo.fullyQualifiedName() + " not yet set");
+        FieldAnalyser fieldAnalyser = getFieldAnalyser(fieldInfo);
+        if (fieldAnalyser == null) {
+            AnalyserContext parent = getParent();
+            if (parent != null) return parent.getFieldAnalysis(fieldInfo);
+            return fieldInfo.fieldAnalysis.get(fieldInfo.fullyQualifiedName());
         }
+        return fieldAnalyser.fieldAnalysis;
     }
 
     default ParameterAnalysis getParameterAnalysis(ParameterInfo parameterInfo) {
@@ -109,31 +105,23 @@ public interface AnalyserContext extends AnalysisProvider, InspectionProvider {
     }
 
     default TypeAnalysis getTypeAnalysis(TypeInfo typeInfo) {
-        try {
-            TypeAnalyser typeAnalyser = getTypeAnalyser(typeInfo);
-            if (typeAnalyser == null) {
-                AnalyserContext parent = getParent();
-                if (parent != null) return parent.getTypeAnalysis(typeInfo);
-                return typeInfo.typeAnalysis.get(typeInfo.fullyQualifiedName);
-            }
-            return typeAnalyser.typeAnalysis;
-        } catch (UnsupportedOperationException e) {
-            throw new UnsupportedOperationException("Type analysis of " + typeInfo.fullyQualifiedName + " not yet set");
+        TypeAnalyser typeAnalyser = getTypeAnalyser(typeInfo);
+        if (typeAnalyser == null) {
+            AnalyserContext parent = getParent();
+            if (parent != null) return parent.getTypeAnalysis(typeInfo);
+            return typeInfo.typeAnalysis.get(typeInfo.fullyQualifiedName);
         }
+        return typeAnalyser.typeAnalysis;
     }
 
     default MethodAnalysis getMethodAnalysis(MethodInfo methodInfo) {
-        try {
-            MethodAnalyser methodAnalyser = getMethodAnalyser(methodInfo);
-            if (methodAnalyser == null) {
-                AnalyserContext parent = getParent();
-                if (parent != null) return parent.getMethodAnalysis(methodInfo);
-                return methodInfo.methodAnalysis.get(methodInfo.fullyQualifiedName);
-            }
-            return methodAnalyser.methodAnalysis;
-        } catch (UnsupportedOperationException e) {
-            throw new UnsupportedOperationException("Method analysis of " + methodInfo.fullyQualifiedName() + " not yet set");
+        MethodAnalyser methodAnalyser = getMethodAnalyser(methodInfo);
+        if (methodAnalyser == null) {
+            AnalyserContext parent = getParent();
+            if (parent != null) return parent.getMethodAnalysis(methodInfo);
+            return methodInfo.methodAnalysis.get(methodInfo.fullyQualifiedName);
         }
+        return methodAnalyser.methodAnalysis;
     }
 
     default FieldInspection getFieldInspection(FieldInfo fieldInfo) {

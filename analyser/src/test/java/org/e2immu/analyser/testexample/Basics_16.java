@@ -14,34 +14,14 @@
 
 package org.e2immu.analyser.testexample;
 
-import java.util.LinkedList;
-import java.util.List;
+public interface Basics_16 {
 
-public class Basics_15 {
-
-    private StringBuilder builder;
-    private List<String> list;
-
-    public void createStringBuilder(String in) {
-        StringBuilder sb = new StringBuilder(in);
-        sb.append(" = ");
-        sb.append(34);
-        builder = sb;
+    static String lc(Class<?> clazz) {
+        return clazz.getSimpleName().toLowerCase();
     }
 
-    public void createSet(String s1, String s2) {
-        List<String> l1 = new LinkedList<>();
-        l1.add(s1);
-        l1.add(s2);
-        List<String> l2 = l1.subList(0, 1); // explicitly have a link to a local variable
-        this.list = l2;
-    }
+    String APP_NAME = "E2Immu Highlighter";
+    String STORAGE_FILE = "e2immuHighlighter.xml";
 
-    public StringBuilder getBuilder() {
-        return builder;
-    }
 
-    public List<String> getList() {
-        return list;
-    }
 }
