@@ -384,6 +384,7 @@ public record NewObject(
             case CONTEXT_MODIFIED:
             case NOT_MODIFIED_1:
             case CONTEXT_MODIFIED_DELAY:
+            case PROPAGATE_MODIFICATION_DELAY:
             case IDENTITY:
             case IGNORE_MODIFICATIONS:
                 return Level.FALSE;

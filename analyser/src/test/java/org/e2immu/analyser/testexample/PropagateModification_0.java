@@ -33,4 +33,9 @@ public class PropagateModification_0 {
     public void forEach(@NotModified @PropagateModification MyConsumer<String> myConsumer) {
         myConsumer.accept(string);
     }
+
+    @NotModified
+    public void visit(@NotModified @PropagateModification MyConsumer<String> myConsumer) {
+        forEach(myConsumer);
+    }
 }

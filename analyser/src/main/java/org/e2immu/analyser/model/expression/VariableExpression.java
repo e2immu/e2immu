@@ -196,8 +196,8 @@ public record VariableExpression(Variable variable, String name) implements Expr
         }
 
         int contextImmutable = forwardEvaluationInfo.getProperty(VariableProperty.CONTEXT_IMMUTABLE);
-        int nextImmutable =  forwardEvaluationInfo.getProperty(VariableProperty.NEXT_CONTEXT_IMMUTABLE);
-        if(contextImmutable > MultiLevel.MUTABLE) {
+        int nextImmutable = forwardEvaluationInfo.getProperty(VariableProperty.NEXT_CONTEXT_IMMUTABLE);
+        if (contextImmutable > MultiLevel.MUTABLE) {
             builder.variableOccursInEventuallyImmutableContext(variable, contextImmutable, nextImmutable);
         }
 
@@ -206,10 +206,23 @@ public record VariableExpression(Variable variable, String name) implements Expr
             builder.markContextImmutableDelay(variable);
         }
 
+        // calling an abstract method without MODIFIED value (Level.DELAY)
         int propagate = forwardEvaluationInfo.getProperty(VariableProperty.CONTEXT_PROPAGATE_MOD);
         if (propagate == Level.TRUE) {
             assert modified == Level.FALSE;
             builder.markPropagateModification(variable);
+        }
+
+        // forEach(consumer) -> consumer gets a CONTEXT_PROPAGATE_MOD = Level.TRUE
+        int propagateModification = forwardEvaluationInfo.getProperty(VariableProperty.PROPAGATE_MODIFICATION);
+        if (propagateModification == Level.TRUE) {
+            builder.markPropagateModification(variable);
+        }
+
+        // when we don't know yet if forEach( ...)'s first parameter has the @PropagateModification annotation
+        int propagateModificationDelay = forwardEvaluationInfo.getProperty(VariableProperty.PROPAGATE_MODIFICATION_DELAY);
+        if (propagateModificationDelay == Level.TRUE) {
+            builder.markPropagateModificationDelay(variable);
         }
         return builder.build();
     }

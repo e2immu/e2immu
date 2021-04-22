@@ -31,8 +31,9 @@ public enum VariableProperty {
 
     // purpose: goes to true when all methods involved in the computation have been "evaluated"
     CONTEXT_MODIFIED_DELAY("method delay"),
-    // continuation of METHOD_DELAY from variable properties into field summaries
+    PROPAGATE_MODIFICATION_DELAY("propagate modification delay"),
 
+    // continuation of METHOD_DELAY from variable properties into field summaries
     SCOPE_DELAY("scope delay"),
 
     // only lives in change map

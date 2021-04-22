@@ -90,6 +90,17 @@ public class EvaluateParameters {
                     map.put(VariableProperty.CONTEXT_NOT_NULL, Level.FALSE);
                 }
                 {
+                    int propagate = map.getOrDefault(VariableProperty.PROPAGATE_MODIFICATION, Level.DELAY);
+                    if (propagate == Level.DELAY) {
+                        if (parameterInfo.owner.isAbstract() || recursiveOrPartOfCallCycle) {
+                            // we explicitly allow for a delay on CM, it triggers PROPAGATE_MODIFICATION; locally, it is non-modifying
+                            map.put(VariableProperty.PROPAGATE_MODIFICATION, Level.FALSE);
+                        } else {
+                            map.put(VariableProperty.PROPAGATE_MODIFICATION_DELAY, Level.TRUE);
+                        }
+                    }
+                }
+                {
                     int contextModified = map.getOrDefault(VariableProperty.CONTEXT_MODIFIED, Level.DELAY);
                     if (contextModified == Level.DELAY) {
                         if (parameterInfo.owner.isAbstract() || recursiveOrPartOfCallCycle) {
@@ -132,7 +143,7 @@ public class EvaluateParameters {
                 if (parameterValue instanceof IsVariableExpression veArg && scopeObject instanceof IsVariableExpression veScope) {
                     if (independent == Level.DELAY) {
                         builder.link1(veArg.variable(), null); // null indicates a delay
-                    } else if(independent == MultiLevel.DEPENDENT_1) {
+                    } else if (independent == MultiLevel.DEPENDENT_1) {
                         builder.link1(veArg.variable(), veScope.variable());
                     }
                 }

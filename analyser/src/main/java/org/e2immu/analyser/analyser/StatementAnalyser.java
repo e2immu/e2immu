@@ -744,7 +744,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 log(DELAYED, "Apply of {}, {} is delayed because of unknown value for {}",
                         index(), myMethodAnalyser.methodInfo.fullyQualifiedName, variable);
                 status = DELAYS;
-            } else if (changeData.haveContextMethodDelay()) {
+            } else if (changeData.haveContextMethodDelay() || changeData.havePropagationModificationDelay()) {
                 log(DELAYED, "Apply of {}, {} is delayed because of delay in method call on {}",
                         index(), myMethodAnalyser.methodInfo.fullyQualifiedName, variable);
                 status = DELAYS;
@@ -1100,7 +1100,13 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                             yield Level.DELAY;
                         }
                     }
-                    case CONTEXT_PROPAGATE_MOD -> maxAtLeastFalse(prev, change);
+                    case CONTEXT_PROPAGATE_MOD -> {
+                        if (changeData.getOrDefault(PROPAGATE_MODIFICATION_DELAY, Level.DELAY) != Level.TRUE && prev != Level.DELAY) {
+                            yield maxAtLeastFalse(prev, change);
+                        } else {
+                            yield Level.DELAY;
+                        }
+                    }
                     default -> throw new UnsupportedOperationException();
                 };
                 groupPropertyValues.set(k, variable, value);

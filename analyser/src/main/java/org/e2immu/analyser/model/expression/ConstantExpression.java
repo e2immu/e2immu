@@ -60,6 +60,7 @@ public interface ConstantExpression<T> extends Expression {
             case MODIFIED_METHOD:
             case NOT_MODIFIED_1:
             case CONTEXT_MODIFIED_DELAY:
+            case PROPAGATE_MODIFICATION_DELAY:
             case IGNORE_MODIFICATIONS:
             case IDENTITY:
                 return Level.FALSE;

@@ -929,7 +929,10 @@ public class FieldAnalyser extends AbstractAnalyser {
                     return variableInfo.getProperty(VariableProperty.CONTEXT_PROPAGATE_MOD);
                 })
                 .max().orElse(Level.FALSE);
-        assert max != Level.DELAY : "There should not be a delay after links have been established";
+        if (max == Level.DELAY) {
+            log(DELAYED, "{}: Still waiting on propagate modification", fieldInfo.fullyQualifiedName());
+            return DELAYS;
+        }
         fieldAnalysis.setProperty(VariableProperty.EXTERNAL_PROPAGATE_MOD, max);
         log(PROPAGATE_MODIFICATION, "Set PM of field {} to {}", fqn, max);
         return DONE;

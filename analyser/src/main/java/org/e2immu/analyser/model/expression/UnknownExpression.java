@@ -61,6 +61,7 @@ public record UnknownExpression(ParameterizedType parameterizedType, String msg)
                 return MultiLevel.NULLABLE;
             case CONTEXT_MODIFIED:
             case CONTEXT_MODIFIED_DELAY:
+            case PROPAGATE_MODIFICATION_DELAY:
             case IDENTITY:
                 return Level.FALSE;
         }
@@ -77,6 +78,7 @@ public record UnknownExpression(ParameterizedType parameterizedType, String msg)
                 return MultiLevel.EFFECTIVELY_NOT_NULL;
             case CONTEXT_MODIFIED:
             case CONTEXT_MODIFIED_DELAY:
+            case PROPAGATE_MODIFICATION_DELAY:
             case IDENTITY:
             case NOT_MODIFIED_1:
                 return Level.FALSE;

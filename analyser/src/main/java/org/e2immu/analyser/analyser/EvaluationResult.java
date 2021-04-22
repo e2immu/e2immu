@@ -146,6 +146,9 @@ public record EvaluationResult(EvaluationContext evaluationContext,
         public boolean haveContextMethodDelay() {
             return properties.getOrDefault(VariableProperty.CONTEXT_MODIFIED_DELAY, Level.DELAY) == Level.TRUE;
         }
+        public boolean havePropagationModificationDelay() {
+            return properties.getOrDefault(VariableProperty.PROPAGATE_MODIFICATION_DELAY, Level.DELAY) == Level.TRUE;
+        }
 
         public boolean haveDelaysCausedByMethodCalls() {
             return properties.getOrDefault(VariableProperty.SCOPE_DELAY, Level.DELAY) == Level.TRUE;
@@ -422,6 +425,10 @@ public record EvaluationResult(EvaluationContext evaluationContext,
 
         public void markContextModifiedDelay(Variable variable) {
             setProperty(variable, VariableProperty.CONTEXT_MODIFIED_DELAY, Level.TRUE);
+        }
+
+        public void markPropagateModificationDelay(Variable variable) {
+            setProperty(variable, VariableProperty.PROPAGATE_MODIFICATION_DELAY, Level.TRUE);
         }
 
         public void markContextNotNullDelay(Variable variable) {
