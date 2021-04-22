@@ -34,7 +34,7 @@ public class EventuallyNotNull2 {
     // this @E1Container becomes an eventually @E2Container when we restrict reInitialize to be called exactly once
     @E1Container
     static class EventuallyNotNull1Container {
-        @NotNull1(after = "assigned")
+        @NotNull1 //(after = "assigned")
         private final String[] strings;
 
         public EventuallyNotNull1Container(int n) {
@@ -61,7 +61,7 @@ public class EventuallyNotNull2 {
     }
 
     @E1Container
-    @NotNull2(after = "assigned") // the @NotNull and @NotNull1 are effective, @NotNull2 eventual
+    @NotNull2//(after = "assigned") // the @NotNull and @NotNull1 are effective, @NotNull2 eventual
     public final EventuallyNotNull1Container[] containers;
 
     public EventuallyNotNull2(int n, int m) {

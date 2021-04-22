@@ -52,7 +52,7 @@ public record MethodResolution(Set<MethodInfo> overrides,
                     isCreateObjectOfSelf(),
                     isStaticMethodCallsOnly(),
                     isAllowsInterrupts(),
-                    isIgnoreMeBecauseOfPartOfCallCycle.getOrElse(false));
+                    isIgnoreMeBecauseOfPartOfCallCycle.getOrDefault(false));
         }
 
         public final SetOnce<Set<MethodInfo>> overrides = new SetOnce<>();
@@ -79,7 +79,7 @@ public record MethodResolution(Set<MethodInfo> overrides,
         public final SetOnce<CallStatus> partOfConstruction = new SetOnce<>();
 
         public CallStatus getPartOfConstruction() {
-            return partOfConstruction.getOrElse(null);
+            return partOfConstruction.getOrDefaultNull();
         }
 
         // ************** VARIOUS ODDS AND ENDS
@@ -89,19 +89,19 @@ public record MethodResolution(Set<MethodInfo> overrides,
         // if true, the method has no (non-static) method calls on the "this" scope
 
         public boolean isCreateObjectOfSelf() {
-            return createObjectOfSelf.getOrElse(false);
+            return createObjectOfSelf.getOrDefault(false);
         }
 
         public final SetOnce<Boolean> staticMethodCallsOnly = new SetOnce<>();
 
         public boolean isStaticMethodCallsOnly() {
-            return staticMethodCallsOnly.getOrElse(false);
+            return staticMethodCallsOnly.getOrDefault(false);
         }
 
         public final SetOnce<Boolean> allowsInterrupts = new SetOnce<>();
 
         public boolean isAllowsInterrupts() {
-            return allowsInterrupts.getOrElse(true);
+            return allowsInterrupts.getOrDefault(true);
         }
 
         public final  SetOnce<Boolean> isIgnoreMeBecauseOfPartOfCallCycle = new SetOnce<>();

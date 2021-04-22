@@ -33,7 +33,7 @@ public class Finalizer_0 {
         return this;
     }
 
-    @Finalizer(contract = true)
+    @Finalizer
     public String done(String last) {
         return string + "; cnt = " + count + "; last = " + last;
     }

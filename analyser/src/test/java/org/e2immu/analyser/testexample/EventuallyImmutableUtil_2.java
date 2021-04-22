@@ -38,7 +38,7 @@ public class EventuallyImmutableUtil_2 {
 
     @NotModified
     public String getOrNull2() {
-        return value.getOrElse(null);
+        return value.getOrDefaultNull();
     }
 
     @Only(after = "value")

@@ -21,7 +21,7 @@ public class VariableProperties extends SetOnceMap<VariableProperty, Integer> {
     @Override
     public void put(VariableProperty variableProperty, Integer integer) {
         assert integer != null && integer >= 0; // not setting delays
-        Integer inMap = super.getOtherwiseNull(variableProperty);
+        Integer inMap = super.getOrDefaultNull(variableProperty);
         if (inMap == null) {
             super.put(variableProperty, integer);
         } else if (!inMap.equals(integer)) {

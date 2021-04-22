@@ -567,7 +567,7 @@ public class Resolver {
         if (methodInspection.getModifiers().contains(MethodModifier.PRIVATE)) {
             allowsInterrupt = methodsReached.stream().anyMatch(reached -> !reached.isPrivate() ||
                     methodInfo.methodResolution.isSet() && methodInfo.methodResolution.get().allowsInterrupts() ||
-                    builders.containsKey(reached) && builders.get(reached).allowsInterrupts.getOrElse(false));
+                    builders.containsKey(reached) && builders.get(reached).allowsInterrupts.getOrDefault(false));
             delays = methodsReached.stream().anyMatch(reached -> reached.isPrivate() &&
                     builders.containsKey(reached) &&
                     !builders.get(reached).allowsInterrupts.isSet());

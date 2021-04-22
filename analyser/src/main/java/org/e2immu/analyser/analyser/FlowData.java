@@ -125,7 +125,7 @@ public class FlowData {
 
     public Execution execution(Execution statementsExecution) {
         // combine with guaranteed to be reached in block
-        FlowData.Execution execution = guaranteedToBeReachedInMethod.getOrElse(Execution.DELAYED_EXECUTION);
+        FlowData.Execution execution = guaranteedToBeReachedInMethod.getOrDefault(Execution.DELAYED_EXECUTION);
         return execution.worst(statementsExecution);
     }
 
@@ -151,11 +151,11 @@ public class FlowData {
     }
 
     public Execution getGuaranteedToBeReachedInCurrentBlock() {
-        return guaranteedToBeReachedInCurrentBlock.getOrElse(Execution.DELAYED_EXECUTION);
+        return guaranteedToBeReachedInCurrentBlock.getOrDefault(Execution.DELAYED_EXECUTION);
     }
 
     public Execution getGuaranteedToBeReachedInMethod() {
-        return guaranteedToBeReachedInMethod.getOrElse(Execution.DELAYED_EXECUTION);
+        return guaranteedToBeReachedInMethod.getOrDefault(Execution.DELAYED_EXECUTION);
     }
 
     public boolean isUnreachable() {
@@ -163,7 +163,7 @@ public class FlowData {
     }
 
     public Map<InterruptsFlow, Execution> getInterruptsFlow() {
-        return interruptsFlow.getOrElse(null);
+        return interruptsFlow.getOrDefaultNull();
     }
 
     public boolean interruptsFlowIsSet() {
@@ -325,7 +325,7 @@ public class FlowData {
                 if (rejectInterrupt(statement, i)) {
                     builder.merge(i, e, (a, b) -> b.best(a));
                 }
-                Execution subAnalyserExecution = subAnalyser.statementAnalysis.flowData.blockExecution.getOrElse(Execution.DELAYED_EXECUTION);
+                Execution subAnalyserExecution = subAnalyser.statementAnalysis.flowData.blockExecution.getOrDefault(Execution.DELAYED_EXECUTION);
                 if (subAnalyserExecution == Execution.DELAYED_EXECUTION) {
                     log(Logger.LogTarget.DELAYED, "Delaying interrupts flow, received DELAYED_EXECUTION from sub statement {} execution",
                             subAnalyser.index());

@@ -77,7 +77,7 @@ public class Test_16_Modification extends CommonTestRunner {
 
         TypeMapVisitor typeMapVisitor = typeMap -> {
             TypeInfo set = typeMap.get(Set.class);
-            assertEquals(AnnotationMode.DEFENSIVE, set.typeInspection.get().annotationMode());
+            assertEquals(AnnotationMode.GREEN, set.typeInspection.get().annotationMode());
             MethodInfo add = set.findUniqueMethod("add", 1);
             assertEquals(Level.TRUE, add.methodAnalysis.get().getProperty(VariableProperty.MODIFIED_METHOD));
 

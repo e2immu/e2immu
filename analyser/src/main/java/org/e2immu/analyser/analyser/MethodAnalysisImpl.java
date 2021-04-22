@@ -179,7 +179,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
 
         @Override
         public Precondition getPrecondition() {
-            return precondition.getOrElse(null);
+            return precondition.getOrDefaultNull();
         }
 
         @Override
@@ -205,15 +205,15 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
         @Override
         public Analysis build() {
             return new MethodAnalysisImpl(methodInfo,
-                    firstStatement.getOrElse(null),
+                    firstStatement.getOrDefaultNull(),
                     getLastStatement(),
                     List.copyOf(parameterAnalyses.stream()
                             .map(parameterAnalysis -> parameterAnalysis instanceof ParameterAnalysisImpl.Builder builder ?
                                     (ParameterAnalysis) builder.build() : parameterAnalysis).collect(Collectors.toList())),
                     getSingleReturnValue(),
-                    preconditionForEventual.getOrElse(Optional.empty()).orElse(null),
-                    eventual.getOrElse(NOT_EVENTUAL),
-                    precondition.getOrElse(Precondition.empty(primitives)),
+                    preconditionForEventual.getOrDefault(Optional.empty()).orElse(null),
+                    eventual.getOrDefault(NOT_EVENTUAL),
+                    precondition.getOrDefault(Precondition.empty(primitives)),
                     properties.toImmutableMap(),
                     annotationChecks.toImmutableMap(),
                     getCompanionAnalyses(),
@@ -232,7 +232,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
 
         @Override
         public Expression getSingleReturnValue() {
-            return singleReturnValue.getOrElse(null);
+            return singleReturnValue.getOrDefaultNull();
         }
 
         @Override
@@ -337,7 +337,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
 
         @Override
         public StatementAnalysis getFirstStatement() {
-            return firstStatement.getOrElse(null);
+            return firstStatement.getOrDefaultNull();
         }
 
         @Override
@@ -348,18 +348,18 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
         @Override
         public StatementAnalysis getLastStatement() {
             // we're not "caching" it during analysis; it may change (?) over iterations
-            StatementAnalysis first = firstStatement.getOrElse(null);
+            StatementAnalysis first = firstStatement.getOrDefaultNull();
             return first == null ? null : first.lastStatement();
         }
 
         @Override
         public Precondition getPreconditionForEventual() {
-            return preconditionForEventual.getOrElse(Optional.empty()).orElse(null);
+            return preconditionForEventual.getOrDefault(Optional.empty()).orElse(null);
         }
 
         @Override
         public Eventual getEventual() {
-            return eventual.getOrElse(DELAYED_EVENTUAL);
+            return eventual.getOrDefault(DELAYED_EVENTUAL);
         }
 
         public void setFirstStatement(StatementAnalysis firstStatement) {

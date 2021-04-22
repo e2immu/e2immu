@@ -17,7 +17,7 @@ package org.e2immu.analyser.testexample;
 import org.e2immu.annotation.*;
 
 @E2Container
-@ExtensionClass(of = String.class)
+@ExtensionClass(of = String.class, absent = true) // because 1st parameter is @Nullable
 public class IfStatement_0 {
 
     @NotNull

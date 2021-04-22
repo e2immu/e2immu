@@ -81,7 +81,7 @@ public interface Analysis {
     Location location();
 
     default AnnotationMode annotationMode() {
-        return AnnotationMode.DEFENSIVE;
+        return AnnotationMode.GREEN;
     }
 
     default OutputBuilder peekIntoAnnotations(AnnotationExpression annotation, Set<TypeInfo> annotationsSeen) {

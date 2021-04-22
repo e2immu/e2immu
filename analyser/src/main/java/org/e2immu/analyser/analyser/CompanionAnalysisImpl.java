@@ -72,17 +72,17 @@ public class CompanionAnalysisImpl implements CompanionAnalysis {
 
         public CompanionAnalysis build() {
             return new CompanionAnalysisImpl(annotationType, value.get(), getPreAspectVariableValue(),
-                    List.copyOf(parameterValues.getOrElse(List.of())));
+                    List.copyOf(parameterValues.getOrDefault(List.of())));
         }
 
         @Override
         public List<Expression> getParameterValues() {
-            return parameterValues.getOrElse(null);
+            return parameterValues.getOrDefaultNull();
         }
 
         @Override
         public Expression getValue() {
-            return value.getOrElse(null);
+            return value.getOrDefaultNull();
         }
 
         @Override
@@ -92,7 +92,7 @@ public class CompanionAnalysisImpl implements CompanionAnalysis {
 
         @Override
         public Expression getPreAspectVariableValue() {
-            return preAspectVariableValue.getOrElse(null);
+            return preAspectVariableValue.getOrDefaultNull();
         }
     }
 }

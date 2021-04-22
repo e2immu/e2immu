@@ -42,7 +42,7 @@ public class Finalizer_1 {
         count++;
     }
 
-    @Finalizer(contract = true)
+    @Finalizer
     @E2Container
     public EventuallyFinal<String> done(String last) {
         eventuallyFinal.setFinal(last + "; tried " + count);

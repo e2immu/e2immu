@@ -31,6 +31,11 @@ public record PropertyWrapper(Expression expression,
                               Map<VariableProperty, Integer> properties) implements Expression, ExpressionWrapper {
 
     @Override
+    public Expression translate(TranslationMap translationMap) {
+        return new PropertyWrapper(expression.translate(translationMap), properties);
+    }
+
+    @Override
     public Expression getExpression() {
         return expression;
     }

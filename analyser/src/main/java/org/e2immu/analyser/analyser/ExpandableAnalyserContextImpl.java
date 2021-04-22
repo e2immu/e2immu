@@ -69,7 +69,7 @@ public class ExpandableAnalyserContextImpl implements AnalyserContext {
 
     @Override
     public MethodAnalyser getMethodAnalyser(MethodInfo methodInfo) {
-        MethodAnalyser ma = this.methodAnalysers.getOrDefault(methodInfo, null);
+        MethodAnalyser ma = this.methodAnalysers.getOrDefaultNull(methodInfo);
         if (ma == null) {
             return parent.getMethodAnalyser(methodInfo);
         }
@@ -78,14 +78,14 @@ public class ExpandableAnalyserContextImpl implements AnalyserContext {
 
     @Override
     public MethodAnalysis getMethodAnalysis(MethodInfo methodInfo) {
-        MethodAnalyser ma = this.methodAnalysers.getOrDefault(methodInfo, null);
+        MethodAnalyser ma = this.methodAnalysers.getOrDefaultNull(methodInfo);
         if (ma != null) return ma.methodAnalysis;
         return parent.getMethodAnalysis(methodInfo);
     }
 
     @Override
     public ParameterAnalyser getParameterAnalyser(ParameterInfo parameterInfo) {
-        ParameterAnalyser ma = this.parameterAnalysers.getOrDefault(parameterInfo, null);
+        ParameterAnalyser ma = this.parameterAnalysers.getOrDefaultNull(parameterInfo);
         if (ma == null) {
             return parent.getParameterAnalyser(parameterInfo);
         }
@@ -94,14 +94,14 @@ public class ExpandableAnalyserContextImpl implements AnalyserContext {
 
     @Override
     public ParameterAnalysis getParameterAnalysis(ParameterInfo parameterInfo) {
-        ParameterAnalyser pa = this.parameterAnalysers.getOrDefault(parameterInfo, null);
+        ParameterAnalyser pa = this.parameterAnalysers.getOrDefaultNull(parameterInfo);
         if (pa != null) return pa.parameterAnalysis;
         return getMethodAnalysis(parameterInfo.owner).getParameterAnalyses().get(parameterInfo.index);
     }
 
     @Override
     public TypeAnalyser getTypeAnalyser(TypeInfo typeInfo) {
-        TypeAnalyser ta = this.typeAnalysers.getOrDefault(typeInfo, null);
+        TypeAnalyser ta = this.typeAnalysers.getOrDefaultNull(typeInfo);
         if (ta == null) {
             return parent.getTypeAnalyser(typeInfo);
         }
@@ -110,7 +110,7 @@ public class ExpandableAnalyserContextImpl implements AnalyserContext {
 
     @Override
     public FieldAnalyser getFieldAnalyser(FieldInfo fieldInfo) {
-        FieldAnalyser fa = this.fieldAnalysers.getOrDefault(fieldInfo, null);
+        FieldAnalyser fa = this.fieldAnalysers.getOrDefaultNull(fieldInfo);
         if (fa == null) {
             return parent.getFieldAnalyser(fieldInfo);
         }
@@ -119,7 +119,7 @@ public class ExpandableAnalyserContextImpl implements AnalyserContext {
 
     @Override
     public TypeAnalysis getTypeAnalysis(TypeInfo typeInfo) {
-        TypeAnalyser ta = this.typeAnalysers.getOrDefault(typeInfo, null);
+        TypeAnalyser ta = this.typeAnalysers.getOrDefaultNull(typeInfo);
         if (ta != null) return ta.typeAnalysis;
         return parent.getTypeAnalysis(typeInfo);
     }
@@ -131,7 +131,7 @@ public class ExpandableAnalyserContextImpl implements AnalyserContext {
 
     @Override
     public FieldAnalysis getFieldAnalysis(FieldInfo fieldInfo) {
-        FieldAnalyser fa = this.fieldAnalysers.getOrDefault(fieldInfo, null);
+        FieldAnalyser fa = this.fieldAnalysers.getOrDefaultNull(fieldInfo);
         if (fa != null) return fa.fieldAnalysis;
         return parent.getFieldAnalysis(fieldInfo);
     }

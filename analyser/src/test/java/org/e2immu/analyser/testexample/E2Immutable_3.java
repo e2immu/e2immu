@@ -38,7 +38,6 @@ public class E2Immutable_3 {
     }
 
     @Identity
-    @Linked(absent = true)
     @Constant(absent = true)
     @NotNull
     public Set<String> mingle(@NotNull @Modified Set<String> input4) {

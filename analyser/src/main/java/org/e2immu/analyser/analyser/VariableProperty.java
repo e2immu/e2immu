@@ -114,6 +114,9 @@ public enum VariableProperty {
     MODIFIED_VARIABLE("@Modified variable", Level.FALSE, Level.TRUE, Level.TRUE, Level.FALSE),
     MODIFIED_OUTSIDE_METHOD("modified outside method"),
     CONTEXT_MODIFIED("modified in context"),
+    /**
+     * In green mode, @Modified is the default, in red mode @NotModified is.
+     */
     MODIFIED_METHOD("@Modified method", Level.FALSE, Level.TRUE, Level.TRUE, Level.FALSE),
     TEMP_MODIFIED_METHOD("@Modified method, temp", Level.FALSE, Level.TRUE, Level.TRUE, Level.FALSE),
 
@@ -154,6 +157,8 @@ public enum VariableProperty {
         propagation: same assignment takes place via methods to (field.add(parameter))
 
     INDEPENDENT_PARAMETER: on parameters, this one combines the value from linked1 fields, and _CONTEXT
+
+    @Dependent is the default in green mode, @Independent is the default in red mode.
      */,
     INDEPENDENT("@Independent", MultiLevel.DEPENDENT, MultiLevel.INDEPENDENT, MultiLevel.DEPENDENT, MultiLevel.INDEPENDENT),
     CONTEXT_DEPENDENT("context dependent", MultiLevel.DEPENDENT, MultiLevel.INDEPENDENT, MultiLevel.DEPENDENT, MultiLevel.INDEPENDENT),
@@ -162,8 +167,16 @@ public enum VariableProperty {
     /*
     group of more simple properties
      */
+
+    /**
+     * In green mode, @Variable is the default, in red mode, @Final is.
+     */
     FINAL("@Final", Level.FALSE, Level.TRUE, Level.FALSE, Level.TRUE),
     FINALIZER("@Finalizer"),
+
+    /**
+     * In green mode, @MutableModifiesArguments is the default, in red mode, @Container is.
+     */
     CONTAINER("@Container", Level.FALSE, Level.TRUE, Level.FALSE, Level.TRUE),
     CONSTANT("@Constant"),
     FLUENT("@Fluent"),
@@ -183,8 +196,8 @@ public enum VariableProperty {
     public final String name;
     public final int best;
     public final int falseValue;
-    private final int valueWhenAbsentInDefensiveMode;
-    private final int valueWhenAbsentInOffensiveMode;
+    private final int valueWhenAbsentInRedMode;
+    private final int valueWhenAbsentInGreenMode;
 
     VariableProperty(String name) {
         this(name, Level.FALSE, Level.TRUE, Level.FALSE, Level.FALSE);
@@ -193,13 +206,13 @@ public enum VariableProperty {
     VariableProperty(String name,
                      int falseValue,
                      int best,
-                     int valueWhenAbsentInDefensiveMode,
-                     int valueWhenAbsentInOffensiveMode) {
+                     int valueWhenAbsentInGreenMode,
+                     int valueWhenAbsentInRedMode) {
         this.name = name;
         this.best = best;
         this.falseValue = falseValue;
-        this.valueWhenAbsentInDefensiveMode = valueWhenAbsentInDefensiveMode;
-        this.valueWhenAbsentInOffensiveMode = valueWhenAbsentInOffensiveMode;
+        this.valueWhenAbsentInGreenMode = valueWhenAbsentInGreenMode;
+        this.valueWhenAbsentInRedMode = valueWhenAbsentInRedMode;
     }
 
     @Override
@@ -208,8 +221,8 @@ public enum VariableProperty {
     }
 
     public int valueWhenAbsent(AnnotationMode annotationMode) {
-        if (annotationMode == AnnotationMode.DEFENSIVE) return valueWhenAbsentInDefensiveMode;
-        if (annotationMode == AnnotationMode.OFFENSIVE) return valueWhenAbsentInOffensiveMode;
+        if (annotationMode == AnnotationMode.GREEN) return valueWhenAbsentInGreenMode;
+        if (annotationMode == AnnotationMode.RED) return valueWhenAbsentInRedMode;
         throw new UnsupportedOperationException();
     }
 

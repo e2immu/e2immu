@@ -75,7 +75,7 @@ public class TypeParameterImpl implements TypeParameter {
 
     @Override
     public Either<TypeInfo, MethodInfo> getOwner() {
-        return owner.getOrElse(null);
+        return owner.getOrDefaultNull();
     }
 
     @Override
@@ -85,7 +85,7 @@ public class TypeParameterImpl implements TypeParameter {
 
     @Override
     public List<ParameterizedType> getTypeBounds() {
-        return typeBounds.getOrElse(List.of());
+        return typeBounds.getOrDefault(List.of());
     }
 
     @Override

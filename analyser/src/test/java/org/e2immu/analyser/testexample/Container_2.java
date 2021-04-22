@@ -28,7 +28,6 @@ public class Container_2 {
     @Nullable
     private final Set<String> s;
 
-    @Modified
     public Container_2(@Modified Set<String> p) {
         this.s = p;
     }

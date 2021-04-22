@@ -1185,7 +1185,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
     public Expression initialValueOfReturnVariable(@NotNull Variable variable) {
         assert methodAnalysis.getMethodInfo().hasReturnValue();
         String fqn = variable.fullyQualifiedName();
-        VariableInfoContainer vic = variables.getOtherwiseNull(fqn);
+        VariableInfoContainer vic = variables.getOrDefaultNull(fqn);
         if (vic == null) {
             throw new IllegalArgumentException("Cannot find " + variable + " in " + index);
         }
@@ -1200,7 +1200,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
      */
     public VariableInfo findOrNull(@NotNull Variable variable, VariableInfoContainer.Level level) {
         String fqn = variable.fullyQualifiedName();
-        VariableInfoContainer vic = variables.getOtherwiseNull(fqn);
+        VariableInfoContainer vic = variables.getOrDefaultNull(fqn);
         if (vic == null) return null;
         return vic.best(level);
     }
@@ -1213,7 +1213,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
      */
     public VariableInfo findOrThrow(@NotNull Variable variable) {
         String fqn = variable.fullyQualifiedName();
-        VariableInfoContainer vic = variables.getOtherwiseNull(fqn);
+        VariableInfoContainer vic = variables.getOrDefaultNull(fqn);
         if (vic == null)
             throw new UnsupportedOperationException("Have not yet evaluated " + variable.fullyQualifiedName());
         return vic.current();

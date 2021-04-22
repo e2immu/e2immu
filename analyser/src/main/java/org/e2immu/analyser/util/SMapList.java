@@ -76,7 +76,6 @@ public class SMapList {
 
     @NotNull1
     @NotModified
-    @Linked(absent = true) // NULL_KEY is E2Immu
     @Constant(absent = true)
     public static <A, B> List<B> list(@NotNull @NotModified Map<A, List<B>> map, @NotNull A a) {
         if (a == null) {

@@ -31,7 +31,7 @@ import java.util.List;
 public class EventuallyNotNull1 {
 
     // effectively not null eventually content not null, but we cannot mark before or after
-    @NotNull1(after = "assigned")
+    @NotNull1//(after = "assigned")
     public final String[] strings;
 
     public EventuallyNotNull1(int n) {

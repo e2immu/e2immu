@@ -54,7 +54,7 @@ public class MethodLevelData {
     private final SetOnce<Boolean> callsPotentiallyCircularMethod = new SetOnce<>();
 
     public Boolean getCallsPotentiallyCircularMethod() {
-        return callsPotentiallyCircularMethod.getOrElse(null);
+        return callsPotentiallyCircularMethod.getOrDefaultNull();
     }
 
     public final SetOnceMap<MethodInfo, Boolean> copyModificationStatusFrom = new SetOnceMap<>();

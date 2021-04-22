@@ -100,7 +100,7 @@ class VariableInfoImpl implements VariableInfo {
 
     @Override
     public int getStatementTime() {
-        return statementTime.getOrElse(VariableInfoContainer.VARIABLE_FIELD_DELAY);
+        return statementTime.getOrDefault(VariableInfoContainer.VARIABLE_FIELD_DELAY);
     }
 
     @Override
@@ -120,7 +120,7 @@ class VariableInfoImpl implements VariableInfo {
 
     @Override
     public LinkedVariables getLinkedVariables() {
-        return linkedVariables.getOrElse(LinkedVariables.DELAY);
+        return linkedVariables.getOrDefault(LinkedVariables.DELAY);
     }
 
     @Override
@@ -169,7 +169,7 @@ class VariableInfoImpl implements VariableInfo {
 
     @Override
     public LinkedVariables getStaticallyAssignedVariables() {
-        return staticallyAssignedVariables.getOrElse(LinkedVariables.EMPTY);
+        return staticallyAssignedVariables.getOrDefault(LinkedVariables.EMPTY);
     }
 
     public boolean staticallyAssignedVariablesIsSet() {

@@ -152,7 +152,7 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
 
         @Override
         public Expression getInitialValue() {
-            return initialValue.getOrElse(null);
+            return initialValue.getOrDefaultNull();
         }
 
         @Override
@@ -195,32 +195,32 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
 
         @Override
         public Expression getEffectivelyFinalValue() {
-            Expression v = effectivelyFinalValue.getOrElse(null);
+            Expression v = effectivelyFinalValue.getOrDefaultNull();
             if (v != null && v.isUnknown()) return null;
             return v;
         }
 
         @Override
         public LinkedVariables getLinkedVariables() {
-            return linkedVariables.getOrElse(LinkedVariables.DELAY);
+            return linkedVariables.getOrDefault(LinkedVariables.DELAY);
         }
 
         @Override
         public LinkedVariables getLinked1Variables() {
-            return linked1Variables.getOrElse(LinkedVariables.DELAY);
+            return linked1Variables.getOrDefault(LinkedVariables.DELAY);
         }
 
         @Override
         public Boolean isOfImplicitlyImmutableDataType() {
-            return isOfImplicitlyImmutableDataType.getOrElse(null);
+            return isOfImplicitlyImmutableDataType.getOrDefaultNull();
         }
 
         @Override
         public Analysis build() {
             return new FieldAnalysisImpl(fieldInfo,
-                    isOfImplicitlyImmutableDataType.getOrElse(false),
-                    linkedVariables.getOrElse(LinkedVariables.EMPTY),
-                    linked1Variables.getOrElse(LinkedVariables.EMPTY),
+                    isOfImplicitlyImmutableDataType.getOrDefault(false),
+                    linkedVariables.getOrDefault(LinkedVariables.EMPTY),
+                    linked1Variables.getOrDefault(LinkedVariables.EMPTY),
                     getEffectivelyFinalValue(),
                     getInitialValue(),
                     properties.toImmutableMap(),

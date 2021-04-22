@@ -19,6 +19,7 @@ import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.*;
 
 import java.util.*;
+import java.util.stream.Stream;
 
 import static org.e2immu.analyser.inspector.TypeInspectionImpl.InspectionState.*;
 
@@ -312,18 +313,29 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
                     isSynthetic());
         }
 
-        private static final Set<String> OFFENSIVE_ANNOTATIONS = Set.of(
+        private static final Set<String> GREEN_MODE_ANNOTATIONS_ON_METHODS = Set.of(
                 Modified.class.getCanonicalName(),
-                Nullable.class.getCanonicalName(),
-                Dependent.class.getCanonicalName(),
-                MutableModifiesArguments.class.getCanonicalName(),
-                org.e2immu.annotation.Variable.class.getCanonicalName());
+                Dependent.class.getCanonicalName());
+        private static final Set<String> GREEN_MODE_ANNOTATIONS_ON_FIELDS = Set.of(
+                Variable.class.getCanonicalName());
+        private static final Set<String> GREEN_MODE_ANNOTATIONS_ON_TYPES = Set.of(
+                org.e2immu.annotation.MutableModifiesArguments.class.getCanonicalName());
 
         private AnnotationMode computeAnnotationMode() {
-            return annotations.stream()
-                    .filter(ae -> OFFENSIVE_ANNOTATIONS.contains(ae.typeInfo().fullyQualifiedName))
-                    .map(ae -> AnnotationMode.OFFENSIVE)
-                    .findFirst().orElse(AnnotationMode.DEFENSIVE);
+            boolean haveGreenModeAnnotation = methodsAndConstructors().stream()
+                    .filter(methodInfo -> methodInfo.methodInspection.isSet())
+                    .flatMap(methodInfo -> methodInfo.methodInspection.get().getAnnotations().stream())
+                    .anyMatch(ae -> GREEN_MODE_ANNOTATIONS_ON_METHODS.contains(ae.typeInfo().fullyQualifiedName)) ||
+                    fields().stream()
+                            .filter(fieldInfo -> fieldInfo.fieldInspection.isSet())
+                            .flatMap(fieldInfo -> fieldInfo.fieldInspection.get().getAnnotations().stream())
+                            .anyMatch(ae -> GREEN_MODE_ANNOTATIONS_ON_FIELDS.contains(ae.typeInfo().fullyQualifiedName)) ||
+                    Stream.concat(annotations.stream(), subTypes.stream()
+                            .filter(sub -> sub.typeInspection.isSet())
+                            .flatMap(sub -> sub.typeInspection.get().getAnnotations().stream()))
+                            .anyMatch(ae -> GREEN_MODE_ANNOTATIONS_ON_TYPES.contains(ae.typeInfo().fullyQualifiedName));
+
+            return haveGreenModeAnnotation ? AnnotationMode.RED : AnnotationMode.GREEN;
         }
 
         @Override

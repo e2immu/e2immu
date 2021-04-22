@@ -58,13 +58,11 @@ public class Modification_10 {
     }
 
     @NotModified
-    @Linked(to = {"NotModifiedChecks.list"})
     public Collection<String> getC0() {
         return c0;
     }
 
     // this is an extension function on Set
-    @Linked(absent = true) // primitive
     private static boolean addAll(@NotNull @Modified Set<String> c, @NotNull1 @NotModified Set<String> d) {
         return c.addAll(d);
     }

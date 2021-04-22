@@ -1132,6 +1132,28 @@ public class TypeAnalyser extends AbstractAnalyser {
                     commonTypeOfFirstParameter = null;
                     break;
                 }
+                int notNull;
+                if (methodInfo.hasReturnValue()) {
+                    if (parameters.isEmpty()) {
+                        MethodAnalysis methodAnalysis = analyserContext.getMethodAnalysis(methodInfo);
+                        notNull = methodAnalysis.getProperty(VariableProperty.NOT_NULL_EXPRESSION);
+                    } else {
+                        ParameterAnalysis p0 = analyserContext.getParameterAnalysis(parameters.get(0));
+                        notNull = p0.getProperty(VariableProperty.NOT_NULL_PARAMETER);
+                    }
+                    if (notNull == Level.DELAY) {
+                        log(DELAYED, "Delaying @ExtensionClass of {} until @NotNull of {} known", typeInfo.fullyQualifiedName,
+                                methodInfo.name);
+                        return DELAYS;
+                    }
+                    if (notNull < MultiLevel.EFFECTIVELY_NOT_NULL) {
+                        log(EXTENSION_CLASS, "Type {} is not an @ExtensionClass, method {} does not have either a " +
+                                        "@NotNull 1st parameter, or no parameters and returns @NotNull.", typeInfo.fullyQualifiedName,
+                                methodInfo.name);
+                        commonTypeOfFirstParameter = null;
+                        break;
+                    }
+                }
             }
         }
         boolean isExtensionClass = commonTypeOfFirstParameter != null && haveFirstParameter;

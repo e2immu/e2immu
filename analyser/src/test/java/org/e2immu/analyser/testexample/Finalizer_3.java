@@ -38,7 +38,7 @@ public class Finalizer_3 {
             System.out.println(data.toString());
         }
 
-        @Finalizer(contract = true)
+        @Finalizer
         @BeforeMark
         public EventuallyFinal<String> getData() {
             return data;

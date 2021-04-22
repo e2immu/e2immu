@@ -106,7 +106,7 @@ public class AnnotationUploader {
         }
         Map<String, List<String>> map = new HashMap<>(annotations(type, type.fullyQualifiedName, TYPE_SUFFIX));
 
-        TypeInspection inspection = type.typeInspection.getOrElse(null);
+        TypeInspection inspection = type.typeInspection.getOrDefaultNull();
         if (inspection == null) return map;
         inspection.methodsAndConstructors(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_ARTIFICIAL_SAM)
                 .forEach(methodInfo -> {

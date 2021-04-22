@@ -251,7 +251,7 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
 
         @Override
         public Set<ParameterizedType> getImplicitlyImmutableDataTypes() {
-            return implicitlyImmutableDataTypes.getOrElse(null);
+            return implicitlyImmutableDataTypes.getOrDefaultNull();
         }
 
         @Override

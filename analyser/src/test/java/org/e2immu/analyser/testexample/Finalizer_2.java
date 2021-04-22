@@ -43,7 +43,7 @@ public class Finalizer_2 {
         count++;
     }
 
-    @Finalizer(contract = true)
+    @Finalizer
     @BeforeMark
     public EventuallyFinal<String> done(String last) {
         eventuallyFinal.setVariable(last + "; tried " + count);

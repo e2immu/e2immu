@@ -47,7 +47,7 @@ public interface WithInspectionAndAnalysis {
             if (ap.contract()) return Optional.empty(); // DO NOTHING, CONTRACTED
         }
         Optional<Boolean> mustBeAbsent = optAp.map(AnnotationParameters::isVerifyAbsent);
-        Boolean actual = analysisBuilder.annotations.getOtherwiseNull(expression);
+        Boolean actual = analysisBuilder.annotations.getOrDefaultNull(expression);
         if (mustBeAbsent.isEmpty()) {
             analysisBuilder.annotationChecks.put(expression, actual == Boolean.TRUE ? Analysis.AnnotationCheck.COMPUTED :
                     Analysis.AnnotationCheck.OK_ABSENT);
