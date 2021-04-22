@@ -24,13 +24,15 @@ import java.util.Map;
 /*
 Test to catch a @Container going from 0 to 1 error in intelliJ highlighter
  */
-public interface Container_6 {
+public class Container_7 {
 
-    String XYZ = "xyz";
-    String ABC = "abc";
+    private static final String XYZ = "xyz";
+    private static final String ABC = "abc";
+    private static final int oneTwoThree = 123;
+    private static final int nineEightSeven = 987;
 
-    class Complex {
-        int i, j;
+    public class Complex {
+        final int i, j;
 
         public Complex(int i, int j) {
             this.i = i;
@@ -38,20 +40,19 @@ public interface Container_6 {
         }
     }
 
-    Complex oneTwoThree = new Complex(1, 23);
-    Complex nineEightSeven = new Complex(9, 87);
-
-    @E2Container
-    @NotNull
-    @NotModified
-    Map<String, Integer> MAP = Map.copyOf(new HashMap<>());
+    final Map<String, Integer> MAP = Map.copyOf(new HashMap<>());
 
     static <K, V> Map<K, V> put(Map<K, V> map, K k, V v) {
         map.put(k, v);
         return map;
     }
 
-    Map<String, Complex> MAP2 = Map.copyOf(put(put(new HashMap<>(), ABC, oneTwoThree), XYZ, nineEightSeven));
+    @E2Container
+    @NotNull
+    @NotModified
+    public final Map<String, Complex> MAP2 = Map.copyOf(put(put(new HashMap<>(), ABC, new Complex(oneTwoThree, nineEightSeven)),
+            XYZ, new Complex(1, 2)));
+
 }
 
 

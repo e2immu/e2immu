@@ -491,4 +491,12 @@ public class Test_17_Container extends CommonTestRunner {
                 .addTypeMapVisitor(typeMapVisitor)
                 .build());
     }
+
+
+    @Test
+    public void test_7() throws IOException {
+
+        testClass("Container_7", 0, 0, new DebugConfiguration.Builder()
+                .build());
+    }
 }

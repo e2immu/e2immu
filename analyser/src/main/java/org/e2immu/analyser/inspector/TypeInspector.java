@@ -148,9 +148,7 @@ public class TypeInspector {
             builder.setTypeNature(typeNature);
             if (enclosingTypeIsInterface) {
                 builder.addTypeModifier(TypeModifier.PUBLIC);
-                if (typeNature == TypeNature.INTERFACE) {
-                    builder.addTypeModifier(TypeModifier.STATIC);
-                }
+                builder.addTypeModifier(TypeModifier.STATIC);
             }
         }
         expressionContext.typeContext.addToContext(typeInfo);
