@@ -40,7 +40,7 @@ public class Test_Support_01_FlipSwitch extends CommonTestRunner {
     @Test
     public void test() throws IOException {
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
-            if ("t".equals(d.fieldInfo().name)) {
+            if ("isSet".equals(d.fieldInfo().name)) {
                 assertEquals(Level.FALSE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
                 String expectValue = "<variable value>";
                 assertEquals(expectValue, d.fieldAnalysis().getEffectivelyFinalValue().toString());
@@ -52,13 +52,13 @@ public class Test_Support_01_FlipSwitch extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("set".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof LocalVariableReference lvr &&
-                        lvr.variable.isLocalCopyOf() instanceof FieldReference fr && "t".equals(fr.fieldInfo.name)) {
-                    assertEquals("t$0", d.variableInfo().variable().simpleName());
-                    String expectAssigned = d.statementId().startsWith("0.0.0") ? "this.t" : "";
+                        lvr.variable.isLocalCopyOf() instanceof FieldReference fr && "isSet".equals(fr.fieldInfo.name)) {
+                    assertEquals("isSet$0", d.variableInfo().variable().simpleName());
+                    String expectAssigned = d.statementId().startsWith("0.0.0") ? "this.isSet" : "";
                     //assertEquals(expectAssigned, d.variableInfo().getStaticallyAssignedVariables().toString(),
                     //        "Statement " + d.statementId());
                 }
-                if (d.variable() instanceof FieldReference fr && "t".equals(fr.fieldInfo.name)) {
+                if (d.variable() instanceof FieldReference fr && "isSet".equals(fr.fieldInfo.name)) {
                     if ("0.0.0".equals(d.statementId())) {
                         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
                         assertEquals("", d.variableInfo().getStaticallyAssignedVariables().toString());
@@ -77,7 +77,7 @@ public class Test_Support_01_FlipSwitch extends CommonTestRunner {
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("FlipSwitch".equals(d.typeInfo().simpleName)) {
-                String expectE2 = d.iteration() <= 1 ? "{}" : "{t=!t}";
+                String expectE2 = d.iteration() <= 1 ? "{}" : "{isSet=!isSet}";
                 assertEquals(expectE2, d.typeAnalysis().getApprovedPreconditionsE2().toString());
             }
         };

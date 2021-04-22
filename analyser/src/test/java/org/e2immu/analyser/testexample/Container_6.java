@@ -21,6 +21,7 @@ import java.util.function.Consumer;
 
 public interface Container_6 {
 
+    @E2Container @NotNull @NotModified
     Map<String, Integer> MAP = Map.copyOf(new HashMap<>());
 }
 

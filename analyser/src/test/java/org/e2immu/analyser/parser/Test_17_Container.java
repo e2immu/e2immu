@@ -20,12 +20,14 @@ import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.visitor.*;
+import org.e2immu.annotation.AnnotationMode;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -470,11 +472,23 @@ public class Test_17_Container extends CommonTestRunner {
                 .build());
     }
 
-
-
     @Test
     public void test_6() throws IOException {
+
+        TypeMapVisitor typeMapVisitor = typeMap -> {
+            TypeInfo stream = typeMap.get(Stream.class);
+            assertEquals(AnnotationMode.GREEN, stream.typeInspection.get().annotationMode());
+            MethodInfo sorted = stream.findUniqueMethod("sorted", 0);
+            MethodAnalysis sortedAnalysis = sorted.methodAnalysis.get();
+            assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL,
+                    sorted.getAnalysis().getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+
+            // The type is an @E2Container, so @NotModified is implied; but it need not actually be present!!
+            assertEquals(Level.DELAY, sortedAnalysis.getProperty(VariableProperty.MODIFIED_METHOD));
+        };
+
         testClass("Container_6", 0, 0, new DebugConfiguration.Builder()
+                .addTypeMapVisitor(typeMapVisitor)
                 .build());
     }
 }

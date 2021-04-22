@@ -128,7 +128,9 @@ public class PrimaryTypeAnalyser implements AnalyserContext, Analyser, HoldsAnal
                 analyser = methodAnalysers.get(mfs);
             } else if (mfs instanceof TypeInfo) {
                 analyser = typeAnalysers.get(mfs);
-            } else throw new UnsupportedOperationException("have "+mfs);
+            } else {
+                throw new UnsupportedOperationException("have "+mfs);
+            }
             return analyser == null ? Stream.empty() : Stream.of(analyser);
         }).collect(Collectors.toList());
         fieldAnalysers = Map.copyOf(fieldAnalysersBuilder);
