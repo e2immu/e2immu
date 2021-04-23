@@ -880,7 +880,8 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
                     methodInfo.fullyQualifiedName(), fieldsWithContentModifications);
         }
         if (!isModified && !methodInfo.methodInspection.get().isStatic()) {
-            int thisModified = getThisAsVariable().getProperty(VariableProperty.CONTEXT_MODIFIED);
+            VariableInfo thisVariable = getThisAsVariable();
+            int thisModified = thisVariable.getProperty(VariableProperty.CONTEXT_MODIFIED);
             if (thisModified == Level.DELAY) {
                 log(DELAYED, "In {}: other local methods are called, but no idea if they are @NotModified yet, delaying",
                         methodInfo.distinguishingName());
@@ -1154,7 +1155,9 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
     }
 
     public VariableInfo getThisAsVariable() {
-        return methodAnalysis.getLastStatement().getLatestVariableInfo(methodInfo.typeInfo.fullyQualifiedName + ".this");
+        StatementAnalysis last = methodAnalysis.getLastStatement();
+        if (last == null) return null;
+        return last.getLatestVariableInfo(methodInfo.typeInfo.fullyQualifiedName + ".this");
     }
 
     public VariableInfo getReturnAsVariable() {

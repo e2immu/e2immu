@@ -839,6 +839,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         }
 
         addToMap(groupPropertyValues, CONTEXT_MODIFIED, x -> Level.FALSE, true);
+        importContextModifiedValuesForThisFromSubTypes(groupPropertyValues.getMap(CONTEXT_MODIFIED));
         // we add the linked variables on top of the statically assigned variables
         AnalysisStatus cmStatus = contextPropertyWriter4.write(statementAnalysis, sharedState.evaluationContext,
                 VariableInfo::getLinkedVariables,
@@ -898,6 +899,24 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
 
         return new ApplyStatusAndEnnStatus(status, ennStatus.combine(extImmStatus
                 .combine(cImmStatus.combine(immutableAtAssignment))));
+    }
+
+    private static final int SUB_CM_NOT_PRESENT = -2;
+
+    private void importContextModifiedValuesForThisFromSubTypes(Map<Variable, Integer> map) {
+        int bestInSub = localAnalysers.get().stream()
+                .flatMap(PrimaryTypeAnalyser::methodAnalyserStream)
+                .map(MethodAnalyser::getThisAsVariable)
+                .filter(Objects::nonNull)
+                .mapToInt(variableInfo -> variableInfo.getProperty(CONTEXT_MODIFIED))
+                .max().orElse(SUB_CM_NOT_PRESENT);
+        if (bestInSub > SUB_CM_NOT_PRESENT) {
+            Variable thisVar = new This(analyserContext, myMethodAnalyser.methodInfo.typeInfo);
+            int myValue = map.getOrDefault(thisVar, Level.DELAY);
+            int merged = myValue == Level.DELAY || bestInSub == Level.DELAY ? Level.DELAY :
+                    Math.max(myValue, bestInSub);
+            map.put(thisVar, merged);
+        }
     }
 
     private void checkPreconditionCompatibilityWithConditionManager(EvaluationContext evaluationContext,

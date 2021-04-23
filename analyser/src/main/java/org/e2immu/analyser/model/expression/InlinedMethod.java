@@ -28,7 +28,8 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Predicate;
 
-import static org.e2immu.analyser.analyser.VariableProperty.*;
+import static org.e2immu.analyser.analyser.VariableProperty.INDEPENDENT;
+import static org.e2immu.analyser.analyser.VariableProperty.MODIFIED_METHOD;
 
 /*
  can only be created as the single result value of a method
@@ -108,13 +109,13 @@ public record InlinedMethod(MethodInfo methodInfo, Expression expression,
 
     @Override
     public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty, boolean duringEvaluation) {
-        if (METHOD_PROPERTIES_IN_INLINE_SAM.contains(variableProperty)) {
-            return evaluationContext.getAnalyserContext().getMethodAnalysis(methodInfo).getProperty(variableProperty);
-        }
-        if(NOT_NULL_EXPRESSION.equals(variableProperty)) {
-            return MultiLevel.EFFECTIVELY_NOT_NULL;
-        }
-        return evaluationContext.getProperty(expression, variableProperty, duringEvaluation, false);
+        return switch (variableProperty) {
+            case MODIFIED_METHOD, INDEPENDENT -> evaluationContext.getAnalyserContext()
+                    .getMethodAnalysis(methodInfo).getProperty(variableProperty);
+            case NOT_NULL_EXPRESSION -> MultiLevel.EFFECTIVELY_NOT_NULL;
+            case IMMUTABLE -> MultiLevel.EFFECTIVELY_E2IMMUTABLE; // a method is immutable
+            default -> evaluationContext.getProperty(expression, variableProperty, duringEvaluation, false);
+        };
     }
 
     @Override

@@ -94,7 +94,7 @@ public class UpgradableBooleanMap<T> {
     }
 
     private UpgradableBooleanMap<T> putAll(UpgradableBooleanMap<T> other) {
-        other.stream().forEach(e -> put(e.getKey(), e.getValue()));
+        other.stream().forEach(e -> this.put(e.getKey(), e.getValue()));
         return this;
     }
 

@@ -498,8 +498,10 @@ public class JavaUtil extends AnnotatedAPI {
         void forEach(@NotNull @PropagateModification BiConsumer<? super K, ? super V> action) { }
 
         @NotModified
-        //@Independent implicit!
-        V get(Object key) { return null; }
+        V get(@NotNull Object key) { return null; }
+
+        @NotModified
+        V getOrDefault(@NotNull Object key, V defaultValue) { return null; }
 
         @Modified
         V put(@NotNull K key, @NotNull V value) { return null; }

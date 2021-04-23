@@ -30,7 +30,7 @@ public interface Container_6 {
     String ABC = "abc";
 
     class Complex {
-        int i, j;
+        final int i, j;
 
         public Complex(int i, int j) {
             this.i = i;

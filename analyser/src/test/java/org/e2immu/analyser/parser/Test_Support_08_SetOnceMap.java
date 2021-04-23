@@ -13,14 +13,13 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parserfailing;
+package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.LinkedVariables;
 import org.e2immu.analyser.analyser.VariableProperty;
-import org.e2immu.analyser.config.*;
+import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.variable.FieldReference;
-import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
 
@@ -32,9 +31,9 @@ import java.util.stream.Collectors;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class Test_Support_07_SetOnceMap extends CommonTestRunner {
+public class Test_Support_08_SetOnceMap extends CommonTestRunner {
 
-    public Test_Support_07_SetOnceMap() {
+    public Test_Support_08_SetOnceMap() {
         super(true);
     }
 
@@ -42,8 +41,9 @@ public class Test_Support_07_SetOnceMap extends CommonTestRunner {
     public void test() throws IOException {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("SetOnceMap".equals(d.typeInfo().simpleName)) {
-                assertEquals("Type param K, Type param V", d.typeAnalysis().getImplicitlyImmutableDataTypes()
-                        .stream().map(ParameterizedType::toString).sorted().collect(Collectors.joining(", ")));
+                assertEquals("Type java.util.function.Function<K,V>, Type param K, Type param V",
+                        d.typeAnalysis().getImplicitlyImmutableDataTypes().stream()
+                                .map(ParameterizedType::toString).sorted().collect(Collectors.joining(", ")));
                 int expectContainer = d.iteration() <= 3 ? Level.DELAY : Level.TRUE;
                 assertEquals(expectContainer, d.typeAnalysis().getProperty(VariableProperty.CONTAINER));
             }
@@ -52,8 +52,12 @@ public class Test_Support_07_SetOnceMap extends CommonTestRunner {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("put".equals(d.methodInfo().name)) {
                 if ("3.0.0".equals(d.statementId())) {
-                    String expect = d.iteration() <= 1 ? "<precondition>" : "!map.containsKey(k)";
-                    assertEquals(expect, d.statementAnalysis().stateData.getPrecondition().toString());
+                    String expect = switch (d.iteration()) {
+                        case 0 -> "!<m:isSet>";
+                        case 1 -> "!<m:containsKey>";
+                        default -> "!map.containsKey(k)";
+                    };
+                    assertEquals(expect, d.statementAnalysis().stateData.getPrecondition().expression().toString());
                     assertEquals(d.iteration() >= 3,
                             d.statementAnalysis().methodLevelData.linksHaveBeenEstablished.isSet());
                 }
@@ -202,14 +206,15 @@ public class Test_Support_07_SetOnceMap extends CommonTestRunner {
             }
         };
 
-        testSupportClass(List.of("SetOnceMap", "Freezable"), 0, 0, new DebugConfiguration.Builder()
-                .addTypeMapVisitor(typeMapVisitor)
-                .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
-                .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                .build());
+        testSupportClass(List.of("SetOnceMap", "Freezable"), 0, 2,
+                new DebugConfiguration.Builder()
+                        .addTypeMapVisitor(typeMapVisitor)
+                        .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
+                        .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                        .build());
     }
 
 }
