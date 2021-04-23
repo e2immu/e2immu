@@ -38,62 +38,143 @@ public class Logger {
     }
 
     public enum LogTarget {
+        /**
+         * Composing the configuration
+         */
         CONFIGURATION,
 
-        BYTECODE_INSPECTOR,
-        BYTECODE_INSPECTOR_DEBUG,
-        ANNOTATION_XML_READER,
-        ANNOTATION_XML_WRITER,
-        ANNOTATED_API_WRITER,
-
-        OUTPUT,
-
-        LAMBDA,      // understanding a lambda
-        METHOD_CALL, // understanding a method call
-        RESOLVE,     // parsing of method bodies
-        CONTEXT,     // expression context
-        VARIABLE_PROPERTIES,
-
-        DELAYED,
-        COMPANION,
-        LINKED_VARIABLES, DEBUG_LINKED_VARIABLES,
-        INDEPENDENT,
-        DEBUG_MODIFY_CONTENT,
-        E1IMMUTABLE,
-        CONTAINER,
-        E2IMMUTABLE,
-        UTILITY_CLASS,
-        EXTENSION_CLASS,
-        NOT_MODIFIED,
-        CONSTANT,
-        NOT_NULL, NOT_NULL_DEBUG,
-        FLUENT,
-        IDENTITY,
-        FINAL,
-        ASSIGNMENT,
-        SINGLETON,
-        CNF,
-        DYNAMIC,
-        PROPAGATE_MODIFICATION,
-        PATTERN,
-
-        INSPECT,
-        ANALYSER,    // main analyser info
-        DEFAULT,
-
+        /**
+         * Logger in Resources: loading from jars and class files
+         */
         RESOURCES,
+
+        /**
+         * Primary byte code inspector logger
+         */
+        BYTECODE_INSPECTOR,
+
+        /**
+         * Extra byte code inspector logger (fine debug level)
+         */
+        BYTECODE_INSPECTOR_DEBUG,
+
+        /**
+         * Logger of annotation XML reader
+         */
+        ANNOTATION_XML_READER,
+
+        /**
+         * Main inspector logger
+         */
+        INSPECTOR,
+
+        /**
+         * Main resolver logger
+         */
+        RESOLVER,
+
+        /**
+         * fine debug level in expressions
+         */
+        EXPRESSION,
+
+        /**
+         * Main analyser logger
+         */
+        ANALYSER,
+
+        /**
+         * Upload annotations to annotation store
+         */
         UPLOAD,
 
+        /**
+         * Output the source code at the end of RunAnalyser
+         */
+        OUTPUT,
 
-        ANNOTATION_EXPRESSION,
-        MERGE_ANNOTATIONS,
+        /**
+         * Logger of annotation xml writer
+         */
+        ANNOTATION_XML_WRITER,
 
-        STATIC_METHOD_CALLS,
+        /**
+         * Logger of annotated API composer
+         */
+        ANNOTATED_API_WRITER,
 
-        MARK,
-        OBJECT_FLOW,
+        /* ************************ part of the inspection system ************************ */
 
-        TRANSFORM,
+        EXPRESSION_CONTEXT,
+        LAMBDA,
+        METHOD_CALL,
+
+        /* ************************ part of the analysis system ************************ */
+
+        /**
+         * probably most important debugging help: why is something delayed?
+         * Cross-cuts all analyser aspects: all delays use this logger.
+         */
+        DELAYED,
+
+        /**
+         * analysis of companion methods
+         */
+        COMPANION,
+
+        /**
+         * debug logger for all things immutable (_LOG so no clash with variable property)
+         */
+        IMMUTABLE_LOG,
+
+        /**
+         * debug logger for eventual immutability
+         */
+        EVENTUALLY,
+
+        /**
+         * debug logger for method analyser specifics @Identity, @Fluent
+         */
+        METHOD_ANALYSER,
+
+        /**
+         * debug logger for final fields and their value
+         */
+        FINAL,
+
+        /**
+         * debug logger for everything @Independent, @Dependent
+         */
+        INDEPENDENCE,
+
+        /**
+         * debug logger for variable linking
+         */
+        LINKED_VARIABLES,
+
+        /**
+         * debug logger for @NotModified, @Modified
+         */
+        MODIFICATION,
+        /**
+         * debug logger for context modification (@PropagateModification,
+         * Modified1, @NotModified1, @Dependent1, ...)
+         */
+        CONTEXT_MODIFICATION,
+        /**
+         * debug logger for everything @NotNull
+         */
+        NOT_NULL,
+        /**
+         * debug logger for condition, state, precondition
+         */
+        PRECONDITION,
+
+        /**
+         * debug logger for the type analyser; general topics such as
+         * utility class, extension class, singleton
+         */
+        TYPE_ANALYSER,
     }
 
     private Logger() {

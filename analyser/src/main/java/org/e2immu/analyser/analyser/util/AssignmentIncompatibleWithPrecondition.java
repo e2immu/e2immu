@@ -30,7 +30,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import static org.e2immu.analyser.util.Logger.LogTarget.MARK;
+import static org.e2immu.analyser.util.Logger.LogTarget.EVENTUALLY;
 import static org.e2immu.analyser.util.Logger.log;
 
 public class AssignmentIncompatibleWithPrecondition {
@@ -58,7 +58,7 @@ public class AssignmentIncompatibleWithPrecondition {
                 if (assigned) {
                     Expression pcExpression = precondition.expression();
                     String index = VariableInfoContainer.statementId(variableInfo.getAssignmentId());
-                    log(MARK, "Field {} is assigned in {}, {}", variable.fullyQualifiedName(),
+                    log(EVENTUALLY, "Field {} is assigned in {}, {}", variable.fullyQualifiedName(),
                             methodAnalyser.methodInfo.distinguishingName(), index);
 
                     StatementAnalyser statementAnalyser = methodAnalyser.findStatementAnalyser(index);

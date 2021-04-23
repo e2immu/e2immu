@@ -32,7 +32,7 @@ public class TestCommonType {
 
     @BeforeAll
     public static void beforeClass() throws IOException {
-        org.e2immu.analyser.util.Logger.activate(Logger.LogTarget.INSPECT, Logger.LogTarget.BYTECODE_INSPECTOR);
+        org.e2immu.analyser.util.Logger.activate(Logger.LogTarget.INSPECTOR, Logger.LogTarget.BYTECODE_INSPECTOR);
         Parser parser = new Parser();
         typeContext = parser.getTypeContext();
         primitives = typeContext.getPrimitives();

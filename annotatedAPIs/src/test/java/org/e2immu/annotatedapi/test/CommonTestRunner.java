@@ -61,7 +61,7 @@ public abstract class CommonTestRunner {
                 .setAnnotationXmConfiguration(axc)
                 .setUploadConfiguration(new UploadConfiguration.Builder()
                         .setUpload(true).build())
-                .addDebugLogTargets(INSPECT + "," + ANALYSER + "," + CONFIGURATION)
+                .addDebugLogTargets(INSPECTOR + "," + ANALYSER + "," + CONFIGURATION)
                 .build();
 
         configuration.initializeLoggers();

@@ -33,7 +33,7 @@ import static org.e2immu.analyser.util.Logger.LogTarget.*;
 import static org.e2immu.analyser.util.Logger.log;
 
 public class AnalyserTask extends ConventionTask {
-    private static final Set<LogTarget> DEBUG_TARGETS = Set.of(CONFIGURATION, BYTECODE_INSPECTOR, INSPECT, ANALYSER, UPLOAD);
+    private static final Set<LogTarget> DEBUG_TARGETS = Set.of(CONFIGURATION, BYTECODE_INSPECTOR, INSPECTOR, ANALYSER, UPLOAD);
 
     private static final Logger LOGGER = Logging.getLogger(AnalyserTask.class);
     private Map<String, String> analyserProperties;

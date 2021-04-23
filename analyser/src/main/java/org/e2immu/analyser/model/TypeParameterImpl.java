@@ -29,7 +29,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
-import static org.e2immu.analyser.util.Logger.LogTarget.INSPECT;
+import static org.e2immu.analyser.util.Logger.LogTarget.INSPECTOR;
 import static org.e2immu.analyser.util.Logger.log;
 
 public class TypeParameterImpl implements TypeParameter {
@@ -122,7 +122,7 @@ public class TypeParameterImpl implements TypeParameter {
     public void inspect(TypeContext typeContext, com.github.javaparser.ast.type.TypeParameter typeParameter) {
         List<ParameterizedType> typeBounds = new ArrayList<>();
         typeParameter.getTypeBound().forEach(cit -> {
-            log(INSPECT, "Inspecting type parameter {}", cit.getName().asString());
+            log(INSPECTOR, "Inspecting type parameter {}", cit.getName().asString());
             ParameterizedType bound = ParameterizedTypeFactory.from(typeContext, cit);
             typeBounds.add(bound);
         });

@@ -35,7 +35,7 @@ import java.util.Set;
 import java.util.function.Predicate;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.LINKED_VARIABLES;
-import static org.e2immu.analyser.util.Logger.LogTarget.VARIABLE_PROPERTIES;
+import static org.e2immu.analyser.util.Logger.LogTarget.EXPRESSION;
 import static org.e2immu.analyser.util.Logger.log;
 
 public class Assignment implements Expression {
@@ -194,7 +194,7 @@ public class Assignment implements Expression {
                 variableValue.variable() instanceof DependentVariable
                 ? variableValue.variable() : variableTarget;
 
-        log(VARIABLE_PROPERTIES, "Assignment: {} = {}", newVariableTarget.fullyQualifiedName(), value);
+        log(EXPRESSION, "Assignment: {} = {}", newVariableTarget.fullyQualifiedName(), value);
 
         Expression resultOfExpression;
         Expression assignedToTarget;

@@ -19,7 +19,7 @@ import org.e2immu.analyser.inspector.MethodInspectionImpl;
 import org.e2immu.analyser.model.CompanionMethodName;
 import org.e2immu.analyser.model.TypeInfo;
 
-import static org.e2immu.analyser.util.Logger.LogTarget.COMPANION;
+import static org.e2immu.analyser.util.Logger.LogTarget.BYTECODE_INSPECTOR_DEBUG;
 import static org.e2immu.analyser.util.Logger.log;
 
 /*
@@ -41,7 +41,7 @@ public class CreateCompanionMethod {
 
         String name = companionMethod.name.substring(0, companionMethod.name.indexOf('('));
         CompanionMethodName companionMethodName = CompanionMethodName.extract(name);
-        log(COMPANION, "Extracted {}", companionMethodName);
+        log(BYTECODE_INSPECTOR_DEBUG, "Extracted {}", companionMethodName);
 
         MethodInspectionImpl.Builder companionBuilder = new MethodInspectionImpl.Builder(currentType, name);
         companionBuilder.setStatic(true);

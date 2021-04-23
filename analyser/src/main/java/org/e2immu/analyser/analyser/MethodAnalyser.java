@@ -48,9 +48,6 @@ import static org.e2immu.analyser.analyser.AnalysisStatus.DONE;
 import static org.e2immu.analyser.analyser.VariableProperty.CONTAINER;
 import static org.e2immu.analyser.analyser.VariableProperty.IDENTITY;
 import static org.e2immu.analyser.analyser.VariableProperty.*;
-import static org.e2immu.analyser.util.Logger.LogTarget.CONSTANT;
-import static org.e2immu.analyser.util.Logger.LogTarget.FLUENT;
-import static org.e2immu.analyser.util.Logger.LogTarget.INDEPENDENT;
 import static org.e2immu.analyser.util.Logger.LogTarget.*;
 import static org.e2immu.analyser.util.Logger.isLogEnabled;
 import static org.e2immu.analyser.util.Logger.log;
@@ -404,7 +401,7 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
             return DONE;
         }
 
-        log(MARK, "Marking {} with only data {}", methodInfo.distinguishingName(), eventual);
+        log(EVENTUALLY, "Marking {} with only data {}", methodInfo.distinguishingName(), eventual);
         AnnotationExpression annotation = detectEventual.makeAnnotation(eventual);
         methodAnalysis.annotations.put(annotation, true);
         return DONE;
@@ -487,7 +484,7 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
 
             ParameterizedType parentClass = typeInfo.typeInspection.get().parentClass();
             if (Primitives.isJavaLangObject(parentClass)) {
-                log(MARK, "No eventual annotation in {}: found no non-final fields", methodInfo.distinguishingName());
+                log(EVENTUALLY, "No eventual annotation in {}: found no non-final fields", methodInfo.distinguishingName());
                 methodAnalysis.preconditionForEventual.set(Optional.empty());
                 return DONE;
             }
@@ -535,7 +532,7 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
                     }
                 }
             }
-            log(MARK, "No @Mark @Only annotation in {} from precondition, found {} from assignment",
+            log(EVENTUALLY, "No @Mark @Only annotation in {} from precondition, found {} from assignment",
                     methodInfo.distinguishingName(), combinedPrecondition);
             methodAnalysis.preconditionForEventual.set(Optional.ofNullable(combinedPrecondition));
             return DONE;
@@ -545,13 +542,13 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
         Filter.FilterResult<FieldReference> filterResult = filter.filter(precondition.expression(),
                 filter.individualFieldClause(analyserContext));
         if (filterResult.accepted().isEmpty()) {
-            log(MARK, "No @Mark/@Only annotation in {}: found no individual field preconditions",
+            log(EVENTUALLY, "No @Mark/@Only annotation in {}: found no individual field preconditions",
                     methodInfo.distinguishingName());
             methodAnalysis.preconditionForEventual.set(Optional.empty());
             return DONE;
         }
         Expression[] preconditionExpressions = filterResult.accepted().values().toArray(Expression[]::new);
-        log(MARK, "Did prep work for @Only, @Mark, found precondition on variables {} in {}", precondition,
+        log(EVENTUALLY, "Did prep work for @Only, @Mark, found precondition on variables {} in {}", precondition,
                 filterResult.accepted().keySet(), methodInfo.distinguishingName());
 
         Expression and = new And(sharedState.evaluationContext().getPrimitives()).append(sharedState.evaluationContext,
@@ -661,13 +658,13 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
             methodAnalysis.annotations.put(e2.constant, false);
         }
         methodAnalysis.setProperty(VariableProperty.CONSTANT, Level.fromBool(isConstant));
-        log(CONSTANT, "Mark method {} as @Constant? {}", methodInfo.fullyQualifiedName(), isConstant);
+        log(METHOD_ANALYSER, "Mark method {} as @Constant? {}", methodInfo.fullyQualifiedName(), isConstant);
 
         boolean isFluent = valueBeforeInlining instanceof VariableExpression vv &&
                 vv.variable() instanceof This thisVar &&
                 thisVar.typeInfo == methodInfo.typeInfo;
         methodAnalysis.setProperty(VariableProperty.FLUENT, Level.fromBool(isFluent));
-        log(FLUENT, "Mark method {} as @Fluent? {}", methodInfo.fullyQualifiedName(), isFluent);
+        log(METHOD_ANALYSER, "Mark method {} as @Fluent? {}", methodInfo.fullyQualifiedName(), isFluent);
 
         for (VariableProperty variableProperty : READ_FROM_RETURN_VALUE_PROPERTIES) {
             int v = variableInfo.getProperty(variableProperty);
@@ -709,7 +706,7 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
             return DELAYS;
         }
         methodAnalysis.setProperty(IMMUTABLE, immutable);
-        log(E2IMMUTABLE, "Set @Immutable to {} on {}", immutable, methodInfo.fullyQualifiedName);
+        log(IMMUTABLE_LOG, "Set @Immutable to {} on {}", immutable, methodInfo.fullyQualifiedName);
         return DONE;
     }
 
@@ -854,7 +851,7 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
                 .filter(vi -> vi.variable() instanceof FieldReference)
                 .anyMatch(VariableInfo::isAssigned);
         if (fieldAssignments) {
-            log(NOT_MODIFIED, "Method {} is @Modified: fields are being assigned", methodInfo.distinguishingName());
+            log(MODIFICATION, "Method {} is @Modified: fields are being assigned", methodInfo.distinguishingName());
             methodAnalysis.setProperty(variableProperty, Level.TRUE);
             return DONE;
         }
@@ -870,13 +867,13 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
         boolean isModified = methodAnalysis.getLastStatement().variableStream()
                 .filter(vi -> vi.variable() instanceof FieldReference)
                 .anyMatch(vi -> vi.getProperty(VariableProperty.CONTEXT_MODIFIED) == Level.TRUE);
-        if (isModified && isLogEnabled(NOT_MODIFIED)) {
+        if (isModified && isLogEnabled(MODIFICATION)) {
             List<String> fieldsWithContentModifications =
                     methodAnalysis.getLastStatement().variableStream()
                             .filter(vi -> vi.variable() instanceof FieldReference)
                             .filter(vi -> vi.getProperty(VariableProperty.CONTEXT_MODIFIED) == Level.TRUE)
                             .map(VariableInfo::name).collect(Collectors.toList());
-            log(NOT_MODIFIED, "Method {} cannot be @NotModified: some fields have content modifications: {}",
+            log(MODIFICATION, "Method {} cannot be @NotModified: some fields have content modifications: {}",
                     methodInfo.fullyQualifiedName(), fieldsWithContentModifications);
         }
         if (!isModified && !methodInfo.methodInspection.get().isStatic()) {
@@ -888,7 +885,7 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
                 return DELAYS;
             }
             isModified = thisModified == Level.TRUE;
-            log(NOT_MODIFIED, "Mark method {} as {}", methodInfo.distinguishingName(),
+            log(MODIFICATION, "Mark method {} as {}", methodInfo.distinguishingName(),
                     isModified ? "@Modified" : "@NotModified");
         } // else: already true, so no need to look at this
 
@@ -1027,7 +1024,7 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
 
         int independent = Math.min(parametersIndependentOfFields, returnObjectIsIndependent);
         methodAnalysis.setProperty(VariableProperty.INDEPENDENT, independent);
-        log(INDEPENDENT, "Mark method/constructor {} @Independent {}",
+        log(INDEPENDENCE, "Mark method/constructor {} @Independent {}",
                 methodInfo.fullyQualifiedName(), independent);
         return DONE;
     }
@@ -1096,7 +1093,7 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
             return Level.DELAY;
         }
         if (immutable >= MultiLevel.EVENTUALLY_E2IMMUTABLE_AFTER_MARK) {
-            log(INDEPENDENT, "Method {} is independent, formal return type is E2Immutable", methodInfo.distinguishingName());
+            log(INDEPENDENCE, "Method {} is independent, formal return type is E2Immutable", methodInfo.distinguishingName());
             return MultiLevel.INDEPENDENT;
         }
         return myOwnType ? MultiLevel.INDEPENDENT : MultiLevel.DEPENDENT;

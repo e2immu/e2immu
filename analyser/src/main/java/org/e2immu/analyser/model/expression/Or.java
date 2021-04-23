@@ -30,7 +30,7 @@ import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import static org.e2immu.analyser.util.Logger.LogTarget.CNF;
+import static org.e2immu.analyser.util.Logger.LogTarget.EXPRESSION;
 import static org.e2immu.analyser.util.Logger.log;
 
 public record Or(Primitives primitives, List<Expression> expressions) implements Expression {
@@ -56,7 +56,7 @@ public record Or(Primitives primitives, List<Expression> expressions) implements
 
         if (this.expressions.isEmpty() && values.size() == 1) {
             if (values.get(0) instanceof Or || values.get(0) instanceof And) {
-                log(CNF, "Return immediately in Or: {}", values.get(0));
+                log(EXPRESSION, "Return immediately in Or: {}", values.get(0));
                 return values.get(0);
             }
         }
@@ -82,7 +82,7 @@ public record Or(Primitives primitives, List<Expression> expressions) implements
 
             for (Expression value : concat) {
                 if (value instanceof BooleanConstant bc && bc.constant()) {
-                    log(CNF, "Return TRUE in Or, found TRUE");
+                    log(EXPRESSION, "Return TRUE in Or, found TRUE");
                     return new BooleanConstant(primitives, true);
                 }
             }
@@ -97,7 +97,7 @@ public record Or(Primitives primitives, List<Expression> expressions) implements
                 // this works because of sorting
                 // A || !A will always sit next to each other
                 if (value instanceof Negation ne && ne.expression.equals(prev)) {
-                    log(CNF, "Return TRUE in Or, found opposites {}", value);
+                    log(EXPRESSION, "Return TRUE in Or, found opposites {}", value);
                     return new BooleanConstant(primitives, true);
                 }
 
@@ -126,7 +126,7 @@ public record Or(Primitives primitives, List<Expression> expressions) implements
             Expression[] components = firstAnd.expressions().stream()
                     .map(v -> append(evaluationContext, ListUtil.immutableConcat(finalValues, List.of(v))))
                     .toArray(Expression[]::new);
-            log(CNF, "Found And-clause {} in {}, components for new And are {}", firstAnd, this, Arrays.toString(components));
+            log(EXPRESSION, "Found And-clause {} in {}, components for new And are {}", firstAnd, this, Arrays.toString(components));
             return new And(primitives).append(evaluationContext, components);
         }
         if (finalValues.size() == 1) return finalValues.get(0);
@@ -136,7 +136,7 @@ public record Or(Primitives primitives, List<Expression> expressions) implements
         }
 
         if (finalValues.isEmpty()) {
-            log(CNF, "Empty disjuction returned as false");
+            log(EXPRESSION, "Empty disjuction returned as false");
             return new BooleanConstant(primitives, false);
         }
 

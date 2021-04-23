@@ -31,7 +31,7 @@ import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import static org.e2immu.analyser.util.Logger.LogTarget.CNF;
+import static org.e2immu.analyser.util.Logger.LogTarget.EXPRESSION;
 import static org.e2immu.analyser.util.Logger.log;
 
 public record And(Primitives primitives, List<Expression> expressions) implements Expression {
@@ -83,7 +83,7 @@ public record And(Primitives primitives, List<Expression> expressions) implement
 
             for (Expression value : concat) {
                 if (value instanceof BooleanConstant bc && !bc.constant()) {
-                    log(CNF, "Return FALSE in And, found FALSE", value);
+                    log(EXPRESSION, "Return FALSE in And, found FALSE", value);
                     return new BooleanConstant(primitives, false);
                 }
             }
@@ -126,15 +126,15 @@ public record And(Primitives primitives, List<Expression> expressions) implement
             concat = newConcat;
         }
         if (concat.isEmpty()) {
-            log(CNF, "And reduced to 0 components, return true");
+            log(EXPRESSION, "And reduced to 0 components, return true");
             return new BooleanConstant(primitives, true);
         }
         if (concat.size() == 1) {
-            log(CNF, "And reduced to 1 component: {}", concat.get(0));
+            log(EXPRESSION, "And reduced to 1 component: {}", concat.get(0));
             return concat.get(0);
         }
         And res = new And(primitives, List.copyOf(concat));
-        log(CNF, "Constructed {}", res);
+        log(EXPRESSION, "Constructed {}", res);
         return res;
     }
 
@@ -146,7 +146,7 @@ public record And(Primitives primitives, List<Expression> expressions) implement
         // this works because of sorting
         // A && !A will always sit next to each other
         if (value instanceof Negation negatedValue && negatedValue.expression.equals(prev)) {
-            log(CNF, "Return FALSE in And, found opposites for {}", value);
+            log(EXPRESSION, "Return FALSE in And, found opposites for {}", value);
             return Action.FALSE;
         }
 
@@ -187,7 +187,7 @@ public record And(Primitives primitives, List<Expression> expressions) implement
             }
             if (changed) {
                 if (remaining.isEmpty()) {
-                    log(CNF, "Return FALSE in And, found opposite for {}", value);
+                    log(EXPRESSION, "Return FALSE in And, found opposite for {}", value);
                     return Action.FALSE;
                 }
                 // replace

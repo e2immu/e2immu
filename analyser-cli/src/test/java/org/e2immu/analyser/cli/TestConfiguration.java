@@ -21,11 +21,9 @@ import org.e2immu.analyser.util.Logger;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.e2immu.analyser.cli.Main.*;
 import static org.e2immu.analyser.util.Logger.LogTarget.*;
 import static org.e2immu.analyser.util.Logger.log;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -49,17 +47,19 @@ public class TestConfiguration {
                 .setUploadConfiguration(new UploadConfiguration.Builder()
                         .setUpload(true).build())
                 .addDebugLogTargets(BYTECODE_INSPECTOR.toString())
-                .addDebugLogTargets(INSPECT + "," + ANALYSER)
+                .addDebugLogTargets(INSPECTOR + "," + ANALYSER)
                 .build();
         log(CONFIGURATION, "Config1:\n{}", configuration);
 
         Map<String, String> properties = new HashMap<>();
-        properties.put(DEBUG, BYTECODE_INSPECTOR + "," + INSPECT + "," + ANALYSER);
-        properties.put(SOURCE, "src/main/java");
-        properties.put(SOURCE_PACKAGES, "org.e2immu.analyser.util");
-        properties.put(CLASSPATH, "build/resources/main/annotatedAPIs" + PATH_SEPARATOR + "build/resources/main/annotations/jdkAnnotations" + PATH_SEPARATOR + "jmods/java.base.jmod");
+        properties.put(Main.DEBUG, BYTECODE_INSPECTOR + "," + INSPECTOR + "," + ANALYSER);
+        properties.put(Main.SOURCE, "src/main/java");
+        properties.put(Main.SOURCE_PACKAGES, "org.e2immu.analyser.util");
+        properties.put(Main.CLASSPATH, "build/resources/main/annotatedAPIs" + Main.PATH_SEPARATOR +
+                "build/resources/main/annotations/jdkAnnotations" + Main.PATH_SEPARATOR +
+                "jmods/java.base.jmod");
         properties.put(Main.UPLOAD, "true");
-        Configuration configuration2 = fromProperties(properties);
+        Configuration configuration2 = Main.fromProperties(properties);
         log(CONFIGURATION, "Config2:\n{}", configuration2);
         assertEquals(configuration.toString(), configuration2.toString());
         assertEquals(configuration, configuration2);

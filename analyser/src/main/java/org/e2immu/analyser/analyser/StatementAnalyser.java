@@ -1369,7 +1369,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             Set<Variable> nullVariables = statementAnalysis.stateData.conditionManagerForNextStatement.get()
                     .findIndividualNullInCondition(sharedState.evaluationContext, true);
             for (Variable nullVariable : nullVariables) {
-                log(VARIABLE_PROPERTIES, "Escape with check not null on {}", nullVariable.fullyQualifiedName());
+                log(PRECONDITION, "Escape with check not null on {}", nullVariable.fullyQualifiedName());
 
                 // move from condition (x!=null) to property
                 VariableInfoContainer vic = statementAnalysis.findForWriting(nullVariable);
@@ -1408,7 +1408,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 boolean preconditionIsDelayed = sharedState.evaluationContext.isDelayed(precondition) || delays;
                 Expression translated = sharedState.evaluationContext.acceptAndTranslatePrecondition(precondition);
                 if (translated != null) {
-                    log(VARIABLE_PROPERTIES, "Escape with precondition {}", translated);
+                    log(PRECONDITION, "Escape with precondition {}", translated);
                     Precondition pc = new Precondition(translated, List.of(new Precondition.EscapeCause()));
                     statementAnalysis.stateData.setPrecondition(pc, preconditionIsDelayed);
                     return preconditionIsDelayed ? DELAYS : DONE;
@@ -2050,7 +2050,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                         .newForNextStatementDoNotChangePrecondition(evaluationContext, addToStateAfterStatement);
                 statementAnalysis.stateData.setLocalConditionManagerForNextStatement(newLocalConditionManager);
                 keepCurrentLocalConditionManager = false;
-                log(VARIABLE_PROPERTIES, "Continuing beyond default condition with conditional", addToStateAfterStatement);
+                log(PRECONDITION, "Continuing beyond default condition with conditional", addToStateAfterStatement);
             }
         } else {
             int maxTime = statementAnalysis.flowData.getTimeAfterEvaluation();

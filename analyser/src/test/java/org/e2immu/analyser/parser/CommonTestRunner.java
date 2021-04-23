@@ -101,25 +101,19 @@ public abstract class CommonTestRunner {
                 .setAnnotatedAPIConfiguration(annotatedAPIConfiguration)
                 .addDebugLogTargets(List.of(ANALYSER, // INSPECT, RESOLVE,
 
-                        TRANSFORM,
                         LAMBDA,
                         // RESOLVE,
                         DELAYED,
-                        PROPAGATE_MODIFICATION,
+                        CONTEXT_MODIFICATION,
                         FINAL,
                         LINKED_VARIABLES,
-                        INDEPENDENT,
-                        E2IMMUTABLE,
-                        ANNOTATION_EXPRESSION,
-                        CONSTANT,
-                        CONTAINER,
-                        E1IMMUTABLE,
-                        UTILITY_CLASS,
+                        INDEPENDENCE,
+                        IMMUTABLE_LOG,
+                        METHOD_ANALYSER,
+                        TYPE_ANALYSER,
                         NOT_NULL,
-                        NOT_MODIFIED,
-                        PATTERN,
-                        MARK
-                        // OBJECT_FLOW
+                        MODIFICATION,
+                        EVENTUALLY
                 ).stream().map(Enum::toString).collect(Collectors.joining(",")))
                 .setInputConfiguration(inputConfigurationBuilder.build())
                 .build();
@@ -167,22 +161,17 @@ public abstract class CommonTestRunner {
         Configuration configuration = new Configuration.Builder()
                 .setAnnotatedAPIConfiguration(annotatedAPIConfiguration)
                 .addDebugLogTargets(List.of(ANALYSER,
-                        TRANSFORM,
                         LAMBDA,
                         DELAYED,
                         FINAL,
                         LINKED_VARIABLES,
-                        INDEPENDENT,
-                        E2IMMUTABLE,
-                        ANNOTATION_EXPRESSION,
-                        CONSTANT,
-                        CONTAINER,
-                        E1IMMUTABLE,
-                        UTILITY_CLASS,
+                        INDEPENDENCE,
+                        IMMUTABLE_LOG,
+                        METHOD_ANALYSER,
+                        TYPE_ANALYSER,
                         NOT_NULL,
-                        NOT_MODIFIED,
-                        PATTERN,
-                        MARK
+                        MODIFICATION,
+                        EVENTUALLY
 
                 ).stream().map(Enum::toString).collect(Collectors.joining(",")))
                 .setDebugConfiguration(debugConfiguration)

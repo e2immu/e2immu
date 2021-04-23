@@ -65,7 +65,7 @@ public abstract class CommonAbstractValue {
 
     @BeforeAll
     public static void beforeClass() {
-        Logger.activate(Logger.LogTarget.CNF);
+        Logger.activate(Logger.LogTarget.EXPRESSION);
 
         TYPE_MAP_BUILDER = new TypeMapImpl.Builder();
         PRIMITIVES = TYPE_MAP_BUILDER.getPrimitives();

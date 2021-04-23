@@ -55,7 +55,7 @@ public class TestComposer {
                 .setAnnotatedAPIConfiguration(annotatedAPIConfiguration)
                 .setUploadConfiguration(new UploadConfiguration.Builder()
                         .setUpload(true).build())
-                .addDebugLogTargets(INSPECT + "," + ANALYSER + "," + CONFIGURATION)
+                .addDebugLogTargets(INSPECTOR + "," + ANALYSER + "," + CONFIGURATION)
                 .build();
 
         configuration.initializeLoggers();

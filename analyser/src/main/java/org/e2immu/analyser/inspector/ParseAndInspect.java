@@ -32,7 +32,7 @@ import java.util.List;
 
 import static org.e2immu.analyser.inspector.TypeInspectionImpl.InspectionState.TRIGGER_BYTECODE_INSPECTION;
 import static org.e2immu.analyser.inspector.TypeInspectionImpl.InspectionState.TRIGGER_JAVA_PARSER;
-import static org.e2immu.analyser.util.Logger.LogTarget.INSPECT;
+import static org.e2immu.analyser.util.Logger.LogTarget.INSPECTOR;
 import static org.e2immu.analyser.util.Logger.log;
 
 public record ParseAndInspect(Resources classPath,
@@ -51,7 +51,7 @@ public record ParseAndInspect(Resources classPath,
      * @return the list of primary types found in the source code
      */
     public List<TypeInfo> run(TypeContext typeContextOfFile, String fileName, String sourceCode) {
-        log(INSPECT, "Parsing compilation unit {}", fileName);
+        log(INSPECTOR, "Parsing compilation unit {}", fileName);
 
         CompilationUnit compilationUnit = StaticJavaParser.parse(sourceCode);
         if (compilationUnit.getTypes().isEmpty()) {
@@ -88,21 +88,21 @@ public record ParseAndInspect(Resources classPath,
                 // fields and methods; important: we do NOT add the type itself to the type context
                 if (importDeclaration.isAsterisk()) {
                     TypeInfo typeInfo = importTypeNoSubTypes(fullyQualified);
-                    log(INSPECT, "Add import static wildcard {}", typeInfo.fullyQualifiedName);
+                    log(INSPECTOR, "Add import static wildcard {}", typeInfo.fullyQualifiedName);
                     typeContextOfFile.addImportStaticWildcard(typeInfo);
                 } else {
                     int dot = fullyQualified.lastIndexOf('.');
                     String typeName = fullyQualified.substring(0, dot);
                     String member = fullyQualified.substring(dot + 1);
                     TypeInfo typeInfo = importTypeNoSubTypes(typeName);
-                    log(INSPECT, "Add import static member {} on class {}", typeName, member);
+                    log(INSPECTOR, "Add import static member {} on class {}", typeName, member);
                     typeContextOfFile.addImportStatic(typeInfo, member);
                 }
             } else {
                 // types
                 if (importDeclaration.isAsterisk()) {
                     // lower priority names (so allowOverwrite = false)
-                    log(INSPECT, "Need to parse folder {}", fullyQualified);
+                    log(INSPECTOR, "Need to parse folder {}", fullyQualified);
                     if (!fullyQualified.equals(packageName)) { // would be our own package; they are already there
                         sourceTypes.visit(fullyQualified.split("\\."), (expansion, typeInfoList) -> {
                             for (TypeInfo typeInfo : typeInfoList) {
@@ -121,7 +121,7 @@ public record ParseAndInspect(Resources classPath,
                                 if (typeInfo == null) {
                                     TypeInfo newTypeInfo = typeContextOfFile.typeMapBuilder
                                             .getOrCreate(fullyQualified, simpleName, TRIGGER_BYTECODE_INSPECTION);
-                                    log(INSPECT, "Registering inspection handler for {}", newTypeInfo.fullyQualifiedName);
+                                    log(INSPECTOR, "Registering inspection handler for {}", newTypeInfo.fullyQualifiedName);
                                     typeContextOfFile.addToContext(newTypeInfo, false);
                                 } else {
                                     typeContextOfFile.addToContext(typeInfo, false);
@@ -131,7 +131,7 @@ public record ParseAndInspect(Resources classPath,
                     }
                 } else {
                     // higher priority names, allowOverwrite = true
-                    log(INSPECT, "Import of {}", fullyQualified);
+                    log(INSPECTOR, "Import of {}", fullyQualified);
                     List<TypeInfo> types = importType(fullyQualified);
                     types.forEach(typeInfo -> typeContextOfFile.addToContext(typeInfo, true));
                 }

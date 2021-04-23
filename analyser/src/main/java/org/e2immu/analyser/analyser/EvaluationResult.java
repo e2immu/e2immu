@@ -28,7 +28,7 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.stream.Stream;
 
-import static org.e2immu.analyser.util.Logger.LogTarget.DEBUG_MODIFY_CONTENT;
+import static org.e2immu.analyser.util.Logger.LogTarget.CONTEXT_MODIFICATION;
 import static org.e2immu.analyser.util.Logger.log;
 
 /*
@@ -473,7 +473,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             if (evaluationContext.isPresent(variable)) {
                 int ignoreContentModifications = getPropertyFromInitial(variable, VariableProperty.IGNORE_MODIFICATIONS);
                 if (ignoreContentModifications != Level.TRUE) {
-                    log(DEBUG_MODIFY_CONTENT, "Mark method object as context modified {}: {}", modified, variable.fullyQualifiedName());
+                    log(CONTEXT_MODIFICATION, "Mark method object as context modified {}: {}", modified, variable.fullyQualifiedName());
                     setProperty(variable, VariableProperty.CONTEXT_MODIFIED, modified);
 
                     /*
@@ -486,10 +486,10 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                     }
                     */
                 } else {
-                    log(DEBUG_MODIFY_CONTENT, "Skip marking method object as context modified: {}", variable.fullyQualifiedName());
+                    log(CONTEXT_MODIFICATION, "Skip marking method object as context modified: {}", variable.fullyQualifiedName());
                 }
             } else {
-                log(DEBUG_MODIFY_CONTENT, "Not yet marking {} as context modified, not present", variable.fullyQualifiedName());
+                log(CONTEXT_MODIFICATION, "Not yet marking {} as context modified, not present", variable.fullyQualifiedName());
             }
         }
 

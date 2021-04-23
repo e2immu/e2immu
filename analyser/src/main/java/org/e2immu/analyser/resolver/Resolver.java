@@ -34,8 +34,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.e2immu.analyser.model.util.ConvertMethodReference.convertMethodReferenceIntoAnonymous;
-import static org.e2immu.analyser.util.Logger.LogTarget.RESOLVE;
-import static org.e2immu.analyser.util.Logger.LogTarget.STATIC_METHOD_CALLS;
+import static org.e2immu.analyser.util.Logger.LogTarget.RESOLVER;
 import static org.e2immu.analyser.util.Logger.isLogEnabled;
 import static org.e2immu.analyser.util.Logger.log;
 
@@ -137,7 +136,7 @@ public class Resolver {
         List<TypeInfo> sorted = typeGraph.sorted(typeInfo -> {
             // typeInfo is part of a cycle, dependencies are:
             Set<TypeInfo> typesInCycle = typeGraph.dependencies(typeInfo);
-            log(RESOLVE, "Type {} is part of cycle: {}", typeInfo,
+            log(RESOLVER, "Type {} is part of cycle: {}", typeInfo,
                     () -> typesInCycle.stream().map(t -> t.simpleName).collect(Collectors.joining(",")));
             for (TypeInfo other : typesInCycle) {
                 add(participatesInCycles, other, typesInCycle);
@@ -170,7 +169,7 @@ public class Resolver {
                     superTypesExcludingJavaLangObject(inspectionProvider, subType));
             subType.typeResolution.set(subTypeResolution);
         }
-        log(RESOLVE, "Result of type sorting: {}", sortedType);
+        log(RESOLVER, "Result of type sorting: {}", sortedType);
         return sortedType;
     }
 
@@ -202,11 +201,11 @@ public class Resolver {
         typeGraph.addNode(typeInfo, List.copyOf(typeDependencies));
         List<WithInspectionAndAnalysis> methodFieldSubTypeOrder = List.copyOf(methodFieldSubTypeGraph.sorted());
 
-        if (isLogEnabled(RESOLVE)) {
-            log(RESOLVE, "Method graph has {} relations", methodFieldSubTypeGraph.relations());
-            log(RESOLVE, "Method and field order in {}: {}", typeInfo.fullyQualifiedName,
+        if (isLogEnabled(RESOLVER)) {
+            log(RESOLVER, "Method graph has {} relations", methodFieldSubTypeGraph.relations());
+            log(RESOLVER, "Method and field order in {}: {}", typeInfo.fullyQualifiedName,
                     methodFieldSubTypeOrder.stream().map(WithInspectionAndAnalysis::name).collect(Collectors.joining(", ")));
-            log(RESOLVE, "Types referred to in {}: {}", typeInfo.fullyQualifiedName, typeDependencies);
+            log(RESOLVER, "Types referred to in {}: {}", typeInfo.fullyQualifiedName, typeDependencies);
         }
 
         return new SortedType(typeInfo, methodFieldSubTypeOrder);
@@ -225,11 +224,11 @@ public class Resolver {
 
             // recursion, do sub-types first (no recursion at resolver level!)
             typeInspection.subTypes().forEach(subType -> {
-                log(RESOLVE, "From {} into {}", typeInfo.fullyQualifiedName, subType.fullyQualifiedName);
+                log(RESOLVER, "From {} into {}", typeInfo.fullyQualifiedName, subType.fullyQualifiedName);
                 doType(subType, expressionContextOfType, methodFieldSubTypeGraph);
             });
 
-            log(RESOLVE, "Resolving type {}", typeInfo.fullyQualifiedName);
+            log(RESOLVER, "Resolving type {}", typeInfo.fullyQualifiedName);
             TypeInfo primaryType = typeInfo.primaryType();
             ExpressionContext expressionContextForBody = ExpressionContext.forTypeBodyParsing(typeInfo, primaryType, expressionContextOfType);
             TypeContext typeContext = expressionContextForBody.typeContext;
@@ -279,7 +278,7 @@ public class Resolver {
             }
             assert !fieldInfo.fieldInspection.isSet() : "Field inspection for " + fieldInfo.fullyQualifiedName() + " has already been set";
             fieldInfo.fieldInspection.set(fieldInspection.build());
-            log(RESOLVE, "Set field inspection of " + fieldInfo.fullyQualifiedName());
+            log(RESOLVER, "Set field inspection of " + fieldInfo.fullyQualifiedName());
         });
     }
 
@@ -303,7 +302,7 @@ public class Resolver {
             if (singleAbstractMethod != null) {
                 singleAbstractMethod = singleAbstractMethod
                         .expand(fieldInfo.type.initialTypeParameterMap(expressionContext.typeContext));
-                log(RESOLVE, "Passing on functional interface method to field initializer of {}: {}",
+                log(RESOLVER, "Passing on functional interface method to field initializer of {}: {}",
                         fieldInfo.name, singleAbstractMethod);
             }
             org.e2immu.analyser.model.Expression parsedExpression = subContext.parseExpression(expression,
@@ -376,7 +375,7 @@ public class Resolver {
                     "Method inspection for " + methodInfo.name + " in " + methodInfo.typeInfo.fullyQualifiedName + " not found";
             boolean haveCompanionMethods = !methodInspection.getCompanionMethods().isEmpty();
             if (haveCompanionMethods) {
-                log(RESOLVE, "Start resolving companion methods of {}", methodInspection.getDistinguishingName());
+                log(RESOLVER, "Start resolving companion methods of {}", methodInspection.getDistinguishingName());
 
                 methodInspection.getCompanionMethods().values().forEach(companionMethod -> {
                     MethodInspection companionMethodInspection = expressionContext.typeContext.getMethodInspection(companionMethod);
@@ -390,7 +389,7 @@ public class Resolver {
                     }
                 });
 
-                log(RESOLVE, "Finished resolving companion methods of {}", methodInspection.getDistinguishingName());
+                log(RESOLVER, "Finished resolving companion methods of {}", methodInspection.getDistinguishingName());
             }
             try {
                 doMethodOrConstructor(methodInfo, (MethodInspectionImpl.Builder) methodInspection,
@@ -408,7 +407,7 @@ public class Resolver {
                                        ExpressionContext expressionContext,
                                        DependencyGraph<WithInspectionAndAnalysis> methodFieldSubTypeGraph,
                                        Set<TypeInfo> restrictToType) {
-        log(RESOLVE, "Resolving {}", methodInfo.fullyQualifiedName);
+        log(RESOLVER, "Resolving {}", methodInfo.fullyQualifiedName);
 
         // TYPE PARAMETERS OF METHOD
 
@@ -428,7 +427,7 @@ public class Resolver {
         if (doBlock) {
             BlockStmt block = methodInspection.getBlock();
             if (block != null && !block.getStatements().isEmpty()) {
-                log(RESOLVE, "Parsing block of method {}", methodInfo.name);
+                log(RESOLVER, "Parsing block of method {}", methodInfo.name);
                 doBlock(subContext, methodInfo, methodInspection, block);
             } else {
                 methodInspection.setInspectedBlock(Block.EMPTY_BLOCK);
@@ -488,7 +487,7 @@ public class Resolver {
                     methodInspection.getReturnType().findSingleAbstractMethodOfInterface(expressionContext.typeContext);
             ExpressionContext newContext = expressionContext.newVariableContext(methodInfo, returnTypeSAM);
             methodInspection.getParameters().forEach(newContext.variableContext::add);
-            log(RESOLVE, "Parsing block with variable context {}", newContext.variableContext);
+            log(RESOLVER, "Parsing block with variable context {}", newContext.variableContext);
             Block parsedBlock = newContext.parseBlockOrStatement(block);
             methodInspection.setInspectedBlock(parsedBlock);
 
@@ -617,7 +616,7 @@ public class Resolver {
                     }
                 });
                 boolean staticMethodCallsOnly = !atLeastOneCallOnThis.get();
-                log(STATIC_METHOD_CALLS, "Method {} is not static, does it have no calls on <this> scope? {}",
+                log(RESOLVER, "Method {} is not static, does it have no calls on <this> scope? {}",
                         methodInfo.fullyQualifiedName(), staticMethodCallsOnly);
                 methodResolution.staticMethodCallsOnly.set(staticMethodCallsOnly);
             }

@@ -38,7 +38,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static org.e2immu.analyser.inspector.TypeInspectionImpl.InspectionState.*;
-import static org.e2immu.analyser.util.Logger.LogTarget.INSPECT;
+import static org.e2immu.analyser.util.Logger.LogTarget.INSPECTOR;
 import static org.e2immu.analyser.util.Logger.log;
 
 /*
@@ -193,7 +193,7 @@ public class TypeInspector {
         for (BodyDeclaration<?> bd : annotationDeclaration.getMembers()) {
             if (bd.isAnnotationMemberDeclaration()) {
                 AnnotationMemberDeclaration amd = bd.asAnnotationMemberDeclaration();
-                log(INSPECT, "Have member {} in {}", amd.getNameAsString(), typeInfo.fullyQualifiedName);
+                log(INSPECTOR, "Have member {} in {}", amd.getNameAsString(), typeInfo.fullyQualifiedName);
                 MethodInspector methodInspector = new MethodInspector(expressionContext.typeContext.typeMapBuilder, typeInfo, fullInspection);
                 methodInspector.inspect(amd, subContext);
                 builder.addMethod(methodInspector.getBuilder().getMethodInfo());
@@ -320,7 +320,7 @@ public class TypeInspector {
         TypeInspectionImpl.InspectionState inspectionState = res.isDollarType ? TRIGGER_BYTECODE_INSPECTION :
                 STARTING_JAVA_PARSER;
         typeStore.ensureTypeAndInspection(res.subType(), inspectionState);
-        log(INSPECT, "Added {} to type store: {}", what, res.subType.fullyQualifiedName);
+        log(INSPECTOR, "Added {} to type store: {}", what, res.subType.fullyQualifiedName);
     }
 
     private List<TypeInfo> continueInspection(
@@ -391,7 +391,7 @@ public class TypeInspector {
 
         // finally, do constructors and methods
 
-        log(INSPECT, "Variable context after parsing fields of type {}: {}", typeInfo.fullyQualifiedName, subContext.variableContext);
+        log(INSPECTOR, "Variable context after parsing fields of type {}: {}", typeInfo.fullyQualifiedName, subContext.variableContext);
 
         AtomicInteger countNonStaticNonDefaultIfInterface = new AtomicInteger();
         Map<CompanionMethodName, MethodInspectionImpl.Builder> companionMethodsWaiting = new LinkedHashMap<>();
@@ -455,7 +455,7 @@ public class TypeInspector {
             builder.addConstructor(createEmptyConstructor(expressionContext.typeContext, privateEmptyConstructor));
         }
 
-        log(INSPECT, "Setting type inspection of {}", typeInfo.fullyQualifiedName);
+        log(INSPECTOR, "Setting type inspection of {}", typeInfo.fullyQualifiedName);
         typeInfo.typeInspection.set(builder.build());
         return dollarTypes;
     }

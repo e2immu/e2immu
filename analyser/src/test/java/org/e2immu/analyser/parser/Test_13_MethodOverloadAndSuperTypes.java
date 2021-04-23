@@ -47,7 +47,7 @@ public class Test_13_MethodOverloadAndSuperTypes {
 
     @BeforeAll
     public static void beforeClass() {
-        org.e2immu.analyser.util.Logger.activate(org.e2immu.analyser.util.Logger.LogTarget.INSPECT);
+        org.e2immu.analyser.util.Logger.activate(org.e2immu.analyser.util.Logger.LogTarget.INSPECTOR);
     }
 
     Parser parser;

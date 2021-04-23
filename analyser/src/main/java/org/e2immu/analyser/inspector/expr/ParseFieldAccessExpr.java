@@ -28,7 +28,7 @@ import org.e2immu.analyser.resolver.Resolver;
 import java.util.List;
 import java.util.Optional;
 
-import static org.e2immu.analyser.util.Logger.LogTarget.RESOLVE;
+import static org.e2immu.analyser.util.Logger.LogTarget.RESOLVER;
 import static org.e2immu.analyser.util.Logger.log;
 
 public class ParseFieldAccessExpr {
@@ -75,7 +75,7 @@ public class ParseFieldAccessExpr {
 
     private static FieldAccess fieldAccess(ExpressionContext expressionContext, FieldInfo fieldInfo, Expression object) {
         if (fieldInfo.owner == expressionContext.enclosingType) {
-            log(RESOLVE, "Adding dependency on field {}", fieldInfo.fullyQualifiedName());
+            log(RESOLVER, "Adding dependency on field {}", fieldInfo.fullyQualifiedName());
         }
         // in a static context, the object is a type expression.
         // it can be a method call, such as findNode().data (data is the field)

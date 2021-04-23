@@ -38,8 +38,8 @@ import java.util.stream.Stream;
 import static org.e2immu.analyser.analyser.AnalysisStatus.DELAYS;
 import static org.e2immu.analyser.analyser.AnalysisStatus.DONE;
 import static org.e2immu.analyser.util.EventuallyFinalExtension.setFinalAllowEquals;
-import static org.e2immu.analyser.util.Logger.LogTarget.ANALYSER;
 import static org.e2immu.analyser.util.Logger.LogTarget.DELAYED;
+import static org.e2immu.analyser.util.Logger.LogTarget.LINKED_VARIABLES;
 import static org.e2immu.analyser.util.Logger.log;
 
 /**
@@ -104,7 +104,7 @@ public class MethodLevelData {
         if (linksHaveBeenEstablished.isSet()) return true;
         Set<WithInspectionAndAnalysis> causes = causesOfContextModificationDelay.get();
         if (causes != null && !causes.isEmpty() && causes.stream().allMatch(canBeIgnored)) {
-            log(ANALYSER, "Accepting a limited version of linksHaveBeenEstablished to break delay cycle");
+            log(LINKED_VARIABLES, "Accepting a limited version of linksHaveBeenEstablished to break delay cycle");
             return true;
         }
         return false;

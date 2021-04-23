@@ -38,7 +38,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
-import static org.e2immu.analyser.util.Logger.LogTarget.INSPECT;
+import static org.e2immu.analyser.util.Logger.LogTarget.INSPECTOR;
 import static org.e2immu.analyser.util.Logger.log;
 
 public class MethodInspector {
@@ -70,7 +70,7 @@ public class MethodInspector {
 
     public void inspect(AnnotationMemberDeclaration amd, ExpressionContext expressionContext) {
         String name = amd.getNameAsString();
-        log(INSPECT, "Inspecting annotation member {} in {}", name, typeInfo.fullyQualifiedName);
+        log(INSPECTOR, "Inspecting annotation member {} in {}", name, typeInfo.fullyQualifiedName);
         MethodInspectionImpl.Builder tempBuilder = new MethodInspectionImpl.Builder(typeInfo, name);
         MethodInspectionImpl.Builder builder = fqnIsKnown(expressionContext.typeContext, tempBuilder);
 
@@ -90,7 +90,7 @@ public class MethodInspector {
         builder.readyToComputeFQN(inspectionProvider);
         MethodInspection methodInspection = typeMapBuilder.getMethodInspectionDoNotTrigger(builder.getDistinguishingName());
         if (methodInspection instanceof MethodInspectionImpl.Builder existing) {
-            log(INSPECT, "Inspecting method {}, already byte-code inspected", builder.getDistinguishingName());
+            log(INSPECTOR, "Inspecting method {}, already byte-code inspected", builder.getDistinguishingName());
             assert !fullInspection;
 
             builderOnceFQNIsKnown.set(existing);
@@ -98,7 +98,7 @@ public class MethodInspector {
         }
         if (methodInspection == null) {
             if (fullInspection) {
-                log(INSPECT, "Inspecting method {}, full inspection", builder.getDistinguishingName());
+                log(INSPECTOR, "Inspecting method {}, full inspection", builder.getDistinguishingName());
                 builderOnceFQNIsKnown.set(builder);
                 return builder;
             }
@@ -107,7 +107,7 @@ public class MethodInspector {
 
             MethodInspection parent = allowCopyFromSuperType(inspectionProvider, builder);
             if (parent != null) {
-                log(INSPECT, "Create method {} as copy from super type, shallow inspection", builder.getDistinguishingName());
+                log(INSPECTOR, "Create method {} as copy from super type, shallow inspection", builder.getDistinguishingName());
                 builder.setReturnType(parent.getReturnType());
                 builderOnceFQNIsKnown.set(builder);
                 typeMapBuilder.registerMethodInspection(builder);

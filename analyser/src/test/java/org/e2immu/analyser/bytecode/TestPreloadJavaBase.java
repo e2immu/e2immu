@@ -34,7 +34,7 @@ public class TestPreloadJavaBase {
 
     @BeforeAll
     public static void beforeClass() throws IOException {
-        org.e2immu.analyser.util.Logger.activate(Logger.LogTarget.INSPECT,
+        org.e2immu.analyser.util.Logger.activate(Logger.LogTarget.INSPECTOR,
                 Logger.LogTarget.BYTECODE_INSPECTOR);
         Parser parser = new Parser();
         typeContext = parser.getTypeContext();

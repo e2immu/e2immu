@@ -43,7 +43,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static org.e2immu.analyser.util.Logger.LogTarget.CONTEXT;
+import static org.e2immu.analyser.util.Logger.LogTarget.EXPRESSION_CONTEXT;
 import static org.e2immu.analyser.util.Logger.log;
 
 // cannot even be a @Container, since the VariableContext passed on to us gets modified along the way
@@ -79,7 +79,7 @@ public class ExpressionContext {
     public static ExpressionContext forInspectionOfPrimaryType(@NotNull @NotModified TypeInfo typeInfo,
                                                                @NotNull @NotModified TypeContext typeContext,
                                                                @NotNull @NotModified AnonymousTypeCounters anonymousTypeCounters) {
-        log(CONTEXT, "Creating a new expression context for {}", typeInfo.fullyQualifiedName);
+        log(EXPRESSION_CONTEXT, "Creating a new expression context for {}", typeInfo.fullyQualifiedName);
         return new ExpressionContext(Objects.requireNonNull(typeInfo), null, null,
                 null, null,
                 null, typeInfo,
@@ -92,7 +92,7 @@ public class ExpressionContext {
                                                        @NotNull @NotModified TypeInfo primaryType,
                                                        @NotNull @NotModified ExpressionContext expressionContextOfType) {
         Map<String, FieldReference> staticallyImportedFields = expressionContextOfType.typeContext.staticFieldImports();
-        log(CONTEXT, "Creating a new expression context for {}", enclosingType.fullyQualifiedName);
+        log(EXPRESSION_CONTEXT, "Creating a new expression context for {}", enclosingType.fullyQualifiedName);
         return new ExpressionContext(Objects.requireNonNull(enclosingType), null,
                 null, null,
                 null, null,
@@ -125,14 +125,14 @@ public class ExpressionContext {
     }
 
     public ExpressionContext newVariableContext(MethodInfo methodInfo, MethodTypeParameterMap returnTypeSAM) {
-        log(CONTEXT, "Creating a new variable context for method {}", methodInfo.fullyQualifiedName);
+        log(EXPRESSION_CONTEXT, "Creating a new variable context for method {}", methodInfo.fullyQualifiedName);
         return new ExpressionContext(enclosingType, null,
                 methodInfo, returnTypeSAM, null, null,
                 primaryType, typeContext, VariableContext.dependentVariableContext(variableContext), anonymousTypeCounters);
     }
 
     public ExpressionContext newVariableContext(@NotNull String reason) {
-        log(CONTEXT, "Creating a new variable context for {}", reason);
+        log(EXPRESSION_CONTEXT, "Creating a new variable context for {}", reason);
         return new ExpressionContext(enclosingType, uninspectedEnclosingType,
                 enclosingMethod, null, enclosingField, typeOfEnclosingSwitchExpression,
                 primaryType, typeContext, VariableContext.dependentVariableContext(variableContext),
@@ -140,7 +140,7 @@ public class ExpressionContext {
     }
 
     public ExpressionContext newVariableContext(@NotNull VariableContext newVariableContext, String reason) {
-        log(CONTEXT, "Creating a new variable context for {}", reason);
+        log(EXPRESSION_CONTEXT, "Creating a new variable context for {}", reason);
         return new ExpressionContext(enclosingType, uninspectedEnclosingType, enclosingMethod,
                 null, enclosingField, typeOfEnclosingSwitchExpression,
                 primaryType, typeContext, newVariableContext, anonymousTypeCounters);
@@ -148,28 +148,28 @@ public class ExpressionContext {
 
 
     public ExpressionContext newLambdaContext(TypeInfo subType, VariableContext variableContext) {
-        log(CONTEXT, "Creating a new type context for lambda, sub-type {}", subType.fullyQualifiedName);
+        log(EXPRESSION_CONTEXT, "Creating a new type context for lambda, sub-type {}", subType.fullyQualifiedName);
         return new ExpressionContext(enclosingType, subType, enclosingMethod,
                 null, enclosingField, typeOfEnclosingSwitchExpression, primaryType,
                 typeContext, variableContext, anonymousTypeCounters);
     }
 
     public ExpressionContext newSubType(@NotNull TypeInfo subType) {
-        log(CONTEXT, "Creating a new type context for subtype {}", subType.simpleName);
+        log(EXPRESSION_CONTEXT, "Creating a new type context for subtype {}", subType.simpleName);
         return new ExpressionContext(subType, null,
                 null, null, null, null, primaryType,
                 new TypeContext(typeContext), variableContext, anonymousTypeCounters);
     }
 
     public ExpressionContext newTypeContext(String reason) {
-        log(CONTEXT, "Creating a new type context for {}", reason);
+        log(EXPRESSION_CONTEXT, "Creating a new type context for {}", reason);
         return new ExpressionContext(enclosingType, uninspectedEnclosingType, enclosingMethod, returnTypeSAM,
                 enclosingField, typeOfEnclosingSwitchExpression, primaryType,
                 new TypeContext(typeContext), variableContext, anonymousTypeCounters);
     }
 
     public ExpressionContext newTypeContext(FieldInfo fieldInfo) {
-        log(CONTEXT, "Creating a new type context for initialiser of field {}", fieldInfo.fullyQualifiedName());
+        log(EXPRESSION_CONTEXT, "Creating a new type context for initialiser of field {}", fieldInfo.fullyQualifiedName());
         return new ExpressionContext(enclosingType, null, null, null,
                 fieldInfo, null, primaryType,
                 new TypeContext(typeContext), variableContext, anonymousTypeCounters);

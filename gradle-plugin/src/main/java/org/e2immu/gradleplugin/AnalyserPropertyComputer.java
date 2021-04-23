@@ -14,7 +14,6 @@
 
 package org.e2immu.gradleplugin;
 
-import org.e2immu.analyser.cli.Main;
 import org.e2immu.analyser.config.AnnotatedAPIConfiguration;
 import org.gradle.api.Project;
 import org.gradle.api.internal.plugins.DslObject;
@@ -32,22 +31,18 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import org.e2immu.analyser.cli.Main;
+
 /**
  * Property names are identical to those of the CLI (.cli.Main). In the system properties,
  * they have to be prefixed by the PREFIX defined in this class.
  */
-public class AnalyserPropertyComputer {
+public record AnalyserPropertyComputer(
+        Map<String, ActionBroadcast<AnalyserProperties>> actionBroadcastMap,
+        Project targetProject) {
 
     private static final Logger LOGGER = Logging.getLogger(AnalyserPropertyComputer.class);
     public static final String PREFIX = "e2immu-analyser.";
-
-    private final Map<String, ActionBroadcast<AnalyserProperties>> actionBroadcastMap;
-    private final Project targetProject;
-
-    public AnalyserPropertyComputer(Map<String, ActionBroadcast<AnalyserProperties>> actionBroadcastMap, Project targetProject) {
-        this.actionBroadcastMap = actionBroadcastMap;
-        this.targetProject = targetProject;
-    }
 
     public Map<String, Object> computeProperties() {
         Map<String, Object> properties = new LinkedHashMap<>();

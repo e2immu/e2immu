@@ -249,13 +249,13 @@ public class FieldAnalyser extends AbstractAnalyser {
         boolean someParameterModificationUnknown = sam.getParameterAnalysers().stream().anyMatch(p ->
                 p.parameterAnalysis.getProperty(VariableProperty.MODIFIED_VARIABLE) == Level.DELAY);
         if (someParameterModificationUnknown) {
-            log(NOT_MODIFIED, "Delaying @NotModified1 on {}, some parameters have no @Modified status yet",
+            log(MODIFICATION, "Delaying @NotModified1 on {}, some parameters have no @Modified status yet",
                     fqn);
         }
         boolean allParametersNotModified = sam.getParameterAnalysers().stream().allMatch(p ->
                 p.parameterAnalysis.getProperty(VariableProperty.MODIFIED_VARIABLE) == Level.FALSE);
 
-        log(NOT_MODIFIED, "Set @NotModified1 on {} to {}", fqn, allParametersNotModified);
+        log(MODIFICATION, "Set @NotModified1 on {} to {}", fqn, allParametersNotModified);
         fieldAnalysis.setProperty(VariableProperty.NOT_MODIFIED_1, Level.fromBool(allParametersNotModified));
         return DONE;
     }
@@ -431,7 +431,7 @@ public class FieldAnalyser extends AbstractAnalyser {
 
         int staticallyImmutable = fieldInfo.type.defaultImmutable(analyserContext);
         if (staticallyImmutable == MultiLevel.EFFECTIVELY_E2IMMUTABLE) {
-            log(E2IMMUTABLE, "Field {} is statically @E2Immutable", fqn);
+            log(IMMUTABLE_LOG, "Field {} is statically @E2Immutable", fqn);
             fieldAnalysis.setProperty(VariableProperty.EXTERNAL_IMMUTABLE, staticallyImmutable);
             return DONE;
         }
@@ -517,7 +517,7 @@ public class FieldAnalyser extends AbstractAnalyser {
             fieldAnalysis.setProperty(VariableProperty.PARTIAL_EXTERNAL_IMMUTABLE, finalImmutable);
             return DELAYS;
         }
-        log(DYNAMIC, "Set immutable on field {} to value {}", fqn, correctedImmutable);
+        log(IMMUTABLE_LOG, "Set immutable on field {} to value {}", fqn, correctedImmutable);
         fieldAnalysis.setProperty(VariableProperty.EXTERNAL_IMMUTABLE, correctedImmutable);
 
         return DONE;
@@ -713,7 +713,7 @@ public class FieldAnalyser extends AbstractAnalyser {
 
         // check constant, but before we set the effectively final value
 
-        log(CONSTANT, "Setting initial value of effectively final of field {} to {}",
+        log(FINAL, "Setting initial value of effectively final of field {} to {}",
                 fqn, effectivelyFinalValue);
         fieldAnalysis.effectivelyFinalValue.set(effectivelyFinalValue);
         return DONE;
@@ -755,7 +755,7 @@ public class FieldAnalyser extends AbstractAnalyser {
             AnnotationExpression constantAnnotation = checkConstant.createConstantAnnotation(e2, effectivelyFinalValue);
             fieldAnalysis.annotations.put(constantAnnotation, true);
             fieldAnalysis.setProperty(VariableProperty.CONSTANT, Level.TRUE);
-            log(CONSTANT, "Added @Constant annotation on field {}", fqn);
+            log(FINAL, "Added @Constant annotation on field {}", fqn);
         } else {
             fieldAnalysis.setProperty(VariableProperty.CONSTANT, Level.FALSE);
         }
@@ -912,7 +912,7 @@ public class FieldAnalyser extends AbstractAnalyser {
         if (epm != Level.DELAY) return DONE;
         TypeInfo bestTypeInfo = fieldInfo.type.bestTypeInfo();
         if (bestTypeInfo == null || !bestTypeInfo.isAbstract()) {
-            log(PROPAGATE_MODIFICATION, "Type of field {} is not abstract, cannot hold @PropagateModification", fqn);
+            log(CONTEXT_MODIFICATION, "Type of field {} is not abstract, cannot hold @PropagateModification", fqn);
             fieldAnalysis.setProperty(VariableProperty.EXTERNAL_PROPAGATE_MOD, Level.FALSE);
             return DONE;
         }
@@ -934,7 +934,7 @@ public class FieldAnalyser extends AbstractAnalyser {
             return DELAYS;
         }
         fieldAnalysis.setProperty(VariableProperty.EXTERNAL_PROPAGATE_MOD, max);
-        log(PROPAGATE_MODIFICATION, "Set PM of field {} to {}", fqn, max);
+        log(CONTEXT_MODIFICATION, "Set PM of field {} to {}", fqn, max);
         return DONE;
     }
 
@@ -950,14 +950,14 @@ public class FieldAnalyser extends AbstractAnalyser {
         if (effectivelyFinal == Level.DELAY) return DELAYS;
         if (effectivelyFinal == Level.FALSE) {
             fieldAnalysis.setProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD, Level.TRUE);
-            log(NOT_MODIFIED, "Field {} is @Modified, because it is @Variable", fqn);
+            log(MODIFICATION, "Field {} is @Modified, because it is @Variable", fqn);
             return DONE;
         }
 
         boolean isPrimitive = Primitives.isPrimitiveExcludingVoid(fieldInfo.type);
         // too dangerous to catch @E2Immutable because of down-casts
         if (isPrimitive) {
-            log(NOT_MODIFIED, "Field {} is @NotModified, since it is final and primitive", fqn);
+            log(MODIFICATION, "Field {} is @NotModified, since it is final and primitive", fqn);
             fieldAnalysis.setProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD, Level.FALSE);
             return DONE;
         }
@@ -971,7 +971,7 @@ public class FieldAnalyser extends AbstractAnalyser {
 
         if (modified) {
             fieldAnalysis.setProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD, Level.TRUE);
-            log(NOT_MODIFIED, "Mark field {} as @Modified", fqn);
+            log(MODIFICATION, "Mark field {} as @Modified", fqn);
             return DONE;
         }
 
@@ -987,7 +987,7 @@ public class FieldAnalyser extends AbstractAnalyser {
 
         if (allContextModificationsDefined) {
             fieldAnalysis.setProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD, Level.FALSE);
-            log(NOT_MODIFIED, "Mark field {} as @NotModified", fqn);
+            log(MODIFICATION, "Mark field {} as @NotModified", fqn);
             return DONE;
         }
 

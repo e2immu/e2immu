@@ -32,10 +32,8 @@ dependencies {
     implementation(project(':analyser')) {
         exclude group: 'ch.qos.logback'
     }
-    implementation(project(':analyser-cli')) {
-        exclude group: 'ch.qos.logback'
-    }
-
+    implementation(project(':analyser-cli'))
+    implementation(project(':analyser-store-uploader'))
     // GRADLE PLUGIN
     implementation(gradleApi())
 

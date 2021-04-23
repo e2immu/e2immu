@@ -37,7 +37,7 @@ import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.BYTECODE_INSPECTOR;
-import static org.e2immu.analyser.util.Logger.LogTarget.INSPECT;
+import static org.e2immu.analyser.util.Logger.LogTarget.INSPECTOR;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class TestInspectAnnotatedAPIs {
@@ -45,7 +45,7 @@ public class TestInspectAnnotatedAPIs {
 
     @BeforeAll
     public static void beforeClass() {
-        org.e2immu.analyser.util.Logger.activate(BYTECODE_INSPECTOR, INSPECT);
+        org.e2immu.analyser.util.Logger.activate(BYTECODE_INSPECTOR, INSPECTOR);
     }
 
     @Test
@@ -69,7 +69,7 @@ public class TestInspectAnnotatedAPIs {
     @Test
     public void testInspectAnnotatedAPIFile() throws IOException {
         org.e2immu.analyser.util.Logger.activate(org.e2immu.analyser.util.Logger.LogTarget.BYTECODE_INSPECTOR,
-                org.e2immu.analyser.util.Logger.LogTarget.INSPECT,
+                org.e2immu.analyser.util.Logger.LogTarget.INSPECTOR,
                 org.e2immu.analyser.util.Logger.LogTarget.ANALYSER);
         Configuration configuration = new Configuration.Builder()
                 .setInputConfiguration(new InputConfiguration.Builder()
