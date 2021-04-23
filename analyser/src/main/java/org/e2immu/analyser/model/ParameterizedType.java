@@ -491,6 +491,10 @@ public class ParameterizedType {
             return ASSIGN_TO_NULL;
         }
 
+        // TWO TYPES, POTENTIALLY WITH PARAMETERS, but not TYPE PARAMETERS
+        // List<T> vs LinkedList; int vs double
+        if (Primitives.isJavaLangObject(this)) return IN_HIERARCHY;
+
         // ARRAYS
 
         if (!ignoreArrays) {
@@ -499,10 +503,6 @@ public class ParameterizedType {
                 return numericIsAssignableFrom(inspectionProvider, other, true, Mode.COVARIANT);
             }
         }
-
-        // TWO TYPES, POTENTIALLY WITH PARAMETERS, but not TYPE PARAMETERS
-        // List<T> vs LinkedList; int vs double
-        if (Primitives.isJavaLangObject(this)) return IN_HIERARCHY;
 
         if (typeInfo != null && other.typeInfo != null) {
 
@@ -722,16 +722,6 @@ public class ParameterizedType {
             return parameters.get(0).bestTypeInfo();
         }
         return null;
-    }
-
-    public boolean isScratchPadType() {
-        if (typeInfo != null) {
-            return typeInfo.isPrivateNested();
-        }
-        if (typeParameter != null && wildCard == WildCard.EXTENDS && parameters.size() == 1) {
-            return parameters.get(0).isScratchPadType();
-        }
-        return false;
     }
 
     /**

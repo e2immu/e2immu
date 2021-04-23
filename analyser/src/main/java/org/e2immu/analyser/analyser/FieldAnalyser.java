@@ -889,9 +889,6 @@ public class FieldAnalyser extends AbstractAnalyser {
                     .noneMatch(VariableInfo::isAssigned);
         }
         fieldAnalysis.setProperty(VariableProperty.FINAL, Level.fromBool(isFinal));
-        if (isFinal && fieldInfo.type.isScratchPadType()) {
-            messages.add(Message.newMessage(new Location(fieldInfo), Message.Label.EFFECTIVELY_FINAL_FIELD_NOT_RECORD));
-        }
         log(FINAL, "Mark field {} as " + (isFinal ? "" : "not ") +
                 "effectively final", fqn);
 

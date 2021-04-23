@@ -14,14 +14,11 @@
 
 package org.e2immu.analyser.testexample;
 
-import org.e2immu.annotation.Container;
-import org.e2immu.annotation.Modified;
-import org.e2immu.annotation.NotModified;
-import org.e2immu.annotation.NotModified1;
+import org.e2immu.annotation.*;
 
 import java.util.function.Consumer;
 
-public class NotModified1_0 {
+public class DynamicContainer_0 {
 
     @Container
     static class Counter {
@@ -41,12 +38,20 @@ public class NotModified1_0 {
     @NotModified
     private final Counter myCounter = new Counter();
 
+    /**
+     * The value held by incrementer is a concrete implementation of a consumer, i.e., an anonymous
+     * subtype. Because it has no fields, it is @E2Immutable. It is not a @Container, because of the modification to
+     * the parameters in the implicit accept method.
+     */
     @NotModified
-    @NotModified1(absent = true)
+    @E2Immutable
     private static final Consumer<Counter> incrementer = Counter::increment;
 
+    /**
+     * In its explicit form, the annotation @Modified is visible.
+     */
     @NotModified
-    @NotModified1(absent = true)
+    @E2Immutable
     private static final Consumer<Counter> explicitIncrementer = new Consumer<Counter>() {
         @Override
         @NotModified
@@ -55,12 +60,18 @@ public class NotModified1_0 {
         }
     };
 
+    /**
+     * Again invisible; but now there is no change to the parameter of accept, so the anonymous type is a container.
+     */
     @NotModified
-    @NotModified1
+    @E2Container
     private static final Consumer<Counter> printer = counter -> System.out.println("Have " + counter.getCounter());
 
+    /**
+     * ... and now visible. The concrete implementation makes no changes, the anonymous type is a container.
+     */
     @NotModified
-    @NotModified1
+    @E2Container
     private static final Consumer<Counter> explicitPrinter = new Consumer<Counter>() {
         @Override
         @NotModified
@@ -69,15 +80,18 @@ public class NotModified1_0 {
         }
     };
 
-    private void apply(@NotModified1(contract = true) Consumer<Counter> consumer) {
+    /**
+     * we will now enforce that consumer is a container
+     */
+    private void apply(@Container(contract = true) Consumer<Counter> consumer) {
         consumer.accept(myCounter);
     }
 
     public void useApply() {
         apply(printer); // should be fine
         apply(explicitPrinter);
-        apply(incrementer); // should cause an ERROR
-        apply(explicitIncrementer); // should case an ERROR
+        apply(incrementer); // should cause an ERROR; incrementer is not a container
+        apply(explicitIncrementer); // should case an ERROR; explicit incrementer is not a container
     }
 
 }

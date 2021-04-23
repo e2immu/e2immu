@@ -203,7 +203,8 @@ public class Primitives {
     }
 
     public static boolean isJavaLangObject(ParameterizedType parameterizedType) {
-        return parameterizedType.typeInfo != null && isJavaLangObject(parameterizedType.typeInfo);
+        return parameterizedType.arrays == 0 &&
+                parameterizedType.typeInfo != null && isJavaLangObject(parameterizedType.typeInfo);
     }
 
     public static boolean needsParent(TypeInfo typeInfo) {

@@ -368,7 +368,7 @@ class JavaLang {
     static class Integer$ {
 
         @NotNull
-        static String toString(int i) { return null; }
+        String toString(int i) { return null; }
     }
 
     @E2Container
@@ -394,7 +394,7 @@ class JavaLang {
         @IgnoreModifications
         static final PrintStream err = null;
 
-        static void arraycopy(@NotNull @NotModified Object src, int srcPos, @NotNull Object dest, int destPos, int length) {
+        static void arraycopy(@NotNull @NotModified Object src, int srcPos, @NotNull @Modified Object dest, int destPos, int length) {
         }
     }
 

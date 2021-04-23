@@ -44,7 +44,7 @@ public class StringUtil {
         return res;
     }
 
-    //@NotNull TODO very hard to prove
+    @NotNull
     @NotModified
     public static <E> String join(@NotNull Collection<E> es, @NotNull Function<E, ?> f) {
         return es.stream().map(f).map(Object::toString).collect(Collectors.joining(", "));
@@ -72,6 +72,7 @@ public class StringUtil {
     n <=100  >> 00..99
     n <=1000 >> 000..999
      */
+    @NotNull
     public static String pad(int i, int n) {
         String s = Integer.toString(i);
         if (n <= 10) return s;
@@ -87,6 +88,7 @@ public class StringUtil {
         throw new UnsupportedOperationException("?? awfully long method");
     }
 
+    @NotNull
     public static String capitalise(String name) {
         assert name != null && !name.isEmpty();
         return Character.toUpperCase(name.charAt(0)) + name.substring(1);

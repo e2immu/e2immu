@@ -1,4 +1,3 @@
-
 /*
  * e2immu: a static code analyser for effective and eventual immutability
  * Copyright 2020-2021, Bart Naudts, https://www.e2immu.org
@@ -13,21 +12,28 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parserfailing;
+package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.parser.CommonTestRunner;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
-import java.util.List;
 
-public class Test_Util_03_StringUtil extends CommonTestRunner {
+public class Test_51_TypeIndependence extends CommonTestRunner {
+
+    public Test_51_TypeIndependence() {
+        super(true);
+    }
 
     @Test
-    public void test() throws IOException {
-        testUtilClass(List.of("StringUtil"), 0, 0, new DebugConfiguration.Builder()
+    public void test_0() throws IOException {
+        testClass("TypeIndependence_0", 0, 0, new DebugConfiguration.Builder()
                 .build());
     }
 
+    @Test
+    public void test_1() throws IOException {
+        testClass("TypeIndependence_1", 0, 0, new DebugConfiguration.Builder()
+                .build());
+    }
 }

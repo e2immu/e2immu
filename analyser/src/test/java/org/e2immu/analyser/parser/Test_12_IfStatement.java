@@ -170,4 +170,11 @@ public class Test_12_IfStatement extends CommonTestRunner {
         testClass("IfStatement_6", 4, 0, new DebugConfiguration.Builder()
                 .build());
     }
+
+
+    @Test
+    public void test_7() throws IOException {
+        testClass("IfStatement_7", 0, 0, new DebugConfiguration.Builder()
+                .build());
+    }
 }

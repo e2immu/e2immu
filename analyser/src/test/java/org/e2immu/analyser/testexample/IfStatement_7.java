@@ -14,41 +14,14 @@
 
 package org.e2immu.analyser.testexample;
 
-import org.e2immu.annotation.E1Container;
+import org.e2immu.annotation.NotNull;
 
-import java.util.HashSet;
-import java.util.Set;
-import java.util.function.Consumer;
-import java.util.stream.Stream;
+public class IfStatement_7 {
 
-/**
- * Goal is to verify independence rules for functional parameters
- */
-public class IndependentFunctionalParameterChecks {
-
-    @E1Container
-    static class Example1<T> {
-
-        private final Set<T> data;
-
-        public Example1(Set<T> ts) {
-            this.data = new HashSet<>(ts);
-        }
-
-        public T getFirst() {
-            return stream().findFirst().orElseThrow();
-        }
-
-        public Stream<T> stream() {
-            return data.stream();
-        }
-
-        public void unsafeVisit(Consumer<Set<T>> consumer) {
-            consumer.accept(data);
-        }
-
-        public void safeVisit(Consumer<T> consumer) {
-            data.forEach(consumer);
-        }
+    @NotNull
+    public static String pad(int i) {
+        if (i <= 9) return "" + i;
+        throw new UnsupportedOperationException();
     }
 }
+

@@ -89,6 +89,11 @@ public record UnknownExpression(ParameterizedType parameterizedType, String msg)
     }
 
     @Override
+    public Expression translate(TranslationMap translationMap) {
+        return this;
+    }
+
+    @Override
     public ParameterizedType returnType() {
         return parameterizedType;
     }

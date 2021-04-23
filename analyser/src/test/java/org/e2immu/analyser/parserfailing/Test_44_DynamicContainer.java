@@ -29,9 +29,9 @@ import java.util.Set;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-public class Test_44_NotModified1 extends CommonTestRunner {
+public class Test_44_DynamicContainer extends CommonTestRunner {
 
-    public Test_44_NotModified1() {
+    public Test_44_DynamicContainer() {
         super(true);
     }
 
@@ -52,7 +52,7 @@ public class Test_44_NotModified1 extends CommonTestRunner {
             }
         };
 
-        testClass("NotModified1_0", 2, 0, new DebugConfiguration.Builder()
+        testClass("DynamicContainer_0", 2, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
