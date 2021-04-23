@@ -300,7 +300,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         // null scope
         Expression objectValue = objectResult.value();
         if (objectValue.isInstanceOf(NullConstant.class)) {
-            builder.raiseError(Message.NULL_POINTER_EXCEPTION);
+            builder.raiseError(Message.Label.NULL_POINTER_EXCEPTION);
         }
 
         // process parameters
@@ -433,11 +433,11 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         if (variable instanceof FieldReference && (evaluationContext.getCurrentMethod() == null ||
                 evaluationContext.getCurrentMethod().methodAnalysis.getProperty(VariableProperty.FINALIZER) != Level.TRUE)) {
             // ensure that the current method has been marked @Finalizer
-            builder.raiseError(Message.FINALIZER_METHOD_CALLED_ON_FIELD_NOT_IN_FINALIZER);
+            builder.raiseError(Message.Label.FINALIZER_METHOD_CALLED_ON_FIELD_NOT_IN_FINALIZER);
             return true;
         }
         if (variable instanceof ParameterInfo) {
-            builder.raiseError(Message.FINALIZER_METHOD_CALLED_ON_PARAMETER);
+            builder.raiseError(Message.Label.FINALIZER_METHOD_CALLED_ON_PARAMETER);
             return true;
         }
         return false;
@@ -528,7 +528,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         } else if (objectValue instanceof TypeExpression) {
             assert methodInfo.methodInspection.get().isStatic();
             return null; // static method
-        } else if(objectValue instanceof NullConstant || objectValue instanceof ClassExpression) {
+        } else if (objectValue instanceof NullConstant || objectValue instanceof ClassExpression) {
             return null; // has already caused an error earlier on
         } else {
             newObject = objectValue.getInstance(builder.build());
@@ -677,7 +677,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             ParameterizedType type = objectValue.returnType();
             if (type != null && type.typeInfo != null && type.typeInfo ==
                     evaluationContext.getPrimitives().stringTypeInfo) {
-                builder.raiseError(Message.UNNECESSARY_METHOD_CALL);
+                builder.raiseError(Message.Label.UNNECESSARY_METHOD_CALL, "toString()");
             }
         }
 
@@ -691,7 +691,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         MethodAnalysis methodAnalysis = evaluationContext.getAnalyserContext().getMethodAnalysis(method);
         int modified = methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD);
         if (modified == Level.TRUE && evaluationContext.cannotBeModified(objectValue)) {
-            builder.raiseError(Message.CALLING_MODIFYING_METHOD_ON_E2IMMU,
+            builder.raiseError(Message.Label.CALLING_MODIFYING_METHOD_ON_E2IMMU,
                     "Method: " + methodInfo.distinguishingName() + ", Type: " + objectValue.returnType());
         }
     }
@@ -708,7 +708,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 if (methodNotNull != Level.DELAY) {
                     boolean isNotNull = MultiLevel.isEffectivelyNotNull(methodNotNull);
                     if (!isNotNull) {
-                        builder.raiseError(Message.POTENTIAL_NULL_POINTER_EXCEPTION,
+                        builder.raiseError(Message.Label.POTENTIAL_NULL_POINTER_EXCEPTION,
                                 "Result of method call " + methodInspection.getFullyQualifiedName());
                     }
                 } // else: delaying is fine
@@ -800,7 +800,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         if (identity == Level.TRUE) return evaluationContext.linkedVariables(parameterExpressions.get(0));
 
         // RULE 3: the current implementation doesn't link to "this" as object.
-        if(object instanceof VariableExpression ve && ve.variable() instanceof This) {
+        if (object instanceof VariableExpression ve && ve.variable() instanceof This) {
             return LinkedVariables.EMPTY;
         }
 

@@ -75,8 +75,8 @@ public abstract class CommonTestRunner {
         assertFalse(types.isEmpty());
         parser.getMessages().forEach(message -> LOGGER.info(message.toString()));
         assertEquals(errorsToExpect, (int) parser.getMessages()
-                .filter(m -> m.severity == Message.Severity.ERROR).count(), "ERRORS: ");
+                .filter(m -> m.message().severity == Message.Severity.ERROR).count(), "ERRORS: ");
         assertEquals(warningsToExpect, (int) parser.getMessages()
-                .filter(m -> m.severity == Message.Severity.WARN).count(), "WARNINGS: ");
+                .filter(m -> m.message().severity == Message.Severity.WARN).count(), "WARNINGS: ");
     }
 }

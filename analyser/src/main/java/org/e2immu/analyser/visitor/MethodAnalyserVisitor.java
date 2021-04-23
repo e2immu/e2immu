@@ -40,7 +40,7 @@ public interface MethodAnalyserVisitor {
 
         public VariableInfo getFieldAsVariable(FieldInfo fieldInfo) {
             StatementAnalysis lastStatement = methodAnalysis.getLastStatement();
-            return lastStatement == null ? null: lastStatement.getLatestVariableInfo(fieldInfo.fullyQualifiedName());
+            return lastStatement == null ? null : lastStatement.getLatestVariableInfo(fieldInfo.fullyQualifiedName());
         }
 
         public VariableInfo getReturnAsVariable() {
@@ -51,9 +51,9 @@ public interface MethodAnalyserVisitor {
             return methodAnalysis.getLastStatement().getLatestVariableInfo(methodInfo.typeInfo.fullyQualifiedName + ".this");
         }
 
-        public String haveError(String message) {
+        public String haveError(Message.Label message) {
             return messageStream.get()
-                    .filter(m -> m.message.contains(message))
+                    .filter(m -> m.message() == message)
                     .map(Message::toString)
                     .findFirst()
                     .orElse(null);

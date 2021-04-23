@@ -112,7 +112,8 @@ public class ParameterAnalyser {
                 boolean complain = variableProperty == VariableProperty.MODIFIED_VARIABLE
                         ? value > valueFromOverrides : value < valueFromOverrides;
                 if (complain) {
-                    messages.add(Message.newMessage(parameterAnalysis.location, Message.WORSE_THAN_OVERRIDDEN_METHOD_PARAMETER,
+                    messages.add(Message.newMessage(parameterAnalysis.location,
+                            Message.Label.WORSE_THAN_OVERRIDDEN_METHOD_PARAMETER,
                             variableProperty.name + ", parameter " + parameterInfo.name));
                 }
             }
@@ -122,7 +123,8 @@ public class ParameterAnalyser {
     private void check(Class<?> annotation, AnnotationExpression annotationExpression) {
         parameterInfo.error(parameterAnalysis, annotation, annotationExpression).ifPresent(mustBeAbsent -> {
             Message error = Message.newMessage(new Location(parameterInfo),
-                    mustBeAbsent ? Message.ANNOTATION_UNEXPECTEDLY_PRESENT : Message.ANNOTATION_ABSENT, annotation.getSimpleName());
+                    mustBeAbsent ? Message.Label.ANNOTATION_UNEXPECTEDLY_PRESENT
+                            : Message.Label.ANNOTATION_ABSENT, annotation.getSimpleName());
             messages.add(error);
         });
     }
@@ -339,22 +341,22 @@ public class ParameterAnalyser {
         if (contractedBefore) {
             if (contractImmutable == EFFECTIVELY_E2IMMUTABLE) {
                 if (formallyImmutable != EVENTUALLY_E2IMMUTABLE) {
-                    messages.add(Message.newMessage(parameterAnalysis.location, Message.INCOMPATIBLE_IMMUTABILITY_CONTRACT,
-                            "Contracted to be @E2Immutable @BeforeMark, formal type is not eventually @E2Immutable"));
+                    messages.add(Message.newMessage(parameterAnalysis.location,
+                            Message.Label.INCOMPATIBLE_IMMUTABILITY_CONTRACT_BEFORE_NOT_EE2));
                     return formallyImmutable;
                 }
                 return MultiLevel.EVENTUALLY_E2IMMUTABLE_BEFORE_MARK;
             }
             if (contractImmutable == EFFECTIVELY_E1IMMUTABLE) {
                 if (formallyImmutable != MultiLevel.EVENTUALLY_E1IMMUTABLE) {
-                    messages.add(Message.newMessage(parameterAnalysis.location, Message.INCOMPATIBLE_IMMUTABILITY_CONTRACT,
-                            "Contracted to be @E1Immutable @BeforeMark, formal type is not eventually @E1Immutable"));
+                    messages.add(Message.newMessage(parameterAnalysis.location,
+                            Message.Label.INCOMPATIBLE_IMMUTABILITY_CONTRACT_BEFORE_NOT_EE1));
                     return formallyImmutable;
                 }
                 return MultiLevel.EVENTUALLY_E1IMMUTABLE_BEFORE_MARK;
             }
-            messages.add(Message.newMessage(parameterAnalysis.location, Message.INCOMPATIBLE_IMMUTABILITY_CONTRACT,
-                    "Contracted to be @BeforeMark, formal type is not eventually immutable"));
+            messages.add(Message.newMessage(parameterAnalysis.location,
+                    Message.Label.INCOMPATIBLE_IMMUTABILITY_CONTRACT_BEFORE_NOT_EVENTUALLY_IMMUTABLE));
             return formallyImmutable;
         }
 
@@ -368,16 +370,16 @@ public class ParameterAnalyser {
 
         if (contractImmutable == EFFECTIVELY_E2IMMUTABLE) {
             if (formallyImmutable != EVENTUALLY_E2IMMUTABLE && formallyImmutable != EFFECTIVELY_E2IMMUTABLE) {
-                messages.add(Message.newMessage(parameterAnalysis.location, Message.INCOMPATIBLE_IMMUTABILITY_CONTRACT,
-                        "Contracted to be @E2Immutable after the mark, formal type is not (eventually) @E2Immutable"));
+                messages.add(Message.newMessage(parameterAnalysis.location,
+                        Message.Label.INCOMPATIBLE_IMMUTABILITY_CONTRACT_AFTER_NOT_EE2));
                 return formallyImmutable;
             }
             return formallyImmutable == EVENTUALLY_E2IMMUTABLE ? EVENTUALLY_E2IMMUTABLE_AFTER_MARK : EFFECTIVELY_E2IMMUTABLE;
         }
         if (contractImmutable == EFFECTIVELY_E1IMMUTABLE) {
             if (formallyImmutable != EVENTUALLY_E1IMMUTABLE && formallyImmutable != EFFECTIVELY_E1IMMUTABLE) {
-                messages.add(Message.newMessage(parameterAnalysis.location, Message.INCOMPATIBLE_IMMUTABILITY_CONTRACT,
-                        "Contracted to be @E2Immutable after the mark, formal type is not (eventually) @E1Immutable"));
+                messages.add(Message.newMessage(parameterAnalysis.location,
+                        Message.Label.INCOMPATIBLE_IMMUTABILITY_CONTRACT_AFTER_NOT_EE1));
                 return formallyImmutable;
             }
             return formallyImmutable == EVENTUALLY_E1IMMUTABLE ? EVENTUALLY_E1IMMUTABLE_AFTER_MARK : EFFECTIVELY_E1IMMUTABLE;
@@ -541,7 +543,7 @@ public class ParameterAnalyser {
             if (lastStatementAnalysis != null && parameterInfo.owner.isNotOverridingAnyOtherMethod()
                     && !parameterInfo.owner.isCompanionMethod()) {
                 messages.add(Message.newMessage(new Location(parameterInfo.owner),
-                        Message.UNUSED_PARAMETER, parameterInfo.simpleName()));
+                        Message.Label.UNUSED_PARAMETER, parameterInfo.simpleName()));
             }
 
             parameterAnalysis.resolveFieldDelays();

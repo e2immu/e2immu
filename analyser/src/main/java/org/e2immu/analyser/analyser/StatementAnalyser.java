@@ -579,7 +579,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         AnalysisStatus analysisStatus = statementAnalysis.flowData.computeGuaranteedToBeReachedReturnUnreachable
                 (sharedState.previous, execution, state, stateIsDelayed, localConditionManagerIsDelayed);
         if (analysisStatus == DONE_ALL) {
-            statementAnalysis.ensure(Message.newMessage(getLocation(), Message.UNREACHABLE_STATEMENT));
+            statementAnalysis.ensure(Message.newMessage(getLocation(), Message.Label.UNREACHABLE_STATEMENT));
             return DONE_ALL; // means: don't run any of the other steps!!
         }
         return analysisStatus;
@@ -863,7 +863,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             boolean preconditionIsDelayed = sharedState.evaluationContext
                     .isDelayed(preconditionExpression);
             if (!preconditionIsDelayed && preconditionExpression.isBoolValueFalse()) {
-                statementAnalysis.ensure(Message.newMessage(getLocation(), Message.INCOMPATIBLE_PRECONDITION));
+                statementAnalysis.ensure(Message.newMessage(getLocation(), Message.Label.INCOMPATIBLE_PRECONDITION));
                 statementAnalysis.stateData.setPreconditionAllowEquals(Precondition.empty(statementAnalysis.primitives));
             } else {
                 Expression translated = sharedState.evaluationContext
@@ -924,7 +924,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                                                                     ConditionManager localConditionManager) {
         Expression result = localConditionManager.evaluate(evaluationContext, untranslated);
         if (result.isBoolValueFalse()) {
-            statementAnalysis.ensure(Message.newMessage(getLocation(), Message.INCOMPATIBLE_PRECONDITION));
+            statementAnalysis.ensure(Message.newMessage(getLocation(), Message.Label.INCOMPATIBLE_PRECONDITION));
         }
     }
 
@@ -945,7 +945,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                     int notNullExpression = vi.getProperty(NOT_NULL_EXPRESSION);
                     if (vi.valueIsSet() && externalNotNull == MultiLevel.NULLABLE
                             && notNullExpression == MultiLevel.NULLABLE) {
-                        statementAnalysis.ensure(Message.newMessage(getLocation(), Message.POTENTIAL_NULL_POINTER_EXCEPTION,
+                        statementAnalysis.ensure(Message.newMessage(getLocation(),
+                                Message.Label.POTENTIAL_NULL_POINTER_EXCEPTION,
                                 "Variable: " + variable.simpleName()));
                     }
                 }
@@ -963,7 +964,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             VariableInfo vi = statementAnalysis.findOrNull(variable, VariableInfoContainer.Level.MERGE);
             int cnn = vi.getProperty(CONTEXT_NOT_NULL); // after merge, CNN should still be too low
             if (cnn < MultiLevel.EFFECTIVELY_NOT_NULL) {
-                statementAnalysis.ensure(Message.newMessage(getLocation(), Message.CONDITION_EVALUATES_TO_CONSTANT_ENN,
+                statementAnalysis.ensure(Message.newMessage(getLocation(),
+                        Message.Label.CONDITION_EVALUATES_TO_CONSTANT_ENN,
                         "Variable: " + variable.fullyQualifiedName()));
             }
         });
@@ -1832,7 +1834,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         if (!never.isEmpty() || !always.isEmpty()) {
             String msg = !always.isEmpty() ? "Is always reached: " + String.join("; ", always) :
                     "Is never reached: " + String.join("; ", never);
-            statementAnalysis.ensure(Message.newMessage(getLocation(), Message.TRIVIAL_CASES_IN_SWITCH, msg));
+            statementAnalysis.ensure(Message.newMessage(getLocation(), Message.Label.TRIVIAL_CASES_IN_SWITCH, msg));
         }
     }
 
@@ -1842,16 +1844,16 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         Expression evaluated = sharedState.localConditionManager.evaluate(sharedState.evaluationContext, value);
 
         if (evaluated.isConstant()) {
-            String message;
+            Message.Label message;
             List<Optional<StatementAnalysis>> blocks = statementAnalysis.navigationData.blocks.get();
             if (statementAnalysis.statement instanceof IfElseStatement) {
-                message = Message.CONDITION_EVALUATES_TO_CONSTANT;
+                message = Message.Label.CONDITION_EVALUATES_TO_CONSTANT;
 
                 blocks.get(0).ifPresent(firstStatement -> {
                     boolean isTrue = evaluated.isBoolValueTrue();
                     if (!isTrue) {
                         firstStatement.ensure(Message.newMessage(new Location(myMethodAnalyser.methodInfo,
-                                firstStatement.index), Message.UNREACHABLE_STATEMENT));
+                                firstStatement.index), Message.Label.UNREACHABLE_STATEMENT));
                     }
                     // guaranteed to be reached in block is always ALWAYS because it is the first statement
                     firstStatement.flowData.setGuaranteedToBeReachedInMethod(isTrue ? ALWAYS : NEVER);
@@ -1861,7 +1863,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                         boolean isTrue = evaluated.isBoolValueTrue();
                         if (isTrue) {
                             firstStatement.ensure(Message.newMessage(new Location(myMethodAnalyser.methodInfo,
-                                    firstStatement.index), Message.UNREACHABLE_STATEMENT));
+                                    firstStatement.index), Message.Label.UNREACHABLE_STATEMENT));
                         }
                         firstStatement.flowData.setGuaranteedToBeReachedInMethod(isTrue ? NEVER : ALWAYS);
                     });
@@ -1869,14 +1871,14 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             } else if (statementAnalysis.statement instanceof AssertStatement) {
                 boolean isTrue = evaluated.isBoolValueTrue();
                 if (isTrue) {
-                    message = Message.ASSERT_EVALUATES_TO_CONSTANT_TRUE;
+                    message = Message.Label.ASSERT_EVALUATES_TO_CONSTANT_TRUE;
                 } else {
-                    message = Message.ASSERT_EVALUATES_TO_CONSTANT_FALSE;
+                    message = Message.Label.ASSERT_EVALUATES_TO_CONSTANT_FALSE;
                     Optional<StatementAnalysis> next = statementAnalysis.navigationData.next.get();
                     next.ifPresent(nextAnalysis -> {
                         nextAnalysis.flowData.setGuaranteedToBeReached(NEVER);
                         nextAnalysis.ensure(Message.newMessage(new Location(myMethodAnalyser.methodInfo, nextAnalysis.index),
-                                Message.UNREACHABLE_STATEMENT));
+                                Message.Label.UNREACHABLE_STATEMENT));
                     });
                 }
             } else throw new UnsupportedOperationException();
@@ -1996,7 +1998,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                     flowData.setGuaranteedToBeReachedInMethod(NEVER);
 
                     if (statement() instanceof LoopStatement) {
-                        statementAnalysis.ensure(Message.newMessage(getLocation(), Message.EMPTY_LOOP));
+                        statementAnalysis.ensure(Message.newMessage(getLocation(), Message.Label.EMPTY_LOOP));
                     }
 
                     sharedState.builder.addMessages(executionOfBlock.startOfBlock.statementAnalysis.messages.stream());
@@ -2309,7 +2311,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                                     isLocalAndLocalToThisBlock ||
                                     variableInfo.variable().isLocal() && bestAlwaysInterrupt == InterruptsFlow.RETURN &&
                                             localVariableAssignmentInThisBlock(variableInfo)) {
-                                statementAnalysis.ensure(Message.newMessage(getLocation(), Message.USELESS_ASSIGNMENT, variableInfo.name()));
+                                statementAnalysis.ensure(Message.newMessage(getLocation(),
+                                        Message.Label.USELESS_ASSIGNMENT, variableInfo.name()));
                             }
                         }
                     });
@@ -2347,14 +2350,14 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                     .filter(vi -> !(vi.variable() instanceof DependentVariable))
                     .filter(vi -> statementAnalysis.isLocalVariableAndLocalToThisBlock(vi.name()) && !vi.isRead())
                     .forEach(vi -> statementAnalysis.ensure(Message.newMessage(getLocation(),
-                            Message.UNUSED_LOCAL_VARIABLE, vi.name())));
+                            Message.Label.UNUSED_LOCAL_VARIABLE, vi.name())));
         }
         return DONE;
     }
 
     private AnalysisStatus checkUnusedLoopVariables() {
         if (statement() instanceof LoopStatement
-                && !statementAnalysis.containsMessage(Message.EMPTY_LOOP)
+                && !statementAnalysis.containsMessage(Message.Label.EMPTY_LOOP)
                 && myMethodAnalyser.methodInfo.isNotATestMethod()) {
             statementAnalysis.variables.stream()
                     .filter(e -> index().equals(e.getValue().getStatementIndexOfThisLoopVariable()))
@@ -2364,7 +2367,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                         StatementAnalysis statementAnalysis = first == null ? null : first.lastStatement().statementAnalysis;
                         if (statementAnalysis == null || !statementAnalysis.variables.isSet(loopVarFqn) ||
                                 !statementAnalysis.variables.get(loopVarFqn).current().isRead()) {
-                            this.statementAnalysis.ensure(Message.newMessage(getLocation(), Message.UNUSED_LOOP_VARIABLE, loopVarFqn));
+                            this.statementAnalysis.ensure(Message.newMessage(getLocation(),
+                                    Message.Label.UNUSED_LOOP_VARIABLE, loopVarFqn));
                         }
                     });
         }
@@ -2394,7 +2398,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 return DELAYS;
             }
             if (modified == Level.FALSE) {
-                statementAnalysis.ensure(Message.newMessage(getLocation(), Message.IGNORING_RESULT_OF_METHOD_CALL,
+                statementAnalysis.ensure(Message.newMessage(getLocation(), Message.Label.IGNORING_RESULT_OF_METHOD_CALL,
                         methodCall.getMethodInfo().fullyQualifiedName()));
             }
         }

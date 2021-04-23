@@ -51,8 +51,10 @@ public class Test_04_Warnings extends CommonTestRunner {
             // ERROR: Unused variable "a"
             // ERROR: useless assignment to "a" as well
             if ("Warnings_0".equals(d.methodInfo().name) && "1".equals(d.statementId())) {
-                assertEquals("ERROR in M:" + TYPE + ":1: Unused local variable: a", d.haveError(Message.UNUSED_LOCAL_VARIABLE));
-                assertEquals("ERROR in M:" + TYPE + ":1: Useless assignment: a", d.haveError(Message.USELESS_ASSIGNMENT));
+                assertEquals("ERROR in M:" + TYPE + ":1: Unused local variable: a",
+                        d.haveError(Message.Label.UNUSED_LOCAL_VARIABLE));
+                assertEquals("ERROR in M:" + TYPE + ":1: Useless assignment: a",
+                        d.haveError(Message.Label.USELESS_ASSIGNMENT));
 
                 AnalysisStatus expectStatus = d.iteration() == 0 ? AnalysisStatus.PROGRESS : AnalysisStatus.DONE;
                 assertEquals(expectStatus, d.result().analysisStatus());
@@ -62,7 +64,7 @@ public class Test_04_Warnings extends CommonTestRunner {
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             // ERROR: b is never read
             if ("b".equals(d.fieldInfo().name) && d.iteration() >= 1) {
-                assertNotNull(d.haveError(Message.PRIVATE_FIELD_NOT_READ));
+                assertNotNull(d.haveError(Message.Label.PRIVATE_FIELD_NOT_READ));
             }
         };
 
@@ -95,10 +97,11 @@ public class Test_04_Warnings extends CommonTestRunner {
                 // ERROR: t.trim() result is not used
                 if ("2".equals(d.statementId())) {
                     // ERROR: unused variable "s"
-                    assertEquals("ERROR in M:method1:2: Unused local variable: s", d.haveError(Message.UNUSED_LOCAL_VARIABLE));
-                    assertNull(d.haveError(Message.USELESS_ASSIGNMENT));
+                    assertEquals("ERROR in M:method1:2: Unused local variable: s",
+                            d.haveError(Message.Label.UNUSED_LOCAL_VARIABLE));
+                    assertNull(d.haveError(Message.Label.USELESS_ASSIGNMENT));
                     if (d.iteration() >= 2) {
-                        assertNotNull(d.haveError(Message.IGNORING_RESULT_OF_METHOD_CALL));
+                        assertNotNull(d.haveError(Message.Label.IGNORING_RESULT_OF_METHOD_CALL));
                     }
                     assertEquals("t.length()>=19", d.state().toString());
                 }
@@ -106,8 +109,8 @@ public class Test_04_Warnings extends CommonTestRunner {
             // ERROR: Unused variable "a" Gone since 20210403
             // ERROR: useless assignment to "a" as well
             if ("UnusedLocalVariableChecks".equals(d.methodInfo().name) && "0".equals(d.statementId())) {
-                //assertEquals("ERROR in M:UnusedLocalVariableChecks:0: Unused local variable: a", d.haveError(Message.UNUSED_LOCAL_VARIABLE));
-                assertEquals("ERROR in M:UnusedLocalVariableChecks:0: Useless assignment: a", d.haveError(Message.USELESS_ASSIGNMENT));
+                assertEquals("ERROR in M:UnusedLocalVariableChecks:0: Useless assignment: a",
+                        d.haveError(Message.Label.USELESS_ASSIGNMENT));
 
                 assertEquals(AnalysisStatus.DONE, analysisStatus);
             }
@@ -115,7 +118,8 @@ public class Test_04_Warnings extends CommonTestRunner {
                 assertEquals(AnalysisStatus.DONE, analysisStatus);
             }
             if ("checkArray2".equals(d.methodInfo().name) && "2".equals(d.statementId())) {
-                assertEquals("ERROR in M:checkArray2:2: Useless assignment: integers[i]", d.haveError(Message.USELESS_ASSIGNMENT));
+                assertEquals("ERROR in M:checkArray2:2: Useless assignment: integers[i]",
+                        d.haveError(Message.Label.USELESS_ASSIGNMENT));
 
                 assertEquals(AnalysisStatus.DONE, analysisStatus);
             }
@@ -130,7 +134,8 @@ public class Test_04_Warnings extends CommonTestRunner {
                 }
             }
             if ("checkForEach".equals(d.methodInfo().name) && "1".equals(d.statementId())) {
-                assertEquals("WARN in M:checkForEach:1: Unused loop variable: loopVar", d.haveError(Message.UNUSED_LOOP_VARIABLE));
+                assertEquals("WARN in M:checkForEach:1: Unused loop variable: loopVar",
+                        d.haveError(Message.Label.UNUSED_LOOP_VARIABLE));
             }
         };
 
@@ -228,7 +233,7 @@ public class Test_04_Warnings extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("method1".equals(d.methodInfo().name)) {
                 // ERROR: method should be static
-                assertNotNull(d.haveError(Message.METHOD_SHOULD_BE_MARKED_STATIC));
+                assertNotNull(d.haveError(Message.Label.METHOD_SHOULD_BE_MARKED_STATIC));
             }
         };
 
@@ -263,18 +268,18 @@ public class Test_04_Warnings extends CommonTestRunner {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("testDivisionByZero".equals(d.methodInfo().name)) {
                 if ("1".equals(d.statementId())) {
-                    assertNotNull(d.haveError(Message.DIVISION_BY_ZERO));
+                    assertNotNull(d.haveError(Message.Label.DIVISION_BY_ZERO));
                 }
                 if ("2".equals(d.statementId())) {
-                    assertNull(d.haveError(Message.DIVISION_BY_ZERO));
+                    assertNull(d.haveError(Message.Label.DIVISION_BY_ZERO));
                 }
             }
             if ("testDeadCode".equals(d.methodInfo().name)) {
                 if ("1".equals(d.statementId())) {
-                    assertNotNull(d.haveError(Message.CONDITION_EVALUATES_TO_CONSTANT));
+                    assertNotNull(d.haveError(Message.Label.CONDITION_EVALUATES_TO_CONSTANT));
                 }
                 if ("1.0.0".equals(d.statementId())) {
-                    assertNotNull(d.haveError(Message.UNREACHABLE_STATEMENT));
+                    assertNotNull(d.haveError(Message.Label.UNREACHABLE_STATEMENT));
                 }
             }
         };

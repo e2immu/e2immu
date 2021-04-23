@@ -45,16 +45,16 @@ public class Test_28_InnerClass extends CommonTestRunner {
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("nonPrivateNonFinal".equals(d.fieldInfo().name)) {
-                assertNotNull(d.haveError(Message.NON_PRIVATE_FIELD_NOT_FINAL));
+                assertNotNull(d.haveError(Message.Label.NON_PRIVATE_FIELD_NOT_FINAL));
             }
             if ("unusedInnerField".equals(d.fieldInfo().name)) {
-                assertNotNull(d.haveError(Message.PRIVATE_FIELD_NOT_READ));
+                assertNotNull(d.haveError(Message.Label.PRIVATE_FIELD_NOT_READ));
             }
         };
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("doAssignmentIntoNestedType".equals(d.methodInfo().name)) {
-                assertNotNull(d.haveError(Message.METHOD_SHOULD_BE_MARKED_STATIC));
+                assertNotNull(d.haveError(Message.Label.METHOD_SHOULD_BE_MARKED_STATIC));
             }
         };
 

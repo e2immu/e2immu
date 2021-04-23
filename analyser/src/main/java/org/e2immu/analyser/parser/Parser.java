@@ -127,7 +127,7 @@ public class Parser {
                         e -> ExpressionContext.forInspectionOfPrimaryType(e.getKey(), e.getValue(), anonymousTypeCounters)));
         List<SortedType> sortedPrimaryTypes = resolver.sortTypes(expressionContexts);
         messages.addAll(resolver.getMessageStream()
-                .filter(m -> m.severity != Message.Severity.WARN || reportWarnings));
+                .filter(m -> m.message().severity != Message.Severity.WARN || reportWarnings));
         return sortedPrimaryTypes;
     }
 

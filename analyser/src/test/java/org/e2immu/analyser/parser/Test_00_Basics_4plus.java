@@ -245,7 +245,7 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
                     }
                 }
                 if ("3".equals(d.statementId())) {
-                    assertNull(d.haveError(Message.ASSERT_EVALUATES_TO_CONSTANT_TRUE));
+                    assertNull(d.haveError(Message.Label.ASSERT_EVALUATES_TO_CONSTANT_TRUE));
                 }
             }
 
@@ -266,7 +266,7 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
                     assertEquals(v1Redirected, v2Redirected);
                 }
                 if ("2".equals(d.statementId()) && d.iteration() > 0) {
-                    assertNotNull(d.haveError(Message.ASSERT_EVALUATES_TO_CONSTANT_TRUE));
+                    assertNotNull(d.haveError(Message.Label.ASSERT_EVALUATES_TO_CONSTANT_TRUE));
                 }
             }
 
@@ -277,7 +277,7 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
                     assertEquals(0, timeM);
                 }
                 if ("3".equals(d.statementId())) {
-                    String msg = d.haveError(Message.ASSERT_EVALUATES_TO_CONSTANT_TRUE);
+                    String msg = d.haveError(Message.Label.ASSERT_EVALUATES_TO_CONSTANT_TRUE);
                     if (d.iteration() == 0) assertNull(msg);
                     else assertNotNull(msg);
                 }
@@ -289,13 +289,13 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
                 assertEquals(0, timeM);
 
                 if ("3".equals(d.statementId()) && d.iteration() > 0) {
-                    assertNotNull(d.haveError(Message.ASSERT_EVALUATES_TO_CONSTANT_TRUE));
+                    assertNotNull(d.haveError(Message.Label.ASSERT_EVALUATES_TO_CONSTANT_TRUE));
                 }
             }
 
             if ("test6".equals(d.methodInfo().name)) {
                 if ("3".equals(d.statementId()) && d.iteration() > 0) {
-                    assertNotNull(d.haveError(Message.ASSERT_EVALUATES_TO_CONSTANT_TRUE));
+                    assertNotNull(d.haveError(Message.Label.ASSERT_EVALUATES_TO_CONSTANT_TRUE));
                 }
             }
         };

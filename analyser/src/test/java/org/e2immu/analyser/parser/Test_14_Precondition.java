@@ -265,7 +265,7 @@ public class Test_14_Precondition extends CommonTestRunner {
                     assertTrue(variableInfo.isAssigned());
 
                     if (d.iteration() > 0) {
-                        assertNotNull(d.haveError(Message.INLINE_CONDITION_EVALUATES_TO_CONSTANT));
+                        assertNotNull(d.haveError(Message.Label.INLINE_CONDITION_EVALUATES_TO_CONSTANT));
                     }
                 }
             }

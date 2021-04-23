@@ -73,10 +73,10 @@ public class AnnotationUploader {
             map.putAll(add(type));
         }
 
-        messageStream.filter(message -> message.severity == Message.Severity.ERROR)
-                .filter(message -> message.location.statementWithinMethod == null) // only type, field, method errors
-                .forEach(message -> SMapList.add(map, fqn(message.location.info),
-                        "error" + suffix(message.location.info)));
+        messageStream.filter(message -> message.message().severity == Message.Severity.ERROR)
+                .filter(message -> message.location().statementWithinMethod == null) // only type, field, method errors
+                .forEach(message -> SMapList.add(map, fqn(message.location().info),
+                        "error" + suffix(message.location().info)));
 
         log(UPLOAD, "Writing {} annotations", map.size());
         return map.entrySet().stream()

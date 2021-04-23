@@ -252,8 +252,9 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         return streamOfLatestInfoOfVariablesReferringTo(fieldInfo, allowLocalCopies).toList();
     }
 
-    public boolean containsMessage(String messageString) {
-        return messages.stream().anyMatch(message -> message.message.contains(messageString) && message.location.equals(location()));
+    public boolean containsMessage(Message.Label messageLabel) {
+        return messages.stream().anyMatch(message -> message.message() == messageLabel &&
+                message.location().equals(location()));
     }
 
     @Override

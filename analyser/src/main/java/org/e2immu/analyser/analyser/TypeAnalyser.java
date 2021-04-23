@@ -222,7 +222,8 @@ public class TypeAnalyser extends AbstractAnalyser {
     private void check(TypeInfo typeInfo, Class<?> annotation, AnnotationExpression annotationExpression) {
         typeInfo.error(typeAnalysis, annotation, annotationExpression).ifPresent(mustBeAbsent -> {
             Message error = Message.newMessage(new Location(typeInfo),
-                    mustBeAbsent ? Message.ANNOTATION_UNEXPECTEDLY_PRESENT : Message.ANNOTATION_ABSENT, annotation.getSimpleName());
+                    mustBeAbsent ? Message.Label.ANNOTATION_UNEXPECTEDLY_PRESENT
+                            : Message.Label.ANNOTATION_ABSENT, annotation.getSimpleName());
             messages.add(error);
         });
     }
@@ -408,7 +409,7 @@ public class TypeAnalyser extends AbstractAnalyser {
                                     tempApproved.put(fieldToCondition.fieldReference, fieldToCondition.condition) : null;
                     if (inMap != null && !inMap.equals(fieldToCondition.condition) && !inMap.equals(fieldToCondition.negatedCondition)) {
                         messages.add(Message.newMessage(new Location(fieldToCondition.fieldReference.fieldInfo),
-                                Message.DUPLICATE_MARK_CONDITION, "Field: " + fieldToCondition.fieldReference));
+                                Message.Label.DUPLICATE_MARK_CONDITION, "Field: " + fieldToCondition.fieldReference));
                     }
                 }
             }
@@ -520,7 +521,7 @@ public class TypeAnalyser extends AbstractAnalyser {
                                         tempApproved.put(fieldToCondition.fieldReference, fieldToCondition.condition) : null;
                         if (inMap != null && !inMap.equals(fieldToCondition.condition) && !inMap.equals(fieldToCondition.negatedCondition)) {
                             messages.add(Message.newMessage(new Location(fieldToCondition.fieldReference.fieldInfo),
-                                    Message.DUPLICATE_MARK_CONDITION, "Field: " + fieldToCondition.fieldReference));
+                                    Message.Label.DUPLICATE_MARK_CONDITION, fieldToCondition.fieldReference.fullyQualifiedName()));
                         }
                     }
                 }

@@ -95,11 +95,11 @@ public class Test_29_TryStatement extends CommonTestRunner {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("method".equals(d.methodInfo().name) && "1.1.1".equals(d.statementId())) {
                 assertEquals("ERROR in M:method:1.1.1: Useless assignment: res",
-                        d.haveError(Message.USELESS_ASSIGNMENT));
+                        d.haveError(Message.Label.USELESS_ASSIGNMENT));
             }
             if ("method".equals(d.methodInfo().name) && "1.2.1".equals(d.statementId())) {
                 assertEquals("ERROR in M:method:1.2.1: Useless assignment: res",
-                        d.haveError(Message.USELESS_ASSIGNMENT));
+                        d.haveError(Message.Label.USELESS_ASSIGNMENT));
             }
         };
 

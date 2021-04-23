@@ -133,10 +133,10 @@ public class Test_08_EvaluateConstants extends CommonTestRunner {
             MethodLevelData methodLevelData = d.statementAnalysis().methodLevelData;
             if ("print".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId()) && d.iteration() >= 1) {
-                    assertNotNull(d.haveError(Message.CONDITION_EVALUATES_TO_CONSTANT));
+                    assertNotNull(d.haveError(Message.Label.CONDITION_EVALUATES_TO_CONSTANT));
                 }
                 if ("0.0.0".equals(d.statementId())) {
-                    assertNull(d.haveError(Message.CONDITION_EVALUATES_TO_CONSTANT));
+                    assertNull(d.haveError(Message.Label.CONDITION_EVALUATES_TO_CONSTANT));
                     if (d.iteration() >= 1) {
                         assertTrue(d.statementAnalysis().flowData.isUnreachable());
                     }
@@ -152,7 +152,7 @@ public class Test_08_EvaluateConstants extends CommonTestRunner {
             }
             if ("print2".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId()) && d.iteration() > 0) {
-                    assertNotNull(d.haveError(Message.INLINE_CONDITION_EVALUATES_TO_CONSTANT));
+                    assertNotNull(d.haveError(Message.Label.INLINE_CONDITION_EVALUATES_TO_CONSTANT));
                     assertSame(DONE, d.result().analysisStatus());
                 }
             }

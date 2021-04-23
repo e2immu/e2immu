@@ -45,8 +45,6 @@ import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.AnalysisStatus.DELAYS;
 import static org.e2immu.analyser.analyser.AnalysisStatus.DONE;
-import static org.e2immu.analyser.analyser.VariableProperty.CONTAINER;
-import static org.e2immu.analyser.analyser.VariableProperty.IDENTITY;
 import static org.e2immu.analyser.analyser.VariableProperty.*;
 import static org.e2immu.analyser.util.Logger.LogTarget.*;
 import static org.e2immu.analyser.util.Logger.isLogEnabled;
@@ -297,7 +295,7 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
                         value > valueFromOverrides : value < valueFromOverrides;
                 if (complain) {
                     messages.add(Message.newMessage(new Location(methodInfo),
-                            Message.WORSE_THAN_OVERRIDDEN_METHOD, variableProperty.name));
+                            Message.Label.WORSE_THAN_OVERRIDDEN_METHOD, variableProperty.name));
                 }
             }
         }
@@ -306,7 +304,8 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
     private void check(Class<?> annotation, AnnotationExpression annotationExpression) {
         methodInfo.error(methodAnalysis, annotation, annotationExpression).ifPresent(mustBeAbsent -> {
             Message error = Message.newMessage(new Location(methodInfo),
-                    mustBeAbsent ? Message.ANNOTATION_UNEXPECTEDLY_PRESENT : Message.ANNOTATION_ABSENT, annotation.getSimpleName());
+                    mustBeAbsent ? Message.Label.ANNOTATION_UNEXPECTEDLY_PRESENT
+                            : Message.Label.ANNOTATION_ABSENT, annotation.getSimpleName());
             messages.add(error);
         });
     }
@@ -364,7 +363,7 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
                     !methodInfo.methodInspection.get().isDefault()) {
                 MethodResolution methodResolution = methodInfo.methodResolution.get();
                 if (methodResolution.staticMethodCallsOnly()) {
-                    messages.add(Message.newMessage(new Location(methodInfo), Message.METHOD_SHOULD_BE_MARKED_STATIC));
+                    messages.add(Message.newMessage(new Location(methodInfo), Message.Label.METHOD_SHOULD_BE_MARKED_STATIC));
                     return DONE;
                 }
             }

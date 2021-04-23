@@ -145,7 +145,7 @@ public class Test_17_Container extends CommonTestRunner {
             // POTENTIAL NULL POINTER EXCEPTION
             if ("addToS".equals(d.methodInfo().name) && "0".equals(d.statementId())) {
                 if (d.iteration() > 0) {
-                    assertNotNull(d.haveError(Message.POTENTIAL_NULL_POINTER_EXCEPTION));
+                    assertNotNull(d.haveError(Message.Label.POTENTIAL_NULL_POINTER_EXCEPTION));
                 }
             }
         };

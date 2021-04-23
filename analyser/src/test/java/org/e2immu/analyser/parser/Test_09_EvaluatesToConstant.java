@@ -40,10 +40,10 @@ public class Test_09_EvaluatesToConstant extends CommonTestRunner {
     StatementAnalyserVisitor statementAnalyserVisitor = d -> {
         if ("method2".equals(d.methodInfo().name)) {
             if ("1".equals(d.statementAnalysis().index) && d.iteration() >= 1) {
-                assertNotNull(d.haveError(Message.CONDITION_EVALUATES_TO_CONSTANT));
+                assertNotNull(d.haveError(Message.Label.CONDITION_EVALUATES_TO_CONSTANT));
             }
             if ("1.0.0".equals(d.statementAnalysis().index)) {
-                assertNull(d.haveError(Message.CONDITION_EVALUATES_TO_CONSTANT));
+                assertNull(d.haveError(Message.Label.CONDITION_EVALUATES_TO_CONSTANT));
             }
         }
 
@@ -61,11 +61,11 @@ public class Test_09_EvaluatesToConstant extends CommonTestRunner {
                 String expectState = d.iteration() == 0 ? "param.contains(\"a\")&&null!=<s:String>" : "param.contains(\"a\")";
                 assertEquals(expectState, d.absoluteState().toString());
                 if (d.iteration() >= 1) {
-                    assertNotNull(d.haveError(Message.CONDITION_EVALUATES_TO_CONSTANT));
+                    assertNotNull(d.haveError(Message.Label.CONDITION_EVALUATES_TO_CONSTANT));
                 }
             }
             if ("1.0.1.0.0".equals(d.statementAnalysis().index)) {
-                assertNull(d.haveError(Message.CONDITION_EVALUATES_TO_CONSTANT));
+                assertNull(d.haveError(Message.Label.CONDITION_EVALUATES_TO_CONSTANT));
             }
         }
 

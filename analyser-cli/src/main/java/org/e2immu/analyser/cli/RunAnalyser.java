@@ -127,7 +127,7 @@ public class RunAnalyser implements Runnable {
                     composer.write(apiTypes, api.writeAnnotatedAPIsDir());
                 }
                 if (!configuration.ignoreErrors()
-                        && parser.getMessages().anyMatch(m -> m.severity == Message.Severity.ERROR)) {
+                        && parser.getMessages().anyMatch(m -> m.message().severity == Message.Severity.ERROR)) {
                     exitValue = Main.EXIT_ANALYSER_ERROR;
                     return;
                 }

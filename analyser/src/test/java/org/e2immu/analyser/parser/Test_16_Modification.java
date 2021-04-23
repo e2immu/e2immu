@@ -108,7 +108,7 @@ public class Test_16_Modification extends CommonTestRunner {
                 assertEquals(expect, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
             }
             if ("getFirst".equals(d.methodInfo().name) && d.iteration() > 0) {
-                assertNotNull(d.haveError(Message.UNUSED_PARAMETER));
+                assertNotNull(d.haveError(Message.Label.UNUSED_PARAMETER));
             }
         };
 
@@ -367,7 +367,7 @@ public class Test_16_Modification extends CommonTestRunner {
 
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("add4".equals(d.methodInfo().name) && "1".equals(d.statementId())) {
-                assertNull(d.haveError(Message.NULL_POINTER_EXCEPTION));
+                assertNull(d.haveError(Message.Label.NULL_POINTER_EXCEPTION));
             }
         };
 
@@ -825,7 +825,7 @@ public class Test_16_Modification extends CommonTestRunner {
             }
             if ("example1".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
-                    assertNull(d.haveError(Message.POTENTIAL_NULL_POINTER_EXCEPTION));
+                    assertNull(d.haveError(Message.Label.POTENTIAL_NULL_POINTER_EXCEPTION));
                 }
                 if ("2".equals(d.statementId())) {
                     assertEquals(d.iteration() >= 3,

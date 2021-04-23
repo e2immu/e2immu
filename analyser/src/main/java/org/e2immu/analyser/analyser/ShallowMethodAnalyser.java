@@ -97,7 +97,7 @@ public class ShallowMethodAnalyser {
         List<MethodInfo> leftMethods = annotations.getOrDefault(left, List.of());
         List<MethodInfo> rightMethods = annotations.getOrDefault(right, List.of());
         if (!leftMethods.isEmpty() && !rightMethods.isEmpty()) {
-            messages.add(Message.newMessage(new Location(where), Message.CONTRADICTING_ANNOTATIONS,
+            messages.add(Message.newMessage(new Location(where), Message.Label.CONTRADICTING_ANNOTATIONS,
                     left + " in " + leftMethods.stream().map(mi -> mi.fullyQualifiedName).collect(Collectors.joining("; ")) +
                             "; " + right + " in " + rightMethods.stream().map(mi -> mi.fullyQualifiedName).collect(Collectors.joining("; "))));
         }

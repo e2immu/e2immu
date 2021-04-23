@@ -19,6 +19,7 @@ import org.e2immu.analyser.model.statement.Structure;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.output.Text;
+import org.e2immu.analyser.parser.Bundle;
 import org.e2immu.annotation.E2Container;
 
 @E2Container
@@ -35,7 +36,7 @@ public interface Statement extends Element {
 
     @Override
     default OutputBuilder output(Qualification qualification) {
-        throw new UnsupportedOperationException("Use other output method: "+getClass());
+        throw new UnsupportedOperationException("Use other output method: " + getClass());
     }
 
     @Override
@@ -47,7 +48,7 @@ public interface Statement extends Element {
         if (statementAnalysis != null && !statementAnalysis.messages.isEmpty()) {
             OutputBuilder outputBuilder = new OutputBuilder();
             statementAnalysis.messages.stream().forEach(message -> outputBuilder.add(Symbol.LEFT_BLOCK_COMMENT)
-                    .add(new Text(message.message)).add(Symbol.RIGHT_BLOCK_COMMENT));
+                    .add(new Text(Bundle.INSTANCE.get(message.message().name()))).add(Symbol.RIGHT_BLOCK_COMMENT));
             return outputBuilder;
         }
         return null;

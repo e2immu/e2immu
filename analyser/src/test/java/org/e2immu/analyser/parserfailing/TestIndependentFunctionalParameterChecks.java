@@ -39,7 +39,7 @@ public class TestIndependentFunctionalParameterChecks extends CommonTestRunner {
     // it should not yet cause an error in the first.
     StatementAnalyserVisitor statementAnalyserVisitor = d -> {
         if("getFirst".equals(d.methodInfo().name) && d.iteration() == 0) {
-            assertNotNull(d.haveError(Message.NULL_POINTER_EXCEPTION)); // TODO
+            assertNotNull(d.haveError(Message.Label.NULL_POINTER_EXCEPTION)); // TODO
         }
     };
 

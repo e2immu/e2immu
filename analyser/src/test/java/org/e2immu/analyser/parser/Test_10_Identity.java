@@ -148,7 +148,7 @@ public class Test_10_Identity extends CommonTestRunner {
         };
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("idem2".equals(d.methodInfo().name) && "1".equals(d.statementId())) {
-                assertNull(d.haveError(Message.POTENTIAL_NULL_POINTER_EXCEPTION), "iteration " + d.iteration());
+                assertNull(d.haveError(Message.Label.POTENTIAL_NULL_POINTER_EXCEPTION), "iteration " + d.iteration());
             }
         };
 

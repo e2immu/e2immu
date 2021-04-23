@@ -250,7 +250,7 @@ public class BinaryOperator implements Expression {
         EvaluationResult l = lhs.evaluate(evaluationContext, forward);
         Expression constant = new BooleanConstant(primitives, !and);
         if (l.value().equals(constant)) {
-            builder.raiseError(Message.PART_OF_EXPRESSION_EVALUATES_TO_CONSTANT);
+            builder.raiseError(Message.Label.PART_OF_EXPRESSION_EVALUATES_TO_CONSTANT);
             return builder.compose(l).build();
         }
 
@@ -260,7 +260,7 @@ public class BinaryOperator implements Expression {
         EvaluationResult r = rhs.evaluate(child, forward);
         builder.compose(l, r);
         if (r.value() instanceof BooleanConstant booleanConstant) {
-            builder.raiseError(Message.PART_OF_EXPRESSION_EVALUATES_TO_CONSTANT);
+            builder.raiseError(Message.Label.PART_OF_EXPRESSION_EVALUATES_TO_CONSTANT);
             if (and && booleanConstant.getValue() || !and && !booleanConstant.getValue()) {
                 // x && true, x || false
                 builder.setExpression(l.value());

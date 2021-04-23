@@ -15,8 +15,8 @@
 package org.e2immu.analyser.visitor;
 
 import org.e2immu.analyser.analyser.AnalysisStatus;
-import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.analyser.EvaluationContext;
+import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.FieldAnalysis;
 import org.e2immu.analyser.model.FieldInfo;
@@ -40,9 +40,9 @@ public interface FieldAnalyserVisitor {
             return evaluationContext.getProperty(value, variableProperty, false, false);
         }
 
-        public String haveError(String message) {
+        public String haveError(Message.Label message) {
             return messageStream.get()
-                    .filter(m -> m.message.contains(message))
+                    .filter(m -> m.message() == message)
                     .map(Message::toString)
                     .findFirst()
                     .orElse(null);

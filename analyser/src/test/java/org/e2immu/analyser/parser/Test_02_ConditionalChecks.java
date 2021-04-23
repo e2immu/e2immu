@@ -90,7 +90,7 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                     assertEquals("true", d.statementAnalysis().stateData.valueOfExpression.get().toString());
                     assertEquals("false", d.state().toString()); // after the statement...
                     assertEquals("ERROR in M:method1:3: Condition in 'if' or 'switch' statement evaluates to constant",
-                            d.haveError(Message.CONDITION_EVALUATES_TO_CONSTANT));
+                            d.haveError(Message.Label.CONDITION_EVALUATES_TO_CONSTANT));
                     assertEquals(FlowData.Execution.CONDITIONALLY, inBlock);
                     assertEquals(FlowData.Execution.CONDITIONALLY, inMethod);
                     assertTrue(d.statementAnalysis().methodLevelData.combinedPrecondition.get().isEmpty());
@@ -99,13 +99,13 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                 if ("4".equals(d.statementId())) {
                     assertEquals(FlowData.Execution.NEVER, inBlock);
                     assertEquals(FlowData.Execution.NEVER, inMethod);
-                    assertNotNull(d.haveError(Message.UNREACHABLE_STATEMENT));
+                    assertNotNull(d.haveError(Message.Label.UNREACHABLE_STATEMENT));
                     assertFalse(d.statementAnalysis().methodLevelData.combinedPrecondition.isFinal());
                 }
                 if ("5".equals(d.statementId())) {
                     assertEquals(FlowData.Execution.NEVER, inBlock);
                     assertEquals(FlowData.Execution.NEVER, inMethod);
-                    assertNull(d.haveError(Message.UNREACHABLE_STATEMENT));
+                    assertNull(d.haveError(Message.Label.UNREACHABLE_STATEMENT));
                     VariableInfo ret = d.getReturnAsVariable();
                     assertNull(ret); // unreachable statement, no data have even been copied!
                     assertFalse(d.statementAnalysis().methodLevelData.combinedPrecondition.isFinal());

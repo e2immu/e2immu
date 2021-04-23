@@ -40,7 +40,7 @@ public class EvaluateInlineConditional {
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
         if (condition instanceof BooleanConstant bc) {
             boolean first = bc.constant();
-            builder.raiseError(Message.INLINE_CONDITION_EVALUATES_TO_CONSTANT);
+            builder.raiseError(Message.Label.INLINE_CONDITION_EVALUATES_TO_CONSTANT);
             return builder.setExpression(first ? ifTrue : ifFalse).build();
         }
 

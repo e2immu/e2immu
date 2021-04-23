@@ -60,7 +60,7 @@ public class Test_30_SwitchStatement extends CommonTestRunner {
 
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("method".equals(d.methodInfo().name) && "0.0.2".equals(d.statementId())) {
-                assertNotNull(d.haveError(Message.CONDITION_EVALUATES_TO_CONSTANT));
+                assertNotNull(d.haveError(Message.Label.CONDITION_EVALUATES_TO_CONSTANT));
             }
         };
 
@@ -115,7 +115,7 @@ public class Test_30_SwitchStatement extends CommonTestRunner {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
                 if ("2".equals(d.statementId())) {
-                    assertNotNull(d.haveError(Message.TRIVIAL_CASES_IN_SWITCH));
+                    assertNotNull(d.haveError(Message.Label.TRIVIAL_CASES_IN_SWITCH));
                     assertSame(FlowData.Execution.NEVER, d.statementAnalysis().flowData.interruptStatus());
                 }
             }

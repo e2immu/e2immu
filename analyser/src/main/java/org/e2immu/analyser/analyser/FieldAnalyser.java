@@ -379,7 +379,7 @@ public class FieldAnalyser extends AbstractAnalyser {
                         .filter(m -> !(m.methodInfo.isConstructor && m.methodInfo.typeInfo == fieldInfo.owner)) // not my own constructors
                         .anyMatch(this::isReadInMethod);
                 if (!readInMethods) {
-                    messages.add(Message.newMessage(new Location(fieldInfo), Message.PRIVATE_FIELD_NOT_READ));
+                    messages.add(Message.newMessage(new Location(fieldInfo), Message.Label.PRIVATE_FIELD_NOT_READ));
                 }
                 return DONE;
             }
@@ -389,7 +389,7 @@ public class FieldAnalyser extends AbstractAnalyser {
                 // only react once we're certain the variable is not effectively final
                 // error, unless we're in a record
                 if (!fieldInfo.owner.isPrivateNested()) {
-                    messages.add(Message.newMessage(new Location(fieldInfo), Message.NON_PRIVATE_FIELD_NOT_FINAL));
+                    messages.add(Message.newMessage(new Location(fieldInfo), Message.Label.NON_PRIVATE_FIELD_NOT_FINAL));
                 } // else: nested private types can have fields the way they like it
                 return DONE;
             } else if (effectivelyFinal == Level.DELAY) {
@@ -890,7 +890,7 @@ public class FieldAnalyser extends AbstractAnalyser {
         }
         fieldAnalysis.setProperty(VariableProperty.FINAL, Level.fromBool(isFinal));
         if (isFinal && fieldInfo.type.isScratchPadType()) {
-            messages.add(Message.newMessage(new Location(fieldInfo), Message.EFFECTIVELY_FINAL_FIELD_NOT_RECORD));
+            messages.add(Message.newMessage(new Location(fieldInfo), Message.Label.EFFECTIVELY_FINAL_FIELD_NOT_RECORD));
         }
         log(FINAL, "Mark field {} as " + (isFinal ? "" : "not ") +
                 "effectively final", fqn);
@@ -900,7 +900,7 @@ public class FieldAnalyser extends AbstractAnalyser {
             if (bestType != null) {
                 TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(bestType);
                 if (typeAnalysis.getProperty(VariableProperty.FINALIZER) == Level.TRUE) {
-                    messages.add(Message.newMessage(new Location(fieldInfo), Message.TYPES_WITH_FINALIZER_ONLY_EFFECTIVELY_FINAL));
+                    messages.add(Message.newMessage(new Location(fieldInfo), Message.Label.TYPES_WITH_FINALIZER_ONLY_EFFECTIVELY_FINAL));
                 }
             }
         }
@@ -1051,7 +1051,8 @@ public class FieldAnalyser extends AbstractAnalyser {
     private void check(Class<?> annotation, AnnotationExpression annotationExpression) {
         fieldInfo.error(fieldAnalysis, annotation, annotationExpression).ifPresent(mustBeAbsent -> {
             Message error = Message.newMessage(new Location(fieldInfo),
-                    mustBeAbsent ? Message.ANNOTATION_UNEXPECTEDLY_PRESENT : Message.ANNOTATION_ABSENT, annotation.getSimpleName());
+                    mustBeAbsent ? Message.Label.ANNOTATION_UNEXPECTEDLY_PRESENT
+                            : Message.Label.ANNOTATION_ABSENT, annotation.getSimpleName());
             messages.add(error);
         });
     }

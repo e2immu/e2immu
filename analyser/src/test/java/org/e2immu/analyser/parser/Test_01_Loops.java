@@ -414,7 +414,7 @@ public class Test_01_Loops extends CommonTestRunner {
                         assertEquals("1.0.0", firstInBlock.index);
                         if (d.iteration() > 0) {
                             assertTrue(firstInBlock.flowData.isUnreachable());
-                            assertNotNull(d.haveError(Message.EMPTY_LOOP));
+                            assertNotNull(d.haveError(Message.Label.EMPTY_LOOP));
                         }
                     } else fail();
                 }
@@ -437,13 +437,13 @@ public class Test_01_Loops extends CommonTestRunner {
                 if ("0".equals(d.statementId())) {
                     String expect = d.iteration() == 0 ? "<new:int>>=10" : "instance type int>=10";
                     assertEquals(expect, d.state().toString());
-                    assertNull(d.haveError(Message.INLINE_CONDITION_EVALUATES_TO_CONSTANT));
+                    assertNull(d.haveError(Message.Label.INLINE_CONDITION_EVALUATES_TO_CONSTANT));
                 }
                 if ("1".equals(d.statementId())) {
                     assertEquals("true", d.condition().toString());
                     String expectState = d.iteration() == 0 ? "<new:int>>=10" : "instance type int>=10";
                     assertEquals(expectState, d.state().toString());
-                    assertNull(d.haveError(Message.INLINE_CONDITION_EVALUATES_TO_CONSTANT));
+                    assertNull(d.haveError(Message.Label.INLINE_CONDITION_EVALUATES_TO_CONSTANT));
                 }
             }
 

@@ -15,7 +15,9 @@
 package org.e2immu.analyser.visitor;
 
 import org.e2immu.analyser.analyser.*;
-import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.FieldInfo;
+import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.parser.Message;
 
 import java.util.Map;
@@ -36,13 +38,14 @@ public interface StatementAnalyserVisitor {
 
         // shortcut
 
-        public String haveError(String message) {
+        public String haveError(Message.Label message) {
             return statementAnalysis.messages.stream()
-                    .filter(m -> m.message.contains(message))
+                    .filter(m -> m.message() == message)
                     .map(Message::toString)
                     .findFirst()
                     .orElse(null);
         }
+
         public int getProperty(Expression value, VariableProperty variableProperty) {
             return evaluationContext.getProperty(value, variableProperty, false, false);
         }

@@ -146,6 +146,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
         public boolean haveContextMethodDelay() {
             return properties.getOrDefault(VariableProperty.CONTEXT_MODIFIED_DELAY, Level.DELAY) == Level.TRUE;
         }
+
         public boolean havePropagationModificationDelay() {
             return properties.getOrDefault(VariableProperty.PROPAGATE_MODIFICATION_DELAY, Level.DELAY) == Level.TRUE;
         }
@@ -358,26 +359,26 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             return this;
         }
 
-        public Builder raiseError(String messageString) {
+        public Builder raiseError(Message.Label messageLabel) {
             assert evaluationContext != null;
             StatementAnalyser statementAnalyser = evaluationContext.getCurrentStatement();
             if (statementAnalyser != null) {
-                Message message = Message.newMessage(evaluationContext.getLocation(), messageString);
+                Message message = Message.newMessage(evaluationContext.getLocation(), messageLabel);
                 messages.add(message);
             } else { // e.g. companion analyser
-                LOGGER.warn("Analyser error: {}", messageString);
+                LOGGER.warn("Analyser error: {}", messageLabel);
             }
             return this;
         }
 
-        public void raiseError(String messageString, String extra) {
+        public void raiseError(Message.Label messageLabel, String extra) {
             assert evaluationContext != null;
             StatementAnalyser statementAnalyser = evaluationContext.getCurrentStatement();
             if (statementAnalyser != null) {
-                Message message = Message.newMessage(evaluationContext.getLocation(), messageString, extra);
+                Message message = Message.newMessage(evaluationContext.getLocation(), messageLabel, extra);
                 messages.add(message);
             } else {
-                LOGGER.warn("Analyser error: {}, {}", messageString, extra);
+                LOGGER.warn("Analyser error: {}, {}", messageLabel, extra);
             }
         }
 
@@ -445,9 +446,9 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             int currentImmutable = getPropertyFromInitial(variable, VariableProperty.CONTEXT_IMMUTABLE);
             if (currentImmutable >= MultiLevel.EVENTUALLY_E1IMMUTABLE_BEFORE_MARK) {
                 if (MultiLevel.isBefore(requiredImmutable) && !MultiLevel.isBefore(currentImmutable)) {
-                    raiseError(Message.EVENTUAL_BEFORE_REQUIRED);
+                    raiseError(Message.Label.EVENTUAL_BEFORE_REQUIRED);
                 } else if (MultiLevel.isAfter(requiredImmutable) && !MultiLevel.isAfter(currentImmutable)) {
-                    raiseError(Message.EVENTUAL_AFTER_REQUIRED);
+                    raiseError(Message.Label.EVENTUAL_AFTER_REQUIRED);
                 }
             }
             // everything proceeds as normal
@@ -500,7 +501,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             // if we already know that the variable is NOT @NotNull, then we'll raise an error
             int notModified1 = getNotModified1FromInitial(currentExpression);
             if (notModified1 == Level.FALSE) {
-                Message message = Message.newMessage(evaluationContext.getLocation(), Message.MODIFICATION_NOT_ALLOWED, variable.simpleName());
+                Message message = Message.newMessage(evaluationContext.getLocation(), Message.Label.MODIFICATION_NOT_ALLOWED, variable.simpleName());
                 messages.add(message);
             } else if (notModified1 == Level.DELAY) {
                 // we only need to mark this in case of doubt (if we already know, we should not mark)
@@ -624,12 +625,14 @@ public record EvaluationResult(EvaluationContext evaluationContext,
         public void addErrorAssigningToFieldOutsideType(FieldInfo fieldInfo) {
             assert evaluationContext != null;
             messages.add(Message.newMessage(evaluationContext.getLocation(),
-                    Message.ASSIGNMENT_TO_FIELD_OUTSIDE_TYPE, "Field " + fieldInfo.fullyQualifiedName()));
+                    Message.Label.ASSIGNMENT_TO_FIELD_OUTSIDE_TYPE,
+                    fieldInfo.fullyQualifiedName()));
         }
 
         public void addParameterShouldNotBeAssignedTo(ParameterInfo parameterInfo) {
             assert evaluationContext != null;
-            messages.add(Message.newMessage(new Location(parameterInfo), Message.PARAMETER_SHOULD_NOT_BE_ASSIGNED_TO,
+            messages.add(Message.newMessage(new Location(parameterInfo),
+                    Message.Label.PARAMETER_SHOULD_NOT_BE_ASSIGNED_TO,
                     parameterInfo.fullyQualifiedName()));
         }
 

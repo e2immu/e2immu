@@ -294,7 +294,7 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                     assertEquals("0" + E, flowData.assignmentIdOfStatementTime.get(1));
                     assertEquals("0" + M, flowData.assignmentIdOfStatementTime.get(2));
                     if (d.iteration() > 0) {
-                        assertNotNull(d.haveError(Message.ASSERT_EVALUATES_TO_CONSTANT_TRUE));
+                        assertNotNull(d.haveError(Message.Label.ASSERT_EVALUATES_TO_CONSTANT_TRUE));
                     }
                 }
             }

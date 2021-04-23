@@ -115,7 +115,7 @@ public record CheckLinks(InspectionProvider inspectionProvider, E2ImmuAnnotation
 
         if (verifyAbsent) {
             if (computedValue != null) {
-                messages.add(Message.newMessage(where, Message.ANNOTATION_UNEXPECTEDLY_PRESENT, annotationSimpleName));
+                messages.add(Message.newMessage(where, Message.Label.ANNOTATION_UNEXPECTEDLY_PRESENT, annotationSimpleName));
                 assert inAnalysis != null;
                 analysis.annotationChecks.put(inAnalysis.getKey(), Analysis.AnnotationCheck.PRESENT);
             } else if (inAnalysis != null) {
@@ -129,7 +129,7 @@ public record CheckLinks(InspectionProvider inspectionProvider, E2ImmuAnnotation
             return;
         }
         if (inAnalysis == null) {
-            messages.add(Message.newMessage(where, Message.ANNOTATION_ABSENT, annotationSimpleName));
+            messages.add(Message.newMessage(where, Message.Label.ANNOTATION_ABSENT, annotationSimpleName));
             analysis.annotationChecks.put(new AnnotationExpressionImpl(annotationTypeInfo, List.of()),
                     Analysis.AnnotationCheck.MISSING);
             return;
@@ -138,7 +138,7 @@ public record CheckLinks(InspectionProvider inspectionProvider, E2ImmuAnnotation
         String requiredValue = extractInspected.apply(optAnnotationInInspection.get());
         if ((computedValue == null) != (requiredValue == null) ||
                 computedValue != null && !computedValue.equals(requiredValue)) {
-            messages.add(Message.newMessage(where, Message.WRONG_ANNOTATION_PARAMETER,
+            messages.add(Message.newMessage(where, Message.Label.WRONG_ANNOTATION_PARAMETER,
                     "Annotation " + annotationSimpleName + ", required " +
                             requiredValue + ", found " + computedValue));
             analysis.annotationChecks.put(inAnalysis.getKey(), Analysis.AnnotationCheck.WRONG);

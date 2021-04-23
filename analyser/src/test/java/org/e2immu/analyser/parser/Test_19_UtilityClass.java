@@ -30,7 +30,7 @@ public class Test_19_UtilityClass extends CommonTestRunner {
     StatementAnalyserVisitor statementAnalyserVisitor = d -> {
         if ("print".equals(d.methodInfo().name)) {
             if ("0".equals(d.statementId())) {
-                assertNull(d.haveError(Message.POTENTIAL_NULL_POINTER_EXCEPTION));
+                assertNull(d.haveError(Message.Label.POTENTIAL_NULL_POINTER_EXCEPTION));
             }
         }
     };

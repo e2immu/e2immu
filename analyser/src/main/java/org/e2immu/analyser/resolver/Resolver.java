@@ -141,7 +141,7 @@ public class Resolver {
             for (TypeInfo other : typesInCycle) {
                 add(participatesInCycles, other, typesInCycle);
             }
-            messages.add(Message.newMessage(new Location(typeInfo), Message.CIRCULAR_TYPE_DEPENDENCY,
+            messages.add(Message.newMessage(new Location(typeInfo), Message.Label.CIRCULAR_TYPE_DEPENDENCY,
                     typesInCycle.stream().map(t -> t.fullyQualifiedName).collect(Collectors.joining(", "))));
         });
 

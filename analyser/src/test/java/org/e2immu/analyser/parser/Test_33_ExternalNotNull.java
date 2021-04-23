@@ -57,26 +57,26 @@ public class Test_33_ExternalNotNull extends CommonTestRunner {
             if ("ExternalNotNull_0".equals(d.methodInfo().name) && n == 4) {
                 if ("6".equals(d.statementId())) {
                     assertEquals(d.iteration() == 0,
-                            null == d.haveError(Message.CONDITION_EVALUATES_TO_CONSTANT_ENN));
+                            null == d.haveError(Message.Label.CONDITION_EVALUATES_TO_CONSTANT_ENN));
                 }
                 if ("7".equals(d.statementId())) {
                     assertEquals(d.iteration() == 0,
-                            null == d.haveError(Message.CONDITION_EVALUATES_TO_CONSTANT_ENN));
+                            null == d.haveError(Message.Label.CONDITION_EVALUATES_TO_CONSTANT_ENN));
                 }
             }
             if ("upperCaseO".equals(d.methodInfo().name)) {
                 assertEquals(d.iteration() == 0,
-                        null == d.haveError(Message.POTENTIAL_NULL_POINTER_EXCEPTION));
+                        null == d.haveError(Message.Label.POTENTIAL_NULL_POINTER_EXCEPTION));
             }
             if ("upperCaseP".equals(d.methodInfo().name)) {
-                assertNull(d.haveError(Message.POTENTIAL_NULL_POINTER_EXCEPTION));
+                assertNull(d.haveError(Message.Label.POTENTIAL_NULL_POINTER_EXCEPTION));
             }
             if ("upperCaseQ".equals(d.methodInfo().name)) {
                 assertEquals(d.iteration() == 0,
-                        null == d.haveError(Message.POTENTIAL_NULL_POINTER_EXCEPTION));
+                        null == d.haveError(Message.Label.POTENTIAL_NULL_POINTER_EXCEPTION));
             }
             if ("upperCaseR".equals(d.methodInfo().name)) {
-                assertNull(d.haveError(Message.POTENTIAL_NULL_POINTER_EXCEPTION));
+                assertNull(d.haveError(Message.Label.POTENTIAL_NULL_POINTER_EXCEPTION));
             }
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
@@ -228,7 +228,7 @@ public class Test_33_ExternalNotNull extends CommonTestRunner {
             if ("ExternalNotNull_1".equals(d.methodInfo().name) && n == 4) {
                 if ("6".equals(d.statementId())) {
                     assertEquals(d.iteration() <= 1,
-                            null == d.haveError(Message.CONDITION_EVALUATES_TO_CONSTANT_ENN));
+                            null == d.haveError(Message.Label.CONDITION_EVALUATES_TO_CONSTANT_ENN));
                 }
             }
         };

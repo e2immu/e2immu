@@ -60,7 +60,7 @@ public class NullConstant implements ConstantExpression<Object> {
     public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
         if (forwardEvaluationInfo.getProperty(VariableProperty.NOT_NULL_EXPRESSION) > MultiLevel.NULLABLE) {
-            builder.raiseError(Message.NULL_POINTER_EXCEPTION);
+            builder.raiseError(Message.Label.NULL_POINTER_EXCEPTION);
         }
         return builder.setExpression(NULL_CONSTANT).build();
     }
