@@ -13,18 +13,20 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser;
+package org.e2immu.analyser.parserfailing;
 
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.variable.ReturnVariable;
+import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static org.e2immu.analyser.analyser.FlowData.Execution.CONDITIONALLY;
 import static org.junit.jupiter.api.Assertions.*;
@@ -192,6 +194,11 @@ public class Test_Util_01_SMapList extends CommonTestRunner {
 
     StatementAnalyserVisitor statementAnalyserVisitor = d -> {
         if ("list".equals(d.methodInfo().name)) {
+            if (Set.of("0", "1", "2", "3").contains(d.statementId())) {
+                assertFalse(d.statementAnalysis().flowData.isUnreachable());
+                assertFalse(d.statementAnalysis().flowData.escapesViaException(), "In " + d.statementId());
+            }
+
             if ("0".equals(d.statementId()) || "1".equals(d.statementId())) {
                 assertEquals("true", d.state().toString());
             }

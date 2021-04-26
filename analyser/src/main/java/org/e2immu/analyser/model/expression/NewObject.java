@@ -144,15 +144,6 @@ public record NewObject(
     }
 
     /* like a local variable in loop*/
-    public static NewObject initialValueOfField(String identifier,
-                                                Primitives primitives,
-                                                ParameterizedType parameterizedType) {
-        return new NewObject(identifier, null, parameterizedType, Diamond.SHOW_ALL, List.of(),
-                parameterizedType.defaultNotNull(), null, null,
-                new BooleanConstant(primitives, true));
-    }
-
-    /* like a local variable in loop*/
     public static NewObject initialValueOfExternalField(String identifier,
                                                         Primitives primitives,
                                                         ParameterizedType parameterizedType,
@@ -185,7 +176,8 @@ public record NewObject(
                                                 Variable variable) {
         int notNull = evaluationContext.getProperty(array, VariableProperty.NOT_NULL_EXPRESSION, true, false);
         if (notNull == Level.DELAY) return DelayedExpression.forNewObject(variable.parameterizedType());
-        return new NewObject(identifier, null, variable.parameterizedType(), Diamond.SHOW_ALL, List.of(), notNull,
+        int notNullOfElement= MultiLevel.oneLevelLess(notNull);
+        return new NewObject(identifier, null, variable.parameterizedType(), Diamond.SHOW_ALL, List.of(), notNullOfElement,
                 null, null,
                 new BooleanConstant(evaluationContext.getPrimitives(), true));
     }

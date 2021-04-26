@@ -840,7 +840,7 @@ public class ParameterizedType {
 
     public int defaultImmutable(AnalyserContext analyserContext) {
         if (Primitives.isPrimitiveExcludingVoid(this)) return MultiLevel.EFFECTIVELY_E2IMMUTABLE;
-        if (arrays > 0) return MultiLevel.EFFECTIVELY_E1IMMUTABLE;
+        if (arrays > 0) return MultiLevel.EFFECTIVELY_E1IMMUTABLE_NOT_E2IMMUTABLE;
         TypeInfo bestType = bestTypeInfo();
         if (bestType == null) {
             return MultiLevel.EFFECTIVELY_E2IMMUTABLE;

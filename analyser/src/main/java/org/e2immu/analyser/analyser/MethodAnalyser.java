@@ -593,8 +593,8 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
         }
 
         VariableInfo variableInfo = getReturnAsVariable();
-        Expression value = variableInfo.getValue();
-        if (variableInfo.isDelayed() || value.isInitialReturnExpression()) {
+        Expression valueWithReturn = variableInfo.getValue();
+        if (variableInfo.isDelayed() || valueWithReturn.isInitialReturnExpression()) {
 
             // it is possible that none of the return statements are reachable... in which case there should be no delay,
             // and no SRV
@@ -607,11 +607,23 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
                 methodAnalysis.setProperty(VariableProperty.CONTAINER, VariableProperty.CONTAINER.best);
                 return DONE;
             }
-            log(DELAYED, "Method {} has return value {}, delaying", methodInfo.distinguishingName(), value.debugOutput());
+            log(DELAYED, "Method {} has return value {}, delaying", methodInfo.distinguishingName(),
+                    valueWithReturn.debugOutput());
             return DELAYS;
         }
 
+        Expression value;
+        boolean computeNotNullFromValue;
+        if (methodAnalysis.getFirstStatement().lastStatementIsEscape()) {
+            // we may need to remove the
+            value = removeInitialReturnExpression(valueWithReturn);
+            computeNotNullFromValue = true;
+        } else {
+            value = valueWithReturn;
+            computeNotNullFromValue = false;
+        }
         // try to compute the dynamic immutable status of value
+
         Expression valueBeforeInlining = value;
         if (!value.isConstant()) {
             int modified = methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD);
@@ -626,7 +638,16 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
                 }
             }
         }
-        int notNull = variableInfo.getProperty(VariableProperty.NOT_NULL_EXPRESSION);
+        /*
+        in normal situations, the @NotNull value is taken from the return value.
+        When the last statement escapes, this value will have been changed; very likely, at least one
+        inline conditional has been removed. We compute not-null directly on the value
+        TODO this may result in evaluation trouble -- local variables not known to the method analyser
+         */
+        int notNull = computeNotNullFromValue ?
+                value.getProperty(sharedState.evaluationContext, NOT_NULL_EXPRESSION, false) :
+                variableInfo.getProperty(VariableProperty.NOT_NULL_EXPRESSION);
+
         if (notNull != Level.DELAY) {
             methodAnalysis.setProperty(VariableProperty.NOT_NULL_EXPRESSION, notNull);
         } else {
@@ -673,6 +694,16 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
         }
 
         return DONE;
+    }
+
+    private Expression removeInitialReturnExpression(Expression value) {
+        if (value instanceof InlineConditional inline) {
+            if (inline.ifTrue.isInitialReturnExpression()) return removeInitialReturnExpression(inline.ifFalse);
+            if (inline.ifFalse.isInitialReturnExpression()) return removeInitialReturnExpression(inline.ifTrue);
+            return new InlineConditional(analyserContext, inline.condition, removeInitialReturnExpression(inline.ifTrue),
+                    removeInitialReturnExpression(inline.ifFalse));
+        }
+        return value;
     }
 
     private AnalysisStatus computeImmutable() {

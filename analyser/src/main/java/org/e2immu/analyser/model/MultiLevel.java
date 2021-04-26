@@ -257,6 +257,12 @@ public class MultiLevel {
 
     // E2Container -> E1Container; Content2 NN -> content NN
     public static int oneLevelLess(int value) {
-        return value >> SHIFT;
+        if (value <= NOT_INVOLVED) return value;
+        return Math.max(FALSE, value >> SHIFT);
+    }
+
+    // DEPENDENT_1, DEPENDENT_2 imply independent
+    public static boolean isIndependent(int value) {
+        return value > MultiLevel.DEPENDENT;
     }
 }

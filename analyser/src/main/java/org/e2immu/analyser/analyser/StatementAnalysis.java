@@ -125,6 +125,18 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         }).orElse(this);
     }
 
+    public boolean lastStatementIsEscape() {
+        if (flowData.isUnreachable()) {
+            return false;
+        }
+        return followReplacements().navigationData.next.get().map(statementAnalysis -> {
+            if (statementAnalysis.flowData.escapesViaException()) {
+                return true;
+            }
+            return statementAnalysis.lastStatementIsEscape();
+        }).orElse(false);
+    }
+
     public List<StatementAnalysis> lastStatementsOfNonEmptySubBlocks() {
         return navigationData.blocks.get().stream()
                 .filter(Optional::isPresent)

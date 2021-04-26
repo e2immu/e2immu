@@ -174,7 +174,15 @@ public class Test_12_IfStatement extends CommonTestRunner {
 
     @Test
     public void test_7() throws IOException {
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("pad".equals(d.methodInfo().name)) {
+                boolean unreachable = "1".equals(d.statementId());
+                assertEquals(unreachable, d.statementAnalysis().flowData.escapesViaException());
+            }
+        };
+
         testClass("IfStatement_7", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build());
     }
 }

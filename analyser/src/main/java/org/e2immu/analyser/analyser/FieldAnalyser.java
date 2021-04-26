@@ -411,11 +411,6 @@ public class FieldAnalyser extends AbstractAnalyser {
     private AnalysisStatus analyseImmutable(SharedState sharedState) {
         // not an assert, because the value is not directly determined by the actual property
         if (fieldAnalysis.getProperty(VariableProperty.EXTERNAL_IMMUTABLE) != Level.DELAY) return DONE;
-        TypeInfo bestType = fieldInfo.type.bestTypeInfo();
-        if (bestType == null) {
-            fieldAnalysis.setProperty(VariableProperty.EXTERNAL_IMMUTABLE, MultiLevel.EFFECTIVELY_E2IMMUTABLE);
-            return DONE; // implicitly immutable: locally effectively e2
-        }
 
         int isFinal = fieldAnalysis.getProperty(VariableProperty.FINAL);
         if (isFinal == Level.DELAY) {

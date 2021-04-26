@@ -705,7 +705,7 @@ public class TypeAnalyser extends AbstractAnalyser {
 
         log(INDEPENDENCE, "Improve type {} to @Independent", typeInfo.fullyQualifiedName);
         typeAnalysis.setProperty(VariableProperty.INDEPENDENT, MultiLevel.EFFECTIVE);
-        return DELAYS;
+        return DONE;
     }
 
     private AnalysisStatus parentOrEnclosingMustHaveTheSameProperty(VariableProperty variableProperty) {
@@ -717,7 +717,7 @@ public class TypeAnalyser extends AbstractAnalyser {
                     variableProperty, typeInfo.fullyQualifiedName);
             return DELAYS;
         }
-        if (propertyValues.stream().anyMatch(level -> level != Level.TRUE)) {
+        if (propertyValues.stream().anyMatch(level -> level != variableProperty.best)) {
             log(ANALYSER, "{} cannot be {}, parent or enclosing class is not", typeInfo.fullyQualifiedName, variableProperty);
             typeAnalysis.setProperty(variableProperty, variableProperty.falseValue);
             return DONE;
