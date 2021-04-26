@@ -1,5 +1,7 @@
 # e2immu: Practical Immutability for Java
 
+More information on the project website [https://www.e2immu.org](https://www.e2immu.org).
+
 ## About the project
 
 _e2immu_ is a static code analyser for modern Java. As for every code analyser, it aims to help you write better code by
@@ -17,10 +19,9 @@ IntelliJ is in development. Support for Eclipse and Visual Studio Code are plann
 
 The following links point towards in-depth reading material:
 
-- [The Road to Immutability](https://www.e2immu.org/road-to-immutability/000-main.html) A gentle introduction to the concepts of effective and eventual immutability
-- [_e2immu_ manual](https://www.e2immu.org/manual/000-main.html) The manual of the _e2immu_ project.
+- [The Road to Immutability](https://www.e2immu.org/docs/road-to-immutability.html) A gentle introduction to the concepts of effective and eventual immutability
+- [_e2immu_ manual](https://www.e2immu.org/docs/manual.html) The manual of the _e2immu_ project.
 
-More information on the project website [https://www.e2immu.org](https://www.e2immu.org).
 
 ## Current status
 
@@ -28,7 +29,7 @@ More information on the project website [https://www.e2immu.org](https://www.e2i
 if you "just" want to use the analyser.
 
 All core concepts are solid, however. There is a full tutorial about the how and why of effective and eventual
-immutability, and all related properties. There are more than 200 code snippets running green, so there is a ton of
+immutability, and all related properties. There are more than 250 code snippets running green, so there is a ton of
 example material already present. **You can already improve your code by introducing eventually immutable constructs. The
 analyser is "nothing but" a support tool to help you along.**
 
@@ -41,32 +42,3 @@ In descending order of priority, we are now focusing on
 - determining a selection of the most important Java APIs, and providing annotations for them.
 
 As soon as these four milestones have been met, the analyser will be promoted as "ready for general use".
-
-Please read the section on [How to contribute](#HowToContribute) to see how you can help advance the `e2immu` code base.
-
-## How to install, use, build
-
-See the separate documents [Installing e2immu](/INSTALL.md), [Building e2immu](/BUILD.md) and
-
-## License: Open Source
-
-The e2immu project (the code analyser and all its related libraries, tools, etc.) are licensed under the LGPLv3, the GNU
-Lesser General Public License.
-
-Quoting from [Wikipedia](https://en.wikipedia.org/wiki/GNU_Lesser_General_Public_License): The GNU Lesser General Public
-License is a  [free-software license](https://en.wikipedia.org/wiki/Free-software_license)  published by
-the  [Free Software Foundation](https://en.wikipedia.org/wiki/Free_Software_Foundation)  (FSF). The license allows
-developers and companies to use and integrate a software component released under the LGPL into their own (
-even  [proprietary](https://en.wikipedia.org/wiki/Proprietary_software)) software without being required by the terms of
-a strong  [copyleft](https://en.wikipedia.org/wiki/Copyleft)  license to release the source code of their own
-components. However, any developer who modifies an LGPL-covered component is required to make their modified version
-available under the same LGPL license. For proprietary software, code under the LGPL is usually used in the form of
-a  [shared library](https://en.wikipedia.org/wiki/Shared_library), so that there is a clear separation between the
-proprietary and LGPL components. The LGPL is primarily used
-for  [software libraries](https://en.wikipedia.org/wiki/Library_(computing)), although it is also used by some
-stand-alone applications.
-
-The most immediate consequence is that
-
-*you are completely free to use the analyser where and when you like, insert e2immu annotations in your proprietary
-code, and build on the immutability stepping stones such as the `SetOnce` type*.

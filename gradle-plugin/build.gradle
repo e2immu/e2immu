@@ -18,7 +18,7 @@ plugins {
     id 'maven-publish'
 }
 
-version '0.1.2';
+version '0.2.0';
 group 'org.e2immu'
 
 java {
@@ -27,7 +27,7 @@ java {
 }
 
 dependencies {
-    implementation group: 'org.e2immu', name: 'e2immu-support', version: '0.1.2'      // LGPL 3.0
+    implementation group: 'org.e2immu', name: 'e2immu-support', version: '0.2.0'      // LGPL 3.0
 
     implementation(project(':analyser')) {
         exclude group: 'ch.qos.logback'
