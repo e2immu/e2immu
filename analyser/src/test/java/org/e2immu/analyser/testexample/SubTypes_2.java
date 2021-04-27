@@ -32,7 +32,7 @@ public class SubTypes_2 {
 
 
     // ERROR: toString is @Modified, which is worse than what we demand in Object.toString()
-    // also warning: assigning to field outside type
+    // Note: no error assigning to field outside type, as it goes "up"
     class NonStaticSubType2 {
         @Modified
         @Override

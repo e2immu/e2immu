@@ -271,7 +271,10 @@ public class Assignment implements Expression {
             // so if x is a local variable of the current type, we can do this.field =, but not x.field = !
             return !(((FieldReference) at).scope instanceof This);
         }
-        // outside current type, but inside primary type, only records
-        return !(owner.isPrivateNested() && owner.isEnclosedIn(currentType));
+        /* outside current type, but inside primary type: we allow assignments
+         1. when the owner is an enclosing type (up)
+         2. when the owner is private, and the owner is enclosed (down)
+         */
+        return !(owner.isPrivateNested() && owner.isEnclosedIn(currentType)) && !currentType.isEnclosedIn(owner);
     }
 }

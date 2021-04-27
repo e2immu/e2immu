@@ -110,7 +110,7 @@ public class Test_22_SubTypes extends CommonTestRunner {
             assertSame(toString, overrides.stream().findFirst().orElseThrow());
         };
 
-        testClass("SubTypes_2", 3, 0, new DebugConfiguration.Builder()
+        testClass("SubTypes_2", 2, 0, new DebugConfiguration.Builder()
                 .addTypeMapVisitor(typeMapVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());

@@ -17,7 +17,7 @@ package org.e2immu.analyser.testexample;
 /*
 In this example we warn against assigning to a field outside of the owning type
  */
-public class SubTypes_4 {
+public class SubTypes_8 {
 
     static class StaticSubType {
         @Override
@@ -40,12 +40,9 @@ public class SubTypes_4 {
     }
 
     // not enclosed in StaticSubType, so assignment outside of type errors
+
+    // no methods! Causes crash in PrimaryTypeAnalyser https://github.com/e2immu/e2immu/issues/50
     static class StaticSubType2 {
         private static String staticField;
-
-        @Override
-        public String toString() {
-            return "hello!";
-        }
     }
 }
