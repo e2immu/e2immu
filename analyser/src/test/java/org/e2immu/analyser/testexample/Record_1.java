@@ -14,6 +14,9 @@
 
 package org.e2immu.analyser.testexample;
 
+import org.e2immu.annotation.E2Container;
+
+@E2Container
 public record Record_1(String string, int integer) {
 
     public Record_1 {

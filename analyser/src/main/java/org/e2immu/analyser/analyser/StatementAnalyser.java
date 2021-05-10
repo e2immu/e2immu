@@ -2304,16 +2304,16 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                     .filter(e -> e.getValue().getVariableInLoop() != VariableInLoop.COPY_FROM_ENCLOSING_METHOD)
                     .map(e -> e.getValue().current())
                     .filter(vi -> !(vi.variable() instanceof ReturnVariable)) // that's for the compiler!
+                    .filter(this::uselessForDependentVariable)
+                    .filter(vi -> vi.notReadAfterAssignment(index()))
                     .forEach(variableInfo -> {
-                        if (variableInfo.notReadAfterAssignment() && uselessForDependentVariable(variableInfo)) {
-                            boolean isLocalAndLocalToThisBlock = statementAnalysis.isLocalVariableAndLocalToThisBlock(variableInfo.name());
-                            if (bestAlwaysInterrupt == InterruptsFlow.ESCAPE ||
-                                    isLocalAndLocalToThisBlock ||
-                                    variableInfo.variable().isLocal() && bestAlwaysInterrupt == InterruptsFlow.RETURN &&
-                                            localVariableAssignmentInThisBlock(variableInfo)) {
-                                statementAnalysis.ensure(Message.newMessage(getLocation(),
-                                        Message.Label.USELESS_ASSIGNMENT, variableInfo.name()));
-                            }
+                        boolean isLocalAndLocalToThisBlock = statementAnalysis.isLocalVariableAndLocalToThisBlock(variableInfo.name());
+                        if (bestAlwaysInterrupt == InterruptsFlow.ESCAPE ||
+                                isLocalAndLocalToThisBlock ||
+                                variableInfo.variable().isLocal() && bestAlwaysInterrupt == InterruptsFlow.RETURN &&
+                                        localVariableAssignmentInThisBlock(variableInfo)) {
+                            statementAnalysis.ensure(Message.newMessage(getLocation(),
+                                    Message.Label.USELESS_ASSIGNMENT, variableInfo.name()));
                         }
                     });
         }

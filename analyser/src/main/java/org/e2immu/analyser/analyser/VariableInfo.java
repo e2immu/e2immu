@@ -16,6 +16,7 @@ package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.variable.Variable;
+import org.e2immu.analyser.util.StringUtil;
 
 import java.util.Map;
 import java.util.Set;
@@ -118,10 +119,10 @@ public interface VariableInfo {
         return getStatementTime() >= 0;
     }
 
-    default boolean notReadAfterAssignment() {
-        boolean assigned = isAssigned();
-        boolean read = isRead();
-        return assigned && (!read || getReadId().compareTo(getAssignmentId()) < 0);
+    default boolean notReadAfterAssignment(String index) {
+        return isAssigned()
+                && (!isRead() || getReadId().compareTo(getAssignmentId()) < 0)
+                && StringUtil.inSameBlock(getAssignmentId(), index);
     }
 
     boolean staticallyAssignedVariablesIsSet();
