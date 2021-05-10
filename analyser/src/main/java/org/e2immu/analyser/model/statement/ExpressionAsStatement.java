@@ -26,8 +26,20 @@ import java.util.List;
 
 public class ExpressionAsStatement extends StatementWithExpression {
 
+    private final boolean synthetic;
+
     public ExpressionAsStatement(Expression expression) {
+        this(expression, false);
+    }
+
+    public ExpressionAsStatement(Expression expression, boolean synthetic) {
         super(createCodeOrganization(expression), expression);
+        this.synthetic = synthetic;
+    }
+
+    @Override
+    public boolean isSynthetic() {
+        return synthetic;
     }
 
     private static Structure createCodeOrganization(Expression expression) {

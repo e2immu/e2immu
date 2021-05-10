@@ -110,11 +110,11 @@ public class FieldInfo implements WithInspectionAndAnalysis {
         return owner.primaryType();
     }
 
-    public OutputBuilder output(Qualification qualification) {
+    public OutputBuilder output(Qualification qualification, boolean asParameter) {
         Stream<OutputBuilder> annotationStream = buildAnnotationOutput(qualification);
 
         OutputBuilder outputBuilder = new OutputBuilder();
-        if (fieldInspection.isSet()) {
+        if (fieldInspection.isSet() && !asParameter) {
             FieldInspection inspection = this.fieldInspection.get();
             outputBuilder.add(Arrays.stream(FieldModifier.sort(inspection.getModifiers()))
                     .map(mod -> new OutputBuilder().add(new Text(mod)))
@@ -125,13 +125,15 @@ public class FieldInfo implements WithInspectionAndAnalysis {
                 .add(type.output(qualification))
                 .add(Space.ONE)
                 .add(new Text(name));
-        if (fieldInspection.isSet() && fieldInspection.get().fieldInitialiserIsSet()) {
+        if (!asParameter && fieldInspection.isSet() && fieldInspection.get().fieldInitialiserIsSet()) {
             Expression expression = fieldInspection.get().getFieldInitialiser().initialiser();
             if (expression != EmptyExpression.EMPTY_EXPRESSION) {
                 outputBuilder.add(Symbol.assignment("=")).add(expression.output(qualification));
             }
         }
-        outputBuilder.add(Symbol.SEMICOLON);
+        if (!asParameter) {
+            outputBuilder.add(Symbol.SEMICOLON);
+        }
 
         return Stream.concat(annotationStream, Stream.of(outputBuilder)).collect(OutputBuilder.joining(Space.ONE_REQUIRED_EASY_SPLIT,
                 Guide.generatorForAnnotationList()));

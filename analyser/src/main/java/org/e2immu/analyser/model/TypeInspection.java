@@ -55,10 +55,6 @@ public interface TypeInspection extends Inspection {
 
     AnnotationMode annotationMode();
 
-    default boolean isClass() {
-        return typeNature() == TypeNature.CLASS;
-    }
-
     default boolean isFunctionalInterface() {
         if (typeNature() != TypeNature.INTERFACE) {
             return false;

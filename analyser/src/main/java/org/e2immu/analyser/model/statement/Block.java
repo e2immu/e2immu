@@ -83,6 +83,7 @@ public class Block extends StatementWithStructure {
         if (statementAnalysis == null) {
             if (!structure.statements().isEmpty()) {
                 outputBuilder.add(structure.statements().stream()
+                        .filter(s -> !s.isSynthetic())
                         .map(s -> s.output(qualification, null))
                         .collect(OutputBuilder.joining(Space.NONE, Guide.generatorForBlock())));
             }
@@ -104,24 +105,26 @@ public class Block extends StatementWithStructure {
         StatementAnalysis sa = statementAnalysis;
         boolean notFirst = isNotFirst;
         while (sa != null) {
-            if (sa.navigationData.replacement.isSet()) {
+            if (!sa.statement.isSynthetic()) {
+                if (sa.navigationData.replacement.isSet()) {
+                    if (!notFirst) notFirst = true;
+                    else outputBuilder.add(guideGenerator.mid());
+                    outputBuilder.add(Symbol.LEFT_BLOCK_COMMENT)
+                            .add(new Text("code will be replaced"))
+                            .add(guideGenerator.mid())
+                            .add(sa.output(qualification));
+
+                    StatementAnalysis moreReplaced = sa.navigationData.next.isSet() ? sa.navigationData.next.get().orElse(null) : null;
+                    if (moreReplaced != null) {
+                        statementsString(qualification, outputBuilder, guideGenerator, moreReplaced, true); // recursion!
+                    }
+                    outputBuilder.add(guideGenerator.mid()).add(Symbol.RIGHT_BLOCK_COMMENT);
+                    sa = sa.navigationData.replacement.get();
+                }
                 if (!notFirst) notFirst = true;
                 else outputBuilder.add(guideGenerator.mid());
-                outputBuilder.add(Symbol.LEFT_BLOCK_COMMENT)
-                        .add(new Text("code will be replaced"))
-                        .add(guideGenerator.mid())
-                        .add(sa.output(qualification));
-
-                StatementAnalysis moreReplaced = sa.navigationData.next.isSet() ? sa.navigationData.next.get().orElse(null) : null;
-                if (moreReplaced != null) {
-                    statementsString(qualification, outputBuilder, guideGenerator, moreReplaced, true); // recursion!
-                }
-                outputBuilder.add(guideGenerator.mid()).add(Symbol.RIGHT_BLOCK_COMMENT);
-                sa = sa.navigationData.replacement.get();
+                outputBuilder.add(sa.output(qualification));
             }
-            if (!notFirst) notFirst = true;
-            else outputBuilder.add(guideGenerator.mid());
-            outputBuilder.add(sa.output(qualification));
             sa = sa.navigationData.next.isSet() ? sa.navigationData.next.get().orElse(null) : null;
         }
     }

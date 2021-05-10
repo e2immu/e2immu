@@ -209,6 +209,10 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
             return this;
         }
 
+        public boolean hasEmptyConstructorIfNoConstructorsPresent() {
+            return typeNature == TypeNature.CLASS || typeNature == TypeNature.ENUM;
+        }
+
         public Builder setParentClass(ParameterizedType parentClass) {
             this.parentClass = Objects.requireNonNull(parentClass);
             return this;

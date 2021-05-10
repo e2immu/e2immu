@@ -53,4 +53,8 @@ public interface Statement extends Element {
         }
         return null;
     }
+
+    default boolean isSynthetic() {
+        return false;
+    }
 }

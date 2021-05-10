@@ -1,4 +1,3 @@
-
 /*
  * e2immu: a static code analyser for effective and eventual immutability
  * Copyright 2020-2021, Bart Naudts, https://www.e2immu.org
@@ -13,33 +12,17 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser;
+package org.e2immu.analyser.testexample;
 
-import org.e2immu.analyser.config.DebugConfiguration;
-import org.junit.jupiter.api.Test;
+public record Record_1(String string, int integer) {
 
-import java.io.IOException;
-
-public class Test_00_Basics_15plus extends CommonTestRunner {
-    public Test_00_Basics_15plus() {
-        super(true);
+    public Record_1 {
+        assert string != null;
+        if (integer < 0) throw new UnsupportedOperationException();
     }
 
-    @Test
-    public void test_15() throws IOException {
-        testClass("Basics_15", 0, 0, new DebugConfiguration.Builder()
-                .build());
-    }
-
-    @Test
-    public void test_16() throws IOException {
-        testClass("Basics_16", 0, 1, new DebugConfiguration.Builder()
-                .build());
-    }
-
-    @Test
-    public void test_17() throws IOException {
-        testClass("Basics_17", 0, 0, new DebugConfiguration.Builder()
-                .build());
+    public Record_1(int i) {
+        this("String " + i, i);
+        if (i > 10) throw new UnsupportedOperationException();
     }
 }

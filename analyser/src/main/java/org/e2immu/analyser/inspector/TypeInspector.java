@@ -20,8 +20,10 @@ import com.github.javaparser.ast.body.*;
 import com.github.javaparser.ast.expr.AnnotationExpr;
 import com.github.javaparser.ast.expr.Expression;
 import com.github.javaparser.ast.expr.ObjectCreationExpr;
+import com.github.javaparser.ast.nodeTypes.NodeWithTypeParameters;
 import com.github.javaparser.ast.type.ClassOrInterfaceType;
 import org.e2immu.analyser.inspector.util.EnumMethods;
+import org.e2immu.analyser.inspector.util.RecordSynthetics;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.variable.FieldReference;
@@ -144,15 +146,12 @@ public class TypeInspector {
         }
         if (fullInspection) {
             builder.setParentClass(expressionContext.typeContext.getPrimitives().objectParameterizedType);
-            TypeNature typeNature = typeNature(typeDeclaration);
-            builder.setTypeNature(typeNature);
             if (enclosingTypeIsInterface) {
                 builder.addTypeModifier(TypeModifier.PUBLIC);
                 builder.addTypeModifier(TypeModifier.STATIC);
             }
         }
         expressionContext.typeContext.addToContext(typeInfo);
-
 
         boolean haveFunctionalInterface = false;
         for (AnnotationExpr annotationExpr : typeDeclaration.getAnnotations()) {
@@ -161,7 +160,9 @@ public class TypeInspector {
             builder.addAnnotation(ae);
         }
         if (fullInspection) {
-            if (typeDeclaration instanceof EnumDeclaration) {
+            if (typeDeclaration instanceof RecordDeclaration) {
+                doRecordDeclaration(expressionContext, (RecordDeclaration) typeDeclaration);
+            } else if (typeDeclaration instanceof EnumDeclaration) {
                 doEnumDeclaration(expressionContext, (EnumDeclaration) typeDeclaration);
             } else if (typeDeclaration instanceof AnnotationDeclaration) {
                 doAnnotationDeclaration(expressionContext, (AnnotationDeclaration) typeDeclaration);
@@ -201,6 +202,32 @@ public class TypeInspector {
         }
     }
 
+    private void doRecordDeclaration(ExpressionContext expressionContext, RecordDeclaration recordDeclaration) {
+        builder.setTypeNature(TypeNature.RECORD);
+        if (!typeInfo.isPrimaryType()) {
+            builder.addTypeModifier(TypeModifier.STATIC);
+        }
+
+        doTypeParameters(expressionContext, recordDeclaration);
+        doImplementedTypes(expressionContext, recordDeclaration.getImplementedTypes());
+
+        List<FieldInfo> recordFields = recordDeclaration.getParameters().stream().map(parameter -> {
+            ParameterizedType type = ParameterizedTypeFactory.from(expressionContext.typeContext, parameter.getType());
+            FieldInfo fieldInfo = new FieldInfo(type, parameter.getNameAsString(), typeInfo);
+
+            FieldInspectionImpl.Builder fieldBuilder = new FieldInspectionImpl.Builder();
+            fieldBuilder.setSynthetic(true);
+            fieldBuilder.addModifier(FieldModifier.FINAL);
+            fieldBuilder.addModifier(FieldModifier.PRIVATE);
+            expressionContext.typeContext.typeMapBuilder.registerFieldInspection(fieldInfo, fieldBuilder);
+            builder.addField(fieldInfo);
+
+            return fieldInfo;
+        }).toList();
+
+        RecordSynthetics.create(expressionContext, typeInfo, builder, recordFields);
+    }
+
     private void doEnumDeclaration(ExpressionContext expressionContext, EnumDeclaration enumDeclaration) {
         builder.setTypeNature(TypeNature.ENUM);
         List<FieldInfo> enumFields = new ArrayList<>();
@@ -226,15 +253,31 @@ public class TypeInspector {
         EnumMethods.create(expressionContext, typeInfo, builder, enumFields);
     }
 
-    private void doClassOrInterfaceDeclaration(ExpressionContext expressionContext, ClassOrInterfaceDeclaration cid) {
+    private void doTypeParameters(ExpressionContext expressionContext, NodeWithTypeParameters<?> node) {
         int tpIndex = 0;
-        for (com.github.javaparser.ast.type.TypeParameter typeParameter : cid.getTypeParameters()) {
+        for (com.github.javaparser.ast.type.TypeParameter typeParameter : node.getTypeParameters()) {
             TypeParameterImpl tp = new TypeParameterImpl(typeInfo, typeParameter.getNameAsString(), tpIndex++);
             expressionContext.typeContext.addToContext(tp);
             tp.inspect(expressionContext.typeContext, typeParameter);
             builder.addTypeParameter(tp);
         }
-        if (builder.typeNature() == TypeNature.CLASS) {
+    }
+
+    private void doImplementedTypes(ExpressionContext expressionContext, NodeList<ClassOrInterfaceType> implementedTypes) {
+        for (ClassOrInterfaceType extended : implementedTypes) {
+            ParameterizedType parameterizedType = ParameterizedTypeFactory.from(expressionContext.typeContext, extended);
+            if (fullInspection) ensureLoaded(expressionContext, parameterizedType);
+            builder.addInterfaceImplemented(parameterizedType);
+        }
+    }
+
+    private void doClassOrInterfaceDeclaration(ExpressionContext expressionContext, ClassOrInterfaceDeclaration cid) {
+        doTypeParameters(expressionContext, cid);
+        if (cid.isInterface()) {
+            builder.setTypeNature(TypeNature.INTERFACE);
+            doImplementedTypes(expressionContext, cid.getExtendedTypes());
+        } else {
+            builder.setTypeNature(TypeNature.CLASS);
             if (!cid.getExtendedTypes().isEmpty()) {
                 ParameterizedType parameterizedType = ParameterizedTypeFactory.from(expressionContext.typeContext, cid.getExtendedTypes(0));
                 // why this check? hasBeenDefined == true signifies Java parsing; == false is annotated APIs.
@@ -243,18 +286,7 @@ public class TypeInspector {
                 if (fullInspection) ensureLoaded(expressionContext, parameterizedType);
                 builder.setParentClass(parameterizedType);
             }
-            for (ClassOrInterfaceType extended : cid.getImplementedTypes()) {
-                ParameterizedType parameterizedType = ParameterizedTypeFactory.from(expressionContext.typeContext, extended);
-                if (fullInspection) ensureLoaded(expressionContext, parameterizedType);
-                builder.addInterfaceImplemented(parameterizedType);
-            }
-        } else {
-            if (builder.typeNature() != TypeNature.INTERFACE) throw new UnsupportedOperationException();
-            for (ClassOrInterfaceType extended : cid.getExtendedTypes()) {
-                ParameterizedType parameterizedType = ParameterizedTypeFactory.from(expressionContext.typeContext, extended);
-                if (fullInspection) ensureLoaded(expressionContext, parameterizedType);
-                builder.addInterfaceImplemented(parameterizedType);
-            }
+            doImplementedTypes(expressionContext, cid.getImplementedTypes());
         }
     }
 
@@ -395,13 +427,21 @@ public class TypeInspector {
 
         AtomicInteger countNonStaticNonDefaultIfInterface = new AtomicInteger();
         Map<CompanionMethodName, MethodInspectionImpl.Builder> companionMethodsWaiting = new LinkedHashMap<>();
-
-        boolean isEnumConstructorMustBePrivate = builder.typeNature() == TypeNature.ENUM;
+        AtomicInteger countCompactConstructors = new AtomicInteger();
 
         for (BodyDeclaration<?> bodyDeclaration : members) {
+            bodyDeclaration.ifCompactConstructorDeclaration(ccd -> {
+                MethodInspector methodInspector = new MethodInspector(expressionContext.typeContext.typeMapBuilder, typeInfo,
+                        fullInspection);
+                methodInspector.inspect(ccd, subContext, companionMethodsWaiting, builder.fields());
+                builder.ensureConstructor(methodInspector.getBuilder().getMethodInfo());
+                companionMethodsWaiting.clear();
+                countCompactConstructors.incrementAndGet();
+            });
             bodyDeclaration.ifConstructorDeclaration(cd -> {
                 MethodInspector methodInspector = new MethodInspector(expressionContext.typeContext.typeMapBuilder, typeInfo,
                         fullInspection);
+                boolean isEnumConstructorMustBePrivate = builder.typeNature() == TypeNature.ENUM;
                 methodInspector.inspect(cd, subContext, companionMethodsWaiting, dollarResolver, isEnumConstructorMustBePrivate);
                 builder.ensureConstructor(methodInspector.getBuilder().getMethodInfo());
                 companionMethodsWaiting.clear();
@@ -449,10 +489,16 @@ public class TypeInspector {
         }
 
         // add empty constructor if needed
-        boolean privateEmptyConstructor = builder.typeNature() == TypeNature.ENUM;
-
-        if (builder.constructors().isEmpty()) {
+        if (builder.constructors().isEmpty() && builder.hasEmptyConstructorIfNoConstructorsPresent()) {
+            boolean privateEmptyConstructor = builder.typeNature() == TypeNature.ENUM;
             builder.addConstructor(createEmptyConstructor(expressionContext.typeContext, privateEmptyConstructor));
+        }
+
+        if(countCompactConstructors.get() == 0 && builder.typeNature() == TypeNature.RECORD) {
+            MethodInspector methodInspector = new MethodInspector(expressionContext.typeContext.typeMapBuilder, typeInfo,
+                    fullInspection);
+            methodInspector.inspect(null, subContext, companionMethodsWaiting, builder.fields());
+            builder.ensureConstructor(methodInspector.getBuilder().getMethodInfo());
         }
 
         log(INSPECTOR, "Setting type inspection of {}", typeInfo.fullyQualifiedName);
@@ -461,7 +507,7 @@ public class TypeInspector {
     }
 
     private MethodInfo createEmptyConstructor(TypeContext typeContext, boolean makePrivate) {
-        MethodInspectionImpl.Builder builder = new MethodInspectionImpl.Builder(typeInfo);
+        MethodInspectionImpl.Builder builder = new MethodInspectionImpl.Builder(typeInfo, false);
         builder.setInspectedBlock(Block.EMPTY_BLOCK)
                 .setSynthetic(true)
                 .addModifier(makePrivate ? MethodModifier.PRIVATE : MethodModifier.PUBLIC)
@@ -544,21 +590,5 @@ public class TypeInspector {
             }
         }
         return null;
-    }
-
-    private static TypeNature typeNature(TypeDeclaration<?> typeDeclaration) {
-        if (typeDeclaration instanceof ClassOrInterfaceDeclaration cid) {
-            if (cid.isInterface()) {
-                return TypeNature.INTERFACE;
-            }
-            return TypeNature.CLASS;
-        }
-        if (typeDeclaration instanceof AnnotationDeclaration) {
-            return TypeNature.ANNOTATION;
-        }
-        if (typeDeclaration instanceof EnumDeclaration) {
-            return TypeNature.ENUM;
-        }
-        throw new UnsupportedOperationException();
     }
 }

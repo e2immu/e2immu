@@ -59,6 +59,7 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
     private final Map<CompanionMethodName, MethodInfo> companionMethods;
     private final boolean isStatic;
     private final boolean isDefault;
+    private final boolean compactConstructor;
 
     private MethodInspectionImpl(MethodInfo methodInfo,
                                  String fullyQualifiedName,
@@ -66,6 +67,7 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
                                  boolean isStatic,
                                  boolean isDefault,
                                  boolean synthetic,
+                                 boolean compactConstructor,
                                  Set<MethodModifier> modifiers,
                                  List<ParameterInfo> parameters,
                                  ParameterizedType returnType,
@@ -89,6 +91,12 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
         this.implementationOf = implementationOf;
         this.isDefault = isDefault;
         this.isStatic = isStatic;
+        this.compactConstructor = compactConstructor;
+    }
+
+    @Override
+    public boolean isCompactConstructor() {
+        return compactConstructor;
     }
 
     @Override
@@ -181,6 +189,7 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
         public final TypeInfo owner;
         public final String name;
         public final boolean isConstructor;
+        public final boolean compactConstructor;
 
         private final Map<CompanionMethodName, Builder> companionMethods = new LinkedHashMap<>();
         private BlockStmt block;
@@ -193,16 +202,27 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
         private List<ParameterInfo> immutableParameters;
         private List<ParameterInfo> mutableParameters;
 
+        public Builder(TypeInfo owner) {
+            this(owner, false);
+        }
+
         public Builder(TypeInfo owner, String name) {
             this.owner = owner;
             this.name = name;
             this.isConstructor = false;
+            this.compactConstructor = false;
         }
 
-        public Builder(TypeInfo owner) {
+        public Builder(TypeInfo owner, boolean isCompact) {
             this.owner = owner;
             this.name = owner.simpleName;
             this.isConstructor = true;
+            this.compactConstructor = isCompact;
+        }
+
+        @Override
+        public boolean isCompactConstructor() {
+            return compactConstructor;
         }
 
         @Fluent
@@ -323,6 +343,7 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
                     isStatic(),
                     isDefault(),
                     isSynthetic(),
+                    isCompactConstructor(),
                     Set.copyOf(modifiers),
                     List.copyOf(immutableParameters),
                     returnType,

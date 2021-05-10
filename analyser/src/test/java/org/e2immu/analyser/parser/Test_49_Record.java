@@ -30,12 +30,13 @@ public class Test_49_Record extends CommonTestRunner {
 
     @Test
     public void test_0() throws IOException {
-        try {
             testClass("Record_0", 0, 0, new DebugConfiguration.Builder()
                     .build());
-            fail();
-        } catch (ParseProblemException parseProblemException) {
-            // ok, we cannot parse records yet
-        }
+    }
+
+    @Test
+    public void test_1() throws IOException {
+        testClass("Record_1", 0, 0, new DebugConfiguration.Builder()
+                .build());
     }
 }

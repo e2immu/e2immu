@@ -14,6 +14,9 @@
 
 package org.e2immu.analyser.inspector;
 
+import com.github.javaparser.JavaParser;
+import com.github.javaparser.ParseResult;
+import com.github.javaparser.ParserConfiguration;
 import com.github.javaparser.StaticJavaParser;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.ImportDeclaration;
@@ -53,7 +56,12 @@ public record ParseAndInspect(Resources classPath,
     public List<TypeInfo> run(TypeContext typeContextOfFile, String fileName, String sourceCode) {
         log(INSPECTOR, "Parsing compilation unit {}", fileName);
 
-        CompilationUnit compilationUnit = StaticJavaParser.parse(sourceCode);
+        JavaParser javaParser = new JavaParser(new ParserConfiguration().setLanguageLevel(ParserConfiguration.LanguageLevel.JAVA_16));
+        ParseResult<CompilationUnit> parseResult = javaParser.parse(sourceCode);
+        if(!parseResult.isSuccessful() || parseResult.getResult().isEmpty()) {
+            throw new UnsupportedOperationException();
+        }
+        CompilationUnit compilationUnit = parseResult.getResult().get();
         if (compilationUnit.getTypes().isEmpty()) {
             LOGGER.warn("No types in compilation unit: {}", fileName);
             return List.of();

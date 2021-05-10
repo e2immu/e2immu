@@ -175,15 +175,24 @@ public class ExpressionContext {
                 new TypeContext(typeContext), variableContext, anonymousTypeCounters);
     }
 
-    @NotNull
-    public Block parseBlockOrStatement(@NotNull @NotModified Statement stmt) {
+    /*
+    used for compact constructors: we have already added some synthetic statements
+     */
+    public Block continueParsingBlock(BlockStmt blockStmt, Block.BlockBuilder blockBuilder) {
+        for (Statement statement : blockStmt.getStatements()) {
+            parseStatement(blockBuilder, statement, null);
+        }
+        return blockBuilder.build();
+    }
+
+    public Block parseBlockOrStatement(Statement stmt) {
         assert enclosingMethod != null || enclosingField != null;
         return parseBlockOrStatement(stmt, null);
     }
 
     // method makes changes to variableContext
-    @NotNull
-    private Block parseBlockOrStatement(@NotNull @NotModified Statement stmt, String labelOfBlock) {
+
+    private Block parseBlockOrStatement(Statement stmt, String labelOfBlock) {
         Block.BlockBuilder blockBuilder = new Block.BlockBuilder().setLabel(labelOfBlock);
         if (stmt.isBlockStmt()) {
             for (Statement statement : stmt.asBlockStmt().getStatements()) {

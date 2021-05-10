@@ -16,10 +16,7 @@ package org.e2immu.analyser.inspector;
 
 import com.github.javaparser.ast.Modifier;
 import com.github.javaparser.ast.NodeList;
-import com.github.javaparser.ast.body.AnnotationMemberDeclaration;
-import com.github.javaparser.ast.body.ConstructorDeclaration;
-import com.github.javaparser.ast.body.MethodDeclaration;
-import com.github.javaparser.ast.body.Parameter;
+import com.github.javaparser.ast.body.*;
 import com.github.javaparser.ast.expr.AnnotationExpr;
 import com.github.javaparser.ast.type.ReferenceType;
 import org.e2immu.analyser.model.*;
@@ -178,20 +175,50 @@ public class MethodInspector {
     }
 
     /*
+    Compact constructor for records
+     */
+    public void inspect(CompactConstructorDeclaration ccd,
+                        ExpressionContext expressionContext,
+                        Map<CompanionMethodName, MethodInspectionImpl.Builder> companionMethods,
+                        List<FieldInfo> fields) {
+        MethodInspectionImpl.Builder tempBuilder = new MethodInspectionImpl.Builder(typeInfo, true);
+        int i = 0;
+        for (FieldInfo fieldInfo : fields) {
+            ParameterInspectionImpl.Builder pib = new ParameterInspectionImpl.Builder(fieldInfo.type, fieldInfo.name, i++);
+            pib.setVarArgs(false);
+            tempBuilder.addParameter(pib);
+        }
+        MethodInspectionImpl.Builder builder = fqnIsKnown(expressionContext.typeContext, tempBuilder);
+        builder.addModifier(MethodModifier.PUBLIC);
+        if (ccd != null) {
+            builder.addCompanionMethods(companionMethods);
+            checkCompanionMethods(companionMethods, typeInfo.simpleName);
+            addAnnotations(builder, ccd.getAnnotations(), expressionContext);
+            if (fullInspection) {
+                addModifiers(builder, ccd.getModifiers());
+                addExceptionTypes(builder, ccd.getThrownExceptions(), expressionContext.typeContext);
+                builder.setBlock(ccd.getBody());
+            }
+        } else {
+            builder.setSynthetic(true);
+        }
+        typeMapBuilder.registerMethodInspection(builder);
+    }
+
+    /*
     Inspection of a constructor.
     Code block will be handled later.
      */
-
     public void inspect(ConstructorDeclaration cd,
                         ExpressionContext expressionContext,
                         Map<CompanionMethodName, MethodInspectionImpl.Builder> companionMethods,
                         TypeInspector.DollarResolver dollarResolver,
                         boolean makePrivate) {
-        MethodInspectionImpl.Builder tempBuilder = new MethodInspectionImpl.Builder(typeInfo);
+        MethodInspectionImpl.Builder tempBuilder = new MethodInspectionImpl.Builder(typeInfo, false);
         addParameters(tempBuilder, cd.getParameters(), expressionContext, dollarResolver);
         MethodInspectionImpl.Builder builder = fqnIsKnown(expressionContext.typeContext, tempBuilder);
         inspectParameters(cd.getParameters(), builder.getParameterBuilders(), expressionContext);
-        if(makePrivate) {
+        if (makePrivate) {
             builder.addModifier(MethodModifier.PRIVATE);
         }
         builder.addCompanionMethods(companionMethods);

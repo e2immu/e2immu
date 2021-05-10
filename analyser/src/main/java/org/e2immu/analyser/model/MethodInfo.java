@@ -191,13 +191,15 @@ public class MethodInfo implements WithInspectionAndAnalysis {
             afterAnnotations.add(inspection.getReturnType().output(qualification)).add(Space.ONE);
         }
         afterAnnotations.add(new Text(name));
-        if (inspection.getParameters().isEmpty()) {
-            afterAnnotations.add(Symbol.OPEN_CLOSE_PARENTHESIS);
-        } else {
-            afterAnnotations.add(inspection.getParameters().stream()
-                    .map(pi -> pi.outputDeclaration(qualification))
-                    .collect(OutputBuilder.joining(Symbol.COMMA, Symbol.LEFT_PARENTHESIS, Symbol.RIGHT_PARENTHESIS,
-                            Guide.generatorForParameterDeclaration())));
+        if(!inspection.isCompactConstructor()) {
+            if (inspection.getParameters().isEmpty()) {
+                afterAnnotations.add(Symbol.OPEN_CLOSE_PARENTHESIS);
+            } else {
+                afterAnnotations.add(inspection.getParameters().stream()
+                        .map(pi -> pi.outputDeclaration(qualification))
+                        .collect(OutputBuilder.joining(Symbol.COMMA, Symbol.LEFT_PARENTHESIS, Symbol.RIGHT_PARENTHESIS,
+                                Guide.generatorForParameterDeclaration())));
+            }
         }
         if (!inspection.getExceptionTypes().isEmpty()) {
             afterAnnotations.add(Space.ONE_REQUIRED_EASY_SPLIT).add(new Text("throws")).add(Space.ONE)

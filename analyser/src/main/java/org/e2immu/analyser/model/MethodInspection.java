@@ -63,6 +63,8 @@ public interface MethodInspection extends Inspection {
 
     boolean isPrivate();
 
+    boolean isCompactConstructor();
+
     default ParameterizedType formalParameterType(int index) {
         int formalParams = getParameters().size();
         if (index < formalParams - 1 || index < formalParams && !isVarargs()) {

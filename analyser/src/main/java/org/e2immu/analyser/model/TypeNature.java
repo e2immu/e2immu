@@ -15,20 +15,16 @@
 package org.e2immu.analyser.model;
 
 public enum TypeNature {
-    /**
-     * we expect that for most situations, PRIMITIVE will be equivalent to CLASS
-     */
-    PRIMITIVE,
-
-    CLASS,
-
-    INTERFACE,
 
     ANNOTATION,
-
-    ENUM;
+    CLASS,
+    ENUM,
+    INTERFACE,
+    PRIMITIVE,
+    RECORD;
 
     public String toJava() {
         return name().toLowerCase();
     }
+
 }

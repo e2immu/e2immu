@@ -21,6 +21,7 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ExplicitConstructorInvocation;
+import org.e2immu.analyser.model.statement.ExpressionAsStatement;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.parser.*;
@@ -380,7 +381,7 @@ public class Resolver {
                 methodInspection.getCompanionMethods().values().forEach(companionMethod -> {
                     MethodInspection companionMethodInspection = expressionContext.typeContext.getMethodInspection(companionMethod);
                     try {
-                        doMethodOrConstructor(companionMethod, (MethodInspectionImpl.Builder)
+                        doMethodOrConstructor(typeInspection, companionMethod, (MethodInspectionImpl.Builder)
                                 companionMethodInspection, expressionContext, methodFieldSubTypeGraph, restrictToType);
                     } catch (RuntimeException rte) {
                         LOGGER.warn("Caught runtime exception while resolving companion method {} in {}", companionMethod.name,
@@ -392,7 +393,7 @@ public class Resolver {
                 log(RESOLVER, "Finished resolving companion methods of {}", methodInspection.getDistinguishingName());
             }
             try {
-                doMethodOrConstructor(methodInfo, (MethodInspectionImpl.Builder) methodInspection,
+                doMethodOrConstructor(typeInspection, methodInfo, (MethodInspectionImpl.Builder) methodInspection,
                         expressionContext, methodFieldSubTypeGraph, restrictToType);
             } catch (RuntimeException rte) {
                 LOGGER.warn("Caught runtime exception while resolving method {} in {}", methodInfo.name,
@@ -402,7 +403,8 @@ public class Resolver {
         });
     }
 
-    private void doMethodOrConstructor(MethodInfo methodInfo,
+    private void doMethodOrConstructor(TypeInspection typeInspection,
+                                       MethodInfo methodInfo,
                                        MethodInspectionImpl.Builder methodInspection,
                                        ExpressionContext expressionContext,
                                        DependencyGraph<WithInspectionAndAnalysis> methodFieldSubTypeGraph,
@@ -425,12 +427,17 @@ public class Resolver {
 
         boolean doBlock = !methodInspection.inspectedBlockIsSet();
         if (doBlock) {
+            Block.BlockBuilder blockBuilder = new Block.BlockBuilder();
+            if (methodInspection.compactConstructor) {
+                addCompactConstructorSyntheticAssignments(expressionContext.typeContext, blockBuilder,
+                        typeInspection, methodInspection);
+            }
             BlockStmt block = methodInspection.getBlock();
             if (block != null && !block.getStatements().isEmpty()) {
                 log(RESOLVER, "Parsing block of method {}", methodInfo.name);
-                doBlock(subContext, methodInfo, methodInspection, block);
+                doBlock(subContext, methodInfo, methodInspection, block, blockBuilder);
             } else {
-                methodInspection.setInspectedBlock(Block.EMPTY_BLOCK);
+                methodInspection.setInspectedBlock(blockBuilder.build());
             }
         }
         MethodsAndFieldsVisited methodsAndFieldsVisited = new MethodsAndFieldsVisited(restrictToType);
@@ -441,6 +448,20 @@ public class Resolver {
 
         // and only then, when the FQN is known, add to the sub-graph
         methodFieldSubTypeGraph.addNode(methodInfo, List.copyOf(methodsAndFieldsVisited.methodsAndFields));
+    }
+
+    private void addCompactConstructorSyntheticAssignments(InspectionProvider inspectionProvider,
+                                                           Block.BlockBuilder blockBuilder,
+                                                           TypeInspection typeInspection,
+                                                           MethodInspectionImpl.Builder methodInspection) {
+        int i = 0;
+        for (FieldInfo fieldInfo : typeInspection.fields()) {
+            VariableExpression target = new VariableExpression(new FieldReference(inspectionProvider, fieldInfo,
+                    new This(inspectionProvider, fieldInfo.owner)));
+            VariableExpression parameter = new VariableExpression(methodInspection.getParameters().get(i++));
+            Assignment assignment = new Assignment(inspectionProvider.getPrimitives(), target, parameter);
+            blockBuilder.addStatement(new ExpressionAsStatement(assignment, true));
+        }
     }
 
     private static class MethodsAndFieldsVisited {
@@ -481,14 +502,15 @@ public class Resolver {
     private void doBlock(ExpressionContext expressionContext,
                          MethodInfo methodInfo,
                          MethodInspectionImpl.Builder methodInspection,
-                         BlockStmt block) {
+                         BlockStmt block,
+                         Block.BlockBuilder blockBuilder) {
         try {
             MethodTypeParameterMap returnTypeSAM = methodInspection.getReturnType() == null ? null :
                     methodInspection.getReturnType().findSingleAbstractMethodOfInterface(expressionContext.typeContext);
             ExpressionContext newContext = expressionContext.newVariableContext(methodInfo, returnTypeSAM);
             methodInspection.getParameters().forEach(newContext.variableContext::add);
             log(RESOLVER, "Parsing block with variable context {}", newContext.variableContext);
-            Block parsedBlock = newContext.parseBlockOrStatement(block);
+            Block parsedBlock = newContext.continueParsingBlock(block, blockBuilder);
             methodInspection.setInspectedBlock(parsedBlock);
 
             newContext.streamNewlyCreatedTypes().forEach(anonymousType -> {

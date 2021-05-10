@@ -132,11 +132,13 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         List<TypeParameter> typeParameters;
         ParameterizedType parentClass;
         boolean isInterface;
+        boolean isRecord;
 
         if (hasBeenInspected()) {
             TypeInspection typeInspection = this.typeInspection.get();
             typeNature = typeInspection.typeNature().toJava();
             isInterface = typeInspection.isInterface();
+            isRecord = typeInspection.typeNature() == TypeNature.RECORD;
             typeModifiers = TypeModifier.sort(typeInspection.modifiers());
             fields = typeInspection.fields();
             constructors = typeInspection.constructors();
@@ -160,6 +162,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
             interfaces = List.of();
             parentClass = null;
             isInterface = false;
+            isRecord = false;
         }
 
         // PACKAGE AND IMPORTS
@@ -194,6 +197,9 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
                         .collect(OutputBuilder.joining(Symbol.COMMA)));
                 afterAnnotations.add(Symbol.RIGHT_ANGLE_BRACKET);
             }
+            if(isRecord) {
+                outputFieldsAsParameters(insideType, afterAnnotations, fields);
+            }
             if (parentClass != null) {
                 afterAnnotations.add(Space.ONE).add(new Text("extends")).add(Space.ONE).add(parentClass.output(insideType));
             }
@@ -208,7 +214,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
                 enumConstantStream(insideType),
                 fields.stream()
                         .filter(f -> !f.fieldInspection.get().isSynthetic())
-                        .map(f -> f.output(insideType))),
+                        .map(f -> f.output(insideType, false))),
                 subTypes.stream()
                         .filter(st -> !st.typeInspection.get().isSynthetic())
                         .map(ti -> ti.output(insideType, true))),
@@ -225,6 +231,15 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         return packageAndImports.add(Stream.concat(annotationStream, Stream.of(afterAnnotations))
                 .collect(OutputBuilder.joining(Space.ONE_REQUIRED_EASY_SPLIT,
                         Guide.generatorForAnnotationList())));
+    }
+
+    private void outputFieldsAsParameters(Qualification qualification,
+                                          OutputBuilder outputBuilder,
+                                          List<FieldInfo> fields) {
+        outputBuilder.add(fields.stream()
+                .map(fieldInfo -> fieldInfo.output(qualification, true))
+                .collect(OutputBuilder.joining(Symbol.COMMA, Symbol.LEFT_PARENTHESIS, Symbol.RIGHT_PARENTHESIS,
+                        Guide.generatorForParameterDeclaration())));
     }
 
     private void addThisToQualification(QualificationImpl insideType) {
