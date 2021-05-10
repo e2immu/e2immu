@@ -449,7 +449,8 @@ public class ParameterAnalyser {
                     firstStatement != null && firstStatement.statement instanceof ExplicitConstructorInvocation eci &&
                     eci.methodInfo == pi.owner) {
                 Expression param = eci.structure.updaters().get(pi.index);
-                if (param instanceof VariableExpression ve2 && ve2.variable() == parameterInfo) {
+                VariableExpression ve2;
+                if ((ve2 = param.asInstanceOf(VariableExpression.class)) != null && ve2.variable() == parameterInfo) {
                     return ASSIGNED;
                 }
             }

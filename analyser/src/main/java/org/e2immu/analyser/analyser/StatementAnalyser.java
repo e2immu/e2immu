@@ -1533,7 +1533,9 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         if (statementAnalysis.statement instanceof LoopStatement) {
             for (Expression expression : statementAnalysis.statement.getStructure().updaters()) {
                 expression.visit(e -> {
-                    if (e instanceof Assignment assignment && assignment.target instanceof VariableExpression ve) {
+                    VariableExpression ve;
+                    if (e instanceof Assignment assignment
+                            && (ve = assignment.target.asInstanceOf(VariableExpression.class)) != null) {
                         if (!(statementAnalysis.localVariablesAssignedInThisLoop.isFrozen()) &&
                                 !statementAnalysis.localVariablesAssignedInThisLoop.contains(ve.name())) {
                             statementAnalysis.localVariablesAssignedInThisLoop.add(ve.name());
@@ -2681,10 +2683,11 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             Expression value = variableInfo.getValue();
 
             // redirect to other variable
-            if (value instanceof VariableExpression variableValue) {
-                assert variableValue.variable() != variable :
+            VariableExpression ve;
+            if ((ve = value.asInstanceOf(VariableExpression.class)) != null) {
+                assert ve.variable() != variable :
                         "Variable " + variable.fullyQualifiedName() + " has been assigned a VariableValue value pointing to itself";
-                return currentInstance(variableValue.variable(), statementTime);
+                return currentInstance(ve.variable(), statementTime);
             }
             if (value instanceof NewObject instance) return instance;
             return null;
@@ -2710,8 +2713,9 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         @Override
         public LinkedVariables linkedVariables(Expression value) {
             assert value != null;
-            if (value instanceof VariableExpression variableValue) {
-                return linkedVariables(variableValue.variable());
+            VariableExpression ve;
+            if ((ve = value.asInstanceOf(VariableExpression.class)) != null) {
+                return linkedVariables(ve.variable());
             }
             return value.linkedVariables(this);
         }
@@ -2843,11 +2847,14 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         }
 
         @Override
-        public Boolean isCurrentlyLinkedToField(Expression objectValue) {
-            if (objectValue instanceof VariableExpression ve && ve.variable() instanceof This) return true;
+        public Boolean isCurrentlyLinkedToField(Expression expression) {
+            VariableExpression ve;
+            if ((ve = expression.asInstanceOf(VariableExpression.class)) != null && ve.variable() instanceof This) {
+                return true;
+            }
             Linked1Writer linked1Writer = new Linked1Writer(statementAnalysis, this,
                     VariableInfo::getStaticallyAssignedVariables);
-            return linked1Writer.isLinkedToField(objectValue);
+            return linked1Writer.isLinkedToField(expression);
         }
 
         @Override

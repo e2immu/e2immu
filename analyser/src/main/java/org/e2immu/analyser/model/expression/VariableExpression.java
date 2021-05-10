@@ -100,7 +100,8 @@ public record VariableExpression(Variable variable, String name) implements Expr
     public EvaluationResult reEvaluate(EvaluationContext evaluationContext, Map<Expression, Expression> translation) {
         Expression inMap = translation.get(this);
         if (inMap != null) {
-            if (inMap instanceof VariableExpression ve) {
+            VariableExpression ve;
+            if ((ve = inMap.asInstanceOf(VariableExpression.class)) != null) {
                 return evaluate(evaluationContext, ForwardEvaluationInfo.DEFAULT, ve.variable);
             }
             return new EvaluationResult.Builder().setExpression(inMap).build();
@@ -146,7 +147,8 @@ public record VariableExpression(Variable variable, String name) implements Expr
             if (variable instanceof This thisVar && !thisVar.typeInfo.equals(evaluationContext.getCurrentType())) {
                 builder.markRead(evaluationContext.currentThis());
             }
-            if (currentValue instanceof VariableExpression ve) {
+            VariableExpression ve;
+            if ((ve = currentValue.asInstanceOf(VariableExpression.class)) != null) {
                 builder.markRead(ve.variable);
                 if (ve.variable instanceof This thisVar && !thisVar.typeInfo.equals(evaluationContext.getCurrentType())) {
                     builder.markRead(evaluationContext.currentThis());

@@ -206,7 +206,8 @@ class VariableInfoImpl implements VariableInfo {
     }
 
     void setValue(Expression value, boolean valueIsDelayed) {
-        if (value instanceof VariableExpression variableValue && variableValue.variable() == variable) {
+        VariableExpression ve;
+        if ((ve = value.asInstanceOf(VariableExpression.class)) != null && ve.variable() == variable) {
             throw new UnsupportedOperationException("Cannot redirect to myself");
         }
         if (valueIsDelayed) {

@@ -656,12 +656,15 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
         }
 
         boolean valueIsConstantField;
-        if (value instanceof InlinedMethod inlined &&
-                inlined.expression() instanceof VariableExpression ve && ve.variable() instanceof FieldReference fieldReference) {
+        VariableExpression ve;
+        if (value instanceof InlinedMethod inlined
+                && (ve = inlined.expression().asInstanceOf(VariableExpression.class)) != null
+                && ve.variable() instanceof FieldReference fieldReference) {
             FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(fieldReference.fieldInfo);
             int constantField = fieldAnalysis.getProperty(VariableProperty.CONSTANT);
             if (constantField == Level.DELAY) {
-                log(DELAYED, "Delaying return value of {}, waiting for effectively final value's @Constant designation", methodInfo.distinguishingName);
+                log(DELAYED, "Delaying return value of {}, waiting for effectively final value's @Constant designation",
+                        methodInfo.distinguishingName);
                 return DELAYS;
             }
             valueIsConstantField = constantField == Level.TRUE;
@@ -680,7 +683,8 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
         methodAnalysis.setProperty(VariableProperty.CONSTANT, Level.fromBool(isConstant));
         log(METHOD_ANALYSER, "Mark method {} as @Constant? {}", methodInfo.fullyQualifiedName(), isConstant);
 
-        boolean isFluent = valueBeforeInlining instanceof VariableExpression vv &&
+        VariableExpression vv;
+        boolean isFluent = (vv = valueBeforeInlining.asInstanceOf(VariableExpression.class)) != null &&
                 vv.variable() instanceof This thisVar &&
                 thisVar.typeInfo == methodInfo.typeInfo;
         methodAnalysis.setProperty(VariableProperty.FLUENT, Level.fromBool(isFluent));

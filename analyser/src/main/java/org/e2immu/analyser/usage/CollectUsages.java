@@ -98,6 +98,7 @@ public record CollectUsages(List<String> packagePrefixes, Set<String> packagesAc
 
     private void collect(Set<WithInspectionAndAnalysis> result, Element element) {
         element.visit(e -> {
+            VariableExpression ve;
             if (e instanceof MethodCall mc && accept(mc.methodInfo.typeInfo.packageName())) {
                 result.add(mc.methodInfo);
                 result.add(mc.methodInfo.typeInfo);
@@ -108,7 +109,7 @@ public record CollectUsages(List<String> packagePrefixes, Set<String> packagesAc
                     accept(no.constructor().typeInfo.packageName())) {
                 result.add(no.constructor());
                 result.add(no.constructor().typeInfo);
-            } else if (e instanceof VariableExpression ve) {
+            } else if (e instanceof Expression ex && (ve = ex.asInstanceOf(VariableExpression.class)) != null) {
                 if (ve.variable() instanceof FieldReference fr) {
                     collect(result, fr.fieldInfo);
                 } else {

@@ -79,8 +79,9 @@ public class InequalityHelper {
     }
 
     private static OneVariable extractOneVariable(Expression expression) {
-        if (expression instanceof VariableExpression ve) return ve.variable();
-        if (expression instanceof MethodCall mc && mc.object instanceof VariableExpression) {
+        VariableExpression ve;
+        if ((ve = expression.asInstanceOf(VariableExpression.class)) != null) return ve.variable();
+        if (expression instanceof MethodCall mc && mc.object.isInstanceOf(VariableExpression.class)) {
             return mc;
         }
         return null;
@@ -94,7 +95,7 @@ public class InequalityHelper {
     public static boolean onlyNotEquals(List<Expression> expressions) {
         return expressions.stream().allMatch(e -> e instanceof Negation n
                 && n.expression instanceof Equals eq
-                && eq.lhs instanceof ConstantExpression<?> && eq.rhs instanceof VariableExpression);
+                && eq.lhs instanceof ConstantExpression<?> && eq.rhs.isInstanceOf(VariableExpression.class));
     }
 
     public static Double extractEquals(List<Expression> expressions) {

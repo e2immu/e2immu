@@ -120,7 +120,8 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
     }
 
     public boolean objectIsThisOrSuper(InspectionProvider inspectionProvider) {
-        if (scope instanceof VariableExpression ve && ve.variable() instanceof This) return true;
+        VariableExpression ve;
+        if ((ve = scope.asInstanceOf(VariableExpression.class)) != null && ve.variable() instanceof This) return true;
         if (scope instanceof TypeExpression) {
             MethodInspection methodInspection = inspectionProvider.getMethodInspection(methodInfo);
             return !methodInspection.isStatic();

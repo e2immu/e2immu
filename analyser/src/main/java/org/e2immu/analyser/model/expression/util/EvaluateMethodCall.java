@@ -199,8 +199,10 @@ public class EvaluateMethodCall {
         TypeInspection typeInspection = evaluationContext.getAnalyserContext().getTypeInspection(methodInfo.typeInfo);
         if (typeInspection.typeNature() != TypeNature.ENUM) return null;
         if (isName) {
-            if (objectValue instanceof VariableExpression ve && ve.variable() instanceof FieldReference fr &&
-                    fr.fieldInfo.owner == methodInfo.typeInfo) {
+            VariableExpression ve;
+            if ((ve = objectValue.asInstanceOf(VariableExpression.class)) != null
+                    && ve.variable() instanceof FieldReference fr
+                    && fr.fieldInfo.owner == methodInfo.typeInfo) {
                 return new StringConstant(evaluationContext.getPrimitives(), fr.fieldInfo.name);
             }
             return NewObject.forGetInstance(evaluationContext.newObjectIdentifier(), evaluationContext.getPrimitives(),
@@ -227,8 +229,10 @@ public class EvaluateMethodCall {
                                                           Expression objectValue,
                                                           InlinedMethod iv) {
         NewObject newObject;
+        VariableExpression varEx;
         if (objectValue instanceof NewObject no) newObject = no;
-        else if (objectValue instanceof VariableExpression varEx && varEx.variable() instanceof FieldReference fieldReference) {
+        else if ((varEx = objectValue.asInstanceOf(VariableExpression.class)) != null
+                && varEx.variable() instanceof FieldReference fieldReference) {
             FieldAnalysis fieldAnalysis = evaluationContext.getAnalyserContext().getFieldAnalysis(fieldReference.fieldInfo);
             if (fieldAnalysis.getEffectivelyFinalValue() instanceof NewObject no) {
                 newObject = no;
@@ -238,7 +242,8 @@ public class EvaluateMethodCall {
         } else {
             return null;
         }
-        if (iv.expression() instanceof VariableExpression ve && newObject.constructor() != null) {
+        VariableExpression ve;
+        if ((ve = iv.expression().asInstanceOf(VariableExpression.class)) != null && newObject.constructor() != null) {
             Variable variable = ve.variable();
             if (variable instanceof FieldReference) {
                 FieldInfo fieldInfo = ((FieldReference) variable).fieldInfo;
@@ -299,8 +304,9 @@ public class EvaluateMethodCall {
         if (objectValue instanceof NewObject theInstance) {
             return theInstance;
         }
-        if (objectValue instanceof VariableExpression variableValue) {
-            return builder.currentInstance(variableValue.variable());
+        VariableExpression ve;
+        if ((ve = objectValue.asInstanceOf(VariableExpression.class)) != null) {
+            return builder.currentInstance(ve.variable());
         }
         return null;
     }

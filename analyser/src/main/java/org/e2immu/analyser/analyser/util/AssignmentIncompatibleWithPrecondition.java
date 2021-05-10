@@ -65,14 +65,14 @@ public class AssignmentIncompatibleWithPrecondition {
                     StatementAnalysis statementAnalysis = statementAnalyser.statementAnalysis;
                     EvaluationContext evaluationContext = statementAnalyser.newEvaluationContextForOutside();
 
-
+                    VariableExpression ve;
                     if (Primitives.isNumeric(fieldInfo.type)) {
                         Expression value = variableInfo.getValue();
                         if (value instanceof ConstantExpression) {
                             Boolean incompatible = remapReturnIncompatible(evaluationContext, variable,
                                     variableInfo.getValue(), pcExpression);
                             if (incompatible != null) return incompatible;
-                        } else if (value instanceof VariableExpression ve) {
+                        } else if ((ve = value.asInstanceOf(VariableExpression.class)) != null) {
                             // grab some state about this variable
                             Expression state = statementAnalysis.stateData.conditionManagerForNextStatement.get()
                                     .individualStateInfo(evaluationContext, ve.variable());

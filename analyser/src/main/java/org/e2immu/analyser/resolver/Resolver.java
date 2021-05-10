@@ -327,6 +327,7 @@ public class Resolver {
                 } else {
                     // implicit anonymous type
                     // no point in creating something that we cannot (yet) deal with...
+                    VariableExpression ve;
                     if (parsedExpression instanceof NullConstant || parsedExpression == EmptyExpression.EMPTY_EXPRESSION) {
                         sam = null;
                     } else if (parsedExpression instanceof Lambda lambda) {
@@ -336,7 +337,7 @@ public class Resolver {
                         sam = convertMethodReferenceIntoAnonymous(fieldInfo.type, fieldInfo.owner,
                                 (MethodReference) parsedExpression, expressionContext);
                         doType(sam.typeInfo, subContext, methodFieldSubTypeGraph);
-                    } else if (parsedExpression instanceof VariableExpression ve) {
+                    } else if ((ve = parsedExpression.asInstanceOf(VariableExpression.class)) != null) {
                         if (ve.variable() instanceof FieldReference) {
                             sam = null; // we can't know, there'll be an indirection
                         } else {
@@ -474,13 +475,15 @@ public class Resolver {
 
         void visit(Element element) {
             element.visit(e -> {
+                VariableExpression ve;
                 if (e instanceof FieldAccess fieldAccess) {
                     if (fieldAccess.variable() instanceof FieldReference fieldReference &&
                             restrictToType.contains(fieldReference.fieldInfo.owner)) {
                         methodsAndFields.add(fieldReference.fieldInfo);
                     }
-                } else if (e instanceof VariableExpression variableExpression) {
-                    if (variableExpression.variable() instanceof FieldReference fieldReference &&
+                } else if (e instanceof org.e2immu.analyser.model.Expression ex &&
+                        (ve = ex.asInstanceOf(VariableExpression.class)) != null) {
+                    if (ve.variable() instanceof FieldReference fieldReference &&
                             restrictToType.contains(fieldReference.fieldInfo.owner)) {
                         methodsAndFields.add(fieldReference.fieldInfo);
                     }

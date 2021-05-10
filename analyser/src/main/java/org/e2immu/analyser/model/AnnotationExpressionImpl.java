@@ -152,7 +152,9 @@ public record AnnotationExpressionImpl(TypeInfo typeInfo,
         }
 
         // direct reference with import static, or local Enum or constant
-        if (expression instanceof VariableExpression ve && ve.variable() instanceof FieldReference fieldReference) {
+        VariableExpression ve;
+        if ((ve = expression.asInstanceOf(VariableExpression.class)) != null
+                && ve.variable() instanceof FieldReference fieldReference) {
             if (returnType.typeInfo.typeInspection.get().typeNature() == TypeNature.ENUM) {
                 return enumField(returnType, fieldReference.fieldInfo.owner, fieldReference.fieldInfo.name);
             }

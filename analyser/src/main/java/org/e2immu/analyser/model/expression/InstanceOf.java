@@ -108,7 +108,8 @@ public record InstanceOf(Primitives primitives,
 
     @Override
     public LinkedVariables linkedVariables(EvaluationContext evaluationContext) {
-        if (expression instanceof VariableExpression ve) {
+        VariableExpression ve;
+        if ((ve = expression.asInstanceOf(VariableExpression.class)) != null) {
             return evaluationContext.linkedVariables(ve.variable());
         }
         return LinkedVariables.EMPTY;
@@ -139,7 +140,8 @@ public record InstanceOf(Primitives primitives,
         if (value instanceof NullConstant) {
             return builder.setExpression(new BooleanConstant(evaluationContext.getPrimitives(), false)).build();
         }
-        if (value instanceof VariableExpression ve) {
+        VariableExpression ve;
+        if ((ve = value.asInstanceOf(VariableExpression.class)) != null) {
             if (parameterizedType.isAssignableFrom(InspectionProvider.defaultFrom(primitives), ve.variable().parameterizedType())) {
                 return builder.setExpression(new BooleanConstant(primitives, true)).build();
             }

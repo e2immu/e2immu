@@ -14,10 +14,10 @@
 
 package org.e2immu.analyser.model.statement;
 
-import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
+import org.e2immu.analyser.analyser.StatementAnalysis;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.EmptyExpression;
-import org.e2immu.analyser.model.expression.MethodCall;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.output.OutputBuilder;
@@ -47,15 +47,6 @@ public class ReturnStatement extends StatementWithExpression {
     @Override
     public Statement translate(TranslationMap translationMap) {
         return new ReturnStatement(translationMap.translateExpression(expression));
-    }
-
-    private static boolean isFirstParameter(Expression expression) {
-        return expression instanceof VariableExpression ve && ve.variable() instanceof ParameterInfo pi &&
-                pi.index == 0;
-    }
-
-    private boolean isThis() {
-        return expression instanceof VariableExpression ve && ve.variable() instanceof This;
     }
 
     @Override

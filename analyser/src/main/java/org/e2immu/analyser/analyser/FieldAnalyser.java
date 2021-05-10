@@ -595,7 +595,9 @@ public class FieldAnalyser extends AbstractAnalyser {
                         for (VariableInfo vi : methodAnalyser.getFieldAsVariable(fieldInfo, false)) {
                             if (vi.isAssigned()) {
                                 Expression expression = vi.getValue();
-                                if (expression instanceof VariableExpression ve && ve.variable() instanceof LocalVariableReference) {
+                                VariableExpression ve;
+                                if ((ve = expression.asInstanceOf(VariableExpression.class)) != null
+                                        && ve.variable() instanceof LocalVariableReference) {
                                     throw new UnsupportedOperationException("Method " + methodAnalyser.methodInfo.fullyQualifiedName + ": " +
                                             fieldInfo.fullyQualifiedName() + " is local variable " + expression);
                                 }
@@ -806,8 +808,8 @@ public class FieldAnalyser extends AbstractAnalyser {
 
         Set<Variable> linked1Variables = allMethodsAndConstructors.stream()
                 .flatMap(m -> m.getFieldAsVariableStream(fieldInfo, false))
-                .filter(vi -> vi.valueIsSet() && vi.getValue() instanceof VariableExpression)
-                .map(vi -> ((VariableExpression) vi.getValue()).variable())
+                .filter(vi -> vi.valueIsSet() && vi.getValue().isInstanceOf(VariableExpression.class))
+                .map(vi -> vi.getValue().asInstanceOf(VariableExpression.class).variable())
                 .filter(v -> !(v instanceof LocalVariableReference)) // especially local variable copies of the field itself
                 .filter(v -> myTypeAnalyser.typeAnalysis.getImplicitlyImmutableDataTypes().contains(v.parameterizedType()))
                 .collect(Collectors.toSet());

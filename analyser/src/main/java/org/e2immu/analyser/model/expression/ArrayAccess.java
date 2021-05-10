@@ -55,8 +55,9 @@ public class ArrayAccess implements Expression {
     }
 
     private static Variable singleVariable(Expression expression) {
-        if (expression instanceof VariableExpression variableExpression) {
-            return variableExpression.variable();
+        VariableExpression ve;
+        if ((ve = expression.asInstanceOf(VariableExpression.class)) != null) {
+            return ve.variable();
         }
         if (expression instanceof FieldAccess fieldAccess) {
             return fieldAccess.variable();
@@ -137,7 +138,8 @@ public class ArrayAccess implements Expression {
 
             // we have to make an effort to see if we can evaluate the components; maybe there's another variable to be had
             Variable arrayVariable = variableTarget == null ? null : variableTarget.arrayVariable;
-            if (array.value() instanceof VariableExpression evaluatedArrayValue) {
+            VariableExpression evaluatedArrayValue;
+            if ((evaluatedArrayValue = array.value().asInstanceOf(VariableExpression.class)) != null) {
                 arrayVariable = evaluatedArrayValue.variable();
             }
             Variable indexVariable = singleVariable(indexValue.value());
@@ -183,8 +185,10 @@ public class ArrayAccess implements Expression {
         }
 
         int notNullRequired = forwardEvaluationInfo.getProperty(VariableProperty.CONTEXT_NOT_NULL);
-        if (notNullRequired > MultiLevel.NULLABLE && builder.getExpression() instanceof VariableExpression e) {
-            builder.variableOccursInNotNullContext(e.variable(), builder.getExpression(), notNullRequired);
+        VariableExpression ve;
+        if (notNullRequired > MultiLevel.NULLABLE &&
+                (ve = builder.getExpression().asInstanceOf(VariableExpression.class)) != null) {
+            builder.variableOccursInNotNullContext(ve.variable(), builder.getExpression(), notNullRequired);
         }
         return builder.build();
     }

@@ -101,7 +101,8 @@ public class MethodCallIncompatibleWithPrecondition {
         TranslationMap.TranslationMapBuilder builder = new TranslationMap.TranslationMapBuilder();
 
         expression.visit(e -> {
-            if (e instanceof MethodCall methodCall && methodCall.object instanceof VariableExpression ve) {
+            VariableExpression ve;
+            if (e instanceof MethodCall methodCall && ((ve = methodCall.object.asInstanceOf(VariableExpression.class)) != null)) {
                 // the first thing we need to know is if this methodCall.methodInfo is involved in an aspect
                 MethodAnalysis methodAnalysis = evaluationContext.getAnalyserContext().getMethodAnalysis(methodCall.methodInfo);
                 for (Map.Entry<CompanionMethodName, CompanionAnalysis> entry : methodAnalysis.getCompanionAnalyses().entrySet()) {
@@ -109,7 +110,7 @@ public class MethodCallIncompatibleWithPrecondition {
                         CompanionMethodName companionMethodName = entry.getKey();
                         CompanionAnalysis companionAnalysis = entry.getValue();
                         Expression value = companionAnalysis.getValue();
-                        if(companionMethodName.aspect() != null) {
+                        if (companionMethodName.aspect() != null) {
                             log(COMPANION, "Found value expression {} for aspect {} for method call", value, companionMethodName.aspect());
 
                             TypeAnalysis typeAnalysis = evaluationContext.getAnalyserContext().getTypeAnalysis(methodCall.methodInfo.typeInfo);
@@ -133,7 +134,8 @@ public class MethodCallIncompatibleWithPrecondition {
         additionalComponents.add(expression);
 
         expression.visit(e -> {
-            if (e instanceof MethodCall methodCall && methodCall.object instanceof VariableExpression ve) {
+            VariableExpression ve;
+            if (e instanceof MethodCall methodCall && ((ve = methodCall.object.asInstanceOf(VariableExpression.class)) != null)) {
                 // the first thing we need to know is if this methodCall.methodInfo is involved in an aspect
                 TypeInfo typeInfo = methodCall.methodInfo.typeInfo;
                 TypeAnalysis typeAnalysis = evaluationContext.getAnalyserContext().getTypeAnalysis(typeInfo);

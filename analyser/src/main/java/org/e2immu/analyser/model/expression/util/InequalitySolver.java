@@ -80,7 +80,8 @@ public class InequalitySolver {
                 }
                 return false;
             }
-            if (element instanceof VariableExpression ve) {
+            VariableExpression ve;
+            if ((ve = element.asInstanceOf(VariableExpression.class)) != null) {
                 if (Primitives.isNumeric(ve.variable().parameterizedType())) {
                     oneVariables.add(ve.variable());
                 } else {

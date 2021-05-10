@@ -102,7 +102,8 @@ public class EvaluatePreconditionFromMethod {
             i++;
         }
         TypeInspection typeInspection = inspectionProvider.getTypeInspection(methodInfo.typeInfo);
-        if (scope instanceof VariableExpression ve) {
+        VariableExpression ve;
+        if ((ve = scope.asInstanceOf(VariableExpression.class)) != null) {
             This thisVar = new This(inspectionProvider, methodInfo.typeInfo);
             for (FieldInfo fieldInfo : typeInspection.fields()) {
                 FieldReference thisField = new FieldReference(inspectionProvider, fieldInfo, thisVar);

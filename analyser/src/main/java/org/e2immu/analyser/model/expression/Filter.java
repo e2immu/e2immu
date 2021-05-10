@@ -213,16 +213,17 @@ public class Filter {
             MethodAnalysis methodAnalysis = analyserContext.getMethodAnalysis(mc.methodInfo);
             if (methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD) != Level.FALSE) return null;
             // none of the arguments to the call can be a parameter
-            if(mc.parameterExpressions.stream().flatMap(e -> e.variables().stream())
-                .anyMatch(arg -> arg instanceof ParameterInfo)) {
+            if (mc.parameterExpressions.stream().flatMap(e -> e.variables().stream())
+                    .anyMatch(arg -> arg instanceof ParameterInfo)) {
                 return null;
             }
             v = mc.object;
         }
-        if (v instanceof VariableExpression ve
+        VariableExpression ve;
+        if ((ve = v.asInstanceOf(VariableExpression.class)) != null
                 && ve.variable() instanceof FieldReference fr
                 && acceptScope(fr.scope)) return fr;
-        if (acceptAndRemapLocalCopy && v instanceof VariableExpression ve
+        if (acceptAndRemapLocalCopy && ((ve = v.asInstanceOf(VariableExpression.class)) != null)
                 && ve.variable() instanceof LocalVariableReference lvr
                 && lvr.variable.isLocalCopyOf() instanceof FieldReference fr && acceptScope(fr.scope)) return fr;
         return null;

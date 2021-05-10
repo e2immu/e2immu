@@ -197,8 +197,9 @@ public record DetectEventual(MethodInfo methodInfo,
             negated = false;
         }
         // @TestMark method on This, FieldReference
+        VariableExpression ve;
         if (expressionAfterNegation instanceof MethodCall methodCall &&
-                methodCall.object instanceof VariableExpression ve) {
+                ((ve = methodCall.object.asInstanceOf(VariableExpression.class)) != null)) {
             MethodAnalysis methodCallAnalysis = analyserContext.getMethodAnalysis(methodCall.methodInfo);
             MethodAnalysis.Eventual mao = methodCallAnalysis.getEventual();
             if (mao == MethodAnalysis.DELAYED_EVENTUAL) {

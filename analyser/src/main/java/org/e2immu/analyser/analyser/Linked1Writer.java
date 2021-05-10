@@ -108,7 +108,8 @@ public class Linked1Writer {
 
     public Boolean isLinkedToField(Expression expression) {
         if (expression instanceof DelayedVariableExpression) return null;
-        if (expression instanceof VariableExpression ve) {
+        VariableExpression ve;
+        if ((ve = expression.asInstanceOf(VariableExpression.class)) != null) {
             Set<Variable> set = dependencyGraph.dependencies(ve.variable());
             return set.stream().anyMatch(v ->
                     v instanceof This ||

@@ -98,9 +98,10 @@ public record FieldAccess(Expression expression, Variable variable) implements E
     public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
         EvaluationResult scopeResult = expression.evaluate(evaluationContext, forwardEvaluationInfo.copyModificationEnsureNotNull());
         Variable newVar;
-        if (scopeResult.value() instanceof VariableExpression variableValue && variable instanceof FieldReference fieldReference) {
-            newVar = new FieldReference(evaluationContext.getAnalyserContext(),
-                    fieldReference.fieldInfo, variableValue.variable());
+        VariableExpression ve;
+        if ((ve = scopeResult.value().asInstanceOf(VariableExpression.class)) != null
+                && variable instanceof FieldReference fieldReference) {
+            newVar = new FieldReference(evaluationContext.getAnalyserContext(), fieldReference.fieldInfo, ve.variable());
         } else {
             newVar = variable;
         }
@@ -116,7 +117,9 @@ public record FieldAccess(Expression expression, Variable variable) implements E
     See also EvaluateMethodCall, which has a similar method
      */
     private Expression tryShortCut(EvaluationContext evaluationContext, Variable variable) {
-        if (expression instanceof VariableExpression ve && ve.variable() instanceof FieldReference scopeField) {
+        VariableExpression ve;
+        if ((ve = expression.asInstanceOf(VariableExpression.class)) != null &&
+                ve.variable() instanceof FieldReference scopeField) {
             FieldAnalysis fieldAnalysis = evaluationContext.getAnalyserContext().getFieldAnalysis(scopeField.fieldInfo);
             if (fieldAnalysis.getEffectivelyFinalValue() instanceof NewObject newObject && newObject.constructor() != null) {
                 // we may have direct values for the field

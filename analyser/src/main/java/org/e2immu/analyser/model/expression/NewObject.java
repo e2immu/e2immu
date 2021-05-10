@@ -176,7 +176,7 @@ public record NewObject(
                                                 Variable variable) {
         int notNull = evaluationContext.getProperty(array, VariableProperty.NOT_NULL_EXPRESSION, true, false);
         if (notNull == Level.DELAY) return DelayedExpression.forNewObject(variable.parameterizedType());
-        int notNullOfElement= MultiLevel.oneLevelLess(notNull);
+        int notNullOfElement = MultiLevel.oneLevelLess(notNull);
         return new NewObject(identifier, null, variable.parameterizedType(), Diamond.SHOW_ALL, List.of(), notNullOfElement,
                 null, null,
                 new BooleanConstant(evaluationContext.getPrimitives(), true));
@@ -569,7 +569,8 @@ public record NewObject(
     private This findThis() {
         AtomicReference<This> thisVar = new AtomicReference<>();
         state.visit(e -> {
-            if (e instanceof VariableExpression ve && ve.variable() instanceof This tv) {
+            VariableExpression ve;
+            if ((ve = e.asInstanceOf(VariableExpression.class)) != null && ve.variable() instanceof This tv) {
                 thisVar.set(tv);
                 return false;
             }

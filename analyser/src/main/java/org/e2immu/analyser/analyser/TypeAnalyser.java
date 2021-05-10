@@ -1090,8 +1090,10 @@ public class TypeAnalyser extends AbstractAnalyser {
     }
 
     private static VariableExpression variableExpressionOrNegated(Expression expression) {
-        if (expression instanceof VariableExpression ve) return ve;
-        if (expression instanceof Negation negation && negation.expression instanceof VariableExpression ve) return ve;
+        VariableExpression ve;
+        if ((ve = expression.asInstanceOf(VariableExpression.class)) != null) return ve;
+        if (expression instanceof Negation negation &&
+                ((ve = negation.expression.asInstanceOf(VariableExpression.class)) != null)) return ve;
         return null;
     }
 

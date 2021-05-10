@@ -151,6 +151,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         boolean start = false;
         Guide.GuideGenerator gg = null;
         if (object != null) {
+            VariableExpression ve;
             if (object instanceof MethodCall methodCall) {
                 // chaining!
                 if (guideGenerator == null) {
@@ -173,7 +174,8 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 outputBuilder.add(new QualifiedName(methodInfo.name, typeName,
                         qualification.qualifierRequired(methodInfo) ? YES : NO_METHOD));
                 if (guideGenerator != null) start = true;
-            } else if (object instanceof VariableExpression ve && ve.variable() instanceof This thisVar) {
+            } else if ((ve = object.asInstanceOf(VariableExpression.class)) != null &&
+                    ve.variable() instanceof This thisVar) {
                 assert !methodInfo.methodInspection.get().isStatic() : "Have a static method with scope 'this'? "
                         + methodInfo.fullyQualifiedName + "; this " + thisVar.typeInfo.fullyQualifiedName;
                 TypeName typeName = new TypeName(thisVar.typeInfo, qualification.qualifierRequired(thisVar.typeInfo));
@@ -594,8 +596,9 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 newObject.copyAfterModifyingMethodOnConstructor(newState.get());
 
         LinkedVariables linkedVariables = variablesLinkedToScopeVariableInModifyingMethod(evaluationContext, methodInfo, parameterValues);
-        if (object instanceof VariableExpression variableValue && !(variableValue.variable() instanceof This)) {
-            builder.modifyingMethodAccess(variableValue.variable(), modifiedInstance, linkedVariables);
+        VariableExpression ve;
+        if (object != null && (ve = object.asInstanceOf(VariableExpression.class)) != null && !(ve.variable() instanceof This)) {
+            builder.modifyingMethodAccess(ve.variable(), modifiedInstance, linkedVariables);
         } else if (object instanceof FieldAccess fieldAccess) {
             builder.modifyingMethodAccess(fieldAccess.variable(), modifiedInstance, linkedVariables);
         }
@@ -800,7 +803,8 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         if (identity == Level.TRUE) return evaluationContext.linkedVariables(parameterExpressions.get(0));
 
         // RULE 3: the current implementation doesn't link to "this" as object.
-        if (object instanceof VariableExpression ve && ve.variable() instanceof This) {
+        VariableExpression ve;
+        if ((ve = object.asInstanceOf(VariableExpression.class)) != null && ve.variable() instanceof This) {
             return LinkedVariables.EMPTY;
         }
 
@@ -855,7 +859,8 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     }
 
     public boolean objectIsThisOrSuper(InspectionProvider inspectionProvider) {
-        if (object instanceof VariableExpression ve && ve.variable() instanceof This) return true;
+        VariableExpression ve;
+        if ((ve = object.asInstanceOf(VariableExpression.class)) != null && ve.variable() instanceof This) return true;
         MethodInspection methodInspection = inspectionProvider.getMethodInspection(methodInfo);
         return !methodInspection.isStatic() && objectIsImplicit;
     }

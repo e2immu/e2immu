@@ -34,8 +34,8 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Predicate;
 
-import static org.e2immu.analyser.util.Logger.LogTarget.LINKED_VARIABLES;
 import static org.e2immu.analyser.util.Logger.LogTarget.EXPRESSION;
+import static org.e2immu.analyser.util.Logger.LogTarget.LINKED_VARIABLES;
 import static org.e2immu.analyser.util.Logger.log;
 
 public class Assignment implements Expression {
@@ -70,8 +70,9 @@ public class Assignment implements Expression {
         this.prefixPrimitiveOperator = prefixPrimitiveOperator;
         binaryOperator = assignmentOperator == null ? null : BinaryOperator.fromAssignmentOperatorToNormalOperator(primitives, assignmentOperator);
         this.primitives = primitives;
-        if (target instanceof VariableExpression variableExpression) {
-            variableTarget = variableExpression.variable();
+        VariableExpression ve;
+        if ((ve = target.asInstanceOf(VariableExpression.class)) != null) {
+            variableTarget = ve.variable();
         } else if (target instanceof FieldAccess fieldAccess) {
             variableTarget = fieldAccess.variable();
         } else if (target instanceof ArrayAccess arrayAccess) {
@@ -179,8 +180,9 @@ public class Assignment implements Expression {
     @Override
     public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
-        boolean assignToField = target instanceof VariableExpression ve && ve.variable() instanceof FieldReference ||
-                target instanceof FieldAccess;
+        VariableExpression ve;
+        boolean assignToField = (ve = target.asInstanceOf(VariableExpression.class)) != null && ve.variable() instanceof FieldReference ||
+                target.isInstanceOf(FieldAccess.class);
         ForwardEvaluationInfo fwd = assignToField ? forwardEvaluationInfo.copyAddAssignToField() : forwardEvaluationInfo;
 
         EvaluationResult valueResult = value.evaluate(evaluationContext, fwd);
@@ -190,7 +192,8 @@ public class Assignment implements Expression {
         builder.composeIgnoreExpression(targetResult);
 
         // re-assess the index in dependent variables TODO feels shaky implementation (re-assessing the index is correct)
-        Variable newVariableTarget = targetResult.value() instanceof VariableExpression variableValue &&
+        VariableExpression variableValue;
+        Variable newVariableTarget = (variableValue = targetResult.value().asInstanceOf(VariableExpression.class)) != null &&
                 variableValue.variable() instanceof DependentVariable
                 ? variableValue.variable() : variableTarget;
 
@@ -209,8 +212,8 @@ public class Assignment implements Expression {
                 resultOfExpression = operationResult.value();
             } else {
                 // i++
-                Expression ve = new VariableExpression(newVariableTarget);
-                EvaluationResult variableOnly = ve.evaluate(evaluationContext, forwardEvaluationInfo);
+                Expression post = new VariableExpression(newVariableTarget);
+                EvaluationResult variableOnly = post.evaluate(evaluationContext, forwardEvaluationInfo);
                 resultOfExpression = variableOnly.value();
                 // not composing, any error will have been raised already
             }
