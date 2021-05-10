@@ -33,6 +33,7 @@ public record VariableInLoop(String statementId, String assignmentId, VariableTy
     }
 
     public enum VariableType {
-        NOT_IN_LOOP, LOOP, LOOP_COPY, IN_LOOP_DEFINED_OUTSIDE, COPY_FROM_ENCLOSING_METHOD, CREATED_IN_MERGE
+        NOT_IN_LOOP, LOOP, LOOP_COPY, IN_LOOP_DEFINED_OUTSIDE, COPY_FROM_ENCLOSING_METHOD, CREATED_IN_MERGE,
+        PATTERN, // created by an instanceof
     }
 }

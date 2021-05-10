@@ -83,12 +83,12 @@ public class TestAbstractValue extends CommonAbstractValue {
 
     @Test
     public void testInstanceOf() {
-        Expression iva = new InstanceOf(PRIMITIVES, PRIMITIVES.stringParameterizedType, null, va);
+        Expression iva = new InstanceOf(PRIMITIVES, PRIMITIVES.stringParameterizedType, null, va, null);
         assertEquals("a instanceof String", iva.toString());
-        Expression ivb = new InstanceOf(PRIMITIVES, PRIMITIVES.stringParameterizedType, null, vb);
+        Expression ivb = new InstanceOf(PRIMITIVES, PRIMITIVES.stringParameterizedType, null, vb, null);
         Expression or = newOrAppend(ivb, iva);
         assertEquals("a instanceof String||b instanceof String", or.toString());
-        Expression iva2 = new InstanceOf(PRIMITIVES, PRIMITIVES.objectParameterizedType, null, va);
+        Expression iva2 = new InstanceOf(PRIMITIVES, PRIMITIVES.objectParameterizedType, null, va, null);
         Expression or2 = newOrAppend(iva, iva2);
         assertEquals("a instanceof Object||a instanceof String", or2.toString());
     }

@@ -193,6 +193,10 @@ public interface VariableInfoContainer {
         return getVariableInLoop().statementId(VariableInLoop.VariableType.LOOP, VariableInLoop.VariableType.LOOP_COPY);
     }
 
+    default String getStatementIndexOfPatternVariable() {
+        return getVariableInLoop().statementId(VariableInLoop.VariableType.PATTERN);
+    }
+
     default String getStatementIndexOfThisLoopVariable() {
         return getVariableInLoop().statementId(VariableInLoop.VariableType.LOOP);
     }

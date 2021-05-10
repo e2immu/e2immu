@@ -34,7 +34,8 @@ import java.util.Objects;
 public record InstanceOf(Primitives primitives,
                          ParameterizedType parameterizedType,
                          Expression expression,
-                         Variable variable) implements Expression {
+                         Variable variable,
+                         String newVariableName) implements Expression {
 
     public InstanceOf {
         Objects.requireNonNull(parameterizedType);
@@ -66,7 +67,8 @@ public record InstanceOf(Primitives primitives,
         return new InstanceOf(primitives,
                 translationMap.translateType(parameterizedType),
                 expression == null ? null : expression.translate(translationMap),
-                variable == null ? null : translationMap.translateVariable(variable));
+                variable == null ? null : translationMap.translateVariable(variable),
+                newVariableName);
     }
 
     @Override
@@ -125,7 +127,7 @@ public record InstanceOf(Primitives primitives,
 
         }
         if (value instanceof VariableExpression ve) {
-            InstanceOf instanceOf = new InstanceOf(primitives, parameterizedType, null, ve.variable());
+            InstanceOf instanceOf = new InstanceOf(primitives, parameterizedType, null, ve.variable(), newVariableName);
             return builder.setExpression(instanceOf).build();
         }
         if (value instanceof NewObject newObject) {

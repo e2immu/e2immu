@@ -22,6 +22,7 @@ import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.pattern.PatternMatcher;
 import org.e2immu.analyser.resolver.SortedType;
+import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.analyser.util.StringUtil;
 import org.e2immu.analyser.visitor.EvaluationResultVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
@@ -1550,6 +1551,40 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         return expressionsToEvaluate;
     }
 
+    /*
+    create local variables Y y = x for every sub-expression x instanceof Y y
+     */
+    private List<Assignment> patternVariables(SharedState sharedState, Expression expression) {
+        List<InstanceOf> instanceOfList = expression.collect(InstanceOf.class);
+
+        List<LocalVariableReference> localVariables = instanceOfList.stream().map(instanceOf ->
+                new LocalVariableReference(sharedState.evaluationContext.getAnalyserContext(),
+                        new LocalVariable(Set.of(LocalVariableModifier.FINAL),
+                                instanceOf.newVariableName(),
+                                instanceOf.newVariableName(),
+                                instanceOf.parameterizedType(),
+                                List.of(),
+                                myMethodAnalyser.methodInfo.typeInfo,
+                                null), List.of())).toList();
+        
+        // create local variables
+        localVariables.forEach(lvr -> {
+            if (!statementAnalysis.variables.isSet(lvr.simpleName())) {
+                VariableInfoContainer vic = VariableInfoContainerImpl.newVariable(lvr, VariableInfoContainer.NOT_A_VARIABLE_FIELD,
+                        new VariableInLoop(index(), index(), VariableInLoop.VariableType.PATTERN),
+                        statementAnalysis.navigationData.hasSubBlocks());
+                statementAnalysis.variables.put(lvr.simpleName(), vic);
+            }
+        });
+
+        // add assignments
+        return ListUtil.joinLists(instanceOfList, localVariables).map(pair ->
+                new Assignment(sharedState.evaluationContext.getPrimitives(),
+                        new VariableExpression(pair.v),
+                        pair.k.expression() != null ? pair.k.expression() : new VariableExpression(pair.k.variable())))
+                .toList();
+    }
+
     private List<Expression> localVariablesInLoop(SharedState sharedState) {
         if (statementAnalysis.localVariablesAssignedInThisLoop == null) {
             return List.of(); // not for us
@@ -1666,6 +1701,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
 
         try {
             if (structure.expression() != EmptyExpression.EMPTY_EXPRESSION) {
+                expressionsFromInitAndUpdate.addAll(patternVariables(sharedState, structure.expression()));
                 expressionsFromInitAndUpdate.add(structure.expression());
             }
             // Too dangerous to use CommaExpression.comma, because it filters out constants etc.!

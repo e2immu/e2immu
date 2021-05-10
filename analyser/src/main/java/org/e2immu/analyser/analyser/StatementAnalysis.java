@@ -377,9 +377,12 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             // so we must keep the initial value
             newVic = VariableInfoContainerImpl.existingLocalVariableIntoLoop(vic,
                     new VariableInLoop(index, null, VariableInLoop.VariableType.IN_LOOP_DEFINED_OUTSIDE), previousIsParent);
-        } else if (indexOfPrevious != null && indexOfPrevious.equals(vic.getStatementIndexOfThisLoopOrShadowVariable())) {
-            // this is the very specific situation that the previous statement introduced a loop variable (or a shadow copy)
-            // this loop variable should not go beyond the loop statement
+        } else if (indexOfPrevious != null && (indexOfPrevious.equals(vic.getStatementIndexOfThisLoopOrShadowVariable()) ||
+                indexOfPrevious.equals(vic.getStatementIndexOfPatternVariable()))) {
+            /* this is the very specific situation that the previous statement introduced a loop variable (or a shadow copy)
+             this loop variable should not go beyond the loop statement
+             the same holds for pattern variables x instanceof Y y
+            */
             return; // skip
         } else {
             // make a simple reference copy; potentially resetting localVariableInLoopDefinedOutside

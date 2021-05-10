@@ -17,6 +17,7 @@ package org.e2immu.analyser.inspector;
 import com.github.javaparser.ast.body.Parameter;
 import com.github.javaparser.ast.body.VariableDeclarator;
 import com.github.javaparser.ast.expr.*;
+import com.github.javaparser.ast.nodeTypes.NodeWithSimpleName;
 import com.github.javaparser.ast.stmt.Statement;
 import com.github.javaparser.ast.stmt.*;
 import com.github.javaparser.ast.type.ClassOrInterfaceType;
@@ -715,8 +716,10 @@ public class ExpressionContext {
             if (expression.isInstanceOfExpr()) {
                 InstanceOfExpr instanceOfExpr = expression.asInstanceOfExpr();
                 Expression e = parseExpression(instanceOfExpr.getExpression());
+                Optional<PatternExpr> pattern = instanceOfExpr.getPattern();
+                String newLocalVariableName = pattern.map(NodeWithSimpleName::getNameAsString).orElse(null);
                 ParameterizedType type = ParameterizedTypeFactory.from(typeContext, instanceOfExpr.getType());
-                return new InstanceOf(typeContext.getPrimitives(), type, e, null);
+                return new InstanceOf(typeContext.getPrimitives(), type, e, null, newLocalVariableName);
             }
             if (expression.isSingleMemberAnnotationExpr()) {
                 SingleMemberAnnotationExpr sma = expression.asSingleMemberAnnotationExpr();
