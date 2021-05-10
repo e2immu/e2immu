@@ -1188,7 +1188,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                 .setIsLocalCopyOf(fieldReference)
                 .setOwningType(methodAnalysis.getMethodInfo().typeInfo)
                 .build();
-        return new LocalVariableReference(analyserContext, lv, List.of());
+        return new LocalVariableReference(lv);
     }
 
     /**

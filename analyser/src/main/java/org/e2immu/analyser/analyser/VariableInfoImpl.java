@@ -234,8 +234,9 @@ class VariableInfoImpl implements VariableInfo {
     /*
     things to set for a new variable
      */
-    public void newVariable() {
-        setProperty(VariableProperty.CONTEXT_NOT_NULL, variable.parameterizedType().defaultNotNull());
+    public void newVariable(boolean notNull) {
+        setProperty(VariableProperty.CONTEXT_NOT_NULL, Math.max(notNull ? MultiLevel.EFFECTIVELY_NOT_NULL : MultiLevel.NULLABLE,
+                variable.parameterizedType().defaultNotNull()));
         setProperty(VariableProperty.CONTEXT_MODIFIED, Level.FALSE);
         setProperty(EXTERNAL_NOT_NULL, MultiLevel.NOT_INVOLVED);
         setProperty(CONTEXT_PROPAGATE_MOD, Level.FALSE);
@@ -539,7 +540,7 @@ class VariableInfoImpl implements VariableInfo {
         StatementAnalysis.ConditionAndVariableInfo eLast = reduced.get(reduced.size() - 1);
         if (eLast.condition().isBoolValueTrue()) return eLast.variableInfo().getValue();
 
-        if(reduced.stream().allMatch(cav -> cav.variableInfo().getValue().isDelayed(evaluationContext))) {
+        if (reduced.stream().allMatch(cav -> cav.variableInfo().getValue().isDelayed(evaluationContext))) {
             // all are delayed, they're not all identical delayed field references.
             return currentValue;
         }

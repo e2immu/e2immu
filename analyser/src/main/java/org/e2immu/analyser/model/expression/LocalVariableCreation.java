@@ -53,8 +53,7 @@ public class LocalVariableCreation implements Expression {
         this.localVariable = Objects.requireNonNull(localVariable);
         this.expression = Objects.requireNonNull(expression);
         this.inspectionProvider = inspectionProvider;
-        localVariableReference = new LocalVariableReference(inspectionProvider, localVariable,
-                expression == EmptyExpression.EMPTY_EXPRESSION ? List.of() : List.of(expression));
+        localVariableReference = new LocalVariableReference( localVariable, expression);
     }
 
     @Override

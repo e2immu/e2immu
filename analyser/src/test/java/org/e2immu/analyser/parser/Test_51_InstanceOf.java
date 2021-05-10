@@ -27,8 +27,20 @@ public class Test_51_InstanceOf extends CommonTestRunner {
 
     @Test
     public void test_0() throws IOException {
-            testClass("InstanceOf_0", 0, 0, new DebugConfiguration.Builder()
-                    .build());
+        testClass("InstanceOf_0", 0, 0, new DebugConfiguration.Builder()
+                .build());
+    }
+
+    @Test
+    public void test_1() throws IOException {
+        testClass("InstanceOf_1", 0, 0, new DebugConfiguration.Builder()
+                .build());
+    }
+
+    @Test
+    public void test_2() throws IOException {
+        testClass("InstanceOf_2", 0, 0, new DebugConfiguration.Builder()
+                .build());
     }
 
 }

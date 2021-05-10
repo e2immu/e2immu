@@ -17,8 +17,10 @@ package org.e2immu.analyser.model.expression;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
+import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.OutputBuilder;
+import org.e2immu.analyser.output.Space;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
@@ -34,12 +36,11 @@ import java.util.Objects;
 public record InstanceOf(Primitives primitives,
                          ParameterizedType parameterizedType,
                          Expression expression,
-                         Variable variable,
-                         String newVariableName) implements Expression {
+                         LocalVariableReference patternVariable) implements Expression {
 
     public InstanceOf {
         Objects.requireNonNull(parameterizedType);
-        assert expression != null || variable != null;
+        Objects.requireNonNull(expression);
         Objects.requireNonNull(primitives);
     }
 
@@ -48,13 +49,14 @@ public record InstanceOf(Primitives primitives,
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         InstanceOf that = (InstanceOf) o;
-        return parameterizedType.equals(that.parameterizedType) &&
-                (expression == null ? variable.equals(that.variable) : expression.equals(that.expression));
+        return parameterizedType.equals(that.parameterizedType)
+                && expression.equals(that.expression)
+                && patternVariable.equals(that.patternVariable);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(parameterizedType, expression, variable);
+        return Objects.hash(parameterizedType, expression, patternVariable);
     }
 
     @Override
@@ -67,8 +69,7 @@ public record InstanceOf(Primitives primitives,
         return new InstanceOf(primitives,
                 translationMap.translateType(parameterizedType),
                 expression == null ? null : expression.translate(translationMap),
-                variable == null ? null : translationMap.translateVariable(variable),
-                newVariableName);
+                patternVariable == null ? null : (LocalVariableReference) translationMap.translateVariable(patternVariable));
     }
 
     @Override
@@ -78,16 +79,26 @@ public record InstanceOf(Primitives primitives,
 
     @Override
     public int internalCompareTo(Expression v) {
-        int c = variable.fullyQualifiedName().compareTo(((InstanceOf) v).variable.fullyQualifiedName());
-        if (c == 0) c = parameterizedType.detailedString()
-                .compareTo(((InstanceOf) v).parameterizedType.detailedString());
-        return c;
+        if (expression instanceof VariableExpression ve
+                && v instanceof InstanceOf other
+                && other.expression instanceof VariableExpression ve2) {
+            int c = ve.variable().fullyQualifiedName().compareTo(ve2.variable().fullyQualifiedName());
+            if (c == 0) c = parameterizedType.detailedString().compareTo(other.parameterizedType.detailedString());
+            return c;
+        }
+        return expression.internalCompareTo(v);
     }
 
     @Override
     public OutputBuilder output(Qualification qualification) {
-        return new OutputBuilder().add(expression != null ? expression.output(qualification) : variable.output(qualification))
-                .add(Symbol.INSTANCE_OF).add(parameterizedType.output(qualification));
+        OutputBuilder ob = new OutputBuilder()
+                .add(expression.output(qualification))
+                .add(Symbol.INSTANCE_OF)
+                .add(parameterizedType.output(qualification));
+        if (patternVariable != null) {
+            ob.add(Space.ONE).add(patternVariable.output(qualification));
+        }
+        return ob;
     }
 
     @Override
@@ -97,12 +108,15 @@ public record InstanceOf(Primitives primitives,
 
     @Override
     public LinkedVariables linkedVariables(EvaluationContext evaluationContext) {
-        return evaluationContext.linkedVariables(variable);
+        if (expression instanceof VariableExpression ve) {
+            return evaluationContext.linkedVariables(ve.variable());
+        }
+        return LinkedVariables.EMPTY;
     }
 
     @Override
     public List<Variable> variables() {
-        return expression != null ? expression.variables() : List.of(variable);
+        return expression.variables();
     }
 
     @Override
@@ -124,11 +138,13 @@ public record InstanceOf(Primitives primitives,
         }
         if (value instanceof NullConstant) {
             return builder.setExpression(new BooleanConstant(evaluationContext.getPrimitives(), false)).build();
-
         }
         if (value instanceof VariableExpression ve) {
-            InstanceOf instanceOf = new InstanceOf(primitives, parameterizedType, null, ve.variable(), newVariableName);
-            return builder.setExpression(instanceOf).build();
+            if (parameterizedType.isAssignableFrom(InspectionProvider.defaultFrom(primitives), ve.variable().parameterizedType())) {
+                return builder.setExpression(new BooleanConstant(primitives, true)).build();
+            }
+            // no real evaluation
+            return builder.setExpression(this).build();
         }
         if (value instanceof NewObject newObject) {
             EvaluationResult er = BooleanConstant.of(parameterizedType.isAssignableFrom(InspectionProvider.defaultFrom(primitives),
@@ -167,8 +183,10 @@ public record InstanceOf(Primitives primitives,
 
     @Override
     public boolean isDelayed(EvaluationContext evaluationContext) {
-        if (variable == null) return false;
-        return evaluationContext.variableIsDelayed(variable);
+        if (expression instanceof VariableExpression ve) {
+            return evaluationContext.variableIsDelayed(ve.variable());
+        }
+        return expression.isDelayed(evaluationContext);
     }
 
     @Override

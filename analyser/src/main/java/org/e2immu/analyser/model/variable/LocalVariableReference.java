@@ -15,23 +15,26 @@
 package org.e2immu.analyser.model.variable;
 
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.QualifiedName;
-import org.e2immu.analyser.parser.InspectionProvider;
 
-import java.util.List;
 import java.util.Objects;
 
 public class LocalVariableReference extends VariableWithConcreteReturnType {
     public final LocalVariable variable;
-    public final List<Expression> assignmentExpressions;
+    public final Expression assignmentExpression;
 
-    public LocalVariableReference(InspectionProvider inspectionProvider,
-                                  LocalVariable localVariable,
-                                  List<Expression> assignmentExpressions) {
-        super(assignmentExpressions.isEmpty() ? localVariable.parameterizedType() : assignmentExpressions.get(0).returnType());
+    public LocalVariableReference(LocalVariable localVariable) {
+        this(localVariable, EmptyExpression.EMPTY_EXPRESSION);
+    }
+
+    public LocalVariableReference(LocalVariable localVariable,
+                                  Expression assignmentExpression) {
+        super(assignmentExpression == EmptyExpression.EMPTY_EXPRESSION
+                ? localVariable.parameterizedType() : assignmentExpression.returnType());
         this.variable = Objects.requireNonNull(localVariable);
-        this.assignmentExpressions = Objects.requireNonNull(assignmentExpressions);
+        this.assignmentExpression = Objects.requireNonNull(assignmentExpression);
     }
 
     @Override

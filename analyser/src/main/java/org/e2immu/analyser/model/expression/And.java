@@ -480,8 +480,7 @@ public record And(Primitives primitives, List<Expression> expressions) implement
     @Override
     public Expression translate(TranslationMap translationMap) {
         if (translationMap.isEmpty()) return this;
-        List<Expression> translated = expressions.stream().map(e -> e.translate(translationMap))
-                .collect(Collectors.toUnmodifiableList());
+        List<Expression> translated = expressions.stream().map(e -> e.translate(translationMap)).toList();
         return new And(primitives, translated);
     }
 

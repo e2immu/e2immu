@@ -22,7 +22,6 @@ import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.pattern.PatternMatcher;
 import org.e2immu.analyser.resolver.SortedType;
-import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.analyser.util.StringUtil;
 import org.e2immu.analyser.visitor.EvaluationResultVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
@@ -1459,7 +1458,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             LocalVariableCreation catchVariable = sharedState.forwardAnalysisInfo.catchVariable();
             String name = catchVariable.localVariable.name();
             if (!statementAnalysis.variables.isSet(name)) {
-                LocalVariableReference lvr = new LocalVariableReference(analyserContext, catchVariable.localVariable, List.of());
+                LocalVariableReference lvr = new LocalVariableReference(catchVariable.localVariable);
                 VariableInfoContainer vic = VariableInfoContainerImpl.newCatchVariable(lvr, index(),
                         NewObject.forCatchOrThis(index() + "-" + lvr.fullyQualifiedName(),
                                 statementAnalysis.primitives, lvr.parameterizedType()),
@@ -1480,7 +1479,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
 
                     // create the local (loop) variable
 
-                    lvr = new LocalVariableReference(analyserContext, lvc.localVariable, List.of());
+                    lvr = new LocalVariableReference(lvc.localVariable);
                     VariableInLoop variableInLoop = statement() instanceof LoopStatement ?
                             new VariableInLoop(index(), null, VariableInLoop.VariableType.LOOP) : VariableInLoop.NOT_IN_LOOP;
                     vic = VariableInfoContainerImpl.newVariable(lvr, VariableInfoContainer.NOT_A_VARIABLE_FIELD,
@@ -1557,31 +1556,26 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
     private List<Assignment> patternVariables(SharedState sharedState, Expression expression) {
         List<InstanceOf> instanceOfList = expression.collect(InstanceOf.class);
 
-        List<LocalVariableReference> localVariables = instanceOfList.stream().map(instanceOf ->
-                new LocalVariableReference(sharedState.evaluationContext.getAnalyserContext(),
-                        new LocalVariable(Set.of(LocalVariableModifier.FINAL),
-                                instanceOf.newVariableName(),
-                                instanceOf.newVariableName(),
-                                instanceOf.parameterizedType(),
-                                List.of(),
-                                myMethodAnalyser.methodInfo.typeInfo,
-                                null), List.of())).toList();
-        
         // create local variables
-        localVariables.forEach(lvr -> {
-            if (!statementAnalysis.variables.isSet(lvr.simpleName())) {
-                VariableInfoContainer vic = VariableInfoContainerImpl.newVariable(lvr, VariableInfoContainer.NOT_A_VARIABLE_FIELD,
-                        new VariableInLoop(index(), index(), VariableInLoop.VariableType.PATTERN),
-                        statementAnalysis.navigationData.hasSubBlocks());
-                statementAnalysis.variables.put(lvr.simpleName(), vic);
-            }
-        });
+        instanceOfList.stream()
+                .filter(instanceOf -> instanceOf.patternVariable() != null)
+                .filter(instanceOf -> !statementAnalysis.variables.isSet(instanceOf.patternVariable().simpleName()))
+                .forEach(instanceOf -> {
+                    LocalVariableReference lvr = instanceOf.patternVariable();
+                    VariableInfoContainer vic = VariableInfoContainerImpl.newVariable(lvr, VariableInfoContainer.NOT_A_VARIABLE_FIELD,
+                            new VariableInLoop(index(), index(), VariableInLoop.VariableType.PATTERN),
+                            statementAnalysis.navigationData.hasSubBlocks());
+                    vic.newVariableWithoutValue();
+                    statementAnalysis.variables.put(lvr.simpleName(), vic);
+                });
 
         // add assignments
-        return ListUtil.joinLists(instanceOfList, localVariables).map(pair ->
-                new Assignment(sharedState.evaluationContext.getPrimitives(),
-                        new VariableExpression(pair.v),
-                        pair.k.expression() != null ? pair.k.expression() : new VariableExpression(pair.k.variable())))
+        return instanceOfList.stream()
+                .filter(instanceOf -> instanceOf.patternVariable() != null)
+                .map(instanceOf -> new Assignment(sharedState.evaluationContext.getPrimitives(),
+                        new PropertyWrapper(
+                                new VariableExpression(instanceOf.patternVariable()),
+                                Map.of(CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL)), instanceOf.expression()))
                 .toList();
     }
 
@@ -1642,7 +1636,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 .setOwningType(myMethodAnalyser.methodInfo.typeInfo)
                 .setIsLocalCopyOf(loopVariable)
                 .build();
-        return new LocalVariableReference(analyserContext, localVariable, List.of());
+        return new LocalVariableReference(localVariable);
     }
 
     private AnalysisStatus evaluationOfMainExpression(SharedState sharedState) {

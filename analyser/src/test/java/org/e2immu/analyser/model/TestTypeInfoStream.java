@@ -156,8 +156,7 @@ public class TestTypeInfoStream {
                                                                 .setName("entry").setSimpleName("entry")
                                                                 .setParameterizedType(new ParameterizedType(mapEntry, List.of(primitives.stringParameterizedType, typeT)))
                                                                 .build()),
-                                                new VariableExpression(new LocalVariableReference(inspectionProvider,
-                                                        mapLocalVariable, List.of(creationExpression))),
+                                                new VariableExpression(new LocalVariableReference(mapLocalVariable, creationExpression)),
                                                 new Block.BlockBuilder()
                                                         .addStatement(new IfElseStatement(
                                                                 new BooleanConstant(primitives, true),

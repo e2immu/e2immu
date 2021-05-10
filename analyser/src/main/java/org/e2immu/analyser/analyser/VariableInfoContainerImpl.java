@@ -62,7 +62,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         VariableInfo outside = previous.current();
         VariableInfoImpl initial = new VariableInfoImpl(outside.variable(), NOT_YET_ASSIGNED,
                 NOT_YET_READ, NOT_A_VARIABLE_FIELD, Set.of());
-        initial.newVariable();
+        initial.newVariable(false);
         initial.setValue(outside.getValue(), outside.isDelayed());
         if (outside.getLinkedVariables() != LinkedVariables.DELAY)
             initial.setLinkedVariables(outside.getLinkedVariables());
@@ -106,7 +106,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
                                                              boolean statementHasSubBlocks) {
         VariableInfoImpl initial = new VariableInfoImpl(variable, index + Level.INITIAL,
                 index + Level.EVALUATION, NOT_A_VARIABLE_FIELD, Set.of());
-        initial.newVariable();
+        initial.newVariable(true);
         initial.setValue(value, false);
         initial.setLinkedVariables(LinkedVariables.EMPTY);
         return new VariableInfoContainerImpl(VariableInLoop.NOT_IN_LOOP,
@@ -193,11 +193,11 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
     }
 
     @Override
-    public void newVariableWithoutValue() {
+    public void newVariableWithoutValue( ) {
         assert !hasMerge();
         assert !hasEvaluation();
         assert isInitial();
-        ((VariableInfoImpl) getPreviousOrInitial()).newVariable();
+        ((VariableInfoImpl) getPreviousOrInitial()).newVariable(false);
         setLinkedVariables(LinkedVariables.EMPTY, true);
     }
 

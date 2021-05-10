@@ -17,7 +17,6 @@ package org.e2immu.analyser.inspector;
 import com.github.javaparser.ast.body.Parameter;
 import com.github.javaparser.ast.body.VariableDeclarator;
 import com.github.javaparser.ast.expr.*;
-import com.github.javaparser.ast.nodeTypes.NodeWithSimpleName;
 import com.github.javaparser.ast.stmt.Statement;
 import com.github.javaparser.ast.stmt.*;
 import com.github.javaparser.ast.type.ClassOrInterfaceType;
@@ -400,8 +399,7 @@ public class ExpressionContext {
         ExpressionContext tryExpressionContext = newVariableContext("try-resources");
         for (com.github.javaparser.ast.expr.Expression resource : tryStmt.getResources()) {
             LocalVariableCreation localVariableCreation = (LocalVariableCreation) tryExpressionContext.parseExpression(resource);
-            tryExpressionContext.variableContext.add(typeContext,
-                    localVariableCreation.localVariable, List.of(localVariableCreation.expression));
+            tryExpressionContext.variableContext.add(localVariableCreation.localVariable, localVariableCreation.expression);
             resources.add(localVariableCreation);
         }
         Block tryBlock = tryExpressionContext.parseBlockOrStatement(tryStmt.getTryBlock());
@@ -427,7 +425,7 @@ public class ExpressionContext {
             LocalVariableCreation lvc = new LocalVariableCreation(typeContext, localVariable);
             TryStatement.CatchParameter catchParameter = new TryStatement.CatchParameter(lvc, unionOfTypes);
             ExpressionContext catchExpressionContext = newVariableContext("catch-clause");
-            catchExpressionContext.variableContext.add(typeContext, localVariable, List.of());
+            catchExpressionContext.variableContext.add(localVariable, EmptyExpression.EMPTY_EXPRESSION);
             Block block = catchExpressionContext.parseBlockOrStatement(catchClause.getBody());
             catchClauses.add(new Pair<>(catchParameter, block));
         }
@@ -483,7 +481,7 @@ public class ExpressionContext {
                 .setParameterizedType(ParameterizedTypeFactory.from(typeContext, vde.getVariables().get(0).getType()))
                 .build();
         org.e2immu.analyser.model.Expression expression = parseExpression(forEachStmt.getIterable());
-        newVariableContext.add(typeContext, localVariable, List.of(expression));
+        newVariableContext.add(localVariable, expression);
         Block block = newVariableContext(newVariableContext, "for-loop").parseBlockOrStatement(forEachStmt.getBody());
         LocalVariableCreation lvc = new LocalVariableCreation(typeContext, localVariable);
         return new ForEachStatement(label, lvc, expression, block);
@@ -716,10 +714,18 @@ public class ExpressionContext {
             if (expression.isInstanceOfExpr()) {
                 InstanceOfExpr instanceOfExpr = expression.asInstanceOfExpr();
                 Expression e = parseExpression(instanceOfExpr.getExpression());
-                Optional<PatternExpr> pattern = instanceOfExpr.getPattern();
-                String newLocalVariableName = pattern.map(NodeWithSimpleName::getNameAsString).orElse(null);
                 ParameterizedType type = ParameterizedTypeFactory.from(typeContext, instanceOfExpr.getType());
-                return new InstanceOf(typeContext.getPrimitives(), type, e, null, newLocalVariableName);
+                LocalVariableReference patternVariable = instanceOfExpr.getPattern().map(pattern ->
+                        new LocalVariableReference(new LocalVariable.Builder()
+                                .setSimpleName(pattern.getNameAsString())
+                                .setName(pattern.getNameAsString())
+                                .setOwningType(enclosingType)
+                                .setParameterizedType(type)
+                                .build())).orElse(null);
+                if (patternVariable != null) {
+                    variableContext.add(patternVariable);
+                }
+                return new InstanceOf(typeContext.getPrimitives(), type, e, patternVariable);
             }
             if (expression.isSingleMemberAnnotationExpr()) {
                 SingleMemberAnnotationExpr sma = expression.asSingleMemberAnnotationExpr();

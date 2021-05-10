@@ -78,8 +78,12 @@ public class VariableContext {
         parameters.put(variable.simpleName(), variable);
     }
 
-    public void add(InspectionProvider inspectionProvider, LocalVariable variable, List<Expression> assignmentExpressions) {
-        localVars.put(variable.name(), new LocalVariableReference(inspectionProvider, variable, assignmentExpressions));
+    public void add(LocalVariableReference variable) {
+        localVars.put(variable.simpleName(), variable);
+    }
+
+    public void add(LocalVariable variable, Expression assignmentExpression) {
+        localVars.put(variable.name(), new LocalVariableReference(variable, assignmentExpression));
     }
 
     public void addAll(List<LocalVariableReference> localVariableReferences) {

@@ -23,36 +23,30 @@ import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.Variable;
-import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
-
-import java.util.List;
 
 public abstract class CommonVariableInfo {
 
     protected final Primitives primitives = new Primitives();
-    protected final InspectionProvider inspectionProvider = InspectionProvider.defaultFrom(primitives);
 
     protected Variable makeLocalIntVar(String name) {
-        return new LocalVariableReference(inspectionProvider,
+        return new LocalVariableReference(
                 // owningType is completely arbitrary
                 new LocalVariable.Builder()
                         .setName(name)
                         .setParameterizedType(primitives.intParameterizedType)
                         .setOwningType(primitives.stringTypeInfo)
-                        .build(),
-                List.of());
+                        .build());
     }
 
     protected Variable makeLocalBooleanVar() {
-        return new LocalVariableReference(inspectionProvider,
+        return new LocalVariableReference(
                 new LocalVariable.Builder()
                         .setName("x")
                         .setSimpleName("x")
                         .setParameterizedType(primitives.booleanParameterizedType)
                         .setOwningType(primitives.stringTypeInfo)
-                        .build(),
-                List.of());
+                        .build());
     }
 
     protected Variable makeReturnVariable() {
