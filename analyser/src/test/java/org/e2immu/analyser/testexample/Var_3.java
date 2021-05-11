@@ -14,7 +14,7 @@ public class Var_3<X> {
         this.xes = new LinkedList<>(set);
     }
 
-    public String method(double d) {
+    public String method() {
         var all = new StringBuilder();
         for (var i : new int[]{1, 2, 3}) {
             all.append(i);
@@ -22,7 +22,7 @@ public class Var_3<X> {
         for (var s : new String[]{"abc", "def"}) {
             all.append(s);
         }
-        // List<E> implements Collection<E> implements Iterable<E> directly
+        // List<E> implements Collection<E> implements Iterable<E>
         for (var x : xes) {
             all.append(x.toString());
         }

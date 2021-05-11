@@ -656,14 +656,20 @@ public class ParameterizedType {
             /* do a recursion, but accept that we may return null
             we must call concreteSuperType on a concrete version of the parentClass
             */
+            ParameterizedType res = inspection.parentClass().concreteSuperType(inspectionProvider, superType);
+            if (res != null) {
+                return concreteDirectSuperType(inspectionProvider, res);
+            }
         }
         for (ParameterizedType interfaceType : inspection.interfacesImplemented()) {
             if (interfaceType.typeInfo == superType.typeInfo) {
                 return concreteDirectSuperType(inspectionProvider, interfaceType);
             }
-            /*
-            similar situation as with parent
-             */
+            // similar to parent
+            ParameterizedType res = interfaceType.concreteSuperType(inspectionProvider, superType);
+            if (res != null) {
+                return concreteDirectSuperType(inspectionProvider, res);
+            }
         }
         return null;
     }
