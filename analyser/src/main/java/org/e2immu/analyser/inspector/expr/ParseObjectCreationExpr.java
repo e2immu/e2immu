@@ -18,13 +18,10 @@ import com.github.javaparser.ast.expr.ObjectCreationExpr;
 import org.e2immu.analyser.inspector.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.NewObject;
-import org.e2immu.analyser.model.expression.UnevaluatedMethodCall;
 import org.e2immu.analyser.model.expression.UnevaluatedObjectCreation;
+import org.e2immu.analyser.parser.InspectionProvider;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class ParseObjectCreationExpr {
     public static Expression parse(ExpressionContext expressionContext,
@@ -32,25 +29,30 @@ public class ParseObjectCreationExpr {
                                    ParameterizedType impliedParameterizedType) {
         TypeContext typeContext = expressionContext.typeContext;
 
+        ParameterizedType typeAsIs = ParameterizedTypeFactory.from(typeContext, objectCreationExpr.getType());
+        ParameterizedType formalType = typeAsIs.typeInfo.asParameterizedType(expressionContext.typeContext);
+
         Diamond diamond = objectCreationExpr.getType().getTypeArguments()
                 .map(list -> list.isEmpty() ? Diamond.YES : Diamond.SHOW_ALL).orElse(Diamond.NO);
 
         ParameterizedType parameterizedType;
         if (diamond == Diamond.YES) {
-            ParameterizedType diamondType = ParameterizedTypeFactory.from(typeContext, objectCreationExpr.getType());
-            ParameterizedType formalType = diamondType.typeInfo.asParameterizedType(expressionContext.typeContext);
-            if (impliedParameterizedType == null) {
+            if (impliedParameterizedType != null) {
+                parameterizedType = formalType.inferDiamondNewObjectCreation(expressionContext.typeContext, impliedParameterizedType);
+            } else {
                 // we cannot infer (this can happen, when we're choosing a method candidate among many candidates)
                 // e.g. map.put(key, new LinkedList<>()) -> we first need to know which "put" method to choose
                 // then there'll be a re-evaluation with an implied parameter of "V"
-                return new UnevaluatedObjectCreation(formalType);
+                parameterizedType = null;
             }
-            parameterizedType = formalType.inferDiamondNewObjectCreation(expressionContext.typeContext, impliedParameterizedType);
         } else {
-            parameterizedType = ParameterizedTypeFactory.from(typeContext, objectCreationExpr.getType());
+            parameterizedType = typeAsIs;
         }
 
         if (objectCreationExpr.getAnonymousClassBody().isPresent()) {
+            if (parameterizedType == null) {
+                return new UnevaluatedObjectCreation(formalType);
+            }
             TypeInfo anonymousType = new TypeInfo(expressionContext.enclosingType,
                     expressionContext.anonymousTypeCounters.newIndex(expressionContext.primaryType));
             typeContext.typeMapBuilder.ensureTypeAndInspection(anonymousType, TypeInspectionImpl.InspectionState.STARTING_JAVA_PARSER);
@@ -62,9 +64,10 @@ public class ParseObjectCreationExpr {
                     typeContext.getPrimitives(), parameterizedType, anonymousType, diamond);
         }
 
-        Map<NamedType, ParameterizedType> typeMap = parameterizedType.initialTypeParameterMap(typeContext);
-        List<TypeContext.MethodCandidate> methodCandidates = typeContext.resolveConstructor(parameterizedType,
-                objectCreationExpr.getArguments().size(), typeMap);
+        Map<NamedType, ParameterizedType> typeMap = parameterizedType == null ? null :
+                parameterizedType.initialTypeParameterMap(typeContext);
+        List<TypeContext.MethodCandidate> methodCandidates = typeContext.resolveConstructor(formalType, parameterizedType,
+                objectCreationExpr.getArguments().size(), parameterizedType == null ? Map.of() : typeMap);
         List<Expression> newParameterExpressions = new ArrayList<>();
 
         MethodTypeParameterMap singleAbstractMethod = impliedParameterizedType == null ? null :
@@ -72,9 +75,75 @@ public class ParseObjectCreationExpr {
         MethodTypeParameterMap method = new ParseMethodCallExpr(typeContext)
                 .chooseCandidateAndEvaluateCall(expressionContext, methodCandidates, objectCreationExpr.getArguments(),
                         newParameterExpressions, singleAbstractMethod, new HashMap<>(), "constructor",
-                        parameterizedType, objectCreationExpr.getBegin().orElseThrow());
-        if (method == null) return new UnevaluatedMethodCall(parameterizedType.detailedString() + "::new");
+                        parameterizedType == null ? formalType : parameterizedType, objectCreationExpr.getBegin().orElseThrow());
+        if (method == null) {
+            if (parameterizedType == null) {
+                return new UnevaluatedObjectCreation(formalType);
+            }
+            return new UnevaluatedObjectCreation(parameterizedType);
+        }
+        ParameterizedType finalParameterizedType;
+        if (parameterizedType == null) {
+            // there's only one method left, so we can derive the parameterized type from the parameters
+            Set<ParameterizedType> typeParametersResolved = new HashSet<>(formalType.parameters);
+            finalParameterizedType = tryToResolveTypeParameters(expressionContext.typeContext,
+                    formalType, method, typeParametersResolved, newParameterExpressions);
+            if (finalParameterizedType == null) {
+                return new UnevaluatedObjectCreation(formalType);
+            }
+        } else {
+            finalParameterizedType = parameterizedType;
+        }
         return NewObject.objectCreation("unevaluated new object", typeContext.getPrimitives(),
-                method.methodInspection.getMethodInfo(), parameterizedType, diamond, newParameterExpressions);
+                method.methodInspection.getMethodInfo(), finalParameterizedType, diamond, newParameterExpressions);
+    }
+
+    private static ParameterizedType tryToResolveTypeParameters(InspectionProvider inspectionProvider,
+                                                                ParameterizedType formalType,
+                                                                MethodTypeParameterMap method,
+                                                                Set<ParameterizedType> typeParametersResolved,
+                                                                List<Expression> newParameterExpressions) {
+        int i = 0;
+        Map<NamedType, ParameterizedType> map = new HashMap<>();
+        for (Expression parameterExpression : newParameterExpressions) {
+            ParameterizedType formalParameterType = method.methodInspection.formalParameterType(i++);
+            ParameterizedType concreteArgumentType = parameterExpression.returnType();
+            tryToResolveTypeParametersBasedOnOneParameter(inspectionProvider,
+                    formalParameterType, concreteArgumentType, map);
+            typeParametersResolved.removeIf(pt -> map.containsKey(pt.typeParameter));
+            if (typeParametersResolved.isEmpty()) {
+                List<ParameterizedType> concreteParameters = formalType.parameters.stream()
+                        .map(pt -> map.getOrDefault(pt.typeParameter, pt)).toList();
+                return new ParameterizedType(formalType.typeInfo, concreteParameters);
+            }
+        }
+        return null;
+    }
+
+    // concreteType Collection<X>, formalType Collection<E>, with E being the parameter in HashSet<E> which implements Collection<E>
+    // add E -> X to the map
+    // we need the intermediate step to original because the result of translateMap contains E=#0 in Collection
+
+    private static void tryToResolveTypeParametersBasedOnOneParameter(InspectionProvider inspectionProvider,
+                                                                      ParameterizedType formalType,
+                                                                      ParameterizedType concreteType,
+                                                                      Map<NamedType, ParameterizedType> mapAll) {
+        if (formalType.typeParameter != null) {
+            mapAll.put(formalType.typeParameter, concreteType);
+            return;
+        }
+        if (formalType.typeInfo != null) {
+            Map<NamedType, ParameterizedType> map = formalType.translateMap(inspectionProvider, concreteType, true);
+            map.forEach((namedType, pt) -> {
+                if (namedType instanceof TypeParameter tp) {
+                    ParameterizedType original = formalType.parameters.get(tp.getIndex());
+                    if (original.typeParameter != null) {
+                        mapAll.put(original.typeParameter, pt);
+                    }
+                }
+            });
+            return;
+        }
+        throw new UnsupportedOperationException("?");
     }
 }

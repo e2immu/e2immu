@@ -220,10 +220,11 @@ public class TypeContext implements InspectionProvider {
 
     public static final int IGNORE_PARAMETER_NUMBERS = -1;
 
-    public List<MethodCandidate> resolveConstructor(ParameterizedType typeOfObject,
+    public List<MethodCandidate> resolveConstructor(ParameterizedType formalType,
+                                                    ParameterizedType concreteType,
                                                     int parametersPresented,
                                                     Map<NamedType, ParameterizedType> typeMap) {
-        List<TypeInfo> types = extractTypeInfo(typeOfObject, typeMap);
+        List<TypeInfo> types = extractTypeInfo(concreteType != null ? concreteType: formalType, typeMap);
         // there's only one situation where we can have multiple types; that's multiple type bounds; only the first one can be a class
         TypeInfo typeInfo = types.get(0);
         TypeInspection typeInspection = getTypeInspection(typeInfo);

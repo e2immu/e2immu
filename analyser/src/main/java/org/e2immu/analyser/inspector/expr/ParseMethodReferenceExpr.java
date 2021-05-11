@@ -52,7 +52,8 @@ public class ParseMethodReferenceExpr {
                 return arrayConstruction(expressionContext, parameterizedType);
             }
             methodNameForErrorReporting = "constructor";
-            methodCandidates = typeContext.resolveConstructor(parameterizedType, parametersPresented, parameterizedType.initialTypeParameterMap(typeContext));
+            methodCandidates = typeContext.resolveConstructor(parameterizedType, parameterizedType,
+                    parametersPresented, parameterizedType.initialTypeParameterMap(typeContext));
         } else {
             methodCandidates = new ArrayList<>();
             methodNameForErrorReporting = "method " + methodName;
@@ -161,7 +162,8 @@ public class ParseMethodReferenceExpr {
             if (parameterizedType.arrays > 0) {
                 return arrayConstruction(expressionContext, parameterizedType);
             }
-            methodCandidates = typeContext.resolveConstructor(parameterizedType, TypeContext.IGNORE_PARAMETER_NUMBERS, parameterizedType.initialTypeParameterMap(typeContext));
+            methodCandidates = typeContext.resolveConstructor(parameterizedType, parameterizedType,
+                    TypeContext.IGNORE_PARAMETER_NUMBERS, parameterizedType.initialTypeParameterMap(typeContext));
         } else {
             methodCandidates = new ArrayList<>();
             typeContext.recursivelyResolveOverloadedMethods(parameterizedType,
