@@ -93,4 +93,23 @@ public class StringUtil {
         assert name != null && !name.isEmpty();
         return Character.toUpperCase(name.charAt(0)) + name.substring(1);
     }
+
+    /**
+     * all
+     *
+     * @param scope an index designating the scope (of a variable)
+     * @param index an index
+     * @return true when the index is in the scope
+     */
+    public static boolean inScopeOf(String scope, String index) {
+        int lastDotScope = scope.lastIndexOf('.');
+        if (lastDotScope < 0) {
+            // scope = 3 --> 3.0.0 ok, 3 ok, 4 ok
+            return index.compareTo(scope) >= 0;
+        }
+        // scope = 3.0.2 --> 3.0.3 ok, 3.0.2.0.0 OK,  but 3.1.3 is not OK; 4 is not OK
+        String withoutDot = scope.substring(0, lastDotScope);
+        if (!index.startsWith(withoutDot)) return false;
+        return index.compareTo(scope) >= 0;
+    }
 }

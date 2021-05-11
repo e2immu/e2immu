@@ -12,7 +12,7 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parserfailing;
+package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.parser.CommonTestRunner;
@@ -20,8 +20,8 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
-public class Test_XX_SwitchExpression extends CommonTestRunner {
-    public Test_XX_SwitchExpression() {
+public class Test_54_SwitchExpression extends CommonTestRunner {
+    public Test_54_SwitchExpression() {
         super(false);
     }
 

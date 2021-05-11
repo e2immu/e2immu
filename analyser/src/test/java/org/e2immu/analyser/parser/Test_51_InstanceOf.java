@@ -23,6 +23,7 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 public class Test_51_InstanceOf extends CommonTestRunner {
 
@@ -57,7 +58,28 @@ public class Test_51_InstanceOf extends CommonTestRunner {
 
     @Test
     public void test_2() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("method".equals(d.methodInfo().name)) {
+                if ("0".equals(d.statementId())) {
+                    if (d.variable() instanceof LocalVariableReference lvr && "number".equals(lvr.simpleName())) {
+                        assertEquals("in/*@NotNull*/", d.currentValue().toString());
+                    }
+                }
+                if ("0.0.0".equals(d.statementId())) {
+                    if (d.variable() instanceof LocalVariableReference lvr && "number".equals(lvr.simpleName())) {
+                        assertEquals("in/*@NotNull*/", d.currentValue().toString());
+                    }
+                    if (d.variable() instanceof LocalVariableReference lvr && "integer".equals(lvr.simpleName())) {
+                        assertEquals("in/*@NotNull*/", d.currentValue().toString());
+                    }
+                }
+                assertFalse("1".equals(d.statementId()) && d.variable() instanceof LocalVariableReference,
+                        "Found " + d.variable().fullyQualifiedName());
+            }
+        };
+
         testClass("InstanceOf_2", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 
@@ -69,7 +91,40 @@ public class Test_51_InstanceOf extends CommonTestRunner {
 
     @Test
     public void test_4() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("method".equals(d.methodInfo().name)) {
+                assertFalse("0.0.0".equals(d.statementId()) && d.variable() instanceof LocalVariableReference,
+                        "Found " + d.variable().fullyQualifiedName() + " in if() { } part");
+                if ("0.1.0".equals(d.statementId()) && "number".equals(d.variableName())) {
+                    assertEquals("", d.currentValue().toString());
+                }
+                if ("1".equals(d.statementId()) && "number".equals(d.variableName())) {
+                    assertEquals("", d.currentValue().toString());
+                }
+            }
+        };
+
         testClass("InstanceOf_4", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .build());
+    }
+
+    @Test
+    public void test_5() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("method".equals(d.methodInfo().name)) {
+                assertFalse("1.0.0".equals(d.statementId()) && d.variable() instanceof LocalVariableReference,
+                        "Found " + d.variable().fullyQualifiedName() + " in if() { } part");
+                if ("1.1.0".equals(d.statementId()) && "number".equals(d.variableName())) {
+                    assertEquals("", d.currentValue().toString());
+                }
+                assertFalse("2".equals(d.statementId()) && d.variable() instanceof LocalVariableReference,
+                        "Found " + d.variable().fullyQualifiedName() + " in 2");
+            }
+        };
+
+        testClass("InstanceOf_5", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 }

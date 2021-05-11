@@ -226,6 +226,14 @@ public class Primitives {
                 operator.returnType().typeInfo.fullyQualifiedName.equals(LONG_FQN);
     }
 
+    public static boolean isUnaryNot(MethodInfo operator) {
+        return operator.name.equals("!");
+    }
+
+    public static boolean isBinaryAnd(MethodInfo operator) {
+        return operator.name.equals("&&");
+    }
+
     private MethodInfo createOperator(TypeInfo owner, String name, List<ParameterizedType> parameterizedTypes, ParameterizedType returnType) {
         int i = 0;
         MethodInspectionImpl.Builder builder = new MethodInspectionImpl.Builder(owner, name).setStatic(true);

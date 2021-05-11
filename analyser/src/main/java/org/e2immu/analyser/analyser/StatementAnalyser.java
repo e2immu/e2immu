@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.analyser;
 
+import org.e2immu.analyser.analyser.util.FindInstanceOfPatterns;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.statement.*;
@@ -1554,18 +1555,29 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
 
     /*
     create local variables Y y = x for every sub-expression x instanceof Y y
+
+    the scope of the variable is determined as follows:
+    (1) if the expression is an if-statement, without else: pos = then block, neg = rest of current block
+    (2) if the expression is an if-statement with else: pos = then block, neg = else block
+    (3) otherwise, only the current expression is accepted (we set to then block)
+    ==> positive: always then block
+    ==> negative: either else or rest of block
      */
+
+
     private List<Assignment> patternVariables(SharedState sharedState, Expression expression) {
-        List<InstanceOf> instanceOfList = expression.collect(InstanceOf.class);
+        List<FindInstanceOfPatterns.InstanceOfPositive> instanceOfList = FindInstanceOfPatterns.find(expression);
+        boolean haveElse = statementAnalysis.statement instanceof IfElseStatement ifElse && ifElse.elseBlock != Block.EMPTY_BLOCK;
 
         // create local variables
         instanceOfList.stream()
-                .filter(instanceOf -> instanceOf.patternVariable() != null)
-                .filter(instanceOf -> !statementAnalysis.variables.isSet(instanceOf.patternVariable().simpleName()))
+                .filter(instanceOf -> instanceOf.instanceOf().patternVariable() != null)
+                .filter(instanceOf -> !statementAnalysis.variables.isSet(instanceOf.instanceOf().patternVariable().simpleName()))
                 .forEach(instanceOf -> {
-                    LocalVariableReference lvr = instanceOf.patternVariable();
+                    LocalVariableReference lvr = instanceOf.instanceOf().patternVariable();
+                    String scope = instanceOf.positive() ? index() + ".0.0" : haveElse ? index() + ".1.0" : index();
                     VariableInfoContainer vic = VariableInfoContainerImpl.newVariable(lvr, VariableInfoContainer.NOT_A_VARIABLE_FIELD,
-                            new VariableInLoop(index(), index(), VariableInLoop.VariableType.PATTERN),
+                            new VariableInLoop(scope, scope, VariableInLoop.VariableType.PATTERN),
                             statementAnalysis.navigationData.hasSubBlocks());
                     vic.newVariableWithoutValue();
                     statementAnalysis.variables.put(lvr.simpleName(), vic);
@@ -1573,10 +1585,10 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
 
         // add assignments
         return instanceOfList.stream()
-                .filter(instanceOf -> instanceOf.patternVariable() != null)
-                .map(instanceOf -> new Assignment(sharedState.evaluationContext.getPrimitives(),
-                        new VariableExpression(instanceOf.patternVariable()),
-                        new PropertyWrapper(instanceOf.expression(), Map.of(NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL))))
+                .filter(iop -> iop.instanceOf().patternVariable() != null)
+                .map(iop -> new Assignment(sharedState.evaluationContext.getPrimitives(),
+                        new VariableExpression(iop.instanceOf().patternVariable()),
+                        new PropertyWrapper(iop.instanceOf().expression(), Map.of(NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL))))
                 .toList();
     }
 
@@ -2606,7 +2618,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
 
             if (NOT_NULL_EXPRESSION == variableProperty && !ignoreConditionManager) {
                 int directNN = value.getProperty(this, NOT_NULL_EXPRESSION, true);
-               // assert !Primitives.isPrimitiveExcludingVoid(value.returnType()) || directNN == MultiLevel.EFFECTIVELY_NOT_NULL;
+                // assert !Primitives.isPrimitiveExcludingVoid(value.returnType()) || directNN == MultiLevel.EFFECTIVELY_NOT_NULL;
 
                 if (directNN == MultiLevel.NULLABLE) {
                     Expression valueIsNull = Equals.equals(this, value, NullConstant.NULL_CONSTANT, false);
