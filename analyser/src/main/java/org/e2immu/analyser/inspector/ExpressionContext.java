@@ -472,19 +472,7 @@ public class ExpressionContext {
     }
 
     private org.e2immu.analyser.model.Statement forEachStatement(String label, ForEachStmt forEachStmt) {
-        VariableContext newVariableContext = VariableContext.dependentVariableContext(variableContext);
-        VariableDeclarationExpr vde = forEachStmt.getVariable();
-        String name = vde.getVariables().get(0).getNameAsString();
-        LocalVariable localVariable = new LocalVariable.Builder()
-                .setOwningType(owningType())
-                .setName(name).setSimpleName(name)
-                .setParameterizedType(ParameterizedTypeFactory.from(typeContext, vde.getVariables().get(0).getType()))
-                .build();
-        org.e2immu.analyser.model.Expression expression = parseExpression(forEachStmt.getIterable());
-        newVariableContext.add(localVariable, expression);
-        Block block = newVariableContext(newVariableContext, "for-loop").parseBlockOrStatement(forEachStmt.getBody());
-        LocalVariableCreation lvc = new LocalVariableCreation(typeContext, localVariable);
-        return new ForEachStatement(label, lvc, expression, block);
+     return ParseForEachStmt.parse(this, label, forEachStmt);
     }
 
     private org.e2immu.analyser.model.Statement ifThenElseStatement(IfStmt statement) {
@@ -627,17 +615,28 @@ public class ExpressionContext {
             if (expression.isVariableDeclarationExpr()) {
                 VariableDeclarationExpr vde = (VariableDeclarationExpr) expression;
                 VariableDeclarator var = vde.getVariable(0);
-                ParameterizedType parameterizedType = ParameterizedTypeFactory.from(typeContext, var.getType());
+                ParameterizedType parameterizedType;
+                org.e2immu.analyser.model.Expression initializer;
+                boolean isVar = "var".equals(var.getType().asString());
+                if (isVar) {
+                    // run initializer without info
+                    initializer = var.getInitializer()
+                            .map(i -> parseExpression(i, null, null))
+                            .orElse(EmptyExpression.EMPTY_EXPRESSION);
+                    parameterizedType = initializer.returnType();
+                } else {
+                    parameterizedType = ParameterizedTypeFactory.from(typeContext, var.getType());
+                    initializer = var.getInitializer()
+                            .map(i -> parseExpression(i, parameterizedType, parameterizedType.findSingleAbstractMethodOfInterface(typeContext)))
+                            .orElse(EmptyExpression.EMPTY_EXPRESSION);
+                }
                 LocalVariable.Builder localVariable = new LocalVariable.Builder()
                         .setName(var.getNameAsString()).setSimpleName(var.getNameAsString())
                         .setParameterizedType(parameterizedType);
                 vde.getAnnotations().forEach(ae -> localVariable.addAnnotation(AnnotationInspector.inspect(this, ae)));
                 vde.getModifiers().forEach(m -> localVariable.addModifier(LocalVariableModifier.from(m)));
-                org.e2immu.analyser.model.Expression initializer = var.getInitializer()
-                        .map(i -> parseExpression(i, parameterizedType, parameterizedType.findSingleAbstractMethodOfInterface(typeContext)))
-                        .orElse(EmptyExpression.EMPTY_EXPRESSION);
                 LocalVariable lv = localVariable.setOwningType(owningType()).build();
-                return new LocalVariableCreation(typeContext, lv, initializer);
+                return new LocalVariableCreation(typeContext, lv, initializer, isVar);
             }
             if (expression.isAssignExpr()) {
                 AssignExpr assignExpr = (AssignExpr) expression;
@@ -745,7 +744,7 @@ public class ExpressionContext {
         }
     }
 
-    private TypeInfo owningType() {
+    public TypeInfo owningType() {
         return uninspectedEnclosingType != null ? uninspectedEnclosingType : enclosingType;
     }
 

@@ -39,21 +39,24 @@ public class LocalVariableCreation implements Expression {
     public final LocalVariableReference localVariableReference;
     public final Expression expression;
     private final InspectionProvider inspectionProvider;
+    public final boolean isVar;
 
     public LocalVariableCreation(
             @NotNull InspectionProvider inspectionProvider,
             @NotNull LocalVariable localVariable) {
-        this(inspectionProvider, localVariable, EmptyExpression.EMPTY_EXPRESSION);
+        this(inspectionProvider, localVariable, EmptyExpression.EMPTY_EXPRESSION, false);
     }
 
     public LocalVariableCreation(
             @NotNull InspectionProvider inspectionProvider,
             @NotNull LocalVariable localVariable,
-            @NotNull Expression expression) {
+            @NotNull Expression expression,
+            boolean isVar) {
         this.localVariable = Objects.requireNonNull(localVariable);
         this.expression = Objects.requireNonNull(expression);
         this.inspectionProvider = inspectionProvider;
-        localVariableReference = new LocalVariableReference( localVariable, expression);
+        localVariableReference = new LocalVariableReference(localVariable, expression);
+        this.isVar = isVar;
     }
 
     @Override
@@ -73,7 +76,7 @@ public class LocalVariableCreation implements Expression {
     @Override
     public Expression translate(TranslationMap translationMap) {
         return new LocalVariableCreation(inspectionProvider, translationMap.translateLocalVariable(localVariable),
-                translationMap.translateExpression(expression));
+                translationMap.translateExpression(expression), isVar);
     }
 
     @Override
@@ -101,10 +104,13 @@ public class LocalVariableCreation implements Expression {
         if (!mods.isEmpty()) {
             mods.add(Space.ONE);
         }
-        outputBuilder.add(mods)
-                .add(localVariable.parameterizedType().output(qualification))
-                .add(Space.ONE)
-                .add(new Text(localVariable.name()));
+        outputBuilder.add(mods);
+        if (isVar) {
+            outputBuilder.add(new Text("var"));
+        } else {
+            outputBuilder.add(localVariable.parameterizedType().output(qualification));
+        }
+        outputBuilder.add(Space.ONE).add(new Text(localVariable.name()));
         if (expression != EmptyExpression.EMPTY_EXPRESSION) {
             outputBuilder.add(Symbol.assignment("=")).add(expression.output(qualification));
         }

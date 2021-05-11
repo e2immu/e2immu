@@ -45,7 +45,7 @@ public class TestAssignment {
     @Test
     public void testNormal() {
         LocalVariable lvi = makeLocalVariableInt();
-        LocalVariableCreation i = new LocalVariableCreation(inspectionProvider, lvi, new IntConstant(primitives, 0));
+        LocalVariableCreation i = new LocalVariableCreation(inspectionProvider, lvi, new IntConstant(primitives, 0), false);
         Expression iPlusEquals1 = new Assignment(primitives,
                 new VariableExpression(i.localVariableReference), new IntConstant(primitives, 1));
         assertEquals("i=1", iPlusEquals1.minimalOutput());
@@ -54,7 +54,7 @@ public class TestAssignment {
     @Test
     public void testPlusEqualsOne() {
         LocalVariable lvi = makeLocalVariableInt();
-        LocalVariableCreation i = new LocalVariableCreation(inspectionProvider, lvi, new IntConstant(primitives, 0));
+        LocalVariableCreation i = new LocalVariableCreation(inspectionProvider, lvi, new IntConstant(primitives, 0), false);
         Expression iPlusEquals1 = new Assignment(primitives, new VariableExpression(i.localVariableReference),
                 new IntConstant(primitives, 1), primitives.assignPlusOperatorInt, null, true);
         assertEquals("i+=1", iPlusEquals1.minimalOutput());
@@ -71,7 +71,7 @@ public class TestAssignment {
     @Test
     public void testPlusPlus() {
         LocalVariable lvi = makeLocalVariableInt();
-        LocalVariableCreation i = new LocalVariableCreation(inspectionProvider, lvi, new IntConstant(primitives, 0));
+        LocalVariableCreation i = new LocalVariableCreation(inspectionProvider, lvi, new IntConstant(primitives, 0), false);
 
         Expression iPlusPlus = new UnaryOperator(primitives.postfixIncrementOperatorInt,
                 new VariableExpression(i.localVariableReference), Precedence.PLUSPLUS);

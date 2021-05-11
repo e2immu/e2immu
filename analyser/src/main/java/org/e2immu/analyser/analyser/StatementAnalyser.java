@@ -2606,7 +2606,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
 
             if (NOT_NULL_EXPRESSION == variableProperty && !ignoreConditionManager) {
                 int directNN = value.getProperty(this, NOT_NULL_EXPRESSION, true);
-                assert !Primitives.isPrimitiveExcludingVoid(value.returnType()) || directNN == MultiLevel.EFFECTIVELY_NOT_NULL;
+               // assert !Primitives.isPrimitiveExcludingVoid(value.returnType()) || directNN == MultiLevel.EFFECTIVELY_NOT_NULL;
 
                 if (directNN == MultiLevel.NULLABLE) {
                     Expression valueIsNull = Equals.equals(this, value, NullConstant.NULL_CONSTANT, false);

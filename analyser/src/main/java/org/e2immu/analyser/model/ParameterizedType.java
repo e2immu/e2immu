@@ -338,11 +338,11 @@ public class ParameterizedType {
                                                           ParameterizedType concreteType,
                                                           boolean concreteTypeIsAssignableToThis) {
         if (concreteTypeIsAssignableToThis) {
-        //    assert isAssignableFrom(inspectionProvider, concreteType)
-       //             : "I'm expecting that " + this + " is assignable from " + concreteType;
+            //    assert isAssignableFrom(inspectionProvider, concreteType)
+            //             : "I'm expecting that " + this + " is assignable from " + concreteType;
         } else {
-        //    assert concreteType.isAssignableFrom(inspectionProvider, this)
-         //           : "I'm expecting that " + concreteType + " is assignable from " + this;
+            //    assert concreteType.isAssignableFrom(inspectionProvider, this)
+            //           : "I'm expecting that " + concreteType + " is assignable from " + this;
         }
 
         if (parameters.isEmpty()) {
@@ -566,8 +566,8 @@ public class ParameterizedType {
                             .mapToInt(p -> {
                                 Mode newMode = mode == Mode.INVARIANT ? Mode.INVARIANT :
                                         switch (p.k.wildCard) {
-                                            case EXTENDS -> mode == Mode.COVARIANT ? Mode.COVARIANT: Mode.CONTRAVARIANT;
-                                            case SUPER -> mode == Mode.COVARIANT ? Mode.CONTRAVARIANT: Mode.COVARIANT;
+                                            case EXTENDS -> mode == Mode.COVARIANT ? Mode.COVARIANT : Mode.CONTRAVARIANT;
+                                            case SUPER -> mode == Mode.COVARIANT ? Mode.CONTRAVARIANT : Mode.COVARIANT;
                                             case NONE -> Mode.INVARIANT;
                                             case UNBOUND -> Mode.ANY;
                                         };
@@ -630,6 +630,42 @@ public class ParameterizedType {
         if (w1 == w2) return true;
         if (mode == Mode.INVARIANT && w1 == WildCard.NONE) return false;
         return true;
+    }
+
+    /**
+     * Input: this == List&lt;String&gt;, superType == Iterable&lt;E&gt;;
+     * List <- Collection <- Iterable;
+     * Returns: Iterable&lt;String&gt;
+     *
+     * @param inspectionProvider the inspection provider
+     * @param superType          the target super type
+     * @return concrete version of the super type; null when the target cannot be found
+     */
+    public ParameterizedType concreteSuperType(InspectionProvider inspectionProvider,
+                                               ParameterizedType superType) {
+        if (typeInfo == superType.typeInfo) {
+            // if we start with Iterable<String>, and we're aiming for Iterable<E>, then
+            // Iterable<String> is the right answer
+            return this;
+        }
+        TypeInspection inspection = inspectionProvider.getTypeInspection(typeInfo);
+        if (!Primitives.isJavaLangObject(inspection.parentClass())) {
+            if (inspection.parentClass().typeInfo == superType.typeInfo) {
+                return concreteDirectSuperType(inspectionProvider, inspection.parentClass());
+            }
+            /* do a recursion, but accept that we may return null
+            we must call concreteSuperType on a concrete version of the parentClass
+            */
+        }
+        for (ParameterizedType interfaceType : inspection.interfacesImplemented()) {
+            if (interfaceType.typeInfo == superType.typeInfo) {
+                return concreteDirectSuperType(inspectionProvider, interfaceType);
+            }
+            /*
+            similar situation as with parent
+             */
+        }
+        return null;
     }
 
     /*

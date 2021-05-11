@@ -145,7 +145,7 @@ public class TestTypeInfoStream {
                                         new ExpressionAsStatement(
                                                 new LocalVariableCreation(inspectionProvider,
                                                         mapLocalVariable,
-                                                        creationExpression)
+                                                        creationExpression, false)
                                         )
                                 )
                                 .addStatement(
