@@ -58,12 +58,23 @@ public class ParseLambdaExpr {
                 createAnonymousTypeAndApplyMethod(singleAbstractMethod.methodInspection.getMethodInfo().name,
                         expressionContext.enclosingType,
                         expressionContext.anonymousTypeCounters.newIndex(expressionContext.primaryType));
+        List<Lambda.OutputVariant> outputVariants = new ArrayList<>(lambdaExpr.getParameters().size());
 
         for (Parameter parameter : lambdaExpr.getParameters()) {
             ParameterizedType parameterType = null;
-            if (parameter.getType() != null && !parameter.getType().asString().isEmpty()) {
-                parameterType = ParameterizedTypeFactory.from(expressionContext.typeContext, parameter.getType());
+            Lambda.OutputVariant outputVariant;
+            if (parameter.getType() != null) {
+                String typeAsString = parameter.getType().asString();
+                outputVariant = "var".equals(typeAsString) ? Lambda.OutputVariant.VAR :
+                        !typeAsString.isEmpty() ? Lambda.OutputVariant.TYPED : Lambda.OutputVariant.EMPTY;
+                if (outputVariant == Lambda.OutputVariant.TYPED) {
+                    parameterType = ParameterizedTypeFactory.from(expressionContext.typeContext, parameter.getType());
+                }
+            } else {
+                outputVariant = Lambda.OutputVariant.EMPTY;
             }
+            outputVariants.add(outputVariant);
+
             if (parameterType == null) {
                 // the type hint is an interface with exactly one abstract method (not "default", not static)
                 parameterType = singleAbstractMethod.getConcreteTypeOfParameter(cnt);
@@ -107,7 +118,8 @@ public class ParseLambdaExpr {
 
         expressionContext.addNewlyCreatedType(anonymousType);
 
-        return new Lambda(inspectionProvider, functionalType, anonymousType.asParameterizedType(inspectionProvider));
+        return new Lambda(inspectionProvider, functionalType, anonymousType.asParameterizedType(inspectionProvider),
+                outputVariants);
     }
 
     private record Evaluation(Block block, ParameterizedType inferredReturnType) {

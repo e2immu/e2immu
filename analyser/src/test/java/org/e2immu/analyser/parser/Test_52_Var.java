@@ -25,27 +25,47 @@ public class Test_52_Var extends CommonTestRunner {
         super(false);
     }
 
+    // basics
     @Test
     public void test_0() throws IOException {
         testClass("Var_0", 0, 0, new DebugConfiguration.Builder()
                 .build());
     }
 
+    // var set = new HashSet<>(xes);
     @Test
     public void test_1() throws IOException {
         testClass("Var_1", 0, 0, new DebugConfiguration.Builder()
                 .build());
     }
 
+    // for (var x : xes) { ... } direct child
     @Test
     public void test_2() throws IOException {
         testClass("Var_2", 0, 0, new DebugConfiguration.Builder()
                 .build());
     }
 
+    // for (var x : xes) { ... } indirect child
     @Test
     public void test_3() throws IOException {
         testClass("Var_3", 0, 0, new DebugConfiguration.Builder()
+                .build());
+    }
+
+    // lambda
+    // TODO add a test for @NotNull on the function returned
+    @Test
+    public void test_4() throws IOException {
+        testClass("Var_4", 0, 0, new DebugConfiguration.Builder()
+                .build());
+    }
+
+    // try
+    @Test
+    public void test_5() throws IOException {
+        // expect one potential null ptr (result of sw.append())
+        testClass("Var_5", 0, 1, new DebugConfiguration.Builder()
                 .build());
     }
 }

@@ -21,19 +21,45 @@ import org.e2immu.analyser.analyser.StatementAnalysis;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ReturnStatement;
-import org.e2immu.analyser.output.Guide;
-import org.e2immu.analyser.output.OutputBuilder;
-import org.e2immu.analyser.output.Symbol;
+import org.e2immu.analyser.output.*;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Stream;
 
 public class Lambda implements Expression {
+    public enum OutputVariant {
+        TYPED, // (@Modified X x, Y y) -> ...
+        VAR,   // (var x, @NotNull var y) -> ...
+        EMPTY, // (x, y) -> ...
+        ;
+
+        public OutputBuilder output(ParameterInfo parameterInfo, Qualification qualification) {
+            OutputBuilder ob = new OutputBuilder();
+            if (this != EMPTY) {
+                Stream<OutputBuilder> annotationStream = parameterInfo.buildAnnotationOutput(qualification);
+                OutputBuilder annotationOutput = annotationStream
+                        .collect(OutputBuilder.joining(Space.ONE_REQUIRED_EASY_SPLIT, Guide.generatorForAnnotationList()));
+                if (this == TYPED) {
+                    ob.add(parameterInfo.parameterizedType.output(qualification)).add(Space.ONE);
+                }
+                if (this == VAR) {
+                    ob.add(new Text("var")).add(Space.ONE);
+                }
+                if(!annotationOutput.isEmpty()) {
+                    return annotationOutput.add(Space.ONE_REQUIRED_EASY_SPLIT).add(ob);
+                }
+            }
+            return ob;
+        }
+    }
+
     public final MethodInfo methodInfo;
     public final Block block;
-    public final List<ParameterInfo> parameters;
+    private final List<ParameterInfo> parameters;
+    private final List<OutputVariant> parameterOutputVariants;
     public final ParameterizedType abstractFunctionalType;
     public final ParameterizedType implementation;
 
@@ -43,7 +69,8 @@ public class Lambda implements Expression {
      */
     public Lambda(InspectionProvider inspectionProvider,
                   ParameterizedType abstractFunctionalType,
-                  ParameterizedType implementation) {
+                  ParameterizedType implementation,
+                  List<OutputVariant> outputVariants) {
         methodInfo = inspectionProvider.getTypeInspection(implementation.typeInfo).methods().get(0);
         MethodInspection methodInspection = inspectionProvider.getMethodInspection(methodInfo);
         this.block = methodInspection.getMethodBody();
@@ -53,6 +80,8 @@ public class Lambda implements Expression {
         this.abstractFunctionalType = Objects.requireNonNull(abstractFunctionalType);
         assert implementsFunctionalInterface(inspectionProvider, implementation);
         this.implementation = Objects.requireNonNull(implementation);
+        this.parameterOutputVariants = outputVariants;
+        assert outputVariants.size() == parameters.size();
     }
 
     private static boolean implementsFunctionalInterface(InspectionProvider inspectionProvider,
@@ -110,11 +139,14 @@ public class Lambda implements Expression {
         OutputBuilder outputBuilder = new OutputBuilder();
         if (parameters.isEmpty()) {
             outputBuilder.add(Symbol.OPEN_CLOSE_PARENTHESIS);
-        } else if (parameters.size() == 1) {
+        } else if (parameters.size() == 1 && parameterOutputVariants.get(0) == OutputVariant.EMPTY) {
             outputBuilder.add(parameters.get(0).output(qualification));
         } else {
             outputBuilder.add(Symbol.LEFT_PARENTHESIS)
-                    .add(parameters.stream().map(pi -> pi.output(qualification)).collect(OutputBuilder.joining(Symbol.COMMA)))
+                    .add(parameters.stream().map(pi -> parameterOutputVariants.get(pi.index)
+                            .output(pi, qualification)
+                            .add(pi.output(qualification)))
+                            .collect(OutputBuilder.joining(Symbol.COMMA)))
                     .add(Symbol.RIGHT_PARENTHESIS);
         }
         outputBuilder.add(Symbol.LAMBDA);

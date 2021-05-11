@@ -144,7 +144,7 @@ public class EnumMethods {
                 expressionContext, enumType, enumTypeBuilder, notModifiedContract, nameMethod, nameParameter);
         var implementationMethod = predicateBuilder.getMethodInfo()
                 .typeInfo.asParameterizedType(typeContext);
-        var lambda = new Lambda(typeContext, functionalInterfaceType, implementationMethod);
+        var lambda = new Lambda(typeContext, functionalInterfaceType, implementationMethod, List.of(Lambda.OutputVariant.EMPTY));
 
         var stream = typeContext.getFullyQualified(Stream.class);
         var filter = stream.findUniqueMethod("filter", 1);
