@@ -234,7 +234,7 @@ public class Test_01_Loops extends CommonTestRunner {
                     NewObject string1 = NewObject.forTesting(primitives, primitives.stringParameterizedType);
                     assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, string1.getProperty(d.evaluationContext(), VariableProperty.NOT_NULL_EXPRESSION, true));
                     Map<VariableProperty, Integer> map = Map.of(VariableProperty.NOT_NULL_EXPRESSION, MultiLevel.NULLABLE);
-                    Expression string1Wrapped = PropertyWrapper.propertyWrapperForceProperties(string1, map);
+                    Expression string1Wrapped = PropertyWrapper.propertyWrapper(string1, map);
                     assertEquals(MultiLevel.NULLABLE, string1Wrapped.getProperty(d.evaluationContext(), VariableProperty.NOT_NULL_EXPRESSION, true));
                     Expression inline = EvaluateInlineConditional.conditionalValueConditionResolved(d.evaluationContext(),
                             GreaterThanZero.greater(d.evaluationContext(), NewObject.forTesting(primitives, primitives.intParameterizedType),

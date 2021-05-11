@@ -1575,9 +1575,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         return instanceOfList.stream()
                 .filter(instanceOf -> instanceOf.patternVariable() != null)
                 .map(instanceOf -> new Assignment(sharedState.evaluationContext.getPrimitives(),
-                        new PropertyWrapper(
-                                new VariableExpression(instanceOf.patternVariable()),
-                                Map.of(CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL)), instanceOf.expression()))
+                        new VariableExpression(instanceOf.patternVariable()),
+                        new PropertyWrapper(instanceOf.expression(), Map.of(NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL))))
                 .toList();
     }
 

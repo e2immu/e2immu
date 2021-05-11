@@ -48,17 +48,36 @@ public record PropertyWrapper(Expression expression,
     @Override
     public EvaluationResult reEvaluate(EvaluationContext evaluationContext, Map<Expression, Expression> translation) {
         EvaluationResult reValue = expression.reEvaluate(evaluationContext, translation);
+        return reEvaluated(evaluationContext, reValue);
+    }
+
+    @Override
+    public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
+        EvaluationResult reValue = expression.evaluate(evaluationContext, forwardEvaluationInfo);
+        return reEvaluated(evaluationContext, reValue);
+    }
+
+    private EvaluationResult reEvaluated(EvaluationContext evaluationContext, EvaluationResult reValue) {
+        Expression newValue = reValue.value();
+        Map<VariableProperty, Integer> reduced = reduce(evaluationContext, newValue, properties);
+        Expression result = reduced.isEmpty() ? newValue : PropertyWrapper.propertyWrapper(newValue, reduced);
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext).compose(reValue);
-        return builder.setExpression(PropertyWrapper.propertyWrapper(reValue.value(),
-                properties)).build();
+        return builder.setExpression(result).build();
+    }
+
+    private static Map<VariableProperty, Integer> reduce(EvaluationContext evaluationContext,
+                                                         Expression expression,
+                                                         Map<VariableProperty, Integer> map) {
+        return map.entrySet().stream()
+                .filter(e -> {
+                    int v = evaluationContext.getProperty(expression, e.getKey(), true, false);
+                    return v != e.getValue();
+                })
+                .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
     public static Expression propertyWrapper(Expression value, Map<VariableProperty, Integer> properties) {
         assert !(value instanceof Negation) : "we always want the negation to be on the outside";
-        return new PropertyWrapper(value, properties);
-    }
-
-    public static Expression propertyWrapperForceProperties(Expression value, Map<VariableProperty, Integer> properties) {
         return new PropertyWrapper(value, properties);
     }
 
@@ -70,11 +89,6 @@ public record PropertyWrapper(Expression expression,
     @Override
     public Precedence precedence() {
         return expression.precedence();
-    }
-
-    @Override
-    public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
-        return expression.evaluate(evaluationContext, forwardEvaluationInfo); // drop everything you have, it should come back
     }
 
     @Override
@@ -162,9 +176,8 @@ public record PropertyWrapper(Expression expression,
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof Expression)) return false;
+        if (!(o instanceof Expression oUnboxed)) return false;
         Expression unboxed = this;
-        Expression oUnboxed = (Expression) o;
         while (unboxed instanceof PropertyWrapper propertyWrapper) {
             unboxed = propertyWrapper.expression;
         }

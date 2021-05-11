@@ -15,9 +15,14 @@
 package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.config.DebugConfiguration;
+import org.e2immu.analyser.model.variable.FieldReference;
+import org.e2immu.analyser.model.variable.LocalVariableReference;
+import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class Test_51_InstanceOf extends CommonTestRunner {
 
@@ -33,7 +38,20 @@ public class Test_51_InstanceOf extends CommonTestRunner {
 
     @Test
     public void test_1() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("InstanceOf_1".equals(d.methodInfo().name) && "0".equals(d.statementId())) {
+                if (d.variable() instanceof FieldReference fr && "number".equals(fr.fieldInfo.name)) {
+                    String expect = "in instanceof Number number?in/*@NotNull*/:3.14";
+                    assertEquals(expect, d.currentValue().toString());
+                }
+                if (d.variable() instanceof LocalVariableReference lvr && "number".equals(lvr.simpleName())) {
+                    assertEquals("in/*@NotNull*/", d.currentValue().toString());
+                }
+            }
+        };
+
         testClass("InstanceOf_1", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 
@@ -43,4 +61,15 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                 .build());
     }
 
+    @Test
+    public void test_3() throws IOException {
+        testClass("InstanceOf_3", 0, 0, new DebugConfiguration.Builder()
+                .build());
+    }
+
+    @Test
+    public void test_4() throws IOException {
+        testClass("InstanceOf_4", 0, 0, new DebugConfiguration.Builder()
+                .build());
+    }
 }
