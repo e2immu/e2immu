@@ -36,5 +36,7 @@ public interface HasNavigationData<T extends HasNavigationData<T>> {
 
     void wireNext(T newStatement);
 
+    void wireDirectly(T newStatement);
+
     BiFunction<List<Statement>, String, T> generator(EvaluationContext evaluationContext);
 }

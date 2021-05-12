@@ -158,6 +158,11 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
     }
 
     @Override
+    public void wireDirectly(StatementAnalysis newStatement) {
+        navigationData.replacement.set(newStatement);
+    }
+
+    @Override
     public BiFunction<List<Statement>, String, StatementAnalysis> generator(EvaluationContext evaluationContext) {
         return (statements, startIndex) -> recursivelyCreateAnalysisObjects(primitives, methodAnalysis, parent(),
                 statements, startIndex, false, inSyncBlock);

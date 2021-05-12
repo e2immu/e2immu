@@ -195,7 +195,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                     wasReplacement = false;
                 } else {
                     // first attempt at detecting a transformation
-                    wasReplacement = checkForPatterns(evaluationContext);
+                    wasReplacement = statementAnalyser.checkForPatterns(evaluationContext);
                     statementAnalyser = statementAnalyser.followReplacements();
                 }
                 StatementAnalysis previousStatementAnalysis = previousStatement == null ? null : previousStatement.statementAnalysis;
@@ -294,6 +294,12 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
     @Override
     public StatementAnalysis parent() {
         return statementAnalysis.parent;
+    }
+
+    @Override
+    public void wireDirectly(StatementAnalyser newStatementAnalyser) {
+        navigationData.replacement.set(newStatementAnalyser);
+        statementAnalysis.navigationData.replacement.set(newStatementAnalyser.statementAnalysis);
     }
 
     @Override
