@@ -22,6 +22,10 @@ java {
     targetCompatibility = JavaVersion.VERSION_16
 }
 
+jar {
+    from sourceSets.main.java
+}
+
 test {
     exclude '**/parserfailing/*.class'
 

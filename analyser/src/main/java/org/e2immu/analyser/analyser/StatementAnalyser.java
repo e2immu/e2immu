@@ -87,20 +87,22 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             boolean inSyncBlock) {
         Objects.requireNonNull(myMethodAnalyser);
         Objects.requireNonNull(myMethodAnalyser.methodAnalysis);
-
+        String adjustedIndices;
         int statementIndex;
         if (setNextAtEnd) {
             statementIndex = 0;
+            adjustedIndices = indices;
         } else {
-            // we're in the replacement mode; replace the existing index value
+            // we're in replacement mode; replace the existing index value
             int pos = indices.lastIndexOf(".");
             statementIndex = Integer.parseInt(pos < 0 ? indices : indices.substring(pos + 1));
+            adjustedIndices = pos < 0 ? "": indices.substring(0, pos);
         }
         StatementAnalyser first = null;
         StatementAnalyser previous = null;
         for (Statement statement : statements) {
             String padded = pad(statementIndex, statements.size());
-            String iPlusSt = indices.isEmpty() ? "" + padded : indices + "." + padded;
+            String iPlusSt = adjustedIndices.isEmpty() ? "" + padded : adjustedIndices + "." + padded;
             StatementAnalyser statementAnalyser = new StatementAnalyser(analyserContext, myMethodAnalyser, statement, parent, iPlusSt, inSyncBlock);
             if (previous != null) {
                 previous.statementAnalysis.navigationData.next.set(Optional.of(statementAnalyser.statementAnalysis));
@@ -269,12 +271,14 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         if (statementAnalysis.flowData.isUnreachable() && statementAnalysis.parent == null) {
             throw new UnsupportedOperationException("The first statement can never be unreachable");
         }
-        return followReplacements().navigationData.next.get().map(statementAnalyser -> {
+        StatementAnalyser afterReplacements = followReplacements();
+        if(!afterReplacements.navigationData.next.isSet()) return afterReplacements;
+        return afterReplacements.navigationData.next.get().map(statementAnalyser -> {
             if (statementAnalyser.statementAnalysis.flowData.isUnreachable()) {
-                return this;
+                return afterReplacements;
             }
             return statementAnalyser.lastStatement();
-        }).orElse(this);
+        }).orElse(afterReplacements);
     }
 
     @Override
