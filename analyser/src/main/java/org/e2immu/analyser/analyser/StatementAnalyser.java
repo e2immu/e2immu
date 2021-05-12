@@ -320,11 +320,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
 
     private boolean checkForPatterns(EvaluationContext evaluationContext) {
         PatternMatcher<StatementAnalyser> patternMatcher = analyserContext.getPatternMatcher();
-        if (!analyserContext.getConfiguration().analyserConfiguration().skipTransformations()) {
-            MethodInfo methodInfo = myMethodAnalyser.methodInfo;
-            return patternMatcher.matchAndReplace(methodInfo, this, evaluationContext);
-        }
-        return false;
+        MethodInfo methodInfo = myMethodAnalyser.methodInfo;
+        return patternMatcher.matchAndReplace(methodInfo, this, evaluationContext);
     }
 
     private Location getLocation() {
@@ -526,6 +523,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                                 sortedType,
                                 analyserContext.getConfiguration(),
                                 analyserContext.getPrimitives(),
+                                analyserContext.getPatternMatcher(),
                                 analyserContext.getE2ImmuAnnotationExpressions());
                         primaryTypeAnalyser.initialize();
                         return primaryTypeAnalyser;

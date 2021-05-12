@@ -18,6 +18,7 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.analyser.parser.TypeAndInspectionProvider;
 import org.e2immu.analyser.parser.TypeMapImpl;
 import org.e2immu.annotation.NotNull;
 
@@ -33,7 +34,7 @@ import static org.e2immu.analyser.util.Logger.log;
  * <p>
  * All type contexts share the same type map.
  */
-public class TypeContext implements InspectionProvider {
+public class TypeContext implements TypeAndInspectionProvider {
     private final TypeContext parentContext;
 
     public final TypeMapImpl.Builder typeMapBuilder;
@@ -105,6 +106,7 @@ public class TypeContext implements InspectionProvider {
         return namedType;
     }
 
+    @Override
     public TypeInfo getFullyQualified(Class<?> clazz) {
         return getFullyQualified(clazz.getCanonicalName(), true);
     }

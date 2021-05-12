@@ -61,12 +61,13 @@ public class PrimaryTypeAnalyser implements AnalyserContext, Analyser, HoldsAnal
                                SortedType sortedType,
                                Configuration configuration,
                                Primitives primitives,
+                               PatternMatcher<StatementAnalyser> patternMatcher,
                                E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
         this.parent = parent;
         this.configuration = configuration;
         this.e2ImmuAnnotationExpressions = e2ImmuAnnotationExpressions;
         Objects.requireNonNull(primitives);
-        patternMatcher = configuration.analyserConfiguration().newPatternMatcher();
+        this.patternMatcher = Objects.requireNonNull(patternMatcher);
         this.primitives = primitives;
         this.primaryType = Objects.requireNonNull(sortedType.primaryType());
         assert (parent == null) == this.primaryType.isPrimaryType();

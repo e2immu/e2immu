@@ -17,11 +17,13 @@ package org.e2immu.analyser.parser;
 import org.apache.commons.io.IOUtils;
 import org.e2immu.analyser.analyser.PrimaryTypeAnalyser;
 import org.e2immu.analyser.analyser.ShallowTypeAnalyser;
+import org.e2immu.analyser.analyser.StatementAnalyser;
 import org.e2immu.analyser.bytecode.ByteCodeInspector;
 import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.inspector.*;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.TypeInspection;
+import org.e2immu.analyser.pattern.PatternMatcher;
 import org.e2immu.analyser.resolver.Resolver;
 import org.e2immu.analyser.resolver.SortedType;
 import org.e2immu.analyser.util.Trie;
@@ -188,8 +190,9 @@ public class Parser {
     }
 
     private void analyseSortedType(SortedType sortedType) {
+        PatternMatcher<StatementAnalyser> patternMatcher = configuration.analyserConfiguration().newPatternMatcher(getTypeContext());
         PrimaryTypeAnalyser primaryTypeAnalyser = new PrimaryTypeAnalyser(null, sortedType, configuration,
-                getTypeContext().getPrimitives(), getTypeContext().typeMapBuilder.getE2ImmuAnnotationExpressions());
+                getTypeContext().getPrimitives(), patternMatcher, getTypeContext().typeMapBuilder.getE2ImmuAnnotationExpressions());
         try {
             primaryTypeAnalyser.analyse();
         } catch (RuntimeException rte) {
