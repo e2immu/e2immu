@@ -90,7 +90,15 @@ public class Block extends StatementWithStructure {
         } else {
             Guide.GuideGenerator guideGenerator = Guide.generatorForBlock();
             outputBuilder.add(guideGenerator.start());
-            statementsString(qualification, outputBuilder, guideGenerator, statementAnalysis);
+            StatementAnalysis sa ;
+            if(statementAnalysis.statement instanceof Block){
+                sa = statementAnalysis.navigationData.blocks.get().get(0).orElse(null);
+            } else {
+                sa = statementAnalysis;
+            }
+            if(sa != null) {
+                statementsString(qualification, outputBuilder, guideGenerator, sa);
+            }
             outputBuilder.add(guideGenerator.end());
         }
         outputBuilder.add(Symbol.RIGHT_BRACE);

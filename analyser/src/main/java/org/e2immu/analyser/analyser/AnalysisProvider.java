@@ -56,4 +56,26 @@ public interface AnalysisProvider {
             }
         }
     };
+
+    AnalysisProvider NULL_IF_NOT_SET = new AnalysisProvider() {
+        @Override
+        public FieldAnalysis getFieldAnalysis(FieldInfo fieldInfo) {
+            return fieldInfo.fieldAnalysis.getOrDefaultNull();
+        }
+
+        @Override
+        public ParameterAnalysis getParameterAnalysis(ParameterInfo parameterInfo) {
+            return parameterInfo.parameterAnalysis.getOrDefaultNull();
+        }
+
+        @Override
+        public TypeAnalysis getTypeAnalysis(TypeInfo typeInfo) {
+            return typeInfo.typeAnalysis.getOrDefaultNull();
+        }
+
+        @Override
+        public MethodAnalysis getMethodAnalysis(MethodInfo methodInfo) {
+            return methodInfo.methodAnalysis.getOrDefaultNull();
+        }
+    };
 }

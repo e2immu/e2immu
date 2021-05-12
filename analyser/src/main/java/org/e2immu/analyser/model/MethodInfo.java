@@ -14,6 +14,8 @@
 
 package org.e2immu.analyser.model;
 
+import org.e2immu.analyser.analyser.AnalyserContext;
+import org.e2immu.analyser.analyser.AnalysisProvider;
 import org.e2immu.analyser.analyser.StatementAnalysis;
 import org.e2immu.analyser.inspector.MethodResolution;
 import org.e2immu.analyser.model.statement.Block;
@@ -167,6 +169,11 @@ public class MethodInfo implements WithInspectionAndAnalysis {
 
     // IMPORTANT: do not write the first MID to methodGG, because that one is written by the joiner
     public OutputBuilder output(Qualification qualification, Guide.GuideGenerator methodGG) {
+        return output(qualification, methodGG, AnalyserContext.NULL_IF_NOT_SET);
+    }
+
+    // IMPORTANT: do not write the first MID to methodGG, because that one is written by the joiner
+    public OutputBuilder output(Qualification qualification, Guide.GuideGenerator methodGG, AnalysisProvider analysisProvider) {
         OutputBuilder mainAndCompanions = new OutputBuilder();
         MethodInspection inspection = methodInspection.get();
 
@@ -191,7 +198,7 @@ public class MethodInfo implements WithInspectionAndAnalysis {
             afterAnnotations.add(inspection.getReturnType().output(qualification)).add(Space.ONE);
         }
         afterAnnotations.add(new Text(name));
-        if(!inspection.isCompactConstructor()) {
+        if (!inspection.isCompactConstructor()) {
             if (inspection.getParameters().isEmpty()) {
                 afterAnnotations.add(Symbol.OPEN_CLOSE_PARENTHESIS);
             } else {
@@ -208,7 +215,8 @@ public class MethodInfo implements WithInspectionAndAnalysis {
         }
         if (hasBeenInspected()) {
             Qualification bodyQualification = makeBodyQualification(qualification, inspection);
-            StatementAnalysis firstStatement = methodAnalysis.isSet() ? methodAnalysis.get().getFirstStatement() : null;
+            MethodAnalysis analysis = analysisProvider.getMethodAnalysis(this);
+            StatementAnalysis firstStatement = analysis != null ? analysis.getFirstStatement() : null;
             afterAnnotations.add(inspection.getMethodBody().output(bodyQualification, firstStatement));
         } else {
             afterAnnotations.add(Space.ONE).add(Symbol.LEFT_BRACE).add(Symbol.RIGHT_BRACE);
