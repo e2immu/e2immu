@@ -54,7 +54,7 @@ public class TestByteCodeInspector {
         resources.addJmod(new URL("jar:file:" + System.getProperty("java.home") + "/jmods/java.base.jmod!/"));
         Resources annotationResources = new Resources();
         AnnotationXmlReader annotationParser = new AnnotationXmlReader(annotationResources);
-        TypeContext typeContext = new TypeContext(new TypeMapImpl.Builder());
+        TypeContext typeContext = new TypeContext(new TypeMapImpl.Builder(resources));
         ByteCodeInspector byteCodeInspector = new ByteCodeInspector(resources, annotationParser, typeContext);
         typeContext.typeMapBuilder.setByteCodeInspector(byteCodeInspector);
         typeContext.loadPrimitives();

@@ -66,7 +66,7 @@ public record Input(Configuration configuration,
                 configuration.inputConfiguration().classPathParts());
         AnnotationStore annotationStore = new AnnotationXmlReader(classPath, configuration.annotationXmlConfiguration());
         LOGGER.info("Read {} annotations from 'annotation.xml' files in classpath", annotationStore.getNumberOfAnnotations());
-        TypeContext globalTypeContext = new TypeContext(new TypeMapImpl.Builder());
+        TypeContext globalTypeContext = new TypeContext(new TypeMapImpl.Builder(classPath));
         ByteCodeInspector byteCodeInspector = new ByteCodeInspector(classPath, annotationStore, globalTypeContext);
         globalTypeContext.typeMapBuilder.setByteCodeInspector(byteCodeInspector);
         globalTypeContext.loadPrimitives();

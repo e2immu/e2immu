@@ -17,11 +17,16 @@ package org.e2immu.analyser.parser;
 import org.e2immu.analyser.bytecode.ByteCodeInspector;
 import org.e2immu.analyser.inspector.FieldInspectionImpl;
 import org.e2immu.analyser.inspector.MethodInspectionImpl;
+import org.e2immu.analyser.inspector.NotFoundInClassPathException;
 import org.e2immu.analyser.inspector.TypeInspectionImpl;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.resolver.Resolver;
 import org.e2immu.analyser.resolver.ShallowMethodResolver;
+import org.e2immu.analyser.util.Resources;
+import org.e2immu.analyser.util.StringUtil;
 import org.e2immu.analyser.util.Trie;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.function.BiConsumer;
@@ -31,6 +36,7 @@ import static org.e2immu.analyser.inspector.TypeInspectionImpl.InspectionState;
 import static org.e2immu.analyser.inspector.TypeInspectionImpl.InspectionState.*;
 
 public class TypeMapImpl implements TypeMap {
+    private static final Logger LOGGER = LoggerFactory.getLogger(TypeMapImpl.class);
 
     private final Trie<TypeInfo> trie;
     private final Primitives primitives;
@@ -129,6 +135,7 @@ public class TypeMapImpl implements TypeMap {
         private final Trie<TypeInfo> trie = new Trie<>();
         private final Primitives primitives = new Primitives();
         private final E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions = new E2ImmuAnnotationExpressions();
+        private final Resources classPath;
 
         private final Map<TypeInfo, TypeInspectionImpl.Builder> typeInspections = new HashMap<>();
         private final Map<FieldInfo, FieldInspectionImpl.Builder> fieldInspections = new HashMap<>();
@@ -136,9 +143,9 @@ public class TypeMapImpl implements TypeMap {
 
         private ByteCodeInspector byteCodeInspector;
         private InspectWithJavaParser inspectWithJavaParser;
-
-
-        public Builder() {
+        
+        public Builder(Resources classPath) {
+            this.classPath = classPath;
             for (TypeInfo typeInfo : getPrimitives().typeByName.values()) {
                 add(typeInfo, TRIGGER_BYTECODE_INSPECTION);
             }
@@ -146,6 +153,20 @@ public class TypeMapImpl implements TypeMap {
                 add(typeInfo, BY_HAND);
             }
             e2ImmuAnnotationExpressions.streamTypes().forEach(typeInfo -> add(typeInfo, TRIGGER_BYTECODE_INSPECTION));
+        }
+
+        public TypeInfo loadType(String fqn) {
+            TypeInfo inMap = get(fqn);
+            if (inMap != null) return inMap;
+            // we don't know it... so we don't know the boundary between primary and sub-type
+            // we can either search in the class path, or in the source path
+
+            String path = classPath.fqnToPath(fqn, ".class");
+            if (path == null) {
+                LOGGER.error("ERROR: Cannot find type '{}'", fqn);
+                throw new NotFoundInClassPathException(fqn);
+            }
+            return getOrCreateFromPath(StringUtil.stripDotClass(path), TRIGGER_BYTECODE_INSPECTION);
         }
 
         public TypeMapImpl build() {

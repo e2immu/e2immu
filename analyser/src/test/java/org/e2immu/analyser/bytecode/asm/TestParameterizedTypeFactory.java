@@ -18,6 +18,7 @@ import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.parser.TypeMapImpl;
 import org.e2immu.analyser.util.Logger;
+import org.e2immu.analyser.util.Resources;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -33,7 +34,7 @@ public class TestParameterizedTypeFactory {
         Logger.activate(Logger.LogTarget.BYTECODE_INSPECTOR);
     }
 
-    private final TypeContext typeContext = new TypeContext(new TypeMapImpl.Builder());
+    private final TypeContext typeContext = new TypeContext(new TypeMapImpl.Builder(new Resources()));
     private final FindType findType = (fqn, path) -> typeContext.typeMapBuilder.getOrCreateFromPath(path,
             TRIGGER_BYTECODE_INSPECTION);
 

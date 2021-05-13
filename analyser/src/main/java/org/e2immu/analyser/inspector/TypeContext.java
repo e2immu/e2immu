@@ -16,7 +16,6 @@ package org.e2immu.analyser.inspector;
 
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.variable.FieldReference;
-import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.TypeAndInspectionProvider;
 import org.e2immu.analyser.parser.TypeMapImpl;
@@ -111,10 +110,18 @@ public class TypeContext implements TypeAndInspectionProvider {
         return getFullyQualified(clazz.getCanonicalName(), true);
     }
 
+    /**
+     * Look up a type by FQN. Actual loading using loadType takes place when a type is mentioned by FQN, bypassing
+     * the more common import system.
+     *
+     * @param fullyQualifiedName the fully qualified name, such as java.lang.String
+     * @param complain           crash when not found, should be the default
+     * @return the type
+     */
     public TypeInfo getFullyQualified(String fullyQualifiedName, boolean complain) {
         TypeInfo typeInfo = typeMapBuilder.get(fullyQualifiedName);
         if (typeInfo == null && complain) {
-            throw new UnsupportedOperationException("Unknown fully qualified name " + fullyQualifiedName);
+            return typeMapBuilder.loadType(fullyQualifiedName);
         }
         return typeInfo;
     }
@@ -226,7 +233,7 @@ public class TypeContext implements TypeAndInspectionProvider {
                                                     ParameterizedType concreteType,
                                                     int parametersPresented,
                                                     Map<NamedType, ParameterizedType> typeMap) {
-        List<TypeInfo> types = extractTypeInfo(concreteType != null ? concreteType: formalType, typeMap);
+        List<TypeInfo> types = extractTypeInfo(concreteType != null ? concreteType : formalType, typeMap);
         // there's only one situation where we can have multiple types; that's multiple type bounds; only the first one can be a class
         TypeInfo typeInfo = types.get(0);
         TypeInspection typeInspection = getTypeInspection(typeInfo);

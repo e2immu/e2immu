@@ -50,9 +50,9 @@ public class TestInspectAnnotatedAPIs {
 
     @Test
     public void testLoadSources() throws IOException {
-        TypeContext globalTypeContext = new TypeContext(new TypeMapImpl.Builder());
-        URL url = new URL("file:src/main/resources/annotatedAPIs/java.util.annotated_api");
         Resources classPath = new Resources();
+        TypeContext globalTypeContext = new TypeContext(new TypeMapImpl.Builder(classPath));
+        URL url = new URL("file:src/main/resources/annotatedAPIs/java.util.annotated_api");
         ByteCodeInspector byteCodeInspector = new ByteCodeInspector(classPath, null, globalTypeContext);
         //ParseAndInspect parseAndInspect
         // FIXME update test
