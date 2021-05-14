@@ -72,7 +72,9 @@ public class Test_50_InspectionGaps_AAPI extends CommonTestRunner {
                         returnStatement.expression instanceof NewObject); // and not UnknownObjectCreation
             }
         };
-        testClass("InspectionGaps_11", 0, 0, new DebugConfiguration.Builder()
+
+        // null-pointer exception raised
+        testClass("InspectionGaps_11", 1, 0, new DebugConfiguration.Builder()
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
 

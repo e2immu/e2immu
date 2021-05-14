@@ -337,14 +337,6 @@ public class ParameterizedType {
     public Map<NamedType, ParameterizedType> translateMap(InspectionProvider inspectionProvider,
                                                           ParameterizedType concreteType,
                                                           boolean concreteTypeIsAssignableToThis) {
-        if (concreteTypeIsAssignableToThis) {
-            //    assert isAssignableFrom(inspectionProvider, concreteType)
-            //             : "I'm expecting that " + this + " is assignable from " + concreteType;
-        } else {
-            //    assert concreteType.isAssignableFrom(inspectionProvider, this)
-            //           : "I'm expecting that " + concreteType + " is assignable from " + this;
-        }
-
         if (parameters.isEmpty()) {
             if (isTypeParameter()) {
                 // T <-- String
@@ -354,7 +346,7 @@ public class ParameterizedType {
             return Map.of();
         }
         assert typeInfo != null;
-        assert concreteType.typeInfo != null;
+        if(concreteType.typeInfo == null) return Map.of();
 
         if (isFunctionalInterface(inspectionProvider) && concreteType.isFunctionalInterface(inspectionProvider)) {
             return translationMapForFunctionalInterfaces(inspectionProvider, concreteType, concreteTypeIsAssignableToThis);

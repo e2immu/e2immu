@@ -1,5 +1,7 @@
 package org.e2immu.analyser.testexample;
 
+import org.e2immu.annotation.E1Container;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -8,6 +10,7 @@ import java.util.stream.Stream;
 /*
 Arrays.ArrayList competes with ArrayList. It is clear that the latter should win!
  */
+@E1Container
 public class InspectionGaps_11 {
     private final String s1;
     private final String s2;
@@ -23,8 +26,12 @@ public class InspectionGaps_11 {
         return Arrays.stream(new String[]{s1, s2});
     }
 
-    public InspectionGaps_11 of(String s1, List<String> list, String s2) {
+    public static InspectionGaps_11 of(String s1, List<String> list, String s2) {
         return new InspectionGaps_11(s1, createUnmodifiable(list), s2);
+    }
+
+    public static InspectionGaps_11 ofWithNull(String s1, String s2) {
+        return new InspectionGaps_11(s1, null, s2); // raises error
     }
 
     private static <T> List<T> createUnmodifiable(List<? extends T> list) {

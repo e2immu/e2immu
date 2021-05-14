@@ -59,7 +59,9 @@ public class NullConstant implements ConstantExpression<Object> {
     @Override
     public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
-        if (forwardEvaluationInfo.getProperty(VariableProperty.NOT_NULL_EXPRESSION) > MultiLevel.NULLABLE) {
+        int max = Math.max(forwardEvaluationInfo.getProperty(VariableProperty.NOT_NULL_EXPRESSION),
+                forwardEvaluationInfo.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+        if (max > MultiLevel.NULLABLE) {
             builder.raiseError(Message.Label.NULL_POINTER_EXCEPTION);
         }
         return builder.setExpression(NULL_CONSTANT).build();
@@ -69,7 +71,7 @@ public class NullConstant implements ConstantExpression<Object> {
     public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty, boolean duringEvaluation) {
         return switch (variableProperty) {
             case NOT_NULL_EXPRESSION -> MultiLevel.NULLABLE;
-            case CONTEXT_MODIFIED, CONTEXT_MODIFIED_DELAY,PROPAGATE_MODIFICATION_DELAY,
+            case CONTEXT_MODIFIED, CONTEXT_MODIFIED_DELAY, PROPAGATE_MODIFICATION_DELAY,
                     IGNORE_MODIFICATIONS, NOT_MODIFIED_1, IDENTITY -> FALSE;
 
             // if this becomes a problem we'll have to add a parameterized type as the expression context, and
