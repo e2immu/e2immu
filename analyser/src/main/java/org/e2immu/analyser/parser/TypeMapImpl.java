@@ -143,7 +143,7 @@ public class TypeMapImpl implements TypeMap {
 
         private ByteCodeInspector byteCodeInspector;
         private InspectWithJavaParser inspectWithJavaParser;
-        
+
         public Builder(Resources classPath) {
             this.classPath = classPath;
             for (TypeInfo typeInfo : getPrimitives().typeByName.values()) {

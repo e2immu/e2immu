@@ -12,20 +12,25 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.model;
+package org.e2immu.analyser.testexample;
 
-public enum TypeNature {
+import org.e2immu.analyser.testexample.a.Value;
 
-    ANNOTATION,
-    CLASS,
-    ENUM,
-    INTERFACE,
-    PRIMITIVE,
-    RECORD;
+@Value.Immutable
+public class InspectionGaps_9 {
 
-    public String toJava() {
-        if (this == ANNOTATION) return "@interface";
-        return name().toLowerCase();
+    @Value
+    static int method(@Value.Immutable.DeeplyImmutable boolean b) {
+        return b ? 3 : 2;
     }
 
+    @Deprecated
+    static int method2() {
+        return 333;
+    }
+
+    @java.lang.Deprecated // is preloaded
+    static int method3() {
+        return 332;
+    }
 }

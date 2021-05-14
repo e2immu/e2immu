@@ -83,6 +83,17 @@ public abstract class CommonTestRunner {
                                     DebugConfiguration debugConfiguration,
                                     AnalyserConfiguration analyserConfiguration,
                                     AnnotatedAPIConfiguration annotatedAPIConfiguration) throws IOException {
+        return testClass(classNames, List.of(), errorsToExpect, warningsToExpect, debugConfiguration,
+                analyserConfiguration, annotatedAPIConfiguration);
+    }
+
+    protected TypeContext testClass(List<String> classNames,
+                                    List<String> extraClassPath,
+                                    int errorsToExpect,
+                                    int warningsToExpect,
+                                    DebugConfiguration debugConfiguration,
+                                    AnalyserConfiguration analyserConfiguration,
+                                    AnnotatedAPIConfiguration annotatedAPIConfiguration) throws IOException {
         // parsing the annotatedAPI files needs them being backed up by .class files, so we'll add the Java
         // test runner's classpath to ours
         InputConfiguration.Builder inputConfigurationBuilder = new InputConfiguration.Builder()
@@ -92,8 +103,10 @@ public abstract class CommonTestRunner {
                 .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/slf4j")
                 .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/junit/jupiter/api")
                 .addClassPath(Input.JAR_WITH_PATH_PREFIX + "ch/qos/logback/core/spi");
+        extraClassPath.forEach(inputConfigurationBuilder::addClassPath);
 
-        classNames.forEach(className -> inputConfigurationBuilder.addRestrictSourceToPackages(ORG_E2IMMU_ANALYSER_TESTEXAMPLE + "." + className));
+        classNames.forEach(className -> inputConfigurationBuilder
+                .addRestrictSourceToPackages(ORG_E2IMMU_ANALYSER_TESTEXAMPLE + "." + className));
 
         Configuration configuration = new Configuration.Builder()
                 .setDebugConfiguration(debugConfiguration)

@@ -14,6 +14,8 @@
 
 package org.e2immu.analyser.parser;
 
+import org.e2immu.analyser.config.AnalyserConfiguration;
+import org.e2immu.analyser.config.AnnotatedAPIConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.ParameterizedType;
@@ -114,5 +116,22 @@ public class Test_50_InspectionGaps extends CommonTestRunner {
     public void test_8() throws IOException {
         testClass("InspectionGaps_8", 0, 2, new DebugConfiguration.Builder()
                 .build());
+    }
+
+    @Test
+    public void test_9() throws IOException {
+        testClass(List.of("InspectionGaps_9", "a.Value"), 0, 0,
+                new DebugConfiguration.Builder().build(),
+                new AnalyserConfiguration.Builder().build(),
+                new AnnotatedAPIConfiguration.Builder().build());
+    }
+
+    @Test
+    public void test_10() throws IOException {
+        testClass(List.of("InspectionGaps_10"), List.of("jmods/java.compiler.jmod"),
+                0, 0,
+                new DebugConfiguration.Builder().build(),
+                new AnalyserConfiguration.Builder().build(),
+                new AnnotatedAPIConfiguration.Builder().build());
     }
 }

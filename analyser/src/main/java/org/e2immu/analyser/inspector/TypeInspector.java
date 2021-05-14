@@ -333,17 +333,11 @@ public class TypeInspector {
                                                   TypeMapImpl.Builder typeStore,
                                                   TypeDeclaration<?> typeDeclaration) {
         typeDeclaration.getMembers().forEach(bodyDeclaration -> {
-            bodyDeclaration.ifClassOrInterfaceDeclaration(cid -> {
+            bodyDeclaration.ifTypeDeclaration(cid -> {
                 DollarResolverResult res = subTypeInfo(typeInfo, cid.getName().asString(),
                         typeDeclaration, parentIsPrimaryType, parentIsDollarType);
-                addToTypeStore(typeStore, res, "type");
+                addToTypeStore(typeStore, res, cid.getClass().getName());
                 recursivelyAddToTypeStore(res.subType, false, res.isDollarType, typeStore, cid);
-            });
-            bodyDeclaration.ifEnumDeclaration(ed -> {
-                DollarResolverResult res = subTypeInfo(typeInfo, ed.getName().asString(),
-                        typeDeclaration, parentIsPrimaryType, parentIsDollarType);
-                addToTypeStore(typeStore, res, "enum");
-                recursivelyAddToTypeStore(res.subType, false, res.isDollarType, typeStore, ed);
             });
         });
     }
@@ -366,17 +360,14 @@ public class TypeInspector {
 
         // 2 step approach: first, add these types to the expression context, without inspection
         for (BodyDeclaration<?> bodyDeclaration : members) {
-            bodyDeclaration.ifClassOrInterfaceDeclaration(cid -> prepareSubType(expressionContext, dollarResolver, cid.getNameAsString()));
-            bodyDeclaration.ifEnumDeclaration(ed -> prepareSubType(expressionContext, dollarResolver, ed.getNameAsString()));
+            bodyDeclaration.ifTypeDeclaration(cid -> prepareSubType(expressionContext, dollarResolver, cid.getNameAsString()));
         }
 
         // then inspect them...
         List<TypeInfo> dollarTypes = new ArrayList<>();
         for (BodyDeclaration<?> bodyDeclaration : members) {
-            bodyDeclaration.ifClassOrInterfaceDeclaration(cid -> inspectSubType(dollarResolver, dollarTypes, expressionContext, isInterface,
+            bodyDeclaration.ifTypeDeclaration(cid -> inspectSubType(dollarResolver, dollarTypes, expressionContext, isInterface,
                     cid.getNameAsString(), cid.asTypeDeclaration()));
-            bodyDeclaration.ifEnumDeclaration(ed -> inspectSubType(dollarResolver, dollarTypes, expressionContext, isInterface,
-                    ed.getNameAsString(), ed.asTypeDeclaration()));
         }
 
         // then, do fields

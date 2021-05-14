@@ -191,9 +191,13 @@ public class Resolver {
         // NOW, ALL METHODS IN THIS PRIMARY TYPE HAVE METHOD RESOLUTION SET
 
         // remove myself and all my enclosing types, and stay within the set of inspectedTypes
+        // only add primary types!
         Set<TypeInfo> typeDependencies = shallowResolver ?
-                new HashSet<>(superTypesExcludingJavaLangObject(expressionContextOfFile.typeContext, typeInfo)) :
-                typeInfo.typesReferenced().stream().map(Map.Entry::getKey).collect(Collectors.toCollection(HashSet::new));
+                new HashSet<>(superTypesExcludingJavaLangObject(expressionContextOfFile.typeContext, typeInfo)
+                        .stream().map(TypeInfo::primaryType).toList()) :
+                typeInfo.typesReferenced().stream().map(Map.Entry::getKey)
+                        .map(TypeInfo::primaryType)
+                        .collect(Collectors.toCollection(HashSet::new));
 
         typeAndAllSubTypes.forEach(typeDependencies::remove);
         typeDependencies.remove(typeInfo);

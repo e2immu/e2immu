@@ -87,11 +87,25 @@ public class TypeContext implements TypeAndInspectionProvider {
         NamedType namedType = map.get(name);
         if (namedType == null && parentContext != null) {
             namedType = parentContext.get(name, false);
-            if (namedType == null) {
-                // in same package
-                namedType = typeMapBuilder.get(packageName + "." + name);
+        }
+
+        // semi-qualified
+        if (namedType == null) {
+            int dot = name.lastIndexOf('.');
+            if (dot >= 0) {
+                String prefix = name.substring(0, dot);
+                NamedType prefixType = get(prefix, false);
+                if (prefixType instanceof TypeInfo typeInfo) {
+                    return getFullyQualified(typeInfo.fullyQualifiedName + "." + name.substring(dot + 1), complain);
+                }
             }
         }
+
+        // in same package?
+        if (namedType == null) {
+            namedType = typeMapBuilder.get(packageName + "." + name);
+        }
+
         if (namedType == null && parentContext == null) {
             if (name.contains(".")) {
                 // we were not expecting an FQN here, but still we come across one
@@ -115,12 +129,12 @@ public class TypeContext implements TypeAndInspectionProvider {
      * the more common import system.
      *
      * @param fullyQualifiedName the fully qualified name, such as java.lang.String
-     * @param complain           crash when not found, should be the default
+     * @param loadIfNotYetPresent           crash when not found, should be the default
      * @return the type
      */
-    public TypeInfo getFullyQualified(String fullyQualifiedName, boolean complain) {
+    public TypeInfo getFullyQualified(String fullyQualifiedName, boolean loadIfNotYetPresent) {
         TypeInfo typeInfo = typeMapBuilder.get(fullyQualifiedName);
-        if (typeInfo == null && complain) {
+        if (typeInfo == null && loadIfNotYetPresent) {
             return typeMapBuilder.loadType(fullyQualifiedName);
         }
         return typeInfo;

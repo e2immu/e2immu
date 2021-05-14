@@ -127,7 +127,7 @@ public record Input(Configuration configuration,
         for (String packageString : restrictions) {
             if (packageString.endsWith(".")) {
                 if (packageName.startsWith(packageString) ||
-                        packageName.equals(packageString.substring(0, packageString.length()-1))) return true;
+                        packageName.equals(packageString.substring(0, packageString.length() - 1))) return true;
             } else if (packageName.equals(packageString) || packageString.equals(packageName + "." + typeName))
                 return true;
         }
@@ -149,8 +149,8 @@ public record Input(Configuration configuration,
             // we'll loop over the primary types only
             if (!expansion[expansion.length - 1].contains("$")) {
                 String fqn = ParseAndInspect.fqnOfClassFile(thePackage, expansion);
-                TypeInfo typeInfo = globalTypeContext.getFullyQualified(fqn, false);
-                if (typeInfo == null || !typeInfo.typeInspection.isSet()) {
+                TypeInfo typeInfo = globalTypeContext.getFullyQualified(fqn, true);
+                if (!typeInfo.typeInspection.isSet()) {
                     String path = fqn.replace(".", "/"); // this is correct!
                     byteCodeInspector.inspectFromPath(path);
                     inspected.incrementAndGet();
