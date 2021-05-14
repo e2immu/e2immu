@@ -79,44 +79,46 @@ public class TypeContext implements TypeAndInspectionProvider {
     /**
      * used for: Annotation types, ParameterizedTypes (general types)
      *
-     * @param name     the simple name to search for
+     * @param name     the name to search for; no idea if it is a simple name, a semi qualified, or a fully qualified
+     *                 name
      * @param complain throw an error when the name is unknown
      * @return the NamedType with that name
      */
     public NamedType get(@NotNull String name, boolean complain) {
+        NamedType simple = getSimpleName(name);
+        if (simple != null) return simple;
+
+        int dot = name.lastIndexOf('.');
+        if (dot >= 0) {
+            // name can be fully qualified, or semi qualified
+            // try fully qualified first
+            NamedType fullyQualified = getFullyQualified(name, false);
+            if (fullyQualified != null) return fullyQualified;
+            // it must be semi qualified now... go recursive
+            String prefix = name.substring(0, dot);
+            NamedType prefixType = get(prefix, complain);
+            if (prefixType instanceof TypeInfo typeInfo) {
+                String fqn = typeInfo.fullyQualifiedName + "." + name.substring(dot + 1);
+                return getFullyQualified(fqn, complain);
+            }
+            return null;
+        }
+        // try out java.lang; has been pre-loaded
+        TypeInfo inJavaLang = typeMapBuilder.get("java.lang." + name);
+        if (inJavaLang != null) return inJavaLang;
+
+        // go fully qualified using the package
+        String fqn = packageName + "." + name;
+        return getFullyQualified(fqn, complain);
+    }
+
+    private NamedType getSimpleName(String name) {
         NamedType namedType = map.get(name);
-        if (namedType == null && parentContext != null) {
-            namedType = parentContext.get(name, false);
+        if (namedType != null) return namedType;
+        if (parentContext != null) {
+            return parentContext.getSimpleName(name);
         }
-
-        // semi-qualified
-        if (namedType == null) {
-            int dot = name.lastIndexOf('.');
-            if (dot >= 0) {
-                String prefix = name.substring(0, dot);
-                NamedType prefixType = get(prefix, false);
-                if (prefixType instanceof TypeInfo typeInfo) {
-                    return getFullyQualified(typeInfo.fullyQualifiedName + "." + name.substring(dot + 1), complain);
-                }
-            }
-        }
-
-        // in same package?
-        if (namedType == null) {
-            namedType = typeMapBuilder.get(packageName + "." + name);
-        }
-
-        if (namedType == null && parentContext == null) {
-            if (name.contains(".")) {
-                // we were not expecting an FQN here, but still we come across one
-                return getFullyQualified(name, true);
-            }
-            namedType = typeMapBuilder.get("java.lang." + name);
-        }
-        if (namedType == null && complain) {
-            throw new UnsupportedOperationException("Unknown type in context: " + name);
-        }
-        return namedType;
+        return null;
     }
 
     @Override
@@ -129,15 +131,18 @@ public class TypeContext implements TypeAndInspectionProvider {
      * the more common import system.
      *
      * @param fullyQualifiedName the fully qualified name, such as java.lang.String
-     * @param loadIfNotYetPresent           crash when not found, should be the default
      * @return the type
      */
-    public TypeInfo getFullyQualified(String fullyQualifiedName, boolean loadIfNotYetPresent) {
+    public TypeInfo getFullyQualified(String fullyQualifiedName, boolean complain) {
         TypeInfo typeInfo = typeMapBuilder.get(fullyQualifiedName);
-        if (typeInfo == null && loadIfNotYetPresent) {
-            return typeMapBuilder.loadType(fullyQualifiedName);
+        if (typeInfo == null) {
+            return typeMapBuilder.loadType(fullyQualifiedName, complain);
         }
         return typeInfo;
+    }
+
+    public boolean isKnown(String fullyQualified) {
+        return typeMapBuilder.get(fullyQualified) != null;
     }
 
     public void addToContext(@NotNull NamedType namedType) {

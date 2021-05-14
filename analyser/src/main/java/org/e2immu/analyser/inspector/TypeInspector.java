@@ -160,18 +160,23 @@ public class TypeInspector {
             builder.addAnnotation(ae);
         }
         if (fullInspection) {
-            if (typeDeclaration instanceof RecordDeclaration) {
-                doRecordDeclaration(expressionContext, (RecordDeclaration) typeDeclaration);
-            } else if (typeDeclaration instanceof EnumDeclaration) {
-                doEnumDeclaration(expressionContext, (EnumDeclaration) typeDeclaration);
-            } else if (typeDeclaration instanceof AnnotationDeclaration) {
-                doAnnotationDeclaration(expressionContext, (AnnotationDeclaration) typeDeclaration);
-            } else if (typeDeclaration instanceof ClassOrInterfaceDeclaration) {
-                doClassOrInterfaceDeclaration(expressionContext, (ClassOrInterfaceDeclaration) typeDeclaration);
-            }
+            try {
+                if (typeDeclaration instanceof RecordDeclaration) {
+                    doRecordDeclaration(expressionContext, (RecordDeclaration) typeDeclaration);
+                } else if (typeDeclaration instanceof EnumDeclaration) {
+                    doEnumDeclaration(expressionContext, (EnumDeclaration) typeDeclaration);
+                } else if (typeDeclaration instanceof AnnotationDeclaration) {
+                    doAnnotationDeclaration(expressionContext, (AnnotationDeclaration) typeDeclaration);
+                } else if (typeDeclaration instanceof ClassOrInterfaceDeclaration) {
+                    doClassOrInterfaceDeclaration(expressionContext, (ClassOrInterfaceDeclaration) typeDeclaration);
+                }
 
-            for (Modifier modifier : typeDeclaration.getModifiers()) {
-                builder.addTypeModifier(TypeModifier.from(modifier));
+                for (Modifier modifier : typeDeclaration.getModifiers()) {
+                    builder.addTypeModifier(TypeModifier.from(modifier));
+                }
+            } catch (RuntimeException rte) {
+                LOGGER.error("Caught runtime exception while parsing type declaration at line " + typeDeclaration.getBegin());
+                throw rte;
             }
         } else if (typeDeclaration instanceof ClassOrInterfaceDeclaration cid) {
             // even if we're inspecting dollar types (no full inspection), we need to keep track
@@ -327,25 +332,25 @@ public class TypeInspector {
         recursivelyAddToTypeStore(typeInfo, true, false, typeStore, typeDeclaration);
     }
 
-    private static void recursivelyAddToTypeStore(TypeInfo typeInfo,
-                                                  boolean parentIsPrimaryType,
-                                                  boolean parentIsDollarType,
-                                                  TypeMapImpl.Builder typeStore,
-                                                  TypeDeclaration<?> typeDeclaration) {
-        typeDeclaration.getMembers().forEach(bodyDeclaration -> {
-            bodyDeclaration.ifTypeDeclaration(cid -> {
-                DollarResolverResult res = subTypeInfo(typeInfo, cid.getName().asString(),
-                        typeDeclaration, parentIsPrimaryType, parentIsDollarType);
-                addToTypeStore(typeStore, res, cid.getClass().getName());
-                recursivelyAddToTypeStore(res.subType, false, res.isDollarType, typeStore, cid);
-            });
-        });
+    private void recursivelyAddToTypeStore(TypeInfo typeInfo,
+                                           boolean parentIsPrimaryType,
+                                           boolean parentIsDollarType,
+                                           TypeMapImpl.Builder typeStore,
+                                           TypeDeclaration<?> typeDeclaration) {
+        typeDeclaration.getMembers().forEach(bodyDeclaration -> bodyDeclaration.ifTypeDeclaration(cid -> {
+            DollarResolverResult res = subTypeInfo(typeInfo, cid.getName().asString(),
+                    typeDeclaration, parentIsPrimaryType, parentIsDollarType);
+            addToTypeStore(typeStore, res, cid.getClass().getSimpleName());
+            recursivelyAddToTypeStore(res.subType, false, res.isDollarType, typeStore, cid);
+        }));
     }
 
-    private static void addToTypeStore(TypeMapImpl.Builder typeStore, DollarResolverResult res, String what) {
+    private void addToTypeStore(TypeMapImpl.Builder typeStore, DollarResolverResult res, String what) {
         TypeInspectionImpl.InspectionState inspectionState = res.isDollarType ? TRIGGER_BYTECODE_INSPECTION :
                 STARTING_JAVA_PARSER;
-        typeStore.ensureTypeAndInspection(res.subType(), inspectionState);
+        if(!res.isDollarType) {
+            typeStore.add(res.subType(), inspectionState); // FIXME cause of errors
+        }
         log(INSPECTOR, "Added {} to type store: {}", what, res.subType.fullyQualifiedName);
     }
 
@@ -485,7 +490,7 @@ public class TypeInspector {
             builder.addConstructor(createEmptyConstructor(expressionContext.typeContext, privateEmptyConstructor));
         }
 
-        if(countCompactConstructors.get() == 0 && builder.typeNature() == TypeNature.RECORD) {
+        if (countCompactConstructors.get() == 0 && builder.typeNature() == TypeNature.RECORD) {
             MethodInspector methodInspector = new MethodInspector(expressionContext.typeContext.typeMapBuilder, typeInfo,
                     fullInspection);
             methodInspector.inspect(null, subContext, companionMethodsWaiting, builder.fields());

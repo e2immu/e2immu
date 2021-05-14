@@ -110,8 +110,7 @@ public class EnumMethods {
     private static final List<Class<?>> TYPES_USED_IN_VALUE_OF = List.of(Arrays.class, Stream.class, Optional.class);
 
     private static boolean insertCode(TypeContext typeContext) {
-        return TYPES_USED_IN_VALUE_OF.stream().allMatch(clazz ->
-                typeContext.getFullyQualified(clazz.getCanonicalName(), false) != null);
+        return TYPES_USED_IN_VALUE_OF.stream().allMatch(clazz -> typeContext.isKnown(clazz.getCanonicalName()));
     }
 
     /*
@@ -133,11 +132,20 @@ public class EnumMethods {
         var values = new MethodCall(true, enumTypeExpression,
                 valuesMethod.getMethodInfo(), valuesMethod.getReturnType(), List.of());
         var arrays = typeContext.getFullyQualified(Arrays.class);
-        var streamArray = arrays.typeInspection.get().methodStream(TypeInspection.Methods.THIS_TYPE_ONLY)
-                .filter(m -> "stream".equals(m.name) && m.methodInspection.get().getParameters().size() == 1 &&
-                        m.methodInspection.get().getTypeParameters().size() == 1).findFirst().orElseThrow();
+        var arraysInspection = typeContext.getTypeInspection(arrays);
+        var streamArray = arraysInspection.methodStream(TypeInspection.Methods.THIS_TYPE_ONLY)
+                .filter(m -> {
+                    if ("stream".equals(m.name)) {
+                        MethodInspection methodInspection = typeContext.getMethodInspection(m);
+                        return methodInspection.getParameters().size() == 1 &&
+                                methodInspection.getTypeParameters().size() == 1;
+                    }
+                    return false;
+                }).findFirst().orElseThrow();
         var arraysType = new TypeExpression(arrays.asParameterizedType(typeContext), Diamond.NO);
-        var callStream = new MethodCall(arraysType, streamArray, List.of(values));
+        var streamArrayInspection = typeContext.getMethodInspection(streamArray);
+        var callStream = new MethodCall(false, arraysType, streamArray,
+                streamArrayInspection.getReturnType(), List.of(values));
 
         var functionalInterfaceType = enumPredicate(typeContext, enumType);
         var predicateBuilder = predicate(functionalInterfaceType,
@@ -147,15 +155,18 @@ public class EnumMethods {
         var lambda = new Lambda(typeContext, functionalInterfaceType, implementationMethod, List.of(Lambda.OutputVariant.EMPTY));
 
         var stream = typeContext.getFullyQualified(Stream.class);
-        var filter = stream.findUniqueMethod("filter", 1);
-        var callFilter = new MethodCall(callStream, filter, List.of(lambda));
+        var filter = stream.findUniqueMethod(typeContext, "filter", 1);
+        var callFilter = new MethodCall(false, callStream, filter,
+                typeContext.getMethodInspection(filter).getReturnType(), List.of(lambda));
 
-        var findFirst = stream.findUniqueMethod("findFirst", 0);
-        var callFindFirst = new MethodCall(callFilter, findFirst, List.of());
+        var findFirst = stream.findUniqueMethod(typeContext, "findFirst", 0);
+        var callFindFirst = new MethodCall(false, callFilter, findFirst,
+                typeContext.getMethodInspection(findFirst).getReturnType(), List.of());
 
         var optional = typeContext.getFullyQualified(Optional.class);
-        var orElseThrow = optional.findUniqueMethod("orElseThrow", 0);
-        var callOrElseThrow = new MethodCall(callFindFirst, orElseThrow, List.of());
+        var orElseThrow = optional.findUniqueMethod(typeContext, "orElseThrow", 0);
+        var callOrElseThrow = new MethodCall(false, callFindFirst, orElseThrow,
+                typeContext.getMethodInspection(orElseThrow).getReturnType(), List.of());
         return new Block.BlockBuilder().addStatement(new ReturnStatement(callOrElseThrow)).build();
     }
 
@@ -213,8 +224,9 @@ public class EnumMethods {
                 new VariableExpression(v), nameMethod.getMethodInfo(), nameMethod.getReturnType(), List.of());
 
         var object = typeContext.getFullyQualified(Object.class);
-        var equals = object.findUniqueMethod("equals", 1);
-        var callEquals = new MethodCall(false, vName, equals, equals.returnType(),
+        var equals = object.findUniqueMethod(typeContext, "equals", 1);
+        var equalsInspection = typeContext.getMethodInspection(equals);
+        var callEquals = new MethodCall(false, vName, equals, equalsInspection.getReturnType(),
                 List.of(new VariableExpression(nameParameter)));
 
         return new Block.BlockBuilder().addStatement(new ReturnStatement(callEquals)).build();

@@ -197,7 +197,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
                         .collect(OutputBuilder.joining(Symbol.COMMA)));
                 afterAnnotations.add(Symbol.RIGHT_ANGLE_BRACKET);
             }
-            if(isRecord) {
+            if (isRecord) {
                 outputFieldsAsParameters(insideType, afterAnnotations, fields);
             }
             if (parentClass != null) {
@@ -487,6 +487,14 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
     public MethodInfo findUniqueMethod(String methodName, int parameters) {
         return typeInspection.get().methodStream(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM)
                 .filter(m -> m.name.equals(methodName) && m.methodInspection.get().getParameters().size() == parameters)
+                .findAny().orElseThrow();
+    }
+
+    public MethodInfo findUniqueMethod(InspectionProvider inspectionProvider, String methodName, int parameters) {
+        TypeInspection inspection = inspectionProvider.getTypeInspection(this);
+        return inspection.methodStream(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM)
+                .filter(m -> m.name.equals(methodName) &&
+                        inspectionProvider.getMethodInspection(m).getParameters().size() == parameters)
                 .findAny().orElseThrow();
     }
 

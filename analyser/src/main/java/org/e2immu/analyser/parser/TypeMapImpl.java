@@ -35,14 +35,12 @@ import java.util.stream.Stream;
 import static org.e2immu.analyser.inspector.TypeInspectionImpl.InspectionState;
 import static org.e2immu.analyser.inspector.TypeInspectionImpl.InspectionState.*;
 
-public class TypeMapImpl implements TypeMap {
+public record TypeMapImpl(Trie<TypeInfo> trie,
+                          Primitives primitives,
+                          E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) implements TypeMap {
     private static final Logger LOGGER = LoggerFactory.getLogger(TypeMapImpl.class);
 
-    private final Trie<TypeInfo> trie;
-    private final Primitives primitives;
-    private final E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions;
-
-    private TypeMapImpl(Trie<TypeInfo> trie, Primitives primitives, E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
+    public TypeMapImpl(Trie<TypeInfo> trie, Primitives primitives, E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
         this.primitives = primitives;
         this.trie = trie;
         this.e2ImmuAnnotationExpressions = e2ImmuAnnotationExpressions;
@@ -91,18 +89,6 @@ public class TypeMapImpl implements TypeMap {
     @Override
     public void visit(String[] prefix, BiConsumer<String[], List<TypeInfo>> consumer) {
         trie.visit(prefix, consumer);
-    }
-
-    public static boolean containsPrefix(Trie<TypeInfo> trie, String fullyQualifiedName) {
-        String[] split = fullyQualifiedName.split("\\.");
-        // we believe it is going to be a lot faster if we go from 1 to max length rather than the other way round
-        // (there'll be more hits outside the source than inside the source dir)
-        for (int i = 1; i <= split.length; i++) {
-            List<TypeInfo> typeInfoList = trie.get(split, i);
-            if (typeInfoList == null) return false;
-            if (!typeInfoList.isEmpty()) return true;
-        }
-        return false;
     }
 
     @Override
@@ -155,7 +141,7 @@ public class TypeMapImpl implements TypeMap {
             e2ImmuAnnotationExpressions.streamTypes().forEach(typeInfo -> add(typeInfo, TRIGGER_BYTECODE_INSPECTION));
         }
 
-        public TypeInfo loadType(String fqn) {
+        public TypeInfo loadType(String fqn, boolean complain) {
             TypeInfo inMap = get(fqn);
             if (inMap != null) return inMap;
             // we don't know it... so we don't know the boundary between primary and sub-type
@@ -163,8 +149,11 @@ public class TypeMapImpl implements TypeMap {
 
             String path = classPath.fqnToPath(fqn, ".class");
             if (path == null) {
-                LOGGER.error("ERROR: Cannot find type '{}'", fqn);
-                throw new NotFoundInClassPathException(fqn);
+                if (complain) {
+                    LOGGER.error("ERROR: Cannot find type '{}'", fqn);
+                    throw new NotFoundInClassPathException(fqn);
+                }
+                return null;
             }
             return getOrCreateFromPath(StringUtil.stripDotClass(path), TRIGGER_BYTECODE_INSPECTION);
         }
@@ -299,15 +288,6 @@ public class TypeMapImpl implements TypeMap {
             TypeInspectionImpl.Builder ti = new TypeInspectionImpl.Builder(typeInfo, inspectionState);
             typeInspections.put(typeInfo, ti);
             return ti;
-        }
-
-        public void ensureTypeAndInspection(TypeInfo typeInfo, InspectionState inspectionState) {
-            TypeInfo inMap = get(typeInfo.fullyQualifiedName);
-            if (inMap == null) {
-                add(typeInfo, inspectionState);
-                return;
-            }
-            ensureTypeInspection(typeInfo, inspectionState);
         }
 
         public void registerFieldInspection(FieldInfo fieldInfo, FieldInspectionImpl.Builder builder) {

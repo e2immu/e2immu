@@ -28,7 +28,8 @@ import java.io.IOException;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /*
 tries to catch the remaining problems with the inspection system
@@ -39,16 +40,11 @@ public class Test_50_InspectionGaps extends CommonTestRunner {
         super(false);
     }
 
-    /* https://github.com/e2immu/e2immu/issues/46 */
+    /* https://github.com/e2immu/e2immu/issues/46; closed! */
     @Test
     public void test_0() throws IOException {
-        try {
-            testClass("InspectionGaps_0", 0, 0, new DebugConfiguration.Builder()
-                    .build());
-            fail();
-        } catch (RuntimeException re) {
-            // we have no system in place
-        }
+        testClass("InspectionGaps_0", 0, 0, new DebugConfiguration.Builder()
+                .build());
     }
 
     @Test

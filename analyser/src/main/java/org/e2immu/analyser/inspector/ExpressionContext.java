@@ -456,7 +456,7 @@ public class ExpressionContext {
         String localName = statement.getClassDeclaration().getNameAsString();
         String typeName = StringUtil.capitalise(enclosingMethod.name) + "$" + localName + "$" + anonymousTypeCounters.newIndex(primaryType);
         TypeInfo typeInfo = new TypeInfo(enclosingType, typeName);
-        typeContext.typeMapBuilder.ensureTypeAndInspection(typeInfo, TypeInspectionImpl.InspectionState.STARTING_JAVA_PARSER);
+        typeContext.typeMapBuilder.add(typeInfo, TypeInspectionImpl.InspectionState.STARTING_JAVA_PARSER);
         TypeInspector typeInspector = new TypeInspector(typeContext.typeMapBuilder, typeInfo, true);
         typeInspector.inspectLocalClassDeclaration(this, statement.getClassDeclaration());
 
