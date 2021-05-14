@@ -30,12 +30,10 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
+import static org.e2immu.analyser.model.ParameterizedType.Mode.COVARIANT;
 import static org.e2immu.analyser.model.ParameterizedType.NOT_ASSIGNABLE;
 import static org.e2immu.analyser.util.Logger.LogTarget.METHOD_CALL;
 import static org.e2immu.analyser.util.Logger.log;
-
-// FIXME have 3x null as impliedParameterizedType, this is probably wrong, especially when the
-// type of the parameter is known for sure (all method candidates have the same type!)
 
 public record ParseMethodCallExpr(InspectionProvider inspectionProvider) {
     private static final Logger LOGGER = LoggerFactory.getLogger(ParseMethodCallExpr.class);
@@ -147,10 +145,10 @@ public record ParseMethodCallExpr(InspectionProvider inspectionProvider) {
         // now we need to ensure that there is only 1 method left, but, there can be overloads and
         // methods with implicit type conversions, varargs, etc. etc.
         if (methodCandidates.isEmpty()) {
-            LOGGER.warn("Evaluated expressions for {}: ", methodNameForErrorReporting);
+            LOGGER.error("Evaluated expressions for {} at {}: ", methodNameForErrorReporting, positionForErrorReporting);
             evaluatedExpressions.forEach((i, expr) ->
-                    LOGGER.warn("  {} = {}", i, (expr == null ? null : expr.debugOutput())));
-            LOGGER.warn("No candidate found for {} in type {} at position {}", methodNameForErrorReporting,
+                    LOGGER.error("  {} = {}", i, (expr == null ? null : expr.debugOutput())));
+            LOGGER.error("No candidate found for {} in type {} at position {}", methodNameForErrorReporting,
                     startingPointForErrorReporting.detailedString(), positionForErrorReporting);
             return null;
         }
@@ -464,13 +462,31 @@ public record ParseMethodCallExpr(InspectionProvider inspectionProvider) {
             int numberOfParametersInSam = sam.methodInspection.getParameters().size();
             return ule.numberOfParameters().contains(numberOfParametersInSam) ? 0 : NOT_ASSIGNABLE;
         }
+
+        /* If the evaluated expression is a method with type parameters, then these type parameters
+         are allowed in a reverse way (expect List<String>, accept List<T> with T a type parameter of the method,
+         as long as T <- String).
+        */
         ParameterizedType returnType = evaluatedExpression.returnType();
+        Set<TypeParameter> reverseParameters;
+        if (evaluatedExpression instanceof MethodCall methodCall) {
+            MethodInspection callInspection = inspectionProvider.getMethodInspection(methodCall.methodInfo);
+            if (!callInspection.getTypeParameters().isEmpty()) {
+                reverseParameters = new HashSet<>(callInspection.getTypeParameters());
+            } else {
+                reverseParameters = null;
+            }
+        } else {
+            reverseParameters = null;
+        }
+
         if (typeOfParameter.isFunctionalInterface(inspectionProvider) && returnType.isFunctionalInterface(inspectionProvider)) {
             MethodTypeParameterMap sam1 = typeOfParameter.findSingleAbstractMethodOfInterface(inspectionProvider);
             MethodTypeParameterMap sam2 = returnType.findSingleAbstractMethodOfInterface(inspectionProvider);
             return sam1.isAssignableFrom(sam2) ? 0 : NOT_ASSIGNABLE;
         }
-        return typeOfParameter.numericIsAssignableFrom(inspectionProvider, returnType);
+        return typeOfParameter.numericIsAssignableFrom(inspectionProvider, returnType,
+                false, COVARIANT, reverseParameters);
     }
 
     /*

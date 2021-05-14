@@ -180,9 +180,9 @@ public class Resolver {
                                       ExpressionContext expressionContextOfFile) {
 
         // main call
-        //TypeContext typeContextOfType = new TypeContext(expressionContextOfFile.typeContext);
+        ExpressionContext expressionContextOfType = expressionContextOfFile.newTypeContext("Primary type");
         DependencyGraph<WithInspectionAndAnalysis> methodFieldSubTypeGraph = new DependencyGraph<>();
-        List<TypeInfo> typeAndAllSubTypes = doType(typeInfo, expressionContextOfFile, methodFieldSubTypeGraph);
+        List<TypeInfo> typeAndAllSubTypes = doType(typeInfo, expressionContextOfType, methodFieldSubTypeGraph);
 
         // FROM HERE ON, ALL INSPECTION HAS BEEN SET!
 
@@ -193,7 +193,7 @@ public class Resolver {
         // remove myself and all my enclosing types, and stay within the set of inspectedTypes
         // only add primary types!
         Set<TypeInfo> typeDependencies = shallowResolver ?
-                new HashSet<>(superTypesExcludingJavaLangObject(expressionContextOfFile.typeContext, typeInfo)
+                new HashSet<>(superTypesExcludingJavaLangObject(expressionContextOfType.typeContext, typeInfo)
                         .stream().map(TypeInfo::primaryType).toList()) :
                 typeInfo.typesReferenced().stream().map(Map.Entry::getKey)
                         .map(TypeInfo::primaryType)

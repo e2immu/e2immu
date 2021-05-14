@@ -17,13 +17,11 @@ package org.e2immu.analyser.inspector;
 import com.github.javaparser.JavaParser;
 import com.github.javaparser.ParseResult;
 import com.github.javaparser.ParserConfiguration;
-import com.github.javaparser.StaticJavaParser;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.ImportDeclaration;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.TypeInspection;
 import org.e2immu.analyser.parser.TypeMapImpl;
-import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.analyser.util.Resources;
 import org.e2immu.analyser.util.StringUtil;
 import org.e2immu.analyser.util.Trie;
@@ -58,7 +56,7 @@ public record ParseAndInspect(Resources classPath,
 
         JavaParser javaParser = new JavaParser(new ParserConfiguration().setLanguageLevel(ParserConfiguration.LanguageLevel.JAVA_16));
         ParseResult<CompilationUnit> parseResult = javaParser.parse(sourceCode);
-        if(!parseResult.isSuccessful() || parseResult.getResult().isEmpty()) {
+        if (!parseResult.isSuccessful() || parseResult.getResult().isEmpty()) {
             throw new UnsupportedOperationException();
         }
         CompilationUnit compilationUnit = parseResult.getResult().get();
@@ -140,8 +138,8 @@ public record ParseAndInspect(Resources classPath,
                 } else {
                     // higher priority names, allowOverwrite = true
                     log(INSPECTOR, "Import of {}", fullyQualified);
-                    List<TypeInfo> types = importType(fullyQualified);
-                    types.forEach(typeInfo -> typeContextOfFile.addToContext(typeInfo, true));
+                    TypeInfo typeInfo = importType(fullyQualified);
+                    typeContextOfFile.addToContext(typeInfo, true); // simple name for primary
                 }
             }
         }
@@ -193,13 +191,13 @@ public record ParseAndInspect(Resources classPath,
     when a type is imported, its sub-types are accessible straight away (they might need disambiguation, but that's not
     the problem here)
      */
-    private List<TypeInfo> importType(String fqn) {
+    private TypeInfo importType(String fqn) {
         TypeInfo typeInfo = importTypeNoSubTypes(fqn);
         TypeInspection inspection = typeMapBuilder.getTypeInspection(typeInfo);
         if (inspection != null) {
-            return ListUtil.concatImmutable(List.of(typeInfo), inspection.subTypes());
+            inspection.subTypes().forEach(subType -> importTypeNoSubTypes(subType.fullyQualifiedName));
         }
-        return List.of(typeInfo);
+        return typeInfo;
     }
 
 

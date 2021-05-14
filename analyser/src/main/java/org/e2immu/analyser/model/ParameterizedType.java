@@ -466,21 +466,21 @@ public class ParameterizedType {
     private static final int SAME_UNDERLYING_TYPE = 1;
     private static final int BOXING_TO_PRIMITIVE = 1;
     private static final int BOXING_FROM_PRIMITIVE = 1;
-    private static final int ARRAY_DIFFERENCE_TYPE_PARAMS = 10;
     private static final int IN_HIERARCHY = 100;
     private static final int UNBOUND_WILDCARD = 1000;
 
-    enum Mode {INVARIANT, COVARIANT, CONTRAVARIANT, ANY}
+    public enum Mode {INVARIANT, COVARIANT, CONTRAVARIANT, ANY}
 
 
     public int numericIsAssignableFrom(InspectionProvider inspectionProvider, ParameterizedType type) {
-        return numericIsAssignableFrom(inspectionProvider, type, false, Mode.COVARIANT);
+        return numericIsAssignableFrom(inspectionProvider, type, false, Mode.COVARIANT, null);
     }
 
-    private int numericIsAssignableFrom(InspectionProvider inspectionProvider,
-                                        ParameterizedType other,
-                                        boolean ignoreArrays,
-                                        Mode mode) {
+    public int numericIsAssignableFrom(InspectionProvider inspectionProvider,
+                                       ParameterizedType other,
+                                       boolean ignoreArrays,
+                                       Mode mode,
+                                       Set<TypeParameter> reverseParameters) {
         Objects.requireNonNull(other);
         if (other == this || equals(other) || ignoreArrays && equalsIgnoreArrays(other)) return EQUALS;
 
@@ -500,7 +500,7 @@ public class ParameterizedType {
         if (!ignoreArrays) {
             if (arrays != other.arrays) return NOT_ASSIGNABLE;
             if (arrays > 0) {
-                return numericIsAssignableFrom(inspectionProvider, other, true, Mode.COVARIANT);
+                return numericIsAssignableFrom(inspectionProvider, other, true, Mode.COVARIANT, reverseParameters);
             }
         }
 
@@ -529,26 +529,26 @@ public class ParameterizedType {
                     for (ParameterizedType interfaceImplemented : otherTypeInspection.interfacesImplemented()) {
                         ParameterizedType concreteType = other.concreteDirectSuperType(inspectionProvider, interfaceImplemented);
                         int scoreInterface = numericIsAssignableFrom(inspectionProvider, concreteType,
-                                true, mode);
+                                true, mode, reverseParameters);
                         if (scoreInterface != NOT_ASSIGNABLE) return IN_HIERARCHY + scoreInterface;
                     }
                     ParameterizedType parentClass = otherTypeInspection.parentClass();
                     if (parentClass != null && !Primitives.isJavaLangObject(parentClass)) {
                         ParameterizedType concreteType = other.concreteDirectSuperType(inspectionProvider, parentClass);
-                        int scoreParent = numericIsAssignableFrom(inspectionProvider, concreteType, true, mode);
+                        int scoreParent = numericIsAssignableFrom(inspectionProvider, concreteType, true, mode, reverseParameters);
                         if (scoreParent != NOT_ASSIGNABLE) return IN_HIERARCHY + scoreParent;
                     }
                 } else if (mode == Mode.CONTRAVARIANT) {
                     TypeInspection typeInspection = inspectionProvider.getTypeInspection(typeInfo);
                     for (ParameterizedType interfaceImplemented : typeInspection.interfacesImplemented()) {
                         int scoreInterface = interfaceImplemented.numericIsAssignableFrom(inspectionProvider, other,
-                                true, mode);
+                                true, mode, reverseParameters);
                         if (scoreInterface != NOT_ASSIGNABLE) return IN_HIERARCHY + scoreInterface;
                     }
                     ParameterizedType parentClass = typeInspection.parentClass();
                     if (parentClass != null && !Primitives.isJavaLangObject(parentClass)) {
                         int scoreParent = parentClass.numericIsAssignableFrom(inspectionProvider, other, true,
-                                mode);
+                                mode, reverseParameters);
                         if (scoreParent != NOT_ASSIGNABLE) return IN_HIERARCHY + scoreParent;
                     }
                 } else if (mode == Mode.INVARIANT) return NOT_ASSIGNABLE;
@@ -571,7 +571,7 @@ public class ParameterizedType {
                                             case NONE -> Mode.INVARIANT;
                                             case UNBOUND -> Mode.ANY;
                                         };
-                                return p.k.numericIsAssignableFrom(inspectionProvider, p.v, true, newMode);
+                                return p.k.numericIsAssignableFrom(inspectionProvider, p.v, true, newMode, reverseParameters);
                             }).reduce(0, REDUCER);
                 }
             }
@@ -581,6 +581,9 @@ public class ParameterizedType {
 
         // I am a concrete type, the other is a type parameter
         // Number vs [T extends Number]
+        if (reverseParameters != null && other.typeParameter != null && reverseParameters.contains(other.typeParameter)) {
+            return other.numericIsAssignableFrom(inspectionProvider, this, true, mode, reverseParameters);
+        }
 
         if (typeInfo != null && other.typeParameter != null) {
             List<ParameterizedType> otherTypeBounds = other.typeParameter.getTypeBounds();
@@ -588,7 +591,7 @@ public class ParameterizedType {
                 return Primitives.isJavaLangObject(typeInfo) ? IN_HIERARCHY : NOT_ASSIGNABLE;
             }
             return otherTypeBounds.stream().mapToInt(bound ->
-                    numericIsAssignableFrom(inspectionProvider, bound, true, mode))
+                    numericIsAssignableFrom(inspectionProvider, bound, true, mode, reverseParameters))
                     .min().orElseThrow();
         }
 
@@ -601,7 +604,7 @@ public class ParameterizedType {
             // other is a type
             if (other.typeInfo != null) {
                 return myTypeBounds.stream().mapToInt(bound -> bound.numericIsAssignableFrom(inspectionProvider, other,
-                        true, mode))
+                        true, mode, reverseParameters))
                         .min().orElseThrow();
             } else if (other.typeParameter != null) {
                 List<ParameterizedType> otherTypeBounds = other.typeParameter.getTypeBounds();
@@ -613,7 +616,7 @@ public class ParameterizedType {
                     for (ParameterizedType myBound : myTypeBounds) {
                         for (ParameterizedType otherBound : otherTypeBounds) {
                             int value = myBound.numericIsAssignableFrom(inspectionProvider, otherBound,
-                                    true, mode);
+                                    true, mode, reverseParameters);
                             if (value < min) min = value;
                         }
                     }

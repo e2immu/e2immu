@@ -16,14 +16,22 @@ package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.inspector.TypeContext;
+import org.e2immu.analyser.model.MethodInspection;
+import org.e2immu.analyser.model.Statement;
 import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.model.expression.MethodCall;
+import org.e2immu.analyser.model.expression.NewObject;
+import org.e2immu.analyser.model.statement.ExpressionAsStatement;
+import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.analyser.testexample.InspectionGaps_1;
+import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /*
 tries to catch the remaining problems with the inspection system
@@ -38,7 +46,6 @@ public class Test_50_InspectionGaps_AAPI extends CommonTestRunner {
     public void test_0() throws IOException {
         testClass("InspectionGaps_0", 0, 0, new DebugConfiguration.Builder()
                 .build());
-
     }
 
     @Test
@@ -57,7 +64,16 @@ public class Test_50_InspectionGaps_AAPI extends CommonTestRunner {
 
     @Test
     public void test_11() throws IOException {
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("of".equals(d.methodInfo().name)) {
+                MethodInspection mi = d.evaluationContext().getAnalyserContext().getMethodInspection(d.methodInfo());
+                Statement statement0 = mi.getMethodBody().structure.getStatements().get(0);
+                assertTrue(statement0 instanceof ReturnStatement returnStatement &&
+                        returnStatement.expression instanceof NewObject); // and not UnknownObjectCreation
+            }
+        };
         testClass("InspectionGaps_11", 0, 0, new DebugConfiguration.Builder()
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
 
     }

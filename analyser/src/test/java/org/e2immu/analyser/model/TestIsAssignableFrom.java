@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -108,6 +109,7 @@ public class TestIsAssignableFrom {
     }
 
     // E <- String, E <- Integer, E <- int, E <- int[] should work
+    // String <- E, Integer <- E, int <- E should fail
     @Test
     public void testTypeParameters2() {
         ParameterizedType stringPt = type(JAVA_LANG_STRING);
@@ -128,5 +130,17 @@ public class TestIsAssignableFrom {
 
     private ParameterizedType type(String name) {
         return Objects.requireNonNull(typeContext.typeMapBuilder.get(name).asParameterizedType(typeContext));
+    }
+
+    @Test
+    public void testReverse() {
+        ParameterizedType stringPt = type(JAVA_LANG_STRING);
+        ParameterizedType listPt = type(JAVA_UTIL_LIST);
+        ParameterizedType typeParam = listPt.parameters.get(0);
+
+        assertFalse(stringPt.isAssignableFrom(typeContext, typeParam));
+        assert typeParam.typeParameter != null;
+        assertEquals(100, stringPt.numericIsAssignableFrom(typeContext, typeParam, false,
+                ParameterizedType.Mode.COVARIANT, Set.of(typeParam.typeParameter)));
     }
 }

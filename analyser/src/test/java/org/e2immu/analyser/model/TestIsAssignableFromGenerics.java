@@ -507,8 +507,8 @@ public class TestIsAssignableFromGenerics {
 
         assertTrue(cSuperMyList1SuperSub1.isAssignableFrom(IP, cSuperMyList1SuperSub1));
         assertFalse(cSuperMyList1SuperSub1.isAssignableFrom(IP, cSuperMyList1SuperSub2));
-        assertFalse(cSuperMyList1SuperSub1.isAssignableFrom(IP, cSuperMyList1SuperNode)); // FIXME fails
-        assertTrue(cSuperMyList1SuperNode.isAssignableFrom(IP, cSuperMyList1SuperSub1)); // FIXME fails
+        assertFalse(cSuperMyList1SuperSub1.isAssignableFrom(IP, cSuperMyList1SuperNode));
+        assertTrue(cSuperMyList1SuperNode.isAssignableFrom(IP, cSuperMyList1SuperSub1));
     }
 
 
@@ -543,8 +543,8 @@ public class TestIsAssignableFromGenerics {
 
         assertTrue(cSuperMyList1ExtendsSub1.isAssignableFrom(IP, cSuperMyList1ExtendsSub1));
         assertFalse(cSuperMyList1ExtendsSub1.isAssignableFrom(IP, cSuperMyList1ExtendsSub2));
-        assertTrue(cSuperMyList1ExtendsSub1.isAssignableFrom(IP, cSuperMyList1ExtendsNode)); // FIXME fails
-        assertFalse(cSuperMyList1ExtendsNode.isAssignableFrom(IP, cSuperMyList1ExtendsSub1)); // FIXME fails
+        assertTrue(cSuperMyList1ExtendsSub1.isAssignableFrom(IP, cSuperMyList1ExtendsNode));
+        assertFalse(cSuperMyList1ExtendsNode.isAssignableFrom(IP, cSuperMyList1ExtendsSub1));
     }
 
     public void test5bis(MyComparable<? extends MyList1<? extends Node>> cNode,
