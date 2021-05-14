@@ -24,9 +24,7 @@ import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.InspectionProvider;
-import org.e2immu.analyser.resolver.ShallowMethodResolver;
 import org.e2immu.analyser.util.Pair;
-import org.e2immu.analyser.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -149,9 +147,10 @@ public record ParseMethodCallExpr(InspectionProvider inspectionProvider) {
         // now we need to ensure that there is only 1 method left, but, there can be overloads and
         // methods with implicit type conversions, varargs, etc. etc.
         if (methodCandidates.isEmpty()) {
-            log(METHOD_CALL, "Evaluated expressions for {}: ", methodNameForErrorReporting);
-            evaluatedExpressions.forEach((i, expr) -> LOGGER.warn("  {} = {}", i, expr.debugOutput()));
-            log(METHOD_CALL, "No candidate found for {} in type {} at position {}", methodNameForErrorReporting,
+            LOGGER.warn("Evaluated expressions for {}: ", methodNameForErrorReporting);
+            evaluatedExpressions.forEach((i, expr) ->
+                    LOGGER.warn("  {} = {}", i, (expr == null ? null : expr.debugOutput())));
+            LOGGER.warn("No candidate found for {} in type {} at position {}", methodNameForErrorReporting,
                     startingPointForErrorReporting.detailedString(), positionForErrorReporting);
             return null;
         }

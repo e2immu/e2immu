@@ -14,14 +14,21 @@
 
 package org.e2immu.analyser.inspector;
 
+import com.github.javaparser.ast.body.FieldDeclaration;
+import com.github.javaparser.ast.body.TypeDeclaration;
+import com.github.javaparser.ast.expr.Expression;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.analyser.parser.TypeMapImpl;
 import org.e2immu.annotation.*;
 
 import java.util.*;
 import java.util.stream.Stream;
 
 import static org.e2immu.analyser.inspector.TypeInspectionImpl.InspectionState.*;
+import static org.e2immu.analyser.inspector.TypeInspector.PACKAGE_NAME_FIELD;
+import static org.e2immu.analyser.util.Logger.LogTarget.INSPECTOR;
+import static org.e2immu.analyser.util.Logger.log;
 
 public class TypeInspectionImpl extends InspectionImpl implements TypeInspection {
     // the type that this inspection object belongs to
@@ -409,6 +416,58 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
         public AnnotationMode annotationMode() {
             return computeAnnotationMode();
         }
+
+
+        public void recursivelyAddToTypeStore(boolean parentIsPrimaryType,
+                                              boolean parentIsDollarType,
+                                              TypeMapImpl.Builder typeStore,
+                                              TypeDeclaration<?> typeDeclaration) {
+            typeDeclaration.getMembers().forEach(bodyDeclaration -> bodyDeclaration.ifTypeDeclaration(cid -> {
+                TypeInspector.DollarResolverResult res = subTypeInfo(typeInfo, cid.getName().asString(),
+                        typeDeclaration, parentIsPrimaryType, parentIsDollarType);
+
+                TypeInspectionImpl.InspectionState inspectionState = res.isDollarType() ? TRIGGER_BYTECODE_INSPECTION :
+                        STARTING_JAVA_PARSER;
+                TypeInspectionImpl.Builder subTypeBuilder = typeStore.ensureTypeAndInspection(res.subType(), inspectionState);
+                if (!res.isDollarType()) {
+                    addSubType(subTypeBuilder.typeInfo());
+                }
+                log(INSPECTOR, "Added {} to type store: {}", cid.getClass().getSimpleName(), res.subType().fullyQualifiedName);
+
+                subTypeBuilder.recursivelyAddToTypeStore(false, res.isDollarType(), typeStore, cid);
+            }));
+        }
     }
 
+
+    /* the following three methods are part of the annotated API system.
+    Briefly, if a first-level subtype's name ends with a $, its FQN is composed by the PACKAGE_NAME field in the primary type
+    and the subtype name without the $.
+     */
+    private static TypeInspector.DollarResolverResult subTypeInfo(TypeInfo enclosingType, String simpleName,
+                                                                  TypeDeclaration<?> typeDeclaration,
+                                                                  boolean isPrimaryType,
+                                                                  boolean parentIsDollarType) {
+        if (simpleName.endsWith("$")) {
+            if (!isPrimaryType) throw new UnsupportedOperationException();
+            String packageName = packageName(typeDeclaration.getFieldByName(PACKAGE_NAME_FIELD).orElse(null));
+            if (packageName != null) {
+                TypeInfo dollarType = new TypeInfo(packageName, simpleName.substring(0, simpleName.length() - 1));
+                return new TypeInspector.DollarResolverResult(dollarType, true);
+            }
+        }
+        return new TypeInspector.DollarResolverResult(new TypeInfo(enclosingType, simpleName), parentIsDollarType);
+    }
+
+    static String packageName(FieldDeclaration packageNameField) {
+        if (packageNameField != null) {
+            if (packageNameField.isFinal() && packageNameField.isStatic()) {
+                Optional<Expression> initializer = packageNameField.getVariable(0).getInitializer();
+                if (initializer.isPresent()) {
+                    return initializer.get().asStringLiteralExpr().getValue();
+                }
+            }
+        }
+        return null;
+    }
 }

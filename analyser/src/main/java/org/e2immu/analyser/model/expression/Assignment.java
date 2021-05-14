@@ -125,7 +125,9 @@ public class Assignment implements Expression {
             case DIVIDE:
                 return primitives.assignDivideOperatorInt;
             case BINARY_OR:
-                return primitives.assignOrOperatorBoolean;
+                return primitives.assignOrOperatorInt;
+            case BINARY_AND:
+                return primitives.assignAndOperatorInt;
             case ASSIGN:
                 return primitives.assignOperatorInt;
         }

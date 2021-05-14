@@ -377,7 +377,8 @@ public class BinaryOperator implements Expression {
         if (primitives.assignMinusOperatorInt == methodInfo) return primitives.minusOperatorInt;
         if (primitives.assignMultiplyOperatorInt == methodInfo) return primitives.multiplyOperatorInt;
         if (primitives.assignDivideOperatorInt == methodInfo) return primitives.divideOperatorInt;
-        if (primitives.assignOrOperatorBoolean == methodInfo) return primitives.orOperatorBool;
+        if (primitives.assignOrOperatorInt == methodInfo) return primitives.bitwiseOrOperatorInt;
+        if (primitives.assignAndOperatorInt == methodInfo) return primitives.bitwiseAndOperatorInt;
 
         throw new UnsupportedOperationException("TODO! " + methodInfo.distinguishingName());
     }

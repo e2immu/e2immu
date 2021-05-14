@@ -18,7 +18,6 @@ import com.github.javaparser.ast.Modifier;
 import com.github.javaparser.ast.NodeList;
 import com.github.javaparser.ast.body.*;
 import com.github.javaparser.ast.expr.AnnotationExpr;
-import com.github.javaparser.ast.expr.Expression;
 import com.github.javaparser.ast.expr.ObjectCreationExpr;
 import com.github.javaparser.ast.nodeTypes.NodeWithTypeParameters;
 import com.github.javaparser.ast.type.ClassOrInterfaceType;
@@ -133,7 +132,7 @@ public class TypeInspector {
         DollarResolver dollarResolver;
         if (typeInfo.isPrimaryType()) {
             FieldDeclaration packageNameField = typeDeclaration.getFieldByName(PACKAGE_NAME_FIELD).orElse(null);
-            String dollarPackageName = packageName(packageNameField);
+            String dollarPackageName = TypeInspectionImpl.packageName(packageNameField);
             dollarResolver = name -> {
                 if (name.endsWith("$") && dollarPackageName != null) {
                     return expressionContext.typeContext.typeMapBuilder
@@ -313,7 +312,9 @@ public class TypeInspector {
             for (TypeInfo subType : typeInspection.subTypes()) {
                 expressionContext.typeContext.addToContext(subType);
             }
-            if (!Primitives.isJavaLangObject(typeInspection.parentClass())) {
+            // parentClass can be null in rare occasions where there is a cyclic dependency between types inside two primary types
+            // see Immutables-generated code
+            if (typeInspection.parentClass() != null && !Primitives.isJavaLangObject(typeInspection.parentClass())) {
                 ensureLoaded(expressionContext, typeInspection.parentClass());
             }
             typeInspection.interfacesImplemented().forEach(i -> ensureLoaded(expressionContext, i));
@@ -329,29 +330,8 @@ public class TypeInspector {
 
     // only to be called on primary types
     public void recursivelyAddToTypeStore(TypeMapImpl.Builder typeStore, TypeDeclaration<?> typeDeclaration) {
-        recursivelyAddToTypeStore(typeInfo, true, false, typeStore, typeDeclaration);
-    }
-
-    private void recursivelyAddToTypeStore(TypeInfo typeInfo,
-                                           boolean parentIsPrimaryType,
-                                           boolean parentIsDollarType,
-                                           TypeMapImpl.Builder typeStore,
-                                           TypeDeclaration<?> typeDeclaration) {
-        typeDeclaration.getMembers().forEach(bodyDeclaration -> bodyDeclaration.ifTypeDeclaration(cid -> {
-            DollarResolverResult res = subTypeInfo(typeInfo, cid.getName().asString(),
-                    typeDeclaration, parentIsPrimaryType, parentIsDollarType);
-            addToTypeStore(typeStore, res, cid.getClass().getSimpleName());
-            recursivelyAddToTypeStore(res.subType, false, res.isDollarType, typeStore, cid);
-        }));
-    }
-
-    private void addToTypeStore(TypeMapImpl.Builder typeStore, DollarResolverResult res, String what) {
-        TypeInspectionImpl.InspectionState inspectionState = res.isDollarType ? TRIGGER_BYTECODE_INSPECTION :
-                STARTING_JAVA_PARSER;
-        if(!res.isDollarType) {
-            typeStore.add(res.subType(), inspectionState); // FIXME cause of errors
-        }
-        log(INSPECTOR, "Added {} to type store: {}", what, res.subType.fullyQualifiedName);
+        assert typeInfo.isPrimaryType() : "Only to be called on primary types";
+        builder.recursivelyAddToTypeStore(true, false, typeStore, typeDeclaration);
     }
 
     private List<TypeInfo> continueInspection(
@@ -512,7 +492,7 @@ public class TypeInspector {
         return builder.getMethodInfo();
     }
 
-    private record DollarResolverResult(TypeInfo subType, boolean isDollarType) {
+    record DollarResolverResult(TypeInfo subType, boolean isDollarType) {
     }
 
     private void prepareSubType(ExpressionContext expressionContext, DollarResolver dollarResolver, String nameAsString) {
@@ -557,34 +537,4 @@ public class TypeInspector {
     public interface DollarResolver extends Function<String, TypeInfo> {
     }
 
-    /* the following three methods are part of the annotated API system.
-    Briefly, if a first-level subtype's name ends with a $, its FQN is composed by the PACKAGE_NAME field in the primary type
-    and the subtype name without the $.
-     */
-    private static DollarResolverResult subTypeInfo(TypeInfo enclosingType, String simpleName,
-                                                    TypeDeclaration<?> typeDeclaration,
-                                                    boolean isPrimaryType,
-                                                    boolean parentIsDollarType) {
-        if (simpleName.endsWith("$")) {
-            if (!isPrimaryType) throw new UnsupportedOperationException();
-            String packageName = packageName(typeDeclaration.getFieldByName(PACKAGE_NAME_FIELD).orElse(null));
-            if (packageName != null) {
-                TypeInfo dollarType = new TypeInfo(packageName, simpleName.substring(0, simpleName.length() - 1));
-                return new DollarResolverResult(dollarType, true);
-            }
-        }
-        return new DollarResolverResult(new TypeInfo(enclosingType, simpleName), parentIsDollarType);
-    }
-
-    private static String packageName(FieldDeclaration packageNameField) {
-        if (packageNameField != null) {
-            if (packageNameField.isFinal() && packageNameField.isStatic()) {
-                Optional<Expression> initialiser = packageNameField.getVariable(0).getInitializer();
-                if (initialiser.isPresent()) {
-                    return initialiser.get().asStringLiteralExpr().getValue();
-                }
-            }
-        }
-        return null;
-    }
 }

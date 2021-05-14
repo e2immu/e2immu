@@ -29,6 +29,18 @@ import java.util.Objects;
 @E2Container
 public record LongConstant(Primitives primitives, long constant) implements ConstantExpression<Long>, Numeric {
 
+    public static Expression parse(Primitives primitives, String valueWithL) {
+        String value = valueWithL.endsWith("L") || valueWithL.endsWith("l") ?
+                valueWithL.substring(0, valueWithL.length() - 1) : valueWithL;
+        long l;
+        if (value.startsWith("0x")) {
+            l = Long.parseLong(value.substring(2), 16);
+        } else {
+            l = Long.parseLong(value);
+        }
+        return new LongConstant(primitives, l);
+    }
+
     @Override
     @NotNull
     public ParameterizedType returnType() {

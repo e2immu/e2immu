@@ -688,9 +688,8 @@ public class ExpressionContext {
                 return new EnclosedExpression(parseExpression(((EnclosedExpr) expression).getInner()));
             }
             if (expression.isLongLiteralExpr()) {
-                String valueWithL = expression.asLongLiteralExpr().getValue();
-                String value = valueWithL.endsWith("L") || valueWithL.endsWith("l") ? valueWithL.substring(0, valueWithL.length() - 1) : valueWithL;
-                return new LongConstant(typeContext.getPrimitives(), Long.parseLong(value));
+                String value = expression.asLongLiteralExpr().getValue();
+                return LongConstant.parse(typeContext.getPrimitives(),value);
             }
             if (expression.isDoubleLiteralExpr()) {
                 String valueWithD = expression.asDoubleLiteralExpr().getValue();

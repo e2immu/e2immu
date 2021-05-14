@@ -35,12 +35,14 @@ import java.util.stream.Stream;
 import static org.e2immu.analyser.inspector.TypeInspectionImpl.InspectionState;
 import static org.e2immu.analyser.inspector.TypeInspectionImpl.InspectionState.*;
 
-public record TypeMapImpl(Trie<TypeInfo> trie,
-                          Primitives primitives,
-                          E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) implements TypeMap {
+public class TypeMapImpl implements TypeMap {
     private static final Logger LOGGER = LoggerFactory.getLogger(TypeMapImpl.class);
 
-    public TypeMapImpl(Trie<TypeInfo> trie, Primitives primitives, E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
+    private final Trie<TypeInfo> trie;
+    private final Primitives primitives;
+    private final E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions;
+
+    private TypeMapImpl(Trie<TypeInfo> trie, Primitives primitives, E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
         this.primitives = primitives;
         this.trie = trie;
         this.e2ImmuAnnotationExpressions = e2ImmuAnnotationExpressions;
@@ -89,6 +91,18 @@ public record TypeMapImpl(Trie<TypeInfo> trie,
     @Override
     public void visit(String[] prefix, BiConsumer<String[], List<TypeInfo>> consumer) {
         trie.visit(prefix, consumer);
+    }
+
+    public static boolean containsPrefix(Trie<TypeInfo> trie, String fullyQualifiedName) {
+        String[] split = fullyQualifiedName.split("\\.");
+        // we believe it is going to be a lot faster if we go from 1 to max length rather than the other way round
+        // (there'll be more hits outside the source than inside the source dir)
+        for (int i = 1; i <= split.length; i++) {
+            List<TypeInfo> typeInfoList = trie.get(split, i);
+            if (typeInfoList == null) return false;
+            if (!typeInfoList.isEmpty()) return true;
+        }
+        return false;
     }
 
     @Override
@@ -288,6 +302,14 @@ public record TypeMapImpl(Trie<TypeInfo> trie,
             TypeInspectionImpl.Builder ti = new TypeInspectionImpl.Builder(typeInfo, inspectionState);
             typeInspections.put(typeInfo, ti);
             return ti;
+        }
+
+        public TypeInspectionImpl.Builder ensureTypeAndInspection(TypeInfo typeInfo, InspectionState inspectionState) {
+            TypeInfo inMap = get(typeInfo.fullyQualifiedName);
+            if (inMap == null) {
+                return add(typeInfo, inspectionState);
+            }
+            return ensureTypeInspection(inMap, inspectionState);
         }
 
         public void registerFieldInspection(FieldInfo fieldInfo, FieldInspectionImpl.Builder builder) {

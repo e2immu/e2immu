@@ -54,4 +54,11 @@ public class Test_50_InspectionGaps_AAPI extends CommonTestRunner {
                 typeInfo.typeInspection.get().methods()
                         .stream().map(m -> m.distinguishingName).sorted().collect(Collectors.joining(",")));
     }
+
+    @Test
+    public void test_11() throws IOException {
+        testClass("InspectionGaps_11", 0, 0, new DebugConfiguration.Builder()
+                .build());
+
+    }
 }

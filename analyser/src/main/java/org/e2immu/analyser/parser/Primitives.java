@@ -272,8 +272,9 @@ public class Primitives {
     public final MethodInfo assignMinusOperatorInt = createOperator(intTypeInfo, "-=", List.of(intParameterizedType), intParameterizedType);
     public final MethodInfo assignMultiplyOperatorInt = createOperator(intTypeInfo, "*=", List.of(intParameterizedType), intParameterizedType);
     public final MethodInfo assignDivideOperatorInt = createOperator(intTypeInfo, "/=", List.of(intParameterizedType), intParameterizedType);
-    public final MethodInfo assignOrOperatorBoolean = createOperator(intTypeInfo, "|=", List.of(intParameterizedType), intParameterizedType);
-
+    public final MethodInfo assignOrOperatorInt = createOperator(intTypeInfo, "|=", List.of(intParameterizedType), intParameterizedType);
+    public final MethodInfo assignAndOperatorInt = createOperator(intTypeInfo, "&=", List.of(intParameterizedType), intParameterizedType);
+    
     // TODO long instead of int to distinguish statically (isPostfix) This is a hack!
     public final MethodInfo postfixIncrementOperatorInt = createOperator(intTypeInfo, "++", List.of(), longParameterizedType);
     public final MethodInfo prefixIncrementOperatorInt = createOperator(intTypeInfo, "++", List.of(), intParameterizedType);
