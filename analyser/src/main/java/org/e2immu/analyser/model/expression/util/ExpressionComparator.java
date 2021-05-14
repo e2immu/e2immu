@@ -36,6 +36,11 @@ public class ExpressionComparator implements Comparator<Expression> {
     public static final int ORDER_REMAINDER = 43;
     public static final int ORDER_SUM = 44;
     public static final int ORDER_BITWISE_AND = 45;
+    public static final int ORDER_BITWISE_OR = 46;
+    public static final int ORDER_BITWISE_XOR = 47;
+    public static final int ORDER_SHIFT_LEFT = 48;
+    public static final int ORDER_SHIFT_RIGHT = 49;
+    public static final int ORDER_UNSIGNED_SHIFT_RIGHT = 50;
 
     // variables, types
     public static final int ORDER_PRIMITIVE = 60;

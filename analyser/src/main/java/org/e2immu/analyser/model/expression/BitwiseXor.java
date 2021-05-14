@@ -22,37 +22,33 @@ import org.e2immu.analyser.parser.Primitives;
 
 import java.util.Map;
 
-public class BitwiseAnd extends BinaryOperator {
+public class BitwiseXor extends BinaryOperator {
 
-    private BitwiseAnd(Primitives primitives, Expression lhs, Expression rhs) {
-        super(primitives, lhs, primitives.bitwiseAndOperatorInt, rhs, Precedence.AND);
+    private BitwiseXor(Primitives primitives, Expression lhs, Expression rhs) {
+        super(primitives, lhs, primitives.bitwiseAndOperatorInt, rhs, Precedence.OR);
     }
 
     public EvaluationResult reEvaluate(EvaluationContext evaluationContext, Map<Expression, Expression> translation) {
         EvaluationResult reLhs = lhs.reEvaluate(evaluationContext, translation);
         EvaluationResult reRhs = rhs.reEvaluate(evaluationContext, translation);
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext).compose(reLhs, reRhs);
-        return builder.setExpression(BitwiseAnd.bitwiseAnd(evaluationContext, reLhs.value(), reRhs.value())).build();
+        return builder.setExpression(BitwiseXor.bitwiseXor(evaluationContext, reLhs.value(), reRhs.value())).build();
     }
 
-    // we try to maintain a sum of products
-    public static Expression bitwiseAnd(EvaluationContext evaluationContext, Expression l, Expression r) {
-        if (l instanceof Numeric ln && ln.doubleValue() == 0) return l;
-        if (r instanceof Numeric rn && rn.doubleValue() == 0) return r;
-
+    public static Expression bitwiseXor(EvaluationContext evaluationContext, Expression l, Expression r) {
         Primitives primitives = evaluationContext.getPrimitives();
         if (l instanceof IntConstant li && r instanceof IntConstant ri)
-            return new IntConstant(primitives, li.constant() & ri.constant());
+            return new IntConstant(primitives, li.constant() ^ ri.constant());
 
         // any unknown lingering
         if (l.isUnknown() || r.isUnknown()) throw new UnsupportedOperationException();
 
-        return new BitwiseAnd(primitives, l, r);
+        return new BitwiseXor(primitives, l, r);
     }
 
     @Override
     public int order() {
-        return ExpressionComparator.ORDER_BITWISE_AND;
+        return ExpressionComparator.ORDER_BITWISE_XOR;
     }
 
     @Override

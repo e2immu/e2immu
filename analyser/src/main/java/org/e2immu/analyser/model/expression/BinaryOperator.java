@@ -222,22 +222,29 @@ public class BinaryOperator implements Expression {
         if (operator == primitives.greaterOperatorInt) {
             return GreaterThanZero.greater(evaluationContext, l, r, false);
         }
+        if (operator == primitives.plusOperatorString) {
+            return StringConcat.stringConcat(evaluationContext, l, r);
+        }
+
+        // more obscure operators
+
         if (operator == primitives.bitwiseAndOperatorInt) {
             return BitwiseAnd.bitwiseAnd(evaluationContext, l, r);
         }
-        /*
-            if (operator == primitives.bitwiseOrOperatorInt) {
-                return new IntValue(l.toInt().value | r.toInt().value);
-            }
-
-            if (operator == primitives.bitwiseXorOperatorInt) {
-                return new IntValue(l.toInt().value ^ r.toInt().value);
-            }
+        if (operator == primitives.bitwiseOrOperatorInt) {
+            return BitwiseOr.bitwiseOr(evaluationContext, l, r);
         }
-         TODO
-         */
-        if (operator == primitives.plusOperatorString) {
-            return StringConcat.stringConcat(evaluationContext, l, r);
+        if (operator == primitives.bitwiseXorOperatorInt) {
+            return BitwiseXor.bitwiseXor(evaluationContext, l, r);
+        }
+        if (operator == primitives.leftShiftOperatorInt) {
+            return ShiftLeft.shiftLeft(evaluationContext, l, r);
+        }
+        if (operator == primitives.signedRightShiftOperatorInt) {
+            return SignedShiftRight.shiftRight(evaluationContext, l, r);
+        }
+        if (operator == primitives.unsignedRightShiftOperatorInt) {
+            return UnsignedShiftRight.unsignedShiftRight(evaluationContext, l, r);
         }
         throw new UnsupportedOperationException("Operator " + operator.fullyQualifiedName());
     }
