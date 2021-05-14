@@ -14,14 +14,11 @@
 
 package org.e2immu.analyser.parser;
 
+import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.inspector.TypeContext;
-import org.e2immu.analyser.model.MethodInspection;
-import org.e2immu.analyser.model.Statement;
-import org.e2immu.analyser.model.TypeInfo;
-import org.e2immu.analyser.model.expression.MethodCall;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.NewObject;
-import org.e2immu.analyser.model.statement.ExpressionAsStatement;
 import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.analyser.testexample.InspectionGaps_1;
 import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
@@ -65,6 +62,19 @@ public class Test_50_InspectionGaps_AAPI extends CommonTestRunner {
     @Test
     public void test_11() throws IOException {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("createUnmodifiable".equals(d.methodInfo().name)) {
+                assertEquals("new ArrayList<>(list)", d.methodAnalysis().getSingleReturnValue().toString());
+
+                assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.methodAnalysis().getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                assertEquals(Level.FALSE, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
+
+                ParameterAnalysis p0 = d.parameterAnalyses().get(0);
+                int expectPm = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
+                assertEquals(expectPm, p0.getProperty(VariableProperty.MODIFIED_VARIABLE));
+                int expectNnp = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL;
+                assertEquals(expectNnp, p0.getProperty(VariableProperty.NOT_NULL_PARAMETER));
+            }
+
             if ("of".equals(d.methodInfo().name)) {
                 MethodInspection mi = d.evaluationContext().getAnalyserContext().getMethodInspection(d.methodInfo());
                 Statement statement0 = mi.getMethodBody().structure.getStatements().get(0);
