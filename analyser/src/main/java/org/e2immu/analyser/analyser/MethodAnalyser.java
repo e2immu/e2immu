@@ -581,9 +581,10 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
     private AnalysisStatus computeReturnValue(SharedState sharedState) {
         assert !methodAnalysis.singleReturnValue.isSet();
 
-        // some immediate short-cuts
-        if (!methodInspection.getReturnType().isAssignableFrom(analyserContext,
-                methodInfo.typeInfo.asParameterizedType(analyserContext))) {
+        // some immediate short-cuts.
+        // if we cannot cast 'this' to the current type, the method cannot be fluent
+        if (!methodInfo.typeInfo.asParameterizedType(analyserContext).isAssignableFrom(analyserContext,
+                methodInspection.getReturnType())) {
             methodAnalysis.setProperty(VariableProperty.FLUENT, Level.FALSE);
         }
         if (methodInspection.getParameters().isEmpty() ||

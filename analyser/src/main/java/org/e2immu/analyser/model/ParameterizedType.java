@@ -450,11 +450,15 @@ public class ParameterizedType {
         return MethodTypeParameterMap.apply(typeParameterMap, this);
     }
 
-
-    // semantics: can type be assigned to me? I should be equal or a super type of type
-
     public static final int NOT_ASSIGNABLE = -1;
 
+    /**
+     * Semantics: can type be assigned to me? I should be equal or a super type of the argument 'type'.
+     *
+     * @param inspectionProvider to obtain type inspections
+     * @param type               the argument, which should have this as a super-type
+     * @return true if this is a super-type of the argument
+     */
     public boolean isAssignableFrom(InspectionProvider inspectionProvider, ParameterizedType type) {
         return numericIsAssignableFrom(inspectionProvider, type) != NOT_ASSIGNABLE;
     }

@@ -112,7 +112,7 @@ public abstract class CommonTestRunner {
                 .setDebugConfiguration(debugConfiguration)
                 .setAnalyserConfiguration(analyserConfiguration)
                 .setAnnotatedAPIConfiguration(annotatedAPIConfiguration)
-                .addDebugLogTargets(List.of(ANALYSER, // INSPECT, RESOLVE,
+                .addDebugLogTargets(List.of(ANALYSER, INSPECTOR, // RESOLVER
 
                         LAMBDA,
                         // RESOLVE,

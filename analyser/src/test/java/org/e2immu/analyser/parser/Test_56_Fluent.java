@@ -27,9 +27,12 @@ public class Test_56_Fluent extends CommonTestRunner {
         super(false);
     }
 
+    /*
+    for now, we raise a warning that there is a circular type dependency between a.IFluent_0 and Fluent_0
+     */
     @Test
     public void test_0() throws IOException {
-        testClass(List.of("a.IFluent_0", "Fluent_0"), 0, 0, new DebugConfiguration.Builder()
+        testClass(List.of("a.IFluent_0", "Fluent_0"), 0, 1, new DebugConfiguration.Builder()
                 .build(), new AnalyserConfiguration.Builder().build(), new AnnotatedAPIConfiguration.Builder().build());
     }
 

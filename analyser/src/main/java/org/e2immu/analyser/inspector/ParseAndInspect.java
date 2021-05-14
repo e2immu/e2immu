@@ -19,6 +19,7 @@ import com.github.javaparser.ParseResult;
 import com.github.javaparser.ParserConfiguration;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.ImportDeclaration;
+import com.github.javaparser.ast.body.TypeDeclaration;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.TypeInspection;
 import org.e2immu.analyser.parser.TypeMapImpl;
@@ -44,6 +45,9 @@ public record ParseAndInspect(Resources classPath,
 
     // NOTE: there is a bit of optimization we can do if we parse/analyse per package
 
+    private record TypeInspectorAndTypeDeclaration(TypeInspector typeInspector, TypeDeclaration<?> typeDeclaration) {
+    }
+
     /**
      * @param typeContextOfFile this type context should contain a delegating type store, with <code>sourceTypeStore</code>
      *                          being the local type store
@@ -68,15 +72,49 @@ public record ParseAndInspect(Resources classPath,
                 .map(pd -> pd.getName().asString())
                 .orElseThrow(() -> new UnsupportedOperationException("Expect package declaration in file " + fileName));
 
-        // add all types from the current package that we can find in the source path
-        sourceTypes.visitLeaves(packageName.split("\\."), (expansion, typeInfoList) -> {
-            for (TypeInfo typeInfo : typeInfoList) {
-                if (typeInfo.fullyQualifiedName.equals(packageName + "." + typeInfo.simpleName)) {
-                    typeContextOfFile.addToContext(typeInfo);
-                }
-            }
+        addSourceTypesToTypeContext(typeContextOfFile, packageName);
+        expandLeavesOfClassPath(typeContextOfFile, packageName);
+
+        /* we first add the types to the type context, so that they're all known
+           we do this BEFORE importing, because of possible cyclic dependencies
+           Note that in current Java, this list is of size 1
+         */
+        List<TypeInspectorAndTypeDeclaration> typeInspectors = new ArrayList<>();
+        compilationUnit.getTypes().forEach(td -> {
+            String name = td.getName().asString();
+            TypeInfo typeInfo = typeContextOfFile.typeMapBuilder.getOrCreate(packageName, name, TRIGGER_JAVA_PARSER);
+            typeContextOfFile.addToContext(typeInfo);
+            TypeInspector typeInspector = new TypeInspector(typeMapBuilder, typeInfo, true);
+            typeInspector.recursivelyAddToTypeStore(typeMapBuilder, td);
+            typeInspectors.add(new TypeInspectorAndTypeDeclaration(typeInspector, td));
         });
 
+        processImports(compilationUnit, typeContextOfFile, packageName);
+
+        // this list in current Java will only contain one element, UNLESS we're processing
+        // and AnnotatedAPI file with $ types
+
+        List<TypeInfo> allPrimaryTypesInspected = new ArrayList<>();
+
+        // we first add the types to the type context, so that they're all known
+        for (TypeInspectorAndTypeDeclaration tia : typeInspectors) {
+            TypeInfo typeInfo = tia.typeInspector.getTypeInfo();
+            ExpressionContext expressionContext = ExpressionContext.forInspectionOfPrimaryType(typeInfo,
+                    new TypeContext(packageName, typeContextOfFile), anonymousTypeCounters);
+            try {
+                List<TypeInfo> primaryTypes = tia.typeInspector.inspect(false, null,
+                        tia.typeDeclaration, expressionContext);
+                allPrimaryTypesInspected.addAll(primaryTypes);
+            } catch (RuntimeException rte) {
+                LOGGER.error("Caught runtime exception inspecting type {}", typeInfo.fullyQualifiedName);
+                throw rte;
+            }
+        }
+
+        return allPrimaryTypesInspected;
+    }
+
+    private void expandLeavesOfClassPath(TypeContext typeContextOfFile, String packageName) {
         // add all types from the current package that we can find in the class path, but ONLY
         // if it doesn't exist already in the source path! (we don't overwrite, and don't create if not needed)
 
@@ -87,7 +125,20 @@ public record ParseAndInspect(Resources classPath,
                 typeContextOfFile.addToContext(typeInfo, false);
             }
         });
+    }
 
+    private void addSourceTypesToTypeContext(TypeContext typeContextOfFile, String packageName) {
+        // add all types from the current package that we can find in the source path
+        sourceTypes.visitLeaves(packageName.split("\\."), (expansion, typeInfoList) -> {
+            for (TypeInfo typeInfo : typeInfoList) {
+                if (typeInfo.fullyQualifiedName.equals(packageName + "." + typeInfo.simpleName)) {
+                    typeContextOfFile.addToContext(typeInfo);
+                }
+            }
+        });
+    }
+
+    private void processImports(CompilationUnit compilationUnit, TypeContext typeContextOfFile, String packageName) {
         for (ImportDeclaration importDeclaration : compilationUnit.getImports()) {
             String fullyQualified = importDeclaration.getName().asString();
             if (importDeclaration.isStatic()) {
@@ -143,31 +194,6 @@ public record ParseAndInspect(Resources classPath,
                 }
             }
         }
-
-        // this list in current Java will only contain one element, UNLESS we're processing
-        // and AnnotatedAPI file with $ types
-
-        List<TypeInfo> allPrimaryTypesInspected = new ArrayList<>();
-
-        // we first add the types to the type context, so that they're all known
-        compilationUnit.getTypes().forEach(td -> {
-            String name = td.getName().asString();
-            TypeInfo typeInfo = typeContextOfFile.typeMapBuilder.getOrCreate(packageName, name, TRIGGER_JAVA_PARSER);
-            typeContextOfFile.addToContext(typeInfo);
-            TypeInspector typeInspector = new TypeInspector(typeMapBuilder, typeInfo, true);
-            typeInspector.recursivelyAddToTypeStore(typeMapBuilder, td);
-            ExpressionContext expressionContext = ExpressionContext.forInspectionOfPrimaryType(typeInfo,
-                    new TypeContext(packageName, typeContextOfFile), anonymousTypeCounters);
-            try {
-                List<TypeInfo> primaryTypes = typeInspector.inspect(false, null, td, expressionContext);
-                allPrimaryTypesInspected.addAll(primaryTypes);
-            } catch (RuntimeException rte) {
-                LOGGER.error("Caught runtime exception inspecting type {}", typeInfo.fullyQualifiedName);
-                throw rte;
-            }
-        });
-
-        return allPrimaryTypesInspected;
     }
 
     private TypeInfo importTypeNoSubTypes(String fqn) {

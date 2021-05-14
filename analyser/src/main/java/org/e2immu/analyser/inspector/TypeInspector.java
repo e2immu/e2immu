@@ -33,7 +33,10 @@ import org.e2immu.analyser.parser.TypeMapImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -89,18 +92,23 @@ public class TypeInspector {
         builder.setInspectionState(STARTING_JAVA_PARSER);
     }
 
-    public void inspectAnonymousType(ParameterizedType classImplemented,
+    public void inspectAnonymousType(ParameterizedType typeImplemented,
                                      ExpressionContext expressionContext,
                                      NodeList<BodyDeclaration<?>> members) {
         assert fullInspection; // no way we could reach this otherwise
-        builder.setParentClass(expressionContext.typeContext.getPrimitives().objectParameterizedType);
-        assert classImplemented.typeInfo != null && classImplemented.typeInfo.hasBeenInspected();
-        if (classImplemented.typeInfo.typeInspection.get().typeNature() == TypeNature.INTERFACE) {
-            builder.addInterfaceImplemented(classImplemented);
+        assert typeImplemented.typeInfo != null && typeImplemented.typeInfo.hasBeenInspected();
+
+        ExpressionContext withSubTypes = expressionContext.newSubType(typeImplemented.typeInfo);
+        TypeInspection superInspection = expressionContext.typeContext.getTypeInspection(typeImplemented.typeInfo);
+        superInspection.subTypes().forEach(withSubTypes.typeContext::addToContext);
+
+        if (typeImplemented.typeInfo.typeInspection.get().typeNature() == TypeNature.INTERFACE) {
+            builder.setParentClass(withSubTypes.typeContext.getPrimitives().objectParameterizedType);
+            builder.addInterfaceImplemented(typeImplemented);
         } else {
-            builder.setParentClass(classImplemented);
+            builder.setParentClass(typeImplemented);
         }
-        continueInspection(expressionContext, members, false, false, null);
+        continueInspection(withSubTypes, members, false, false, null);
     }
 
     /**
@@ -537,4 +545,7 @@ public class TypeInspector {
     public interface DollarResolver extends Function<String, TypeInfo> {
     }
 
+    public TypeInfo getTypeInfo() {
+        return typeInfo;
+    }
 }
