@@ -324,26 +324,30 @@ public record NewObject(
         }
 
         // RULE 2, 3
-        boolean notSelf = constructor.typeInfo != evaluationContext.getCurrentType();
-        if (notSelf) {
-            TypeAnalysis typeAnalysisOfConstructor = evaluationContext.getAnalyserContext()
-                    .getTypeAnalysis(constructor.typeInfo);
-            int immutable = typeAnalysisOfConstructor.getProperty(VariableProperty.IMMUTABLE);
-            int typeIndependent = typeAnalysisOfConstructor.getProperty(VariableProperty.INDEPENDENT);
-            MethodAnalysis methodAnalysisOfConstructor = evaluationContext.getAnalyserContext()
-                    .getMethodAnalysis(constructor);
-            int independent = methodAnalysisOfConstructor.getProperty(VariableProperty.INDEPENDENT);
 
-            if (MultiLevel.isAtLeastEventuallyE2Immutable(immutable) || independent == MultiLevel.EFFECTIVE
-                    || typeIndependent == MultiLevel.EFFECTIVE) { // RULE 3
-                return LinkedVariables.EMPTY;
-            }
+        TypeAnalysis typeAnalysisOfConstructor = evaluationContext.getAnalyserContext()
+                .getTypeAnalysis(constructor.typeInfo);
+        int immutable = typeAnalysisOfConstructor.getProperty(VariableProperty.IMMUTABLE);
+        int typeIndependent = typeAnalysisOfConstructor.getProperty(VariableProperty.INDEPENDENT);
+        MethodAnalysis methodAnalysisOfConstructor = evaluationContext.getAnalyserContext()
+                .getMethodAnalysis(constructor);
+        int independent = methodAnalysisOfConstructor.getProperty(VariableProperty.INDEPENDENT);
+
+        if (MultiLevel.isAtLeastEventuallyE2Immutable(immutable) || independent == MultiLevel.EFFECTIVE
+                || typeIndependent == MultiLevel.EFFECTIVE) { // RULE 3
+            return LinkedVariables.EMPTY;
+        }
+
+        boolean notSelf = constructor.typeInfo != evaluationContext.getCurrentType();
+        boolean beingAnalysed = constructor.typeInfo.shallowAnalysis();
+        if (notSelf && beingAnalysed) {
             if (independent == Level.DELAY) return LinkedVariables.DELAY;
             if (immutable == MultiLevel.DELAY) return LinkedVariables.DELAY;
             if (typeIndependent == MultiLevel.DELAY) return LinkedVariables.DELAY;
         }
 
-        // default case
+        // default case: assume dependent
+
         Set<Variable> result = new HashSet<>();
         for (Expression value : parameterExpressions) {
             LinkedVariables sub = evaluationContext.linkedVariables(value);

@@ -311,6 +311,10 @@ public class JavaUtil extends AnnotatedAPI {
         boolean ArrayList$Modification$Size(int post, int size) { return post == 0; }
         public ArrayList$(int size) {
         }
+
+        @Independent
+        public ArrayList$(@NotNull1 @NotModified Collection<? extends E> collection) {
+        }
     }
 
 

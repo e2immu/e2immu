@@ -346,7 +346,7 @@ public class ParameterizedType {
             return Map.of();
         }
         assert typeInfo != null;
-        if(concreteType.typeInfo == null) return Map.of();
+        if (concreteType.typeInfo == null) return Map.of();
 
         if (isFunctionalInterface(inspectionProvider) && concreteType.isFunctionalInterface(inspectionProvider)) {
             return translationMapForFunctionalInterfaces(inspectionProvider, concreteType, concreteTypeIsAssignableToThis);
@@ -443,6 +443,10 @@ public class ParameterizedType {
     }
 
     public static final int NOT_ASSIGNABLE = -1;
+
+    public boolean isAssignableFromTo(InspectionProvider inspectionProvider, ParameterizedType type) {
+        return isAssignableFrom(inspectionProvider, type) || type.isAssignableFrom(inspectionProvider, this);
+    }
 
     /**
      * Semantics: can type be assigned to me? I should be equal or a super type of the argument 'type'.

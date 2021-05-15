@@ -25,7 +25,9 @@ import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.ListUtil;
 
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.function.Predicate;
 
 /**
@@ -150,19 +152,9 @@ public class InlineConditional implements Expression {
 
     @Override
     public LinkedVariables linkedVariables(EvaluationContext evaluationContext) {
-        Set<Variable> result = null;
-        for (Variable variable : ListUtil.concatImmutable(ifTrue.variables(), ifFalse.variables())) {
-            LinkedVariables links = evaluationContext.linkedVariables(variable);
-            if (links == LinkedVariables.DELAY) {
-                return LinkedVariables.DELAY;
-            }
-            if (result == null) {
-                result = new HashSet<>(links.variables());
-            } else {
-                result.addAll(links.variables());
-            }
-        }
-        return result == null ? LinkedVariables.EMPTY : result.isEmpty() ? LinkedVariables.EMPTY : new LinkedVariables(result);
+        LinkedVariables linkedVariablesTrue = evaluationContext.linkedVariables(ifTrue);
+        LinkedVariables linkedVariablesFalse = evaluationContext.linkedVariables(ifFalse);
+        return linkedVariablesTrue.merge(linkedVariablesFalse);
     }
 
     @Override

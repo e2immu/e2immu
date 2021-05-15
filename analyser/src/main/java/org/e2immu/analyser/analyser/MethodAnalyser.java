@@ -585,12 +585,15 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
         // if we cannot cast 'this' to the current type or the other way round, the method cannot be fluent
         // see Fluent_0 for one way, and Store_7 for the other direction
         ParameterizedType myType = methodInfo.typeInfo.asParameterizedType(analyserContext);
-        if (!myType.isAssignableFrom(analyserContext, methodInspection.getReturnType())
-                && !methodInspection.getReturnType().isAssignableFrom(analyserContext, myType)) {
+        if (!myType.isAssignableFromTo(analyserContext, methodInspection.getReturnType())) {
             methodAnalysis.setProperty(VariableProperty.FLUENT, Level.FALSE);
         }
+
+        /*
+        down-or-upcast allowed
+         */
         if (methodInspection.getParameters().isEmpty() ||
-                !methodInspection.getReturnType().isAssignableFrom(analyserContext,
+                !methodInspection.getReturnType().isAssignableFromTo(analyserContext,
                         methodInspection.getParameters().get(0).parameterizedType)) {
             methodAnalysis.setProperty(VariableProperty.IDENTITY, Level.FALSE);
         }

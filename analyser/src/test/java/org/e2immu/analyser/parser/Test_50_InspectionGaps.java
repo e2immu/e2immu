@@ -14,13 +14,16 @@
 
 package org.e2immu.analyser.parser;
 
+import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.AnnotatedAPIConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.inspector.TypeContext;
-import org.e2immu.analyser.model.ParameterizedType;
-import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.expression.NewObject;
+import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.analyser.testexample.InspectionGaps_1;
+import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
 import org.e2immu.analyser.visitor.TypeMapVisitor;
 import org.junit.jupiter.api.Test;
 
@@ -28,8 +31,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /*
 tries to catch the remaining problems with the inspection system
@@ -127,6 +129,57 @@ public class Test_50_InspectionGaps extends CommonTestRunner {
         testClass(List.of("InspectionGaps_10"), List.of("jmods/java.compiler.jmod"),
                 0, 0,
                 new DebugConfiguration.Builder().build(),
+                new AnalyserConfiguration.Builder().build(),
+                new AnnotatedAPIConfiguration.Builder().build());
+    }
+
+    @Test
+    public void test_11() throws IOException {
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if("InspectionGaps_11".equals(d.methodInfo().name)) {
+                int expectDep = d.iteration() == 0 ? Level.DELAY: MultiLevel.INDEPENDENT;
+                assertEquals(expectDep, d.methodAnalysis().getProperty(VariableProperty.INDEPENDENT));
+            }
+
+            if ("createUnmodifiable".equals(d.methodInfo().name)) {
+                if (d.iteration() == 0) {
+                    assertNull(d.methodAnalysis().getSingleReturnValue());
+                } else {
+                    assertEquals("new ArrayList<>(list)", d.methodAnalysis().getSingleReturnValue().toString());
+                }
+                int expectNne = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
+                assertEquals(expectNne, d.methodAnalysis().getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                int expectModified = d.iteration() == 0 ? Level.DELAY: Level.FALSE;
+                assertEquals(expectModified, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
+
+                int expectIndependent = d.iteration() == 0 ? Level.DELAY: MultiLevel.INDEPENDENT;
+                assertEquals(expectIndependent, d.methodAnalysis().getProperty(VariableProperty.INDEPENDENT));
+
+                ParameterAnalysis p0 = d.parameterAnalyses().get(0);
+                int expectPm = d.iteration() <= 1 ? Level.DELAY : Level.FALSE;
+                assertEquals(expectPm, p0.getProperty(VariableProperty.MODIFIED_VARIABLE));
+                int expectNnp = d.iteration() == 0 ? Level.DELAY : MultiLevel.NULLABLE;
+                assertEquals(expectNnp, p0.getProperty(VariableProperty.NOT_NULL_PARAMETER));
+            }
+            if ("of".equals(d.methodInfo().name)) {
+                MethodInspection mi = d.evaluationContext().getAnalyserContext().getMethodInspection(d.methodInfo());
+                Statement statement0 = mi.getMethodBody().structure.getStatements().get(0);
+                assertTrue(statement0 instanceof ReturnStatement returnStatement &&
+                        returnStatement.expression instanceof NewObject); // and not UnknownObjectCreation
+
+                int expectModified = d.iteration() <= 1 ? Level.DELAY: Level.FALSE;
+                assertEquals(expectModified, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
+                int expectNne = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
+                assertEquals(expectNne, d.methodAnalysis().getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+
+            }
+        };
+
+        testClass(List.of("InspectionGaps_11"), List.of("jmods/java.compiler.jmod"),
+                0, 0,
+                new DebugConfiguration.Builder()
+                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        .build(),
                 new AnalyserConfiguration.Builder().build(),
                 new AnnotatedAPIConfiguration.Builder().build());
     }

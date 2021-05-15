@@ -249,7 +249,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
             boolean circularCallOutsidePrimaryType = methodPrimaryType != currentPrimaryType &&
                     currentPrimaryType.typeResolution.get().circularDependencies().contains(methodPrimaryType) &&
-                    !ShallowTypeAnalyser.IS_FACT_FQN.equals(methodInfo.fullyQualifiedName());
+                    !methodInfo.shallowAnalysis();
 
             // internal circular dependency (as opposed to one outside the primary type)
             partOfCallCycle = methodInfo.methodResolution.get().ignoreMeBecauseOfPartOfCallCycle();
