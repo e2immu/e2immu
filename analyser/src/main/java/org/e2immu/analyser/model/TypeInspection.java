@@ -74,10 +74,6 @@ public interface TypeInspection extends Inspection {
         return !permittedWhenSealed().isEmpty();
     }
 
-    default boolean hasOneKnownGeneratedImplementation() {
-        return false;
-    }
-
     enum Methods {
 
         THIS_TYPE_ONLY(false, null),

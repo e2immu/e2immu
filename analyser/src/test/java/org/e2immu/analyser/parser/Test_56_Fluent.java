@@ -155,7 +155,7 @@ public class Test_56_Fluent extends CommonTestRunner {
     public void test_1() throws IOException {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("IFluent_1".equals(d.typeInfo().simpleName)) {
-                assertTrue(d.typeInspection().hasOneKnownGeneratedImplementation());
+                fail("There is no type analyser for IFluent_1");
             }
         };
 
@@ -172,8 +172,33 @@ public class Test_56_Fluent extends CommonTestRunner {
                         .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
                         .build(), new AnalyserConfiguration.Builder().build(), new AnnotatedAPIConfiguration.Builder().build());
         TypeInfo iFluent1 = typeContext.typeMapBuilder.get(IFluent_1.class);
+        assertTrue(iFluent1.typeResolution.get().hasOneKnownGeneratedImplementation());
+
         MethodInfo value = iFluent1.findUniqueMethod("value", 0);
         MethodAnalysis valueAnalysis = value.methodAnalysis.get();
         assertSame(Analysis.AnalysisMode.AGGREGATED, valueAnalysis.analysisMode());
+    }
+
+
+    @Test
+    public void test_2() throws IOException {
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("IFluent_2".equals(d.typeInfo().simpleName)) {
+                assertTrue(d.typeInfo().typeResolution.get().hasOneKnownGeneratedImplementation());
+            }
+        };
+
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("value".equals(d.methodInfo().name) && "IFluent_2".equals(d.methodInfo().typeInfo.simpleName)) {
+            //    assertSame(Analysis.AnalysisMode.AGGREGATED, d.methodAnalysis().analysisMode());
+            }
+        };
+
+        testClass(List.of("a.IFluent_2", "Fluent_2"),
+                List.of("jmods/java.compiler.jmod"),
+                0, 1, new DebugConfiguration.Builder()
+                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
+                        .build(), new AnalyserConfiguration.Builder().build(), new AnnotatedAPIConfiguration.Builder().build());
     }
 }

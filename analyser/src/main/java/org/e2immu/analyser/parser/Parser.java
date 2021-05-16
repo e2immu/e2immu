@@ -91,7 +91,7 @@ public class Parser {
         // and the the inspection and resolution of Java sources (Java parser)
         List<SortedType> resolvedSourceTypes = inspectAndResolve(input.sourceURLs(), input.sourceTypes(), true, false);
 
-        // creating the typeMap ensures that all inspections are set.
+        // creating the typeMap ensures that all inspections and resolutions are set.
         TypeMap typeMap = input.globalTypeContext().typeMapBuilder.build();
 
         // finally, there is an analysis step

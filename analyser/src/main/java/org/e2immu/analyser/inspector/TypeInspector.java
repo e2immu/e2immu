@@ -161,25 +161,23 @@ public class TypeInspector {
         expressionContext.typeContext.addToContext(typeInfo);
 
         boolean haveFunctionalInterface = false;
-        boolean haveGeneratedAnnotation = false;
 
         for (AnnotationExpr annotationExpr : typeDeclaration.getAnnotations()) {
             AnnotationExpression ae = AnnotationInspector.inspect(expressionContext, annotationExpr);
             String fqn = ae.typeInfo().fullyQualifiedName;
             haveFunctionalInterface |= "java.lang.FunctionalInterface".equals(fqn);
-            haveGeneratedAnnotation |= "javax.annotation.processing.Generated".equals(fqn);
             builder.addAnnotation(ae);
         }
         if (fullInspection) {
             try {
                 if (typeDeclaration instanceof RecordDeclaration rd) {
-                    doRecordDeclaration(expressionContext, rd, haveGeneratedAnnotation);
+                    doRecordDeclaration(expressionContext, rd);
                 } else if (typeDeclaration instanceof EnumDeclaration ed) {
                     doEnumDeclaration(expressionContext, ed);
                 } else if (typeDeclaration instanceof AnnotationDeclaration ad) {
                     doAnnotationDeclaration(expressionContext, ad);
                 } else if (typeDeclaration instanceof ClassOrInterfaceDeclaration cid) {
-                    doClassOrInterfaceDeclaration(expressionContext, cid, haveGeneratedAnnotation);
+                    doClassOrInterfaceDeclaration(expressionContext, cid);
                 }
 
                 for (Modifier modifier : typeDeclaration.getModifiers()) {
@@ -219,15 +217,14 @@ public class TypeInspector {
     }
 
     private void doRecordDeclaration(ExpressionContext expressionContext,
-                                     RecordDeclaration recordDeclaration,
-                                     boolean haveGeneratedAnnotation) {
+                                     RecordDeclaration recordDeclaration) {
         builder.setTypeNature(TypeNature.RECORD);
         if (!typeInfo.isPrimaryType()) {
             builder.addTypeModifier(TypeModifier.STATIC);
         }
 
         doTypeParameters(expressionContext, recordDeclaration);
-        doImplementedTypes(expressionContext, recordDeclaration.getImplementedTypes(), haveGeneratedAnnotation);
+        doImplementedTypes(expressionContext, recordDeclaration.getImplementedTypes());
 
         List<FieldInfo> recordFields = recordDeclaration.getParameters().stream().map(parameter -> {
             ParameterizedType type = ParameterizedTypeFactory.from(expressionContext.typeContext, parameter.getType());
@@ -281,33 +278,21 @@ public class TypeInspector {
         }
     }
 
-    private void registerSuperType(ExpressionContext expressionContext,
-                                   ParameterizedType superType,
-                                   boolean haveGeneratedAnnotation) {
-        TypeInspection superTypeInspection = expressionContext.typeContext.getTypeInspection(superType.typeInfo);
-        if (superTypeInspection instanceof TypeInspectionImpl.Builder builder) {
-            builder.registerImplementation(haveGeneratedAnnotation);
-        }
-    }
-
     private void doImplementedTypes(ExpressionContext expressionContext,
-                                    NodeList<ClassOrInterfaceType> implementedTypes,
-                                    boolean haveGeneratedAnnotation) {
+                                    NodeList<ClassOrInterfaceType> implementedTypes) {
         for (ClassOrInterfaceType extended : implementedTypes) {
             ParameterizedType parameterizedType = ParameterizedTypeFactory.from(expressionContext.typeContext, extended);
             if (fullInspection) ensureLoaded(expressionContext, parameterizedType);
             builder.addInterfaceImplemented(parameterizedType);
-            registerSuperType(expressionContext, parameterizedType, haveGeneratedAnnotation);
         }
     }
 
     private void doClassOrInterfaceDeclaration(ExpressionContext expressionContext,
-                                               ClassOrInterfaceDeclaration cid,
-                                               boolean haveGeneratedAnnotation) {
+                                               ClassOrInterfaceDeclaration cid) {
         doTypeParameters(expressionContext, cid);
         if (cid.isInterface()) {
             builder.setTypeNature(TypeNature.INTERFACE);
-            doImplementedTypes(expressionContext, cid.getExtendedTypes(), haveGeneratedAnnotation);
+            doImplementedTypes(expressionContext, cid.getExtendedTypes());
         } else {
             builder.setTypeNature(TypeNature.CLASS);
             if (!cid.getExtendedTypes().isEmpty()) {
@@ -317,9 +302,8 @@ public class TypeInspector {
                 // fully qualified names. In Java, we must add type names of parent's subtypes etc.
                 if (fullInspection) ensureLoaded(expressionContext, parameterizedType);
                 builder.setParentClass(parameterizedType);
-                registerSuperType(expressionContext, parameterizedType, haveGeneratedAnnotation);
             }
-            doImplementedTypes(expressionContext, cid.getImplementedTypes(), haveGeneratedAnnotation);
+            doImplementedTypes(expressionContext, cid.getImplementedTypes());
         }
     }
 
@@ -353,7 +337,7 @@ public class TypeInspector {
     public void inspectLocalClassDeclaration(ExpressionContext expressionContext,
                                              ClassOrInterfaceDeclaration cid) {
         builder.noParent(expressionContext.typeContext.getPrimitives());
-        doClassOrInterfaceDeclaration(expressionContext, cid, false);
+        doClassOrInterfaceDeclaration(expressionContext, cid);
         builder.addTypeModifier(TypeModifier.PRIVATE);
         continueInspection(expressionContext, cid.getMembers(), false, false, null);
     }

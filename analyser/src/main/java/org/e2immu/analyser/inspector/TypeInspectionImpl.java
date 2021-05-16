@@ -47,7 +47,6 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
     public final List<TypeParameter> typeParameters;
     public final List<ParameterizedType> interfacesImplemented;
     public final TypeModifier access;
-    public final boolean hasOneKnownGeneratedImplementation;
     public final AnnotationMode annotationMode;
 
     private TypeInspectionImpl(TypeInfo typeInfo,
@@ -64,8 +63,7 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
                                List<TypeInfo> permittedWhenSealed,
                                List<AnnotationExpression> annotations,
                                AnnotationMode annotationMode,
-                               boolean synthetic,
-                               boolean hasOneKnownGeneratedImplementation) {
+                               boolean synthetic) {
         super(annotations, synthetic);
         this.parentClass = parentClass;
         this.interfacesImplemented = interfacesImplemented;
@@ -80,12 +78,6 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
         this.access = access;
         this.annotationMode = annotationMode;
         this.permittedWhenSealed = permittedWhenSealed;
-        this.hasOneKnownGeneratedImplementation = hasOneKnownGeneratedImplementation;
-    }
-
-    @Override
-    public boolean hasOneKnownGeneratedImplementation() {
-        return hasOneKnownGeneratedImplementation;
     }
 
     @Override
@@ -207,19 +199,11 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
         private ParameterizedType parentClass;
         private final List<ParameterizedType> interfacesImplemented = new ArrayList<>();
         private final TypeInfo typeInfo;
-
         private InspectionState inspectionState;
-        private int countImplementations;
-        private int countGeneratedImplementations;
 
         public Builder(TypeInfo typeInfo, InspectionState inspectionState) {
             this.typeInfo = typeInfo;
             this.inspectionState = inspectionState;
-        }
-
-        public void registerImplementation(boolean generated) {
-            countImplementations++;
-            if (generated) countGeneratedImplementations++;
         }
 
         @Override
@@ -363,8 +347,7 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
                     permittedWhenSealed(),
                     getAnnotations(),
                     annotationMode(),
-                    isSynthetic(),
-                    countGeneratedImplementations == 1 && countImplementations == 1);
+                    isSynthetic());
         }
 
         private static final Set<String> GREEN_MODE_ANNOTATIONS_ON_METHODS = Set.of(

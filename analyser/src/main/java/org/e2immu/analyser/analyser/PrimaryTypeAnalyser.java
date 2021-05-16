@@ -24,7 +24,6 @@ import org.e2immu.analyser.pattern.PatternMatcher;
 import org.e2immu.analyser.resolver.SortedType;
 import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.analyser.util.Pair;
-import org.e2immu.support.SetOnce;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,6 +34,9 @@ import java.util.stream.Stream;
 import static org.e2immu.analyser.util.Logger.LogTarget.ANALYSER;
 import static org.e2immu.analyser.util.Logger.log;
 
+/*
+Recursive, but only for types inside statements, not for subtypes.
+ */
 public class PrimaryTypeAnalyser implements AnalyserContext, Analyser, HoldsAnalysers {
     private static final Logger LOGGER = LoggerFactory.getLogger(PrimaryTypeAnalyser.class);
 
@@ -74,12 +76,10 @@ public class PrimaryTypeAnalyser implements AnalyserContext, Analyser, HoldsAnal
 
         // do the types first, so we can pass on a TypeAnalysis objects
         Map<TypeInfo, TypeAnalyser> typeAnalysersBuilder = new HashMap<>();
-        SetOnce<TypeAnalyser> primaryTypeAnalyser = new SetOnce<>();
         sortedType.methodsFieldsSubTypes().forEach(mfs -> {
             if (mfs instanceof TypeInfo typeInfo && !typeInfo.typeAnalysis.isSet()) {
                 TypeAnalyser typeAnalyser = new TypeAnalyser(typeInfo, primaryType, this);
                 typeAnalysersBuilder.put(typeInfo, typeAnalyser);
-                if (typeInfo == primaryType) primaryTypeAnalyser.set(typeAnalyser);
             }
         });
         typeAnalysers = Map.copyOf(typeAnalysersBuilder);
