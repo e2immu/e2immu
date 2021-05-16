@@ -60,7 +60,7 @@ public class TestParameterizedType {
                 .setTypeNature(TypeNature.CLASS)
                 .build());
         primitives.integerTypeInfo.typeInspection.set(new TypeInspectionImpl.Builder(primitives.integerTypeInfo, BY_HAND)
-                .setParentClass(primitives.objectParameterizedType)
+                .noParent(primitives)
                 .setTypeNature(TypeNature.CLASS)
                 .build());
 
@@ -71,7 +71,7 @@ public class TestParameterizedType {
             TypeParameter mapV = new TypeParameterImpl(map, "V", 1);
 
             TypeInspectionImpl.Builder mapInspection = new TypeInspectionImpl.Builder(map, BY_HAND)
-                    .setParentClass(primitives.objectParameterizedType)
+                    .noParent(primitives)
                     .addTypeParameter(mapK)
                     .addTypeParameter(mapV);
             map.typeInspection.set(mapInspection.build());
@@ -83,7 +83,7 @@ public class TestParameterizedType {
             TypeParameter hashMapV = new TypeParameterImpl(hashMap, "V", 1);
 
             TypeInspectionImpl.Builder hashMapInspection = new TypeInspectionImpl.Builder(map, BY_HAND)
-                    .setParentClass(primitives.objectParameterizedType)
+                    .noParent(primitives)
                     .addInterfaceImplemented(new ParameterizedType(map,
                             List.of(new ParameterizedType(hashMapK, 0, NONE),
                                     new ParameterizedType(hashMapV, 0, NONE))))
@@ -121,7 +121,7 @@ public class TestParameterizedType {
                             new ParameterizedType(functionT, 0, NONE), "t", 0))
                     .build(IP).getMethodInfo();
             TypeInspectionImpl.Builder functionInspection = new TypeInspectionImpl.Builder(function, BY_HAND)
-                    .setParentClass(primitives.objectParameterizedType)
+                    .noParent(primitives)
                     .setTypeNature(TypeNature.INTERFACE)
                     .addAnnotation(primitives.functionalInterfaceAnnotationExpression)
                     .addTypeParameter(functionT)
@@ -136,7 +136,7 @@ public class TestParameterizedType {
             TypeParameter aV = new TypeParameterImpl(a, "V", 1);
 
             TypeInspectionImpl.Builder aInspection = new TypeInspectionImpl.Builder(a, BY_HAND)
-                    .setParentClass(primitives.objectParameterizedType)
+                    .noParent(primitives)
                     .addTypeParameter(aK)
                     .addTypeParameter(aV);
             a.typeInspection.set(aInspection.build());

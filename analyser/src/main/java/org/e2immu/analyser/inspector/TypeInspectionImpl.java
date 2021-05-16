@@ -43,10 +43,11 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
     public final List<FieldInfo> fields;
     public final Set<TypeModifier> modifiers;
     public final List<TypeInfo> subTypes;
+    public final List<TypeInfo> permittedWhenSealed;
     public final List<TypeParameter> typeParameters;
     public final List<ParameterizedType> interfacesImplemented;
     public final TypeModifier access;
-
+    public final boolean hasOneKnownGeneratedImplementation;
     public final AnnotationMode annotationMode;
 
     private TypeInspectionImpl(TypeInfo typeInfo,
@@ -60,9 +61,11 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
                                List<FieldInfo> fields,
                                Set<TypeModifier> modifiers,
                                List<TypeInfo> subTypes,
+                               List<TypeInfo> permittedWhenSealed,
                                List<AnnotationExpression> annotations,
                                AnnotationMode annotationMode,
-                               boolean synthetic) {
+                               boolean synthetic,
+                               boolean hasOneKnownGeneratedImplementation) {
         super(annotations, synthetic);
         this.parentClass = parentClass;
         this.interfacesImplemented = interfacesImplemented;
@@ -76,6 +79,13 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
         this.subTypes = subTypes;
         this.access = access;
         this.annotationMode = annotationMode;
+        this.permittedWhenSealed = permittedWhenSealed;
+        this.hasOneKnownGeneratedImplementation = hasOneKnownGeneratedImplementation;
+    }
+
+    @Override
+    public boolean hasOneKnownGeneratedImplementation() {
+        return hasOneKnownGeneratedImplementation;
     }
 
     @Override
@@ -148,6 +158,11 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
         return BUILT;
     }
 
+    @Override
+    public List<TypeInfo> permittedWhenSealed() {
+        return permittedWhenSealed;
+    }
+
     public enum InspectionState {
         TRIGGER_BYTECODE_INSPECTION(1),
         STARTING_BYTECODE(2),
@@ -181,6 +196,7 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
     public static class Builder extends AbstractInspectionBuilder<Builder> implements TypeInspection {
         private TypeNature typeNature = TypeNature.CLASS;
         private final Set<String> methodAndConstructorNames = new HashSet<>();
+        private final List<TypeInfo> permittedWhenSealed = new ArrayList<>();
         private final List<MethodInfo> methods = new ArrayList<>();
         private final List<MethodInfo> constructors = new ArrayList<>();
         private final List<FieldInfo> fields = new ArrayList<>();
@@ -193,10 +209,22 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
         private final TypeInfo typeInfo;
 
         private InspectionState inspectionState;
+        private int countImplementations;
+        private int countGeneratedImplementations;
 
         public Builder(TypeInfo typeInfo, InspectionState inspectionState) {
             this.typeInfo = typeInfo;
             this.inspectionState = inspectionState;
+        }
+
+        public void registerImplementation(boolean generated) {
+            countImplementations++;
+            if (generated) countGeneratedImplementations++;
+        }
+
+        @Override
+        public List<TypeInfo> permittedWhenSealed() {
+            return List.copyOf(permittedWhenSealed);
         }
 
         public boolean finishedInspection() {
@@ -218,6 +246,11 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
 
         public boolean hasEmptyConstructorIfNoConstructorsPresent() {
             return typeNature == TypeNature.CLASS || typeNature == TypeNature.ENUM;
+        }
+
+        public Builder noParent(Primitives primitives) {
+            this.parentClass = primitives.objectParameterizedType;
+            return this;
         }
 
         public Builder setParentClass(ParameterizedType parentClass) {
@@ -273,6 +306,12 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
             return this;
         }
 
+        public Builder addPermitted(TypeInfo typeInfo) {
+            assert modifiers.contains(TypeModifier.SEALED);
+            permittedWhenSealed.add(typeInfo);
+            return this;
+        }
+
         public void ensureSubType(TypeInfo typeInfo) {
             if (!subTypeNames.contains(typeInfo.simpleName)) {
                 subTypes.add(typeInfo);
@@ -306,6 +345,8 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
             if (Primitives.needsParent(typeInfo) && parentClass == null) {
                 throw new UnsupportedOperationException("Need a parent class for " + typeInfo.fullyQualifiedName);
             }
+            assert permittedWhenSealed.isEmpty() || modifiers.contains(TypeModifier.SEALED);
+            assert !modifiers.contains(TypeModifier.SEALED) || !permittedWhenSealed.isEmpty();
 
             return new TypeInspectionImpl(
                     typeInfo,
@@ -319,9 +360,11 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
                     fields(),
                     modifiers(),
                     subTypes(),
+                    permittedWhenSealed(),
                     getAnnotations(),
                     annotationMode(),
-                    isSynthetic());
+                    isSynthetic(),
+                    countGeneratedImplementations == 1 && countImplementations == 1);
         }
 
         private static final Set<String> GREEN_MODE_ANNOTATIONS_ON_METHODS = Set.of(

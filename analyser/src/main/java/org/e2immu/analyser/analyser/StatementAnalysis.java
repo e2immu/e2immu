@@ -1038,7 +1038,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         if (!variableField) {
             Expression efv = fieldAnalysis.getEffectivelyFinalValue();
             if (efv == null) {
-                if (analyserContext.getTypeAnalysis(fieldReference.fieldInfo.owner).isBeingAnalysed() && !selfReference) {
+                if (analyserContext.getTypeAnalysis(fieldReference.fieldInfo.owner).isNotContracted() && !selfReference) {
                     return new ExpressionAndDelay(DelayedVariableExpression.forField(fieldReference), true);
                 }
             } else {

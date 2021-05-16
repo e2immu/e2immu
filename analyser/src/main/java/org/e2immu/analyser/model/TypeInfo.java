@@ -703,7 +703,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         List<FieldInfo> fromParent = Primitives.isJavaLangObject(this) ? List.of() :
                 inspection.parentClass().typeInfo.visibleFields(inspectionProvider);
         List<FieldInfo> fromInterfaces = inspection.interfacesImplemented().stream()
-                .flatMap(i -> i.typeInfo.visibleFields(inspectionProvider).stream()).collect(Collectors.toUnmodifiableList());
+                .flatMap(i -> i.typeInfo.visibleFields(inspectionProvider).stream()).toList();
         return ListUtil.immutableConcat(locally, fromParent, fromInterfaces);
     }
 }

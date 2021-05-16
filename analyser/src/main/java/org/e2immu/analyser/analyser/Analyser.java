@@ -19,13 +19,21 @@ import org.e2immu.analyser.model.WithInspectionAndAnalysis;
 import org.e2immu.analyser.parser.Message;
 
 import java.util.Collection;
-import java.util.List;
 import java.util.stream.Stream;
 
 public interface Analyser {
 
     enum AnalyserIdentification {
-        TYPE, FIELD, PARAMETER, METHOD
+        TYPE(null), // type does not have notNull
+        FIELD(VariableProperty.EXTERNAL_NOT_NULL),
+        PARAMETER(VariableProperty.NOT_NULL_PARAMETER),
+        METHOD(VariableProperty.NOT_NULL_EXPRESSION);
+
+        public final VariableProperty notNull;
+
+        AnalyserIdentification(VariableProperty notNull) {
+            this.notNull = notNull;
+        }
     }
 
     // four stages

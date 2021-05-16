@@ -185,7 +185,7 @@ public record Composer(TypeMap typeMap, String destinationPackage, Predicate<Wit
         String typeName = typeToCopy.typeInfo().simpleName;
         TypeInfo typeInfo = new TypeInfo(packageType, topLevel ? typeName + "$" : typeName);
         TypeInspectionImpl.Builder builder = new TypeInspectionImpl.Builder(typeInfo, BY_HAND);
-        builder.setParentClass(typeMap.getPrimitives().objectParameterizedType)
+        builder.noParent(typeMap.getPrimitives())
                 .setTypeNature(TypeNature.CLASS)
                 .addTypeModifier(TypeModifier.STATIC);
         return builder;
@@ -195,7 +195,7 @@ public record Composer(TypeMap typeMap, String destinationPackage, Predicate<Wit
         String camelCasePackageName = convertToCamelCase(packageName);
         TypeInfo typeInfo = new TypeInfo(destinationPackage, camelCasePackageName);
         TypeInspectionImpl.Builder builder = new TypeInspectionImpl.Builder(typeInfo, BY_HAND);
-        builder.setParentClass(typeMap.getPrimitives().objectParameterizedType)
+        builder.noParent(typeMap.getPrimitives())
                 .setTypeNature(TypeNature.CLASS)
                 .addTypeModifier(TypeModifier.PUBLIC);
         FieldInfo packageField = new FieldInfo(typeMap.getPrimitives().stringParameterizedType,

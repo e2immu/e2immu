@@ -153,7 +153,7 @@ public class EvaluateMethodCall {
             return builder.compose(reInline).setExpression(reInline.value()).build();
         }
 
-        if (methodAnalysis.isBeingAnalysed() && !methodInfo.methodResolution.get().ignoreMeBecauseOfPartOfCallCycle()) {
+        if (methodAnalysis.isComputed() && !methodInfo.methodResolution.get().ignoreMeBecauseOfPartOfCallCycle()) {
             // singleReturnValue implies non-modifying
             if (methodAnalysis.getSingleReturnValue() != null) {
                 // if this method was identity?
@@ -454,7 +454,7 @@ public class EvaluateMethodCall {
 
     private static Expression computeFluent(MethodInfo methodInfo, MethodAnalysis methodAnalysis, Expression scope) {
         int fluent = methodAnalysis.getProperty(VariableProperty.FLUENT);
-        if (fluent == Level.DELAY && methodAnalysis.isBeingAnalysed()) {
+        if (fluent == Level.DELAY && methodAnalysis.isNotContracted()) {
             log(Logger.LogTarget.DELAYED, "Delaying method value because @Fluent delayed on {}",
                     methodAnalysis.getMethodInfo().fullyQualifiedName);
             return DelayedExpression.forMethod(methodInfo);
@@ -470,7 +470,7 @@ public class EvaluateMethodCall {
                                               MethodAnalysis methodAnalysis,
                                               List<Expression> parameters) {
         int identity = methodAnalysis.getProperty(VariableProperty.IDENTITY);
-        if (identity == Level.DELAY && methodAnalysis.isBeingAnalysed()) {
+        if (identity == Level.DELAY && methodAnalysis.isNotContracted()) {
             log(Logger.LogTarget.DELAYED, "Delaying method value because @Identity delayed on {}",
                     methodAnalysis.getMethodInfo().fullyQualifiedName);
             return DelayedExpression.forMethod(methodInfo);

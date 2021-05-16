@@ -28,7 +28,7 @@ public interface MethodAnalysis extends Analysis {
     static MethodAnalysis createEmpty(MethodInfo methodInfo, Primitives primitives) {
         List<ParameterAnalysis> parameterAnalyses = methodInfo.methodInspection.get().getParameters().stream()
                 .map(ParameterAnalysis::createEmpty).collect(Collectors.toList());
-        MethodAnalysisImpl.Builder builder = new MethodAnalysisImpl.Builder(false,
+        MethodAnalysisImpl.Builder builder = new MethodAnalysisImpl.Builder(AnalysisMode.CONTRACTED,
                 primitives, AnalysisProvider.DEFAULT_PROVIDER, InspectionProvider.DEFAULT,
                 methodInfo, parameterAnalyses);
         return (MethodAnalysis) builder.build();

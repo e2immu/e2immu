@@ -55,7 +55,7 @@ public class TestTypeInfoStream {
 
         genericContainer.typeInspection.set(new TypeInspectionImpl.Builder(genericContainer, BY_HAND)
                 .addTypeParameter(genericContainerTypeParameterT)
-                .setParentClass(primitives.objectParameterizedType).build());
+                .noParent(primitives).build());
 
         TypeInfo testTypeInfo = new TypeInfo(MODEL, "TestTypeInfoStream");
         TypeInfo loggerTypeInfo = new TypeInfo("org.slf4j", "Logger");
@@ -81,9 +81,9 @@ public class TestTypeInfoStream {
         TypeInfo exception = new TypeInfo(GENERATED_PACKAGE, "MyException");
 
         TypeInspectionImpl.Builder hashMapInspection = new TypeInspectionImpl.Builder(hashMap, BY_HAND)
-                .setParentClass(primitives.objectParameterizedType);
+                .noParent(primitives);
         TypeInspectionImpl.Builder exceptionInspection = new TypeInspectionImpl.Builder(exception, BY_HAND)
-                .setParentClass(primitives.objectParameterizedType);
+                .noParent(primitives);
 
         InspectionProvider inspectionProvider = new InspectionProvider() {
             @Override
@@ -111,13 +111,13 @@ public class TestTypeInfoStream {
         ParameterizedType hashMapParameterizedType = hashMap.asParameterizedType(inspectionProvider);
         TypeInfo map = new TypeInfo(JAVA_UTIL, "Map");
         map.typeInspection.set(new TypeInspectionImpl.Builder(map, BY_HAND)
-                .setParentClass(primitives.objectParameterizedType)
+                .noParent(primitives)
                 .setTypeNature(TypeNature.INTERFACE).build()
         );
         TypeInfo mapEntry = new TypeInfo(map, "Entry");
         mapEntry.typeInspection.set(new TypeInspectionImpl.Builder(mapEntry, BY_HAND)
                 .setTypeNature(TypeNature.INTERFACE)
-                .setParentClass(primitives.objectParameterizedType)
+                .noParent(primitives)
                 .build());
 
         logger.fieldInspection.set(new FieldInspectionImpl.Builder()
@@ -192,7 +192,7 @@ public class TestTypeInfoStream {
 
         TypeInspection containerTypeInspection = new TypeInspectionImpl.Builder(containerTypeInfo, BY_HAND)
                 .setTypeNature(TypeNature.CLASS)
-                .setParentClass(primitives.objectParameterizedType)
+                .noParent(primitives)
                 .addTypeModifier(TypeModifier.STATIC)
                 .addField(intFieldInContainer)
                 .addField(stringFieldInContainer)
@@ -212,7 +212,7 @@ public class TestTypeInfoStream {
                 .setInspectedBlock(new Block.BlockBuilder().build())
                 .build(IP).getMethodInfo();
         testEquivalent.typeInspection.set(new TypeInspectionImpl.Builder(testEquivalent, BY_HAND)
-                .setParentClass(primitives.objectParameterizedType)
+                .noParent(primitives)
                 .setTypeNature(TypeNature.ANNOTATION)
                 .addMethod(referenceMethodInfo)
                 .build());
@@ -247,7 +247,7 @@ public class TestTypeInfoStream {
         intSum.methodResolution.set(new MethodResolution.Builder().build());
         TypeInspection testTypeInspection = new TypeInspectionImpl.Builder(testTypeInfo, BY_HAND)
                 .addTypeModifier(TypeModifier.PUBLIC)
-                .setParentClass(primitives.objectParameterizedType)
+                .noParent(primitives)
                 .addField(logger)
                 .addSubType(containerTypeInfo)
                 .addConstructor(emptyTestConstructor)

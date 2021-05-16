@@ -105,10 +105,12 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
         parameterAnalyses = parameterAnalysers.stream().map(pa -> (ParameterAnalysis) pa.parameterAnalysis).toList();
 
         this.typeAnalysis = typeAnalysis;
-        Block block = methodInspection.getMethodBody();
-        methodAnalysis = new MethodAnalysisImpl.Builder(true, analyserContext.getPrimitives(),
+        TypeInspection typeInspection = analyserContextInput.getTypeInspection(methodInfo.typeInfo);
+        Analysis.AnalysisMode analysisMode = computeAnalysisMode(methodInspection, typeInspection);
+        methodAnalysis = new MethodAnalysisImpl.Builder(analysisMode, analyserContext.getPrimitives(),
                 analyserContext, analyserContext, methodInfo, parameterAnalyses);
 
+        Block block = methodInspection.getMethodBody();
         if (block == Block.EMPTY_BLOCK) {
             firstStatementAnalyser = null;
         } else {
@@ -162,6 +164,19 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
         analyserComponents = builder.build();
     }
 
+    private Analysis.AnalysisMode computeAnalysisMode(MethodInspection methodInspection,
+                                                      TypeInspection typeInspection) {
+        boolean isAbstract = typeInspection.isInterface() && !methodInspection.isDefault() ||
+                methodInspection.isAbstract();
+        if (isAbstract) {
+            if (typeInspection.isSealed() || typeInspection.hasOneKnownGeneratedImplementation()) {
+                return Analysis.AnalysisMode.AGGREGATED;
+            }
+            return Analysis.AnalysisMode.CONTRACTED;
+        }
+        return Analysis.AnalysisMode.COMPUTED;
+    }
+
     public Stream<PrimaryTypeAnalyser> getLocallyCreatedPrimaryTypeAnalysers() {
         return locallyCreatedPrimaryTypeAnalysers.stream();
     }
@@ -203,17 +218,15 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
         });
         this.myFieldAnalysers = Map.copyOf(myFieldAnalysers);
 
-        boolean acceptVerify = methodInfo.isAbstract();
+        boolean acceptVerify = methodAnalysis.analysisMode == Analysis.AnalysisMode.CONTRACTED;
         // copy CONTRACT annotations into the properties
-        methodAnalysis.fromAnnotationsIntoProperties(VariableProperty.NOT_NULL_EXPRESSION,
-                AnalyserIdentification.METHOD, acceptVerify, methodInspection.getAnnotations(),
-                analyserContext.getE2ImmuAnnotationExpressions());
+        methodAnalysis.fromAnnotationsIntoProperties(AnalyserIdentification.METHOD, acceptVerify,
+                methodInspection.getAnnotations(), analyserContext.getE2ImmuAnnotationExpressions());
 
         parameterAnalysers.forEach(pa -> {
             Collection<AnnotationExpression> annotations = pa.parameterInfo.getInspection().getAnnotations();
-            pa.parameterAnalysis.fromAnnotationsIntoProperties(VariableProperty.NOT_NULL_PARAMETER,
-                    AnalyserIdentification.PARAMETER, acceptVerify, annotations,
-                    analyserContext.getE2ImmuAnnotationExpressions());
+            pa.parameterAnalysis.fromAnnotationsIntoProperties(AnalyserIdentification.PARAMETER, acceptVerify,
+                    annotations, analyserContext.getE2ImmuAnnotationExpressions());
 
             pa.initialize(analyserContext.fieldAnalyserStream());
         });

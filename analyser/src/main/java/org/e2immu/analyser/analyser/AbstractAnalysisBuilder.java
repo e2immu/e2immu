@@ -162,10 +162,19 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
         annotations.put(ae, true);
     }
 
+    /**
+     * Copy contracted annotations into properties.
+     *
+     * @param analyserIdentification      which analyser is calling? some small choices to make
+     * @param acceptVerifyAsContracted    accept annotations with AnnotationMode.VERIFY as contracted. This is e.g.
+     *                                    the case for methods that have AnalyserMode.CONTRACTED
+     * @param annotations                 the annotations to copy
+     * @param e2ImmuAnnotationExpressions the full list of e2immu annotations
+     * @return error or warning messages
+     */
     public Messages fromAnnotationsIntoProperties(
-            VariableProperty notNullProperty,
             Analyser.AnalyserIdentification analyserIdentification,
-            boolean acceptVerify,
+            boolean acceptVerifyAsContracted,
             Collection<AnnotationExpression> annotations,
             E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
         int immutable = -1;
@@ -186,7 +195,7 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
 
         for (AnnotationExpression annotationExpression : annotations) {
             AnnotationParameters parameters = annotationExpression.e2ImmuAnnotationParameters();
-            if (parameters != null && (parameters.contract() || acceptVerify && !parameters.absent())) {
+            if (parameters != null && (parameters.contract() || acceptVerifyAsContracted && !parameters.absent())) {
                 int trueFalse = parameters.absent() ? Level.FALSE : Level.TRUE;
                 int falseTrue = !parameters.absent() ? Level.FALSE : Level.TRUE;
 
@@ -271,7 +280,7 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
         }
         if (container) {
             setProperty(VariableProperty.CONTAINER, Level.TRUE);
-            if(immutable == -1) {
+            if (immutable == -1) {
                 setProperty(VariableProperty.IMMUTABLE, MultiLevel.MUTABLE);
             }
         }
@@ -284,7 +293,7 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
             setProperty(VariableProperty.IMMUTABLE, value);
         }
         if (notNull >= 0) {
-            setProperty(notNullProperty, notNull);
+            setProperty(analyserIdentification.notNull, notNull);
         }
         if (mark != null && only == null) {
             String markValue = mark.extract("value", "");
@@ -322,10 +331,5 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
             res.put(property, value);
         }
         return res;
-    }
-
-    @Override
-    public boolean isBeingAnalysed() {
-        return true;
     }
 }

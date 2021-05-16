@@ -81,4 +81,6 @@ public interface MethodInspection extends Inspection {
                 })
                 .anyMatch(ae -> ae.typeInfo().fullyQualifiedName.equals(Finalizer.class.getCanonicalName()));
     }
+
+    default boolean isAbstract() { return getModifiers().contains(MethodModifier.ABSTRACT); }
 }

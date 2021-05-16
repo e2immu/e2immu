@@ -165,11 +165,11 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
 
         public final SetOnceMap<CompanionMethodName, MethodInfo> computedCompanions = new SetOnceMap<>();
 
-        public final boolean isBeingAnalysed;
+        public final AnalysisMode analysisMode;
 
         @Override
-        public boolean isBeingAnalysed() {
-            return isBeingAnalysed;
+        public AnalysisMode analysisMode() {
+            return analysisMode;
         }
 
         @Override
@@ -187,7 +187,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
             return eventual.isSet();
         }
 
-        public Builder(boolean isBeingAnalysed,
+        public Builder(AnalysisMode analysisMode,
                        Primitives primitives,
                        AnalysisProvider analysisProvider,
                        InspectionProvider inspectionProvider,
@@ -195,7 +195,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
                        List<ParameterAnalysis> parameterAnalyses) {
             super(primitives, methodInfo.name);
             this.inspectionProvider = inspectionProvider;
-            this.isBeingAnalysed = isBeingAnalysed;
+            this.analysisMode = analysisMode;
             this.parameterAnalyses = parameterAnalyses;
             this.methodInfo = methodInfo;
             this.returnType = methodInfo.returnType();

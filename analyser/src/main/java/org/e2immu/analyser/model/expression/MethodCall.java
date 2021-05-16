@@ -335,18 +335,22 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         // before we return, increment the time, irrespective of NO_VALUE
         if (!recursiveCall) {
             boolean increment;
-            if (methodAnalysis.isBeingAnalysed()) {
-                StatementAnalysis lastStatement = methodAnalysis.getLastStatement();
-                if (lastStatement == null) {
-                    increment = false;
-                } else if (lastStatement.flowData.initialTimeNotYetSet()) {
-                    return delayedMethod(evaluationContext, builder, objectValue,
-                            contextModifiedDelay == Level.TRUE, parameterValues);
-                } else {
-                    increment = lastStatement.flowData.getTimeAfterSubBlocks() > 0;
+            switch (methodAnalysis.analysisMode()) {
+                case COMPUTED -> {
+                    StatementAnalysis lastStatement = methodAnalysis.getLastStatement();
+                    if (lastStatement == null) {
+                        increment = false;
+                    } else if (lastStatement.flowData.initialTimeNotYetSet()) {
+                        return delayedMethod(evaluationContext, builder, objectValue,
+                                contextModifiedDelay == Level.TRUE, parameterValues);
+                    } else {
+                        increment = lastStatement.flowData.getTimeAfterSubBlocks() > 0;
+                    }
                 }
-            } else {
-                increment = !methodInfo.methodResolution.isSet() || methodInfo.methodResolution.get().allowsInterrupts();
+                // TODO aggregated needs its specific code
+                case CONTRACTED, AGGREGATED -> increment = !methodInfo.methodResolution.isSet() ||
+                        methodInfo.methodResolution.get().allowsInterrupts();
+                default -> throw new IllegalStateException("Unexpected value: " + methodAnalysis.analysisMode());
             }
             if (increment) builder.incrementStatementTime();
         }

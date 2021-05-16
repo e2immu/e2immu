@@ -55,11 +55,27 @@ public interface TypeInspection extends Inspection {
 
     AnnotationMode annotationMode();
 
+    /**
+     * Returns the types permitted to extend from this type.
+     *
+     * @return The types permitted to extend from this type. Note that this list is not empty
+     * if and only if the type is sealed.
+     */
+    List<TypeInfo> permittedWhenSealed();
+
     default boolean isFunctionalInterface() {
         if (typeNature() != TypeNature.INTERFACE) {
             return false;
         }
         return getAnnotations().stream().anyMatch(ann -> Primitives.isFunctionalInterfaceAnnotation(ann.typeInfo()));
+    }
+
+    default boolean isSealed() {
+        return !permittedWhenSealed().isEmpty();
+    }
+
+    default boolean hasOneKnownGeneratedImplementation() {
+        return false;
     }
 
     enum Methods {

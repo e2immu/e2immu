@@ -65,7 +65,7 @@ public class ConvertMethodReference {
 
         builder.setTypeNature(TypeNature.CLASS);
         builder.addInterfaceImplemented(functionalInterfaceType);
-        builder.setParentClass(expressionContext.typeContext.getPrimitives().objectParameterizedType);
+        builder.noParent(expressionContext.typeContext.getPrimitives());
 
         // there are no extra type parameters; only those of the enclosing type(s) can be in 'type'
         MethodInspectionImpl.Builder methodBuilder = method.buildCopy(expressionContext.typeContext, typeInfo);

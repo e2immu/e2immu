@@ -28,8 +28,7 @@ public enum TypeModifier {
 
     STATIC(2),
 
-    FINAL(3), SEALED(3),
-    ;
+    FINAL(3), SEALED(3), NON_SEALED(3);
 
     TypeModifier(int group) {
         this.group = group;
@@ -44,6 +43,7 @@ public enum TypeModifier {
     }
 
     public String toJava() {
+        if (this == NON_SEALED) return "non-sealed";
         return name().toLowerCase();
     }
 

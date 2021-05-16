@@ -31,6 +31,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static org.e2immu.analyser.model.Analysis.AnalysisMode.CONTRACTED;
 import static org.e2immu.analyser.util.Logger.LogTarget.ANALYSER;
 import static org.e2immu.analyser.util.Logger.LogTarget.DELAYED;
 import static org.e2immu.analyser.util.Logger.log;
@@ -64,7 +65,8 @@ public class ShallowTypeAnalyser implements AnalyserContext {
         typeAnalyses = new LinkedHashMap<>(); // we keep the order provided
         Map<MethodInfo, MethodAnalysis> methodAnalysesBuilder = new HashMap<>();
         for (TypeInfo typeInfo : types) {
-            TypeAnalysisImpl.Builder typeAnalysis = new TypeAnalysisImpl.Builder(primitives, typeInfo, null);
+            TypeAnalysisImpl.Builder typeAnalysis = new TypeAnalysisImpl.Builder(CONTRACTED,
+                    primitives, typeInfo, null);
             typeAnalyses.put(typeInfo, typeAnalysis);
             AtomicBoolean hasFinalizers = new AtomicBoolean();
             typeInfo.typeInspection.get().methodsAndConstructors(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM).forEach(methodInfo -> {
@@ -76,7 +78,7 @@ public class ShallowTypeAnalyser implements AnalyserContext {
                     } else {
                         MethodAnalysisImpl.Builder methodAnalysisBuilder;
                         MethodInspection methodInspection = methodInfo.methodInspection.get();
-                        if(methodInspection.hasContractedFinalizer()) hasFinalizers.set(true);
+                        if (methodInspection.hasContractedFinalizer()) hasFinalizers.set(true);
                         boolean hasNoCompanionMethods = methodInspection.getCompanionMethods().isEmpty();
                         if (hasNoCompanionMethods && methodInfo.hasStatements()) {
                             // normal method analysis
@@ -119,7 +121,7 @@ public class ShallowTypeAnalyser implements AnalyserContext {
         parameterAnalysis.setProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD, Level.FALSE);
 
         List<ParameterAnalysis> parameterAnalyses = List.of((ParameterAnalysis) parameterAnalysis.build());
-        MethodAnalysisImpl.Builder builder = new MethodAnalysisImpl.Builder(false, getPrimitives(),
+        MethodAnalysisImpl.Builder builder = new MethodAnalysisImpl.Builder(CONTRACTED, getPrimitives(),
                 this, this, methodInfo, parameterAnalyses);
         builder.setProperty(VariableProperty.IDENTITY, Level.FALSE);
         builder.setProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD, Level.FALSE);
@@ -147,7 +149,7 @@ public class ShallowTypeAnalyser implements AnalyserContext {
         parameterAnalysis.setProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD, Level.FALSE);
 
         List<ParameterAnalysis> parameterAnalyses = List.of((ParameterAnalysis) parameterAnalysis.build());
-        MethodAnalysisImpl.Builder builder = new MethodAnalysisImpl.Builder(false, getPrimitives(),
+        MethodAnalysisImpl.Builder builder = new MethodAnalysisImpl.Builder(CONTRACTED, getPrimitives(),
                 this, this, methodInfo, parameterAnalyses);
         builder.setProperty(VariableProperty.IDENTITY, Level.FALSE);
         builder.setProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD, Level.FALSE);
@@ -276,8 +278,7 @@ public class ShallowTypeAnalyser implements AnalyserContext {
                             }
                         }
                     });
-                    builder.fromAnnotationsIntoProperties(VariableProperty.NOT_NULL_EXPRESSION,
-                            Analyser.AnalyserIdentification.METHOD, true,
+                    builder.fromAnnotationsIntoProperties(Analyser.AnalyserIdentification.METHOD, true,
                             methodInfo.methodInspection.get().getAnnotations(), e2ImmuAnnotationExpressions);
                 } else {
                     MethodAnalyser methodAnalyser = either.getLeft();
@@ -316,9 +317,8 @@ public class ShallowTypeAnalyser implements AnalyserContext {
                                              TypeAnalysisImpl.Builder typeAnalysisBuilder,
                                              E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
         TypeInspection typeInspection = typeInfo.typeInspection.get();
-        messages.addAll(typeAnalysisBuilder.fromAnnotationsIntoProperties(null,
-                Analyser.AnalyserIdentification.METHOD, true, typeInspection.getAnnotations(),
-                e2ImmuAnnotationExpressions));
+        messages.addAll(typeAnalysisBuilder.fromAnnotationsIntoProperties(Analyser.AnalyserIdentification.METHOD,
+                true, typeInspection.getAnnotations(), e2ImmuAnnotationExpressions));
 
         TypeAnalyser.findAspects(typeAnalysisBuilder, typeInfo);
         typeAnalysisBuilder.freezeApprovedPreconditionsE1();
@@ -339,8 +339,7 @@ public class ShallowTypeAnalyser implements AnalyserContext {
         FieldAnalysisImpl.Builder fieldAnalysisBuilder = new FieldAnalysisImpl.Builder(primitives, AnalysisProvider.DEFAULT_PROVIDER,
                 fieldInfo, fieldInfo.owner.typeAnalysis.get());
 
-        messages.addAll(fieldAnalysisBuilder.fromAnnotationsIntoProperties(VariableProperty.EXTERNAL_NOT_NULL,
-                Analyser.AnalyserIdentification.FIELD, true,
+        messages.addAll(fieldAnalysisBuilder.fromAnnotationsIntoProperties(Analyser.AnalyserIdentification.FIELD, true,
                 fieldInfo.fieldInspection.get().getAnnotations(), e2ImmuAnnotationExpressions));
 
         FieldInspection fieldInspection = getFieldInspection(fieldInfo);

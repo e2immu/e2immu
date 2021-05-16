@@ -159,8 +159,7 @@ public class FieldAnalyser extends AbstractAnalyser {
         List<MethodAnalyser> allMethodsAndConstructors = new LinkedList<>();
         List<MethodAnalyser> myMethodsAndConstructors = new LinkedList<>();
 
-        messages.addAll(fieldAnalysis.fromAnnotationsIntoProperties(VariableProperty.EXTERNAL_NOT_NULL,
-                AnalyserIdentification.FIELD, false,
+        messages.addAll(fieldAnalysis.fromAnnotationsIntoProperties(AnalyserIdentification.FIELD, false,
                 fieldInfo.fieldInspection.get().getAnnotations(), analyserContext.getE2ImmuAnnotationExpressions()));
 
         analyserContext.methodAnalyserStream().forEach(analyser -> {

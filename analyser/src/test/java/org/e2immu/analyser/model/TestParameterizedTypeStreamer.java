@@ -74,7 +74,7 @@ public class TestParameterizedTypeStreamer {
         TypeParameter t = new TypeParameterImpl(clazz, "T", 0);
         TypeParameter s = new TypeParameterImpl(clazz, "S", 1);
         TypeInspectionImpl.Builder clazzInspection = new TypeInspectionImpl.Builder(clazz, TypeInspectionImpl.InspectionState.BY_HAND)
-                .setParentClass(primitives.objectParameterizedType)
+                .noParent(primitives)
                 .addTypeParameter(t)
                 .addTypeParameter(s);
         clazz.typeInspection.set(clazzInspection.build());
@@ -86,7 +86,7 @@ public class TestParameterizedTypeStreamer {
         TypeInfo sub = new TypeInfo(clazz, "Sub");
 
         TypeInspectionImpl.Builder subInspection = new TypeInspectionImpl.Builder(sub, TypeInspectionImpl.InspectionState.BY_HAND)
-                .setParentClass(primitives.objectParameterizedType);
+                .noParent(primitives);
         sub.typeInspection.set(subInspection.build());
         ParameterizedType clazzTSubS = new ParameterizedType(sub, List.of(
                 new ParameterizedType(t, 0, ParameterizedType.WildCard.NONE),
@@ -100,7 +100,7 @@ public class TestParameterizedTypeStreamer {
         TypeInfo clazz = new TypeInfo("a.b", "Clazz");
         TypeParameter t = new TypeParameterImpl(clazz, "T", 0);
         TypeInspectionImpl.Builder clazzInspection = new TypeInspectionImpl.Builder(clazz, TypeInspectionImpl.InspectionState.BY_HAND)
-                .setParentClass(primitives.objectParameterizedType)
+                .noParent(primitives)
                 .addTypeParameter(t);
         clazz.typeInspection.set(clazzInspection.build());
         ParameterizedType clazzT = new ParameterizedType(clazz, List.of(new ParameterizedType(t, 0, ParameterizedType.WildCard.NONE)));
@@ -109,7 +109,7 @@ public class TestParameterizedTypeStreamer {
         TypeInfo sub = new TypeInfo(clazz, "Sub");
         TypeParameter s = new TypeParameterImpl(sub, "S", 0);
         TypeInspectionImpl.Builder subInspection = new TypeInspectionImpl.Builder(sub, TypeInspectionImpl.InspectionState.BY_HAND)
-                .setParentClass(primitives.objectParameterizedType)
+                .noParent(primitives)
                 .addTypeParameter(s);
         sub.typeInspection.set(subInspection.build());
         ParameterizedType clazzTSubS = new ParameterizedType(sub, List.of(

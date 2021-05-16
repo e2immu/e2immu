@@ -19,11 +19,11 @@ import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.AnnotatedAPIConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.model.Level;
-import org.e2immu.analyser.model.MultiLevel;
-import org.e2immu.analyser.model.ParameterInfo;
+import org.e2immu.analyser.inspector.TypeContext;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.ReturnVariable;
+import org.e2immu.analyser.testexample.a.IFluent_1;
 import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.visitor.TypeAnalyserVisitor;
@@ -151,4 +151,29 @@ public class Test_56_Fluent extends CommonTestRunner {
                 .build(), new AnalyserConfiguration.Builder().build(), new AnnotatedAPIConfiguration.Builder().build());
     }
 
+    @Test
+    public void test_1() throws IOException {
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("IFluent_1".equals(d.typeInfo().simpleName)) {
+                assertTrue(d.typeInspection().hasOneKnownGeneratedImplementation());
+            }
+        };
+
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("value".equals(d.methodInfo().name) && "IFluent_1".equals(d.methodInfo().typeInfo.simpleName)) {
+                fail("There is no method analyser for IFluent_1.value()!");
+            }
+        };
+
+        TypeContext typeContext = testClass(List.of("a.IFluent_1", "Fluent_1"),
+                List.of("jmods/java.compiler.jmod"),
+                0, 1, new DebugConfiguration.Builder()
+                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
+                        .build(), new AnalyserConfiguration.Builder().build(), new AnnotatedAPIConfiguration.Builder().build());
+        TypeInfo iFluent1 = typeContext.typeMapBuilder.get(IFluent_1.class);
+        MethodInfo value = iFluent1.findUniqueMethod("value", 0);
+        MethodAnalysis valueAnalysis = value.methodAnalysis.get();
+        assertSame(Analysis.AnalysisMode.AGGREGATED, valueAnalysis.analysisMode());
+    }
 }

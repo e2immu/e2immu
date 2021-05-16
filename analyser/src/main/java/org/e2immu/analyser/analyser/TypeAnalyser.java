@@ -89,7 +89,8 @@ public class TypeAnalyser extends AbstractAnalyser {
         this.primaryType = primaryType;
         typeInspection = typeInfo.typeInspection.get();
 
-        typeAnalysis = new TypeAnalysisImpl.Builder(analyserContext.getPrimitives(), typeInfo, analyserContext);
+        typeAnalysis = new TypeAnalysisImpl.Builder(Analysis.AnalysisMode.COMPUTED,
+                analyserContext.getPrimitives(), typeInfo, analyserContext);
         AnalyserComponents.Builder<String, Integer> builder = new AnalyserComponents.Builder<String, Integer>()
                 .add("findAspects", iteration -> findAspects())
                 .add("analyseImplicitlyImmutableTypes", iteration -> analyseImplicitlyImmutableTypes());
@@ -110,8 +111,9 @@ public class TypeAnalyser extends AbstractAnalyser {
 
         analyserComponents = builder.build();
 
-        messages.addAll(typeAnalysis.fromAnnotationsIntoProperties(null,
-                AnalyserIdentification.TYPE, typeInfo.isInterface(), typeInspection.getAnnotations(),
+        messages.addAll(typeAnalysis.fromAnnotationsIntoProperties(AnalyserIdentification.TYPE,
+                typeInfo.isInterface(),
+                typeInspection.getAnnotations(),
                 analyserContext.getE2ImmuAnnotationExpressions()));
     }
 
@@ -237,7 +239,10 @@ public class TypeAnalyser extends AbstractAnalyser {
                     .debugConfiguration().afterTypePropertyComputations()) {
                 typeAnalyserVisitor.visit(new TypeAnalyserVisitor.Data(iteration,
                         analyserContext.getPrimitives(),
-                        typeInfo, typeAnalysis, analyserComponents.getStatusesAsMap()));
+                        typeInfo,
+                        analyserContext.getTypeInspection(typeInfo),
+                        typeAnalysis,
+                        analyserComponents.getStatusesAsMap()));
             }
 
             return analysisStatus;
@@ -343,7 +348,7 @@ public class TypeAnalyser extends AbstractAnalyser {
             TypeInfo bestType = type.bestTypeInfo();
             if (bestType == null) return false;
             int immutable = analyserContext.getTypeAnalysis(bestType).getProperty(VariableProperty.IMMUTABLE);
-            return immutable == MultiLevel.DELAY && analyserContext.getTypeAnalysis(bestType).isBeingAnalysed();
+            return immutable == MultiLevel.DELAY && analyserContext.getTypeAnalysis(bestType).isNotContracted();
         });
         if (e2immuDelay) {
             log(DELAYED, "Delaying implicitly immutable data types on {} because of immutable", typeInfo.fullyQualifiedName);

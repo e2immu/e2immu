@@ -84,7 +84,7 @@ public class TestIsAssignableFromGenerics {
             TypeParameter myComparableT = new TypeParameterImpl(myComparable, "T", 0);
 
             TypeInspectionImpl.Builder myComparableInspection = new TypeInspectionImpl.Builder(myComparable, BY_HAND)
-                    .setParentClass(primitives.objectParameterizedType)
+                    .noParent(primitives)
                     .addTypeParameter(myComparableT);
             MethodInspectionImpl.Builder compareToBuilder = new MethodInspectionImpl.Builder(myComparable, "compareTo");
             MethodInfo compareTo = compareToBuilder
@@ -101,21 +101,21 @@ public class TestIsAssignableFromGenerics {
         {
             TypeInspectionImpl.Builder builder = new TypeInspectionImpl.Builder(node, BY_HAND)
                     .addInterfaceImplemented(new ParameterizedType(myComparable, List.of(new ParameterizedType(node, List.of()))))
-                    .setParentClass(primitives.objectParameterizedType);
+                    .noParent(primitives);
             node.typeInspection.set(builder.setTypeNature(TypeNature.INTERFACE).build());
         }
         sub1 = new TypeInfo(PACKAGE, "Sub1");
         {
             TypeInspectionImpl.Builder builder = new TypeInspectionImpl.Builder(sub1, BY_HAND)
                     .addInterfaceImplemented(new ParameterizedType(node, List.of()))
-                    .setParentClass(primitives.objectParameterizedType);
+                    .noParent(primitives);
             sub1.typeInspection.set(builder.setTypeNature(TypeNature.INTERFACE).build());
         }
         sub2 = new TypeInfo(PACKAGE, "Sub2");
         {
             TypeInspectionImpl.Builder builder = new TypeInspectionImpl.Builder(sub2, BY_HAND)
                     .addInterfaceImplemented(new ParameterizedType(node, List.of()))
-                    .setParentClass(primitives.objectParameterizedType);
+                    .noParent(primitives);
             sub2.typeInspection.set(builder.setTypeNature(TypeNature.INTERFACE).build());
         }
 
@@ -126,7 +126,7 @@ public class TestIsAssignableFromGenerics {
             t.setTypeBounds(List.of(new ParameterizedType(node, List.of())));
 
             TypeInspectionImpl.Builder builder = new TypeInspectionImpl.Builder(myList1, BY_HAND)
-                    .setParentClass(primitives.objectParameterizedType)
+                    .noParent(primitives)
                     .addTypeParameter(t);
             MethodInspectionImpl.Builder addBuilder = new MethodInspectionImpl.Builder(myList1, "add");
             add = addBuilder
@@ -150,7 +150,7 @@ public class TestIsAssignableFromGenerics {
             t.setTypeBounds(List.of(new ParameterizedType(node, List.of())));
 
             TypeInspectionImpl.Builder builder = new TypeInspectionImpl.Builder(myList2, BY_HAND)
-                    .setParentClass(primitives.objectParameterizedType)
+                    .noParent(primitives)
                     .addTypeParameter(t);
             myList2.typeInspection.set(builder
                     .setTypeNature(TypeNature.INTERFACE)
@@ -166,7 +166,7 @@ public class TestIsAssignableFromGenerics {
             t.setTypeBounds(List.of(new ParameterizedType(node, List.of())));
 
             TypeInspectionImpl.Builder builder = new TypeInspectionImpl.Builder(myList3, BY_HAND)
-                    .setParentClass(primitives.objectParameterizedType)
+                    .noParent(primitives)
                     .addTypeParameter(t);
             myList3.typeInspection.set(builder
                     .setTypeNature(TypeNature.INTERFACE)

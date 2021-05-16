@@ -191,7 +191,7 @@ public class EnumMethods {
         builder.setTypeNature(TypeNature.CLASS)
                 .setSynthetic(true)
                 .addInterfaceImplemented(functionalInterfaceType)
-                .setParentClass(primitives.objectParameterizedType);
+                .noParent(primitives);
 
         var predicate = new MethodInspectionImpl.Builder(lambdaType, "test")
                 .setSynthetic(true)

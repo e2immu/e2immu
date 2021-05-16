@@ -124,6 +124,33 @@ public interface Analysis {
         return Level.DELAY;
     }
 
+    enum AnalysisMode {
+        /**
+         * Properties are contracted.
+         * <p>
+         * Byte code inspection/shallow analyser: all types, methods
+         * Java parser: types: when nothing has code, and annotations. Methods: when no code
+         * <p>
+         * Absence of a property implies the default false value.
+         */
+        CONTRACTED,
+        /**
+         * Properties are generally computed by analysing the code block provided; they can be
+         * contracted explicitly.
+         * <p>
+         * Byte code inspection: never
+         * Java parser: as soon as one method has code, or a field has a non-constant initializer.
+         * <p>
+         * Means that absence of a property is typically interpreted as a delay.
+         */
+        COMPUTED,
+        /**
+         * Only in the case of abstract methods in a sealed type.
+         * The properties are aggregated over the implementations/overrides of the abstract method.
+         */
+        AGGREGATED,
+    }
+
     /**
      * Helps to decide whether absence of a property must equal a delay. If the analyser is actively going over the method's code,
      * then this method has to return true.
@@ -133,7 +160,15 @@ public interface Analysis {
      *
      * @return true when the method is being analysed, irrespective of whether its companion methods are being analysed.
      */
-    default boolean isBeingAnalysed() {
-        return false;
+    default AnalysisMode analysisMode() {
+        return AnalysisMode.CONTRACTED;
+    }
+
+    default boolean isComputed() {
+        return analysisMode() == AnalysisMode.COMPUTED;
+    }
+
+    default boolean isNotContracted() {
+        return analysisMode() != AnalysisMode.CONTRACTED;
     }
 }

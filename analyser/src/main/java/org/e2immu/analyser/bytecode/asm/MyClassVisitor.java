@@ -137,7 +137,7 @@ public class MyClassVisitor extends ClassVisitor {
 
         // may be overwritten, but this is the default UNLESS it's JLO itself
         if (!Primitives.isJavaLangObject(currentType)) {
-            typeInspectionBuilder.setParentClass(typeContext.getPrimitives().objectParameterizedType);
+            typeInspectionBuilder.noParent(typeContext.getPrimitives());
         }
 
         TypeNature currentTypeNature = typeNatureFromOpCode(access);

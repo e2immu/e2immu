@@ -25,6 +25,7 @@ import org.e2immu.analyser.model.*;
 import java.util.*;
 
 import static org.e2immu.analyser.inspector.TypeInspectionImpl.InspectionState.BY_HAND;
+import static org.e2immu.analyser.model.Analysis.AnalysisMode.CONTRACTED;
 import static org.e2immu.analyser.model.ParameterizedType.NOT_ASSIGNABLE;
 
 public class Primitives {
@@ -315,9 +316,9 @@ public class Primitives {
         for (TypeInfo ti : boxed) {
             ti.typeInspection.set(new TypeInspectionImpl.Builder(ti, BY_HAND)
                     .setTypeNature(TypeNature.CLASS)
-                    .setParentClass(objectParameterizedType)
+                    .noParent(this)
                     .build());
-            TypeAnalysisImpl.Builder builder = new TypeAnalysisImpl.Builder(this, ti, null);
+            TypeAnalysisImpl.Builder builder = new TypeAnalysisImpl.Builder(CONTRACTED, this, ti, null);
             builder.properties.put(VariableProperty.CONTAINER, Level.TRUE);
             builder.properties.put(VariableProperty.IMMUTABLE, MultiLevel.EFFECTIVELY_E2IMMUTABLE);
             builder.freezeApprovedPreconditionsE2(); // cannot change these anymore; will never be eventual
@@ -333,10 +334,10 @@ public class Primitives {
         for (TypeInfo ti : primitives) {
             ti.typeInspection.set(new TypeInspectionImpl.Builder(ti, BY_HAND)
                     .setTypeNature(TypeNature.PRIMITIVE)
-                    .setParentClass(objectParameterizedType)
+                    .noParent(this)
                     .build());
             primitiveByName.put(ti.simpleName, ti);
-            TypeAnalysisImpl.Builder builder = new TypeAnalysisImpl.Builder(this, ti, null);
+            TypeAnalysisImpl.Builder builder = new TypeAnalysisImpl.Builder(CONTRACTED, this, ti, null);
             ti.typeAnalysis.set(builder);
             builder.properties.put(VariableProperty.CONTAINER, Level.TRUE);
             builder.properties.put(VariableProperty.IMMUTABLE, MultiLevel.EFFECTIVELY_E2IMMUTABLE);
@@ -361,7 +362,7 @@ public class Primitives {
 
         functionalInterface.typeInspection.set(new TypeInspectionImpl.Builder(functionalInterface, BY_HAND)
                 .setTypeNature(TypeNature.ANNOTATION)
-                .setParentClass(objectParameterizedType)
+                .noParent(this)
                 .build());
 
         assert UNARY_MINUS_OPERATOR_INT.equals(unaryMinusOperatorInt.fullyQualifiedName);
@@ -405,7 +406,7 @@ public class Primitives {
         TypeInspectionImpl.Builder typeInspectionBuilder = new TypeInspectionImpl.Builder(typeInfo, BY_HAND)
                 .setTypeNature(TypeNature.ENUM)
                 .addTypeModifier(TypeModifier.PUBLIC)
-                .setParentClass(objectParameterizedType)
+                .noParent(this)
                 .addMethod(valueOf)
                 .addMethod(name);
         for (FieldInfo fieldInfo : fields) typeInspectionBuilder.addField(fieldInfo);

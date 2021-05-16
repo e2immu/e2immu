@@ -155,14 +155,21 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
         public final SetOnce<Boolean> ignorePrivateConstructorsForFieldValues = new SetOnce<>();
 
         private final Set<FieldInfo> visibleFields;
+        private final AnalysisMode analysisMode;
 
         /*
         analyser context can be null for Primitives, ShallowTypeAnalyser
          */
-        public Builder(Primitives primitives, TypeInfo typeInfo, AnalyserContext analyserContext) {
+        public Builder(AnalysisMode analysisMode, Primitives primitives, TypeInfo typeInfo, AnalyserContext analyserContext) {
             super(primitives, typeInfo.simpleName);
             this.typeInfo = typeInfo;
+            this.analysisMode = analysisMode;
             this.visibleFields = analyserContext == null ? Set.of() : Set.copyOf(typeInfo.visibleFields(analyserContext));
+        }
+
+        @Override
+        public AnalysisMode analysisMode() {
+            return analysisMode;
         }
 
         @Override
