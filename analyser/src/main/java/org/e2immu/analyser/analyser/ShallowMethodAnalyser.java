@@ -54,13 +54,28 @@ public class ShallowMethodAnalyser {
             parameterAnalyses.add(builder); // building will take place when the method analysis is built
         });
 
+
+        Analysis.AnalysisMode analysisMode = computeAnalysisMode(methodInspection);
         MethodAnalysisImpl.Builder methodAnalysisBuilder = new MethodAnalysisImpl.Builder(
-                Analysis.AnalysisMode.CONTRACTED, primitives,
+                analysisMode, primitives,
                 analysisProvider, InspectionProvider.DEFAULT, methodInfo, parameterAnalyses);
 
         messages.addAll(methodAnalysisBuilder.fromAnnotationsIntoProperties(Analyser.AnalyserIdentification.METHOD,
                 true, map.getOrDefault(methodInfo, Map.of()).keySet(), e2ImmuAnnotationExpressions));
         return methodAnalysisBuilder;
+    }
+
+    private static Analysis.AnalysisMode computeAnalysisMode(MethodInspection methodInspection) {
+        TypeInspection typeInspection = methodInspection.getMethodInfo().typeInfo.typeInspection.get();
+        boolean isAbstract = typeInspection.isInterface() && !methodInspection.isDefault() ||
+                methodInspection.isAbstract();
+        if (isAbstract) {
+            TypeResolution typeResolution = methodInspection.getMethodInfo().typeInfo.typeResolution.get();
+            if (typeInspection.isSealed() || typeResolution.hasOneKnownGeneratedImplementation()) {
+                return Analysis.AnalysisMode.AGGREGATED;
+            }
+        }
+        return Analysis.AnalysisMode.CONTRACTED;
     }
 
     private Map<WithInspectionAndAnalysis, Map<AnnotationExpression, List<MethodInfo>>> collectAnnotations(MethodInfo methodInfo) {

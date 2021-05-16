@@ -43,6 +43,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
     public final Expression singleReturnValue;
     public final Map<CompanionMethodName, CompanionAnalysis> companionAnalyses;
     public final Map<CompanionMethodName, MethodInfo> computedCompanions;
+    public final AnalysisMode analysisMode;
 
     private MethodAnalysisImpl(MethodInfo methodInfo,
                                StatementAnalysis firstStatement,
@@ -52,6 +53,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
                                Precondition preconditionForEventual,
                                Eventual eventual,
                                Precondition precondition,
+                               AnalysisMode analysisMode,
                                Map<VariableProperty, Integer> properties,
                                Map<AnnotationExpression, AnnotationCheck> annotations,
                                Map<CompanionMethodName, CompanionAnalysis> companionAnalyses,
@@ -67,6 +69,12 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
         this.singleReturnValue = singleReturnValue;
         this.companionAnalyses = companionAnalyses;
         this.computedCompanions = computedCompanions;
+        this.analysisMode = analysisMode;
+    }
+
+    @Override
+    public AnalysisMode analysisMode() {
+        return analysisMode;
     }
 
     @Override
@@ -214,6 +222,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
                     preconditionForEventual.getOrDefault(Optional.empty()).orElse(null),
                     eventual.getOrDefault(NOT_EVENTUAL),
                     precondition.getOrDefault(Precondition.empty(primitives)),
+                    analysisMode(),
                     properties.toImmutableMap(),
                     annotationChecks.toImmutableMap(),
                     getCompanionAnalyses(),
@@ -248,12 +257,6 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
         @Override
         public int getProperty(VariableProperty variableProperty) {
             return getMethodProperty(analysisProvider, methodInfo, variableProperty);
-        }
-
-        private int dynamicProperty(int formalImmutableProperty) {
-            int immutableTypeAfterEventual = MultiLevel.eventual(formalImmutableProperty,
-                    false); //  FIXME
-            return Level.best(super.getProperty(VariableProperty.IMMUTABLE), immutableTypeAfterEventual);
         }
 
         private int formalProperty() {

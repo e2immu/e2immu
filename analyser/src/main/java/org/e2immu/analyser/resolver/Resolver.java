@@ -29,6 +29,7 @@ import org.e2immu.analyser.util.DependencyGraph;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.processing.Generated;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
@@ -92,7 +93,7 @@ public class Resolver {
 
     public List<SortedType> sortTypes(Map<TypeInfo, ExpressionContext> inspectedTypes) {
         DependencyGraph<TypeInfo> typeGraph = new DependencyGraph<>();
-        Map<TypeInfo, SortedType> toSortedType = new HashMap<>();
+        Map<TypeInfo, TypeResolution.Builder> resolutionBuilders = new HashMap<>();
         Set<TypeInfo> stayWithin = inspectedTypes.keySet().stream()
                 .flatMap(typeInfo -> typeAndAllSubTypes(typeInfo).stream())
                 .collect(Collectors.toUnmodifiableSet());
@@ -109,13 +110,14 @@ public class Resolver {
                             "?? in recursive situation we do not expect a primary type" + typeInfo.fullyQualifiedName;
                 }
                 SortedType sortedType = addToTypeGraph(typeGraph, stayWithin, typeInfo, expressionContext);
-                toSortedType.put(typeInfo, sortedType);
+                resolutionBuilders.put(typeInfo, new TypeResolution.Builder().setSortedType(sortedType));
             } catch (RuntimeException rte) {
                 LOGGER.warn("Caught runtime exception while resolving type {}", entry.getKey().fullyQualifiedName);
                 throw rte;
             }
         }
-        return sortWarnForCircularDependencies(typeGraph, toSortedType);
+        List<TypeInfo> sorted = sortWarnForCircularDependencies(typeGraph, resolutionBuilders);
+        return computeTypeResolution(sorted, resolutionBuilders);
     }
 
     private List<TypeInfo> typeAndAllSubTypes(TypeInfo typeInfo) {
@@ -132,46 +134,57 @@ public class Resolver {
         }
     }
 
-    private List<SortedType> sortWarnForCircularDependencies(DependencyGraph<TypeInfo> typeGraph, Map<TypeInfo, SortedType> toSortedType) {
-        Map<TypeInfo, Set<TypeInfo>> participatesInCycles = new HashMap<>();
-        List<TypeInfo> sorted = typeGraph.sorted(typeInfo -> {
+    private List<TypeInfo> sortWarnForCircularDependencies(DependencyGraph<TypeInfo> typeGraph,
+                                                           Map<TypeInfo, TypeResolution.Builder> resolutionBuilders) {
+        return typeGraph.sorted(typeInfo -> {
             // typeInfo is part of a cycle, dependencies are:
             Set<TypeInfo> typesInCycle = typeGraph.dependencies(typeInfo);
             log(RESOLVER, "Type {} is part of cycle: {}", typeInfo,
                     () -> typesInCycle.stream().map(t -> t.simpleName).collect(Collectors.joining(",")));
             for (TypeInfo other : typesInCycle) {
-                add(participatesInCycles, other, typesInCycle);
+                TypeResolution.Builder otherBuilder = resolutionBuilders.get(other);
+                otherBuilder.addCircularDependencies(typesInCycle);
             }
             messages.add(Message.newMessage(new Location(typeInfo), Message.Label.CIRCULAR_TYPE_DEPENDENCY,
                     typesInCycle.stream().map(t -> t.fullyQualifiedName).collect(Collectors.joining(", "))));
         });
-
-        return sorted.stream().map(typeInfo -> computeTypeResolution(typeInfo, participatesInCycles, toSortedType))
-                .collect(Collectors.toList());
     }
 
-    private void add(Map<TypeInfo, Set<TypeInfo>> map, TypeInfo key, Set<TypeInfo> set) {
-        Set<TypeInfo> inMap = map.computeIfAbsent(key, k -> new HashSet<>());
-        inMap.addAll(set);
+    private List<SortedType> computeTypeResolution(
+            List<TypeInfo> sorted,
+            Map<TypeInfo, TypeResolution.Builder> resolutionBuilders) {
+        /*
+        The code that computes supertypes and counts implementations runs over all known types and sub-types,
+        out of the standard sorting order, exactly because of circular dependencies.
+         */
+        Map<TypeInfo, TypeResolution.Builder> allBuilders = new HashMap<>(resolutionBuilders);
+        resolutionBuilders.forEach((typeInfo, builder) ->
+                addSubtypeResolutionBuilders(inspectionProvider, typeInfo, builder, allBuilders));
+
+        allBuilders.forEach((typeInfo, builder) -> computeSuperTypes(inspectionProvider, typeInfo, builder, allBuilders));
+        allBuilders.forEach((typeInfo, builder) -> typeInfo.typeResolution.set(builder.build()));
+
+        return sorted.stream().map(typeInfo -> typeInfo.typeResolution.get().sortedType).toList();
     }
 
-    private SortedType computeTypeResolution(TypeInfo typeInfo,
-                                             Map<TypeInfo, Set<TypeInfo>> participatesInCycles,
-                                             Map<TypeInfo, SortedType> toSortedType) {
-        Set<TypeInfo> circularDependencies = participatesInCycles.get(typeInfo);
-        SortedType sortedType = toSortedType.get(typeInfo);
-        TypeResolution typeResolution = new TypeResolution(parent != null ? sortedType : null,
-                circularDependencies == null ? Set.of() : circularDependencies,
-                superTypesExcludingJavaLangObject(inspectionProvider, typeInfo));
-        typeInfo.typeResolution.set(typeResolution);
+    private void addSubtypeResolutionBuilders(InspectionProvider inspectionProvider,
+                                              TypeInfo typeInfo,
+                                              TypeResolution.Builder resolutionBuilder,
+                                              Map<TypeInfo, TypeResolution.Builder> allBuilders) {
+        Set<TypeInfo> circularDependencies = resolutionBuilder.getCircularDependencies();
         for (TypeInfo subType : inspectionProvider.getTypeInspection(typeInfo).subTypes()) {
-            // IMPROVE circular dependencies not computed for sub-types at the moment
-            TypeResolution subTypeResolution = new TypeResolution(null, circularDependencies == null ? Set.of() : circularDependencies,
-                    superTypesExcludingJavaLangObject(inspectionProvider, subType));
-            subType.typeResolution.set(subTypeResolution);
+            // IMPROVE circularDependencies is at the level of primary types, can be better
+            TypeResolution.Builder builder = new TypeResolution.Builder().setCircularDependencies(circularDependencies);
+            allBuilders.put(subType, builder);
         }
-        log(RESOLVER, "Result of type sorting: {}", sortedType);
-        return sortedType;
+    }
+
+    private static void computeSuperTypes(InspectionProvider inspectionProvider,
+                                          TypeInfo typeInfo,
+                                          TypeResolution.Builder builder,
+                                          Map<TypeInfo, TypeResolution.Builder> allBuilders) {
+        Set<TypeInfo> superTypes = superTypesExcludingJavaLangObject(inspectionProvider, typeInfo, allBuilders);
+        builder.setSuperTypesExcludingJavaLangObject(superTypes);
     }
 
     private SortedType addToTypeGraph(DependencyGraph<TypeInfo> typeGraph,
@@ -193,7 +206,7 @@ public class Resolver {
         // remove myself and all my enclosing types, and stay within the set of inspectedTypes
         // only add primary types!
         Set<TypeInfo> typeDependencies = shallowResolver ?
-                new HashSet<>(superTypesExcludingJavaLangObject(expressionContextOfType.typeContext, typeInfo)
+                new HashSet<>(superTypesExcludingJavaLangObject(expressionContextOfType.typeContext, typeInfo, null)
                         .stream().map(TypeInfo::primaryType).toList()) :
                 typeInfo.typesReferenced().stream().map(Map.Entry::getKey)
                         .map(TypeInfo::primaryType)
@@ -728,24 +741,41 @@ public class Resolver {
         return MethodResolution.CallStatus.NOT_CALLED_AT_ALL;
     }
 
-    public static Set<TypeInfo> superTypesExcludingJavaLangObject(InspectionProvider inspectionProvider, TypeInfo typeInfo) {
+    public static Set<TypeInfo> superTypesExcludingJavaLangObject(InspectionProvider inspectionProvider,
+                                                                  TypeInfo typeInfo,
+                                                                  Map<TypeInfo, TypeResolution.Builder> builders) {
         if (Primitives.isJavaLangObject(typeInfo)) return Set.of();
         List<TypeInfo> list = new ArrayList<>();
         TypeInspection typeInspection = inspectionProvider.getTypeInspection(typeInfo);
+        boolean hasGeneratedAnnotation = typeInspection.getAnnotations().stream()
+                .anyMatch(ae -> Generated.class.getCanonicalName().equals(ae.typeInfo().fullyQualifiedName));
+
         if (typeInspection.parentClass() != null && !Primitives.isJavaLangObject(typeInspection.parentClass())) {
             TypeInfo parent = Objects.requireNonNull(typeInspection.parentClass().typeInfo);
             list.add(parent);
-            list.addAll(superTypesExcludingJavaLangObject(inspectionProvider, parent));
+            list.addAll(superTypesExcludingJavaLangObject(inspectionProvider, parent, builders));
+            incrementImplementations(parent, hasGeneratedAnnotation, builders);
         } // else: silently ignore, we may be going out of bounds
 
         typeInspection.interfacesImplemented().forEach(i -> {
             list.add(i.typeInfo);
             assert i.typeInfo != null;
-            list.addAll(superTypesExcludingJavaLangObject(inspectionProvider, i.typeInfo));
+            list.addAll(superTypesExcludingJavaLangObject(inspectionProvider, i.typeInfo, builders));
+            incrementImplementations(i.typeInfo, hasGeneratedAnnotation, builders);
         });
         return Set.copyOf(list);
     }
 
+    private static void incrementImplementations(TypeInfo typeInfo,
+                                                 boolean hasGeneratedAnnotation,
+                                                 Map<TypeInfo, TypeResolution.Builder> builders) {
+        if (builders != null) {
+            TypeResolution.Builder builder = builders.get(typeInfo);
+            if (builder != null) {
+                builder.incrementImplementations(hasGeneratedAnnotation);
+            }
+        }
+    }
 
     public static Stream<TypeInfo> accessibleBySimpleNameTypeInfoStream(InspectionProvider inspectionProvider,
                                                                         TypeInfo typeInfo,

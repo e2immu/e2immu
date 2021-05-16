@@ -198,8 +198,10 @@ public class TypeMapImpl implements TypeMap {
             new HashSet<>(typeInspections.keySet()).forEach(typeInfo -> {
                 if (typeInfo.typeInspection.isSet()) {
                     if (!typeInfo.typeResolution.isSet()) {
-                        Set<TypeInfo> superTypes = Resolver.superTypesExcludingJavaLangObject(InspectionProvider.DEFAULT, typeInfo);
-                        TypeResolution typeResolution = new TypeResolution(null, Set.of(), superTypes);
+                        Set<TypeInfo> superTypes = Resolver.superTypesExcludingJavaLangObject(InspectionProvider.DEFAULT, typeInfo, null);
+                        TypeResolution typeResolution = new TypeResolution.Builder()
+                                .setSuperTypesExcludingJavaLangObject(superTypes)
+                                .build();
                         typeInfo.typeResolution.set(typeResolution);
                     }
                     for (MethodInfo methodInfo : typeInfo.typeInspection.get().methodsAndConstructors()) {

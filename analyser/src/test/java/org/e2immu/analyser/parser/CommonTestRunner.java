@@ -149,12 +149,12 @@ public abstract class CommonTestRunner {
                 errorsToExpect, warningsToExpect, debugConfiguration);
     }
 
-    protected void testSupportAndUtilClasses(List<String> testClasses,
-                                             List<String> utilClasses,
-                                             String packageString,
-                                             int errorsToExpect,
-                                             int warningsToExpect,
-                                             DebugConfiguration debugConfiguration) throws IOException {
+    protected TypeContext testSupportAndUtilClasses(List<String> testClasses,
+                                                    List<String> utilClasses,
+                                                    String packageString,
+                                                    int errorsToExpect,
+                                                    int warningsToExpect,
+                                                    DebugConfiguration debugConfiguration) throws IOException {
         InputConfiguration.Builder builder = new InputConfiguration.Builder()
                 .addSources("src/main/java")
                 .addSources("src/test/java")
@@ -190,7 +190,7 @@ public abstract class CommonTestRunner {
                 .setDebugConfiguration(debugConfiguration)
                 .setInputConfiguration(builder.build())
                 .build();
-        execute(configuration, errorsToExpect, warningsToExpect);
+        return execute(configuration, errorsToExpect, warningsToExpect);
     }
 
     private TypeContext execute(Configuration configuration, int errorsToExpect, int warningsToExpect) throws IOException {

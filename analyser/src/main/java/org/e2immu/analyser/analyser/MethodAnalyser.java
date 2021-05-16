@@ -106,7 +106,8 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
 
         this.typeAnalysis = typeAnalysis;
         TypeInspection typeInspection = analyserContextInput.getTypeInspection(methodInfo.typeInfo);
-        Analysis.AnalysisMode analysisMode = computeAnalysisMode(methodInspection, typeInspection);
+        TypeResolution typeResolution = methodInfo.typeInfo.typeResolution.get();
+        Analysis.AnalysisMode analysisMode = computeAnalysisMode(methodInspection, typeInspection, typeResolution);
         methodAnalysis = new MethodAnalysisImpl.Builder(analysisMode, analyserContext.getPrimitives(),
                 analyserContext, analyserContext, methodInfo, parameterAnalyses);
 
@@ -164,12 +165,13 @@ public class MethodAnalyser extends AbstractAnalyser implements HoldsAnalysers {
         analyserComponents = builder.build();
     }
 
-    private Analysis.AnalysisMode computeAnalysisMode(MethodInspection methodInspection,
-                                                      TypeInspection typeInspection) {
+    private static Analysis.AnalysisMode computeAnalysisMode(MethodInspection methodInspection,
+                                                     TypeInspection typeInspection,
+                                                     TypeResolution typeResolution) {
         boolean isAbstract = typeInspection.isInterface() && !methodInspection.isDefault() ||
                 methodInspection.isAbstract();
         if (isAbstract) {
-            if (typeInspection.isSealed() || typeInspection.hasOneKnownGeneratedImplementation()) {
+            if (typeInspection.isSealed() || typeResolution.hasOneKnownGeneratedImplementation()) {
                 return Analysis.AnalysisMode.AGGREGATED;
             }
             return Analysis.AnalysisMode.CONTRACTED;

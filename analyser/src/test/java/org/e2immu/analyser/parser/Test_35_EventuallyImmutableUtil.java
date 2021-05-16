@@ -16,18 +16,23 @@
 package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.config.DebugConfiguration;
+import org.e2immu.analyser.inspector.TypeContext;
+import org.e2immu.analyser.model.Analysis;
+import org.e2immu.analyser.model.MethodInfo;
+import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.variable.ReturnVariable;
+import org.e2immu.analyser.testexample.EventuallyImmutableUtil_0;
 import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
 import org.e2immu.analyser.visitor.TypeAnalyserVisitor;
+import org.e2immu.support.FlipSwitch;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_35_EventuallyImmutableUtil extends CommonTestRunner {
 
@@ -39,9 +44,23 @@ public class Test_35_EventuallyImmutableUtil extends CommonTestRunner {
 
     @Test
     public void test_0() throws IOException {
-        testSupportAndUtilClasses(List.of("EventuallyImmutableUtil_0"), List.of("FlipSwitch"), ORG_E2IMMU_SUPPORT,
+        TypeContext typeContext = testSupportAndUtilClasses(List.of("EventuallyImmutableUtil_0"), List.of("FlipSwitch"), ORG_E2IMMU_SUPPORT,
                 0, 0, new DebugConfiguration.Builder()
                         .build());
+
+        TypeInfo flipSwitch = typeContext.getFullyQualified(FlipSwitch.class);
+        MethodInfo isSet = flipSwitch.findUniqueMethod("isSet", 0);
+        assertSame(Analysis.AnalysisMode.COMPUTED, isSet.methodAnalysis.get().analysisMode());
+        assertFalse(flipSwitch.typeResolution.get().hasOneKnownGeneratedImplementation());
+        assertTrue(flipSwitch.typeResolution.get().circularDependencies().isEmpty());
+        assertTrue(flipSwitch.typeResolution.get().superTypesExcludingJavaLangObject().isEmpty());
+
+        TypeInfo eventually = typeContext.getFullyQualified(EventuallyImmutableUtil_0.class);
+        MethodInfo isReady = eventually.findUniqueMethod("isReady", 0);
+        assertSame(Analysis.AnalysisMode.COMPUTED, isReady.methodAnalysis.get().analysisMode());
+        assertFalse(eventually.typeResolution.get().hasOneKnownGeneratedImplementation());
+        assertTrue(eventually.typeResolution.get().circularDependencies().isEmpty());
+        assertTrue(eventually.typeResolution.get().superTypesExcludingJavaLangObject().isEmpty());
     }
 
     @Test
