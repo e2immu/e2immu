@@ -49,7 +49,7 @@ public class EnumMethods {
                 .setSynthetic(true)
                 .setReturnType(primitives.stringParameterizedType)
                 .addModifier(MethodModifier.PUBLIC)
-                .addModifier(MethodModifier.ABSTRACT) // no code
+                .addModifier(MethodModifier.ABSTRACT) // no code -> shallow method analyser
                 .addAnnotation(notNullContract)
                 .addAnnotation(e2Container)
                 .addAnnotation(notModifiedContract);

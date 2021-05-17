@@ -19,26 +19,25 @@ import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.util.SMapList;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class ShallowMethodAnalyser extends AbstractAnalyser {
-
-    private final MethodInfo methodInfo;
-    private final MethodAnalysisImpl.Builder methodAnalysis;
-    private final List<ParameterAnalysis> parameterAnalyses;
+public class ShallowMethodAnalyser extends MethodAnalyser {
 
     public ShallowMethodAnalyser(MethodInfo methodInfo,
                                  MethodAnalysisImpl.Builder methodAnalysis,
                                  List<ParameterAnalysis> parameterAnalyses,
                                  AnalyserContext analyserContext) {
-        super("Method " + methodInfo, analyserContext);
-        this.methodInfo = methodInfo;
-        this.methodAnalysis = methodAnalysis;
-        this.parameterAnalyses = parameterAnalyses;
+        super(methodInfo, methodAnalysis, List.of(), parameterAnalyses, Map.of(), false, analyserContext);
+    }
+
+    @Override
+    public void receiveAdditionalTypeAnalysers(Collection<PrimaryTypeAnalyser> typeAnalysers) {
+        // no-op
     }
 
     @Override
@@ -46,22 +45,28 @@ public class ShallowMethodAnalyser extends AbstractAnalyser {
         // no-op
     }
 
-    @Override
-    public AnalysisStatus analyse(int iteration, EvaluationContext closure) {
+    public void analyse() {
         Map<WithInspectionAndAnalysis, Map<AnnotationExpression, List<MethodInfo>>> map = collectAnnotations();
         E2ImmuAnnotationExpressions e2 = analyserContext.getE2ImmuAnnotationExpressions();
 
         parameterAnalyses.forEach(parameterAnalysis -> {
-            ParameterAnalysisImpl.Builder builder = (ParameterAnalysisImpl.Builder)parameterAnalysis;
+            ParameterAnalysisImpl.Builder builder = (ParameterAnalysisImpl.Builder) parameterAnalysis;
             messages.addAll(builder.fromAnnotationsIntoProperties(Analyser.AnalyserIdentification.PARAMETER, true,
                     map.getOrDefault(builder.getParameterInfo(), Map.of()).keySet(), e2));
         });
 
         messages.addAll(methodAnalysis.fromAnnotationsIntoProperties(Analyser.AnalyserIdentification.METHOD,
                 true, map.getOrDefault(methodInfo, Map.of()).keySet(), e2));
-        return AnalysisStatus.DONE;
+
+        // IMPROVE reading preconditions from AAPI...
+        methodAnalysis.precondition.set(Precondition.empty(analyserContext.getPrimitives()));
     }
 
+    @Override
+    public AnalysisStatus analyse(int iteration, EvaluationContext closure) {
+        // nothing here
+        return AnalysisStatus.DONE;
+    }
 
     private Map<WithInspectionAndAnalysis, Map<AnnotationExpression, List<MethodInfo>>> collectAnnotations() {
         Map<WithInspectionAndAnalysis, Map<AnnotationExpression, List<MethodInfo>>> map = new HashMap<>();
@@ -115,6 +120,11 @@ public class ShallowMethodAnalyser extends AbstractAnalyser {
     }
 
     @Override
+    public List<VariableInfo> getFieldAsVariable(FieldInfo fieldInfo, boolean b) {
+        return List.of();
+    }
+
+    @Override
     public void check() {
         // everything contracted, nothing to check
     }
@@ -124,21 +134,32 @@ public class ShallowMethodAnalyser extends AbstractAnalyser {
     }
 
     @Override
-    public WithInspectionAndAnalysis getMember() {
-        return methodInfo;
+    public Stream<PrimaryTypeAnalyser> getLocallyCreatedPrimaryTypeAnalysers() {
+        return Stream.empty();
     }
 
     @Override
-    public Analysis getAnalysis() {
-        return methodAnalysis;
+    public Stream<VariableInfo> getFieldAsVariableStream(FieldInfo fieldInfo, boolean includeLocalCopies) {
+        return Stream.empty();
     }
 
-    public MethodAnalysisImpl.Builder getMethodAnalysis() {
-        return methodAnalysis;
+    @Override
+    public StatementAnalyser findStatementAnalyser(String index) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void logAnalysisStatuses() {
+        // nothing here
     }
 
     @Override
     public AnalyserComponents<String, ?> getAnalyserComponents() {
         throw new UnsupportedOperationException("Shallow method analyser has no analyser components");
+    }
+
+    @Override
+    public void makeImmutable() {
+        // nothing here
     }
 }

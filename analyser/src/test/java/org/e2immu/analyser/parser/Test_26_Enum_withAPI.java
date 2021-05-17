@@ -17,9 +17,9 @@ package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.model.Level;
-import org.e2immu.analyser.model.MultiLevel;
-import org.e2immu.analyser.model.ParameterInfo;
+import org.e2immu.analyser.inspector.TypeContext;
+import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.testexample.Enum_0;
 import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
 
@@ -95,7 +95,7 @@ public class Test_26_Enum_withAPI extends CommonTestRunner {
             // predicate depends on name and values, but comes earlier (we look at class only, not primary type)
             // valueOf depends on predicate
             if ("name".equals(d.methodInfo().name)) {
-                assertEquals(Level.FALSE, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
+                fail("Shallow method analyser! name() has no code");
             }
 
             if ("test".equals(d.methodInfo().name)) {
@@ -143,7 +143,7 @@ public class Test_26_Enum_withAPI extends CommonTestRunner {
             }
         };
 
-        testClass("Enum_0", 0, 0, new DebugConfiguration.Builder()
+        TypeContext typeContext = testClass("Enum_0", 0, 0, new DebugConfiguration.Builder()
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
@@ -151,6 +151,11 @@ public class Test_26_Enum_withAPI extends CommonTestRunner {
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
+        TypeInfo enum0 = typeContext.getFullyQualified(Enum_0.class);
+        MethodInfo name = enum0.findUniqueMethod("name", 0);
+        MethodAnalysis nameAnalysis = name.methodAnalysis.get();
+        assertEquals(Level.FALSE, nameAnalysis.getProperty(VariableProperty.MODIFIED_METHOD));
+        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, nameAnalysis.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
     }
 
     @Test

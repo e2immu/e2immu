@@ -74,7 +74,7 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
     private final ShallowFieldAnalyser shallowFieldAnalyser;
 
     private final Map<TypeInfo, TypeAnalysis> typeAnalyses;
-    private final Map<MethodInfo, AbstractAnalyser> methodAnalysers;
+    private final Map<MethodInfo, MethodAnalyser> methodAnalysers;
 
     public AnnotatedAPIAnalyser(List<TypeInfo> types,
                                 Configuration configuration,
@@ -91,7 +91,7 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
         this.e2ImmuAnnotationExpressions = e2ImmuAnnotationExpressions;
 
         typeAnalyses = new LinkedHashMap<>(); // we keep the order provided
-        Map<MethodInfo, AbstractAnalyser> methodAnalysers = new HashMap<>();
+        Map<MethodInfo, MethodAnalyser> methodAnalysers = new HashMap<>();
         for (TypeInfo typeInfo : types) {
             TypeAnalysisImpl.Builder typeAnalysis = new TypeAnalysisImpl.Builder(CONTRACTED,
                     primitives, typeInfo, null);
@@ -106,7 +106,7 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
                             } else if (IS_KNOWN_FQN.equals(methodInfo.fullyQualifiedName())) {
                                 analyseIsKnown(methodInfo);
                             } else {
-                                AbstractAnalyser methodAnalyser = createAnalyser(methodInfo, typeAnalysis);
+                                MethodAnalyser methodAnalyser = createAnalyser(methodInfo, typeAnalysis);
                                 MethodInspection methodInspection = methodInfo.methodInspection.get();
                                 if (methodInspection.hasContractedFinalizer()) hasFinalizers.set(true);
                                 methodAnalyser.initialize();
@@ -123,11 +123,11 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
         this.methodAnalysers = Map.copyOf(methodAnalysers);
     }
 
-    private AbstractAnalyser createAnalyser(MethodInfo methodInfo, TypeAnalysis typeAnalysis) {
+    private MethodAnalyser createAnalyser(MethodInfo methodInfo, TypeAnalysis typeAnalysis) {
         boolean isHelperFunction = methodInfo.hasStatements();
         if (isHelperFunction) {
             assert methodInfo.methodInspection.get().getCompanionMethods().isEmpty();
-            AbstractAnalyser methodAnalyser = MethodAnalyserFactory.create(methodInfo, typeAnalysis,
+            MethodAnalyser methodAnalyser = MethodAnalyserFactory.create(methodInfo, typeAnalysis,
                     false, true, this);
             assert methodAnalyser instanceof ComputingMethodAnalyser;
             return methodAnalyser;
@@ -150,10 +150,10 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
             shallowTypeAndFieldAnalysis(typeInfo, (TypeAnalysisImpl.Builder) typeAnalysis, e2ImmuAnnotationExpressions);
         });
 
-        Map<MethodInfo, AbstractAnalyser> nonShallowOrWithCompanions = new HashMap<>();
+        Map<MethodInfo, MethodAnalyser> nonShallowOrWithCompanions = new HashMap<>();
         methodAnalysers.forEach((methodInfo, analyser) -> {
-            if (analyser instanceof ShallowMethodAnalyser) {
-                analyser.analyse(0, null);
+            if (analyser instanceof ShallowMethodAnalyser shallowMethodAnalyser) {
+                shallowMethodAnalyser.analyse();
                 boolean hasNoCompanionMethods = methodInfo.methodInspection.get().getCompanionMethods().isEmpty();
                 if (hasNoCompanionMethods) {
                     methodInfo.setAnalysis(analyser.getAnalysis().build());
@@ -293,7 +293,7 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
         return typeInfo.typeAnalysis.get();
     }
 
-    private void iterativeMethodAnalysis(Map<MethodInfo, AbstractAnalyser> nonShallowOrWithCompanions) {
+    private void iterativeMethodAnalysis(Map<MethodInfo, MethodAnalyser> nonShallowOrWithCompanions) {
         int iteration = 0;
 
         while (!nonShallowOrWithCompanions.isEmpty()) {
@@ -304,13 +304,13 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
             AtomicBoolean delayed = new AtomicBoolean();
             AtomicBoolean progress = new AtomicBoolean();
 
-            for (Map.Entry<MethodInfo, AbstractAnalyser> entry : nonShallowOrWithCompanions.entrySet()) {
+            for (Map.Entry<MethodInfo, MethodAnalyser> entry : nonShallowOrWithCompanions.entrySet()) {
                 MethodInfo methodInfo = entry.getKey();
                 log(ANALYSER, "Analysing {}", methodInfo.fullyQualifiedName());
 
                 AtomicReference<AnalysisStatus> methodAnalysisStatus = new AtomicReference<>(AnalysisStatus.DONE);
                 if (entry.getValue() instanceof ShallowMethodAnalyser shallowMethodAnalyser) {
-                    MethodAnalysisImpl.Builder builder = shallowMethodAnalyser.getMethodAnalysis();
+                    MethodAnalysisImpl.Builder builder = shallowMethodAnalyser.methodAnalysis;
                     for (Map.Entry<CompanionMethodName, MethodInfo> e : methodInfo.methodInspection.get().getCompanionMethods().entrySet()) {
                         CompanionMethodName cmn = e.getKey();
                         if (!builder.companionAnalyses.isSet(cmn)) {

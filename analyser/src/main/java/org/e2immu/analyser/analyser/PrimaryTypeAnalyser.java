@@ -99,18 +99,17 @@ public class PrimaryTypeAnalyser implements AnalyserContext, Analyser, HoldsAnal
         sortedTypes.forEach(sortedType ->
                 sortedType.methodsFieldsSubTypes().forEach(mfs -> {
                     if (mfs instanceof MethodInfo methodInfo && !methodInfo.methodAnalysis.isSet()) {
-                        AbstractAnalyser analyser = MethodAnalyserFactory.create(methodInfo,
+                        MethodAnalyser methodAnalyser = MethodAnalyserFactory.create(methodInfo,
                                 typeAnalysers.get(methodInfo.typeInfo).typeAnalysis,
                                 false, true, this);
-                        if (analyser instanceof MethodAnalyser methodAnalyser) {
-                            for (ParameterAnalyser parameterAnalyser : methodAnalyser.getParameterAnalysers()) {
-                                parameterAnalysersBuilder.put(parameterAnalyser.parameterInfo, parameterAnalyser);
-                            }
-                            methodAnalysersBuilder.put(methodInfo, methodAnalyser);
-                        } else {
-                            analyser.analyse(0, null);
-                            methodInfo.setAnalysis(analyser.getAnalysis().build());
+                        for (ParameterAnalyser parameterAnalyser : methodAnalyser.getParameterAnalysers()) {
+                            parameterAnalysersBuilder.put(parameterAnalyser.parameterInfo, parameterAnalyser);
                         }
+                        // this has to happen before the regular analysers, because there are no delays
+                        if (methodAnalyser instanceof ShallowMethodAnalyser shallowMethodAnalyser) {
+                            shallowMethodAnalyser.analyse();
+                        }
+                        methodAnalysersBuilder.put(methodInfo, methodAnalyser);
                         // finalizers are done early, before the first assignments
                         if (methodInfo.methodInspection.get().hasContractedFinalizer()) {
                             TypeAnalyser typeAnalyser = typeAnalysers.get(methodInfo.typeInfo);

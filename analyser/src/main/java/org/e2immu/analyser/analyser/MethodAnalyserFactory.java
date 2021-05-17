@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Map;
 
 public class MethodAnalyserFactory {
-    public static AbstractAnalyser create(MethodInfo methodInfo,
+    public static MethodAnalyser create(MethodInfo methodInfo,
                                           TypeAnalysis typeAnalysis,
                                           boolean isSAM,
                                           boolean allowComputed,
