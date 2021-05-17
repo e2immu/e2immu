@@ -36,12 +36,16 @@ import static org.e2immu.analyser.util.Logger.log;
 
 /*
 Recursive, but only for types inside statements, not for subtypes.
+
+Holds either a single primary type and its subtypes, or multiple primary types,
+when there is a circular dependency that cannot easily be ignored.
  */
 public class PrimaryTypeAnalyser implements AnalyserContext, Analyser, HoldsAnalysers {
     private static final Logger LOGGER = LoggerFactory.getLogger(PrimaryTypeAnalyser.class);
 
     private final PatternMatcher<StatementAnalyser> patternMatcher;
-    public final TypeInfo primaryType;
+    public final String name;
+    public final Set<TypeInfo> primaryTypes;
     public final List<Analyser> analysers;
     public final Configuration configuration;
     public final E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions;
@@ -60,7 +64,7 @@ public class PrimaryTypeAnalyser implements AnalyserContext, Analyser, HoldsAnal
     }
 
     public PrimaryTypeAnalyser(AnalyserContext parent,
-                               SortedType sortedType,
+                               Set<SortedType> sortedTypes,
                                Configuration configuration,
                                Primitives primitives,
                                PatternMatcher<StatementAnalyser> patternMatcher,
@@ -71,17 +75,20 @@ public class PrimaryTypeAnalyser implements AnalyserContext, Analyser, HoldsAnal
         Objects.requireNonNull(primitives);
         this.patternMatcher = Objects.requireNonNull(patternMatcher);
         this.primitives = primitives;
-        this.primaryType = Objects.requireNonNull(sortedType.primaryType());
-        assert (parent == null) == this.primaryType.isPrimaryType();
+        name = sortedTypes.stream().map(sortedType -> sortedType.primaryType().fullyQualifiedName).collect(Collectors.joining(","));
+        primaryTypes = sortedTypes.stream().map(SortedType::primaryType).collect(Collectors.toUnmodifiableSet());
+
+        assert (parent == null) == (sortedTypes.stream().allMatch(st -> st.primaryType().isPrimaryType()));
 
         // do the types first, so we can pass on a TypeAnalysis objects
         Map<TypeInfo, TypeAnalyser> typeAnalysersBuilder = new HashMap<>();
-        sortedType.methodsFieldsSubTypes().forEach(mfs -> {
-            if (mfs instanceof TypeInfo typeInfo && !typeInfo.typeAnalysis.isSet()) {
-                TypeAnalyser typeAnalyser = new TypeAnalyser(typeInfo, primaryType, this);
-                typeAnalysersBuilder.put(typeInfo, typeAnalyser);
-            }
-        });
+        sortedTypes.forEach(sortedType ->
+                sortedType.methodsFieldsSubTypes().forEach(mfs -> {
+                    if (mfs instanceof TypeInfo typeInfo && !typeInfo.typeAnalysis.isSet()) {
+                        TypeAnalyser typeAnalyser = new TypeAnalyser(typeInfo, sortedType.primaryType(), this);
+                        typeAnalysersBuilder.put(typeInfo, typeAnalyser);
+                    }
+                }));
         typeAnalysers = Map.copyOf(typeAnalysersBuilder);
 
         // then methods
@@ -89,51 +96,54 @@ public class PrimaryTypeAnalyser implements AnalyserContext, Analyser, HoldsAnal
         // can only reach TypeAnalysisImpl, and not its builder. We'd better live with empty methods in the method analyser.
         Map<ParameterInfo, ParameterAnalyser> parameterAnalysersBuilder = new HashMap<>();
         Map<MethodInfo, MethodAnalyser> methodAnalysersBuilder = new HashMap<>();
-        sortedType.methodsFieldsSubTypes().forEach(mfs -> {
-            if (mfs instanceof MethodInfo methodInfo && !methodInfo.methodAnalysis.isSet()) {
-                MethodAnalyser analyser = new MethodAnalyser(methodInfo, typeAnalysers.get(methodInfo.typeInfo).typeAnalysis,
-                        false, this);
-                for (ParameterAnalyser parameterAnalyser : analyser.getParameterAnalysers()) {
-                    parameterAnalysersBuilder.put(parameterAnalyser.parameterInfo, parameterAnalyser);
-                }
-                methodAnalysersBuilder.put(methodInfo, analyser);
-                // finalizers are done early, before the first assignments
-                if (methodInfo.methodInspection.get().hasContractedFinalizer()) {
-                    TypeAnalyser typeAnalyser = typeAnalysers.get(methodInfo.typeInfo);
-                    typeAnalyser.typeAnalysis.setProperty(VariableProperty.FINALIZER, Level.TRUE);
-                }
-            }
-        });
+        sortedTypes.forEach(sortedType ->
+                sortedType.methodsFieldsSubTypes().forEach(mfs -> {
+                    if (mfs instanceof MethodInfo methodInfo && !methodInfo.methodAnalysis.isSet()) {
+                        MethodAnalyser analyser = new MethodAnalyser(methodInfo,
+                                typeAnalysers.get(methodInfo.typeInfo).typeAnalysis,
+                                false, this);
+                        for (ParameterAnalyser parameterAnalyser : analyser.getParameterAnalysers()) {
+                            parameterAnalysersBuilder.put(parameterAnalyser.parameterInfo, parameterAnalyser);
+                        }
+                        methodAnalysersBuilder.put(methodInfo, analyser);
+                        // finalizers are done early, before the first assignments
+                        if (methodInfo.methodInspection.get().hasContractedFinalizer()) {
+                            TypeAnalyser typeAnalyser = typeAnalysers.get(methodInfo.typeInfo);
+                            typeAnalyser.typeAnalysis.setProperty(VariableProperty.FINALIZER, Level.TRUE);
+                        }
+                    }
+                }));
 
         parameterAnalysers = Map.copyOf(parameterAnalysersBuilder);
         methodAnalysers = Map.copyOf(methodAnalysersBuilder);
 
         // finally fields, and wire everything together
         Map<FieldInfo, FieldAnalyser> fieldAnalysersBuilder = new HashMap<>();
-        List<Analyser> allAnalysers = sortedType.methodsFieldsSubTypes().stream().flatMap(mfs -> {
-            Analyser analyser;
-            if (mfs instanceof FieldInfo fieldInfo && !fieldInfo.fieldAnalysis.isSet()) {
-                MethodAnalyser samAnalyser;
-                if (fieldInfo.fieldInspection.get().fieldInitialiserIsSet()) {
-                    FieldInspection.FieldInitialiser fieldInitialiser = fieldInfo.fieldInspection.get().getFieldInitialiser();
-                    MethodInfo sam = fieldInitialiser.implementationOfSingleAbstractMethod();
-                    if (sam != null) {
-                        samAnalyser = Objects.requireNonNull(methodAnalysers.get(sam),
-                                "No method analyser for " + sam.fullyQualifiedName);
-                    } else samAnalyser = null;
-                } else samAnalyser = null;
-                TypeAnalysis ownerTypeAnalysis = typeAnalysers.get(fieldInfo.owner).typeAnalysis;
-                analyser = new FieldAnalyser(fieldInfo, primaryType, ownerTypeAnalysis, samAnalyser, this);
-                fieldAnalysersBuilder.put(fieldInfo, (FieldAnalyser) analyser);
-            } else if (mfs instanceof MethodInfo) {
-                analyser = methodAnalysers.get(mfs);
-            } else if (mfs instanceof TypeInfo) {
-                analyser = typeAnalysers.get(mfs);
-            } else {
-                throw new UnsupportedOperationException("have "+mfs);
-            }
-            return analyser == null ? Stream.empty() : Stream.of(analyser);
-        }).collect(Collectors.toList());
+        List<Analyser> allAnalysers = sortedTypes.stream().flatMap(sortedType ->
+                sortedType.methodsFieldsSubTypes().stream().flatMap(mfs -> {
+                    Analyser analyser;
+                    if (mfs instanceof FieldInfo fieldInfo && !fieldInfo.fieldAnalysis.isSet()) {
+                        MethodAnalyser samAnalyser;
+                        if (fieldInfo.fieldInspection.get().fieldInitialiserIsSet()) {
+                            FieldInspection.FieldInitialiser fieldInitialiser = fieldInfo.fieldInspection.get().getFieldInitialiser();
+                            MethodInfo sam = fieldInitialiser.implementationOfSingleAbstractMethod();
+                            if (sam != null) {
+                                samAnalyser = Objects.requireNonNull(methodAnalysers.get(sam),
+                                        "No method analyser for " + sam.fullyQualifiedName);
+                            } else samAnalyser = null;
+                        } else samAnalyser = null;
+                        TypeAnalysis ownerTypeAnalysis = typeAnalysers.get(fieldInfo.owner).typeAnalysis;
+                        analyser = new FieldAnalyser(fieldInfo, sortedType.primaryType(), ownerTypeAnalysis, samAnalyser, this);
+                        fieldAnalysersBuilder.put(fieldInfo, (FieldAnalyser) analyser);
+                    } else if (mfs instanceof MethodInfo) {
+                        analyser = methodAnalysers.get(mfs);
+                    } else if (mfs instanceof TypeInfo) {
+                        analyser = typeAnalysers.get(mfs);
+                    } else {
+                        throw new UnsupportedOperationException("have " + mfs);
+                    }
+                    return analyser == null ? Stream.empty() : Stream.of(analyser);
+                })).collect(Collectors.toList());
         fieldAnalysers = Map.copyOf(fieldAnalysersBuilder);
 
         List<MethodAnalyser> methodAnalysersInOrder = new ArrayList<>(methodAnalysers.size());
@@ -184,7 +194,7 @@ public class PrimaryTypeAnalyser implements AnalyserContext, Analyser, HoldsAnal
 
     @Override
     public WithInspectionAndAnalysis getMember() {
-        return primaryType;
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -194,7 +204,7 @@ public class PrimaryTypeAnalyser implements AnalyserContext, Analyser, HoldsAnal
 
     @Override
     public String getName() {
-        return "PTA " + primaryType.fullyQualifiedName;
+        return "PTA " + name;
     }
 
     @Override
@@ -207,13 +217,13 @@ public class PrimaryTypeAnalyser implements AnalyserContext, Analyser, HoldsAnal
         AnalysisStatus analysisStatus = AnalysisStatus.PROGRESS;
 
         while (analysisStatus != AnalysisStatus.DONE) {
-            log(ANALYSER, "\n******\nStarting iteration {} of the primary type analyser on {}\n******", iteration, primaryType.fullyQualifiedName);
+            log(ANALYSER, "\n******\nStarting iteration {} of the primary type analyser on {}\n******", iteration, name);
 
             analysisStatus = analyse(iteration, null);
             iteration++;
             if (iteration > 10) {
                 logAnalysisStatuses(analyserComponents);
-                throw new UnsupportedOperationException("More than 10 iterations needed for primary type " + primaryType.fullyQualifiedName + "?");
+                throw new UnsupportedOperationException("More than 10 iterations needed for primary type(s) " + name + "?");
             }
         }
     }

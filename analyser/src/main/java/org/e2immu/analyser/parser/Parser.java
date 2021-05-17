@@ -127,7 +127,7 @@ public class Parser {
         Map<TypeInfo, ExpressionContext> expressionContexts = onDemandSourceInspection.typeContexts.entrySet().stream()
                 .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey,
                         e -> ExpressionContext.forInspectionOfPrimaryType(e.getKey(), e.getValue(), anonymousTypeCounters)));
-        List<SortedType> sortedPrimaryTypes = resolver.sortTypes(expressionContexts);
+        List<SortedType> sortedPrimaryTypes = resolver.resolve(expressionContexts);
         messages.addAll(resolver.getMessageStream()
                 .filter(m -> m.message().severity != Message.Severity.WARN || reportWarnings));
         return sortedPrimaryTypes;
@@ -184,39 +184,56 @@ public class Parser {
         }
         log(org.e2immu.analyser.util.Logger.LogTarget.ANALYSER, "Analysing primary types:\n{}",
                 sortedPrimaryTypes.stream().map(t -> t.primaryType().fullyQualifiedName).collect(Collectors.joining("\n")));
-        for (SortedType sortedType : sortedPrimaryTypes) {
-            analyseSortedType(sortedType);
+        Collection<Set<SortedType>> groupByCycles = groupByCycles(sortedPrimaryTypes);
+        for (Set<SortedType> sortedTypeCycle : groupByCycles) {
+            analyseSortedTypeCycle(sortedTypeCycle);
         }
     }
 
-    private void analyseSortedType(SortedType sortedType) {
+    private Collection<Set<SortedType>> groupByCycles(List<SortedType> sortedPrimaryTypes) {
+        List<Set<SortedType>> cycles = new LinkedList<>();
+        Set<TypeInfo> seen = new HashSet<>();
+        for (SortedType sortedType : sortedPrimaryTypes) {
+            if (!seen.contains(sortedType.primaryType())) {
+                Set<TypeInfo> circularDependencies = sortedType.primaryType().typeResolution.get().circularDependencies;
+                Set<SortedType> cycle =
+                        circularDependencies.isEmpty() ? Set.of(sortedType) : circularDependencies.stream()
+                                .map(typeInfo -> typeInfo.typeResolution.get().sortedType).collect(Collectors.toUnmodifiableSet());
+                cycles.add(cycle);
+                seen.addAll(circularDependencies);
+            }
+        }
+        return cycles;
+    }
+
+    private void analyseSortedTypeCycle(Set<SortedType> sortedTypes) {
         PatternMatcher<StatementAnalyser> patternMatcher = configuration.analyserConfiguration().newPatternMatcher(getTypeContext());
-        PrimaryTypeAnalyser primaryTypeAnalyser = new PrimaryTypeAnalyser(null, sortedType, configuration,
+        PrimaryTypeAnalyser primaryTypeAnalyser = new PrimaryTypeAnalyser(null, sortedTypes, configuration,
                 getTypeContext().getPrimitives(), patternMatcher, getTypeContext().typeMapBuilder.getE2ImmuAnnotationExpressions());
         try {
             primaryTypeAnalyser.analyse();
         } catch (RuntimeException rte) {
-            LOGGER.warn("Caught runtime exception while analysing type {}", sortedType.primaryType().fullyQualifiedName);
+            LOGGER.warn("Caught runtime exception while analysing type {}", primaryTypeAnalyser.name);
             throw rte;
         }
         try {
             primaryTypeAnalyser.write();
         } catch (RuntimeException rte) {
             LOGGER.warn("Caught runtime exception while writing out annotations for type {}",
-                    sortedType.primaryType().fullyQualifiedName);
+                    primaryTypeAnalyser.name);
             throw rte;
         }
         try {
             primaryTypeAnalyser.check();
         } catch (RuntimeException rte) {
-            LOGGER.warn("Caught runtime exception while checking type {}", sortedType.primaryType().fullyQualifiedName);
+            LOGGER.warn("Caught runtime exception while checking type {}", primaryTypeAnalyser.name);
             throw rte;
         }
         try {
             primaryTypeAnalyser.makeImmutable();
         } catch (RuntimeException rte) {
             LOGGER.warn("Caught runtime exception while making analysis of type {} immutable",
-                    sortedType.primaryType().fullyQualifiedName);
+                    primaryTypeAnalyser.name);
             throw rte;
         }
         messages.addAll(primaryTypeAnalyser.getMessageStream());

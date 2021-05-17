@@ -91,7 +91,7 @@ public class Resolver {
      * @return A list of sorted primary types, each with their sub-elements (sub-types, fields, methods) sorted.
      */
 
-    public List<SortedType> sortTypes(Map<TypeInfo, ExpressionContext> inspectedTypes) {
+    public List<SortedType> resolve(Map<TypeInfo, ExpressionContext> inspectedTypes) {
         DependencyGraph<TypeInfo> typeGraph = new DependencyGraph<>();
         Map<TypeInfo, TypeResolution.Builder> resolutionBuilders = new HashMap<>();
         Set<TypeInfo> stayWithin = inspectedTypes.keySet().stream()
@@ -535,7 +535,7 @@ public class Resolver {
 
             newContext.streamNewlyCreatedTypes().forEach(anonymousType -> {
                 Resolver resolver = new Resolver(this, inspectionProvider, e2ImmuAnnotationExpressions, false);
-                resolver.sortTypes(Map.of(anonymousType, newContext));
+                resolver.resolve(Map.of(anonymousType, newContext));
                 // result can be ignored, because it is stored in the anonymousType's TypeResolution
             });
 

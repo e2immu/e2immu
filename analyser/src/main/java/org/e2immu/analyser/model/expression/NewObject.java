@@ -552,7 +552,7 @@ public record NewObject(
 
         if (anonymousClass != null) {
             evaluationContext.getLocalPrimaryTypeAnalysers().stream()
-                    .filter(pta -> pta.primaryType == anonymousClass)
+                    .filter(pta -> pta.primaryTypes.contains(anonymousClass))
                     .forEach(res.k::markVariablesFromPrimaryTypeAnalyser);
         }
 

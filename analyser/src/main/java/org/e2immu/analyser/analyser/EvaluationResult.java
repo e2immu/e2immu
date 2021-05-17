@@ -671,7 +671,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
 
         public void markVariablesFromPrimaryTypeAnalyser(PrimaryTypeAnalyser pta) {
             pta.methodAnalyserStream().forEach(ma -> markVariablesFromSubMethod(ma.methodAnalysis));
-            pta.fieldAnalyserStream().forEach(fa -> markVariablesFromSubFieldInitialisers(fa.fieldAnalysis, pta.primaryType));
+            pta.fieldAnalyserStream().forEach(fa -> markVariablesFromSubFieldInitialisers(fa.fieldAnalysis, fa.primaryType));
         }
 
         private void markVariablesFromSubFieldInitialisers(FieldAnalysisImpl.Builder fieldAnalysis, TypeInfo

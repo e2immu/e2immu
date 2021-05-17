@@ -163,6 +163,7 @@ public interface EvaluationContext {
     default Map<VariableProperty, Integer> getValueProperties(Expression value) {
         return getValueProperties(value, false);
     }
+
     /*
     computed/copied during assignment. Critical that NNE is present!
      */
@@ -235,7 +236,7 @@ public interface EvaluationContext {
 
     default MethodAnalysis findMethodAnalysisOfLambda(MethodInfo methodInfo) {
         MethodAnalysis inLocalPTAs = getLocalPrimaryTypeAnalysers().stream()
-                .filter(pta -> pta.primaryType == methodInfo.typeInfo)
+                .filter(pta -> pta.primaryTypes.contains(methodInfo.typeInfo))
                 .map(pta -> pta.getMethodAnalysis(methodInfo))
                 .findFirst().orElse(null);
         if (inLocalPTAs != null) return inLocalPTAs;

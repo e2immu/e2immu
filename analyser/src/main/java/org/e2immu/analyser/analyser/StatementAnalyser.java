@@ -96,7 +96,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             // we're in replacement mode; replace the existing index value
             int pos = indices.lastIndexOf(".");
             statementIndex = Integer.parseInt(pos < 0 ? indices : indices.substring(pos + 1));
-            adjustedIndices = pos < 0 ? "": indices.substring(0, pos);
+            adjustedIndices = pos < 0 ? "" : indices.substring(0, pos);
         }
         StatementAnalyser first = null;
         StatementAnalyser previous = null;
@@ -272,7 +272,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             throw new UnsupportedOperationException("The first statement can never be unreachable");
         }
         StatementAnalyser afterReplacements = followReplacements();
-        if(!afterReplacements.navigationData.next.isSet()) return afterReplacements;
+        if (!afterReplacements.navigationData.next.isSet()) return afterReplacements;
         return afterReplacements.navigationData.next.get().map(statementAnalyser -> {
             if (statementAnalyser.statementAnalysis.flowData.isUnreachable()) {
                 return afterReplacements;
@@ -530,7 +530,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                     .map(typeInfo -> {
                         SortedType sortedType = typeInfo.typeResolution.get().sortedType();
                         PrimaryTypeAnalyser primaryTypeAnalyser = new PrimaryTypeAnalyser(analyserContext,
-                                sortedType,
+                                Set.of(sortedType),
                                 analyserContext.getConfiguration(),
                                 analyserContext.getPrimitives(),
                                 analyserContext.getPatternMatcher(),
@@ -1693,7 +1693,9 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             } else if (statement() instanceof LocalClassDeclaration localClassDeclaration) {
                 EvaluationResult.Builder builder = new EvaluationResult.Builder(sharedState.evaluationContext);
                 PrimaryTypeAnalyser primaryTypeAnalyser =
-                        localAnalysers.get().stream().filter(pta -> pta.primaryType == localClassDeclaration.typeInfo).findFirst().orElseThrow();
+                        localAnalysers.get().stream()
+                                .filter(pta -> pta.primaryTypes.contains(localClassDeclaration.typeInfo))
+                                .findFirst().orElseThrow();
                 builder.markVariablesFromPrimaryTypeAnalyser(primaryTypeAnalyser);
                 return apply(sharedState, builder.build()).combinedStatus();
             } else if (statementAnalysis.statement instanceof ExplicitConstructorInvocation eci) {
