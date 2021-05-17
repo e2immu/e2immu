@@ -116,7 +116,14 @@ class JavaLang {
 
     @E2Container
     static class Class$ {
+        @NotNull
+        String getCanonicalName() { return null; }
 
+        @NotNull
+        String getName() { return null; }
+
+        @NotNull
+        String getSimpleName() { return null; }
     }
 
     static class CharSequence$ {

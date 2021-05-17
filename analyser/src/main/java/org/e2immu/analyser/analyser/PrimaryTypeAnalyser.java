@@ -99,13 +99,18 @@ public class PrimaryTypeAnalyser implements AnalyserContext, Analyser, HoldsAnal
         sortedTypes.forEach(sortedType ->
                 sortedType.methodsFieldsSubTypes().forEach(mfs -> {
                     if (mfs instanceof MethodInfo methodInfo && !methodInfo.methodAnalysis.isSet()) {
-                        MethodAnalyser analyser = (MethodAnalyser) MethodAnalyserFactory.create(methodInfo,
+                        AbstractAnalyser analyser = MethodAnalyserFactory.create(methodInfo,
                                 typeAnalysers.get(methodInfo.typeInfo).typeAnalysis,
                                 false, true, this);
-                        for (ParameterAnalyser parameterAnalyser : analyser.getParameterAnalysers()) {
-                            parameterAnalysersBuilder.put(parameterAnalyser.parameterInfo, parameterAnalyser);
+                        if (analyser instanceof MethodAnalyser methodAnalyser) {
+                            for (ParameterAnalyser parameterAnalyser : methodAnalyser.getParameterAnalysers()) {
+                                parameterAnalysersBuilder.put(parameterAnalyser.parameterInfo, parameterAnalyser);
+                            }
+                            methodAnalysersBuilder.put(methodInfo, methodAnalyser);
+                        } else {
+                            analyser.analyse(0, null);
+                            methodInfo.setAnalysis(analyser.getAnalysis().build());
                         }
-                        methodAnalysersBuilder.put(methodInfo, analyser);
                         // finalizers are done early, before the first assignments
                         if (methodInfo.methodInspection.get().hasContractedFinalizer()) {
                             TypeAnalyser typeAnalyser = typeAnalysers.get(methodInfo.typeInfo);

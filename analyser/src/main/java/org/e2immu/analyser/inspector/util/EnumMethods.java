@@ -49,6 +49,7 @@ public class EnumMethods {
                 .setSynthetic(true)
                 .setReturnType(primitives.stringParameterizedType)
                 .addModifier(MethodModifier.PUBLIC)
+                .addModifier(MethodModifier.ABSTRACT) // no code
                 .addAnnotation(notNullContract)
                 .addAnnotation(e2Container)
                 .addAnnotation(notModifiedContract);
@@ -101,6 +102,7 @@ public class EnumMethods {
             valueOfBuilder.setInspectedBlock(codeBlock);
         } else {
             valueOfBuilder.addAnnotation(e2Container);
+            valueOfBuilder.addModifier(MethodModifier.ABSTRACT); // no code
         }
 
         expressionContext.typeContext.typeMapBuilder.registerMethodInspection(valueOfBuilder);

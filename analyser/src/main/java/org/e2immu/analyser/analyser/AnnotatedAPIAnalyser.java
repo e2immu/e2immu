@@ -154,11 +154,11 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
         methodAnalysers.forEach((methodInfo, analyser) -> {
             if (analyser instanceof ShallowMethodAnalyser) {
                 analyser.analyse(0, null);
-                boolean hasCompanionMethods = methodInfo.methodInspection.get().getCompanionMethods().isEmpty();
-                if (hasCompanionMethods) {
-                    nonShallowOrWithCompanions.put(methodInfo, analyser);
-                } else {
+                boolean hasNoCompanionMethods = methodInfo.methodInspection.get().getCompanionMethods().isEmpty();
+                if (hasNoCompanionMethods) {
                     methodInfo.setAnalysis(analyser.getAnalysis().build());
+                } else {
+                    nonShallowOrWithCompanions.put(methodInfo, analyser);
                 }
             } else {
                 nonShallowOrWithCompanions.put(methodInfo, analyser);
@@ -311,12 +311,14 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
                 AtomicReference<AnalysisStatus> methodAnalysisStatus = new AtomicReference<>(AnalysisStatus.DONE);
                 if (entry.getValue() instanceof ShallowMethodAnalyser shallowMethodAnalyser) {
                     MethodAnalysisImpl.Builder builder = shallowMethodAnalyser.getMethodAnalysis();
-                    methodInfo.methodInspection.get().getCompanionMethods().forEach((cmn, companionMethod) -> {
+                    for (Map.Entry<CompanionMethodName, MethodInfo> e : methodInfo.methodInspection.get().getCompanionMethods().entrySet()) {
+                        CompanionMethodName cmn = e.getKey();
                         if (!builder.companionAnalyses.isSet(cmn)) {
                             log(ANALYSER, "Starting companion analyser for {}", cmn);
 
-                            CompanionAnalyser companionAnalyser = new CompanionAnalyser(this, methodInfo.typeInfo.typeAnalysis.get(),
-                                    cmn, companionMethod, methodInfo, AnnotationParameters.CONTRACT);
+                            CompanionAnalyser companionAnalyser = new CompanionAnalyser(this,
+                                    methodInfo.typeInfo.typeAnalysis.get(), cmn, e.getValue(),
+                                    methodInfo, AnnotationParameters.CONTRACT);
                             AnalysisStatus analysisStatus = companionAnalyser.analyse(effectivelyFinalIteration);
                             if (analysisStatus == AnalysisStatus.DONE) {
                                 CompanionAnalysis companionAnalysis = companionAnalyser.companionAnalysis.build();
@@ -326,13 +328,14 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
                                 methodAnalysisStatus.set(AnalysisStatus.DELAYS);
                             }
                         }
-                    });
+                    }
                     builder.fromAnnotationsIntoProperties(Analyser.AnalyserIdentification.METHOD, true,
                             methodInfo.methodInspection.get().getAnnotations(), e2ImmuAnnotationExpressions);
                 } else if (entry.getValue() instanceof ComputingMethodAnalyser computingMethodAnalyser) {
                     AnalysisStatus analysisStatus = computingMethodAnalyser.analyse(effectivelyFinalIteration, null);
                     if (analysisStatus != AnalysisStatus.DONE) {
-                        log(DELAYED, "{} in analysis of {}, full method analyser", analysisStatus, methodInfo.fullyQualifiedName());
+                        log(DELAYED, "{} in analysis of {}, full method analyser", analysisStatus,
+                                methodInfo.fullyQualifiedName());
                         methodAnalysisStatus.set(analysisStatus);
                     }
                 }
@@ -349,10 +352,11 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
 
             methodsToRemove.forEach(nonShallowOrWithCompanions.keySet()::remove);
             if (delayed.get() && !progress.get()) {
-                throw new UnsupportedOperationException("No changes after iteration " + iteration + "; have left: " + nonShallowOrWithCompanions.size());
+                throw new UnsupportedOperationException("No changes after iteration " + iteration +
+                        "; have left: " + nonShallowOrWithCompanions.size());
             }
-            log(ANALYSER, "**** At end of iteration {} in shallow method analysis, removed {}, remaining {}", iteration,
-                    methodsToRemove.size(), nonShallowOrWithCompanions.size());
+            log(ANALYSER, "**** At end of iteration {} in shallow method analysis, removed {}, remaining {}",
+                    iteration, methodsToRemove.size(), nonShallowOrWithCompanions.size());
             iteration++;
 
             if (iteration >= 20) throw new UnsupportedOperationException();

@@ -64,8 +64,6 @@ public abstract class MethodAnalyser extends AbstractAnalyser implements HoldsAn
 
     public abstract Stream<VariableInfo> getFieldAsVariableStream(FieldInfo fieldInfo, boolean includeLocalCopies);
 
-    public abstract VariableInfo getThisAsVariable();
-
     public abstract StatementAnalyser findStatementAnalyser(String index);
 
     public abstract void logAnalysisStatuses();

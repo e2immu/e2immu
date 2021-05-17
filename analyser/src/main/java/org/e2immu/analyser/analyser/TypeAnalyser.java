@@ -580,7 +580,8 @@ public class TypeAnalyser extends AbstractAnalyser {
             log(DELAYED, "Delaying container, need assignedToField to be set");
             return DELAYS;
         }
-        boolean allReady = myMethodAndConstructorAnalysersExcludingSAMs.stream().allMatch(MethodAnalyser::fromFieldToParametersIsDone);
+        boolean allReady = myMethodAndConstructorAnalysersExcludingSAMs.stream()
+                .allMatch(MethodAnalyser::fromFieldToParametersIsDone);
         if (!allReady) {
             log(DELAYED, "Delaying container, variables linked to fields and params not yet set");
             return DELAYS;

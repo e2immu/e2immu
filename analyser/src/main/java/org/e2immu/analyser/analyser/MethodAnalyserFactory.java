@@ -55,7 +55,7 @@ public class MethodAnalyserFactory {
                         .Builder(Analysis.AnalysisMode.CONTRACTED, analyserContext.getPrimitives(),
                         analyserContext, parameterInfo))
                 .toList();
-        MethodAnalysisImpl.Builder methodAnalysis = new MethodAnalysisImpl.Builder(Analysis.AnalysisMode.COMPUTED,
+        MethodAnalysisImpl.Builder methodAnalysis = new MethodAnalysisImpl.Builder(Analysis.AnalysisMode.CONTRACTED,
                 analyserContext.getPrimitives(), analyserContext, analyserContext,
                 methodInfo, parameterAnalyses);
         return new ShallowMethodAnalyser(methodInfo, methodAnalysis, parameterAnalyses, analyserContext);
@@ -64,7 +64,8 @@ public class MethodAnalyserFactory {
     private static Analysis.AnalysisMode computeAnalysisMode(MethodInspection methodInspection,
                                                              TypeInspection typeInspection,
                                                              TypeResolution typeResolution, boolean allowComputed) {
-        boolean isAbstract = typeInspection.isInterface() && !methodInspection.isDefault() ||
+        boolean isAbstract = typeInspection.isInterface() &&
+                !methodInspection.isDefault() && !methodInspection.isStatic() ||
                 methodInspection.isAbstract();
         if (isAbstract) {
             if (typeInspection.isSealed() || typeResolution.hasOneKnownGeneratedImplementation()) {

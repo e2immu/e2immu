@@ -39,11 +39,6 @@ public class AggregatingMethodAnalyser extends MethodAnalyser {
     }
 
     @Override
-    public VariableInfo getThisAsVariable() {
-        return null;
-    }
-
-    @Override
     public StatementAnalyser findStatementAnalyser(String index) {
         return null;
     }

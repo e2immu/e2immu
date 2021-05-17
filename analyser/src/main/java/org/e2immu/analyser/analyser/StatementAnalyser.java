@@ -915,7 +915,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
     private void importContextModifiedValuesForThisFromSubTypes(Map<Variable, Integer> map) {
         int bestInSub = localAnalysers.get().stream()
                 .flatMap(PrimaryTypeAnalyser::methodAnalyserStream)
-                .map(MethodAnalyser::getThisAsVariable)
+                .map(ma -> ((ComputingMethodAnalyser)ma).getThisAsVariable())
                 .filter(Objects::nonNull)
                 .mapToInt(variableInfo -> variableInfo.getProperty(CONTEXT_MODIFIED))
                 .max().orElse(SUB_CM_NOT_PRESENT);

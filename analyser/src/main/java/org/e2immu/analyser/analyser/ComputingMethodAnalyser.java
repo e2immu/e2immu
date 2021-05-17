@@ -152,16 +152,6 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
         this.myFieldAnalysers = Map.copyOf(myFieldAnalysers);
     }
 
-    public boolean fromFieldToParametersIsDone() {
-        return !hasCode() || getParameterAnalysers().stream().allMatch(parameterAnalyser ->
-                parameterAnalyser.getParameterAnalysis().isAssignedToFieldDelaysResolved());
-    }
-
-    public boolean hasCode() {
-        StatementAnalysis firstStatement = methodAnalysis.getFirstStatement();
-        return firstStatement != null;
-    }
-
     // called from primary type analyser
     @Override
     public AnalysisStatus analyse(int iteration, EvaluationContext closure) {
@@ -1024,6 +1014,7 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
         }
     }
 
+    @Override
     public List<VariableInfo> getFieldAsVariable(FieldInfo fieldInfo, boolean includeLocalCopies) {
         StatementAnalysis lastStatement = methodAnalysis.getLastStatement();
         return lastStatement == null ? List.of() :
@@ -1038,7 +1029,6 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
                 methodAnalysis.getLastStatement().streamOfLatestInfoOfVariablesReferringTo(fieldInfo, includeLocalCopies);
     }
 
-    @Override
     public VariableInfo getThisAsVariable() {
         StatementAnalysis last = methodAnalysis.getLastStatement();
         if (last == null) return null;

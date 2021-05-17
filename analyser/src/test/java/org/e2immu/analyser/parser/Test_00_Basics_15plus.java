@@ -16,9 +16,15 @@
 package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.config.DebugConfiguration;
+import org.e2immu.analyser.model.Analysis;
+import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class Test_00_Basics_15plus extends CommonTestRunner {
     public Test_00_Basics_15plus() {
@@ -31,10 +37,21 @@ public class Test_00_Basics_15plus extends CommonTestRunner {
                 .build());
     }
 
+    // getSimpleName().toLowerCase() causes null-pointer warning
+    // test checks that lc is visited, because it has code!!
     @Test
     public void test_16() throws IOException {
-        testClass("Basics_16", 0, 1, new DebugConfiguration.Builder()
+        AtomicBoolean visited = new AtomicBoolean();
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("lc".equals(d.methodInfo().name)) {
+                assertSame(Analysis.AnalysisMode.COMPUTED, d.methodAnalysis().analysisMode());
+                visited.set(true);
+            }
+        };
+        testClass("Basics_16", 0, 0, new DebugConfiguration.Builder()
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
+        assertTrue(visited.get());
     }
 
     @Test
