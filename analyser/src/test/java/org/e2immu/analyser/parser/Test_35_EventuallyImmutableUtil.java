@@ -20,6 +20,9 @@ import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.Analysis;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.model.expression.InlinedMethod;
+import org.e2immu.analyser.model.expression.VariableExpression;
+import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.testexample.EventuallyImmutableUtil_0;
 import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
@@ -44,8 +47,26 @@ public class Test_35_EventuallyImmutableUtil extends CommonTestRunner {
 
     @Test
     public void test_0() throws IOException {
-        TypeContext typeContext = testSupportAndUtilClasses(List.of("EventuallyImmutableUtil_0"), List.of("FlipSwitch"), ORG_E2IMMU_SUPPORT,
-                0, 0, new DebugConfiguration.Builder()
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("isSet".equals(d.methodInfo().name)) {
+                if (d.iteration() == 0) {
+                    assertNull(d.methodAnalysis().getSingleReturnValue());
+                } else {
+                    assertEquals("isSet", d.methodAnalysis().getSingleReturnValue().toString());
+                    if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
+                        assertEquals("isSet", inlinedMethod.expression().toString());
+                        if (inlinedMethod.expression() instanceof VariableExpression variableExpression) {
+                            if (variableExpression.variable() instanceof FieldReference fr) {
+                                assertEquals("org.e2immu.support.FlipSwitch.this", fr.scope.fullyQualifiedName());
+                            } else fail();
+                        } else fail();
+                    } else fail();
+                }
+            }
+        };
+        TypeContext typeContext = testSupportAndUtilClasses(List.of("EventuallyImmutableUtil_0"), List.of("FlipSwitch"),
+                ORG_E2IMMU_SUPPORT, 0, 0, new DebugConfiguration.Builder()
+                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                         .build());
 
         TypeInfo flipSwitch = typeContext.getFullyQualified(FlipSwitch.class);

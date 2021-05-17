@@ -124,13 +124,11 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
     }
 
     private MethodAnalyser createAnalyser(MethodInfo methodInfo, TypeAnalysis typeAnalysis) {
-        boolean isHelperFunction = methodInfo.hasStatements();
-        if (isHelperFunction) {
+        boolean isHelperFunctionOrAnnotationMethod = methodInfo.hasStatements();
+        if (isHelperFunctionOrAnnotationMethod) {
             assert methodInfo.methodInspection.get().getCompanionMethods().isEmpty();
-            MethodAnalyser methodAnalyser = MethodAnalyserFactory.create(methodInfo, typeAnalysis,
+            return MethodAnalyserFactory.create(methodInfo, typeAnalysis,
                     false, true, this);
-            assert methodAnalyser instanceof ComputingMethodAnalyser;
-            return methodAnalyser;
         }
         // shallow method analysis, potentially with companion analysis
         return MethodAnalyserFactory.createShallowMethodAnalyser(methodInfo, this);

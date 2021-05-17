@@ -74,6 +74,10 @@ public interface TypeInspection extends Inspection {
         return !permittedWhenSealed().isEmpty();
     }
 
+    default boolean isAnnotation() {
+        return typeNature() == TypeNature.ANNOTATION;
+    }
+
     enum Methods {
 
         THIS_TYPE_ONLY(false, null),

@@ -64,7 +64,7 @@ public class MethodAnalyserFactory {
     private static Analysis.AnalysisMode computeAnalysisMode(MethodInspection methodInspection,
                                                              TypeInspection typeInspection,
                                                              TypeResolution typeResolution, boolean allowComputed) {
-        boolean isAbstract = typeInspection.isInterface() &&
+        boolean isAbstract = (typeInspection.isInterface()  || typeInspection.isAnnotation()) &&
                 !methodInspection.isDefault() && !methodInspection.isStatic() ||
                 methodInspection.isAbstract();
         if (isAbstract) {
