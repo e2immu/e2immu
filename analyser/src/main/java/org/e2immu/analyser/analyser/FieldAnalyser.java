@@ -518,7 +518,8 @@ public class FieldAnalyser extends AbstractAnalyser {
     }
 
     private int correctForExposureBefore(int immutable) {
-        if (immutable != MultiLevel.EVENTUALLY_E1IMMUTABLE_BEFORE_MARK && immutable != MultiLevel.EVENTUALLY_E2IMMUTABLE_BEFORE_MARK) {
+        if (immutable != MultiLevel.EVENTUALLY_E1IMMUTABLE_BEFORE_MARK &&
+                immutable != MultiLevel.EVENTUALLY_E2IMMUTABLE_BEFORE_MARK) {
             return immutable;
         }
         int corrected = immutable == MultiLevel.EVENTUALLY_E1IMMUTABLE_BEFORE_MARK ? MultiLevel.EVENTUALLY_E1IMMUTABLE :
@@ -528,9 +529,10 @@ public class FieldAnalyser extends AbstractAnalyser {
         }
         // check exposed via return values of methods
         Optional<MethodAnalyser> delayLinkedVariables = myMethodsAndConstructors.stream()
-                .filter(ma -> !ma.methodInfo.isPrivate() && ma.methodLevelData() != null)
+                .filter(ma -> ma instanceof ComputingMethodAnalyser)
+                .filter(ma -> !ma.methodInfo.isPrivate() && ((ComputingMethodAnalyser) ma).methodLevelData() != null)
                 .filter(ma -> ma.methodAnalysis.getProperty(VariableProperty.FINALIZER) != Level.TRUE)
-                .filter(ma -> !ma.methodLevelData().acceptLinksHaveBeenEstablished(ignoreMyConstructors))
+                .filter(ma -> !((ComputingMethodAnalyser) ma).methodLevelData().acceptLinksHaveBeenEstablished(ignoreMyConstructors))
                 .findFirst();
         if (delayLinkedVariables.isPresent()) {
             log(DELAYED, "Exposure computation on {} delayed by links of {}", fqn,
@@ -540,11 +542,12 @@ public class FieldAnalyser extends AbstractAnalyser {
         This thisVar = new This(analyserContext, myTypeAnalyser.typeInfo);
         FieldReference me = new FieldReference(analyserContext, fieldInfo, thisVar);
         boolean linkedToMe = myMethodsAndConstructors.stream()
-                .filter(ma -> !ma.methodInfo.isPrivate() && ma.methodLevelData() != null)
+                .filter(ma -> ma instanceof ComputingMethodAnalyser)
+                .filter(ma -> !ma.methodInfo.isPrivate() && ((ComputingMethodAnalyser) ma).methodLevelData() != null)
                 .filter(ma -> ma.methodAnalysis.getProperty(VariableProperty.FINALIZER) != Level.TRUE)
                 .anyMatch(ma -> {
                     if (ma.methodInfo.hasReturnValue()) {
-                        LinkedVariables linkedVariables = ma.getReturnAsVariable().getLinkedVariables();
+                        LinkedVariables linkedVariables = ((ComputingMethodAnalyser) ma).getReturnAsVariable().getLinkedVariables();
                         if (linkedVariables.variables().contains(me)) return true;
                     }
                     return ma.methodAnalysis.getLastStatement().variableStream()
@@ -628,7 +631,7 @@ public class FieldAnalyser extends AbstractAnalyser {
         assert !fieldAnalysis.allLinksHaveBeenEstablished.isSet();
         boolean res = allMethodsAndConstructors.stream()
                 .filter(m -> !m.getFieldAsVariable(fieldInfo, false).isEmpty())
-                .allMatch(m -> m.methodLevelData().acceptLinksHaveBeenEstablished(ignoreMyConstructors));
+                .allMatch(m -> ((ComputingMethodAnalyser) m).methodLevelData().acceptLinksHaveBeenEstablished(ignoreMyConstructors));
         if (res) {
             fieldAnalysis.allLinksHaveBeenEstablished.set();
             return DONE;
@@ -973,9 +976,10 @@ public class FieldAnalyser extends AbstractAnalyser {
                 .filter(m -> !m.methodInfo.isConstructor)
                 .allMatch(m -> {
                     List<VariableInfo> variableInfoList = m.getFieldAsVariable(fieldInfo, true);
+                    // AggregatingMethodAnalyser returns empty list, so cast is safe
                     return variableInfoList.isEmpty() ||
                             variableInfoList.stream().noneMatch(VariableInfo::isRead) ||
-                            m.methodLevelData().acceptLinksHaveBeenEstablished(ignoreMyConstructors);
+                            ((ComputingMethodAnalyser) m).methodLevelData().acceptLinksHaveBeenEstablished(ignoreMyConstructors);
                 });
 
         if (allContextModificationsDefined) {
@@ -990,7 +994,7 @@ public class FieldAnalyser extends AbstractAnalyser {
             allMethodsAndConstructors.stream().filter(m -> !m.methodInfo.isConstructor &&
                     !m.getFieldAsVariable(fieldInfo, true).isEmpty() &&
                     m.getFieldAsVariable(fieldInfo, true).stream().anyMatch(VariableInfo::isRead) &&
-                    !m.methodLevelData().acceptLinksHaveBeenEstablished(ignoreMyConstructors))
+                    !((ComputingMethodAnalyser) m).methodLevelData().acceptLinksHaveBeenEstablished(ignoreMyConstructors))
                     .forEach(m -> log(DELAYED, "... method {} reads the field, but we're still waiting on links to be established", m.methodInfo.name));
         }
         return DELAYS;

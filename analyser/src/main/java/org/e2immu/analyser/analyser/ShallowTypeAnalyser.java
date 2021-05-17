@@ -16,7 +16,9 @@ package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.expression.*;
+import org.e2immu.analyser.model.expression.InlinedMethod;
+import org.e2immu.analyser.model.expression.UnknownExpression;
+import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Messages;
@@ -45,13 +47,17 @@ public class ShallowTypeAnalyser implements AnalyserContext {
     private final Messages messages = new Messages();
     private final Primitives primitives;
     private final E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions;
-    private final ShallowMethodAnalyser shallowMethodAnalyser;
+    private final ShallowFieldAnalyser shallowFieldAnalyser;
 
     private final Map<TypeInfo, TypeAnalysis> typeAnalyses;
-    private final Map<MethodInfo, MethodAnalysis> methodAnalyses;
-    private final Map<MethodInfo, Either<MethodAnalyser, MethodAnalysisImpl.Builder>> buildersForCompanionAnalysis = new LinkedHashMap<>();
+    private final Map<MethodInfo, MethodAnalyser> methodAnalysers;
+    private final Map<MethodInfo, Either<AbstractAnalyser, MethodAnalysisImpl.Builder>> buildersForCompanionAnalysis = new LinkedHashMap<>();
 
-    public ShallowTypeAnalyser(List<TypeInfo> types, Configuration configuration, Primitives primitives, E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
+    public ShallowTypeAnalyser(List<TypeInfo> types,
+                               Configuration configuration,
+                               Primitives primitives,
+                               E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
+        shallowFieldAnalyser = new ShallowFieldAnalyser(this, e2ImmuAnnotationExpressions);
 
         if (Logger.isLogEnabled(ANALYSER)) {
             log(ANALYSER, "Order of shallow analysis:");
@@ -60,60 +66,80 @@ public class ShallowTypeAnalyser implements AnalyserContext {
         this.primitives = primitives;
         this.configuration = configuration;
         this.e2ImmuAnnotationExpressions = e2ImmuAnnotationExpressions;
-        this.shallowMethodAnalyser = new ShallowMethodAnalyser(primitives, this, e2ImmuAnnotationExpressions);
 
         typeAnalyses = new LinkedHashMap<>(); // we keep the order provided
-        Map<MethodInfo, MethodAnalysis> methodAnalysesBuilder = new HashMap<>();
+        Map<MethodInfo, MethodAnalyser> methodAnalysers = new HashMap<>();
         for (TypeInfo typeInfo : types) {
             TypeAnalysisImpl.Builder typeAnalysis = new TypeAnalysisImpl.Builder(CONTRACTED,
                     primitives, typeInfo, null);
             typeAnalyses.put(typeInfo, typeAnalysis);
             AtomicBoolean hasFinalizers = new AtomicBoolean();
-            typeInfo.typeInspection.get().methodsAndConstructors(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM).forEach(methodInfo -> {
-                try {
-                    if (IS_FACT_FQN.equals(methodInfo.fullyQualifiedName())) {
-                        analyseIsFact(methodInfo);
-                    } else if (IS_KNOWN_FQN.equals(methodInfo.fullyQualifiedName())) {
-                        analyseIsKnown(methodInfo);
-                    } else {
-                        MethodAnalysisImpl.Builder methodAnalysisBuilder;
-                        MethodInspection methodInspection = methodInfo.methodInspection.get();
-                        if (methodInspection.hasContractedFinalizer()) hasFinalizers.set(true);
-                        boolean hasNoCompanionMethods = methodInspection.getCompanionMethods().isEmpty();
-                        if (hasNoCompanionMethods && methodInfo.hasStatements()) {
-                            // normal method analysis
-
-                            MethodAnalyser methodAnalyser = new MethodAnalyser(methodInfo, typeAnalysis, false, this);
-                            methodAnalyser.initialize(); // sets the field analysers, not implemented yet.
-                            buildersForCompanionAnalysis.put(methodInfo, Either.left(methodAnalyser));
-                            methodAnalysisBuilder = methodAnalyser.methodAnalysis;
-                        } else {
-                            // shallow method analysis, companion analysis
-                            methodAnalysisBuilder = shallowMethodAnalyser.copyAnnotationsIntoMethodAnalysisProperties(methodInfo);
-                            if (hasNoCompanionMethods) {
-                                MethodAnalysis methodAnalysis = (MethodAnalysis) methodAnalysisBuilder.build();
-                                methodInfo.setAnalysis(methodAnalysis); // also sets parameter analyses
+            typeInfo.typeInspection.get()
+                    .methodsAndConstructors(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM)
+                    .forEach(methodInfo -> {
+                        try {
+                            if (IS_FACT_FQN.equals(methodInfo.fullyQualifiedName())) {
+                                analyseIsFact(methodInfo);
+                            } else if (IS_KNOWN_FQN.equals(methodInfo.fullyQualifiedName())) {
+                                analyseIsKnown(methodInfo);
                             } else {
-                                buildersForCompanionAnalysis.put(methodInfo, Either.right(methodAnalysisBuilder));
-                            }
-                        }
+                                MethodAnalyser methodAnalyser;
+                                MethodInspection methodInspection = methodInfo.methodInspection.get();
+                                if (methodInspection.hasContractedFinalizer()) hasFinalizers.set(true);
+                                boolean hasNoCompanionMethods = methodInspection.getCompanionMethods().isEmpty();
+                                if (hasNoCompanionMethods && methodInfo.hasStatements()) {
+                                    // normal method analysis
 
-                        methodAnalysesBuilder.put(methodInfo, methodAnalysisBuilder);
-                    }
-                } catch (RuntimeException rte) {
-                    LOGGER.error("Caught runtime exception shallowly analysing method " + methodInfo.fullyQualifiedName);
-                    throw rte;
-                }
-            });
+                                    methodAnalyser = (MethodAnalyser) MethodAnalyserFactory.create(methodInfo, typeAnalysis,
+                                            false, false, this);
+                                    methodAnalyser.initialize(); // sets the field analysers, not implemented yet.
+                                    buildersForCompanionAnalysis.put(methodInfo, Either.left(methodAnalyser));
+                                } else {
+                                    // shallow method analysis, companion analysis
+
+                                    if (hasNoCompanionMethods) {
+                                        MethodAnalysis methodAnalysis = (MethodAnalysis) methodAnalysisBuilder.build();
+                                        methodInfo.setAnalysis(methodAnalysis); // also sets parameter analyses
+                                    } else {
+                                        buildersForCompanionAnalysis.put(methodInfo, Either.right(methodAnalysisBuilder));
+                                    }
+                                }
+
+                                methodAnalysers.put(methodInfo, methodAnalyser);
+                            }
+                        } catch (RuntimeException rte) {
+                            LOGGER.error("Caught runtime exception shallowly analysing method " + methodInfo.fullyQualifiedName);
+                            throw rte;
+                        }
+                    });
             typeAnalysis.setProperty(VariableProperty.FINALIZER, Level.fromBool(hasFinalizers.get()));
         }
-        methodAnalyses = Map.copyOf(methodAnalysesBuilder);
+        this.methodAnalysers = Map.copyOf(methodAnalysers);
+    }
+
+    /**
+     * Main entry point
+     *
+     * @return the message stream of all sub-analysers
+     */
+    public Stream<Message> analyse() {
+        log(ANALYSER, "Starting shallow type analysis on {} types", typeAnalyses.size());
+
+        // do the types and fields
+        typeAnalyses.forEach((typeInfo, typeAnalysis) -> {
+            // do types and fields; no need to recurse into sub-types, they're included among the primary types
+            shallowTypeAndFieldAnalysis(typeInfo, (TypeAnalysisImpl.Builder) typeAnalysis, e2ImmuAnnotationExpressions);
+        });
+
+        methodAnalysis();
+        return Stream.concat(shallowFieldAnalyser.getMessageStream(), messages.getMessageStream());
     }
 
     // dedicated method exactly for this "isFact" method
     private void analyseIsFact(MethodInfo methodInfo) {
         ParameterInfo parameterInfo = methodInfo.methodInspection.get().getParameters().get(0);
-        ParameterAnalysisImpl.Builder parameterAnalysis = new ParameterAnalysisImpl.Builder(getPrimitives(), this, parameterInfo);
+        ParameterAnalysisImpl.Builder parameterAnalysis = new ParameterAnalysisImpl.Builder(
+                Analysis.AnalysisMode.CONTRACTED, getPrimitives(), this, parameterInfo);
         parameterAnalysis.setProperty(VariableProperty.IDENTITY, Level.FALSE);
         parameterAnalysis.setProperty(VariableProperty.NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL);
         parameterAnalysis.setProperty(VariableProperty.CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
@@ -141,7 +167,8 @@ public class ShallowTypeAnalyser implements AnalyserContext {
     // dedicated method exactly for this "isKnown" method
     private void analyseIsKnown(MethodInfo methodInfo) {
         ParameterInfo parameterInfo = methodInfo.methodInspection.get().getParameters().get(0);
-        ParameterAnalysisImpl.Builder parameterAnalysis = new ParameterAnalysisImpl.Builder(getPrimitives(), this, parameterInfo);
+        ParameterAnalysisImpl.Builder parameterAnalysis = new ParameterAnalysisImpl.Builder(Analysis.AnalysisMode.CONTRACTED,
+                getPrimitives(), this, parameterInfo);
         parameterAnalysis.setProperty(VariableProperty.IDENTITY, Level.FALSE);
         parameterAnalysis.setProperty(VariableProperty.NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL);
         parameterAnalysis.setProperty(VariableProperty.CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
@@ -213,8 +240,8 @@ public class ShallowTypeAnalyser implements AnalyserContext {
 
     @Override
     public MethodAnalysis getMethodAnalysis(MethodInfo methodInfo) {
-        MethodAnalysis methodAnalysis = methodAnalyses.get(methodInfo);
-        if (methodAnalysis != null) return methodAnalysis;
+        MethodAnalyser methodAnalyser = methodAnalysers.get(methodInfo);
+        if (methodAnalyser != null) return methodAnalyser.methodAnalysis;
         return methodInfo.methodAnalysis.get();
     }
 
@@ -230,22 +257,16 @@ public class ShallowTypeAnalyser implements AnalyserContext {
         return typeInfo.typeAnalysis.get();
     }
 
-    public Stream<Message> analyse() {
-        shallowTypeAndFieldAnalysis();
-        methodAnalysis();
-        return Stream.concat(shallowMethodAnalyser.getMessageStream(), messages.getMessageStream());
-    }
+    /*
+    Shallowly analysing a type means that there is no code in regular methods and constructors.
+    When analysing Annotated APIs (the normal use case of the shallow type analyser),
+    there is dummy code present, but that is discarded.
 
-    private void shallowTypeAndFieldAnalysis() {
-        log(ANALYSER, "Starting shallow analysis on {} types, {} methods", typeAnalyses.size(), methodAnalyses.size());
-
-        // do the types and fields
-        typeAnalyses.forEach((typeInfo, typeAnalysis) -> {
-            // do types and fields; no need to recurse into sub-types, they're included among the primary types
-            shallowTypeAndFieldAnalysis(typeInfo, (TypeAnalysisImpl.Builder) typeAnalysis, e2ImmuAnnotationExpressions);
-        });
-    }
-
+    There can be companion methods with code; they'll need a ComputingMethodAnalyser.
+    Normal situations require the ShallowMethodAnalyser.
+    The AggregatingMethodAnalyser is called in the exceptional case of sealed classes where the properties of the
+    method can be summarized from the implementation(s).
+     */
     private void methodAnalysis() {
         int iteration = 0;
         while (!buildersForCompanionAnalysis.isEmpty()) {
@@ -281,7 +302,7 @@ public class ShallowTypeAnalyser implements AnalyserContext {
                     builder.fromAnnotationsIntoProperties(Analyser.AnalyserIdentification.METHOD, true,
                             methodInfo.methodInspection.get().getAnnotations(), e2ImmuAnnotationExpressions);
                 } else {
-                    MethodAnalyser methodAnalyser = either.getLeft();
+                    AbstractAnalyser methodAnalyser = either.getLeft();
                     AnalysisStatus analysisStatus = methodAnalyser.analyse(effectivelyFinalIteration, null);
                     if (analysisStatus != AnalysisStatus.DONE) {
                         log(DELAYED, "{} in analysis of {}, full method analyser", analysisStatus, methodInfo.fullyQualifiedName());
@@ -291,7 +312,7 @@ public class ShallowTypeAnalyser implements AnalyserContext {
                 switch (methodAnalysisStatus.get()) {
                     case DONE -> {
                         keysToRemove.add(methodInfo);
-                        MethodAnalysis methodAnalysis = (MethodAnalysis) (either.isRight() ? either.getRight().build() : either.getLeft().methodAnalysis.build());
+                        MethodAnalysis methodAnalysis = (MethodAnalysis) (either.isRight() ? either.getRight().build() : either.getLeft().getAnalysis().build());
                         methodInfo.setAnalysis(methodAnalysis);
                         progress.set(true);
                     }
@@ -331,41 +352,9 @@ public class ShallowTypeAnalyser implements AnalyserContext {
         typeInfo.typeAnalysis.set(typeAnalysis);
 
         boolean isEnum = typeInspection.typeNature() == TypeNature.ENUM;
-        typeInspection.fields().forEach(fieldInfo -> shallowFieldAnalyser(fieldInfo, isEnum));
+        typeInspection.fields().forEach(fieldInfo -> shallowFieldAnalyser.analyser(fieldInfo, isEnum));
     }
 
-
-    public void shallowFieldAnalyser(FieldInfo fieldInfo, boolean typeIsEnum) {
-        FieldAnalysisImpl.Builder fieldAnalysisBuilder = new FieldAnalysisImpl.Builder(primitives, AnalysisProvider.DEFAULT_PROVIDER,
-                fieldInfo, fieldInfo.owner.typeAnalysis.get());
-
-        messages.addAll(fieldAnalysisBuilder.fromAnnotationsIntoProperties(Analyser.AnalyserIdentification.FIELD, true,
-                fieldInfo.fieldInspection.get().getAnnotations(), e2ImmuAnnotationExpressions));
-
-        FieldInspection fieldInspection = getFieldInspection(fieldInfo);
-        boolean enumField = typeIsEnum && fieldInspection.isSynthetic();
-
-        // the following code is here to save some @Final annotations in annotated APIs where there already is a `final` keyword.
-        if (fieldInfo.isExplicitlyFinal() || enumField) {
-            fieldAnalysisBuilder.setProperty(VariableProperty.FINAL, Level.TRUE);
-        }
-        // unless annotated with something heavier, ...
-        if (enumField && fieldAnalysisBuilder.getProperty(VariableProperty.EXTERNAL_NOT_NULL) == Level.DELAY) {
-            fieldAnalysisBuilder.setProperty(VariableProperty.EXTERNAL_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
-        }
-
-        if (fieldAnalysisBuilder.getProperty(VariableProperty.FINAL) == Level.TRUE && fieldInfo.fieldInspection.get().fieldInitialiserIsSet()) {
-            Expression initialiser = fieldInfo.fieldInspection.get().getFieldInitialiser().initialiser();
-            Expression value;
-            if (initialiser instanceof ConstantExpression<?> constantExpression) {
-                value = constantExpression;
-            } else {
-                value = EmptyExpression.EMPTY_EXPRESSION; // IMPROVE
-            }
-            fieldAnalysisBuilder.effectivelyFinalValue.set(value);
-        }
-        fieldInfo.setAnalysis(fieldAnalysisBuilder.build());
-    }
 
     @Override
     public boolean inAnnotatedAPIAnalysis() {

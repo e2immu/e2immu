@@ -685,9 +685,9 @@ public class TypeAnalyser extends AbstractAnalyser {
                 .collect(Collectors.toSet());
 
         for (MethodAnalyser methodAnalyser : myMethodAnalysers) {
-            if (methodAnalyser.methodInfo.hasReturnValue() && methodAnalyser.hasCode() &&
+            if (methodAnalyser.methodInfo.hasReturnValue() && methodAnalyser instanceof ComputingMethodAnalyser cma &&
                     !typeAnalysis.implicitlyImmutableDataTypes.get().contains(methodAnalyser.methodInfo.returnType())) {
-                VariableInfo variableInfo = methodAnalyser.getReturnAsVariable();
+                VariableInfo variableInfo = cma.getReturnAsVariable();
                 if (variableInfo == null) {
                     log(DELAYED, "Delay independence of type {}, method {}'s return statement not known",
                             typeInfo.fullyQualifiedName, methodAnalyser.methodInfo.name);

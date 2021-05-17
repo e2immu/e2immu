@@ -15,70 +15,55 @@
 package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.parser.*;
+import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
+import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.util.SMapList;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class ShallowMethodAnalyser {
-    private final Primitives primitives;
-    private final AnalysisProvider analysisProvider;
-    private final E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions;
-    private final Messages messages = new Messages();
+public class ShallowMethodAnalyser extends AbstractAnalyser {
 
-    public ShallowMethodAnalyser(Primitives primitives,
-                                 AnalysisProvider analysisProvider,
-                                 E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
-        this.e2ImmuAnnotationExpressions = e2ImmuAnnotationExpressions;
-        this.analysisProvider = analysisProvider;
-        this.primitives = primitives;
+    private final MethodInfo methodInfo;
+    private final MethodAnalysisImpl.Builder methodAnalysis;
+    private final List<ParameterAnalysis> parameterAnalyses;
+
+    public ShallowMethodAnalyser(MethodInfo methodInfo,
+                                 MethodAnalysisImpl.Builder methodAnalysis,
+                                 List<ParameterAnalysis> parameterAnalyses,
+                                 AnalyserContext analyserContext) {
+        super("Method " + methodInfo, analyserContext);
+        this.methodInfo = methodInfo;
+        this.methodAnalysis = methodAnalysis;
+        this.parameterAnalyses = parameterAnalyses;
     }
 
+    @Override
+    public void initialize() {
+        // no-op
+    }
 
-    public MethodAnalysisImpl.Builder copyAnnotationsIntoMethodAnalysisProperties(MethodInfo methodInfo) {
-        Map<WithInspectionAndAnalysis, Map<AnnotationExpression, List<MethodInfo>>> map = collectAnnotations(methodInfo);
+    @Override
+    public AnalysisStatus analyse(int iteration, EvaluationContext closure) {
+        Map<WithInspectionAndAnalysis, Map<AnnotationExpression, List<MethodInfo>>> map = collectAnnotations();
+        E2ImmuAnnotationExpressions e2 = analyserContext.getE2ImmuAnnotationExpressions();
 
-        MethodInspection methodInspection = methodInfo.methodInspection.get();
-
-        List<ParameterAnalysis> parameterAnalyses = new ArrayList<>();
-
-        methodInspection.getParameters().forEach(parameterInfo -> {
-            ParameterAnalysisImpl.Builder builder = new ParameterAnalysisImpl.Builder(primitives, analysisProvider, parameterInfo);
+        parameterAnalyses.forEach(parameterAnalysis -> {
+            ParameterAnalysisImpl.Builder builder = (ParameterAnalysisImpl.Builder)parameterAnalysis;
             messages.addAll(builder.fromAnnotationsIntoProperties(Analyser.AnalyserIdentification.PARAMETER, true,
-                    map.getOrDefault(parameterInfo, Map.of()).keySet(), e2ImmuAnnotationExpressions));
-            parameterAnalyses.add(builder); // building will take place when the method analysis is built
+                    map.getOrDefault(builder.getParameterInfo(), Map.of()).keySet(), e2));
         });
 
-
-        Analysis.AnalysisMode analysisMode = computeAnalysisMode(methodInspection);
-        MethodAnalysisImpl.Builder methodAnalysisBuilder = new MethodAnalysisImpl.Builder(
-                analysisMode, primitives,
-                analysisProvider, InspectionProvider.DEFAULT, methodInfo, parameterAnalyses);
-
-        messages.addAll(methodAnalysisBuilder.fromAnnotationsIntoProperties(Analyser.AnalyserIdentification.METHOD,
-                true, map.getOrDefault(methodInfo, Map.of()).keySet(), e2ImmuAnnotationExpressions));
-        return methodAnalysisBuilder;
+        messages.addAll(methodAnalysis.fromAnnotationsIntoProperties(Analyser.AnalyserIdentification.METHOD,
+                true, map.getOrDefault(methodInfo, Map.of()).keySet(), e2));
+        return AnalysisStatus.DONE;
     }
 
-    private static Analysis.AnalysisMode computeAnalysisMode(MethodInspection methodInspection) {
-        TypeInspection typeInspection = methodInspection.getMethodInfo().typeInfo.typeInspection.get();
-        boolean isAbstract = typeInspection.isInterface() && !methodInspection.isDefault() ||
-                methodInspection.isAbstract();
-        if (isAbstract) {
-            TypeResolution typeResolution = methodInspection.getMethodInfo().typeInfo.typeResolution.get();
-            if (typeInspection.isSealed() || typeResolution.hasOneKnownGeneratedImplementation()) {
-                return Analysis.AnalysisMode.AGGREGATED;
-            }
-        }
-        return Analysis.AnalysisMode.CONTRACTED;
-    }
 
-    private Map<WithInspectionAndAnalysis, Map<AnnotationExpression, List<MethodInfo>>> collectAnnotations(MethodInfo methodInfo) {
+    private Map<WithInspectionAndAnalysis, Map<AnnotationExpression, List<MethodInfo>>> collectAnnotations() {
         Map<WithInspectionAndAnalysis, Map<AnnotationExpression, List<MethodInfo>>> map = new HashMap<>();
 
         Map<AnnotationExpression, List<MethodInfo>> methodMap = new HashMap<>();
@@ -100,24 +85,56 @@ public class ShallowMethodAnalyser {
         return map;
     }
 
-    private void checkContradictions(WithInspectionAndAnalysis where, Map<AnnotationExpression, List<MethodInfo>> annotations) {
+    private void checkContradictions(WithInspectionAndAnalysis where,
+                                     Map<AnnotationExpression,
+                                             List<MethodInfo>> annotations) {
         if (annotations.size() < 2) return;
-        checkContradictions(where, annotations, e2ImmuAnnotationExpressions.notModified, e2ImmuAnnotationExpressions.modified);
-        checkContradictions(where, annotations, e2ImmuAnnotationExpressions.notNull, e2ImmuAnnotationExpressions.nullable);
+        E2ImmuAnnotationExpressions e2 = analyserContext.getE2ImmuAnnotationExpressions();
+        checkContradictions(where, annotations, e2.notModified, e2.modified);
+        checkContradictions(where, annotations, e2.notNull, e2.nullable);
     }
 
-    private void checkContradictions(WithInspectionAndAnalysis where, Map<AnnotationExpression, List<MethodInfo>> annotations,
-                                     AnnotationExpression left, AnnotationExpression right) {
+    private void checkContradictions(WithInspectionAndAnalysis where,
+                                     Map<AnnotationExpression, List<MethodInfo>> annotations,
+                                     AnnotationExpression left,
+                                     AnnotationExpression right) {
         List<MethodInfo> leftMethods = annotations.getOrDefault(left, List.of());
         List<MethodInfo> rightMethods = annotations.getOrDefault(right, List.of());
         if (!leftMethods.isEmpty() && !rightMethods.isEmpty()) {
             messages.add(Message.newMessage(new Location(where), Message.Label.CONTRADICTING_ANNOTATIONS,
-                    left + " in " + leftMethods.stream().map(mi -> mi.fullyQualifiedName).collect(Collectors.joining("; ")) +
-                            "; " + right + " in " + rightMethods.stream().map(mi -> mi.fullyQualifiedName).collect(Collectors.joining("; "))));
+                    left + " in " + leftMethods.stream()
+                            .map(mi -> mi.fullyQualifiedName).collect(Collectors.joining("; ")) +
+                            "; " + right + " in " + rightMethods.stream()
+                            .map(mi -> mi.fullyQualifiedName).collect(Collectors.joining("; "))));
         }
+    }
+
+    @Override
+    public void write() {
+        // everything contracted, nothing to write
+    }
+
+    @Override
+    public void check() {
+        // everything contracted, nothing to check
     }
 
     public Stream<Message> getMessageStream() {
         return messages.getMessageStream();
+    }
+
+    @Override
+    public WithInspectionAndAnalysis getMember() {
+        return methodInfo;
+    }
+
+    @Override
+    public Analysis getAnalysis() {
+        return methodAnalysis;
+    }
+
+    @Override
+    public AnalyserComponents<String, ?> getAnalyserComponents() {
+        throw new UnsupportedOperationException("Shallow method analyser has no analyser components");
     }
 }
