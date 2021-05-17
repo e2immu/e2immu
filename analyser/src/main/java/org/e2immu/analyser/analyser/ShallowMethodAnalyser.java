@@ -133,6 +133,10 @@ public class ShallowMethodAnalyser extends AbstractAnalyser {
         return methodAnalysis;
     }
 
+    public MethodAnalysisImpl.Builder getMethodAnalysis() {
+        return methodAnalysis;
+    }
+
     @Override
     public AnalyserComponents<String, ?> getAnalyserComponents() {
         throw new UnsupportedOperationException("Shallow method analyser has no analyser components");

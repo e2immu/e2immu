@@ -17,7 +17,7 @@ package org.e2immu.analyser.model.value;
 import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
-import org.e2immu.analyser.analyser.ShallowTypeAnalyser;
+import org.e2immu.analyser.analyser.AnnotatedAPIAnalyser;
 import org.e2immu.analyser.inspector.MethodInspectionImpl;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
@@ -63,7 +63,7 @@ public class TestConditionalValue extends CommonAbstractValue {
     public void test3() {
         TypeInfo annotatedAPI = new TypeInfo("org.e2immu.annotatedapi", "AnnotatedAPI");
         ParameterizedType annotatedAPIPt = new ParameterizedType(annotatedAPI, 0);
-        MethodInfo isFact = new MethodInfo(annotatedAPI, "isFact", ShallowTypeAnalyser.IS_FACT_FQN, ShallowTypeAnalyser.IS_FACT_FQN, false);
+        MethodInfo isFact = new MethodInfo(annotatedAPI, "isFact", AnnotatedAPIAnalyser.IS_FACT_FQN, AnnotatedAPIAnalyser.IS_FACT_FQN, false);
         isFact.methodInspection.set(new MethodInspectionImpl.Builder(annotatedAPI)
                 .setStatic(true)
                 .setReturnType(PRIMITIVES.booleanParameterizedType).build(InspectionProvider.DEFAULT));

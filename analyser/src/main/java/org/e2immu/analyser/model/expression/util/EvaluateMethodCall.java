@@ -60,7 +60,7 @@ public class EvaluateMethodCall {
             return builder.setExpression(DelayedExpression.forMethod(methodInfo)).build(); // this will delay
         }
 
-        if (ShallowTypeAnalyser.IS_KNOWN_FQN.equals(methodInfo.fullyQualifiedName) &&
+        if (AnnotatedAPIAnalyser.IS_KNOWN_FQN.equals(methodInfo.fullyQualifiedName) &&
                 !evaluationContext.getAnalyserContext().inAnnotatedAPIAnalysis() &&
                 parameters.get(0) instanceof BooleanConstant boolValue) {
             Expression clause = new MethodCall(objectValue, methodInfo,

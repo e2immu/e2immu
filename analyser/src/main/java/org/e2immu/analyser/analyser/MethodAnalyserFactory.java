@@ -19,17 +19,7 @@ public class MethodAnalyserFactory {
                 allowComputed);
 
         return switch (analysisMode) {
-            case CONTRACTED -> {
-                List<ParameterAnalysis> parameterAnalyses = methodInspection.getParameters().stream()
-                        .map(parameterInfo -> (ParameterAnalysis) new ParameterAnalysisImpl
-                                .Builder(Analysis.AnalysisMode.CONTRACTED, analyserContextInput.getPrimitives(),
-                                analyserContextInput, parameterInfo))
-                        .toList();
-                MethodAnalysisImpl.Builder methodAnalysis = new MethodAnalysisImpl.Builder(Analysis.AnalysisMode.COMPUTED,
-                        analyserContextInput.getPrimitives(), analyserContextInput, analyserContextInput,
-                        methodInfo, parameterAnalyses);
-                yield new ShallowMethodAnalyser(methodInfo, methodAnalysis, parameterAnalyses, analyserContextInput);
-            }
+            case CONTRACTED -> createShallowMethodAnalyser(methodInfo, analyserContextInput);
             case AGGREGATED -> {
                 assert !isSAM;
                 List<? extends ParameterAnalyser> parameterAnalysers = methodInspection.getParameters().stream()
@@ -56,6 +46,19 @@ public class MethodAnalyserFactory {
                         methodAnalysis, parameterAnalysers, parameterAnalyses, companionAnalysers, isSAM, analyserContext);
             }
         };
+    }
+
+    public static ShallowMethodAnalyser createShallowMethodAnalyser(MethodInfo methodInfo, AnalyserContext analyserContext) {
+        MethodInspection methodInspection = methodInfo.methodInspection.get();
+        List<ParameterAnalysis> parameterAnalyses = methodInspection.getParameters().stream()
+                .map(parameterInfo -> (ParameterAnalysis) new ParameterAnalysisImpl
+                        .Builder(Analysis.AnalysisMode.CONTRACTED, analyserContext.getPrimitives(),
+                        analyserContext, parameterInfo))
+                .toList();
+        MethodAnalysisImpl.Builder methodAnalysis = new MethodAnalysisImpl.Builder(Analysis.AnalysisMode.COMPUTED,
+                analyserContext.getPrimitives(), analyserContext, analyserContext,
+                methodInfo, parameterAnalyses);
+        return new ShallowMethodAnalyser(methodInfo, methodAnalysis, parameterAnalyses, analyserContext);
     }
 
     private static Analysis.AnalysisMode computeAnalysisMode(MethodInspection methodInspection,

@@ -16,7 +16,7 @@ package org.e2immu.analyser.parser;
 
 import org.apache.commons.io.IOUtils;
 import org.e2immu.analyser.analyser.PrimaryTypeAnalyser;
-import org.e2immu.analyser.analyser.ShallowTypeAnalyser;
+import org.e2immu.analyser.analyser.AnnotatedAPIAnalyser;
 import org.e2immu.analyser.analyser.StatementAnalyser;
 import org.e2immu.analyser.bytecode.ByteCodeInspector;
 import org.e2immu.analyser.config.Configuration;
@@ -261,9 +261,9 @@ public class Parser {
 
         assert types.size() == new HashSet<>(types).size() : "Duplicates?";
 
-        ShallowTypeAnalyser shallowTypeAnalyser = new ShallowTypeAnalyser(types, configuration,
+        AnnotatedAPIAnalyser annotatedAPIAnalyser = new AnnotatedAPIAnalyser(types, configuration,
                 getTypeContext().getPrimitives(), typeMap.getE2ImmuAnnotationExpressions());
-        messages.addAll(shallowTypeAnalyser.analyse());
+        messages.addAll(annotatedAPIAnalyser.analyse());
 
         assert types.stream().allMatch(typeInfo -> typeInfo.typeAnalysis.isSet() &&
                 typeInfo.typeInspection.get().methodsAndConstructors(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM)
