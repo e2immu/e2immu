@@ -754,25 +754,26 @@ public class Resolver {
             TypeInfo parent = Objects.requireNonNull(typeInspection.parentClass().typeInfo);
             list.add(parent);
             list.addAll(superTypesExcludingJavaLangObject(inspectionProvider, parent, builders));
-            incrementImplementations(parent, hasGeneratedAnnotation, builders);
+            incrementImplementations(parent, typeInfo, hasGeneratedAnnotation, builders);
         } // else: silently ignore, we may be going out of bounds
 
         typeInspection.interfacesImplemented().forEach(i -> {
             list.add(i.typeInfo);
             assert i.typeInfo != null;
             list.addAll(superTypesExcludingJavaLangObject(inspectionProvider, i.typeInfo, builders));
-            incrementImplementations(i.typeInfo, hasGeneratedAnnotation, builders);
+            incrementImplementations(i.typeInfo, typeInfo, hasGeneratedAnnotation, builders);
         });
         return Set.copyOf(list);
     }
 
-    private static void incrementImplementations(TypeInfo typeInfo,
+    private static void incrementImplementations(TypeInfo superType,
+                                                 TypeInfo implementation,
                                                  boolean hasGeneratedAnnotation,
                                                  Map<TypeInfo, TypeResolution.Builder> builders) {
         if (builders != null) {
-            TypeResolution.Builder builder = builders.get(typeInfo);
+            TypeResolution.Builder builder = builders.get(superType);
             if (builder != null) {
-                builder.incrementImplementations(hasGeneratedAnnotation);
+                builder.incrementImplementations(implementation, hasGeneratedAnnotation);
             }
         }
     }

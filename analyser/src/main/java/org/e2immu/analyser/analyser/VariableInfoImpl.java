@@ -253,9 +253,9 @@ class VariableInfoImpl implements VariableInfo {
     // it is important to note that the properties are NOT read off the value, but from the properties map
     // this copying has to have taken place earlier; for each of the variable properties below:
 
-    private static final IntBinaryOperator MAX = (i1, i2) -> i1 == Level.DELAY || i2 == Level.DELAY
+    public static final IntBinaryOperator MAX = (i1, i2) -> i1 == Level.DELAY || i2 == Level.DELAY
             ? Level.DELAY : Math.max(i1, i2);
-    private static final IntBinaryOperator MIN = (i1, i2) -> i1 == Level.DELAY || i2 == Level.DELAY
+    public static final IntBinaryOperator MIN = (i1, i2) -> i1 == Level.DELAY || i2 == Level.DELAY
             ? Level.DELAY : Math.min(i1, i2);
 
     private static final IntBinaryOperator MAX_CM = (i1, i2) ->

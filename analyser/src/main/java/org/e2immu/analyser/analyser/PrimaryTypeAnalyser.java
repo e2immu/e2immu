@@ -96,27 +96,29 @@ public class PrimaryTypeAnalyser implements AnalyserContext, Analyser, HoldsAnal
         // can only reach TypeAnalysisImpl, and not its builder. We'd better live with empty methods in the method analyser.
         Map<ParameterInfo, ParameterAnalyser> parameterAnalysersBuilder = new HashMap<>();
         Map<MethodInfo, MethodAnalyser> methodAnalysersBuilder = new HashMap<>();
-        sortedTypes.forEach(sortedType ->
-                sortedType.methodsFieldsSubTypes().forEach(mfs -> {
-                    if (mfs instanceof MethodInfo methodInfo && !methodInfo.methodAnalysis.isSet()) {
-                        MethodAnalyser methodAnalyser = MethodAnalyserFactory.create(methodInfo,
-                                typeAnalysers.get(methodInfo.typeInfo).typeAnalysis,
-                                false, true, this);
-                        for (ParameterAnalyser parameterAnalyser : methodAnalyser.getParameterAnalysers()) {
-                            parameterAnalysersBuilder.put(parameterAnalyser.parameterInfo, parameterAnalyser);
-                        }
-                        // this has to happen before the regular analysers, because there are no delays
-                        if (methodAnalyser instanceof ShallowMethodAnalyser shallowMethodAnalyser) {
-                            shallowMethodAnalyser.analyse();
-                        }
-                        methodAnalysersBuilder.put(methodInfo, methodAnalyser);
-                        // finalizers are done early, before the first assignments
-                        if (methodInfo.methodInspection.get().hasContractedFinalizer()) {
-                            TypeAnalyser typeAnalyser = typeAnalysers.get(methodInfo.typeInfo);
-                            typeAnalyser.typeAnalysis.setProperty(VariableProperty.FINALIZER, Level.TRUE);
-                        }
+        sortedTypes.forEach(sortedType -> {
+            List<WithInspectionAndAnalysis> mfss = sortedType.methodsFieldsSubTypes();
+            mfss.forEach(mfs -> {
+                if (mfs instanceof MethodInfo methodInfo && !methodInfo.methodAnalysis.isSet()) {
+                    MethodAnalyser methodAnalyser = MethodAnalyserFactory.create(methodInfo,
+                            typeAnalysers.get(methodInfo.typeInfo).typeAnalysis,
+                            false, true, this);
+                    for (ParameterAnalyser parameterAnalyser : methodAnalyser.getParameterAnalysers()) {
+                        parameterAnalysersBuilder.put(parameterAnalyser.parameterInfo, parameterAnalyser);
                     }
-                }));
+                    // this has to happen before the regular analysers, because there are no delays
+                    if (methodAnalyser instanceof ShallowMethodAnalyser shallowMethodAnalyser) {
+                        shallowMethodAnalyser.analyse();
+                    }
+                    methodAnalysersBuilder.put(methodInfo, methodAnalyser);
+                    // finalizers are done early, before the first assignments
+                    if (methodInfo.methodInspection.get().hasContractedFinalizer()) {
+                        TypeAnalyser typeAnalyser = typeAnalysers.get(methodInfo.typeInfo);
+                        typeAnalyser.typeAnalysis.setProperty(VariableProperty.FINALIZER, Level.TRUE);
+                    }
+                }
+            });
+        });
 
         parameterAnalysers = Map.copyOf(parameterAnalysersBuilder);
         methodAnalysers = Map.copyOf(methodAnalysersBuilder);
@@ -170,7 +172,7 @@ public class PrimaryTypeAnalyser implements AnalyserContext, Analyser, HoldsAnal
             AnalysisStatus.AnalysisResultSupplier<SharedState> supplier = sharedState -> {
                 analyser.receiveAdditionalTypeAnalysers(localPrimaryTypeAnalysers);
                 AnalysisStatus status = analyser.analyse(sharedState.iteration, sharedState.closure);
-                if (analyser instanceof MethodAnalyser methodAnalyser) {
+                if (analyser instanceof ComputingMethodAnalyser methodAnalyser) {
                     methodAnalyser.getLocallyCreatedPrimaryTypeAnalysers().forEach(localPrimaryTypeAnalysers::add);
                 }
                 return status;

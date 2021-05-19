@@ -127,4 +127,10 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
+
+    @Test
+    public void test_6() throws IOException {
+        testClass("InstanceOf_6", 1, 0, new DebugConfiguration.Builder()
+                .build());
+    }
 }

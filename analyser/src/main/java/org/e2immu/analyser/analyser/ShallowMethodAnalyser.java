@@ -19,7 +19,6 @@ import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.util.SMapList;
 
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -33,11 +32,6 @@ public class ShallowMethodAnalyser extends MethodAnalyser {
                                  List<ParameterAnalysis> parameterAnalyses,
                                  AnalyserContext analyserContext) {
         super(methodInfo, methodAnalysis, List.of(), parameterAnalyses, Map.of(), false, analyserContext);
-    }
-
-    @Override
-    public void receiveAdditionalTypeAnalysers(Collection<PrimaryTypeAnalyser> typeAnalysers) {
-        // no-op
     }
 
     @Override

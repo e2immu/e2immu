@@ -23,6 +23,7 @@ import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.ReturnVariable;
+import org.e2immu.analyser.testexample.Fluent_1;
 import org.e2immu.analyser.testexample.a.IFluent_1;
 import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
@@ -35,6 +36,9 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_56_Fluent extends CommonTestRunner {
+
+    public static final String INSTANCE_TYPE_BUILDER_BUILD = "instance instanceof Fluent_0?instance:(instance type Builder).build()";
+
     public Test_56_Fluent() {
         super(false);
     }
@@ -53,7 +57,7 @@ public class Test_56_Fluent extends CommonTestRunner {
                     }
                     if ("1".equals(d.statementId())) {
                         String expect = d.iteration() <= 1 ? "instance instanceof Fluent_0?instance:<m:build>" :
-                                "instance instanceof Fluent_0?instance:new Fluent_0(value)";
+                                INSTANCE_TYPE_BUILDER_BUILD;
                         assertEquals(expect, d.currentValue().toString());
                         String expectLinks = d.iteration() <= 1 ? LinkedVariables.DELAY_STRING : "instance";
                         assertEquals(expectLinks, d.variableInfo().getLinkedVariables().toString());
@@ -83,8 +87,7 @@ public class Test_56_Fluent extends CommonTestRunner {
                 if (d.iteration() <= 2) {
                     assertNull(d.methodAnalysis().getSingleReturnValue());
                 } else {
-                    assertEquals("instance instanceof Fluent_0?instance:new Fluent_0(value)",
-                            d.methodAnalysis().getSingleReturnValue().toString());
+                    assertEquals(INSTANCE_TYPE_BUILDER_BUILD, d.methodAnalysis().getSingleReturnValue().toString());
                 }
 
                 int expectFluent = d.iteration() <= 2 ? Level.DELAY : Level.FALSE;
@@ -137,16 +140,14 @@ public class Test_56_Fluent extends CommonTestRunner {
                         d.typeAnalysis().getImplicitlyImmutableDataTypes().toString());
             }
             if ("IFluent_0".equals(d.typeInfo().simpleName)) {
-                fail("Not analysed: no code");
             }
             if ("Type org.e2immu.analyser.testexample.a.IFluent_0.Builder".equals(d.typeInfo().fullyQualifiedName)) {
-                fail("Not analysed: no code");
             }
         };
 
         testClass(List.of("a.IFluent_0", "Fluent_0"), 0, 1, new DebugConfiguration.Builder()
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                //    .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
                 .build(), new AnalyserConfiguration.Builder().build(), new AnnotatedAPIConfiguration.Builder().build());
     }
@@ -155,13 +156,18 @@ public class Test_56_Fluent extends CommonTestRunner {
     public void test_1() throws IOException {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("IFluent_1".equals(d.typeInfo().simpleName)) {
-                fail("There is no type analyser for IFluent_1");
+                assertTrue(d.typeInfo().typeResolution.get().hasOneKnownGeneratedImplementation());
             }
         };
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("value".equals(d.methodInfo().name) && "IFluent_1".equals(d.methodInfo().typeInfo.simpleName)) {
-                fail("There is no method analyser for IFluent_1.value()!");
+                assertEquals(Level.FALSE, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
+                assertEquals(Level.FALSE, d.methodAnalysis().getProperty(VariableProperty.FLUENT));
+                assertEquals(Level.FALSE, d.methodAnalysis().getProperty(VariableProperty.IDENTITY));
+                assertEquals(MultiLevel.DEPENDENT, d.methodAnalysis().getProperty(VariableProperty.INDEPENDENT));
+                int expectImmutable = d.iteration() == 0 ? Level.DELAY: MultiLevel.MUTABLE;
+                assertEquals(expectImmutable, d.methodAnalysis().getProperty(VariableProperty.IMMUTABLE));
             }
         };
 
@@ -172,9 +178,11 @@ public class Test_56_Fluent extends CommonTestRunner {
                         .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
                         .build(), new AnalyserConfiguration.Builder().build(), new AnnotatedAPIConfiguration.Builder().build());
         TypeInfo iFluent1 = typeContext.typeMapBuilder.get(IFluent_1.class);
-        assertTrue(iFluent1.typeResolution.get().hasOneKnownGeneratedImplementation());
-
         MethodInfo value = iFluent1.findUniqueMethod("value", 0);
+        TypeInfo implementation = iFluent1.typeResolution.get().generatedImplementation;
+        TypeInfo fluent1 = typeContext.typeMapBuilder.get(Fluent_1.class);
+        assertSame(fluent1, implementation, "Generated implementation");
+
         MethodAnalysis valueAnalysis = value.methodAnalysis.get();
         assertSame(Analysis.AnalysisMode.AGGREGATED, valueAnalysis.analysisMode());
     }
@@ -190,7 +198,7 @@ public class Test_56_Fluent extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("value".equals(d.methodInfo().name) && "IFluent_2".equals(d.methodInfo().typeInfo.simpleName)) {
-            //    assertSame(Analysis.AnalysisMode.AGGREGATED, d.methodAnalysis().analysisMode());
+                //    assertSame(Analysis.AnalysisMode.AGGREGATED, d.methodAnalysis().analysisMode());
             }
         };
 

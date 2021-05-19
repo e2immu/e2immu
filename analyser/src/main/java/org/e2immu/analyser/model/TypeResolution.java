@@ -17,6 +17,7 @@ package org.e2immu.analyser.model;
 import org.e2immu.analyser.resolver.SortedType;
 
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 
 /*
@@ -32,16 +33,16 @@ public class TypeResolution {
     public final SortedType sortedType;
     public final Set<TypeInfo> circularDependencies;
     public final Set<TypeInfo> superTypesExcludingJavaLangObject;
-    public final boolean hasOneKnownGeneratedImplementation;
+    public final TypeInfo generatedImplementation; // not null <=> hasOneKnownGeneratedImplementation
 
     private TypeResolution(SortedType sortedType,
                            Set<TypeInfo> circularDependencies,
                            Set<TypeInfo> superTypesExcludingJavaLangObject,
-                           boolean hasOneKnownGeneratedImplementation) {
+                           TypeInfo generatedImplementation) {
         this.sortedType = sortedType;
         this.circularDependencies = circularDependencies;
         this.superTypesExcludingJavaLangObject = superTypesExcludingJavaLangObject;
-        this.hasOneKnownGeneratedImplementation = hasOneKnownGeneratedImplementation;
+        this.generatedImplementation = generatedImplementation;
     }
 
     public static class Builder {
@@ -50,10 +51,12 @@ public class TypeResolution {
         private Set<TypeInfo> superTypesExcludingJavaLangObject;
         private int countImplementations;
         private int countGeneratedImplementations;
+        private TypeInfo implementingType; // valid value only when counts == 1
 
-        public void incrementImplementations(boolean generated) {
+        public void incrementImplementations(TypeInfo typeInfo, boolean generated) {
             countImplementations++;
             if (generated) countGeneratedImplementations++;
+            this.implementingType = typeInfo;
         }
 
         public Builder setSortedType(SortedType sortedType) {
@@ -80,7 +83,7 @@ public class TypeResolution {
             return new TypeResolution(sortedType, // can be null
                     circularDependencies == null ? Set.of() : Set.copyOf(circularDependencies),
                     Set.copyOf(superTypesExcludingJavaLangObject),
-                    hasOneKnownGeneratedImplementation());
+                    hasOneKnownGeneratedImplementation() ? Objects.requireNonNull(implementingType) : null);
         }
 
         public SortedType getSortedType() {
@@ -109,6 +112,6 @@ public class TypeResolution {
     }
 
     public boolean hasOneKnownGeneratedImplementation() {
-        return hasOneKnownGeneratedImplementation;
+        return generatedImplementation != null;
     }
 }

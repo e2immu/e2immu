@@ -15,8 +15,8 @@
 package org.e2immu.analyser.parser;
 
 import org.apache.commons.io.IOUtils;
-import org.e2immu.analyser.analyser.PrimaryTypeAnalyser;
 import org.e2immu.analyser.analyser.AnnotatedAPIAnalyser;
+import org.e2immu.analyser.analyser.PrimaryTypeAnalyser;
 import org.e2immu.analyser.analyser.StatementAnalyser;
 import org.e2immu.analyser.bytecode.ByteCodeInspector;
 import org.e2immu.analyser.config.Configuration;
@@ -99,7 +99,7 @@ public class Parser {
         if (!configuration.skipAnalysis()) {
             // we pass on the Java sources for the PrimaryTypeAnalyser, while all other loaded types
             // will be sent to the ShallowAnalyser
-            runShallowAnalyser(typeMap, sortedAnnotatedAPITypes);
+            runShallowAnalyser(typeMap, sortedAnnotatedAPITypes, resolvedSourceTypes);
             runPrimaryTypeAnalyser(typeMap, resolvedSourceTypes);
         }
 
@@ -239,27 +239,26 @@ public class Parser {
         messages.addAll(primaryTypeAnalyser.getMessageStream());
     }
 
-    private void runShallowAnalyser(TypeMap typeMap, List<SortedType> sortedTypes) {
+    private void runShallowAnalyser(TypeMap typeMap, List<SortedType> annotatedAPITypes, List<SortedType> sourceTypes) {
 
         // the following block of code ensures that primary types of the annotated APIs
         // are processed in the correct order
 
         List<TypeInfo> types = new LinkedList<>();
-        sortedTypes.forEach(st -> types.add(st.primaryType()));
-        Set<TypeInfo> alreadyIncluded = new HashSet<>(types);
+        annotatedAPITypes.forEach(st -> types.add(st.primaryType()));
+        Set<TypeInfo> alreadyAdded = new HashSet<>();
+        sourceTypes.forEach(st -> alreadyAdded.add(st.primaryType()));
 
+        // all byte-code inspected types and AnnotatedAPI, excluding source types
         typeMap.visit(new String[0], (s, list) -> {
             for (TypeInfo typeInfo : list) {
-                if (typeInfo.typeInspection.isSet() &&
-                        !typeInfo.typeAnalysis.isSet() &&
-                        typeInfo.shallowAnalysis() &&
-                        !alreadyIncluded.contains(typeInfo)) {
+                if (typeInfo.typeInspection.isSet() && !typeInfo.typeAnalysis.isSet() &&
+                        typeInfo.shallowAnalysis() && !alreadyAdded.contains(typeInfo)) {
                     types.add(typeInfo);
+                    alreadyAdded.add(typeInfo); // to avoid duplicates
                 }
             }
         });
-
-        assert types.size() == new HashSet<>(types).size() : "Duplicates?";
 
         AnnotatedAPIAnalyser annotatedAPIAnalyser = new AnnotatedAPIAnalyser(types, configuration,
                 getTypeContext().getPrimitives(), typeMap.getE2ImmuAnnotationExpressions());

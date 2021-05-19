@@ -51,7 +51,6 @@ public abstract class AbstractAnalyser implements Analyser {
 
     @Override
     public void receiveAdditionalTypeAnalysers(Collection<PrimaryTypeAnalyser> typeAnalysers) {
-        ExpandableAnalyserContextImpl expandable = (ExpandableAnalyserContextImpl) analyserContext;
-        typeAnalysers.forEach(expandable::addPrimaryTypeAnalyser);
+        // no-op
     }
 }

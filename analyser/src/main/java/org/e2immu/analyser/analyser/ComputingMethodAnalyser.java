@@ -130,6 +130,12 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
         analyserComponents = builder.build();
     }
 
+    @Override
+    public void receiveAdditionalTypeAnalysers(Collection<PrimaryTypeAnalyser> typeAnalysers) {
+        ExpandableAnalyserContextImpl expandable = (ExpandableAnalyserContextImpl) analyserContext;
+        typeAnalysers.forEach(expandable::addPrimaryTypeAnalyser);
+    }
+
     public Stream<PrimaryTypeAnalyser> getLocallyCreatedPrimaryTypeAnalysers() {
         return locallyCreatedPrimaryTypeAnalysers.stream();
     }
