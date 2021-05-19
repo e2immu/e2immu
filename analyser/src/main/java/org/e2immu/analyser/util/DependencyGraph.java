@@ -21,7 +21,6 @@ import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 /**
  * In-house implementation of a directed graph that can be used to model dependencies between objects.
@@ -154,11 +153,21 @@ public class DependencyGraph<T> extends Freezable {
     @Independent
     public List<T> sorted() {
         return sorted(t -> {
-        });
+        }, null);
+    }
+
+    Comparator<Map.Entry<T, Node<T>>> comparator(Comparator<T> backupComparator) {
+        return (e1, e2) -> {
+            int c = e1.getValue().dependsOn.size() - e2.getValue().dependsOn.size();
+            if (c == 0) {
+                c = backupComparator == null ? 0 : backupComparator.compare(e1.getKey(), e2.getKey());
+            }
+            return c;
+        };
     }
 
     @Independent
-    public List<T> sorted(Consumer<T> reportPartOfCycle) {
+    public List<T> sorted(Consumer<T> reportPartOfCycle, Comparator<T> backupComparator) {
         Map<T, Node<T>> toDo = new HashMap<>(nodeMap);
         Set<T> done = new HashSet<>();
         List<T> result = new ArrayList<>(nodeMap.size());
@@ -173,7 +182,8 @@ public class DependencyGraph<T> extends Freezable {
             }
             if (keys.isEmpty()) {
                 // we have a cycle, break by taking one with a minimal number of dependencies
-                Map.Entry<T, Node<T>> toRemove = toDo.entrySet().stream().min(Comparator.comparingInt(e -> e.getValue().dependsOn.size())).orElseThrow();
+                Map.Entry<T, Node<T>> toRemove = toDo.entrySet().stream()
+                        .min(comparator(backupComparator)).orElseThrow();
                 T key = toRemove.getKey();
                 toDo.remove(key);
                 done.add(key);
@@ -192,7 +202,7 @@ public class DependencyGraph<T> extends Freezable {
         nodeMap.forEach((t, node) -> {
             if (accept.test(t)) {
                 List<T> newDependsOn = node.dependsOn == null ? null :
-                        node.dependsOn.stream().filter(accept).collect(Collectors.toUnmodifiableList());
+                        node.dependsOn.stream().filter(accept).toList();
                 copy.nodeMap.put(t, new Node<>(t, newDependsOn));
             }
         });

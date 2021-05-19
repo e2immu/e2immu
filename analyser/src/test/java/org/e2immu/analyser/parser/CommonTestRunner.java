@@ -115,6 +115,7 @@ public abstract class CommonTestRunner {
                 .addDebugLogTargets(List.of(ANALYSER,
                         //INSPECTOR,
                         //RESOLVER,
+                        PRIMARY_TYPE_ANALYSER,
                         LAMBDA,
                         DELAYED,
                         CONTEXT_MODIFICATION,

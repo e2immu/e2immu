@@ -184,21 +184,22 @@ public class Parser {
         }
         log(org.e2immu.analyser.util.Logger.LogTarget.ANALYSER, "Analysing primary types:\n{}",
                 sortedPrimaryTypes.stream().map(t -> t.primaryType().fullyQualifiedName).collect(Collectors.joining("\n")));
-        Collection<Set<SortedType>> groupByCycles = groupByCycles(sortedPrimaryTypes);
-        for (Set<SortedType> sortedTypeCycle : groupByCycles) {
+        List<List<SortedType>> groupByCycles = groupByCycles(sortedPrimaryTypes);
+        for (List<SortedType> sortedTypeCycle : groupByCycles) {
             analyseSortedTypeCycle(sortedTypeCycle);
         }
     }
 
-    private Collection<Set<SortedType>> groupByCycles(List<SortedType> sortedPrimaryTypes) {
-        List<Set<SortedType>> cycles = new LinkedList<>();
+    private List<List<SortedType>> groupByCycles(List<SortedType> sortedPrimaryTypes) {
+        List<List<SortedType>> cycles = new LinkedList<>();
         Set<TypeInfo> seen = new HashSet<>();
         for (SortedType sortedType : sortedPrimaryTypes) {
             if (!seen.contains(sortedType.primaryType())) {
                 Set<TypeInfo> circularDependencies = sortedType.primaryType().typeResolution.get().circularDependencies;
-                Set<SortedType> cycle =
-                        circularDependencies.isEmpty() ? Set.of(sortedType) : circularDependencies.stream()
-                                .map(typeInfo -> typeInfo.typeResolution.get().sortedType).collect(Collectors.toUnmodifiableSet());
+                List<SortedType> cycle =
+                        circularDependencies.isEmpty() ? List.of(sortedType) : circularDependencies.stream()
+                                .sorted(Comparator.comparing(TypeInfo::fullyQualifiedName))
+                                .map(typeInfo -> typeInfo.typeResolution.get().sortedType).toList();
                 cycles.add(cycle);
                 seen.addAll(circularDependencies);
             }
@@ -206,7 +207,7 @@ public class Parser {
         return cycles;
     }
 
-    private void analyseSortedTypeCycle(Set<SortedType> sortedTypes) {
+    private void analyseSortedTypeCycle(List<SortedType> sortedTypes) {
         PatternMatcher<StatementAnalyser> patternMatcher = configuration.analyserConfiguration().newPatternMatcher(getTypeContext());
         PrimaryTypeAnalyser primaryTypeAnalyser = new PrimaryTypeAnalyser(null, sortedTypes, configuration,
                 getTypeContext().getPrimitives(), patternMatcher, getTypeContext().typeMapBuilder.getE2ImmuAnnotationExpressions());

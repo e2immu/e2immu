@@ -32,6 +32,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.ANALYSER;
+import static org.e2immu.analyser.util.Logger.LogTarget.PRIMARY_TYPE_ANALYSER;
 import static org.e2immu.analyser.util.Logger.log;
 
 /*
@@ -64,7 +65,7 @@ public class PrimaryTypeAnalyser implements AnalyserContext, Analyser, HoldsAnal
     }
 
     public PrimaryTypeAnalyser(AnalyserContext parent,
-                               Set<SortedType> sortedTypes,
+                               List<SortedType> sortedTypes,
                                Configuration configuration,
                                Primitives primitives,
                                PatternMatcher<StatementAnalyser> patternMatcher,
@@ -181,6 +182,7 @@ public class PrimaryTypeAnalyser implements AnalyserContext, Analyser, HoldsAnal
             builder.add(analyser, supplier);
         }
         analyserComponents = builder.build();
+        log(PRIMARY_TYPE_ANALYSER, "List of analysers: {}", analysers);
     }
 
     @Override

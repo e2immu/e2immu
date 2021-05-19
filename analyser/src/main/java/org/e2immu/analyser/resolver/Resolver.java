@@ -136,7 +136,7 @@ public class Resolver {
 
     private List<TypeInfo> sortWarnForCircularDependencies(DependencyGraph<TypeInfo> typeGraph,
                                                            Map<TypeInfo, TypeResolution.Builder> resolutionBuilders) {
-        return typeGraph.sorted(typeInfo -> {
+        List<TypeInfo> sorted = typeGraph.sorted(typeInfo -> {
             // typeInfo is part of a cycle, dependencies are:
             Set<TypeInfo> typesInCycle = typeGraph.dependencies(typeInfo);
             log(RESOLVER, "Type {} is part of cycle: {}", typeInfo,
@@ -147,7 +147,9 @@ public class Resolver {
             }
             messages.add(Message.newMessage(new Location(typeInfo), Message.Label.CIRCULAR_TYPE_DEPENDENCY,
                     typesInCycle.stream().map(t -> t.fullyQualifiedName).collect(Collectors.joining(", "))));
-        });
+        }, Comparator.comparing(typeInfo -> typeInfo.fullyQualifiedName));
+        log(RESOLVER, "Sorted types: {}", sorted);
+        return sorted;
     }
 
     private List<SortedType> computeTypeResolution(
@@ -217,7 +219,8 @@ public class Resolver {
         typeDependencies.retainAll(stayWithin);
 
         typeGraph.addNode(typeInfo, List.copyOf(typeDependencies));
-        List<WithInspectionAndAnalysis> methodFieldSubTypeOrder = List.copyOf(methodFieldSubTypeGraph.sorted());
+        List<WithInspectionAndAnalysis> methodFieldSubTypeOrder = List.copyOf(methodFieldSubTypeGraph.sorted(x->{},
+                Comparator.comparing(WithInspectionAndAnalysis::fullyQualifiedName)));
 
         if (isLogEnabled(RESOLVER)) {
             log(RESOLVER, "Method graph has {} relations", methodFieldSubTypeGraph.relations());

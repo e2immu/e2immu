@@ -530,7 +530,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                     .map(typeInfo -> {
                         SortedType sortedType = typeInfo.typeResolution.get().sortedType();
                         PrimaryTypeAnalyser primaryTypeAnalyser = new PrimaryTypeAnalyser(analyserContext,
-                                Set.of(sortedType),
+                                List.of(sortedType),
                                 analyserContext.getConfiguration(),
                                 analyserContext.getPrimitives(),
                                 analyserContext.getPatternMatcher(),

@@ -75,23 +75,21 @@ public class Test_20_CyclicReferences extends CommonTestRunner {
             if ("methodB".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ReturnVariable) {
                     if ("0.0.0".equals(d.statementId())) {
-                        String expectValue = d.iteration() == 0 ? "<m:methodA>" : "CyclicReferences_2.methodA(paramB)";
-                        assertEquals(expectValue, d.currentValue().toString());
+                        assertEquals("CyclicReferences_2.methodA(paramB)", d.currentValue().toString());
                     }
                     if ("1".equals(d.statementId())) {
-                        String expectValue = d.iteration() == 0 ? "<m:equals>&&!<m:equals>" : "!\"a\".equals(paramB)&&\"b\".equals(paramB)";
-                        assertEquals(expectValue, d.currentValue().toString());
+                        assertEquals("!\"a\".equals(paramB)&&\"b\".equals(paramB)", d.currentValue().toString());
                     }
                 }
             }
             if ("methodA".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ReturnVariable) {
                     if ("0.0.0".equals(d.statementId())) {
-                        String expectValue = d.iteration() <= 1 ? "<m:methodB>" : "!\"a\".equals(paramA)&&\"b\".equals(paramA)";
+                        String expectValue = d.iteration() <= 2 ? "<m:methodB>" : "!\"a\".equals(paramA)&&\"b\".equals(paramA)";
                         assertEquals(expectValue, d.currentValue().toString());
                     }
                     if ("1".equals(d.statementId())) {
-                        String expectValue = d.iteration() <= 1 ? "<m:equals>&&!<m:equals>" : "\"a\".equals(paramA)&&!\"b\".equals(paramA)";
+                        String expectValue = d.iteration() <= 2 ? "<m:equals>&&!<m:equals>" : "\"a\".equals(paramA)&&!\"b\".equals(paramA)";
                         assertEquals(expectValue, d.currentValue().toString());
                     }
                 }

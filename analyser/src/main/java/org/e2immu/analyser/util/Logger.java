@@ -79,6 +79,11 @@ public class Logger {
         EXPRESSION,
 
         /**
+         * fine print debugging of order of pta
+         */
+        PRIMARY_TYPE_ANALYSER,
+
+        /**
          * Main analyser logger
          */
         ANALYSER,

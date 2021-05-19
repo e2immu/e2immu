@@ -46,7 +46,7 @@ public class AnalyseCycle {
             // we'll try to remove me. If the rest has no cycles, then stop. Otherwise, continue.
             DependencyGraph<WithInspectionAndAnalysis> newGraph = methodGraph.copyRemove(w -> w instanceof MethodInfo && w != remove);
             AtomicBoolean haveCycle = new AtomicBoolean();
-            newGraph.sorted(w -> haveCycle.set(true));
+            newGraph.sorted(w -> haveCycle.set(true), null);
             if (!haveCycle.get()) break;
         }
         return toRemove;
