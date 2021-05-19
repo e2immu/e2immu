@@ -15,6 +15,7 @@
 
 package org.e2immu.analyser.parser;
 
+import org.e2immu.analyser.analyser.ConditionManager;
 import org.e2immu.analyser.analyser.FieldAnalysisImpl;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
@@ -71,7 +72,6 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
             if ("get".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
                     assertEquals(0, d.statementAnalysis().flowData.getTimeAfterSubBlocks());
-
                     assertEquals("true", d.statementAnalysis().stateData
                             .conditionManagerForNextStatement.get().state().toString());
                     assertTrue(d.statementAnalysis().stateData
@@ -86,6 +86,17 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
                         d.statementAnalysis().methodLevelData.linksHaveBeenEstablished.isSet());
                 String expectState = d.iteration() == 0 ? "<precondition>" : "true";
                 assertEquals(expectState, d.statementAnalysis().stateData.getPrecondition().expression().toString());
+            }
+            if ("copy".equals(d.methodInfo().name)) {
+                if ("0.0.0".equals(d.statementId())) {
+                    ConditionManager cm = d.statementAnalysis().stateData.conditionManagerForNextStatement.get();
+                    String expectCondition = switch (d.iteration()) {
+                        case 0 -> "<m:isSet>";
+                        case 1 -> "null!=<f:t>";
+                        default -> "null!=t$0";
+                    };
+                    assertEquals(expectCondition, cm.condition().toString());
+                }
             }
         };
 
@@ -220,8 +231,8 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
                 } else {
                     assertEquals("null==t", d.methodAnalysis().getPreconditionForEventual().expression().toString());
                 }
-                assertEquals(d.iteration() > 1, d.methodAnalysis().methodLevelData().linksHaveBeenEstablished.isSet());
-                int expectModified = d.iteration() <= 1 ? Level.DELAY : Level.TRUE;
+                assertEquals(d.iteration() >= 1, d.methodAnalysis().methodLevelData().linksHaveBeenEstablished.isSet());
+                int expectModified = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
                 assertEquals(expectModified, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
 
                 MethodAnalysis.Eventual eventual = d.methodAnalysis().getEventual();
@@ -267,7 +278,7 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
 
         testSupportClass(List.of("SetOnce"), 0, 0, new DebugConfiguration.Builder()
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                //    .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)

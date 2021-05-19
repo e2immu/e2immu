@@ -161,13 +161,16 @@ public class EvaluateMethodCall {
                 if (srv.isInstanceOf(InlinedMethod.class)) {
                     InlinedMethod iv = srv.asInstanceOf(InlinedMethod.class);
 
-                    EvaluationResult shortCut = tryEvaluationShortCut(evaluationContext, builder, objectValue, iv);
-                    if (shortCut != null) return shortCut;
+                    if (isLocalCall(objectValue, evaluationContext.getCurrentType())
+                            || hasFinalFields(evaluationContext.getAnalyserContext(), iv.expression())) {
+                        EvaluationResult shortCut = tryEvaluationShortCut(evaluationContext, builder, objectValue, iv);
+                        if (shortCut != null) return shortCut;
 
-                    Map<Expression, Expression> translationMap = EvaluatePreconditionFromMethod
-                            .translationMap(evaluationContext.getAnalyserContext(), methodInfo, parameters, objectValue);
-                    EvaluationResult reSrv = srv.reEvaluate(evaluationContext, translationMap);
-                    return builder.compose(reSrv).setExpression(reSrv.value()).build();
+                        Map<Expression, Expression> translationMap = EvaluatePreconditionFromMethod
+                                .translationMap(evaluationContext.getAnalyserContext(), methodInfo, parameters, objectValue);
+                        EvaluationResult reSrv = srv.reEvaluate(evaluationContext, translationMap);
+                        return builder.compose(reSrv).setExpression(reSrv.value()).build();
+                    }
                 }
                 if (srv.isConstant()) {
                     return builder.setExpression(srv).build();
@@ -182,6 +185,18 @@ public class EvaluateMethodCall {
         // normal method value
         MethodCall methodValue = new MethodCall(objectValue, methodInfo, parameters);
         return builder.setExpression(methodValue).build();
+    }
+
+    private static boolean isLocalCall(Expression objectValue, TypeInfo currentType) {
+        // TODO probably more complication needed
+        if(objectValue instanceof VariableExpression ve && ve.returnType().bestTypeInfo() == currentType) return true;
+        return objectValue instanceof VariableExpression ve && ve.variable() instanceof This;
+    }
+
+    private static boolean hasFinalFields(AnalysisProvider analysisProvider, Expression expression) {
+        // TODO delays?
+        return expression.variables().stream().allMatch(v -> !(v instanceof FieldReference fr) ||
+                analysisProvider.getFieldAnalysis(fr.fieldInfo).getProperty(VariableProperty.FINAL) == Level.TRUE);
     }
 
     /*
