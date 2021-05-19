@@ -34,6 +34,7 @@ public record Guide(int index, Position position,
         }
 
 
+
     }
     public static GuideGenerator generatorForBlock() {
         return new GuideGenerator(1, true, true, true, true);
@@ -41,6 +42,10 @@ public record Guide(int index, Position position,
 
     public static GuideGenerator generatorForEnumDefinitions() {
         return new GuideGenerator(0, false, false, true, true);
+    }
+
+    public static GuideGenerator generatorForCompanionList() {
+        return new GuideGenerator(0, true, false, false, true);
     }
 
     public static GuideGenerator defaultGuideGenerator() {

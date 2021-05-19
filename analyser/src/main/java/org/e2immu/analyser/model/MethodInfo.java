@@ -16,15 +16,11 @@ package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.analyser.AnalyserContext;
 import org.e2immu.analyser.analyser.AnalysisProvider;
-import org.e2immu.analyser.analyser.StatementAnalysis;
 import org.e2immu.analyser.inspector.MethodResolution;
 import org.e2immu.analyser.model.statement.Block;
-import org.e2immu.analyser.model.variable.LocalVariableReference;
-import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.*;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
-import org.e2immu.analyser.util.SetUtil;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.Container;
 import org.e2immu.annotation.E2Immutable;
@@ -32,8 +28,6 @@ import org.e2immu.annotation.NotNull;
 import org.e2immu.support.SetOnce;
 
 import java.util.*;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 @Container
 @E2Immutable(after = "TypeAnalyser.analyse()") // and not MethodAnalyser.analyse(), given the back reference
@@ -167,93 +161,12 @@ public class MethodInfo implements WithInspectionAndAnalysis {
         return typeInfo.primaryType();
     }
 
-    // IMPORTANT: do not write the first MID to methodGG, because that one is written by the joiner
-    public OutputBuilder output(Qualification qualification, Guide.GuideGenerator methodGG) {
-        return output(qualification, methodGG, AnalyserContext.NULL_IF_NOT_SET);
+    public OutputBuilder output(Qualification qualification) {
+        return output(qualification, AnalyserContext.NULL_IF_NOT_SET);
     }
 
-    // IMPORTANT: do not write the first MID to methodGG, because that one is written by the joiner
-    public OutputBuilder output(Qualification qualification, Guide.GuideGenerator methodGG, AnalysisProvider analysisProvider) {
-        OutputBuilder mainAndCompanions = new OutputBuilder();
-        MethodInspection inspection = methodInspection.get();
-
-        boolean nonEmpty = outputCompanions(inspection, mainAndCompanions, qualification, methodGG);
-
-        OutputBuilder afterAnnotations = new OutputBuilder();
-
-        afterAnnotations.add(Arrays.stream(MethodModifier.sort(inspection.getModifiers()))
-                .map(mod -> new OutputBuilder().add(new Text(mod)))
-                .collect(OutputBuilder.joining(Space.ONE)));
-        if (!inspection.getModifiers().isEmpty()) afterAnnotations.add(Space.ONE);
-
-        if (!inspection.getTypeParameters().isEmpty()) {
-            afterAnnotations.add(Symbol.LEFT_ANGLE_BRACKET);
-            afterAnnotations.add(inspection.getTypeParameters().stream()
-                    .map(tp -> tp.output(InspectionProvider.DEFAULT, qualification, new HashSet<>()))
-                    .collect(OutputBuilder.joining(Symbol.COMMA)));
-            afterAnnotations.add(Symbol.RIGHT_ANGLE_BRACKET).add(Space.ONE);
-        }
-
-        if (!isConstructor) {
-            afterAnnotations.add(inspection.getReturnType().output(qualification)).add(Space.ONE);
-        }
-        afterAnnotations.add(new Text(name));
-        if (!inspection.isCompactConstructor()) {
-            if (inspection.getParameters().isEmpty()) {
-                afterAnnotations.add(Symbol.OPEN_CLOSE_PARENTHESIS);
-            } else {
-                afterAnnotations.add(inspection.getParameters().stream()
-                        .map(pi -> pi.outputDeclaration(qualification))
-                        .collect(OutputBuilder.joining(Symbol.COMMA, Symbol.LEFT_PARENTHESIS, Symbol.RIGHT_PARENTHESIS,
-                                Guide.generatorForParameterDeclaration())));
-            }
-        }
-        if (!inspection.getExceptionTypes().isEmpty()) {
-            afterAnnotations.add(Space.ONE_REQUIRED_EASY_SPLIT).add(new Text("throws")).add(Space.ONE)
-                    .add(inspection.getExceptionTypes().stream()
-                            .map(pi -> pi.output(qualification)).collect(OutputBuilder.joining(Symbol.COMMA)));
-        }
-        if (hasBeenInspected()) {
-            Qualification bodyQualification = makeBodyQualification(qualification, inspection);
-            MethodAnalysis analysis = analysisProvider.getMethodAnalysis(this);
-            StatementAnalysis firstStatement = analysis != null ? analysis.getFirstStatement() : null;
-            afterAnnotations.add(inspection.getMethodBody().output(bodyQualification, firstStatement));
-        } else {
-            afterAnnotations.add(Space.ONE).add(Symbol.LEFT_BRACE).add(Symbol.RIGHT_BRACE);
-        }
-
-        Stream<OutputBuilder> annotationStream = buildAnnotationOutput(qualification);
-        OutputBuilder mainMethod = Stream.concat(annotationStream, Stream.of(afterAnnotations))
-                .collect(OutputBuilder.joining(Space.ONE_REQUIRED_EASY_SPLIT, Guide.generatorForAnnotationList()));
-
-        if (nonEmpty) mainAndCompanions.add(methodGG.mid());
-        return mainAndCompanions.add(mainMethod);
-    }
-
-    private Qualification makeBodyQualification(Qualification qualification, MethodInspection inspection) {
-        Set<String> localNamesFromBody = inspection.getMethodBody().variables().stream()
-                .filter(v -> v instanceof LocalVariableReference || v instanceof ParameterInfo)
-                .map(Variable::simpleName).collect(Collectors.toSet());
-        Set<String> parameterNames = inspection.getParameters().stream()
-                .map(ParameterInfo::simpleName).collect(Collectors.toSet());
-        Set<String> localNames = SetUtil.immutableUnion(localNamesFromBody, parameterNames);
-
-        List<FieldInfo> visibleFields = typeInfo.visibleFields(InspectionProvider.DEFAULT);
-        QualificationImpl res = new QualificationImpl(qualification);
-        visibleFields.stream().filter(fieldInfo -> !localNames.contains(fieldInfo.name)).forEach(res::addField);
-
-
-        return res;
-    }
-
-    private boolean outputCompanions(MethodInspection methodInspection, OutputBuilder outputBuilder, Qualification qualification, Guide.GuideGenerator methodGG) {
-        methodInspection.getCompanionMethods().values().forEach(companion -> outputBuilder.add(companion.output(qualification, methodGG)));
-        boolean nonEmpty = !methodInspection.getCompanionMethods().isEmpty();
-        if (methodAnalysis.isSet()) {
-            methodAnalysis.get().getComputedCompanions().values().forEach(companion -> outputBuilder.add(companion.output(qualification, methodGG)));
-            nonEmpty |= !methodAnalysis.get().getComputedCompanions().isEmpty();
-        }
-        return nonEmpty;
+    public OutputBuilder output(Qualification qualification, AnalysisProvider analysisProvider) {
+        return OutputMethodInfo.output(this, qualification, analysisProvider);
     }
 
     public String fullyQualifiedName() {
