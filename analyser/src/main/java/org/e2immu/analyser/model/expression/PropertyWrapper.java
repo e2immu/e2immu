@@ -28,11 +28,13 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 public record PropertyWrapper(Expression expression,
-                              Map<VariableProperty, Integer> properties) implements Expression, ExpressionWrapper {
+                              Map<VariableProperty, Integer> properties,
+                              ParameterizedType castType) implements Expression, ExpressionWrapper {
 
     @Override
     public Expression translate(TranslationMap translationMap) {
-        return new PropertyWrapper(expression.translate(translationMap), properties);
+        return new PropertyWrapper(expression.translate(translationMap), properties,
+                castType == null ? null : translationMap.translateType(castType));
     }
 
     @Override
@@ -78,12 +80,17 @@ public record PropertyWrapper(Expression expression,
 
     public static Expression propertyWrapper(Expression value, Map<VariableProperty, Integer> properties) {
         assert !(value instanceof Negation) : "we always want the negation to be on the outside";
-        return new PropertyWrapper(value, properties);
+        return new PropertyWrapper(value, properties, null);
+    }
+
+    public static Expression propertyWrapper(Expression value, Map<VariableProperty, Integer> properties, ParameterizedType castType) {
+        assert !(value instanceof Negation) : "we always want the negation to be on the outside";
+        return new PropertyWrapper(value, properties, castType);
     }
 
     @Override
     public ParameterizedType returnType() {
-        return expression.returnType();
+        return castType != null ? castType : expression.returnType();
     }
 
     @Override
@@ -108,8 +115,13 @@ public record PropertyWrapper(Expression expression,
         OutputBuilder outputBuilder = new OutputBuilder().add(expression.output(qualification));
         if (!propertyString.isBlank()) {
             outputBuilder.add(Symbol.LEFT_BLOCK_COMMENT)
-                    .add(new Text(propertyString))
-                    .add(Symbol.RIGHT_BLOCK_COMMENT);
+                    .add(new Text(propertyString));
+            if (castType != null) {
+                outputBuilder.add(Symbol.LEFT_PARENTHESIS)
+                        .add(castType.output(qualification))
+                        .add(Symbol.RIGHT_PARENTHESIS);
+            }
+            outputBuilder.add(Symbol.RIGHT_BLOCK_COMMENT);
         }
         return outputBuilder;
     }

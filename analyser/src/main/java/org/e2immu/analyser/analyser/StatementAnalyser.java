@@ -915,7 +915,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
     private void importContextModifiedValuesForThisFromSubTypes(Map<Variable, Integer> map) {
         int bestInSub = localAnalysers.get().stream()
                 .flatMap(PrimaryTypeAnalyser::methodAnalyserStream)
-                .map(ma -> ((ComputingMethodAnalyser)ma).getThisAsVariable())
+                .map(ma -> ((ComputingMethodAnalyser) ma).getThisAsVariable())
                 .filter(Objects::nonNull)
                 .mapToInt(variableInfo -> variableInfo.getProperty(CONTEXT_MODIFIED))
                 .max().orElse(SUB_CM_NOT_PRESENT);
@@ -1596,7 +1596,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 .filter(iop -> iop.instanceOf().patternVariable() != null)
                 .map(iop -> new Assignment(sharedState.evaluationContext.getPrimitives(),
                         new VariableExpression(iop.instanceOf().patternVariable()),
-                        new PropertyWrapper(iop.instanceOf().expression(), Map.of(NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL))))
+                        PropertyWrapper.propertyWrapper(iop.instanceOf().expression(),
+                                Map.of(NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL))))
                 .toList();
     }
 
@@ -2754,10 +2755,10 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 return LinkedVariables.EMPTY;
             }
             // first try immutable
-            TypeInfo typeInfo = variable.parameterizedType().bestTypeInfo();
-            boolean notSelf = typeInfo != getCurrentType();
+            boolean isSelf = variable.parameterizedType().isAssignableFromTo(analyserContext,
+                    getCurrentType().asParameterizedType(analyserContext));
             VariableInfo variableInfo = statementAnalysis.initialValueForReading(variable, getInitialStatementTime(), true);
-            if (notSelf) {
+            if (!isSelf) {
                 int immutable = variableInfo.getProperty(IMMUTABLE);
                 if (immutable == Level.DELAY) return LinkedVariables.DELAY;
                 if (MultiLevel.isAtLeastEventuallyE2ImmutableAfter(immutable)) return LinkedVariables.EMPTY;

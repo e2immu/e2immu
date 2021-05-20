@@ -158,6 +158,10 @@ public class Test_56_Fluent extends CommonTestRunner {
             if ("IFluent_1".equals(d.typeInfo().simpleName)) {
                 assertTrue(d.typeInfo().typeResolution.get().hasOneKnownGeneratedImplementation());
             }
+            if ("Fluent_1".equals(d.typeInfo().simpleName)) {
+                int expectImmutable = d.iteration() <= 2 ? Level.DELAY : MultiLevel.EFFECTIVELY_E2IMMUTABLE;
+                assertEquals(expectImmutable, d.typeAnalysis().getProperty(VariableProperty.IMMUTABLE));
+            }
         };
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
@@ -166,8 +170,14 @@ public class Test_56_Fluent extends CommonTestRunner {
                 assertEquals(Level.FALSE, d.methodAnalysis().getProperty(VariableProperty.FLUENT));
                 assertEquals(Level.FALSE, d.methodAnalysis().getProperty(VariableProperty.IDENTITY));
                 assertEquals(MultiLevel.DEPENDENT, d.methodAnalysis().getProperty(VariableProperty.INDEPENDENT));
-                int expectImmutable = d.iteration() == 0 ? Level.DELAY: MultiLevel.MUTABLE;
+                int expectImmutable = d.iteration() == 0 ? Level.DELAY : MultiLevel.MUTABLE;
                 assertEquals(expectImmutable, d.methodAnalysis().getProperty(VariableProperty.IMMUTABLE));
+            }
+            if ("identity".equals(d.methodInfo().name)) {
+                int expectModified = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
+                assertEquals(expectModified, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
+                int expectIdentity = d.iteration() == 0 ? Level.DELAY : Level.TRUE; // wait for @Modified
+                assertEquals(expectIdentity, d.methodAnalysis().getProperty(VariableProperty.IDENTITY));
             }
         };
 

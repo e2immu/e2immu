@@ -967,7 +967,7 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
         if (e2ImmutableStatusOfFieldRefs >= MultiLevel.EVENTUAL_AFTER) return MultiLevel.INDEPENDENT;
         int immutable = methodAnalysis.getProperty(IMMUTABLE);
         ParameterizedType returnType = methodInfo.returnType();
-        boolean myOwnType = returnType.typeInfo == methodInfo.typeInfo;
+        boolean myOwnType = returnType.isAssignableFromTo(analyserContext, methodInfo.typeInfo.asParameterizedType(analyserContext));
         if (immutable == MultiLevel.DELAY && !myOwnType) {
             log(DELAYED, "Delaying @Independent of {}, waiting for @Immutable", methodInfo.fullyQualifiedName);
             return Level.DELAY;
