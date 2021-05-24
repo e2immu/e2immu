@@ -1095,6 +1095,21 @@ public class FieldAnalyser extends AbstractAnalyser {
         }
 
         @Override
+        public boolean createDelay(String where, String delayFqn) {
+            return FieldAnalyser.super.createDelay(where, delayFqn);
+        }
+
+        @Override
+        public boolean translatedDelay(String where, String delayFromFqn, String newDelayFqn) {
+            return FieldAnalyser.super.translatedDelay(where, delayFromFqn, newDelayFqn);
+        }
+
+        @Override
+        public boolean foundDelay(String where, String delayFqn) {
+            return FieldAnalyser.super.foundDelay(where, delayFqn);
+        }
+
+        @Override
         public TypeInfo getCurrentType() {
             return fieldInfo.owner;
         }

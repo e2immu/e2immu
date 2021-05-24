@@ -234,11 +234,14 @@ public class MethodLevelData implements DelayDebugger {
         assert !allDelayed || createDelay(sharedState.where(COMBINE_PRECONDITION),
                 sharedState.myStatement() + D_COMBINED_PRECONDITION);
 
-        if (previousDelayed || subBlockDelay.isPresent() || !preconditionFinal || allDelayed) {
+        boolean delay = previousDelayed || subBlockDelay.isPresent() || !preconditionFinal || allDelayed;
+        if (delay) {
             combinedPrecondition.setVariable(all);
-        } else setFinalAllowEquals(combinedPrecondition, all);
+            return DELAYS;
+        }
 
-        return previousDelayed ? DELAYS : DONE;
+        setFinalAllowEquals(combinedPrecondition, all);
+        return DONE;
     }
 
     private AnalysisStatus linksHaveBeenEstablished(SharedState sharedState) {
