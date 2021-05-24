@@ -131,8 +131,13 @@ public class MethodLevelData implements DelayDebugger {
                     + ":" + statementAnalysis.index + ":MLD:" + component;
         }
 
-        String combinedPrecondition(String index) {
+        String myStatement(String index) {
             return statementAnalysis.methodAnalysis.getMethodInfo().fullyQualifiedName + ":" + index;
+        }
+
+        String myStatement() {
+            return statementAnalysis.methodAnalysis.getMethodInfo().fullyQualifiedName + ":" +
+                    statementAnalysis.index;
         }
     }
 
@@ -198,16 +203,18 @@ public class MethodLevelData implements DelayDebugger {
     private AnalysisStatus combinePrecondition(SharedState sharedState) {
         boolean previousDelayed = sharedState.previous != null && sharedState.previous.combinedPrecondition.isVariable();
         assert !previousDelayed || foundDelay(sharedState.where(COMBINE_PRECONDITION),
-                sharedState.previous.combinedPrecondition.get().toString() + D_COMBINED_PRECONDITION);
+                sharedState.myStatement(sharedState.previousIndex) + D_COMBINED_PRECONDITION);
 
         List<StatementAnalysis> subBlocks = sharedState.statementAnalysis.lastStatementsOfNonEmptySubBlocks();
-        Optional<StatementAnalysis> subBlockDelay = subBlocks.stream().filter(sa -> sa.methodLevelData.combinedPrecondition.isVariable()).findFirst();
+        Optional<StatementAnalysis> subBlockDelay = subBlocks.stream()
+                .filter(sa -> sa.methodLevelData.combinedPrecondition.isVariable()).findFirst();
         assert subBlockDelay.isEmpty() || foundDelay(sharedState.where(COMBINE_PRECONDITION),
-                subBlockDelay.get().methodLevelData.combinedPrecondition.get().toString() + D_COMBINED_PRECONDITION);
+                sharedState.myStatement(subBlockDelay.get().index) + D_COMBINED_PRECONDITION);
 
         boolean preconditionFinal = sharedState.stateData.preconditionIsFinal();
-        assert preconditionFinal || translatedDelay(sharedState.where(COMBINE_PRECONDITION), "xx",
-                sharedState.statementAnalysis.index + D_COMBINED_PRECONDITION);
+        assert preconditionFinal || translatedDelay(sharedState.where(COMBINE_PRECONDITION),
+                sharedState.myStatement() + D_PRECONDITION,
+                sharedState.myStatement() + D_COMBINED_PRECONDITION);
 
         Stream<Precondition> fromMyStateData =
                 Stream.of(sharedState.stateData.getPrecondition());
@@ -222,7 +229,10 @@ public class MethodLevelData implements DelayDebugger {
                 .orElse(Precondition.empty(sharedState.evaluationContext.getPrimitives()));
 
         boolean allDelayed = sharedState.evaluationContext.isDelayed(all.expression());
-        assert !allDelayed || createDelay(sharedState.where(COMBINE_PRECONDITION), ""); // FIXME
+
+        // I wonder whether it is possible that the combination is delayed when none of the constituents are?
+        assert !allDelayed || createDelay(sharedState.where(COMBINE_PRECONDITION),
+                sharedState.myStatement() + D_COMBINED_PRECONDITION);
 
         if (previousDelayed || subBlockDelay.isPresent() || !preconditionFinal || allDelayed) {
             combinedPrecondition.setVariable(all);
@@ -243,7 +253,17 @@ public class MethodLevelData implements DelayDebugger {
                         || vi.getProperty(VariableProperty.CONTEXT_MODIFIED) == Level.DELAY)
                 .findFirst();
         if (delayed.isPresent()) {
-            assert translatedDelay(sharedState.where(LINKS_HAVE_BEEN_ESTABLISHED), "", ""); // FIXME
+            VariableInfo vi = delayed.get();
+
+            assert vi.linkedVariablesIsSet() ||
+                    translatedDelay(sharedState.where(LINKS_HAVE_BEEN_ESTABLISHED),
+                            vi.variable().fullyQualifiedName() + D_LINKED_VARIABLES_SET,
+                            sharedState.myStatement() + D_LINKS_HAVE_BEEN_ESTABLISHED);
+            assert vi.getProperty(VariableProperty.CONTEXT_MODIFIED) != Level.DELAY ||
+                    translatedDelay(sharedState.where(LINKS_HAVE_BEEN_ESTABLISHED),
+                            vi.variable().fullyQualifiedName() + D_CONTEXT_MODIFIED,
+                            sharedState.myStatement() + D_LINKS_HAVE_BEEN_ESTABLISHED);
+
             log(DELAYED, "Links have not yet been established for (findFirst) {}, statement {}",
                     delayed.get().variable().fullyQualifiedName(), sharedState.statementAnalysis.index);
             return DELAYS;

@@ -188,6 +188,21 @@ public class CompanionAnalyser implements DelayDebugger {
         }
 
         @Override
+        public boolean createDelay(String where, String delayFqn) {
+            return delayDebugCollector.createDelay(where, delayFqn);
+        }
+
+        @Override
+        public boolean translatedDelay(String where, String delayFromFqn, String newDelayFqn) {
+            return delayDebugCollector.translatedDelay(where, delayFromFqn, newDelayFqn);
+        }
+
+        @Override
+        public boolean foundDelay(String where, String delayFqn) {
+            return delayDebugCollector.foundDelay(where, delayFqn);
+        }
+
+        @Override
         public String newObjectIdentifier() {
             return companionMethod.fullyQualifiedName;
         }

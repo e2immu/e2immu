@@ -49,7 +49,17 @@ import static org.e2immu.analyser.util.Logger.log;
 
 public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnalysers {
     private static final Logger LOGGER = LoggerFactory.getLogger(ComputingMethodAnalyser.class);
+
     public static final String STATEMENT_ANALYSER = "StatementAnalyser";
+    public static final String OBTAIN_MOST_COMPLETE_PRECONDITION = "obtainMostCompletePrecondition";
+    public static final String COMPUTE_MODIFIED = "computeModified";
+    public static final String COMPUTE_MODIFIED_CYCLES = "computeModifiedCycles";
+    public static final String COMPUTE_RETURN_VALUE = "computeReturnValue";
+    public static final String COMPUTE_IMMUTABLE = "computeImmutable";
+    public static final String DETECT_MISSING_STATIC_MODIFIER = "detectMissingStaticModifier";
+    public static final String EVENTUAL_PREP_WORK = "eventualPrepWork";
+    public static final String ANNOTATE_EVENTUAL = "annotateEventual";
+    public static final String METHOD_IS_INDEPENDENT = "methodIsIndependent";
 
     private final TypeAnalysis typeAnalysis;
     public final StatementAnalyser firstStatementAnalyser;
@@ -115,15 +125,15 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
             };
 
             builder.add(STATEMENT_ANALYSER, statementAnalyser)
-                    .add("obtainMostCompletePrecondition", (sharedState) -> obtainMostCompletePrecondition())
-                    .add("computeModified", (sharedState) -> methodInfo.isConstructor ? DONE : computeModified())
-                    .add("computeModifiedCycles", (sharedState -> methodInfo.isConstructor ? DONE : computeModifiedInternalCycles()))
-                    .add("computeReturnValue", (sharedState) -> methodInfo.noReturnValue() ? DONE : computeReturnValue(sharedState))
-                    .add("computeImmutable", sharedState -> methodInfo.noReturnValue() ? DONE : computeImmutable())
-                    .add("detectMissingStaticModifier", (iteration) -> methodInfo.isConstructor ? DONE : detectMissingStaticModifier())
-                    .add("eventualPrepWork", (sharedState) -> methodInfo.isConstructor ? DONE : eventualPrepWork(sharedState))
-                    .add("annotateEventual", (sharedState) -> methodInfo.isConstructor ? DONE : annotateEventual(sharedState))
-                    .add("methodIsIndependent", this::methodIsIndependent);
+                    .add(OBTAIN_MOST_COMPLETE_PRECONDITION, (sharedState) -> obtainMostCompletePrecondition())
+                    .add(COMPUTE_MODIFIED, (sharedState) -> methodInfo.isConstructor ? DONE : computeModified())
+                    .add(COMPUTE_MODIFIED_CYCLES, (sharedState -> methodInfo.isConstructor ? DONE : computeModifiedInternalCycles()))
+                    .add(COMPUTE_RETURN_VALUE, (sharedState) -> methodInfo.noReturnValue() ? DONE : computeReturnValue(sharedState))
+                    .add(COMPUTE_IMMUTABLE, sharedState -> methodInfo.noReturnValue() ? DONE : computeImmutable())
+                    .add(DETECT_MISSING_STATIC_MODIFIER, (iteration) -> methodInfo.isConstructor ? DONE : detectMissingStaticModifier())
+                    .add(EVENTUAL_PREP_WORK, (sharedState) -> methodInfo.isConstructor ? DONE : eventualPrepWork(sharedState))
+                    .add(ANNOTATE_EVENTUAL, (sharedState) -> methodInfo.isConstructor ? DONE : annotateEventual(sharedState))
+                    .add(METHOD_IS_INDEPENDENT, this::methodIsIndependent);
 
         } else {
             methodAnalysis.minimalInfoForEmptyMethod(methodAnalysis.primitives);
@@ -276,6 +286,9 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
             if (haveDelayOnFinalFields.isPresent()) {
                 log(DELAYED, "Delaying eventual in {} until we know about @Final of (findFirst) field",
                         methodInfo.fullyQualifiedName, haveDelayOnFinalFields.get());
+                assert translatedDelay(EVENTUAL_PREP_WORK, haveDelayOnFinalFields.get()
+                                .getFieldInfo().fullyQualifiedName() + D_FINAL,
+                        methodInfo.fullyQualifiedName + D_PRECONDITION_FOR_EVENTUAL);
                 return DELAYS;
             }
 
@@ -300,6 +313,9 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
             if (delayOnImmutableFields.isPresent()) {
                 log(DELAYED, "Delaying eventual in {} until we know about @Immutable of (findFirst) field {}",
                         methodInfo.fullyQualifiedName, delayOnImmutableFields.get().getFieldInfo().name);
+                assert translatedDelay(EVENTUAL_PREP_WORK, delayOnImmutableFields.get()
+                                .getFieldInfo().fullyQualifiedName() + D_EXTERNAL_IMMUTABLE,
+                        methodInfo.fullyQualifiedName + D_PRECONDITION_FOR_EVENTUAL);
                 return DELAYS;
             }
 
@@ -320,6 +336,9 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
             if (haveDelayOnImplicitlyImmutableType.isPresent()) {
                 log(DELAYED, "Delaying eventual in {} until we know about implicitly immutable type of (findFirst) field {}",
                         methodInfo.fullyQualifiedName, haveDelayOnImplicitlyImmutableType.get().getFieldInfo().name);
+                assert translatedDelay(EVENTUAL_PREP_WORK, haveDelayOnImplicitlyImmutableType.get()
+                                .getFieldInfo().fullyQualifiedName() + D_IMPLICITLY_IMMUTABLE_DATA,
+                        methodInfo.fullyQualifiedName + D_PRECONDITION_FOR_EVENTUAL);
                 return DELAYS;
             }
 
@@ -349,6 +368,8 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
 
         if (!methodAnalysis.precondition.isSet()) {
             log(DELAYED, "Delaying compute @Only and @Mark, precondition not set (weird, should be set by now)");
+            assert translatedDelay(EVENTUAL_PREP_WORK, methodInfo.fullyQualifiedName + D_PRECONDITION,
+                    methodInfo.fullyQualifiedName + D_PRECONDITION_FOR_EVENTUAL);
             return DELAYS;
         }
         Precondition precondition = methodAnalysis.precondition.get();
@@ -366,6 +387,9 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
                         if (cm.stateIsDelayed() != null) {
                             log(DELAYED, "Delaying compute @Only, @Mark, delay in state {} {}", beforeAssignment.index,
                                     methodInfo.fullyQualifiedName);
+                            assert translatedDelay(EVENTUAL_PREP_WORK,
+                                    beforeAssignment.fullyQualifiedName() + D_CONDITION_MANAGER_FOR_NEXT_STMT,
+                                    methodInfo.fullyQualifiedName + D_PRECONDITION_FOR_EVENTUAL);
                             return DELAYS;
                         }
                         Expression state = cm.state();

@@ -73,7 +73,11 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         this.inSyncBlock = inSyncBlock;
         this.methodAnalysis = Objects.requireNonNull(methodAnalysis);
         localVariablesAssignedInThisLoop = statement instanceof LoopStatement ? new AddOnceSet<>() : null;
-        stateData = new StateData(statement instanceof LoopStatement);
+        stateData = new StateData(statement instanceof LoopStatement, fullyQualifiedName());
+    }
+
+    public String fullyQualifiedName() {
+        return methodAnalysis.getMethodInfo().fullyQualifiedName + ":" + index;
     }
 
     public String toString() {
@@ -1320,7 +1324,8 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
 
     @Override
     public Stream<DelayDebugNode> streamNodes() {
-        return Stream.concat(delayDebugCollector.streamNodes(), methodLevelData.streamNodes());
+        return Stream.concat(Stream.concat(delayDebugCollector.streamNodes(), methodLevelData.streamNodes()),
+                stateData.streamNodes());
     }
 
     private String where(String componentName) {
