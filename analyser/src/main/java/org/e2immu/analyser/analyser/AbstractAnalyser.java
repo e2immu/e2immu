@@ -14,17 +14,20 @@
 
 package org.e2immu.analyser.analyser;
 
+import org.e2immu.analyser.analyser.util.DelayDebugCollector;
+import org.e2immu.analyser.analyser.util.DelayDebugNode;
+import org.e2immu.analyser.analyser.util.DelayDebugger;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Messages;
 
 import java.util.Collection;
-import java.util.List;
 import java.util.Objects;
 import java.util.stream.Stream;
 
 public abstract class AbstractAnalyser implements Analyser {
     public final AnalyserContext analyserContext;
     public final String name;
+    private final DelayDebugger delayDebugger = new DelayDebugCollector();
 
     protected AbstractAnalyser(String name, AnalyserContext analyserContext) {
         this.analyserContext = Objects.requireNonNull(analyserContext);
@@ -52,5 +55,30 @@ public abstract class AbstractAnalyser implements Analyser {
     @Override
     public void receiveAdditionalTypeAnalysers(Collection<PrimaryTypeAnalyser> typeAnalysers) {
         // no-op
+    }
+
+    protected abstract String where(String componentName);
+
+    @Override
+    public boolean createDelay(String componentName, String delayFqn) {
+        delayDebugger.createDelay(where(componentName), delayFqn);
+        return true;
+    }
+
+    @Override
+    public boolean foundDelay(String componentName, String delayFqn) {
+        delayDebugger.foundDelay(where(componentName), delayFqn);
+        return true;
+    }
+
+    @Override
+    public boolean translatedDelay(String componentName, String delayFromFqn, String newDelayFqn) {
+        delayDebugger.translatedDelay(where(componentName), delayFromFqn, newDelayFqn);
+        return true;
+    }
+
+    @Override
+    public Stream<DelayDebugNode> streamNodes() {
+        return delayDebugger.streamNodes();
     }
 }

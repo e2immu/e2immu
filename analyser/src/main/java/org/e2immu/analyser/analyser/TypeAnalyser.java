@@ -16,6 +16,7 @@ package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.analyser.check.CheckE1E2Immutable;
 import org.e2immu.analyser.analyser.util.AssignmentIncompatibleWithPrecondition;
+import org.e2immu.analyser.analyser.util.DelayDebugNode;
 import org.e2immu.analyser.analyser.util.ExplicitTypes;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
@@ -64,6 +65,19 @@ import static org.e2immu.analyser.util.Logger.log;
 public class TypeAnalyser extends AbstractAnalyser {
     private static final Logger LOGGER = LoggerFactory.getLogger(TypeAnalyser.class);
 
+    public static final String DELAY_LOCATION_IMPLICITLY_IMMUTABLE_DATA_TYPES = "typeAnalysis.implicitlyImmutableDataTypes";
+
+    public static final String ANALYSE_IMPLICITLY_IMMUTABLE_TYPES = "analyseImplicitlyImmutableTypes";
+    public static final String FIND_ASPECTS = "findAspects";
+    public static final String COMPUTE_APPROVED_PRECONDITIONS_E1 = "computeApprovedPreconditionsE1";
+    public static final String COMPUTE_APPROVED_PRECONDITIONS_E2 = "computeApprovedPreconditionsE2";
+    public static final String ANALYSE_INDEPENDENT = "analyseIndependent";
+    public static final String ANALYSE_EFFECTIVELY_EVENTUALLY_E2IMMUTABLE = "analyseEffectivelyEventuallyE2Immutable";
+    public static final String ANALYSE_CONTAINER = "analyseContainer";
+    public static final String ANALYSE_UTILITY_CLASS = "analyseUtilityClass";
+    public static final String ANALYSE_SINGLETON = "analyseSingleton";
+    public static final String ANALYSE_EXTENSION_CLASS = "analyseExtensionClass";
+
     private final Messages messages = new Messages();
     public final TypeInfo primaryType;
     public final TypeInfo typeInfo;
@@ -91,19 +105,22 @@ public class TypeAnalyser extends AbstractAnalyser {
 
         typeAnalysis = new TypeAnalysisImpl.Builder(Analysis.AnalysisMode.COMPUTED,
                 analyserContext.getPrimitives(), typeInfo, analyserContext);
+        String fqn = typeInfo.fullyQualifiedName;
+        assert createDelay(fqn, fqn + D_ASPECTS);
+
         AnalyserComponents.Builder<String, Integer> builder = new AnalyserComponents.Builder<String, Integer>()
-                .add("findAspects", iteration -> findAspects())
-                .add("analyseImplicitlyImmutableTypes", iteration -> analyseImplicitlyImmutableTypes());
+                .add(FIND_ASPECTS, iteration -> findAspects())
+                .add(ANALYSE_IMPLICITLY_IMMUTABLE_TYPES, iteration -> analyseImplicitlyImmutableTypes());
 
         if (!typeInfo.isInterface()) {
-            builder.add("computeApprovedPreconditionsE1", this::computeApprovedPreconditionsE1)
-                    .add("computeApprovedPreconditionsE2", this::computeApprovedPreconditionsE2)
-                    .add("analyseIndependent", iteration -> analyseIndependent())
-                    .add("analyseEffectivelyEventuallyE2Immutable", iteration -> analyseEffectivelyEventuallyE2Immutable())
-                    .add("analyseContainer", iteration -> analyseContainer())
-                    .add("analyseUtilityClass", iteration -> analyseUtilityClass())
-                    .add("analyseSingleton", iteration -> analyseSingleton())
-                    .add("analyseExtensionClass", iteration -> analyseExtensionClass());
+            builder.add(COMPUTE_APPROVED_PRECONDITIONS_E1, this::computeApprovedPreconditionsE1)
+                    .add(COMPUTE_APPROVED_PRECONDITIONS_E2, this::computeApprovedPreconditionsE2)
+                    .add(ANALYSE_INDEPENDENT, iteration -> analyseIndependent())
+                    .add(ANALYSE_EFFECTIVELY_EVENTUALLY_E2IMMUTABLE, iteration -> analyseEffectivelyEventuallyE2Immutable())
+                    .add(ANALYSE_CONTAINER, iteration -> analyseContainer())
+                    .add(ANALYSE_UTILITY_CLASS, iteration -> analyseUtilityClass())
+                    .add(ANALYSE_SINGLETON, iteration -> analyseSingleton())
+                    .add(ANALYSE_EXTENSION_CLASS, iteration -> analyseExtensionClass());
         } else {
             typeAnalysis.freezeApprovedPreconditionsE1();
             typeAnalysis.freezeApprovedPreconditionsE2();
@@ -258,6 +275,11 @@ public class TypeAnalyser extends AbstractAnalyser {
         typeAnalysis.transferPropertiesToAnnotations(analyserContext, e2);
     }
 
+    @Override
+    protected String where(String componentName) {
+        return typeInfo.fullyQualifiedName + ":" + componentName;
+    }
+
     private AnalysisStatus findAspects() {
         return findAspects(typeAnalysis, typeInfo);
     }
@@ -344,14 +366,17 @@ public class TypeAnalyser extends AbstractAnalyser {
         });
 
         // e2immu is more work, we need to check delays
-        boolean e2immuDelay = typesOfFields.stream().anyMatch(type -> {
+        Optional<ParameterizedType> immutableDelay = typesOfFields.stream().filter(type -> {
             TypeInfo bestType = type.bestTypeInfo();
             if (bestType == null) return false;
             int immutable = analyserContext.getTypeAnalysis(bestType).getProperty(VariableProperty.IMMUTABLE);
             return immutable == MultiLevel.DELAY && analyserContext.getTypeAnalysis(bestType).isNotContracted();
-        });
-        if (e2immuDelay) {
+        }).findFirst();
+        if (immutableDelay.isPresent()) {
             log(DELAYED, "Delaying implicitly immutable data types on {} because of immutable", typeInfo.fullyQualifiedName);
+            assert translatedDelay(ANALYSE_IMPLICITLY_IMMUTABLE_TYPES,
+                    immutableDelay.get().typeInfo.fullyQualifiedName + D_IMMUTABLE,
+                    typeInfo.fullyQualifiedName + D_IMPLICITLY_IMMUTABLE_DATA);
             return DELAYS;
         }
         typesOfFields.removeIf(type -> {
@@ -1280,6 +1305,11 @@ public class TypeAnalyser extends AbstractAnalyser {
         @Override
         public String newObjectIdentifier() {
             return typeInfo.fullyQualifiedName;
+        }
+
+        @Override
+        public Stream<DelayDebugNode> streamNodes() {
+            throw new UnsupportedOperationException();
         }
     }
 }

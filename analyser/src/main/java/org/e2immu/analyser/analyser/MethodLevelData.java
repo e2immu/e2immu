@@ -14,6 +14,9 @@
 
 package org.e2immu.analyser.analyser;
 
+import org.e2immu.analyser.analyser.util.DelayDebugCollector;
+import org.e2immu.analyser.analyser.util.DelayDebugNode;
+import org.e2immu.analyser.analyser.util.DelayDebugger;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.WithInspectionAndAnalysis;
@@ -47,8 +50,13 @@ import static org.e2immu.analyser.util.Logger.log;
  * Method level data is incrementally copied from one statement to the next.
  * The method analyser will only investigate the data from the last statement in the method!
  */
-public class MethodLevelData {
+public class MethodLevelData implements DelayDebugger {
     private static final Logger LOGGER = LoggerFactory.getLogger(MethodLevelData.class);
+
+    public static final String MERGE_CAUSES_OF_CONTEXT_MODIFICATION_DELAY = "mergeCausesOfContextModificationDelay";
+    public static final String ENSURE_THIS_PROPERTIES = "ensureThisProperties";
+    public static final String LINKS_HAVE_BEEN_ESTABLISHED = "linksHaveBeenEstablished";
+    public static final String COMBINE_PRECONDITION = "combinePrecondition";
 
     // part of modification status for dealing with circular methods
     private final SetOnce<Boolean> callsPotentiallyCircularMethod = new SetOnce<>();
@@ -66,6 +74,7 @@ public class MethodLevelData {
     public final FlipSwitch linksHaveBeenEstablished = new FlipSwitch();
 
     private final EventuallyFinal<Set<WithInspectionAndAnalysis>> causesOfContextModificationDelay = new EventuallyFinal<>();
+    private final DelayDebugger delayDebugCollector = new DelayDebugCollector();
 
     public void addCircularCall() {
         if (!callsPotentiallyCircularMethod.isSet()) {
@@ -115,14 +124,23 @@ public class MethodLevelData {
                        StatementAnalysis statementAnalysis,
                        String logLocation,
                        MethodLevelData previous,
+                       String previousIndex,
                        StateData stateData) {
+        String where(String component) {
+            return statementAnalysis.methodAnalysis.getMethodInfo().fullyQualifiedName
+                    + ":" + statementAnalysis.index + ":MLD:" + component;
+        }
+
+        String combinedPrecondition(String index) {
+            return statementAnalysis.methodAnalysis.getMethodInfo().fullyQualifiedName + ":" + index;
+        }
     }
 
     public final AnalyserComponents<String, SharedState> analyserComponents = new AnalyserComponents.Builder<String, SharedState>()
-            .add("mergeCausesOfContextModificationDelay", this::mergeCausesOfContextModificationDelay)
-            .add("ensureThisProperties", sharedState -> ensureThisProperties())
-            .add("linksHaveBeenEstablished", this::linksHaveBeenEstablished)
-            .add("combinePrecondition", this::combinePrecondition)
+            .add(MERGE_CAUSES_OF_CONTEXT_MODIFICATION_DELAY, this::mergeCausesOfContextModificationDelay)
+            .add(ENSURE_THIS_PROPERTIES, sharedState -> ensureThisProperties())
+            .add(LINKS_HAVE_BEEN_ESTABLISHED, this::linksHaveBeenEstablished)
+            .add(COMBINE_PRECONDITION, this::combinePrecondition)
             .build();
 
     private AnalysisStatus mergeCausesOfContextModificationDelay(SharedState sharedState) {
@@ -131,13 +149,21 @@ public class MethodLevelData {
             if (causesOfContextModificationDelay.get() == null) {
                 causesOfContextModificationDelay.setVariable(new HashSet<>());
             }
-            causesOfContextModificationDelay.get().addAll(sharedState.previous.causesOfContextModificationDelay.get());
+            boolean added = causesOfContextModificationDelay.get()
+                    .addAll(sharedState.previous.causesOfContextModificationDelay.get());
+            assert !added || sharedState.previous.causesOfContextModificationDelay.get().stream().allMatch(cause ->
+                    foundDelay(sharedState.where(MERGE_CAUSES_OF_CONTEXT_MODIFICATION_DELAY),
+                            cause.fullyQualifiedName() + D_CAUSES_OF_CONTENT_MODIFICATION_DELAY));
         }
         sharedState.statementAnalysis.lastStatementsOfNonEmptySubBlocks().stream()
                 .filter(sa -> sa.methodLevelData.causesOfContextModificationDelay.get() != null)
                 .flatMap(sa -> sa.methodLevelData.causesOfContextModificationDelay.get().stream())
                 .forEach(set -> {
-                    if (set != null) causesOfContextModificationDelay.get().add(set);
+                    if (set != null) {
+                        boolean added = causesOfContextModificationDelay.get().add(set);
+                        assert !added || foundDelay(sharedState.where(MERGE_CAUSES_OF_CONTEXT_MODIFICATION_DELAY),
+                                set.fullyQualifiedName() + D_CAUSES_OF_CONTENT_MODIFICATION_DELAY);
+                    }
                 });
         if (causesOfContextModificationDelay.get() == null || causesOfContextModificationDelay.get().isEmpty()) {
             causesOfContextModificationDelaySetFinal();
@@ -151,12 +177,14 @@ public class MethodLevelData {
     public AnalysisStatus analyse(StatementAnalyser.SharedState sharedState,
                                   StatementAnalysis statementAnalysis,
                                   MethodLevelData previous,
+                                  String previousIndex,
                                   StateData stateData) {
         EvaluationContext evaluationContext = sharedState.evaluationContext();
         String logLocation = statementAnalysis.location().toString();
         try {
             StatementAnalyserResult.Builder builder = sharedState.builder();
-            SharedState localSharedState = new SharedState(builder, evaluationContext, statementAnalysis, logLocation, previous, stateData);
+            SharedState localSharedState = new SharedState(builder, evaluationContext, statementAnalysis,
+                    logLocation, previous, previousIndex, stateData);
             return analyserComponents.run(localSharedState);
         } catch (RuntimeException rte) {
             LOGGER.warn("Caught exception in linking computation, {}", logLocation);
@@ -164,15 +192,22 @@ public class MethodLevelData {
         }
     }
 
+
     // preconditions come from the precondition expression in stateData
     // they are accumulated from the previous statement, and from all child statements
-
     private AnalysisStatus combinePrecondition(SharedState sharedState) {
-        boolean delays = sharedState.previous != null && sharedState.previous.combinedPrecondition.isVariable();
+        boolean previousDelayed = sharedState.previous != null && sharedState.previous.combinedPrecondition.isVariable();
+        assert !previousDelayed || foundDelay(sharedState.where(COMBINE_PRECONDITION),
+                sharedState.previous.combinedPrecondition.get().toString() + D_COMBINED_PRECONDITION);
 
         List<StatementAnalysis> subBlocks = sharedState.statementAnalysis.lastStatementsOfNonEmptySubBlocks();
-        delays |= subBlocks.stream().anyMatch(sa -> sa.methodLevelData.combinedPrecondition.isVariable());
-        delays |= !sharedState.stateData.preconditionIsFinal();
+        Optional<StatementAnalysis> subBlockDelay = subBlocks.stream().filter(sa -> sa.methodLevelData.combinedPrecondition.isVariable()).findFirst();
+        assert subBlockDelay.isEmpty() || foundDelay(sharedState.where(COMBINE_PRECONDITION),
+                subBlockDelay.get().methodLevelData.combinedPrecondition.get().toString() + D_COMBINED_PRECONDITION);
+
+        boolean preconditionFinal = sharedState.stateData.preconditionIsFinal();
+        assert preconditionFinal || translatedDelay(sharedState.where(COMBINE_PRECONDITION), "xx",
+                sharedState.statementAnalysis.index + D_COMBINED_PRECONDITION);
 
         Stream<Precondition> fromMyStateData =
                 Stream.of(sharedState.stateData.getPrecondition());
@@ -186,11 +221,14 @@ public class MethodLevelData {
                 .reduce((pc1, pc2) -> pc1.combine(sharedState.evaluationContext, pc2))
                 .orElse(Precondition.empty(sharedState.evaluationContext.getPrimitives()));
 
-        delays |= sharedState.evaluationContext.isDelayed(all.expression());
-        if (delays) combinedPrecondition.setVariable(all);
-        else setFinalAllowEquals(combinedPrecondition, all);
+        boolean allDelayed = sharedState.evaluationContext.isDelayed(all.expression());
+        assert !allDelayed || createDelay(sharedState.where(COMBINE_PRECONDITION), ""); // FIXME
 
-        return delays ? DELAYS : DONE;
+        if (previousDelayed || subBlockDelay.isPresent() || !preconditionFinal || allDelayed) {
+            combinedPrecondition.setVariable(all);
+        } else setFinalAllowEquals(combinedPrecondition, all);
+
+        return previousDelayed ? DELAYS : DONE;
     }
 
     private AnalysisStatus linksHaveBeenEstablished(SharedState sharedState) {
@@ -205,6 +243,7 @@ public class MethodLevelData {
                         || vi.getProperty(VariableProperty.CONTEXT_MODIFIED) == Level.DELAY)
                 .findFirst();
         if (delayed.isPresent()) {
+            assert translatedDelay(sharedState.where(LINKS_HAVE_BEEN_ESTABLISHED), "", ""); // FIXME
             log(DELAYED, "Links have not yet been established for (findFirst) {}, statement {}",
                     delayed.get().variable().fullyQualifiedName(), sharedState.statementAnalysis.index);
             return DELAYS;
@@ -223,5 +262,25 @@ public class MethodLevelData {
             callsPotentiallyCircularMethod.set(false);
         }
         return DONE;
+    }
+
+    @Override
+    public boolean foundDelay(String where, String delayFqn) {
+        return delayDebugCollector.foundDelay(where, delayFqn);
+    }
+
+    @Override
+    public boolean translatedDelay(String where, String delayFromFqn, String newDelayFqn) {
+        return delayDebugCollector.translatedDelay(where, delayFromFqn, newDelayFqn);
+    }
+
+    @Override
+    public boolean createDelay(String where, String delayFqn) {
+        return delayDebugCollector.createDelay(where, delayFqn);
+    }
+
+    @Override
+    public Stream<DelayDebugNode> streamNodes() {
+        return delayDebugCollector.streamNodes();
     }
 }

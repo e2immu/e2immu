@@ -18,6 +18,7 @@ import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.analyser.VariableProperty;
+import org.e2immu.analyser.analyser.util.DelayDebugger;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.IsVariableExpression;
 import org.e2immu.analyser.model.expression.VariableExpression;
@@ -117,6 +118,8 @@ public class EvaluateParameters {
                         map.put(VariableProperty.CONTEXT_NOT_NULL, MultiLevel.NULLABLE); // won't be me to rock the boat
                     } else {
                         map.put(VariableProperty.CONTEXT_NOT_NULL_DELAY, Level.TRUE);
+                        assert evaluationContext.createDelay(parameterInfo.fullyQualifiedName(),
+                                methodInfo.fullyQualifiedName+ DelayDebugger.D_CAUSES_OF_CONTENT_MODIFICATION_DELAY);
                         builder.causeOfContextModificationDelay(methodInfo);
                     }
                 }

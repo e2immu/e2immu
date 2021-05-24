@@ -17,6 +17,7 @@ package org.e2immu.analyser.analyser;
 import org.e2immu.analyser.analyser.check.CheckConstant;
 import org.e2immu.analyser.analyser.check.CheckEventual;
 import org.e2immu.analyser.analyser.check.CheckPrecondition;
+import org.e2immu.analyser.analyser.util.DelayDebugNode;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Message;
@@ -206,4 +207,10 @@ public abstract class MethodAnalyser extends AbstractAnalyser implements HoldsAn
     }
 
     public abstract List<VariableInfo> getFieldAsVariable(FieldInfo fieldInfo, boolean b);
+
+    @Override
+    public Stream<DelayDebugNode> streamNodes() {
+        Stream<DelayDebugNode> parameterStream = parameterAnalysers.stream().flatMap(ParameterAnalyser::streamNodes);
+        return Stream.concat(super.streamNodes(), parameterStream);
+    }
 }

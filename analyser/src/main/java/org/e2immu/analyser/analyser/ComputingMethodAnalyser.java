@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.analyser;
 
+import org.e2immu.analyser.analyser.util.DelayDebugNode;
 import org.e2immu.analyser.analyser.util.DetectEventual;
 import org.e2immu.analyser.inspector.MethodResolution;
 import org.e2immu.analyser.model.*;
@@ -128,6 +129,20 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
             methodAnalysis.minimalInfoForEmptyMethod(methodAnalysis.primitives);
         }
         analyserComponents = builder.build();
+    }
+
+    @Override
+    public Stream<DelayDebugNode> streamNodes() {
+        Stream<DelayDebugNode> localTypes = locallyCreatedPrimaryTypeAnalysers.stream()
+                .flatMap(PrimaryTypeAnalyser::streamNodes);
+        Stream<DelayDebugNode> statementStream = firstStatementAnalyser == null ? Stream.of() :
+                firstStatementAnalyser.streamNodes();
+        return Stream.concat(Stream.concat(super.streamNodes(), localTypes), statementStream);
+    }
+
+    @Override
+    protected String where(String componentName) {
+        return methodInfo.fullyQualifiedName + ":" + componentName;
     }
 
     @Override
@@ -1056,6 +1071,11 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
 
         protected EvaluationContextImpl(int iteration, ConditionManager conditionManager, EvaluationContext closure) {
             super(iteration, conditionManager, closure);
+        }
+
+        @Override
+        public Stream<DelayDebugNode> streamNodes() {
+            throw new UnsupportedOperationException();
         }
 
         @Override

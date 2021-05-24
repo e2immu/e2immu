@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.analyser;
 
+import org.e2immu.analyser.analyser.util.DelayDebugNode;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.expression.*;
@@ -26,6 +27,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /*
 condition = the condition in the parent statement that leads to this block. Default: true
@@ -342,6 +344,11 @@ public record ConditionManager(Expression condition,
         @Override
         public Expression currentValue(Variable variable, int statementTime, ForwardEvaluationInfo forwardEvaluationInfo) {
             return new VariableExpression(variable);
+        }
+
+        @Override
+        public Stream<DelayDebugNode> streamNodes() {
+            throw new UnsupportedOperationException();
         }
     }
 }

@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.analyser;
 
+import org.e2immu.analyser.analyser.util.DelayDebugger;
 import org.e2immu.analyser.model.Analysis;
 import org.e2immu.analyser.model.WithInspectionAndAnalysis;
 import org.e2immu.analyser.parser.Message;
@@ -21,7 +22,7 @@ import org.e2immu.analyser.parser.Message;
 import java.util.Collection;
 import java.util.stream.Stream;
 
-public interface Analyser {
+public interface Analyser extends DelayDebugger {
 
     enum AnalyserIdentification {
         TYPE(null), // type does not have notNull

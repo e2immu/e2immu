@@ -15,6 +15,7 @@
 package org.e2immu.analyser.model.value;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.util.DelayDebugNode;
 import org.e2immu.analyser.inspector.MethodInspectionImpl;
 import org.e2immu.analyser.inspector.ParameterInspectionImpl;
 import org.e2immu.analyser.inspector.TypeInspectionImpl;
@@ -31,6 +32,7 @@ import org.e2immu.analyser.util.Resources;
 import org.junit.jupiter.api.BeforeAll;
 
 import java.util.Set;
+import java.util.stream.Stream;
 
 import static org.e2immu.analyser.inspector.TypeInspectionImpl.InspectionState.BY_HAND;
 
@@ -238,6 +240,11 @@ public abstract class CommonAbstractValue {
         @Override
         public String newObjectIdentifier() {
             return "-";
+        }
+
+        @Override
+        public Stream<DelayDebugNode> streamNodes() {
+            throw new UnsupportedOperationException();
         }
     }
 

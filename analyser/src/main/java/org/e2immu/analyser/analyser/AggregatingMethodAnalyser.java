@@ -17,6 +17,12 @@ import static org.e2immu.analyser.util.Logger.log;
 
 public class AggregatingMethodAnalyser extends MethodAnalyser {
 
+    public static final String MODIFIED = "modified";
+    public static final String IMMUTABLE = "immutable";
+    public static final String INDEPENDENT = "independent";
+    public static final String FLUENT = "fluent";
+    public static final String IDENTITY = "identity";
+    public static final String NOT_NULL = "notNull";
     private final SetOnce<List<MethodAnalysis>> implementingAnalyses = new SetOnce<>();
     private final AnalyserComponents<String, Integer> analyserComponents;
 
@@ -28,12 +34,12 @@ public class AggregatingMethodAnalyser extends MethodAnalyser {
         super(methodInfo, methodAnalysis, parameterAnalysers,
                 parameterAnalyses, Map.of(), false, analyserContextInput);
         AnalyserComponents.Builder<String, Integer> builder = new AnalyserComponents.Builder<String, Integer>()
-                .add("modified", iteration -> this.aggregate(VariableProperty.MODIFIED_METHOD, VariableInfoImpl.MAX))
-                .add("immutable", iteration -> this.aggregate(VariableProperty.IMMUTABLE, VariableInfoImpl.MIN))
-                .add("independent", iteration -> this.aggregate(VariableProperty.INDEPENDENT, VariableInfoImpl.MIN))
-                .add("fluent", iteration -> this.aggregate(VariableProperty.FLUENT, VariableInfoImpl.MIN))
-                .add("identity", iteration -> this.aggregate(VariableProperty.IDENTITY, VariableInfoImpl.MIN))
-                .add("notNull", iteration -> this.aggregate(VariableProperty.NOT_NULL_EXPRESSION, VariableInfoImpl.MIN));
+                .add(MODIFIED, iteration -> this.aggregate(VariableProperty.MODIFIED_METHOD, VariableInfoImpl.MAX))
+                .add(IMMUTABLE, iteration -> this.aggregate(VariableProperty.IMMUTABLE, VariableInfoImpl.MIN))
+                .add(INDEPENDENT, iteration -> this.aggregate(VariableProperty.INDEPENDENT, VariableInfoImpl.MIN))
+                .add(FLUENT, iteration -> this.aggregate(VariableProperty.FLUENT, VariableInfoImpl.MIN))
+                .add(IDENTITY, iteration -> this.aggregate(VariableProperty.IDENTITY, VariableInfoImpl.MIN))
+                .add(NOT_NULL, iteration -> this.aggregate(VariableProperty.NOT_NULL_EXPRESSION, VariableInfoImpl.MIN));
 
         analyserComponents = builder.build();
     }
@@ -58,7 +64,7 @@ public class AggregatingMethodAnalyser extends MethodAnalyser {
 
     @Override
     public AnalysisStatus analyse(int iteration, EvaluationContext closure) {
-        AnalysisStatus analysisStatus =  analyserComponents.run(iteration);
+        AnalysisStatus analysisStatus = analyserComponents.run(iteration);
         List<MethodAnalyserVisitor> visitors = analyserContext.getConfiguration()
                 .debugConfiguration().afterMethodAnalyserVisitors();
         if (!visitors.isEmpty()) {
@@ -105,7 +111,7 @@ public class AggregatingMethodAnalyser extends MethodAnalyser {
 
     @Override
     public void logAnalysisStatuses() {
-
+        // nothing
     }
 
     @Override
@@ -115,7 +121,12 @@ public class AggregatingMethodAnalyser extends MethodAnalyser {
 
     @Override
     public void makeImmutable() {
+        // nothing
+    }
 
+    @Override
+    protected String where(String componentName) {
+        return methodInfo.fullyQualifiedName + ":AGG:" + componentName;
     }
 
     @Override

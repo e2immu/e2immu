@@ -14,6 +14,9 @@
 
 package org.e2immu.analyser.analyser;
 
+import org.e2immu.analyser.analyser.util.DelayDebugCollector;
+import org.e2immu.analyser.analyser.util.DelayDebugNode;
+import org.e2immu.analyser.analyser.util.DelayDebugger;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.DelayedVariableExpression;
 import org.e2immu.analyser.model.expression.EmptyExpression;
@@ -28,12 +31,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.AnalysisStatus.DONE;
 import static org.e2immu.analyser.util.Logger.LogTarget.*;
 import static org.e2immu.analyser.util.Logger.log;
 
-public class CompanionAnalyser {
+public class CompanionAnalyser implements DelayDebugger {
     private static final Logger LOGGER = LoggerFactory.getLogger(CompanionAnalyser.class);
 
     private final AnalyserContext analyserContext;
@@ -42,6 +46,7 @@ public class CompanionAnalyser {
     public final CompanionMethodName companionMethodName;
     public final CompanionAnalysisImpl.Builder companionAnalysis;
     public final TypeAnalysis typeAnalysis;
+    private final DelayDebugger delayDebugCollector = new DelayDebugCollector();
 
     public CompanionAnalyser(AnalyserContext analyserContext,
                              TypeAnalysis typeAnalysis,
@@ -63,6 +68,8 @@ public class CompanionAnalyser {
                 if (iteration == 0) {
                     log(DELAYED, "Delaying companion analysis of {} of {}, aspect function not known",
                             companionMethodName, mainMethod.fullyQualifiedName());
+                    assert translatedDelay(companionMethod.fullyQualifiedName, mainMethod.typeInfo.fullyQualifiedName + D_ASPECTS, // FIXME
+                            companionMethod.fullyQualifiedName + D_COMPANION_METHOD);
                     return AnalysisStatus.DELAYS;
                 }
                 throw new UnsupportedOperationException("Aspect function not found in type " + mainMethod.typeInfo.fullyQualifiedName);
@@ -78,6 +85,8 @@ public class CompanionAnalyser {
                 // its companion methods need processing
                 log(DELAYED, "Delaying companion analysis of {} of {}, modification of main method delayed",
                         companionMethodName, mainMethod.fullyQualifiedName());
+                assert translatedDelay(companionMethod.fullyQualifiedName, mainMethod.fullyQualifiedName + D_MODIFIED_METHOD,
+                        companionMethod.fullyQualifiedName + D_COMPANION_METHOD);
                 return AnalysisStatus.DELAYS;
             }
             computeRemapParameters(!mainMethod.isConstructor && modifyingMainMethod == Level.TRUE);
@@ -90,6 +99,8 @@ public class CompanionAnalyser {
             if (evaluationContext.isDelayed(evaluationResult.value())) {
                 log(DELAYED, "Delaying companion analysis of {} of {}, delay in evaluation",
                         companionMethodName, mainMethod.fullyQualifiedName());
+                assert translatedDelay(companionMethod.fullyQualifiedName, companionMethod.fullyQualifiedName + ":0" + D_EVALUATION_RESULT,
+                        companionMethod.fullyQualifiedName + D_COMPANION_METHOD);
                 return AnalysisStatus.DELAYS;
             }
             companionAnalysis.value.set(evaluationResult.value());
@@ -145,10 +156,35 @@ public class CompanionAnalyser {
         companionAnalysis.parameterValues.set(parameterValues);
     }
 
+    @Override
+    public boolean foundDelay(String where, String delayFqn) {
+        return delayDebugCollector.foundDelay(where, delayFqn);
+    }
+
+    @Override
+    public boolean translatedDelay(String where, String delayFromFqn, String newDelayFqn) {
+        return delayDebugCollector.translatedDelay(where, delayFromFqn, newDelayFqn);
+    }
+
+    @Override
+    public boolean createDelay(String where, String delayFqn) {
+        return delayDebugCollector.createDelay(where, delayFqn);
+    }
+
+    @Override
+    public Stream<DelayDebugNode> streamNodes() {
+        return delayDebugCollector.streamNodes();
+    }
+
     private class EvaluationContextImpl extends AbstractEvaluationContextImpl {
 
         protected EvaluationContextImpl(int iteration, ConditionManager conditionManager) {
             super(iteration, conditionManager, null);
+        }
+
+        @Override
+        public Stream<DelayDebugNode> streamNodes() {
+            throw new UnsupportedOperationException();
         }
 
         @Override

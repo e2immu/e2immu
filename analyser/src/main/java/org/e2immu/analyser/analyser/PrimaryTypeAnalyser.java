@@ -14,6 +14,8 @@
 
 package org.e2immu.analyser.analyser;
 
+import org.e2immu.analyser.analyser.util.DelayDebugNode;
+import org.e2immu.analyser.analyser.util.DelayDebugProcessor;
 import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
@@ -267,6 +269,9 @@ public class PrimaryTypeAnalyser implements AnalyserContext, Analyser, HoldsAnal
     @Override
     public void write() {
         analysers.forEach(Analyser::write);
+        if (org.e2immu.analyser.util.Logger.isLogEnabled(org.e2immu.analyser.util.Logger.LogTarget.DELAYED)) {
+            new DelayDebugProcessor(streamNodes().toList()).process();
+        }
     }
 
     @Override
@@ -325,5 +330,10 @@ public class PrimaryTypeAnalyser implements AnalyserContext, Analyser, HoldsAnal
     @Override
     public void receiveAdditionalTypeAnalysers(Collection<PrimaryTypeAnalyser> typeAnalysers) {
         throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Stream<DelayDebugNode> streamNodes() {
+        return analysers.stream().flatMap(Analyser::streamNodes);
     }
 }

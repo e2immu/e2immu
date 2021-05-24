@@ -17,6 +17,7 @@ package org.e2immu.analyser.analyser;
 import org.e2immu.analyser.analyser.check.CheckConstant;
 import org.e2immu.analyser.analyser.check.CheckFinalNotModified;
 import org.e2immu.analyser.analyser.check.CheckLinks;
+import org.e2immu.analyser.analyser.util.DelayDebugNode;
 import org.e2immu.analyser.inspector.MethodResolution;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
@@ -48,7 +49,7 @@ import static org.e2immu.analyser.util.Logger.log;
 public class FieldAnalyser extends AbstractAnalyser {
     private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(FieldAnalyser.class);
 
-    // analyser components, constants are used in tests
+    // analyser components, constants are used in tests and delay debugging
     public static final String COMPUTE_IMPLICITLY_IMMUTABLE_DATA_TYPE = "computeImplicitlyImmutableDataType";
     public static final String EVALUATE_INITIALISER = "evaluateInitialiser";
     public static final String ANALYSE_FINAL = "analyseFinal";
@@ -60,7 +61,10 @@ public class FieldAnalyser extends AbstractAnalyser {
     public static final String ANALYSE_LINKED = "analyseLinked";
     public static final String FIELD_ERRORS = "fieldErrors";
     public static final String ANALYSE_ASSIGNMENTS = "allAssignmentsHaveBeenSet";
-    private static final String ANALYSE_LINKS_HAVE_BEEN_ESTABLISHED = "allLinksHaveBeenEstablished";
+    public static final String ANALYSE_LINKS_HAVE_BEEN_ESTABLISHED = "allLinksHaveBeenEstablished";
+    public static final String ANALYSE_CONSTANT = "analyseConstant";
+    public static final String ANALYSE_LINKED_1 = "analyseLinked1";
+    public static final String ANALYSE_PROPAGATE_MODIFICATION = "analysePropagateModification";
 
     public final TypeInfo primaryType;
     public final FieldInfo fieldInfo;
@@ -81,7 +85,6 @@ public class FieldAnalyser extends AbstractAnalyser {
 
     private record SharedState(int iteration, EvaluationContext closure) {
     }
-
 
     private final Predicate<WithInspectionAndAnalysis> ignoreMyConstructors;
 
@@ -116,12 +119,12 @@ public class FieldAnalyser extends AbstractAnalyser {
                 .add(ANALYSE_IMMUTABLE, this::analyseImmutable)
                 .add(ANALYSE_MODIFIED, sharedState -> analyseModified())
                 .add(ANALYSE_FINAL_VALUE, sharedState -> analyseFinalValue())
-                .add("analyseConstant", sharedState -> analyseConstant())
+                .add(ANALYSE_CONSTANT, sharedState -> analyseConstant())
                 .add(ANALYSE_NOT_NULL, this::analyseNotNull)
                 .add(ANALYSE_NOT_MODIFIED_1, sharedState -> analyseNotModified1())
                 .add(ANALYSE_LINKED, sharedState -> analyseLinked())
-                .add("analyseLinked1", sharedState -> analyseLinked1())
-                .add("analysePropagateModification", sharedState -> analysePropagateModification())
+                .add(ANALYSE_LINKED_1, sharedState -> analyseLinked1())
+                .add(ANALYSE_PROPAGATE_MODIFICATION, sharedState -> analysePropagateModification())
                 .add(FIELD_ERRORS, sharedState -> fieldErrors())
                 .build();
     }
@@ -225,7 +228,12 @@ public class FieldAnalyser extends AbstractAnalyser {
                     fieldAnalysis.initialValue.set(initialiserValue);
                 }
                 log(FINAL, "Set initialiser of field {} to {}", fqn, evaluationResult.value());
-                return evaluationResult.someValueWasDelayed() ? DELAYS : DONE;
+                if (evaluationResult.someValueWasDelayed()) {
+                    assert translatedDelay(EVALUATE_INITIALISER, "XX?", // FIXME how to label this?
+                            fqn + ".initialValue");
+                    return DELAYS;
+                }
+                return DONE;
             }
         }
         fieldAnalysis.initialValue.set(ConstantExpression.nullValue(analyserContext.getPrimitives(), fieldInfo.type.bestTypeInfo()));
@@ -235,7 +243,12 @@ public class FieldAnalyser extends AbstractAnalyser {
 
     private AnalysisStatus computeImplicitlyImmutableDataType() {
         assert !fieldAnalysis.isOfImplicitlyImmutableDataTypeIsSet();
-        if (myTypeAnalyser.typeAnalysis.getImplicitlyImmutableDataTypes() == null) return DELAYS;
+        if (myTypeAnalyser.typeAnalysis.getImplicitlyImmutableDataTypes() == null) {
+            assert translatedDelay(COMPUTE_IMPLICITLY_IMMUTABLE_DATA_TYPE,
+                    myTypeAnalyser.typeInfo.fullyQualifiedName + D_IMPLICITLY_IMMUTABLE_DATA,
+                    fqn + D_IMPLICITLY_IMMUTABLE_DATA);
+            return DELAYS;
+        }
         boolean implicit = myTypeAnalyser.typeAnalysis.getImplicitlyImmutableDataTypes().contains(fieldInfo.type);
         fieldAnalysis.setImplicitlyImmutableDataType(implicit);
         return DONE;
@@ -273,6 +286,8 @@ public class FieldAnalyser extends AbstractAnalyser {
 
         int isFinal = fieldAnalysis.getProperty(VariableProperty.FINAL);
         if (isFinal == Level.DELAY) {
+            assert translatedDelay(ANALYSE_NOT_NULL, fqn + ".FINAL",
+                    fqn + D_EXTERNAL_NOT_NULL);
             log(DELAYED, "Delaying @NotNull on {} until we know about @Final", fqn);
             return DELAYS;
         }
@@ -290,6 +305,8 @@ public class FieldAnalyser extends AbstractAnalyser {
 
         Boolean onlyAssignedToParameters = onlyAssignedToParameters(evaluationContext);
         if (onlyAssignedToParameters == null) {
+            assert translatedDelay(ANALYSE_NOT_NULL, fqn + D_VALUES,
+                    fqn + D_EXTERNAL_NOT_NULL);
             log(DELAYED, "Delaying @NotNull on {}, waiting for values", fqn);
             return DELAYS;
         }
@@ -300,6 +317,8 @@ public class FieldAnalyser extends AbstractAnalyser {
                     .mapToInt(vi -> vi.getProperty(VariableProperty.CONTEXT_NOT_NULL))
                     .reduce(MultiLevel.NULLABLE, MAX);
             if (bestOverContext == Level.DELAY) {
+                assert translatedDelay(ANALYSE_NOT_NULL, ".CONTEXT_NOT_NULL",  // FIXME
+                        fqn + D_EXTERNAL_NOT_NULL);
                 log(DELAYED, "Delay @NotNull on {}, waiting for CNN", fqn);
                 return DELAYS;
             }
@@ -321,12 +340,18 @@ public class FieldAnalyser extends AbstractAnalyser {
             if (hardNull) {
                 finalNotNullValue = MultiLevel.NULLABLE;
             } else {
-                if (fieldAnalysis.valuesIsNotSet()) return DELAYS;
+                if (fieldAnalysis.valuesIsNotSet()) {
+                    assert translatedDelay(ANALYSE_NOT_NULL, fqn + D_VALUES,
+                            fqn + D_EXTERNAL_NOT_NULL);
+                    return DELAYS;
+                }
                 assert fieldAnalysis.getValues().expressions().length > 0;
                 int worstOverValuesBreakParameterDelay = fieldAnalysis.getValues().stream()
                         .mapToInt(expression -> notNullBreakParameterDelay(evaluationContext, expression))
                         .min().orElse(MultiLevel.NULLABLE);
                 if (worstOverValuesBreakParameterDelay == Level.DELAY) {
+                    assert translatedDelay(ANALYSE_NOT_NULL, fqn + D_VALUES, // FIXME
+                            fqn + D_EXTERNAL_NOT_NULL);
                     log(DELAYED, "Delay @NotNull on {}, waiting for values", fqn);
                     return DELAYS;
                 }
@@ -1065,6 +1090,11 @@ public class FieldAnalyser extends AbstractAnalyser {
         }
 
         @Override
+        public Stream<DelayDebugNode> streamNodes() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
         public TypeInfo getCurrentType() {
             return fieldInfo.owner;
         }
@@ -1167,4 +1197,8 @@ public class FieldAnalyser extends AbstractAnalyser {
         }
     }
 
+    @Override
+    protected String where(String componentName) {
+        return fqn + ":" + componentName;
+    }
 }

@@ -14,6 +14,9 @@
 
 package org.e2immu.analyser.analyser;
 
+import org.e2immu.analyser.analyser.util.DelayDebugCollector;
+import org.e2immu.analyser.analyser.util.DelayDebugNode;
+import org.e2immu.analyser.analyser.util.DelayDebugger;
 import org.e2immu.analyser.analyser.util.FindInstanceOfPatterns;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
@@ -49,9 +52,22 @@ import static org.e2immu.analyser.util.Logger.log;
 import static org.e2immu.analyser.util.StringUtil.pad;
 
 @Container(builds = StatementAnalysis.class)
-public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, HoldsAnalysers {
+public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, HoldsAnalysers, DelayDebugger {
     private static final Logger LOGGER = LoggerFactory.getLogger(StatementAnalyser.class);
+
     public static final String ANALYSE_METHOD_LEVEL_DATA = "analyseMethodLevelData";
+    public static final String EVALUATION_OF_MAIN_EXPRESSION = "evaluationOfMainExpression";
+    public static final String SUB_BLOCKS = "subBlocks";
+    public static final String ANALYSE_TYPES_IN_STATEMENT = "analyseTypesInStatement";
+    public static final String ANALYSE_FLOW_DATA = "analyseFlowData";
+    public static final String FREEZE_ASSIGNMENT_IN_BLOCK = "freezeAssignmentInBlock";
+    public static final String CHECK_NOT_NULL_ESCAPES_AND_PRECONDITIONS = "checkNotNullEscapesAndPreconditions";
+    public static final String CHECK_UNUSED_RETURN_VALUE = "checkUnusedReturnValue";
+    public static final String CHECK_USELESS_ASSIGNMENTS = "checkUselessAssignments";
+    public static final String CHECK_UNUSED_LOCAL_VARIABLES = "checkUnusedLocalVariables";
+    public static final String CHECK_UNUSED_LOOP_VARIABLES = "checkUnusedLoopVariables";
+    public static final String INITIALISE_OR_UPDATE_VARIABLES = "initialiseOrUpdateVariables";
+    public static final String CHECK_UNREACHABLE_STATEMENT = "checkUnreachableStatement";
 
     public final StatementAnalysis statementAnalysis;
     private final MethodAnalyser myMethodAnalyser;
@@ -62,7 +78,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
     //private ConditionManager localConditionManager;
     private AnalysisStatus analysisStatus;
     private AnalyserComponents<String, SharedState> analyserComponents;
-
+    private final DelayDebugger delayDebugger = new DelayDebugCollector();
     private final SetOnce<List<PrimaryTypeAnalyser>> localAnalysers = new SetOnce<>();
 
     private StatementAnalyser(AnalyserContext analyserContext,
@@ -367,22 +383,23 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 assert analyserComponents == null : "expected null analyser components";
 
                 analyserComponents = new AnalyserComponents.Builder<String, SharedState>()
-                        .add("checkUnreachableStatement", this::checkUnreachableStatement)
-                        .add("initialiseOrUpdateVariables", this::initialiseOrUpdateVariables)
-                        .add("analyseTypesInStatement", this::analyseTypesInStatement)
-                        .add("evaluationOfMainExpression", this::evaluationOfMainExpression)
-                        .add("subBlocks", this::subBlocks)
-                        .add("analyseFlowData", sharedState -> statementAnalysis.flowData.analyse(this, previous,
+                        .add(CHECK_UNREACHABLE_STATEMENT, this::checkUnreachableStatement)
+                        .add(INITIALISE_OR_UPDATE_VARIABLES, this::initialiseOrUpdateVariables)
+                        .add(ANALYSE_TYPES_IN_STATEMENT, this::analyseTypesInStatement)
+                        .add(EVALUATION_OF_MAIN_EXPRESSION, this::evaluationOfMainExpression)
+                        .add(SUB_BLOCKS, this::subBlocks)
+                        .add(ANALYSE_FLOW_DATA, sharedState -> statementAnalysis.flowData.analyse(this, previous,
                                 sharedState.forwardAnalysisInfo.execution()))
-                        .add("freezeAssignmentInBlock", this::freezeAssignmentInBlock)
-                        .add("checkNotNullEscapesAndPreconditions", this::checkNotNullEscapesAndPreconditions)
+                        .add(FREEZE_ASSIGNMENT_IN_BLOCK, this::freezeAssignmentInBlock)
+                        .add(CHECK_NOT_NULL_ESCAPES_AND_PRECONDITIONS, this::checkNotNullEscapesAndPreconditions)
                         .add(ANALYSE_METHOD_LEVEL_DATA, sharedState -> statementAnalysis.methodLevelData.analyse(sharedState, statementAnalysis,
                                 previous == null ? null : previous.methodLevelData,
+                                previous == null ? null: previous.index,
                                 statementAnalysis.stateData))
-                        .add("checkUnusedReturnValue", sharedState -> checkUnusedReturnValueOfMethodCall())
-                        .add("checkUselessAssignments", sharedState -> checkUselessAssignments())
-                        .add("checkUnusedLocalVariables", sharedState -> checkUnusedLocalVariables())
-                        .add("checkUnusedLoopVariables", sharedState -> checkUnusedLoopVariables())
+                        .add(CHECK_UNUSED_RETURN_VALUE, sharedState -> checkUnusedReturnValueOfMethodCall())
+                        .add(CHECK_USELESS_ASSIGNMENTS, sharedState -> checkUselessAssignments())
+                        .add(CHECK_UNUSED_LOCAL_VARIABLES, sharedState -> checkUnusedLocalVariables())
+                        .add(CHECK_UNUSED_LOOP_VARIABLES, sharedState -> checkUnusedLoopVariables())
                         .build();
             }
 
@@ -822,6 +839,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         AnalysisStatus ennStatus = contextPropertyWriter2.write(statementAnalysis, sharedState.evaluationContext,
                 VariableInfo::getStaticallyAssignedVariables,
                 EXTERNAL_NOT_NULL, groupPropertyValues.getMap(EXTERNAL_NOT_NULL), EVALUATION, Set.of());
+        assert ennStatus == DONE || translatedDelay(EVALUATION_OF_MAIN_EXPRESSION, "??", "??"); // FIXME
 
         potentiallyRaiseErrorsOnNotNullInContext(evaluationResult.changeData());
 
@@ -845,6 +863,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 CONTEXT_IMMUTABLE, groupPropertyValues.getMap(CONTEXT_IMMUTABLE), EVALUATION, Set.of());
         if (cImmStatus != DONE) {
             log(DELAYED, "Context immutable causes delay in {} {}", index(), myMethodAnalyser.methodInfo.fullyQualifiedName);
+            assert translatedDelay(EVALUATION_OF_MAIN_EXPRESSION, "??", "??"); // FIXME
         }
 
         addToMap(groupPropertyValues, CONTEXT_MODIFIED, x -> Level.FALSE, true);
@@ -2889,5 +2908,45 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             }
             return null;
         }
+
+        @Override
+        public boolean foundDelay(String where, String delayFqn) {
+            return statementAnalysis.foundDelay(where, delayFqn);
+        }
+
+        @Override
+        public boolean translatedDelay(String where, String delayFromFqn, String newDelayFqn) {
+            return statementAnalysis.translatedDelay(where, delayFromFqn, newDelayFqn);
+        }
+
+        @Override
+        public boolean createDelay(String where, String delayFqn) {
+            return statementAnalysis.createDelay(where, delayFqn);
+        }
+
+        @Override
+        public Stream<DelayDebugNode> streamNodes() {
+            throw new UnsupportedOperationException();
+        }
+    }
+
+    @Override
+    public Stream<DelayDebugNode> streamNodes() {
+        return statementAnalysis.streamNodes();
+    }
+
+    @Override
+    public boolean translatedDelay(String where, String delayFromFqn, String newDelayFqn) {
+        return statementAnalysis.translatedDelay(where, delayFromFqn, newDelayFqn);
+    }
+
+    @Override
+    public boolean createDelay(String where, String delayFqn) {
+        return statementAnalysis.createDelay(where, delayFqn);
+    }
+
+    @Override
+    public boolean foundDelay(String where, String delayFqn) {
+        return statementAnalysis.foundDelay(where, delayFqn);
     }
 }

@@ -156,4 +156,9 @@ public class ShallowMethodAnalyser extends MethodAnalyser {
     public void makeImmutable() {
         // nothing here
     }
+
+    @Override
+    protected String where(String componentName) {
+        throw new UnsupportedOperationException();
+    }
 }

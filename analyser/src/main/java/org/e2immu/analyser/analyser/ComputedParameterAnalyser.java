@@ -21,12 +21,9 @@ import org.e2immu.analyser.model.statement.ExplicitConstructorInvocation;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
-import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Message;
-import org.e2immu.analyser.parser.Messages;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.resolver.Resolver;
-import org.e2immu.annotation.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,6 +40,9 @@ import static org.e2immu.analyser.util.Logger.log;
 
 public class ComputedParameterAnalyser extends ParameterAnalyser {
     private static final Logger LOGGER = LoggerFactory.getLogger(ComputedParameterAnalyser.class);
+    public static final String CHECK_UNUSED_PARAMETER = "checkUnusedParameter";
+    public static final String ANALYSE_FIELDS = "analyseFields";
+    public static final String ANALYSE_CONTEXT = "analyseContext";
 
     private Map<FieldInfo, FieldAnalyser> fieldAnalysers;
 
@@ -59,10 +59,15 @@ public class ComputedParameterAnalyser extends ParameterAnalyser {
     }
 
     public final AnalyserComponents<String, SharedState> analyserComponents = new AnalyserComponents.Builder<String, SharedState>()
-            .add("checkUnusedParameter", this::checkUnusedParameter)
-            .add("analyseFields", this::analyseFields)
-            .add("analyseContext", this::analyseContext)
+            .add(CHECK_UNUSED_PARAMETER, this::checkUnusedParameter)
+            .add(ANALYSE_FIELDS, this::analyseFields)
+            .add(ANALYSE_CONTEXT, this::analyseContext)
             .build();
+
+    @Override
+    protected String where(String componentName) {
+        return parameterInfo.fullyQualifiedName() + ":" + componentName;
+    }
 
     /**
      * Copy properties from an effectively final field  (FINAL=Level.TRUE) to the parameter that is is assigned to.

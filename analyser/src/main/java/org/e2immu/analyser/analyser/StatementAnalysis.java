@@ -14,6 +14,9 @@
 
 package org.e2immu.analyser.analyser;
 
+import org.e2immu.analyser.analyser.util.DelayDebugCollector;
+import org.e2immu.analyser.analyser.util.DelayDebugNode;
+import org.e2immu.analyser.analyser.util.DelayDebugger;
 import org.e2immu.analyser.inspector.MethodResolution;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
@@ -40,7 +43,8 @@ import static org.e2immu.analyser.analyser.VariableProperty.*;
 import static org.e2immu.analyser.util.StringUtil.pad;
 
 @Container
-public class StatementAnalysis extends AbstractAnalysisBuilder implements Comparable<StatementAnalysis>, HasNavigationData<StatementAnalysis> {
+public class StatementAnalysis extends AbstractAnalysisBuilder implements Comparable<StatementAnalysis>,
+        HasNavigationData<StatementAnalysis>, DelayDebugger {
 
     public final Statement statement;
     public final String index;
@@ -57,6 +61,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
     public final FlowData flowData = new FlowData();
     public final AddOnceSet<String> localVariablesAssignedInThisLoop;
     public final AddOnceSet<Variable> candidateVariablesForNullPtrWarning = new AddOnceSet<>();
+    private final DelayDebugger delayDebugCollector = new DelayDebugCollector();
 
     public StatementAnalysis(Primitives primitives,
                              MethodAnalysis methodAnalysis,
@@ -1311,5 +1316,29 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                     return equals;
                 })
                 .toArray(Expression[]::new));
+    }
+
+    @Override
+    public Stream<DelayDebugNode> streamNodes() {
+        return Stream.concat(delayDebugCollector.streamNodes(), methodLevelData.streamNodes());
+    }
+
+    private String where(String componentName) {
+        return methodAnalysis.getMethodInfo().fullyQualifiedName + ":" + index + ":" + componentName;
+    }
+
+    @Override
+    public boolean translatedDelay(String componentName, String delayFromFqn, String newDelayFqn) {
+        return delayDebugCollector.translatedDelay(where(componentName), delayFromFqn, newDelayFqn);
+    }
+
+    @Override
+    public boolean createDelay(String componentName, String delayFqn) {
+        return delayDebugCollector.createDelay(where(componentName), delayFqn);
+    }
+
+    @Override
+    public boolean foundDelay(String componentName, String delayFqn) {
+        return delayDebugCollector.foundDelay(where(componentName), delayFqn);
     }
 }

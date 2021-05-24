@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.analyser;
 
+import org.e2immu.analyser.analyser.util.DelayDebugNode;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.LocalVariable;
 import org.e2immu.analyser.model.expression.BooleanConstant;
@@ -24,6 +25,8 @@ import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.Primitives;
+
+import java.util.stream.Stream;
 
 public abstract class CommonVariableInfo {
 
@@ -91,6 +94,11 @@ public abstract class CommonVariableInfo {
         @Override
         public String newObjectIdentifier() {
             return "-";
+        }
+
+        @Override
+        public Stream<DelayDebugNode> streamNodes() {
+            throw new UnsupportedOperationException();
         }
     };
 

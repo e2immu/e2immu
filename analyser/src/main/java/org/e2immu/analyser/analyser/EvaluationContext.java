@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.analyser;
 
+import org.e2immu.analyser.analyser.util.DelayDebugger;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.variable.FieldReference;
@@ -36,7 +37,7 @@ import static org.e2immu.analyser.analyser.VariableProperty.*;
 /**
  * Defaults because of tests
  */
-public interface EvaluationContext {
+public interface EvaluationContext extends DelayDebugger {
     Logger LOGGER = LoggerFactory.getLogger(EvaluationContext.class);
 
     default int getIteration() {
