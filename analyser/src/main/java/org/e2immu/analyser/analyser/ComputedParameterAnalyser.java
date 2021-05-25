@@ -406,7 +406,8 @@ public class ComputedParameterAnalyser extends ParameterAnalyser {
 
         // context not null, context modified
         MethodAnalysis methodAnalysis = analyserContext.getMethodAnalysis(parameterInfo.owner);
-        VariableInfo vi = methodAnalysis.getLastStatement().getLatestVariableInfo(parameterInfo.fullyQualifiedName());
+        StatementAnalysis lastStatement = methodAnalysis.getLastStatement();
+        VariableInfo vi = lastStatement.getLatestVariableInfo(parameterInfo.fullyQualifiedName());
         boolean delayFromContext = false;
         boolean changed = false;
         for (VariableProperty variableProperty : CONTEXT_PROPERTIES) {
@@ -418,6 +419,10 @@ public class ComputedParameterAnalyser extends ParameterAnalyser {
                             parameterInfo.fullyQualifiedName(), value);
                     changed = true;
                 } else {
+                    assert translatedDelay(ANALYSE_CONTEXT,
+                            vi.variable().fullyQualifiedName() + "@" + lastStatement.index + "." + variableProperty.name(),
+                            parameterInfo.fullyQualifiedName() + "." + variableProperty.name());
+
                     log(org.e2immu.analyser.util.Logger.LogTarget.DELAYED,
                             "Delays on {} not yet resolved for parameter {}, delaying", variableProperty,
                             parameterInfo.fullyQualifiedName());

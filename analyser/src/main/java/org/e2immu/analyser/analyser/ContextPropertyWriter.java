@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.analyser;
 
+import org.e2immu.analyser.analyser.util.DelayDebugger;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.Variable;
@@ -36,6 +37,7 @@ import static org.e2immu.analyser.util.Logger.log;
 
 public class ContextPropertyWriter {
     private static final Logger LOGGER = LoggerFactory.getLogger(ContextPropertyWriter.class);
+    public static final String CONTEXT_PROPERTY_WRITER = "ContextPropertyWriter";
 
     private final DependencyGraph<Variable> dependencyGraph = new DependencyGraph<>();
 
@@ -47,7 +49,8 @@ public class ContextPropertyWriter {
                                            Function<VariableInfo, LinkedVariables> connections,
                                            VariableInfoContainer.Level level,
                                            DependencyGraph<Variable> dependencyGraph,
-                                           AtomicReference<AnalysisStatus> analysisStatus) {
+                                           AtomicReference<AnalysisStatus> analysisStatus,
+                                           String variablePropertyNameForDebugging) {
         // delays in dependency graph
         statementAnalysis.variableStream(level)
                 .forEach(variableInfo -> {
@@ -56,6 +59,10 @@ public class ContextPropertyWriter {
                         if (!(variableInfo.variable() instanceof LocalVariableReference) || variableInfo.isAssigned()) {
                             log(DELAYED, "Delaying MethodLevelData for {} in {}: linked variables not set",
                                     variableInfo.variable().fullyQualifiedName(), evaluationContext.getLocation());
+
+                            assert statementAnalysis.translatedDelay(CONTEXT_PROPERTY_WRITER,
+                                    variableInfo.variable().fullyQualifiedName() + "@" + statementAnalysis.index + DelayDebugger.D_LINKED_VARIABLES_SET,
+                                    statementAnalysis.fullyQualifiedName() + "." + variablePropertyNameForDebugging);
                             analysisStatus.set(DELAYS);
                         }
                     } else {
@@ -79,7 +86,8 @@ public class ContextPropertyWriter {
                                 VariableInfoContainer.Level level,
                                 Set<Variable> doNotWrite) {
         final AtomicReference<AnalysisStatus> analysisStatus = new AtomicReference<>(DONE);
-        fillDependencyGraph(statementAnalysis, evaluationContext, connections, level, dependencyGraph, analysisStatus);
+        fillDependencyGraph(statementAnalysis, evaluationContext, connections, level, dependencyGraph, analysisStatus,
+                variableProperty.name());
 
         if (analysisStatus.get() == DELAYS) return analysisStatus.get();
 
@@ -96,7 +104,7 @@ public class ContextPropertyWriter {
                             Stream.concat(Stream.of(baseVariable), dependencyGraph.dependencies(baseVariable).stream())
                                     .filter(v -> statementAnalysis.variables.isSet(v.fullyQualifiedName()))
                                     .collect(Collectors.toSet());
-                    int summary = summarizeContext(variablesBaseLinksTo, variableProperty, propertyValues);
+                    int summary = summarizeContext(statementAnalysis, variablesBaseLinksTo, variableProperty, propertyValues);
                     if (summary == Level.DELAY) analysisStatus.set(DELAYS);
                     // this loop is critical, see Container_3, do not remove it again :-)
                     try {
@@ -119,7 +127,8 @@ public class ContextPropertyWriter {
         return analysisStatus.get() == DELAYS ? (progress.get() ? PROGRESS : DELAYS) : DONE;
     }
 
-    private static int summarizeContext(Set<Variable> linkedVariables,
+    private static int summarizeContext(StatementAnalysis statementAnalysis,
+                                        Set<Variable> linkedVariables,
                                         VariableProperty variableProperty,
                                         Map<Variable, Integer> values) {
         boolean hasDelays = false;
@@ -130,7 +139,13 @@ public class ContextPropertyWriter {
                 throw new NullPointerException("Expect " + variable.fullyQualifiedName() + " to be known for "
                         + variableProperty + ", map is " + values);
             }
-            if (v == Level.DELAY) hasDelays = true;
+            if (v == Level.DELAY) {
+                assert statementAnalysis.translatedDelay(CONTEXT_PROPERTY_WRITER,
+                        variable.fullyQualifiedName() + "@" + statementAnalysis.index + "." + variableProperty.name(),
+                        statementAnalysis.fullyQualifiedName() + "." + variableProperty.name());
+
+                hasDelays = true;
+            }
             max = Math.max(max, v);
         }
         return hasDelays && max < variableProperty.best ? Level.DELAY : max;
@@ -162,6 +177,9 @@ public class ContextPropertyWriter {
                 valuesToSet.merge(vic, newValue, (v1, v2) -> v1 == Level.DELAY ? Level.DELAY : Math.max(v1, v2));
                 progress.set(true);
             } else {
+                assert statementAnalysis.translatedDelay(CONTEXT_PROPERTY_WRITER,
+                        vi.variable().fullyQualifiedName() + "@" + statementAnalysis.index + "." + variableProperty.name(),
+                        statementAnalysis.fullyQualifiedName() + "." + variableProperty.name());
                 valuesToSet.put(vic, Level.DELAY);
             }
         } else if (current < newValue && newValue != Level.DELAY) {

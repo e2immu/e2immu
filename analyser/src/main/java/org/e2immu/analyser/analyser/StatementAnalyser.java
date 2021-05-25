@@ -394,7 +394,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                         .add(CHECK_NOT_NULL_ESCAPES_AND_PRECONDITIONS, this::checkNotNullEscapesAndPreconditions)
                         .add(ANALYSE_METHOD_LEVEL_DATA, sharedState -> statementAnalysis.methodLevelData.analyse(sharedState, statementAnalysis,
                                 previous == null ? null : previous.methodLevelData,
-                                previous == null ? null: previous.index,
+                                previous == null ? null : previous.index,
                                 statementAnalysis.stateData))
                         .add(CHECK_UNUSED_RETURN_VALUE, sharedState -> checkUnusedReturnValueOfMethodCall())
                         .add(CHECK_USELESS_ASSIGNMENTS, sharedState -> checkUselessAssignments())
@@ -832,6 +832,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         AnalysisStatus cnnStatus = contextPropertyWriter.write(statementAnalysis, sharedState.evaluationContext,
                 VariableInfo::getStaticallyAssignedVariables,
                 CONTEXT_NOT_NULL, groupPropertyValues.getMap(CONTEXT_NOT_NULL), EVALUATION, Set.of());
+        assert cnnStatus == DONE || foundDelay(EVALUATION_OF_MAIN_EXPRESSION,
+                statementAnalysis.fullyQualifiedName() + ":" + CONTEXT_NOT_NULL.name());
         status = cnnStatus.combine(status);
 
         ContextPropertyWriter contextPropertyWriter2 = new ContextPropertyWriter();
@@ -839,7 +841,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         AnalysisStatus ennStatus = contextPropertyWriter2.write(statementAnalysis, sharedState.evaluationContext,
                 VariableInfo::getStaticallyAssignedVariables,
                 EXTERNAL_NOT_NULL, groupPropertyValues.getMap(EXTERNAL_NOT_NULL), EVALUATION, Set.of());
-        assert ennStatus == DONE || translatedDelay(EVALUATION_OF_MAIN_EXPRESSION, "??", "??"); // FIXME
+        assert ennStatus == DONE || foundDelay(EVALUATION_OF_MAIN_EXPRESSION,
+                statementAnalysis.fullyQualifiedName() + ":" + EXTERNAL_NOT_NULL.name());
 
         potentiallyRaiseErrorsOnNotNullInContext(evaluationResult.changeData());
 
@@ -848,6 +851,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         AnalysisStatus extImmStatus = contextPropertyWriter3.write(statementAnalysis, sharedState.evaluationContext,
                 VariableInfo::getStaticallyAssignedVariables,
                 EXTERNAL_IMMUTABLE, groupPropertyValues.getMap(EXTERNAL_IMMUTABLE), EVALUATION, Set.of());
+        assert extImmStatus == DONE || foundDelay(EVALUATION_OF_MAIN_EXPRESSION,
+                statementAnalysis.fullyQualifiedName() + ":" + EXTERNAL_IMMUTABLE.name());
 
         addToMap(groupPropertyValues, CONTEXT_PROPAGATE_MOD, x -> Level.FALSE, true);
         // the delay for PM is ignored (if any, it will come from CM)
@@ -863,7 +868,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 CONTEXT_IMMUTABLE, groupPropertyValues.getMap(CONTEXT_IMMUTABLE), EVALUATION, Set.of());
         if (cImmStatus != DONE) {
             log(DELAYED, "Context immutable causes delay in {} {}", index(), myMethodAnalyser.methodInfo.fullyQualifiedName);
-            assert translatedDelay(EVALUATION_OF_MAIN_EXPRESSION, "??", "??"); // FIXME
+            assert foundDelay(EVALUATION_OF_MAIN_EXPRESSION,
+                    statementAnalysis.fullyQualifiedName() + ":" + CONTEXT_IMMUTABLE.name());
         }
 
         addToMap(groupPropertyValues, CONTEXT_MODIFIED, x -> Level.FALSE, true);

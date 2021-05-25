@@ -1324,8 +1324,15 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
 
     @Override
     public Stream<DelayDebugNode> streamNodes() {
-        return Stream.concat(Stream.concat(delayDebugCollector.streamNodes(), methodLevelData.streamNodes()),
+        Stream<DelayDebugNode> local = Stream.concat(Stream.concat(delayDebugCollector.streamNodes(), methodLevelData.streamNodes()),
                 stateData.streamNodes());
+        Stream<DelayDebugNode> next = navigationData.next.get()
+                .map(StatementAnalysis::streamNodes).orElse(Stream.empty());
+        Stream<DelayDebugNode> sub = navigationData.blocks.get().stream()
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .flatMap(StatementAnalysis::streamNodes);
+        return Stream.concat(local, Stream.concat(next, sub));
     }
 
     private String where(String componentName) {

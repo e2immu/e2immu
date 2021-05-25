@@ -52,7 +52,7 @@ public class Linked1Writer {
                          Function<VariableInfo, LinkedVariables> connections) {
         this.statementAnalysis = statementAnalysis;
         ContextPropertyWriter.fillDependencyGraph(statementAnalysis, evaluationContext,
-                connections, EVALUATION, dependencyGraph, analysisStatus);
+                connections, EVALUATION, dependencyGraph, analysisStatus, "LINKED_1");
     }
 
     public AnalysisStatus write(Map<Variable, EvaluationResult.ChangeData> changeDataMap) {

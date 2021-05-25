@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.analyser;
 
+import org.e2immu.analyser.analyser.util.DelayDebugCollector;
 import org.e2immu.analyser.analyser.util.DelayDebugNode;
 import org.e2immu.analyser.analyser.util.DelayDebugProcessor;
 import org.e2immu.analyser.config.Configuration;
@@ -224,17 +225,28 @@ public class PrimaryTypeAnalyser implements AnalyserContext, Analyser, HoldsAnal
 
     public void analyse() {
         int iteration = 0;
+        int timeAtStartOfIteration = 0;
         AnalysisStatus analysisStatus = AnalysisStatus.PROGRESS;
 
-        while (analysisStatus != AnalysisStatus.DONE) {
-            log(ANALYSER, "\n******\nStarting iteration {} of the primary type analyser on {}\n******", iteration, name);
+        while (analysisStatus == AnalysisStatus.PROGRESS) {
+            timeAtStartOfIteration = DelayDebugCollector.currentTime();
+            log(ANALYSER, "\n******\nStarting iteration {} of the primary type analyser on {}, time {}\n******",
+                    iteration, name, timeAtStartOfIteration);
 
             analysisStatus = analyse(iteration, null);
             iteration++;
-            if (iteration > 10) {
-                logAnalysisStatuses(analyserComponents);
-                throw new UnsupportedOperationException("More than 10 iterations needed for primary type(s) " + name + "?");
+
+            if (analysisStatus == AnalysisStatus.DONE) break;
+        }
+        if (analysisStatus == AnalysisStatus.DELAYS) {
+            logAnalysisStatuses(analyserComponents);
+            if (org.e2immu.analyser.util.Logger.isLogEnabled(org.e2immu.analyser.util.Logger.LogTarget.DELAYED)) {
+                final int startTime = timeAtStartOfIteration;
+                new DelayDebugProcessor(streamNodes()
+                        .filter(ddn -> ddn.time > startTime).sorted()
+                        .toList()).process();
             }
+            throw new UnsupportedOperationException("No progress after " + iteration + " iterations for primary type(s) " + name + "?");
         }
     }
 
@@ -269,9 +281,6 @@ public class PrimaryTypeAnalyser implements AnalyserContext, Analyser, HoldsAnal
     @Override
     public void write() {
         analysers.forEach(Analyser::write);
-        if (org.e2immu.analyser.util.Logger.isLogEnabled(org.e2immu.analyser.util.Logger.LogTarget.DELAYED)) {
-            new DelayDebugProcessor(streamNodes().toList()).process();
-        }
     }
 
     @Override
