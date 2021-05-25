@@ -833,7 +833,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 VariableInfo::getStaticallyAssignedVariables,
                 CONTEXT_NOT_NULL, groupPropertyValues.getMap(CONTEXT_NOT_NULL), EVALUATION, Set.of());
         assert cnnStatus == DONE || foundDelay(EVALUATION_OF_MAIN_EXPRESSION,
-                statementAnalysis.fullyQualifiedName() + ":" + CONTEXT_NOT_NULL.name());
+                statementAnalysis.fullyQualifiedName() + "." + CONTEXT_NOT_NULL.name());
         status = cnnStatus.combine(status);
 
         ContextPropertyWriter contextPropertyWriter2 = new ContextPropertyWriter();
@@ -842,7 +842,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 VariableInfo::getStaticallyAssignedVariables,
                 EXTERNAL_NOT_NULL, groupPropertyValues.getMap(EXTERNAL_NOT_NULL), EVALUATION, Set.of());
         assert ennStatus == DONE || foundDelay(EVALUATION_OF_MAIN_EXPRESSION,
-                statementAnalysis.fullyQualifiedName() + ":" + EXTERNAL_NOT_NULL.name());
+                statementAnalysis.fullyQualifiedName() + "." + EXTERNAL_NOT_NULL.name());
 
         potentiallyRaiseErrorsOnNotNullInContext(evaluationResult.changeData());
 
@@ -852,7 +852,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 VariableInfo::getStaticallyAssignedVariables,
                 EXTERNAL_IMMUTABLE, groupPropertyValues.getMap(EXTERNAL_IMMUTABLE), EVALUATION, Set.of());
         assert extImmStatus == DONE || foundDelay(EVALUATION_OF_MAIN_EXPRESSION,
-                statementAnalysis.fullyQualifiedName() + ":" + EXTERNAL_IMMUTABLE.name());
+                statementAnalysis.fullyQualifiedName() + "." + EXTERNAL_IMMUTABLE.name());
 
         addToMap(groupPropertyValues, CONTEXT_PROPAGATE_MOD, x -> Level.FALSE, true);
         // the delay for PM is ignored (if any, it will come from CM)
@@ -869,7 +869,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         if (cImmStatus != DONE) {
             log(DELAYED, "Context immutable causes delay in {} {}", index(), myMethodAnalyser.methodInfo.fullyQualifiedName);
             assert foundDelay(EVALUATION_OF_MAIN_EXPRESSION,
-                    statementAnalysis.fullyQualifiedName() + ":" + CONTEXT_IMMUTABLE.name());
+                    statementAnalysis.fullyQualifiedName() + "." + CONTEXT_IMMUTABLE.name());
         }
 
         addToMap(groupPropertyValues, CONTEXT_MODIFIED, x -> Level.FALSE, true);
@@ -1092,12 +1092,12 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
 
     There is no overlap between valueProps and variableProps
      */
-    private static Map<VariableProperty, Integer> mergeAssignment(Variable variable,
-                                                                  boolean valueIsDelayed,
-                                                                  Map<VariableProperty, Integer> valueProps,
-                                                                  Map<VariableProperty, Integer> variableProps,
-                                                                  Map<VariableProperty, Integer> changeData,
-                                                                  GroupPropertyValues groupPropertyValues) {
+    private Map<VariableProperty, Integer> mergeAssignment(Variable variable,
+                                                           boolean valueIsDelayed,
+                                                           Map<VariableProperty, Integer> valueProps,
+                                                           Map<VariableProperty, Integer> variableProps,
+                                                           Map<VariableProperty, Integer> changeData,
+                                                           GroupPropertyValues groupPropertyValues) {
         Map<VariableProperty, Integer> res = new HashMap<>(valueProps);
         variableProps.forEach(res::put);
         changeData.forEach(res::put);
@@ -1114,6 +1114,9 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         groupPropertyValues.set(EXTERNAL_IMMUTABLE, variable, extImm == null ? (valueIsDelayed ? Level.DELAY : MultiLevel.NOT_INVOLVED) : extImm);
         Integer cImm = res.remove(CONTEXT_IMMUTABLE);
         groupPropertyValues.set(CONTEXT_IMMUTABLE, variable, cImm == null ? MultiLevel.FALSE : cImm);
+
+        assert cImm == null || cImm != Level.DELAY || foundDelay("mergeAssignment",
+                variable.fullyQualifiedName() + "@" + index() + D_CONTEXT_IMMUTABLE);
         return res;
     }
 
@@ -1136,6 +1139,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                         if (changeData.getOrDefault(CONTEXT_IMMUTABLE_DELAY, Level.DELAY) != Level.TRUE && prev != Level.DELAY) {
                             yield Math.max(prev, change);
                         } else {
+                            assert foundDelay("mergePrevious",
+                                    variable.fullyQualifiedName() + "@" + index() + D_CONTEXT_IMMUTABLE);
                             yield Level.DELAY;
                         }
                     }
@@ -1537,13 +1542,18 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                     // especially in the case of forEach, the lvc.expression is empty, anyway
                     // an assignment may be difficult. The value is never used, only local copies are
 
+                    int defaultImmutable = lvr.parameterizedType().defaultImmutable(analyserContext);
+                    assert defaultImmutable != Level.DELAY ||
+                            translatedDelay(EVALUATION_OF_MAIN_EXPRESSION,
+                                    lvr.parameterizedType().fullyQualifiedName() + D_IMMUTABLE,
+                                    lvc.localVariable.name() + "@" + index() + D_CONTEXT_IMMUTABLE);
                     Map<VariableProperty, Integer> properties =
                             Map.of(CONTEXT_MODIFIED, Level.FALSE,
                                     CONTEXT_PROPAGATE_MOD, Level.FALSE,
                                     EXTERNAL_NOT_NULL, MultiLevel.NOT_INVOLVED,
                                     CONTEXT_NOT_NULL, lvr.parameterizedType().defaultNotNull(),
                                     EXTERNAL_IMMUTABLE, MultiLevel.NOT_INVOLVED,
-                                    CONTEXT_IMMUTABLE, lvr.parameterizedType().defaultImmutable(analyserContext));
+                                    CONTEXT_IMMUTABLE, defaultImmutable);
 
                     vic.setValue(NewObject.forCatchOrThis(index() + "-" + name,
                             statementAnalysis.primitives, lvr.parameterizedType()), false,
@@ -2517,6 +2527,11 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         }
 
         @Override
+        public String statementIndex() {
+            return statementAnalysis.index;
+        }
+
+        @Override
         public String newObjectIdentifier() {
             return index();
         }
@@ -2645,8 +2660,19 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 if (variableProperty == IMMUTABLE) {
                     int formally = ve.variable().parameterizedType().defaultImmutable(getAnalyserContext());
                     if (formally == IMMUTABLE.best) return formally; // EFFECTIVELY_E2, for primitives etc.
+                    if (inMap == Level.DELAY) {
+                        assert translatedDelay("getProperty",
+                                ve.variable().parameterizedType().fullyQualifiedName() + D_IMMUTABLE,
+                                ve.variable().fullyQualifiedName() + "@" + index() + D_IMMUTABLE);
+                        return Level.DELAY;
+                    }
                     int cImm = getVariableProperty(ve.variable(), CONTEXT_IMMUTABLE, duringEvaluation);
-                    if (cImm == Level.DELAY || inMap == Level.DELAY) return Level.DELAY;
+                    if (cImm == Level.DELAY) {
+                        assert translatedDelay("getProperty",
+                                ve.variable().fullyQualifiedName() + "@" + index() + D_CONTEXT_IMMUTABLE,
+                                ve.variable().fullyQualifiedName() + "@" + index() + D_IMMUTABLE);
+                        return Level.DELAY;
+                    }
                     return MultiLevel.bestImmutable(inMap, MultiLevel.bestImmutable(cImm, formally));
                 }
                 return inMap;

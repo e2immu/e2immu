@@ -30,11 +30,10 @@ public abstract class ParameterAnalyser extends AbstractAnalyser {
     public final ParameterInfo parameterInfo;
     public final ParameterAnalysisImpl.Builder parameterAnalysis;
 
-    ParameterAnalyser(AnalyserContext analyserContext, ParameterInfo parameterInfo, Analysis.AnalysisMode analysisMode) {
+    ParameterAnalyser(AnalyserContext analyserContext, ParameterInfo parameterInfo) {
         super("Parameter " + parameterInfo.fullyQualifiedName(), analyserContext);
         this.parameterInfo = parameterInfo;
-        parameterAnalysis = new ParameterAnalysisImpl.Builder(analysisMode,
-                analyserContext.getPrimitives(), analyserContext, parameterInfo);
+        parameterAnalysis = new ParameterAnalysisImpl.Builder(analyserContext.getPrimitives(), analyserContext, parameterInfo);
     }
 
     public ParameterAnalysis getParameterAnalysis() {

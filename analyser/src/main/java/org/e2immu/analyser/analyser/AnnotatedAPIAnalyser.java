@@ -173,7 +173,7 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
     private void analyseIsFact(MethodInfo methodInfo) {
         ParameterInfo parameterInfo = methodInfo.methodInspection.get().getParameters().get(0);
         ParameterAnalysisImpl.Builder parameterAnalysis = new ParameterAnalysisImpl.Builder(
-                Analysis.AnalysisMode.CONTRACTED, getPrimitives(), this, parameterInfo);
+              getPrimitives(), this, parameterInfo);
         parameterAnalysis.setProperty(VariableProperty.IDENTITY, Level.FALSE);
         parameterAnalysis.setProperty(VariableProperty.NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL);
         parameterAnalysis.setProperty(VariableProperty.CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
@@ -201,7 +201,7 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
     // dedicated method exactly for this "isKnown" method
     private void analyseIsKnown(MethodInfo methodInfo) {
         ParameterInfo parameterInfo = methodInfo.methodInspection.get().getParameters().get(0);
-        ParameterAnalysisImpl.Builder parameterAnalysis = new ParameterAnalysisImpl.Builder(Analysis.AnalysisMode.CONTRACTED,
+        ParameterAnalysisImpl.Builder parameterAnalysis = new ParameterAnalysisImpl.Builder(
                 getPrimitives(), this, parameterInfo);
         parameterAnalysis.setProperty(VariableProperty.IDENTITY, Level.FALSE);
         parameterAnalysis.setProperty(VariableProperty.NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL);

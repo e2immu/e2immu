@@ -177,9 +177,8 @@ public class ContextPropertyWriter {
                 valuesToSet.merge(vic, newValue, (v1, v2) -> v1 == Level.DELAY ? Level.DELAY : Math.max(v1, v2));
                 progress.set(true);
             } else {
-                assert statementAnalysis.translatedDelay(CONTEXT_PROPERTY_WRITER,
-                        vi.variable().fullyQualifiedName() + "@" + statementAnalysis.index + "." + variableProperty.name(),
-                        statementAnalysis.fullyQualifiedName() + "." + variableProperty.name());
+                assert statementAnalysis.foundDelay(CONTEXT_PROPERTY_WRITER,
+                        vi.variable().fullyQualifiedName() + "@" + statementAnalysis.index + "." + variableProperty.name());
                 valuesToSet.put(vic, Level.DELAY);
             }
         } else if (current < newValue && newValue != Level.DELAY) {

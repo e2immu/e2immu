@@ -23,6 +23,7 @@ public interface DelayDebugger {
 
     // common properties
     String D_IMMUTABLE = ".IMMUTABLE";
+    String D_CONTEXT_IMMUTABLE = ".CONTEXT_IMMUTABLE";
     String D_CONTEXT_MODIFIED = ".CONTEXT_MODIFIED";
     String D_EXTERNAL_IMMUTABLE = ".EXTERNAL_IMMUTABLE";
     String D_EXTERNAL_NOT_NULL = ".EXTERNAL_NOT_NULL";

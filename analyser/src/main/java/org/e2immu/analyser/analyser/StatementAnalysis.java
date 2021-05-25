@@ -487,6 +487,9 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                         int value = parameterAnalysis.getProperty(variableProperty);
                         if (value != Level.DELAY) {
                             vic.setProperty(variableProperty, value, INITIAL);
+                        } else {
+                            assert createDelay(StatementAnalyser.INITIALISE_OR_UPDATE_VARIABLES,
+                                    prevInitial.variable().fullyQualifiedName() + "@" + index + "." + variableProperty.name());
                         }
                     }
                 });
@@ -508,6 +511,9 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             int formalImmutable = variable.parameterizedType().defaultImmutable(analyserContext);
             if (formalImmutable != Level.DELAY) {
                 vic.setProperty(IMMUTABLE, formalImmutable, INITIAL);
+            } else {
+                assert createDelay(StatementAnalyser.INITIALISE_OR_UPDATE_VARIABLES,
+                        vi.variable().fullyQualifiedName() + "@" + index + "." + IMMUTABLE.name());
             }
         }
         // update @Independent
@@ -519,6 +525,9 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                 int independent = typeAnalysis.getProperty(VariableProperty.INDEPENDENT);
                 if (independent != Level.DELAY) {
                     vic.setProperty(VariableProperty.INDEPENDENT, independent, INITIAL);
+                } else {
+                    assert createDelay(StatementAnalyser.INITIALISE_OR_UPDATE_VARIABLES,
+                            vi.variable().fullyQualifiedName() + "@" + index + "." + INDEPENDENT.name());
                 }
             }
         }
@@ -528,7 +537,14 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         VariableInfo variableInfo = vic.current();
         if (!(variableInfo.variable() instanceof This thisVar)) return;
         Map<VariableProperty, Integer> map = typePropertyMap(evaluationContext.getAnalyserContext(), thisVar.typeInfo, false);
-        map.forEach((k, v) -> vic.setProperty(k, v, INITIAL));
+        map.forEach((k, v) -> {
+            if (v != Level.DELAY) {
+                vic.setProperty(k, v, INITIAL);
+            } else {
+                assert createDelay(StatementAnalyser.INITIALISE_OR_UPDATE_VARIABLES,
+                        variableInfo.variable().fullyQualifiedName() + "@" + index + "." + k.name());
+            }
+        });
     }
 
     private void fromFieldAnalyserIntoInitial(EvaluationContext evaluationContext, VariableInfoContainer vic) {

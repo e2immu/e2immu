@@ -175,7 +175,7 @@ public abstract class CommonAbstractValue {
         methodBuilder.setReturnType(PRIMITIVES.stringParameterizedType).addParameter(pi);
         MethodInfo methodInfo = methodBuilder.build(InspectionProvider.DEFAULT).getMethodInfo();
         ParameterInfo p0 = methodInfo.methodInspection.get().getParameters().get(0);
-        p0.setAnalysis(new ParameterAnalysisImpl.Builder(Analysis.AnalysisMode.CONTRACTED, PRIMITIVES, null, p0));
+        p0.setAnalysis(new ParameterAnalysisImpl.Builder(PRIMITIVES, null, p0));
 
         someType.typeInspection.set(new TypeInspectionImpl.Builder(someType, BY_HAND)
                 .noParent(PRIMITIVES)

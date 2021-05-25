@@ -8,10 +8,10 @@ import java.util.Map;
 
 public class MethodAnalyserFactory {
     public static MethodAnalyser create(MethodInfo methodInfo,
-                                          TypeAnalysis typeAnalysis,
-                                          boolean isSAM,
-                                          boolean allowComputed,
-                                          AnalyserContext analyserContextInput) {
+                                        TypeAnalysis typeAnalysis,
+                                        boolean isSAM,
+                                        boolean allowComputed,
+                                        AnalyserContext analyserContextInput) {
         TypeInspection typeInspection = analyserContextInput.getTypeInspection(methodInfo.typeInfo);
         TypeResolution typeResolution = methodInfo.typeInfo.typeResolution.get();
         MethodInspection methodInspection = methodInfo.methodInspection.get();
@@ -52,8 +52,7 @@ public class MethodAnalyserFactory {
         MethodInspection methodInspection = methodInfo.methodInspection.get();
         List<ParameterAnalysis> parameterAnalyses = methodInspection.getParameters().stream()
                 .map(parameterInfo -> (ParameterAnalysis) new ParameterAnalysisImpl
-                        .Builder(Analysis.AnalysisMode.CONTRACTED, analyserContext.getPrimitives(),
-                        analyserContext, parameterInfo))
+                        .Builder(analyserContext.getPrimitives(), analyserContext, parameterInfo))
                 .toList();
         MethodAnalysisImpl.Builder methodAnalysis = new MethodAnalysisImpl.Builder(Analysis.AnalysisMode.CONTRACTED,
                 analyserContext.getPrimitives(), analyserContext, analyserContext,
@@ -64,7 +63,7 @@ public class MethodAnalyserFactory {
     private static Analysis.AnalysisMode computeAnalysisMode(MethodInspection methodInspection,
                                                              TypeInspection typeInspection,
                                                              TypeResolution typeResolution, boolean allowComputed) {
-        boolean isAbstract = (typeInspection.isInterface()  || typeInspection.isAnnotation()) &&
+        boolean isAbstract = (typeInspection.isInterface() || typeInspection.isAnnotation()) &&
                 !methodInspection.isDefault() && !methodInspection.isStatic() ||
                 methodInspection.isAbstract();
         if (isAbstract) {

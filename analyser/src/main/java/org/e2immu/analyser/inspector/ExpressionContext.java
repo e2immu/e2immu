@@ -733,6 +733,11 @@ public class ExpressionContext {
             }
             // new switch expression isn't there yet in JavaParser...
 
+            if(expression.isTextBlockLiteralExpr()) {
+                TextBlockLiteralExpr textBlock = expression.asTextBlockLiteralExpr();
+                return new StringConstant(typeContext.getPrimitives(), textBlock.stripIndent());
+            }
+
             throw new UnsupportedOperationException("Unknown expression type " + expression +
                     " class " + expression.getClass() + " at " + expression.getBegin());
         } catch (RuntimeException rte) {

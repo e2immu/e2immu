@@ -47,7 +47,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyser {
     private Map<FieldInfo, FieldAnalyser> fieldAnalysers;
 
     public ComputedParameterAnalyser(AnalyserContext analyserContext, ParameterInfo parameterInfo) {
-        super(analyserContext, parameterInfo, Analysis.AnalysisMode.COMPUTED);
+        super(analyserContext, parameterInfo);
     }
 
     @Override

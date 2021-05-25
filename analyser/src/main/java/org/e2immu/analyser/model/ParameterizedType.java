@@ -893,4 +893,9 @@ public class ParameterizedType {
         TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(bestType);
         return typeAnalysis.getProperty(VariableProperty.IMMUTABLE);
     }
+
+    // for delay debugging
+    public String fullyQualifiedName() {
+        return detailedString();
+    }
 }

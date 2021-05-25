@@ -69,19 +69,16 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
 
     public static class Builder extends AbstractAnalysisBuilder implements ParameterAnalysis {
         private final ParameterInfo parameterInfo;
-        private final AnalysisMode analysisMode;
         private final SetOnceMap<FieldInfo, AssignedOrLinked> assignedToField = new SetOnceMap<>();
         private final FlipSwitch delaysOnFieldsResolved = new FlipSwitch();
         public final Location location;
         private final AnalysisProvider analysisProvider;
 
-        public Builder(AnalysisMode analysisMode,
-                       Primitives primitives, AnalysisProvider analysisProvider, ParameterInfo parameterInfo) {
+        public Builder(Primitives primitives, AnalysisProvider analysisProvider, ParameterInfo parameterInfo) {
             super(primitives, parameterInfo.simpleName());
             this.parameterInfo = parameterInfo;
             this.location = new Location(parameterInfo);
             this.analysisProvider = analysisProvider;
-            this.analysisMode = analysisMode;
         }
 
         public ParameterInfo getParameterInfo() {

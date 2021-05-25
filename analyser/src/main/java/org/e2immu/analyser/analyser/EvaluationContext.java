@@ -304,4 +304,6 @@ public interface EvaluationContext extends DelayDebugger {
     default MethodInfo concreteMethod(Variable variable, MethodInfo methodInfo) {
         return null;
     }
+
+    default String statementIndex() { return "-"; }
 }

@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.analyser;
 
+import org.e2immu.analyser.analyser.util.DelayDebugger;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.variable.FieldReference;
@@ -452,6 +453,9 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                 }
             }
             // everything proceeds as normal
+            assert evaluationContext == null || nextImmutable != Level.DELAY ||
+                    evaluationContext.createDelay("variableOccursInContext",
+                            variable.fullyQualifiedName() + "@" + evaluationContext.statementIndex() + DelayDebugger.D_CONTEXT_IMMUTABLE);
             setProperty(variable, VariableProperty.CONTEXT_IMMUTABLE, nextImmutable);
         }
 

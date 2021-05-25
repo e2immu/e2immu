@@ -37,14 +37,16 @@ public class DelayDebugProcessor {
     private void printTree() {
         log(DELAYED, "*********** start delay tree ************");
         for (DelayDebugNode node : byLabel.values()) {
-            printTree(0, node);
+            if (node.nodeType != DelayDebugNode.NodeType.CREATE || node.hasChildren()) {
+                printTree(0, node);
+            }
         }
         log(DELAYED, "*********** end   delay tree ************");
     }
 
     private void printTree(int indent, DelayDebugNode node) {
         String indentation = " ".repeat(indent);
-        log(DELAYED, "{} {} {} {} {} ", indentation, node.time, node.nodeType, clean(node.label),
+        log(DELAYED, "{}{} {} {} {} ", indentation, node.time, node.nodeType, clean(node.label),
                 clean(node.where));
         node.children().forEach(child -> printTree(indent + 2, child));
     }
@@ -54,8 +56,8 @@ public class DelayDebugProcessor {
     }
 
     private void addNode(DelayDebugNode node) {
-        log(DELAYED, "Node {} {} {} {} ", node.time, node.nodeType, clean(node.label),
-                clean(node.where));
+        log(DELAYED, "Node {} {} {} {} {}", node.time, node.nodeType, clean(node.label),
+                clean(node.where), clean(node.children().map(c -> "-->" + c.time + " " + c.label).findFirst().orElse("")));
 
         DelayDebugNode inMap = byLabel.getOrDefault(node.label, null);
         if (node.nodeType == DelayDebugNode.NodeType.CREATE) {
@@ -69,6 +71,7 @@ public class DelayDebugProcessor {
             if (inMap == null) {
                 creationMissing.add(node.label);
                 parent = new DelayDebugNode(-1, DelayDebugNode.NodeType.CREATE, node.label, "???");
+                byLabel.put(parent.label, parent);
             } else {
                 parent = inMap;
             }

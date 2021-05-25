@@ -7,9 +7,8 @@ import java.util.stream.Stream;
 
 public class AggregatingParameterAnalyser extends ParameterAnalyser {
 
-
     public AggregatingParameterAnalyser(AnalyserContext analyserContext, ParameterInfo parameterInfo) {
-        super(analyserContext, parameterInfo, Analysis.AnalysisMode.AGGREGATED);
+        super(analyserContext, parameterInfo);
     }
 
     @Override

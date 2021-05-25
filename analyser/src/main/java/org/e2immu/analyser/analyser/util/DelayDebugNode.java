@@ -13,16 +13,17 @@ public class DelayDebugNode implements Comparable<DelayDebugNode> {
         return time - o.time;
     }
 
-    public enum NodeType {
-        CREATE, FOUND, TRANSLATE
-    }
 
+
+    public enum NodeType {
+        CREATE, FOUND, TRANSLATE;
+    }
     public final int time;
+
     public final String where;
     public final NodeType nodeType;
     public final String label;
     private final List<DelayDebugNode> children = new ArrayList<>();
-
     public DelayDebugNode(int time, NodeType nodeType, String label, String where) {
         this.label = label;
         this.nodeType = nodeType;
@@ -36,6 +37,10 @@ public class DelayDebugNode implements Comparable<DelayDebugNode> {
 
     public Stream<DelayDebugNode> children() {
         return children.stream();
+    }
+
+    public boolean hasChildren() {
+        return !children.isEmpty();
     }
 
     public void sortRecursively() {
