@@ -78,7 +78,7 @@ public class TryStatement extends StatementWithStructure {
         return new TryStatement(resources.stream().map(translationMap::translateExpression).collect(Collectors.toList()),
                 translationMap.translateBlock(structure.block()),
                 catchClauses.stream().map(p -> new Pair<>(
-                        TranslationMap.ensureExpressionType(p.k.translate(translationMap), CatchParameter.class),
+                        TranslationMapImpl.ensureExpressionType(p.k.translate(translationMap), CatchParameter.class),
                         translationMap.translateBlock(p.v))).collect(Collectors.toList()),
                 translationMap.translateBlock(finallyBlock));
     }

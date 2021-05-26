@@ -256,7 +256,7 @@ public class Filter {
                     lvr.variable.isLocalCopyOf() instanceof FieldReference fieldReference &&
                     acceptScope(fieldReference.scope)) {
                 return new FieldReferenceAndTranslationMap(fieldReference,
-                        new TranslationMap.TranslationMapBuilder().put(lvr, fieldReference).build());
+                        new TranslationMapImpl.Builder().put(lvr, fieldReference).build());
             }
         }
         return null;

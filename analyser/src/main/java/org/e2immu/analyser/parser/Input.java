@@ -70,11 +70,17 @@ public record Input(Configuration configuration,
         ByteCodeInspector byteCodeInspector = new ByteCodeInspector(classPath, annotationStore, globalTypeContext);
         globalTypeContext.typeMapBuilder.setByteCodeInspector(byteCodeInspector);
         globalTypeContext.loadPrimitives();
-
         for (String packageName : new String[]{"org.e2immu.annotation", "java.lang", "java.util.function"}) {
             preload(globalTypeContext, byteCodeInspector, classPath, packageName); // needed for our own stuff
         }
 
+        return createNext(configuration, classPath, globalTypeContext, byteCodeInspector);
+    }
+
+    public static Input createNext(Configuration configuration,
+                                   Resources classPath,
+                                   TypeContext globalTypeContext,
+                                   ByteCodeInspector byteCodeInspector) throws IOException {
         Resources sourcePath = assemblePath(configuration, false, "Source path",
                 configuration.inputConfiguration().sources());
         Trie<TypeInfo> sourceTypes = new Trie<>();

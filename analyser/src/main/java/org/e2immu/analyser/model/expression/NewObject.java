@@ -291,7 +291,7 @@ public record NewObject(
                 parameterExpressions.stream().map(translationMap::translateExpression).collect(Collectors.toList()),
                 minimalNotNull,
                 anonymousClass, // not translating this yet!
-                arrayInitializer == null ? null : TranslationMap.ensureExpressionType(arrayInitializer, ArrayInitializer.class),
+                arrayInitializer == null ? null : TranslationMapImpl.ensureExpressionType(arrayInitializer, ArrayInitializer.class),
                 state);
     }
 
@@ -567,7 +567,7 @@ public record NewObject(
         if (state.isBooleanConstant()) return state;
         // the "this" in the state can belong to the type of the object, or any of its super types
         This thisVar = findThis();
-        return state.translate(new TranslationMap.TranslationMapBuilder().put(thisVar, fieldReference).build());
+        return state.translate(new TranslationMapImpl.Builder().put(thisVar, fieldReference).build());
     }
 
     private This findThis() {

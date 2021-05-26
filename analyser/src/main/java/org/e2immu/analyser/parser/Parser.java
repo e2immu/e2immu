@@ -60,6 +60,12 @@ public class Parser {
         input = Input.create(configuration);
     }
 
+    public Parser(Configuration newConfiguration, Parser previousParser) throws IOException {
+        this.configuration = newConfiguration;
+        this.input = Input.createNext(newConfiguration, previousParser.input.classPath(),
+                previousParser.input.globalTypeContext(), previousParser.input.byteCodeInspector());
+    }
+
     public record RunResult(List<SortedType> annotatedAPISortedTypes,
                             List<SortedType> sourceSortedTypes,
                             TypeMap typeMap) {
@@ -91,12 +97,16 @@ public class Parser {
         // and the the inspection and resolution of Java sources (Java parser)
         List<SortedType> resolvedSourceTypes = inspectAndResolve(input.sourceURLs(), input.sourceTypes(), true, false);
 
-        // creating the typeMap ensures that all inspections and resolutions are set.
-        TypeMap typeMap = input.globalTypeContext().typeMapBuilder.build();
+        TypeMap typeMap;
 
         // finally, there is an analysis step
 
-        if (!configuration.skipAnalysis()) {
+        if (configuration.skipAnalysis()) {
+            // do not build yet, others may want to continue
+            typeMap = input.globalTypeContext().typeMapBuilder;
+        } else {
+            // creating the typeMap ensures that all inspections and resolutions are set.
+            typeMap = input.globalTypeContext().typeMapBuilder.build();
             // we pass on the Java sources for the PrimaryTypeAnalyser, while all other loaded types
             // will be sent to the ShallowAnalyser
             runShallowAnalyser(typeMap, sortedAnnotatedAPITypes, resolvedSourceTypes);

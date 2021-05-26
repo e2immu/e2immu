@@ -78,7 +78,7 @@ public class MethodCallIncompatibleWithPrecondition {
     }
 
     private static Expression normaliseMethods(EvaluationContext evaluationContext, Expression expression) {
-        TranslationMap.TranslationMapBuilder builder = new TranslationMap.TranslationMapBuilder();
+        TranslationMapImpl.Builder builder = new TranslationMapImpl.Builder();
         expression.visit(e -> {
             if (e instanceof MethodCall methodCall && !builder.translateMethod(methodCall.methodInfo)) {
                 MethodAnalysis methodAnalysis = evaluationContext.getAnalyserContext().getMethodAnalysis(methodCall.methodInfo);
@@ -98,7 +98,7 @@ public class MethodCallIncompatibleWithPrecondition {
     set.isEmpty() => we add 0==set.size()
      */
     private static Expression replaceByAspectsWherePossible(EvaluationContext evaluationContext, Expression expression) {
-        TranslationMap.TranslationMapBuilder builder = new TranslationMap.TranslationMapBuilder();
+        TranslationMapImpl.Builder builder = new TranslationMapImpl.Builder();
 
         expression.visit(e -> {
             VariableExpression ve;
@@ -116,7 +116,7 @@ public class MethodCallIncompatibleWithPrecondition {
                             TypeAnalysis typeAnalysis = evaluationContext.getAnalyserContext().getTypeAnalysis(methodCall.methodInfo.typeInfo);
                             MethodInfo aspectMethod = typeAnalysis.getAspects().get(companionMethodName.aspect());
                             This thisVar = new This(InspectionProvider.DEFAULT, aspectMethod.typeInfo);
-                            TranslationMap translationMap = new TranslationMap.TranslationMapBuilder()
+                            TranslationMap translationMap = new TranslationMapImpl.Builder()
                                     .put(thisVar, ve.variable()).build();
                             Expression translated = value.translate(translationMap);
                             builder.put(e, translated);
@@ -148,7 +148,7 @@ public class MethodCallIncompatibleWithPrecondition {
                         Expression invariant = companionAnalysis.getValue();
                         log(COMPANION, "Found invariant expression {} for method call", invariant);
 
-                        TranslationMap translationMap = new TranslationMap.TranslationMapBuilder()
+                        TranslationMap translationMap = new TranslationMapImpl.Builder()
                                 .put(new This(InspectionProvider.DEFAULT, aspectMain.typeInfo), ve.variable()).build();
                         Expression translated = invariant.translate(translationMap);
                         additionalComponents.add(translated);

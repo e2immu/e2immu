@@ -50,9 +50,9 @@ public record VariableExpression(Variable variable, String name) implements Expr
 
     @Override
     public Expression translate(TranslationMap translationMap) {
-        Variable inMap = translationMap.variables.get(variable);
-        if (inMap != null) {
-            return new VariableExpression(inMap);
+        Variable translated = translationMap.translateVariable(variable);
+        if (translated != variable) {
+            return new VariableExpression(translated);
         }
         return this;
     }

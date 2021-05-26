@@ -633,7 +633,7 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
     replace local copies of fields to fields
      */
     private Expression replaceFields(EvaluationContext evaluationContext, Expression value) {
-        TranslationMap.TranslationMapBuilder builder = new TranslationMap.TranslationMapBuilder();
+        TranslationMapImpl.Builder builder = new TranslationMapImpl.Builder();
         boolean change = false;
         for (Variable variable : value.variables()) {
             if (variable instanceof LocalVariableReference lvr) {

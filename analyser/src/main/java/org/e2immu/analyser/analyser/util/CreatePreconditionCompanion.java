@@ -24,13 +24,11 @@ import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.analyser.model.variable.This;
-import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.InspectionProvider;
 
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Collectors;
 
 public record CreatePreconditionCompanion(InspectionProvider inspectionProvider, AnalysisProvider analysisProvider) {
 
@@ -77,12 +75,10 @@ public record CreatePreconditionCompanion(InspectionProvider inspectionProvider,
         if (aspect != null) {
             MethodInfo aspectMethod = analysisProvider.getTypeAnalysis(mainInspection.getMethodInfo().typeInfo).getAspects().get(aspect);
             MethodCall methodCall = aspectCall(aspectMethod);
-            Map<Expression, Expression> expressionMap = Map.of(methodCall, new VariableExpression(newParameters.get(0)));
-            Map<Variable, Variable> variableMap = mainInspection.getParameters().stream().collect(Collectors.toMap(pi -> pi, pi ->
-                    newParameters.get(pi.index + 1)));
-            TranslationMap translationMap = new TranslationMap(Map.of(), expressionMap, variableMap, Map.of(), Map.of());
-
-            return value.translate(translationMap);
+            TranslationMapImpl.Builder builder = new TranslationMapImpl.Builder()
+                    .put(methodCall, new VariableExpression(newParameters.get(0)));
+            mainInspection.getParameters().forEach(pi -> builder.put(pi, newParameters.get(pi.index + 1)));
+            return value.translate(builder.build());
         }
         return value; // TODO
     }
