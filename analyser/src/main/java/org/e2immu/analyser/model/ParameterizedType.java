@@ -266,7 +266,7 @@ public class ParameterizedType {
     }
 
     public boolean allowsForOperators() {
-        if (Primitives.isVoid(this)) return false;
+        if (Primitives.isVoidOrJavaLangVoid(this)) return false;
         if (typeInfo == null) return false;
         return Primitives.isPrimitiveExcludingVoid(typeInfo)
                 || Primitives.isBoxedExcludingVoid(typeInfo)

@@ -132,19 +132,24 @@ public class PrimaryTypeAnalyser implements AnalyserContext, Analyser, HoldsAnal
         List<Analyser> allAnalysers = sortedTypes.stream().flatMap(sortedType ->
                 sortedType.methodsFieldsSubTypes().stream().flatMap(mfs -> {
                     Analyser analyser;
-                    if (mfs instanceof FieldInfo fieldInfo && !fieldInfo.fieldAnalysis.isSet()) {
-                        MethodAnalyser samAnalyser;
-                        if (fieldInfo.fieldInspection.get().fieldInitialiserIsSet()) {
-                            FieldInspection.FieldInitialiser fieldInitialiser = fieldInfo.fieldInspection.get().getFieldInitialiser();
-                            MethodInfo sam = fieldInitialiser.implementationOfSingleAbstractMethod();
-                            if (sam != null) {
-                                samAnalyser = Objects.requireNonNull(methodAnalysers.get(sam),
-                                        "No method analyser for " + sam.fullyQualifiedName);
+                    if (mfs instanceof FieldInfo fieldInfo) {
+                        if (!fieldInfo.fieldAnalysis.isSet()) {
+                            MethodAnalyser samAnalyser;
+                            if (fieldInfo.fieldInspection.get().fieldInitialiserIsSet()) {
+                                FieldInspection.FieldInitialiser fieldInitialiser = fieldInfo.fieldInspection.get().getFieldInitialiser();
+                                MethodInfo sam = fieldInitialiser.implementationOfSingleAbstractMethod();
+                                if (sam != null) {
+                                    samAnalyser = Objects.requireNonNull(methodAnalysers.get(sam),
+                                            "No method analyser for " + sam.fullyQualifiedName);
+                                } else samAnalyser = null;
                             } else samAnalyser = null;
-                        } else samAnalyser = null;
-                        TypeAnalysis ownerTypeAnalysis = typeAnalysers.get(fieldInfo.owner).typeAnalysis;
-                        analyser = new FieldAnalyser(fieldInfo, sortedType.primaryType(), ownerTypeAnalysis, samAnalyser, this);
-                        fieldAnalysersBuilder.put(fieldInfo, (FieldAnalyser) analyser);
+                            TypeAnalysis ownerTypeAnalysis = typeAnalysers.get(fieldInfo.owner).typeAnalysis;
+                            analyser = new FieldAnalyser(fieldInfo, sortedType.primaryType(), ownerTypeAnalysis, samAnalyser, this);
+                            fieldAnalysersBuilder.put(fieldInfo, (FieldAnalyser) analyser);
+                        } else {
+                            analyser = null;
+                            log(PRIMARY_TYPE_ANALYSER, "Ignoring field {}, already has analysis", fieldInfo.fullyQualifiedName());
+                        }
                     } else if (mfs instanceof MethodInfo) {
                         analyser = methodAnalysers.get(mfs);
                     } else if (mfs instanceof TypeInfo) {

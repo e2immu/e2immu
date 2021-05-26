@@ -148,6 +148,11 @@ public record PropertyWrapper(Expression expression,
 
     @Override
     public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty, boolean duringEvaluation) {
+        if (castType != null && (
+                variableProperty == VariableProperty.IMMUTABLE || variableProperty == VariableProperty.CONTAINER ||
+                        variableProperty == VariableProperty.INDEPENDENT)) {
+            return castType.getProperty(evaluationContext.getAnalyserContext(), variableProperty);
+        }
         int inMap = properties.getOrDefault(variableProperty, Level.DELAY);
         if (inMap != Level.DELAY) return inMap;
         return evaluationContext.getProperty(expression, variableProperty, duringEvaluation, false);

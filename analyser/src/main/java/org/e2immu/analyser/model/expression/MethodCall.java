@@ -531,6 +531,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         VariableExpression variableExpression;
         if ((variableExpression = objectValue.asInstanceOf(VariableExpression.class)) != null) {
             newObject = builder.currentInstance(variableExpression.variable());
+            if(newObject == null) return null; // DELAY
         } else if (objectValue instanceof TypeExpression) {
             assert methodInfo.methodInspection.get().isStatic();
             return null; // static method
@@ -539,7 +540,8 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         } else {
             newObject = objectValue.getInstance(builder.build());
         }
-        Objects.requireNonNull(newObject, "Modifying method on constant or primitive? Impossible: " + objectValue.getClass());
+        Objects.requireNonNull(newObject, "Modifying method on constant or primitive? Impossible: " + objectValue.getClass()
+                + " call to " + methodInfo.name);
 
         if (evaluationContext.isDelayed(newObject.state())) return null; // DELAY
 
@@ -798,7 +800,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
         // RULE 1: void method cannot link
         ParameterizedType returnType = methodInfo.returnType();
-        if (Primitives.isVoid(returnType)) return LinkedVariables.EMPTY; // no assignment
+        if (Primitives.isVoidOrJavaLangVoid(returnType)) return LinkedVariables.EMPTY; // no assignment
 
         MethodAnalysis methodAnalysis = evaluationContext.getAnalyserContext().getMethodAnalysis(methodInfo);
 

@@ -78,6 +78,10 @@ public interface TypeInspection extends Inspection {
         return typeNature() == TypeNature.ANNOTATION;
     }
 
+    default boolean importedStatically() {
+        return typeNature() != TypeNature.CLASS || isStatic();
+    }
+
     enum Methods {
 
         THIS_TYPE_ONLY(false, null),

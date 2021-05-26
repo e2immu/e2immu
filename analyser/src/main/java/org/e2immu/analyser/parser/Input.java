@@ -101,15 +101,17 @@ public record Input(Configuration configuration,
         AtomicInteger ignored = new AtomicInteger();
         sourcePath.visit(new String[0], (parts, list) -> {
             if (parts.length >= 1) {
-                String name = parts[parts.length - 1];
+                int n = parts.length - 1;
+                String name = parts[n];
                 if (name.endsWith(".java")) {
                     String typeName = name.substring(0, name.length() - 5);
-                    String packageName = Arrays.stream(parts).limit(parts.length - 1).collect(Collectors.joining("."));
+                    String packageName = Arrays.stream(parts).limit(n).collect(Collectors.joining("."));
                     if (acceptSource(packageName, typeName, restrictions)) {
                         TypeInfo typeInfo = new TypeInfo(packageName, typeName);
                         globalTypeContext.typeMapBuilder.add(typeInfo, TRIGGER_JAVA_PARSER);
                         URL url = list.get(0);
                         sourceURLs.put(typeInfo, url);
+                        parts[n] = typeName;
                         trie.add(parts, typeInfo);
                     } else {
                         ignored.incrementAndGet();

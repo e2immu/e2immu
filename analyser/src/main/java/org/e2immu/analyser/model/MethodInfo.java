@@ -224,7 +224,7 @@ public class MethodInfo implements WithInspectionAndAnalysis {
     }
 
     public boolean isVoid() {
-        return Primitives.isVoid(returnType());
+        return Primitives.isVoidOrJavaLangVoid(returnType());
     }
 
     public boolean isSynchronized() {

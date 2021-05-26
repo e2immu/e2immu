@@ -300,7 +300,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
                 doImmutableContainer(e2ImmuAnnotationExpressions, dynamicallyImmutable, true);
             }
 
-            if (Primitives.isVoid(returnType)) return;
+            if (Primitives.isVoidOrJavaLangVoid(returnType)) return;
 
             // @Identity
             if (getProperty(VariableProperty.IDENTITY) == Level.TRUE) {
@@ -323,7 +323,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
         }
 
         private boolean allowIndependentOnMethod() {
-            return !Primitives.isVoid(returnType) &&
+            return !Primitives.isVoidOrJavaLangVoid(returnType) &&
                     returnType.isImplicitlyOrAtLeastEventuallyE2Immutable(analysisProvider, methodInfo.typeInfo) != Boolean.TRUE;
         }
 

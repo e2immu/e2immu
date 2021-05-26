@@ -164,6 +164,10 @@ public class Primitives {
     }
 
     public static boolean isVoid(ParameterizedType parameterizedType) {
+        return parameterizedType.typeInfo != null && isVoid(parameterizedType.typeInfo);
+    }
+
+    public static boolean isVoidOrJavaLangVoid(ParameterizedType parameterizedType) {
         return parameterizedType.typeInfo != null && (isJavaLangVoid(parameterizedType.typeInfo) || isVoid(parameterizedType.typeInfo));
     }
 
@@ -275,7 +279,7 @@ public class Primitives {
     public final MethodInfo assignDivideOperatorInt = createOperator(intTypeInfo, "/=", List.of(intParameterizedType), intParameterizedType);
     public final MethodInfo assignOrOperatorInt = createOperator(intTypeInfo, "|=", List.of(intParameterizedType), intParameterizedType);
     public final MethodInfo assignAndOperatorInt = createOperator(intTypeInfo, "&=", List.of(intParameterizedType), intParameterizedType);
-    
+
     // TODO long instead of int to distinguish statically (isPostfix) This is a hack!
     public final MethodInfo postfixIncrementOperatorInt = createOperator(intTypeInfo, "++", List.of(), longParameterizedType);
     public final MethodInfo prefixIncrementOperatorInt = createOperator(intTypeInfo, "++", List.of(), intParameterizedType);

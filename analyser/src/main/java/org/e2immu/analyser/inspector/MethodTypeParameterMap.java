@@ -172,7 +172,8 @@ public class MethodTypeParameterMap {
             i++;
         }
         // TODO
-        return Primitives.isVoid(methodInspection.getReturnType()) == Primitives.isVoid(other.methodInspection.getReturnType());
+        return Primitives.isVoidOrJavaLangVoid(methodInspection.getReturnType()) ==
+                Primitives.isVoidOrJavaLangVoid(other.methodInspection.getReturnType());
     }
 
     // used in TypeInfo.convertMethodReferenceIntoLambda

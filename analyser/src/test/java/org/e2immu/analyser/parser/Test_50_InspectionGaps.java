@@ -84,7 +84,7 @@ public class Test_50_InspectionGaps extends CommonTestRunner {
                 .build());
     }
 
-    // FIXME the output of this test is not good enough (though correct!)
+    // IMPROVE the output of this test is not good enough (though correct!)
     @Test
     public void test_3() throws IOException {
         testClass("InspectionGaps_3", 2, 0, new DebugConfiguration.Builder()
@@ -180,6 +180,24 @@ public class Test_50_InspectionGaps extends CommonTestRunner {
                 new DebugConfiguration.Builder()
                         .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                         .build(),
+                new AnalyserConfiguration.Builder().build(),
+                new AnnotatedAPIConfiguration.Builder().build());
+    }
+
+    // import type fqn;
+    @Test
+    public void test_12() throws IOException {
+        testClass(List.of("InspectionGaps_12", "a.TypeWithStaticSubType"), 0, 0,
+                new DebugConfiguration.Builder().build(),
+                new AnalyserConfiguration.Builder().build(),
+                new AnnotatedAPIConfiguration.Builder().build());
+    }
+
+    // import static type fqn.*
+    @Test
+    public void test_13() throws IOException {
+        testClass(List.of("InspectionGaps_13", "a.TypeWithStaticSubType"), 0, 0,
+                new DebugConfiguration.Builder().build(),
                 new AnalyserConfiguration.Builder().build(),
                 new AnnotatedAPIConfiguration.Builder().build());
     }

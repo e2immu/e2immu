@@ -475,7 +475,7 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
         }
 
         public boolean isVoid() {
-            return Primitives.isVoid(returnType);
+            return Primitives.isVoidOrJavaLangVoid(returnType);
         }
     }
 }

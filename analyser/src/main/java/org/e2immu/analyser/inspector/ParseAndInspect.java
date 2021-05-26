@@ -31,6 +31,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import static org.e2immu.analyser.inspector.TypeInspectionImpl.InspectionState.TRIGGER_BYTECODE_INSPECTION;
 import static org.e2immu.analyser.inspector.TypeInspectionImpl.InspectionState.TRIGGER_JAVA_PARSER;
@@ -147,13 +148,28 @@ public record ParseAndInspect(Resources classPath,
                     TypeInfo typeInfo = importTypeNoSubTypes(fullyQualified);
                     log(INSPECTOR, "Add import static wildcard {}", typeInfo.fullyQualifiedName);
                     typeContextOfFile.addImportStaticWildcard(typeInfo);
+                    // also, import the static sub-types
+                    TypeInspection inspection = typeContextOfFile.getTypeInspection(typeInfo);
+                    if (inspection != null) {
+                        inspection.subTypes()
+                                .stream().filter(st -> typeContextOfFile.getTypeInspection(st).importedStatically())
+                                .forEach(st -> typeContextOfFile.addToContext(st, true));
+                    }
                 } else {
                     int dot = fullyQualified.lastIndexOf('.');
                     String typeName = fullyQualified.substring(0, dot);
                     String member = fullyQualified.substring(dot + 1);
                     TypeInfo typeInfo = importTypeNoSubTypes(typeName);
-                    log(INSPECTOR, "Add import static member {} on class {}", typeName, member);
-                    typeContextOfFile.addImportStatic(typeInfo, member);
+                    TypeInspection inspection = typeContextOfFile.getTypeInspection(typeInfo);
+                    Optional<TypeInfo> subType = inspection.subTypes().stream()
+                            .filter(st -> st.simpleName.equals(member))
+                            .findFirst();
+                    if (subType.isPresent()) {
+                        typeContextOfFile.addToContext(subType.get(), true);
+                    } else {
+                        log(INSPECTOR, "Add import static member {} on class {}", typeName, member);
+                        typeContextOfFile.addImportStatic(typeInfo, member);
+                    }
                 }
             } else {
                 // types
@@ -161,13 +177,21 @@ public record ParseAndInspect(Resources classPath,
                     // lower priority names (so allowOverwrite = false)
                     log(INSPECTOR, "Need to parse folder {}", fullyQualified);
                     if (!fullyQualified.equals(packageName)) { // would be our own package; they are already there
-                        sourceTypes.visit(fullyQualified.split("\\."), (expansion, typeInfoList) -> {
-                            for (TypeInfo typeInfo : typeInfoList) {
-                                if (typeInfo.fullyQualifiedName.equals(fullyQualified + "." + typeInfo.simpleName)) {
-                                    typeContextOfFile.addToContext(typeInfo, false);
+                        // we either have a type, a sub-type, or a package
+                        String[] fullyQualifiedSplit = fullyQualified.split("\\.");
+                        TypeInfo inSourceTypes = TypeMapImpl.fromTrie(sourceTypes, fullyQualifiedSplit);
+                        if (inSourceTypes != null) {
+                            importSubTypesIn(typeContextOfFile, inSourceTypes, fullyQualified);
+                        } else {
+                            // deal with package
+                            sourceTypes.visit(fullyQualified.split("\\."), (expansion, typeInfoList) -> {
+                                for (TypeInfo typeInfo : typeInfoList) {
+                                    if (typeInfo.fullyQualifiedName.equals(fullyQualified + "." + typeInfo.simpleName)) {
+                                        typeContextOfFile.addToContext(typeInfo, false);
+                                    }
                                 }
-                            }
-                        });
+                            });
+                        }
                         classPath.expandLeaves(fullyQualified, ".class", (expansion, urls) -> {
                             String leaf = expansion[expansion.length - 1];
                             if (!leaf.contains("$")) {
@@ -196,6 +220,20 @@ public record ParseAndInspect(Resources classPath,
         }
     }
 
+    private void importSubTypesIn(TypeContext typeContext, TypeInfo typeInfo, String startingFrom) {
+        log(INSPECTOR, "Importing sub-types of {}, starting from {}", startingFrom, typeInfo.fullyQualifiedName);
+        TypeInspection inspection = typeMapBuilder.getTypeInspection(typeInfo);
+        if (inspection != null) {
+            if (typeInfo.fullyQualifiedName.equals(startingFrom)) {
+                inspection.subTypes().forEach(st -> typeContext.addToContext(st, true));
+            } else {
+                // recursive call
+                inspection.subTypes().stream().filter(st -> startingFrom.startsWith(st.fullyQualifiedName))
+                        .forEach(st -> importSubTypesIn(typeContext, st, startingFrom));
+            }
+        }
+    }
+
     private TypeInfo importTypeNoSubTypes(String fqn) {
         TypeInfo inMap = typeMapBuilder.get(fqn);
         if (inMap != null) return inMap;
@@ -203,7 +241,9 @@ public record ParseAndInspect(Resources classPath,
         // we can either search in the class path, or in the source path
 
         TypeInfo inSourceTypes = TypeMapImpl.fromTrie(sourceTypes, fqn.split("\\."));
-        if (inSourceTypes != null) return inSourceTypes;
+        if (inSourceTypes != null) {
+            return inSourceTypes;
+        }
 
         String path = classPath.fqnToPath(fqn, ".class");
         if (path == null) {

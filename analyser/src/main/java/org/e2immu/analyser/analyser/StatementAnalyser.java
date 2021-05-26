@@ -2471,7 +2471,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         if (statementAnalysis.statement instanceof ExpressionAsStatement eas
                 && eas.expression instanceof MethodCall methodCall
                 && myMethodAnalyser.methodInfo.isNotATestMethod()) {
-            if (Primitives.isVoid(methodCall.methodInfo.returnType())) return DONE;
+            if (Primitives.isVoidOrJavaLangVoid(methodCall.methodInfo.returnType())) return DONE;
             MethodAnalysis methodAnalysis = getMethodAnalysis(methodCall.methodInfo);
             int identity = methodAnalysis.getProperty(VariableProperty.IDENTITY);
             if (identity == Level.DELAY) {
