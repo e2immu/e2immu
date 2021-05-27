@@ -71,4 +71,9 @@ public class ExpressionAsStatement extends StatementWithExpression {
     public List<? extends Element> subElements() {
         return List.of(expression);
     }
+
+    @Override
+    public String toString() {
+        return "ExpressionAsStatement{" + expression.getClass() + ": " + expression + "}";
+    }
 }

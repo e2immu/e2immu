@@ -67,22 +67,6 @@ public class TranslationMapImpl implements TranslationMap {
                 '}';
     }
 
-    public static TranslationMapImpl fromVariableMap(Map<? extends Variable, ? extends Variable> map) {
-        return new TranslationMapImpl(Map.of(), Map.of(), map, Map.of(), Map.of());
-    }
-
-    public TranslationMapImpl overwriteVariableMap(Map<? extends Variable, ? extends Variable> map) {
-        Map<Variable, Variable> overwrittenMap = new HashMap<>(variables);
-        overwrittenMap.putAll(map);
-        return new TranslationMapImpl(statements, expressions, overwrittenMap, methods, types);
-    }
-
-    public TranslationMapImpl overwriteExpressionMap(Map<Expression, Expression> update) {
-        Map<Expression, Expression> overwrittenExpressionMap = new HashMap<>(expressions);
-        overwrittenExpressionMap.putAll(update);
-        return new TranslationMapImpl(statements, overwrittenExpressionMap, variables, methods, types);
-    }
-
     @Override
     public Expression translateExpression(Expression expression) {
         return Objects.requireNonNullElse(expressions.get(expression), expression).translate(this);
@@ -143,23 +127,6 @@ public class TranslationMapImpl implements TranslationMap {
     public static <T extends Expression> T ensureExpressionType(Expression expression, Class<T> clazz) {
         if (clazz.isAssignableFrom(expression.getClass())) return (T) expression;
         throw new UnsupportedOperationException();
-    }
-
-    @SuppressWarnings("unchecked")
-    public static <T extends Statement> T ensureStatementType(List<Statement> statements, Class<T> clazz) {
-        if (statements.size() != 1) throw new UnsupportedOperationException();
-        Statement statement = statements.get(0);
-        if (clazz.isAssignableFrom(statement.getClass())) return (T) statement;
-        throw new UnsupportedOperationException();
-    }
-
-    public TranslationMapImpl applyVariables(Map<? extends Variable, ? extends Variable> variables) {
-        Map<? extends Variable, ? extends Variable> updatedVariables =
-                this.variables.entrySet().stream().collect(Collectors.toMap(e -> {
-                    Variable inMap = variables.get(e.getKey());
-                    return inMap == null ? e.getKey() : inMap;
-                }, Map.Entry::getValue));
-        return new TranslationMapImpl(statements, expressions, updatedVariables, methods, types);
     }
 
     @Override

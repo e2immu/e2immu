@@ -28,6 +28,7 @@ import org.e2immu.annotation.NotNull;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
@@ -90,13 +91,13 @@ public class Block extends StatementWithStructure {
         } else {
             Guide.GuideGenerator guideGenerator = Guide.generatorForBlock();
             outputBuilder.add(guideGenerator.start());
-            StatementAnalysis sa ;
-            if(statementAnalysis.statement instanceof Block){
+            StatementAnalysis sa;
+            if (statementAnalysis.statement instanceof Block) {
                 sa = statementAnalysis.navigationData.blocks.get().get(0).orElse(null);
             } else {
                 sa = statementAnalysis;
             }
-            if(sa != null) {
+            if (sa != null) {
                 statementsString(qualification, outputBuilder, guideGenerator, sa);
             }
             outputBuilder.add(guideGenerator.end());
@@ -216,7 +217,8 @@ public class Block extends StatementWithStructure {
     public Statement translate(TranslationMap translationMap) {
         if (this == EMPTY_BLOCK) return this;
         return new Block(structure.statements().stream()
-                .flatMap(st -> translationMap.translateStatement(st).stream())
+                .flatMap(st -> Objects.requireNonNull(translationMap.translateStatement(st),
+                        "Translation of statement of " + st.getClass() + " returns null: "+st).stream())
                 .collect(Collectors.toList()), label);
     }
 
