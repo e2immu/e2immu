@@ -67,7 +67,7 @@ public class QualificationImpl implements Qualification {
             QualificationImpl levelWithData = this;
             while (levelWithData.unqualifiedThis.isEmpty()) {
                 levelWithData = levelWithData.parent;
-                assert levelWithData != null : "Forgot to add this info at the type level?";
+                if(levelWithData == null) return false; // we did not start properly at the top, we're e.g. only outputting a method
             }
             return !levelWithData.unqualifiedThis.contains(thisVar);
         }

@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.config;
 
+import org.e2immu.analyser.analyser.AnalysisProvider;
 import org.e2immu.analyser.analyser.StatementAnalyser;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.TypeAndInspectionProvider;
@@ -31,8 +32,9 @@ public record AnalyserConfiguration(boolean skipTransformations,
         Objects.requireNonNull(patternMatcherProvider);
     }
 
-    public PatternMatcher<StatementAnalyser> newPatternMatcher(TypeAndInspectionProvider inspectionProvider) {
-        return patternMatcherProvider.newPatternMatcher(inspectionProvider);
+    public PatternMatcher<StatementAnalyser> newPatternMatcher(TypeAndInspectionProvider inspectionProvider,
+                                                               AnalysisProvider analysisProvider) {
+        return patternMatcherProvider.newPatternMatcher(inspectionProvider, analysisProvider);
     }
 
     @Container(builds = AnalyserConfiguration.class)
@@ -52,7 +54,7 @@ public record AnalyserConfiguration(boolean skipTransformations,
 
         public AnalyserConfiguration build() {
             return new AnalyserConfiguration(skipTransformations, patternMatcherProvider == null ?
-                    (ip) -> PatternMatcher.NO_PATTERN_MATCHER : patternMatcherProvider);
+                    (ip, ap) -> PatternMatcher.NO_PATTERN_MATCHER : patternMatcherProvider);
         }
     }
 

@@ -31,6 +31,7 @@ import org.e2immu.analyser.visitor.EvaluationResultVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
 import org.e2immu.annotation.Container;
+import org.e2immu.support.Either;
 import org.e2immu.support.SetOnce;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -550,7 +551,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                                 List.of(sortedType),
                                 analyserContext.getConfiguration(),
                                 analyserContext.getPrimitives(),
-                                analyserContext.getPatternMatcher(),
+                                Either.left(analyserContext.getPatternMatcher()),
                                 analyserContext.getE2ImmuAnnotationExpressions());
                         primaryTypeAnalyser.initialize();
                         return primaryTypeAnalyser;

@@ -17,17 +17,16 @@ package org.e2immu.analyser.parser;
 import org.apache.commons.io.IOUtils;
 import org.e2immu.analyser.analyser.AnnotatedAPIAnalyser;
 import org.e2immu.analyser.analyser.PrimaryTypeAnalyser;
-import org.e2immu.analyser.analyser.StatementAnalyser;
 import org.e2immu.analyser.bytecode.ByteCodeInspector;
 import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.inspector.*;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.TypeInspection;
-import org.e2immu.analyser.pattern.PatternMatcher;
 import org.e2immu.analyser.resolver.Resolver;
 import org.e2immu.analyser.resolver.SortedType;
 import org.e2immu.analyser.util.Trie;
 import org.e2immu.analyser.visitor.TypeMapVisitor;
+import org.e2immu.support.Either;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -218,9 +217,9 @@ public class Parser {
     }
 
     private void analyseSortedTypeCycle(List<SortedType> sortedTypes) {
-        PatternMatcher<StatementAnalyser> patternMatcher = configuration.analyserConfiguration().newPatternMatcher(getTypeContext());
         PrimaryTypeAnalyser primaryTypeAnalyser = new PrimaryTypeAnalyser(null, sortedTypes, configuration,
-                getTypeContext().getPrimitives(), patternMatcher, getTypeContext().typeMapBuilder.getE2ImmuAnnotationExpressions());
+                getTypeContext().getPrimitives(), Either.right(getTypeContext()),
+                getTypeContext().typeMapBuilder.getE2ImmuAnnotationExpressions());
         try {
             primaryTypeAnalyser.analyse();
         } catch (RuntimeException rte) {
@@ -295,12 +294,10 @@ public class Parser {
         for (String packagePrefix : configuration.annotatedAPIConfiguration().writeAnnotatedAPIPackages()) {
             String[] packagePrefixArray = packagePrefix.split("\\.");
             boolean allowSubPackages = packagePrefix.endsWith(".");
-            typeMap.visit(packagePrefixArray, (prefix, types) -> {
-                types.stream().filter(t ->
-                        (allowSubPackages || t.primaryType().packageName().equals(packagePrefix)) &&
-                                t.typeInspection.isSet() &&
-                                t.isPrimaryType() && t.isPublic()).forEach(typesToWrite::add);
-            });
+            typeMap.visit(packagePrefixArray, (prefix, types) -> types.stream().filter(t ->
+                    (allowSubPackages || t.primaryType().packageName().equals(packagePrefix)) &&
+                            t.typeInspection.isSet() &&
+                            t.isPrimaryType() && t.isPublic()).forEach(typesToWrite::add));
         }
         LOGGER.info("Returning composer data with {} types", typesToWrite.size());
         return new ComposerData(typesToWrite, typeMap);

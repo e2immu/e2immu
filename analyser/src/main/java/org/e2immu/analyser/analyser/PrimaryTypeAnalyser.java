@@ -18,6 +18,7 @@ import org.e2immu.analyser.analyser.util.DelayDebugCollector;
 import org.e2immu.analyser.analyser.util.DelayDebugNode;
 import org.e2immu.analyser.analyser.util.DelayDebugProcessor;
 import org.e2immu.analyser.config.Configuration;
+import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Message;
@@ -27,6 +28,7 @@ import org.e2immu.analyser.pattern.PatternMatcher;
 import org.e2immu.analyser.resolver.SortedType;
 import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.analyser.util.Pair;
+import org.e2immu.support.Either;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -71,13 +73,14 @@ public class PrimaryTypeAnalyser implements AnalyserContext, Analyser, HoldsAnal
                                List<SortedType> sortedTypes,
                                Configuration configuration,
                                Primitives primitives,
-                               PatternMatcher<StatementAnalyser> patternMatcher,
+                               Either<PatternMatcher<StatementAnalyser>, TypeContext> patternMatcherOrTypeContext,
                                E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
         this.parent = parent;
         this.configuration = configuration;
         this.e2ImmuAnnotationExpressions = e2ImmuAnnotationExpressions;
         Objects.requireNonNull(primitives);
-        this.patternMatcher = Objects.requireNonNull(patternMatcher);
+        this.patternMatcher = patternMatcherOrTypeContext.isLeft() ? patternMatcherOrTypeContext.getLeft() :
+                configuration.analyserConfiguration().newPatternMatcher(patternMatcherOrTypeContext.getRight(), this);
         this.primitives = primitives;
         name = sortedTypes.stream().map(sortedType -> sortedType.primaryType().fullyQualifiedName).collect(Collectors.joining(","));
         primaryTypes = sortedTypes.stream().map(SortedType::primaryType).collect(Collectors.toUnmodifiableSet());
