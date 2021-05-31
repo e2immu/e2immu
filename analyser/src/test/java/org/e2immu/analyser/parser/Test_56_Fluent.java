@@ -154,7 +154,7 @@ public class Test_56_Fluent extends CommonTestRunner {
     public void test_1() throws IOException {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("IFluent_1".equals(d.typeInfo().simpleName)) {
-                assertTrue(d.typeInfo().typePropertiesAreContracted()); // FIXME BECAUSE NO IMPLEMENTATION YET FOR AGGREGATING PROPERTIES ON TYPES
+                assertFalse(d.typeInfo().typePropertiesAreContracted()); // they are aggregated!
                 assertTrue(d.typeInfo().typeResolution.get().hasOneKnownGeneratedImplementation());
                 int expectImmutable = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EFFECTIVELY_E2IMMUTABLE;
                 assertEquals(expectImmutable, d.typeAnalysis().getProperty(VariableProperty.IMMUTABLE));
@@ -172,7 +172,7 @@ public class Test_56_Fluent extends CommonTestRunner {
                 assertEquals(Level.FALSE, d.methodAnalysis().getProperty(VariableProperty.FLUENT));
                 assertEquals(Level.FALSE, d.methodAnalysis().getProperty(VariableProperty.IDENTITY));
                 assertEquals(MultiLevel.DEPENDENT, d.methodAnalysis().getProperty(VariableProperty.INDEPENDENT));
-                int expectImmutable = d.iteration() == 0 ? Level.DELAY : MultiLevel.MUTABLE;
+                int expectImmutable = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_E2IMMUTABLE;
                 assertEquals(expectImmutable, d.methodAnalysis().getProperty(VariableProperty.IMMUTABLE));
             }
             if ("identity".equals(d.methodInfo().name)) {
@@ -265,18 +265,19 @@ public class Test_56_Fluent extends CommonTestRunner {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("IFluent_2".equals(d.typeInfo().simpleName)) {
                 assertTrue(d.typeInfo().typeResolution.get().hasOneKnownGeneratedImplementation());
+                assertSame(Analysis.AnalysisMode.AGGREGATED, d.typeAnalysis().analysisMode());
             }
         };
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("value".equals(d.methodInfo().name) && "IFluent_2".equals(d.methodInfo().typeInfo.simpleName)) {
-                //    assertSame(Analysis.AnalysisMode.AGGREGATED, d.methodAnalysis().analysisMode());
+                assertSame(Analysis.AnalysisMode.AGGREGATED, d.methodAnalysis().analysisMode());
             }
         };
 
         testClass(List.of("a.IFluent_2", "Fluent_2"),
                 List.of("jmods/java.compiler.jmod"),
-                0, 1, new DebugConfiguration.Builder()
+                0, 2, new DebugConfiguration.Builder()
                         .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                         .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
                         .build(), new AnalyserConfiguration.Builder().build(), new AnnotatedAPIConfiguration.Builder().build());

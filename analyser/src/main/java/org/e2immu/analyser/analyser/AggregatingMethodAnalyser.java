@@ -112,9 +112,10 @@ public class AggregatingMethodAnalyser extends MethodAnalyser {
     private AnalysisStatus aggregate(VariableProperty variableProperty, IntBinaryOperator operator) {
         int current = methodAnalysis.getProperty(variableProperty);
         if (current == Level.DELAY) {
+            int identity = operator == VariableInfoImpl.MIN ? variableProperty.best : variableProperty.falseValue;
             int value = implementingAnalyses.get().stream()
                     .mapToInt(a -> a.getProperty(variableProperty))
-                    .reduce(variableProperty.falseValue, operator);
+                    .reduce(identity, operator);
             if (value == Level.DELAY) {
                 log(DELAYED, "Delaying aggregate of {} for {}", variableProperty, methodInfo.fullyQualifiedName);
                 assert translatedDelay("AGG:" + variableProperty,

@@ -160,7 +160,7 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
         public final SetOnce<Boolean> ignorePrivateConstructorsForFieldValues = new SetOnce<>();
 
         private final Set<FieldInfo> visibleFields;
-        private final AnalysisMode analysisMode;
+        public final AnalysisMode analysisMode;
 
         /*
         analyser context can be null for Primitives, ShallowTypeAnalyser

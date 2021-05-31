@@ -40,7 +40,6 @@ public class Test_56_Fluent_AAPI extends CommonTestRunner {
 
     @Test
     public void test_0() throws IOException {
-
         testClass(List.of("a.IFluent_0", "Fluent_0"), 0, 1, new DebugConfiguration.Builder()
                 .build(), new AnalyserConfiguration.Builder().build(), new AnnotatedAPIConfiguration.Builder().build());
     }

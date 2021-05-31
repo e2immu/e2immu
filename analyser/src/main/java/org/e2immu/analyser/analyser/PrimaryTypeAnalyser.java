@@ -92,7 +92,12 @@ public class PrimaryTypeAnalyser implements AnalyserContext, Analyser, HoldsAnal
         sortedTypes.forEach(sortedType ->
                 sortedType.methodsFieldsSubTypes().forEach(mfs -> {
                     if (mfs instanceof TypeInfo typeInfo && !typeInfo.typeAnalysis.isSet()) {
-                        TypeAnalyser typeAnalyser = new TypeAnalyser(typeInfo, sortedType.primaryType(), this);
+                        TypeAnalyser typeAnalyser;
+                        if (typeInfo.isInterface() && (typeInfo.typeInspection.get().isSealed() || typeInfo.typeResolution.get().hasOneKnownGeneratedImplementation())) {
+                            typeAnalyser = new AggregatingTypeAnalyser(typeInfo, sortedType.primaryType(), this);
+                        } else {
+                            typeAnalyser = new ComputingTypeAnalyser(typeInfo, sortedType.primaryType(), this);
+                        }
                         typeAnalysersBuilder.put(typeInfo, typeAnalyser);
                     }
                 }));

@@ -369,7 +369,7 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
         messages.addAll(typeAnalysisBuilder.fromAnnotationsIntoProperties(Analyser.AnalyserIdentification.METHOD,
                 true, typeInspection.getAnnotations(), e2ImmuAnnotationExpressions));
 
-        TypeAnalyser.findAspects(typeAnalysisBuilder, typeInfo);
+        ComputingTypeAnalyser.findAspects(typeAnalysisBuilder, typeInfo);
         typeAnalysisBuilder.freezeApprovedPreconditionsE1();
         typeAnalysisBuilder.freezeApprovedPreconditionsE2();
 

@@ -1192,7 +1192,7 @@ public class FieldAnalyser extends AbstractAnalyser {
                 return getVariableValue(variable);
             }
             if (variable instanceof This) {
-                return myTypeAnalyser.getVariableValue(variable);
+                return ComputingTypeAnalyser.getVariableValue(variable);
             }
             if (variable instanceof ParameterInfo) {
                 /*
