@@ -320,5 +320,14 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
                     getAspects(),
                     visibleFields);
         }
+
+        @Override
+        public int internalGetProperty(VariableProperty variableProperty) {
+            int inMap = properties.getOrDefault(variableProperty, Level.DELAY);
+            if (inMap == Level.DELAY && typeInfo.typePropertiesAreContracted()) {
+                return variableProperty.valueWhenAbsent(annotationMode());
+            }
+            return inMap;
+        }
     }
 }
