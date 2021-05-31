@@ -4,7 +4,7 @@ import org.e2immu.analyser.testexample.Fluent_1;
 import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.NotModified;
 
-@E2Container // will be computed, and verified!!
+// do not add @E2Container here, this tests a crash/infinite loop
 public interface IFluent_1 {
     @NotModified //will be computed, and verified!!
     int value();

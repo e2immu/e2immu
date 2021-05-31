@@ -22,12 +22,12 @@ import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.PropertyWrapper;
-import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.testexample.Fluent_1;
 import org.e2immu.analyser.testexample.a.IFluent_1;
 import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
+import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
 import org.e2immu.analyser.visitor.TypeAnalyserVisitor;
 import org.junit.jupiter.api.Test;
 
@@ -54,7 +54,7 @@ public class Test_56_Fluent extends CommonTestRunner {
                 if (d.variable() instanceof ReturnVariable) {
                     if ("0.0.0".equals(d.statementId())) {
                         assertEquals("instance", d.currentValue().toString());
-                        assertTrue(d.currentValue() instanceof PropertyWrapper, "Have "+d.currentValue().getClass());
+                        assertTrue(d.currentValue() instanceof PropertyWrapper, "Have " + d.currentValue().getClass());
                     }
                     if ("1".equals(d.statementId())) {
                         String expect = d.iteration() == 0 ? "instance instanceof Fluent_0?instance:<m:build>" :
@@ -134,10 +134,12 @@ public class Test_56_Fluent extends CommonTestRunner {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("Fluent_0".equals(d.typeInfo().simpleName)) {
                 assertEquals("[]", d.typeAnalysis().getImplicitlyImmutableDataTypes().toString());
+                assertFalse(d.typeInfo().typePropertiesAreContracted());
             }
-            if("IFluent_0".equals(d.typeInfo().simpleName)) {
+            if ("IFluent_0".equals(d.typeInfo().simpleName)) {
                 // property has been contracted in the code: there is no computing
                 assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, d.typeAnalysis().getProperty(VariableProperty.IMMUTABLE));
+                assertTrue(d.typeInfo().typePropertiesAreContracted());
             }
         };
 
@@ -152,11 +154,15 @@ public class Test_56_Fluent extends CommonTestRunner {
     public void test_1() throws IOException {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("IFluent_1".equals(d.typeInfo().simpleName)) {
+                assertTrue(d.typeInfo().typePropertiesAreContracted()); // FIXME BECAUSE NO IMPLEMENTATION YET FOR AGGREGATING PROPERTIES ON TYPES
                 assertTrue(d.typeInfo().typeResolution.get().hasOneKnownGeneratedImplementation());
+                int expectImmutable = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EFFECTIVELY_E2IMMUTABLE;
+                assertEquals(expectImmutable, d.typeAnalysis().getProperty(VariableProperty.IMMUTABLE));
             }
             if ("Fluent_1".equals(d.typeInfo().simpleName)) {
-                int expectImmutable = d.iteration() <= 2 ? Level.DELAY : MultiLevel.EFFECTIVELY_E2IMMUTABLE;
+                int expectImmutable = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EFFECTIVELY_E2IMMUTABLE;
                 assertEquals(expectImmutable, d.typeAnalysis().getProperty(VariableProperty.IMMUTABLE));
+                assertFalse(d.typeInfo().typePropertiesAreContracted());
             }
         };
 
@@ -175,6 +181,63 @@ public class Test_56_Fluent extends CommonTestRunner {
                 int expectIdentity = d.iteration() == 0 ? Level.DELAY : Level.TRUE; // wait for @Modified
                 assertEquals(expectIdentity, d.methodAnalysis().getProperty(VariableProperty.IDENTITY));
             }
+            if ("value".equals(d.methodInfo().name) && "Fluent_1".equals(d.methodInfo().typeInfo.simpleName)) {
+                assertEquals(Level.FALSE, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
+            }
+            if ("value".equals(d.methodInfo().name) && "IFluent_1".equals(d.methodInfo().typeInfo.simpleName)) {
+                // via aggregation
+                assertEquals(Level.FALSE, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
+            }
+
+            if ("from".equals(d.methodInfo().name)) {
+                // STEP 1 links have not been established
+                int expectMom = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
+                assertEquals(expectMom, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
+            }
+        };
+
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("from".equals(d.methodInfo().name)) {
+                if ("0".equals(d.statementId())) {
+                    assertNull(d.conditionManagerForNextStatement().preconditionIsDelayed());
+                    assertTrue(d.statementAnalysis().methodLevelData.combinedPrecondition.isFinal());
+                    assertTrue(d.statementAnalysis().stateData.preconditionIsFinal());
+                }
+                if ("1".equals(d.statementId())) {
+                    // STEP 6: evaluation renders a delayed precondition: hardcoded in AggregatingMethodAnalyser
+                    assertTrue(d.statementAnalysis().stateData.preconditionIsFinal());
+
+                    // STEP 5: check preconditionIsDelayed in previous statement, that's OK
+                    assertNull(d.conditionManagerForNextStatement().preconditionIsDelayed());
+                    // STEP 5bis: combined precondition never becomes final
+                    assertTrue(d.statementAnalysis().methodLevelData.combinedPrecondition.isFinal());
+                }
+                if ("2".equals(d.statementId())) {
+                    // STEP 2 parameter 'instance'
+                    assertEquals(d.iteration() > 0, d.statementAnalysis().methodLevelData.linksHaveBeenEstablished.isSet());
+                }
+            }
+        };
+
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("from".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ParameterInfo p && "instance".equals(p.name)) {
+                    assertTrue(d.variableInfo().linkedVariablesIsSet());
+                    if ("0".equals(d.statementId()) || "1".equals(d.statementId())) {
+                        assertEquals(Level.FALSE, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
+                    }
+                    if ("2".equals(d.statementId())) {
+                        // STEP 3 value of 0 not set because no linked variables set for return variable
+                        int expectCm = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
+                        assertEquals(expectCm, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
+                    }
+                }
+                if (d.variable() instanceof ReturnVariable && "2".equals(d.statementId())) {
+                    // STEP 4 <s:Builder> value delayed -> linked variables delayed; why is value delayed?
+                    // Precondition in state is delayed (empty set instead of null)
+                    assertEquals("this", d.currentValue().toString());
+                }
+            }
         };
 
         TypeContext typeContext = testClass(List.of("a.IFluent_1", "Fluent_1"),
@@ -182,7 +245,10 @@ public class Test_56_Fluent extends CommonTestRunner {
                 0, 1, new DebugConfiguration.Builder()
                         .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                         .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
-                        .build(), new AnalyserConfiguration.Builder().build(), new AnnotatedAPIConfiguration.Builder().build());
+                        .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        .build(), new AnalyserConfiguration.Builder().build(),
+                new AnnotatedAPIConfiguration.Builder().build());
         TypeInfo iFluent1 = typeContext.typeMapBuilder.get(IFluent_1.class);
         MethodInfo value = iFluent1.findUniqueMethod("value", 0);
         TypeInfo implementation = iFluent1.typeResolution.get().generatedImplementation;
@@ -218,10 +284,15 @@ public class Test_56_Fluent extends CommonTestRunner {
 
     @Test
     public void test_3() throws IOException {
-
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("IFluent_3".equals(d.typeInfo().simpleName)) {
+                assertTrue(d.typeInfo().typePropertiesAreContracted());
+            }
+        };
         testClass(List.of("a.IFluent_3", "Fluent_3"),
                 List.of("jmods/java.compiler.jmod"),
                 0, 1, new DebugConfiguration.Builder()
+                        .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
                         .build(), new AnalyserConfiguration.Builder().build(), new AnnotatedAPIConfiguration.Builder().build());
     }
 }

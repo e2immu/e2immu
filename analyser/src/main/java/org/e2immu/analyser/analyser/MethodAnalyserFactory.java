@@ -26,7 +26,7 @@ public class MethodAnalyserFactory {
                         .map(parameterInfo -> new AggregatingParameterAnalyser(analyserContextInput, parameterInfo)).toList();
                 List<ParameterAnalysis> parameterAnalyses = parameterAnalysers.stream()
                         .map(ParameterAnalyser::getParameterAnalysis).toList();
-                MethodAnalysisImpl.Builder methodAnalysis = new MethodAnalysisImpl.Builder(Analysis.AnalysisMode.COMPUTED,
+                MethodAnalysisImpl.Builder methodAnalysis = new MethodAnalysisImpl.Builder(analysisMode,
                         analyserContextInput.getPrimitives(), analyserContextInput, analyserContextInput,
                         methodInfo, parameterAnalyses);
                 yield new AggregatingMethodAnalyser(methodInfo, methodAnalysis, parameterAnalysers,
@@ -38,7 +38,7 @@ public class MethodAnalyserFactory {
                         .map(parameterInfo -> new ComputedParameterAnalyser(analyserContext, parameterInfo)).toList();
                 List<ParameterAnalysis> parameterAnalyses = parameterAnalysers.stream()
                         .map(ParameterAnalyser::getParameterAnalysis).toList();
-                MethodAnalysisImpl.Builder methodAnalysis = new MethodAnalysisImpl.Builder(Analysis.AnalysisMode.COMPUTED,
+                MethodAnalysisImpl.Builder methodAnalysis = new MethodAnalysisImpl.Builder(analysisMode,
                         analyserContext.getPrimitives(), analyserContext, analyserContext, methodInfo, parameterAnalyses);
                 Map<CompanionMethodName, CompanionAnalyser> companionAnalysers = createCompanionAnalysers(methodInfo,
                         analyserContext, typeAnalysis);

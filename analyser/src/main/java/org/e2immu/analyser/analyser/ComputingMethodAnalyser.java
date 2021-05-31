@@ -86,6 +86,7 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
                                    AnalyserContext analyserContextInput) {
         super(methodInfo, methodAnalysis, parameterAnalysers,
                 parameterAnalyses, companionAnalysers, isSAM, analyserContextInput);
+        assert methodAnalysis.analysisMode == Analysis.AnalysisMode.COMPUTED;
         this.typeAnalysis = typeAnalysis;
 
         Block block = methodInspection.getMethodBody();
