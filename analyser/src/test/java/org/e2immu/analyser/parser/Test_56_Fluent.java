@@ -21,6 +21,7 @@ import org.e2immu.analyser.config.AnnotatedAPIConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.expression.PropertyWrapper;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.testexample.Fluent_1;
@@ -53,13 +54,13 @@ public class Test_56_Fluent extends CommonTestRunner {
                 if (d.variable() instanceof ReturnVariable) {
                     if ("0.0.0".equals(d.statementId())) {
                         assertEquals("instance", d.currentValue().toString());
-                        assertTrue(d.currentValue() instanceof VariableExpression);
+                        assertTrue(d.currentValue() instanceof PropertyWrapper, "Have "+d.currentValue().getClass());
                     }
                     if ("1".equals(d.statementId())) {
-                        String expect = d.iteration() <= 1 ? "instance instanceof Fluent_0?instance:<m:build>" :
+                        String expect = d.iteration() == 0 ? "instance instanceof Fluent_0?instance:<m:build>" :
                                 INSTANCE_TYPE_BUILDER_BUILD;
                         assertEquals(expect, d.currentValue().toString());
-                        String expectLinks = d.iteration() <= 1 ? LinkedVariables.DELAY_STRING : "instance";
+                        String expectLinks = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "instance";
                         assertEquals(expectLinks, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
@@ -71,8 +72,7 @@ public class Test_56_Fluent extends CommonTestRunner {
                         assertEquals(Level.FALSE, cm);
                     }
                     if ("1".equals(d.statementId())) {
-                        int expectCm = d.iteration() <= 1 ? Level.DELAY : Level.FALSE;
-                        assertEquals(expectCm, cm);
+                        assertEquals(Level.FALSE, cm);
                     }
                 }
             }
@@ -81,23 +81,23 @@ public class Test_56_Fluent extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("copyOf".equals(d.methodInfo().name)) {
                 // @NotModified
-                int expectModified = d.iteration() <= 2 ? Level.DELAY : Level.FALSE;
+                int expectModified = d.iteration() <= 1 ? Level.DELAY : Level.FALSE;
                 assertEquals(expectModified, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
 
-                if (d.iteration() <= 2) {
+                if (d.iteration() <= 1) {
                     assertNull(d.methodAnalysis().getSingleReturnValue());
                 } else {
                     assertEquals(INSTANCE_TYPE_BUILDER_BUILD, d.methodAnalysis().getSingleReturnValue().toString());
                 }
 
-                int expectFluent = d.iteration() <= 2 ? Level.DELAY : Level.FALSE;
+                int expectFluent = d.iteration() <= 1 ? Level.DELAY : Level.FALSE;
                 assertEquals(expectFluent, d.methodAnalysis().getProperty(VariableProperty.FLUENT));
 
                 // @NotNull
-                int expectNne = d.iteration() <= 2 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
+                int expectNne = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
                 assertEquals(expectNne, d.methodAnalysis().getProperty(VariableProperty.NOT_NULL_EXPRESSION));
                 // @Independent
-                int expectIndependent = d.iteration() <= 2 ? Level.DELAY : MultiLevel.INDEPENDENT;
+                int expectIndependent = d.iteration() <= 1 ? Level.DELAY : MultiLevel.INDEPENDENT;
                 assertEquals(expectIndependent, d.methodAnalysis().getProperty(VariableProperty.INDEPENDENT));
             }
 
@@ -111,22 +111,22 @@ public class Test_56_Fluent extends CommonTestRunner {
             }
 
             if ("from".equals(d.methodInfo().name)) {
-                if (d.iteration() <= 1) {
+                if (d.iteration() == 0) {
                     assertNull(d.methodAnalysis().getSingleReturnValue());
                 } else {
                     assertEquals("this", d.methodAnalysis().getSingleReturnValue().toString());
                 }
 
-                int expectFluent = d.iteration() <= 1 ? Level.DELAY : Level.TRUE;
+                int expectFluent = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
                 assertEquals(expectFluent, d.methodAnalysis().getProperty(VariableProperty.FLUENT));
 
-                int expectNne = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
+                int expectNne = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
                 assertEquals(expectNne, d.methodAnalysis().getProperty(VariableProperty.NOT_NULL_EXPRESSION));
-                int expectModified = d.iteration() <= 1 ? Level.DELAY : Level.TRUE;
+                int expectModified = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
                 assertEquals(expectModified, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
 
                 // a fluent method is dependent
-                int expectIndependent = d.iteration() <= 1 ? Level.DELAY : MultiLevel.DEPENDENT;
+                int expectIndependent = d.iteration() == 0 ? Level.DELAY : MultiLevel.DEPENDENT;
                 assertEquals(expectIndependent, d.methodAnalysis().getProperty(VariableProperty.INDEPENDENT));
             }
         };
@@ -135,19 +135,15 @@ public class Test_56_Fluent extends CommonTestRunner {
             if ("Fluent_0".equals(d.typeInfo().simpleName)) {
                 assertEquals("[]", d.typeAnalysis().getImplicitlyImmutableDataTypes().toString());
             }
-            if ("org.e2immu.analyser.testexample.Fluent_0.Builder".equals(d.typeInfo().fullyQualifiedName)) {
-                assertEquals("[Type org.e2immu.analyser.testexample.a.IFluent_0.Builder]",
-                        d.typeAnalysis().getImplicitlyImmutableDataTypes().toString());
-            }
-            if ("IFluent_0".equals(d.typeInfo().simpleName)) {
-            }
-            if ("Type org.e2immu.analyser.testexample.a.IFluent_0.Builder".equals(d.typeInfo().fullyQualifiedName)) {
+            if("IFluent_0".equals(d.typeInfo().simpleName)) {
+                // property has been contracted in the code: there is no computing
+                assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, d.typeAnalysis().getProperty(VariableProperty.IMMUTABLE));
             }
         };
 
         testClass(List.of("a.IFluent_0", "Fluent_0"), 0, 1, new DebugConfiguration.Builder()
-                //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                //    .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
                 .build(), new AnalyserConfiguration.Builder().build(), new AnnotatedAPIConfiguration.Builder().build());
     }
@@ -217,6 +213,15 @@ public class Test_56_Fluent extends CommonTestRunner {
                 0, 1, new DebugConfiguration.Builder()
                         .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                         .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
+                        .build(), new AnalyserConfiguration.Builder().build(), new AnnotatedAPIConfiguration.Builder().build());
+    }
+
+    @Test
+    public void test_3() throws IOException {
+
+        testClass(List.of("a.IFluent_3", "Fluent_3"),
+                List.of("jmods/java.compiler.jmod"),
+                0, 1, new DebugConfiguration.Builder()
                         .build(), new AnalyserConfiguration.Builder().build(), new AnnotatedAPIConfiguration.Builder().build());
     }
 }

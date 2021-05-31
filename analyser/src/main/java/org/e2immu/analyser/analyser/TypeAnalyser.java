@@ -65,8 +65,6 @@ import static org.e2immu.analyser.util.Logger.log;
 public class TypeAnalyser extends AbstractAnalyser {
     private static final Logger LOGGER = LoggerFactory.getLogger(TypeAnalyser.class);
 
-    public static final String DELAY_LOCATION_IMPLICITLY_IMMUTABLE_DATA_TYPES = "typeAnalysis.implicitlyImmutableDataTypes";
-
     public static final String ANALYSE_IMPLICITLY_IMMUTABLE_TYPES = "analyseImplicitlyImmutableTypes";
     public static final String FIND_ASPECTS = "findAspects";
     public static final String COMPUTE_APPROVED_PRECONDITIONS_E1 = "computeApprovedPreconditionsE1";
@@ -218,6 +216,8 @@ public class TypeAnalyser extends AbstractAnalyser {
 
     @Override
     public void check() {
+        if(typeInfo.typePropertiesAreContracted()) return;
+
         E2ImmuAnnotationExpressions e2 = analyserContext.getE2ImmuAnnotationExpressions();
 
         // before we check, we copy the properties into annotations
@@ -236,7 +236,28 @@ public class TypeAnalyser extends AbstractAnalyser {
 
         // opposites
         check(typeInfo, MutableModifiesArguments.class, e2.mutableModifiesArguments);
+
+        checkWorseThanSpecifiedInInterfacesImplemented();
     }
+
+
+    private static final Set<VariableProperty> CHECK_WORSE_THAN_INTERFACES_IMPLEMENTED = Set.of(VariableProperty.IMMUTABLE,
+            VariableProperty.INDEPENDENT, VariableProperty.CONTAINER);
+
+    private void checkWorseThanSpecifiedInInterfacesImplemented() {
+        for (VariableProperty variableProperty : CHECK_WORSE_THAN_INTERFACES_IMPLEMENTED) {
+            int valueFromOverrides = typeAnalysis.valueFromInterfacesImplemented(analyserContext, variableProperty);
+            int value = typeAnalysis.getProperty(variableProperty);
+            if (valueFromOverrides != Level.DELAY && value != Level.DELAY) {
+                boolean complain = value < valueFromOverrides;
+                if (complain) {
+                    messages.add(Message.newMessage(new Location(typeInfo),
+                            Message.Label.WORSE_THAN_IMPLEMENTED_INTERFACE, variableProperty.name));
+                }
+            }
+        }
+    }
+
 
     private void check(TypeInfo typeInfo, Class<?> annotation, AnnotationExpression annotationExpression) {
         typeInfo.error(typeAnalysis, annotation, annotationExpression).ifPresent(mustBeAbsent -> {

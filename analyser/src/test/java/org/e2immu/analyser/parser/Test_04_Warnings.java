@@ -466,4 +466,21 @@ public class Test_04_Warnings extends CommonTestRunner {
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build());
     }
+
+
+    @Test
+    public void test6() throws IOException {
+        // one on the type
+        testClass("Warnings_6", 1, 0, new DebugConfiguration.Builder()
+                        .build(),
+                new AnalyserConfiguration.Builder().build());
+    }
+
+    @Test
+    public void test7() throws IOException {
+        // one on the method, one on the type
+        testClass("Warnings_7", 2, 0, new DebugConfiguration.Builder()
+                        .build(),
+                new AnalyserConfiguration.Builder().build());
+    }
 }

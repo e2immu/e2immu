@@ -59,6 +59,11 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
     }
 
     @Override
+    public TypeInfo getTypeInfo() {
+        return typeInfo;
+    }
+
+    @Override
     public boolean approvedPreconditionsE2IsEmpty() {
         return approvedPreconditionsE2.isEmpty();
     }
@@ -165,6 +170,11 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
             this.typeInfo = typeInfo;
             this.analysisMode = analysisMode;
             this.visibleFields = analyserContext == null ? Set.of() : Set.copyOf(typeInfo.visibleFields(analyserContext));
+        }
+
+        @Override
+        public TypeInfo getTypeInfo() {
+            return typeInfo;
         }
 
         @Override

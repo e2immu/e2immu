@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.model;
 
+import org.e2immu.analyser.analyser.AnalyserContext;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.variable.FieldReference;
 
@@ -21,8 +22,11 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public interface TypeAnalysis extends Analysis {
+
+    TypeInfo getTypeInfo();
 
     Map<FieldReference, Expression> getApprovedPreconditionsE1();
 
@@ -83,5 +87,12 @@ public interface TypeAnalysis extends Analysis {
 
     default boolean aspectsIsSet(String aspect) {
         return getAspects().containsKey(aspect);
+    }
+
+    default int valueFromInterfacesImplemented(AnalyserContext analyserContext, VariableProperty variableProperty) {
+        Stream<TypeInfo> implementedInterfaces = getTypeInfo().typeResolution.get().superTypesExcludingJavaLangObject
+                .stream().filter(TypeInfo::isInterface);
+        return implementedInterfaces.map(analyserContext::getTypeAnalysis)
+                .mapToInt(typeAnalysis -> typeAnalysis.getTypeProperty(variableProperty)).max().orElse(Level.DELAY);
     }
 }

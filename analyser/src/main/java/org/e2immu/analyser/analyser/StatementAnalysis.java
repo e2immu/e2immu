@@ -127,12 +127,13 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         if (flowData.isUnreachable()) {
             throw new UnsupportedOperationException("The first statement can never be unreachable");
         }
-        return followReplacements().navigationData.next.get().map(statementAnalysis -> {
+        StatementAnalysis replaced = followReplacements();
+        return replaced.navigationData.next.get().map(statementAnalysis -> {
             if (statementAnalysis.flowData.isUnreachable()) {
-                return this;
+                return replaced;
             }
             return statementAnalysis.lastStatement();
-        }).orElse(this);
+        }).orElse(replaced);
     }
 
     public boolean lastStatementIsEscape() {

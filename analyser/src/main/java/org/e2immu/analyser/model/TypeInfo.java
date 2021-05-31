@@ -471,4 +471,12 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
                 .flatMap(i -> i.typeInfo.visibleFields(inspectionProvider).stream()).toList();
         return ListUtil.immutableConcat(locally, fromParent, fromInterfaces);
     }
+
+    public boolean typePropertiesAreContracted() {
+        TypeInspection inspection = typeInspection.get();
+        if(inspection.isInterface()) {
+            return !inspection.isSealed() && !typeResolution.get().hasOneKnownGeneratedImplementation();
+        }
+        return false;
+    }
 }
