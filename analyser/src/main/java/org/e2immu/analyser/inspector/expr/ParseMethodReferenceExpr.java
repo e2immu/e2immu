@@ -39,6 +39,8 @@ public class ParseMethodReferenceExpr {
 
         Expression scope = expressionContext.parseExpression(methodReferenceExpr.getScope());
         boolean scopeIsAType = scopeIsAType(scope);
+        ParseMethodCallExpr.ScopeNature scopeNature = scopeIsAType ? ParseMethodCallExpr.ScopeNature.STATIC :
+                ParseMethodCallExpr.ScopeNature.INSTANCE;
         ParameterizedType parameterizedType = scope.returnType();
         String methodName = methodReferenceExpr.getIdentifier();
         boolean constructor = "new".equals(methodName);
@@ -66,7 +68,8 @@ public class ParseMethodReferenceExpr {
             // but this example says you need to subtract:
             // e.g. Function<T, R> has R apply(T t), and we present Object::toString (the scope is the first argument)
             typeContext.recursivelyResolveOverloadedMethods(parameterizedType,
-                    methodName, parametersPresented, scopeIsAType, parameterizedType.initialTypeParameterMap(typeContext), methodCandidates);
+                    methodName, parametersPresented, scopeIsAType, parameterizedType.initialTypeParameterMap(typeContext),
+                    methodCandidates, scopeNature);
         }
         if (methodCandidates.isEmpty()) {
             throw new UnsupportedOperationException("Cannot find a candidate for " + methodNameForErrorReporting + " at " + methodReferenceExpr.getBegin());
@@ -167,7 +170,9 @@ public class ParseMethodReferenceExpr {
         } else {
             methodCandidates = new ArrayList<>();
             typeContext.recursivelyResolveOverloadedMethods(parameterizedType,
-                    methodName, TypeContext.IGNORE_PARAMETER_NUMBERS, false, parameterizedType.initialTypeParameterMap(typeContext), methodCandidates);
+                    methodName, TypeContext.IGNORE_PARAMETER_NUMBERS, false,
+                    parameterizedType.initialTypeParameterMap(typeContext), methodCandidates,
+                    ParseMethodCallExpr.ScopeNature.INSTANCE);
         }
         if (methodCandidates.isEmpty()) {
             throw new UnsupportedOperationException("Cannot find a candidate for " + (constructor ? "constructor" : methodName) + " at " + methodReferenceExpr.getBegin());

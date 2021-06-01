@@ -27,6 +27,7 @@ import org.e2immu.analyser.model.expression.InlinedMethod;
 import org.e2immu.analyser.model.expression.Negation;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
+import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
 
@@ -127,6 +128,19 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
                         assertTrue(d.variableInfoContainer().isPrevious());
                         assertEquals("nullable instance type T", d.currentValue().toString());
                         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+                    }
+                }
+            }
+            if ("getOrDefault".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof This) {
+                    assertEquals("org.e2immu.support.SetOnce.this", d.variable().fullyQualifiedName());
+                    if("0".equals(d.statementId())) {
+                        assertEquals(Level.TRUE, d.getProperty(VariableProperty.CONTEXT_MODIFIED_DELAY));
+                      //  int expectResolved = d.iteration() == 0 ? Level.DELAY: Level.TRUE;
+                      //  assertEquals(expectResolved, d.getProperty(VP.C));
+                    }
+                    if ("1".equals(d.statementId())) {
+                        assertEquals(Level.FALSE, d.getProperty(VariableProperty.CONTEXT_MODIFIED_DELAY));
                     }
                 }
             }
@@ -231,12 +245,12 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
                 } else {
                     assertEquals("null==t", d.methodAnalysis().getPreconditionForEventual().expression().toString());
                 }
-                assertEquals(d.iteration() >= 1, d.methodAnalysis().methodLevelData().linksHaveBeenEstablished.isSet());
-                int expectModified = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
+                assertEquals(d.iteration() >= 2, d.methodAnalysis().methodLevelData().linksHaveBeenEstablished.isSet());
+                int expectModified = d.iteration() <= 1 ? Level.DELAY : Level.TRUE;
                 assertEquals(expectModified, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
 
                 MethodAnalysis.Eventual eventual = d.methodAnalysis().getEventual();
-                if (d.iteration() > 2) {
+                if (d.iteration() > 3) {
                     assertTrue(eventual.mark());
                 } else {
                     assertSame(MethodAnalysis.DELAYED_EVENTUAL, eventual);
@@ -278,7 +292,7 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
 
         testSupportClass(List.of("SetOnce"), 0, 0, new DebugConfiguration.Builder()
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                //    .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)

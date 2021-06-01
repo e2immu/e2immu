@@ -13,7 +13,7 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parserfailing;
+package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.parser.CommonTestRunner;
@@ -24,6 +24,9 @@ import java.util.List;
 
 public class Test_Util_09_Logger extends CommonTestRunner {
 
+    public Test_Util_09_Logger() {
+        super(true);
+    }
 
     @Test
     public void test() throws IOException {

@@ -796,17 +796,19 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
             log(MODIFICATION, "Method {} cannot be @NotModified: some fields have content modifications: {}",
                     methodInfo.fullyQualifiedName(), fieldsWithContentModifications);
         }
-        if (!isModified && !methodInfo.methodInspection.get().isStatic()) {
+        if (!isModified) { // also in static cases, sometimes a modification is written to "this" (MethodCall)
             VariableInfo thisVariable = getThisAsVariable();
-            int thisModified = thisVariable.getProperty(VariableProperty.CONTEXT_MODIFIED);
-            if (thisModified == Level.DELAY) {
-                log(DELAYED, "In {}: other local methods are called, but no idea if they are @NotModified yet, delaying",
-                        methodInfo.distinguishingName());
-                return DELAYS;
+            if(thisVariable != null) {
+                int thisModified = thisVariable.getProperty(VariableProperty.CONTEXT_MODIFIED);
+                if (thisModified == Level.DELAY) {
+                    log(DELAYED, "In {}: other local methods are called, but no idea if they are @NotModified yet, delaying",
+                            methodInfo.distinguishingName());
+                    return DELAYS;
+                }
+                isModified = thisModified == Level.TRUE;
+                log(MODIFICATION, "Mark method {} as {}", methodInfo.distinguishingName(),
+                        isModified ? "@Modified" : "@NotModified");
             }
-            isModified = thisModified == Level.TRUE;
-            log(MODIFICATION, "Mark method {} as {}", methodInfo.distinguishingName(),
-                    isModified ? "@Modified" : "@NotModified");
         } // else: already true, so no need to look at this
 
         if (!isModified) {

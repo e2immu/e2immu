@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.inspector;
 
+import org.e2immu.analyser.inspector.expr.ParseMethodCallExpr;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.parser.Primitives;
@@ -275,8 +276,10 @@ public class TypeContext implements TypeAndInspectionProvider {
                                                     int parametersPresented,
                                                     boolean decrementWhenNotStatic,
                                                     Map<NamedType, ParameterizedType> typeMap,
-                                                    List<MethodCandidate> result) {
-        recursivelyResolveOverloadedMethods(typeOfObject, methodName, parametersPresented, decrementWhenNotStatic, typeMap, result, new HashSet<>(), false);
+                                                    List<MethodCandidate> result,
+                                                    ParseMethodCallExpr.ScopeNature scopeNature) {
+        recursivelyResolveOverloadedMethods(typeOfObject, methodName, parametersPresented, decrementWhenNotStatic,
+                typeMap, result, new HashSet<>(), false, scopeNature);
     }
 
     private void recursivelyResolveOverloadedMethods(ParameterizedType typeOfObject,
@@ -286,32 +289,37 @@ public class TypeContext implements TypeAndInspectionProvider {
                                                      Map<NamedType, ParameterizedType> typeMap,
                                                      List<MethodCandidate> result,
                                                      Set<TypeInfo> visited,
-                                                     boolean staticOnly) {
+                                                     boolean staticOnly,
+                                                     ParseMethodCallExpr.ScopeNature scopeNature) {
         List<TypeInfo> multipleTypeInfoObjects = extractTypeInfo(typeOfObject, typeMap);
         // more than one: only in the rare situation of multiple type bounds
         for (TypeInfo typeInfo : multipleTypeInfoObjects) {
             if (!visited.contains(typeInfo)) {
                 visited.add(typeInfo);
-                resolveOverloadedMethodsSingleType(typeInfo, staticOnly, methodName, parametersPresented, decrementWhenNotStatic, typeMap, result, visited);
+                resolveOverloadedMethodsSingleType(typeInfo, staticOnly, scopeNature, methodName, parametersPresented,
+                        decrementWhenNotStatic, typeMap, result, visited);
             }
         }
         // it is possible that we find the method in one of the statically imported types... with * import
         for (TypeInfo typeInfo : importStaticAsterisk) {
             if (!visited.contains(typeInfo)) {
                 visited.add(typeInfo);
-                resolveOverloadedMethodsSingleType(typeInfo, true, methodName, parametersPresented, decrementWhenNotStatic, typeMap, result, visited);
+                resolveOverloadedMethodsSingleType(typeInfo, true, scopeNature, methodName,
+                        parametersPresented, decrementWhenNotStatic, typeMap, result, visited);
             }
         }
         // or import by name
         TypeInfo byName = importStaticMemberToTypeInfo.get(methodName);
         if (byName != null && !visited.contains(byName)) {
             visited.add(byName);
-            resolveOverloadedMethodsSingleType(byName, true, methodName, parametersPresented, decrementWhenNotStatic, typeMap, result, visited);
+            resolveOverloadedMethodsSingleType(byName, true, scopeNature, methodName,
+                    parametersPresented, decrementWhenNotStatic, typeMap, result, visited);
         }
     }
 
     private void resolveOverloadedMethodsSingleType(TypeInfo typeInfo,
                                                     boolean staticOnly,
+                                                    ParseMethodCallExpr.ScopeNature scopeNature,
                                                     String methodName,
                                                     int parametersPresented,
                                                     boolean decrementWhenNotStatic,
@@ -337,18 +345,22 @@ public class TypeContext implements TypeAndInspectionProvider {
                 "Parent class of " + typeInfo.fullyQualifiedName + " is null";
         if (!isJLO) {
             recursivelyResolveOverloadedMethods(parentClass, methodName, parametersPresented, decrementWhenNotStatic,
-                    joinMaps(typeMap, parentClass), result, visited, staticOnly);
+                    joinMaps(typeMap, parentClass), result, visited, staticOnly, scopeNature);
         }
         for (ParameterizedType interfaceImplemented : typeInspection.interfacesImplemented()) {
             recursivelyResolveOverloadedMethods(interfaceImplemented, methodName, parametersPresented,
-                    decrementWhenNotStatic, joinMaps(typeMap, interfaceImplemented), result, visited, staticOnly);
+                    decrementWhenNotStatic, joinMaps(typeMap, interfaceImplemented), result, visited, staticOnly, scopeNature);
         }
+        // See UtilityClass_2 for an example where we should go to the static methods of the enclosing type
         if (typeInfo.packageNameOrEnclosingType.isRight()) {
             // if I'm in a static subtype, I can only access the static methods of the enclosing type
-            ParameterizedType enclosingType = typeInfo.packageNameOrEnclosingType.getRight().asParameterizedType(this);
             boolean onlyStatic = staticOnly || typeInspection.isStatic();
-            recursivelyResolveOverloadedMethods(enclosingType, methodName, parametersPresented, decrementWhenNotStatic,
-                    joinMaps(typeMap, enclosingType), result, visited, onlyStatic);
+            if (onlyStatic && scopeNature != ParseMethodCallExpr.ScopeNature.INSTANCE ||
+                    !onlyStatic && scopeNature != ParseMethodCallExpr.ScopeNature.STATIC) {
+                ParameterizedType enclosingType = typeInfo.packageNameOrEnclosingType.getRight().asParameterizedType(this);
+                recursivelyResolveOverloadedMethods(enclosingType, methodName, parametersPresented, decrementWhenNotStatic,
+                        joinMaps(typeMap, enclosingType), result, visited, onlyStatic, scopeNature);
+            }
         }
     }
 

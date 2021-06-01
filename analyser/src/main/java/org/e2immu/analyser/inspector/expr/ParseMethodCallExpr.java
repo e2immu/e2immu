@@ -38,6 +38,11 @@ import static org.e2immu.analyser.util.Logger.log;
 public record ParseMethodCallExpr(InspectionProvider inspectionProvider) {
     private static final Logger LOGGER = LoggerFactory.getLogger(ParseMethodCallExpr.class);
 
+    public enum ScopeNature {
+        ABSENT,
+        STATIC,
+        INSTANCE,
+    }
     public Expression parse(ExpressionContext expressionContext, MethodCallExpr methodCallExpr, MethodTypeParameterMap singleAbstractMethod) {
         log(METHOD_CALL, "Start parsing method call {}, method name {}, single abstract {}", methodCallExpr,
                 methodCallExpr.getNameAsString(), singleAbstractMethod);
@@ -45,9 +50,11 @@ public record ParseMethodCallExpr(InspectionProvider inspectionProvider) {
         Expression scope = methodCallExpr.getScope().map(expressionContext::parseExpression).orElse(null);
         // depending on the object, we'll need to find the method somewhere
         ParameterizedType scopeType;
+        ScopeNature scopeNature;
 
         if (scope == null) {
             scopeType = new ParameterizedType(expressionContext.enclosingType, 0);
+            scopeNature = ScopeNature.ABSENT; // could be static, could be instance
         } else {
             scopeType = scope.returnType();
             if (scope instanceof VariableExpression variableExpression) {
@@ -57,13 +64,15 @@ public record ParseMethodCallExpr(InspectionProvider inspectionProvider) {
                     }
                 }
             }
+            scopeNature = scope instanceof TypeExpression ? ScopeNature.STATIC : ScopeNature.INSTANCE;
         }
         Map<NamedType, ParameterizedType> scopeTypeMap = scopeType.initialTypeParameterMap(inspectionProvider);
         log(METHOD_CALL, "Type map of method call {} is {}", methodCallExpr.getNameAsString(), scopeTypeMap);
         String methodName = methodCallExpr.getName().asString();
         List<TypeContext.MethodCandidate> methodCandidates = new ArrayList<>();
         expressionContext.typeContext.recursivelyResolveOverloadedMethods(scopeType, methodName,
-                methodCallExpr.getArguments().size(), false, scopeTypeMap, methodCandidates);
+                methodCallExpr.getArguments().size(), false, scopeTypeMap, methodCandidates,
+                scopeNature);
         if (methodCandidates.isEmpty()) {
             log(METHOD_CALL, "Creating unevaluated method call, no candidates found");
             return new UnevaluatedMethodCall(methodName);

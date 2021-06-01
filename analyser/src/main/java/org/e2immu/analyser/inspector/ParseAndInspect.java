@@ -152,7 +152,7 @@ public record ParseAndInspect(Resources classPath,
                     TypeInspection inspection = typeContextOfFile.getTypeInspection(typeInfo);
                     if (inspection != null) {
                         inspection.subTypes()
-                                .stream().filter(st -> typeContextOfFile.getTypeInspection(st).importedStatically())
+                                .stream().filter(st -> typeContextOfFile.getTypeInspection(st).isStatic())
                                 .forEach(st -> typeContextOfFile.addToContext(st, true));
                     }
                 } else {

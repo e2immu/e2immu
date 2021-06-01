@@ -16,6 +16,8 @@ package org.e2immu.analyser.util;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.LoggerContext;
+import org.e2immu.annotation.Container;
+import org.e2immu.annotation.Modified;
 import org.e2immu.annotation.NotModified;
 import org.e2immu.annotation.UtilityClass;
 import org.slf4j.LoggerFactory;
@@ -26,7 +28,7 @@ import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-@UtilityClass
+@Container
 public class Logger {
 
     private static LogMethod logger;
@@ -34,6 +36,7 @@ public class Logger {
 
     @FunctionalInterface
     public interface LogMethod {
+        @NotModified
         void log(LogTarget logTarget, String message, Object... objects);
     }
 
@@ -202,7 +205,7 @@ public class Logger {
 
     // activated from Main, going over logback classic
 
-    @NotModified
+    @Modified
     public static void activate(Collection<LogTarget> logTargetSet) {
         LoggerContext loggerContext = (LoggerContext) LoggerFactory.getILoggerFactory();
         for (LogTarget logTarget : logTargetSet) {
@@ -217,12 +220,13 @@ public class Logger {
 
     // activated from Gradle, going over Gradle's log system
 
-    @NotModified
-    public static void activate(LogMethod logMethod, Collection<LogTarget> logTargetSet) {
+    @Modified
+    public static void activate(@NotModified LogMethod logMethod, Collection<LogTarget> logTargetSet) {
         logger = logMethod;
         logTargets = Set.copyOf(logTargetSet);
     }
 
+    @NotModified
     public static boolean isLogEnabled(LogTarget logTarget) {
         return logTargets.contains(logTarget);
     }

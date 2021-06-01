@@ -289,6 +289,17 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         ImmutableData immutableData = recursiveCall || partOfCallCycle ? NOT_EVENTUAL :
                 computeContextImmutable(evaluationContext);
 
+        // modification on a type expression -> make sure that this gets modified too!
+        if (object instanceof TypeExpression) {
+            /* static method, not on a variable (not System.out.println, e.g.), with modification information
+            Translate the modification to a 'this' variable
+             */
+            This thisType = new This(evaluationContext.getAnalyserContext(), evaluationContext.getCurrentType());
+            builder.setProperty(thisType, VariableProperty.CONTEXT_MODIFIED, modified); // without being "read"
+            builder.setProperty(thisType, VariableProperty.CONTEXT_MODIFIED_DELAY, contextModifiedDelay);
+            builder.setProperty(thisType, VariableProperty.METHOD_CALLED, Level.TRUE);
+        }
+
         // scope
         EvaluationResult objectResult = object.evaluate(evaluationContext, new ForwardEvaluationInfo(Map.of(
                 VariableProperty.CONTEXT_NOT_NULL, notNullForward,
@@ -531,7 +542,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         VariableExpression variableExpression;
         if ((variableExpression = objectValue.asInstanceOf(VariableExpression.class)) != null) {
             newObject = builder.currentInstance(variableExpression.variable());
-            if(newObject == null) return null; // DELAY
+            if (newObject == null) return null; // DELAY
         } else if (objectValue instanceof TypeExpression) {
             assert methodInfo.methodInspection.get().isStatic();
             return null; // static method

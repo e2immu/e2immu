@@ -70,18 +70,6 @@ public interface TypeInspection extends Inspection {
         return getAnnotations().stream().anyMatch(ann -> Primitives.isFunctionalInterfaceAnnotation(ann.typeInfo()));
     }
 
-    default boolean isSealed() {
-        return !permittedWhenSealed().isEmpty();
-    }
-
-    default boolean isAnnotation() {
-        return typeNature() == TypeNature.ANNOTATION;
-    }
-
-    default boolean importedStatically() {
-        return typeNature() != TypeNature.CLASS || isStatic();
-    }
-
     enum Methods {
 
         THIS_TYPE_ONLY(false, null),
@@ -95,6 +83,7 @@ public interface TypeInspection extends Inspection {
         }
 
         final boolean recurse;
+
         final Methods nonRecursiveVariant;
     }
 
@@ -184,11 +173,26 @@ public interface TypeInspection extends Inspection {
 
     default boolean isStatic() {
         if (typeInfo().packageNameOrEnclosingType.isLeft()) return true; // independent type
-        return modifiers().contains(TypeModifier.STATIC); // static sub type
+        return typeNature() != TypeNature.CLASS || modifiers().contains(TypeModifier.STATIC); // static sub type
     }
 
     default boolean isInterface() {
         return typeNature() == TypeNature.INTERFACE;
     }
 
+    default boolean isEnum() {
+        return typeNature() == TypeNature.ENUM;
+    }
+
+    default boolean isRecord() {
+        return typeNature() == TypeNature.RECORD;
+    }
+
+    default boolean isAnnotation() {
+        return typeNature() == TypeNature.ANNOTATION;
+    }
+
+    default boolean isSealed() {
+        return !permittedWhenSealed().isEmpty();
+    }
 }

@@ -245,7 +245,7 @@ public class Test_26_Enum extends CommonTestRunner {
 
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
-            int expectImmutable = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_E2IMMUTABLE;
+            int expectImmutable = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EFFECTIVELY_E2IMMUTABLE;
             assertEquals(expectImmutable, d.typeAnalysis().getProperty(VariableProperty.IMMUTABLE));
         };
 

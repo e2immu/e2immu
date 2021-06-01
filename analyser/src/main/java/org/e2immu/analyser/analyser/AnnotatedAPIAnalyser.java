@@ -184,7 +184,7 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
         MethodAnalysisImpl.Builder builder = new MethodAnalysisImpl.Builder(CONTRACTED, getPrimitives(),
                 this, this, methodInfo, parameterAnalyses);
         builder.setProperty(VariableProperty.IDENTITY, Level.FALSE);
-        builder.setProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD, Level.FALSE);
+        builder.setProperty(VariableProperty.MODIFIED_METHOD, Level.FALSE);
         builder.setProperty(VariableProperty.CONTEXT_MODIFIED, Level.FALSE);
         builder.setProperty(VariableProperty.INDEPENDENT, Level.TRUE);
         builder.setProperty(VariableProperty.CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
@@ -213,7 +213,7 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
         MethodAnalysisImpl.Builder builder = new MethodAnalysisImpl.Builder(CONTRACTED, getPrimitives(),
                 this, this, methodInfo, parameterAnalyses);
         builder.setProperty(VariableProperty.IDENTITY, Level.FALSE);
-        builder.setProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD, Level.FALSE);
+        builder.setProperty(VariableProperty.MODIFIED_METHOD, Level.FALSE);
         builder.setProperty(VariableProperty.CONTEXT_MODIFIED, Level.FALSE);
         builder.setProperty(VariableProperty.INDEPENDENT, Level.TRUE);
         builder.setProperty(VariableProperty.CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
