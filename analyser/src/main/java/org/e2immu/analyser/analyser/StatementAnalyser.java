@@ -1185,6 +1185,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             }
         });
         res.keySet().removeAll(GroupPropertyValues.PROPERTIES);
+        res.keySet().removeAll(GroupPropertyValues.DELAY_PROPERTIES);
         return res;
     }
 

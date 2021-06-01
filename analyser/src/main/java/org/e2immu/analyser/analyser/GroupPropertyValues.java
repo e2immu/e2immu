@@ -21,6 +21,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
+import static org.e2immu.analyser.analyser.VariableProperty.*;
+
 public class GroupPropertyValues {
 
     public static final Set<VariableProperty> PROPERTIES = Set.of(
@@ -30,6 +32,9 @@ public class GroupPropertyValues {
             VariableProperty.EXTERNAL_NOT_NULL,
             VariableProperty.EXTERNAL_IMMUTABLE,
             VariableProperty.CONTEXT_IMMUTABLE);
+
+    public static final Set<VariableProperty> DELAY_PROPERTIES = Set.of(CONTEXT_MODIFIED_DELAY,
+            CONTEXT_IMMUTABLE_DELAY, CONTEXT_NOT_NULL_DELAY);
 
     private final Map<VariableProperty, Map<Variable, Integer>> map = new HashMap<>();
 

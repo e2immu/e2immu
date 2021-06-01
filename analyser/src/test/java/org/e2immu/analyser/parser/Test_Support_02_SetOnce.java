@@ -134,14 +134,6 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
             if ("getOrDefault".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof This) {
                     assertEquals("org.e2immu.support.SetOnce.this", d.variable().fullyQualifiedName());
-                    if("0".equals(d.statementId())) {
-                        assertEquals(Level.TRUE, d.getProperty(VariableProperty.CONTEXT_MODIFIED_DELAY));
-                      //  int expectResolved = d.iteration() == 0 ? Level.DELAY: Level.TRUE;
-                      //  assertEquals(expectResolved, d.getProperty(VP.C));
-                    }
-                    if ("1".equals(d.statementId())) {
-                        assertEquals(Level.FALSE, d.getProperty(VariableProperty.CONTEXT_MODIFIED_DELAY));
-                    }
                 }
             }
             if ("getOrElse".equals(d.methodInfo().name)) {
@@ -250,7 +242,7 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
                 assertEquals(expectModified, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
 
                 MethodAnalysis.Eventual eventual = d.methodAnalysis().getEventual();
-                if (d.iteration() > 3) {
+                if (d.iteration() >= 3) {
                     assertTrue(eventual.mark());
                 } else {
                     assertSame(MethodAnalysis.DELAYED_EVENTUAL, eventual);

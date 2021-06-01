@@ -1113,4 +1113,12 @@ public class Test_16_Modification extends CommonTestRunner {
         testClass("Modification_17", 0, 0, new DebugConfiguration.Builder()
                 .build());
     }
+
+    // static method reference
+    @Test
+    public void test18() throws IOException {
+        // statics
+        testClass("Modification_18", 0, 0, new DebugConfiguration.Builder()
+                .build());
+    }
 }

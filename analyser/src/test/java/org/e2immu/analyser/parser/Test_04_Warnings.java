@@ -346,8 +346,8 @@ public class Test_04_Warnings extends CommonTestRunner {
             }
             if ("methodMustNotBeStatic5".equals(d.methodInfo().name) && d.variable() instanceof ParameterInfo) {
                 if ("0".equals(d.statementId())) {
-                    int expectDelay = d.iteration() <= 3 ? Level.TRUE : Level.DELAY;
-                    assertEquals(expectDelay, d.getProperty(VariableProperty.CONTEXT_MODIFIED_DELAY));
+                    // CMD can never be in a variable property!
+                    assertEquals(Level.DELAY, d.getProperty(VariableProperty.CONTEXT_MODIFIED_DELAY));
                 }
             }
             if ("apply".equals(d.methodInfo().name)) {

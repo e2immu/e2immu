@@ -198,7 +198,7 @@ public class Logger {
 
     // convenience method for tests, going over logback classic
 
-    @NotModified
+    @Modified
     public static void activate(LogTarget... logTargetArray) {
         activate(Arrays.stream(logTargetArray).collect(Collectors.toSet()));
     }

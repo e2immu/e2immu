@@ -179,6 +179,8 @@ class VariableInfoImpl implements VariableInfo {
     // ***************************** NON-INTERFACE CODE: SETTERS ************************
 
     void setProperty(VariableProperty variableProperty, int value) {
+        assert !GroupPropertyValues.DELAY_PROPERTIES.contains(variableProperty) :
+                "?? trying to add a delay property to a variable";
         try {
             properties.put(variableProperty, value);
         } catch (RuntimeException e) {
