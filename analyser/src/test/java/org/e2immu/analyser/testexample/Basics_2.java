@@ -29,7 +29,7 @@ public class Basics_2 {
     @Variable
     @Nullable
     @Modified(absent = true)
-    @NotModified(absent = true)
+    @NotModified
     private String string;
 
     @Nullable

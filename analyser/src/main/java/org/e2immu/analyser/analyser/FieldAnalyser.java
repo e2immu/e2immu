@@ -970,9 +970,9 @@ public class FieldAnalyser extends AbstractAnalyser {
         int effectivelyFinal = fieldAnalysis.getProperty(VariableProperty.FINAL);
         if (effectivelyFinal == Level.DELAY) return DELAYS;
         if (effectivelyFinal == Level.FALSE) {
-            fieldAnalysis.setProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD, Level.TRUE);
-            log(MODIFICATION, "Field {} is @Modified, because it is @Variable", fqn);
-            return DONE;
+         //   fieldAnalysis.setProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD, Level.TRUE);
+         //   log(MODIFICATION, "Field {} is @Modified, because it is @Variable", fqn);
+         //   return DONE;
         }
 
         boolean isPrimitive = Primitives.isPrimitiveExcludingVoid(fieldInfo.type);

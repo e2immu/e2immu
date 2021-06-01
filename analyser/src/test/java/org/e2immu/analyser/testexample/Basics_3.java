@@ -21,6 +21,7 @@ public class Basics_3 {
 
     @Nullable
     @Variable
+    @NotModified
     private String s;
 
     @Modified

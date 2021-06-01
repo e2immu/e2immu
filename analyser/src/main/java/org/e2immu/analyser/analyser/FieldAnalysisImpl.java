@@ -253,7 +253,7 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
             if (modified == Level.TRUE && MultiLevel.isEventuallyE2Immutable(ownerImmutable)) {
                 String labels = typeAnalysisOfOwner.markLabel();
                 annotations.put(e2ImmuAnnotationExpressions.notModified.copyWith(primitives, "after", labels), true);
-            } else if (allowModificationAnnotation(effectivelyFinal)) {
+            } else {
                 AnnotationExpression ae = modified == Level.FALSE ? e2ImmuAnnotationExpressions.notModified :
                         e2ImmuAnnotationExpressions.modified;
                 annotations.put(ae, true);

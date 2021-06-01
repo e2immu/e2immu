@@ -114,7 +114,7 @@ public record CheckLinks(InspectionProvider inspectionProvider, E2ImmuAnnotation
         boolean verifyAbsent = annotation.e2ImmuAnnotationParameters().isVerifyAbsent();
 
         if (verifyAbsent) {
-            if (computedValue != null) {
+            if (computedValue != null || inAnalysis != null && inAnalysis.getValue() == Boolean.TRUE) {
                 messages.add(Message.newMessage(where, Message.Label.ANNOTATION_UNEXPECTEDLY_PRESENT, annotationSimpleName));
                 assert inAnalysis != null;
                 analysis.annotationChecks.put(inAnalysis.getKey(), Analysis.AnnotationCheck.PRESENT);
