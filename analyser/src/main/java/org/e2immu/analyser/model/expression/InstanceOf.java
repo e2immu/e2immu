@@ -157,9 +157,9 @@ public record InstanceOf(Primitives primitives,
             return builder.setExpression(new UnknownExpression(returnType(), "instanceof value")).build(); // no clue, too deep
         }
         if (value instanceof ClassExpression ce) {
-            EvaluationResult er = BooleanConstant.of(parameterizedType.isAssignableFrom(InspectionProvider.defaultFrom(primitives),
+           /* EvaluationResult er = BooleanConstant.of(parameterizedType.isAssignableFrom(InspectionProvider.defaultFrom(primitives),
                     ce.parameterizedType()), evaluationContext);
-            return builder.compose(er).setExpression(er.value()).build();
+            return builder.compose(er).setExpression(er.value()).build();*/
         }
         // this error occurs with a TypeExpression, probably due to our code giving priority to types rather than
         // variable names, when you use a type name as a variable name, which is perfectly allowed in Java but is

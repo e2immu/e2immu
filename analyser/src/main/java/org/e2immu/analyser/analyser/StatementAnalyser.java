@@ -2034,7 +2034,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         public boolean escapesAlwaysButNotWithPrecondition() {
             if (execution != NEVER && startOfBlock != null) {
                 StatementAnalysis lastStatement = startOfBlock.lastStatement().statementAnalysis;
-                return lastStatement.flowData.interruptStatus() == ALWAYS && !lastStatement.flowData.escapesViaException();
+                return lastStatement.flowData.interruptStatus() == ALWAYS && !lastStatement.flowData.alwaysEscapesViaException();
             }
             return false;
         }
@@ -2179,7 +2179,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 .startingPointToLabels(evaluationContext, startOfBlock.statementAnalysis);
         return startingPointToLabels.entrySet().stream().map(e -> {
             StatementAnalyser lastStatement = startOfBlock.lastStatementOfSwitchOldStyle(e.getKey());
-            boolean alwaysEscapes = statementAnalysis.flowData.escapesViaException();
+            boolean alwaysEscapes = statementAnalysis.flowData.alwaysEscapesViaException();
             return new StatementAnalysis.ConditionAndLastStatement(e.getValue(), e.getKey(), lastStatement, alwaysEscapes);
         }).toList();
     }

@@ -13,13 +13,12 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parserfailing;
+package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.variable.ReturnVariable;
-import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
 
@@ -196,7 +195,7 @@ public class Test_Util_01_SMapList extends CommonTestRunner {
         if ("list".equals(d.methodInfo().name)) {
             if (Set.of("0", "1", "2", "3").contains(d.statementId())) {
                 assertFalse(d.statementAnalysis().flowData.isUnreachable());
-                assertFalse(d.statementAnalysis().flowData.escapesViaException(), "In " + d.statementId());
+                assertFalse(d.statementAnalysis().flowData.alwaysEscapesViaException(), "In " + d.statementId());
             }
 
             if ("0".equals(d.statementId()) || "1".equals(d.statementId())) {
@@ -238,6 +237,9 @@ public class Test_Util_01_SMapList extends CommonTestRunner {
                     d.getReturnAsVariable().getValue().toString());
             int retValNotNull = returnValue1.getProperty(VariableProperty.NOT_NULL_EXPRESSION);
             assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL, retValNotNull);
+
+            assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL,
+                    d.methodAnalysis().getProperty(VariableProperty.NOT_NULL_EXPRESSION));
         }
         if ("copy".equals(name)) {
             VariableInfo returnValue = d.getReturnAsVariable();

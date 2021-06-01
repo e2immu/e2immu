@@ -42,7 +42,8 @@ public class Test_51_InstanceOf extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("InstanceOf_1".equals(d.methodInfo().name) && "0".equals(d.statementId())) {
                 if (d.variable() instanceof FieldReference fr && "number".equals(fr.fieldInfo.name)) {
-                    String expect = "in instanceof Number number?in/*@NotNull*/:3.14";
+                    String expect = d.iteration() == 0 ? "in instanceof Number number?<s:Object>:3.14"
+                            : "in instanceof Number number?in/*@NotNull*/:3.14";
                     assertEquals(expect, d.currentValue().toString());
                 }
                 if (d.variable() instanceof LocalVariableReference lvr && "number".equals(lvr.simpleName())) {
@@ -79,7 +80,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
         };
 
         testClass("InstanceOf_2", 0, 0, new DebugConfiguration.Builder()
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                //.addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 
@@ -131,6 +132,12 @@ public class Test_51_InstanceOf extends CommonTestRunner {
     @Test
     public void test_6() throws IOException {
         testClass("InstanceOf_6", 1, 0, new DebugConfiguration.Builder()
+                .build());
+    }
+
+    @Test
+    public void test_7() throws IOException {
+        testClass("InstanceOf_7", 0, 0, new DebugConfiguration.Builder()
                 .build());
     }
 }

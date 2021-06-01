@@ -173,8 +173,8 @@ public class FlowData {
     /*
     at some point we need to make a distinction between different
      */
-    public boolean escapesViaException() {
-        return interruptsFlow.isSet() && interruptsFlow.get().containsKey(ESCAPE);
+    public boolean alwaysEscapesViaException() {
+        return interruptsFlow.isSet() && interruptsFlow.get().get(ESCAPE) == Execution.ALWAYS;
     }
 
     public enum Execution {

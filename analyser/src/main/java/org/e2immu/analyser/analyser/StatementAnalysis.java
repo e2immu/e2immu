@@ -141,7 +141,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             return false;
         }
         return followReplacements().navigationData.next.get().map(statementAnalysis -> {
-            if (statementAnalysis.flowData.escapesViaException()) {
+            if (statementAnalysis.flowData.alwaysEscapesViaException()) {
                 return true;
             }
             return statementAnalysis.lastStatementIsEscape();

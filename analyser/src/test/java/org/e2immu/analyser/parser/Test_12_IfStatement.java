@@ -177,7 +177,7 @@ public class Test_12_IfStatement extends CommonTestRunner {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("pad".equals(d.methodInfo().name)) {
                 boolean unreachable = "1".equals(d.statementId());
-                assertEquals(unreachable, d.statementAnalysis().flowData.escapesViaException());
+                assertEquals(unreachable, d.statementAnalysis().flowData.alwaysEscapesViaException());
             }
         };
 
