@@ -16,14 +16,12 @@ package org.e2immu.analyser.util;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.LoggerContext;
-import org.e2immu.annotation.Container;
-import org.e2immu.annotation.Modified;
-import org.e2immu.annotation.NotModified;
-import org.e2immu.annotation.UtilityClass;
+import org.e2immu.annotation.*;
 import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -31,6 +29,9 @@ import java.util.stream.Collectors;
 @Container
 public class Logger {
 
+    public static final String ACTIVATE_THE_LOG_SYSTEM = "You must activate the log system";
+
+    @Variable // not eventually immutable, the logger can be overwritten
     private static LogMethod logger;
     private static Set<LogTarget> logTargets;
 
@@ -221,19 +222,25 @@ public class Logger {
     // activated from Gradle, going over Gradle's log system
 
     @Modified
-    public static void activate(@NotModified LogMethod logMethod, Collection<LogTarget> logTargetSet) {
-        logger = logMethod;
+    public static void activate(@NotModified @NotNull LogMethod logMethod,
+                                @NotNull1 Collection<LogTarget> logTargetSet) {
+        logger = Objects.requireNonNull(logMethod);
         logTargets = Set.copyOf(logTargetSet);
     }
 
     @NotModified
     public static boolean isLogEnabled(LogTarget logTarget) {
+        if (logTargets == null || logger == null) {
+            throw new UnsupportedOperationException(ACTIVATE_THE_LOG_SYSTEM);
+        }
         return logTargets.contains(logTarget);
     }
 
     @NotModified
     public static void log(LogTarget logTarget, String msg, Object... objects) {
-        if (logTargets == null) throw new UnsupportedOperationException("You must activate the log system");
+        if (logTargets == null || logger == null) {
+            throw new UnsupportedOperationException(ACTIVATE_THE_LOG_SYSTEM);
+        }
         if (logTargets.contains(logTarget)) {
             logger.log(logTarget, msg, objects);
         }
@@ -241,7 +248,9 @@ public class Logger {
 
     @NotModified
     public static void log(LogTarget logTarget, String msg, Object object, Supplier<Object> supplier) {
-        if (logTargets == null) throw new UnsupportedOperationException("You must activate the log system");
+        if (logTargets == null || logger == null) {
+            throw new UnsupportedOperationException(ACTIVATE_THE_LOG_SYSTEM);
+        }
         if (logTargets.contains(logTarget)) {
             logger.log(logTarget, msg, object, supplier.get());
         }
@@ -249,7 +258,9 @@ public class Logger {
 
     @NotModified
     public static void log(LogTarget logTarget, String msg, Supplier<Object> supplier) {
-        if (logTargets == null) throw new UnsupportedOperationException("You must activate the log system");
+        if (logTargets == null || logger == null) {
+            throw new UnsupportedOperationException(ACTIVATE_THE_LOG_SYSTEM);
+        }
         if (logTargets.contains(logTarget)) {
             logger.log(logTarget, msg, supplier.get());
         }

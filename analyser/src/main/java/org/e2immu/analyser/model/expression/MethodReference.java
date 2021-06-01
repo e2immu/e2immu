@@ -96,15 +96,22 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
         if (propagateMod == Level.TRUE) {
             MethodAnalysis methodAnalysis = evaluationContext.getAnalyserContext().getMethodAnalysis(methodInfo);
             int modified = methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD);
-            Map<VariableProperty, Integer> map;
-            if (modified == Level.DELAY) {
-                map = Map.of(VariableProperty.CONTEXT_MODIFIED_DELAY, Level.TRUE,
-                        VariableProperty.CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
-            } else {
-                map = Map.of(VariableProperty.CONTEXT_MODIFIED, modified,
-                        VariableProperty.CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
-            }
+            int contextModifiedDelay = Level.fromBool(modified == Level.DELAY);
+
+            Map<VariableProperty, Integer> map = Map.of(
+                    VariableProperty.CONTEXT_MODIFIED, modified,
+                    VariableProperty.CONTEXT_MODIFIED_DELAY, contextModifiedDelay,
+                    VariableProperty.CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
+
             scopeForward = new ForwardEvaluationInfo(map, true, false);
+
+            // as in MethodCall, we transfer modification of static methods onto 'this'
+            if (methodInfo.methodInspection.get().isStatic()) {
+                This thisType = new This(evaluationContext.getAnalyserContext(), evaluationContext.getCurrentType());
+                builder.setProperty(thisType, VariableProperty.CONTEXT_MODIFIED, modified); // without being "read"
+                builder.setProperty(thisType, VariableProperty.CONTEXT_MODIFIED_DELAY, contextModifiedDelay);
+                builder.setProperty(thisType, VariableProperty.METHOD_CALLED, Level.TRUE);
+            }
         } else {
             scopeForward = ForwardEvaluationInfo.NOT_NULL;
         }

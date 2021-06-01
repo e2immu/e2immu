@@ -92,19 +92,19 @@ public class JavaUtilStream {
         long count();
 
         @NotNull
-        <R> Stream<R> map(@NotNull Function<? super T, ? extends R> mapper);
+        <R> Stream<R> map(@PropagateModification @NotNull Function<? super T, ? extends R> mapper);
 
         @NotNull
         <R, A> R collect(@NotNull Collector<? super T, A, R> collector);
 
         @NotNull
-        Stream<T> filter(@NotNull Predicate<? super T> predicate);
+        Stream<T> filter(@PropagateModification @NotNull Predicate<? super T> predicate);
 
         @NotNull
-        IntStream mapToInt(@NotNull ToIntFunction<? super T> mapper);
+        IntStream mapToInt(@PropagateModification @NotNull ToIntFunction<? super T> mapper);
 
         @NotNull
-        Optional<T> min(@NotNull Comparator<? super T> comparator);
+        Optional<T> min(@PropagateModification @NotNull Comparator<? super T> comparator);
 
         @NotNull
         Stream<T> sorted();
@@ -114,6 +114,9 @@ public class JavaUtilStream {
 
         @NotNull
         Optional<T> findFirst();
+
+        @NotNull
+        void forEach(@PropagateModification Consumer<? super T> action);
     }
 
 }
