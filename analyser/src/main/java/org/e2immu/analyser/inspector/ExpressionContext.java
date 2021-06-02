@@ -232,7 +232,9 @@ public class ExpressionContext {
             } else if (statement.isWhileStmt()) {
                 newStatement = whileStatement(labelOfStatement, (WhileStmt) statement);
             } else if (statement.isBlockStmt()) {
-                newStatement = newVariableContext("block").parseBlockOrStatement(statement, labelOfStatement);
+                ExpressionContext context = newVariableContext("block");
+                newStatement = context.parseBlockOrStatement(statement, labelOfStatement);
+                inherit(context);
             } else if (statement.isIfStmt()) {
                 newStatement = ifThenElseStatement((IfStmt) statement);
             } else if (statement.isSynchronizedStmt()) {
@@ -303,12 +305,15 @@ public class ExpressionContext {
         }
         if (switchStmt.getEntries().stream().anyMatch(e ->
                 e.getType() == com.github.javaparser.ast.stmt.SwitchEntry.Type.STATEMENT_GROUP)) {
-            return switchStatementOldStyle(newExpressionContext, selector, switchStmt);
+            var res = switchStatementOldStyle(newExpressionContext, selector, switchStmt);
+            inherit(newExpressionContext);
+            return res;
         }
         List<SwitchEntry> entries = switchStmt.getEntries()
                 .stream()
                 .map(entry -> newExpressionContext.switchEntry(selector, entry))
                 .collect(Collectors.toList());
+        inherit(newExpressionContext);
         return new SwitchStatementNewStyle(selector, entries);
     }
 
@@ -374,9 +379,9 @@ public class ExpressionContext {
     }
 
     private org.e2immu.analyser.model.Statement forStatement(String label, ForStmt forStmt) {
-        List<Expression> initialisers = forStmt.getInitialization().stream().map(this::parseExpression).collect(Collectors.toList());
+        List<Expression> initializers = forStmt.getInitialization().stream().map(this::parseExpression).collect(Collectors.toList());
         ExpressionContext newExpressionContext = newVariableContext("for-loop");
-        for (Expression initialiser : initialisers) {
+        for (Expression initialiser : initializers) {
             List<LocalVariableReference> newLocalVariables = initialiser.newLocalVariables();
             if (newLocalVariables == null)
                 throw new NullPointerException("Statement of " + initialiser.getClass() + " produces null local vars");
@@ -385,7 +390,8 @@ public class ExpressionContext {
         Expression condition = forStmt.getCompare().map(newExpressionContext::parseExpression).orElse(EmptyExpression.EMPTY_EXPRESSION);
         List<Expression> updaters = forStmt.getUpdate().stream().map(newExpressionContext::parseExpression).collect(Collectors.toList());
         Block block = newExpressionContext.parseBlockOrStatement(forStmt.getBody());
-        return new ForStatement(label, initialisers, condition, updaters, block);
+        inherit(newExpressionContext);
+        return new ForStatement(label, initializers, condition, updaters, block);
     }
 
     private org.e2immu.analyser.model.Statement assertStatement(AssertStmt assertStmt) {
@@ -403,6 +409,7 @@ public class ExpressionContext {
             resources.add(localVariableCreation);
         }
         Block tryBlock = tryExpressionContext.parseBlockOrStatement(tryStmt.getTryBlock());
+        inherit(tryExpressionContext);
         List<Pair<TryStatement.CatchParameter, Block>> catchClauses = new ArrayList<>();
         for (CatchClause catchClause : tryStmt.getCatchClauses()) {
             Parameter parameter = catchClause.getParameter();
@@ -427,6 +434,7 @@ public class ExpressionContext {
             ExpressionContext catchExpressionContext = newVariableContext("catch-clause");
             catchExpressionContext.variableContext.add(localVariable, EmptyExpression.EMPTY_EXPRESSION);
             Block block = catchExpressionContext.parseBlockOrStatement(catchClause.getBody());
+            inherit(catchExpressionContext);
             catchClauses.add(new Pair<>(catchParameter, block));
         }
         Block finallyBlock = tryStmt.getFinallyBlock().map(this::parseBlockOrStatement).orElse(Block.EMPTY_BLOCK);
@@ -435,12 +443,16 @@ public class ExpressionContext {
 
     private org.e2immu.analyser.model.Statement whileStatement(String label, WhileStmt statement) {
         org.e2immu.analyser.model.Expression expression = parseExpression(statement.getCondition());
-        Block block = newVariableContext("while-block").parseBlockOrStatement(statement.getBody());
+        ExpressionContext context = newVariableContext("while-block");
+        Block block = context.parseBlockOrStatement(statement.getBody());
+        inherit(context);
         return new WhileStatement(label, expression, block);
     }
 
     private org.e2immu.analyser.model.Statement doStatement(String label, DoStmt statement) {
-        Block block = newVariableContext("do-block").parseBlockOrStatement(statement.getBody());
+        ExpressionContext context = newVariableContext("do-block");
+        Block block = context.parseBlockOrStatement(statement.getBody());
+        inherit(context);
         org.e2immu.analyser.model.Expression expression = parseExpression(statement.getCondition());
         return new DoStatement(label, expression, block);
     }
@@ -467,20 +479,33 @@ public class ExpressionContext {
 
     private org.e2immu.analyser.model.Statement synchronizedStatement(SynchronizedStmt statement) {
         org.e2immu.analyser.model.Expression expression = parseExpression(statement.getExpression());
-        Block block = newVariableContext("synchronized-block").parseBlockOrStatement(statement.getBody());
+        ExpressionContext context = newVariableContext("synchronized-block");
+        Block block = context.parseBlockOrStatement(statement.getBody());
+        inherit(context);
         return new SynchronizedStatement(expression, block);
     }
 
+    private void inherit(ExpressionContext context) {
+        newlyCreatedTypes.addAll(context.newlyCreatedTypes);
+    }
+
     private org.e2immu.analyser.model.Statement forEachStatement(String label, ForEachStmt forEachStmt) {
-     return ParseForEachStmt.parse(this, label, forEachStmt);
+        return ParseForEachStmt.parse(this, label, forEachStmt);
     }
 
     private org.e2immu.analyser.model.Statement ifThenElseStatement(IfStmt statement) {
         org.e2immu.analyser.model.Expression conditional = parseExpression(statement.getCondition());
-        Block ifBlock = newVariableContext("if-block").parseBlockOrStatement(statement.getThenStmt());
-        Block elseBlock = statement.getElseStmt()
-                .map(stmt -> newVariableContext("else-block").parseBlockOrStatement(stmt))
-                .orElse(Block.EMPTY_BLOCK);
+        ExpressionContext ifContext = newVariableContext("if-block");
+        Block ifBlock = ifContext.parseBlockOrStatement(statement.getThenStmt());
+        inherit(ifContext);
+        Block elseBlock;
+        if (statement.getElseStmt().isPresent()) {
+            ExpressionContext elseContext = newVariableContext("else-block");
+            elseBlock = elseContext.parseBlockOrStatement(statement.getElseStmt().get());
+            inherit(elseContext);
+        } else {
+            elseBlock = Block.EMPTY_BLOCK;
+        }
         return new IfElseStatement(conditional, ifBlock, elseBlock);
     }
 
@@ -689,7 +714,7 @@ public class ExpressionContext {
             }
             if (expression.isLongLiteralExpr()) {
                 String value = expression.asLongLiteralExpr().getValue();
-                return LongConstant.parse(typeContext.getPrimitives(),value);
+                return LongConstant.parse(typeContext.getPrimitives(), value);
             }
             if (expression.isDoubleLiteralExpr()) {
                 String valueWithD = expression.asDoubleLiteralExpr().getValue();
@@ -733,7 +758,7 @@ public class ExpressionContext {
             }
             // new switch expression isn't there yet in JavaParser...
 
-            if(expression.isTextBlockLiteralExpr()) {
+            if (expression.isTextBlockLiteralExpr()) {
                 TextBlockLiteralExpr textBlock = expression.asTextBlockLiteralExpr();
                 return new StringConstant(typeContext.getPrimitives(), textBlock.stripIndent());
             }
