@@ -41,6 +41,7 @@ public abstract class CommonTestRunner {
     private static final Logger LOGGER = LoggerFactory.getLogger(CommonTestRunner.class);
     public static final String ORG_E2IMMU_SUPPORT = "org.e2immu.support";
     public static final String ORG_E2IMMU_ANALYSER_UTIL = "org.e2immu.analyser.util";
+    public static final String ORG_E2IMMU_ANALYSER_OUTPUT = "org.e2immu.analyser.output";
     public static final String ORG_E2IMMU_ANALYSER_TESTEXAMPLE = "org.e2immu.analyser.testexample";
     public static final String DEFAULT_ANNOTATED_API_DIRS = "../annotatedAPIs/src/main/java";
 
@@ -139,6 +140,15 @@ public abstract class CommonTestRunner {
                                  int warningsToExpect,
                                  DebugConfiguration debugConfiguration) throws IOException {
         testSupportAndUtilClasses(List.of(), classes, ORG_E2IMMU_ANALYSER_UTIL,
+                errorsToExpect, warningsToExpect, debugConfiguration);
+    }
+
+
+    protected void testOutputClass(List<String> classes,
+                                 int errorsToExpect,
+                                 int warningsToExpect,
+                                 DebugConfiguration debugConfiguration) throws IOException {
+        testSupportAndUtilClasses(List.of(), classes, ORG_E2IMMU_ANALYSER_OUTPUT,
                 errorsToExpect, warningsToExpect, debugConfiguration);
     }
 

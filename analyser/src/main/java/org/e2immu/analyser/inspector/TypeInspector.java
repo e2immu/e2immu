@@ -487,7 +487,9 @@ public class TypeInspector {
         if (countCompactConstructors.get() == 0 && builder.typeNature() == TypeNature.RECORD) {
             MethodInspector methodInspector = new MethodInspector(expressionContext.typeContext.typeMapBuilder, typeInfo,
                     fullInspection);
-            methodInspector.inspect(null, subContext, companionMethodsWaiting, builder.fields());
+            List<FieldInfo> nonStaticFields = builder.fields().stream()
+                    .filter(fieldInfo -> !fieldInfo.isStatic(expressionContext.typeContext)).toList();
+            methodInspector.inspect(null, subContext, companionMethodsWaiting, nonStaticFields);
             builder.ensureConstructor(methodInspector.getBuilder().getMethodInfo());
         }
 

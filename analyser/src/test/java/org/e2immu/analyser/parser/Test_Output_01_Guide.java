@@ -1,3 +1,4 @@
+
 /*
  * e2immu: a static code analyser for effective and eventual immutability
  * Copyright 2020-2021, Bart Naudts, https://www.e2immu.org
@@ -12,32 +13,25 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.output;
+package org.e2immu.analyser.parser;
 
-import org.e2immu.annotation.E2Container;
-import org.e2immu.annotation.NotModified;
+import org.e2immu.analyser.config.DebugConfiguration;
+import org.junit.jupiter.api.Test;
 
-@E2Container
-public interface OutputElement {
+import java.io.IOException;
+import java.util.List;
 
-    @NotModified
-    String minimal();
+public class Test_Output_01_Guide extends CommonTestRunner {
 
-    default String debug() {
-        return minimal();
+    public Test_Output_01_Guide() {
+        super(true);
     }
 
-    default String trace() {
-        return debug();
+    @Test
+    public void test() throws IOException {
+        testOutputClass(List.of("FormattingOptions", "Guide"),
+                0, 0, new DebugConfiguration.Builder()
+                .build());
     }
 
-    // formatter system
-
-    default int length(FormattingOptions options) { return write(options).length(); }
-
-    @NotModified
-    String write(FormattingOptions options);
-
-    @NotModified
-    String generateJavaForDebugging();
 }

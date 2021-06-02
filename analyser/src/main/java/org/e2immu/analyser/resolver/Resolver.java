@@ -219,7 +219,8 @@ public class Resolver {
         typeDependencies.retainAll(stayWithin);
 
         typeGraph.addNode(typeInfo, List.copyOf(typeDependencies));
-        List<WithInspectionAndAnalysis> methodFieldSubTypeOrder = List.copyOf(methodFieldSubTypeGraph.sorted(x->{},
+        List<WithInspectionAndAnalysis> methodFieldSubTypeOrder = List.copyOf(methodFieldSubTypeGraph.sorted(x -> {
+                },
                 Comparator.comparing(WithInspectionAndAnalysis::fullyQualifiedName)));
 
         if (isLogEnabled(RESOLVER)) {
@@ -264,7 +265,7 @@ public class Resolver {
                     .forEach(fieldInfo -> expressionContextForBody.variableContext.add(new FieldReference(
                             typeContext,
                             fieldInfo,
-                            fieldInfo.isStatic() ? null : new This(typeContext, fieldInfo.owner))));
+                            fieldInfo.isStatic(typeContext) ? null : new This(typeContext, fieldInfo.owner))));
 
             List<TypeInfo> typeAndAllSubTypes = typeAndAllSubTypes(typeInfo);
             Set<TypeInfo> restrictToType = new HashSet<>(typeAndAllSubTypes);
@@ -477,11 +478,13 @@ public class Resolver {
                                                            MethodInspectionImpl.Builder methodInspection) {
         int i = 0;
         for (FieldInfo fieldInfo : typeInspection.fields()) {
-            VariableExpression target = new VariableExpression(new FieldReference(inspectionProvider, fieldInfo,
-                    new This(inspectionProvider, fieldInfo.owner)));
-            VariableExpression parameter = new VariableExpression(methodInspection.getParameters().get(i++));
-            Assignment assignment = new Assignment(inspectionProvider.getPrimitives(), target, parameter);
-            blockBuilder.addStatement(new ExpressionAsStatement(assignment, true));
+            if (!fieldInfo.isStatic(inspectionProvider)) {
+                VariableExpression target = new VariableExpression(new FieldReference(inspectionProvider, fieldInfo,
+                        new This(inspectionProvider, fieldInfo.owner)));
+                VariableExpression parameter = new VariableExpression(methodInspection.getParameters().get(i++));
+                Assignment assignment = new Assignment(inspectionProvider.getPrimitives(), target, parameter);
+                blockBuilder.addStatement(new ExpressionAsStatement(assignment, true));
+            }
         }
     }
 

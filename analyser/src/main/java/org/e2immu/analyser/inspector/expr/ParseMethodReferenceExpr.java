@@ -200,6 +200,6 @@ public class ParseMethodReferenceExpr {
     }
 
     public static boolean scopeIsAType(Expression scope) {
-        return !(scope instanceof VariableExpression) && !(scope instanceof FieldAccess);
+        return scope instanceof TypeExpression;
     }
 }

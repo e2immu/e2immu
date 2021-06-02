@@ -21,15 +21,12 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.ArrayLength;
 import org.e2immu.analyser.model.expression.FieldAccess;
 import org.e2immu.analyser.model.expression.TypeExpression;
+import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.resolver.Resolver;
 
-import java.util.List;
 import java.util.Optional;
-
-import static org.e2immu.analyser.util.Logger.LogTarget.RESOLVER;
-import static org.e2immu.analyser.util.Logger.log;
 
 public class ParseFieldAccessExpr {
     public static Expression parse(ExpressionContext expressionContext, FieldAccessExpr fieldAccessExpr) {
@@ -74,14 +71,17 @@ public class ParseFieldAccessExpr {
     }
 
     private static FieldAccess fieldAccess(ExpressionContext expressionContext, FieldInfo fieldInfo, Expression object) {
-        if (fieldInfo.owner == expressionContext.enclosingType) {
-            log(RESOLVER, "Adding dependency on field {}", fieldInfo.fullyQualifiedName());
-        }
         // in a static context, the object is a type expression.
         // it can be a method call, such as findNode().data (data is the field)
         // Otherwise, it has to be a variable
-        List<Variable> vars = object.variables();
-        Variable objectVariable = vars.isEmpty() ? null : vars.get(0);
+        Variable objectVariable;
+        if (object instanceof VariableExpression ve) {
+            objectVariable = ve.variable();
+        } else if (object instanceof FieldAccess fa) {
+            objectVariable = fa.variable();
+        } else {
+            objectVariable = null;
+        }
         FieldReference fieldReference = new FieldReference(expressionContext.typeContext, fieldInfo, objectVariable);
         return new FieldAccess(object, fieldReference);
     }

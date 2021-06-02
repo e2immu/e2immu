@@ -14,6 +14,11 @@
 
 package org.e2immu.analyser.output;
 
+import org.e2immu.annotation.Container;
+import org.e2immu.annotation.E2Container;
+import org.e2immu.annotation.NotModified;
+
+@E2Container
 public record FormattingOptions(int lengthOfLine,
                                 int spacesInTab,
                                 int tabsForLineSplit,
@@ -25,16 +30,17 @@ public record FormattingOptions(int lengthOfLine,
 
     public static final FormattingOptions DEFAULT = new Builder().build();
 
+    @Container
     public static class Builder {
 
-        int lengthOfLine = 120;
-        int spacesInTab = 4;
-        int tabsForLineSplit = 2;
-        boolean binaryOperatorsAtEndOfLine = true;
-        boolean debug;
-        boolean compact;
-        boolean allFieldsRequireThis;
-        boolean allStaticFieldsRequireType;
+        private int lengthOfLine = 120;
+        private int spacesInTab = 4;
+        private int tabsForLineSplit = 2;
+        private boolean binaryOperatorsAtEndOfLine = true;
+        private boolean debug;
+        private boolean compact;
+        private boolean allFieldsRequireThis;
+        private boolean allStaticFieldsRequireType;
 
         public Builder() {
         }
@@ -91,6 +97,7 @@ public record FormattingOptions(int lengthOfLine,
             return this;
         }
 
+        @NotModified
         public FormattingOptions build() {
             return new FormattingOptions(lengthOfLine, spacesInTab, tabsForLineSplit, binaryOperatorsAtEndOfLine, debug, compact,
                     allFieldsRequireThis, allStaticFieldsRequireType);

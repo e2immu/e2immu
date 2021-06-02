@@ -16,6 +16,7 @@ package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.output.*;
+import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.NotNull;
 import org.e2immu.support.SetOnce;
@@ -140,7 +141,11 @@ public class FieldInfo implements WithInspectionAndAnalysis {
     }
 
     public boolean isStatic() {
-        return fieldInspection.isSet() && fieldInspection.get().getModifiers().contains(FieldModifier.STATIC);
+        return fieldInspection.get().getModifiers().contains(FieldModifier.STATIC);
+    }
+    public boolean isStatic(InspectionProvider inspectionProvider) {
+        FieldInspection inspection = inspectionProvider.getFieldInspection(this);
+        return inspection.getModifiers().contains(FieldModifier.STATIC);
     }
 
     @Override
