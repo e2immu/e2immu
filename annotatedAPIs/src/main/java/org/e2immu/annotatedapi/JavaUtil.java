@@ -332,6 +332,19 @@ public class JavaUtil extends AnnotatedAPI {
     }
 
     @Container
+    static class Stack$<E> {
+
+        boolean Stack$Modification$Size(int post) { return post == 0; }
+        public Stack$() {
+        }
+
+        boolean Stack$Modification$Size(int post, Collection<? extends  E> c) { return post == c.size(); }
+        @Independent
+        public Stack$(@NotNull1 Collection<? extends E> c) {
+        }
+    }
+
+    @Container
     static class HashSet$<E> {
 
         // content is known

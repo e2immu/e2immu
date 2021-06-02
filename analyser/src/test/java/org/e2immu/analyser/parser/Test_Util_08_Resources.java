@@ -13,7 +13,7 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parserfailing;
+package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.parser.CommonTestRunner;
@@ -27,7 +27,8 @@ public class Test_Util_08_Resources extends CommonTestRunner {
 
     @Test
     public void test() throws IOException {
-        testUtilClass(List.of("Resources"), 0, 0, new DebugConfiguration.Builder()
+        testUtilClass(List.of("Resources", "Trie", "Freezable", "Logger"),
+                0, 0, new DebugConfiguration.Builder()
                 .build());
     }
 

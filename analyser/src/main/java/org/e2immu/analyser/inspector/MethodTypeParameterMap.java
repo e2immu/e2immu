@@ -200,4 +200,12 @@ public class MethodTypeParameterMap {
                 .collect(Collectors.toMap(Map.Entry::getKey,
                         e -> translationMap.translateType(e.getValue()))));
     }
+
+    public ParameterizedType parameterizedType(int pos) {
+        List<ParameterInfo> parameters = methodInspection.getParameters();
+        if (pos < parameters.size()) return parameters.get(pos).parameterizedType;
+        ParameterInfo lastOne = parameters.get(parameters.size() - 1);
+        if (!lastOne.parameterInspection.get().isVarArgs()) throw new UnsupportedOperationException();
+        return lastOne.parameterizedType().copyWithOneFewerArrays();
+    }
 }

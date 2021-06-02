@@ -495,16 +495,16 @@ public class ParameterizedType {
         // List<T> vs LinkedList; int vs double
         if (Primitives.isJavaLangObject(this)) return IN_HIERARCHY;
 
-        // ARRAYS
-
-        if (!ignoreArrays) {
-            if (arrays != other.arrays) return NOT_ASSIGNABLE;
-            if (arrays > 0) {
-                return numericIsAssignableFrom(inspectionProvider, other, true, Mode.COVARIANT, reverseParameters);
-            }
-        }
-
         if (typeInfo != null && other.typeInfo != null) {
+
+            if (!ignoreArrays) {
+                if (arrays != other.arrays) {
+                    return NOT_ASSIGNABLE;
+                }
+                if (arrays > 0) {
+                    return numericIsAssignableFrom(inspectionProvider, other, true, Mode.COVARIANT, reverseParameters);
+                }
+            }
 
             // PRIMITIVES
 

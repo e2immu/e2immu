@@ -13,7 +13,7 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parserfailing;
+package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.parser.CommonTestRunner;
@@ -22,11 +22,11 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.util.List;
 
-public class Test_Util_07_Trie extends CommonTestRunner {
+public class Test_Util_06_DependencyGraph extends CommonTestRunner {
 
     @Test
     public void test() throws IOException {
-        testUtilClass(List.of("Trie", "Freezable"), 0, 0, new DebugConfiguration.Builder()
+        testUtilClass(List.of("DependencyGraph", "Freezable"), 0, 0, new DebugConfiguration.Builder()
                 .build());
     }
 
