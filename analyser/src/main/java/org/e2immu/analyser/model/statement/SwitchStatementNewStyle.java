@@ -27,7 +27,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class SwitchStatementNewStyle extends StatementWithExpression implements SwitchStatement {
+public class SwitchStatementNewStyle extends StatementWithExpression implements HasSwitchLabels {
     public final List<SwitchEntry> switchEntries;
 
     public SwitchStatementNewStyle(Expression selector, List<SwitchEntry> switchEntries) {

@@ -100,8 +100,12 @@ public record ParseAndInspect(Resources classPath,
         // we first add the types to the type context, so that they're all known
         for (TypeInspectorAndTypeDeclaration tia : typeInspectors) {
             TypeInfo typeInfo = tia.typeInspector.getTypeInfo();
+            TypeContext typeContext = new TypeContext(packageName, typeContextOfFile);
+            // add the subtypes, because record declarations can have subtype names in their parameter lists
+            TypeInspection typeInspection = typeContextOfFile.getTypeInspection(typeInfo);
+            typeInspection.subTypes().forEach(typeContext::addToContext);
             ExpressionContext expressionContext = ExpressionContext.forInspectionOfPrimaryType(typeInfo,
-                    new TypeContext(packageName, typeContextOfFile), anonymousTypeCounters);
+                    typeContext, anonymousTypeCounters);
             try {
                 List<TypeInfo> primaryTypes = tia.typeInspector.inspect(false, null,
                         tia.typeDeclaration, expressionContext);

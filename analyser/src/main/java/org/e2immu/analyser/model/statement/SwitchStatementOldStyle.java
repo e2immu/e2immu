@@ -31,7 +31,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class SwitchStatementOldStyle extends StatementWithExpression implements SwitchStatement {
+public class SwitchStatementOldStyle extends StatementWithExpression implements HasSwitchLabels {
 
     public record SwitchLabel(Expression expression, int from) implements Comparable<SwitchLabel> {
 

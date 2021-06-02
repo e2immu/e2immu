@@ -18,13 +18,19 @@ import com.github.javaparser.ast.expr.SwitchExpr;
 import org.e2immu.analyser.inspector.ExpressionContext;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.SwitchExpression;
+import org.e2immu.analyser.model.expression.util.MultiExpression;
+import org.e2immu.analyser.model.statement.ExpressionAsStatement;
 import org.e2immu.analyser.model.statement.SwitchEntry;
+import org.e2immu.analyser.model.statement.YieldStatement;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class ParseSwitchExpr {
 
@@ -50,14 +56,29 @@ public class ParseSwitchExpr {
         // if the entry is a StatementEntry, it must be either a throws, or an expression as statement
         // in the latter case, we can grab a value.
         // if the entry is a BlockEntry, we must look at the yield statement
-        ParameterizedType parameterizedType = summarize(expressionContext, entries);
-        return new SwitchExpression(selector, entries, parameterizedType);
+        MultiExpression yieldExpressions = new MultiExpression(extractYields(entries));
+        ParameterizedType parameterizedType = yieldExpressions.commonType(expressionContext.typeContext);
+        return new SwitchExpression(selector, entries, parameterizedType, yieldExpressions);
     }
 
-    private static ParameterizedType summarize(ExpressionContext expressionContext, List<SwitchEntry> entries) {
-        // FIXME need code here
+    private static Expression[] extractYields(List<SwitchEntry> entries) {
+        return entries.stream().flatMap(e -> {
+            if (e.structure.statements().size() == 1) {
+                Statement statement = e.structure.statements().get(0);
+                if (statement instanceof ExpressionAsStatement eas) {
+                    return Stream.of(eas.expression);
+                }
+                // in all other cases, the yield statement is required
+            }
+            return e.structure.statements().stream().flatMap(ParseSwitchExpr::extractYields).filter(Objects::nonNull);
+        }).toArray(Expression[]::new);
+    }
 
-        // we haven't got a clue, so we return java.lang.Object
-        return expressionContext.typeContext.getPrimitives().objectParameterizedType;
+    private static Stream<Expression> extractYields(Statement statement) {
+        List<Expression> yields = new ArrayList<>();
+        statement.visit(e -> {
+            yields.add(e.expression);
+        }, YieldStatement.class);
+        return yields.stream();
     }
 }

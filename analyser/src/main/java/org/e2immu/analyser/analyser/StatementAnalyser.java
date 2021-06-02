@@ -1793,7 +1793,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             if (!valueIsDelayed && (statementAnalysis.statement instanceof IfElseStatement ||
                     statementAnalysis.statement instanceof AssertStatement)) {
                 value = eval_IfElse_Assert(sharedState, value);
-            } else if (!valueIsDelayed && statementAnalysis.statement instanceof SwitchStatement switchStatement) {
+            } else if (!valueIsDelayed && statementAnalysis.statement instanceof HasSwitchLabels switchStatement) {
                 eval_Switch(sharedState, value, switchStatement);
             }
 
@@ -1906,7 +1906,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
     /*
     goal: raise errors, exclude branches, etc.
      */
-    private void eval_Switch(SharedState sharedState, Expression switchExpression, SwitchStatement switchStatement) {
+    private void eval_Switch(SharedState sharedState, Expression switchExpression, HasSwitchLabels switchStatement) {
         assert switchExpression != null;
         List<String> never = new ArrayList<>();
         List<String> always = new ArrayList<>();
@@ -2245,7 +2245,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         // a switch statement has no primary block, only subStructures, one per SwitchEntry
 
         // make an And of NOTs for all those conditions where the switch entry escapes
-        if (statementAnalysis.statement instanceof SwitchStatement) {
+        if (statementAnalysis.statement instanceof HasSwitchLabels) {
             Expression[] components = list.stream().filter(ExecutionOfBlock::escapesAlwaysButNotWithPrecondition)
                     .map(e -> e.condition).toArray(Expression[]::new);
             if (components.length == 0) return TRUE;

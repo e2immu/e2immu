@@ -12,12 +12,10 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.model.statement;
-
-import org.e2immu.analyser.model.Expression;
+package org.e2immu.analyser.model;
 
 import java.util.stream.Stream;
 
-public interface SwitchStatement {
+public interface HasSwitchLabels {
     Stream<Expression> labels();
 }

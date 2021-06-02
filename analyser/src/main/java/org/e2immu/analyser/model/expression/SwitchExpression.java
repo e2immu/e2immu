@@ -17,41 +17,43 @@ package org.e2immu.analyser.model.expression;
 import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
+import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.HasSwitchLabels;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.Qualification;
+import org.e2immu.analyser.model.expression.util.MultiExpression;
 import org.e2immu.analyser.model.statement.SwitchEntry;
 import org.e2immu.analyser.output.*;
+import org.e2immu.analyser.parser.Primitives;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Stream;
 
 public record SwitchExpression(Expression selector,
                                List<SwitchEntry> switchEntries,
-                               ParameterizedType returnType) implements Expression {
+                               ParameterizedType returnType,
+                               MultiExpression yieldExpressions) implements Expression, HasSwitchLabels {
 
     public SwitchExpression {
-        if (switchEntries.size() <= 2) {
-            throw new IllegalArgumentException("Expect at least 3 entries to have a bit of a reasonable switch value");
-        }
         switchEntries.forEach(e -> {
-            Objects.requireNonNull(e.switchVariableAsExpression); // FIXME
+            Objects.requireNonNull(e.switchVariableAsExpression);
             Objects.requireNonNull(e.labels);
-            if (e.labels.contains(EmptyExpression.EMPTY_EXPRESSION) && e.labels.size() != 1)
-                throw new UnsupportedOperationException();
-            if (e.labels.isEmpty()) throw new UnsupportedOperationException();
         });
     }
 
     @Override
     public OutputBuilder output(Qualification qualification) {
+        Guide.GuideGenerator blockGenerator = Guide.generatorForBlock();
         return new OutputBuilder().add(new Text("switch"))
                 .add(Symbol.LEFT_PARENTHESIS)
                 .add(selector.output(qualification))
                 .add(Symbol.RIGHT_PARENTHESIS)
-                .add(switchEntries.stream().map(switchEntry -> switchEntry.output(qualification))
+                .add(switchEntries.stream().map(switchEntry ->
+                        switchEntry.output(qualification, blockGenerator, null))
                         .collect(OutputBuilder.joining(Space.ONE_IS_NICE_EASY_SPLIT, Symbol.LEFT_BRACE,
-                                Symbol.RIGHT_BRACE, Guide.generatorForBlock())));
+                                Symbol.RIGHT_BRACE, blockGenerator)));
     }
 
     @Override
@@ -66,12 +68,33 @@ public record SwitchExpression(Expression selector,
 
     @Override
     public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
-        throw new UnsupportedOperationException("NYI");
-        //return SwitchValue.switchValue(evaluationContext, selectorValue, entries, objectFlow);
+        EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
+        EvaluationResult selectorResult = selector.evaluate(evaluationContext, forwardEvaluationInfo);
+
+        Expression selectorValue = selectorResult.value();
+        if (selectorValue.isConstant()) {
+            // do some short-cuts
+        }
+        builder.compose(selectorResult);
+        builder.setExpression(new SwitchExpression(selectorValue, switchEntries, returnType, yieldExpressions));
+        return builder.build();
     }
 
     @Override
     public int order() {
         return 0;
+    }
+
+    @Override
+    public Stream<Expression> labels() {
+        return switchEntries.stream().flatMap(e -> e.labels.stream());
+    }
+
+    @Override
+    public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty, boolean duringEvaluation) {
+        if (Primitives.isPrimitiveExcludingVoid(returnType)) {
+            return UnknownExpression.primitiveGetProperty(variableProperty);
+        }
+        return yieldExpressions.getProperty(evaluationContext, variableProperty, duringEvaluation);
     }
 }

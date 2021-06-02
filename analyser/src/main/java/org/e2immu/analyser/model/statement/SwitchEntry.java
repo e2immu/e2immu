@@ -19,10 +19,7 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.BinaryOperator;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.expression.Precedence;
-import org.e2immu.analyser.output.Guide;
-import org.e2immu.analyser.output.OutputBuilder;
-import org.e2immu.analyser.output.Symbol;
-import org.e2immu.analyser.output.Text;
+import org.e2immu.analyser.output.*;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.ListUtil;
 
@@ -46,7 +43,7 @@ public abstract class SwitchEntry extends StatementWithStructure {
 
     protected void appendLabels(OutputBuilder outputBuilder, Qualification qualification, Guide.GuideGenerator guideGenerator) {
         if (labels.isEmpty()) {
-            outputBuilder.add(guideGenerator.mid()).add(new Text("default")).add(Symbol.COLON_LABEL);
+            outputBuilder.add(guideGenerator.mid()).add(new Text("default")).add(Symbol.LAMBDA);
         } else {
             outputBuilder.add(guideGenerator.mid())
                     .add(labels.stream().map(expression -> expression.output(qualification)).collect(OutputBuilder.joining(Symbol.COMMA)))
@@ -60,6 +57,8 @@ public abstract class SwitchEntry extends StatementWithStructure {
         if (labels.isEmpty()) {
             return EmptyExpression.DEFAULT_EXPRESSION; // this will become the negation of the disjunction of all previous expressions
         }
+        if (labels.size() == 1) return labels.get(0);
+
         MethodInfo operator = operator(primitives, switchVariableAsExpression);
         Expression or = equality(primitives, labels.get(0), switchVariableAsExpression, operator);
         // we group multiple "labels" into one disjunction
@@ -80,7 +79,7 @@ public abstract class SwitchEntry extends StatementWithStructure {
         return primitive ? primitives.equalsOperatorInt : primitives.equalsOperatorObject;
     }
 
-    abstract OutputBuilder output(Qualification qualification, Guide.GuideGenerator guideGenerator, StatementAnalysis statementAnalysis);
+    public abstract OutputBuilder output(Qualification qualification, Guide.GuideGenerator guideGenerator, StatementAnalysis statementAnalysis);
 
     public FlowData.Execution statementExecution(Expression value, EvaluationContext evaluationContext) {
         if (switchVariableAsExpression == EmptyExpression.DEFAULT_EXPRESSION) return FlowData.Execution.DEFAULT;
@@ -128,7 +127,14 @@ public abstract class SwitchEntry extends StatementWithStructure {
 
             Guide.GuideGenerator ggStatements = Guide.defaultGuideGenerator();
             outputBuilder.add(ggStatements.start());
-            Block.statementsString(qualification, outputBuilder, ggStatements, statementAnalysis);
+            if(statementAnalysis != null) {
+                Block.statementsString(qualification, outputBuilder, ggStatements, statementAnalysis);
+            } else {
+                outputBuilder.add(structure.statements().stream()
+                        .filter(s -> !s.isSynthetic())
+                        .map(s -> s.output(qualification, null))
+                        .collect(OutputBuilder.joining(Space.NONE, Guide.generatorForBlock())));
+            }
             outputBuilder.add(ggStatements.end());
 
             return outputBuilder;
