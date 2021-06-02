@@ -355,7 +355,12 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                         return delayedMethod(evaluationContext, builder, objectValue,
                                 contextModifiedDelay == Level.TRUE, parameterValues);
                     } else {
-                        increment = lastStatement.flowData.getTimeAfterSubBlocks() > 0;
+                        if (lastStatement.flowData.timeAfterSubBlocksNotYetSet()) {
+                            increment = false;
+                            // see e.g. Trie.recursivelyVisit: recursive call, but inside a lambda so we don't see this
+                        } else {
+                            increment = lastStatement.flowData.getTimeAfterSubBlocks() > 0;
+                        }
                     }
                 }
                 // TODO aggregated needs its specific code

@@ -96,7 +96,8 @@ public class TypeInspector {
                                      ExpressionContext expressionContext,
                                      NodeList<BodyDeclaration<?>> members) {
         assert fullInspection; // no way we could reach this otherwise
-        assert typeImplemented.typeInfo != null && typeImplemented.typeInfo.hasBeenInspected();
+        assert typeImplemented.typeInfo != null && typeImplemented.typeInfo.hasBeenInspected() :
+                "typeImplemented is " + typeImplemented;
 
         ExpressionContext withSubTypes = expressionContext.newSubType(typeImplemented.typeInfo);
         TypeInspection superInspection = expressionContext.typeContext.getTypeInspection(typeImplemented.typeInfo);

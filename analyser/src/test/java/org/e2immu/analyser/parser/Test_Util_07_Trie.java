@@ -15,12 +15,20 @@
 
 package org.e2immu.analyser.parser;
 
+import org.e2immu.analyser.analyser.VariableInfo;
+import org.e2immu.analyser.analyser.VariableInfoContainer;
+import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.parser.CommonTestRunner;
+import org.e2immu.analyser.model.Level;
+import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
+import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class Test_Util_07_Trie extends CommonTestRunner {
 
@@ -30,7 +38,57 @@ public class Test_Util_07_Trie extends CommonTestRunner {
 
     @Test
     public void test() throws IOException {
+
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("goTo".equals(d.methodInfo().name)) {
+                if ("node".equals(d.variableName())) {
+                    if ("0".equals(d.statementId())) {
+                        String expected = d.iteration() == 0 ? "<f:root>" : "root";
+                        assertEquals(expected, d.currentValue().toString());
+                    }
+                    if ("1.0.0".equals(d.statementId())) {
+                        String expected = d.iteration() <= 1 ? "<v:node>" : "";
+                        assertEquals(expected, d.currentValue().toString());
+                    }
+                    if ("1.0.1".equals(d.statementId())) {
+                        String expected = d.iteration() == 0 ? "<m:get>" : "";
+                        assertEquals(expected, d.currentValue().toString());
+                        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+                    }
+                }
+                if ("org.e2immu.analyser.util.Trie.TrieNode.map#node".equals(d.variable().fullyQualifiedName())) {
+                    if ("1.0.0".equals(d.statementId())) {
+                        VariableInfo eval = d.variableInfoContainer().best(VariableInfoContainer.Level.EVALUATION);
+                        String expectEval = d.iteration() == 0  ? "<f:map>": "";
+                        assertEquals(expectEval, eval.getValue().toString());
+                        assertEquals(MultiLevel.NULLABLE, eval.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+
+                        String expected = d.iteration() <= 1 ? "null==<f:map>?<f:map>:<f:map>" : "";
+                        assertEquals(expected, d.currentValue().toString());
+                        assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+                    }
+                    if ("1.0.1".equals(d.statementId())) {
+                        String expected = d.iteration() <= 1 ? "null==<f:map>?<f:map>:<f:map>" : "";
+                        assertEquals(expected, d.currentValue().toString());
+                        int expectCnn = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
+                        assertEquals(expectCnn, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+                    }
+                }
+            }
+        };
+
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("goTo".equals(d.methodInfo().name)) {
+                if ("1.0.0".equals(d.statementId())) {
+                    String expected = d.iteration() <= 1 ? "null!=<f:map>" : "";
+                    assertEquals(expected, d.conditionManagerForNextStatement().state().toString());
+                }
+            }
+        };
+
         testUtilClass(List.of("Trie", "Freezable"), 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build());
     }
 
