@@ -237,13 +237,13 @@ public class Assignment implements Expression {
                                   Expression resultOfExpression) {
 
         // see if we need to raise an error (writing to fields outside our class, etc.)
-        if (at instanceof FieldReference) {
-            FieldInfo fieldInfo = ((FieldReference) at).fieldInfo;
+        if (at instanceof FieldReference fieldReference) {
 
             // check illegal assignment into nested type
             if (complainAboutAssignmentOutsideType &&
-                    checkIllAdvisedAssignment(at, fieldInfo, evaluationContext.getCurrentType())) {
-                builder.addErrorAssigningToFieldOutsideType(fieldInfo);
+                    checkIllAdvisedAssignment(at, fieldReference, evaluationContext.getCurrentType(),
+                            fieldReference.fieldInfo.isStatic(evaluationContext.getAnalyserContext()))) {
+                builder.addErrorAssigningToFieldOutsideType(fieldReference.fieldInfo);
             }
         } else if (at instanceof ParameterInfo parameterInfo) {
             builder.addParameterShouldNotBeAssignedTo(parameterInfo);
@@ -269,12 +269,15 @@ public class Assignment implements Expression {
 
     }
 
-    private static boolean checkIllAdvisedAssignment(Variable at, FieldInfo fieldInfo, TypeInfo currentType) {
-        TypeInfo owner = fieldInfo.owner;
+    private static boolean checkIllAdvisedAssignment(Variable at, FieldReference fieldReference, TypeInfo currentType, boolean isStatic) {
+        TypeInfo owner = fieldReference.fieldInfo.owner;
         if (owner.primaryType() != currentType.primaryType()) return true; // outside primary type
         if (owner == currentType) { // in the same type
             // so if x is a local variable of the current type, we can do this.field =, but not x.field = !
-            return !(((FieldReference) at).scope instanceof This);
+            if (isStatic) {
+                return fieldReference.scope != null && !(fieldReference.scope instanceof TypeExpression);
+            }
+            return !(fieldReference.scope instanceof This);
         }
         /* outside current type, but inside primary type: we allow assignments
          1. when the owner is an enclosing type (up)

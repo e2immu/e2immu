@@ -33,7 +33,7 @@ public class Test_54_SwitchExpression extends CommonTestRunner {
 
     @Test
     public void test_1() throws IOException {
-        testClass("SwitchExpression_1", 0, 1, new DebugConfiguration.Builder()
+        testClass("SwitchExpression_1", 1, 0, new DebugConfiguration.Builder()
                 .build());
     }
 

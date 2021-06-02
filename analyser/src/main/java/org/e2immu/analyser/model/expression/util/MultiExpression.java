@@ -42,9 +42,12 @@ public record MultiExpression(Expression... expressions) {
     }
 
     public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty, boolean duringEvaluation) {
+        System.out.println("VP "+variableProperty);
         return Arrays.stream(expressions)
                 .filter(Expression::isComputeProperties) // <return value> does NOT contribute!
+                .peek(v -> System.out.println("value "+v))
                 .mapToInt(value -> evaluationContext.getProperty(value, variableProperty, duringEvaluation, false))
+                .peek(i -> System.out.println("have value "+i))
                 .min().orElse(Level.DELAY);
     }
 

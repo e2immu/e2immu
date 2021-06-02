@@ -28,9 +28,7 @@ import org.e2immu.analyser.model.variable.Variable;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public class ParseSwitchExpr {
 
@@ -56,29 +54,31 @@ public class ParseSwitchExpr {
         // if the entry is a StatementEntry, it must be either a throws, or an expression as statement
         // in the latter case, we can grab a value.
         // if the entry is a BlockEntry, we must look at the yield statement
-        MultiExpression yieldExpressions = new MultiExpression(extractYields(entries));
+        MultiExpression yieldExpressions = new MultiExpression(extractYieldsFromEntries(entries));
         ParameterizedType parameterizedType = yieldExpressions.commonType(expressionContext.typeContext);
         return new SwitchExpression(selector, entries, parameterizedType, yieldExpressions);
     }
 
-    private static Expression[] extractYields(List<SwitchEntry> entries) {
-        return entries.stream().flatMap(e -> {
-            if (e.structure.statements().size() == 1) {
-                Statement statement = e.structure.statements().get(0);
-                if (statement instanceof ExpressionAsStatement eas) {
-                    return Stream.of(eas.expression);
-                }
-                // in all other cases, the yield statement is required
-            }
-            return e.structure.statements().stream().flatMap(ParseSwitchExpr::extractYields).filter(Objects::nonNull);
-        }).toArray(Expression[]::new);
+    private static Expression[] extractYieldsFromEntries(List<SwitchEntry> entries) {
+        return entries.stream().flatMap(e -> extractYields(e.structure.statements()).stream()).toArray(Expression[]::new);
     }
 
-    private static Stream<Expression> extractYields(Statement statement) {
+    public static List<Expression> extractYields(List<Statement> statements) {
+        if (statements.size() == 1) {
+            Statement statement = statements.get(0);
+            if (statement instanceof ExpressionAsStatement eas) {
+                return List.of(eas.expression);
+            }
+            // in all other cases, the yield statement is required
+        }
+        return statements.stream().flatMap(statement -> extractYields(statement).stream()).toList();
+    }
+
+    private static List<Expression> extractYields(Statement statement) {
         List<Expression> yields = new ArrayList<>();
         statement.visit(e -> {
             yields.add(e.expression);
         }, YieldStatement.class);
-        return yields.stream();
+        return yields;
     }
 }

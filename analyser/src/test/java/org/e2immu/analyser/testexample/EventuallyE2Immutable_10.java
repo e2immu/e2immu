@@ -24,7 +24,7 @@ non-constructor version of Singleton_1
 @E2Container(after = "created")
 public class EventuallyE2Immutable_10 {
     private final int k;
-    private static boolean created;
+    private boolean created;
 
     public EventuallyE2Immutable_10(int k) {
         this.k = k;

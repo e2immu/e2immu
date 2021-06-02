@@ -18,15 +18,16 @@ import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.analyser.VariableProperty;
-import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.HasSwitchLabels;
-import org.e2immu.analyser.model.ParameterizedType;
-import org.e2immu.analyser.model.Qualification;
+import org.e2immu.analyser.inspector.expr.ParseSwitchExpr;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.MultiExpression;
+import org.e2immu.analyser.model.statement.ExpressionAsStatement;
 import org.e2immu.analyser.model.statement.SwitchEntry;
+import org.e2immu.analyser.model.statement.YieldStatement;
 import org.e2immu.analyser.output.*;
 import org.e2immu.analyser.parser.Primitives;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Stream;
@@ -41,6 +42,19 @@ public record SwitchExpression(Expression selector,
             Objects.requireNonNull(e.switchVariableAsExpression);
             Objects.requireNonNull(e.labels);
         });
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        SwitchExpression that = (SwitchExpression) o;
+        return selector.equals(that.selector) && switchEntries.equals(that.switchEntries);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(selector, switchEntries);
     }
 
     @Override
@@ -75,9 +89,36 @@ public record SwitchExpression(Expression selector,
         if (selectorValue.isConstant()) {
             // do some short-cuts
         }
+        List<Expression> newYieldExpressions = new ArrayList<>(yieldExpressions.expressions().length);
+        for (SwitchEntry switchEntry : switchEntries) {
+            if (switchEntry.structure.statements().size() == 1) {
+                // single expression
+                Expression condition = convertDefaultToNegationOfAllOthers(evaluationContext, switchEntry.structure.expression());
+                EvaluationContext localContext = evaluationContext.child(condition);
+                EvaluationResult entryResult;
+                Statement statement = switchEntry.structure.statements().get(0);
+                Expression expression = statement instanceof YieldStatement yieldStatement ? yieldStatement.expression
+                        : statement instanceof ExpressionAsStatement eas ? eas.expression : null;
+                if (expression == null) throw new UnsupportedOperationException("??");
+                entryResult = expression.evaluate(localContext, forwardEvaluationInfo);
+                builder.composeIgnoreExpression(entryResult);
+                newYieldExpressions.add(entryResult.getExpression());
+            } else {
+                List<Expression> yields = ParseSwitchExpr.extractYields(switchEntry.structure.statements());
+                newYieldExpressions.addAll(yields); // FIXME how do we go about evaluating?
+            }
+        }
         builder.compose(selectorResult);
-        builder.setExpression(new SwitchExpression(selectorValue, switchEntries, returnType, yieldExpressions));
+        builder.setExpression(new SwitchExpression(selectorValue, switchEntries, returnType, MultiExpression.create(newYieldExpressions)));
         return builder.build();
+    }
+
+    private Expression convertDefaultToNegationOfAllOthers(EvaluationContext evaluationContext, Expression expression) {
+        if (!(expression instanceof EmptyExpression)) return expression;
+        return new And(evaluationContext.getPrimitives()).append(evaluationContext,
+                switchEntries.stream().flatMap(se -> se.labels.stream()).map(label ->
+                        Negation.negate(evaluationContext, Equals.equals(evaluationContext, label, selector)))
+                        .toArray(Expression[]::new));
     }
 
     @Override

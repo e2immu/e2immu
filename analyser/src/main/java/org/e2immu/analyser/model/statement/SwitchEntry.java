@@ -24,6 +24,7 @@ import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.ListUtil;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 
@@ -39,6 +40,19 @@ public abstract class SwitchEntry extends StatementWithStructure {
         this.labels = labels;
         this.switchVariableAsExpression = switchVariableAsExpression;
         this.primitives = primitives;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        SwitchEntry that = (SwitchEntry) o;
+        return labels.equals(that.labels);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(labels);
     }
 
     protected void appendLabels(OutputBuilder outputBuilder, Qualification qualification, Guide.GuideGenerator guideGenerator) {
@@ -57,8 +71,6 @@ public abstract class SwitchEntry extends StatementWithStructure {
         if (labels.isEmpty()) {
             return EmptyExpression.DEFAULT_EXPRESSION; // this will become the negation of the disjunction of all previous expressions
         }
-        if (labels.size() == 1) return labels.get(0);
-
         MethodInfo operator = operator(primitives, switchVariableAsExpression);
         Expression or = equality(primitives, labels.get(0), switchVariableAsExpression, operator);
         // we group multiple "labels" into one disjunction
@@ -127,7 +139,7 @@ public abstract class SwitchEntry extends StatementWithStructure {
 
             Guide.GuideGenerator ggStatements = Guide.defaultGuideGenerator();
             outputBuilder.add(ggStatements.start());
-            if(statementAnalysis != null) {
+            if (statementAnalysis != null) {
                 Block.statementsString(qualification, outputBuilder, ggStatements, statementAnalysis);
             } else {
                 outputBuilder.add(structure.statements().stream()
