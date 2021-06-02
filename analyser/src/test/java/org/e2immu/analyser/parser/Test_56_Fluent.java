@@ -251,7 +251,7 @@ public class Test_56_Fluent extends CommonTestRunner {
                 new AnnotatedAPIConfiguration.Builder().build());
         TypeInfo iFluent1 = typeContext.typeMapBuilder.get(IFluent_1.class);
         MethodInfo value = iFluent1.findUniqueMethod("value", 0);
-        TypeInfo implementation = iFluent1.typeResolution.get().generatedImplementation;
+        TypeInfo implementation = iFluent1.typeResolution.get().generatedImplementation();
         TypeInfo fluent1 = typeContext.typeMapBuilder.get(Fluent_1.class);
         assertSame(fluent1, implementation, "Generated implementation");
 

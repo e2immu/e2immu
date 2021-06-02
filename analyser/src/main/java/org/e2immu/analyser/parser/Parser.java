@@ -204,11 +204,11 @@ public class Parser {
         Set<TypeInfo> seen = new HashSet<>();
         for (SortedType sortedType : sortedPrimaryTypes) {
             if (!seen.contains(sortedType.primaryType())) {
-                Set<TypeInfo> circularDependencies = sortedType.primaryType().typeResolution.get().circularDependencies;
+                Set<TypeInfo> circularDependencies = sortedType.primaryType().typeResolution.get().circularDependencies();
                 List<SortedType> cycle =
                         circularDependencies.isEmpty() ? List.of(sortedType) : circularDependencies.stream()
                                 .sorted(Comparator.comparing(TypeInfo::fullyQualifiedName))
-                                .map(typeInfo -> typeInfo.typeResolution.get().sortedType).toList();
+                                .map(typeInfo -> typeInfo.typeResolution.get().sortedType()).toList();
                 cycles.add(cycle);
                 seen.addAll(circularDependencies);
             }

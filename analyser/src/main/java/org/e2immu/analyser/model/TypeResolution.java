@@ -28,22 +28,10 @@ This recursion results in a SortedType object which will be used to create a Pri
 in the statement analyser.
 SortedType is only not-null for sub-types defined in statements; it is kept null for primary types.
  */
-public class TypeResolution {
-
-    public final SortedType sortedType;
-    public final Set<TypeInfo> circularDependencies;
-    public final Set<TypeInfo> superTypesExcludingJavaLangObject;
-    public final TypeInfo generatedImplementation; // not null <=> hasOneKnownGeneratedImplementation
-
-    private TypeResolution(SortedType sortedType,
-                           Set<TypeInfo> circularDependencies,
-                           Set<TypeInfo> superTypesExcludingJavaLangObject,
-                           TypeInfo generatedImplementation) {
-        this.sortedType = sortedType;
-        this.circularDependencies = circularDependencies;
-        this.superTypesExcludingJavaLangObject = superTypesExcludingJavaLangObject;
-        this.generatedImplementation = generatedImplementation;
-    }
+public record TypeResolution(SortedType sortedType,
+                             Set<TypeInfo> circularDependencies,
+                             Set<TypeInfo> superTypesExcludingJavaLangObject,
+                             TypeInfo generatedImplementation) {
 
     public static class Builder {
         private SortedType sortedType;
@@ -97,18 +85,6 @@ public class TypeResolution {
         public Set<TypeInfo> getCircularDependencies() {
             return circularDependencies;
         }
-    }
-
-    public SortedType sortedType() {
-        return sortedType;
-    }
-
-    public Set<TypeInfo> circularDependencies() {
-        return circularDependencies;
-    }
-
-    public Set<TypeInfo> superTypesExcludingJavaLangObject() {
-        return superTypesExcludingJavaLangObject;
     }
 
     public boolean hasOneKnownGeneratedImplementation() {

@@ -50,7 +50,7 @@ public class AggregatingTypeAnalyser extends TypeAnalyser {
         if (myTypeInspection.isSealed()) {
             return myTypeInspection.permittedWhenSealed().stream();
         }
-        TypeInfo generated = typeInfo.typeResolution.get().generatedImplementation;
+        TypeInfo generated = typeInfo.typeResolution.get().generatedImplementation();
         assert generated != null : typeInfo.fullyQualifiedName
                 + " is not a sealed class, so it must have a unique generated implementation";
         return Stream.of(generated);

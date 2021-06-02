@@ -166,7 +166,7 @@ public class Resolver {
         allBuilders.forEach((typeInfo, builder) -> computeSuperTypes(inspectionProvider, typeInfo, builder, allBuilders));
         allBuilders.forEach((typeInfo, builder) -> typeInfo.typeResolution.set(builder.build()));
 
-        return sorted.stream().map(typeInfo -> typeInfo.typeResolution.get().sortedType).toList();
+        return sorted.stream().map(typeInfo -> typeInfo.typeResolution.get().sortedType()).toList();
     }
 
     private void addSubtypeResolutionBuilders(InspectionProvider inspectionProvider,

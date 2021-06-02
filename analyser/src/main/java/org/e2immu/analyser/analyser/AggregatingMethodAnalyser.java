@@ -67,7 +67,7 @@ public class AggregatingMethodAnalyser extends MethodAnalyser {
         if (myTypeInspection.isSealed()) {
             return myTypeInspection.permittedWhenSealed().stream();
         }
-        TypeInfo generated = methodInfo.typeInfo.typeResolution.get().generatedImplementation;
+        TypeInfo generated = methodInfo.typeInfo.typeResolution.get().generatedImplementation();
         assert generated != null : methodInfo.fullyQualifiedName
                 + " does not belong to a sealed class, so it must have a unique generated implementation";
         return Stream.of(generated);

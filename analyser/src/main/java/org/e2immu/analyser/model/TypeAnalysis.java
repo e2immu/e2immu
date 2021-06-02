@@ -90,7 +90,7 @@ public interface TypeAnalysis extends Analysis {
     }
 
     default int valueFromInterfacesImplemented(AnalyserContext analyserContext, VariableProperty variableProperty) {
-        Stream<TypeInfo> implementedInterfaces = getTypeInfo().typeResolution.get().superTypesExcludingJavaLangObject
+        Stream<TypeInfo> implementedInterfaces = getTypeInfo().typeResolution.get().superTypesExcludingJavaLangObject()
                 .stream().filter(TypeInfo::isInterface);
         return implementedInterfaces.map(analyserContext::getTypeAnalysis)
                 .mapToInt(typeAnalysis -> typeAnalysis.getTypeProperty(variableProperty)).max().orElse(Level.DELAY);
