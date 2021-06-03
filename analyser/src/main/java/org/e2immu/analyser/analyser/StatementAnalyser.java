@@ -79,7 +79,6 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
     //private ConditionManager localConditionManager;
     private AnalysisStatus analysisStatus;
     private AnalyserComponents<String, SharedState> analyserComponents;
-    private final DelayDebugger delayDebugger = new DelayDebugCollector();
     private final SetOnce<List<PrimaryTypeAnalyser>> localAnalysers = new SetOnce<>();
 
     private StatementAnalyser(AnalyserContext analyserContext,
@@ -421,7 +420,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
 
             StatementAnalyserResult result = sharedState.builder()
                     .addTypeAnalysers(localAnalysers.getOrDefault(List.of())) // unreachable statement...
-                    .addMessages(statementAnalysis.messages.stream())
+                    .addMessages(statementAnalysis.messageStream())
                     .setAnalysisStatus(overallStatus)
                     .combineAnalysisStatus(wasReplacement ? PROGRESS : DONE).build();
             analysisStatus = result.analysisStatus();
@@ -2092,7 +2091,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                         statementAnalysis.ensure(Message.newMessage(getLocation(), Message.Label.EMPTY_LOOP));
                     }
 
-                    sharedState.builder.addMessages(executionOfBlock.startOfBlock.statementAnalysis.messages.stream());
+                    sharedState.builder.addMessages(executionOfBlock.startOfBlock.statementAnalysis.messageStream());
                 }
             }
         }

@@ -118,4 +118,8 @@ public interface WithInspectionAndAnalysis {
         }
         return perAnnotation.stream();
     }
+
+    default MethodInfo getMethod() {
+        return null;
+    }
 }

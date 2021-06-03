@@ -278,4 +278,9 @@ public class MethodInfo implements WithInspectionAndAnalysis {
     public boolean isCompanionMethod() {
         return CompanionMethodName.extract(name) != null;
     }
+
+    @Override
+    public MethodInfo getMethod() {
+        return this;
+    }
 }

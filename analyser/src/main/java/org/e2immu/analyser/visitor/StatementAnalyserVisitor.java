@@ -39,7 +39,7 @@ public interface StatementAnalyserVisitor {
         // shortcut
 
         public String haveError(Message.Label message) {
-            return statementAnalysis.messages.stream()
+            return statementAnalysis.localMessageStream()
                     .filter(m -> m.message() == message)
                     .map(Message::toString)
                     .findFirst()

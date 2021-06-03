@@ -22,19 +22,19 @@ public class Location {
     public final Expression expression; // in the same statement, there can be multiple identical flows starting...
 
     public Location(WithInspectionAndAnalysis info) {
-        this(Objects.requireNonNull(info), null, null);
+        this(info, null, null);
     }
 
     public Location(WithInspectionAndAnalysis info, Expression expression) {
-        this(Objects.requireNonNull(info), null, expression);
+        this(info, null, expression);
     }
 
     public Location(MethodInfo methodInfo, String statementIndex) {
-        this(Objects.requireNonNull(methodInfo), statementIndex, null);
+        this(methodInfo, statementIndex, null);
     }
 
     public Location(WithInspectionAndAnalysis info, String statementWithinMethod, Expression expression) {
-        this.info = info;
+        this.info = Objects.requireNonNull(info);
         this.statementWithinMethod = statementWithinMethod;
         this.expression = expression;
     }

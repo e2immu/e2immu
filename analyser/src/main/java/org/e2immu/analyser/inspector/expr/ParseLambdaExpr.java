@@ -105,7 +105,10 @@ public class ParseLambdaExpr {
         ExpressionContext newExpressionContext = expressionContext.newLambdaContext(anonymousType,
                 newVariableContext);
 
-        Evaluation evaluation = evaluate(lambdaExpr, newExpressionContext, forwardReturnTypeInfo, inspectionProvider);
+        ParameterizedType returnTypeOfLambda = singleAbstractMethod.getConcreteReturnType();
+        ForwardReturnTypeInfo newForward = new ForwardReturnTypeInfo(returnTypeOfLambda, null);
+
+        Evaluation evaluation = evaluate(lambdaExpr, newExpressionContext, newForward, inspectionProvider);
         if (evaluation == null) {
             return partiallyParse(lambdaExpr, expressionContext.getLocation());
         }

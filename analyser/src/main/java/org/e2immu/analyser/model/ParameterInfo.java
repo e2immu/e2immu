@@ -211,4 +211,9 @@ public class ParameterInfo implements Variable, WithInspectionAndAnalysis, Compa
         }
         throw new UnsupportedOperationException();
     }
+
+    @Override
+    public MethodInfo getMethod() {
+        return owner;
+    }
 }

@@ -45,9 +45,9 @@ public interface Statement extends Element {
     }
 
     default OutputBuilder messageComment(StatementAnalysis statementAnalysis) {
-        if (statementAnalysis != null && !statementAnalysis.messages.isEmpty()) {
+        if (statementAnalysis != null && statementAnalysis.haveLocalMessages()) {
             OutputBuilder outputBuilder = new OutputBuilder();
-            statementAnalysis.messages.stream().forEach(message -> outputBuilder.add(Symbol.LEFT_BLOCK_COMMENT)
+            statementAnalysis.localMessageStream().forEach(message -> outputBuilder.add(Symbol.LEFT_BLOCK_COMMENT)
                     .add(new Text(Bundle.INSTANCE.get(message.message().name()))).add(Symbol.RIGHT_BLOCK_COMMENT));
             return outputBuilder;
         }

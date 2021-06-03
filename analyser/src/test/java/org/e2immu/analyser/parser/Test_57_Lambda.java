@@ -30,4 +30,10 @@ public class Test_57_Lambda extends CommonTestRunner {
         testClass("Lambda_0", 0, 1, new DebugConfiguration.Builder()
                 .build());
     }
+
+    @Test
+    public void test_1() throws IOException {
+        testClass("Lambda_1", 0, 0, new DebugConfiguration.Builder()
+                .build());
+    }
 }

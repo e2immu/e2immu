@@ -192,13 +192,8 @@ public record ParseMethodCallExpr(InspectionProvider inspectionProvider) {
                     || e instanceof UnevaluatedMethodCall || e instanceof UnevaluatedObjectCreation) {
                 log(METHOD_CALL, "Reevaluating unevaluated expression on {}, pos {}, single abstract method {}",
                         methodNameForErrorReporting, i, singleAbstractMethod);
-                MethodTypeParameterMap mapForEvaluation = determineMethodTypeParameterMap(method, i, e, singleAbstractMethod);
-                // the map for evaluation can/will be used for lambda's and method calls; the
-                // implied parameterized type is needed for filling in the diamond operator for new object creations
+                ForwardReturnTypeInfo newForward = determineMethodTypeParameterMap(method, i, e, singleAbstractMethod);
 
-                ParameterizedType formalParameterType = method.methodInspection.formalParameterType(i);
-                ParameterizedType concreteParameterType = determineConcreteParameterType(e, formalParameterType, mapForEvaluation);
-                ForwardReturnTypeInfo newForward = new ForwardReturnTypeInfo(concreteParameterType, mapForEvaluation);
                 Expression reParsed = expressionContext.parseExpression(expressions.get(i), newForward);
                 if (reParsed instanceof UnevaluatedMethodCall || reParsed instanceof UnevaluatedLambdaExpression) {
                     log(METHOD_CALL, "Reevaluation of {} fails, have {}", methodNameForErrorReporting, reParsed.debugOutput());
@@ -254,17 +249,24 @@ public record ParseMethodCallExpr(InspectionProvider inspectionProvider) {
     private ParameterizedType determineConcreteParameterType(Expression e,
                                                              ParameterizedType formalParameterType,
                                                              MethodTypeParameterMap mapForEvaluation) {
-        if (e instanceof UnevaluatedObjectCreation) {
-            return mapForEvaluation.applyMap(formalParameterType);
-        }
-        return null;
+        //if (e instanceof UnevaluatedObjectCreation) {
+        // the map for evaluation can/will be used for lambda's and method calls; the
+        // implied parameterized type is needed for filling in the diamond operator for new object creations
+
+        //   ParameterizedType formalParameterType = method.methodInspection.formalParameterType(i);
+        //  ParameterizedType concreteParameterType = determineConcreteParameterType(e, formalParameterType, mapForEvaluation);
+        //   ForwardReturnTypeInfo newForward = new ForwardReturnTypeInfo(concreteParameterType, mapForEvaluation);
+        return mapForEvaluation.applyMap(formalParameterType);
+        //}
+        //  return null;
     }
 
-    private MethodTypeParameterMap determineMethodTypeParameterMap(MethodTypeParameterMap method,
-                                                                   int i,
-                                                                   Expression e,
-                                                                   MethodTypeParameterMap singleAbstractMethod) {
+    private ForwardReturnTypeInfo determineMethodTypeParameterMap(MethodTypeParameterMap method,
+                                                                  int i,
+                                                                  Expression e,
+                                                                  MethodTypeParameterMap singleAbstractMethod) {
         ForwardReturnTypeInfo abstractInterfaceMethod = determineAbstractInterfaceMethod(method, i, singleAbstractMethod);
+        ParameterizedType abstractType = method.methodInspection.formalParameterType(i);
         if (abstractInterfaceMethod != null) {
             if (singleAbstractMethod != null) {
                 ParameterizedType returnTypeOfMethod = method.methodInspection.getReturnType();
@@ -289,18 +291,20 @@ public record ParseMethodCallExpr(InspectionProvider inspectionProvider) {
                         }
                         newMap.put(entry.getKey(), best);
                     }
-                    return new MethodTypeParameterMap(abstractInterfaceMethod.sam().methodInspection, newMap);
+                    MethodTypeParameterMap map = new MethodTypeParameterMap(abstractInterfaceMethod.sam().methodInspection, newMap);
+                    return new ForwardReturnTypeInfo(map.applyMap(abstractType), map);
                 }
-                return abstractInterfaceMethod.sam();
+                return abstractInterfaceMethod;
             }
-            return abstractInterfaceMethod.sam();
+            return abstractInterfaceMethod;
         }
         // could be that e == null, we did not evaluate
         if (e instanceof UnevaluatedMethodCall && singleAbstractMethod != null) {
             Map<NamedType, ParameterizedType> newMap = makeTranslationMap(method, i, singleAbstractMethod);
-            return new MethodTypeParameterMap(null, newMap);
+            return new ForwardReturnTypeInfo(null, new MethodTypeParameterMap(null, newMap));
         }
-        return singleAbstractMethod;
+        if (singleAbstractMethod == null) return new ForwardReturnTypeInfo(abstractType, null);
+        return new ForwardReturnTypeInfo(singleAbstractMethod.applyMap(abstractType), singleAbstractMethod);
     }
 
     private Map<NamedType, ParameterizedType> makeTranslationMap(MethodTypeParameterMap method,

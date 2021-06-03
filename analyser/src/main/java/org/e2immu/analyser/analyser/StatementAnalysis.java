@@ -281,7 +281,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
     }
 
     public boolean containsMessage(Message.Label messageLabel) {
-        return messages.stream().anyMatch(message -> message.message() == messageLabel &&
+        return localMessageStream().anyMatch(message -> message.message() == messageLabel &&
                 message.location().equals(location()));
     }
 
@@ -668,6 +668,18 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
     public boolean noIncompatiblePrecondition() {
         return !(methodLevelData.combinedPrecondition.isFinal()
                 && methodLevelData.combinedPrecondition.get().expression().isBoolValueFalse());
+    }
+
+    public boolean haveLocalMessages() {
+        return !messages.isEmpty();
+    }
+
+    public Stream<Message> localMessageStream() {
+        return messages.stream().filter(m -> m.location().info.getMethod() == methodAnalysis.getMethodInfo());
+    }
+
+    public Stream<Message> messageStream() {
+        return messages.stream();
     }
 
     public record ConditionAndLastStatement(Expression condition,
