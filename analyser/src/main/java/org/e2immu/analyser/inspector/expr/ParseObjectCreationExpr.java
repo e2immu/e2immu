@@ -26,7 +26,7 @@ import java.util.*;
 public class ParseObjectCreationExpr {
     public static Expression parse(ExpressionContext expressionContext,
                                    ObjectCreationExpr objectCreationExpr,
-                                   ParameterizedType impliedParameterizedType) {
+                                   ForwardReturnTypeInfo forwardReturnTypeInfo) {
         TypeContext typeContext = expressionContext.typeContext;
 
         ParameterizedType typeAsIs = ParameterizedTypeFactory.from(typeContext, objectCreationExpr.getType());
@@ -35,6 +35,7 @@ public class ParseObjectCreationExpr {
         Diamond diamond = objectCreationExpr.getType().getTypeArguments()
                 .map(list -> list.isEmpty() ? Diamond.YES : Diamond.SHOW_ALL).orElse(Diamond.NO);
 
+        ParameterizedType impliedParameterizedType = forwardReturnTypeInfo.type();
         ParameterizedType parameterizedType;
         if (diamond == Diamond.YES) {
             if (impliedParameterizedType != null) {

@@ -14,27 +14,9 @@
 
 package org.e2immu.analyser.parser;
 
-import org.e2immu.analyser.analyser.LinkedVariables;
-import org.e2immu.analyser.analyser.VariableProperty;
-import org.e2immu.analyser.config.AnalyserConfiguration;
-import org.e2immu.analyser.config.AnnotatedAPIConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.inspector.TypeContext;
-import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.expression.PropertyWrapper;
-import org.e2immu.analyser.model.variable.ReturnVariable;
-import org.e2immu.analyser.testexample.Fluent_1;
-import org.e2immu.analyser.testexample.a.IFluent_1;
-import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
-import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
-import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
-import org.e2immu.analyser.visitor.TypeAnalyserVisitor;
 import org.junit.jupiter.api.Test;
-
 import java.io.IOException;
-import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_57_Lambda extends CommonTestRunner {
 
@@ -42,10 +24,10 @@ public class Test_57_Lambda extends CommonTestRunner {
         super(false);
     }
 
-    // basics
+    // System.out potential null pointer
     @Test
     public void test_0() throws IOException {
-        testClass("Lambda_0", 0, 0, new DebugConfiguration.Builder()
+        testClass("Lambda_0", 0, 1, new DebugConfiguration.Builder()
                 .build());
     }
 }

@@ -35,7 +35,7 @@ public class ParseForEachStmt {
                 .setParameterizedType(parameterizedType)
                 .build();
         newVariableContext.add(localVariable, expression);
-        Block block = expressionContext.newVariableContext(newVariableContext, "for-loop")
+        Block block = expressionContext.newVariableContextForEachLoop(newVariableContext)
                 .parseBlockOrStatement(forEachStmt.getBody());
         LocalVariableCreation lvc = new LocalVariableCreation(expressionContext.typeContext,
                 localVariable, EmptyExpression.EMPTY_EXPRESSION, isVar);

@@ -62,9 +62,9 @@ public class ExpressionContext {
     public final VariableContext variableContext; // gets modified! so this class cannot even be a container...
     public final AnonymousTypeCounters anonymousTypeCounters;
     public final MethodInfo enclosingMethod;
-    public final MethodTypeParameterMap returnTypeSAM;
+    public final ForwardReturnTypeInfo forwardReturnTypeInfo;
     public final FieldInfo enclosingField; // terminology ~ assigning field, field that we're assigning to
-    public final ParameterizedType typeOfEnclosingSwitchExpression;
+    public final ForwardReturnTypeInfo typeOfEnclosingSwitchExpression;
 
     private final List<TypeInfo> newlyCreatedTypes = new LinkedList<>();
 
@@ -81,7 +81,7 @@ public class ExpressionContext {
                                                                @NotNull @NotModified AnonymousTypeCounters anonymousTypeCounters) {
         log(EXPRESSION_CONTEXT, "Creating a new expression context for {}", typeInfo.fullyQualifiedName);
         return new ExpressionContext(Objects.requireNonNull(typeInfo), null, null,
-                null, null,
+                ForwardReturnTypeInfo.NO_INFO, null,
                 null, typeInfo,
                 Objects.requireNonNull(typeContext),
                 VariableContext.initialVariableContext(null, new HashMap<>()),
@@ -94,7 +94,8 @@ public class ExpressionContext {
         Map<String, FieldReference> staticallyImportedFields = expressionContextOfType.typeContext.staticFieldImports();
         log(EXPRESSION_CONTEXT, "Creating a new expression context for {}", enclosingType.fullyQualifiedName);
         return new ExpressionContext(Objects.requireNonNull(enclosingType), null,
-                null, null,
+                null,
+                ForwardReturnTypeInfo.NO_INFO,
                 null, null,
                 Objects.requireNonNull(primaryType),
                 Objects.requireNonNull(expressionContextOfType.typeContext),
@@ -105,9 +106,9 @@ public class ExpressionContext {
     private ExpressionContext(TypeInfo enclosingType,
                               TypeInfo uninspectedEnclosingType,
                               MethodInfo enclosingMethod,
-                              MethodTypeParameterMap returnTypeSAM,
+                              ForwardReturnTypeInfo forwardReturnTypeInfo,
                               FieldInfo enclosingField,
-                              ParameterizedType typeOfEnclosingSwitchExpression,
+                              ForwardReturnTypeInfo typeOfEnclosingSwitchExpression,
                               TypeInfo primaryType,
                               TypeContext typeContext,
                               VariableContext variableContext,
@@ -121,28 +122,32 @@ public class ExpressionContext {
         this.anonymousTypeCounters = anonymousTypeCounters;
         this.variableContext = variableContext;
         this.typeOfEnclosingSwitchExpression = typeOfEnclosingSwitchExpression;
-        this.returnTypeSAM = returnTypeSAM;
+        this.forwardReturnTypeInfo = Objects.requireNonNull(forwardReturnTypeInfo);
     }
 
-    public ExpressionContext newVariableContext(MethodInfo methodInfo, MethodTypeParameterMap returnTypeSAM) {
+    public ExpressionContext newVariableContext(MethodInfo methodInfo, ForwardReturnTypeInfo forwardReturnTypeInfo) {
         log(EXPRESSION_CONTEXT, "Creating a new variable context for method {}", methodInfo.fullyQualifiedName);
         return new ExpressionContext(enclosingType, null,
-                methodInfo, returnTypeSAM, null, null,
+                methodInfo, forwardReturnTypeInfo, null, null,
                 primaryType, typeContext, VariableContext.dependentVariableContext(variableContext), anonymousTypeCounters);
     }
 
     public ExpressionContext newVariableContext(@NotNull String reason) {
         log(EXPRESSION_CONTEXT, "Creating a new variable context for {}", reason);
         return new ExpressionContext(enclosingType, uninspectedEnclosingType,
-                enclosingMethod, null, enclosingField, typeOfEnclosingSwitchExpression,
+                enclosingMethod,
+                forwardReturnTypeInfo,
+                enclosingField, typeOfEnclosingSwitchExpression,
                 primaryType, typeContext, VariableContext.dependentVariableContext(variableContext),
                 anonymousTypeCounters);
     }
 
-    public ExpressionContext newVariableContext(@NotNull VariableContext newVariableContext, String reason) {
-        log(EXPRESSION_CONTEXT, "Creating a new variable context for {}", reason);
+    public ExpressionContext newVariableContextForEachLoop(@NotNull VariableContext newVariableContext) {
+        log(EXPRESSION_CONTEXT, "Creating a new variable context for for-each loop");
         return new ExpressionContext(enclosingType, uninspectedEnclosingType, enclosingMethod,
-                null, enclosingField, typeOfEnclosingSwitchExpression,
+                forwardReturnTypeInfo,
+                enclosingField,
+                typeOfEnclosingSwitchExpression,
                 primaryType, typeContext, newVariableContext, anonymousTypeCounters);
     }
 
@@ -150,27 +155,30 @@ public class ExpressionContext {
     public ExpressionContext newLambdaContext(TypeInfo subType, VariableContext variableContext) {
         log(EXPRESSION_CONTEXT, "Creating a new type context for lambda, sub-type {}", subType.fullyQualifiedName);
         return new ExpressionContext(enclosingType, subType, enclosingMethod,
-                null, enclosingField, typeOfEnclosingSwitchExpression, primaryType,
+                forwardReturnTypeInfo,
+                enclosingField, typeOfEnclosingSwitchExpression, primaryType,
                 typeContext, variableContext, anonymousTypeCounters);
     }
 
     public ExpressionContext newSubType(@NotNull TypeInfo subType) {
         log(EXPRESSION_CONTEXT, "Creating a new type context for subtype {}", subType.simpleName);
         return new ExpressionContext(subType, null,
-                null, null, null, null, primaryType,
+                null, ForwardReturnTypeInfo.NO_INFO, null, null, primaryType,
                 new TypeContext(typeContext), variableContext, anonymousTypeCounters);
     }
 
     public ExpressionContext newTypeContext(String reason) {
         log(EXPRESSION_CONTEXT, "Creating a new type context for {}", reason);
-        return new ExpressionContext(enclosingType, uninspectedEnclosingType, enclosingMethod, returnTypeSAM,
+        return new ExpressionContext(enclosingType, uninspectedEnclosingType, enclosingMethod,
+                ForwardReturnTypeInfo.NO_INFO,
                 enclosingField, typeOfEnclosingSwitchExpression, primaryType,
                 new TypeContext(typeContext), variableContext, anonymousTypeCounters);
     }
 
-    public ExpressionContext newTypeContext(FieldInfo fieldInfo) {
+    public ExpressionContext newTypeContext(FieldInfo fieldInfo, ForwardReturnTypeInfo forwardReturnTypeInfo) {
         log(EXPRESSION_CONTEXT, "Creating a new type context for initialiser of field {}", fieldInfo.fullyQualifiedName());
-        return new ExpressionContext(enclosingType, null, null, null,
+        return new ExpressionContext(enclosingType, null, null,
+                forwardReturnTypeInfo,
                 fieldInfo, null, primaryType,
                 new TypeContext(typeContext), variableContext, anonymousTypeCounters);
     }
@@ -217,11 +225,10 @@ public class ExpressionContext {
             org.e2immu.analyser.model.Statement newStatement;
             if (statement.isReturnStmt()) {
                 newStatement = new ReturnStatement(((ReturnStmt) statement).getExpression()
-                        .map(e -> parseExpression(e, typeOfEnclosingMethodOrField(), returnTypeSAM))
-                        .orElse(EmptyExpression.EMPTY_EXPRESSION));
+                        .map(this::parseExpression).orElse(EmptyExpression.EMPTY_EXPRESSION));
             } else if (statement.isYieldStmt()) {
                 Expression expr = parseExpression(((YieldStmt) statement).getExpression(),
-                        Objects.requireNonNull(typeOfEnclosingSwitchExpression), null);
+                        Objects.requireNonNull(typeOfEnclosingSwitchExpression));
                 newStatement = new YieldStatement(expr);
             } else if (statement.isExpressionStmt()) {
                 Expression expression = parseExpression(((ExpressionStmt) statement).getExpression());
@@ -280,13 +287,6 @@ public class ExpressionContext {
         }
     }
 
-    private ParameterizedType typeOfEnclosingMethodOrField() {
-        if (enclosingMethod != null) return
-                typeContext.getMethodInspection(enclosingMethod).getReturnType();
-        if (enclosingField != null) return enclosingField.type;
-        throw new UnsupportedOperationException();
-    }
-
     private org.e2immu.analyser.model.Statement switchStatement(@NotNull SwitchStmt switchStmt) {
         Expression selector = parseExpression(switchStmt.getSelector());
         ExpressionContext newExpressionContext;
@@ -338,7 +338,8 @@ public class ExpressionContext {
                     } else {
                         // case X: case Y:
                         for (com.github.javaparser.ast.expr.Expression labelExpr : switchEntry.getLabels()) {
-                            Expression parsedLabel = expressionContextWithEnums.parseExpression(labelExpr, selector.returnType(), null);
+                            ForwardReturnTypeInfo info = ForwardReturnTypeInfo.computeSAM(selector.returnType(), typeContext);
+                            Expression parsedLabel = expressionContextWithEnums.parseExpression(labelExpr, info);
                             var switchLabel = new SwitchStatementOldStyle.SwitchLabel(parsedLabel, from);
                             labels.add(switchLabel);
                         }
@@ -511,12 +512,12 @@ public class ExpressionContext {
 
     @NotNull
     public org.e2immu.analyser.model.Expression parseExpression(@NotNull com.github.javaparser.ast.expr.Expression expression) {
-        return parseExpression(expression, null, null);
+        return parseExpression(expression, forwardReturnTypeInfo);
     }
 
     public org.e2immu.analyser.model.Expression parseExpression(@NotNull com.github.javaparser.ast.expr.Expression expression,
-                                                                ParameterizedType impliedParameterizedType,
-                                                                MethodTypeParameterMap singleAbstractMethod) {
+                                                                ForwardReturnTypeInfo forwardReturnTypeInfo) {
+        assert forwardReturnTypeInfo != null;
         try {
             if (expression.isStringLiteralExpr()) {
                 StringLiteralExpr stringLiteralExpr = (StringLiteralExpr) expression;
@@ -635,7 +636,7 @@ public class ExpressionContext {
             }
             if (expression.isObjectCreationExpr()) {
                 ObjectCreationExpr objectCreationExpr = (ObjectCreationExpr) expression;
-                return ParseObjectCreationExpr.parse(this, objectCreationExpr, impliedParameterizedType);
+                return ParseObjectCreationExpr.parse(this, objectCreationExpr, forwardReturnTypeInfo);
             }
             if (expression.isVariableDeclarationExpr()) {
                 VariableDeclarationExpr vde = (VariableDeclarationExpr) expression;
@@ -646,13 +647,12 @@ public class ExpressionContext {
                 if (isVar) {
                     // run initializer without info
                     initializer = var.getInitializer()
-                            .map(i -> parseExpression(i, null, null))
-                            .orElse(EmptyExpression.EMPTY_EXPRESSION);
+                            .map(this::parseExpression).orElse(EmptyExpression.EMPTY_EXPRESSION);
                     parameterizedType = initializer.returnType();
                 } else {
                     parameterizedType = ParameterizedTypeFactory.from(typeContext, var.getType());
                     initializer = var.getInitializer()
-                            .map(i -> parseExpression(i, parameterizedType, parameterizedType.findSingleAbstractMethodOfInterface(typeContext)))
+                            .map(i -> parseExpression(i, ForwardReturnTypeInfo.computeSAM(parameterizedType, typeContext)))
                             .orElse(EmptyExpression.EMPTY_EXPRESSION);
                 }
                 LocalVariable.Builder localVariable = new LocalVariable.Builder()
@@ -667,7 +667,7 @@ public class ExpressionContext {
                 AssignExpr assignExpr = (AssignExpr) expression;
                 org.e2immu.analyser.model.Expression target = parseExpression(assignExpr.getTarget());
                 org.e2immu.analyser.model.Expression value = parseExpression(assignExpr.getValue(),
-                        target.returnType(), target.returnType().findSingleAbstractMethodOfInterface(typeContext));
+                        ForwardReturnTypeInfo.computeSAM(target.returnType(), typeContext));
                 if (value.returnType().isType() && Primitives.isPrimitiveExcludingVoid(value.returnType()) &&
                         target.returnType().isType() && Primitives.isPrimitiveExcludingVoid(target.returnType())) {
                     ParameterizedType widestType = typeContext.getPrimitives().widestType(value.returnType(), target.returnType());
@@ -677,27 +677,26 @@ public class ExpressionContext {
                 return new Assignment(typeContext.getPrimitives(), target, value);
             }
             if (expression.isMethodCallExpr()) {
-                return new ParseMethodCallExpr(typeContext).parse(this, expression.asMethodCallExpr(), singleAbstractMethod);
+                return new ParseMethodCallExpr(typeContext).parse(this, expression.asMethodCallExpr(), forwardReturnTypeInfo);
             }
             if (expression.isMethodReferenceExpr()) {
-                return ParseMethodReferenceExpr.parse(this, expression.asMethodReferenceExpr(), singleAbstractMethod);
+                return ParseMethodReferenceExpr.parse(this, expression.asMethodReferenceExpr(), forwardReturnTypeInfo);
             }
             if (expression.isConditionalExpr()) {
                 ConditionalExpr conditionalExpr = (ConditionalExpr) expression;
                 org.e2immu.analyser.model.Expression condition = parseExpression(conditionalExpr.getCondition(),
-                        typeContext.typeMapBuilder.getPrimitives().booleanParameterizedType,
-                        null);
+                        new ForwardReturnTypeInfo(typeContext.typeMapBuilder.getPrimitives().booleanParameterizedType, null));
                 org.e2immu.analyser.model.Expression ifTrue = parseExpression(conditionalExpr.getThenExpr(),
-                        impliedParameterizedType, singleAbstractMethod);
+                        forwardReturnTypeInfo);
                 org.e2immu.analyser.model.Expression ifFalse = parseExpression(conditionalExpr.getElseExpr(),
-                        impliedParameterizedType, singleAbstractMethod);
+                        forwardReturnTypeInfo);
                 return new InlineConditional(typeContext, condition, ifTrue, ifFalse);
             }
             if (expression.isFieldAccessExpr()) {
                 return ParseFieldAccessExpr.parse(this, expression.asFieldAccessExpr());
             }
             if (expression.isLambdaExpr()) {
-                return ParseLambdaExpr.parse(this, expression.asLambdaExpr(), singleAbstractMethod);
+                return ParseLambdaExpr.parse(this, expression.asLambdaExpr(), forwardReturnTypeInfo);
             }
             if (expression.isSwitchExpr()) {
                 return ParseSwitchExpr.parse(this, expression.asSwitchExpr());
@@ -707,7 +706,7 @@ public class ExpressionContext {
             }
             if (expression.isArrayInitializerExpr()) {
                 return new ArrayInitializer(typeContext, expression.asArrayInitializerExpr().getValues().stream()
-                        .map(this::parseExpression).collect(Collectors.toList()), impliedParameterizedType);
+                        .map(this::parseExpression).collect(Collectors.toList()), forwardReturnTypeInfo.type());
             }
             if (expression.isEnclosedExpr()) {
                 return new EnclosedExpression(parseExpression(((EnclosedExpr) expression).getInner()));
@@ -752,7 +751,7 @@ public class ExpressionContext {
             }
             if (expression.isSingleMemberAnnotationExpr()) {
                 SingleMemberAnnotationExpr sma = expression.asSingleMemberAnnotationExpr();
-                return parseExpression(sma.getMemberValue(), null, null);
+                return parseExpression(sma.getMemberValue());
                 // expect a field access or variable expression to show up
                 // TODO write tests
             }

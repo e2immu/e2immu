@@ -33,24 +33,25 @@ public class AnnotationInspector {
             analyserExpressions = new ArrayList<>();
             for (com.github.javaparser.ast.expr.MemberValuePair mvp : ((NormalAnnotationExpr) ae).getPairs()) {
                 String methodName = mvp.getNameAsString();
-                ParameterizedType expectedType = expectedType(expressionContext, methodName, typeInspection);
-                Expression value = expressionContext.parseExpression(mvp.getValue(), expectedType, null);
+                ForwardReturnTypeInfo expectedType = expectedType(expressionContext, methodName, typeInspection);
+                Expression value = expressionContext.parseExpression(mvp.getValue(), expectedType);
                 analyserExpressions.add(new MemberValuePair(methodName, value));
             }
         } else if (ae instanceof SingleMemberAnnotationExpr) {
-            ParameterizedType expectedType = expectedType(expressionContext, "value", typeInspection);
+            ForwardReturnTypeInfo expectedType = expectedType(expressionContext, "value", typeInspection);
             Expression value = expressionContext.parseExpression(ae.asSingleMemberAnnotationExpr().getMemberValue(),
-                    expectedType, null);
+                    expectedType);
             analyserExpressions = List.of(new MemberValuePair("value", value));
         } else analyserExpressions = List.of();
         return new AnnotationExpressionImpl(typeInfo, analyserExpressions);
     }
 
-    private static ParameterizedType expectedType(ExpressionContext expressionContext,
-                                                  String methodName, TypeInspection typeInspection) {
+    private static ForwardReturnTypeInfo expectedType(ExpressionContext expressionContext,
+                                                      String methodName,
+                                                      TypeInspection typeInspection) {
         MethodInfo methodInfo = typeInspection.methods().stream()
                 .filter(m -> m.name.equals(methodName)).findFirst().orElseThrow();
         MethodInspection methodInspection = expressionContext.typeContext.getMethodInspection(methodInfo);
-        return methodInspection.getReturnType();
+        return ForwardReturnTypeInfo.computeSAM(methodInspection.getReturnType(), expressionContext.typeContext);
     }
 }

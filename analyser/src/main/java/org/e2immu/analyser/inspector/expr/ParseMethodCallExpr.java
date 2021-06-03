@@ -17,6 +17,7 @@ package org.e2immu.analyser.inspector.expr;
 import com.github.javaparser.Position;
 import com.github.javaparser.ast.expr.MethodCallExpr;
 import org.e2immu.analyser.inspector.ExpressionContext;
+import org.e2immu.analyser.inspector.ForwardReturnTypeInfo;
 import org.e2immu.analyser.inspector.MethodTypeParameterMap;
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.*;
@@ -46,7 +47,11 @@ public record ParseMethodCallExpr(InspectionProvider inspectionProvider) {
         INSTANCE,
     }
 
-    public Expression parse(ExpressionContext expressionContext, MethodCallExpr methodCallExpr, MethodTypeParameterMap singleAbstractMethod) {
+    public Expression parse(ExpressionContext expressionContext,
+                            MethodCallExpr methodCallExpr,
+                            ForwardReturnTypeInfo forwardReturnTypeInfo) {
+        // the return type of the method is not used to make a selection
+        MethodTypeParameterMap singleAbstractMethod = forwardReturnTypeInfo.sam();
         log(METHOD_CALL, "Start parsing method call {}, method name {}, single abstract {}", methodCallExpr,
                 methodCallExpr.getNameAsString(), singleAbstractMethod);
 
@@ -139,8 +144,8 @@ public record ParseMethodCallExpr(InspectionProvider inspectionProvider) {
                                 evaluatedExpressions.keySet());
                         if (pair != null) {
                             pos = pair.v;
-                            MethodTypeParameterMap abstractInterfaceMethod = determineAbstractInterfaceMethod(pair.k, pos, singleAbstractMethod);
-                            evaluatedExpression = expressionContext.parseExpression(expressions.get(pos), null, abstractInterfaceMethod);
+                            ForwardReturnTypeInfo info = determineAbstractInterfaceMethod(pair.k, pos, singleAbstractMethod);
+                            evaluatedExpression = expressionContext.parseExpression(expressions.get(pos), info);
                         } else {
                             // still nothing... just take the next one
                             pos = IntStream.range(0, expressions.size()).filter(i -> !evaluatedExpressions.containsKey(i)).findFirst().orElseThrow();
@@ -153,7 +158,9 @@ public record ParseMethodCallExpr(InspectionProvider inspectionProvider) {
                     // IMPROVE a more systematic approach might be to send multiple candidates
                     ParameterizedType commonType = commonTypeInCandidatesOnParameter(methodCandidates, pos);
                     ParameterizedType impliedParameterizedType = Primitives.isJavaLangObject(commonType) ? null : commonType;
-                    evaluatedExpression = expressionContext.parseExpression(expressions.get(pos), impliedParameterizedType, singleAbstractMethod == null ? null : singleAbstractMethod.copyWithoutMethod());
+                    ForwardReturnTypeInfo newForward = new ForwardReturnTypeInfo(impliedParameterizedType,
+                            singleAbstractMethod == null ? null : singleAbstractMethod.copyWithoutMethod());
+                    evaluatedExpression = expressionContext.parseExpression(expressions.get(pos), newForward);
                 }
                 evaluatedExpressions.put(pos, Objects.requireNonNull(evaluatedExpression));
                 filterMethodCandidates(evaluatedExpression, pos, methodCandidates, compatibilityScore);
@@ -191,8 +198,8 @@ public record ParseMethodCallExpr(InspectionProvider inspectionProvider) {
 
                 ParameterizedType formalParameterType = method.methodInspection.formalParameterType(i);
                 ParameterizedType concreteParameterType = determineConcreteParameterType(e, formalParameterType, mapForEvaluation);
-
-                Expression reParsed = expressionContext.parseExpression(expressions.get(i), concreteParameterType, mapForEvaluation);
+                ForwardReturnTypeInfo newForward = new ForwardReturnTypeInfo(concreteParameterType, mapForEvaluation);
+                Expression reParsed = expressionContext.parseExpression(expressions.get(i), newForward);
                 if (reParsed instanceof UnevaluatedMethodCall || reParsed instanceof UnevaluatedLambdaExpression) {
                     log(METHOD_CALL, "Reevaluation of {} fails, have {}", methodNameForErrorReporting, reParsed.debugOutput());
                     return null;
@@ -257,7 +264,7 @@ public record ParseMethodCallExpr(InspectionProvider inspectionProvider) {
                                                                    int i,
                                                                    Expression e,
                                                                    MethodTypeParameterMap singleAbstractMethod) {
-        MethodTypeParameterMap abstractInterfaceMethod = determineAbstractInterfaceMethod(method, i, singleAbstractMethod);
+        ForwardReturnTypeInfo abstractInterfaceMethod = determineAbstractInterfaceMethod(method, i, singleAbstractMethod);
         if (abstractInterfaceMethod != null) {
             if (singleAbstractMethod != null) {
                 ParameterizedType returnTypeOfMethod = method.methodInspection.getReturnType();
@@ -268,7 +275,7 @@ public record ParseMethodCallExpr(InspectionProvider inspectionProvider) {
                     ParameterizedType formalReturnTypeOfMethod = returnTypeOfMethod.typeInfo.asParameterizedType(inspectionProvider);
                     // we should expect type parameters of the return type to be present in the SAM; the ones of the formal type are in the AIM
                     Map<NamedType, ParameterizedType> newMap = new HashMap<>();
-                    for (Map.Entry<NamedType, ParameterizedType> entry : abstractInterfaceMethod.concreteTypes.entrySet()) {
+                    for (Map.Entry<NamedType, ParameterizedType> entry : abstractInterfaceMethod.sam().concreteTypes.entrySet()) {
                         ParameterizedType typeParameter = entry.getValue();
                         ParameterizedType best = null;
                         ParameterizedType tpInReturnType = returnTypeOfMethod.parameters.stream().filter(pt -> pt.typeParameter == typeParameter.typeParameter).findFirst().orElse(null);
@@ -282,11 +289,11 @@ public record ParseMethodCallExpr(InspectionProvider inspectionProvider) {
                         }
                         newMap.put(entry.getKey(), best);
                     }
-                    return new MethodTypeParameterMap(abstractInterfaceMethod.methodInspection, newMap);
+                    return new MethodTypeParameterMap(abstractInterfaceMethod.sam().methodInspection, newMap);
                 }
-                return abstractInterfaceMethod;
+                return abstractInterfaceMethod.sam();
             }
-            return abstractInterfaceMethod;
+            return abstractInterfaceMethod.sam();
         }
         // could be that e == null, we did not evaluate
         if (e instanceof UnevaluatedMethodCall && singleAbstractMethod != null) {
@@ -526,15 +533,18 @@ public record ParseMethodCallExpr(InspectionProvider inspectionProvider) {
 
     This method here ensures that the U in comparingInt is linked to the result of Stream, so that e -> e.getValue can be evaluated on the Map.Entry type
      */
-    private MethodTypeParameterMap determineAbstractInterfaceMethod(MethodTypeParameterMap method,
-                                                                    int p,
-                                                                    MethodTypeParameterMap singleAbstractMethod) {
+    private ForwardReturnTypeInfo determineAbstractInterfaceMethod(MethodTypeParameterMap method,
+                                                                   int p,
+                                                                   MethodTypeParameterMap singleAbstractMethod) {
         Objects.requireNonNull(method);
-        MethodTypeParameterMap abstractInterfaceMethod = method.getConcreteTypeOfParameter(p).findSingleAbstractMethodOfInterface(inspectionProvider);
-        log(METHOD_CALL, "Abstract interface method of parameter {} of method {} is {}", p, method.methodInspection.getFullyQualifiedName(), abstractInterfaceMethod);
-        if (abstractInterfaceMethod == null || singleAbstractMethod == null) return abstractInterfaceMethod;
-
-        if (singleAbstractMethod.isSingleAbstractMethod() && singleAbstractMethod.methodInspection.getMethodInfo().typeInfo
+        ParameterizedType parameterType = method.getConcreteTypeOfParameter(p);
+        MethodTypeParameterMap abstractInterfaceMethod
+                = parameterType.findSingleAbstractMethodOfInterface(inspectionProvider);
+        log(METHOD_CALL, "Abstract interface method of parameter {} of method {} is {}",
+                p, method.methodInspection.getFullyQualifiedName(), abstractInterfaceMethod);
+        if (abstractInterfaceMethod == null) return ForwardReturnTypeInfo.NO_INFO;
+        if (singleAbstractMethod != null && singleAbstractMethod.isSingleAbstractMethod()
+                && singleAbstractMethod.methodInspection.getMethodInfo().typeInfo
                 .equals(method.methodInspection.getMethodInfo().typeInfo)) {
             Map<NamedType, ParameterizedType> links = new HashMap<>();
             int pos = 0;
@@ -548,9 +558,9 @@ public record ParseMethodCallExpr(InspectionProvider inspectionProvider) {
                 links.put(abstractTypeInCandidate, valueOfKey);
                 pos++;
             }
-            return abstractInterfaceMethod.expand(links);
+            return new ForwardReturnTypeInfo(parameterType, abstractInterfaceMethod.expand(links));
         }
-        return abstractInterfaceMethod;
+        return new ForwardReturnTypeInfo(parameterType, abstractInterfaceMethod);
     }
 
 }

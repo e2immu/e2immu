@@ -16,6 +16,7 @@ package org.e2immu.analyser.inspector.expr;
 
 import com.github.javaparser.ast.expr.MethodReferenceExpr;
 import org.e2immu.analyser.inspector.ExpressionContext;
+import org.e2immu.analyser.inspector.ForwardReturnTypeInfo;
 import org.e2immu.analyser.inspector.MethodTypeParameterMap;
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.*;
@@ -30,7 +31,10 @@ import static org.e2immu.analyser.util.Logger.log;
 
 public class ParseMethodReferenceExpr {
 
-    public static Expression parse(ExpressionContext expressionContext, MethodReferenceExpr methodReferenceExpr, MethodTypeParameterMap singleAbstractMethod) {
+    public static Expression parse(ExpressionContext expressionContext,
+                                   MethodReferenceExpr methodReferenceExpr,
+                                   ForwardReturnTypeInfo forwardReturnTypeInfo) {
+        MethodTypeParameterMap singleAbstractMethod = forwardReturnTypeInfo.sam();
         if (singleAbstractMethod == null || !singleAbstractMethod.isSingleAbstractMethod()) {
             log(METHOD_CALL, "Start parsing unevaluated method reference {}", methodReferenceExpr);
             return unevaluated(expressionContext, methodReferenceExpr);

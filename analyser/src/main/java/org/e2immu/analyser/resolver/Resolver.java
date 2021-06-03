@@ -316,19 +316,12 @@ public class Resolver {
         List<WithInspectionAndAnalysis> dependencies;
 
         if (expression != FieldInspectionImpl.EMPTY) {
-            ExpressionContext subContext = expressionContext.newTypeContext(fieldInfo);
 
             // fieldInfo.type can have concrete types; but the abstract method will not have them filled in
-            MethodTypeParameterMap singleAbstractMethod = fieldInfo.type
-                    .findSingleAbstractMethodOfInterface(expressionContext.typeContext);
-            if (singleAbstractMethod != null) {
-                singleAbstractMethod = singleAbstractMethod
-                        .expand(fieldInfo.type.initialTypeParameterMap(expressionContext.typeContext));
-                log(RESOLVER, "Passing on functional interface method to field initializer of {}: {}",
-                        fieldInfo.name, singleAbstractMethod);
-            }
-            org.e2immu.analyser.model.Expression parsedExpression = subContext.parseExpression(expression,
-                    fieldInfo.type, singleAbstractMethod);
+            ForwardReturnTypeInfo forwardReturnTypeInfo = ForwardReturnTypeInfo.computeSAM(fieldInfo.type, expressionContext.typeContext);
+            ExpressionContext subContext = expressionContext.newTypeContext(fieldInfo, forwardReturnTypeInfo);
+
+            org.e2immu.analyser.model.Expression parsedExpression = subContext.parseExpression(expression);
             // here we decide how to resolve the anonymous types created as we go along
             // the current implementation treats the anonymous types as subtypes in the current type, which is what we want to do
             subContext.streamNewlyCreatedTypes().forEach(anonymousType -> doType(anonymousType, subContext,
@@ -531,9 +524,9 @@ public class Resolver {
                          BlockStmt block,
                          Block.BlockBuilder blockBuilder) {
         try {
-            MethodTypeParameterMap returnTypeSAM = methodInspection.getReturnType() == null ? null :
-                    methodInspection.getReturnType().findSingleAbstractMethodOfInterface(expressionContext.typeContext);
-            ExpressionContext newContext = expressionContext.newVariableContext(methodInfo, returnTypeSAM);
+            ForwardReturnTypeInfo forwardReturnTypeInfo = ForwardReturnTypeInfo.computeSAM(methodInspection.getReturnType(),
+                    expressionContext.typeContext);
+            ExpressionContext newContext = expressionContext.newVariableContext(methodInfo, forwardReturnTypeInfo);
             methodInspection.getParameters().forEach(newContext.variableContext::add);
             log(RESOLVER, "Parsing block with variable context {}", newContext.variableContext);
             Block parsedBlock = newContext.continueParsingBlock(block, blockBuilder);

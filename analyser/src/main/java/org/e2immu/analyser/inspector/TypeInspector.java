@@ -96,14 +96,12 @@ public class TypeInspector {
                                      ExpressionContext expressionContext,
                                      NodeList<BodyDeclaration<?>> members) {
         assert fullInspection; // no way we could reach this otherwise
-        assert typeImplemented.typeInfo != null && typeImplemented.typeInfo.hasBeenInspected() :
-                "typeImplemented is " + typeImplemented;
 
         ExpressionContext withSubTypes = expressionContext.newSubType(typeImplemented.typeInfo);
         TypeInspection superInspection = expressionContext.typeContext.getTypeInspection(typeImplemented.typeInfo);
         superInspection.subTypes().forEach(withSubTypes.typeContext::addToContext);
 
-        if (typeImplemented.typeInfo.typeInspection.get().typeNature() == TypeNature.INTERFACE) {
+        if (superInspection.typeNature() == TypeNature.INTERFACE) {
             builder.noParent(withSubTypes.typeContext.getPrimitives());
             builder.addInterfaceImplemented(typeImplemented);
         } else {
@@ -468,7 +466,7 @@ public class TypeInspector {
             boolean haveNonStaticNonDefaultsInSuperType = false;
             for (ParameterizedType superInterface : builder.getInterfacesImplemented()) {
                 assert superInterface.typeInfo != null;
-                if (superInterface.typeInfo.typeInspection.get()
+                if (expressionContext.typeContext.getTypeInspection(superInterface.typeInfo)
                         .haveNonStaticNonDefaultMethods(expressionContext.typeContext)) {
                     haveNonStaticNonDefaultsInSuperType = true;
                     break;

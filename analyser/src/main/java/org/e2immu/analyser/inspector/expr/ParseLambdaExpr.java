@@ -42,7 +42,8 @@ public class ParseLambdaExpr {
 
     public static Expression parse(ExpressionContext expressionContext,
                                    LambdaExpr lambdaExpr,
-                                   MethodTypeParameterMap singleAbstractMethod) {
+                                   ForwardReturnTypeInfo forwardReturnTypeInfo) {
+        MethodTypeParameterMap singleAbstractMethod = forwardReturnTypeInfo.sam();
         if (singleAbstractMethod == null || !singleAbstractMethod.isSingleAbstractMethod()) {
             return partiallyParse(lambdaExpr, expressionContext.getLocation());
         }
@@ -104,7 +105,7 @@ public class ParseLambdaExpr {
         ExpressionContext newExpressionContext = expressionContext.newLambdaContext(anonymousType,
                 newVariableContext);
 
-        Evaluation evaluation = evaluate(lambdaExpr, newExpressionContext, singleAbstractMethod, inspectionProvider);
+        Evaluation evaluation = evaluate(lambdaExpr, newExpressionContext, forwardReturnTypeInfo, inspectionProvider);
         if (evaluation == null) {
             return partiallyParse(lambdaExpr, expressionContext.getLocation());
         }
@@ -127,32 +128,33 @@ public class ParseLambdaExpr {
 
     private static Evaluation evaluate(LambdaExpr lambdaExpr,
                                        ExpressionContext newExpressionContext,
-                                       MethodTypeParameterMap singleAbstractMethod,
+                                       ForwardReturnTypeInfo forwardReturnTypeInfo,
                                        InspectionProvider inspectionProvider) {
         boolean isExpression = lambdaExpr.getExpressionBody().isPresent();
         if (isExpression) {
             Expression expr = lambdaExpr.getExpressionBody()
-                    .map(e -> newExpressionContext.parseExpression(e, singleAbstractMethod.getConcreteReturnType(), null))
+                    .map(e -> newExpressionContext.parseExpression(e, forwardReturnTypeInfo))
                     .orElse(EmptyExpression.EMPTY_EXPRESSION);
             if (expr instanceof UnevaluatedMethodCall) {
                 log(LAMBDA, "Body results in unevaluated method call, so I can't be evaluated either");
                 return null;
             }
             ParameterizedType inferredReturnType = expr.returnType();
-            if (Primitives.isVoid(singleAbstractMethod.getConcreteReturnType())) {
+            if (forwardReturnTypeInfo.isVoid()) {
                 // we don't expect/want a value, even if the inferredReturnType provides one
                 return new Evaluation(new Block.BlockBuilder().addStatement(new ExpressionAsStatement(expr)).build(),
                         inferredReturnType);
-            } else {
-                // but if we expect one, the inferredReturnType cannot be void (would be a compiler error)
-                assert !Primitives.isVoid(inferredReturnType);
-                return new Evaluation(new Block.BlockBuilder().addStatement(new ReturnStatement(expr)).build(),
-                        inferredReturnType);
             }
-        } else {
-            Block block = newExpressionContext.parseBlockOrStatement(lambdaExpr.getBody());
-            return new Evaluation(block, block.mostSpecificReturnType(inspectionProvider));
+            // but if we expect one, the inferredReturnType cannot be void (would be a compiler error)
+            if (Primitives.isVoid(inferredReturnType)) {
+                throw new UnsupportedOperationException();
+            }
+            return new Evaluation(new Block.BlockBuilder().addStatement(new ReturnStatement(expr)).build(),
+                    inferredReturnType);
         }
+        // not an expression, so we must have a block...
+        Block block = newExpressionContext.parseBlockOrStatement(lambdaExpr.getBody());
+        return new Evaluation(block, block.mostSpecificReturnType(inspectionProvider));
     }
 
     // experimental: we look at the parameters, and return an expression which is superficial, with only
