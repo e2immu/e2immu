@@ -883,14 +883,14 @@ public class ParameterizedType {
         return Primitives.isPrimitiveExcludingVoid(this) ? MultiLevel.INDEPENDENT : MultiLevel.DEPENDENT;
     }
 
-    public int defaultImmutable(AnalyserContext analyserContext) {
+    public int defaultImmutable(AnalysisProvider analysisProvider) {
         if (Primitives.isPrimitiveExcludingVoid(this)) return MultiLevel.EFFECTIVELY_E2IMMUTABLE;
         if (arrays > 0) return MultiLevel.EFFECTIVELY_E1IMMUTABLE_NOT_E2IMMUTABLE;
         TypeInfo bestType = bestTypeInfo();
         if (bestType == null) {
             return MultiLevel.EFFECTIVELY_E2IMMUTABLE;
         }
-        TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(bestType);
+        TypeAnalysis typeAnalysis = analysisProvider.getTypeAnalysis(bestType);
         return typeAnalysis.getProperty(VariableProperty.IMMUTABLE);
     }
 

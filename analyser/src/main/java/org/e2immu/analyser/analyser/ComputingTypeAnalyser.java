@@ -781,7 +781,9 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
         for (FieldAnalyser fieldAnalyser : myFieldAnalysers) {
             FieldAnalysis fieldAnalysis = fieldAnalyser.fieldAnalysis;
             FieldInfo fieldInfo = fieldAnalyser.fieldInfo;
-            FieldReference thisFieldInfo = new FieldReference(analyserContext, fieldInfo, new This(analyserContext, typeInfo));
+            boolean isStatic = fieldAnalyser.fieldInspection.isStatic();
+            Variable scope = isStatic ? null: new This(analyserContext, typeInfo);
+            FieldReference thisFieldInfo = new FieldReference(analyserContext, fieldInfo, scope);
             String fieldFQN = fieldInfo.fullyQualifiedName();
 
             if (fieldAnalysis.isOfImplicitlyImmutableDataType() == null) {

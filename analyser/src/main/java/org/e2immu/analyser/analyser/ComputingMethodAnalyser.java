@@ -380,8 +380,9 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
             Precondition combinedPrecondition = null;
             for (FieldAnalyser fieldAnalyser : myFieldAnalysers.values()) {
                 if (fieldAnalyser.fieldAnalysis.getProperty(VariableProperty.FINAL) == Level.FALSE) {
-                    This newThis = new This(analyserContext, methodInfo.typeInfo);
-                    FieldReference fr = new FieldReference(analyserContext, fieldAnalyser.fieldInfo, newThis);
+                    boolean isStatic = fieldAnalyser.fieldInspection.isStatic();
+                    Variable scope = isStatic ? null: new This(analyserContext, methodInfo.typeInfo);
+                    FieldReference fr = new FieldReference(analyserContext, fieldAnalyser.fieldInfo, scope);
                     StatementAnalysis beforeAssignment = statementBeforeAssignment(fr);
                     if (beforeAssignment != null) {
                         ConditionManager cm = beforeAssignment.stateData.conditionManagerForNextStatement.get();

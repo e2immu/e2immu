@@ -296,7 +296,8 @@ public class ExpressionContext {
             newExpressionContext = newVariableContext("switch-statement");
             Variable scope = new This(typeContext, enumType);
             enumInspection.fields().forEach(fieldInfo -> newExpressionContext.variableContext
-                    .add(new FieldReference(typeContext, fieldInfo, scope)));
+                    .add(new FieldReference(typeContext, fieldInfo,
+                            fieldInfo.isStatic(typeContext) ? null : scope)));
         } else {
             newExpressionContext = this;
         }

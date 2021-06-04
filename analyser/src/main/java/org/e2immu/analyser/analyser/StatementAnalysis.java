@@ -32,6 +32,8 @@ import org.e2immu.annotation.Container;
 import org.e2immu.annotation.NotNull;
 import org.e2immu.support.AddOnceSet;
 import org.e2immu.support.SetOnceMap;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.function.BiFunction;
@@ -45,6 +47,7 @@ import static org.e2immu.analyser.util.StringUtil.pad;
 @Container
 public class StatementAnalysis extends AbstractAnalysisBuilder implements Comparable<StatementAnalysis>,
         HasNavigationData<StatementAnalysis>, DelayDebugger {
+    private static final Logger LOGGER = LoggerFactory.getLogger(StatementAnalysis.class);
 
     public final Statement statement;
     public final String index;
@@ -764,8 +767,14 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                         ignoreCurrent = atLeastOneBlockExecuted;
                     }
                     if (toMerge.size() > 0) {
-                        destination.merge(evaluationContext, stateOfConditionManagerBeforeExecution, ignoreCurrent, toMerge,
-                                groupPropertyValues);
+                        try {
+                            destination.merge(evaluationContext, stateOfConditionManagerBeforeExecution, ignoreCurrent, toMerge,
+                                    groupPropertyValues);
+                        } catch (Throwable throwable) {
+                            LOGGER.warn("Caught exception while merging variable {} in {}, {}", fqn,
+                                    methodAnalysis.getMethodInfo().fullyQualifiedName, index);
+                            throw throwable;
+                        }
                     } else if (destination.hasMerge()) {
                         assert evaluationContext.getIteration() > 0; // or it wouldn't have had a merge
                         // in previous iterations there was data for us, but now there isn't; copy from I/E into M
@@ -1119,13 +1128,18 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         VariableInfoContainer vic = variables.get(fqn);
         VariableInfo vi = vic.getPreviousOrInitial();
         if (isNotAssignmentTarget) {
-            if (vi.variable() instanceof FieldReference fieldReference && vi.isConfirmedVariableField()) {
-                NameSimpleName localVariableFqn = createLocalFieldCopyFQN(vi, fieldReference, statementTime);
-                if (!variables.isSet(localVariableFqn.name)) {
-                    // it is possible that the field has been assigned to, so it exists, but the local copy does not yet
+            if (vi.variable() instanceof FieldReference fieldReference) {
+                if (vi.isConfirmedVariableField()) {
+                    NameSimpleName localVariableFqn = createLocalFieldCopyFQN(vi, fieldReference, statementTime);
+                    if (!variables.isSet(localVariableFqn.name)) {
+                        // it is possible that the field has been assigned to, so it exists, but the local copy does not yet
+                        return new VariableInfoImpl(variable);
+                    }
+                    return variables.get(localVariableFqn.name).getPreviousOrInitial();
+                }
+                if(vi.statementTimeDelayed()) {
                     return new VariableInfoImpl(variable);
                 }
-                return variables.get(localVariableFqn.name).getPreviousOrInitial();
             }
             if (vic.isLocalVariableInLoopDefinedOutside()) {
                 StatementAnalysis relevantLoop = mostEnclosingLoop();

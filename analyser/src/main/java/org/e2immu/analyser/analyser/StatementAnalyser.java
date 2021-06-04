@@ -14,7 +14,6 @@
 
 package org.e2immu.analyser.analyser;
 
-import org.e2immu.analyser.analyser.util.DelayDebugCollector;
 import org.e2immu.analyser.analyser.util.DelayDebugNode;
 import org.e2immu.analyser.analyser.util.DelayDebugger;
 import org.e2immu.analyser.analyser.util.FindInstanceOfPatterns;
@@ -227,7 +226,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 statementAnalyser = statementAnalyser.navigationData.next.get().orElse(null);
             } while (statementAnalyser != null);
             return builder.build();
-        } catch (RuntimeException rte) {
+        } catch (Throwable rte) {
             LOGGER.warn("Caught exception while analysing block {} of: {}", index(), myMethodAnalyser.methodInfo.fullyQualifiedName());
             throw rte;
         }
@@ -430,7 +429,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             log(ANALYSER, "Returning from statement {} of {} with analysis status {}", statementAnalysis.index,
                     myMethodAnalyser.methodInfo.name, analysisStatus);
             return result;
-        } catch (RuntimeException rte) {
+        } catch (Throwable rte) {
             LOGGER.warn("Caught exception while analysing statement {} of {}", index(), myMethodAnalyser.methodInfo.fullyQualifiedName());
             throw rte;
         }
@@ -1813,7 +1812,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 }
             }
             return overall;
-        } catch (RuntimeException rte) {
+        } catch (Throwable rte) {
             LOGGER.warn("Failed to evaluate main expression in statement {}", statementAnalysis.index);
             throw rte;
         }
@@ -1842,15 +1841,17 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         }
         List<Expression> assignments = new ArrayList<>();
         for (FieldInfo fieldInfo : myMethodAnalyser.methodInfo.typeInfo.visibleFields(analyserContext)) {
-            for (VariableInfo variableInfo : methodAnalyser.getFieldAsVariable(fieldInfo, false)) {
-                if (variableInfo.isAssigned()) {
-                    EvaluationResult translated = variableInfo.getValue()
-                            .reEvaluate(sharedState.evaluationContext, translation);
-                    Assignment assignment = new Assignment(statementAnalysis.primitives,
-                            new VariableExpression(new FieldReference(analyserContext, fieldInfo, thisVar)),
-                            translated.value(), null, null, false);
-                    builder.compose(translated);
-                    assignments.add(assignment);
+            if (!fieldInfo.isStatic(analyserContext)) {
+                for (VariableInfo variableInfo : methodAnalyser.getFieldAsVariable(fieldInfo, false)) {
+                    if (variableInfo.isAssigned()) {
+                        EvaluationResult translated = variableInfo.getValue()
+                                .reEvaluate(sharedState.evaluationContext, translation);
+                        Assignment assignment = new Assignment(statementAnalysis.primitives,
+                                new VariableExpression(new FieldReference(analyserContext, fieldInfo, thisVar)),
+                                translated.value(), null, null, false);
+                        builder.compose(translated);
+                        assignments.add(assignment);
+                    }
                 }
             }
         }

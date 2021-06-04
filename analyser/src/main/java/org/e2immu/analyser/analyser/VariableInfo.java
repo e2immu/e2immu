@@ -119,6 +119,10 @@ public interface VariableInfo {
         return getStatementTime() >= 0;
     }
 
+    default boolean statementTimeDelayed() {
+        return getStatementTime() == VARIABLE_FIELD_DELAY;
+    }
+
     default boolean notReadAfterAssignment(String index) {
         return isAssigned()
                 && (!isRead() || getReadId().compareTo(getAssignmentId()) < 0)

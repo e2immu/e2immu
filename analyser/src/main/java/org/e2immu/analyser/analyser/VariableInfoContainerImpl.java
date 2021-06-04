@@ -61,7 +61,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         Objects.requireNonNull(previous);
         VariableInfo outside = previous.current();
         VariableInfoImpl initial = new VariableInfoImpl(outside.variable(), NOT_YET_ASSIGNED,
-                NOT_YET_READ, NOT_A_VARIABLE_FIELD, Set.of());
+                NOT_YET_READ, NOT_A_VARIABLE_FIELD, Set.of(), outside.valueIsSet() ? null : outside.getValue());
         initial.newVariable(false);
         initial.setValue(outside.getValue(), outside.isDelayed());
         if (outside.getLinkedVariables() != LinkedVariables.DELAY)
@@ -79,7 +79,8 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
     public static VariableInfoContainerImpl newLocalCopyOfVariableField(Variable variable,
                                                                         String readId,
                                                                         boolean statementHasSubBlocks) {
-        VariableInfoImpl initial = new VariableInfoImpl(variable, NOT_YET_ASSIGNED, readId, NOT_A_VARIABLE_FIELD, Set.of());
+        VariableInfoImpl initial = new VariableInfoImpl(variable, NOT_YET_ASSIGNED,
+                readId, NOT_A_VARIABLE_FIELD, Set.of(), null);
         // no newVariable, because either setValue is called immediately after this method, or the explicit newVariableWithoutValue()
         return new VariableInfoContainerImpl(VariableInLoop.NOT_IN_LOOP, Either.right(initial),
                 statementHasSubBlocks ? new SetOnce<>() : null, null);
@@ -92,7 +93,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
                                                         int statementTime,
                                                         VariableInLoop variableInLoop,
                                                         boolean statementHasSubBlocks) {
-        VariableInfoImpl initial = new VariableInfoImpl(variable, NOT_YET_ASSIGNED, NOT_YET_READ, statementTime, Set.of());
+        VariableInfoImpl initial = new VariableInfoImpl(variable, NOT_YET_ASSIGNED, NOT_YET_READ, statementTime, Set.of(), null);
         // no newVariable, because either setValue is called immediately after this method, or the explicit newVariableWithoutValue()
         return new VariableInfoContainerImpl(variableInLoop, Either.right(initial), statementHasSubBlocks ? new SetOnce<>() : null, null);
     }
@@ -105,7 +106,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
                                                              Expression value,
                                                              boolean statementHasSubBlocks) {
         VariableInfoImpl initial = new VariableInfoImpl(variable, index + Level.INITIAL,
-                index + Level.EVALUATION, NOT_A_VARIABLE_FIELD, Set.of());
+                index + Level.EVALUATION, NOT_A_VARIABLE_FIELD, Set.of(), null);
         initial.newVariable(true);
         initial.setValue(value, false);
         initial.setLinkedVariables(LinkedVariables.EMPTY);
@@ -124,7 +125,8 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
                                                             LinkedVariables staticallyAssignedVariables,
                                                             VariableInLoop variableInLoop,
                                                             boolean statementHasSubBlocks) {
-        VariableInfoImpl initial = new VariableInfoImpl(variable, assignedId, readId, VariableInfoContainer.NOT_A_VARIABLE_FIELD, Set.of());
+        VariableInfoImpl initial = new VariableInfoImpl(variable, assignedId, readId,
+                VariableInfoContainer.NOT_A_VARIABLE_FIELD, Set.of(), null);
         initial.setValue(value, false);
         properties.forEach(initial::setProperty);
         int cnn = initial.getProperty(VariableProperty.CONTEXT_NOT_NULL);
@@ -193,7 +195,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
     }
 
     @Override
-    public void newVariableWithoutValue( ) {
+    public void newVariableWithoutValue() {
         assert !hasMerge();
         assert !hasEvaluation();
         assert isInitial();
@@ -322,12 +324,13 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
             assert !readId.equals(NOT_YET_READ) || !assignmentId.equals(NOT_YET_ASSIGNED) || !pi.isRead();
              */
 
-            VariableInfoImpl eval = new VariableInfoImpl(pi.variable(), assignmentId, readId, statementTime, readAtStatementTimes);
+            VariableInfoImpl eval = new VariableInfoImpl(pi.variable(), assignmentId, readId, statementTime,
+                    readAtStatementTimes, pi.valueIsSet() ? null : pi.getValue());
             evaluation.set(eval);
             if (!pi.valueIsSet()) {
                 eval.setValue(pi.getValue(), true);
             }
-        } else if (!evaluation.get().statementTimeIsSet() && statementTime != VariableInfoContainer.VARIABLE_FIELD_DELAY) {
+        } else if (evaluation.get().statementTimeDelayed() && statementTime != VariableInfoContainer.VARIABLE_FIELD_DELAY) {
             evaluation.get().setStatementTime(statementTime);
         }
     }
@@ -337,7 +340,8 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         VariableInfo vi1 = getPreviousOrInitial();
         VariableInfoImpl write;
         if (!evaluation.isSet()) {
-            write = new VariableInfoImpl(vi1.variable(), vi1.getAssignmentId(), vi1.getReadId(), vi1.getStatementTime(), vi1.getReadAtStatementTimes());
+            write = new VariableInfoImpl(vi1.variable(), vi1.getAssignmentId(), vi1.getReadId(), vi1.getStatementTime(),
+                    vi1.getReadAtStatementTimes(), vi1.valueIsSet() ? null : vi1.getValue());
             if (vi1.linkedVariablesIsSet()) write.setLinkedVariables(vi1.getLinkedVariables());
             if (vi1.valueIsSet()) write.setValue(vi1.getValue(), false);
             vi1.propertyStream().filter(e -> !GroupPropertyValues.PROPERTIES.contains(e.getKey()))
@@ -372,7 +376,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
 
     private VariableInfoImpl prepareForWritingContextProperties(VariableInfo vi1) {
         VariableInfoImpl write = new VariableInfoImpl(vi1.variable(), vi1.getAssignmentId(),
-                vi1.getReadId(), vi1.getStatementTime(), vi1.getReadAtStatementTimes());
+                vi1.getReadId(), vi1.getStatementTime(), vi1.getReadAtStatementTimes(), vi1.valueIsSet() ? null : vi1.getValue());
         if (vi1.linkedVariablesIsSet()) write.setLinkedVariables(vi1.getLinkedVariables());
         if (vi1.valueIsSet()) write.setValue(vi1.getValue(), false);
         write.setStaticallyAssignedVariables(vi1.getStaticallyAssignedVariables());

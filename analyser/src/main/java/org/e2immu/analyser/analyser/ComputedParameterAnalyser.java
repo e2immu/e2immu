@@ -343,8 +343,9 @@ public class ComputedParameterAnalyser extends ParameterAnalyser {
     }
 
     private boolean isAssignedIn(StatementAnalysis lastStatementAnalysis, FieldInfo fieldInfo) {
-        This thisVar = new This(analyserContext, fieldInfo.owner);
-        VariableInfo vi = lastStatementAnalysis.findOrNull(new FieldReference(analyserContext, fieldInfo, thisVar),
+        boolean isStatic = fieldInfo.isStatic(analyserContext);
+        Variable scope = isStatic ? null : new This(analyserContext, fieldInfo.owner);
+        VariableInfo vi = lastStatementAnalysis.findOrNull(new FieldReference(analyserContext, fieldInfo, scope),
                 VariableInfoContainer.Level.MERGE);
         return vi != null && vi.isAssigned();
     }

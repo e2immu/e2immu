@@ -188,7 +188,7 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
 
                 if (d.variable() instanceof ReturnVariable) {
                     if ("4".equals(d.statementId())) {
-                        String expectValue = d.iteration() == 0 ? "<v:v3>" : "Basics_6.someMinorMethod(field$0)";
+                        String expectValue = d.iteration() == 0 ? "<m:someMinorMethod>" : "Basics_6.someMinorMethod(field$0)";
                         assertEquals(expectValue, d.currentValue().toString());
                         int expectNotNull = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
                         assertEquals(expectNotNull, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
@@ -439,13 +439,12 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
             if ("increment3".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ReturnVariable) {
                     assertEquals(INC3_RETURN_VAR, d.variableName());
+                    String expected = d.iteration() == 0 ? "-1+<f:i>==<f:i>" : "true";
                     if ("1.0.3".equals(d.statementId())) {
-                        String expect = d.iteration() == 0 ? I_EXPR : "true";
-                        assertEquals(expect, d.currentValue().toString());
+                        assertEquals(expected, d.currentValue().toString());
                     }
                     if ("1".equals(d.statementId())) {
-                        String expect = d.iteration() == 0 ? I_EXPR : "true";
-                        assertEquals(expect, d.currentValue().toString());
+                        assertEquals(expected, d.currentValue().toString());
                     }
                 }
                 if ("j".equals(d.variableName())) {
@@ -554,8 +553,8 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
                 assertTrue(d.methodInfo().isSynchronized());
             }
             if ("increment3".equals(d.methodInfo().name)) {
-                String expect = d.iteration() == 0 ? I_EXPR : "true";
-                assertEquals(expect, d.methodAnalysis().getLastStatement()
+                String expected = d.iteration() == 0 ? "-1+<f:i>==<f:i>" : "true";
+                assertEquals(expected, d.methodAnalysis().getLastStatement()
                         .variables.get(INC3_RETURN_VAR).current().getValue().toString());
                 if (d.iteration() > 0) {
                     assertEquals("true", d.methodAnalysis().getSingleReturnValue().toString());
@@ -616,13 +615,27 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
                 }
             }
             if ("test4".equals(d.methodInfo().name)) {
-                if ("j".equals(d.variableName()) && ("1".equals(d.statementId())
-                        || "2".equals(d.statementId())
-                        || "3".equals(d.statementId())
-                        || "4.0.0.0.0".equals(d.statementId()))) {
-                    assertEquals("this.i", d.variableInfo().getStaticallyAssignedVariables().toString());
+                if ("j".equals(d.variableName())) {
+                    String staticallyAssigned = d.variableInfo().getStaticallyAssignedVariables().toString();
+                    if ("0".equals(d.statementId()) || "2".equals(d.statementId())
+                            || "3".equals(d.statementId()) || "4.0.0.0.0".equals(d.statementId())
+                            || "4".equals(d.statementId())) { // FIXME is this correct?? At 4, I'd assume some combination of this.i and ""
+                        String expectValue = d.iteration() == 0 ? "<f:i>" : "i$1";
+                        assertEquals(expectValue, d.currentValue().toString());
+                        assertEquals("this.i", staticallyAssigned);
+                    }
+                    if ("4.0.0.0.1".equals(d.statementId()) || "4.0.0.0.2".equals(d.statementId()) ||
+                            "4.0.0.0.3".equals(d.statementId()) || "4.0.0.0.4".equals(d.statementId()) ||
+                            "4.0.0".equals(d.statementId())) {
+                        assertEquals("", staticallyAssigned, "At " + d.statementId());
+                    }
                 }
-
+                if ("k".equals(d.variableName())) {
+                    if ("3".equals(d.statementId())) {
+                        String expectValue = d.iteration() == 0 ? "<f:i>" : "i$2";
+                        assertEquals(expectValue, d.currentValue().toString());
+                    }
+                }
                 if (d.iteration() > 0) {
                     if ("j0".equals(d.variableName()) && "4.0.0.0.0".equals(d.statementId())) {
                         assertEquals(I2, d.currentValue().toString());

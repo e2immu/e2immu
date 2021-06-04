@@ -29,6 +29,10 @@ public interface FieldInspection extends Inspection {
 
     FieldModifier getAccess();
 
+    default boolean isStatic() {
+        return getModifiers().contains(FieldModifier.STATIC);
+    }
+
     record FieldInitialiser(Expression initialiser, MethodInfo implementationOfSingleAbstractMethod,
                             boolean artificial) {
         public FieldInitialiser {

@@ -14,8 +14,10 @@
 
 package org.e2immu.analyser.model.variable;
 
-import org.e2immu.analyser.analyser.EvaluationContext;
-import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.FieldInfo;
+import org.e2immu.analyser.model.ParameterizedType;
+import org.e2immu.analyser.model.Qualification;
+import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.output.*;
 import org.e2immu.analyser.parser.InspectionProvider;
 
@@ -38,6 +40,8 @@ public class FieldReference extends VariableWithConcreteReturnType {
                         fieldInfo.owner.asParameterizedType(inspectionProvider), scope.concreteReturnType()));
         this.fieldInfo = Objects.requireNonNull(fieldInfo);
         this.scope = scope;
+        assert !fieldInfo.isStatic(inspectionProvider) || !(scope instanceof This)
+                : "Have This scope on static field " + fullyQualifiedName();
     }
 
     @Override
@@ -48,7 +52,7 @@ public class FieldReference extends VariableWithConcreteReturnType {
     /**
      * Two field references with the same fieldInfo object can only be different when
      * not both scopes are instances of This.
-    *
+     *
      * @param o the other one
      * @return true if the same field is being referred to
      */

@@ -143,8 +143,10 @@ public class FieldInfo implements WithInspectionAndAnalysis {
     public boolean isStatic() {
         return fieldInspection.get().getModifiers().contains(FieldModifier.STATIC);
     }
+
     public boolean isStatic(InspectionProvider inspectionProvider) {
         FieldInspection inspection = inspectionProvider.getFieldInspection(this);
+        assert inspection != null : "No field inspection known for " + fullyQualifiedName();
         return inspection.getModifiers().contains(FieldModifier.STATIC);
     }
 

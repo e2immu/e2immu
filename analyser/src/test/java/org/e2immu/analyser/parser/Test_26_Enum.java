@@ -199,7 +199,7 @@ public class Test_26_Enum extends CommonTestRunner {
             }
             if ("i$2$2-E".equals(d.variableName())) {
                 if ("2.0.0".equals(d.statementId())) {
-                    String expectValue = d.iteration() == 0 ? "<v:i$2$2-E>" : "1+i$2";
+                    String expectValue = d.iteration() == 0 ? "1+<v:i>" : "1+i$2";
                     assertEquals(expectValue, d.currentValue().toString());
                     assertEquals("", d.variableInfo().getLinkedVariables().toString());
                 }

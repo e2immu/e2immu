@@ -59,7 +59,7 @@ class VariableInfoImpl implements VariableInfo {
 
     // ONLY for testing!
     VariableInfoImpl(Variable variable) {
-        this(variable, NOT_YET_ASSIGNED, NOT_YET_READ, NOT_A_VARIABLE_FIELD, Set.of());
+        this(variable, NOT_YET_ASSIGNED, NOT_YET_READ, NOT_A_VARIABLE_FIELD, Set.of(), null);
     }
 
     // used by merge code
@@ -72,7 +72,12 @@ class VariableInfoImpl implements VariableInfo {
     }
 
     // normal one for creating an initial or evaluation
-    VariableInfoImpl(Variable variable, String assignmentId, String readId, int statementTime, Set<Integer> readAtStatementTimes) {
+    VariableInfoImpl(Variable variable,
+                     String assignmentId,
+                     String readId,
+                     int statementTime,
+                     Set<Integer> readAtStatementTimes,
+                     Expression delayedValue) {
         this.variable = Objects.requireNonNull(variable);
         this.assignmentId = Objects.requireNonNull(assignmentId);
         this.readId = Objects.requireNonNull(readId);
@@ -80,7 +85,7 @@ class VariableInfoImpl implements VariableInfo {
             this.statementTime.set(statementTime);
         }
         this.readAtStatementTimes = Objects.requireNonNull(readAtStatementTimes);
-        value.setVariable(DelayedVariableExpression.forVariable(variable));
+        value.setVariable(delayedValue == null ? DelayedVariableExpression.forVariable(variable): delayedValue);
     }
 
     @Override

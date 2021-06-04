@@ -12,33 +12,24 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.output;
+package org.e2immu.analyser.testexample;
 
-import org.e2immu.annotation.E2Container;
-import org.e2immu.annotation.NotModified;
-import org.e2immu.annotation.NotNull;
+import org.e2immu.annotation.Constant;
+import org.e2immu.annotation.Final;
+import org.e2immu.annotation.Nullable;
 
-@E2Container
-public interface OutputElement {
+public class ExplicitConstructorInvocation_4 {
 
-    @NotModified
-    String minimal();
+    private static int generator = 0;
+    public final int index;
+    public final int max;
 
-    default String debug() {
-        return minimal();
+    public ExplicitConstructorInvocation_4() {
+        this(1);
     }
 
-    default String trace() {
-        return debug();
+    public ExplicitConstructorInvocation_4( int max) {
+        this.index = generator++;
+        this.max = max;
     }
-
-    // formatter system
-
-    default int length(FormattingOptions options) { return write(options).length(); }
-
-    @NotModified
-    String write(FormattingOptions options);
-
-    @NotModified
-    String generateJavaForDebugging();
 }

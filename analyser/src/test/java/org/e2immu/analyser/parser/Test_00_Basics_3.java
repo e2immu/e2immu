@@ -69,7 +69,8 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                 }
                 if ("1".equals(d.statementId())) {
                     // should not be sth like null != s$2, because statement time has not advanced since the assignments
-                    assertEquals("true", d.evaluationResult().value().debugOutput());
+                    String expect = d.iteration() == 0 ? "null!=<field:org.e2immu.analyser.testexample.Basics_3.s>" : "true";
+                    assertEquals(expect, d.evaluationResult().value().debugOutput());
                 }
             }
             if ("getS".equals(d.methodInfo().name)) {
@@ -186,7 +187,8 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                     assertTrue(d.variableInfo().isAssigned());
                 }
                 if ("1".equals(d.statementId())) {
-                    assertEquals("input1.contains(\"a\")?\"xyz\":\"abc\"", d.currentValue().toString());
+                    String expected = d.iteration() == 0 ? "<f:s>" : "input1.contains(\"a\")?\"xyz\":\"abc\"";
+                    assertEquals(expected, d.currentValue().toString());
 
                     assertEquals("", d.variableInfo().getStaticallyAssignedVariables().toString());
                     assertEquals("", d.variableInfo().getLinkedVariables().toString());
@@ -304,7 +306,7 @@ public class Test_00_Basics_3 extends CommonTestRunner {
             if ("s".equals(d.fieldInfo().name)) {
                 assertEquals(MultiLevel.NULLABLE, d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_NOT_NULL));
                 assertEquals(Level.FALSE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
-                int expectModified = d.iteration() == 0 ? Level.DELAY: Level.FALSE;
+                int expectModified = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
                 assertEquals(expectModified, d.fieldAnalysis().getProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD));
                 assertEquals("<variable value>", d.fieldAnalysis().getEffectivelyFinalValue().toString());
                 assertEquals("", d.fieldAnalysis().getLinkedVariables().toString());

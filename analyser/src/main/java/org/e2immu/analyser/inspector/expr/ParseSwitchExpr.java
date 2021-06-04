@@ -42,7 +42,8 @@ public class ParseSwitchExpr {
             Variable scope = new This(expressionContext.typeContext, enumType);
             enumInspection.fields()
                     .forEach(fieldInfo -> newExpressionContext.variableContext.add(
-                            new FieldReference(expressionContext.typeContext, fieldInfo, scope)));
+                            new FieldReference(expressionContext.typeContext, fieldInfo,
+                                    fieldInfo.isStatic(expressionContext.typeContext) ? null : scope)));
         } else {
             newExpressionContext = expressionContext;
         }

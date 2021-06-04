@@ -58,7 +58,12 @@ public class ShallowMethodAnalyser extends MethodAnalyser {
 
     @Override
     public AnalysisStatus analyse(int iteration, EvaluationContext closure) {
-        // nothing here
+
+        int immutable = methodInspection.getReturnType().defaultImmutable(analyserContext);
+        if (immutable == MultiLevel.EFFECTIVELY_E2IMMUTABLE && !methodAnalysis.properties.isSet(VariableProperty.IMMUTABLE)) {
+            methodAnalysis.setProperty(VariableProperty.IMMUTABLE, immutable);
+        }
+
         return AnalysisStatus.DONE;
     }
 

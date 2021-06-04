@@ -60,10 +60,6 @@ public record Guide(int index, Position position,
         return new GuideGenerator(0, false, false, false, false);
     }
 
-    public static GuideGenerator generatorForImports() {
-        return new GuideGenerator(0, false, false, false, true);
-    }
-
     public static class GuideGenerator {
         public final int index;
         private final int tabs;

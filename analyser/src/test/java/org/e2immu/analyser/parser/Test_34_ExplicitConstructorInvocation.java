@@ -15,10 +15,14 @@
 
 package org.e2immu.analyser.parser;
 
-import org.e2immu.analyser.config.*;
+import org.e2immu.analyser.config.DebugConfiguration;
+import org.e2immu.analyser.model.variable.FieldReference;
+import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
 
@@ -47,6 +51,27 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
     @Test
     public void test_3() throws IOException {
         testClass("ExplicitConstructorInvocation_3", 0, 0, new DebugConfiguration.Builder()
+                .build());
+    }
+
+    @Test
+    public void test_4() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("ExplicitConstructorInvocation_4".equals(d.methodInfo().name)
+                    && d.methodInfo().methodInspection.get().getParameters().size() == 1) {
+                if (d.variable() instanceof FieldReference fr && "index".equals(fr.fieldInfo.name)) {
+                    String expected = d.iteration() == 0 ? "<f:generator>" : "generator";
+                    if ("0".equals(d.statementId())) {
+                        assertEquals(expected, d.currentValue().toString());
+                    }
+                    if ("1".equals(d.statementId())) {
+                        assertEquals(expected, d.currentValue().toString());
+                    }
+                }
+            }
+        };
+        testClass("ExplicitConstructorInvocation_4", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 }

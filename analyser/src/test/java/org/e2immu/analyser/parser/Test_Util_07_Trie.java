@@ -47,7 +47,7 @@ public class Test_Util_07_Trie extends CommonTestRunner {
                         assertEquals(expected, d.currentValue().toString());
                     }
                     if ("1.0.0".equals(d.statementId())) {
-                        String expected = d.iteration() <= 1 ? "<v:node>" : "";
+                        String expected = d.iteration() <= 1 ? "<f:root>" : "";
                         assertEquals(expected, d.currentValue().toString());
                     }
                     if ("1.0.1".equals(d.statementId())) {
@@ -63,12 +63,12 @@ public class Test_Util_07_Trie extends CommonTestRunner {
                         assertEquals(expectEval, eval.getValue().toString());
                         assertEquals(MultiLevel.NULLABLE, eval.getProperty(VariableProperty.CONTEXT_NOT_NULL));
 
-                        String expected = d.iteration() <= 1 ? "null==<f:map>?<f:map>:<f:map>" : "";
+                        String expected = d.iteration() <= 1 ? "<f:map>" : "";
                         assertEquals(expected, d.currentValue().toString());
                         assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
                     }
                     if ("1.0.1".equals(d.statementId())) {
-                        String expected = d.iteration() <= 1 ? "null==<f:map>?<f:map>:<f:map>" : "";
+                        String expected = d.iteration() <= 1 ? "<f:map>" : "";
                         assertEquals(expected, d.currentValue().toString());
                         int expectCnn = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
                         assertEquals(expectCnn, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
