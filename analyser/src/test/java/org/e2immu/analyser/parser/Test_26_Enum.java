@@ -337,4 +337,10 @@ public class Test_26_Enum extends CommonTestRunner {
                 .build());
     }
 
+    @Test
+    public void test8() throws IOException {
+        // private field not read outside constructors
+        testClass("Enum_8", 0, 0, new DebugConfiguration.Builder()
+                .build());
+    }
 }

@@ -88,56 +88,56 @@ public class ComputedParameterAnalyser extends ParameterAnalyser {
         boolean delays = false;
         boolean checkLinks = true;
 
-        if (Primitives.isPrimitiveExcludingVoid(parameterInfo.parameterizedType) &&
-                !parameterAnalysis.properties.isSet(VariableProperty.MODIFIED_OUTSIDE_METHOD)) {
-            parameterAnalysis.setProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD, Level.FALSE);
-            changed = true;
-        }
+        if(sharedState.iteration == 0) {
+            if (Primitives.isPrimitiveExcludingVoid(parameterInfo.parameterizedType) &&
+                    !parameterAnalysis.properties.isSet(VariableProperty.MODIFIED_OUTSIDE_METHOD)) {
+                parameterAnalysis.setProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD, Level.FALSE);
+                changed = true;
+            }
 
-        // NOTE: a shortcut on immutable to set modification to false is not possible because of casts, see Cast_1
-
-        int formallyImmutable = parameterInfo.parameterizedType.defaultImmutable(analyserContext);
-        int contractBefore = parameterAnalysis.getProperty(IMMUTABLE_BEFORE_CONTRACTED);
-        int contractImmutable = parameterAnalysis.getProperty(IMMUTABLE);
-        if (contractImmutable != Level.DELAY && !parameterAnalysis.properties.isSet(IMMUTABLE)) {
-            if (formallyImmutable == Level.DELAY) {
-                delays = true;
-            } else {
+            // NOTE: a shortcut on immutable to set modification to false is not possible because of casts, see Cast_1
+            // NOTE: contractImmutable only has this meaning in iteration 0; once the other two components have been
+            // computed, the property IMMUTABLE is not "contract" anymore
+            int formallyImmutable = parameterInfo.parameterizedType.defaultImmutable(analyserContext);
+            int contractBefore = parameterAnalysis.getProperty(IMMUTABLE_BEFORE_CONTRACTED);
+            int contractImmutable = parameterAnalysis.getProperty(IMMUTABLE);
+            if (contractImmutable != Level.DELAY && formallyImmutable != Level.DELAY
+                    && !parameterAnalysis.properties.isSet(IMMUTABLE)) {
                 int combined = combineImmutable(formallyImmutable, contractImmutable, contractBefore == Level.TRUE);
                 parameterAnalysis.properties.put(IMMUTABLE, combined);
                 changed = true;
             }
-        }
 
-        int contractDependent = parameterAnalysis.getProperty(INDEPENDENT_PARAMETER);
-        if (contractDependent != Level.DELAY && !parameterAnalysis.properties.isSet(INDEPENDENT_PARAMETER)) {
-            parameterAnalysis.properties.put(INDEPENDENT_PARAMETER, contractDependent);
-            changed = true;
-        }
-
-        int contractPropMod = parameterAnalysis.getProperty(PROPAGATE_MODIFICATION);
-        if (contractPropMod != Level.DELAY && !parameterAnalysis.properties.isSet(EXTERNAL_PROPAGATE_MOD)) {
-            parameterAnalysis.properties.put(EXTERNAL_PROPAGATE_MOD, contractPropMod);
-            changed = true;
-        }
-
-        int contractModified = parameterAnalysis.getProperty(VariableProperty.MODIFIED_VARIABLE);
-        if (contractModified != Level.DELAY && !parameterAnalysis.properties.isSet(VariableProperty.MODIFIED_OUTSIDE_METHOD)) {
-            parameterAnalysis.setProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD, contractModified);
-            changed = true;
-        }
-
-        if (Primitives.isPrimitiveExcludingVoid(parameterInfo.parameterizedType)) {
-            if (!parameterAnalysis.properties.isSet(VariableProperty.EXTERNAL_NOT_NULL)) {
-                parameterAnalysis.setProperty(VariableProperty.EXTERNAL_NOT_NULL, MultiLevel.NOT_INVOLVED); // not involved
+            int contractDependent = parameterAnalysis.getProperty(INDEPENDENT_PARAMETER);
+            if (contractDependent != Level.DELAY && !parameterAnalysis.properties.isSet(INDEPENDENT_PARAMETER)) {
+                parameterAnalysis.properties.put(INDEPENDENT_PARAMETER, contractDependent);
                 changed = true;
             }
-            checkLinks = false;
-        } else {
-            int contractNotNull = parameterAnalysis.getProperty(VariableProperty.NOT_NULL_PARAMETER);
-            if (contractNotNull != Level.DELAY && !parameterAnalysis.properties.isSet(VariableProperty.EXTERNAL_NOT_NULL)) {
-                parameterAnalysis.setProperty(VariableProperty.EXTERNAL_NOT_NULL, contractNotNull);
+
+            int contractPropMod = parameterAnalysis.getProperty(PROPAGATE_MODIFICATION);
+            if (contractPropMod != Level.DELAY && !parameterAnalysis.properties.isSet(EXTERNAL_PROPAGATE_MOD)) {
+                parameterAnalysis.properties.put(EXTERNAL_PROPAGATE_MOD, contractPropMod);
                 changed = true;
+            }
+
+            int contractModified = parameterAnalysis.getProperty(VariableProperty.MODIFIED_VARIABLE);
+            if (contractModified != Level.DELAY && !parameterAnalysis.properties.isSet(VariableProperty.MODIFIED_OUTSIDE_METHOD)) {
+                parameterAnalysis.setProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD, contractModified);
+                changed = true;
+            }
+
+            if (Primitives.isPrimitiveExcludingVoid(parameterInfo.parameterizedType)) {
+                if (!parameterAnalysis.properties.isSet(VariableProperty.EXTERNAL_NOT_NULL)) {
+                    parameterAnalysis.setProperty(VariableProperty.EXTERNAL_NOT_NULL, MultiLevel.NOT_INVOLVED); // not involved
+                    changed = true;
+                }
+                checkLinks = false;
+            } else {
+                int contractNotNull = parameterAnalysis.getProperty(VariableProperty.NOT_NULL_PARAMETER);
+                if (contractNotNull != Level.DELAY && !parameterAnalysis.properties.isSet(VariableProperty.EXTERNAL_NOT_NULL)) {
+                    parameterAnalysis.setProperty(VariableProperty.EXTERNAL_NOT_NULL, contractNotNull);
+                    changed = true;
+                }
             }
         }
 
@@ -199,7 +199,8 @@ public class ComputedParameterAnalyser extends ParameterAnalyser {
                     } else {
                         propertiesDelayed.add(variableProperty);
                         log(org.e2immu.analyser.util.Logger.LogTarget.DELAYED,
-                                "Still delaying copiedFromFieldToParameters because of {}", variableProperty);
+                                "Still delaying copiedFromFieldToParameters because of {}, field {} ~ param {}",
+                                variableProperty, fieldInfo.name, parameterInfo.name);
                         delays = true;
                     }
                 }

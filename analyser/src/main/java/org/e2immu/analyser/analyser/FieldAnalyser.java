@@ -664,6 +664,7 @@ public class FieldAnalyser extends AbstractAnalyser {
         if (Logger.isLogEnabled(DELAYED)) {
             allMethodsAndConstructors.stream()
                     .filter(m -> !m.getFieldAsVariable(fieldInfo, false).isEmpty())
+                    .filter(m -> !((ComputingMethodAnalyser) m).methodLevelData().acceptLinksHaveBeenEstablished(ignoreMyConstructors))
                     .forEach(m -> log(DELAYED, "Field {}: links have not been established yet in method {}",
                             fieldInfo.name, m.methodInfo.name));
         }
@@ -969,11 +970,6 @@ public class FieldAnalyser extends AbstractAnalyser {
 
         int effectivelyFinal = fieldAnalysis.getProperty(VariableProperty.FINAL);
         if (effectivelyFinal == Level.DELAY) return DELAYS;
-        if (effectivelyFinal == Level.FALSE) {
-         //   fieldAnalysis.setProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD, Level.TRUE);
-         //   log(MODIFICATION, "Field {} is @Modified, because it is @Variable", fqn);
-         //   return DONE;
-        }
 
         boolean isPrimitive = Primitives.isPrimitiveExcludingVoid(fieldInfo.type);
         // too dangerous to catch @E2Immutable because of down-casts
