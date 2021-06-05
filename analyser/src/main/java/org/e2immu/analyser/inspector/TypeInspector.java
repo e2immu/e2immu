@@ -26,8 +26,6 @@ import org.e2immu.analyser.inspector.util.RecordSynthetics;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.variable.FieldReference;
-import org.e2immu.analyser.model.variable.This;
-import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.TypeMapImpl;
@@ -370,7 +368,6 @@ public class TypeInspector {
         }
 
         // then, do fields
-        This thisVar = new This(expressionContext.typeContext, typeInfo);
 
         for (BodyDeclaration<?> bodyDeclaration : members) {
             bodyDeclaration.ifFieldDeclaration(fd -> {
@@ -393,9 +390,7 @@ public class TypeInspector {
                     } else if (inMap instanceof FieldInspectionImpl.Builder builder) fieldInspectionBuilder = builder;
                     else throw new UnsupportedOperationException();
 
-                    boolean isStatic = fieldInspectionBuilder.getModifiers().contains(FieldModifier.STATIC);
-                    Variable scope = isStatic ? null : thisVar;
-                    expressionContext.variableContext.add(new FieldReference(expressionContext.typeContext, fieldInfo, scope));
+                    expressionContext.variableContext.add(new FieldReference(expressionContext.typeContext, fieldInfo));
 
                     fieldInspectionBuilder.addAnnotations(annotations);
                     if (fullInspection) {

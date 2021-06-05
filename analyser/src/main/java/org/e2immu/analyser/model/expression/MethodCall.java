@@ -621,8 +621,6 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         VariableExpression ve;
         if (object != null && (ve = object.asInstanceOf(VariableExpression.class)) != null && !(ve.variable() instanceof This)) {
             builder.modifyingMethodAccess(ve.variable(), modifiedInstance, linkedVariables);
-        } else if (object instanceof FieldAccess fieldAccess) {
-            builder.modifyingMethodAccess(fieldAccess.variable(), modifiedInstance, linkedVariables);
         }
         return modifiedInstance;
     }

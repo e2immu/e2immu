@@ -19,7 +19,6 @@ import org.e2immu.analyser.model.expression.MultiValue;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.statement.ExplicitConstructorInvocation;
 import org.e2immu.analyser.model.variable.FieldReference;
-import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Primitives;
@@ -88,7 +87,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyser {
         boolean delays = false;
         boolean checkLinks = true;
 
-        if(sharedState.iteration == 0) {
+        if (sharedState.iteration == 0) {
             if (Primitives.isPrimitiveExcludingVoid(parameterInfo.parameterizedType) &&
                     !parameterAnalysis.properties.isSet(VariableProperty.MODIFIED_OUTSIDE_METHOD)) {
                 parameterAnalysis.setProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD, Level.FALSE);
@@ -221,7 +220,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyser {
                         }
                     } else {
                         Optional<Variable> ov = lv1.variables().stream().filter(v -> v instanceof FieldReference fr
-                                && fr.scope == parameterInfo).findFirst();
+                                && fr.scope instanceof VariableExpression ve && ve.variable() == parameterInfo).findFirst();
                         ov.ifPresent(v -> {
                             if (!parameterAnalysis.properties.isSet(VariableProperty.INDEPENDENT)) {
                                 parameterAnalysis.properties.put(VariableProperty.INDEPENDENT, MultiLevel.DEPENDENT_2);
@@ -344,9 +343,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyser {
     }
 
     private boolean isAssignedIn(StatementAnalysis lastStatementAnalysis, FieldInfo fieldInfo) {
-        boolean isStatic = fieldInfo.isStatic(analyserContext);
-        Variable scope = isStatic ? null : new This(analyserContext, fieldInfo.owner);
-        VariableInfo vi = lastStatementAnalysis.findOrNull(new FieldReference(analyserContext, fieldInfo, scope),
+        VariableInfo vi = lastStatementAnalysis.findOrNull(new FieldReference(analyserContext, fieldInfo),
                 VariableInfoContainer.Level.MERGE);
         return vi != null && vi.isAssigned();
     }

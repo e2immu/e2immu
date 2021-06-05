@@ -568,7 +568,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             }
             // so from here on, isConfirmedVariableField may be set
         }
-        boolean selfReference = inPartOfConstruction() && !(fieldReference.scope instanceof This);
+        boolean selfReference = inPartOfConstruction() && !(fieldReference.scopeIsThis());
 
         // this is the first time we see this field (initial)
         ExpressionAndDelay initialValue = initialValueOfField(evaluationContext, fieldReference, selfReference);
@@ -1050,7 +1050,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(fieldReference.fieldInfo);
         // rather than fieldAnalysis.getLinkedVariables
 
-        boolean myOwn = fieldReference.scope instanceof This thisVariable && thisVariable.typeInfo.equals(methodAnalysis.getMethodInfo().typeInfo);
+        boolean myOwn = fieldReference.scopeOwnerIs(methodAnalysis.getMethodInfo().typeInfo);
         String newObjectIdentifier = index + "-" + fieldReference.fieldInfo.fullyQualifiedName();
 
         if (inPartOfConstruction() && myOwn && !fieldReference.fieldInfo.isStatic()) { // instance field that must be initialised

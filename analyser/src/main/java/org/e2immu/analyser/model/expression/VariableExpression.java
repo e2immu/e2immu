@@ -28,6 +28,7 @@ import org.e2immu.annotation.E2Container;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 @E2Container
 public record VariableExpression(Variable variable, String name) implements Expression, IsVariableExpression {
@@ -106,14 +107,14 @@ public record VariableExpression(Variable variable, String name) implements Expr
             }
             return new EvaluationResult.Builder().setExpression(inMap).build();
         }
-        if (variable instanceof FieldReference fieldReference && fieldReference.scope != null) {
+        if (variable instanceof FieldReference fieldReference && fieldReference.scope instanceof VariableExpression ve) {
             // the variable itself is not in the map, but we may have to substitute
             // (see EventuallyImmutableUtil_5, s1.bool with substitution s1 -> t.s1
             // IMPROVE how should we go recursive here? we should call reEvaluate, but may bump into
             // unknown fields (t is known, but t.s1 is not), which causes infinite delays.
-            Expression scopeInMap = translation.get(new VariableExpression(fieldReference.scope));
+            Expression scopeInMap = translation.get(ve);
             if (scopeInMap instanceof VariableExpression newScope) {
-                Variable newFieldRef = new FieldReference(evaluationContext.getAnalyserContext(), fieldReference.fieldInfo, newScope.variable);
+                Variable newFieldRef = new FieldReference(evaluationContext.getAnalyserContext(), fieldReference.fieldInfo, newScope);
                 return new EvaluationResult.Builder(evaluationContext)
                         .setExpression(new VariableExpression(newFieldRef)).build();
             }
@@ -154,10 +155,10 @@ public record VariableExpression(Variable variable, String name) implements Expr
                     builder.markRead(evaluationContext.currentThis());
                 }
             }
-        } else if (variable instanceof FieldReference fieldReference && fieldReference.scope instanceof This thisVar) {
-            builder.markRead(thisVar);
+        } else if (variable instanceof FieldReference fieldReference && fieldReference.scope instanceof VariableExpression ve) {
+            builder.markRead(ve.variable);
             // if super is read, then this should be read to
-            if (!thisVar.typeInfo.equals(evaluationContext.getCurrentType())) {
+            if (ve.variable instanceof This thisVar && !thisVar.typeInfo.equals(evaluationContext.getCurrentType())) {
                 builder.markRead(evaluationContext.currentThis());
             } // TODO: and do all types "in between"
         }
@@ -262,5 +263,35 @@ public record VariableExpression(Variable variable, String name) implements Expr
     @Override
     public UpgradableBooleanMap<TypeInfo> typesReferenced() {
         return variable.typesReferenced(false);
+    }
+
+
+    /*
+    FIXME
+
+    See also EvaluateMethodCall, which has a similar method
+     */
+    private Expression tryShortCut(EvaluationContext evaluationContext, Variable variable) {
+        VariableExpression ve;
+        if (variable instanceof FieldReference scopeField) {
+            FieldAnalysis fieldAnalysis = evaluationContext.getAnalyserContext().getFieldAnalysis(scopeField.fieldInfo);
+            if (fieldAnalysis.getEffectivelyFinalValue() instanceof NewObject newObject && newObject.constructor() != null) {
+                // we may have direct values for the field
+                if (variable instanceof FieldReference fieldReference) {
+                    int i = 0;
+                    List<ParameterAnalysis> parameterAnalyses = evaluationContext
+                            .getParameterAnalyses(newObject.constructor()).collect(Collectors.toList());
+                    for (ParameterAnalysis parameterAnalysis : parameterAnalyses) {
+                        Map<FieldInfo, ParameterAnalysis.AssignedOrLinked> assigned = parameterAnalysis.getAssignedToField();
+                        ParameterAnalysis.AssignedOrLinked assignedOrLinked = assigned.get(fieldReference.fieldInfo);
+                        if (assignedOrLinked == ParameterAnalysis.AssignedOrLinked.ASSIGNED) {
+                            return newObject.getParameterExpressions().get(i);
+                        }
+                        i++;
+                    }
+                }
+            }
+        }
+        return null;
     }
 }

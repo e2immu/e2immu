@@ -53,8 +53,7 @@ public class RecordSynthetics {
     // return this.field;
     private static Block getterCodeBlock(ExpressionContext expressionContext, FieldInfo fieldInfo) {
         var returnStatement = new ReturnStatement(
-                new VariableExpression(new FieldReference(expressionContext.typeContext, fieldInfo,
-                        new This(expressionContext.typeContext, fieldInfo.owner))));
+                new VariableExpression(new FieldReference(expressionContext.typeContext, fieldInfo)));
         return new Block.BlockBuilder().addStatement(returnStatement).build();
     }
 }

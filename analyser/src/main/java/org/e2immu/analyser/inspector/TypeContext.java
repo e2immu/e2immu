@@ -211,7 +211,7 @@ public class TypeContext implements TypeAndInspectionProvider {
             String memberName = entry.getKey();
             TypeInspection typeInspection = getTypeInspection(typeInfo);
             typeInspection.fields().stream()
-                    .filter(fieldInfo -> getFieldInspection(fieldInfo).getModifiers().contains(FieldModifier.STATIC))
+                    .filter(fieldInfo -> getFieldInspection(fieldInfo).isStatic())
                     .filter(f -> f.name.equals(memberName))
                     .findFirst()
                     .ifPresent(fieldInfo -> map.put(memberName, new FieldReference(this, fieldInfo, null)));

@@ -23,8 +23,6 @@ import org.e2immu.analyser.model.statement.ExpressionAsStatement;
 import org.e2immu.analyser.model.statement.SwitchEntry;
 import org.e2immu.analyser.model.statement.YieldStatement;
 import org.e2immu.analyser.model.variable.FieldReference;
-import org.e2immu.analyser.model.variable.This;
-import org.e2immu.analyser.model.variable.Variable;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -39,11 +37,9 @@ public class ParseSwitchExpr {
         TypeInspection enumInspection = expressionContext.typeContext.getTypeInspection(enumType);
         if (enumType != null) {
             newExpressionContext = expressionContext.newVariableContext("switch-expression");
-            Variable scope = new This(expressionContext.typeContext, enumType);
             enumInspection.fields()
                     .forEach(fieldInfo -> newExpressionContext.variableContext.add(
-                            new FieldReference(expressionContext.typeContext, fieldInfo,
-                                    fieldInfo.isStatic(expressionContext.typeContext) ? null : scope)));
+                            new FieldReference(expressionContext.typeContext, fieldInfo)));
         } else {
             newExpressionContext = expressionContext;
         }

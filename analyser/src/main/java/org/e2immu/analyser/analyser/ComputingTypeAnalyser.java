@@ -14,7 +14,6 @@
 
 package org.e2immu.analyser.analyser;
 
-import org.e2immu.analyser.analyser.check.CheckE1E2Immutable;
 import org.e2immu.analyser.analyser.util.AssignmentIncompatibleWithPrecondition;
 import org.e2immu.analyser.analyser.util.DelayDebugNode;
 import org.e2immu.analyser.analyser.util.ExplicitTypes;
@@ -24,12 +23,10 @@ import org.e2immu.analyser.model.variable.DependentVariable;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
-import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Message;
-import org.e2immu.analyser.parser.Messages;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.visitor.TypeAnalyserVisitor;
-import org.e2immu.annotation.*;
+import org.e2immu.annotation.NotModified;
 import org.e2immu.support.Either;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -621,9 +618,8 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
 
         // RULE 3
 
-        Variable thisVariable = new This(analyserContext, typeInfo);
         Set<FieldReference> fieldReferencesLinkedToParameters = fieldsLinkedToParameters.stream()
-                .map(fa -> new FieldReference(analyserContext, fa.fieldInfo, thisVariable))
+                .map(fa -> new FieldReference(analyserContext, fa.fieldInfo))
                 .collect(Collectors.toSet());
 
         for (MethodAnalyser methodAnalyser : myMethodAnalysers) {
@@ -781,9 +777,7 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
         for (FieldAnalyser fieldAnalyser : myFieldAnalysers) {
             FieldAnalysis fieldAnalysis = fieldAnalyser.fieldAnalysis;
             FieldInfo fieldInfo = fieldAnalyser.fieldInfo;
-            boolean isStatic = fieldAnalyser.fieldInspection.isStatic();
-            Variable scope = isStatic ? null: new This(analyserContext, typeInfo);
-            FieldReference thisFieldInfo = new FieldReference(analyserContext, fieldInfo, scope);
+            FieldReference thisFieldInfo = new FieldReference(analyserContext, fieldInfo);
             String fieldFQN = fieldInfo.fullyQualifiedName();
 
             if (fieldAnalysis.isOfImplicitlyImmutableDataType() == null) {

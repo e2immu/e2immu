@@ -22,7 +22,6 @@ import org.e2immu.analyser.analyser.LinkedVariables;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.variable.DependentVariable;
 import org.e2immu.analyser.model.variable.FieldReference;
-import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
@@ -73,8 +72,6 @@ public class Assignment implements Expression {
         VariableExpression ve;
         if ((ve = target.asInstanceOf(VariableExpression.class)) != null) {
             variableTarget = ve.variable();
-        } else if (target instanceof FieldAccess fieldAccess) {
-            variableTarget = fieldAccess.variable();
         } else if (target instanceof ArrayAccess arrayAccess) {
             variableTarget = arrayAccess.variableTarget;
         } else {
@@ -183,8 +180,7 @@ public class Assignment implements Expression {
     public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
         VariableExpression ve;
-        boolean assignToField = (ve = target.asInstanceOf(VariableExpression.class)) != null && ve.variable() instanceof FieldReference ||
-                target.isInstanceOf(FieldAccess.class);
+        boolean assignToField = (ve = target.asInstanceOf(VariableExpression.class)) != null && ve.variable() instanceof FieldReference;
         ForwardEvaluationInfo fwd = assignToField ? forwardEvaluationInfo.copyAddAssignToField() : forwardEvaluationInfo;
 
         EvaluationResult valueResult = value.evaluate(evaluationContext, fwd);
@@ -277,7 +273,7 @@ public class Assignment implements Expression {
             if (isStatic) {
                 return fieldReference.scope != null && !(fieldReference.scope instanceof TypeExpression);
             }
-            return !(fieldReference.scope instanceof This);
+            return !fieldReference.scopeIsThis();
         }
         /* outside current type, but inside primary type: we allow assignments
          1. when the owner is an enclosing type (up)

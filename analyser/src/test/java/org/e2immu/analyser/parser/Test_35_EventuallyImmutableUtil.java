@@ -56,8 +56,8 @@ public class Test_35_EventuallyImmutableUtil extends CommonTestRunner {
                     if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
                         assertEquals("isSet", inlinedMethod.expression().toString());
                         if (inlinedMethod.expression() instanceof VariableExpression variableExpression) {
-                            if (variableExpression.variable() instanceof FieldReference fr) {
-                                assertEquals("org.e2immu.support.FlipSwitch.this", fr.scope.fullyQualifiedName());
+                            if (variableExpression.variable() instanceof FieldReference fr && fr.scope instanceof VariableExpression ve) {
+                                assertEquals("org.e2immu.support.FlipSwitch.this", ve.variable().fullyQualifiedName());
                             } else fail();
                         } else fail();
                     } else fail();

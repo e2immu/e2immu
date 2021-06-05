@@ -239,7 +239,7 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
 
     private boolean absentUnlessStatic(Predicate<VariableInfo> variableProperty) {
         return methodAnalysis.getLastStatement().variableStream()
-                .filter(vi -> vi.variable() instanceof FieldReference fieldReference && fieldReference.scope instanceof This)
+                .filter(vi -> vi.variable() instanceof FieldReference fieldReference && fieldReference.scopeIsThis())
                 .allMatch(vi -> !variableProperty.test(vi) || vi.variable().isStatic());
     }
 
@@ -380,9 +380,7 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
             Precondition combinedPrecondition = null;
             for (FieldAnalyser fieldAnalyser : myFieldAnalysers.values()) {
                 if (fieldAnalyser.fieldAnalysis.getProperty(VariableProperty.FINAL) == Level.FALSE) {
-                    boolean isStatic = fieldAnalyser.fieldInspection.isStatic();
-                    Variable scope = isStatic ? null: new This(analyserContext, methodInfo.typeInfo);
-                    FieldReference fr = new FieldReference(analyserContext, fieldAnalyser.fieldInfo, scope);
+                    FieldReference fr = new FieldReference(analyserContext, fieldAnalyser.fieldInfo);
                     StatementAnalysis beforeAssignment = statementBeforeAssignment(fr);
                     if (beforeAssignment != null) {
                         ConditionManager cm = beforeAssignment.stateData.conditionManagerForNextStatement.get();
@@ -641,9 +639,7 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
             if (variable instanceof LocalVariableReference lvr) {
                 FieldInfo fieldInfo = extractFieldFromLocal(lvr);
                 if (fieldInfo != null) {
-                    This thisVar = new This(evaluationContext.getAnalyserContext(), fieldInfo.owner);
-                    FieldReference fieldReference = new FieldReference(evaluationContext.getAnalyserContext(),
-                            fieldInfo, thisVar);
+                    FieldReference fieldReference = new FieldReference(evaluationContext.getAnalyserContext(), fieldInfo);
                     builder.put(variable, fieldReference);
                     change = true;
                 }
@@ -654,7 +650,7 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
     }
 
     private FieldInfo extractFieldFromLocal(LocalVariableReference lvr) {
-        if (lvr.variable.isLocalCopyOf() instanceof FieldReference fr && fr.scope instanceof This) return fr.fieldInfo;
+        if (lvr.variable.isLocalCopyOf() instanceof FieldReference fr && fr.scopeIsThis()) return fr.fieldInfo;
         return null;
     }
 
@@ -799,7 +795,7 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
         }
         if (!isModified) { // also in static cases, sometimes a modification is written to "this" (MethodCall)
             VariableInfo thisVariable = getThisAsVariable();
-            if(thisVariable != null) {
+            if (thisVariable != null) {
                 int thisModified = thisVariable.getProperty(VariableProperty.CONTEXT_MODIFIED);
                 if (thisModified == Level.DELAY) {
                     log(DELAYED, "In {}: other local methods are called, but no idea if they are @NotModified yet, delaying",

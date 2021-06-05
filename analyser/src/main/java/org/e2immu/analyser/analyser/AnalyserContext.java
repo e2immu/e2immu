@@ -17,7 +17,6 @@ package org.e2immu.analyser.analyser;
 import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.variable.FieldReference;
-import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
@@ -137,9 +136,8 @@ public interface AnalyserContext extends AnalysisProvider, InspectionProvider {
     }
 
     default FieldReference adjustThis(FieldReference fieldReference) {
-        if (fieldReference.scope instanceof This thisVar && thisVar.typeInfo != fieldReference.fieldInfo.owner) {
-            This newThis = new This(this, fieldReference.fieldInfo.owner);
-            return new FieldReference(this, fieldReference.fieldInfo, newThis);
+        if (fieldReference.scopeIsNonOwnerThis()) {
+            return new FieldReference(this, fieldReference.fieldInfo);
         }
         return fieldReference;
     }

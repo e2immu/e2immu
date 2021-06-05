@@ -354,13 +354,13 @@ public record EvaluationResult(EvaluationContext evaluationContext,
 
             // we do this because this. is often implicit (all other scopes will be marked read explicitly!)
             // when explicit, there may be two MarkRead modifications, which will eventually be merged
-            if (variable instanceof FieldReference fieldReference && fieldReference.scope instanceof This) {
-                markRead(fieldReference.scope);
+            if (variable instanceof FieldReference fieldReference && fieldReference.scope instanceof VariableExpression ve) {
+                markRead(ve.variable());
             }
             return this;
         }
 
-        public Builder raiseError(Message.Label messageLabel) {
+        public void raiseError(Message.Label messageLabel) {
             assert evaluationContext != null;
             StatementAnalyser statementAnalyser = evaluationContext.getCurrentStatement();
             if (statementAnalyser != null) {
@@ -369,7 +369,6 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             } else { // e.g. companion analyser
                 LOGGER.warn("Analyser error: {}", messageLabel);
             }
-            return this;
         }
 
         public void raiseError(Message.Label messageLabel, String extra) {

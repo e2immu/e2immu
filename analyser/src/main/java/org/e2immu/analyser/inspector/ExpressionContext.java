@@ -294,10 +294,8 @@ public class ExpressionContext {
         TypeInspection enumInspection = typeContext.getTypeInspection(enumType);
         if (enumType != null) {
             newExpressionContext = newVariableContext("switch-statement");
-            Variable scope = new This(typeContext, enumType);
             enumInspection.fields().forEach(fieldInfo -> newExpressionContext.variableContext
-                    .add(new FieldReference(typeContext, fieldInfo,
-                            fieldInfo.isStatic(typeContext) ? null : scope)));
+                    .add(new FieldReference(typeContext, fieldInfo)));
         } else {
             newExpressionContext = this;
         }

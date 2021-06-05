@@ -102,11 +102,6 @@ public class ExplicitTypes {
                 add(fr.fieldInfo.owner.asParameterizedType(inspectionProvider), UsedAs.FIELD_ACCESS);
             }
 
-            // a.b -> type of a cannot be replaced by unbound type parameter
-            if (element instanceof FieldAccess fieldAccess) {
-                add(fieldAccess.expression().returnType(), UsedAs.FIELD_ACCESS);
-            }
-
             // for(E e: list) -> type of list cannot be replaced by unbound type parameter
             if (element instanceof ForEachStatement forEach) {
                 add(forEach.expression.returnType(), UsedAs.FOR_EACH);

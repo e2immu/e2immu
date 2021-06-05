@@ -22,7 +22,6 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.Filter;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.FieldReference;
-import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.parser.InspectionProvider;
 
 import java.util.HashMap;
@@ -104,13 +103,10 @@ public class EvaluatePreconditionFromMethod {
         TypeInspection typeInspection = inspectionProvider.getTypeInspection(methodInfo.typeInfo);
         VariableExpression ve;
         if ((ve = scope.asInstanceOf(VariableExpression.class)) != null) {
-            This thisVar = new This(inspectionProvider, methodInfo.typeInfo);
             for (FieldInfo fieldInfo : typeInspection.fields()) {
                 boolean staticField = fieldInfo.isStatic(inspectionProvider);
-                FieldReference thisField = new FieldReference(inspectionProvider, fieldInfo,
-                        staticField ? null : thisVar);
-                FieldReference scopeField = new FieldReference(inspectionProvider, fieldInfo,
-                        staticField ? null : ve.variable());
+                FieldReference thisField = new FieldReference(inspectionProvider, fieldInfo);
+                FieldReference scopeField = new FieldReference(inspectionProvider, fieldInfo, staticField ? null : ve);
                 builder.put(new VariableExpression(thisField), new VariableExpression(scopeField));
             }
         }

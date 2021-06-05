@@ -86,8 +86,7 @@ public class Linked1Writer {
                 Set<Variable> varsInScope = dependencyGraph.dependencies(varInScope);
 
                 Set<Variable> fieldsInScope = varsInScope.stream()
-                        .filter(v -> v instanceof This ||
-                                v instanceof FieldReference fr && fr.scope instanceof This)
+                        .filter(v -> v instanceof This || v instanceof FieldReference fr && fr.scopeIsThis())
                         .collect(Collectors.toSet());
                 if (!fieldsInScope.isEmpty()) {
                     // we have a hit!
@@ -111,9 +110,7 @@ public class Linked1Writer {
         VariableExpression ve;
         if ((ve = expression.asInstanceOf(VariableExpression.class)) != null) {
             Set<Variable> set = dependencyGraph.dependencies(ve.variable());
-            return set.stream().anyMatch(v ->
-                    v instanceof This ||
-                            v instanceof FieldReference fr && fr.scope instanceof This);
+            return set.stream().anyMatch(v -> v instanceof This || v instanceof FieldReference fr && fr.scopeIsThis());
         }
         return false;
     }

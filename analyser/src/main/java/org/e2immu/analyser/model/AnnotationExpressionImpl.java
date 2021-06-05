@@ -161,13 +161,6 @@ public record AnnotationExpressionImpl(TypeInfo typeInfo,
             return inspectFieldValue(returnType, fieldReference);
         }
 
-        // Type.CONSTANT
-        if (expression instanceof FieldAccess fieldAccess) {
-            if (fieldAccess.expression() instanceof TypeExpression typeExpression) {
-                return enumField(returnType, typeExpression.parameterizedType.typeInfo, fieldAccess.variable().simpleName());
-            } else throw new UnsupportedOperationException("? did not expect " + fieldAccess.expression().getClass());
-        }
-
         // -123
         if (expression instanceof UnaryOperator unaryOperator) {
             if (Primitives.isUnaryMinusOperatorInt(unaryOperator.operator) &&

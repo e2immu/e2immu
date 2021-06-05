@@ -564,8 +564,7 @@ public class FieldAnalyser extends AbstractAnalyser {
                     delayLinkedVariables.get().methodInfo.fullyQualifiedName);
             return Level.DELAY;
         }
-        This thisVar = new This(analyserContext, myTypeAnalyser.typeInfo);
-        FieldReference me = new FieldReference(analyserContext, fieldInfo, thisVar);
+        FieldReference me = new FieldReference(analyserContext, fieldInfo);
         boolean linkedToMe = myMethodsAndConstructors.stream()
                 .filter(ma -> ma instanceof ComputingMethodAnalyser)
                 .filter(ma -> !ma.methodInfo.isPrivate() && ((ComputingMethodAnalyser) ma).methodLevelData() != null)

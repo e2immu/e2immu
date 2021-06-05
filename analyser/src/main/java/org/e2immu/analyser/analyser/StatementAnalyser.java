@@ -1827,7 +1827,6 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
              */
         MethodAnalyser methodAnalyser = analyserContext.getMethodAnalyser(eci.methodInfo);
         int n = eci.methodInfo.methodInspection.get().getParameters().size();
-        This thisVar = new This(analyserContext, myMethodAnalyser.methodInfo.typeInfo);
         EvaluationResult.Builder builder = new EvaluationResult.Builder();
         Map<Expression, Expression> translation = new HashMap<>();
         if (result != null && n > 0) {
@@ -1847,7 +1846,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                         EvaluationResult translated = variableInfo.getValue()
                                 .reEvaluate(sharedState.evaluationContext, translation);
                         Assignment assignment = new Assignment(statementAnalysis.primitives,
-                                new VariableExpression(new FieldReference(analyserContext, fieldInfo, thisVar)),
+                                new VariableExpression(new FieldReference(analyserContext, fieldInfo)),
                                 translated.value(), null, null, false);
                         builder.compose(translated);
                         assignments.add(assignment);

@@ -59,9 +59,6 @@ public class ArrayAccess implements Expression {
         if ((ve = expression.asInstanceOf(VariableExpression.class)) != null) {
             return ve.variable();
         }
-        if (expression instanceof FieldAccess fieldAccess) {
-            return fieldAccess.variable();
-        }
         return null;
     }
 

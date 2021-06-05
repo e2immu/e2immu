@@ -47,8 +47,7 @@ public class MethodCallIncompatibleWithPrecondition {
 
         // IMPROVE add stateData.conditionManagerForNextStatement.state to this
         for (FieldInfo fieldInfo : fields) {
-            FieldReference fieldReference = new FieldReference(InspectionProvider.DEFAULT,
-                    fieldInfo, new This(InspectionProvider.DEFAULT, methodAnalyser.methodInfo.typeInfo));
+            FieldReference fieldReference = new FieldReference(InspectionProvider.DEFAULT, fieldInfo);
             VariableInfo variableInfo = statementAnalysis.findOrNull(fieldReference, VariableInfoContainer.Level.MERGE);
             if (!variableInfo.valueIsSet()) {
                 log(DELAYED, "Delaying isMark, no value for field {} in last statement of {}",

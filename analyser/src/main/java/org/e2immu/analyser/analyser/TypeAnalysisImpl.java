@@ -15,6 +15,7 @@
 package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Primitives;
@@ -140,7 +141,9 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
 
     static FieldInfo translateToVisibleField(Set<FieldInfo> visibleFields, FieldReference fieldReference) {
         if (visibleFields.contains(fieldReference.fieldInfo)) return fieldReference.fieldInfo;
-        if (fieldReference.scope instanceof FieldReference fr) return translateToVisibleField(visibleFields, fr);
+        if (fieldReference.scope instanceof VariableExpression ve && ve.variable() instanceof FieldReference fr) {
+            return translateToVisibleField(visibleFields, fr);
+        }
         return null; // not one of ours, i
     }
 

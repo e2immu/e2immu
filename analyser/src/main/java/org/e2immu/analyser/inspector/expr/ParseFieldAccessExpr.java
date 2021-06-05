@@ -19,11 +19,9 @@ import com.github.javaparser.ast.expr.FieldAccessExpr;
 import org.e2immu.analyser.inspector.ExpressionContext;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.ArrayLength;
-import org.e2immu.analyser.model.expression.FieldAccess;
 import org.e2immu.analyser.model.expression.TypeExpression;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.FieldReference;
-import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.resolver.Resolver;
 
 import java.util.Optional;
@@ -57,7 +55,7 @@ public class ParseFieldAccessExpr {
                     objectType.typeInfo, objectType.typeInfo.primaryType())
                     .filter(f -> name.equals(f.name)).findFirst();
             if (oFieldInfo.isPresent()) {
-                return fieldAccess(expressionContext, oFieldInfo.get(), object);
+                return new VariableExpression(new FieldReference(expressionContext.typeContext, oFieldInfo.get(), object));
             }
             TypeInspection objectTypeInspection = expressionContext.typeContext.getTypeInspection(objectType.typeInfo);
             Optional<TypeInfo> oSubType = objectTypeInspection.subTypes().stream().filter(s -> name.equals(s.name())).findFirst();
@@ -70,19 +68,4 @@ public class ParseFieldAccessExpr {
         }
     }
 
-    private static FieldAccess fieldAccess(ExpressionContext expressionContext, FieldInfo fieldInfo, Expression object) {
-        // in a static context, the object is a type expression.
-        // it can be a method call, such as findNode().data (data is the field)
-        // Otherwise, it has to be a variable
-        Variable objectVariable;
-        if (object instanceof VariableExpression ve) {
-            objectVariable = ve.variable();
-        } else if (object instanceof FieldAccess fa) {
-            objectVariable = fa.variable();
-        } else {
-            objectVariable = null;
-        }
-        FieldReference fieldReference = new FieldReference(expressionContext.typeContext, fieldInfo, objectVariable);
-        return new FieldAccess(object, fieldReference);
-    }
 }

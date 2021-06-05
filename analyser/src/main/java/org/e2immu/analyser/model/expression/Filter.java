@@ -189,7 +189,7 @@ public class Filter {
             } else if (value instanceof GreaterThanZero gt0) {
                 Expression expression = gt0.expression();
                 List<Variable> vars = expression.variables();
-                if (vars.size() == 1 && vars.get(0) instanceof FieldReference fr && acceptScope(fr)) {
+                if (vars.size() == 1 && vars.get(0) instanceof FieldReference fr && acceptScope(fr.scope)) {
                     return new FilterResult<FieldReference>(Map.of(fr, gt0), defaultRest);
                 }
             } else if (Primitives.isBoolean(value.returnType())) {
@@ -230,8 +230,11 @@ public class Filter {
     }
 
     // we do not allow parameters or local variables
-    private static boolean acceptScope(Variable scope) {
-        return scope instanceof This || (scope instanceof FieldReference fr && acceptScope(fr.scope));
+    private static boolean acceptScope(Expression scopeExpression) {
+        if (scopeExpression instanceof VariableExpression scope) {
+            return scope.variable() instanceof This || (scope.variable() instanceof FieldReference fr && acceptScope(fr.scope));
+        }
+        return false;
     }
 
     private record FieldReferenceAndTranslationMap(FieldReference fieldReference, TranslationMap translationMap) {

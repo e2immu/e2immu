@@ -112,13 +112,11 @@ public record CollectUsages(List<String> packagePrefixes, Set<String> packagesAc
             } else if (e instanceof Expression ex && (ve = ex.asInstanceOf(VariableExpression.class)) != null) {
                 if (ve.variable() instanceof FieldReference fr) {
                     collect(result, fr.fieldInfo);
-                } else {
-                    collect(result, ve.variable().parameterizedType());
+                    if (fr.scope != null) {
+                        collect(result, fr.scope);
+                    }
                 }
-            } else if (e instanceof FieldAccess fa) {
-                if (fa.variable() instanceof FieldReference fr) {
-                    collect(result, fr.fieldInfo);
-                } else throw new UnsupportedOperationException("?");
+                collect(result, ve.variable().parameterizedType());
             } else if (e instanceof TypeExpression te) {
                 collect(result, te.parameterizedType);
             }

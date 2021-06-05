@@ -261,11 +261,8 @@ public class Resolver {
             accessibleBySimpleNameTypeInfoStream(typeContext, typeInfo, primaryType).forEach(typeContext::addToContext);
 
             // add visible fields to variable context
-            accessibleFieldsStream(typeContext, typeInfo, primaryType)
-                    .forEach(fieldInfo -> expressionContextForBody.variableContext.add(new FieldReference(
-                            typeContext,
-                            fieldInfo,
-                            fieldInfo.isStatic(typeContext) ? null : new This(typeContext, fieldInfo.owner))));
+            accessibleFieldsStream(typeContext, typeInfo, primaryType).forEach(fieldInfo ->
+                    expressionContextForBody.variableContext.add(new FieldReference(typeContext, fieldInfo)));
 
             List<TypeInfo> typeAndAllSubTypes = typeAndAllSubTypes(typeInfo);
             Set<TypeInfo> restrictToType = new HashSet<>(typeAndAllSubTypes);
@@ -472,8 +469,7 @@ public class Resolver {
         int i = 0;
         for (FieldInfo fieldInfo : typeInspection.fields()) {
             if (!fieldInfo.isStatic(inspectionProvider)) {
-                VariableExpression target = new VariableExpression(new FieldReference(inspectionProvider, fieldInfo,
-                        new This(inspectionProvider, fieldInfo.owner)));
+                VariableExpression target = new VariableExpression(new FieldReference(inspectionProvider, fieldInfo));
                 VariableExpression parameter = new VariableExpression(methodInspection.getParameters().get(i++));
                 Assignment assignment = new Assignment(inspectionProvider.getPrimitives(), target, parameter);
                 blockBuilder.addStatement(new ExpressionAsStatement(assignment, true));
@@ -492,12 +488,7 @@ public class Resolver {
         void visit(Element element) {
             element.visit(e -> {
                 VariableExpression ve;
-                if (e instanceof FieldAccess fieldAccess) {
-                    if (fieldAccess.variable() instanceof FieldReference fieldReference &&
-                            restrictToType.contains(fieldReference.fieldInfo.owner)) {
-                        methodsAndFields.add(fieldReference.fieldInfo);
-                    }
-                } else if (e instanceof org.e2immu.analyser.model.Expression ex &&
+                if (e instanceof org.e2immu.analyser.model.Expression ex &&
                         (ve = ex.asInstanceOf(VariableExpression.class)) != null) {
                     if (ve.variable() instanceof FieldReference fieldReference &&
                             restrictToType.contains(fieldReference.fieldInfo.owner)) {
