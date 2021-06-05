@@ -156,7 +156,7 @@ public class Test_35_EventuallyImmutableUtil extends CommonTestRunner {
             final String expectedT = "t.s1.bool.isSet()&&t.s2.bool.isSet()&&t.s1.string.isSet()&&t.s2.string.isSet()";
             final String expected = "s1.bool.isSet()&&s2.bool.isSet()&&s1.string.isSet()&&s2.string.isSet()";
 
-            if ("isReady1".equals(d.methodInfo().name) && d.iteration() > 5) {
+            if ("isReady1".equals(d.methodInfo().name) && d.iteration() > 6) {
                 assertEquals(expectedT, d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("isReady2".equals(d.methodInfo().name) && d.iteration() > 5) {
