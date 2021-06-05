@@ -67,7 +67,8 @@ public class FieldReference extends VariableWithConcreteReturnType {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         FieldReference that = (FieldReference) o;
-        return (fieldInfo.equals(that.fieldInfo) && scopeIsThis() && that.scopeIsThis()) || Objects.equals(scope, that.scope);
+        return (fieldInfo.equals(that.fieldInfo) &&
+                (Objects.equals(scope, that.scope) || scopeIsThis() && that.scopeIsThis()));
     }
 
     @Override

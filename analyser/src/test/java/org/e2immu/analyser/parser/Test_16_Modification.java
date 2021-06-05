@@ -1021,7 +1021,7 @@ public class Test_16_Modification extends CommonTestRunner {
         final String INNER_THIS = "org.e2immu.analyser.testexample.Modification_13.Inner.this";
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("clearIfExceeds".equals(d.methodInfo().name) && INNER_THIS.equals(d.variableName())) {
-                int expectCm = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
+                int expectCm = d.iteration() == 0 ? Level.DELAY : Level.TRUE; // TRUE good, FALSE would have been acceptable as well
                 assertEquals(expectCm, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
             }
         };
