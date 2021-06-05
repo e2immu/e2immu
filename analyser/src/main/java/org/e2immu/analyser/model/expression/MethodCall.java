@@ -325,7 +325,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
         // revisit abstract method, check if object value pointed to a concrete, modifying method
         if (abstractMethod && objectValue instanceof IsVariableExpression ve) {
-            MethodInfo pointsToConcreteMethod = evaluationContext.concreteMethod(variable(), methodInfo);
+            MethodInfo pointsToConcreteMethod = evaluationContext.concreteMethod(ve.variable(), methodInfo);
             if (pointsToConcreteMethod != null) {
                 MethodAnalysis concreteMethodAnalysis = evaluationContext.getAnalyserContext().getMethodAnalysis(pointsToConcreteMethod);
                 int modifyingConcreteMethod = concreteMethodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD);

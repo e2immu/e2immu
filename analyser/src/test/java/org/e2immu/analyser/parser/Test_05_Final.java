@@ -80,7 +80,7 @@ public class Test_05_Final extends CommonTestRunner {
                     if (d.iteration() == 0) {
                         expectValue = "<f:s1>+\" \"+<f:s2>+\" \"+<f:s3>+\" \"+<f:s4>";
                     } else if (d.iteration() == 1) {
-                        expectValue = "<f:s1>+\" \"+<f:s2>+\" \"+\"abc\"+\" \"+" + S4_0;
+                        expectValue = "<f:s1>+\" \"+s2+\" \"+\"abc\"+\" \"+" + S4_0;
                     } else {
                         expectValue = "s1+\" \"+s2+\" \"+\"abc\"+\" \"+" + S4_0;
                     }
@@ -195,7 +195,7 @@ public class Test_05_Final extends CommonTestRunner {
                 assertEquals("", d.fieldAnalysis().getLinkedVariables().toString());
             }
             if ("s2".equals(d.fieldInfo().name)) {
-                if (d.iteration() > 0) {
+                if (d.iteration() >= 0) {
                     assertEquals("[null,s2]", d.fieldAnalysis().getEffectivelyFinalValue().debugOutput());
                     assertTrue(d.fieldAnalysis().getEffectivelyFinalValue() instanceof MultiValue);
                 } else {

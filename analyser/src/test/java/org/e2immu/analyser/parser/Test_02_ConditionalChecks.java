@@ -34,6 +34,8 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_02_ConditionalChecks extends CommonTestRunner {
 
+    public static final String RETURN_VALUE = "null!=o&&o.getClass()==this.getClass()&&o!=this&&this.i==o.i";
+
     public Test_02_ConditionalChecks() {
         super(false);
     }
@@ -346,8 +348,8 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                     }
                     if (RETURN5.equals(d.variableName())) {
                         String expectValue = d.iteration() == 0 ?
-                                "null!=o&&<field:org.e2immu.analyser.testexample.ConditionalChecks_4.i#org.e2immu.analyser.testexample.ConditionalChecks_4.method5(java.lang.Object):0:o>==<field:org.e2immu.analyser.testexample.ConditionalChecks_4.i>&&o.getClass()==this.getClass()&&o!=this" :
-                                "null!=o&&this.i==o.i&&o.getClass()==this.getClass()&&o!=this";
+                                "null!=o&&<field:org.e2immu.analyser.testexample.ConditionalChecks_4.i#o>==<field:org.e2immu.analyser.testexample.ConditionalChecks_4.i>&&o.getClass()==this.getClass()&&o!=this":
+                                RETURN_VALUE;
                         assertEquals(expectValue, d.currentValue().debugOutput());
                         assertEquals(d.iteration() == 0, d.currentValueIsDelayed());
                     }
@@ -410,8 +412,8 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                 }
                 if ("3".equals(d.statementId())) {
                     String expectValueString = d.iteration() == 0
-                            ? "null!=o&&<field:org.e2immu.analyser.testexample.ConditionalChecks_4.i#org.e2immu.analyser.testexample.ConditionalChecks_4.method5(java.lang.Object):0:o>==<field:org.e2immu.analyser.testexample.ConditionalChecks_4.i>&&o.getClass()==this.getClass()&&o!=this"
-                            : "null!=o&&this.i==o.i&&o.getClass()==this.getClass()&&o!=this";
+                            ? "null!=o&&<field:org.e2immu.analyser.testexample.ConditionalChecks_4.i#o>==<field:org.e2immu.analyser.testexample.ConditionalChecks_4.i>&&o.getClass()==this.getClass()&&o!=this"
+                            : RETURN_VALUE;
                     assertEquals(expectValueString, d.evaluationResult().value().debugOutput());
                     assertEquals(d.iteration() == 0, d.evaluationResult().someValueWasDelayed());
 
@@ -419,7 +421,7 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                         // markRead is only done in the first iteration
                         assertTrue(d.haveMarkRead(CONDITIONAL_CHECKS));
                         assertTrue(d.haveMarkRead(I));
-                        assertTrue(d.haveMarkRead(I + "#" + O5));
+                        //assertTrue(d.haveMarkRead(I + "#o"));
                     }
                     assertFalse(d.haveSetProperty(O5, VariableProperty.CONTEXT_NOT_NULL));
                     assertFalse(d.haveSetProperty(CONDITIONAL_CHECKS, VariableProperty.CONTEXT_NOT_NULL));

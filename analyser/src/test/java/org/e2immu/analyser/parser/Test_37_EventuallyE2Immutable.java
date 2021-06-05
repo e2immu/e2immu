@@ -216,7 +216,7 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
     @Test
     public void test_3() throws IOException {
         String TYPE = "org.e2immu.analyser.testexample.EventuallyE2Immutable_3";
-        String OTHER_T_0 = TYPE + ".t#" + TYPE + ".error1(" + TYPE + "<T>):0:other$0";
+        String OTHER_T_0 = TYPE + ".t#other$0";
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("error1".equals(d.methodInfo().name)) {
                 if ("0.0.0".equals(d.statementId())) {

@@ -21,7 +21,9 @@ import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.OutputBuilder;
+import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.E2Container;
 
@@ -103,7 +105,7 @@ public record VariableExpression(Variable variable, String name) implements Expr
         if (inMap != null) {
             VariableExpression ve;
             if ((ve = inMap.asInstanceOf(VariableExpression.class)) != null) {
-                return evaluate(evaluationContext, ForwardEvaluationInfo.DEFAULT, ve.variable);
+                return ve.evaluate(evaluationContext, ForwardEvaluationInfo.DEFAULT);
             }
             return new EvaluationResult.Builder().setExpression(inMap).build();
         }
@@ -123,49 +125,46 @@ public record VariableExpression(Variable variable, String name) implements Expr
     }
 
     @Override
-    public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
-        return evaluate(evaluationContext, forwardEvaluationInfo, variable);
-    }
-
-    @Override
     public boolean isDelayed(EvaluationContext evaluationContext) {
         return evaluationContext.variableIsDelayed(variable);
     }
 
-    // code also used by FieldAccess
-    public static EvaluationResult evaluate(EvaluationContext evaluationContext,
-                                            ForwardEvaluationInfo forwardEvaluationInfo,
-                                            Variable variable) {
+    @Override
+    public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
+        EvaluationResult scopeResult;
+        if (variable instanceof FieldReference fr && fr.scope != null) {
+            scopeResult = fr.scope.evaluate(evaluationContext, forwardEvaluationInfo.copyModificationEnsureNotNull());
+            builder.compose(scopeResult);
+        } else {
+            scopeResult = null;
+        }
+
         Expression currentValue = builder.currentExpression(variable, forwardEvaluationInfo);
-        builder.setExpression(currentValue);
+        Expression adjustedScope = adjustScope(evaluationContext.getAnalyserContext(), scopeResult, currentValue);
+
+        builder.setExpression(adjustedScope);
 
         // no statement analyser... we're in the shallow analyser
         if (evaluationContext.getCurrentStatement() == null) return builder.build();
 
+        if (variable instanceof This thisVar && !thisVar.typeInfo.equals(evaluationContext.getCurrentType())) {
+            builder.markRead(evaluationContext.currentThis());
+        }
         if (forwardEvaluationInfo.isNotAssignmentTarget()) {
             builder.markRead(variable);
-            if (variable instanceof This thisVar && !thisVar.typeInfo.equals(evaluationContext.getCurrentType())) {
-                builder.markRead(evaluationContext.currentThis());
-            }
             VariableExpression ve;
-            if ((ve = currentValue.asInstanceOf(VariableExpression.class)) != null) {
+            if ((ve = adjustedScope.asInstanceOf(VariableExpression.class)) != null) {
                 builder.markRead(ve.variable);
                 if (ve.variable instanceof This thisVar && !thisVar.typeInfo.equals(evaluationContext.getCurrentType())) {
                     builder.markRead(evaluationContext.currentThis());
                 }
             }
-        } else if (variable instanceof FieldReference fieldReference && fieldReference.scope instanceof VariableExpression ve) {
-            builder.markRead(ve.variable);
-            // if super is read, then this should be read to
-            if (ve.variable instanceof This thisVar && !thisVar.typeInfo.equals(evaluationContext.getCurrentType())) {
-                builder.markRead(evaluationContext.currentThis());
-            } // TODO: and do all types "in between"
         }
 
         int notNull = forwardEvaluationInfo.getProperty(VariableProperty.CONTEXT_NOT_NULL);
         if (notNull > MultiLevel.NULLABLE) {
-            builder.variableOccursInNotNullContext(variable, currentValue, notNull);
+            builder.variableOccursInNotNullContext(variable, adjustedScope, notNull);
         }
         int modified = forwardEvaluationInfo.getProperty(VariableProperty.CONTEXT_MODIFIED);
         if (modified != Level.DELAY) {
@@ -180,7 +179,7 @@ public record VariableExpression(Variable variable, String name) implements Expr
 
         int notModified1 = forwardEvaluationInfo.getProperty(VariableProperty.NOT_MODIFIED_1);
         if (notModified1 == Level.TRUE) {
-            builder.variableOccursInNotModified1Context(variable, currentValue);
+            builder.variableOccursInNotModified1Context(variable, adjustedScope);
         }
 
         int methodCalled = forwardEvaluationInfo.getProperty(VariableProperty.METHOD_CALLED);
@@ -227,7 +226,29 @@ public record VariableExpression(Variable variable, String name) implements Expr
         if (propagateModificationDelay == Level.TRUE) {
             builder.markPropagateModificationDelay(variable);
         }
+
+        // having done all this, we do try for a shortcut
+        if (scopeResult != null) {
+            Expression shortCut = tryShortCut(evaluationContext, scopeResult.value(), currentValue);
+            if (shortCut != null) {
+                builder.setExpression(shortCut);
+            }
+        }
         return builder.build();
+    }
+
+    private Expression adjustScope(InspectionProvider inspectionProvider, EvaluationResult scopeResult, Expression currentValue) {
+        if (scopeResult != null) {
+            if (currentValue instanceof VariableExpression ve
+                    && ve.variable() instanceof FieldReference fr && !fr.scope.equals(scopeResult.value())) {
+                return new VariableExpression(new FieldReference(inspectionProvider, fr.fieldInfo, scopeResult.getExpression()));
+            }
+            if (currentValue instanceof DelayedVariableExpression ve
+                    && ve.variable() instanceof FieldReference fr && !fr.scope.equals(scopeResult.value())) {
+                return DelayedVariableExpression.forField(new FieldReference(inspectionProvider, fr.fieldInfo, scopeResult.getExpression()));
+            }
+        }
+        return currentValue;
     }
 
     @Override
@@ -247,6 +268,9 @@ public record VariableExpression(Variable variable, String name) implements Expr
 
     @Override
     public List<Variable> variables() {
+        if (variable instanceof FieldReference fr && fr.scope != null && !fr.scopeIsThis()) {
+            return ListUtil.concatImmutable(fr.scope.variables(), List.of(variable));
+        }
         return List.of(variable);
     }
 
@@ -265,32 +289,41 @@ public record VariableExpression(Variable variable, String name) implements Expr
         return variable.typesReferenced(false);
     }
 
+    @Override
+    public List<? extends Element> subElements() {
+        if (variable instanceof FieldReference fr && fr.scope != null && !fr.scopeIsThis()) {
+            return List.of(fr.scope);
+        }
+        return List.of();
+    }
 
-    /*
-    FIXME
-
-    See also EvaluateMethodCall, which has a similar method
-     */
-    private Expression tryShortCut(EvaluationContext evaluationContext, Variable variable) {
-        VariableExpression ve;
-        if (variable instanceof FieldReference scopeField) {
-            FieldAnalysis fieldAnalysis = evaluationContext.getAnalyserContext().getFieldAnalysis(scopeField.fieldInfo);
-            if (fieldAnalysis.getEffectivelyFinalValue() instanceof NewObject newObject && newObject.constructor() != null) {
-                // we may have direct values for the field
-                if (variable instanceof FieldReference fieldReference) {
-                    int i = 0;
-                    List<ParameterAnalysis> parameterAnalyses = evaluationContext
-                            .getParameterAnalyses(newObject.constructor()).collect(Collectors.toList());
-                    for (ParameterAnalysis parameterAnalysis : parameterAnalyses) {
-                        Map<FieldInfo, ParameterAnalysis.AssignedOrLinked> assigned = parameterAnalysis.getAssignedToField();
-                        ParameterAnalysis.AssignedOrLinked assignedOrLinked = assigned.get(fieldReference.fieldInfo);
-                        if (assignedOrLinked == ParameterAnalysis.AssignedOrLinked.ASSIGNED) {
-                            return newObject.getParameterExpressions().get(i);
-                        }
-                        i++;
-                    }
+    private Expression tryShortCut(EvaluationContext evaluationContext, Expression scopeValue, Expression variableValue) {
+        if (variableValue instanceof VariableExpression ve && ve.variable instanceof FieldReference fr) {
+            if (scopeValue instanceof NewObject newObject && newObject.constructor() != null) {
+                return extractNewObject(evaluationContext, newObject, fr.fieldInfo);
+            }
+            if (scopeValue instanceof VariableExpression scopeVe && scopeVe.variable instanceof FieldReference scopeFr) {
+                FieldAnalysis fieldAnalysis = evaluationContext.getAnalyserContext().getFieldAnalysis(scopeFr.fieldInfo);
+                if (fieldAnalysis.getEffectivelyFinalValue() instanceof NewObject newObject && newObject.constructor() != null) {
+                    return extractNewObject(evaluationContext, newObject, fr.fieldInfo);
                 }
             }
+        }
+        return null;
+    }
+
+    private Expression extractNewObject(EvaluationContext evaluationContext, NewObject newObject, FieldInfo
+            fieldInfo) {
+        int i = 0;
+        List<ParameterAnalysis> parameterAnalyses = evaluationContext
+                .getParameterAnalyses(newObject.constructor()).collect(Collectors.toList());
+        for (ParameterAnalysis parameterAnalysis : parameterAnalyses) {
+            Map<FieldInfo, ParameterAnalysis.AssignedOrLinked> assigned = parameterAnalysis.getAssignedToField();
+            ParameterAnalysis.AssignedOrLinked assignedOrLinked = assigned.get(fieldInfo);
+            if (assignedOrLinked == ParameterAnalysis.AssignedOrLinked.ASSIGNED) {
+                return newObject.getParameterExpressions().get(i);
+            }
+            i++;
         }
         return null;
     }

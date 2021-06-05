@@ -18,6 +18,7 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.output.*;
 import org.e2immu.analyser.parser.InspectionProvider;
+import org.e2immu.analyser.util.UpgradableBooleanMap;
 
 import java.util.Objects;
 
@@ -106,7 +107,7 @@ public class FieldReference extends VariableWithConcreteReturnType {
                     new TypeName(fieldInfo.owner, qualification.qualifierRequired(fieldInfo.owner)),
                     qualification.qualifierRequired(this) ? YES : NO_FIELD));
         }
-        if (scope instanceof This thisVar) {
+        if (scope instanceof VariableExpression ve && ve.variable() instanceof This thisVar) {
             ThisName thisName = new ThisName(thisVar.writeSuper,
                     new TypeName(thisVar.typeInfo, qualification.qualifierRequired(thisVar.typeInfo)),
                     qualification.qualifierRequired(thisVar));
@@ -126,6 +127,14 @@ public class FieldReference extends VariableWithConcreteReturnType {
     @Override
     public boolean isStatic() {
         return fieldInfo.isStatic();
+    }
+
+    @Override
+    public UpgradableBooleanMap<TypeInfo> typesReferenced(boolean explicit) {
+        if (scope != null && !scopeIsThis()) {
+            return UpgradableBooleanMap.of(scope.typesReferenced(), parameterizedType().typesReferenced(explicit));
+        }
+        return parameterizedType().typesReferenced(explicit);
     }
 
     public boolean scopeIsNonOwnerThis() {

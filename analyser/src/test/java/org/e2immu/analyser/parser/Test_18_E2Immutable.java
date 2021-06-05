@@ -54,7 +54,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
                     if ("1".equals(d.statementId())) {
                         // we never know in the first iteration...
                         String expectValue = d.iteration() == 0
-                                ? "2+<field:org.e2immu.analyser.testexample.E2Immutable_1.level2#org.e2immu.analyser.testexample.E2Immutable_1.E2Immutable_1(org.e2immu.analyser.testexample.E2Immutable_1,java.lang.String):0:parent2Param>"
+                                ? "2+<field:org.e2immu.analyser.testexample.E2Immutable_1.level2#parent2Param>"
                                 : "2+parent2Param.level2";
                         assertEquals(expectValue, d.currentValue().debugOutput());
                     }
