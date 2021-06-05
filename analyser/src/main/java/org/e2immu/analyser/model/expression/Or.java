@@ -175,7 +175,7 @@ public record Or(Primitives primitives, List<Expression> expressions) implements
     public OutputBuilder output(Qualification qualification) {
         Precedence precedence = precedence();
         return new OutputBuilder()
-                .add(expressions.stream().map(e -> e.outputInParenthesis(qualification, precedence, e))
+                .add(expressions.stream().map(e -> outputInParenthesis(qualification, precedence, e))
                         .collect(OutputBuilder.joining(Symbol.LOGICAL_OR)));
     }
 

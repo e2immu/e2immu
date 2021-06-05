@@ -968,9 +968,6 @@ public class FieldAnalyser extends AbstractAnalyser {
         }
         assert fieldAnalysis.getProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD) == Level.DELAY;
 
-        int effectivelyFinal = fieldAnalysis.getProperty(VariableProperty.FINAL);
-        if (effectivelyFinal == Level.DELAY) return DELAYS;
-
         boolean isPrimitive = Primitives.isPrimitiveExcludingVoid(fieldInfo.type);
         // too dangerous to catch @E2Immutable because of down-casts
         if (isPrimitive) {

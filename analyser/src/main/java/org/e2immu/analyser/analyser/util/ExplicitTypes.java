@@ -18,12 +18,10 @@ import org.e2immu.analyser.analyser.AnalysisProvider;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.inspector.TypeInspectionImpl;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.expression.Cast;
-import org.e2immu.analyser.model.expression.FieldAccess;
-import org.e2immu.analyser.model.expression.MethodCall;
-import org.e2immu.analyser.model.expression.NewObject;
+import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.statement.ForEachStatement;
 import org.e2immu.analyser.model.statement.SwitchStatementNewStyle;
+import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 
@@ -97,6 +95,11 @@ public class ExplicitTypes {
                 if (newObject.constructor() != null) { // can be null, anonymous implementation of interface
                     addTypesFromParameters(newObject.constructor(), UsedAs.NEW_OBJECT);
                 }
+            }
+
+            // a.b -> type of a == owner of b cannot be replaced by unbound type parameter
+            if (element instanceof VariableExpression ve && ve.variable() instanceof FieldReference fr) {
+                add(fr.fieldInfo.owner.asParameterizedType(inspectionProvider), UsedAs.FIELD_ACCESS);
             }
 
             // a.b -> type of a cannot be replaced by unbound type parameter

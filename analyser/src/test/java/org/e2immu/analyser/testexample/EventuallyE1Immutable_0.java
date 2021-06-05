@@ -21,7 +21,7 @@ public class EventuallyE1Immutable_0 {
     private static final String STRING = "string";
 
     /* the presence of a field of the TwoIntegers type ensures that EventuallyE1Immutable_0 is not
-    level 2 immutable.
+    level 2 immutable. The type is not implicitly immutable because of the access in getI
      */
     @Container
     public static class TwoIntegers {
