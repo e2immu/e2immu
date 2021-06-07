@@ -579,24 +579,21 @@ public class ExpressionContext {
                         UnaryOperator.precedence(unaryExpr.getOperator())
                 );
             }
+
             if (expression.isThisExpr()) {
                 ThisExpr thisExpr = expression.asThisExpr();
-                Variable variable = thisExpr.getTypeName().map(typeName -> {
-                    NamedType superType = typeContext.get(typeName.asString(), true);
-                    if (!(superType instanceof TypeInfo)) throw new UnsupportedOperationException();
-                    return new This(typeContext, (TypeInfo) superType, true, false);
-                }).orElse(new This(typeContext, enclosingType));
-                return new VariableExpression(variable);
+                Variable thisVar = This.create(typeContext, false, enclosingType,
+                        thisExpr.getTypeName().map(Name::asString).orElse(null));
+                return new VariableExpression(thisVar);
             }
+
             if (expression.isSuperExpr()) {
                 SuperExpr superExpr = expression.asSuperExpr();
-                Variable variable = superExpr.getTypeName().map(typeName -> {
-                    NamedType superType = typeContext.get(typeName.asString(), true);
-                    if (!(superType instanceof TypeInfo)) throw new UnsupportedOperationException();
-                    return new This(typeContext, (TypeInfo) superType, true, true);
-                }).orElse(new This(typeContext, enclosingType, false, true));
-                return new VariableExpression(variable);
+                Variable superVar = This.create(typeContext, true, enclosingType,
+                        superExpr.getTypeName().map(Name::asString).orElse(null));
+                return new VariableExpression(superVar);
             }
+
             if (expression.isTypeExpr()) {
                 // note that "System.out" is a type expression; ParameterizedType.from can handle this, but we'd rather see a field access
                 TypeExpr typeExpr = (TypeExpr) expression;

@@ -14,6 +14,8 @@
 
 package org.e2immu.analyser.model.variable;
 
+import org.e2immu.analyser.inspector.TypeContext;
+import org.e2immu.analyser.model.NamedType;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.Qualification;
 import org.e2immu.analyser.model.TypeInfo;
@@ -30,19 +32,44 @@ import java.util.Objects;
  */
 public class This implements Variable {
     public final TypeInfo typeInfo;
-    public final boolean explicitlyWriteType;
-    public final boolean writeSuper;
     public final ParameterizedType typeAsParameterizedType;
 
+    // display information.
+    public final TypeInfo explicitlyWriteType;
+    public final boolean writeSuper;
+
     public This(InspectionProvider inspectionProvider, TypeInfo typeInfo) {
-        this(inspectionProvider, typeInfo, false, false);
+        this(inspectionProvider, typeInfo, null, false);
     }
 
-    public This(InspectionProvider inspectionProvider, TypeInfo typeInfo, boolean explicitlyWriteType, boolean writeSuper) {
+    public This(InspectionProvider inspectionProvider, TypeInfo typeInfo, TypeInfo explicitlyWriteType, boolean writeSuper) {
         this.typeInfo = Objects.requireNonNull(typeInfo);
         this.explicitlyWriteType = explicitlyWriteType;
         this.writeSuper = writeSuper;
         typeAsParameterizedType = typeInfo.asParameterizedType(inspectionProvider);
+    }
+
+    public static Variable create(TypeContext typeContext, boolean writeSuper, TypeInfo enclosingType, String typeName) {
+        if (typeName != null) {
+            NamedType superTypeNamed = typeContext.get(typeName, true);
+            if (!(superTypeNamed instanceof TypeInfo superType)) throw new UnsupportedOperationException();
+            if (writeSuper) {
+                // SomeType.super. --> write SomeType explicitly; go upwards from its parent
+                TypeInfo parentType = typeContext.getTypeInspection(superType).parentClass().bestTypeInfo();
+                assert parentType != null : "?? if super is allowed, it should have a parent!";
+                return new This(typeContext, parentType, superType, true);
+            }
+            // SomeType.this. --> write SomeType explicitly; and start at SomeType going upwards
+            return new This(typeContext, superType, superType, false);
+        }
+
+        if (writeSuper) {
+            // super. --> go up from enclosing type's parent
+            TypeInfo parentType = typeContext.getTypeInspection(enclosingType).parentClass().bestTypeInfo();
+            return new This(typeContext, parentType, null, true);
+        }
+        // this. --> here
+        return new This(typeContext, enclosingType, null, false);
     }
 
     @Override
@@ -50,7 +77,8 @@ public class This implements Variable {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         This aThis = (This) o;
-        return typeInfo.equals(aThis.typeInfo) && writeSuper == aThis.writeSuper;
+        return typeInfo.equals(aThis.typeInfo) && writeSuper == aThis.writeSuper
+                && Objects.equals(explicitlyWriteType, aThis.explicitlyWriteType);
     }
 
     @Override
@@ -75,8 +103,9 @@ public class This implements Variable {
 
     @Override
     public String simpleName() {
-        if (explicitlyWriteType) return typeInfo.simpleName + (writeSuper ? ".super" : ".this");
-        return writeSuper ? "super" : "this";
+        String superOrThis = writeSuper ? "super" : "this";
+        if (explicitlyWriteType != null) return explicitlyWriteType.simpleName + "+" + superOrThis;
+        return superOrThis;
     }
 
     @Override
@@ -93,7 +122,7 @@ public class This implements Variable {
 
     @Override
     public String fullyQualifiedName() {
-        return typeInfo.fullyQualifiedName + "." + (writeSuper ? "super" : "this");
+        return typeInfo.fullyQualifiedName + ".this";
     }
 
     @Override
@@ -103,10 +132,9 @@ public class This implements Variable {
 
     @Override
     public UpgradableBooleanMap<TypeInfo> typesReferenced(boolean explicit) {
-        boolean b = explicit && explicitlyWriteType;
-        if (writeSuper) {
-            return UpgradableBooleanMap.of(typeInfo, b, typeInfo.typeInspection.get().parentClass().bestTypeInfo(), false);
+        if (explicitlyWriteType != null && explicitlyWriteType != typeInfo) {
+            return UpgradableBooleanMap.of(explicitlyWriteType, true, typeInfo, false);
         }
-        return UpgradableBooleanMap.of(typeInfo, b);
+        return UpgradableBooleanMap.of(typeInfo, explicitlyWriteType == typeInfo);
     }
 }

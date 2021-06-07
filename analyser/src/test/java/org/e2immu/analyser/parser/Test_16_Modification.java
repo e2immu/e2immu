@@ -895,7 +895,6 @@ public class Test_16_Modification extends CommonTestRunner {
     @Test
     public void test12() throws IOException {
         final String TYPE = "org.e2immu.analyser.testexample.Modification_12";
-        final String CHILD_CLASS_SUPER = TYPE + ".ChildClass.super";
         final String PARENT_CLASS_THIS = TYPE + ".ParentClass.this";
         final String PARENT_CLASS_SET = TYPE + ".ParentClass.set";
 
@@ -916,7 +915,8 @@ public class Test_16_Modification extends CommonTestRunner {
             if ("clearAndLog".equals(d.methodInfo().name) && "ChildClass".equals(d.methodInfo().typeInfo.simpleName)
                     && "0".equals(d.statementId())) {
                 if (d.variable() instanceof This thisVar && thisVar.writeSuper) {
-                    assertEquals(CHILD_CLASS_SUPER, d.variableName());
+                    assertEquals("ParentClass", thisVar.typeInfo.simpleName);
+                    assertEquals(PARENT_CLASS_THIS, d.variableName());
                     int expectModified = d.iteration() <= 1 ? Level.DELAY : Level.TRUE;
                     // we have to wait for clearAndLog in ParentClass, which is analysed AFTER this one
                     assertEquals(expectModified, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
@@ -925,7 +925,9 @@ public class Test_16_Modification extends CommonTestRunner {
 
             if ("clear".equals(d.methodInfo().name) && "InnerOfChild".equals(d.methodInfo().typeInfo.simpleName)) {
                 if (d.variable() instanceof This thisVar && thisVar.writeSuper) {
-                    assertEquals(CHILD_CLASS_SUPER, d.variableName());
+                    assertEquals("ChildClass", thisVar.explicitlyWriteType.simpleName);
+                    assertEquals("ParentClass", thisVar.typeInfo.simpleName);
+                    assertEquals(PARENT_CLASS_THIS, d.variableName());
                     int expectCm = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
                     assertEquals(expectCm, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
                 }
@@ -937,7 +939,7 @@ public class Test_16_Modification extends CommonTestRunner {
                 Expression scope = ((MethodCall) ((ExpressionAsStatement) d.statementAnalysis().statement).expression).object;
                 VariableExpression variableExpression = (VariableExpression) scope;
                 This t = (This) variableExpression.variable();
-                assertTrue(t.explicitlyWriteType);
+                assertNotNull(t.explicitlyWriteType);
                 assertTrue(t.writeSuper);
             }
             // we make sure that super.clearAndLog refers to the method in ParentClass

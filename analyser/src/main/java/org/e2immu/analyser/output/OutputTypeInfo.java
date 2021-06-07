@@ -147,7 +147,7 @@ public class OutputTypeInfo {
         insideType.addThis(new This(InspectionProvider.DEFAULT, typeInfo));
         if (!Primitives.isJavaLangObject(typeInfo.typeInspection.get().parentClass())) {
             insideType.addThis(new This(InspectionProvider.DEFAULT, typeInfo.typeInspection.get().parentClass().typeInfo,
-                    false, true));
+                    null, true));
         }
     }
 

@@ -65,13 +65,6 @@ public record ParseMethodCallExpr(InspectionProvider inspectionProvider) {
             scopeNature = ScopeNature.ABSENT; // could be static, could be instance
         } else {
             scopeType = scope.returnType();
-            if (scope instanceof VariableExpression variableExpression) {
-                if (variableExpression.variable() instanceof This v) {
-                    if (v.writeSuper) {
-                        scopeType = inspectionProvider.getTypeInspection(v.typeInfo).parentClass();
-                    }
-                }
-            }
             scopeNature = scope instanceof TypeExpression ? ScopeNature.STATIC : ScopeNature.INSTANCE;
         }
         Map<NamedType, ParameterizedType> scopeTypeMap = scopeType.initialTypeParameterMap(inspectionProvider);
