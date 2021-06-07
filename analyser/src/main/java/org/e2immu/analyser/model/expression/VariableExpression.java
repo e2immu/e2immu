@@ -134,7 +134,10 @@ public record VariableExpression(Variable variable, String name) implements Expr
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
         EvaluationResult scopeResult;
         if (variable instanceof FieldReference fr && fr.scope != null) {
-            scopeResult = fr.scope.evaluate(evaluationContext, forwardEvaluationInfo.copyModificationEnsureNotNull());
+            // do not continue modification onto This: we want modifications on this only when there's a direct method call
+            ForwardEvaluationInfo forward = fr.scopeIsThis() ? ForwardEvaluationInfo.NOT_NULL :
+                    forwardEvaluationInfo.copyModificationEnsureNotNull();
+            scopeResult = fr.scope.evaluate(evaluationContext, forward);
             builder.compose(scopeResult);
         } else {
             scopeResult = null;

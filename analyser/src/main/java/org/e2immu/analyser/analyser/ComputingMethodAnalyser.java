@@ -845,7 +845,7 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
     private Boolean findOtherModifyingElements() {
         boolean nonPrivateFields = myFieldAnalysers.values().stream()
                 .filter(fa -> fa.fieldInfo.type.isFunctionalInterface() && fa.fieldAnalysis.isDeclaredFunctionalInterface())
-                .anyMatch(fa -> fa.fieldInfo.isNotPrivate());
+                .anyMatch(fa -> !fa.fieldInfo.isPrivate());
         if (nonPrivateFields) {
             return true;
         }

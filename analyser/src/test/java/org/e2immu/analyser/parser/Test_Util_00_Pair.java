@@ -17,11 +17,11 @@ package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
+import org.e2immu.analyser.model.Level;
+import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.visitor.FieldAnalyserVisitor;
 import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
 import org.e2immu.analyser.visitor.TypeAnalyserVisitor;
-import org.e2immu.analyser.model.Level;
-import org.e2immu.analyser.model.MultiLevel;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -50,7 +50,8 @@ public class Test_Util_00_Pair extends CommonTestRunner {
 
         // fields k and v do not link to the constructor's parameters because they are implicitly immutable
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
-            assertEquals(MultiLevel.INDEPENDENT, d.typeAnalysis().getProperty(VariableProperty.INDEPENDENT));
+            int expectIndependent = d.iteration() == 0 ? Level.DELAY : MultiLevel.INDEPENDENT;
+            assertEquals(expectIndependent, d.typeAnalysis().getProperty(VariableProperty.INDEPENDENT));
         };
 
         testUtilClass(List.of("Pair"), 0, 0, new DebugConfiguration.Builder()

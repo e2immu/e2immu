@@ -211,9 +211,8 @@ public class Test_58_GuideSimplified extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("trace".equals(d.methodInfo().name) && d.variable() instanceof ReturnVariable) {
                 String expectValue = switch (d.iteration()) {
-                    case 0 -> "\"/*\"+<m:position>.msg+\"*/\"";
+                    case 0 -> "\"/*\"+<f:msg>+\"*/\"";
                     case 1 -> "\"/*\"+<f:position>.msg+\"*/\"";
-                    case 2 -> "\"/*\"+<f:msg>+\"*/\"";
                     default -> TRACE_RETURN;
                 };
                 assertEquals(expectValue, d.currentValue().toString());
@@ -222,7 +221,7 @@ public class Test_58_GuideSimplified extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("trace".equals(d.methodInfo().name)) {
-                if (d.iteration() <= 2) {
+                if (d.iteration() < 2) {
                     assertNull(d.methodAnalysis().getSingleReturnValue());
                 } else { // independent of delays/modification of the fields
                     assertEquals(TRACE_RETURN, d.methodAnalysis().getSingleReturnValue().toString());

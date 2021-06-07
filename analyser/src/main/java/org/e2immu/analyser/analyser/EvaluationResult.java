@@ -475,7 +475,9 @@ public record EvaluationResult(EvaluationContext evaluationContext,
         public void markContextModified(Variable variable, int modified) {
             assert evaluationContext != null;
             if (evaluationContext.isPresent(variable)) {
-                int ignoreContentModifications = getPropertyFromInitial(variable, VariableProperty.IGNORE_MODIFICATIONS);
+                int ignoreContentModifications = variable instanceof FieldReference fr ? evaluationContext.getAnalyserContext()
+                        .getFieldAnalysis(fr.fieldInfo).getProperty(VariableProperty.IGNORE_MODIFICATIONS)
+                        : Level.FALSE;
                 if (ignoreContentModifications != Level.TRUE) {
                     log(CONTEXT_MODIFICATION, "Mark method object as context modified {}: {}", modified, variable.fullyQualifiedName());
                     setProperty(variable, VariableProperty.CONTEXT_MODIFIED, modified);

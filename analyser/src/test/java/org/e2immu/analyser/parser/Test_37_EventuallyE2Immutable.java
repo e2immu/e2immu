@@ -148,7 +148,8 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("t".equals(d.fieldInfo().name)) {
                 assertEquals(Level.FALSE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
-                assertEquals("", d.fieldAnalysis().getLinkedVariables().toString());
+                String expectLinked = d.iteration()==0 ? LinkedVariables.DELAY_STRING: "";
+                assertEquals(expectLinked, d.fieldAnalysis().getLinkedVariables().toString());
             }
         };
 
@@ -233,11 +234,6 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build());
     }
-
-
-    /*
-    object flow helps to find the errors
-     */
 
     @Test
     public void test_4() throws IOException {

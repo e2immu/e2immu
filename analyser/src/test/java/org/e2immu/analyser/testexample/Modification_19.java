@@ -14,25 +14,34 @@
 
 package org.e2immu.analyser.testexample;
 
+import org.e2immu.annotation.Modified;
 
-public enum Enum_1 {
-    ONE(1), TWO(2), THREE(3);
+import java.util.HashSet;
+import java.util.Set;
 
-    public final int cnt;
+/*
+simplest version of Modification_11 that causes problems.
+ */
+public class Modification_19 {
 
-    Enum_1(int cnt) {
-        this.cnt = cnt;
-    }
+    final Set<String> s2 = new HashSet<>();
 
-    //@NotModified when A API, @Modified otherwise
-    public int best(Enum_1 other) {
-        return Math.max(cnt, other.cnt);
-    }
+    static class C1 {
+        @Modified
+        final Set<String> set;
 
-    public int posInList() {
-        for (int i = 0; i < values().length; i++) {
-            if (values()[i] == this) return i;
+        C1(@Modified Set<String> setC) {
+            this.set = setC;
         }
-        throw new UnsupportedOperationException();
+    }
+
+    private boolean example1() {
+        C1 c = new C1(s2);
+        C1 localD = new C1(Set.of("a", "b", "c"));
+        return addAll(c.set, localD.set);
+    }
+
+    private static boolean addAll(Set<String> c, Set<String> d) {
+        return c.addAll(d);
     }
 }

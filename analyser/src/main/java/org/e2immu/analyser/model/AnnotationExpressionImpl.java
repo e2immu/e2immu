@@ -23,6 +23,7 @@ import org.e2immu.analyser.output.TypeName;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.Finalizer;
+import org.e2immu.annotation.IgnoreModifications;
 
 import java.lang.reflect.Array;
 import java.util.*;
@@ -206,11 +207,14 @@ public record AnnotationExpressionImpl(TypeInfo typeInfo,
         return UpgradableBooleanMap.of(typeInfo, true);
     }
 
+    private static final Set<String> FQN_ALWAYS_CONTRACT = Set.of(Finalizer.class.getCanonicalName(),
+            IgnoreModifications.class.getCanonicalName());
+
     @Override
     public AnnotationParameters e2ImmuAnnotationParameters() {
         if (!typeInfo.fullyQualifiedName.startsWith(ORG_E_2_IMMU_ANNOTATION)) return null;
         boolean absent = extract("absent", false);
-        boolean contract = extract("contract", false) || Finalizer.class.getCanonicalName().equals(typeInfo.fullyQualifiedName);
+        boolean contract = extract("contract", false) || FQN_ALWAYS_CONTRACT.contains(typeInfo.fullyQualifiedName);
         return new AnnotationParameters(absent, contract);
     }
 

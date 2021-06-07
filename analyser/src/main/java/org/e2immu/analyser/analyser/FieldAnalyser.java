@@ -106,7 +106,7 @@ public class FieldAnalyser extends AbstractAnalyser {
         fieldAnalysis = new FieldAnalysisImpl.Builder(analyserContext.getPrimitives(), analyserContext, fieldInfo, ownerTypeAnalysis);
         this.primaryType = primaryType;
         this.sam = sam;
-        fieldCanBeWrittenFromOutsideThisPrimaryType = fieldInfo.isNotPrivate() &&
+        fieldCanBeWrittenFromOutsideThisPrimaryType = fieldInfo.isAccessibleOutsideOfPrimaryType() &&
                 !fieldInfo.isExplicitlyFinal() && !fieldInfo.owner.isPrivateOrEnclosingIsPrivate();
         haveInitialiser = fieldInspection.fieldInitialiserIsSet() && fieldInspection.getFieldInitialiser().initialiser() != EmptyExpression.EMPTY_EXPRESSION;
 
@@ -115,6 +115,8 @@ public class FieldAnalyser extends AbstractAnalyser {
                 .add(EVALUATE_INITIALISER, this::evaluateInitialiser)
                 .add(ANALYSE_FINAL, this::analyseFinal)
                 .add(ANALYSE_ASSIGNMENTS, sharedState -> allAssignmentsHaveBeenSet())
+                .add(ANALYSE_LINKED, sharedState -> analyseLinked())
+                .add(ANALYSE_LINKED_1, sharedState -> analyseLinked1())
                 .add(ANALYSE_LINKS_HAVE_BEEN_ESTABLISHED, sharedState -> allLinksHaveBeenEstablished())
                 .add(ANALYSE_IMMUTABLE, this::analyseImmutable)
                 .add(ANALYSE_MODIFIED, sharedState -> analyseModified())
@@ -122,8 +124,6 @@ public class FieldAnalyser extends AbstractAnalyser {
                 .add(ANALYSE_CONSTANT, sharedState -> analyseConstant())
                 .add(ANALYSE_NOT_NULL, this::analyseNotNull)
                 .add(ANALYSE_NOT_MODIFIED_1, sharedState -> analyseNotModified1())
-                .add(ANALYSE_LINKED, sharedState -> analyseLinked())
-                .add(ANALYSE_LINKED_1, sharedState -> analyseLinked1())
                 .add(ANALYSE_PROPAGATE_MODIFICATION, sharedState -> analysePropagateModification())
                 .add(FIELD_ERRORS, sharedState -> fieldErrors())
                 .build();
@@ -549,7 +549,7 @@ public class FieldAnalyser extends AbstractAnalyser {
         }
         int corrected = immutable == MultiLevel.EVENTUALLY_E1IMMUTABLE_BEFORE_MARK ? MultiLevel.EVENTUALLY_E1IMMUTABLE :
                 MultiLevel.EVENTUALLY_E2IMMUTABLE;
-        if (fieldInfo.isNotPrivate()) {
+        if (fieldInfo.isAccessibleOutsideOfPrimaryType()) {
             return corrected;
         }
         // check exposed via return values of methods
@@ -653,19 +653,9 @@ public class FieldAnalyser extends AbstractAnalyser {
 
     private AnalysisStatus allLinksHaveBeenEstablished() {
         assert !fieldAnalysis.allLinksHaveBeenEstablished.isSet();
-        boolean res = allMethodsAndConstructors.stream()
-                .filter(m -> !m.getFieldAsVariable(fieldInfo, false).isEmpty())
-                .allMatch(m -> ((ComputingMethodAnalyser) m).methodLevelData().acceptLinksHaveBeenEstablished(ignoreMyConstructors));
-        if (res) {
+        if (fieldAnalysis.linked1Variables.isSet() && fieldAnalysis.linkedVariables.isSet()) {
             fieldAnalysis.allLinksHaveBeenEstablished.set();
             return DONE;
-        }
-        if (Logger.isLogEnabled(DELAYED)) {
-            allMethodsAndConstructors.stream()
-                    .filter(m -> !m.getFieldAsVariable(fieldInfo, false).isEmpty())
-                    .filter(m -> !((ComputingMethodAnalyser) m).methodLevelData().acceptLinksHaveBeenEstablished(ignoreMyConstructors))
-                    .forEach(m -> log(DELAYED, "Field {}: links have not been established yet in method {}",
-                            fieldInfo.name, m.methodInfo.name));
         }
         return DELAYS;
     }
@@ -939,7 +929,7 @@ public class FieldAnalyser extends AbstractAnalyser {
         }
 
         if (!fieldAnalysis.allLinksHaveBeenEstablished.isSet()) {
-            log(DELAYED, "Delaying, have no linked variables yet for field {}", fqn);
+            log(DELAYED, "Delaying @PropagateModification, have no linked variables yet for field {}", fqn);
             return DELAYS;
         }
         int max = allMethodsAndConstructors.stream()
@@ -1004,6 +994,7 @@ public class FieldAnalyser extends AbstractAnalyser {
             log(MODIFICATION, "Mark field {} as @NotModified", fqn);
             return DONE;
         }
+
 
         if (Logger.isLogEnabled(DELAYED)) {
             log(DELAYED, "Cannot yet conclude if field {}'s contents have been modified, not all read or links",

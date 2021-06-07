@@ -17,10 +17,7 @@ package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.model.Level;
-import org.e2immu.analyser.model.MultiLevel;
-import org.e2immu.analyser.model.ParameterAnalysis;
-import org.e2immu.analyser.model.ParameterInfo;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.testexample.Enum_7;
@@ -142,10 +139,26 @@ public class Test_26_Enum extends CommonTestRunner {
             }
         };
 
+        TypeMapVisitor typeMapVisitor = typeMap -> {
+            TypeInfo math = typeMap.get(Math.class);
+            MethodInfo max = math.findUniqueMethod("max", 2);
+            // default is TRUE: there are no annotated APIs!
+            assertEquals(Level.TRUE, max.methodAnalysis.get().getProperty(VariableProperty.MODIFIED_METHOD));
+        };
+
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("best".equals(d.methodInfo().name)) {
+                int expectMm = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
+                assertEquals(expectMm, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
+            }
+        };
+
         testClass("Enum_1", 0, 0, new DebugConfiguration.Builder()
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addTypeMapVisitor(typeMapVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 
@@ -245,7 +258,7 @@ public class Test_26_Enum extends CommonTestRunner {
 
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
-            int expectImmutable = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EFFECTIVELY_E2IMMUTABLE;
+            int expectImmutable = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_E2IMMUTABLE;
             assertEquals(expectImmutable, d.typeAnalysis().getProperty(VariableProperty.IMMUTABLE));
         };
 

@@ -21,6 +21,7 @@ import org.e2immu.analyser.parser.Primitives;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public interface MethodAnalysis extends Analysis {
@@ -100,58 +101,57 @@ public interface MethodAnalysis extends Analysis {
         return last.methodLevelData;
     }
 
-    default int getMethodProperty(AnalysisProvider analysisProvider, MethodInfo methodInfo, VariableProperty variableProperty) {
+    Function<Integer, Integer> OVERRIDE_FALSE = x -> Level.FALSE;
+    Function<Integer, Integer> OVERRIDE_EFFECTIVELY_NOT_NULL = x -> MultiLevel.EFFECTIVELY_NOT_NULL;
+    Function<Integer, Integer> NO_INFLUENCE = x -> x;
+
+    default Function<Integer, Integer> influenceOfType(AnalysisProvider analysisProvider, VariableProperty variableProperty) {
+        MethodInfo methodInfo = getMethodInfo();
         ParameterizedType returnType = methodInfo.returnType();
+
         switch (variableProperty) {
             case MODIFIED_METHOD:
-                // all methods in java.lang.String are @NotModified, but we do not bother writing that down
-                // we explicitly check on EFFECTIVE, because in an eventually E2IMMU we want the methods to remain @Modified
                 TypeAnalysis typeAnalysis = analysisProvider.getTypeAnalysis(methodInfo.typeInfo);
                 if (!methodInfo.isConstructor &&
                         !methodInfo.isAbstract() &&
                         typeAnalysis.getProperty(VariableProperty.IMMUTABLE) == MultiLevel.EFFECTIVELY_E2IMMUTABLE) {
-                    return Level.FALSE;
+                    return OVERRIDE_FALSE;
                 }
-                return getPropertyCheckOverrides(analysisProvider, VariableProperty.MODIFIED_METHOD);
-
-            case FLUENT:
-            case IDENTITY:
-
-            case INDEPENDENT:
-                // TODO if we have an array constructor created on-the-fly, it should be EFFECTIVELY INDEPENDENT
-                return getPropertyCheckOverrides(analysisProvider, variableProperty);
+                return NO_INFLUENCE;
 
             case NOT_NULL_EXPRESSION:
-                if (Primitives.isPrimitiveExcludingVoid(returnType)) return MultiLevel.EFFECTIVELY_NOT_NULL;
+                if (Primitives.isPrimitiveExcludingVoid(returnType)) return OVERRIDE_EFFECTIVELY_NOT_NULL;
                 int fluent = getProperty(VariableProperty.FLUENT);
-                if (fluent == Level.TRUE) return MultiLevel.EFFECTIVELY_NOT_NULL;
-                return getPropertyCheckOverrides(analysisProvider, VariableProperty.NOT_NULL_EXPRESSION);
+                if (fluent == Level.TRUE) return OVERRIDE_EFFECTIVELY_NOT_NULL;
+                return NO_INFLUENCE;
 
             case CONTAINER:
                 assert returnType != ParameterizedType.RETURN_TYPE_OF_CONSTRUCTOR : "void method";
                 int container = returnType.getProperty(analysisProvider, VariableProperty.CONTAINER);
-                if (container == Level.DELAY) return Level.DELAY;
-                return Level.best(getPropertyCheckOverrides(analysisProvider, VariableProperty.CONTAINER), container);
+                return inMethod -> Math.max(inMethod, container);
 
             default:
+                return NO_INFLUENCE;
         }
-        return internalGetProperty(variableProperty);
     }
 
-    default int valueFromOverrides(AnalysisProvider analysisProvider, VariableProperty variableProperty) {
-        Set<MethodAnalysis> overrides = getOverrides(analysisProvider);
-        return overrides.stream()
-                .mapToInt(ma -> ma.getPropertyAsIs(variableProperty)).max().orElse(Level.DELAY);
+    default int getMethodProperty(AnalysisProvider analysisProvider, VariableProperty variableProperty) {
+        return switch (variableProperty) {
+            case MODIFIED_METHOD, FLUENT, IDENTITY, INDEPENDENT, NOT_NULL_EXPRESSION, CONTAINER -> getPropertyCheckOverrides(analysisProvider, variableProperty);
+            default -> internalGetProperty(variableProperty);
+        };
     }
 
     private int getPropertyCheckOverrides(AnalysisProvider analysisProvider, VariableProperty variableProperty) {
-        int mine = getPropertyAsIs(variableProperty);
+        int mineAsIs = getPropertyAsIs(variableProperty);
+        int mine = influenceOfType(analysisProvider, variableProperty).apply(mineAsIs);
         int max;
         if (getMethodInfo().shallowAnalysis()) {
             int bestOfOverrides = Level.DELAY;
             for (MethodAnalysis override : getOverrides(analysisProvider)) {
                 int overrideAsIs = override.getPropertyAsIs(variableProperty);
-                bestOfOverrides = Math.max(bestOfOverrides, overrideAsIs);
+                int combinedWithType = override.influenceOfType(analysisProvider, variableProperty).apply(overrideAsIs);
+                bestOfOverrides = Math.max(bestOfOverrides, combinedWithType);
             }
             max = Math.max(mine, bestOfOverrides);
         } else {
@@ -167,6 +167,12 @@ public interface MethodAnalysis extends Analysis {
             return variableProperty.valueWhenAbsent(annotationMode());
         }
         return max;
+    }
+
+    default int valueFromOverrides(AnalysisProvider analysisProvider, VariableProperty variableProperty) {
+        Set<MethodAnalysis> overrides = getOverrides(analysisProvider);
+        return overrides.stream()
+                .mapToInt(ma -> ma.getPropertyAsIs(variableProperty)).max().orElse(Level.DELAY);
     }
 
     default boolean eventualIsSet() {
@@ -185,7 +191,7 @@ public interface MethodAnalysis extends Analysis {
             assert !fields.isEmpty() || !mark && after == null && test == null;
         }
 
-        //@Override FIXME is this an IntelliJ error?
+        @Override
         public String toString() {
             if (mark) return "@Mark: " + fields;
             if (test != null) return "@TestMark: " + fields;

@@ -30,7 +30,7 @@ public enum Enum_3 {
 
     @NotModified
     public int best(Enum_3 other) {
-        return Math.max(cnt, other.cnt);
+        return cnt > other.cnt ? cnt : other.cnt;
     }
 
     @Constant("THREE")

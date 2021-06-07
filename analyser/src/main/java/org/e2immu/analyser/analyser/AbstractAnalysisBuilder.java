@@ -263,6 +263,7 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
                     setProperty(VariableProperty.SINGLETON, trueFalse);
                 } else if (e2ImmuAnnotationExpressions.utilityClass.typeInfo() == t) {
                     setProperty(VariableProperty.UTILITY_CLASS, trueFalse);
+                    immutable = 1;
                 } else if (e2ImmuAnnotationExpressions.linked.typeInfo() == t) {
                     log(org.e2immu.analyser.util.Logger.LogTarget.ANALYSER, "Ignoring informative annotation @Linked");
                 } else if (e2ImmuAnnotationExpressions.linked1.typeInfo() == t) {

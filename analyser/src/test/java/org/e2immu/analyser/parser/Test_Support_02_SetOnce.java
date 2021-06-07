@@ -17,6 +17,7 @@ package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.ConditionManager;
 import org.e2immu.analyser.analyser.FieldAnalysisImpl;
+import org.e2immu.analyser.analyser.LinkedVariables;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.Level;
@@ -65,7 +66,8 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
                 assertEquals(expectImmu, d.fieldAnalysis().getProperty(VariableProperty.IMMUTABLE));
                 assertEquals(MultiLevel.NULLABLE, d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_NOT_NULL));
 
-                assertEquals("", d.fieldAnalysis().getLinkedVariables().toString());
+                String expectLinked = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "";
+                assertEquals(expectLinked, d.fieldAnalysis().getLinkedVariables().toString());
             }
         };
 
@@ -190,7 +192,7 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
             if ("set".equals(d.methodInfo().name)) {
                 ParameterAnalysis paramT = d.parameterAnalyses().get(0);
                 // because not @Final, we get NOT_INVOLVED
-                int expectEnn = d.iteration() == 0 ? Level.DELAY : MultiLevel.NOT_INVOLVED;
+                int expectEnn = d.iteration() <= 1 ? Level.DELAY : MultiLevel.NOT_INVOLVED;
                 assertEquals(expectEnn, paramT.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
 
                 if (d.iteration() == 0) {

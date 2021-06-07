@@ -121,7 +121,7 @@ public class Test_Support_00_Either extends CommonTestRunner {
             assertEquals("(null==a||null==b)&&(null!=a||null!=b)",
                     d.methodAnalysis().getPrecondition().expression().toString());
             ParameterAnalysis a = d.parameterAnalyses().get(0);
-            int expectNnp = d.iteration() == 0 ? Level.DELAY : MultiLevel.NULLABLE;
+            int expectNnp = d.iteration() <= 1 ? Level.DELAY : MultiLevel.NULLABLE;
             assertEquals(expectNnp, a.getProperty(VariableProperty.NOT_NULL_PARAMETER));
             ParameterAnalysis b = d.parameterAnalyses().get(1);
             assertEquals(expectNnp, b.getProperty(VariableProperty.NOT_NULL_PARAMETER));

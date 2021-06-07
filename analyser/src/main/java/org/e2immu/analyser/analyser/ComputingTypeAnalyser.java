@@ -600,8 +600,9 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
 
         // RULE 2
 
-        List<FieldAnalyser> nonPrivateFields = fieldsLinkedToParameters.stream().filter(fieldAnalyser -> fieldAnalyser.fieldInfo.isNotPrivate()).collect(Collectors.toList());
-        for (FieldAnalyser nonPrivateField : nonPrivateFields) {
+        List<FieldAnalyser> fieldsAccessibleFromOutside = fieldsLinkedToParameters.stream().
+                filter(fieldAnalyser -> fieldAnalyser.fieldInfo.isAccessibleOutsideOfPrimaryType()).toList();
+        for (FieldAnalyser nonPrivateField : fieldsAccessibleFromOutside) {
             int immutable = nonPrivateField.fieldAnalysis.getProperty(VariableProperty.EXTERNAL_IMMUTABLE);
             if (immutable == Level.DELAY) {
                 log(DELAYED, "Delay independence of type {}, field {} is not known to be immutable", typeInfo.fullyQualifiedName,
@@ -609,8 +610,8 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
                 return DELAYS;
             }
             if (!MultiLevel.isAtLeastEventuallyE2Immutable(immutable)) {
-                log(INDEPENDENCE, "Type {} cannot be @Independent, field {} is non-private and not level 2 immutable",
-                        typeInfo.fullyQualifiedName, nonPrivateField.fieldInfo.name);
+                log(INDEPENDENCE, "Type {} cannot be @Independent, field {} is accessible to the outside," +
+                        " and not level 2 immutable", typeInfo.fullyQualifiedName, nonPrivateField.fieldInfo.name);
                 typeAnalysis.setProperty(VariableProperty.INDEPENDENT, MultiLevel.FALSE);
                 return DONE;
             }

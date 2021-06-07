@@ -669,7 +669,7 @@ public class Resolver {
             }
         }
         for (FieldInfo fieldInfo : typeInspection.fields()) {
-            if (fieldInfo.isNotPrivate() && fieldInfo.fieldInspection.get().fieldInitialiserIsSet()) {
+            if (!fieldInfo.isPrivate() && fieldInfo.fieldInspection.get().fieldInitialiserIsSet()) {
                 FieldInspection.FieldInitialiser fieldInitialiser = fieldInfo.fieldInspection.get().getFieldInitialiser();
                 if (fieldInitialiser.implementationOfSingleAbstractMethod() != null &&
                         builders.get(fieldInitialiser.implementationOfSingleAbstractMethod()).getMethodsOfOwnClassReached().contains(methodInfo)) {

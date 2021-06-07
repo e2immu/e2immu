@@ -115,7 +115,7 @@ public class ContextPropertyWriter {
                             }
                         }
                     } catch (RuntimeException re) {
-                        LOGGER.error("Summary {}, vars: {}", summary, variablesBaseLinksTo);
+                        LOGGER.error("Summary {}: {}, vars: {}", variableProperty, summary, variablesBaseLinksTo);
                         throw re;
                     }
                 });

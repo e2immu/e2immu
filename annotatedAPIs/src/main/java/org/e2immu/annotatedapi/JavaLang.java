@@ -387,7 +387,7 @@ class JavaLang {
 
     @UtilityClass
     static class Math$ {
-        @NotModified
+        //@NotModified implied by @UtilityClass, which implies @E2Immutable
         static int max(int a, int b) {
             return 0;
         }

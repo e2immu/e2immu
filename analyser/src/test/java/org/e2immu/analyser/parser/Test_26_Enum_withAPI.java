@@ -159,6 +159,19 @@ public class Test_26_Enum_withAPI extends CommonTestRunner {
     }
 
     @Test
+    public void test1() throws IOException {
+        TypeMapVisitor typeMapVisitor = typeMap -> {
+            TypeInfo math = typeMap.get(Math.class);
+            MethodInfo max = math.findUniqueMethod("max", 2);
+            assertEquals(Level.FALSE, max.methodAnalysis.get().getProperty(VariableProperty.MODIFIED_METHOD));
+        };
+
+        testClass("Enum_1", 0, 0, new DebugConfiguration.Builder()
+                .addTypeMapVisitor(typeMapVisitor)
+                .build());
+    }
+
+    @Test
     public void test4() throws IOException {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("highest".equals(d.methodInfo().name)) {
