@@ -17,8 +17,6 @@ package org.e2immu.analyser.parser;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.variable.FieldReference;
-import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
 
@@ -36,31 +34,6 @@ public class Test_45_Project_AAPI extends CommonTestRunner {
 
     @Test
     public void test_0() throws IOException {
-        final String CONTAINER = "org.e2immu.analyser.testexample.Project_0.Container";
-
-        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-            if ("set".equals(d.methodInfo().name)) {
-                if (d.variable() instanceof FieldReference fr && "value".equals(fr.fieldInfo.name)) {
-                    assertEquals(CONTAINER + ".value#prev", fr.fullyQualifiedName());
-                    if ("2".equals(d.statementId())) {
-                        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
-                        int expectNne = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
-                        assertEquals(expectNne, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
-                    }
-                }
-                if (d.variable() instanceof ReturnVariable && "3".equals(d.statementId())) {
-                    String expectValue = switch (d.iteration()) {
-                        case 0 -> "null==<m:get>?<s:>:<f:value>";
-                        case 1, 2 -> "null==<m:get>?null:prev.value";
-                        default -> "null==kvStore.get(key)?null:prev.value";
-                    };
-                    assertEquals(expectValue, d.currentValue().toString());
-                    int expectNne = d.iteration() == 0 ? Level.DELAY : MultiLevel.NULLABLE;
-                    assertEquals(expectNne, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
-                }
-            }
-        };
-
         TypeMapVisitor typeMapVisitor = typeMap -> {
             TypeInfo map = typeMap.get(Map.class);
             MethodInfo get = map.findUniqueMethod("get", 1);
@@ -69,7 +42,6 @@ public class Test_45_Project_AAPI extends CommonTestRunner {
 
         testClass("Project_0", 1, 4, new DebugConfiguration.Builder()
                 .addTypeMapVisitor(typeMapVisitor)
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 

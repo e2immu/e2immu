@@ -144,7 +144,7 @@ public record VariableExpression(Variable variable, String name) implements Expr
         }
 
         Expression currentValue = builder.currentExpression(variable, forwardEvaluationInfo);
-        Expression adjustedScope = adjustScope(evaluationContext.getAnalyserContext(), scopeResult, currentValue);
+        Expression adjustedScope = adjustScope(evaluationContext, scopeResult, currentValue);
 
         builder.setExpression(adjustedScope);
 
@@ -232,7 +232,7 @@ public record VariableExpression(Variable variable, String name) implements Expr
 
         // having done all this, we do try for a shortcut
         if (scopeResult != null) {
-            Expression shortCut = tryShortCut(evaluationContext, scopeResult.value(), currentValue);
+            Expression shortCut = tryShortCut(evaluationContext, scopeResult.value(), adjustedScope);
             if (shortCut != null) {
                 builder.setExpression(shortCut);
             }
@@ -240,15 +240,26 @@ public record VariableExpression(Variable variable, String name) implements Expr
         return builder.build();
     }
 
-    private Expression adjustScope(InspectionProvider inspectionProvider, EvaluationResult scopeResult, Expression currentValue) {
+    private static Expression adjustScope(EvaluationContext evaluationContext,
+                                          EvaluationResult scopeResult,
+                                          Expression currentValue) {
         if (scopeResult != null) {
+            boolean scopeResultIsDelayed = evaluationContext.isDelayed(scopeResult.getExpression());
+            InspectionProvider inspectionProvider = evaluationContext.getAnalyserContext();
             if (currentValue instanceof VariableExpression ve
-                    && ve.variable() instanceof FieldReference fr && !fr.scope.equals(scopeResult.value())) {
-                return new VariableExpression(new FieldReference(inspectionProvider, fr.fieldInfo, scopeResult.getExpression()));
+                    && ve.variable() instanceof FieldReference fr
+                    && !fr.scope.equals(scopeResult.value())) {
+                if (!scopeResultIsDelayed) {
+                    return new VariableExpression(new FieldReference(inspectionProvider, fr.fieldInfo, scopeResult.getExpression()));
+                }
+                return DelayedVariableExpression.forField(fr);
             }
             if (currentValue instanceof DelayedVariableExpression ve
                     && ve.variable() instanceof FieldReference fr && !fr.scope.equals(scopeResult.value())) {
-                return DelayedVariableExpression.forField(new FieldReference(inspectionProvider, fr.fieldInfo, scopeResult.getExpression()));
+                if (!scopeResultIsDelayed) {
+                    return DelayedVariableExpression.forField(new FieldReference(inspectionProvider, fr.fieldInfo, scopeResult.getExpression()));
+                }
+                return DelayedVariableExpression.forField(fr);
             }
         }
         return currentValue;
@@ -300,7 +311,7 @@ public record VariableExpression(Variable variable, String name) implements Expr
         return List.of();
     }
 
-    private Expression tryShortCut(EvaluationContext evaluationContext, Expression scopeValue, Expression variableValue) {
+    private static Expression tryShortCut(EvaluationContext evaluationContext, Expression scopeValue, Expression variableValue) {
         if (variableValue instanceof VariableExpression ve && ve.variable instanceof FieldReference fr) {
             if (scopeValue instanceof NewObject newObject && newObject.constructor() != null) {
                 return extractNewObject(evaluationContext, newObject, fr.fieldInfo);
@@ -315,7 +326,7 @@ public record VariableExpression(Variable variable, String name) implements Expr
         return null;
     }
 
-    private Expression extractNewObject(EvaluationContext evaluationContext, NewObject newObject, FieldInfo
+    private static Expression extractNewObject(EvaluationContext evaluationContext, NewObject newObject, FieldInfo
             fieldInfo) {
         int i = 0;
         List<ParameterAnalysis> parameterAnalyses = evaluationContext

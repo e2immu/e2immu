@@ -133,7 +133,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                     .merge(other.staticallyAssignedVariables);
             LinkedVariables combinedLinked1Variables = linked1Variables.merge(other.linked1Variables);
             Set<Integer> combinedReadAtStatementTime = SetUtil.immutableUnion(readAtStatementTime, other.readAtStatementTime);
-            Map<VariableProperty, Integer> combinedProperties = VariableInfoImpl.mergeProperties(properties, other.properties);
+            Map<VariableProperty, Integer> combinedProperties = VariableInfoImpl.mergeIgnoreAbsent(properties, other.properties);
             return new ChangeData(other.value == null ? value : other.value,
                     other.stateIsDelayed,
                     other.markAssignment || markAssignment,
@@ -503,7 +503,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             assert evaluationContext != null;
 
             if (evaluationContext.isDelayed(currentExpression)) return; // not yet
-            // if we already know that the variable is NOT @NotNull, then we'll raise an error
+            // if we already know that the variable is NOT @NotModified1, then we'll raise an error
             int notModified1 = getNotModified1FromInitial(currentExpression);
             if (notModified1 == Level.FALSE) {
                 Message message = Message.newMessage(evaluationContext.getLocation(), Message.Label.MODIFICATION_NOT_ALLOWED, variable.simpleName());

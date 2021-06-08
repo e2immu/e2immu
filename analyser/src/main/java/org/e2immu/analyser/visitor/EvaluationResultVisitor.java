@@ -57,5 +57,10 @@ public interface EvaluationResultVisitor {
             return evaluationResult().getExpressionChangeStream().filter(e -> e.getKey().fullyQualifiedName().equals(variableName))
                     .map(Map.Entry::getValue).findFirst().orElseThrow();
         }
+
+        public EvaluationResult.ChangeData findValueChangeByToString(String variableName) {
+            return evaluationResult().getExpressionChangeStream().filter(e -> e.getKey().toString().equals(variableName))
+                    .map(Map.Entry::getValue).findFirst().orElseThrow();
+        }
     }
 }

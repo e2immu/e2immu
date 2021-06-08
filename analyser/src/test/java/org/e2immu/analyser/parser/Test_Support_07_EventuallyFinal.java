@@ -59,7 +59,7 @@ public class Test_Support_07_EventuallyFinal extends CommonTestRunner {
             if ("setFinal".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo value && "value".equals(value.name)) {
                     assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, d.getProperty(VariableProperty.IMMUTABLE));
-                    int expectExtImm = d.iteration() == 0 ? Level.DELAY : MultiLevel.NOT_INVOLVED;
+                    int expectExtImm = d.iteration() <= 1 ? Level.DELAY : MultiLevel.NOT_INVOLVED;
                     assertEquals(expectExtImm, d.getProperty(VariableProperty.EXTERNAL_IMMUTABLE));
                 }
                 if (d.variable() instanceof FieldReference fr && "value".equals(fr.fieldInfo.name)) {
@@ -69,7 +69,7 @@ public class Test_Support_07_EventuallyFinal extends CommonTestRunner {
                     }
                 }
                 if (d.variable() instanceof This) {
-                    int expectImm = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EFFECTIVELY_E2IMMUTABLE;
+                    int expectImm = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EVENTUALLY_E2IMMUTABLE;
                     assertEquals(expectImm, d.variableInfoContainer().getPreviousOrInitial()
                             .getProperty(VariableProperty.IMMUTABLE), "Statement " + d.statementId());
                     assertEquals(expectImm, d.getProperty(VariableProperty.IMMUTABLE),

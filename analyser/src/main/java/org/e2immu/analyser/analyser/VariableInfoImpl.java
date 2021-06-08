@@ -85,7 +85,7 @@ class VariableInfoImpl implements VariableInfo {
             this.statementTime.set(statementTime);
         }
         this.readAtStatementTimes = Objects.requireNonNull(readAtStatementTimes);
-        value.setVariable(delayedValue == null ? DelayedVariableExpression.forVariable(variable): delayedValue);
+        value.setVariable(delayedValue == null ? DelayedVariableExpression.forVariable(variable) : delayedValue);
     }
 
     @Override
@@ -275,6 +275,7 @@ class VariableInfoImpl implements VariableInfo {
             new MergeOp(CONTEXT_MODIFIED_DELAY, Math::max, Level.DELAY),
             new MergeOp(PROPAGATE_MODIFICATION_DELAY, Math::max, Level.DELAY),
             new MergeOp(CONTEXT_NOT_NULL_DELAY, Math::max, Level.DELAY),
+            new MergeOp(CONTEXT_IMMUTABLE_DELAY, Math::max, Level.DELAY),
 
             new MergeOp(CONTEXT_NOT_NULL_FOR_PARENT, Math::max, Level.DELAY),
             new MergeOp(CONTEXT_NOT_NULL_FOR_PARENT_DELAY, Math::max, Level.DELAY),
@@ -485,6 +486,34 @@ class VariableInfoImpl implements VariableInfo {
             int v = mergeOp.operator.applyAsInt(v1, v2);
             if (v > Level.DELAY) {
                 map.put(mergeOp.variableProperty, v);
+            }
+        }
+        return Map.copyOf(map);
+    }
+
+
+    public static Map<VariableProperty, Integer> mergeIgnoreAbsent
+            (Map<VariableProperty, Integer> m1, Map<VariableProperty, Integer> m2) {
+        if (m2.isEmpty()) return m1;
+        if (m1.isEmpty()) return m2;
+        Map<VariableProperty, Integer> map = new HashMap<>();
+        for (MergeOp mergeOp : MERGE) {
+            Integer v1 = m1.getOrDefault(mergeOp.variableProperty, null);
+            Integer v2 = m2.getOrDefault(mergeOp.variableProperty, null);
+
+            if (v1 == null) {
+                if (v2 != null) {
+                    map.put(mergeOp.variableProperty, v2);
+                }
+            } else {
+                if (v2 == null) {
+                    map.put(mergeOp.variableProperty, v1);
+                } else {
+                    int v = mergeOp.operator.applyAsInt(v1, v2);
+                    if (v > Level.DELAY) {
+                        map.put(mergeOp.variableProperty, v);
+                    }
+                }
             }
         }
         return Map.copyOf(map);

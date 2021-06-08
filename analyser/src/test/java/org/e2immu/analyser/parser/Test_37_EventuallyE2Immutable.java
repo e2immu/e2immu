@@ -230,8 +230,23 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
                 }
             }
         };
+
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("error4".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ParameterInfo other && "other".equals(other.name)) {
+                    if ("0".equals(d.statementId())) {
+                        String expectValue = d.iteration() <= 1 ? "<p:other>" : "instance type EventuallyE2Immutable_3<T>";
+                        assertEquals(expectValue, d.currentValue().toString());
+                        int expectCImm = d.iteration() <= 2 ? Level.DELAY : MultiLevel.EVENTUALLY_E2IMMUTABLE_AFTER_MARK;
+                        assertEquals(expectCImm, d.getProperty(VariableProperty.CONTEXT_IMMUTABLE));
+                    }
+                }
+            }
+        };
+
         testClass("EventuallyE2Immutable_3", 4, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 
