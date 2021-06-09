@@ -37,9 +37,10 @@ public class Test_58_GuideSimplified extends CommonTestRunner {
     }
 
     // original minus some dependencies
+    // minimal, debug should be marked static
     @Test
     public void test_0() throws IOException {
-        testClass("GuideSimplified_0", 0, 0, new DebugConfiguration.Builder()
+        testClass("GuideSimplified_0", 2, 0, new DebugConfiguration.Builder()
                 .build());
     }
 
@@ -52,7 +53,8 @@ public class Test_58_GuideSimplified extends CommonTestRunner {
 
     @Test
     public void test_2() throws IOException {
-        testClass("GuideSimplified_2", 0, 0, new DebugConfiguration.Builder()
+        // minimal, debug should be marked static
+        testClass("GuideSimplified_2", 2, 0, new DebugConfiguration.Builder()
                 .build());
     }
 
@@ -61,7 +63,7 @@ public class Test_58_GuideSimplified extends CommonTestRunner {
     public void test_3() throws IOException {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("Position".equals(d.typeInfo().simpleName)) {
-                int expectImmutable = d.iteration() <= 2 ? Level.DELAY : MultiLevel.EFFECTIVELY_E2IMMUTABLE;
+                int expectImmutable = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_E2IMMUTABLE;
                 assertEquals(expectImmutable, d.typeAnalysis().getProperty(VariableProperty.IMMUTABLE));
             }
         };
