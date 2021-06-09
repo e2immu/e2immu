@@ -7,7 +7,7 @@ public class Assert_0 {
     @NotNull
     private final Object object;
 
-    public Assert_0(Object object) {
+    public Assert_0(@NotNull Object object) {
         this.object = object;
         assert object != null;
     }

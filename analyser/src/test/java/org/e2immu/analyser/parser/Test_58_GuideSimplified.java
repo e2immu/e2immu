@@ -231,7 +231,6 @@ public class Test_58_GuideSimplified extends CommonTestRunner {
             if ("GuideSimplified_5".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo p && "position".equals(p.name)) {
                     if ("2".equals(d.statementId())) {
-                        // goes into precondition
                         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
                     }
                 }

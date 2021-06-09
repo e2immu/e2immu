@@ -25,7 +25,7 @@ public class Test_59_Assert extends CommonTestRunner {
         super(false);
     }
 
-    // translation of precondition to field fails
+    // translation of precondition to parameter, and then to the field, fails
     @Test
     public void test_0() throws IOException {
         testClass("Assert_0", 0, 0, new DebugConfiguration.Builder()

@@ -122,6 +122,15 @@ public interface Expression extends Element, Comparable<Expression> {
         return false;
     }
 
+    default boolean equalsNotNull() {
+        if (!(this instanceof Negation negation)) return false;
+        Equals equals;
+        if ((equals = negation.expression.asInstanceOf(Equals.class)) != null) {
+            return equals.lhs.isNull();
+        }
+        return false;
+    }
+
     default boolean isComputeProperties() {
         return !(this instanceof UnknownExpression);
     }

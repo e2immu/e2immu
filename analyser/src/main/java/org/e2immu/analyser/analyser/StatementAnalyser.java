@@ -1414,34 +1414,9 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             for (Variable nullVariable : nullVariables) {
                 log(PRECONDITION, "Escape with check not null on {}", nullVariable.fullyQualifiedName());
 
-                // move from condition (x!=null) to property
-                VariableInfoContainer vic = statementAnalysis.findForWriting(nullVariable);
-                if (!vic.hasEvaluation()) {
-                    VariableInfo initial = vic.getPreviousOrInitial();
-                    vic.ensureEvaluation(initial.getAssignmentId(), initial.getReadId(), initial.getStatementTime(), initial.getReadAtStatementTimes());
-                }
-                if (delays) {
-                    vic.setProperty(CONTEXT_NOT_NULL_FOR_PARENT_DELAY, Level.TRUE, EVALUATION);
-                } else {
-                    vic.setProperty(CONTEXT_NOT_NULL_FOR_PARENT_DELAY_RESOLVED, Level.TRUE, EVALUATION);
-                    if (escapeAlwaysExecuted == Boolean.TRUE) {
-                        vic.setProperty(CONTEXT_NOT_NULL_FOR_PARENT, MultiLevel.EFFECTIVELY_NOT_NULL, EVALUATION);
-                    }
-                }
+                ensureContextNotNullForParent(nullVariable, delays, escapeAlwaysExecuted == Boolean.TRUE);
                 if (nullVariable instanceof LocalVariableReference lvr && lvr.variable.isLocalCopyOf() instanceof FieldReference fr) {
-                    VariableInfoContainer vicF = statementAnalysis.findForWriting(fr);
-                    if (!vicF.hasEvaluation()) {
-                        VariableInfo initial = vicF.getPreviousOrInitial();
-                        vicF.ensureEvaluation(initial.getAssignmentId(), initial.getReadId(), initial.getStatementTime(), initial.getReadAtStatementTimes());
-                    }
-                    if (delays) {
-                        vicF.setProperty(CONTEXT_NOT_NULL_FOR_PARENT_DELAY, Level.TRUE, EVALUATION);
-                    } else {
-                        vicF.setProperty(CONTEXT_NOT_NULL_FOR_PARENT_DELAY_RESOLVED, Level.TRUE, EVALUATION);
-                        if (escapeAlwaysExecuted == Boolean.TRUE) {
-                            vicF.setProperty(CONTEXT_NOT_NULL_FOR_PARENT, MultiLevel.EFFECTIVELY_NOT_NULL, EVALUATION);
-                        }
-                    }
+                    ensureContextNotNullForParent(fr, delays, escapeAlwaysExecuted == Boolean.TRUE);
                 }
             }
             if (escapeAlwaysExecuted == Boolean.TRUE) {
@@ -1467,6 +1442,23 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             return DELAYS;
         }
         return DONE;
+    }
+
+    private void ensureContextNotNullForParent(Variable nullVariable, boolean delays, boolean notifyParent) {
+        // move from condition (x!=null) to property
+        VariableInfoContainer vic = statementAnalysis.findForWriting(nullVariable);
+        if (!vic.hasEvaluation()) {
+            VariableInfo initial = vic.getPreviousOrInitial();
+            vic.ensureEvaluation(initial.getAssignmentId(), initial.getReadId(), initial.getStatementTime(), initial.getReadAtStatementTimes());
+        }
+        if (delays) {
+            vic.setProperty(CONTEXT_NOT_NULL_FOR_PARENT_DELAY, Level.TRUE, EVALUATION);
+        } else {
+            vic.setProperty(CONTEXT_NOT_NULL_FOR_PARENT_DELAY_RESOLVED, Level.TRUE, EVALUATION);
+            if (notifyParent) {
+                vic.setProperty(CONTEXT_NOT_NULL_FOR_PARENT, MultiLevel.EFFECTIVELY_NOT_NULL, EVALUATION);
+            }
+        }
     }
 
     /*
@@ -1769,6 +1761,9 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             } else {
                 result = toEvaluate.evaluate(sharedState.evaluationContext, structure.forwardEvaluationInfo());
             }
+            if (statementAnalysis.statement instanceof AssertStatement) {
+                result = handleNotNullClausesInAssertStatement(sharedState.evaluationContext, result);
+            }
             if (statementAnalysis.flowData.timeAfterExecutionNotYetSet()) {
                 statementAnalysis.flowData.setTimeAfterEvaluation(result.statementTime(), index());
             }
@@ -1818,6 +1813,30 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             LOGGER.warn("Failed to evaluate main expression in statement {}", statementAnalysis.index);
             throw rte;
         }
+    }
+
+    private EvaluationResult handleNotNullClausesInAssertStatement(EvaluationContext evaluationContext,
+                                                                   EvaluationResult evaluationResult) {
+        Expression expression = evaluationResult.getExpression();
+        boolean expressionIsDelayed = evaluationContext.isDelayed(expression);
+        Filter.FilterResult<ParameterInfo> result = moveConditionToParameter(evaluationContext, expression, expressionIsDelayed);
+        if (result != null) {
+            EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
+            boolean changes = false;
+            for (Map.Entry<ParameterInfo, Expression> e : result.accepted().entrySet()) {
+                boolean isNotNull = e.getValue().equalsNotNull();
+                Variable notNullVariable = e.getKey();
+                log(ANALYSER, "Found parameter (not)null ({}) assertion, {}", isNotNull, notNullVariable.simpleName());
+                if (isNotNull) {
+                    builder.setProperty(notNullVariable, CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
+                    changes = true;
+                }
+            }
+            if (changes) {
+                return builder.setExpression(evaluationResult.getExpression()).compose(evaluationResult).build();
+            }
+        }
+        return evaluationResult;
     }
 
     private Expression replaceExplicitConstructorInvocation(SharedState sharedState,
@@ -1991,11 +2010,18 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         if (statementAnalysis.statement instanceof AssertStatement) {
             Expression assertion = statementAnalysis.stateData.valueOfExpression.get();
             boolean expressionIsDelayed = statementAnalysis.stateData.valueOfExpression.isVariable();
-            Expression translated = Objects.requireNonNullElse(
-                    sharedState.evaluationContext.acceptAndTranslatePrecondition(assertion),
-                    new BooleanConstant(statementAnalysis.primitives, true));
-            Precondition pc = new Precondition(translated, List.of(new Precondition.EscapeCause()));
-            statementAnalysis.stateData.setPrecondition(pc, expressionIsDelayed);
+
+            if (moveConditionToParameter(sharedState.evaluationContext, assertion, expressionIsDelayed) == null) {
+                Expression translated = Objects.requireNonNullElse(
+                        sharedState.evaluationContext.acceptAndTranslatePrecondition(assertion),
+                        new BooleanConstant(statementAnalysis.primitives, true));
+                Precondition pc = new Precondition(translated, List.of(new Precondition.EscapeCause()));
+                statementAnalysis.stateData.setPrecondition(pc, expressionIsDelayed);
+            } else {
+                // the null/not null of parameters has been handled during the main evaluation
+                statementAnalysis.stateData.setPrecondition(Precondition.empty(statementAnalysis.primitives),
+                        expressionIsDelayed);
+            }
 
             if (expressionIsDelayed) {
                 analysisStatus = DELAYS;
@@ -2008,6 +2034,15 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
 
         statementAnalysis.stateData.setLocalConditionManagerForNextStatement(sharedState.localConditionManager);
         return analysisStatus;
+    }
+
+    private Filter.FilterResult<ParameterInfo> moveConditionToParameter(EvaluationContext evaluationContext, Expression expression, boolean expressionIsDelayed) {
+        Filter filter = new Filter(evaluationContext, Filter.FilterMode.ACCEPT);
+        Filter.FilterResult<ParameterInfo> result = filter.filter(expression, filter.individualNullOrNotNullClauseOnParameter());
+        if (result != null && !result.accepted().isEmpty() && result.rest().isBoolValueTrue()) {
+            return result;
+        }
+        return null;
     }
 
     public StatementAnalyser navigateTo(String index) {

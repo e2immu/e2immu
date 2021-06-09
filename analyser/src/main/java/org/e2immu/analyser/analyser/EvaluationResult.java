@@ -205,11 +205,12 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             return this;
         }
 
-        public void composeIgnoreExpression(EvaluationResult... previousResults) {
+        public Builder composeIgnoreExpression(EvaluationResult... previousResults) {
             assert previousResults != null;
             for (EvaluationResult evaluationResult : previousResults) {
                 append(true, evaluationResult);
             }
+            return this;
         }
 
         public Builder compose(Iterable<EvaluationResult> previousResults) {
