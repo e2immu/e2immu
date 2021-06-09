@@ -28,6 +28,7 @@ simplest modification of Modification_11 that causes delay problems.
 
 This is an infinite delay.
 
+TODO at the moment, C
  */
 public class Modification_20 {
 
@@ -47,7 +48,8 @@ public class Modification_20 {
         return addAll(c.set, localD.set);
     }
 
+    // non-modifying as compared to modifying in _19
     private static boolean addAll(Set<String> c, Set<String> d) {
-        return true;//c.addAll(d);
+        return c.size() == d.size();
     }
 }

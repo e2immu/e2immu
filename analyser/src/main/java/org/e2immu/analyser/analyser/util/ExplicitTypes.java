@@ -18,7 +18,10 @@ import org.e2immu.analyser.analyser.AnalysisProvider;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.inspector.TypeInspectionImpl;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.expression.*;
+import org.e2immu.analyser.model.expression.Cast;
+import org.e2immu.analyser.model.expression.MethodCall;
+import org.e2immu.analyser.model.expression.NewObject;
+import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.statement.ForEachStatement;
 import org.e2immu.analyser.model.statement.SwitchStatementNewStyle;
 import org.e2immu.analyser.model.variable.FieldReference;
@@ -46,16 +49,18 @@ public class ExplicitTypes {
 
     public ExplicitTypes(AnalysisProvider analysisProvider,
                          InspectionProvider inspectionProvider,
-                         TypeInspection typeInspection,
                          TypeInfo typeBeingAnalysed) {
         this.analysisProvider = analysisProvider;
         this.inspectionProvider = inspectionProvider;
         this.typeBeingAnalysed = typeBeingAnalysed;
+    }
 
+    public ExplicitTypes go(TypeInspection typeInspection) {
         // handles SAMs of fields as well
         typeInspection.methodsAndConstructors(TypeInspectionImpl.Methods.THIS_TYPE_ONLY)
                 .forEach(this::explicitTypes);
         typeInspection.fields().forEach(this::explicitTypes);
+        return this;
     }
 
     public Map<ParameterizedType, Set<UsedAs>> getResult() {

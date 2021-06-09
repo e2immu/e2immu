@@ -249,7 +249,7 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
         log(IMMUTABLE_LOG, "Types of fields, methods and constructors: {}", typesOfFields);
 
         Map<ParameterizedType, Set<ExplicitTypes.UsedAs>> explicitTypes =
-                new ExplicitTypes(analyserContext, analyserContext, typeInspection, typeInfo).getResult();
+                new ExplicitTypes(analyserContext, analyserContext, typeInfo).go(typeInspection).getResult();
         Set<ParameterizedType> explicitTypesAsSet = explicitTypes.entrySet().stream()
                 .filter(e -> !e.getValue().equals(Set.of(ExplicitTypes.UsedAs.CAST_TO_E2IMMU)))
                 .map(Map.Entry::getKey).collect(Collectors.toSet());

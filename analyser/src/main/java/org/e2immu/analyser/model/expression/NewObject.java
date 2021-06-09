@@ -307,7 +307,7 @@ public record NewObject(
     }
 
     /*
-     * Rules, assuming the notation b = new B(c, d)
+     * Rules, assuming the notation a = new B(c, d)
      *
      * 1. no explicit constructor, no parameters: independent (static or not, doesn't matter)
      * 2. constructor is @Independent: independent
@@ -339,7 +339,7 @@ public record NewObject(
         }
 
         boolean notSelf = constructor.typeInfo != evaluationContext.getCurrentType();
-        boolean beingAnalysed = constructor.typeInfo.shallowAnalysis();
+        boolean beingAnalysed = !constructor.typeInfo.shallowAnalysis();
         if (notSelf && beingAnalysed) {
             if (independent == Level.DELAY) return LinkedVariables.DELAY;
             if (immutable == MultiLevel.DELAY) return LinkedVariables.DELAY;

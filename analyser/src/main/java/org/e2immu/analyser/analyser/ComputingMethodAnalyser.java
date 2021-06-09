@@ -906,38 +906,29 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
             // TODO check ExplicitConstructorInvocations
 
             // PART 2: check parameters, but remove those that are recursively of my own type
-            List<ParameterInfo> parameters = new ArrayList<>(methodInfo.methodInspection.get().getParameters());
+            Set<ParameterInfo> parameters = new HashSet<>(methodInfo.methodInspection.get().getParameters());
             parameters.removeIf(pi -> pi.parameterizedType.typeInfo == methodInfo.typeInfo);
 
-            boolean allLinkedVariablesSet = methodAnalysis.getLastStatement().variableStream()
-                    .filter(vi -> vi.variable() instanceof FieldReference)
-                    .allMatch(vi -> vi.getLinkedVariables() != LinkedVariables.DELAY);
-            if (!allLinkedVariablesSet) {
-                log(DELAYED, "Delaying @Independent on {}, linked variables not yet known for all field references", methodInfo.distinguishingName());
-                return DELAYS;
-            }
-            boolean supportDataSet = methodAnalysis.getLastStatement().variableStream()
-                    .filter(vi -> vi.variable() instanceof FieldReference)
-                    .flatMap(vi -> vi.getLinkedVariables().variables().stream())
-                    .allMatch(v -> isImplicitlyImmutableDataTypeSet(v, analyserContext));
-            if (!supportDataSet) {
-                log(DELAYED, "Delaying @Independent on {}, support data not yet known for all field references", methodInfo.distinguishingName());
-                return DELAYS;
-            }
+            int independentViaLinkedVariables = computeConstructorIndependenceViaLinkedVariables(parameters);
+            int independentViaStaticallyAssignedVariables = computeConstructorIndependenceViaStaticallyAssignedVariables(parameters);
 
-            parametersIndependentOfFields = methodAnalysis.getLastStatement().variableStream()
-                    .filter(vi -> vi.variable() instanceof FieldReference)
-                    .peek(vi -> {
-                        if (vi.getLinkedVariables() == LinkedVariables.DELAY)
-                            LOGGER.warn("Field {} has no linked variables set in {}", vi.name(), methodInfo.distinguishingName());
-                    })
-                    .flatMap(vi -> vi.getLinkedVariables().variables().stream())
-                    .filter(v -> v instanceof ParameterInfo)
-                    .map(v -> (ParameterInfo) v)
-                    .peek(set -> log(LINKED_VARIABLES, "Remaining linked support variables of {} are {}", methodInfo.distinguishingName(), set))
-                    .noneMatch(parameters::contains) ? MultiLevel.INDEPENDENT : MultiLevel.DEPENDENT;
-
-        } else parametersIndependentOfFields = MultiLevel.INDEPENDENT;
+            if (independentViaLinkedVariables == MultiLevel.DEPENDENT || independentViaStaticallyAssignedVariables == MultiLevel.DEPENDENT) {
+                parametersIndependentOfFields = MultiLevel.DEPENDENT; // do not care about delays on the other one
+            } else {
+                if (independentViaLinkedVariables == Level.DELAY || independentViaStaticallyAssignedVariables == Level.DELAY) {
+                    if (independentViaLinkedVariables == Level.DELAY) {
+                        log(DELAYED, "Delaying @Independent on {}, linked variables not yet known for all field references", methodInfo.distinguishingName());
+                    }
+                    if (independentViaStaticallyAssignedVariables == Level.DELAY) {
+                        log(DELAYED, "Delaying @Independent on {}, statically assigned variables not yet fully known for all field references", methodInfo.distinguishingName());
+                    }
+                    return DELAYS;
+                }
+                parametersIndependentOfFields = MultiLevel.INDEPENDENT;
+            }
+        } else {
+            parametersIndependentOfFields = MultiLevel.INDEPENDENT;
+        }
 
         // conclusion
 
@@ -946,6 +937,63 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
         log(INDEPENDENCE, "Mark method/constructor {} @Independent {}",
                 methodInfo.fullyQualifiedName(), independent);
         return DONE;
+    }
+
+    private int computeConstructorIndependenceViaStaticallyAssignedVariables(Set<ParameterInfo> parameters) {
+        Optional<VariableInfo> staticallyAssignedDelayed = methodAnalysis.getLastStatement().variableStream()
+                .filter(vi -> vi.variable() instanceof FieldReference)
+                .filter(vi -> vi.getStaticallyAssignedVariables() == LinkedVariables.DELAY)
+                .findFirst();
+        if (staticallyAssignedDelayed.isPresent()) {
+            return Level.DELAY;
+        }
+
+        Optional<VariableInfo> implicitlyImmutableNotSet = methodAnalysis.getLastStatement().variableStream()
+                .filter(vi -> vi.variable() instanceof FieldReference)
+                .filter(vi -> !isImplicitlyImmutableDataTypeSet(vi.variable(), analyserContext))
+                .findFirst();
+        if (implicitlyImmutableNotSet.isPresent()) {
+            return Level.DELAY;
+        }
+
+        Optional<Variable> immutableNotKnown = methodAnalysis.getLastStatement().variableStream()
+                .filter(vi -> vi.variable() instanceof FieldReference)
+                .flatMap(vi -> vi.getStaticallyAssignedVariables().variables().stream())
+                .filter(v -> v.parameterizedType().defaultImmutable(analyserContext) == Level.DELAY)
+                .findFirst();
+        if (immutableNotKnown.isPresent()) {
+            return Level.DELAY;
+        }
+
+        Optional<ParameterInfo> nonImmutableStaticallyAssignedToParameter =
+                methodAnalysis.getLastStatement().variableStream()
+                        .filter(vi -> vi.variable() instanceof FieldReference)
+                        .filter(vi -> isFieldOfImplicitlyImmutableType(vi.variable(), analyserContext))
+                        .flatMap(vi -> vi.getStaticallyAssignedVariables().variables().stream())
+                        .filter(v -> v instanceof ParameterInfo)
+                        .filter(v -> v.parameterizedType().defaultImmutable(analyserContext) != MultiLevel.EFFECTIVELY_E2IMMUTABLE)
+                        .map(v -> (ParameterInfo) v)
+                        .filter(parameters::contains)
+                        .findFirst();
+        return nonImmutableStaticallyAssignedToParameter.isPresent() ? MultiLevel.DEPENDENT : MultiLevel.INDEPENDENT;
+    }
+
+    private int computeConstructorIndependenceViaLinkedVariables(Set<ParameterInfo> parameters) {
+        boolean allLinkedVariablesSet = methodAnalysis.getLastStatement().variableStream()
+                .filter(vi -> vi.variable() instanceof FieldReference)
+                .allMatch(vi -> vi.getLinkedVariables() != LinkedVariables.DELAY);
+        if (!allLinkedVariablesSet) {
+            return Level.DELAY;
+        }
+
+        boolean independentViaLinkingToParameter = methodAnalysis.getLastStatement().variableStream()
+                .filter(vi -> vi.variable() instanceof FieldReference)
+                .flatMap(vi -> vi.getLinkedVariables().variables().stream())
+                .filter(v -> v instanceof ParameterInfo)
+                .map(v -> (ParameterInfo) v)
+                .noneMatch(parameters::contains);
+
+        return independentViaLinkingToParameter ? MultiLevel.INDEPENDENT : MultiLevel.DEPENDENT;
     }
 
     private int independenceStatusOfReturnType(MethodInfo methodInfo, MethodLevelData methodLevelData) {

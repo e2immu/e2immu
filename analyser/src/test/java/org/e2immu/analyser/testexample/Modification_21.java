@@ -20,23 +20,20 @@ import java.util.HashSet;
 import java.util.Set;
 
 /*
-Here, Set<String> is not implicitly immutable in C1, so there is a link between c and s2.
-See Modification_21 where the size() method is not present.
+Infinite loop is broken, but too harshly.
+There is no link between c and s2, because Set<String> is implicitly immutable in C1 (TODO, not quite correct!)
  */
-public class Modification_19 {
+public class Modification_21 {
 
     final Set<String> s2 = new HashSet<>();
 
+    // implicitly immutable
     static class C1 {
         @Modified
         final Set<String> set;
 
         C1(@Modified Set<String> setC) {
             this.set = setC;
-        }
-
-        int size() {
-            return set.size(); // not implicitly immutable
         }
     }
 
