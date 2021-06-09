@@ -130,12 +130,6 @@ public class Negation extends UnaryOperator implements ExpressionWrapper {
         return expression.variables();
     }
 
-    @Override
-    public void visit(Predicate<Expression> predicate) {
-        if (predicate.test(this)) {
-            expression.visit(predicate);
-        }
-    }
 
     @Override
     public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty, boolean duringEvaluation) {

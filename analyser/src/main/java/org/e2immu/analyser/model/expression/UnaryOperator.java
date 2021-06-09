@@ -28,6 +28,7 @@ import org.e2immu.annotation.NotNull;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Predicate;
 
 public class UnaryOperator implements Expression {
     public final Expression expression;
@@ -168,6 +169,13 @@ public class UnaryOperator implements Expression {
     @Override
     public List<? extends Element> subElements() {
         return List.of(expression);
+    }
+
+    @Override
+    public void visit(Predicate<Expression> predicate) {
+        if (predicate.test(this)) {
+            expression.visit(predicate);
+        }
     }
 
     @Override

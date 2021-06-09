@@ -2510,7 +2510,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 && eas.expression instanceof MethodCall methodCall
                 && myMethodAnalyser.methodInfo.isNotATestMethod()) {
             if (Primitives.isVoidOrJavaLangVoid(methodCall.methodInfo.returnType())) return DONE;
-            MethodAnalysis methodAnalysis = getMethodAnalysis(methodCall.methodInfo);
+            MethodAnalysis methodAnalysis = analyserContext.getMethodAnalysis(methodCall.methodInfo);
             int identity = methodAnalysis.getProperty(VariableProperty.IDENTITY);
             if (identity == Level.DELAY) {
                 log(DELAYED, "Delaying unused return value in {} {}, waiting for @Identity of {}",
@@ -2532,10 +2532,6 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         return DONE;
     }
 
-    public MethodAnalysis getMethodAnalysis(MethodInfo methodInfo) {
-        MethodAnalyser methodAnalyser = analyserContext.getMethodAnalyser(methodInfo);
-        return methodAnalyser != null ? methodAnalyser.methodAnalysis : methodInfo.methodAnalysis.get();
-    }
 
     public List<StatementAnalyser> lastStatementsOfNonEmptySubBlocks() {
         return navigationData.blocks.get().stream()
