@@ -56,36 +56,6 @@ public class Test_45_Project_AAPI extends CommonTestRunner {
      */
     @Test
     public void test_2() throws IOException {
-        final String CONTAINER = "[org.e2immu.analyser.testexample.Project_2.Container.Container(java.lang.String)]";
-
-        EvaluationResultVisitor evaluationResultVisitor = d -> {
-            if ("set".equals(d.methodInfo().name)) {
-                if ("1.0.0".equals(d.statementId())) {
-                    String expect = d.iteration() == 0 ? CONTAINER : "[]";
-                    assertEquals(expect, d.evaluationResult().causesOfContextModificationDelay().toString());
-                }
-            }
-        };
-
-        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
-            if ("set".equals(d.methodInfo().name)) {
-                if ("1.0.0".equals(d.statementId())) {
-                    String expect = d.iteration() <= 1 ? CONTAINER : "[]";
-                    assertEquals(expect, d.statementAnalysis().methodLevelData
-                            .getCausesOfContextModificationDelay().toString());
-                }
-                if ("1".equals(d.statementId())) { // test the merge
-                    String expect = d.iteration() == 0 ? CONTAINER : "[]";
-                    assertEquals(expect, d.statementAnalysis().methodLevelData
-                            .getCausesOfContextModificationDelay().toString());
-                }
-                if ("2".equals(d.statementId())) { // test the normal propagation
-                    String expect = d.iteration() == 0 ? CONTAINER : "[]";
-                    assertEquals(expect, d.statementAnalysis().methodLevelData
-                            .getCausesOfContextModificationDelay().toString());
-                }
-            }
-        };
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("value".equals(d.fieldInfo().name)) {
@@ -114,8 +84,6 @@ public class Test_45_Project_AAPI extends CommonTestRunner {
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addTypeMapVisitor(typeMapVisitor)
-                .addEvaluationResultVisitor(evaluationResultVisitor)
-                .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build());
     }
 

@@ -48,6 +48,7 @@ public class EvaluateParameters {
         int minNotNullOverParameters = MultiLevel.EFFECTIVELY_NOT_NULL;
 
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
+        builder.causeOfContextModificationDelay(methodInfo, false); // will be overwritten when there's a delay
 
         for (Expression parameterExpression : parameterExpressions) {
             Expression parameterValue;
@@ -109,6 +110,9 @@ public class EvaluateParameters {
                             map.put(VariableProperty.CONTEXT_MODIFIED, Level.FALSE);
                         } else {
                             map.put(VariableProperty.CONTEXT_MODIFIED_DELAY, Level.TRUE);
+                            assert evaluationContext.createDelay(parameterInfo.fullyQualifiedName(),
+                                    methodInfo.fullyQualifiedName + DelayDebugger.D_CAUSES_OF_CONTENT_MODIFICATION_DELAY);
+                            builder.causeOfContextModificationDelay(methodInfo, true);
                         }
                     }
                 }
@@ -118,9 +122,6 @@ public class EvaluateParameters {
                         map.put(VariableProperty.CONTEXT_NOT_NULL, MultiLevel.NULLABLE); // won't be me to rock the boat
                     } else {
                         map.put(VariableProperty.CONTEXT_NOT_NULL_DELAY, Level.TRUE);
-                        assert evaluationContext.createDelay(parameterInfo.fullyQualifiedName(),
-                                methodInfo.fullyQualifiedName+ DelayDebugger.D_CAUSES_OF_CONTENT_MODIFICATION_DELAY);
-                        builder.causeOfContextModificationDelay(methodInfo);
                     }
                 }
 
@@ -131,6 +132,7 @@ public class EvaluateParameters {
                                     evaluationContext.getCurrentType());
                     if (cannotBeModified == null) {
                         map.put(VariableProperty.CONTEXT_MODIFIED_DELAY, Level.TRUE); // DELAY
+                        builder.causeOfContextModificationDelay(methodInfo, true);
                     } else if (cannotBeModified) {
                         map.put(VariableProperty.CONTEXT_MODIFIED, Level.FALSE);
                     }

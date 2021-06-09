@@ -644,10 +644,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         if (evaluationResult.addCircularCall()) {
             statementAnalysis.methodLevelData.addCircularCall();
         }
-        if (statementAnalysis.methodLevelData.causesOfContextModificationDelayIsVariable()) {
-            statementAnalysis.methodLevelData.causesOfContextModificationDelayAddVariable(evaluationResult
-                    .causesOfContextModificationDelay());
-        }
+
         GroupPropertyValues groupPropertyValues = new GroupPropertyValues();
         Map<Variable, LinkedVariables> remapStaticallyAssignedVariables = new HashMap<>();
 
@@ -877,6 +874,11 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         AnalysisStatus cmStatus = contextPropertyWriter4.write(statementAnalysis, sharedState.evaluationContext,
                 VariableInfo::getLinkedVariables,
                 CONTEXT_MODIFIED, groupPropertyValues.getMap(CONTEXT_MODIFIED), EVALUATION, Set.of());
+
+        if (statementAnalysis.methodLevelData.causesOfContextModificationDelayIsVariable()) {
+            statementAnalysis.methodLevelData.causesOfContextModificationDelayAddVariable(evaluationResult
+                    .causesOfContextModificationDelay(), true);// FIXME cmStatus == DONE);
+        }
         status = cmStatus.combine(status);
 
 

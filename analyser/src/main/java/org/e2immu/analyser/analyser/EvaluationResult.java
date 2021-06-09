@@ -64,7 +64,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                                Precondition precondition,
                                Expression untranslatedPrecondition,
                                boolean addCircularCall,
-                               Set<WithInspectionAndAnalysis> causesOfContextModificationDelay) {
+                               Map<WithInspectionAndAnalysis, Boolean> causesOfContextModificationDelay) {
 
     public EvaluationResult {
         assert changeData.values().stream().noneMatch(ecd -> ecd.linkedVariables == null);
@@ -185,7 +185,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
         private Expression untranslatedPrecondition;
         private boolean addCircularCallOrUndeclaredFunctionalInterface;
         private boolean someValueWasDelayed;
-        private final Set<WithInspectionAndAnalysis> causesOfContextModificationDelays = new HashSet<>();
+        private final Map<WithInspectionAndAnalysis, Boolean> causesOfContextModificationDelays = new HashMap<>();
 
         // for a constant EvaluationResult
         public Builder() {
@@ -252,7 +252,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                     untranslatedPrecondition = combinePrecondition(untranslatedPrecondition, evaluationResult.untranslatedPrecondition);
                 }
             }
-            causesOfContextModificationDelays.addAll(evaluationResult.causesOfContextModificationDelay);
+            causesOfContextModificationDelays.putAll(evaluationResult.causesOfContextModificationDelay);
         }
 
         public void incrementStatementTime() {
@@ -284,7 +284,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                     messages, valueChanges, precondition,
                     untranslatedPrecondition,
                     addCircularCallOrUndeclaredFunctionalInterface,
-                    Set.copyOf(causesOfContextModificationDelays));
+                    Map.copyOf(causesOfContextModificationDelays));
         }
 
         /**
@@ -697,8 +697,11 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             setProperty(variable, VariableProperty.CONTEXT_PROPAGATE_MOD, Level.TRUE);
         }
 
-        public void causeOfContextModificationDelay(MethodInfo methodInfo) {
-            causesOfContextModificationDelays.add(methodInfo);
+        // can be called for multiple parameters, a value of 'true' should always survive
+        public void causeOfContextModificationDelay(MethodInfo methodInfo, boolean delay) {
+            if (methodInfo != null) {
+                causesOfContextModificationDelays.merge(methodInfo, delay, (orig, val) -> orig || val);
+            }
         }
     }
 }

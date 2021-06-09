@@ -281,6 +281,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         int modified = alwaysModifying ? Level.TRUE : recursiveCall || partOfCallCycle ||
                 propagateModification ? Level.FALSE : modifiedMethod;
         int contextModifiedDelay = Level.fromBool(modified == Level.DELAY);
+        builder.causeOfContextModificationDelay(methodInfo, modified == Level.DELAY);
 
         // effectively not null is the default, but when we're in a not null situation, we can demand effectively content not null
         int notNullForward = notNullRequirementOnScope(forwardEvaluationInfo.getProperty(VariableProperty.CONTEXT_NOT_NULL));

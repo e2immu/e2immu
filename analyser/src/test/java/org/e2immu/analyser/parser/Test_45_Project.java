@@ -140,7 +140,9 @@ public class Test_45_Project extends CommonTestRunner {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("set".equals(d.methodInfo().name)) {
                 if ("1.0.0".equals(d.statementId())) {
-                    String expect = d.iteration() == 0 ? CONTAINER : "[]";
+                    String expect = d.iteration() == 0
+                            ? "{org.e2immu.analyser.testexample.Project_2.Container.Container(java.lang.String)=true}"
+                            : "{org.e2immu.analyser.testexample.Project_2.Container.Container(java.lang.String)=false}";
                     assertEquals(expect, d.evaluationResult().causesOfContextModificationDelay().toString());
                 }
             }
@@ -148,17 +150,7 @@ public class Test_45_Project extends CommonTestRunner {
 
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("set".equals(d.methodInfo().name)) {
-                if ("1.0.0".equals(d.statementId())) {
-                    String expect = d.iteration() <= 1 ? CONTAINER : "[]";
-                    assertEquals(expect, d.statementAnalysis().methodLevelData
-                            .getCausesOfContextModificationDelay().toString());
-                }
-                if ("1".equals(d.statementId())) { // test the merge
-                    String expect = d.iteration() == 0 ? CONTAINER : "[]";
-                    assertEquals(expect, d.statementAnalysis().methodLevelData
-                            .getCausesOfContextModificationDelay().toString());
-                }
-                if ("2".equals(d.statementId())) { // test the normal propagation
+                if ("1.0.0".equals(d.statementId()) || "1".equals(d.statementId()) || "2".equals(d.statementId())) {
                     String expect = d.iteration() == 0 ? CONTAINER : "[]";
                     assertEquals(expect, d.statementAnalysis().methodLevelData
                             .getCausesOfContextModificationDelay().toString());

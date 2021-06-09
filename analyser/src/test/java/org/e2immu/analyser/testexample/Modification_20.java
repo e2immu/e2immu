@@ -14,23 +14,29 @@
 
 package org.e2immu.analyser.testexample;
 
-import org.e2immu.annotation.Modified;
-
 import java.util.HashSet;
 import java.util.Set;
 
 /*
-simplest version of Modification_11 that causes delay problems.
+simplest modification of Modification_11 that causes delay problems.
+
+1: In example 1, CM van 's2' only when we knew CM of parameter 'setC'
+2: In C1(), 'setC' is modified only when we know if 'set' is modified
+3: In C1, set is modified only when we know that the links have been established in statement 2 of example1,
+   because set is read in that method
+4: Links have not been established in 2, 1, 0, because we do not know the modification status of 's2'
+
+This is an infinite delay.
+
  */
 public class Modification_20 {
 
     final Set<String> s2 = new HashSet<>();
 
     static class C1 {
-        @Modified
         final Set<String> set;
 
-        C1(@Modified Set<String> setC) {
+        C1(Set<String> setC) {
             this.set = setC;
         }
     }

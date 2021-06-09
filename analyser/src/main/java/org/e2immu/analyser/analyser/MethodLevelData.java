@@ -30,10 +30,7 @@ import org.e2immu.support.SetOnceMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -93,12 +90,16 @@ public class MethodLevelData implements DelayDebugger {
         return causesOfContextModificationDelay.isVariable();
     }
 
-    public void causesOfContextModificationDelayAddVariable(Set<WithInspectionAndAnalysis> set) {
+    public void causesOfContextModificationDelayAddVariable(Map<WithInspectionAndAnalysis, Boolean> map, boolean allowRemoval) {
         assert causesOfContextModificationDelay.isVariable();
         if (causesOfContextModificationDelay.get() == null) {
             causesOfContextModificationDelay.setVariable(new HashSet<>());
         }
-        causesOfContextModificationDelay.get().addAll(set);
+        Set<WithInspectionAndAnalysis> set = causesOfContextModificationDelay.get();
+        map.forEach((k, v) -> {
+            if (v) set.add(k);
+            else if (allowRemoval) set.remove(k);
+        });
     }
 
     public void causesOfContextModificationDelaySetFinal() {
