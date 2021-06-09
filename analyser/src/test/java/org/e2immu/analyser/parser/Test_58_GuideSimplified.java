@@ -19,6 +19,7 @@ import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterAnalysis;
+import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.visitor.*;
@@ -116,9 +117,11 @@ public class Test_58_GuideSimplified extends CommonTestRunner {
 
     @Test
     public void test_4() throws IOException {
+        final int HIGH = 50;
+
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("Position".equals(d.typeInfo().simpleName)) {
-                int expectImmutable = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EFFECTIVELY_E2IMMUTABLE;
+                int expectImmutable = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_E2IMMUTABLE;
                 assertEquals(expectImmutable, d.typeAnalysis().getProperty(VariableProperty.IMMUTABLE));
             }
         };
@@ -126,9 +129,14 @@ public class Test_58_GuideSimplified extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("position".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof FieldReference fr && "position".equals(fr.fieldInfo.name)) {
+                    String expectValue = d.iteration() == 0 ? "<f:position>" : "instance type Position";
+                    assertEquals(expectValue, d.currentValue().toString());
+
                     String expectLinked = d.iteration() == 0 ? "<delay>" : "";
                     assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
-                    int expectModified = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
+
+                    // this one must wait for Position to become @E2Immutable
+                    int expectModified = d.iteration() <= 1 ? Level.DELAY : Level.FALSE;
                     assertEquals(expectModified, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
                 }
             }
@@ -136,7 +144,7 @@ public class Test_58_GuideSimplified extends CommonTestRunner {
 
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("position".equals(d.methodInfo().name)) {
-                assertEquals(d.iteration() > 0, d.statementAnalysis().methodLevelData.linksHaveBeenEstablished.isSet());
+                assertEquals(d.iteration() > 1, d.statementAnalysis().methodLevelData.linksHaveBeenEstablished.isSet());
             }
             if ("values".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
@@ -156,11 +164,11 @@ public class Test_58_GuideSimplified extends CommonTestRunner {
             }
             if ("GuideSimplified_4".equals(d.methodInfo().name)) {
                 ParameterAnalysis position = d.parameterAnalyses().get(1);
-                int expectContextModified = d.iteration() <= 1 ? Level.DELAY : Level.FALSE;
+                int expectContextModified = d.iteration() <= 2 ? Level.DELAY : Level.FALSE;
                 assertEquals(expectContextModified, position.getProperty(VariableProperty.CONTEXT_MODIFIED));
-                int expectMom = d.iteration() <= 1 ? Level.DELAY : Level.FALSE;
+                int expectMom = d.iteration() <= 2 ? Level.DELAY : Level.FALSE;
                 assertEquals(expectMom, position.getProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD));
-                int expectModifiedVar = d.iteration() <= 1 ? Level.DELAY : Level.FALSE;
+                int expectModifiedVar = d.iteration() <= 2 ? Level.DELAY : Level.FALSE;
                 assertEquals(expectModifiedVar, position.getProperty(VariableProperty.MODIFIED_VARIABLE));
             }
             if ("trace".equals(d.methodInfo().name)) {
@@ -180,18 +188,20 @@ public class Test_58_GuideSimplified extends CommonTestRunner {
                 assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_IMMUTABLE));
                 int expectMom = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
                 assertEquals(expectMom, d.fieldAnalysis().getProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD));
+
+                assertEquals("", d.fieldAnalysis().getLinkedVariables().toString());
             }
 
             if ("START".equals(d.fieldInfo().name)) {
                 assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_NOT_NULL));
 
-                int expectMom = d.iteration() <= 1 ? Level.DELAY : Level.FALSE;
+                int expectMom = d.iteration() <= 2 ? Level.DELAY : Level.FALSE;
                 assertEquals(expectMom, d.fieldAnalysis().getProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD));
             }
             if ("position".equals(d.fieldInfo().name)) {
                 assertEquals("position", d.fieldAnalysis().getEffectivelyFinalValue().toString());
 
-                int expectMom = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
+                int expectMom = d.iteration() <= 1 ? Level.DELAY : Level.FALSE;
                 assertEquals(expectMom, d.fieldAnalysis().getProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD));
             }
         };
@@ -205,17 +215,26 @@ public class Test_58_GuideSimplified extends CommonTestRunner {
                 .build());
     }
 
+    // contrast to test_4 solved with refactoring of fieldAccess
     @Test
     public void test_5() throws IOException {
         final String TRACE_RETURN = "\"/*\"+position.msg+\"*/\"";
+
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("trace".equals(d.methodInfo().name) && d.variable() instanceof ReturnVariable) {
                 String expectValue = switch (d.iteration()) {
-                    case 0 -> "\"/*\"+<f:msg>+\"*/\"";
-                    case 1 -> "\"/*\"+<f:position>.msg+\"*/\"";
+                    case 0, 1 -> "\"/*\"+<f:msg>+\"*/\"";
                     default -> TRACE_RETURN;
                 };
                 assertEquals(expectValue, d.currentValue().toString());
+            }
+            if ("GuideSimplified_5".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ParameterInfo p && "position".equals(p.name)) {
+                    if ("2".equals(d.statementId())) {
+                        // goes into precondition
+                        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+                    }
+                }
             }
         };
 
@@ -227,7 +246,12 @@ public class Test_58_GuideSimplified extends CommonTestRunner {
                     assertEquals(TRACE_RETURN, d.methodAnalysis().getSingleReturnValue().toString());
                 }
             }
+            if ("position".equals(d.methodInfo().name)) {
+                int expectNne = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
+                assertEquals(expectNne, d.methodAnalysis().getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+            }
         };
+
         testClass("GuideSimplified_5", 0, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)

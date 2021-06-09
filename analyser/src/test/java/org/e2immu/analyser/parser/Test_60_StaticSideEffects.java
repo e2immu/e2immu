@@ -24,10 +24,10 @@ import java.io.IOException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class Test_58_StaticSideEffects extends CommonTestRunner {
+public class Test_60_StaticSideEffects extends CommonTestRunner {
 
     // AtomicInteger, System.out, ...
-    public Test_58_StaticSideEffects() {
+    public Test_60_StaticSideEffects() {
         super(true);
     }
 

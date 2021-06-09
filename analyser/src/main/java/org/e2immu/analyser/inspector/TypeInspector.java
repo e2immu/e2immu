@@ -422,7 +422,10 @@ public class TypeInspector {
             bodyDeclaration.ifCompactConstructorDeclaration(ccd -> {
                 MethodInspector methodInspector = new MethodInspector(expressionContext.typeContext.typeMapBuilder, typeInfo,
                         fullInspection);
-                methodInspector.inspect(ccd, subContext, companionMethodsWaiting, builder.fields());
+                List<FieldInfo> nonStaticFields = builder.fields().stream()
+                        .filter(fieldInfo -> !fieldInfo.isStatic(expressionContext.typeContext))
+                        .toList();
+                methodInspector.inspect(ccd, subContext, companionMethodsWaiting, nonStaticFields);
                 builder.ensureConstructor(methodInspector.getBuilder().getMethodInfo());
                 companionMethodsWaiting.clear();
                 countCompactConstructors.incrementAndGet();

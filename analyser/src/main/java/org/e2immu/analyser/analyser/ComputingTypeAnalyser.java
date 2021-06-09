@@ -778,6 +778,11 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
         for (FieldAnalyser fieldAnalyser : myFieldAnalysers) {
             FieldAnalysis fieldAnalysis = fieldAnalyser.fieldAnalysis;
             FieldInfo fieldInfo = fieldAnalyser.fieldInfo;
+            if (fieldInfo.type.bestTypeInfo() == typeInfo) {
+                // "self" type, ignored
+                continue;
+            }
+
             FieldReference thisFieldInfo = new FieldReference(analyserContext, fieldInfo);
             String fieldFQN = fieldInfo.fullyQualifiedName();
 
