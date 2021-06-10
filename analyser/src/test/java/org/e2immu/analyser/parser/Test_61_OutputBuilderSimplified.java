@@ -192,4 +192,48 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
+
+    /*
+     There is no pressing need to turn the NewObject into a Lambda (that's another war to fight, plus, in OutputBuilder
+     we have a Collector, which is not a functional interface).
+
+     */
+    @Test
+    public void test_4() throws IOException {
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("j2".equals(d.methodInfo().name)) {
+                assertEquals(Level.FALSE, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
+                assertEquals("instance type $1", d.methodAnalysis().getSingleReturnValue().toString());
+                assertTrue(d.methodAnalysis().methodLevelData().linksHaveBeenEstablished.isSet());
+            }
+            if ("j1".equals(d.methodInfo().name)) {
+                // single statement: return j2(); links have not been established
+               // assertTrue(d.methodAnalysis().methodLevelData().linksHaveBeenEstablished.isSet());
+
+              //  assertEquals("instance type $1", d.methodAnalysis().getSingleReturnValue().toString());
+             //   assertEquals(Level.FALSE, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
+            }
+        };
+
+        testClass("OutputBuilderSimplified_4", 0, 0, new DebugConfiguration.Builder()
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .build());
+    }
+
+    @Test
+    public void test_5() throws IOException {
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("j2".equals(d.methodInfo().name)) {
+                assertEquals(Level.FALSE, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
+                assertEquals("null", d.methodAnalysis().getSingleReturnValue().toString());
+            }
+            if ("j1".equals(d.methodInfo().name)) {
+                assertEquals(Level.FALSE, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
+            }
+        };
+        testClass("OutputBuilderSimplified_5", 0, 0, new DebugConfiguration.Builder()
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .build());
+    }
+
 }

@@ -33,6 +33,9 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Predicate;
 
+import static org.e2immu.analyser.analyser.StatementAnalyser.EVALUATION_OF_MAIN_EXPRESSION;
+import static org.e2immu.analyser.analyser.util.DelayDebugger.D_LINKED_VARIABLES;
+import static org.e2immu.analyser.analyser.util.DelayDebugger.D_LINKED_VARIABLES_SET;
 import static org.e2immu.analyser.util.Logger.LogTarget.EXPRESSION;
 import static org.e2immu.analyser.util.Logger.LogTarget.LINKED_VARIABLES;
 import static org.e2immu.analyser.util.Logger.log;
@@ -254,6 +257,10 @@ public class Assignment implements Expression {
         } else {
             linkedVariables = LinkedVariables.DELAY;
         }
+        assert linkedVariables != LinkedVariables.DELAY ||
+                evaluationContext.translatedDelay(EVALUATION_OF_MAIN_EXPRESSION,
+                        "EXPRESSION " + resultOfExpression + "@" + evaluationContext.statementIndex() + D_LINKED_VARIABLES,
+                        at.fullyQualifiedName() + "@" + evaluationContext.statementIndex() + D_LINKED_VARIABLES_SET);
 
         LinkedVariables staticallyAssignedVariables;
         if (value instanceof IsVariableExpression variableExpression) {

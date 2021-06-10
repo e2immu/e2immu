@@ -513,6 +513,9 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
         if (!value.isConstant()) {
             int modified = methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD);
             if (modified == Level.DELAY) {
+                assert translatedDelay(COMPUTE_RETURN_VALUE, methodInfo.fullyQualifiedName + D_MODIFIED_METHOD,
+                        methodInfo.fullyQualifiedName + D_METHOD_RETURN_VALUE);
+
                 log(DELAYED, "Delaying return value of {}, waiting for MODIFIED (we may try to inline!)", methodInfo.distinguishingName);
                 return DELAYS;
             }
@@ -597,6 +600,8 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
 
     private AnalysisStatus computeImmutable() {
         if (!methodAnalysis.singleReturnValue.isSet()) {
+            assert translatedDelay(COMPUTE_IMMUTABLE, methodInfo.fullyQualifiedName + D_METHOD_RETURN_VALUE,
+                    methodInfo.fullyQualifiedName + D_IMMUTABLE);
             log(DELAYED, "Delaying @Immutable on {} until return value is set", methodInfo.fullyQualifiedName);
             return DELAYS;
         }
@@ -612,10 +617,26 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
                 it really is a hack because other types that come late are missed as well.
                  */
                 immutable = typeAnalysis.getProperty(IMMUTABLE);
+
+                assert immutable != Level.DELAY || translatedDelay(COMPUTE_IMMUTABLE,
+                        typeAnalysis.getTypeInfo().fullyQualifiedName + D_IMMUTABLE,
+                        methodInfo.fullyQualifiedName + D_IMMUTABLE);
             } else {
                 int dynamic = variableInfo.getProperty(IMMUTABLE);
+                assert dynamic != Level.DELAY || translatedDelay(COMPUTE_IMMUTABLE,
+                        variableInfo.variable().fullyQualifiedName() + "@" + methodAnalysis.getLastStatement().index + D_IMMUTABLE,
+                        methodInfo.fullyQualifiedName + D_IMMUTABLE);
+
                 int dynamicExt = variableInfo.getProperty(EXTERNAL_IMMUTABLE);
+                assert dynamicExt != Level.DELAY || translatedDelay(COMPUTE_IMMUTABLE,
+                        variableInfo.variable().fullyQualifiedName() + "@" + methodAnalysis.getLastStatement().index + D_EXTERNAL_IMMUTABLE,
+                        methodInfo.fullyQualifiedName + D_IMMUTABLE);
+
                 int formalImmutable = methodInfo.returnType().defaultImmutable(analyserContext);
+                assert formalImmutable != Level.DELAY || translatedDelay(COMPUTE_IMMUTABLE,
+                        methodInfo.returnType().bestTypeInfo().fullyQualifiedName() + D_IMMUTABLE,
+                        methodInfo.fullyQualifiedName + D_IMMUTABLE);
+
                 immutable = dynamic == Level.DELAY || dynamicExt == Level.DELAY || formalImmutable == Level.DELAY ?
                         Level.DELAY : Math.max(formalImmutable, Math.max(dynamicExt, dynamic));
             }
@@ -777,6 +798,8 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
 
         // second step, check that linking has been computed
         if (!methodLevelData.linksHaveBeenEstablished.isSet()) {
+            assert translatedDelay(COMPUTE_MODIFIED, methodInfo.fullyQualifiedName + ":" + methodAnalysis.getLastStatement().index + D_LINKS_HAVE_BEEN_ESTABLISHED,
+                    methodInfo.fullyQualifiedName + D_MODIFIED_METHOD);
             log(DELAYED, "Method {}: Not deciding on @Modified yet, delaying because linking not computed",
                     methodInfo.distinguishingName());
             return DELAYS;
@@ -798,6 +821,10 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
             if (thisVariable != null) {
                 int thisModified = thisVariable.getProperty(VariableProperty.CONTEXT_MODIFIED);
                 if (thisModified == Level.DELAY) {
+                    assert translatedDelay(COMPUTE_MODIFIED,
+                            thisVariable.variable().fullyQualifiedName() + "@" + methodAnalysis.getLastStatement().index + D_CONTEXT_MODIFIED,
+                            methodInfo.fullyQualifiedName + D_MODIFIED_METHOD);
+
                     log(DELAYED, "In {}: other local methods are called, but no idea if they are @NotModified yet, delaying",
                             methodInfo.distinguishingName());
                     return DELAYS;

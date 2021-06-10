@@ -320,9 +320,12 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
         }
         Set<MethodAnalyser> assigningMethods = determineAssigningMethods();
 
-        boolean allPreconditionsOnAssigningMethodsSet = assigningMethods.stream()
-                .allMatch(methodAnalyser -> methodAnalyser.methodAnalysis.preconditionForEventual.isSet());
-        if (!allPreconditionsOnAssigningMethodsSet) {
+        Optional<MethodAnalyser> allPreconditionsOnAssigningMethodsSet = assigningMethods.stream()
+                .filter(methodAnalyser -> !methodAnalyser.methodAnalysis.preconditionForEventual.isSet()).findFirst();
+        if (allPreconditionsOnAssigningMethodsSet.isPresent()) {
+            assert translatedDelay(COMPUTE_APPROVED_PRECONDITIONS_E1,
+                    allPreconditionsOnAssigningMethodsSet.get().methodInfo.fullyQualifiedName + D_PRECONDITION_FOR_EVENTUAL,
+                    typeInfo.fullyQualifiedName + D_APPROVED_PRECONDITIONS_E1);
             log(DELAYED, "Not all precondition preps on assigning methods have been set in {}, delaying", typeInfo.fullyQualifiedName);
             return DELAYS;
         }
@@ -421,6 +424,9 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
                 .filter(methodAnalyser -> methodAnalyser.methodAnalysis
                         .getProperty(VariableProperty.MODIFIED_METHOD) == Level.DELAY).findFirst();
         if (optModificationDelay.isPresent()) {
+            assert translatedDelay(COMPUTE_APPROVED_PRECONDITIONS_E2,
+                    optModificationDelay.get().methodInfo.fullyQualifiedName + D_MODIFIED_METHOD,
+                    typeInfo.fullyQualifiedName + D_APPROVED_PRECONDITIONS_E2);
             log(DELAYED, "Delaying only mark E2, modification delayed of (findFirst) {}",
                     optModificationDelay.get().methodInfo.fullyQualifiedName);
             return DELAYS;
@@ -431,6 +437,10 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
                 .filter(ma -> !ma.methodAnalysis.preconditionForEventual.isSet())
                 .findFirst();
         if (preconditionForEventualNotYetSet.isPresent()) {
+            assert translatedDelay(COMPUTE_APPROVED_PRECONDITIONS_E2,
+                    preconditionForEventualNotYetSet.get().methodInfo.fullyQualifiedName + D_PRECONDITION_FOR_EVENTUAL,
+                    typeInfo.fullyQualifiedName + D_APPROVED_PRECONDITIONS_E2);
+
             log(DELAYED, "Not all precondition preps on modifying methods have been set in {}, delaying; findFirst: {}",
                     typeInfo.fullyQualifiedName, preconditionForEventualNotYetSet.get().methodInfo.fullyQualifiedName);
             return DELAYS;
@@ -740,6 +750,9 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
             if (!typeAnalysis.approvedPreconditionsIsFrozen(false)) {
                 log(DELAYED, "Type {} is not effectively level 1 immutable, waiting for" +
                         " preconditions to find out if it is eventually level 1 immutable", typeInfo.fullyQualifiedName);
+                assert translatedDelay(ANALYSE_EFFECTIVELY_EVENTUALLY_E2IMMUTABLE,
+                        typeInfo.fullyQualifiedName + D_APPROVED_PRECONDITIONS_E1,
+                        typeInfo.fullyQualifiedName + D_IMMUTABLE);
                 return DELAYS;
             }
             boolean isEventuallyE1 = typeAnalysis.approvedPreconditionsIsNotEmpty(false);
@@ -755,6 +768,9 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
             if (!typeAnalysis.approvedPreconditionsIsFrozen(true)) {
                 log(DELAYED, "Type {} is not effectively level 1 immutable, waiting for" +
                         " preconditions to find out if it is eventually level 2 immutable", typeInfo.fullyQualifiedName);
+                assert translatedDelay(ANALYSE_EFFECTIVELY_EVENTUALLY_E2IMMUTABLE,
+                        typeInfo.fullyQualifiedName + D_APPROVED_PRECONDITIONS_E2,
+                        typeInfo.fullyQualifiedName + D_IMMUTABLE);
                 return DELAYS;
             }
             myWhenE2Fails = MultiLevel.compose(MultiLevel.EFFECTIVE, MultiLevel.FALSE);
@@ -770,6 +786,9 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
         if (!typeAnalysis.approvedPreconditionsIsFrozen(true)) {
             log(DELAYED, "Type {} is not effectively level 1 immutable, waiting for" +
                     " preconditions to find out if it is eventually level 2 immutable", typeInfo.fullyQualifiedName);
+            assert translatedDelay(ANALYSE_EFFECTIVELY_EVENTUALLY_E2IMMUTABLE,
+                    typeInfo.fullyQualifiedName + D_APPROVED_PRECONDITIONS_E2,
+                    typeInfo.fullyQualifiedName + D_IMMUTABLE);
             return DELAYS;
         }
 

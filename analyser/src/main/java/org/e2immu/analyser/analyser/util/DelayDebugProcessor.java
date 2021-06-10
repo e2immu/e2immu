@@ -36,19 +36,22 @@ public class DelayDebugProcessor {
 
     private void printTree() {
         log(DELAYED, "*********** start delay tree ************");
+        Set<DelayDebugNode> visited = new HashSet<>();
         for (DelayDebugNode node : byLabel.values()) {
             if (node.nodeType != DelayDebugNode.NodeType.CREATE || node.hasChildren()) {
-                printTree(0, node);
+                printTree(0, node, visited);
             }
         }
         log(DELAYED, "*********** end   delay tree ************");
     }
 
-    private void printTree(int indent, DelayDebugNode node) {
+    private void printTree(int indent, DelayDebugNode node, Set<DelayDebugNode> visited) {
+        if (visited.contains(node)) return;
+        visited.add(node);
         String indentation = " ".repeat(indent);
         log(DELAYED, "{}{} {} {} {} ", indentation, node.time, node.nodeType, clean(node.label),
                 clean(node.where));
-        node.children().forEach(child -> printTree(indent + 2, child));
+        node.children().forEach(child -> printTree(indent + 2, child, visited));
     }
 
     private static String clean(String in) {

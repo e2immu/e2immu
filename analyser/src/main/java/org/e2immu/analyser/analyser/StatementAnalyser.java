@@ -788,6 +788,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             } else if (vi.getLinkedVariables() == LinkedVariables.DELAY) {
                 status = DELAYS;
                 linkedDelays = true;
+                assert foundDelay(EVALUATION_OF_MAIN_EXPRESSION, variable.fullyQualifiedName() + "@" + index() + D_LINKED_VARIABLES_SET);
             }
 
             // the method analyser must have both context not null and not null expression

@@ -38,6 +38,7 @@ public interface DelayDebugger {
 
     // method analyser
     String D_PRECONDITION_FOR_EVENTUAL = ".preconditionForEventual";
+    String D_METHOD_RETURN_VALUE = ".methodReturnValue";
 
     // statement analyser, state data
     String D_PRECONDITION = ".precondition";
@@ -55,7 +56,12 @@ public interface DelayDebugger {
     // Type analyser
     String D_ASPECTS = ".aspects";
     String D_IMPLICITLY_IMMUTABLE_DATA = ".implicitlyImmutableData";
+    String D_APPROVED_PRECONDITIONS_E1 = ".approvedPreconditionsE1";
+    String D_APPROVED_PRECONDITIONS_E2 = ".approvedPreconditionsE2";
 
     // EvaluationResult.value()
     String D_EVALUATION_RESULT = ".evaluationResult";
+
+    String D_LINKED_VARIABLES = ".linkedVariables";
 }
+

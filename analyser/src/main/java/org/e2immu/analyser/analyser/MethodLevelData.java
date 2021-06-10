@@ -261,11 +261,11 @@ public class MethodLevelData implements DelayDebugger {
 
             assert vi.linkedVariablesIsSet() ||
                     translatedDelay(sharedState.where(LINKS_HAVE_BEEN_ESTABLISHED),
-                            vi.variable().fullyQualifiedName() + D_LINKED_VARIABLES_SET,
+                            vi.variable().fullyQualifiedName() + "@" + sharedState.statementAnalysis.index + D_LINKED_VARIABLES_SET,
                             sharedState.myStatement() + D_LINKS_HAVE_BEEN_ESTABLISHED);
             assert vi.getProperty(VariableProperty.CONTEXT_MODIFIED) != Level.DELAY ||
                     translatedDelay(sharedState.where(LINKS_HAVE_BEEN_ESTABLISHED),
-                            vi.variable().fullyQualifiedName() + D_CONTEXT_MODIFIED,
+                            vi.variable().fullyQualifiedName() + "@" + sharedState.statementAnalysis.index + D_CONTEXT_MODIFIED,
                             sharedState.myStatement() + D_LINKS_HAVE_BEEN_ESTABLISHED);
 
             log(DELAYED, "Links have not yet been established for (findFirst) {}, statement {}",

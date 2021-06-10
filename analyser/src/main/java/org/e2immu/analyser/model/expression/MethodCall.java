@@ -35,6 +35,9 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+import static org.e2immu.analyser.analyser.StatementAnalyser.EVALUATION_OF_MAIN_EXPRESSION;
+import static org.e2immu.analyser.analyser.util.DelayDebugger.D_IMMUTABLE;
+import static org.e2immu.analyser.analyser.util.DelayDebugger.D_LINKED_VARIABLES;
 import static org.e2immu.analyser.output.QualifiedName.Required.NO_METHOD;
 import static org.e2immu.analyser.output.QualifiedName.Required.YES;
 import static org.e2immu.analyser.util.Logger.LogTarget.DELAYED;
@@ -838,7 +841,13 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         boolean notSelf = returnType.typeInfo != evaluationContext.getCurrentType();
         if (notSelf) {
             int immutable = MultiLevel.value(methodAnalysis.getProperty(VariableProperty.IMMUTABLE), MultiLevel.E2IMMUTABLE);
-            if (immutable == MultiLevel.DELAY) return LinkedVariables.DELAY;
+            if (immutable == MultiLevel.DELAY) {
+                assert evaluationContext.translatedDelay(EVALUATION_OF_MAIN_EXPRESSION,
+                        methodInfo.fullyQualifiedName + D_IMMUTABLE,
+                        "EXPRESSION " + this + "@" + evaluationContext.statementIndex() + D_LINKED_VARIABLES);
+
+                return LinkedVariables.DELAY;
+            }
             if (immutable >= MultiLevel.EVENTUAL_AFTER) {
                 return LinkedVariables.EMPTY;
             }
