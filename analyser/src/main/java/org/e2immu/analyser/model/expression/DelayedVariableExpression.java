@@ -93,7 +93,23 @@ public record DelayedVariableExpression(String msg, String debug,
 
     @Override
     public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
-        return new EvaluationResult.Builder(evaluationContext).setExpression(this).build();
+        // CONTEXT NOT NULL as soon as possible, also for delayed values...
+
+        EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
+
+        if (variable instanceof FieldReference fr && fr.scope != null) {
+            // do not continue modification onto This: we want modifications on this only when there's a direct method call
+            ForwardEvaluationInfo forward = fr.scopeIsThis() ? ForwardEvaluationInfo.NOT_NULL :
+                    forwardEvaluationInfo.copyModificationEnsureNotNull();
+            EvaluationResult scopeResult = fr.scope.evaluate(evaluationContext, forward);
+            builder.compose(scopeResult);
+        }
+
+        int cnn = forwardEvaluationInfo.getProperty(VariableProperty.CONTEXT_NOT_NULL);
+        if (cnn > MultiLevel.NULLABLE) {
+            builder.variableOccursInNotNullContext(variable, this, cnn);
+        }
+        return builder.setExpression(this).build();
     }
 
     @Override

@@ -21,7 +21,9 @@ import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterAnalysis;
 import org.e2immu.analyser.model.ParameterInfo;
+import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
+import org.e2immu.analyser.visitor.EvaluationResultVisitor;
 import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.visitor.TypeAnalyserVisitor;
@@ -30,6 +32,7 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
 
@@ -148,7 +151,45 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
 
     @Test
     public void test_3() throws IOException {
+        EvaluationResultVisitor evaluationResultVisitor = d -> {
+            if ("combiner".equals(d.methodInfo().name)) {
+                if ("0".equals(d.statementId())) {
+                    String expectValue = d.iteration() <= 1 ? "<m:isEmpty>" : "a.list.isEmpty()";
+                    assertEquals(expectValue, d.evaluationResult().value().toString());
+                }
+            }
+        };
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("combiner".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ReturnVariable) {
+                    if ("0".equals(d.statementId())) {
+                        String expectValue = d.iteration() <= 1
+                                ? "<m:isEmpty>?<s:OutputBuilderSimplified_3>:<return value>"
+                                : "a.list.isEmpty()?b:<return value>";
+                        assertEquals(expectValue, d.currentValue().toString());
+                    }
+                    if ("1".equals(d.statementId()) || "2".equals(d.statementId())) {
+                        String expectValue = d.iteration() <= 1
+                                ? "<m:isEmpty>?<p:a>:<m:isEmpty>?<s:OutputBuilderSimplified_3>:<return value>"
+                                : "b.list.isEmpty()?a:a.list.isEmpty()?b:<return value>";
+                        assertEquals(expectValue, d.currentValue().toString());
+                    }
+                }
+                if (d.variable() instanceof FieldReference fr && "list".equals(fr.fieldInfo.name)) {
+                    if ("a.list".equals(d.variable().toString())) {
+                        if ("0".equals(d.statementId())) {
+                            assertTrue(d.iteration() > 0);
+                            // question 1: why does a.list appear while the evaluation is still <m:isEmpty> ?
+                            // because a.list has been identified, but aspects of .isEmpty() have not been cleared yet
+                            assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+                        }
+                    }
+                }
+            }
+        };
         testClass("OutputBuilderSimplified_3", 0, 0, new DebugConfiguration.Builder()
+                .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 }

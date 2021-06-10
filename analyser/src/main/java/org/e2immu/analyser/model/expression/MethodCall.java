@@ -220,8 +220,13 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 .getMethodAnalysis(methodInfo).getProperty(VariableProperty.MODIFIED_METHOD);
         EvaluationResult mv = EvaluateMethodCall.methodValue(modified, evaluationContext, methodInfo,
                 evaluationContext.getAnalyserContext().getMethodAnalysis(methodInfo), reObject.value(), reParamValues);
-        return new EvaluationResult.Builder(evaluationContext).compose(reParams).compose(reObject, mv)
-                .setExpression(mv.value()).build();
+        EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext).compose(reParams)
+                .compose(reObject, mv);
+        if (reObject.value() instanceof IsVariableExpression ve) {
+            EvaluationResult forwarded = ve.evaluate(evaluationContext, ForwardEvaluationInfo.NOT_NULL);
+            builder.compose(forwarded);
+        }
+        return builder.setExpression(mv.value()).build();
     }
 
     @Override

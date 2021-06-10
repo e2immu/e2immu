@@ -240,9 +240,9 @@ public record VariableExpression(Variable variable, String name) implements Expr
         return builder.build();
     }
 
-    private static Expression adjustScope(EvaluationContext evaluationContext,
-                                          EvaluationResult scopeResult,
-                                          Expression currentValue) {
+    static Expression adjustScope(EvaluationContext evaluationContext,
+                                  EvaluationResult scopeResult,
+                                  Expression currentValue) {
         if (scopeResult != null) {
             boolean scopeResultIsDelayed = evaluationContext.isDelayed(scopeResult.getExpression());
             InspectionProvider inspectionProvider = evaluationContext.getAnalyserContext();
