@@ -477,6 +477,13 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
     }
 
     /*
+    Do not add IMMUTABLE to this set! (computed from external, formal, context)
+     */
+    public static final Set<VariableProperty> FROM_PARAMETER_ANALYSER_TO_PROPERTIES
+            = Set.of(IDENTITY, FINAL, EXTERNAL_NOT_NULL, EXTERNAL_IMMUTABLE, MODIFIED_OUTSIDE_METHOD,
+            CONTAINER, NOT_MODIFIED_1);
+
+    /*
     assume that all parameters, also those from closures, are already present
      */
     private void init1PlusStartOfMethodDoParametersAndThis(AnalyserContext analyserContext) {
@@ -487,7 +494,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                     ParameterInfo parameterInfo = (ParameterInfo) prevInitial.variable();
                     updateValuePropertiesOfParameter(analyserContext, vic, prevInitial, parameterInfo);
                     ParameterAnalysis parameterAnalysis = analyserContext.getParameterAnalysis(parameterInfo);
-                    for (VariableProperty variableProperty : FROM_ANALYSER_TO_PROPERTIES) {
+                    for (VariableProperty variableProperty : FROM_PARAMETER_ANALYSER_TO_PROPERTIES) {
                         int value = parameterAnalysis.getProperty(variableProperty);
                         if (value != Level.DELAY) {
                             vic.setProperty(variableProperty, value, INITIAL);
@@ -623,8 +630,8 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                 LinkedVariables assignedToOriginal = new LinkedVariables(Set.of(fieldReference));
 
                 for (int statementTime : eval.getReadAtStatementTimes()) {
-                    LocalVariableReference localCopy = variableInfoOfFieldWhenReading(analyserContext,
-                            fieldReference, initial, statementTime);
+                    LocalVariableReference localCopy = variableInfoOfFieldWhenReading(fieldReference, initial
+                            , statementTime);
                     if (!variables.isSet(localCopy.fullyQualifiedName())) {
                         VariableInfoContainer lvrVic = VariableInfoContainerImpl.newLocalCopyOfVariableField(localCopy,
                                 index + INITIAL, navigationData.hasSubBlocks());
@@ -1004,8 +1011,6 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         return result;
     }
 
-    private static final Set<VariableProperty> FROM_PARAMETER_ANALYSER_TO_PROPERTIES
-            = Set.of(IDENTITY, CONTAINER, EXTERNAL_NOT_NULL, EXTERNAL_IMMUTABLE, NOT_MODIFIED_1, MODIFIED_METHOD);
 
     private Map<VariableProperty, Integer> parameterPropertyMap(AnalyserContext analyserContext,
                                                                 ParameterInfo parameterInfo) {
@@ -1029,7 +1034,8 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         Map<VariableProperty, Integer> result = sharedContext(fieldInfo.type.defaultNotNull());
 
         for (VariableProperty vp : FROM_FIELD_ANALYSER_TO_PROPERTIES) {
-            int value = fieldAnalysis.getPropertyVerifyContracted(vp); // FIXME we're not passing on 'our' analyserContext instead relying on that of the field, which does not now the lambda we're in at the moment
+            int value = fieldAnalysis.getPropertyVerifyContracted(vp);
+            // FIXME we're not passing on 'our' analyserContext instead relying on that of the field, which does not know the lambda we're in at the moment
             result.put(vp, value);
         }
         return result;
@@ -1137,7 +1143,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                     }
                     return variables.get(localVariableFqn.name).getPreviousOrInitial();
                 }
-                if(vi.statementTimeDelayed()) {
+                if (vi.statementTimeDelayed()) {
                     return new VariableInfoImpl(variable);
                 }
             }
@@ -1224,8 +1230,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         return new NameSimpleName(prefix, simplePrefix);
     }
 
-    public LocalVariableReference variableInfoOfFieldWhenReading(AnalyserContext analyserContext,
-                                                                 FieldReference fieldReference,
+    public LocalVariableReference variableInfoOfFieldWhenReading(FieldReference fieldReference,
                                                                  VariableInfo fieldVi,
                                                                  int statementTime) {
         // a variable field can have any value when first read in a method.

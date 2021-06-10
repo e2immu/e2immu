@@ -38,6 +38,11 @@ public class ExpandableAnalyserContextImpl implements AnalyserContext {
     }
 
     @Override
+    public AnalyserContext getParent() {
+        return parent;
+    }
+
+    @Override
     public Primitives getPrimitives() {
         return parent.getPrimitives();
     }

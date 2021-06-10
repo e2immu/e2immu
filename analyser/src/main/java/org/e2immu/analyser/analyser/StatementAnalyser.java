@@ -555,7 +555,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                         return primaryTypeAnalyser;
                     }).toList();
             localAnalysers.set(analysers);
-            analysers.forEach(analyserContext::addPrimaryTypeAnalyser);
+            recursivelyAddPrimaryTypeAnalysersToAnalyserContext(analysers);
 
             boolean haveNext = navigationData.next.get().isPresent();
             // first, simple propagation of those analysers that we've already accumulated
@@ -576,6 +576,16 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
 
 
         return analysisStatus;
+    }
+
+    private void recursivelyAddPrimaryTypeAnalysersToAnalyserContext(List<PrimaryTypeAnalyser> analysers) {
+        AnalyserContext context = analyserContext;
+        while (context != null) {
+            if (context instanceof ExpandableAnalyserContextImpl expandable) {
+                analysers.forEach(expandable::addPrimaryTypeAnalyser);
+            }
+            context = context.getParent();
+        }
     }
 
     @Override
@@ -1229,7 +1239,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         if (variable instanceof FieldReference fieldReference &&
                 initial.isConfirmedVariableField() && !changeData.readAtStatementTime().isEmpty()) {
             for (int statementTime : changeData.readAtStatementTime()) {
-                statementAnalysis.variableInfoOfFieldWhenReading(analyserContext, fieldReference, initial, statementTime);
+                statementAnalysis.variableInfoOfFieldWhenReading(fieldReference, initial, statementTime);
             }
         }
         String id = index() + EVALUATION;
