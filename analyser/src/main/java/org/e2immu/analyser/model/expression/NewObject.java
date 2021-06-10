@@ -15,6 +15,7 @@
 package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.util.DelayDebugger;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.EvaluateParameters;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
@@ -411,6 +412,9 @@ public record NewObject(
                     if (immutable == MultiLevel.EVENTUALLY_E2IMMUTABLE)
                         return MultiLevel.EVENTUALLY_E2IMMUTABLE_BEFORE_MARK;
                 }
+                assert immutable != Level.DELAY || evaluationContext.translatedDelay(this.toString(),
+                        parameterizedType.bestTypeInfo().fullyQualifiedName + DelayDebugger.D_IMMUTABLE,
+                        this.toString() + "@" + evaluationContext.statementIndex() + DelayDebugger.D_IMMUTABLE);
                 return immutable;
             }
             default:

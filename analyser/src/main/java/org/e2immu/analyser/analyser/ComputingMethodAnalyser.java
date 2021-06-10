@@ -830,8 +830,6 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
                     return DELAYS;
                 }
                 isModified = thisModified == Level.TRUE;
-                log(MODIFICATION, "Mark method {} as {}", methodInfo.distinguishingName(),
-                        isModified ? "@Modified" : "@NotModified");
             }
         } // else: already true, so no need to look at this
 
@@ -864,6 +862,8 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
                 isModified = maxModified.getAsInt() == Level.TRUE;
             }
         }
+        log(MODIFICATION, "Mark method {} as {}", methodInfo.distinguishingName(),
+                isModified ? "@Modified" : "@NotModified");
         // (we could call non-@NM methods on parameters or local variables, but that does not influence this annotation)
         methodAnalysis.setProperty(variableProperty, isModified ? Level.TRUE : Level.FALSE);
         return DONE;

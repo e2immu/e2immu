@@ -832,8 +832,8 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         if (identity == Level.TRUE) return evaluationContext.linkedVariables(parameterExpressions.get(0));
 
         // RULE 3: the current implementation doesn't link to "this" as object.
-        VariableExpression ve;
-        if ((ve = object.asInstanceOf(VariableExpression.class)) != null && ve.variable() instanceof This) {
+        // see the method for other restrictions
+        if (ignoreLinkingBecauseOfScope()) {
             return LinkedVariables.EMPTY;
         }
 
@@ -881,6 +881,12 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
         // link to the object
         return evaluationContext.linkedVariables(object);
+    }
+
+    private boolean ignoreLinkingBecauseOfScope( ) {
+        VariableExpression ve;
+        if ((ve = object.asInstanceOf(VariableExpression.class)) != null && ve.variable() instanceof This) return true;
+        return object instanceof TypeExpression; // static
     }
 
     @Override

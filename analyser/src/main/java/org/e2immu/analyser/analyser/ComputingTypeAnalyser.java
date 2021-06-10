@@ -733,6 +733,11 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
                 .mapToInt(typeAnalysis -> typeAnalysis.getProperty(VariableProperty.IMMUTABLE)).min()
                 .orElse(VariableProperty.IMMUTABLE.best);
         if (fromParentOrEnclosing == Level.DELAY) {
+            assert translatedDelay(ANALYSE_EFFECTIVELY_EVENTUALLY_E2IMMUTABLE,
+                    parentAndOrEnclosingTypeAnalysis.stream()
+                            .filter(t -> t.getProperty(VariableProperty.IMMUTABLE) == Level.DELAY)
+                            .findFirst().orElseThrow().getTypeInfo().fullyQualifiedName + D_IMMUTABLE,
+                    typeInfo.fullyQualifiedName + D_IMMUTABLE);
             log(DELAYED, "Waiting with immutable on {} for parent or enclosing types", typeInfo.fullyQualifiedName);
             return DELAYS;
         }

@@ -205,18 +205,26 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
                 assertEquals(Level.FALSE, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
                 assertEquals("instance type $1", d.methodAnalysis().getSingleReturnValue().toString());
                 assertTrue(d.methodAnalysis().methodLevelData().linksHaveBeenEstablished.isSet());
+
+              //  assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, d.methodAnalysis().getProperty(VariableProperty.IMMUTABLE));
             }
             if ("j1".equals(d.methodInfo().name)) {
                 // single statement: return j2(); links have not been established
-               // assertTrue(d.methodAnalysis().methodLevelData().linksHaveBeenEstablished.isSet());
+                // assertTrue(d.methodAnalysis().methodLevelData().linksHaveBeenEstablished.isSet());
 
-              //  assertEquals("instance type $1", d.methodAnalysis().getSingleReturnValue().toString());
-             //   assertEquals(Level.FALSE, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
+                //  assertEquals("instance type $1", d.methodAnalysis().getSingleReturnValue().toString());
+                //   assertEquals(Level.FALSE, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
             }
         };
 
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("$1".equals(d.typeInfo().simpleName)) {
+             //   assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, d.typeAnalysis().getProperty(VariableProperty.IMMUTABLE));
+            }
+        };
         testClass("OutputBuilderSimplified_4", 0, 0, new DebugConfiguration.Builder()
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
                 .build());
     }
 
@@ -233,6 +241,13 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
         };
         testClass("OutputBuilderSimplified_5", 0, 0, new DebugConfiguration.Builder()
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .build());
+    }
+
+    @Test
+    public void test_6() throws IOException {
+        // method should be marked static
+        testClass("OutputBuilderSimplified_6", 1, 0, new DebugConfiguration.Builder()
                 .build());
     }
 
