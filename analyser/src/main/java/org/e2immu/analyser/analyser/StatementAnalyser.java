@@ -825,6 +825,22 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             }
         }
 
+        for (Map.Entry<Variable, VariableInfoContainer> e : existingVariablesNotVisited.entrySet()) {
+            VariableInfoContainer vic = e.getValue();
+            if (vic.hasEvaluation()) {
+                /* so we have an evaluation, but we did not get the chance to copy from previous into evaluation.
+                 (this happened because an evaluation was ensured for some other reason than the pure
+                  evaluation of the expression).
+                At least for IMMUTABLE we need to copy the value from previous into evaluation, because
+                the next statement will copy it from there
+                 */
+                VariableInfo prev = vic.getPreviousOrInitial();
+                int immPrev = prev.getProperty(IMMUTABLE);
+                if (immPrev != Level.DELAY) {
+                    vic.setProperty(IMMUTABLE, immPrev, EVALUATION);
+                }
+            }
+        }
         // the second one is across clusters of variables
 
         addToMap(groupPropertyValues, CONTEXT_NOT_NULL, x -> x.parameterizedType().defaultNotNull(), true);

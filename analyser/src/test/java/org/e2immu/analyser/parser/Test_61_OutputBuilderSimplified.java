@@ -105,7 +105,7 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
                         assertEquals(expectContextImm, cImm);
                     }
                     if ("0.0.0".equals(d.statementId())) {
-                        int expectImm = d.iteration() <= 3 ? Level.DELAY : MultiLevel.EFFECTIVELY_E1IMMUTABLE_NOT_E2IMMUTABLE;
+                        int expectImm = d.iteration() <= 2 ? Level.DELAY : MultiLevel.EFFECTIVELY_E1IMMUTABLE_NOT_E2IMMUTABLE;
                         assertEquals(expectImm, d.getProperty(VariableProperty.IMMUTABLE));
                     }
                 }
