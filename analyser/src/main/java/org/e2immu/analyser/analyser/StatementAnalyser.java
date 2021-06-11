@@ -142,6 +142,9 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 blocks.add(Optional.of(subStatementAnalyser));
                 analysisBlocks.add(Optional.of(subStatementAnalyser.statementAnalysis));
             } else {
+                if (structure.isEmptyBlock()) {
+                    blocks.add(Optional.empty());
+                }
                 analysisBlocks.add(Optional.empty());
             }
             blockIndex++;

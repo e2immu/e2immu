@@ -98,6 +98,10 @@ public record Structure(List<Expression> initialisers,
         return statements != null && !statements.isEmpty();
     }
 
+    public boolean isEmptyBlock() {
+        return block != null && block.structure.statements.isEmpty();
+    }
+
     public static class Builder {
         private final List<Expression> initialisers = new ArrayList<>(); // try, for   (example: int i=0; )
         private Expression expression; // for, forEach, while, do, return, expression statement, switch primary  (typically, the condition); OR condition for switch entry
