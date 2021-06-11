@@ -2349,14 +2349,20 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         // main block
 
         // some loops are never executed, and we can see that
-        FlowData.Execution firstBlockStatementsExecution = structure.statementExecution().apply(value, evaluationContext);
-        FlowData.Execution firstBlockExecution = statementAnalysis.flowData.execution(firstBlockStatementsExecution);
+        int start;
+        if (statementAnalysis.statement instanceof SwitchStatementNewStyle) {
+            start = 0;
+        } else {
+            FlowData.Execution firstBlockStatementsExecution = structure.statementExecution().apply(value, evaluationContext);
+            FlowData.Execution firstBlockExecution = statementAnalysis.flowData.execution(firstBlockStatementsExecution);
 
-        executions.add(makeExecutionOfPrimaryBlock(sharedState.localConditionManager, firstBlockExecution, startOfBlocks, value,
-                valueIsDelayed));
+            executions.add(makeExecutionOfPrimaryBlock(sharedState.localConditionManager, firstBlockExecution, startOfBlocks, value,
+                    valueIsDelayed));
+            start = 1;
+        }
 
-        for (int count = 1; count < startOfBlocks.size(); count++) {
-            Structure subStatements = structure.subStatements().get(count - 1);
+        for (int count = start; count < startOfBlocks.size(); count++) {
+            Structure subStatements = structure.subStatements().get(count - start);
             Expression conditionForSubStatement;
             Set<Variable> conditionForSubStatementIsDelayed;
 
@@ -2380,9 +2386,9 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 conditionForSubStatement = NewObject.forCatchOrThis(index() + "-condition",
                         statementAnalysis.primitives, statementAnalysis.primitives.booleanParameterizedType);
                 conditionForSubStatementIsDelayed = null;
-            } else if (statement() instanceof SwitchEntry switchEntry) {
-                Expression constant = switchEntry.switchVariableAsExpression.evaluate(evaluationContext, ForwardEvaluationInfo.DEFAULT).value();
-                conditionForSubStatement = Equals.equals(evaluationContext, value, constant);
+            } else if (statement() instanceof SwitchStatementNewStyle newStyle) {
+                SwitchEntry switchEntry = newStyle.switchEntries.get(count);
+                conditionForSubStatement = switchEntry.structure.expression();
                 conditionForSubStatementIsDelayed = evaluationContext.isDelayedSet(conditionForSubStatement);
             } else throw new UnsupportedOperationException();
 

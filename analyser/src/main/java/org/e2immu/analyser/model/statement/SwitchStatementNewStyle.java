@@ -43,8 +43,9 @@ public class SwitchStatementNewStyle extends StatementWithExpression implements 
     private static Structure codeOrganization(Expression expression, List<SwitchEntry> switchEntries) {
         Structure.Builder builder = new Structure.Builder()
                 .setExpression(expression)
+                .setStatementExecution(StatementExecution.NEVER) // will be ignored
                 .setForwardEvaluationInfo(ForwardEvaluationInfo.NOT_NULL);
-        switchEntries.forEach(se -> builder.addSubStatement(se.getStructure()).setStatementExecution(se::statementExecution));
+        switchEntries.forEach(se -> builder.addSubStatement(se.getStructure()));
         return builder.build();
     }
 

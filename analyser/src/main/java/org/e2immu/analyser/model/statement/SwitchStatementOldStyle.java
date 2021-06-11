@@ -66,8 +66,8 @@ public class SwitchStatementOldStyle extends StatementWithExpression implements 
                 .setForwardEvaluationInfo(ForwardEvaluationInfo.NOT_NULL)
                 .setStatementExecution(StatementExecution.ALWAYS)
                 .setBlock(block).build(), selector);
-        this.switchLabels = switchLabels.stream().sorted().collect(Collectors.toUnmodifiableList());
-        labelExpressions = this.switchLabels.stream().map(SwitchLabel::expression).collect(Collectors.toUnmodifiableList());
+        this.switchLabels = switchLabels.stream().sorted().toList();
+        labelExpressions = this.switchLabels.stream().map(SwitchLabel::expression).toList();
     }
 
     @Override

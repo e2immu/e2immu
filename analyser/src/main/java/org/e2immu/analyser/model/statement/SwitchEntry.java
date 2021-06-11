@@ -93,10 +93,16 @@ public abstract class SwitchEntry extends StatementWithStructure {
 
     public abstract OutputBuilder output(Qualification qualification, Guide.GuideGenerator guideGenerator, StatementAnalysis statementAnalysis);
 
-    public FlowData.Execution statementExecution(Expression value, EvaluationContext evaluationContext) {
-        if (switchVariableAsExpression == EmptyExpression.DEFAULT_EXPRESSION) return FlowData.Execution.DEFAULT;
-        EvaluationResult result = switchVariableAsExpression.evaluate(evaluationContext, ForwardEvaluationInfo.DEFAULT);
-        return result.value().equals(value) ? FlowData.Execution.ALWAYS : value.isConstant() ? FlowData.Execution.NEVER : FlowData.Execution.CONDITIONALLY;
+    public static FlowData.Execution statementExecution(List<Expression> labels,
+                                                        Expression value,
+                                                        EvaluationContext evaluationContext) {
+        if (labels.isEmpty()) return FlowData.Execution.DEFAULT;
+        for (Expression label : labels) {
+            EvaluationResult result = label.evaluate(evaluationContext, ForwardEvaluationInfo.DEFAULT);
+            if (result.value().equals(value)) return FlowData.Execution.ALWAYS;
+        }
+        if (value.isConstant()) return FlowData.Execution.NEVER;
+        return FlowData.Execution.CONDITIONALLY;
     }
 
     //****************************************************************************************************************
@@ -165,8 +171,12 @@ public abstract class SwitchEntry extends StatementWithStructure {
         public BlockEntry(Primitives primitives,
                           Expression switchVariableAsExpression, List<Expression> labels, Block block) {
             super(primitives,
-                    new Structure.Builder().setExpression(generateConditionExpression(primitives, labels, switchVariableAsExpression))
-                            .setBlock(block).build(), switchVariableAsExpression, labels);
+                    new Structure.Builder()
+                            .setExpression(generateConditionExpression(primitives, labels, switchVariableAsExpression))
+                            .setStatementExecution((x, y) -> SwitchEntry.statementExecution(labels, x, y))
+                            .setBlock(block)
+                            .build(),
+                    switchVariableAsExpression, labels);
         }
 
         @Override

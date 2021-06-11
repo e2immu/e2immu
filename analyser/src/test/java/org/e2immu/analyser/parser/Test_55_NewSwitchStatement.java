@@ -32,7 +32,7 @@ public class Test_55_NewSwitchStatement extends CommonTestRunner {
 
     @Test
     public void test_1() throws IOException {
-        testClass("NewSwitchStatement_1", 0, 1, new DebugConfiguration.Builder()
+        testClass("NewSwitchStatement_1", 0, 0, new DebugConfiguration.Builder()
                 .build());
     }
 
