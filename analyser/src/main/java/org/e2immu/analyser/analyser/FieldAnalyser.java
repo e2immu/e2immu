@@ -79,7 +79,6 @@ public class FieldAnalyser extends AbstractAnalyser {
     private final boolean haveInitialiser;
 
     // set at initialisation time
-    private List<MethodAnalyser> allMethodsAndConstructors;
     private List<MethodAnalyser> myMethodsAndConstructors;
     private TypeAnalyser myTypeAnalyser;
 
@@ -159,21 +158,26 @@ public class FieldAnalyser extends AbstractAnalyser {
 
     @Override
     public void initialize() {
-        List<MethodAnalyser> allMethodsAndConstructors = new LinkedList<>();
         List<MethodAnalyser> myMethodsAndConstructors = new LinkedList<>();
 
         messages.addAll(fieldAnalysis.fromAnnotationsIntoProperties(AnalyserIdentification.FIELD, false,
                 fieldInfo.fieldInspection.get().getAnnotations(), analyserContext.getE2ImmuAnnotationExpressions()));
 
         analyserContext.methodAnalyserStream().forEach(analyser -> {
-            allMethodsAndConstructors.add(analyser);
             if (analyser.methodInfo.typeInfo == fieldInfo.owner) {
                 myMethodsAndConstructors.add(analyser);
             }
         });
         myTypeAnalyser = analyserContext.getTypeAnalyser(fieldInfo.owner);
-        this.allMethodsAndConstructors = List.copyOf(allMethodsAndConstructors);
         this.myMethodsAndConstructors = List.copyOf(myMethodsAndConstructors);
+    }
+
+    private Stream<MethodAnalyser> allMethodsAndConstructors(boolean alsoMyOwnConstructors) {
+        return analyserContext.methodAnalyserStream()
+                .filter(ma -> alsoMyOwnConstructors ||
+                        !(ma.methodInfo.typeInfo == fieldInfo.owner && ma.methodInfo.isConstructor))
+                .flatMap(ma -> Stream.concat(Stream.of(ma),
+                        ma.getLocallyCreatedPrimaryTypeAnalysers().flatMap(PrimaryTypeAnalyser::methodAnalyserStream)));
     }
 
     @Override
@@ -229,7 +233,7 @@ public class FieldAnalyser extends AbstractAnalyser {
                 }
                 log(FINAL, "Set initialiser of field {} to {}", fqn, evaluationResult.value());
                 if (evaluationResult.someValueWasDelayed()) {
-                    assert translatedDelay(EVALUATE_INITIALISER, "XX?", // FIXME how to label this?
+                    assert translatedDelay(EVALUATE_INITIALISER, "EXPRESSION " + initialiserValue,
                             fqn + ".initialValue");
                     return DELAYS;
                 }
@@ -312,7 +316,7 @@ public class FieldAnalyser extends AbstractAnalyser {
         }
 
         if (onlyAssignedToParameters) {
-            int bestOverContext = allMethodsAndConstructors.stream()
+            int bestOverContext = allMethodsAndConstructors(true)
                     .flatMap(m -> m.getFieldAsVariableStream(fieldInfo, true))
                     .mapToInt(vi -> vi.getProperty(VariableProperty.CONTEXT_NOT_NULL))
                     .reduce(MultiLevel.NULLABLE, MAX);
@@ -399,9 +403,7 @@ public class FieldAnalyser extends AbstractAnalyser {
     private AnalysisStatus fieldErrors() {
         if (fieldInspection.getModifiers().contains(FieldModifier.PRIVATE)) {
             if (!fieldInfo.isStatic()) {
-                boolean readInMethods = allMethodsAndConstructors.stream()
-                        .filter(m -> !(m.methodInfo.isConstructor && m.methodInfo.typeInfo == fieldInfo.owner)) // not my own constructors
-                        .anyMatch(this::isReadInMethod);
+                boolean readInMethods = allMethodsAndConstructors(false).anyMatch(this::isReadInMethod);
                 if (!readInMethods) {
                     messages.add(Message.newMessage(new Location(fieldInfo), Message.Label.PRIVATE_FIELD_NOT_READ));
                 }
@@ -466,7 +468,7 @@ public class FieldAnalyser extends AbstractAnalyser {
         }
 
         if (onlyAssignedToParameters) {
-            int bestOverContext = allMethodsAndConstructors.stream()
+            int bestOverContext = allMethodsAndConstructors(true)
                     .flatMap(m -> m.getFieldAsVariableStream(fieldInfo, true))
                     .mapToInt(vi -> vi.getProperty(VariableProperty.CONTEXT_IMMUTABLE))
                     .reduce(MultiLevel.MUTABLE, MAX);
@@ -513,7 +515,7 @@ public class FieldAnalyser extends AbstractAnalyser {
             // if we have an assignment to an eventually immutable variable, but somehow the construction context enforces "after"
             // that should be taken into account (see EventuallyImmutableUtil_2 vs E2InContext_2)
             if (MultiLevel.isBeforeAllowNotEventual(worstOverValuesBreakParameterDelay)) {
-                int bestOverContext = allMethodsAndConstructors.stream()
+                int bestOverContext = myMethodsAndConstructors.stream()
                         .filter(m -> m.methodInfo.isConstructor || m.methodInfo.methodResolution.get().partOfConstruction()
                                 == MethodResolution.CallStatus.PART_OF_CONSTRUCTION)
                         .flatMap(m -> m.getFieldAsVariableStream(fieldInfo, true))
@@ -804,7 +806,7 @@ public class FieldAnalyser extends AbstractAnalyser {
         assert !fieldAnalysis.linked1Variables.isSet();
 
         // we ONLY look at the linked variables of fields that have been assigned to
-        Optional<MethodInfo> notDefined = allMethodsAndConstructors.stream()
+        Optional<MethodInfo> notDefined = allMethodsAndConstructors(true)
                 .filter(m -> {
                     List<VariableInfo> variableInfoList = m.getFieldAsVariable(fieldInfo, false);
                     return !variableInfoList.isEmpty() &&
@@ -823,7 +825,7 @@ public class FieldAnalyser extends AbstractAnalyser {
             return DELAYS;
         }
 
-        Set<Variable> linked1Variables = allMethodsAndConstructors.stream()
+        Set<Variable> linked1Variables = allMethodsAndConstructors(true)
                 .flatMap(m -> m.getFieldAsVariableStream(fieldInfo, false))
                 .filter(vi -> vi.valueIsSet() && vi.getValue().isInstanceOf(VariableExpression.class))
                 .map(vi -> vi.getValue().asInstanceOf(VariableExpression.class).variable())
@@ -853,7 +855,7 @@ public class FieldAnalyser extends AbstractAnalyser {
         }
 
         // we ONLY look at the linked variables of fields that have been assigned to
-        Optional<MethodInfo> notDefined = allMethodsAndConstructors.stream()
+        Optional<MethodInfo> notDefined = allMethodsAndConstructors(true)
                 .filter(m -> {
                     List<VariableInfo> variableInfoList = m.getFieldAsVariable(fieldInfo, false);
                     return !variableInfoList.isEmpty() &&
@@ -866,7 +868,7 @@ public class FieldAnalyser extends AbstractAnalyser {
             return DELAYS;
         }
 
-        Set<Variable> linkedVariables = allMethodsAndConstructors.stream()
+        Set<Variable> linkedVariables = allMethodsAndConstructors(true)
                 .flatMap(m -> m.getFieldAsVariableStream(fieldInfo, false))
                 .filter(VariableInfo::linkedVariablesIsSet)
                 .flatMap(vi -> vi.getLinkedVariables().variables().stream())
@@ -897,7 +899,7 @@ public class FieldAnalyser extends AbstractAnalyser {
             // this means other types can write to the field... not final by definition
             isFinal = false;
         } else {
-            isFinal = allMethodsAndConstructors.stream()
+            isFinal = allMethodsAndConstructors(true)
                     .filter(m -> m.methodInfo.methodResolution.get().partOfConstruction().accessibleFromTheOutside())
                     .flatMap(m -> m.getFieldAsVariableStream(fieldInfo, false))
                     .noneMatch(VariableInfo::isAssigned);
@@ -932,7 +934,7 @@ public class FieldAnalyser extends AbstractAnalyser {
             log(DELAYED, "Delaying @PropagateModification, have no linked variables yet for field {}", fqn);
             return DELAYS;
         }
-        int max = allMethodsAndConstructors.stream()
+        int max = allMethodsAndConstructors(true)
                 .filter(m -> m.methodAnalysis.getLastStatement() != null)
                 .filter(m -> m.methodAnalysis.getLastStatement().variables.isSet(fqn))
                 .mapToInt(m -> {
@@ -966,8 +968,7 @@ public class FieldAnalyser extends AbstractAnalyser {
         }
 
         boolean modified = fieldCanBeWrittenFromOutsideThisPrimaryType ||
-                allMethodsAndConstructors.stream()
-                        .filter(m -> !m.methodInfo.isConstructor)
+                allMethodsAndConstructors(false)
                         .flatMap(m -> m.getFieldAsVariableStream(fieldInfo, true))
                         .filter(VariableInfo::isRead)
                         .anyMatch(vi -> vi.getProperty(VariableProperty.CONTEXT_MODIFIED) == Level.TRUE);
@@ -979,8 +980,7 @@ public class FieldAnalyser extends AbstractAnalyser {
         }
 
         // we only consider methods, not constructors!
-        boolean allContextModificationsDefined = allMethodsAndConstructors.stream()
-                .filter(m -> !m.methodInfo.isConstructor)
+        boolean allContextModificationsDefined = allMethodsAndConstructors(false)
                 .allMatch(m -> {
                     List<VariableInfo> variableInfoList = m.getFieldAsVariable(fieldInfo, true);
                     // AggregatingMethodAnalyser returns empty list, so cast is safe
@@ -999,7 +999,7 @@ public class FieldAnalyser extends AbstractAnalyser {
         if (Logger.isLogEnabled(DELAYED)) {
             log(DELAYED, "Cannot yet conclude if field {}'s contents have been modified, not all read or links",
                     fqn);
-            allMethodsAndConstructors.stream().filter(m -> !m.methodInfo.isConstructor &&
+            allMethodsAndConstructors(false).filter(m -> !m.methodInfo.isConstructor &&
                     !m.getFieldAsVariable(fieldInfo, true).isEmpty() &&
                     m.getFieldAsVariable(fieldInfo, true).stream().anyMatch(VariableInfo::isRead) &&
                     !((ComputingMethodAnalyser) m).methodLevelData().acceptLinksHaveBeenEstablished(ignoreMyConstructors))

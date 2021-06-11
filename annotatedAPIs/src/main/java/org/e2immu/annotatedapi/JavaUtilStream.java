@@ -95,6 +95,9 @@ public class JavaUtilStream {
         <R> Stream<R> map(@PropagateModification @NotNull Function<? super T, ? extends R> mapper);
 
         @NotNull
+        <R> Stream<R> flatMap(@PropagateModification @NotNull Function<? super T, ? extends Stream<? extends R>> mapper);
+
+        @NotNull
         <R, A> R collect(@NotNull Collector<? super T, A, R> collector);
 
         @NotNull

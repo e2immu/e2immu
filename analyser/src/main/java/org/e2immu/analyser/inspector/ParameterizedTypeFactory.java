@@ -113,7 +113,7 @@ public class ParameterizedTypeFactory {
                 return new ParameterizedType(typeInfo, arrays);
             }
             // Set<T>... == Set<T>[]
-            return new ParameterizedType(typeInfo, arrays, ParameterizedType.WildCard.NONE, parameters);
+            return new ParameterizedType(typeInfo, arrays, wildCard, parameters);
         }
         if (namedType instanceof TypeParameter typeParameter) {
             if (!parameters.isEmpty()) {

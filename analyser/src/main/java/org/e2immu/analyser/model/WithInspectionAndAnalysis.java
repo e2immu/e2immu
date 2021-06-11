@@ -16,10 +16,7 @@ package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.analyser.AbstractAnalysisBuilder;
 import org.e2immu.analyser.analyser.AnnotationParameters;
-import org.e2immu.analyser.output.OutputBuilder;
-import org.e2immu.analyser.output.Symbol;
-import org.e2immu.analyser.output.Text;
-import org.e2immu.analyser.output.TypeName;
+import org.e2immu.analyser.output.*;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 
 import java.util.*;
@@ -103,7 +100,15 @@ public interface WithInspectionAndAnalysis {
         if (hasBeenAnalysed()) {
             for (AnnotationExpression annotation : annotations) {
                 Analysis.AnnotationCheck annotationCheck = getAnalysis().getAnnotation(annotation);
-                if (annotationCheck != Analysis.AnnotationCheck.ABSENT) {
+                if (annotationCheck == Analysis.AnnotationCheck.MISSING) {
+                    OutputBuilder outputBuilder = new OutputBuilder()
+                            .add(Symbol.LEFT_BLOCK_COMMENT)
+                            .add(annotation.output(qualification))
+                            .add(Space.ONE_REQUIRED_EASY_SPLIT)
+                            .add(new Text(annotationCheck.toString()))
+                            .add(Symbol.RIGHT_BLOCK_COMMENT);
+                    perAnnotation.add(outputBuilder);
+                } else if (annotationCheck != Analysis.AnnotationCheck.ABSENT) {
                     OutputBuilder outputBuilder = new OutputBuilder().add(annotation.output(qualification));
                     if (annotationCheck.writeComment()) {
                         outputBuilder.add(Symbol.LEFT_BLOCK_COMMENT).add(new Text(annotationCheck.toString()))
@@ -114,7 +119,7 @@ public interface WithInspectionAndAnalysis {
             }
         }
         if (perAnnotation.size() > 1) {
-            perAnnotation.sort(Comparator.comparing(a -> ((TypeName) a.get(1)).simpleName()));
+            perAnnotation.sort(Comparator.comparing(a -> a.findTypeName().simpleName()));
         }
         return perAnnotation.stream();
     }

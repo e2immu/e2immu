@@ -24,6 +24,7 @@ import java.util.stream.Stream;
 @E2Container
 public class MethodReferences_3 {
 
+    @NotModified
     private final Map<String, Integer> map = new HashMap<>();
 
     public MethodReferences_3(int i) {

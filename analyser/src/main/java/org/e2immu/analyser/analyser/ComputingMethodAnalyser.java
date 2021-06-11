@@ -453,7 +453,7 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
         return null;
     }
 
-    private final static Set<VariableProperty> READ_FROM_RETURN_VALUE_PROPERTIES = Set.of(IDENTITY, CONTAINER);
+    private final static Set<VariableProperty> READ_FROM_RETURN_VALUE_PROPERTIES = Set.of(CONTAINER);
 
     // singleReturnValue is associated with @Constant; to be able to grab the actual Value object
     // but we cannot assign this value too early: first, there should be no evaluation anymore with NO_VALUES in them
@@ -578,6 +578,14 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
         methodAnalysis.setProperty(VariableProperty.FLUENT, Level.fromBool(isFluent));
         log(METHOD_ANALYSER, "Mark method {} as @Fluent? {}", methodInfo.fullyQualifiedName(), isFluent);
 
+        int currentIdentity = methodAnalysis.getProperty(IDENTITY);
+        if (currentIdentity == Level.DELAY) {
+            VariableExpression ve2;
+            boolean isIdentity = (ve2 = valueBeforeInlining.asInstanceOf(VariableExpression.class)) != null &&
+                    ve2.variable() instanceof ParameterInfo pi && pi.getMethod() == methodInfo && pi.index == 0;
+            methodAnalysis.setProperty(IDENTITY, Level.fromBool(isIdentity));
+        }
+        // this is pretty dangerous for IDENTITY / will work for CONTAINER
         for (VariableProperty variableProperty : READ_FROM_RETURN_VALUE_PROPERTIES) {
             int v = variableInfo.getProperty(variableProperty);
             if (v == Level.DELAY) v = variableProperty.falseValue;

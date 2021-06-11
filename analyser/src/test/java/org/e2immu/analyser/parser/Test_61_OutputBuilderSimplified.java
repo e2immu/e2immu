@@ -23,10 +23,7 @@ import org.e2immu.analyser.model.ParameterAnalysis;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
-import org.e2immu.analyser.visitor.EvaluationResultVisitor;
-import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
-import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
-import org.e2immu.analyser.visitor.TypeAnalyserVisitor;
+import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -206,7 +203,7 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
                 assertEquals("instance type $1", d.methodAnalysis().getSingleReturnValue().toString());
                 assertTrue(d.methodAnalysis().methodLevelData().linksHaveBeenEstablished.isSet());
 
-              //  assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, d.methodAnalysis().getProperty(VariableProperty.IMMUTABLE));
+                //  assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, d.methodAnalysis().getProperty(VariableProperty.IMMUTABLE));
             }
             if ("j1".equals(d.methodInfo().name)) {
                 // single statement: return j2(); links have not been established
@@ -219,7 +216,7 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("$1".equals(d.typeInfo().simpleName)) {
-             //   assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, d.typeAnalysis().getProperty(VariableProperty.IMMUTABLE));
+                //   assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, d.typeAnalysis().getProperty(VariableProperty.IMMUTABLE));
             }
         };
         testClass("OutputBuilderSimplified_4", 0, 0, new DebugConfiguration.Builder()
@@ -251,4 +248,47 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
                 .build());
     }
 
+    // delay, but not minimized; see 9
+    @Test
+    public void test_7() throws IOException {
+        testClass("OutputBuilderSimplified_7", 0, 0, new DebugConfiguration.Builder()
+                .build());
+    }
+
+    // picked up a bug in Identity computation
+    @Test
+    public void test_8() throws IOException {
+        // unused parameter
+        testClass("OutputBuilderSimplified_8", 0, 1, new DebugConfiguration.Builder()
+                .build());
+    }
+
+    // again, simplifying to find the infinite loop; this time, there's a modifying method
+    @Test
+    public void test_9() throws IOException {
+        FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+            if ("countMid".equals(d.fieldInfo().name)) {
+                int expectMom = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
+                assertEquals(expectMom, d.fieldAnalysis().getProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD));
+            }
+        };
+        testClass("OutputBuilderSimplified_9", 0, 0, new DebugConfiguration.Builder()
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .build());
+    }
+
+    // function instead of consumer
+    @Test
+    public void test_10() throws IOException {
+        testClass("OutputBuilderSimplified_10", 0, 0, new DebugConfiguration.Builder()
+                .build());
+    }
+
+    // again, simplifying to find the infinite loop; this time, everything is immutable
+    @Test
+    public void test_11() throws IOException {
+
+        testClass("OutputBuilderSimplified_11", 0, 0, new DebugConfiguration.Builder()
+                .build());
+    }
 }

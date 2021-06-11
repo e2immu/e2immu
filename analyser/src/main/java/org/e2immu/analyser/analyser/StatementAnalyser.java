@@ -2552,6 +2552,27 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 return DELAYS;
             }
             if (modified == Level.FALSE) {
+                MethodInspection methodCallInspection = analyserContext.getMethodInspection(methodCall.methodInfo);
+                if (methodCallInspection.isStatic()) {
+                    // for static methods, we verify if one of the parameters is modifying
+                    boolean delays = false;
+                    for (ParameterInfo parameterInfo : methodCallInspection.getParameters()) {
+                        ParameterAnalysis parameterAnalysis = analyserContext.getParameterAnalysis(parameterInfo);
+                        int mv = parameterAnalysis.getProperty(MODIFIED_VARIABLE);
+                        if (mv == Level.TRUE) {
+                            return DONE;
+                        }
+                        if (mv == Level.DELAY) {
+                            delays = true;
+                        }
+                    }
+                    if (delays) {
+                        log(DELAYED, "Delaying unused return value {} {}, waiting for @Modified of parameters in {}",
+                                index(), myMethodAnalyser.methodInfo.fullyQualifiedName, methodCall.methodInfo.fullyQualifiedName());
+                        return DELAYS;
+                    }
+                }
+
                 statementAnalysis.ensure(Message.newMessage(getLocation(), Message.Label.IGNORING_RESULT_OF_METHOD_CALL,
                         methodCall.getMethodInfo().fullyQualifiedName()));
             }

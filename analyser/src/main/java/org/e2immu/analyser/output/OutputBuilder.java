@@ -14,6 +14,8 @@
 
 package org.e2immu.analyser.output;
 
+import org.e2immu.analyser.model.LocalVariable;
+
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.*;
@@ -142,5 +144,9 @@ public class OutputBuilder {
 
     public void replace(UnaryOperator<OutputElement> replacer) {
         list.replaceAll(replacer);
+    }
+
+    public TypeName findTypeName() {
+        return (TypeName) list.stream().filter(oe -> oe instanceof TypeName).findFirst().orElseThrow();
     }
 }

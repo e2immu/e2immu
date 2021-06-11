@@ -17,5 +17,8 @@ public class JavaUtilConcurrentAtomic {
         int getAndIncrement() {
             return 0;
         }
+
+        @Modified
+        int incrementAndGet() { return 0; }
     }
 }

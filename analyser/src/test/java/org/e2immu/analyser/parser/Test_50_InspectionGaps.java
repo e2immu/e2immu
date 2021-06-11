@@ -201,4 +201,18 @@ public class Test_50_InspectionGaps extends CommonTestRunner {
                 new AnalyserConfiguration.Builder().build(),
                 new AnnotatedAPIConfiguration.Builder().build());
     }
+
+    // flatMap
+    @Test
+    public void test_14() throws IOException {
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("flatMap".equals(d.methodInfo().name)) {
+                assertEquals("org.e2immu.analyser.testexample.InspectionGaps_14.flatMap(java.util.function.Function<? super T,? extends java.util.stream.Stream<? extends R>>)", d.methodInfo().fullyQualifiedName);
+            }
+        };
+        testClass("InspectionGaps_14", 1, 1,
+                new DebugConfiguration.Builder()
+                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        .build());
+    }
 }
