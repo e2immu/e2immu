@@ -1,3 +1,4 @@
+
 /*
  * e2immu: a static code analyser for effective and eventual immutability
  * Copyright 2020-2021, Bart Naudts, https://www.e2immu.org
@@ -14,17 +15,23 @@
 
 package org.e2immu.analyser.parser;
 
-import com.github.javaparser.ParseException;
-import org.e2immu.analyser.inspector.TypeInspectionImpl;
-import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.config.DebugConfiguration;
+import org.junit.jupiter.api.Test;
 
-/**
- * Interface to avoid a circular dependency between the ParseAndInspect type and the TypeMapImpl.Builder.
- * The builder has to be able to inspect types on demand, while inspecting another type.
- * <p>
- * In a similar way, the byte code inspector is known to the TypeMapImpl.Builder, whilst the ByteCodeInspector needs the TypeMapImpl.Builder.
- */
-public interface InspectWithJavaParser {
+import java.io.IOException;
+import java.util.List;
 
-    void inspect(TypeInfo typeInfo, TypeInspectionImpl.Builder typeInspectionBuilder) throws ParseException;
+public class Test_Output_03_Formatter extends CommonTestRunner {
+
+    public Test_Output_03_Formatter() {
+        super(true);
+    }
+
+    @Test
+    public void test() throws IOException {
+        testOutputClass(List.of("Formatter", "ElementarySpace", "OutputElement", "FormattingOptions", "Guide"),
+                0, 0, new DebugConfiguration.Builder()
+                        .build());
+    }
+
 }

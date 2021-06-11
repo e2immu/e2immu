@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.parser;
 
+import com.github.javaparser.ParseException;
 import org.apache.commons.io.IOUtils;
 import org.e2immu.analyser.analyser.AnnotatedAPIAnalyser;
 import org.e2immu.analyser.analyser.PrimaryTypeAnalyser;
@@ -153,7 +154,7 @@ public class Parser {
         }
 
         @Override
-        public void inspect(TypeInfo typeInfo, TypeInspectionImpl.Builder typeInspectionBuilder) {
+        public void inspect(TypeInfo typeInfo, TypeInspectionImpl.Builder typeInspectionBuilder) throws ParseException {
             if (typeInspectionBuilder.getInspectionState() != TRIGGER_JAVA_PARSER) {
                 return; // already done, or started
             }

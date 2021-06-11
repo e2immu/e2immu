@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.parser;
 
+import com.github.javaparser.ParseException;
 import org.e2immu.analyser.bytecode.ByteCodeInspector;
 import org.e2immu.analyser.inspector.FieldInspectionImpl;
 import org.e2immu.analyser.inspector.MethodInspectionImpl;
@@ -360,7 +361,11 @@ public class TypeMapImpl implements TypeMap {
                     typeInspection.setInspectionState(TRIGGER_BYTECODE_INSPECTION);
                 }
             } else if (typeInspection.getInspectionState() == TRIGGER_JAVA_PARSER) {
-                inspectWithJavaParser.inspect(typeInfo, typeInspection);
+                try {
+                    inspectWithJavaParser.inspect(typeInfo, typeInspection);
+                } catch (ParseException e) {
+                    throw new UnsupportedOperationException("Caught parse exception: " + e);
+                }
                 if (typeInspection.getInspectionState().lt(FINISHED_JAVA_PARSER)) {
                     throw new UnsupportedOperationException("? expected the java parser to do its job");
                 }

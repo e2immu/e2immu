@@ -14,17 +14,27 @@
 
 package org.e2immu.analyser.parser;
 
-import com.github.javaparser.ParseException;
-import org.e2immu.analyser.inspector.TypeInspectionImpl;
-import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.analyser.VariableProperty;
+import org.e2immu.analyser.config.DebugConfiguration;
+import org.e2immu.analyser.model.Level;
+import org.e2immu.analyser.visitor.FieldAnalyserVisitor;
+import org.junit.jupiter.api.Test;
 
-/**
- * Interface to avoid a circular dependency between the ParseAndInspect type and the TypeMapImpl.Builder.
- * The builder has to be able to inspect types on demand, while inspecting another type.
- * <p>
- * In a similar way, the byte code inspector is known to the TypeMapImpl.Builder, whilst the ByteCodeInspector needs the TypeMapImpl.Builder.
- */
-public interface InspectWithJavaParser {
+import java.io.IOException;
 
-    void inspect(TypeInfo typeInfo, TypeInspectionImpl.Builder typeInspectionBuilder) throws ParseException;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+public class Test_62_FormatterSimplified extends CommonTestRunner {
+
+    // AtomicInteger, System.out, ...
+    public Test_62_FormatterSimplified() {
+        super(true);
+    }
+
+    @Test
+    public void test_0() throws IOException {
+        testClass("FormatterSimplified_0", 0, 0, new DebugConfiguration.Builder()
+                .build());
+    }
+
 }

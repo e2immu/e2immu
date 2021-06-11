@@ -15,6 +15,7 @@
 package org.e2immu.analyser.inspector;
 
 import com.github.javaparser.JavaParser;
+import com.github.javaparser.ParseException;
 import com.github.javaparser.ParseResult;
 import com.github.javaparser.ParserConfiguration;
 import com.github.javaparser.ast.CompilationUnit;
@@ -56,13 +57,14 @@ public record ParseAndInspect(Resources classPath,
      * @param sourceCode        the source code to parse
      * @return the list of primary types found in the source code
      */
-    public List<TypeInfo> run(TypeContext typeContextOfFile, String fileName, String sourceCode) {
+    public List<TypeInfo> run(TypeContext typeContextOfFile, String fileName, String sourceCode) throws ParseException {
         log(INSPECTOR, "Parsing compilation unit {}", fileName);
 
         JavaParser javaParser = new JavaParser(new ParserConfiguration().setLanguageLevel(ParserConfiguration.LanguageLevel.JAVA_16));
         ParseResult<CompilationUnit> parseResult = javaParser.parse(sourceCode);
         if (!parseResult.isSuccessful() || parseResult.getResult().isEmpty()) {
-            throw new UnsupportedOperationException();
+            parseResult.getProblems().forEach(problem -> LOGGER.error("Parsing problem: {}", problem));
+            throw new ParseException();
         }
         CompilationUnit compilationUnit = parseResult.getResult().get();
         if (compilationUnit.getTypes().isEmpty()) {
