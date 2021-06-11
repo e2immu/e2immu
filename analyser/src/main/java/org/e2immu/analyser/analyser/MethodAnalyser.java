@@ -167,6 +167,7 @@ public abstract class MethodAnalyser extends AbstractAnalyser implements HoldsAn
         CheckEventual.checkTestMark(messages, methodInfo, methodAnalysis);
 
         getParameterAnalysers().forEach(ParameterAnalyser::check);
+        getLocallyCreatedPrimaryTypeAnalysers().forEach(PrimaryTypeAnalyser::check);
 
         checkWorseThanOverriddenMethod();
     }
@@ -204,6 +205,7 @@ public abstract class MethodAnalyser extends AbstractAnalyser implements HoldsAn
         // before we check, we copy the properties into annotations
         methodAnalysis.transferPropertiesToAnnotations(analyserContext, e2);
         parameterAnalysers.forEach(ParameterAnalyser::write);
+        getLocallyCreatedPrimaryTypeAnalysers().forEach(PrimaryTypeAnalyser::write);
     }
 
     public abstract List<VariableInfo> getFieldAsVariable(FieldInfo fieldInfo, boolean b);

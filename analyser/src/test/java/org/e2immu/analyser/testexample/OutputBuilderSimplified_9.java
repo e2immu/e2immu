@@ -1,5 +1,10 @@
 package org.e2immu.analyser.testexample;
 
+import org.e2immu.annotation.E1Immutable;
+import org.e2immu.annotation.Modified;
+import org.e2immu.annotation.NotModified;
+import org.e2immu.annotation.NotNull;
+
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
@@ -12,8 +17,13 @@ import java.util.function.Supplier;
 
 public class OutputBuilderSimplified_9 {
 
+    @E1Immutable
+    @NotNull
+    @NotModified
     public static Supplier<BiConsumer<OutputBuilderSimplified_9, OutputBuilderSimplified_9>> joining() {
         return new Supplier<>() {
+
+            @Modified
             private final AtomicInteger countMid = new AtomicInteger();
 
             @Override
