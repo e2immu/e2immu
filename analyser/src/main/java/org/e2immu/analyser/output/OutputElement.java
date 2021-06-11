@@ -14,14 +14,13 @@
 
 package org.e2immu.analyser.output;
 
-import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.NotModified;
 import org.e2immu.annotation.NotNull;
 
-@E2Container
 public interface OutputElement {
 
     @NotModified
+    @NotNull
     String minimal();
 
     default String debug() {
@@ -37,8 +36,10 @@ public interface OutputElement {
     default int length(FormattingOptions options) { return write(options).length(); }
 
     @NotModified
+    @NotNull
     String write(FormattingOptions options);
 
     @NotModified
+    @NotNull
     String generateJavaForDebugging();
 }

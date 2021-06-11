@@ -56,7 +56,7 @@ public class Location {
 
     @Override
     public String toString() {
-        return info == null ? "<no location>" : typeLetter(info) + ":" + info.name()
+        return info == null ? "<no location>" : info.niceClassName() + " " + info.fullyQualifiedName()
                 + (statementWithinMethod == null ? "" : ":" + statementWithinMethod)
                 + (expression == null ? "" : "#" + expression);
     }

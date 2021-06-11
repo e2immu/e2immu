@@ -14,7 +14,10 @@
 
 package org.e2immu.analyser.model.expression;
 
-import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.EvaluationContext;
+import org.e2immu.analyser.analyser.EvaluationResult;
+import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
+import org.e2immu.analyser.analyser.LinkedVariables;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
@@ -23,6 +26,7 @@ import org.e2immu.analyser.util.UpgradableBooleanMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Predicate;
 
 public record Cast(Expression expression, ParameterizedType parameterizedType) implements Expression {
 
@@ -59,7 +63,7 @@ public record Cast(Expression expression, ParameterizedType parameterizedType) i
     public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
         EvaluationResult er = expression.evaluate(evaluationContext, forwardEvaluationInfo);
 
-        if(parameterizedType.equals(er.getExpression().returnType())) return er;
+        if (parameterizedType.equals(er.getExpression().returnType())) return er;
         Expression result = PropertyWrapper.propertyWrapper(expression, Map.of(), parameterizedType);
 
         return new EvaluationResult.Builder(evaluationContext).compose(er).setExpression(result).build();
@@ -94,5 +98,12 @@ public record Cast(Expression expression, ParameterizedType parameterizedType) i
     @Override
     public List<? extends Element> subElements() {
         return List.of(expression);
+    }
+
+    @Override
+    public void visit(Predicate<Expression> predicate) {
+        if (predicate.test(expression)) {
+            expression.visit(predicate);
+        }
     }
 }

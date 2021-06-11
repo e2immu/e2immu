@@ -127,4 +127,6 @@ public interface WithInspectionAndAnalysis {
     default MethodInfo getMethod() {
         return null;
     }
+
+    String niceClassName();
 }

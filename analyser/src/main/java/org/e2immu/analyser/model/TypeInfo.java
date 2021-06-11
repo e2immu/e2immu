@@ -15,7 +15,8 @@
 package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.model.expression.ConstantExpression;
-import org.e2immu.analyser.output.*;
+import org.e2immu.analyser.output.OutputBuilder;
+import org.e2immu.analyser.output.OutputTypeInfo;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.ListUtil;
@@ -474,9 +475,25 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
 
     public boolean typePropertiesAreContracted() {
         TypeInspection inspection = typeInspection.get();
-        if(inspection.isInterface()) {
+        if (inspection.isInterface()) {
             return !inspection.isSealed() && !typeResolution.get().hasOneKnownGeneratedImplementation();
         }
         return false;
+    }
+
+    @Override
+    public String niceClassName() {
+        if (typeInspection.isSet()) {
+            TypeNature typeNature = typeInspection.get().typeNature();
+            return switch (typeNature) {
+                case CLASS -> "Class";
+                case INTERFACE -> "Interface";
+                case ENUM -> "Enum";
+                case ANNOTATION -> "Annotation";
+                case RECORD -> "Record";
+                default -> "Type";
+            };
+        }
+        return "Type";
     }
 }

@@ -14,7 +14,7 @@
 
 package org.e2immu.analyser.output;
 
-import org.e2immu.analyser.model.LocalVariable;
+import org.e2immu.annotation.E1Container;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -22,6 +22,7 @@ import java.util.function.*;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
+@E1Container
 public class OutputBuilder {
     final List<OutputElement> list = new LinkedList<>();
 

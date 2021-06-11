@@ -216,4 +216,9 @@ public class ParameterInfo implements Variable, WithInspectionAndAnalysis, Compa
     public MethodInfo getMethod() {
         return owner;
     }
+
+    @Override
+    public String niceClassName() {
+        return "Parameter";
+    }
 }

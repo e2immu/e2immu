@@ -283,4 +283,9 @@ public class MethodInfo implements WithInspectionAndAnalysis {
     public MethodInfo getMethod() {
         return this;
     }
+
+    @Override
+    public String niceClassName() {
+        return "Method";
+    }
 }
