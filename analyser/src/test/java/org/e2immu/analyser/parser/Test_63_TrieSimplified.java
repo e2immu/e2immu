@@ -14,7 +14,12 @@
 
 package org.e2immu.analyser.parser;
 
+import org.e2immu.analyser.analyser.LinkedVariables;
+import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
+import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.visitor.EvaluationResultVisitor;
+import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
 import org.junit.jupiter.api.Test;
 
@@ -37,16 +42,53 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
     // there should be no null ptr warnings
     @Test
     public void test_1() throws IOException {
+        EvaluationResultVisitor evaluationResultVisitor = d -> {
+            if ("add".equals(d.methodInfo().name)) {
+                if ("0.1.0".equals(d.statementId())) {
+                    String expectCondition = d.iteration() == 0 ? "<m:get>" : "map$0.get(s)";
+                    assertEquals(expectCondition, d.evaluationResult().value().toString());
+                }
+                if("0.1.1.0.1".equals(d.statementId())) {
+                    // FIXME, ERROR in eval, iteration 1
+                    String expectCondition = d.iteration() == 0 ? "<m:put>" : "map$0.get(s)";
+                    assertEquals(expectCondition, d.evaluationResult().value().toString());
+                }
+            }
+        };
+
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("add".equals(d.methodInfo().name)) {
+                if ("org.e2immu.analyser.testexample.TrieSimplified_1.TrieNode.map#root".equals(d.variable().fullyQualifiedName())) {
+                    if ("0.1.0".equals(d.statementId()) || "0.1.1.0.0".equals(d.statementId()) || "0.1.1.0.1".equals(d.statementId())) {
+                        String expectValue = d.iteration() == 0 ? "<f:map>" : "nullable instance type Map<String,TrieNode<T>>";
+                        assertEquals(expectValue, d.currentValue().toString());
+                        String expectLinked = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "";
+                        assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
+
+                        // nullable, because we already have a condition saying that the value is not null
+                        assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.CONTEXT_NOT_NULL),
+                                "Fails in "+d.statementId());
+                    }
+                }
+            }
+        };
+
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("add".equals(d.methodInfo().name)) {
                 if ("0.1.0".equals(d.statementId())) {
                     String expectCondition = d.iteration() == 0 ? "null!=<f:map>" : "null!=map$0";
                     assertEquals(expectCondition, d.condition().toString());
                 }
+                if ("0.1.1.0.1".equals(d.statementId())) {
+                    String expectCondition = d.iteration() == 0 ? "null==<m:get>&&null!=<f:map>" : "null==map$0.get(s)&&null!=map$0";
+                    assertEquals(expectCondition, d.absoluteState().toString());
+                }
             }
         };
         testClass("TrieSimplified_1", 0, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 

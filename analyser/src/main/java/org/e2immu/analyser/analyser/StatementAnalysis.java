@@ -819,30 +819,33 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
 
         // then, per cluster of variables
 
+        ContextPropertyWriter.LocalCopyData localCopyData =
+                ContextPropertyWriter.localCopyPreferences(groupPropertyValues.allVariables());
+
         ContextPropertyWriter contextPropertyWriter = new ContextPropertyWriter();
         AnalysisStatus ennStatus = contextPropertyWriter.write(this, evaluationContext,
                 VariableInfo::getStaticallyAssignedVariables, EXTERNAL_NOT_NULL,
-                groupPropertyValues.getMap(EXTERNAL_NOT_NULL), MERGE, doNotWrite);
+                groupPropertyValues.getMap(EXTERNAL_NOT_NULL), MERGE, doNotWrite, localCopyData);
 
         AnalysisStatus cnnStatus = contextPropertyWriter.write(this, evaluationContext,
                 VariableInfo::getStaticallyAssignedVariables, CONTEXT_NOT_NULL,
-                groupPropertyValues.getMap(CONTEXT_NOT_NULL), MERGE, doNotWrite);
+                groupPropertyValues.getMap(CONTEXT_NOT_NULL), MERGE, doNotWrite, localCopyData);
 
         AnalysisStatus extImmStatus = contextPropertyWriter.write(this, evaluationContext,
                 VariableInfo::getStaticallyAssignedVariables, EXTERNAL_IMMUTABLE,
-                groupPropertyValues.getMap(EXTERNAL_IMMUTABLE), MERGE, doNotWrite);
+                groupPropertyValues.getMap(EXTERNAL_IMMUTABLE), MERGE, doNotWrite, localCopyData);
 
         AnalysisStatus cImmStatus = contextPropertyWriter.write(this, evaluationContext,
                 VariableInfo::getStaticallyAssignedVariables, CONTEXT_IMMUTABLE,
-                groupPropertyValues.getMap(CONTEXT_IMMUTABLE), MERGE, doNotWrite);
+                groupPropertyValues.getMap(CONTEXT_IMMUTABLE), MERGE, doNotWrite, localCopyData);
 
         AnalysisStatus cmStatus = contextPropertyWriter.write(this, evaluationContext,
                 VariableInfo::getLinkedVariables, CONTEXT_MODIFIED,
-                groupPropertyValues.getMap(CONTEXT_MODIFIED), MERGE, doNotWrite);
+                groupPropertyValues.getMap(CONTEXT_MODIFIED), MERGE, doNotWrite, localCopyData);
 
         contextPropertyWriter.write(this, evaluationContext,
                 VariableInfo::getLinkedVariables, CONTEXT_PROPAGATE_MOD,
-                groupPropertyValues.getMap(CONTEXT_PROPAGATE_MOD), MERGE, doNotWrite);
+                groupPropertyValues.getMap(CONTEXT_PROPAGATE_MOD), MERGE, doNotWrite, localCopyData);
 
         return ennStatus.combine(cnnStatus).combine(cmStatus).combine(extImmStatus).combine(cImmStatus);
     }
@@ -1201,7 +1204,10 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
     Only when statement time hasn't increased, but assignments have, we use the combination $st$assignment id.
      */
 
-    record NameSimpleName(String name, String simpleName) {
+    record NameSimpleName(String name, String simpleName, int localCopyIndex) {
+        NameSimpleName(String name, String simpleName) {
+            this(name, simpleName, 0);
+        }
     }
 
     private NameSimpleName createLocalFieldCopyFQN(VariableInfo fieldVi,
@@ -1213,15 +1219,15 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         if (statementTime == fieldVi.getStatementTime() && fieldVi.getAssignmentId().compareTo(indexOfStatementTime) >= 0) {
             // return a local variable with the current field value, numbered as the statement time + assignment ID
             String suffix = fieldVi.getAssignmentId().replace(".", "_");
-            return new NameSimpleName(prefix + "$" + suffix, simplePrefix + "$" + suffix);
+            return new NameSimpleName(prefix + "$" + suffix, simplePrefix + "$" + suffix, statementTime);
         }
-        return new NameSimpleName(prefix, simplePrefix);
+        return new NameSimpleName(prefix, simplePrefix, statementTime);
     }
 
     public NameSimpleName createLocalLoopCopyFQN(VariableInfoContainer vic, VariableInfo vi) {
         assert vic.isLocalVariableInLoopDefinedOutside();
-
-        String prefix = vi.name() + "$" + vic.getVariableInLoop().statementId();
+        String statementId = vic.getVariableInLoop().statementId();
+        String prefix = vi.name() + "$" + statementId;
         String simplePrefix = vi.variable().simpleName() + "$" + vic.getVariableInLoop().statementId();
         if (vi.getAssignmentId().compareTo(vic.getVariableInLoop().statementId()) > 0) {
             String suffix = vi.getAssignmentId().replace(".", "_");
@@ -1249,7 +1255,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                 .setName(localVariableFqn.name)
                 .setSimpleName(localVariableFqn.simpleName)
                 .setParameterizedType(fieldReference.parameterizedType())
-                .setIsLocalCopyOf(fieldReference)
+                .setIsLocalCopyOf(fieldReference, localVariableFqn.localCopyIndex)
                 .setOwningType(methodAnalysis.getMethodInfo().typeInfo)
                 .build();
         return new LocalVariableReference(lv);

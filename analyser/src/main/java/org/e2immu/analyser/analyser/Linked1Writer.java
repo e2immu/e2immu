@@ -49,10 +49,12 @@ public class Linked1Writer {
 
     public Linked1Writer(StatementAnalysis statementAnalysis,
                          EvaluationContext evaluationContext,
-                         Function<VariableInfo, LinkedVariables> connections) {
+                         Function<VariableInfo, LinkedVariables> connections,
+                         ContextPropertyWriter.LocalCopyData localCopyData) {
         this.statementAnalysis = statementAnalysis;
         ContextPropertyWriter.fillDependencyGraph(statementAnalysis, evaluationContext,
-                connections, EVALUATION, dependencyGraph, analysisStatus, "LINKED_1");
+                connections, EVALUATION, dependencyGraph, analysisStatus, "LINKED_1",
+                localCopyData);
     }
 
     public AnalysisStatus write(Map<Variable, EvaluationResult.ChangeData> changeDataMap) {

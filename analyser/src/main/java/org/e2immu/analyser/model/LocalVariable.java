@@ -24,7 +24,8 @@ public record LocalVariable(Set<LocalVariableModifier> modifiers,
                             ParameterizedType parameterizedType,
                             List<AnnotationExpression> annotations,
                             TypeInfo owningType,
-                            Variable isLocalCopyOf) {
+                            Variable isLocalCopyOf,
+                            int localCopyIndex) {
 
     public LocalVariable {
         Objects.requireNonNull(name);
@@ -33,7 +34,8 @@ public record LocalVariable(Set<LocalVariableModifier> modifiers,
 
     public LocalVariable translate(TranslationMap translationMap) {
         return new LocalVariable(modifiers, simpleName,
-                name, translationMap.translateType(parameterizedType), annotations, owningType, isLocalCopyOf);
+                name, translationMap.translateType(parameterizedType), annotations, owningType, isLocalCopyOf,
+                localCopyIndex);
     }
 
     @Override
@@ -66,6 +68,7 @@ public record LocalVariable(Set<LocalVariableModifier> modifiers,
         private String simpleName;
         private TypeInfo owningType;
         private Variable isLocalCopyOf;
+        private int localCopyIndex;
 
         public Builder setOwningType(TypeInfo owningType) {
             this.owningType = owningType;
@@ -76,6 +79,7 @@ public record LocalVariable(Set<LocalVariableModifier> modifiers,
             this.name = name;
             return this;
         }
+
         public Builder setSimpleName(String name) {
             this.simpleName = name;
             return this;
@@ -96,14 +100,15 @@ public record LocalVariable(Set<LocalVariableModifier> modifiers,
             return this;
         }
 
-        public Builder setIsLocalCopyOf(Variable isLocalCopyOf) {
+        public Builder setIsLocalCopyOf(Variable isLocalCopyOf, int localCopyIndex) {
             this.isLocalCopyOf = isLocalCopyOf;
+            this.localCopyIndex = localCopyIndex;
             return this;
         }
 
         public LocalVariable build() {
             return new LocalVariable(modifiers, simpleName,
-                    name, parameterizedType, annotations, owningType, isLocalCopyOf);
+                    name, parameterizedType, annotations, owningType, isLocalCopyOf, localCopyIndex);
         }
     }
 }

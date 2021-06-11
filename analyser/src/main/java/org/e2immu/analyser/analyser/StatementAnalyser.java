@@ -848,62 +848,71 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         // the second one is across clusters of variables
 
         addToMap(groupPropertyValues, CONTEXT_NOT_NULL, x -> x.parameterizedType().defaultNotNull(), true);
+        addToMap(groupPropertyValues, EXTERNAL_NOT_NULL, x -> MultiLevel.DELAY, false);
+        addToMap(groupPropertyValues, EXTERNAL_IMMUTABLE, x -> MultiLevel.NOT_INVOLVED, false);
+        addToMap(groupPropertyValues, CONTEXT_IMMUTABLE, x -> MultiLevel.NOT_INVOLVED, true);
+        addToMap(groupPropertyValues, CONTEXT_MODIFIED, x -> Level.FALSE, true);
+        addToMap(groupPropertyValues, CONTEXT_PROPAGATE_MOD, x -> Level.FALSE, true);
+
+        ContextPropertyWriter.LocalCopyData localCopyData =
+                ContextPropertyWriter.localCopyPreferences(groupPropertyValues.allVariables());
+
         if (statement() instanceof ForEachStatement) {
             potentiallyUpgradeCnnOfLocalLoopVariableAndCopy(sharedState.evaluationContext,
                     groupPropertyValues.getMap(EXTERNAL_NOT_NULL),
                     groupPropertyValues.getMap(CONTEXT_NOT_NULL), evaluationResult.value(),
                     evaluationResult.someValueWasDelayed());
         }
+
         ContextPropertyWriter contextPropertyWriter = new ContextPropertyWriter();
         AnalysisStatus cnnStatus = contextPropertyWriter.write(statementAnalysis, sharedState.evaluationContext,
                 VariableInfo::getStaticallyAssignedVariables,
-                CONTEXT_NOT_NULL, groupPropertyValues.getMap(CONTEXT_NOT_NULL), EVALUATION, Set.of());
+                CONTEXT_NOT_NULL, groupPropertyValues.getMap(CONTEXT_NOT_NULL), EVALUATION, Set.of(), localCopyData);
         assert cnnStatus == DONE || foundDelay(EVALUATION_OF_MAIN_EXPRESSION,
                 statementAnalysis.fullyQualifiedName() + "." + CONTEXT_NOT_NULL.name());
         status = cnnStatus.combine(status);
 
         ContextPropertyWriter contextPropertyWriter2 = new ContextPropertyWriter();
-        addToMap(groupPropertyValues, EXTERNAL_NOT_NULL, x -> MultiLevel.DELAY, false);
+
         AnalysisStatus ennStatus = contextPropertyWriter2.write(statementAnalysis, sharedState.evaluationContext,
                 VariableInfo::getStaticallyAssignedVariables,
-                EXTERNAL_NOT_NULL, groupPropertyValues.getMap(EXTERNAL_NOT_NULL), EVALUATION, Set.of());
+                EXTERNAL_NOT_NULL, groupPropertyValues.getMap(EXTERNAL_NOT_NULL), EVALUATION, Set.of(), localCopyData);
         assert ennStatus == DONE || foundDelay(EVALUATION_OF_MAIN_EXPRESSION,
                 statementAnalysis.fullyQualifiedName() + "." + EXTERNAL_NOT_NULL.name());
 
         potentiallyRaiseErrorsOnNotNullInContext(evaluationResult.changeData());
 
         ContextPropertyWriter contextPropertyWriter3 = new ContextPropertyWriter();
-        addToMap(groupPropertyValues, EXTERNAL_IMMUTABLE, x -> MultiLevel.NOT_INVOLVED, false);
+
         AnalysisStatus extImmStatus = contextPropertyWriter3.write(statementAnalysis, sharedState.evaluationContext,
                 VariableInfo::getStaticallyAssignedVariables,
-                EXTERNAL_IMMUTABLE, groupPropertyValues.getMap(EXTERNAL_IMMUTABLE), EVALUATION, Set.of());
+                EXTERNAL_IMMUTABLE, groupPropertyValues.getMap(EXTERNAL_IMMUTABLE), EVALUATION, Set.of(), localCopyData);
         assert extImmStatus == DONE || foundDelay(EVALUATION_OF_MAIN_EXPRESSION,
                 statementAnalysis.fullyQualifiedName() + "." + EXTERNAL_IMMUTABLE.name());
 
-        addToMap(groupPropertyValues, CONTEXT_PROPAGATE_MOD, x -> Level.FALSE, true);
+
         // the delay for PM is ignored (if any, it will come from CM)
         // we add the linked variables on top of the statically assigned variables
         contextPropertyWriter3.write(statementAnalysis, sharedState.evaluationContext,
                 VariableInfo::getLinkedVariables,
-                CONTEXT_PROPAGATE_MOD, groupPropertyValues.getMap(CONTEXT_PROPAGATE_MOD), EVALUATION, Set.of());
+                CONTEXT_PROPAGATE_MOD, groupPropertyValues.getMap(CONTEXT_PROPAGATE_MOD), EVALUATION, Set.of(), localCopyData);
 
         ContextPropertyWriter contextPropertyWriter4 = new ContextPropertyWriter();
-        addToMap(groupPropertyValues, CONTEXT_IMMUTABLE, x -> MultiLevel.NOT_INVOLVED, true);
+
         AnalysisStatus cImmStatus = contextPropertyWriter4.write(statementAnalysis, sharedState.evaluationContext,
                 VariableInfo::getStaticallyAssignedVariables,
-                CONTEXT_IMMUTABLE, groupPropertyValues.getMap(CONTEXT_IMMUTABLE), EVALUATION, Set.of());
+                CONTEXT_IMMUTABLE, groupPropertyValues.getMap(CONTEXT_IMMUTABLE), EVALUATION, Set.of(), localCopyData);
         if (cImmStatus != DONE) {
             log(DELAYED, "Context immutable causes delay in {} {}", index(), myMethodAnalyser.methodInfo.fullyQualifiedName);
             assert foundDelay(EVALUATION_OF_MAIN_EXPRESSION,
                     statementAnalysis.fullyQualifiedName() + "." + CONTEXT_IMMUTABLE.name());
         }
 
-        addToMap(groupPropertyValues, CONTEXT_MODIFIED, x -> Level.FALSE, true);
         importContextModifiedValuesForThisFromSubTypes(groupPropertyValues.getMap(CONTEXT_MODIFIED));
         // we add the linked variables on top of the statically assigned variables
         AnalysisStatus cmStatus = contextPropertyWriter4.write(statementAnalysis, sharedState.evaluationContext,
                 VariableInfo::getLinkedVariables,
-                CONTEXT_MODIFIED, groupPropertyValues.getMap(CONTEXT_MODIFIED), EVALUATION, Set.of());
+                CONTEXT_MODIFIED, groupPropertyValues.getMap(CONTEXT_MODIFIED), EVALUATION, Set.of(), localCopyData);
 
         if (statementAnalysis.methodLevelData.causesOfContextModificationDelayIsVariable()) {
             statementAnalysis.methodLevelData.causesOfContextModificationDelayAddVariable(evaluationResult
@@ -914,7 +923,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
 
         if (!linked1Delays && !linkedDelays) {
             AnalysisStatus linked1 = new Linked1Writer(statementAnalysis, sharedState.evaluationContext,
-                    VariableInfo::getStaticallyAssignedVariables).write(evaluationResult.changeData());
+                    VariableInfo::getStaticallyAssignedVariables, localCopyData)
+                    .write(evaluationResult.changeData());
             status = status.combine(linked1);
         }
 
@@ -1715,7 +1725,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 .setSimpleName(newFqn.simpleName())
                 .setParameterizedType(loopVariable.parameterizedType())
                 .setOwningType(myMethodAnalyser.methodInfo.typeInfo)
-                .setIsLocalCopyOf(loopVariable)
+                .setIsLocalCopyOf(loopVariable, 0)
                 .build();
         return new LocalVariableReference(localVariable);
     }
@@ -3017,7 +3027,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 return true;
             }
             Linked1Writer linked1Writer = new Linked1Writer(statementAnalysis, this,
-                    VariableInfo::getStaticallyAssignedVariables);
+                    VariableInfo::getStaticallyAssignedVariables, ContextPropertyWriter.LocalCopyData.EMPTY);
             return linked1Writer.isLinkedToField(expression);
         }
 

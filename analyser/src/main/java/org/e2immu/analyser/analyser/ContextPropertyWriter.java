@@ -16,15 +16,14 @@ package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.analyser.util.DelayDebugger;
 import org.e2immu.analyser.model.Level;
+import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.util.DependencyGraph;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
@@ -41,6 +40,55 @@ public class ContextPropertyWriter {
 
     private final DependencyGraph<Variable> dependencyGraph = new DependencyGraph<>();
 
+    record LocalCopy(LocalVariableReference localVariableReference, int index) {
+    }
+
+    /*
+    map$0 may be linked to the field map
+    map$1 may be linked as well.
+    Without breaking the link between map$0 and map, we'd have map$0 and map$1 in the same cluster,
+    which causes problems because where map$0 may be non-null in a condition (but not CNN), map$1 may be only
+    not null CNN.
+     */
+    record LocalCopyData(Map<FieldReference, List<LocalCopy>> map) {
+        public static final LocalCopyData EMPTY = new LocalCopyData(Map.of());
+
+        boolean accept(Variable v1, Variable v2) {
+            if (v1 instanceof FieldReference fieldReference && v2 instanceof LocalVariableReference lvr) {
+                return accept(fieldReference, lvr);
+            }
+            if (v2 instanceof FieldReference fieldReference && v1 instanceof LocalVariableReference lvr) {
+                return accept(fieldReference, lvr);
+            }
+            return true;
+        }
+
+        boolean accept(FieldReference fieldReference, LocalVariableReference lvr) {
+            if (lvr.variable.isLocalCopyOf() != null) {
+                List<LocalCopy> list = map.get(fieldReference);
+                if (list != null) {
+                    return lvr.equals(list.get(0).localVariableReference);
+                }
+            }
+            return true;
+        }
+    }
+
+    public static LocalCopyData localCopyPreferences(Collection<Variable> variables) {
+        Map<FieldReference, List<LocalCopy>> map = new HashMap<>();
+        for (Variable variable : variables) {
+            if (variable instanceof LocalVariableReference lvr
+                    && lvr.variable.isLocalCopyOf() != null
+                    && lvr.variable.isLocalCopyOf() instanceof FieldReference fieldReference) {
+                List<LocalCopy> list = map.computeIfAbsent(fieldReference, k -> new ArrayList<>());
+                LocalCopy localCopy = new LocalCopy(lvr, lvr.variable.localCopyIndex());
+                if (!list.contains(localCopy)) list.add(localCopy);
+            }
+        }
+        map.values().forEach(list -> list.sort(Comparator.comparingInt(lvr -> -lvr.index)));
+        return new LocalCopyData(map);
+    }
+
     /*
     method separate because reused by Linked1Writer
      */
@@ -50,7 +98,8 @@ public class ContextPropertyWriter {
                                            VariableInfoContainer.Level level,
                                            DependencyGraph<Variable> dependencyGraph,
                                            AtomicReference<AnalysisStatus> analysisStatus,
-                                           String variablePropertyNameForDebugging) {
+                                           String variablePropertyNameForDebugging,
+                                           LocalCopyData localCopyData) {
         // delays in dependency graph
         statementAnalysis.variableStream(level)
                 .forEach(variableInfo -> {
@@ -66,7 +115,10 @@ public class ContextPropertyWriter {
                             analysisStatus.set(DELAYS);
                         }
                     } else {
-                        dependencyGraph.addNode(variableInfo.variable(), linkedVariables.variables(), true);
+                        Variable from = variableInfo.variable();
+                        List<Variable> to = linkedVariables.variables().stream()
+                                .filter(t -> localCopyData.accept(from, t)).toList();
+                        dependencyGraph.addNode(from, to, true);
                     }
                 });
     }
@@ -84,10 +136,11 @@ public class ContextPropertyWriter {
                                 VariableProperty variableProperty,
                                 Map<Variable, Integer> propertyValues,
                                 VariableInfoContainer.Level level,
-                                Set<Variable> doNotWrite) {
+                                Set<Variable> doNotWrite,
+                                LocalCopyData localCopyData) {
         final AtomicReference<AnalysisStatus> analysisStatus = new AtomicReference<>(DONE);
         fillDependencyGraph(statementAnalysis, evaluationContext, connections, level, dependencyGraph, analysisStatus,
-                variableProperty.name());
+                variableProperty.name(), localCopyData);
 
         if (analysisStatus.get() == DELAYS) return analysisStatus.get();
 

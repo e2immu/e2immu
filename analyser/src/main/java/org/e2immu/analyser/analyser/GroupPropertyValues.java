@@ -16,10 +16,7 @@ package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.variable.Variable;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 
 import static org.e2immu.analyser.analyser.VariableProperty.*;
 
@@ -61,5 +58,9 @@ public class GroupPropertyValues {
         if (!vpMap.containsKey(variable)) {
             vpMap.put(variable, value);
         }
+    }
+
+    public Collection<Variable> allVariables() {
+        return map.values().stream().flatMap(m -> m.keySet().stream()).toList();
     }
 }
