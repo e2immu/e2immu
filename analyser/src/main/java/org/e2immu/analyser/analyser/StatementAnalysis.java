@@ -406,7 +406,6 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             return; // skip
         } else if (vic.variableNature() instanceof VariableNature.Pattern pattern
                 && !StringUtil.inScopeOf(pattern.assignmentId(), index)) {
-            assert variable instanceof LocalVariableReference lvr && lvr.variable.nature() == vic.variableNature();
             return; // skip
         } else {
             // make a simple reference copy; potentially resetting localVariableInLoopDefinedOutside
