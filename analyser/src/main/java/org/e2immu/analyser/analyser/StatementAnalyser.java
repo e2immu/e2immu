@@ -1069,7 +1069,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 contextNotNull.put(loopVar, oneLevelLess);
                 externalNotNull.put(loopVar, MultiLevel.NOT_INVOLVED);
 
-                LocalVariableReference copyVar = statementAnalysis.createLocalLoopCopy(loopVar,
+                LocalVariableReference copyVar = statementAnalysis.createLocalLoopCopy(loopVar, index(),
                         VariableInfoContainer.NOT_YET_ASSIGNED);
                 if (contextNotNull.containsKey(copyVar)) {
                     // can be delayed to the next iteration
@@ -1402,7 +1402,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         assert loopIndex != null;
 
         VariableInfo vi = vic.best(EVALUATION);
-        return statementAnalysis.ensureLocalLoopCopy(vi.variable(), vi.getAssignmentId());
+        return statementAnalysis.ensureLocalLoopCopy(vi.variable(), loopIndex, vi.getAssignmentId());
     }
 
     private Expression bestValue(EvaluationResult.ChangeData valueChangeData, VariableInfo vi1) {
@@ -1666,7 +1666,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             VariableInfo vi = vic.best(EVALUATION); // NOT merge, merge is after the loop
             // assign to local variable that has been created at Level 2 in this statement
             String assigned = index() + VariableInfoContainer.Level.INITIAL;
-            LocalVariableReference loopCopy = statementAnalysis.createLocalLoopCopy(vi.variable(), assigned);
+            LocalVariableReference loopCopy = statementAnalysis.createLocalLoopCopy(vi.variable(), index(), assigned);
             String loopCopyFqn = loopCopy.fullyQualifiedName();
             if (!statementAnalysis.variables.isSet(loopCopyFqn)) {
                 String read = index() + EVALUATION;

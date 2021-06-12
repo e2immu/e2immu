@@ -71,6 +71,10 @@ public interface VariableNature {
     record CopyOfVariableField(int statementTime,
                                String assignmentId,
                                FieldReference localCopyOf) implements VariableNature {
+        public CopyOfVariableField {
+            assert localCopyOf != null;
+        }
+
         public String suffix() {
             if (assignmentId != null) {
                 return "$" + statementTime + "$" + assignmentId; // FIXME .replace(".", "_"); why?
@@ -82,10 +86,19 @@ public interface VariableNature {
     /*
     situation 5: local copy of variable defined outside loop, potentially assigned inside the loop
     assignmentId null means: not assigned in the loop
+
+    statement index is the one of the loop!
+    assignment ID when there has been an assignment inside the loop
      */
     record CopyOfVariableInLoop(String statementIndex,
                                 String assignmentId,
                                 Variable localCopyOf) implements VariableNature {
+        public CopyOfVariableInLoop {
+            assert statementIndex != null;
+            assert localCopyOf != null;
+            assert assignmentId == null || assignmentId.startsWith(statementIndex);
+        }
+
         public String suffix() {
             String first = "$" + statementIndex;
             if (assignmentId != null) {
