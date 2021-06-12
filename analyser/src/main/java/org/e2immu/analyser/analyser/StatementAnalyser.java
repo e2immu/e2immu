@@ -1666,7 +1666,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             VariableInfo vi = vic.best(EVALUATION); // NOT merge, merge is after the loop
             // assign to local variable that has been created at Level 2 in this statement
             String assigned = index() + VariableInfoContainer.Level.INITIAL;
-            LocalVariableReference loopCopy = statementAnalysis.createLocalLoopCopy(vi.variable(), index(), assigned);
+            LocalVariableReference loopCopy = statementAnalysis.createLocalLoopCopy(vi.variable(), index(), index());
             String loopCopyFqn = loopCopy.fullyQualifiedName();
             if (!statementAnalysis.variables.isSet(loopCopyFqn)) {
                 String read = index() + EVALUATION;
