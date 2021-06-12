@@ -79,4 +79,6 @@ public interface Variable extends OneVariable {
     default boolean needsNewVariableWithoutValueCall() {
         return false;
     }
+
+    default VariableNature variableNature() { return VariableNature.NORMAL; }
 }

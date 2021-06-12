@@ -19,9 +19,12 @@ import org.e2immu.analyser.model.variable.VariableNature;
 import java.util.*;
 
 /*
-the VariableNature of a LocalVariable is copied into VariableInfoContainer; both have the same object.
-There is one exception, where VIC can "temporarily, for in a loop statement", have a different value (see docs there).
- */
+The VariableNature of a LocalVariable is copied into VariableInfoContainer; both have often the same object.
+In some situations, the VIC has a different VariableNature, which always takes precedence.
+
+This always the case when the variable was created by the inspection (rather than being synthetic, created by
+the analyser. Then, they have identical values.)
+*/
 public record LocalVariable(Set<LocalVariableModifier> modifiers,
                             String simpleName,
                             String name,

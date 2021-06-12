@@ -19,6 +19,7 @@ import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.Variable;
+import org.e2immu.analyser.model.variable.VariableNature;
 import org.e2immu.analyser.util.DependencyGraph;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -64,7 +65,7 @@ public class ContextPropertyWriter {
         }
 
         boolean accept(FieldReference fieldReference, LocalVariableReference lvr) {
-            if (lvr.variable.isLocalCopyOf() != null) {
+            if (lvr.variable.nature() instanceof VariableNature.CopyOfVariableField) {
                 List<LocalCopy> list = map.get(fieldReference);
                 if (list != null) {
                     return lvr.equals(list.get(0).localVariableReference);
@@ -78,10 +79,9 @@ public class ContextPropertyWriter {
         Map<FieldReference, List<LocalCopy>> map = new HashMap<>();
         for (Variable variable : variables) {
             if (variable instanceof LocalVariableReference lvr
-                    && lvr.variable.isLocalCopyOf() != null
-                    && lvr.variable.isLocalCopyOf() instanceof FieldReference fieldReference) {
-                List<LocalCopy> list = map.computeIfAbsent(fieldReference, k -> new ArrayList<>());
-                LocalCopy localCopy = new LocalCopy(lvr, lvr.variable.localCopyIndex());
+                    && lvr.variable.nature() instanceof VariableNature.CopyOfVariableField copy) {
+                List<LocalCopy> list = map.computeIfAbsent(copy.localCopyOf(), k -> new ArrayList<>());
+                LocalCopy localCopy = new LocalCopy(lvr, copy.statementTime());
                 if (!list.contains(localCopy)) list.add(localCopy);
             }
         }

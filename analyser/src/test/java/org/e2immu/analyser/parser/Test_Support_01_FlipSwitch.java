@@ -21,6 +21,7 @@ import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
+import org.e2immu.analyser.model.variable.VariableNature;
 import org.e2immu.analyser.visitor.FieldAnalyserVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.visitor.TypeAnalyserVisitor;
@@ -52,7 +53,8 @@ public class Test_Support_01_FlipSwitch extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("set".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof LocalVariableReference lvr &&
-                        lvr.variable.isLocalCopyOf() instanceof FieldReference fr && "isSet".equals(fr.fieldInfo.name)) {
+                        lvr.variable.nature() instanceof VariableNature.CopyOfVariableField copy &&
+                        "isSet".equals(copy.localCopyOf().fieldInfo.name)) {
                     assertEquals("isSet$0", d.variableInfo().variable().simpleName());
                     String expectAssigned = d.statementId().startsWith("0.0.0") ? "this.isSet" : "";
                     //assertEquals(expectAssigned, d.variableInfo().getStaticallyAssignedVariables().toString(),

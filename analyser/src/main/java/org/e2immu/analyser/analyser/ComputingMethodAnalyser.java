@@ -21,10 +21,7 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ReturnStatement;
-import org.e2immu.analyser.model.variable.FieldReference;
-import org.e2immu.analyser.model.variable.LocalVariableReference;
-import org.e2immu.analyser.model.variable.This;
-import org.e2immu.analyser.model.variable.Variable;
+import org.e2immu.analyser.model.variable.*;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Primitives;
@@ -679,7 +676,8 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
     }
 
     private FieldInfo extractFieldFromLocal(LocalVariableReference lvr) {
-        if (lvr.variable.isLocalCopyOf() instanceof FieldReference fr && fr.scopeIsThis()) return fr.fieldInfo;
+        if (lvr.variable.nature() instanceof VariableNature.CopyOfVariableField copy &&
+                copy.localCopyOf().scopeIsThis()) return copy.localCopyOf().fieldInfo;
         return null;
     }
 

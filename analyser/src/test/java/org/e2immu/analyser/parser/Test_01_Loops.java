@@ -25,6 +25,7 @@ import org.e2immu.analyser.model.statement.ForEachStatement;
 import org.e2immu.analyser.model.statement.WhileStatement;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
+import org.e2immu.analyser.model.variable.VariableNature;
 import org.e2immu.analyser.visitor.EvaluationResultVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
@@ -206,16 +207,14 @@ public class Test_01_Loops extends CommonTestRunner {
             }
             if ("res2".equals(d.variableName())) {
                 if ("2.0.0".equals(d.statementId())) {
-                    assertEquals("2", d.variableInfoContainer().getVariableInLoop()
-                            .statementId(VariableInLoop.VariableType.IN_LOOP_DEFINED_OUTSIDE));
+                    assertEquals("2", d.variableInfoContainer().variableNature().statementIndex());
                 }
                 if ("2.0.1.0.0".equals(d.statementId())) {
-                    assertEquals("2", d.variableInfoContainer().getVariableInLoop()
-                            .statementId(VariableInLoop.VariableType.IN_LOOP_DEFINED_OUTSIDE));
+                    assertEquals("2", d.variableInfoContainer().variableNature().statementIndex());
+                    assertTrue(d.variableInfoContainer().variableNature() instanceof VariableNature.VariableDefinedOutsideLoop);
                 }
                 if ("2.0.1".equals(d.statementId())) {
-                    assertEquals("2", d.variableInfoContainer().getVariableInLoop()
-                            .statementId(VariableInLoop.VariableType.IN_LOOP_DEFINED_OUTSIDE));
+                    assertEquals("2", d.variableInfoContainer().variableNature().statementIndex());
                 }
                 if ("2.0.2".equals(d.statementId())) {
                     // statement says: res="abc", but the value takes the state into account
@@ -535,8 +534,8 @@ public class Test_01_Loops extends CommonTestRunner {
             }
             if ("i".equals(d.variableName())) {
                 if ("1.0.0".equals(d.statementId())) {
-                    assertEquals("1", d.variableInfoContainer().getVariableInLoop()
-                            .statementId(VariableInLoop.VariableType.IN_LOOP_DEFINED_OUTSIDE));
+                    assertEquals("1", d.variableInfoContainer().variableNature().statementIndex());
+                    assertTrue(d.variableInfoContainer().variableNature() instanceof VariableNature.VariableDefinedOutsideLoop);
                     String expect = d.iteration() == 0 ? "1+<v:i>" : "1+i$1";
                     assertEquals(expect, d.currentValue().toString());
                 }

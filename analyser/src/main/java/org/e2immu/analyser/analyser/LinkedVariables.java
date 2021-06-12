@@ -73,7 +73,7 @@ public record LinkedVariables(Set<Variable> variables) {
         if (this == DELAY) return DELAY;
         if (this == EMPTY) return EMPTY;
         Set<Variable> remaining = variables.stream().filter(v -> v instanceof LocalVariableReference lvr &&
-                variable.equals(lvr.variable.isLocalCopyOf())).collect(Collectors.toSet());
+                variable.equals(lvr.variable.nature().localCopyOf())).collect(Collectors.toSet());
         if (remaining.isEmpty()) return EMPTY;
         return new LinkedVariables(remaining);
     }

@@ -14,6 +14,22 @@ public interface VariableNature {
         return null;
     }
 
+    default Variable localCopyOf() {
+        return null;
+    }
+
+    default String suffix() {
+        return "";
+    }
+
+    default String assignmentId() {
+        return null;
+    }
+
+    default String statementIndex() {
+        return null;
+    }
+
     class Marker implements VariableNature {
     }
 
@@ -27,7 +43,7 @@ public interface VariableNature {
     now it still needs to exist after that block (see Enum_1 as example)
     this copy is created during the merge phase at the end of the block.
     */
-    Marker LOCAL_VARIABLE_CREATED_IN_MERGE = new Marker();
+    Marker CREATED_IN_MERGE = new Marker();
 
     /*
     situation 3: a local pattern variable, often a local copy
@@ -42,7 +58,7 @@ public interface VariableNature {
 
     The assignmentId will be the statement ID + "-E".
      */
-    record Pattern(String assignmentId, boolean isNegative, Variable localCopyOf) implements VariableNature {
+    record Pattern(String assignmentId, boolean isPositive, Variable localCopyOf) implements VariableNature {
     }
 
     /*
@@ -52,12 +68,12 @@ public interface VariableNature {
     if the assignment id is not null, there has been an assignment inside the method, and the name becomes
       field$
     */
-    record VariableFieldReadCopy(int statementTime,
-                                 String assignmentId,
-                                 Variable localCopyOf) implements VariableNature {
+    record CopyOfVariableField(int statementTime,
+                               String assignmentId,
+                               FieldReference localCopyOf) implements VariableNature {
         public String suffix() {
             if (assignmentId != null) {
-                return "$" + statementTime + "$" + assignmentId;
+                return "$" + statementTime + "$" + assignmentId; // FIXME .replace(".", "_"); why?
             }
             return "$" + statementTime;
         }
@@ -67,11 +83,11 @@ public interface VariableNature {
     situation 5: local copy of variable defined outside loop, potentially assigned inside the loop
     assignmentId null means: not assigned in the loop
      */
-    record CopyOfVariableInLoop(String statementIndexOfLoop,
+    record CopyOfVariableInLoop(String statementIndex,
                                 String assignmentId,
                                 Variable localCopyOf) implements VariableNature {
         public String suffix() {
-            String first = "$" + statementIndexOfLoop;
+            String first = "$" + statementIndex;
             if (assignmentId != null) {
                 return first + "$" + assignmentId;
             }
@@ -80,13 +96,15 @@ public interface VariableNature {
 
         @Override
         public String getStatementIndexOfThisLoopOrLoopCopyVariable() {
-            return statementIndexOfLoop;
+            return statementIndex;
         }
     }
 
     /*
     situation 6: Loop variable, like 'i' in (for int i=0; ...) or 'x' in for(X x: xs) { ... }.
-    Only thing we need to store is the statement id of the loop
+    Only thing we need to store is the statement id of the loop.
+
+    Only stored in the VIC, because the LocalVariable has been created before we know statement IDs.
      */
     record LoopVariable(String statementIndexOfLoop) implements VariableNature {
         @Override
@@ -109,7 +127,7 @@ public interface VariableNature {
     situation 8
      */
     record VariableDefinedOutsideLoop(VariableNature previousVariableNature,
-                                      String statementIndexOfLoop) implements VariableNature {
+                                      String statementIndex) implements VariableNature {
         @Override
         public boolean isLocalVariableInLoopDefinedOutside() {
             return true;

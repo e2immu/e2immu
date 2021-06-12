@@ -18,10 +18,7 @@ import org.e2immu.analyser.analyser.AnalyserContext;
 import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.variable.FieldReference;
-import org.e2immu.analyser.model.variable.LocalVariableReference;
-import org.e2immu.analyser.model.variable.This;
-import org.e2immu.analyser.model.variable.Variable;
+import org.e2immu.analyser.model.variable.*;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.ListUtil;
 
@@ -225,7 +222,8 @@ public class Filter {
                 && acceptScope(fr.scope)) return fr;
         if (acceptAndRemapLocalCopy && ((ve = v.asInstanceOf(VariableExpression.class)) != null)
                 && ve.variable() instanceof LocalVariableReference lvr
-                && lvr.variable.isLocalCopyOf() instanceof FieldReference fr && acceptScope(fr.scope)) return fr;
+                && lvr.variable.nature() instanceof VariableNature.CopyOfVariableField copy
+                && acceptScope(copy.localCopyOf().scope)) return copy.localCopyOf();
         return null;
     }
 
@@ -256,10 +254,10 @@ public class Filter {
                     acceptScope(fieldReference.scope)) return new FieldReferenceAndTranslationMap(fieldReference, null);
             if (acceptAndRemapLocalCopy &&
                     variableValue.variable() instanceof LocalVariableReference lvr &&
-                    lvr.variable.isLocalCopyOf() instanceof FieldReference fieldReference &&
-                    acceptScope(fieldReference.scope)) {
-                return new FieldReferenceAndTranslationMap(fieldReference,
-                        new TranslationMapImpl.Builder().put(lvr, fieldReference).build());
+                    lvr.variable.nature() instanceof VariableNature.CopyOfVariableField copy &&
+                    acceptScope(copy.localCopyOf().scope)) {
+                return new FieldReferenceAndTranslationMap(copy.localCopyOf(),
+                        new TranslationMapImpl.Builder().put(lvr, copy.localCopyOf()).build());
             }
         }
         return null;

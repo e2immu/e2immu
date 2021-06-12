@@ -273,9 +273,11 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
     public Stream<VariableInfo> streamOfLatestInfoOfVariablesReferringTo(FieldInfo fieldInfo, boolean allowLocalCopies) {
         return variables.stream()
                 .map(e -> e.getValue().current())
-                .filter(v -> v.variable() instanceof FieldReference fieldReference && fieldReference.fieldInfo == fieldInfo ||
+                .filter(v -> v.variable() instanceof FieldReference fieldReference &&
+                        fieldReference.fieldInfo == fieldInfo ||
                         allowLocalCopies && v.variable() instanceof LocalVariableReference lvr &&
-                                lvr.variable.isLocalCopyOf() instanceof FieldReference fr && fr.fieldInfo == fieldInfo
+                                lvr.variable.nature() instanceof VariableNature.CopyOfVariableField copy &&
+                                copy.localCopyOf().fieldInfo == fieldInfo
                 );
     }
 
@@ -335,8 +337,9 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         while (closure != null) {
             if (closure.getCurrentMethod() != null) {
                 for (ParameterInfo parameterInfo : closure.getCurrentMethod().methodInspection.getParameters()) {
-                    VariableInLoop variableInLoop = inClosure ? VariableInLoop.COPY_FROM_ENCLOSING_METHOD : VariableInLoop.NOT_IN_LOOP;
-                    createVariable(closure, parameterInfo, 0, variableInLoop);
+                    VariableNature variableNature = inClosure
+                            ? VariableNature.FROM_ENCLOSING_METHOD : VariableNature.NORMAL;
+                    createVariable(closure, parameterInfo, 0, variableNature);
                 }
             }
             closure = closure.getClosure();
@@ -345,7 +348,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         // for now, other variations on this are not explicitly present at the moment IMPROVE?
         if (!currentMethod.methodInspection.get().isStatic()) {
             This thisVariable = new This(evaluationContext.getAnalyserContext(), currentMethod.typeInfo);
-            createVariable(evaluationContext, thisVariable, 0, VariableInLoop.NOT_IN_LOOP);
+            createVariable(evaluationContext, thisVariable, 0, VariableNature.NORMAL);
         }
 
         // we'll copy local variables from outside this method
@@ -362,7 +365,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
 
     private void createReturnVariableAtBeginningOfEachBlock(EvaluationContext evaluationContext) {
         Variable retVar = new ReturnVariable(methodAnalysis.getMethodInfo());
-        VariableInfoContainer vic = createVariable(evaluationContext, retVar, 0, VariableInLoop.NOT_IN_LOOP);
+        VariableInfoContainer vic = createVariable(evaluationContext, retVar, 0, VariableNature.NORMAL);
         READ_FROM_RETURN_VALUE_PROPERTIES.forEach(vp ->
                 vic.setProperty(vp, vp.falseValue, INITIAL));
         int notNull = Primitives.isPrimitiveExcludingVoid(methodAnalysis.getMethodInfo().returnType()) ?
@@ -385,24 +388,25 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         String fqn = entry.getKey();
         VariableInfoContainer vic = entry.getValue();
         VariableInfo vi = vic.current();
+        Variable variable = vi.variable();
         VariableInfoContainer newVic;
 
         if (markCopyOfEnclosingMethod) {
             newVic = VariableInfoContainerImpl.copyOfExistingVariableInEnclosingMethod(vic, navigationData.hasSubBlocks());
-        } else if (!vic.isLocalVariableInLoopDefinedOutside() && statement instanceof LoopStatement && vi.variable().isLocal()) {
+        } else if (!vic.isLocalVariableInLoopDefinedOutside() && statement instanceof LoopStatement && variable.isLocal()) {
             // as we move into a loop statement, the VariableInLoop is added to obtain local variable in loop defined outside
             // the variable itself will not be used anymore, only its "local copy" associated with the loop
             // however, the loop may turn out to be completely empty, in which case the initial value is kept
             // so we must keep the initial value
-            newVic = VariableInfoContainerImpl.existingLocalVariableIntoLoop(vic,
-                    new VariableInLoop(index, null, VariableInLoop.VariableType.IN_LOOP_DEFINED_OUTSIDE), previousIsParent);
+            newVic = VariableInfoContainerImpl.existingLocalVariableIntoLoop(vic, index, previousIsParent);
         } else if (indexOfPrevious != null && (indexOfPrevious.equals(vic.getStatementIndexOfThisLoopOrShadowVariable()))) {
             /* this is the very specific situation that the previous statement introduced a loop variable (or a shadow copy)
              this loop variable should not go beyond the loop statement
             */
             return; // skip
-        } else if (VariableInLoop.VariableType.PATTERN == vic.getVariableInLoop().variableType()
-                && !StringUtil.inScopeOf(vic.getStatementIndexOfPatternVariable(), index)) {
+        } else if (vic.variableNature() instanceof VariableNature.Pattern pattern
+                && !StringUtil.inScopeOf(pattern.assignmentId(), index)) {
+            assert variable instanceof LocalVariableReference lvr && lvr.variable.nature() == vic.variableNature();
             return; // skip
         } else {
             // make a simple reference copy; potentially resetting localVariableInLoopDefinedOutside
@@ -471,9 +475,10 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
     private boolean notLocalLoopCopyOutOfComfortZone(VariableInfoContainer vic) {
         // we'd only copy fields if they are used somewhere in the block. BUT there are "hidden" fields
         // such as local variables with an array initialiser containing fields as a value; conclusion: copy all, but don't merge unless used.
-        if (vic.getVariableInLoop().variableType() != VariableInLoop.VariableType.LOOP_COPY) return true;
-        String assignmentId = vic.getVariableInLoop().assignmentId(); // 2nd dollar
-        return assignmentId == null || !assignmentId.startsWith(parent.index);
+        if (vic.variableNature() instanceof VariableNature.CopyOfVariableInLoop loopCopy) {
+            return loopCopy.assignmentId() == null || !loopCopy.assignmentId().startsWith(parent.index);
+        }
+        return true;
     }
 
     /*
@@ -630,8 +635,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                 LinkedVariables assignedToOriginal = new LinkedVariables(Set.of(fieldReference));
 
                 for (int statementTime : eval.getReadAtStatementTimes()) {
-                    LocalVariableReference localCopy = variableInfoOfFieldWhenReading(fieldReference, initial
-                            , statementTime);
+                    LocalVariableReference localCopy = createCopyOfVariableField(fieldReference, initial, statementTime);
                     if (!variables.isSet(localCopy.fullyQualifiedName())) {
                         VariableInfoContainer lvrVic = VariableInfoContainerImpl.newLocalCopyOfVariableField(localCopy,
                                 index + INITIAL, navigationData.hasSubBlocks());
@@ -692,6 +696,77 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         return messages.stream();
     }
 
+    public VariableInfoContainer ensureLocalLoopCopy(Variable original, String assignmentId) {
+        LocalVariableReference lvr = createLocalLoopCopy(original, assignmentId);
+        String newFqn = lvr.fullyQualifiedName();
+
+        if (!variables.isSet(newFqn)) {
+            VariableInfoContainer newVic = VariableInfoContainerImpl.newVariable(lvr,
+                    VariableInfoContainer.NOT_A_VARIABLE_FIELD, lvr.variableNature(), navigationData.hasSubBlocks());
+            newVic.newVariableWithoutValue(); // at initial level
+            newVic.setStaticallyAssignedVariables(new LinkedVariables(Set.of(original)), true);
+            String assigned = index() + VariableInfoContainer.Level.INITIAL;
+            String read = index() + EVALUATION;
+            newVic.ensureEvaluation(assigned, read, VariableInfoContainer.NOT_A_VARIABLE_FIELD, Set.of());
+
+            variables.put(newFqn, newVic);
+
+            // value and properties will be set in main apply
+            return newVic;
+        }
+        return variables.get(newFqn);
+    }
+
+    LocalVariableReference createCopyOfVariableField(FieldReference fieldReference,
+                                                     VariableInfo fieldVi,
+                                                     int statementTime) {
+        // a variable field can have any value when first read in a method.
+        // after statement time goes up, this value may have changed completely
+        // therefore we return a new local variable each time we read and statement time has gone up.
+
+        // when there are assignments within the same statement time, however, we stick to the assigned value
+        // (we temporarily treat the field as a local variable)
+        // so we need to know: have there been assignments AFTER the latest statement time increase?
+
+        String copyAssignmentId;
+        String indexOfStatementTime = flowData.assignmentIdOfStatementTime.get(statementTime);
+        if (statementTime == fieldVi.getStatementTime() && fieldVi.getAssignmentId().compareTo(indexOfStatementTime) >= 0) {
+            copyAssignmentId = fieldVi.getAssignmentId(); // double $
+        } else {
+            copyAssignmentId = null; // single $
+        }
+
+        VariableNature.CopyOfVariableField copy = new VariableNature.CopyOfVariableField(statementTime,
+                copyAssignmentId, fieldReference);
+        // the statement time of the field indicates the time of the latest assignment
+        return createLocalCopy(fieldReference, copy);
+    }
+
+    LocalVariableReference createLocalLoopCopy(Variable original, String assignmentId) {
+        String copyAssignmentId;
+        String statementIdOfCurrent = original.variableNature().getStatementIndexOfThisLoopOrLoopCopyVariable();
+        if (assignmentId.compareTo(statementIdOfCurrent) > 0) {
+            copyAssignmentId = assignmentId; // double $
+        } else {
+            copyAssignmentId = null; // single $
+        }
+        VariableNature.CopyOfVariableInLoop copy = new VariableNature.CopyOfVariableInLoop(index,
+                copyAssignmentId, original);
+        return createLocalCopy(original, copy);
+    }
+
+    private LocalVariableReference createLocalCopy(Variable original, VariableNature copy) {
+        LocalVariable localVariable = new LocalVariable.Builder()
+                .addModifier(LocalVariableModifier.FINAL)
+                .setName(original.fullyQualifiedName() + copy.suffix())
+                .setSimpleName(original.simpleName() + copy.suffix())
+                .setNature(copy)
+                .setParameterizedType(original.parameterizedType())
+                .setOwningType(methodAnalysis.getMethodInfo().typeInfo)
+                .build();
+        return new LocalVariableReference(localVariable);
+    }
+
     public record ConditionAndLastStatement(Expression condition,
                                             String firstStatementIndexForOldStyleSwitch,
                                             StatementAnalyser lastStatement,
@@ -701,11 +776,11 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
     public record ConditionAndVariableInfo(Expression condition,
                                            VariableInfo variableInfo,
                                            boolean alwaysEscapes,
-                                           VariableInLoop variableInLoop,
+                                           VariableNature variableNature,
                                            String firstStatementIndexForOldStyleSwitch) {
         // for testing
         public ConditionAndVariableInfo(Expression condition, VariableInfo variableInfo) {
-            this(condition, variableInfo, false, VariableInLoop.NOT_IN_LOOP, null);
+            this(condition, variableInfo, false, VariableNature.NORMAL, null);
         }
     }
 
@@ -746,10 +821,11 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                 if (merged.add(fqn)) {
                     VariableInfoContainer destination;
                     if (!variables.isSet(fqn)) {
-                        VariableInLoop vil = vic.getVariableInLoop();
+                        VariableNature nature = vic.variableNature();
                         // created in merge: see Enum_1, a dependent variable created inside the loop
-                        VariableInLoop newVil = vil == VariableInLoop.NOT_IN_LOOP ? VariableInLoop.CREATED_IN_MERGE : vil;
-                        destination = createVariable(evaluationContext, variable, statementTime, newVil);
+                        VariableNature newNature = nature == VariableNature.NORMAL
+                                ? VariableNature.CREATED_IN_MERGE : nature;
+                        destination = createVariable(evaluationContext, variable, statementTime, newNature);
                         if (variable.needsNewVariableWithoutValueCall()) destination.newVariableWithoutValue();
                     } else {
                         destination = vic;
@@ -761,14 +837,15 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                             .map(e2 -> {
                                 VariableInfoContainer vic2 = e2.lastStatement.statementAnalysis.variables.get(fqn);
                                 return new ConditionAndVariableInfo(e2.condition,
-                                        vic2.current(), e2.alwaysEscapes, vic2.getVariableInLoop(), e2.firstStatementIndexForOldStyleSwitch);
+                                        vic2.current(), e2.alwaysEscapes,
+                                        vic2.variableNature(), e2.firstStatementIndexForOldStyleSwitch);
                             })
                             .filter(cav -> acceptVariableForMerging(cav, inSwitchStatementOldStyle)).toList();
                     boolean ignoreCurrent;
-                    if (toMerge.size() == 1 && (toMerge.get(0).variableInLoop.assignmentId() != null
-                            && toMerge.get(0).variableInLoop.assignmentId().startsWith(index) && !atLeastOneBlockExecuted ||
+                    if (toMerge.size() == 1 && (toMerge.get(0).variableNature.assignmentId() != null
+                            && toMerge.get(0).variableNature.assignmentId().startsWith(index) && !atLeastOneBlockExecuted ||
                             variable instanceof FieldReference fr && onlyOneCopy(evaluationContext, fr)) ||
-                            destination.getVariableInLoop().variableType() == VariableInLoop.VariableType.CREATED_IN_MERGE) {
+                            destination.variableNature()== VariableNature.CREATED_IN_MERGE) {
                         ignoreCurrent = true;
                     } else {
                         ignoreCurrent = atLeastOneBlockExecuted;
@@ -881,7 +958,8 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                     VariableInfo vi = e.getValue().current();
                     // we don't copy up local variables, unless they're local copies of fields
                     boolean accept = (!vi.variable().isLocal() ||
-                            vi.variable() instanceof LocalVariableReference lvr && lvr.variable.isLocalCopyOf() != null) &&
+                            vi.variable() instanceof LocalVariableReference lvr
+                                    && lvr.variable.nature() instanceof VariableNature.CopyOfVariableField) &&
                             !index.equals(e.getValue().getStatementIndexOfThisLoopOrShadowVariable());
                     return new AcceptForMerging(e.getValue(), accept);
                 }))
@@ -895,7 +973,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
     public VariableInfoContainer createVariable(EvaluationContext evaluationContext,
                                                 Variable variable,
                                                 int statementTime,
-                                                VariableInLoop variableInLoop) {
+                                                VariableNature variableInLoop) {
         AnalyserContext analyserContext = evaluationContext.getAnalyserContext();
         String fqn = variable.fullyQualifiedName();
         if (variables.isSet(fqn)) {
@@ -1139,12 +1217,12 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         if (isNotAssignmentTarget) {
             if (vi.variable() instanceof FieldReference fieldReference) {
                 if (vi.isConfirmedVariableField()) {
-                    NameSimpleName localVariableFqn = createLocalFieldCopyFQN(vi, fieldReference, statementTime);
-                    if (!variables.isSet(localVariableFqn.name)) {
+                    LocalVariableReference copy = createCopyOfVariableField(fieldReference, vi, statementTime);
+                    if (!variables.isSet(copy.fullyQualifiedName())) {
                         // it is possible that the field has been assigned to, so it exists, but the local copy does not yet
                         return new VariableInfoImpl(variable);
                     }
-                    return variables.get(localVariableFqn.name).getPreviousOrInitial();
+                    return variables.get(copy.fullyQualifiedName()).getPreviousOrInitial();
                 }
                 if (vi.statementTimeDelayed()) {
                     return new VariableInfoImpl(variable);
@@ -1154,8 +1232,8 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                 StatementAnalysis relevantLoop = mostEnclosingLoop();
                 if (relevantLoop.localVariablesAssignedInThisLoop.isFrozen()) {
                     if (relevantLoop.localVariablesAssignedInThisLoop.contains(fqn)) {
-                        NameSimpleName localCopyFqn = createLocalLoopCopyFQN(vic, vi);
-                        VariableInfoContainer newVic = variables.get(localCopyFqn.name);
+                        LocalVariableReference localCopy = createLocalLoopCopy(vi.variable(), vi.getAssignmentId());
+                        VariableInfoContainer newVic = variables.get(localCopy.fullyQualifiedName());
                         return newVic.getPreviousOrInitial();
                     }
                     return vi; // we don't participate in the modification process?
@@ -1196,69 +1274,6 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             cnt++;
         }
         throw new UnsupportedOperationException();
-    }
-
-    /*
-    Two situations for a variable field. First, when there's consecutive reads after an assignment, each in increasing
-    statement times, we simply use this statement time in the name: $st.
-    Only when statement time hasn't increased, but assignments have, we use the combination $st$assignment id.
-     */
-
-    record NameSimpleName(String name, String simpleName, int localCopyIndex) {
-        NameSimpleName(String name, String simpleName) {
-            this(name, simpleName, 0);
-        }
-    }
-
-    private NameSimpleName createLocalFieldCopyFQN(VariableInfo fieldVi,
-                                                   FieldReference fieldReference,
-                                                   int statementTime) {
-        String indexOfStatementTime = flowData.assignmentIdOfStatementTime.get(statementTime);
-        String prefix = fieldReference.fullyQualifiedName() + "$" + statementTime;
-        String simplePrefix = fieldReference.simpleName() + "$" + statementTime;
-        if (statementTime == fieldVi.getStatementTime() && fieldVi.getAssignmentId().compareTo(indexOfStatementTime) >= 0) {
-            // return a local variable with the current field value, numbered as the statement time + assignment ID
-            String suffix = fieldVi.getAssignmentId().replace(".", "_");
-            return new NameSimpleName(prefix + "$" + suffix, simplePrefix + "$" + suffix, statementTime);
-        }
-        return new NameSimpleName(prefix, simplePrefix, statementTime);
-    }
-
-    public NameSimpleName createLocalLoopCopyFQN(VariableInfoContainer vic, VariableInfo vi) {
-        assert vic.isLocalVariableInLoopDefinedOutside();
-        String statementId = vic.getVariableInLoop().statementId();
-        String prefix = vi.name() + "$" + statementId;
-        String simplePrefix = vi.variable().simpleName() + "$" + vic.getVariableInLoop().statementId();
-        if (vi.getAssignmentId().compareTo(vic.getVariableInLoop().statementId()) > 0) {
-            String suffix = vi.getAssignmentId().replace(".", "_");
-            return new NameSimpleName(prefix + "$" + suffix, simplePrefix + "$" + suffix);
-        }
-        return new NameSimpleName(prefix, simplePrefix);
-    }
-
-    public LocalVariableReference variableInfoOfFieldWhenReading(FieldReference fieldReference,
-                                                                 VariableInfo fieldVi,
-                                                                 int statementTime) {
-        // a variable field can have any value when first read in a method.
-        // after statement time goes up, this value may have changed completely
-        // therefore we return a new local variable each time we read and statement time has gone up.
-
-        // when there are assignments within the same statement time, however, we stick to the assigned value
-        // (we temporarily treat the field as a local variable)
-        // so we need to know: have there been assignments AFTER the latest statement time increase?
-
-        NameSimpleName localVariableFqn = createLocalFieldCopyFQN(fieldVi, fieldReference, statementTime);
-
-        // the statement time of the field indicates the time of the latest assignment
-        LocalVariable lv = new LocalVariable.Builder()
-                .addModifier(LocalVariableModifier.FINAL)
-                .setName(localVariableFqn.name)
-                .setSimpleName(localVariableFqn.simpleName)
-                .setParameterizedType(fieldReference.parameterizedType())
-                .setIsLocalCopyOf(fieldReference, localVariableFqn.localCopyIndex)
-                .setOwningType(methodAnalysis.getMethodInfo().typeInfo)
-                .build();
-        return new LocalVariableReference(lv);
     }
 
     /**

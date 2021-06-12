@@ -1069,10 +1069,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 contextNotNull.put(loopVar, oneLevelLess);
                 externalNotNull.put(loopVar, MultiLevel.NOT_INVOLVED);
 
-                String copy = lvc.localVariable.name() + "$" + index();
-                String simple = lvc.localVariable.simpleName() + "$" + index();
-                LocalVariableReference copyVar = createLocalCopyOfLoopVariable(loopVar,
-                        new StatementAnalysis.NameSimpleName(copy, simple));
+                LocalVariableReference copyVar = statementAnalysis.createLocalLoopCopy(loopVar,
+                        VariableInfoContainer.NOT_YET_ASSIGNED);
                 if (contextNotNull.containsKey(copyVar)) {
                     // can be delayed to the next iteration
                     contextNotNull.put(copyVar, MultiLevel.EFFECTIVELY_NOT_NULL);
@@ -1255,8 +1253,9 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         VariableInfoContainer vic;
         VariableInfo initial;
         if (!statementAnalysis.variables.isSet(variable.fullyQualifiedName())) {
+            assert variable.variableNature() == VariableNature.NORMAL;
             vic = statementAnalysis.createVariable(evaluationContext, variable,
-                    statementAnalysis.flowData.getInitialTime(), VariableInLoop.NOT_IN_LOOP);
+                    statementAnalysis.flowData.getInitialTime(), VariableNature.NORMAL);
             initial = vic.getPreviousOrInitial();
             if (initial.variable().needsNewVariableWithoutValueCall()) {
                 vic.newVariableWithoutValue();
@@ -1264,13 +1263,6 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         } else {
             vic = statementAnalysis.variables.get(variable.fullyQualifiedName());
             initial = vic.getPreviousOrInitial();
-        }
-
-        if (variable instanceof FieldReference fieldReference &&
-                initial.isConfirmedVariableField() && !changeData.readAtStatementTime().isEmpty()) {
-            for (int statementTime : changeData.readAtStatementTime()) {
-                statementAnalysis.variableInfoOfFieldWhenReading(fieldReference, initial, statementTime);
-            }
         }
         String id = index() + EVALUATION;
         String assignmentId = changeData.markAssignment() ? id : initial.getAssignmentId();
@@ -1357,11 +1349,12 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
     private Expression maybeValueNeedsState(SharedState sharedState, VariableInfoContainer vic, VariableInfo vi1,
                                             Expression value) {
         boolean valueIsDelayed = sharedState.evaluationContext.isDelayed(value);
-        if (valueIsDelayed ||
-                vic.getVariableInLoop().variableType() != VariableInLoop.VariableType.IN_LOOP_DEFINED_OUTSIDE) {
+        if (valueIsDelayed || !(vic.variableNature() instanceof VariableNature.VariableDefinedOutsideLoop)) {
             // not applicable
             return value;
         }
+        // variable defined outside loop, now in loop, not delayed
+
         ConditionManager localConditionManager = sharedState.localConditionManager;
         //if (localConditionManager.isDelayed()) return NoValue.EMPTY;
         Expression state;
@@ -1409,25 +1402,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         assert loopIndex != null;
 
         VariableInfo vi = vic.best(EVALUATION);
-        StatementAnalysis.NameSimpleName newName = statementAnalysis.createLocalLoopCopyFQN(vic, vi);
-        String newFqn = newName.name();
-        if (!statementAnalysis.variables.isSet(newFqn)) {
-            LocalVariableReference newLvr = createLocalCopyOfLoopVariable(vi.variable(), newName);
-            VariableInLoop variableInLoop = new VariableInLoop(loopIndex, index(), VariableInLoop.VariableType.LOOP_COPY);
-            VariableInfoContainer newVic = VariableInfoContainerImpl.newVariable(newLvr,
-                    VariableInfoContainer.NOT_A_VARIABLE_FIELD, variableInLoop, navigationData.hasSubBlocks());
-            newVic.newVariableWithoutValue(); // at initial level
-            newVic.setStaticallyAssignedVariables(new LinkedVariables(Set.of(vi.variable())), true);
-            String assigned = index() + VariableInfoContainer.Level.INITIAL;
-            String read = index() + EVALUATION;
-            newVic.ensureEvaluation(assigned, read, VariableInfoContainer.NOT_A_VARIABLE_FIELD, Set.of());
-
-            statementAnalysis.variables.put(newFqn, newVic);
-
-            // value and properties will be set in main apply
-            return newVic;
-        }
-        return statementAnalysis.variables.get(newFqn);
+        return statementAnalysis.ensureLocalLoopCopy(vi.variable(), vi.getAssignmentId());
     }
 
     private Expression bestValue(EvaluationResult.ChangeData valueChangeData, VariableInfo vi1) {
@@ -1455,8 +1430,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 log(PRECONDITION, "Escape with check not null on {}", nullVariable.fullyQualifiedName());
 
                 ensureContextNotNullForParent(nullVariable, delays, escapeAlwaysExecuted == Boolean.TRUE);
-                if (nullVariable instanceof LocalVariableReference lvr && lvr.variable.isLocalCopyOf() instanceof FieldReference fr) {
-                    ensureContextNotNullForParent(fr, delays, escapeAlwaysExecuted == Boolean.TRUE);
+                if (nullVariable instanceof LocalVariableReference lvr && lvr.variable.nature() instanceof VariableNature.CopyOfVariableField copy) {
+                    ensureContextNotNullForParent(copy.localCopyOf(), delays, escapeAlwaysExecuted == Boolean.TRUE);
                 }
             }
             if (escapeAlwaysExecuted == Boolean.TRUE) {
@@ -1553,10 +1528,10 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                     // create the local (loop) variable
 
                     lvr = new LocalVariableReference(lvc.localVariable);
-                    VariableInLoop variableInLoop = statement() instanceof LoopStatement ?
-                            new VariableInLoop(index(), null, VariableInLoop.VariableType.LOOP) : VariableInLoop.NOT_IN_LOOP;
+                    VariableNature variableNature = statement() instanceof LoopStatement
+                            ? new VariableNature.LoopVariable(index()) : lvc.localVariable.nature();
                     vic = VariableInfoContainerImpl.newVariable(lvr, VariableInfoContainer.NOT_A_VARIABLE_FIELD,
-                            variableInLoop, statementAnalysis.navigationData.hasSubBlocks());
+                            variableNature, statementAnalysis.navigationData.hasSubBlocks());
                     newVariable = true;
                     if (statement() instanceof LoopStatement) {
                         statementAnalysis.localVariablesAssignedInThisLoop.add(lvr.fullyQualifiedName());
@@ -1653,11 +1628,15 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 .forEach(instanceOf -> {
                     LocalVariableReference lvr = instanceOf.instanceOf().patternVariable();
                     String scope = instanceOf.positive() ? index() + ".0.0" : haveElse ? index() + ".1.0" : index();
-                    VariableInfoContainer vic = VariableInfoContainerImpl.newVariable(lvr, VariableInfoContainer.NOT_A_VARIABLE_FIELD,
-                            new VariableInLoop(scope, scope, VariableInLoop.VariableType.PATTERN),
+                    Variable scopeVariable = instanceOf.instanceOf().expression() instanceof IsVariableExpression ve ?
+                            ve.variable() : null;
+                    VariableNature variableNature = new VariableNature.Pattern(scope, instanceOf.positive(), scopeVariable);
+                    VariableInfoContainer vic = VariableInfoContainerImpl.newVariable(lvr,
+                            VariableInfoContainer.NOT_A_VARIABLE_FIELD,
+                            variableNature,
                             statementAnalysis.navigationData.hasSubBlocks());
                     vic.newVariableWithoutValue();
-                    statementAnalysis.variables.put(lvr.simpleName(), vic);
+                    statementAnalysis.variables.put(lvr.fullyQualifiedName(), vic);
                 });
 
         // add assignments
@@ -1686,25 +1665,21 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             VariableInfoContainer vic = statementAnalysis.findForWriting(fqn); // must exist already
             VariableInfo vi = vic.best(EVALUATION); // NOT merge, merge is after the loop
             // assign to local variable that has been created at Level 2 in this statement
-            String newFqn = fqn + "$" + index(); // must be compatible with statementAnalysis.createLocalLoopCopyFQN
-            String newSimple = vi.variable().simpleName() + "$" + index();
-
-            if (!statementAnalysis.variables.isSet(newFqn)) {
-                LocalVariableReference newLvr = createLocalCopyOfLoopVariable(vi.variable(),
-                        new StatementAnalysis.NameSimpleName(newFqn, newSimple));
-                String assigned = index() + VariableInfoContainer.Level.INITIAL;
+            String assigned = index() + VariableInfoContainer.Level.INITIAL;
+            LocalVariableReference loopCopy = statementAnalysis.createLocalLoopCopy(vi.variable(), assigned);
+            String loopCopyFqn = loopCopy.fullyQualifiedName();
+            if (!statementAnalysis.variables.isSet(loopCopyFqn)) {
                 String read = index() + EVALUATION;
-                Expression newValue = NewObject.localVariableInLoop(index() + "-" + newFqn,
-                        statementAnalysis.primitives, newLvr.parameterizedType());
+                Expression newValue = NewObject.localVariableInLoop(index() + "-" + loopCopyFqn,
+                        statementAnalysis.primitives, vi.variable().parameterizedType());
                 Map<VariableProperty, Integer> valueProps = sharedState.evaluationContext.getValueProperties(newValue);
-                VariableInfoContainer newVic = VariableInfoContainerImpl.newLoopVariable(newLvr, assigned,
+                VariableInfoContainer newVic = VariableInfoContainerImpl.newLoopVariable(loopCopy, assigned,
                         read,
                         newValue,
                         mergeValueAndLoopVar(valueProps, vi.getProperties().toImmutableMap()),
                         new LinkedVariables(Set.of(vi.variable())),
-                        new VariableInLoop(index(), null, VariableInLoop.VariableType.LOOP_COPY),
                         true);
-                statementAnalysis.variables.put(newFqn, newVic);
+                statementAnalysis.variables.put(loopCopyFqn, newVic);
             }
         });
         return expressionsToEvaluate;
@@ -1717,18 +1692,6 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         return res;
     }
 
-    private LocalVariableReference createLocalCopyOfLoopVariable(Variable loopVariable,
-                                                                 StatementAnalysis.NameSimpleName newFqn) {
-        LocalVariable localVariable = new LocalVariable.Builder()
-                .addModifier(LocalVariableModifier.FINAL)
-                .setName(newFqn.name())
-                .setSimpleName(newFqn.simpleName())
-                .setParameterizedType(loopVariable.parameterizedType())
-                .setOwningType(myMethodAnalyser.methodInfo.typeInfo)
-                .setIsLocalCopyOf(loopVariable, 0)
-                .build();
-        return new LocalVariableReference(localVariable);
-    }
 
     private AnalysisStatus evaluationOfMainExpression(SharedState sharedState) {
         List<Expression> expressionsFromInitAndUpdate = initialisersAndUpdaters(sharedState);
@@ -1858,8 +1821,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
     private EvaluationResult handleNotNullClausesInAssertStatement(EvaluationContext evaluationContext,
                                                                    EvaluationResult evaluationResult) {
         Expression expression = evaluationResult.getExpression();
-        boolean expressionIsDelayed = evaluationContext.isDelayed(expression);
-        Filter.FilterResult<ParameterInfo> result = moveConditionToParameter(evaluationContext, expression, expressionIsDelayed);
+        Filter.FilterResult<ParameterInfo> result = moveConditionToParameter(evaluationContext, expression);
         if (result != null) {
             EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
             boolean changes = false;
@@ -2051,7 +2013,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             Expression assertion = statementAnalysis.stateData.valueOfExpression.get();
             boolean expressionIsDelayed = statementAnalysis.stateData.valueOfExpression.isVariable();
 
-            if (moveConditionToParameter(sharedState.evaluationContext, assertion, expressionIsDelayed) == null) {
+            if (moveConditionToParameter(sharedState.evaluationContext, assertion) == null) {
                 Expression translated = Objects.requireNonNullElse(
                         sharedState.evaluationContext.acceptAndTranslatePrecondition(assertion),
                         new BooleanConstant(statementAnalysis.primitives, true));
@@ -2076,7 +2038,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         return analysisStatus;
     }
 
-    private Filter.FilterResult<ParameterInfo> moveConditionToParameter(EvaluationContext evaluationContext, Expression expression, boolean expressionIsDelayed) {
+    private Filter.FilterResult<ParameterInfo> moveConditionToParameter(EvaluationContext evaluationContext, Expression expression) {
         Filter filter = new Filter(evaluationContext, Filter.FilterMode.ACCEPT);
         Filter.FilterResult<ParameterInfo> result = filter.filter(expression, filter.individualNullOrNotNullClauseOnParameter());
         if (result != null && !result.accepted().isEmpty() && result.rest().isBoolValueTrue()) {
@@ -2474,7 +2436,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         boolean atEndOfBlock = navigationData.next.get().isEmpty();
         if ((atEndOfBlock || alwaysInterrupts) && myMethodAnalyser.methodInfo.isNotATestMethod()) {
             statementAnalysis.variables.stream()
-                    .filter(e -> e.getValue().getVariableInLoop() != VariableInLoop.COPY_FROM_ENCLOSING_METHOD)
+                    .filter(e -> e.getValue().variableNature() != VariableNature.FROM_ENCLOSING_METHOD)
                     .map(e -> e.getValue().current())
                     .filter(vi -> !(vi.variable() instanceof ReturnVariable)) // that's for the compiler!
                     .filter(this::uselessForDependentVariable)
@@ -2518,7 +2480,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             // READ is set in the first iteration, so there is no reason to expect delays
             statementAnalysis.variables.stream()
                     .filter(e -> e.getValue().getStatementIndexOfThisLoopVariable() == null &&
-                            e.getValue().getVariableInLoop() != VariableInLoop.COPY_FROM_ENCLOSING_METHOD)
+                            e.getValue().variableNature() != VariableNature.FROM_ENCLOSING_METHOD)
                     .map(e -> e.getValue().current())
                     .filter(vi -> !(vi.variable() instanceof DependentVariable))
                     .filter(vi -> statementAnalysis.isLocalVariableAndLocalToThisBlock(vi.name()) && !vi.isRead())
@@ -2810,9 +2772,10 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             FieldReference fieldReference;
             if (variable instanceof FieldReference fr) {
                 fieldReference = fr;
-            } else if (variable instanceof LocalVariableReference lvr && lvr.variable.isLocalCopyOf() instanceof FieldReference fr) {
-                fieldReference = fr;
-                VariableInfo variableInfo = statementAnalysis.findOrThrow(fr);
+            } else if (variable instanceof LocalVariableReference lvr &&
+                    lvr.variable.nature() instanceof VariableNature.CopyOfVariableField copy) {
+                fieldReference = copy.localCopyOf();
+                VariableInfo variableInfo = statementAnalysis.findOrThrow(fieldReference);
                 if (variableInfo.isAssigned()) return false;
                 // IMPROVE this is only valid if the statement time of the local copy is the same as that of the precondition
                 // but how to do that?
@@ -2844,10 +2807,10 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         public Expression currentValue(Variable variable, int statementTime, ForwardEvaluationInfo forwardEvaluationInfo) {
             VariableInfo variableInfo = findForReading(variable, statementTime, forwardEvaluationInfo.isNotAssignmentTarget());
             Expression value = variableInfo.getValue();
-            // important! do not use variable in the next statement, but vi.variable()
+            // important! do not use variable in the next statement, but variableInfo.variable()
             // we could have redirected from a variable field to a local variable copy
             return value instanceof NewObject && (!forwardEvaluationInfo.assignToField() ||
-                    !(variable instanceof LocalVariableReference lvr && lvr.variable.isLocalCopyOf() == null))
+                    !(variable instanceof LocalVariableReference lvr && lvr.variable.nature().localCopyOf() == null))
                     ? new VariableExpression(variableInfo.variable()) : value;
         }
 
@@ -2974,9 +2937,9 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             if (precondition.isBooleanConstant()) return null;
             Map<Expression, Expression> translationMap = precondition.variables().stream()
                     .filter(v -> v instanceof LocalVariableReference lvr &&
-                            lvr.variable.isLocalCopyOf() instanceof FieldReference)
+                            lvr.variable.nature() instanceof VariableNature.CopyOfVariableField)
                     .collect(Collectors.toUnmodifiableMap(VariableExpression::new,
-                            v -> new VariableExpression(((LocalVariableReference) v).variable.isLocalCopyOf())));
+                            v -> new VariableExpression(((LocalVariableReference) v).variable.nature().localCopyOf())));
             Expression translated;
             if (translationMap.isEmpty()) {
                 translated = precondition;

@@ -19,6 +19,7 @@ import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.variable.ReturnVariable;
+import org.e2immu.analyser.model.variable.VariableNature;
 import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
 
@@ -165,14 +166,14 @@ public class Test_Util_01_SMapList extends CommonTestRunner {
                     String expectValue = d.iteration() == 0 ? "<s:boolean>" : "change$1||null==destination.get(e$1.getKey())";
                     assertEquals(expectValue, d.currentValue().toString());
                     assertEquals("", d.variableInfo().getStaticallyAssignedVariables().toString());
-                    assertSame(VariableInLoop.VariableType.LOOP_COPY, d.variableInfoContainer().getVariableInLoop().variableType());
+                    assertTrue(d.variableInfoContainer().variableNature() instanceof VariableNature.CopyOfVariableInLoop);
                     assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
                 }
                 if ("1.0.1.0.0".equals(d.statementId()) || "1.0.1.1.0".equals(d.statementId())) {
                     fail("The variable should not exist here");
                 }
                 if ("1.0.1".equals(d.statementId())) {
-                    assertSame(VariableInLoop.VariableType.LOOP_COPY, d.variableInfoContainer().getVariableInLoop().variableType());
+                    assertTrue(d.variableInfoContainer().variableNature() instanceof VariableNature.CopyOfVariableInLoop);
                     String expectValue = d.iteration() == 0 ? "<s:boolean>" : "change$1||null==destination.get(e$1.getKey())";
                     assertEquals(expectValue, d.currentValue().toString());
                     assertEquals("", d.variableInfo().getStaticallyAssignedVariables().toString());

@@ -61,7 +61,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
                                                                               String statementIndex) {
         if (statementIndex != null &&
                 previous.variableNature() instanceof VariableNature.VariableDefinedOutsideLoop inLoop &&
-                !statementIndex.startsWith(inLoop.statementIndexOfLoop())) {
+                !statementIndex.startsWith(inLoop.statementIndex())) {
             // we go back out
             return inLoop.previousVariableNature();
         }
@@ -182,9 +182,10 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
    factory method for new variables
     */
     public static VariableInfoContainerImpl existingLocalVariableIntoLoop(VariableInfoContainer previous,
-                                                                          VariableNature variableNature,
+                                                                          String statementIndex,
                                                                           boolean previousIsParent) {
-        return new VariableInfoContainerImpl(variableNature,
+        return new VariableInfoContainerImpl(
+                new VariableNature.VariableDefinedOutsideLoop(previous.variableNature(), statementIndex),
                 Either.left(previous),
                 new SetOnce<>(),
                 previousIsParent ? Level.EVALUATION : Level.MERGE);
