@@ -14,18 +14,21 @@
 
 package org.e2immu.analyser.model;
 
-import org.e2immu.analyser.model.variable.Variable;
+import org.e2immu.analyser.model.variable.VariableNature;
 
 import java.util.*;
 
+/*
+the VariableNature of a LocalVariable is copied into VariableInfoContainer; both have the same object.
+There is one exception, where VIC can "temporarily, for in a loop statement", have a different value (see docs there).
+ */
 public record LocalVariable(Set<LocalVariableModifier> modifiers,
                             String simpleName,
                             String name,
                             ParameterizedType parameterizedType,
                             List<AnnotationExpression> annotations,
                             TypeInfo owningType,
-                            Variable isLocalCopyOf,
-                            int localCopyIndex) {
+                            VariableNature nature) {
 
     public LocalVariable {
         Objects.requireNonNull(name);
@@ -34,8 +37,7 @@ public record LocalVariable(Set<LocalVariableModifier> modifiers,
 
     public LocalVariable translate(TranslationMap translationMap) {
         return new LocalVariable(modifiers, simpleName,
-                name, translationMap.translateType(parameterizedType), annotations, owningType, isLocalCopyOf,
-                localCopyIndex);
+                name, translationMap.translateType(parameterizedType), annotations, owningType, nature);
     }
 
     @Override
@@ -67,8 +69,7 @@ public record LocalVariable(Set<LocalVariableModifier> modifiers,
         private String name;
         private String simpleName;
         private TypeInfo owningType;
-        private Variable isLocalCopyOf;
-        private int localCopyIndex;
+        private VariableNature nature;
 
         public Builder setOwningType(TypeInfo owningType) {
             this.owningType = owningType;
@@ -100,15 +101,14 @@ public record LocalVariable(Set<LocalVariableModifier> modifiers,
             return this;
         }
 
-        public Builder setIsLocalCopyOf(Variable isLocalCopyOf, int localCopyIndex) {
-            this.isLocalCopyOf = isLocalCopyOf;
-            this.localCopyIndex = localCopyIndex;
+        public Builder setNature(VariableNature nature) {
+            this.nature = nature;
             return this;
         }
 
         public LocalVariable build() {
             return new LocalVariable(modifiers, simpleName,
-                    name, parameterizedType, annotations, owningType, isLocalCopyOf, localCopyIndex);
+                    name, parameterizedType, annotations, owningType, nature);
         }
     }
 }

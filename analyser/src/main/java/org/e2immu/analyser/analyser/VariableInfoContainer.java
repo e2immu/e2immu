@@ -15,6 +15,7 @@
 package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.variable.VariableNature;
 import org.e2immu.annotation.NotNull;
 
 import java.util.List;
@@ -28,6 +29,12 @@ import java.util.Set;
  * MERGE: created by step 4 in the analyser
  */
 public interface VariableInfoContainer {
+
+    /* note: local variables also have a variableNature. This one can override their value
+    but only when this variable nature is VariableDefinedOutsideLoop. All the others have to agree exactly,
+    and can be used interchangeably.
+     */
+    VariableNature variableNature();
 
     int VARIABLE_FIELD_DELAY = -1;
     int NOT_A_VARIABLE_FIELD = -2;
@@ -175,30 +182,27 @@ public interface VariableInfoContainer {
      */
     void setStatementTime(int statementTime);
 
-    /*
-    Is true starting from the level 3 main expression of the loop statement, down to all statements in the block.
-    Is true at all times for variables declared in the loop statement's level 2 (for, forEach)
-     */
     default boolean isLocalVariableInLoopDefinedOutside() {
-        VariableInLoop.VariableType vt = getVariableInLoop().variableType();
-        return vt == VariableInLoop.VariableType.IN_LOOP_DEFINED_OUTSIDE || vt == VariableInLoop.VariableType.LOOP;
+        return variableNature().isLocalVariableInLoopDefinedOutside();
     }
-
-    /*
-    Never null, points to NOT_IN_LOOP otherwise
-     */
-    VariableInLoop getVariableInLoop();
 
     default String getStatementIndexOfThisLoopOrShadowVariable() {
-        return getVariableInLoop().statementId(VariableInLoop.VariableType.LOOP, VariableInLoop.VariableType.LOOP_COPY);
+        return variableNature().getStatementIndexOfThisLoopOrLoopCopyVariable();
     }
 
+    // TODO assignment ID or statement index?
     default String getStatementIndexOfPatternVariable() {
-        return getVariableInLoop().statementId(VariableInLoop.VariableType.PATTERN);
+        if (variableNature() instanceof VariableNature.Pattern pattern) {
+            return pattern.assignmentId();
+        }
+        return null;
     }
 
     default String getStatementIndexOfThisLoopVariable() {
-        return getVariableInLoop().statementId(VariableInLoop.VariableType.LOOP);
+        if (variableNature() instanceof VariableNature.LoopVariable loopVariable) {
+            return loopVariable.statementIndexOfLoop();
+        }
+        return null;
     }
 
     default boolean isLocalCopy() {

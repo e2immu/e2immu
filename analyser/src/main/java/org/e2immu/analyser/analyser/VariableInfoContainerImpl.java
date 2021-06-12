@@ -16,7 +16,9 @@ package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.Variable;
+import org.e2immu.analyser.model.variable.VariableNature;
 import org.e2immu.support.Either;
 import org.e2immu.support.Freezable;
 import org.e2immu.support.SetOnce;
@@ -31,7 +33,7 @@ import java.util.Set;
 public class VariableInfoContainerImpl extends Freezable implements VariableInfoContainer {
     private static final Logger LOGGER = LoggerFactory.getLogger(VariableInfoContainerImpl.class);
 
-    private final VariableInLoop variableInLoop;
+    private final VariableNature variableNature;
 
     private final Either<VariableInfoContainer, VariableInfoImpl> previousOrInitial;
     private final SetOnce<VariableInfoImpl> evaluation = new SetOnce<>();
@@ -40,21 +42,36 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
     private final Level levelForPrevious;
 
     /*
-    factory method for existing variables
+    factory method for existing variables; potentially revert VariableDefinedOutsideLoop nature
      */
     public static VariableInfoContainerImpl existingVariable(VariableInfoContainer previous,
-                                                             String statementIndexForLocalVariableInLoop,
+                                                             String statementIndex,
                                                              boolean previousIsParent,
                                                              boolean statementHasSubBlocks) {
         Objects.requireNonNull(previous);
-        return new VariableInfoContainerImpl(computeVariableInLoop(previous, statementIndexForLocalVariableInLoop),
+        return new VariableInfoContainerImpl(potentiallyRevertVariableDefinedOutsideLoop(previous, statementIndex),
                 Either.left(previous),
                 statementHasSubBlocks ? new SetOnce<>() : null,
                 previousIsParent ? Level.EVALUATION : Level.MERGE);
     }
 
     /*
+     */
+    private static VariableNature potentiallyRevertVariableDefinedOutsideLoop(VariableInfoContainer previous,
+                                                                              String statementIndex) {
+        if (statementIndex != null &&
+                previous.variableNature() instanceof VariableNature.VariableDefinedOutsideLoop inLoop &&
+                !statementIndex.startsWith(inLoop.statementIndexOfLoop())) {
+            // we go back out
+            return inLoop.previousVariableNature();
+        }
+        return previous.variableNature();
+    }
+
+    /*
    factory method for existing variables in enclosing methods
+
+   these variables must be implicitly final
     */
     public static VariableInfoContainerImpl copyOfExistingVariableInEnclosingMethod(VariableInfoContainer previous,
                                                                                     boolean statementHasSubBlocks) {
@@ -66,7 +83,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         initial.setValue(outside.getValue(), outside.isDelayed());
         if (outside.getLinkedVariables() != LinkedVariables.DELAY)
             initial.setLinkedVariables(outside.getLinkedVariables());
-        return new VariableInfoContainerImpl(VariableInLoop.COPY_FROM_ENCLOSING_METHOD,
+        return new VariableInfoContainerImpl(VariableNature.FROM_ENCLOSING_METHOD,
                 Either.right(initial),
                 statementHasSubBlocks ? new SetOnce<>() : null,
                 Level.MERGE);
@@ -81,51 +98,53 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
                                                                         boolean statementHasSubBlocks) {
         VariableInfoImpl initial = new VariableInfoImpl(variable, NOT_YET_ASSIGNED,
                 readId, NOT_A_VARIABLE_FIELD, Set.of(), null);
+        VariableNature variableNature = variable instanceof LocalVariableReference lvr
+                ? lvr.variable.nature() : VariableNature.NORMAL;
         // no newVariable, because either setValue is called immediately after this method, or the explicit newVariableWithoutValue()
-        return new VariableInfoContainerImpl(VariableInLoop.NOT_IN_LOOP, Either.right(initial),
+        return new VariableInfoContainerImpl(variableNature, Either.right(initial),
                 statementHasSubBlocks ? new SetOnce<>() : null, null);
     }
 
     /*
-    factory method for new variables
+    factory method for new variables, explicitly setting the variableNature
      */
     public static VariableInfoContainerImpl newVariable(Variable variable,
                                                         int statementTime,
-                                                        VariableInLoop variableInLoop,
+                                                        VariableNature variableNature,
                                                         boolean statementHasSubBlocks) {
         VariableInfoImpl initial = new VariableInfoImpl(variable, NOT_YET_ASSIGNED, NOT_YET_READ, statementTime, Set.of(), null);
         // no newVariable, because either setValue is called immediately after this method, or the explicit newVariableWithoutValue()
-        return new VariableInfoContainerImpl(variableInLoop, Either.right(initial), statementHasSubBlocks ? new SetOnce<>() : null, null);
+        return new VariableInfoContainerImpl(variableNature, Either.right(initial), statementHasSubBlocks ? new SetOnce<>() : null, null);
     }
 
     /*
         factory method for new catch variables
          */
-    public static VariableInfoContainerImpl newCatchVariable(Variable variable,
+    public static VariableInfoContainerImpl newCatchVariable(LocalVariableReference lvr,
                                                              String index,
                                                              Expression value,
                                                              boolean statementHasSubBlocks) {
-        VariableInfoImpl initial = new VariableInfoImpl(variable, index + Level.INITIAL,
+        VariableInfoImpl initial = new VariableInfoImpl(lvr, index + Level.INITIAL,
                 index + Level.EVALUATION, NOT_A_VARIABLE_FIELD, Set.of(), null);
         initial.newVariable(true);
         initial.setValue(value, false);
         initial.setLinkedVariables(LinkedVariables.EMPTY);
-        return new VariableInfoContainerImpl(VariableInLoop.NOT_IN_LOOP,
+
+        return new VariableInfoContainerImpl(lvr.variable.nature(),
                 Either.right(initial), statementHasSubBlocks ? new SetOnce<>() : null, null);
     }
 
     /*
     factory method for new loop variables
      */
-    public static VariableInfoContainerImpl newLoopVariable(Variable variable,
+    public static VariableInfoContainerImpl newLoopVariable(LocalVariableReference lvr,
                                                             String assignedId,
                                                             String readId,
                                                             Expression value,
                                                             Map<VariableProperty, Integer> properties,
                                                             LinkedVariables staticallyAssignedVariables,
-                                                            VariableInLoop variableInLoop,
                                                             boolean statementHasSubBlocks) {
-        VariableInfoImpl initial = new VariableInfoImpl(variable, assignedId, readId,
+        VariableInfoImpl initial = new VariableInfoImpl(lvr, assignedId, readId,
                 VariableInfoContainer.NOT_A_VARIABLE_FIELD, Set.of(), null);
         initial.setValue(value, false);
         properties.forEach(initial::setProperty);
@@ -155,44 +174,32 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         }
         initial.setStaticallyAssignedVariables(staticallyAssignedVariables);
         initial.setLinkedVariables(LinkedVariables.EMPTY);
-        return new VariableInfoContainerImpl(variableInLoop, Either.right(initial), statementHasSubBlocks ? new SetOnce<>() : null, null);
+        return new VariableInfoContainerImpl(lvr.variable.nature(),
+                Either.right(initial), statementHasSubBlocks ? new SetOnce<>() : null, null);
     }
 
     /*
    factory method for new variables
     */
     public static VariableInfoContainerImpl existingLocalVariableIntoLoop(VariableInfoContainer previous,
-                                                                          VariableInLoop variableInLoop,
+                                                                          VariableNature variableNature,
                                                                           boolean previousIsParent) {
-        return new VariableInfoContainerImpl(variableInLoop,
+        return new VariableInfoContainerImpl(variableNature,
                 Either.left(previous),
                 new SetOnce<>(),
                 previousIsParent ? Level.EVALUATION : Level.MERGE);
     }
 
-    private VariableInfoContainerImpl(VariableInLoop variableInLoop,
+    private VariableInfoContainerImpl(VariableNature variableNature,
                                       Either<VariableInfoContainer, VariableInfoImpl> previousOrInitial,
                                       SetOnce<VariableInfoImpl> merge,
                                       Level levelForPrevious) {
-        this.variableInLoop = variableInLoop;
+        this.variableNature = variableNature;
         this.previousOrInitial = previousOrInitial;
         this.merge = merge;
         this.levelForPrevious = levelForPrevious;
     }
 
-    private static VariableInLoop computeVariableInLoop(VariableInfoContainer previous,
-                                                        String statementIndexForLocalVariableInLoop) {
-        if (statementIndexForLocalVariableInLoop == null) {
-            return previous.getVariableInLoop();
-        }
-        String prevStatementId = previous.getVariableInLoop().variableType() == VariableInLoop.VariableType.IN_LOOP_DEFINED_OUTSIDE ?
-                previous.getVariableInLoop().statementId() : null;
-        if (prevStatementId != null && !statementIndexForLocalVariableInLoop.startsWith(prevStatementId)) {
-            // we go back out
-            return VariableInLoop.NOT_IN_LOOP;
-        }
-        return previous.getVariableInLoop();
-    }
 
     @Override
     public void newVariableWithoutValue() {
@@ -204,8 +211,8 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
     }
 
     @Override
-    public VariableInLoop getVariableInLoop() {
-        return variableInLoop;
+    public VariableNature variableNature() {
+        return variableNature;
     }
 
     @Override
