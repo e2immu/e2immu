@@ -195,7 +195,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
                                       Either<VariableInfoContainer, VariableInfoImpl> previousOrInitial,
                                       SetOnce<VariableInfoImpl> merge,
                                       Level levelForPrevious) {
-        this.variableNature = variableNature;
+        this.variableNature = Objects.requireNonNull(variableNature);
         this.previousOrInitial = previousOrInitial;
         this.merge = merge;
         this.levelForPrevious = levelForPrevious;

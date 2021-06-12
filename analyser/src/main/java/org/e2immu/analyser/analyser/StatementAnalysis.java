@@ -744,7 +744,9 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
 
     LocalVariableReference createLocalLoopCopy(Variable original, String assignmentId) {
         String copyAssignmentId;
-        String statementIdOfCurrent = original.variableNature().getStatementIndexOfThisLoopOrLoopCopyVariable();
+        String statementIdOfCurrent = Objects.requireNonNullElse(
+                original.variableNature().getStatementIndexOfThisLoopOrLoopCopyVariable(),
+                VariableInfoContainer.NOT_YET_ASSIGNED);
         if (assignmentId.compareTo(statementIdOfCurrent) > 0) {
             copyAssignmentId = assignmentId; // double $
         } else {
@@ -845,7 +847,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                     if (toMerge.size() == 1 && (toMerge.get(0).variableNature.assignmentId() != null
                             && toMerge.get(0).variableNature.assignmentId().startsWith(index) && !atLeastOneBlockExecuted ||
                             variable instanceof FieldReference fr && onlyOneCopy(evaluationContext, fr)) ||
-                            destination.variableNature()== VariableNature.CREATED_IN_MERGE) {
+                            destination.variableNature() == VariableNature.CREATED_IN_MERGE) {
                         ignoreCurrent = true;
                     } else {
                         ignoreCurrent = atLeastOneBlockExecuted;

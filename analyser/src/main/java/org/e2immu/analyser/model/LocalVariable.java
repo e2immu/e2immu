@@ -36,6 +36,7 @@ public record LocalVariable(Set<LocalVariableModifier> modifiers,
     public LocalVariable {
         Objects.requireNonNull(name);
         Objects.requireNonNull(owningType);
+        Objects.requireNonNull(nature);
     }
 
     public LocalVariable translate(TranslationMap translationMap) {
@@ -72,7 +73,7 @@ public record LocalVariable(Set<LocalVariableModifier> modifiers,
         private String name;
         private String simpleName;
         private TypeInfo owningType;
-        private VariableNature nature;
+        private VariableNature nature = VariableNature.NORMAL;
 
         public Builder setOwningType(TypeInfo owningType) {
             this.owningType = owningType;

@@ -92,8 +92,8 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
         final String TYPE = "org.e2immu.analyser.testexample.Basics_6";
         final String FIELD = TYPE + ".field";
         final String FIELD_0 = "field$0";
-        final String FIELD_1 = "field$1";
         final String FIELD_0_FQN = FIELD + "$0";
+        final String FIELD_1_FQN = FIELD + "$1";
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("setField".equals(d.methodInfo().name) && d.variableInfo().variable() instanceof ParameterInfo) {
@@ -117,12 +117,12 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
                         assertEquals(expect, d.variableInfo().getStatementTime());
                     }
                 }
-                if (FIELD_0.equals(d.variableName())) {
+                if (FIELD_0_FQN.equals(d.variableName())) {
                     assertTrue(d.iteration() > 0);
                     assertEquals("nullable instance type String", d.currentValue().toString());
                     assertEquals(VariableInfoContainer.NOT_A_VARIABLE_FIELD, d.variableInfo().getStatementTime());
                 }
-                if (FIELD_1.equals(d.variableName())) {
+                if (FIELD_1_FQN.equals(d.variableName())) {
                     assertTrue(d.iteration() > 0);
                     assertEquals("nullable instance type String", d.currentValue().toString());
                     assertEquals(VariableInfoContainer.NOT_A_VARIABLE_FIELD, d.variableInfo().getStatementTime());
@@ -141,7 +141,7 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
                         assertEquals(Level.FALSE, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
                     }
                 }
-                if (FIELD_0.equals(d.variableName())) {
+                if (FIELD_0_FQN.equals(d.variableName())) {
                     assert d.iteration() > 0;
                     if ("0".equals(d.statementId())) {
                         assertEquals("this.field", d.variableInfo().getStaticallyAssignedVariables().toString());
@@ -169,7 +169,7 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
                         assertEquals(expectCnn, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
                     }
                 }
-                if (FIELD_0.equals(d.variableName()) && "1".equals(d.statementId())) {
+                if (FIELD_0_FQN.equals(d.variableName()) && "1".equals(d.statementId())) {
                     assertEquals(d.iteration() == 0, d.getProperty(VariableProperty.CONTEXT_NOT_NULL) == Level.DELAY);
                 }
                 if (FIELD.equals(d.variableName())) {
@@ -385,10 +385,11 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
         final String I = "org.e2immu.analyser.testexample.Basics_7.i";
         final String I0 = "i$0";
         final String I1 = "i$1";
-        final String I101 = "i$1$1_0_1-E";
+        final String I0_FQN = I + "$0";
+        final String I1_FQN = I + "$1";
+        final String I101_FQN = I + "$1$1_0_1-E";
         final String INC3_RETURN_VAR = "org.e2immu.analyser.testexample.Basics_7.increment3()";
         final String I_DELAYED = "<f:i>";
-        final String I_EXPR = "<f:i>==<v:j>";
 
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("increment".equals(d.methodInfo().name) && "3".equals(d.statementId())) {
@@ -453,7 +454,7 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
                         assertEquals(expect, d.currentValue().toString());
                     }
                 }
-                if (I0.equals(d.variableName())) {
+                if (I0_FQN.equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {
                         assertEquals("this.i", d.variableInfo().getStaticallyAssignedVariables().toString());
 
@@ -461,7 +462,7 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
                         assertEquals("instance type int", d.currentValue().toString());
                     }
                 }
-                if (I1.equals(d.variableName())) {
+                if (I1_FQN.equals(d.variableName())) {
                     // exists from 1.0.0 onwards
                     assertTrue(d.iteration() > 0); // does not exist earlier!
                     assertEquals("instance type int", d.currentValue().toString());
@@ -469,7 +470,7 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
                     // after the assignment, i becomes a different value
                     assertEquals(expectStaticallyAssigned, d.variableInfo().getStaticallyAssignedVariables().toString());
                 }
-                if (I101.equals(d.variableName())) {
+                if (I101_FQN.equals(d.variableName())) {
                     assertEquals("this.i", d.variableInfo().getStaticallyAssignedVariables().toString());
 
                     // is primitive
@@ -620,7 +621,7 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
                     if ("0".equals(d.statementId()) || "2".equals(d.statementId())
                             || "3".equals(d.statementId()) || "4.0.0.0.0".equals(d.statementId())
                             || "4".equals(d.statementId())) { // FIXME is this correct?? At 4, I'd assume some combination of this.i and ""
-                        String expectValue = d.iteration() == 0 ? "<f:i>" : "i$1";
+                        String expectValue = d.iteration() == 0 ? "<f:i>" : I1;
                         assertEquals(expectValue, d.currentValue().toString());
                         assertEquals("this.i", staticallyAssigned);
                     }
@@ -632,7 +633,7 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
                 }
                 if ("k".equals(d.variableName())) {
                     if ("3".equals(d.statementId())) {
-                        String expectValue = d.iteration() == 0 ? "<f:i>" : "i$2";
+                        String expectValue = d.iteration() == 0 ? "<f:i>" : I2;
                         assertEquals(expectValue, d.currentValue().toString());
                     }
                 }
