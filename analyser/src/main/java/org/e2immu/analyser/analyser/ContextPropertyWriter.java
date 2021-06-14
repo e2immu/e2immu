@@ -235,6 +235,12 @@ public class ContextPropertyWriter {
                 valuesToSet.put(vic, Level.DELAY);
             }
         } else if (current < newValue && newValue != Level.DELAY) {
+            if(vi.isConfirmedVariableField()) {
+                // allow; the reason are conflicting values on different local copies, both linking to this
+                // confirmed variable field. (see TrieSimplified_0, among others.) They do not matter, as
+                // the context values for MethodAnalyser and FieldAnalyser is taken over ALL the local copies as well.
+                return;
+            }
             throw new UnsupportedOperationException("? already have " + current + ", computed "
                     + newValue + " variable " + vi.variable().fullyQualifiedName() + ", prop " + variableProperty);
         } /* else: it is possible that the previous value was higher: statements at the end of the block

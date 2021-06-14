@@ -93,9 +93,11 @@ public class EvaluatePreconditionFromMethod {
                                                              List<Expression> parameters,
                                                              Expression scope) {
         Map<Expression, Expression> builder = new HashMap<>();
+        List<ParameterInfo> methodParameters = methodInfo.methodInspection.get().getParameters();
         int i = 0;
         for (Expression parameterValue : parameters) {
-            ParameterInfo parameterInfo = methodInfo.methodInspection.get().getParameters().get(i);
+            int indexParam = i >= methodParameters.size() ? methodParameters.size() - 1 : i;
+            ParameterInfo parameterInfo = methodParameters.get(indexParam);
             Expression vv = new VariableExpression(parameterInfo);
             builder.put(vv, parameterValue);
             i++;

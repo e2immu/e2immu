@@ -14,7 +14,6 @@
 
 package org.e2immu.analyser.model;
 
-import org.e2immu.analyser.analyser.AnalyserContext;
 import org.e2immu.analyser.analyser.AnalysisProvider;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.inspector.MethodTypeParameterMap;
@@ -346,7 +345,8 @@ public class ParameterizedType {
             return Map.of();
         }
         assert typeInfo != null;
-        if (concreteType.typeInfo == null) return Map.of();
+        // no hope if Object or unbound wildcard is the best we have
+        if (concreteType.typeInfo == null || Primitives.isJavaLangObject(concreteType)) return Map.of();
 
         if (isFunctionalInterface(inspectionProvider) && concreteType.isFunctionalInterface(inspectionProvider)) {
             return translationMapForFunctionalInterfaces(inspectionProvider, concreteType, concreteTypeIsAssignableToThis);

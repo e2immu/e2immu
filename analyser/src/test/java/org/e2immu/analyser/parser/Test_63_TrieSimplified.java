@@ -35,7 +35,8 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
 
     @Test
     public void test_0() throws IOException {
-        testClass("TrieSimplified_0", 0, 0, new DebugConfiguration.Builder()
+        // null ptr warning
+        testClass("TrieSimplified_0", 0, 1, new DebugConfiguration.Builder()
                 .build());
     }
 
@@ -48,27 +49,9 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                     String expectCondition = d.iteration() == 0 ? "<m:get>" : "map$0.get(s)";
                     assertEquals(expectCondition, d.evaluationResult().value().toString());
                 }
-                if("0.1.1.0.1".equals(d.statementId())) {
-                    // FIXME, ERROR in eval, iteration 1
-                    String expectCondition = d.iteration() == 0 ? "<m:put>" : "map$0.get(s)";
+                if ("0.1.1.0.1".equals(d.statementId())) {
+                    String expectCondition = d.iteration() == 0 ? "<m:put>" : "map$1.put(s,newTrieNode)";
                     assertEquals(expectCondition, d.evaluationResult().value().toString());
-                }
-            }
-        };
-
-        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-            if ("add".equals(d.methodInfo().name)) {
-                if ("org.e2immu.analyser.testexample.TrieSimplified_1.TrieNode.map#root".equals(d.variable().fullyQualifiedName())) {
-                    if ("0.1.0".equals(d.statementId()) || "0.1.1.0.0".equals(d.statementId()) || "0.1.1.0.1".equals(d.statementId())) {
-                        String expectValue = d.iteration() == 0 ? "<f:map>" : "nullable instance type Map<String,TrieNode<T>>";
-                        assertEquals(expectValue, d.currentValue().toString());
-                        String expectLinked = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "";
-                        assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
-
-                        // nullable, because we already have a condition saying that the value is not null
-                        assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.CONTEXT_NOT_NULL),
-                                "Fails in "+d.statementId());
-                    }
                 }
             }
         };
@@ -85,11 +68,17 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                 }
             }
         };
-        testClass("TrieSimplified_1", 0, 0, new DebugConfiguration.Builder()
+        // potential null ptr
+        testClass("TrieSimplified_1", 0, 1, new DebugConfiguration.Builder()
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addEvaluationResultVisitor(evaluationResultVisitor)
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 
+    @Test
+    public void test_3() throws IOException {
+        // null ptr warning
+        testClass("TrieSimplified_3", 0, 1, new DebugConfiguration.Builder()
+                .build());
+    }
 }

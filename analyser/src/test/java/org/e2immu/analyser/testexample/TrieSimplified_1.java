@@ -28,4 +28,18 @@ public class TrieSimplified_1<T> {
         }
         return root;
     }
+
+    @NotNull
+    public synchronized TrieNode<T> addSynchronized(@NotNull String s) {
+        if (root.map == null) {
+            //
+        } else {
+            TrieNode<T> newTrieNode = root.map.get(s);
+            if (newTrieNode == null) {
+                newTrieNode = new TrieNode<>();
+                root.map.put(s, newTrieNode);
+            }
+        }
+        return root;
+    }
 }

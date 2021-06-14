@@ -207,6 +207,9 @@ public record Or(Primitives primitives, List<Expression> expressions) implements
 
     @Override
     public int internalCompareTo(Expression v) {
+        if(v instanceof InlineConditional inlineConditional) {
+            return expressions.get(0).compareTo(inlineConditional.condition);
+        }
         Or orValue = (Or) v;
         return ListUtil.compare(expressions, orValue.expressions);
     }
