@@ -104,7 +104,7 @@ public class Test_Util_02_UpgradableBooleanMap extends CommonTestRunner {
 
             // finisher
             if ("apply".equals(d.methodInfo().name) && "$3".equals(d.methodInfo().typeInfo.simpleName)) {
-                int expectMm = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
+                int expectMm = d.iteration() <= 2 ? Level.DELAY : Level.FALSE;
                 assertEquals(expectMm, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
             }
 

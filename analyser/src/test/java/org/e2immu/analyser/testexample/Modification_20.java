@@ -28,7 +28,7 @@ simplest modification of Modification_11 that causes delay problems.
 
 This is an infinite delay.
 
-TODO at the moment, C
+C1 is not implicitly immutable, see .size() methods, new HashSet
  */
 public class Modification_20 {
 

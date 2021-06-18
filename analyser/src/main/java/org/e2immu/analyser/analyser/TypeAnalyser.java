@@ -154,7 +154,7 @@ public abstract class TypeAnalyser extends AbstractAnalyser {
     @Override
     public void write() {
         E2ImmuAnnotationExpressions e2 = analyserContext.getE2ImmuAnnotationExpressions();
-        typeAnalysis.transferPropertiesToAnnotations(analyserContext, e2);
+        typeAnalysis.transferPropertiesToAnnotations(e2);
     }
 
     @Override

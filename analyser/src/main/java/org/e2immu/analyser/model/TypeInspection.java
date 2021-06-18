@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.model;
 
+import org.e2immu.analyser.analyser.AnalyserContext;
 import org.e2immu.analyser.inspector.TypeInspectionImpl;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
@@ -21,8 +22,10 @@ import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.AnnotationMode;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -194,5 +197,31 @@ public interface TypeInspection extends Inspection {
 
     default boolean isSealed() {
         return !permittedWhenSealed().isEmpty();
+    }
+
+
+    default Set<ParameterizedType> typesOfFieldsMethodsConstructors(AnalyserContext analyserContext) {
+        // this type
+        Set<ParameterizedType> typesOfFields = fields().stream()
+                .map(fieldInfo -> fieldInfo.type).collect(Collectors.toCollection(HashSet::new));
+        typesOfFields.addAll(typesOfMethodsAndConstructors());
+
+        // recursively all subtypes
+        subTypes().stream().map(st -> analyserContext.getTypeInspection(st).typesOfFieldsMethodsConstructors(analyserContext))
+                .forEach(typesOfFields::addAll);
+        return typesOfFields;
+    }
+
+    default Set<ParameterizedType> typesOfMethodsAndConstructors() {
+        Set<ParameterizedType> result = new HashSet<>();
+        for (MethodInfo methodInfo : methodsAndConstructors()) {
+            if (!methodInfo.isConstructor && !methodInfo.isVoid()) {
+                result.add(methodInfo.returnType());
+            }
+            for (ParameterInfo parameterInfo : methodInfo.methodInspection.get().getParameters()) {
+                result.add(parameterInfo.parameterizedType);
+            }
+        }
+        return result;
     }
 }

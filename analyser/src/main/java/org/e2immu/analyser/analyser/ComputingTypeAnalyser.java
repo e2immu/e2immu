@@ -92,9 +92,10 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
         assert createDelay(fqn, fqn + D_ASPECTS);
 
         AnalyserComponents.Builder<String, Integer> builder = new AnalyserComponents.Builder<String, Integer>()
-                .add(FIND_ASPECTS, iteration -> findAspects())
-                .add(ANALYSE_IMPLICITLY_IMMUTABLE_TYPES, iteration -> analyseImplicitlyImmutableTypes());
-
+                .add(FIND_ASPECTS, iteration -> findAspects());
+        if (typeInfo.isPrimaryType()) {
+            builder.add(ANALYSE_IMPLICITLY_IMMUTABLE_TYPES, iteration -> analyseImplicitlyImmutableTypes());
+        }
         if (!typeInfo.isInterface()) {
             builder.add(COMPUTE_APPROVED_PRECONDITIONS_E1, this::computeApprovedPreconditionsE1)
                     .add(COMPUTE_APPROVED_PRECONDITIONS_E2, this::computeApprovedPreconditionsE2)
@@ -238,16 +239,25 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
         }
     }
 
+    /*
+    this computation is a crude approximation of what is meant with implicitly immutable type of a field: you can replace
+    the field's type by an unbound parameter type.
+
+     */
     private AnalysisStatus analyseImplicitlyImmutableTypes() {
         if (typeAnalysis.implicitlyImmutableDataTypes.isSet()) return DONE;
+        assert typeInfo.isPrimaryType();
 
-        log(IMMUTABLE_LOG, "Computing implicitly immutable types for {}", typeInfo.fullyQualifiedName);
-        Set<ParameterizedType> typesOfFields = typeInspection.fields().stream()
-                .map(fieldInfo -> fieldInfo.type).collect(Collectors.toCollection(HashSet::new));
-        typesOfFields.addAll(typeInfo.typesOfMethodsAndConstructors());
+        log(IMMUTABLE_LOG, "Computing implicitly immutable types for primary type {}", typeInfo.fullyQualifiedName);
+
+        // first, determine the types of fields, methods and constructors of my type and all sub-types
+
+        Set<ParameterizedType> typesOfFields = typeInspection.typesOfFieldsMethodsConstructors(analyserContext);
+        // add all type parameters of these types
         typesOfFields.addAll(typesOfFields.stream().flatMap(pt -> pt.components(false).stream()).collect(Collectors.toList()));
         log(IMMUTABLE_LOG, "Types of fields, methods and constructors: {}", typesOfFields);
 
+        // then, compute the explicit types
         Map<ParameterizedType, Set<ExplicitTypes.UsedAs>> explicitTypes =
                 new ExplicitTypes(analyserContext, analyserContext, typeInfo).go(typeInspection).getResult();
         Set<ParameterizedType> explicitTypesAsSet = explicitTypes.entrySet().stream()
@@ -259,7 +269,9 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
         typesOfFields.removeIf(type -> {
             if (type.arrays > 0) return true;
 
-            boolean self = type.typeInfo == typeInfo;
+            // exclude all types declared inside the primary type
+            // (this may be too crude but we'll live with that for now)
+            boolean self = type.typeInfo != null && type.typeInfo.primaryType() == typeInfo.primaryType();
             if (self || Primitives.isPrimitiveExcludingVoid(type) || Primitives.isBoxedExcludingVoid(type))
                 return true;
 
@@ -278,7 +290,7 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
             return explicit || assignableFrom;
         });
 
-        // e2immu is more work, we need to check delays
+        // level 2 immutable is more work, we need to check delays
         Optional<ParameterizedType> immutableDelay = typesOfFields.stream().filter(type -> {
             TypeInfo bestType = type.bestTypeInfo();
             if (bestType == null) return false;
@@ -634,25 +646,32 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
                 .collect(Collectors.toSet());
 
         for (MethodAnalyser methodAnalyser : myMethodAnalysers) {
-            if (methodAnalyser.methodInfo.hasReturnValue() && methodAnalyser instanceof ComputingMethodAnalyser cma &&
-                    !typeAnalysis.implicitlyImmutableDataTypes.get().contains(methodAnalyser.methodInfo.returnType())) {
-                VariableInfo variableInfo = cma.getReturnAsVariable();
-                if (variableInfo == null) {
-                    log(DELAYED, "Delay independence of type {}, method {}'s return statement not known",
+            if (methodAnalyser.methodInfo.hasReturnValue() && methodAnalyser instanceof ComputingMethodAnalyser cma) {
+                Set<ParameterizedType> implicitlyImmutableTypes = typeAnalysis.getImplicitlyImmutableDataTypes();
+                if (implicitlyImmutableTypes == null) {
+                    log(DELAYED, "Delay independence of type {}, implicitly immutable types not known",
                             typeInfo.fullyQualifiedName, methodAnalyser.methodInfo.name);
                     return DELAYS;
                 }
-                if (variableInfo.getLinkedVariables() == null) {
-                    log(DELAYED, "Delay independence of type {}, method {}'s return statement summaries linking not known",
-                            typeInfo.fullyQualifiedName, methodAnalyser.methodInfo.name);
-                    return DELAYS;
-                }
-                boolean safeMethod = Collections.disjoint(variableInfo.getLinkedVariables().variables(), fieldReferencesLinkedToParameters);
-                if (!safeMethod) {
-                    log(INDEPENDENCE, "Type {} cannot be @Independent, method {}'s return values link to some of the fields linked to constructors",
-                            typeInfo.fullyQualifiedName, methodAnalyser.methodInfo.name);
-                    typeAnalysis.setProperty(VariableProperty.INDEPENDENT, MultiLevel.FALSE);
-                    return DONE;
+                if (!typeAnalysis.getImplicitlyImmutableDataTypes().contains(methodAnalyser.methodInfo.returnType())) {
+                    VariableInfo variableInfo = cma.getReturnAsVariable();
+                    if (variableInfo == null) {
+                        log(DELAYED, "Delay independence of type {}, method {}'s return statement not known",
+                                typeInfo.fullyQualifiedName, methodAnalyser.methodInfo.name);
+                        return DELAYS;
+                    }
+                    if (variableInfo.getLinkedVariables() == null) {
+                        log(DELAYED, "Delay independence of type {}, method {}'s return statement summaries linking not known",
+                                typeInfo.fullyQualifiedName, methodAnalyser.methodInfo.name);
+                        return DELAYS;
+                    }
+                    boolean safeMethod = Collections.disjoint(variableInfo.getLinkedVariables().variables(), fieldReferencesLinkedToParameters);
+                    if (!safeMethod) {
+                        log(INDEPENDENCE, "Type {} cannot be @Independent, method {}'s return values link to some of the fields linked to constructors",
+                                typeInfo.fullyQualifiedName, methodAnalyser.methodInfo.name);
+                        typeAnalysis.setProperty(VariableProperty.INDEPENDENT, MultiLevel.FALSE);
+                        return DONE;
+                    }
                 }
             }
         }

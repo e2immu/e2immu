@@ -248,7 +248,7 @@ public class Test_48_Store extends CommonTestRunner {
         // field, of type int
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("Store_7".equals(d.typeInfo().simpleName)) {
-                assertTrue(d.typeAnalysis().getImplicitlyImmutableDataTypes().isEmpty());
+                assertEquals("[Type param E]", d.typeAnalysis().getImplicitlyImmutableDataTypes().toString());
             }
         };
 

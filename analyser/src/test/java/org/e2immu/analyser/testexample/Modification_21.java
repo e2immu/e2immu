@@ -21,7 +21,8 @@ import java.util.Set;
 
 /*
 Infinite loop is broken, but too harshly.
-There is no link between c and s2, because Set<String> is implicitly immutable in C1 (TODO, not quite correct!)
+Note that 'set' is not of implicitly immutable type, as of 20210618 these types are computed over the primary type,
+and there is the c.addAll(d) as operation on Set<String>, and the assignment of a new set
  */
 public class Modification_21 {
 

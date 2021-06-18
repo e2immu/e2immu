@@ -282,19 +282,6 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         return null;
     }
 
-    public Set<ParameterizedType> typesOfMethodsAndConstructors() {
-        Set<ParameterizedType> result = new HashSet<>();
-        for (MethodInfo methodInfo : typeInspection.get().methodsAndConstructors()) {
-            if (!methodInfo.isConstructor && !methodInfo.isVoid()) {
-                result.add(methodInfo.returnType());
-            }
-            for (ParameterInfo parameterInfo : methodInfo.methodInspection.get().getParameters()) {
-                result.add(parameterInfo.parameterizedType);
-            }
-        }
-        return result;
-    }
-
     public String packageName() {
         if (packageNameOrEnclosingType.isLeft())
             return packageNameOrEnclosingType.getLeft();

@@ -18,10 +18,7 @@ import org.e2immu.analyser.analyser.AnalysisProvider;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.inspector.TypeInspectionImpl;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.expression.Cast;
-import org.e2immu.analyser.model.expression.MethodCall;
-import org.e2immu.analyser.model.expression.NewObject;
-import org.e2immu.analyser.model.expression.VariableExpression;
+import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.statement.ForEachStatement;
 import org.e2immu.analyser.model.statement.SwitchStatementNewStyle;
 import org.e2immu.analyser.model.variable.FieldReference;
@@ -39,7 +36,7 @@ Extra: abstract types on which ONLY abstract methods without modification status
 public class ExplicitTypes {
 
     public enum UsedAs {
-        METHOD, NEW_OBJECT, FIELD_ACCESS, FOR_EACH, SWITCH, CAST_TO_E2IMMU, CAST, CAST_DELAY, CAST_SELF
+        METHOD, ASSIGN_TO_NEW_OBJECT, NEW_OBJECT, FIELD_ACCESS, FOR_EACH, SWITCH, CAST_TO_E2IMMU, CAST, CAST_DELAY, CAST_SELF
     }
 
     private final AnalysisProvider analysisProvider;
@@ -60,6 +57,8 @@ public class ExplicitTypes {
         typeInspection.methodsAndConstructors(TypeInspectionImpl.Methods.THIS_TYPE_ONLY)
                 .forEach(this::explicitTypes);
         typeInspection.fields().forEach(this::explicitTypes);
+        // recurse down
+        typeInspection.subTypes().forEach(st -> go(inspectionProvider.getTypeInspection(st)));
         return this;
     }
 
@@ -100,6 +99,11 @@ public class ExplicitTypes {
                 if (newObject.constructor() != null) { // can be null, anonymous implementation of interface
                     addTypesFromParameters(newObject.constructor(), UsedAs.NEW_OBJECT);
                 }
+            }
+
+            // x = new Y() -> the type of x cannot be replaced by an unbound type parameter
+            if (element instanceof Assignment assignment && assignment.value instanceof NewObject) {
+                add(assignment.target.returnType(), UsedAs.ASSIGN_TO_NEW_OBJECT);
             }
 
             // a.b -> type of a == owner of b cannot be replaced by unbound type parameter

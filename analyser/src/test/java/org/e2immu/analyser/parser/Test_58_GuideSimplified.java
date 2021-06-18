@@ -87,11 +87,11 @@ public class Test_58_GuideSimplified extends CommonTestRunner {
             }
             if ("GuideSimplified_3".equals(d.methodInfo().name)) {
                 ParameterAnalysis position = d.parameterAnalyses().get(1);
-                int expectContextModified = d.iteration() <= 1 ? Level.DELAY : Level.FALSE;
+                int expectContextModified = d.iteration() <= 2 ? Level.DELAY : Level.FALSE;
                 assertEquals(expectContextModified, position.getProperty(VariableProperty.CONTEXT_MODIFIED));
-                int expectMom = d.iteration() <= 1 ? Level.DELAY : Level.FALSE;
+                int expectMom = d.iteration() <= 2 ? Level.DELAY : Level.FALSE;
                 assertEquals(expectMom, position.getProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD));
-                int expectModifiedVar = d.iteration() <= 1 ? Level.DELAY : Level.FALSE;
+                int expectModifiedVar = d.iteration() <= 2 ? Level.DELAY : Level.FALSE;
                 assertEquals(expectModifiedVar, position.getProperty(VariableProperty.MODIFIED_VARIABLE));
             }
         };
@@ -100,11 +100,11 @@ public class Test_58_GuideSimplified extends CommonTestRunner {
             if ("START".equals(d.fieldInfo().name)) {
                 assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_NOT_NULL));
 
-                int expectMom = d.iteration() <= 2 ? Level.DELAY : Level.FALSE;
+                int expectMom = d.iteration() <= 3 ? Level.DELAY : Level.FALSE;
                 assertEquals(expectMom, d.fieldAnalysis().getProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD));
             }
             if ("position".equals(d.fieldInfo().name)) {
-                int expectMom = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
+                int expectMom = d.iteration() <= 1 ? Level.DELAY : Level.FALSE;
                 assertEquals(expectMom, d.fieldAnalysis().getProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD));
             }
         };

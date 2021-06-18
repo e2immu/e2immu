@@ -149,6 +149,7 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
 
     public static class Builder extends AbstractAnalysisBuilder implements TypeAnalysis {
         public final TypeInfo typeInfo;
+        private final AnalyserContext analyserContext;
 
         // from label to condition BEFORE (used by @Mark and @Only(before="label"))
         private final SetOnceMap<FieldReference, Expression> approvedPreconditionsE1 = new SetOnceMap<>();
@@ -173,6 +174,7 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
             this.typeInfo = typeInfo;
             this.analysisMode = analysisMode;
             this.visibleFields = analyserContext == null ? Set.of() : Set.copyOf(typeInfo.visibleFields(analyserContext));
+            this.analyserContext = analyserContext;
         }
 
         @Override
@@ -271,7 +273,12 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
 
         @Override
         public Set<ParameterizedType> getImplicitlyImmutableDataTypes() {
-            return implicitlyImmutableDataTypes.getOrDefaultNull();
+            if (typeInfo.isPrimaryType()) {
+                return implicitlyImmutableDataTypes.getOrDefaultNull();
+            }
+            if (analyserContext == null) return Set.of(); // FIXME
+            TypeAnalysis primaryTypeAnalysis = analyserContext.getTypeAnalysis(typeInfo.primaryType());
+            return primaryTypeAnalysis.getImplicitlyImmutableDataTypes();
         }
 
         @Override
@@ -279,8 +286,7 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
             return eventuallyImmutableFields.toImmutableSet();
         }
 
-        public void transferPropertiesToAnnotations(AnalysisProvider analysisProvider,
-                                                    E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
+        public void transferPropertiesToAnnotations(E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
 
             // @ExtensionClass
             if (getProperty(VariableProperty.EXTENSION_CLASS) == Level.TRUE) {
