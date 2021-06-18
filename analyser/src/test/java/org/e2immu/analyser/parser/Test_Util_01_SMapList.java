@@ -62,9 +62,8 @@ public class Test_Util_01_SMapList extends CommonTestRunner {
                     // note the absence of null!=a
                     assertEquals("null==map.get(a)?List.of():<return value>", d.currentValue().toString());
 
-                    // IMPORTANT: ENN could also be NULLABLE if we took <return value> into account
-                    // see code in MultiExpression
-                    assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.currentValue().getProperty(d.evaluationContext(),
+                    // <return value> is nullable
+                    assertEquals(MultiLevel.NULLABLE, d.currentValue().getProperty(d.evaluationContext(),
                             VariableProperty.NOT_NULL_EXPRESSION, true));
 
                     assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
@@ -72,10 +71,10 @@ public class Test_Util_01_SMapList extends CommonTestRunner {
                 if ("3".equals(d.statementId())) {
                     assertEquals("null==map.get(a)?List.of():map.get(a)", d.currentValue().toString());
                     assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
-                    assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL,
+                    assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL,
                             d.currentValue().getProperty(d.evaluationContext(), VariableProperty.NOT_NULL_EXPRESSION, true));
 
-                    assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                    assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
                 }
             }
 
@@ -85,6 +84,10 @@ public class Test_Util_01_SMapList extends CommonTestRunner {
                 }
             }
         }
+
+        // IMPORTANT: we find ENN, not EffectivelyContentNotNull (we cannot force a List to have non-null content as a result
+        // of ma.get)
+
         if ("add".equals(d.methodInfo().name) && d.variable() instanceof ParameterInfo bs && "bs".equals(bs.simpleName())) {
             if ("1".equals(d.statementId())) {
                 assertEquals(Level.FALSE, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
@@ -237,9 +240,9 @@ public class Test_Util_01_SMapList extends CommonTestRunner {
             assertEquals("null==map.get(a)?List.of():map.get(a)",
                     d.getReturnAsVariable().getValue().toString());
             int retValNotNull = returnValue1.getProperty(VariableProperty.NOT_NULL_EXPRESSION);
-            assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL, retValNotNull);
+            assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, retValNotNull);
 
-            assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL,
+            assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL,
                     d.methodAnalysis().getProperty(VariableProperty.NOT_NULL_EXPRESSION));
         }
         if ("copy".equals(name)) {

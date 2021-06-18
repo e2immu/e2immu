@@ -74,7 +74,7 @@ public class SMapList {
         return list.addAll(bs);
     }
 
-    @NotNull1
+    @NotNull
     @NotModified
     @Constant(absent = true)
     public static <A, B> List<B> list(@NotNull @NotModified Map<A, List<B>> map, @NotNull A a) {
@@ -90,7 +90,7 @@ public class SMapList {
 
     @NotNull
     @E2Container
-    public static <A, B> Map<A, List<B>> immutable(@NotModified @NotNull1(contract = true) Map<A, List<B>> map) {
+    public static <A, B> Map<A, List<B>> immutable(@NotModified @NotNull Map<A, List<B>> map) {
         Map<A, List<B>> tmp = new HashMap<>();
         for (Entry<A, List<B>> e : map.entrySet()) {
             List<B> is = List.copyOf(e.getValue());

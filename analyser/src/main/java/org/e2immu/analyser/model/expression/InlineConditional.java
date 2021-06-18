@@ -104,8 +104,6 @@ public class InlineConditional implements Expression {
                 .add(outputInParenthesis(qualification, precedence(), ifFalse));
     }
 
-    private static final int NO_PATTERN = -2;
-
     @Override
     public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty, boolean duringEvaluation) {
         if (variableProperty == VariableProperty.NOT_NULL_EXPRESSION) {

@@ -1176,7 +1176,7 @@ public class FieldAnalyser extends AbstractAnalyser {
         public int getProperty(Expression value,
                                VariableProperty variableProperty,
                                boolean duringEvaluation,
-                               boolean ignoreConditionManager) {
+                               boolean ignoreStateInConditionManager) {
             if (value instanceof VariableExpression variableValue) {
                 Variable variable = variableValue.variable();
                 return getProperty(variable, variableProperty);

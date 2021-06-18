@@ -229,7 +229,7 @@ public abstract class CommonAbstractValue {
         public int getProperty(Expression value,
                                VariableProperty variableProperty,
                                boolean duringEvaluation,
-                               boolean ignoreConditionManager) {
+                               boolean ignoreStateInConditionManager) {
             if (value instanceof VariableExpression ve && variableProperty == VariableProperty.NOT_NULL_EXPRESSION
                     && !"q".equals(ve.variable().simpleName())) {
                 if (ve.variable().simpleName().endsWith("n") || ve.variable().simpleName().compareTo("p") >= 0)

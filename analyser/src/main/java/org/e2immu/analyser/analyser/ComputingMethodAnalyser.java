@@ -1179,6 +1179,14 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
         }
 
         @Override
+        public EvaluationContext child(Expression condition) {
+            Set<Variable> conditionIsDelayed = isDelayedSet(condition);
+            ConditionManager cm = conditionManager.newAtStartOfNewBlock(getPrimitives(), condition, conditionIsDelayed,
+                    Precondition.empty(getPrimitives()), null);
+            return ComputingMethodAnalyser.this.new EvaluationContextImpl(iteration, cm, closure);
+        }
+
+        @Override
         public Stream<DelayDebugNode> streamNodes() {
             throw new UnsupportedOperationException();
         }
@@ -1216,7 +1224,7 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
         public int getProperty(Expression value,
                                VariableProperty variableProperty,
                                boolean duringEvaluation,
-                               boolean ignoreConditionManager) {
+                               boolean ignoreStateInConditionManager) {
             if (value instanceof VariableExpression ve) {
                 return getProperty(ve.variable(), variableProperty);
             }

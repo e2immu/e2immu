@@ -2717,7 +2717,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
 
         @Override
         public int getProperty(Expression value, VariableProperty variableProperty, boolean duringEvaluation,
-                               boolean ignoreConditionManager) {
+                               boolean ignoreStateInConditionManager) {
             // IMPORTANT: here we do not want to catch VariableValues wrapped in the PropertyWrapper
             if (value instanceof IsVariableExpression ve) {
                 // read what's in the property map (all values should be there) at initial or current level
@@ -2753,7 +2753,13 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 return inMap;
             }
 
-            if (NOT_NULL_EXPRESSION == variableProperty && !ignoreConditionManager) {
+            if (NOT_NULL_EXPRESSION == variableProperty) {
+                if (ignoreStateInConditionManager) {
+                    EvaluationContext customEc = new EvaluationContextImpl(iteration,
+                            conditionManager.withoutState(getPrimitives()), closure);
+                    return value.getProperty(customEc, NOT_NULL_EXPRESSION, true);
+                }
+
                 int directNN = value.getProperty(this, NOT_NULL_EXPRESSION, true);
                 // assert !Primitives.isPrimitiveExcludingVoid(value.returnType()) || directNN == MultiLevel.EFFECTIVELY_NOT_NULL;
 
@@ -2761,6 +2767,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                     Expression valueIsNull = Equals.equals(this, value, NullConstant.NULL_CONSTANT, false);
                     Expression evaluation = conditionManager.evaluate(this, valueIsNull);
                     if (evaluation.isBoolValueFalse()) {
+                        // FIXME should not necessarily be ENN, could be 45 depending
                         return MultiLevel.bestNotNull(MultiLevel.EFFECTIVELY_NOT_NULL, directNN);
                     }
                 }
@@ -2771,7 +2778,6 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             // this is the only usage of this method; all other evaluation of a Value in an evaluation context
             // must go via the current method
             return value.getProperty(this, variableProperty, true);
-
         }
 
         @Override

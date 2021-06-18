@@ -17,7 +17,7 @@ package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analyser.VariableProperty;
-import org.e2immu.analyser.config.*;
+import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.InlineConditional;
 import org.e2immu.analyser.model.variable.FieldReference;
@@ -59,7 +59,8 @@ public class Test_Support_00_Either extends CommonTestRunner {
                     String expectValue = d.iteration() == 0 ? "null==<f:left>?orElse/*@NotNull*/:<f:left>" :
                             "null==left?orElse/*@NotNull*/:left";
                     assertEquals(expectValue, d.currentValue().toString());
-                    assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                    int expected = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
+                    assertEquals(expected, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
                 }
             }
         }
@@ -115,7 +116,8 @@ public class Test_Support_00_Either extends CommonTestRunner {
             String expectValue = d.iteration() == 0 ? "null==<f:left>?orElse/*@NotNull*/:<f:left>" :
                     "null==left?orElse/*@NotNull*/:left";
             assertEquals(expectValue, conditionalValue.toString());
-            assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(retVal, VariableProperty.NOT_NULL_EXPRESSION));
+            int expected = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
+            assertEquals(expected, d.methodAnalysis().getProperty(VariableProperty.NOT_NULL_EXPRESSION));
         }
         if ("Either".equals(d.methodInfo().name)) {
             assertEquals("(null==a||null==b)&&(null!=a||null!=b)",

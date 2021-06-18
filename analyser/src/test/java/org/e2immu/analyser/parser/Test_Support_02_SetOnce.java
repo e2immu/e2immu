@@ -59,9 +59,10 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
             if ("t".equals(d.fieldInfo().name)) {
                 assertEquals("<variable value>", d.fieldAnalysis().getEffectivelyFinalValue().toString());
                 assertEquals(Level.FALSE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
-                String expectValues = "[null,t]";
+                String expectValues = "[null, t]";
                 assertEquals(expectValues,
-                        ((FieldAnalysisImpl.Builder) d.fieldAnalysis()).getValues().toString());
+                        ((FieldAnalysisImpl.Builder) d.fieldAnalysis()).getValues().stream()
+                                .map(FieldAnalysisImpl.ValueAndPropertyProxy::getValue).toList().toString());
                 int expectImmu = d.iteration() <= 2 ? Level.DELAY : MultiLevel.MUTABLE;
                 assertEquals(expectImmu, d.fieldAnalysis().getProperty(VariableProperty.IMMUTABLE));
                 assertEquals(MultiLevel.NULLABLE, d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_NOT_NULL));

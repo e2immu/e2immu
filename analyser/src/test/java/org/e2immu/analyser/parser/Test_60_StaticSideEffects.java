@@ -18,6 +18,7 @@ import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.visitor.FieldAnalyserVisitor;
+import org.e2immu.analyser.visitor.TypeAnalyserVisitor;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -39,7 +40,14 @@ public class Test_60_StaticSideEffects extends CommonTestRunner {
 
     @Test
     public void test_1() throws IOException {
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("StaticSideEffects_1".equals(d.typeInfo().simpleName)) {
+                assertEquals("[Type param K]", d.typeAnalysis().getImplicitlyImmutableDataTypes().toString());
+            }
+        };
+
         testClass("StaticSideEffects_1", 0, 0, new DebugConfiguration.Builder()
+                .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
                 .build());
     }
 

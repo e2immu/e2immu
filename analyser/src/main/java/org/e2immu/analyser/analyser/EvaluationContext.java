@@ -102,7 +102,7 @@ public interface EvaluationContext extends DelayDebugger {
      */
     default int getProperty(Expression value, VariableProperty variableProperty,
                             boolean duringEvaluation,
-                            boolean ignoreConditionManager) {
+                            boolean ignoreStateInConditionManager) {
         if (value instanceof VariableExpression variableValue) {
             Variable variable = variableValue.variable();
             if (variable instanceof ParameterInfo parameterInfo) {
@@ -168,10 +168,10 @@ public interface EvaluationContext extends DelayDebugger {
     /*
     computed/copied during assignment. Critical that NNE is present!
      */
-    default Map<VariableProperty, Integer> getValueProperties(Expression value, boolean ignoreConditionManager) {
+    default Map<VariableProperty, Integer> getValueProperties(Expression value, boolean ignoreConditionInConditionManager) {
         Map<VariableProperty, Integer> builder = new HashMap<>();
         for (VariableProperty property : VALUE_PROPERTIES) {
-            int v = getProperty(value, property, true, ignoreConditionManager);
+            int v = getProperty(value, property, true, ignoreConditionInConditionManager);
             if (v != Level.DELAY) builder.put(property, v);
         }
         return Map.copyOf(builder);
