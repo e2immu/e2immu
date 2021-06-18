@@ -2154,10 +2154,15 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                                 ex.startOfBlock.lastStatement(),
                                 ex.startOfBlock.lastStatement().isEscapeAlwaysExecutedInCurrentBlock()
                                         == Boolean.TRUE)).toList();
+                /*
+                 See VariableField_0; because we don't know which sub-block gets executed, we cannot use either
+                 of the local copies, so we must create a new one.
+                 */
+                int increment = atLeastOneBlockExecuted ? 0: 1;
                 maxTime = lastStatements.stream()
                         .map(StatementAnalysis.ConditionAndLastStatement::lastStatement)
                         .mapToInt(sa -> sa.statementAnalysis.flowData.getTimeAfterSubBlocks())
-                        .max().orElseThrow();
+                        .max().orElseThrow() + increment;
             }
             int maxTimeWithEscape;
             if (executions.stream().allMatch(ExecutionOfBlock::escapesAlways)) {
@@ -2200,6 +2205,14 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         potentiallyRaiseNullPointerWarningENN();
 
         return analysisStatus;
+    }
+
+    private boolean allValuesTheSame(int[] times) {
+        int v = times[0];
+        for (int i = 1; i < times.length; i++) {
+            if (times[i] != v) return false;
+        }
+        return true;
     }
 
     /*

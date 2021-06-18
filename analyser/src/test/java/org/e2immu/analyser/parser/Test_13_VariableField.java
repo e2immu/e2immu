@@ -49,7 +49,7 @@ public class Test_13_VariableField extends CommonTestRunner {
                     String expectValue = d.iteration() == 0 ? "<f:string>" :
                             // FIXME <v:string$1> should be just string$1 or string$0, depending on 'b'
                             // to fix that, we should make it to string$2
-                            "string$0.startsWith(\"abc\")&&b?nullable instance type String:<v:string$1>";
+                            "string$2";
                     assertEquals(expectValue, d.evaluationResult().getExpression().toString());
                 }
             }
@@ -88,13 +88,20 @@ public class Test_13_VariableField extends CommonTestRunner {
                     if ("0.0.0.0.0".equals(d.statementId())) {
                         assertEquals("nullable instance type String", d.currentValue().toString());
                     } else if ("0.0.0".equals(d.statementId())) {
-                        assertEquals("string$0.startsWith(\"abc\")?nullable instance type String:<v:string$1>", d.currentValue().toString());
+                        // only seen in iteration 1, the return value has no delays anymore then !!
+                        String expected = "string$0.startsWith(\"abc\")?nullable instance type String:<v:string$1>";
+                        assertEquals(expected, d.currentValue().toString());
                     } else if ("0".equals(d.statementId()) || "1".equals(d.statementId())) {
-                        assertEquals("string$0.startsWith(\"abc\")&&b?nullable instance type String:<v:string$1>", d.currentValue().toString());
+                        // "0" only seen in iteration 1, no delays in the return value anymore
+                        String expected = "string$0.startsWith(\"abc\")&&b?nullable instance type String:<v:string$1>";
+                        assertEquals(expected, d.currentValue().toString());
                     } else fail("Statement " + d.statementId());
 
                     // inherited from the previous read copy:
                     assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+
+                } else if (d.variableName().endsWith("string$2")) {
+                    assertEquals("1", d.statementId());
 
                 } else if (d.variableName().contains("string")) {
                     assertEquals(STRING, d.variableName());
@@ -102,6 +109,12 @@ public class Test_13_VariableField extends CommonTestRunner {
                 }
 
                 if (d.variable() instanceof ReturnVariable) {
+                    if("0.0.0".equals(d.statementId())) {
+                        String expectValue = d.iteration() == 0 ?
+                                "<m:startsWith>?\"abc\"+<f:string>:<return value>" :
+                                "string$0.startsWith(\"abc\")?\"abc\"+string$1:<return value>";
+                        assertEquals(expectValue, d.currentValue().toString());
+                    }
                     if ("0".equals(d.statementId())) {
                         String expectValue = d.iteration() == 0 ?
                                 "b&&<m:startsWith>?\"abc\"+<f:string>:<return value>" :
@@ -112,7 +125,8 @@ public class Test_13_VariableField extends CommonTestRunner {
             }
         };
 
-        testClass("VariableField_0", 0, 0, new DebugConfiguration.Builder()
+        // potential null pointer
+        testClass("VariableField_0", 0, 1, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addEvaluationResultVisitor(evaluationResultVisitor)
