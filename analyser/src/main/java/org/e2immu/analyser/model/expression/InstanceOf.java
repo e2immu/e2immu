@@ -122,13 +122,13 @@ public record InstanceOf(Primitives primitives,
 
     @Override
     public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
-        EvaluationResult evaluationResult = expression.evaluate(evaluationContext, forwardEvaluationInfo);
+        // do not pass on the forward requirements on to expression! See e.g. InstanceOf_8
+        EvaluationResult evaluationResult = expression.evaluate(evaluationContext, ForwardEvaluationInfo.DEFAULT);
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext).compose(evaluationResult);
-        return localEvaluation(builder, evaluationContext, evaluationResult.getExpression());
-    }
 
-    private EvaluationResult localEvaluation(EvaluationResult.Builder builder, EvaluationContext evaluationContext, Expression value) {
+
         Primitives primitives = evaluationContext.getPrimitives();
+        Expression value = evaluationResult.value();
 
         if (value.isUnknown()) {
             return builder.setExpression(value).build();
@@ -145,8 +145,6 @@ public record InstanceOf(Primitives primitives,
             if (parameterizedType.isAssignableFrom(InspectionProvider.defaultFrom(primitives), ve.variable().parameterizedType())) {
                 return builder.setExpression(new BooleanConstant(primitives, true)).build();
             }
-            // no real evaluation
-            return builder.setExpression(this).build();
         }
         if (value instanceof NewObject newObject) {
             EvaluationResult er = BooleanConstant.of(parameterizedType.isAssignableFrom(InspectionProvider.defaultFrom(primitives),
@@ -156,15 +154,13 @@ public record InstanceOf(Primitives primitives,
         if (value instanceof MethodCall) {
             return builder.setExpression(new UnknownExpression(returnType(), "instanceof value")).build(); // no clue, too deep
         }
-        if (value instanceof ClassExpression ce) {
-           /* EvaluationResult er = BooleanConstant.of(parameterizedType.isAssignableFrom(InspectionProvider.defaultFrom(primitives),
-                    ce.parameterizedType()), evaluationContext);
-            return builder.compose(er).setExpression(er.value()).build();*/
-        }
-        // this error occurs with a TypeExpression, probably due to our code giving priority to types rather than
-        // variable names, when you use a type name as a variable name, which is perfectly allowed in Java but is
-        // horrible practice. We leave the bug for now.
-        throw new UnsupportedOperationException("? have expression of " + expression.getClass() + " value is " + value + " of " + value.getClass());
+
+        // whatever it is, it is not null; we're more interested in that, than it its type which is guarded by the compiler
+        Expression notNull = Negation.negate(evaluationContext,
+                Equals.equals(evaluationContext, expression, NullConstant.NULL_CONSTANT));
+        return builder
+                .setExpression(new And(evaluationContext.getPrimitives()).append(evaluationContext, this, notNull))
+                .build();
     }
 
     @Override

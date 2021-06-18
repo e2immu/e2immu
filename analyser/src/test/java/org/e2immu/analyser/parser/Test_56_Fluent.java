@@ -38,7 +38,8 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_56_Fluent extends CommonTestRunner {
 
-    public static final String INSTANCE_TYPE_BUILDER_BUILD = "instance instanceof Fluent_0?instance:(instance type Builder).build()";
+    public static final String INSTANCE_TYPE_BUILDER_BUILD =
+            "!(instance instanceof Fluent_0)||null==instance?(instance type Builder).build():instance";
 
     public Test_56_Fluent() {
         super(false);
@@ -54,14 +55,28 @@ public class Test_56_Fluent extends CommonTestRunner {
                 if (d.variable() instanceof ReturnVariable) {
                     if ("0.0.0".equals(d.statementId())) {
                         assertEquals("instance", d.currentValue().toString());
-                        assertTrue(d.currentValue() instanceof PropertyWrapper, "Have " + d.currentValue().getClass());
+                        assertTrue(d.currentValue() instanceof PropertyWrapper,
+                                "Have " + d.currentValue().getClass());
+                        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                    }
+                    if("0".equals(d.statementId())) {
+                        String expect = "instance instanceof Fluent_0&&null!=instance?instance:<return value>";
+                        assertEquals(expect, d.currentValue().toString());
+                        // <return value> is nullable
+                        assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
                     }
                     if ("1".equals(d.statementId())) {
-                        String expect = d.iteration() == 0 ? "instance instanceof Fluent_0?instance:<m:build>" :
+                        String expect = d.iteration() == 0
+                                ? "!(instance instanceof Fluent_0)||null==instance?<m:build>:instance" :
                                 INSTANCE_TYPE_BUILDER_BUILD;
                         assertEquals(expect, d.currentValue().toString());
+
                         String expectLinks = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "instance";
                         assertEquals(expectLinks, d.variableInfo().getLinkedVariables().toString());
+
+                        // computation of NNE is important here!
+                        int expectNne = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
+                        assertEquals(expectNne, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
                     }
                 }
             }

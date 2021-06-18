@@ -101,6 +101,7 @@ public class Fluent_0 implements IFluent_0 {
         }
 
         @NotModified
+        @NotNull
         public Fluent_0 build() {
             return new Fluent_0(value);
         }

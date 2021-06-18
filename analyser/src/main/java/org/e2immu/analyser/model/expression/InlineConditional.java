@@ -108,46 +108,22 @@ public class InlineConditional implements Expression {
 
     @Override
     public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty, boolean duringEvaluation) {
-        int inCondition = lookForPatterns(evaluationContext, variableProperty);
-        if (inCondition != NO_PATTERN) return inCondition;
-        return new MultiExpression(condition, ifTrue, ifFalse).getProperty(evaluationContext, variableProperty, duringEvaluation);
-    }
-
-    /*
-    There are a few patterns that we can look out for.
-
-    (1) a == null ? xx : a
-
-    (3)-(4) same wit SIZE, e.g.
-    (3) 0 == a.size() ? xx : a
-    (4) (-3) + a.size() >= 0 ? a : x
-     */
-    private int lookForPatterns(EvaluationContext evaluationContext, VariableProperty variableProperty) {
         if (variableProperty == VariableProperty.NOT_NULL_EXPRESSION) {
             if (Primitives.isPrimitiveExcludingVoid(returnType())) {
                 return MultiLevel.EFFECTIVELY_NOT_NULL;
             }
             Expression c = condition;
-            boolean not = false;
-            if (c.isInstanceOf(Negation.class)) {
-                c = ((Negation) c).expression;
-                not = true;
+            EvaluationContext child = evaluationContext.child(c);
+            int nneIfTrue = child.getProperty(ifTrue, VariableProperty.NOT_NULL_EXPRESSION, true, false);
+            if (nneIfTrue <= MultiLevel.NULLABLE) {
+                return nneIfTrue;
             }
-            Equals equalsValue;
-            if ((equalsValue = c.asInstanceOf(Equals.class)) != null && equalsValue.lhs.isInstanceOf(NullConstant.class)) {
-                // null == rhs or not (null == rhs), now check that rhs appears left or right
-                Expression rhs = equalsValue.rhs;
-                if (ifTrue.equals(rhs)) {
-                    // null == a ? a : something;  null != a ? a : something
-                    return not ? evaluationContext.getProperty(ifFalse, variableProperty, true, false) : MultiLevel.NULLABLE;
-                }
-                if (ifFalse.equals(rhs)) {
-                    // null == a ? something: a
-                    return not ? MultiLevel.NULLABLE : evaluationContext.getProperty(ifTrue, variableProperty, true, false);
-                }
-            }
+            Expression notC = Negation.negate(evaluationContext, c);
+            EvaluationContext notChild = evaluationContext.child(notC);
+            int nneIfFalse = notChild.getProperty(ifFalse, VariableProperty.NOT_NULL_EXPRESSION, true, false);
+            return Math.min(nneIfFalse, nneIfTrue);
         }
-        return NO_PATTERN;
+        return new MultiExpression(condition, ifTrue, ifFalse).getProperty(evaluationContext, variableProperty, duringEvaluation);
     }
 
     @Override
@@ -241,6 +217,9 @@ public class InlineConditional implements Expression {
 
     @Override
     public ParameterizedType returnType() {
+        if (ifTrue.isNull() && ifFalse.isNull()) throw new UnsupportedOperationException();
+        if (ifTrue.isNull()) return ifFalse.returnType();
+        if (ifFalse.isNull()) return ifTrue.returnType();
         return ifTrue.returnType().commonType(inspectionProvider, ifFalse.returnType());
     }
 

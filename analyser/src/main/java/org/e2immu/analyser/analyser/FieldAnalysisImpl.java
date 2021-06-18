@@ -15,14 +15,17 @@
 package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.expression.util.MultiExpression;
+import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.AnnotationMode;
 import org.e2immu.annotation.NotModified;
+import org.e2immu.support.EventuallyFinal;
 import org.e2immu.support.FlipSwitch;
 import org.e2immu.support.SetOnce;
 
+import java.util.Comparator;
+import java.util.List;
 import java.util.Map;
 
 public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
@@ -58,7 +61,7 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
 
     @Override
     public ParameterizedType concreteTypeNullWhenDelayed() {
-        if(fieldInfo.type.isUnboundParameterType()) return fieldInfo.type;
+        if (fieldInfo.type.isUnboundParameterType()) return fieldInfo.type;
         if (effectivelyFinalValue != null) {
             return effectivelyFinalValue.returnType();
         }
@@ -105,6 +108,16 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
         return fieldInfo;
     }
 
+    public interface ValueAndPropertyProxy {
+        Expression getValue();
+
+        boolean isDelayedValue();
+
+        int getProperty(VariableProperty variableProperty);
+
+        Comparator<ValueAndPropertyProxy> COMPARATOR = (p1, p2) -> ExpressionComparator.SINGLETON.compare(p1.getValue(), p2.getValue());
+    }
+
     public static class Builder extends AbstractAnalysisBuilder implements FieldAnalysis {
         public final TypeInfo bestType;
         public final boolean isExplicitlyFinal;
@@ -113,10 +126,9 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
         public final MethodInfo sam;
         private final TypeAnalysis typeAnalysisOfOwner;
         private final AnalysisProvider analysisProvider;
-        public final SetOnce<Expression> initialValue = new SetOnce<>();
+        public final EventuallyFinal<Expression> initialValue = new EventuallyFinal<>();
 
-        private final SetOnce<MultiExpression> values = new SetOnce<>();
-        private MultiExpression delayedValue;
+        private final EventuallyFinal<List<ValueAndPropertyProxy>> values = new EventuallyFinal<>();
 
         public final FlipSwitch allLinksHaveBeenEstablished = new FlipSwitch();
 
@@ -134,7 +146,7 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
 
         @Override
         public ParameterizedType concreteTypeNullWhenDelayed() {
-            if(fieldInfo.type.isUnboundParameterType()) return fieldInfo.type;
+            if (fieldInfo.type.isUnboundParameterType()) return fieldInfo.type;
             if (effectivelyFinalValue.isSet()) {
                 Expression efv = effectivelyFinalValue.get();
                 if (!efv.isUnknown()) {
@@ -152,7 +164,7 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
 
         @Override
         public Expression getInitialValue() {
-            return initialValue.getOrDefaultNull();
+            return initialValue.get();
         }
 
         @Override
@@ -227,8 +239,7 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
                     annotationChecks.toImmutableMap());
         }
 
-        public void transferPropertiesToAnnotations(AnalysisProvider analysisProvider,
-                                                    E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
+        public void transferPropertiesToAnnotations(E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
             int effectivelyFinal = getProperty(VariableProperty.FINAL);
             int ownerImmutable = typeAnalysisOfOwner.getProperty(VariableProperty.IMMUTABLE);
             int modified = getProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD);
@@ -275,15 +286,6 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
             }
         }
 
-        private boolean allowModificationAnnotation(int effectivelyFinal) {
-            if (effectivelyFinal <= Level.FALSE) return false;
-            if (type.isAtLeastEventuallyE2Immutable(analysisProvider) == Boolean.TRUE) return false;
-            if (type.isFunctionalInterface()) {
-                return sam != null;
-            }
-            return true;
-        }
-
         private int typeImmutable() {
             return fieldInfo.owner == bestType || bestType == null ? MultiLevel.FALSE :
                     analysisProvider.getTypeAnalysis(bestType).getProperty(VariableProperty.IMMUTABLE);
@@ -293,21 +295,20 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
             return false; // TODO
         }
 
-        public void setValues(MultiExpression values, boolean delayed) {
+        public void setValues(List<ValueAndPropertyProxy> values, boolean delayed) {
             if (delayed) {
-                this.delayedValue = values;
+                this.values.setVariable(values);
             } else {
-                this.values.set(values);
+                this.values.setFinal(values);
             }
         }
 
-        public MultiExpression getValues() {
-            if (this.values.isSet()) return values.get();
-            return delayedValue;
+        public List<ValueAndPropertyProxy> getValues() {
+            return values.get();
         }
 
         public boolean valuesIsNotSet() {
-            return !values.isSet();
+            return !values.isFinal();
         }
     }
 }

@@ -66,6 +66,9 @@ public abstract class CommonAbstractValue {
     protected static Variable vp;
     protected static VariableExpression p;
 
+    protected static Variable vq;
+    protected static VariableExpression q;
+
     @BeforeAll
     public static void beforeClass() {
         Logger.activate(Logger.LogTarget.EXPRESSION);
@@ -100,6 +103,9 @@ public abstract class CommonAbstractValue {
 
         vp = createParameter(); // nullable
         p = new VariableExpression(vp);
+
+        vq = createVariable("q"); // not intercepted
+        q = new VariableExpression(vq);
     }
 
     static Variable createVariable(String name) {
@@ -224,7 +230,8 @@ public abstract class CommonAbstractValue {
                                VariableProperty variableProperty,
                                boolean duringEvaluation,
                                boolean ignoreConditionManager) {
-            if (value instanceof VariableExpression ve && variableProperty == VariableProperty.NOT_NULL_EXPRESSION) {
+            if (value instanceof VariableExpression ve && variableProperty == VariableProperty.NOT_NULL_EXPRESSION
+                    && !"q".equals(ve.variable().simpleName())) {
                 if (ve.variable().simpleName().endsWith("n") || ve.variable().simpleName().compareTo("p") >= 0)
                     return MultiLevel.NULLABLE;
                 return MultiLevel.EFFECTIVELY_NOT_NULL;

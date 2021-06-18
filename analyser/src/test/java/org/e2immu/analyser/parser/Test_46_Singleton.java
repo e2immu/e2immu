@@ -138,7 +138,7 @@ public class Test_46_Singleton extends CommonTestRunner {
             if ("created".equals(d.fieldInfo().name)) {
                 FieldAnalysisImpl.Builder builder = (FieldAnalysisImpl.Builder) d.fieldAnalysis();
                 assertEquals("false", d.fieldAnalysis().getEffectivelyFinalValue().toString());
-                assertEquals("[false,false]", builder.getValues().toString());
+                assertEquals("[false, false]", builder.getValues().stream().map(FieldAnalysisImpl.ValueAndPropertyProxy::getValue).toList().toString());
             }
         };
 

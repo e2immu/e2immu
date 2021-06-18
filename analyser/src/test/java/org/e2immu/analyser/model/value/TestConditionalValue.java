@@ -14,10 +14,7 @@
 
 package org.e2immu.analyser.model.value;
 
-import org.e2immu.analyser.analyser.AnnotatedAPIAnalyser;
-import org.e2immu.analyser.analyser.EvaluationContext;
-import org.e2immu.analyser.analyser.EvaluationResult;
-import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
+import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.inspector.MethodInspectionImpl;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
@@ -191,5 +188,12 @@ public class TestConditionalValue extends CommonAbstractValue {
         assertEquals("a||!b?4:3", e3.toString());
         Expression e4 = inline(a, newInt(4), inline(b, newInt(4), newInt(3)));
         assertEquals("a||b?4:3", e4.toString());
+    }
+
+    @Test
+    public void testNotNull() {
+        Expression e1 = inline(equals(s, NullConstant.NULL_CONSTANT), new StringConstant(PRIMITIVES, "x"), s);
+        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL,
+                e1.getProperty(minimalEvaluationContext, VariableProperty.NOT_NULL_EXPRESSION, true));
     }
 }

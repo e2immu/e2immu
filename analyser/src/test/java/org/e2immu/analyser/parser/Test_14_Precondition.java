@@ -187,12 +187,11 @@ public class Test_14_Precondition extends CommonTestRunner {
                     assertEquals(RETURN_VAR, d.variableName());
                     if ("1".equals(d.statementId())) {
                         if (d.iteration() == 0) {
-                            assertEquals("<s:Integer>", d.currentValue().toString());
+                            assertEquals("<s:int>", d.currentValue().toString());
                         } else {
                             assertEquals("ii", d.currentValue().toString());
                         }
-                        int expectNne = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
-                        assertEquals(expectNne, d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL_EXPRESSION));
+                        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL_EXPRESSION));
                     }
                 }
             }

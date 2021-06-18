@@ -14,10 +14,16 @@
 
 package org.e2immu.analyser.parser;
 
+import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
+import org.e2immu.analyser.model.Level;
+import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
+import org.e2immu.analyser.model.variable.ReturnVariable;
+import org.e2immu.analyser.visitor.EvaluationResultVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
+import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -33,7 +39,29 @@ public class Test_51_InstanceOf extends CommonTestRunner {
 
     @Test
     public void test_0() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("method".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ReturnVariable) {
+                    if ("0".equals(d.statementId())) {
+                        String expect = d.iteration() == 0 ? "in instanceof Number number&&null!=in?<s:String>:<return value>" :
+                                "in instanceof Number number&&null!=in?\"Number: \"+in:<return value>";
+                        assertEquals(expect, d.currentValue().toString());
+                    }
+                }
+            }
+        };
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("method".equals(d.methodInfo().name)) {
+                if ("0".equals(d.statementId())) {
+                    assertEquals("!(in instanceof Number number)||null==in",
+                            d.conditionManagerForNextStatement().state().toString());
+                }
+            }
+        };
+
         testClass("InstanceOf_0", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build());
     }
 
@@ -42,12 +70,14 @@ public class Test_51_InstanceOf extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("InstanceOf_1".equals(d.methodInfo().name) && "0".equals(d.statementId())) {
                 if (d.variable() instanceof FieldReference fr && "number".equals(fr.fieldInfo.name)) {
-                    String expect = d.iteration() == 0 ? "in instanceof Number number?<s:Object>:3.14"
-                            : "in instanceof Number number?in/*@NotNull*/:3.14";
+                    String expect = d.iteration() == 0 ? "in instanceof Number number&&null!=in?<s:Object>:3.14"
+                            : "in instanceof Number number&&null!=in?in:3.14";
                     assertEquals(expect, d.currentValue().toString());
+                    int expectNne = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
+                    assertEquals(expectNne, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
                 }
                 if (d.variable() instanceof LocalVariableReference lvr && "number".equals(lvr.simpleName())) {
-                    assertEquals("in/*@NotNull*/", d.currentValue().toString());
+                    assertEquals("in", d.currentValue().toString());
                 }
             }
         };
@@ -131,13 +161,33 @@ public class Test_51_InstanceOf extends CommonTestRunner {
 
     @Test
     public void test_6() throws IOException {
-        testClass("InstanceOf_6", 1, 0, new DebugConfiguration.Builder()
+        testClass("InstanceOf_6", 3, 0, new DebugConfiguration.Builder()
                 .build());
     }
 
     @Test
     public void test_7() throws IOException {
         testClass("InstanceOf_7", 0, 0, new DebugConfiguration.Builder()
+                .build());
+    }
+
+    @Test
+    public void test_8() throws IOException {
+        EvaluationResultVisitor evaluationResultVisitor = d -> {
+            if ("method".equals(d.methodInfo().name)) {
+                if ("0".equals(d.statementId())) {
+                    assertEquals("in instanceof String&&null!=in", d.evaluationResult().getExpression().toString());
+                }
+            }
+            if ("method2".equals(d.methodInfo().name)) {
+                if ("0".equals(d.statementId())) {
+                    assertEquals("null!=in", d.evaluationResult().getExpression().toString());
+                }
+            }
+        };
+
+        testClass("InstanceOf_8", 0, 0, new DebugConfiguration.Builder()
+                .addEvaluationResultVisitor(evaluationResultVisitor)
                 .build());
     }
 }

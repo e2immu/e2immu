@@ -1643,9 +1643,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         return instanceOfList.stream()
                 .filter(iop -> iop.instanceOf().patternVariable() != null)
                 .map(iop -> new Assignment(sharedState.evaluationContext.getPrimitives(),
-                        new VariableExpression(iop.instanceOf().patternVariable()),
-                        PropertyWrapper.propertyWrapper(iop.instanceOf().expression(),
-                                Map.of(NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL))))
+                        new VariableExpression(iop.instanceOf().patternVariable()), //  PropertyWrapper.propertyWrapper(
+                        iop.instanceOf().expression())) //, Map.of(NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL))
                 .toList();
     }
 
@@ -2158,7 +2157,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                  See VariableField_0; because we don't know which sub-block gets executed, we cannot use either
                  of the local copies, so we must create a new one.
                  */
-                int increment = atLeastOneBlockExecuted ? 0: 1;
+                int increment = atLeastOneBlockExecuted ? 0 : 1;
                 maxTime = lastStatements.stream()
                         .map(StatementAnalysis.ConditionAndLastStatement::lastStatement)
                         .mapToInt(sa -> sa.statementAnalysis.flowData.getTimeAfterSubBlocks())

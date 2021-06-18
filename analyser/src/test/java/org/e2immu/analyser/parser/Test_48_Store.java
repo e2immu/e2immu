@@ -43,7 +43,7 @@ public class Test_48_Store extends CommonTestRunner {
 
     @Test
     public void test_0() throws IOException {
-        testClass(List.of("Project_0", "Store_0"), 1, 16, new DebugConfiguration.Builder()
+        testClass(List.of("Project_0", "Store_0"), 1, 15, new DebugConfiguration.Builder()
                 .build(), new AnalyserConfiguration.Builder().build(), new AnnotatedAPIConfiguration.Builder().build());
     }
 
@@ -73,7 +73,7 @@ public class Test_48_Store extends CommonTestRunner {
             }
         };
 
-        testClass("Store_1", 0, 3, new DebugConfiguration.Builder()
+        testClass("Store_1", 0, 2, new DebugConfiguration.Builder()
                 .addTypeMapVisitor(typeMapVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
@@ -104,7 +104,7 @@ public class Test_48_Store extends CommonTestRunner {
                 }
             }
         };
-        testClass("Store_2", 0, 2, new DebugConfiguration.Builder()
+        testClass("Store_2", 0, 1, new DebugConfiguration.Builder()
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
