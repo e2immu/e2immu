@@ -26,7 +26,6 @@ import org.e2immu.annotation.NotNull;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 public class Negation extends UnaryOperator implements ExpressionWrapper {
@@ -84,6 +83,18 @@ public class Negation extends UnaryOperator implements ExpressionWrapper {
         if (v instanceof GreaterThanZero greaterThanZero) {
             return greaterThanZero.negate(evaluationContext);
         }
+
+        if (v instanceof Equals equals) {
+            if (equals.lhs instanceof InlineConditional inlineConditional) {
+                Expression result = Equals.tryToRewriteConstantEqualsInlineNegative(evaluationContext, equals.rhs, inlineConditional);
+                if (result != null) return result;
+            }
+            if (equals.rhs instanceof InlineConditional inlineConditional) {
+                Expression result = Equals.tryToRewriteConstantEqualsInlineNegative(evaluationContext, equals.lhs, inlineConditional);
+                if (result != null) return result;
+            }
+        }
+
         MethodInfo operator = v.isNumeric() ?
                 evaluationContext.getPrimitives().unaryMinusOperatorInt :
                 evaluationContext.getPrimitives().logicalNotOperatorBool;

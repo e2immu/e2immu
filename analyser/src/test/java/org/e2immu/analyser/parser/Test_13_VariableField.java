@@ -17,7 +17,10 @@ package org.e2immu.analyser.parser;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.model.variable.ReturnVariable;
+import org.e2immu.analyser.visitor.EvaluationResultVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
+import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -38,6 +41,31 @@ public class Test_13_VariableField extends CommonTestRunner {
     public void test_0() throws IOException {
         final String STRING = "org.e2immu.analyser.testexample.VariableField_0.string";
 
+        EvaluationResultVisitor evaluationResultVisitor = d -> {
+            if ("getString".equals(d.methodInfo().name)) {
+
+                // evaluation of the return value, which is 'string' in the current state
+                if ("1".equals(d.statementId())) {
+                    String expectValue = d.iteration() == 0 ? "<f:string>" :
+                            // FIXME <v:string$1> should be just string$1 or string$0, depending on 'b'
+                            // to fix that, we should make it to string$2
+                            "string$0.startsWith(\"abc\")&&b?nullable instance type String:<v:string$1>";
+                    assertEquals(expectValue, d.evaluationResult().getExpression().toString());
+                }
+            }
+        };
+
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("getString".equals(d.methodInfo().name)) {
+                if ("0".equals(d.statementId())) {
+                    assertEquals("true", d.absoluteState().toString());
+                }
+                if ("1".equals(d.statementId())) {
+                    assertEquals("true", d.absoluteState().toString());
+                }
+            }
+        };
+
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("getString".equals(d.methodInfo().name)) {
 
@@ -53,6 +81,8 @@ public class Test_13_VariableField extends CommonTestRunner {
                     } else fail("Statement " + d.statementId());
                     assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
 
+                    // second read copy
+
                 } else if (d.variableName().endsWith("string$1")) {
                     assertEquals(STRING + "$1", d.variableName());
                     if ("0.0.0.0.0".equals(d.statementId())) {
@@ -60,7 +90,7 @@ public class Test_13_VariableField extends CommonTestRunner {
                     } else if ("0.0.0".equals(d.statementId())) {
                         assertEquals("string$0.startsWith(\"abc\")?nullable instance type String:<v:string$1>", d.currentValue().toString());
                     } else if ("0".equals(d.statementId()) || "1".equals(d.statementId())) {
-                        assertEquals("b?string$0.startsWith(\"abc\")?nullable instance type String:<v:string$1>:<v:string$1>", d.currentValue().toString());
+                        assertEquals("string$0.startsWith(\"abc\")&&b?nullable instance type String:<v:string$1>", d.currentValue().toString());
                     } else fail("Statement " + d.statementId());
 
                     // inherited from the previous read copy:
@@ -70,11 +100,22 @@ public class Test_13_VariableField extends CommonTestRunner {
                     assertEquals(STRING, d.variableName());
                     // according to the new rules, this one should not have CNN set to Effectively Not Null
                 }
+
+                if (d.variable() instanceof ReturnVariable) {
+                    if ("0".equals(d.statementId())) {
+                        String expectValue = d.iteration() == 0 ?
+                                "b&&<m:startsWith>?\"abc\"+<f:string>:<return value>" :
+                                "string$0.startsWith(\"abc\")&&b?\"abc\"+string$1:<return value>";
+                        assertEquals(expectValue, d.currentValue().toString());
+                    }
+                }
             }
         };
 
         testClass("VariableField_0", 0, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addEvaluationResultVisitor(evaluationResultVisitor)
                 .build());
     }
 

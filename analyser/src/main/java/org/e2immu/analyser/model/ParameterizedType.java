@@ -782,15 +782,20 @@ public class ParameterizedType {
 
         TypeInfo bestType = bestTypeInfo();
         TypeInfo otherBestType = other.bestTypeInfo();
-        boolean isPrimitive = Primitives.isPrimitiveExcludingVoid(this) || bestType != null && Primitives.isBoxedExcludingVoid(bestType);
-        boolean otherIsPrimitive = Primitives.isPrimitiveExcludingVoid(other) || otherBestType != null && Primitives.isBoxedExcludingVoid(otherBestType);
+
+        boolean isPrimitive = Primitives.isPrimitiveExcludingVoid(this);
+        boolean otherIsPrimitive = Primitives.isPrimitiveExcludingVoid(other);
         if (isPrimitive && otherIsPrimitive) {
             return inspectionProvider.getPrimitives().widestType(this, other);
         }
-        if (isPrimitive && other == ParameterizedType.NULL_CONSTANT) {
+        boolean isBoxed = Primitives.isBoxedExcludingVoid(this);
+        boolean otherIsBoxed = Primitives.isBoxedExcludingVoid(other);
+        if ((isPrimitive || isBoxed) && other == ParameterizedType.NULL_CONSTANT) {
+            if (isBoxed) return this;
             return inspectionProvider.getPrimitives().boxed(bestType).asParameterizedType(inspectionProvider);
         }
-        if (otherIsPrimitive && this == ParameterizedType.NULL_CONSTANT) {
+        if ((otherIsPrimitive || otherIsBoxed) && this == ParameterizedType.NULL_CONSTANT) {
+            if (otherIsBoxed) return other;
             return inspectionProvider.getPrimitives().boxed(otherBestType).asParameterizedType(inspectionProvider);
         }
         if (isPrimitive || otherIsPrimitive)
@@ -807,6 +812,7 @@ public class ParameterizedType {
         if (other.isAssignableFrom(inspectionProvider, this)) {
             return other;
         }
+        // FIXME go into hierarchy
         return inspectionProvider.getPrimitives().objectParameterizedType; // no common type
     }
 

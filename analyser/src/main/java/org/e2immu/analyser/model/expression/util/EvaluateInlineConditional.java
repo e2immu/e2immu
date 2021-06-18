@@ -14,9 +14,9 @@
 
 package org.e2immu.analyser.model.expression.util;
 
+import org.e2immu.analyser.analyser.AnnotatedAPIAnalyser;
 import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
-import org.e2immu.analyser.analyser.AnnotatedAPIAnalyser;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.variable.This;
@@ -60,34 +60,61 @@ public class EvaluateInlineConditional {
             if (isKnown != null) return builder.setExpression(isKnown).build();
         }
 
+        Expression edgeCase = edgeCases(evaluationContext, evaluationContext.getPrimitives(), condition, ifTrue, ifFalse);
+        if (edgeCase != null) return builder.setExpression(edgeCase).build();
+
         // NOTE that x, !x cannot always be detected by the presence of Negation (see GreaterThanZero,
         // x>=10 and x<=9 for integer x
-        InlineConditional secondCv;
-        if ((secondCv = ifTrue.asInstanceOf(InlineConditional.class)) != null) {
+        InlineConditional ifTrueCv;
+        if ((ifTrueCv = ifTrue.asInstanceOf(InlineConditional.class)) != null) {
             // x ? (x? a: b): c === x ? a : c
-            if (secondCv.condition.equals(condition)) {
-                return conditionalValueConditionResolved(evaluationContext, condition, secondCv.ifTrue, ifFalse);
+            if (ifTrueCv.condition.equals(condition)) {
+                return conditionalValueConditionResolved(evaluationContext, condition, ifTrueCv.ifTrue, ifFalse);
             }
             // x ? (!x ? a: b): c === x ? b : c
-            if (secondCv.condition.equals(Negation.negate(evaluationContext, condition))) {
-                return conditionalValueConditionResolved(evaluationContext, condition, secondCv.ifFalse, ifFalse);
+            if (ifTrueCv.condition.equals(Negation.negate(evaluationContext, condition))) {
+                return conditionalValueConditionResolved(evaluationContext, condition, ifTrueCv.ifFalse, ifFalse);
+            }
+            // x ? (y ? a: b): b --> x && y ? a : b
+            // especially important for trailing x?(y ? z: <return variable>):<return variable>
+            if (ifFalse.equals(ifTrueCv.ifFalse)) {
+                return conditionalValueConditionResolved(evaluationContext,
+                        new And(evaluationContext.getPrimitives()).append(evaluationContext, condition, ifTrueCv.condition),
+                        ifTrueCv.ifTrue, ifFalse);
+            }
+            // x ? (y ? a: b): a --> x && !y ? b: a
+            if (ifFalse.equals(ifTrueCv.ifTrue)) {
+                return conditionalValueConditionResolved(evaluationContext,
+                        new And(evaluationContext.getPrimitives()).append(evaluationContext, condition,
+                                Negation.negate(evaluationContext, ifTrueCv.condition)),
+                        ifTrueCv.ifFalse, ifFalse);
             }
         }
         // x? a: (x? b:c) === x?a:c
-        InlineConditional secondCv2;
-        if ((secondCv2 = ifFalse.asInstanceOf(InlineConditional.class)) != null) {
+        InlineConditional ifFalseCv;
+        if ((ifFalseCv = ifFalse.asInstanceOf(InlineConditional.class)) != null) {
             // x ? a: (x ? b:c) === x?a:c
-            if (secondCv2.condition.equals(condition)) {
-                return conditionalValueConditionResolved(evaluationContext, condition, ifTrue, secondCv2.ifFalse);
+            if (ifFalseCv.condition.equals(condition)) {
+                return conditionalValueConditionResolved(evaluationContext, condition, ifTrue, ifFalseCv.ifFalse);
             }
             // x ? a: (!x ? b:c) === x?a:b
-            if (secondCv2.condition.equals(Negation.negate(evaluationContext, condition))) {
-                return conditionalValueConditionResolved(evaluationContext, condition, ifTrue, secondCv2.ifTrue);
+            if (ifFalseCv.condition.equals(Negation.negate(evaluationContext, condition))) {
+                return conditionalValueConditionResolved(evaluationContext, condition, ifTrue, ifFalseCv.ifTrue);
+            }
+            // x ? a: (y ? a: b) --> x || y ? a: b
+            if (ifTrue.equals(ifFalseCv.ifTrue)) {
+                return conditionalValueConditionResolved(evaluationContext,
+                        new Or(evaluationContext.getPrimitives()).append(evaluationContext, condition, ifFalseCv.condition),
+                        ifTrue, ifFalseCv.ifFalse);
+            }
+            // x ? a: (y ? b: a) --> x || !y ? a: b
+            if (ifTrue.equals(ifFalseCv.ifFalse)) {
+                return conditionalValueConditionResolved(evaluationContext,
+                        new Or(evaluationContext.getPrimitives()).append(evaluationContext, condition,
+                                Negation.negate(evaluationContext, ifFalseCv.condition)),
+                        ifTrue, ifFalseCv.ifTrue);
             }
         }
-
-        Expression edgeCase = edgeCases(evaluationContext, evaluationContext.getPrimitives(), condition, ifTrue, ifFalse);
-        if (edgeCase != null) return builder.setExpression(edgeCase).build();
 
         // standardization... we swap!
         // this will result in  a != null ? a: x ==>  null == a ? x : a as the default form

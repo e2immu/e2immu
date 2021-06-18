@@ -477,13 +477,13 @@ public class Test_01_Loops extends CommonTestRunner {
                         assertEquals(expect, d.currentValue().toString());
                     }
                     if ("0".equals(d.statementId())) {
-                        String expect = d.iteration() == 0 ? "<new:int><=9?1==<new:int>?<s:int>:<return value>:<return value>"
-                                : "instance type int<=9?0==instance type int?4:<return value>:<return value>";
+                        String expect = d.iteration() == 0 ? "1==<new:int>?<s:int>:<return value>"
+                                : "0==instance type int?4:<return value>";
                         assertEquals(expect, d.currentValue().toString());
                     }
                     if ("1".equals(d.statementId())) {
                         String expect = d.iteration() == 0
-                                ? "<new:int>>=10?0:<new:int><=9&&<new:int><=9?1==<new:int>&&<new:int><=9&&<new:int><=9&&<new:int><=9?<s:int>:<return value>:<return value>"
+                                ? "<new:int>>=10?0:1==<new:int>&&<new:int><=9?<s:int>:<return value>"
                                 : "instance type int>=10?0:0==instance type int?4:<return value>";
                         assertEquals(expect, d.currentValue().toString());
                     }
@@ -550,8 +550,8 @@ public class Test_01_Loops extends CommonTestRunner {
                 }
             }
             if (d.variable() instanceof ReturnVariable && "2".equals(d.statementId())) {
-                String expectReturn = d.iteration() == 0 ? "<v:i><=9?1==<v:i>?<s:int>:<return value>:<return value>" :
-                        "instance type int<=9?0==instance type int?5:<return value>:<return value>";
+                String expectReturn = d.iteration() == 0 ? "1==<v:i>?<s:int>:<return value>" :
+                        "0==instance type int?5:<return value>";
                 assertEquals(expectReturn, d.currentValue().toString());
             }
         };

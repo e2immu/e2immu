@@ -384,14 +384,14 @@ public class Primitives {
     }
 
     public static boolean isBoxedExcludingVoid(ParameterizedType parameterizedType) {
-        return parameterizedType.typeInfo != null &&
-                parameterizedType.arrays == 0 &&
+        return  parameterizedType.arrays == 0 &&
                 isBoxedExcludingVoid(parameterizedType.typeInfo);
     }
 
     public static boolean isBoxedExcludingVoid(TypeInfo typeInfo) {
+        if (typeInfo == null) return false;
         return isBoxedByte(typeInfo) || isBoxedShort(typeInfo) || isInteger(typeInfo) || isBoxedLong(typeInfo)
-                || isCharacter(typeInfo) || isBoxedFloat(typeInfo) || isBoxedDouble(typeInfo) || isBoolean(typeInfo);
+                || isCharacter(typeInfo) || isBoxedFloat(typeInfo) || isBoxedDouble(typeInfo) || isBoxedBoolean(typeInfo);
     }
 
     private void processEnum(TypeInfo typeInfo, List<FieldInfo> fields) {

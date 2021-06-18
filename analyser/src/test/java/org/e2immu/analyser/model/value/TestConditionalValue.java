@@ -14,10 +14,10 @@
 
 package org.e2immu.analyser.model.value;
 
+import org.e2immu.analyser.analyser.AnnotatedAPIAnalyser;
 import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
-import org.e2immu.analyser.analyser.AnnotatedAPIAnalyser;
 import org.e2immu.analyser.inspector.MethodInspectionImpl;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
@@ -111,11 +111,14 @@ public class TestConditionalValue extends CommonAbstractValue {
         assertEquals("!a&&c", and2.toString());
     }
 
+    // ensure that the short-cuts in TestEqualsConstantInline do NOT apply
+    // (a?b:c)==b does not guarantee a, rather a||b==c
     @Test
     public void test5() {
         Expression cv1 = inline(a, b, c);
         Expression eq = Equals.equals(minimalEvaluationContext, b, cv1);
-        assertSame(a, eq);
+        assertNotSame(a, eq);
+        assertEquals("(a?b:c)==b", eq.toString());
     }
 
     @Test
@@ -135,20 +138,6 @@ public class TestConditionalValue extends CommonAbstractValue {
         assertEquals("a&&b", eq3.toString());
         Expression eq4 = Equals.equals(minimalEvaluationContext, newInt(4), cv1);
         assertEquals("a&&!b", eq4.toString());
-        Expression eq5 = Equals.equals(minimalEvaluationContext, newInt(5), cv1);
-        assertEquals("!a&&!c", eq5.toString());
-    }
-
-
-    @Test
-    public void test8() {
-        Expression cv1 = inline(a, inline(b, newInt(3), NullConstant.NULL_CONSTANT), inline(c, NullConstant.NULL_CONSTANT, newInt(5)));
-        Expression eqNull = Equals.equals(minimalEvaluationContext, NullConstant.NULL_CONSTANT, cv1);
-        assertEquals("(a||c)&&(!a||!b)&&(!b||c)", eqNull.toString());
-        Expression eq3 = Equals.equals(minimalEvaluationContext, newInt(3), cv1);
-        assertEquals("a&&b", eq3.toString());
-        Expression eq4 = Equals.equals(minimalEvaluationContext, newInt(4), cv1);
-        assertEquals("4==(a?b?3:null:c?null:5)", eq4.toString());
         Expression eq5 = Equals.equals(minimalEvaluationContext, newInt(5), cv1);
         assertEquals("!a&&!c", eq5.toString());
     }
@@ -187,5 +176,20 @@ public class TestConditionalValue extends CommonAbstractValue {
         EvaluationResult er = e2.evaluate(minimalEvaluationContext, ForwardEvaluationInfo.DEFAULT);
         assertEquals("!a&&!b?2:a?3:4", er.getExpression().toString());
         assertEquals("!a&&!b?2:a?3:4", e2.optimise(minimalEvaluationContext).toString());
+    }
+
+    @Test
+    public void testDoubleInline() {
+        Expression e1 = inline(a, inline(b, newInt(3), newInt(4)), newInt(4));
+        assertEquals("a&&b?3:4", e1.toString());
+        Expression e1b = inline(a, inline(b, newInt(4), newInt(3)), newInt(4));
+        assertEquals("a&&!b?3:4", e1b.toString());
+        Expression e2 = inline(a, inline(b, newInt(3), newInt(4)), newInt(5));
+        assertEquals("a?b?3:4:5", e2.toString());
+
+        Expression e3 = inline(a, newInt(4), inline(b, newInt(3), newInt(4)));
+        assertEquals("a||!b?4:3", e3.toString());
+        Expression e4 = inline(a, newInt(4), inline(b, newInt(4), newInt(3)));
+        assertEquals("a||b?4:3", e4.toString());
     }
 }
