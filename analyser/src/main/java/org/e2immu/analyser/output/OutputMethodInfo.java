@@ -19,6 +19,14 @@ public class OutputMethodInfo {
 
     public static OutputBuilder output(MethodInfo methodInfo, Qualification qualification, AnalysisProvider analysisProvider) {
         MethodInspection inspection = methodInfo.methodInspection.get();
+        if(inspection.isStaticBlock()) {
+            OutputBuilder result = new OutputBuilder().add(new Text("static"));
+            Qualification bodyQualification = makeBodyQualification(qualification, inspection);
+            MethodAnalysis methodAnalysisOrNull = analysisProvider.getMethodAnalysis(methodInfo);
+            StatementAnalysis firstStatement = methodAnalysisOrNull != null ? methodAnalysisOrNull.getFirstStatement() : null;
+            result.add(inspection.getMethodBody().output(bodyQualification, firstStatement));
+            return result;
+        }
 
         OutputBuilder afterAnnotations = new OutputBuilder();
         afterAnnotations.add(Arrays.stream(MethodModifier.sort(inspection.getModifiers()))

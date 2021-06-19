@@ -79,6 +79,7 @@ public class FieldAnalyser extends AbstractAnalyser {
 
     // set at initialisation time
     private List<MethodAnalyser> myMethodsAndConstructors;
+    private List<MethodAnalyser> myStaticBlocks;
     private TypeAnalyser myTypeAnalyser;
 
     private record SharedState(int iteration, EvaluationContext closure) {
@@ -120,7 +121,7 @@ public class FieldAnalyser extends AbstractAnalyser {
                 .add(ANALYSE_MODIFIED, sharedState -> analyseModified())
                 .add(ANALYSE_FINAL_VALUE, sharedState -> analyseFinalValue())
                 .add(ANALYSE_CONSTANT, sharedState -> analyseConstant())
-                .add(ANALYSE_NOT_NULL, this::analyseNotNull)
+                .add(ANALYSE_NOT_NULL, sharedState -> analyseNotNull())
                 .add(ANALYSE_NOT_MODIFIED_1, sharedState -> analyseNotModified1())
                 .add(ANALYSE_PROPAGATE_MODIFICATION, sharedState -> analysePropagateModification())
                 .add(FIELD_ERRORS, sharedState -> fieldErrors())
@@ -158,21 +159,43 @@ public class FieldAnalyser extends AbstractAnalyser {
     @Override
     public void initialize() {
         List<MethodAnalyser> myMethodsAndConstructors = new LinkedList<>();
+        List<MethodAnalyser> myStaticBlocks = new LinkedList<>();
 
         messages.addAll(fieldAnalysis.fromAnnotationsIntoProperties(AnalyserIdentification.FIELD, false,
                 fieldInfo.fieldInspection.get().getAnnotations(), analyserContext.getE2ImmuAnnotationExpressions()));
 
         analyserContext.methodAnalyserStream().forEach(analyser -> {
-            if (analyser.methodInfo.typeInfo == fieldInfo.owner) {
+            if (analyser.methodInspection.isStaticBlock()) {
+                myStaticBlocks.add(analyser);
+            } else if (analyser.methodInfo.typeInfo == fieldInfo.owner) {
                 myMethodsAndConstructors.add(analyser);
             }
         });
         myTypeAnalyser = analyserContext.getTypeAnalyser(fieldInfo.owner);
         this.myMethodsAndConstructors = List.copyOf(myMethodsAndConstructors);
+        this.myStaticBlocks = List.copyOf(myStaticBlocks);
+    }
+
+    private Stream<MethodAnalyser> otherStaticBlocks() {
+        TypeInfo primaryType = myTypeAnalyser.primaryType;
+        TypeInspection primaryTypeInspection = analyserContext.getTypeInspection(primaryType);
+        return primaryTypeInspection.staticBlocksRecursively(analyserContext)
+                .filter(m -> !(m.typeInfo == fieldInfo.owner)) // filter out mine
+                .map(analyserContext::getMethodAnalyser);
+    }
+
+    // group them per type, because we take only one value per type
+    private Stream<List<MethodAnalyser>> staticBlocksPerTypeExcludeMine() {
+        TypeInfo primaryType = myTypeAnalyser.primaryType;
+        TypeInspection primaryTypeInspection = analyserContext.getTypeInspection(primaryType);
+        return primaryTypeInspection.staticBlocksPerType(analyserContext)
+                .filter(list -> !list.isEmpty() && !(list.get(0).typeInfo == fieldInfo.owner)) // filter out mine
+                .map(list -> list.stream().map(analyserContext::getMethodAnalyser).toList());
     }
 
     private Stream<MethodAnalyser> allMethodsAndConstructors(boolean alsoMyOwnConstructors) {
         return analyserContext.methodAnalyserStream()
+                .filter(ma -> !ma.methodInspection.isStaticBlock())
                 .filter(ma -> alsoMyOwnConstructors ||
                         !(ma.methodInfo.typeInfo == fieldInfo.owner && ma.methodInfo.isConstructor))
                 .flatMap(ma -> Stream.concat(Stream.of(ma),
@@ -287,7 +310,7 @@ public class FieldAnalyser extends AbstractAnalyser {
     for methods/constructors with assignment to the variable, we wait for linked variables to be set AND for not null delays.
     for methods which only read, we only wait for not-null delays to be resolved.
      */
-    private AnalysisStatus analyseNotNull(SharedState sharedState) {
+    private AnalysisStatus analyseNotNull() {
         if (fieldAnalysis.getProperty(VariableProperty.EXTERNAL_NOT_NULL) != Level.DELAY) return DONE;
 
         int isFinal = fieldAnalysis.getProperty(VariableProperty.FINAL);
@@ -320,7 +343,7 @@ public class FieldAnalyser extends AbstractAnalyser {
                     .mapToInt(vi -> vi.getProperty(VariableProperty.CONTEXT_NOT_NULL))
                     .reduce(MultiLevel.NULLABLE, MAX);
             if (bestOverContext == Level.DELAY) {
-                assert translatedDelay(ANALYSE_NOT_NULL, ".CONTEXT_NOT_NULL",  // FIXME
+                assert translatedDelay(ANALYSE_NOT_NULL, ".CONTEXT_NOT_NULL",  // TODO
                         fqn + D_EXTERNAL_NOT_NULL);
                 log(DELAYED, "Delay @NotNull on {}, waiting for CNN", fqn);
                 return DELAYS;
@@ -347,7 +370,7 @@ public class FieldAnalyser extends AbstractAnalyser {
                         .mapToInt(this::notNullBreakParameterDelay)
                         .min().orElse(MultiLevel.NULLABLE);
                 if (worstOverValuesBreakParameterDelay == Level.DELAY) {
-                    assert translatedDelay(ANALYSE_NOT_NULL, fqn + D_VALUES, // FIXME
+                    assert translatedDelay(ANALYSE_NOT_NULL, fqn + D_VALUES, // TODO
                             fqn + D_EXTERNAL_NOT_NULL);
                     log(DELAYED, "Delay @NotNull on {}, waiting for values", fqn);
                     return DELAYS;
@@ -451,16 +474,13 @@ public class FieldAnalyser extends AbstractAnalyser {
             return DONE;
         }
 
-        int finalImmutable;
-        EvaluationContext evaluationContext = new EvaluationContextImpl(sharedState.iteration,
-                ConditionManager.initialConditionManager(analyserContext.getPrimitives()), sharedState.closure);
-
         Boolean onlyAssignedToParameters = onlyAssignedToParameters();
         if (onlyAssignedToParameters == null) {
             log(DELAYED, "Delaying @Immutable on {}, waiting for values", fqn);
             return DELAYS;
         }
 
+        int finalImmutable;
         if (onlyAssignedToParameters) {
             int bestOverContext = allMethodsAndConstructors(true)
                     .flatMap(m -> m.getFieldAsVariableStream(fieldInfo, true))
@@ -591,6 +611,101 @@ public class FieldAnalyser extends AbstractAnalyser {
         return Level.DELAY;
     }
 
+    record OccursAndDelay(boolean occurs, boolean delay) {
+    }
+
+    private OccursAndDelay occursInAllConstructors(List<FieldAnalysisImpl.ValueAndPropertyProxy> values,
+                                                   boolean ignorePrivateConstructors) {
+        boolean occurs = true;
+        boolean delays = false;
+        for (MethodAnalyser methodAnalyser : myMethodsAndConstructors) {
+            if (methodAnalyser.methodAnalysis.getProperty(VariableProperty.FINALIZER) != Level.TRUE) {
+                if (!methodAnalyser.methodInfo.isPrivate() || !ignorePrivateConstructors) {
+                    boolean added = false;
+                    for (VariableInfo vi : methodAnalyser.getFieldAsVariable(fieldInfo, false)) {
+                        if (vi.isAssigned()) {
+                            Expression expression = vi.getValue();
+                            VariableExpression ve;
+                            if ((ve = expression.asInstanceOf(VariableExpression.class)) != null
+                                    && ve.variable() instanceof LocalVariableReference) {
+                                throw new UnsupportedOperationException("Method " + methodAnalyser.methodInfo.fullyQualifiedName + ": " +
+                                        fieldInfo.fullyQualifiedName() + " is local variable " + expression);
+                            }
+                            values.add(new FieldAnalysisImpl.ValueAndPropertyProxy() {
+                                @Override
+                                public Expression getValue() {
+                                    return vi.getValue();
+                                }
+
+                                @Override
+                                public int getProperty(VariableProperty variableProperty) {
+                                    return vi.getProperty(variableProperty);
+                                }
+
+                                @Override
+                                public boolean isDelayedValue() {
+                                    return vi.isDelayed();
+                                }
+                            });
+                            added = true;
+                            if (vi.isDelayed()) {
+                                log(DELAYED, "Delay consistent value for field {}", fqn);
+                                delays = true;
+                            }
+                        }
+                    }
+                    if (!added && methodAnalyser.methodInfo.isConstructor) {
+                        occurs = false;
+                    }
+                }
+            }
+        }
+        return new OccursAndDelay(occurs, delays);
+    }
+
+    private OccursAndDelay occursInStaticBlocks(List<MethodAnalyser> staticBlocks, List<FieldAnalysisImpl.ValueAndPropertyProxy> values) {
+        boolean delays = false;
+        FieldAnalysisImpl.ValueAndPropertyProxy latestBlock = null;
+        for (MethodAnalyser methodAnalyser : staticBlocks) {
+            for (VariableInfo vi : methodAnalyser.getFieldAsVariable(fieldInfo, false)) {
+                if (vi.isAssigned()) {
+                    Expression expression = vi.getValue();
+                    VariableExpression ve;
+                    if ((ve = expression.asInstanceOf(VariableExpression.class)) != null
+                            && ve.variable() instanceof LocalVariableReference) {
+                        throw new UnsupportedOperationException("Method " + methodAnalyser.methodInfo.fullyQualifiedName + ": " +
+                                fieldInfo.fullyQualifiedName() + " is local variable " + expression);
+                    }
+                    latestBlock = new FieldAnalysisImpl.ValueAndPropertyProxy() {
+                        @Override
+                        public Expression getValue() {
+                            return vi.getValue();
+                        }
+
+                        @Override
+                        public int getProperty(VariableProperty variableProperty) {
+                            return vi.getProperty(variableProperty);
+                        }
+
+                        @Override
+                        public boolean isDelayedValue() {
+                            return vi.isDelayed();
+                        }
+                    };
+                    delays = vi.isDelayed();
+                }
+            }
+        }
+        if (latestBlock != null) {
+            values.add(latestBlock);
+            if (delays) {
+                log(DELAYED, "Delaying initialization of field {} in static block", fieldInfo.fullyQualifiedName());
+            }
+            return new OccursAndDelay(true, delays);
+        }
+        return new OccursAndDelay(false, false);
+    }
+
     private AnalysisStatus allAssignmentsHaveBeenSet() {
         assert fieldAnalysis.valuesIsNotSet();
         List<FieldAnalysisImpl.ValueAndPropertyProxy> values = new ArrayList<>();
@@ -617,54 +732,30 @@ public class FieldAnalyser extends AbstractAnalyser {
             });
         }
         // collect all the other values, bail out when delays
-        boolean ignorePrivateConstructors = myTypeAnalyser.ignorePrivateConstructorsForFieldValue();
 
-        boolean occursInAllConstructors = true;
-        if (!(fieldInfo.isExplicitlyFinal() && haveInitialiser)) {
-            for (MethodAnalyser methodAnalyser : myMethodsAndConstructors) {
-                if (methodAnalyser.methodAnalysis.getProperty(VariableProperty.FINALIZER) != Level.TRUE) {
-                    if (!methodAnalyser.methodInfo.isPrivate() || !ignorePrivateConstructors) {
-                        boolean added = false;
-                        for (VariableInfo vi : methodAnalyser.getFieldAsVariable(fieldInfo, false)) {
-                            if (vi.isAssigned()) {
-                                Expression expression = vi.getValue();
-                                VariableExpression ve;
-                                if ((ve = expression.asInstanceOf(VariableExpression.class)) != null
-                                        && ve.variable() instanceof LocalVariableReference) {
-                                    throw new UnsupportedOperationException("Method " + methodAnalyser.methodInfo.fullyQualifiedName + ": " +
-                                            fieldInfo.fullyQualifiedName() + " is local variable " + expression);
-                                }
-                                values.add(new FieldAnalysisImpl.ValueAndPropertyProxy() {
-                                    @Override
-                                    public Expression getValue() {
-                                        return vi.getValue();
-                                    }
+        boolean occursInAllConstructorsOrOneStaticBlock;
+        if (fieldInfo.isExplicitlyFinal() && haveInitialiser) {
+            occursInAllConstructorsOrOneStaticBlock = true;
+        } else {
+            boolean ignorePrivateConstructors = myTypeAnalyser.ignorePrivateConstructorsForFieldValue();
+            OccursAndDelay oad = occursInAllConstructors(values, ignorePrivateConstructors);
+            occursInAllConstructorsOrOneStaticBlock = oad.occurs;
+            delays |= oad.delay;
 
-                                    @Override
-                                    public int getProperty(VariableProperty variableProperty) {
-                                        return vi.getProperty(variableProperty);
-                                    }
+            if (fieldInspection.isStatic()) {
+                // also look in my static blocks
+                OccursAndDelay myBlocks = occursInStaticBlocks(myStaticBlocks, values);
+                delays |= myBlocks.delay;
+                occursInAllConstructorsOrOneStaticBlock = myBlocks.occurs;
 
-                                    @Override
-                                    public boolean isDelayedValue() {
-                                        return vi.isDelayed();
-                                    }
-                                });
-                                added = true;
-                                if (vi.isDelayed()) {
-                                    log(DELAYED, "Delay consistent value for field {}", fqn);
-                                    delays = true;
-                                }
-                            }
-                        }
-                        if (!added && methodAnalyser.methodInfo.isConstructor) {
-                            occursInAllConstructors = false;
-                        }
-                    }
-                }
+                // and add values of other static blocks
+                delays |= staticBlocksPerTypeExcludeMine().map(list -> {
+                    OccursAndDelay staticOad = occursInStaticBlocks(list, values);
+                    return staticOad.delay;
+                }).reduce(false, (v, w) -> v || w);
             }
         }
-        if (!haveInitialiser && (!occursInAllConstructors || fieldInfo.isStatic())) {
+        if (!haveInitialiser && !occursInAllConstructorsOrOneStaticBlock) {
             Expression nullValue = ConstantExpression.nullValue(analyserContext.getPrimitives(),
                     fieldInfo.type.bestTypeInfo());
             values.add(0, new FieldAnalysisImpl.ValueAndPropertyProxy() {
@@ -937,8 +1028,11 @@ public class FieldAnalyser extends AbstractAnalyser {
             // this means other types can write to the field... not final by definition
             isFinal = false;
         } else {
-            isFinal = allMethodsAndConstructors(true)
-                    .filter(m -> m.methodInfo.methodResolution.get().partOfConstruction().accessibleFromTheOutside())
+            // final if only written in constructors, or methods exclusively reached from constructors
+            // for static fields, we'll take ALL methods and constructors (only the static blocks are allowed)
+            Stream<MethodAnalyser> stream = allMethodsAndConstructorsAndOtherStaticBlocks(true);
+            isFinal = stream.filter(m -> fieldInspection.isStatic() ||
+                    m.methodInfo.methodResolution.get().partOfConstruction().accessibleFromTheOutside())
                     .flatMap(m -> m.getFieldAsVariableStream(fieldInfo, false))
                     .noneMatch(VariableInfo::isAssigned);
         }
@@ -956,6 +1050,13 @@ public class FieldAnalyser extends AbstractAnalyser {
             }
         }
         return DONE;
+    }
+
+    private Stream<MethodAnalyser> allMethodsAndConstructorsAndOtherStaticBlocks(boolean alsoMyOwn) {
+        if (fieldInspection.isStatic()) {
+            return Stream.concat(allMethodsAndConstructors(alsoMyOwn), otherStaticBlocks());
+        }
+        return allMethodsAndConstructors(true);
     }
 
     private AnalysisStatus analysePropagateModification() {
@@ -1005,9 +1106,9 @@ public class FieldAnalyser extends AbstractAnalyser {
             return DONE;
         }
 
+        Stream<MethodAnalyser> stream = allMethodsAndConstructorsAndOtherStaticBlocks(false);
         boolean modified = fieldCanBeWrittenFromOutsideThisPrimaryType ||
-                allMethodsAndConstructors(false)
-                        .flatMap(m -> m.getFieldAsVariableStream(fieldInfo, true))
+                stream.flatMap(m -> m.getFieldAsVariableStream(fieldInfo, true))
                         .filter(VariableInfo::isRead)
                         .anyMatch(vi -> vi.getProperty(VariableProperty.CONTEXT_MODIFIED) == Level.TRUE);
 
@@ -1018,21 +1119,20 @@ public class FieldAnalyser extends AbstractAnalyser {
         }
 
         // we only consider methods, not constructors!
-        boolean allContextModificationsDefined = allMethodsAndConstructors(false)
-                .allMatch(m -> {
-                    List<VariableInfo> variableInfoList = m.getFieldAsVariable(fieldInfo, true);
-                    // AggregatingMethodAnalyser returns empty list, so cast is safe
-                    return variableInfoList.isEmpty() ||
-                            variableInfoList.stream().noneMatch(VariableInfo::isRead) ||
-                            ((ComputingMethodAnalyser) m).methodLevelData().acceptLinksHaveBeenEstablished(ignoreMyConstructors);
-                });
+        Stream<MethodAnalyser> stream2 = allMethodsAndConstructorsAndOtherStaticBlocks(false);
+        boolean allContextModificationsDefined = stream2.allMatch(m -> {
+            List<VariableInfo> variableInfoList = m.getFieldAsVariable(fieldInfo, true);
+            // AggregatingMethodAnalyser returns empty list, so cast is safe
+            return variableInfoList.isEmpty() ||
+                    variableInfoList.stream().noneMatch(VariableInfo::isRead) ||
+                    ((ComputingMethodAnalyser) m).methodLevelData().acceptLinksHaveBeenEstablished(ignoreMyConstructors);
+        });
 
         if (allContextModificationsDefined) {
             fieldAnalysis.setProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD, Level.FALSE);
             log(MODIFICATION, "Mark field {} as @NotModified", fqn);
             return DONE;
         }
-
 
         if (Logger.isLogEnabled(DELAYED)) {
             log(DELAYED, "Cannot yet conclude if field {}'s contents have been modified, not all read or links",

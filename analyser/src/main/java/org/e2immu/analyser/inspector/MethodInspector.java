@@ -181,7 +181,7 @@ public class MethodInspector {
                         ExpressionContext expressionContext,
                         Map<CompanionMethodName, MethodInspectionImpl.Builder> companionMethods,
                         List<FieldInfo> fields) {
-        MethodInspectionImpl.Builder tempBuilder = new MethodInspectionImpl.Builder(typeInfo, true);
+        MethodInspectionImpl.Builder tempBuilder = MethodInspectionImpl.Builder.compactConstructor(typeInfo);
         int i = 0;
         for (FieldInfo fieldInfo : fields) {
             ParameterInspectionImpl.Builder pib = new ParameterInspectionImpl.Builder(fieldInfo.type, fieldInfo.name, i++);
@@ -206,6 +206,19 @@ public class MethodInspector {
     }
 
     /*
+    Inspection of a static block
+     */
+    public void inspect(InitializerDeclaration id,
+                        ExpressionContext expressionContext,
+                        int identifier) {
+        MethodInspectionImpl.Builder tempBuilder = MethodInspectionImpl.Builder.createStaticBlock(typeInfo, identifier);
+        MethodInspectionImpl.Builder builder = fqnIsKnown(expressionContext.typeContext, tempBuilder);
+        assert fullInspection: "? otherwise we would not see them";
+        typeMapBuilder.registerMethodInspection(builder);
+        builder.setBlock(id.getBody());
+    }
+
+    /*
     Inspection of a constructor.
     Code block will be handled later.
      */
@@ -214,7 +227,7 @@ public class MethodInspector {
                         Map<CompanionMethodName, MethodInspectionImpl.Builder> companionMethods,
                         TypeInspector.DollarResolver dollarResolver,
                         boolean makePrivate) {
-        MethodInspectionImpl.Builder tempBuilder = new MethodInspectionImpl.Builder(typeInfo, false);
+        MethodInspectionImpl.Builder tempBuilder = new MethodInspectionImpl.Builder(typeInfo);
         addParameters(tempBuilder, cd.getParameters(), expressionContext, dollarResolver);
         MethodInspectionImpl.Builder builder = fqnIsKnown(expressionContext.typeContext, tempBuilder);
         inspectParameters(cd.getParameters(), builder.getParameterBuilders(), expressionContext);

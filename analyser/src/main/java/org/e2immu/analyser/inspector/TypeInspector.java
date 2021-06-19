@@ -417,8 +417,16 @@ public class TypeInspector {
         AtomicInteger countNonStaticNonDefaultIfInterface = new AtomicInteger();
         Map<CompanionMethodName, MethodInspectionImpl.Builder> companionMethodsWaiting = new LinkedHashMap<>();
         AtomicInteger countCompactConstructors = new AtomicInteger();
+        AtomicInteger countStaticBlocks = new AtomicInteger();
 
         for (BodyDeclaration<?> bodyDeclaration : members) {
+            bodyDeclaration.ifInitializerDeclaration(id -> {
+                if (fullInspection) {
+                    MethodInspector methodInspector = new MethodInspector(expressionContext.typeContext.typeMapBuilder, typeInfo, true);
+                    methodInspector.inspect(id, expressionContext, countStaticBlocks.getAndIncrement());
+                    builder.ensureMethod(methodInspector.getBuilder().getMethodInfo());
+                }
+            });
             bodyDeclaration.ifCompactConstructorDeclaration(ccd -> {
                 MethodInspector methodInspector = new MethodInspector(expressionContext.typeContext.typeMapBuilder, typeInfo,
                         fullInspection);
@@ -501,7 +509,7 @@ public class TypeInspector {
     }
 
     private MethodInfo createEmptyConstructor(TypeContext typeContext, boolean makePrivate) {
-        MethodInspectionImpl.Builder builder = new MethodInspectionImpl.Builder(typeInfo, false);
+        MethodInspectionImpl.Builder builder = new MethodInspectionImpl.Builder(typeInfo);
         builder.setInspectedBlock(Block.EMPTY_BLOCK)
                 .setSynthetic(true)
                 .addModifier(makePrivate ? MethodModifier.PRIVATE : MethodModifier.PUBLIC)

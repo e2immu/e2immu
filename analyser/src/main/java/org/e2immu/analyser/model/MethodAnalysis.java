@@ -126,7 +126,7 @@ public interface MethodAnalysis extends Analysis {
                 return NO_INFLUENCE;
 
             case CONTAINER:
-                assert returnType != ParameterizedType.RETURN_TYPE_OF_CONSTRUCTOR : "void method";
+                if (returnType == ParameterizedType.RETURN_TYPE_OF_CONSTRUCTOR) return NO_INFLUENCE;
                 int container = returnType.getProperty(analysisProvider, VariableProperty.CONTAINER);
                 return inMethod -> Math.max(inMethod, container);
 

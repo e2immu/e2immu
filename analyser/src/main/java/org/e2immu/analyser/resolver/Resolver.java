@@ -458,6 +458,12 @@ public class Resolver {
         // finally, we build the method inspection and set it in the methodInfo object
         methodInspection.build(expressionContext.typeContext);
 
+        if(methodInspection.staticBlockIdentifier > 0) {
+            // add a dependency to the previous one!
+            MethodInfo previousStaticBlock = typeInspection.findStaticBlock(methodInspection.staticBlockIdentifier-1);
+            methodsAndFieldsVisited.methodsAndFields.add(previousStaticBlock);
+        }
+
         // and only then, when the FQN is known, add to the sub-graph
         methodFieldSubTypeGraph.addNode(methodInfo, List.copyOf(methodsAndFieldsVisited.methodsAndFields));
     }

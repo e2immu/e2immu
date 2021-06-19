@@ -32,6 +32,10 @@ import static org.e2immu.analyser.util.Logger.log;
 
 public class MethodInspectionImpl extends InspectionImpl implements MethodInspection {
 
+    enum MethodType {
+        CONSTRUCTOR, COMPACT_CONSTRUCTOR, STATIC_BLOCK, DEFAULT_METHOD, STATIC_METHOD, METHOD,
+    }
+
     private final String fullyQualifiedName;
     private final String distinguishingName;
 
@@ -57,17 +61,13 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
     //@Immutable
     private final List<MethodInfo> implementationOf;
     private final Map<CompanionMethodName, MethodInfo> companionMethods;
-    private final boolean isStatic;
-    private final boolean isDefault;
-    private final boolean compactConstructor;
+    private final MethodType methodType;
 
     private MethodInspectionImpl(MethodInfo methodInfo,
                                  String fullyQualifiedName,
                                  String distinguishingName,
-                                 boolean isStatic,
-                                 boolean isDefault,
                                  boolean synthetic,
-                                 boolean compactConstructor,
+                                 MethodType methodType,
                                  Set<MethodModifier> modifiers,
                                  List<ParameterInfo> parameters,
                                  ParameterizedType returnType,
@@ -89,24 +89,27 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
         this.methodBody = methodBody;
         this.exceptionTypes = exceptionTypes;
         this.implementationOf = implementationOf;
-        this.isDefault = isDefault;
-        this.isStatic = isStatic;
-        this.compactConstructor = compactConstructor;
+        this.methodType = methodType;
     }
 
     @Override
     public boolean isCompactConstructor() {
-        return compactConstructor;
+        return methodType == MethodType.COMPACT_CONSTRUCTOR;
     }
 
     @Override
     public boolean isDefault() {
-        return isDefault;
+        return methodType == MethodType.DEFAULT_METHOD;
     }
 
     @Override
     public boolean isStatic() {
-        return isStatic;
+        return methodType == MethodType.STATIC_METHOD || methodType == MethodType.STATIC_BLOCK;
+    }
+
+    @Override
+    public boolean isStaticBlock() {
+        return methodType == MethodType.STATIC_BLOCK;
     }
 
     @Override
@@ -180,6 +183,8 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
         return modifiers.contains(MethodModifier.PRIVATE);
     }
 
+    private static final int NOT_A_STATIC_BLOCK = -1;
+
     @Container(builds = MethodInspectionImpl.class)
     public static class Builder extends AbstractInspectionBuilder<Builder> implements MethodInspection {
         private final List<ParameterInspectionImpl.Builder> parameters = new ArrayList<>();
@@ -190,6 +195,7 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
         public final String name;
         public final boolean isConstructor;
         public final boolean compactConstructor;
+        public final int staticBlockIdentifier;
 
         private final Map<CompanionMethodName, Builder> companionMethods = new LinkedHashMap<>();
         private BlockStmt block;
@@ -202,27 +208,51 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
         private List<ParameterInfo> immutableParameters;
         private List<ParameterInfo> mutableParameters;
 
+        /* constructor */
+
         public Builder(TypeInfo owner) {
-            this(owner, false);
+            this(owner, owner.simpleName, true, false, NOT_A_STATIC_BLOCK);
         }
+
+        /* method */
 
         public Builder(TypeInfo owner, String name) {
-            this.owner = owner;
-            this.name = name;
-            this.isConstructor = false;
-            this.compactConstructor = false;
+            this(owner, name, false, false, NOT_A_STATIC_BLOCK);
         }
 
-        public Builder(TypeInfo owner, boolean isCompact) {
+        /* compact constructor */
+
+        public static Builder compactConstructor(TypeInfo owner) {
+            return new Builder(owner, owner.simpleName, true, true, NOT_A_STATIC_BLOCK);
+        }
+
+        /* static block */
+
+        public static Builder createStaticBlock(TypeInfo owner, int identifier) {
+            String name = TypeInspection.createStaticBlockMethodName(identifier);
+            return new Builder(owner, name, false, false, identifier);
+        }
+
+        private Builder(TypeInfo owner,
+                        String name,
+                        boolean isConstructor,
+                        boolean isCompact,
+                        int staticBlockIdentifier) {
             this.owner = owner;
-            this.name = owner.simpleName;
-            this.isConstructor = true;
+            this.name = name;
+            this.isConstructor = isConstructor;
             this.compactConstructor = isCompact;
+            this.staticBlockIdentifier = staticBlockIdentifier;
         }
 
         @Override
         public boolean isCompactConstructor() {
             return compactConstructor;
+        }
+
+        @Override
+        public boolean isStaticBlock() {
+            return staticBlockIdentifier > NOT_A_STATIC_BLOCK;
         }
 
         @Fluent
@@ -304,10 +334,8 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
             return this;
         }
 
-        @Fluent
-        public Builder addCompanionMethods(Map<CompanionMethodName, Builder> companionMethods) {
+        public void addCompanionMethods(Map<CompanionMethodName, Builder> companionMethods) {
             this.companionMethods.putAll(companionMethods);
-            return this;
         }
 
         @NotModified
@@ -331,19 +359,27 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
             makeParametersImmutable();
 
             // we have a method object now...
-            if (methodInfo.isConstructor) {
+            if (methodInfo.isConstructor || isStaticBlock()) {
                 returnType = ParameterizedType.RETURN_TYPE_OF_CONSTRUCTOR;
             } else {
                 Objects.requireNonNull(returnType);
+            }
+            MethodType methodType;
+            if (isStaticBlock()) {
+                methodType = MethodType.STATIC_BLOCK;
+            } else if (compactConstructor) {
+                methodType = MethodType.COMPACT_CONSTRUCTOR;
+            } else if (isStatic()) {
+                methodType = MethodType.STATIC_METHOD;
+            } else {
+                methodType = methodInfo.isConstructor ? MethodType.CONSTRUCTOR : MethodType.METHOD;
             }
 
             MethodInspectionImpl methodInspection = new MethodInspectionImpl(methodInfo,
                     getFullyQualifiedName(), // the builders have not been invalidated yet
                     getDistinguishingName(),
-                    isStatic(),
-                    isDefault(),
                     isSynthetic(),
-                    isCompactConstructor(),
+                    methodType,
                     Set.copyOf(modifiers),
                     List.copyOf(immutableParameters),
                     returnType,

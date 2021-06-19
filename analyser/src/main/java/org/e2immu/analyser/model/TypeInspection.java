@@ -224,4 +224,27 @@ public interface TypeInspection extends Inspection {
         }
         return result;
     }
+
+    static String createStaticBlockMethodName(int identifier) {
+        return "$staticBlock$" + identifier;
+    }
+
+    default MethodInfo findStaticBlock(int i) {
+        String name = createStaticBlockMethodName(i);
+        return methods().stream().filter(m -> m.name.equals(name)).findFirst().orElseThrow();
+    }
+
+    default Stream<MethodInfo> staticBlocksRecursively(InspectionProvider inspectionProvider) {
+        Stream<MethodInfo> mine = methods().stream().filter(m -> inspectionProvider.getMethodInspection(m).isStaticBlock());
+        Stream<MethodInfo> subTypes = subTypes().stream()
+                .flatMap(st -> inspectionProvider.getTypeInspection(st).staticBlocksRecursively(inspectionProvider));
+        return Stream.concat(mine, subTypes);
+    }
+
+    default Stream<List<MethodInfo>> staticBlocksPerType(InspectionProvider inspectionProvider) {
+        List<MethodInfo> mine = methods().stream().filter(m -> inspectionProvider.getMethodInspection(m).isStaticBlock()).toList();
+        Stream<List<MethodInfo>> subTypes = subTypes().stream()
+                .flatMap(st -> inspectionProvider.getTypeInspection(st).staticBlocksPerType(inspectionProvider));
+        return Stream.concat(Stream.of(mine), subTypes);
+    }
 }

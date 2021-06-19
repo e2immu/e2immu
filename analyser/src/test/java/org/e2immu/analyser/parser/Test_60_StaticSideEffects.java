@@ -17,7 +17,11 @@ package org.e2immu.analyser.parser;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.Level;
+import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.visitor.FieldAnalyserVisitor;
+import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
+import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
 import org.e2immu.analyser.visitor.TypeAnalyserVisitor;
 import org.junit.jupiter.api.Test;
 
@@ -45,9 +49,41 @@ public class Test_60_StaticSideEffects extends CommonTestRunner {
                 assertEquals("[Type param K]", d.typeAnalysis().getImplicitlyImmutableDataTypes().toString());
             }
         };
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("StaticSideEffects_1".equals(d.methodInfo().name)) {
+                if ("1.0.0".equals(d.statementId())) {
+                    String expected = d.iteration() == 0 ? "null==<f:counter>" : "";
+                    assertEquals(expected, d.condition().toString());
+                }
+            }
+        };
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("StaticSideEffects_1".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof FieldReference fr && "counter".equals(fr.fieldInfo.name)) {
+                    if ("1".equals(d.statementId())) {
+                        String expected = d.iteration() == 0
+                                ? "null==<f:counter>?<s:AtomicInteger>:<f:counter>" : "<s:AtomicInteger>"; // FIXME
+                        assertEquals(expected, d.currentValue().toString());
+                    }
+                    if ("1.0.0".equals(d.statementId())) {
+                        String expected = d.iteration() <= 1 ? "<s:AtomicInteger>" : ""; // FIXME
+                        assertEquals(expected, d.currentValue().toString());
+                    }
+                }
+            }
+        };
+        FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+            if ("counter".equals(d.fieldInfo().name)) {
+                assertEquals(Level.FALSE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
+                assertEquals(MultiLevel.NULLABLE, d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_NOT_NULL));
+            }
+        };
 
         testClass("StaticSideEffects_1", 0, 0, new DebugConfiguration.Builder()
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build());
     }
 
