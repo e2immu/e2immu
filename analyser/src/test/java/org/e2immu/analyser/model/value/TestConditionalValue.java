@@ -120,10 +120,12 @@ public class TestConditionalValue extends CommonAbstractValue {
 
     @Test
     public void test6() {
-        Expression cv1 = inline(a, b, NullConstant.NULL_CONSTANT);
-        assertEquals("a?b:null", cv1.toString());
+        Expression cv1 = inline(a, p, NullConstant.NULL_CONSTANT);
+        assertEquals("a?p:null", cv1.toString());
         Expression eq = Equals.equals(minimalEvaluationContext, NullConstant.NULL_CONSTANT, cv1);
-        assertEquals(Negation.negate(minimalEvaluationContext, a), eq);
+        assertEquals("null==(a?p:null)", eq.toString());
+        Expression eq2 = negate(Equals.equals(minimalEvaluationContext, NullConstant.NULL_CONSTANT, cv1));
+        assertEquals("a&&null!=p", eq2.toString());
     }
 
     @Test
@@ -188,12 +190,5 @@ public class TestConditionalValue extends CommonAbstractValue {
         assertEquals("a||!b?4:3", e3.toString());
         Expression e4 = inline(a, newInt(4), inline(b, newInt(4), newInt(3)));
         assertEquals("a||b?4:3", e4.toString());
-    }
-
-    @Test
-    public void testNotNull() {
-        Expression e1 = inline(equals(s, NullConstant.NULL_CONSTANT), new StringConstant(PRIMITIVES, "x"), s);
-        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL,
-                e1.getProperty(minimalEvaluationContext, VariableProperty.NOT_NULL_EXPRESSION, true));
     }
 }

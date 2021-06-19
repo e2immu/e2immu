@@ -1052,11 +1052,11 @@ public class FieldAnalyser extends AbstractAnalyser {
         return DONE;
     }
 
-    private Stream<MethodAnalyser> allMethodsAndConstructorsAndOtherStaticBlocks(boolean alsoMyOwn) {
+    private Stream<MethodAnalyser> allMethodsAndConstructorsAndOtherStaticBlocks(boolean alsoMyOwnConstructors) {
         if (fieldInspection.isStatic()) {
-            return Stream.concat(allMethodsAndConstructors(alsoMyOwn), otherStaticBlocks());
+            return Stream.concat(allMethodsAndConstructors(alsoMyOwnConstructors), otherStaticBlocks());
         }
-        return allMethodsAndConstructors(true);
+        return allMethodsAndConstructors(alsoMyOwnConstructors);
     }
 
     private AnalysisStatus analysePropagateModification() {

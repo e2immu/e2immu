@@ -32,6 +32,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.io.PrintStream;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -68,15 +69,24 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
                 assertEquals(MultiLevel.DELAY, d.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
             }
         };
+
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("apply".equals(d.methodInfo().name) && "0.0.0".equals(d.statementId())) {
                 assertFalse(d.localConditionManager().isDelayed());
                 assertEquals("null==s", d.condition().toString());
             }
         };
+
+        TypeMapVisitor typeMapVisitor = typeMap -> {
+            TypeInfo stream = typeMap.get(Stream.class);
+            MethodInfo of = stream.findUniqueMethod("of", 1);
+            assertFalse(of.methodInspection.get().isDefault());
+        };
+
         testClass("Basics_5", 0, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addTypeMapVisitor(typeMapVisitor)
                 .build());
     }
 

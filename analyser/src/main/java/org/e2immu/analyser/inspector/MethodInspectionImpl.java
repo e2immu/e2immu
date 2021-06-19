@@ -365,7 +365,9 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
                 Objects.requireNonNull(returnType);
             }
             MethodType methodType;
-            if (isStaticBlock()) {
+            if (isDefault()) {
+                methodType = MethodType.DEFAULT_METHOD;
+            } else if (isStaticBlock()) {
                 methodType = MethodType.STATIC_BLOCK;
             } else if (compactConstructor) {
                 methodType = MethodType.COMPACT_CONSTRUCTOR;
@@ -503,7 +505,7 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
 
         @Override
         public boolean isStatic() {
-            return modifiers.contains(MethodModifier.STATIC);
+            return modifiers.contains(MethodModifier.STATIC) || isStaticBlock();
         }
 
         public List<ParameterInspectionImpl.Builder> getParameterBuilders() {

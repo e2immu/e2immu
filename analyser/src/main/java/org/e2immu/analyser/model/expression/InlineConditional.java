@@ -216,9 +216,18 @@ public class InlineConditional implements Expression {
     @Override
     public ParameterizedType returnType() {
         if (ifTrue.isNull() && ifFalse.isNull()) throw new UnsupportedOperationException();
-        if (ifTrue.isNull()) return ifFalse.returnType();
-        if (ifFalse.isNull()) return ifTrue.returnType();
+        if (ifTrue.isNull()) {
+            return box(ifFalse.returnType());
+        }
+        if (ifFalse.isNull()) return box(ifTrue.returnType());
         return ifTrue.returnType().commonType(inspectionProvider, ifFalse.returnType());
+    }
+
+    private ParameterizedType box(ParameterizedType returnType) {
+        if (Primitives.isPrimitiveExcludingVoid(returnType)) {
+            return returnType.toBoxed(inspectionProvider.getPrimitives()).asParameterizedType(inspectionProvider);
+        }
+        return returnType;
     }
 
     @Override

@@ -174,14 +174,8 @@ public class TestEqualsConstantInline extends CommonAbstractValue {
 
     @Test
     public void test15() {
-
-        // recursive example
-        // a ? (b ? 3: null): (c ? null: 5) == null
-        // now 3!=null, so a recursive application will result in b
-        // now 5!=null, so a recursive application will result in !c
-        // end: a ? b : !c  or (a&&b) || (!a&&!c)
-
         Expression cv1 = inline(b, newInt(3), NullConstant.NULL_CONSTANT);
+        assertEquals("b?3:null", cv1.toString());
         Expression eqNull = Equals.equals(minimalEvaluationContext, NullConstant.NULL_CONSTANT, cv1);
         assertEquals("!b", eqNull.toString());
     }

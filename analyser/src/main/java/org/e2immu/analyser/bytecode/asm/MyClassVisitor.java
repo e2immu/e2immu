@@ -349,7 +349,7 @@ public class MyClassVisitor extends ClassVisitor {
         if ((access & Opcodes.ACC_FINAL) != 0) methodInspectionBuilder.addModifier(MethodModifier.FINAL);
         boolean isAbstract = (access & Opcodes.ACC_ABSTRACT) != 0;
         if (currentTypeIsInterface && !isAbstract) {
-            methodInspectionBuilder.addModifier(MethodModifier.DEFAULT);
+            methodInspectionBuilder.addModifier(isStatic ? MethodModifier.STATIC : MethodModifier.DEFAULT);
         }
         if (isAbstract && (!currentTypeIsInterface || isStatic)) {
             methodInspectionBuilder.addModifier(MethodModifier.ABSTRACT);
