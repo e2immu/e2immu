@@ -31,8 +31,7 @@ public class Test_64_StaticBlock extends CommonTestRunner {
 
     @Test
     public void test_0() throws IOException {
-        // null ptr warning
-        testClass("StaticBlock_0", 0, 1, new DebugConfiguration.Builder()
+        testClass("StaticBlock_0", 0, 0, new DebugConfiguration.Builder()
                 .build());
     }
 

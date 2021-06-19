@@ -1,24 +1,24 @@
 package org.e2immu.analyser.testexample;
 
-import org.e2immu.annotation.Final;
-import org.e2immu.annotation.NotModified;
-import org.e2immu.annotation.NotNull;
-import org.e2immu.annotation.Nullable;
+import org.e2immu.annotation.*;
 import org.junit.jupiter.api.Test;
 
 import java.util.HashMap;
 import java.util.Map;
 
 // bit of an overview to see where we can put static blocks
+
+@E1Container // not @E2, because it has a modified (static) field
 public class StaticBlock_0 {
 
     @Final
     @NotNull // no changes after construction in its own static blocks
+    @Modified // other types make changes
     private static Map<String, String> map;
 
     static {
         map = new HashMap<>();
-        map.put("1", "2"); // should not raise a warning
+        map.put("1", "2");
         System.out.println("enclosing type");
     }
 
