@@ -2727,7 +2727,10 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                         return MultiLevel.EFFECTIVELY_NOT_NULL;
                     }
                     int cnn = getVariableProperty(ve.variable(), CONTEXT_NOT_NULL, duringEvaluation);
-                    if (cnn == Level.DELAY || inMap == Level.DELAY) return Level.DELAY;
+                    if (cnn == Level.DELAY || inMap == Level.DELAY) {
+                        // we return even if cmNn would be ENN, because our value could be higher
+                        return Level.DELAY;
+                    }
                     int best = MultiLevel.bestNotNull(inMap, cnn);
                     boolean cmNn = notNullAccordingToConditionManager(ve.variable());
                     return MultiLevel.bestNotNull(cmNn ? MultiLevel.EFFECTIVELY_NOT_NULL : MultiLevel.NULLABLE, best);
@@ -2938,7 +2941,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                                 map.put(new VariableExpression(variable), newObject);
                             }
 
-                            Expression delayed = DelayedExpression.forNewObject(variable.parameterizedType());
+                            Expression delayed = DelayedExpression.forNewObject(variable.parameterizedType(), nne);
                             map.put(DelayedVariableExpression.forVariable(e.getValue().current().variable()), delayed);
                         });
                 return mergeValue.reEvaluate(this, map).value();

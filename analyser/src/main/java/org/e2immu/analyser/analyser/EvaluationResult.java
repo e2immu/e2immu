@@ -205,12 +205,11 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             return this;
         }
 
-        public Builder composeIgnoreExpression(EvaluationResult... previousResults) {
+        public void composeIgnoreExpression(EvaluationResult... previousResults) {
             assert previousResults != null;
             for (EvaluationResult evaluationResult : previousResults) {
                 append(true, evaluationResult);
             }
-            return this;
         }
 
         public Builder compose(Iterable<EvaluationResult> previousResults) {
@@ -526,6 +525,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             assert evaluationContext != null;
             boolean stateIsDelayed = evaluationContext.getConditionManager().isDelayed();
             boolean resultOfExpressionIsDelayed = evaluationContext.isDelayed(resultOfExpression);
+            int resultNotNull = evaluationContext.getProperty(resultOfExpression, VariableProperty.NOT_NULL_EXPRESSION, true, false);
             boolean markAssignment = resultOfExpression != EmptyExpression.EMPTY_EXPRESSION;
 
             // in case both state and result of expression are delayed, we give preference to the result
@@ -534,7 +534,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             Expression value = stateIsDelayed
                     && !resultOfExpressionIsDelayed
                     && !evaluationContext.getConditionManager().isReasonForDelay(assignmentTarget)
-                    ? DelayedExpression.forState(resultOfExpression.returnType()) : resultOfExpression;
+                    ? DelayedExpression.forState(resultOfExpression.returnType(), resultNotNull) : resultOfExpression;
 
             ChangeData newEcd;
             ChangeData ecd = valueChanges.get(assignmentTarget);

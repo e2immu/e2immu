@@ -176,7 +176,7 @@ public record NewObject(
                                                 Expression array,
                                                 Variable variable) {
         int notNull = evaluationContext.getProperty(array, VariableProperty.NOT_NULL_EXPRESSION, true, false);
-        if (notNull == Level.DELAY) return DelayedExpression.forNewObject(variable.parameterizedType());
+        if (notNull == Level.DELAY) return DelayedExpression.forNewObject(variable.parameterizedType(), Level.DELAY);
         int notNullOfElement = MultiLevel.oneLevelLess(notNull);
         return new NewObject(identifier, null, variable.parameterizedType(), Diamond.SHOW_ALL, List.of(), notNullOfElement,
                 null, null,
@@ -543,7 +543,8 @@ public record NewObject(
             MethodAnalysis constructorAnalysis = evaluationContext.getAnalyserContext().getMethodAnalysis(constructor);
             NewObject no = MethodCall.checkCompanionMethodsModifying(res.k, evaluationContext, constructor, constructorAnalysis,
                     null, initialInstance, res.v);
-            instance = no == null ? DelayedExpression.forNewObject(parameterizedType) : no;
+            int nne = constructorAnalysis.getProperty(VariableProperty.NOT_NULL_EXPRESSION);
+            instance = no == null ? DelayedExpression.forNewObject(parameterizedType, nne) : no;
         } else {
             instance = initialInstance;
         }

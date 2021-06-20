@@ -24,48 +24,47 @@ import org.e2immu.annotation.E2Container;
 
 import java.util.Objects;
 
-@E2Container
-public record DelayedExpression(String msg, String debug, ParameterizedType parameterizedType) implements Expression {
+import static org.e2immu.analyser.model.MultiLevel.EFFECTIVELY_NOT_NULL;
 
-    public static DelayedExpression forMethod(MethodInfo methodInfo) {
+@E2Container
+public record DelayedExpression(String msg,
+                                String debug,
+                                ParameterizedType parameterizedType,
+                                int notNull) implements Expression {
+
+    public static DelayedExpression forMethod(MethodInfo methodInfo, int notNull) {
         return new DelayedExpression("<m:" + methodInfo.name + ">",
-                "<method:" + methodInfo.fullyQualifiedName + ">", methodInfo.returnType());
+                "<method:" + methodInfo.fullyQualifiedName + ">", methodInfo.returnType(), notNull);
     }
 
     /*
     expression with delayed state
      */
-    public static Expression forState(ParameterizedType parameterizedType) {
+    public static Expression forState(ParameterizedType parameterizedType, int notNull) {
         return new DelayedExpression("<s:" + parameterizedType.printSimple() + ">",
-                "<state:" + parameterizedType.detailedString() + ">", parameterizedType);
+                "<state:" + parameterizedType.detailedString() + ">", parameterizedType, notNull);
     }
 
-    public static Expression forNewObject(ParameterizedType parameterizedType) {
+    public static Expression forNewObject(ParameterizedType parameterizedType, int notNull) {
+        assert notNull >= EFFECTIVELY_NOT_NULL;
         return new DelayedExpression("<new:" + parameterizedType.printSimple() + ">",
-                "<new:" + parameterizedType.detailedString() + ">", parameterizedType);
+                "<new:" + parameterizedType.detailedString() + ">", parameterizedType, notNull);
     }
 
     public static Expression forArrayLength(Primitives primitives) {
-        return new DelayedExpression("<delayed array length>", "<delayed array length>", primitives.intParameterizedType);
+        return new DelayedExpression("<delayed array length>",
+                "<delayed array length>", primitives.intParameterizedType, EFFECTIVELY_NOT_NULL);
     }
 
     public static Expression forPrecondition(Primitives primitives) {
-        return new DelayedExpression("<precondition>", "<precondition>", primitives.booleanParameterizedType);
-    }
-
-    public static Expression forCast(ParameterizedType parameterizedType) {
-        return new DelayedExpression("<cast:" + parameterizedType.printSimple() + ">",
-                "<cast:" + parameterizedType.detailedString() + ">", parameterizedType);
-    }
-
-    public static Expression forImmutable(ParameterizedType parameterizedType) {
-        return new DelayedExpression("<immutable:" + parameterizedType.printSimple() + ">",
-                "<immutable:" + parameterizedType.detailedString() + ">", parameterizedType);
+        return new DelayedExpression("<precondition>", "<precondition>", primitives.booleanParameterizedType,
+                EFFECTIVELY_NOT_NULL);
     }
 
     public static Expression forInstanceOf(Primitives primitives, ParameterizedType parameterizedType) {
         return new DelayedExpression("<instanceOf:" + parameterizedType.printSimple() + ">",
-                "<instanceOf:" + parameterizedType.detailedString() + ">", primitives.booleanParameterizedType);
+                "<instanceOf:" + parameterizedType.detailedString() + ">", primitives.booleanParameterizedType,
+                EFFECTIVELY_NOT_NULL);
     }
 
     /*
@@ -125,8 +124,9 @@ public record DelayedExpression(String msg, String debug, ParameterizedType para
 
     @Override
     public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty, boolean duringEvaluation) {
-        if (VariableProperty.NOT_NULL_EXPRESSION == variableProperty && Primitives.isPrimitiveExcludingVoid(parameterizedType)) {
-            return MultiLevel.EFFECTIVELY_NOT_NULL;
+        if (VariableProperty.NOT_NULL_EXPRESSION == variableProperty) {
+            assert !Primitives.isPrimitiveExcludingVoid(parameterizedType) || notNull == EFFECTIVELY_NOT_NULL;
+            return notNull;
         }
         return Level.DELAY;
     }

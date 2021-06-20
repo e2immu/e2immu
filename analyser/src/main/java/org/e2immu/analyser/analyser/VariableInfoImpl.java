@@ -298,6 +298,31 @@ class VariableInfoImpl implements VariableInfo {
             new MergeOp(CONTEXT_DEPENDENT, MAX, CONTEXT_DEPENDENT.falseValue)
     );
 
+    // IDENTITY, IMMUTABLE, CONTAINER, NOT_NULL_EXPRESSION, INDEPENDENT
+    private static final List<MergeOp> MERGE_WITHOUT_VALUE_PROPERTIES = List.of(
+            new MergeOp(SCOPE_DELAY, Math::max, Level.DELAY),
+            new MergeOp(METHOD_CALLED, Math::max, Level.DELAY),
+            new MergeOp(CONTEXT_MODIFIED_DELAY, Math::max, Level.DELAY),
+            new MergeOp(PROPAGATE_MODIFICATION_DELAY, Math::max, Level.DELAY),
+            new MergeOp(CONTEXT_NOT_NULL_DELAY, Math::max, Level.DELAY),
+            new MergeOp(CONTEXT_IMMUTABLE_DELAY, Math::max, Level.DELAY),
+
+            new MergeOp(CONTEXT_NOT_NULL_FOR_PARENT, Math::max, Level.DELAY),
+            new MergeOp(CONTEXT_NOT_NULL_FOR_PARENT_DELAY, Math::max, Level.DELAY),
+            new MergeOp(CONTEXT_NOT_NULL_FOR_PARENT_DELAY_RESOLVED, Math::max, Level.DELAY),
+
+            new MergeOp(CONTEXT_NOT_NULL, MAX, CONTEXT_NOT_NULL.falseValue),
+            new MergeOp(EXTERNAL_NOT_NULL, MIN, EXTERNAL_NOT_NULL.best),
+            new MergeOp(EXTERNAL_IMMUTABLE, MIN, EXTERNAL_IMMUTABLE.best),
+            new MergeOp(CONTEXT_IMMUTABLE, MAX, CONTEXT_IMMUTABLE.falseValue),
+
+            new MergeOp(CONTEXT_PROPAGATE_MOD, MAX_CM, CONTEXT_PROPAGATE_MOD.falseValue),
+            new MergeOp(CONTEXT_MODIFIED, MAX_CM, CONTEXT_MODIFIED.falseValue),
+            new MergeOp(MODIFIED_OUTSIDE_METHOD, MAX_CM, MODIFIED_OUTSIDE_METHOD.falseValue),
+
+            new MergeOp(CONTEXT_DEPENDENT, MAX, CONTEXT_DEPENDENT.falseValue)
+    );
+
     // TESTING ONLY!!
     VariableInfoImpl mergeIntoNewObject(EvaluationContext evaluationContext,
                                         Expression stateOfDestination,
@@ -334,6 +359,11 @@ class VariableInfoImpl implements VariableInfo {
                 new GroupPropertyValues());
     }
 
+    void mergePropertiesIgnoreValue(boolean existingValuesWillBeOverwritten,
+                                    VariableInfo previous,
+                                    List<StatementAnalysis.ConditionAndVariableInfo> mergeSources) {
+        mergePropertiesIgnoreValue(existingValuesWillBeOverwritten, previous, mergeSources, new GroupPropertyValues());
+    }
     /*
         We know that in each of the merge sources, the variable is either read or assigned to
      */
@@ -348,11 +378,16 @@ class VariableInfoImpl implements VariableInfo {
         Expression mergedValue = evaluationContext.replaceLocalVariables(
                 previous.mergeValue(evaluationContext, stateOfDestination, atLeastOneBlockExecuted, mergeSources));
         setValue(mergedValue, evaluationContext.isDelayed(mergedValue));
-
         mergeStatementTime(evaluationContext, atLeastOneBlockExecuted, previous.getStatementTime(), mergeSources);
-        mergeProperties(atLeastOneBlockExecuted, previous, mergeSources, groupPropertyValues);
+        setMergedValueProperties(evaluationContext, mergedValue);
+        mergePropertiesIgnoreValue(atLeastOneBlockExecuted, previous, mergeSources, groupPropertyValues);
         mergeLinkedVariables(atLeastOneBlockExecuted, previous, mergeSources);
         mergeStaticallyAssignedVariables(atLeastOneBlockExecuted, previous, mergeSources);
+    }
+
+    private void setMergedValueProperties(EvaluationContext evaluationContext, Expression mergedValue) {
+        Map<VariableProperty, Integer> map = evaluationContext.getValueProperties(mergedValue, false);
+        map.forEach(this::setProperty);
     }
 
     private static String mergedId(EvaluationContext evaluationContext,
@@ -432,20 +467,14 @@ class VariableInfoImpl implements VariableInfo {
         setStaticallyAssignedVariables(new LinkedVariables(merged));
     }
 
-    // testing only!!
-    void mergeProperties(boolean existingValuesWillBeOverwritten, VariableInfo previous,
-                         List<StatementAnalysis.ConditionAndVariableInfo> mergeSources) {
-        mergeProperties(existingValuesWillBeOverwritten, previous, mergeSources, new GroupPropertyValues());
-    }
-
     /*
     Compute and set or update in this object, the properties resulting from merging previous and merge sources.
     If existingValuesWillBeOverwritten is true, the previous object is ignored.
      */
-    void mergeProperties(boolean existingValuesWillBeOverwritten,
-                         VariableInfo previous,
-                         List<StatementAnalysis.ConditionAndVariableInfo> mergeSources,
-                         GroupPropertyValues groupPropertyValues) {
+    void mergePropertiesIgnoreValue(boolean existingValuesWillBeOverwritten,
+                                    VariableInfo previous,
+                                    List<StatementAnalysis.ConditionAndVariableInfo> mergeSources,
+                                    GroupPropertyValues groupPropertyValues) {
         List<VariableInfo> list = mergeSources.stream()
                 .map(StatementAnalysis.ConditionAndVariableInfo::variableInfo)
                 .collect(Collectors.toCollection(() -> new ArrayList<>(mergeSources.size() + 1)));
@@ -453,7 +482,7 @@ class VariableInfoImpl implements VariableInfo {
             assert previous != null;
             list.add(previous);
         }
-        for (MergeOp mergeOp : MERGE) {
+        for (MergeOp mergeOp : MERGE_WITHOUT_VALUE_PROPERTIES) {
             int commonValue = mergeOp.initial;
 
             for (VariableInfo vi : list) {
@@ -473,25 +502,7 @@ class VariableInfoImpl implements VariableInfo {
         }
     }
 
-    public static Map<VariableProperty, Integer> mergeProperties
-            (Map<VariableProperty, Integer> m1, Map<VariableProperty, Integer> m2) {
-        if (m2.isEmpty()) return m1;
-        if (m1.isEmpty()) return m2;
-        Map<VariableProperty, Integer> map = new HashMap<>();
-        for (MergeOp mergeOp : MERGE) {
-
-            int v1 = m1.getOrDefault(mergeOp.variableProperty, Level.DELAY);
-            int v2 = m2.getOrDefault(mergeOp.variableProperty, Level.DELAY);
-
-            int v = mergeOp.operator.applyAsInt(v1, v2);
-            if (v > Level.DELAY) {
-                map.put(mergeOp.variableProperty, v);
-            }
-        }
-        return Map.copyOf(map);
-    }
-
-
+    // used by change data
     public static Map<VariableProperty, Integer> mergeIgnoreAbsent
             (Map<VariableProperty, Integer> m1, Map<VariableProperty, Integer> m2) {
         if (m2.isEmpty()) return m1;

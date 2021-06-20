@@ -44,7 +44,7 @@ public class TestVariableInfo extends CommonVariableInfo {
         VariableInfoImpl vii = viB.mergeIntoNewObject(minimalEvaluationContext, TRUE, false, List.of());
 
         assertSame(four, vii.getValue());
-        vii.mergeProperties(false, viB, List.of());
+        vii.mergePropertiesIgnoreValue(false, viB, List.of());
         assertEquals(Level.TRUE, vii.getProperty(IDENTITY));
     }
 
@@ -83,7 +83,7 @@ public class TestVariableInfo extends CommonVariableInfo {
 
         Expression res = viC2.getValue();
         assertEquals("4", res.toString());
-        viC2.mergeProperties(true, viA, list);
+        viC2.mergePropertiesIgnoreValue(true, viA, list);
         assertEquals(Level.FALSE, viC2.getProperty(IDENTITY));
     }
 
@@ -110,7 +110,7 @@ public class TestVariableInfo extends CommonVariableInfo {
         Expression res = viC.getValue();
         assertEquals("instance type boolean?4:3", res.toString());
 
-        viC.mergeProperties(true, viA, xViB);
+        viC.mergePropertiesIgnoreValue(true, viA, xViB);
         assertEquals(Level.FALSE, viC.getProperty(IDENTITY));
 
         // in a second iteration, we may encounter:
@@ -142,7 +142,7 @@ public class TestVariableInfo extends CommonVariableInfo {
 
         Expression value2 = ret2.getValue();
         assertEquals("instance type boolean?4:<return value:boolean>", value2.debugOutput());
-        ret2.mergeProperties(false, ret, xViB);
+        ret2.mergePropertiesIgnoreValue(false, ret, xViB);
         assertEquals(Level.FALSE, ret2.getProperty(IDENTITY));
 
         // OK let's continue
@@ -182,7 +182,7 @@ public class TestVariableInfo extends CommonVariableInfo {
         assertNotSame(ret2, ret);
         assertEquals("3==instance type int?4:<return value:boolean>", ret2.getValue().debugOutput());
 
-        ret2.mergeProperties(false, ret, x3ViB);
+        ret2.mergePropertiesIgnoreValue(false, ret, x3ViB);
         assertEquals(Level.FALSE, ret2.getProperty(IDENTITY));
 
         // OK let's continue, but with another if in between
@@ -202,7 +202,7 @@ public class TestVariableInfo extends CommonVariableInfo {
         assertNotSame(ret3, ret2);
         assertEquals("4==instance type int?3:3==instance type int?4:<return value:boolean>",
                 ret3.getValue().debugOutput());
-        ret3.mergeProperties(false, ret2, x4ViA);
+        ret3.mergePropertiesIgnoreValue(false, ret2, x4ViA);
         assertEquals(Level.FALSE, ret3.getProperty(IDENTITY));
 
         // situation:
@@ -246,7 +246,7 @@ public class TestVariableInfo extends CommonVariableInfo {
         assertNotSame(viA, viC2);
         assertEquals("<no idea>?4:instance type int", viC2.getValue().toString());
 
-        viC2.mergeProperties(false, viA, uViB);
+        viC2.mergePropertiesIgnoreValue(false, viA, uViB);
         assertEquals(Level.FALSE, viC2.getProperty(IDENTITY));
     }
 
@@ -274,7 +274,7 @@ public class TestVariableInfo extends CommonVariableInfo {
         viC.mergeIntoMe(minimalEvaluationContext, TRUE, true, viC, list);
         assertEquals("instance type boolean?3:4", viC.getValue().toString());
 
-        viC.mergeProperties(true, new VariableInfoImpl(viA.variable()), list);
+        viC.mergePropertiesIgnoreValue(true, new VariableInfoImpl(viA.variable()), list);
         assertEquals(Level.FALSE, viC.getProperty(IDENTITY));
     }
 
@@ -304,7 +304,7 @@ public class TestVariableInfo extends CommonVariableInfo {
         Expression res = viC.getValue();
         assertEquals("3", res.toString());
 
-        viC.mergeProperties(true, new VariableInfoImpl(viA.variable()), list);
+        viC.mergePropertiesIgnoreValue(true, new VariableInfoImpl(viA.variable()), list);
         assertEquals(Level.TRUE, viC.getProperty(IDENTITY));
     }
 }

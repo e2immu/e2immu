@@ -14,15 +14,13 @@
 
 package org.e2immu.analyser.parser;
 
+import org.e2immu.analyser.analyser.FieldAnalysisImpl;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.variable.FieldReference;
-import org.e2immu.analyser.visitor.FieldAnalyserVisitor;
-import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
-import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
-import org.e2immu.analyser.visitor.TypeAnalyserVisitor;
+import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -44,15 +42,26 @@ public class Test_60_StaticSideEffects extends CommonTestRunner {
 
     @Test
     public void test_1() throws IOException {
+
+        EvaluationResultVisitor evaluationResultVisitor = d -> {
+            if ("StaticSideEffects_1".equals(d.methodInfo().name)) {
+                if ("1".equals(d.statementId())) {
+                    String expected = d.iteration() == 0 ? "null==<f:counter>" : "";
+                    assertEquals(expected, d.evaluationResult().getExpression().toString());
+                }
+            }
+        };
+
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("StaticSideEffects_1".equals(d.typeInfo().simpleName)) {
                 assertEquals("[Type param K]", d.typeAnalysis().getImplicitlyImmutableDataTypes().toString());
             }
         };
+
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("StaticSideEffects_1".equals(d.methodInfo().name)) {
                 if ("1.0.0".equals(d.statementId())) {
-                    String expected = d.iteration() <= 1 ? "null==<f:counter>" : "";
+                    String expected = d.iteration() == 0 ? "null==<f:counter>" : "";
                     assertEquals(expected, d.condition().toString());
                 }
             }
@@ -62,12 +71,16 @@ public class Test_60_StaticSideEffects extends CommonTestRunner {
                 if (d.variable() instanceof FieldReference fr && "counter".equals(fr.fieldInfo.name)) {
                     if ("1".equals(d.statementId())) {
                         String expected = d.iteration() == 0
-                                ? "null==<f:counter>?<s:AtomicInteger>:<f:counter>" : "<s:AtomicInteger>"; // FIXME
+                                ? "null==<f:counter>?<s:AtomicInteger>:<f:counter>" : "";
                         assertEquals(expected, d.currentValue().toString());
+
+                        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
                     }
                     if ("1.0.0".equals(d.statementId())) {
-                        String expected = d.iteration() <= 1 ? "<s:AtomicInteger>" : ""; // FIXME
+                        String expected = d.iteration() == 0 ? "<s:AtomicInteger>" : "";
                         assertEquals(expected, d.currentValue().toString());
+
+                        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
                     }
                 }
             }
@@ -78,14 +91,19 @@ public class Test_60_StaticSideEffects extends CommonTestRunner {
 
                 int expectEnn = d.iteration() == 0 ? Level.DELAY : MultiLevel.NULLABLE;
                 assertEquals(expectEnn, d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_NOT_NULL));
+
+                String expected = "[null, null==<f:counter>?<s:AtomicInteger>:<f:counter>]";
+                assertEquals(expected, ((FieldAnalysisImpl.Builder) d.fieldAnalysis()).getValues().stream()
+                        .map(FieldAnalysisImpl.ValueAndPropertyProxy::getValue).sorted().toList().toString());
             }
         };
 
         testClass("StaticSideEffects_1", 0, 0, new DebugConfiguration.Builder()
-          //      .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-          //      .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
-          //      .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-          //      .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addEvaluationResultVisitor(evaluationResultVisitor)
                 .build());
     }
 

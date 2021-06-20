@@ -14,10 +14,7 @@
 
 package org.e2immu.analyser.model.expression;
 
-import org.e2immu.analyser.analyser.EvaluationContext;
-import org.e2immu.analyser.analyser.EvaluationResult;
-import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
-import org.e2immu.analyser.analyser.StatementAnalysis;
+import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ReturnStatement;
@@ -48,7 +45,7 @@ public class Lambda implements Expression {
                 if (this == VAR) {
                     ob.add(new Text("var")).add(Space.ONE);
                 }
-                if(!annotationOutput.isEmpty()) {
+                if (!annotationOutput.isEmpty()) {
                     return annotationOutput.add(Space.ONE_REQUIRED_EASY_SPLIT).add(ob);
                 }
             }
@@ -191,7 +188,7 @@ public class Lambda implements Expression {
         Expression result;
 
         if (evaluationContext.getLocalPrimaryTypeAnalysers() == null) {
-            result = DelayedExpression.forMethod(methodInfo);
+            result = DelayedExpression.forMethod(methodInfo, Level.DELAY);
         } else {
             MethodAnalysis methodAnalysis = evaluationContext.findMethodAnalysisOfLambda(methodInfo);
             if (methodInfo.hasReturnValue()) {
@@ -200,7 +197,8 @@ public class Lambda implements Expression {
                     InlinedMethod inlineValue = srv.asInstanceOf(InlinedMethod.class);
                     result = Objects.requireNonNullElse(inlineValue, srv);
                 } else {
-                    result = DelayedExpression.forMethod(methodInfo);
+                    int nne = methodAnalysis.getProperty(VariableProperty.NOT_NULL_EXPRESSION);
+                    result = DelayedExpression.forMethod(methodInfo, nne);
                 }
             } else {
                 result = NewObject.forGetInstance(evaluationContext.newObjectIdentifier(),
