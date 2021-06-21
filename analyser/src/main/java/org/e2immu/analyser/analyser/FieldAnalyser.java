@@ -611,7 +611,7 @@ public class FieldAnalyser extends AbstractAnalyser {
         return Level.DELAY;
     }
 
-    record OccursAndDelay(boolean occurs, boolean delay) {
+    record OccursAndDelay(boolean occurs, int count, boolean delay) {
     }
 
     // NOTE: we're also considering non-private methods here, like setters: IS THIS WISE?
@@ -620,6 +620,7 @@ public class FieldAnalyser extends AbstractAnalyser {
                                                    boolean ignorePrivateConstructors) {
         boolean occurs = true;
         boolean delays = false;
+        int occurrences = 0;
         for (MethodAnalyser methodAnalyser : myMethodsAndConstructors) {
             if (methodAnalyser.methodAnalysis.getProperty(VariableProperty.FINALIZER) != Level.TRUE &&
                     (!methodAnalyser.methodInfo.isPrivate() ||
@@ -657,10 +658,12 @@ public class FieldAnalyser extends AbstractAnalyser {
                 }
                 if (!added && methodAnalyser.methodInfo.isConstructor) {
                     occurs = false;
+                } else {
+                    occurrences++;
                 }
             }
         }
-        return new OccursAndDelay(occurs, delays);
+        return new OccursAndDelay(occurs, occurrences, delays);
     }
 
     private OccursAndDelay occursInStaticBlocks(List<MethodAnalyser> staticBlocks, List<FieldAnalysisImpl.ValueAndPropertyProxy> values) {
@@ -701,9 +704,9 @@ public class FieldAnalyser extends AbstractAnalyser {
             if (delays) {
                 log(DELAYED, "Delaying initialization of field {} in static block", fieldInfo.fullyQualifiedName());
             }
-            return new OccursAndDelay(true, delays);
+            return new OccursAndDelay(true, 1, delays);
         }
-        return new OccursAndDelay(false, false);
+        return new OccursAndDelay(false, 0, false);
     }
 
     private AnalysisStatus allAssignmentsHaveBeenSet() {
@@ -734,12 +737,15 @@ public class FieldAnalyser extends AbstractAnalyser {
         // collect all the other values, bail out when delays
 
         boolean occursInAllConstructorsOrOneStaticBlock;
+        boolean occursInAllConstructorsOrOneStaticBlockExcludeNone;
         if (fieldInfo.isExplicitlyFinal() && haveInitialiser) {
             occursInAllConstructorsOrOneStaticBlock = true;
+            occursInAllConstructorsOrOneStaticBlockExcludeNone = false;
         } else {
             boolean ignorePrivateConstructors = myTypeAnalyser.ignorePrivateConstructorsForFieldValue();
             OccursAndDelay oad = occursInAllConstructors(values, ignorePrivateConstructors);
             occursInAllConstructorsOrOneStaticBlock = oad.occurs;
+            occursInAllConstructorsOrOneStaticBlockExcludeNone = oad.count > 0;
             delays |= oad.delay;
 
             if (fieldInspection.isStatic()) {
@@ -754,6 +760,10 @@ public class FieldAnalyser extends AbstractAnalyser {
                     return staticOad.delay;
                 }).reduce(false, (v, w) -> v || w);
             }
+        }
+        if (!delays && haveInitialiser && occursInAllConstructorsOrOneStaticBlockExcludeNone) {
+            Message message = Message.newMessage(new Location(fieldInfo), Message.Label.UNNECESSARY_FIELD_INITIALIZER);
+            messages.add(message);
         }
         if (!haveInitialiser && !occursInAllConstructorsOrOneStaticBlock) {
             Expression nullValue = ConstantExpression.nullValue(analyserContext.getPrimitives(),
@@ -826,7 +836,8 @@ public class FieldAnalyser extends AbstractAnalyser {
         if (set.size() == 1) {
             Expression expression = values.get(0).getValue();
             BooleanConstant TRUE = new BooleanConstant(analyserContext.getPrimitives(), true);
-            if (expression instanceof NewObject newObject && newObject.constructor() != null) {
+            NewObject newObject;
+            if ((newObject = expression.asInstanceOf(NewObject.class)) != null && newObject.constructor() != null) {
                 // now the state of the new object may survive if there are no modifying methods called,
                 // but that's too early to know now
                 int immutable = fieldAnalysis.getProperty(VariableProperty.EXTERNAL_IMMUTABLE);
@@ -912,7 +923,8 @@ public class FieldAnalyser extends AbstractAnalyser {
      */
     private Boolean recursivelyConstant(Expression effectivelyFinalValue) {
         if (effectivelyFinalValue.isConstant()) return true;
-        if (effectivelyFinalValue instanceof NewObject newObject) {
+        NewObject newObject;
+        if ((newObject = effectivelyFinalValue.asInstanceOf(NewObject.class)) != null) {
             if (newObject.constructor() == null) return false;
             for (Expression parameter : newObject.getParameterExpressions()) {
                 if (!parameter.isConstant()) {

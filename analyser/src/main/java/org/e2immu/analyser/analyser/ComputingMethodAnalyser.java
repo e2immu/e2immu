@@ -715,7 +715,8 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
                 applicability.set(InlinedMethod.Applicability.NONE);
                 return false;
             }
-            if (v instanceof NewObject newObject && newObject.constructor() == null) {
+            NewObject newObject;
+            if ((newObject = v.asInstanceOf(NewObject.class)) != null && newObject.constructor() == null) {
                 applicability.set(InlinedMethod.Applicability.NONE);
                 return false;
             }

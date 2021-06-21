@@ -99,17 +99,20 @@ public record CollectUsages(List<String> packagePrefixes, Set<String> packagesAc
     private void collect(Set<WithInspectionAndAnalysis> result, Element element) {
         element.visit(e -> {
             VariableExpression ve;
-            if (e instanceof MethodCall mc && accept(mc.methodInfo.typeInfo.packageName())) {
+            NewObject no;
+            MethodReference mr;
+            MethodCall mc;
+            if ((mc = e.asInstanceOf(MethodCall.class)) != null && accept(mc.methodInfo.typeInfo.packageName())) {
                 result.add(mc.methodInfo);
                 result.add(mc.methodInfo.typeInfo);
-            } else if (e instanceof MethodReference mr && accept(mr.methodInfo.typeInfo.packageName())) {
+            } else if ((mr = e.asInstanceOf(MethodReference.class)) != null && accept(mr.methodInfo.typeInfo.packageName())) {
                 result.add(mr.methodInfo);
                 result.add(mr.methodInfo.typeInfo);
-            } else if (e instanceof NewObject no && no.constructor() != null &&
+            } else if ((no = e.asInstanceOf(NewObject.class)) != null && no.constructor() != null &&
                     accept(no.constructor().typeInfo.packageName())) {
                 result.add(no.constructor());
                 result.add(no.constructor().typeInfo);
-            } else if (e instanceof Expression ex && (ve = ex.asInstanceOf(VariableExpression.class)) != null) {
+            } else if ((ve = e.asInstanceOf(VariableExpression.class)) != null) {
                 if (ve.variable() instanceof FieldReference fr) {
                     collect(result, fr.fieldInfo);
                     if (fr.scope != null) {

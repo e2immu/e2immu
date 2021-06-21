@@ -405,7 +405,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             EvaluationResult mv = EvaluateMethodCall.methodValue(modified, evaluationContext, methodInfo,
                     methodAnalysis, objectValue, parameterValues);
             builder.compose(mv);
-            if (mv.value() == objectValue && mv.value() instanceof NewObject && modifiedInstance != null) {
+            if (mv.value() == objectValue && mv.value().isInstanceOf(NewObject.class) && modifiedInstance != null) {
                 result = modifiedInstance;
                 resultIsDelayed = false;
             } else {
@@ -885,7 +885,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         return evaluationContext.linkedVariables(object);
     }
 
-    private boolean ignoreLinkingBecauseOfScope( ) {
+    private boolean ignoreLinkingBecauseOfScope() {
         VariableExpression ve;
         if ((ve = object.asInstanceOf(VariableExpression.class)) != null && ve.variable() instanceof This) return true;
         return object instanceof TypeExpression; // static

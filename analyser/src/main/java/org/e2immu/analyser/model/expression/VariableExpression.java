@@ -313,13 +313,16 @@ public record VariableExpression(Variable variable, String name) implements Expr
 
     private static Expression tryShortCut(EvaluationContext evaluationContext, Expression scopeValue, Expression variableValue) {
         if (variableValue instanceof VariableExpression ve && ve.variable instanceof FieldReference fr) {
-            if (scopeValue instanceof NewObject newObject && newObject.constructor() != null) {
+            NewObject newObject;
+            if ((newObject = scopeValue.asInstanceOf(NewObject.class)) != null && newObject.constructor() != null) {
                 return extractNewObject(evaluationContext, newObject, fr.fieldInfo);
             }
             if (scopeValue instanceof VariableExpression scopeVe && scopeVe.variable instanceof FieldReference scopeFr) {
                 FieldAnalysis fieldAnalysis = evaluationContext.getAnalyserContext().getFieldAnalysis(scopeFr.fieldInfo);
-                if (fieldAnalysis.getEffectivelyFinalValue() instanceof NewObject newObject && newObject.constructor() != null) {
-                    return extractNewObject(evaluationContext, newObject, fr.fieldInfo);
+                NewObject no2;
+                if ((no2 = fieldAnalysis.getEffectivelyFinalValue().asInstanceOf(NewObject.class)) != null &&
+                        no2.constructor() != null) {
+                    return extractNewObject(evaluationContext, no2, fr.fieldInfo);
                 }
             }
         }

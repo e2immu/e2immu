@@ -34,13 +34,16 @@ public class AllowInterruptVisitor {
     static boolean allowInterrupts(Element element, Set<MethodInfo> exclude) {
         AtomicBoolean allowInterrupts = new AtomicBoolean();
         element.visit(e -> {
+            MethodCall methodCall;
+            MethodReference methodReference;
+            NewObject newObject;
             if (e instanceof SynchronizedStatement) {
                 allowInterrupts.set(true);
-            } else if (e instanceof MethodCall methodCall) {
+            } else if ((methodCall = e.asInstanceOf(MethodCall.class)) != null) {
                 if (verify(methodCall.methodInfo, exclude)) allowInterrupts.set(true);
-            } else if (e instanceof MethodReference methodReference) {
+            } else if ((methodReference = e.asInstanceOf(MethodReference.class)) != null) {
                 if (verify(methodReference.methodInfo, exclude)) allowInterrupts.set(true);
-            } else if (e instanceof NewObject newObject && newObject.constructor() != null) {
+            } else if ((newObject = e.asInstanceOf(NewObject.class)) != null && newObject.constructor() != null) {
                 if (verify(newObject.constructor(), exclude)) allowInterrupts.set(true);
             }
         });

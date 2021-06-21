@@ -146,12 +146,13 @@ public record InstanceOf(Primitives primitives,
                 return builder.setExpression(new BooleanConstant(primitives, true)).build();
             }
         }
-        if (value instanceof NewObject newObject) {
+        NewObject newObject;
+        if ((newObject = value.asInstanceOf(NewObject.class)) != null) {
             EvaluationResult er = BooleanConstant.of(parameterizedType.isAssignableFrom(InspectionProvider.defaultFrom(primitives),
                     newObject.parameterizedType()), evaluationContext);
             return builder.compose(er).setExpression(er.value()).build();
         }
-        if (value instanceof MethodCall) {
+        if (value.isInstanceOf(MethodCall.class)) {
             return builder.setExpression(new UnknownExpression(returnType(), "instanceof value")).build(); // no clue, too deep
         }
 

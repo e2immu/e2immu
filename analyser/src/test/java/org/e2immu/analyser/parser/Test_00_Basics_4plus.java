@@ -200,8 +200,7 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
                     if ("4".equals(d.statementId())) {
                         String expectValue = d.iteration() == 0 ? "<m:someMinorMethod>" : "Basics_6.someMinorMethod(field$0)";
                         assertEquals(expectValue, d.currentValue().toString());
-                        int expectNotNull = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
-                        assertEquals(expectNotNull, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
                     }
                 }
             }
@@ -331,12 +330,13 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("someMinorMethod".equals(d.methodInfo().name)) {
+                assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.methodAnalysis().getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+
                 assertFalse(d.methodInfo().methodResolution.get().allowsInterrupts());
                 ParameterAnalysis p0 = d.parameterAnalyses().get(0);
                 assertEquals(MultiLevel.DELAY, p0.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
                 int expectContextNotNull = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
                 assertEquals(expectContextNotNull, p0.getProperty(VariableProperty.CONTEXT_NOT_NULL));
-
                 assertEquals(Level.FALSE, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
                 int expectMv = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
                 assertEquals(expectMv, p0.getProperty(VariableProperty.MODIFIED_VARIABLE));
@@ -423,6 +423,7 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
                 if ("0".equals(d.statementId())) {
                     assertTrue(d.variableInfoContainer().hasMerge());
                     assertEquals("0" + VariableInfoContainer.Level.MERGE, d.variableInfo().getReadId());
+                    assertEquals(Level.TRUE, d.getProperty(VariableProperty.IDENTITY));
                 }
             }
 

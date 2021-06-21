@@ -54,7 +54,8 @@ public class MethodCallIncompatibleWithPrecondition {
                         fieldInfo.name, methodAnalyser.methodInfo.fullyQualifiedName);
                 return null;
             }
-            if (variableInfo.getValue() instanceof NewObject newObject) {
+            NewObject newObject;
+            if ((newObject = variableInfo.getValue().asInstanceOf(NewObject.class)) != null) {
                 Expression state = newObject.stateTranslateThisTo(fieldReference);
                 if (!state.isBoolValueTrue()) {
                     Expression stateWithInvariants = enrichWithInvariants(evaluationContext, state);

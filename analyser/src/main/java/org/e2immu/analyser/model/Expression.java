@@ -166,19 +166,6 @@ public interface Expression extends Element, Comparable<Expression> {
         predicate.test(this);
     }
 
-
-    default boolean isInstanceOf(Class<? extends Expression> clazz) {
-        return clazz.isAssignableFrom(getClass());
-    }
-
-    @SuppressWarnings("unchecked")
-    default <T extends Expression> T asInstanceOf(Class<T> clazz) {
-        if (clazz.isAssignableFrom(getClass())) {
-            return (T) this;
-        }
-        return null;
-    }
-
     default OutputBuilder outputInParenthesis(Qualification qualification, Precedence precedence, Expression expression) {
         if (precedence.greaterThan(expression.precedence())) {
             return new OutputBuilder().add(Symbol.LEFT_PARENTHESIS).add(expression.output(qualification)).add(Symbol.RIGHT_PARENTHESIS);

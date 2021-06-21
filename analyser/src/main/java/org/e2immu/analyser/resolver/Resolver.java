@@ -458,9 +458,9 @@ public class Resolver {
         // finally, we build the method inspection and set it in the methodInfo object
         methodInspection.build(expressionContext.typeContext);
 
-        if(methodInspection.staticBlockIdentifier > 0) {
+        if (methodInspection.staticBlockIdentifier > 0) {
             // add a dependency to the previous one!
-            MethodInfo previousStaticBlock = typeInspection.findStaticBlock(methodInspection.staticBlockIdentifier-1);
+            MethodInfo previousStaticBlock = typeInspection.findStaticBlock(methodInspection.staticBlockIdentifier - 1);
             methodsAndFieldsVisited.methodsAndFields.add(previousStaticBlock);
         }
 
@@ -494,18 +494,22 @@ public class Resolver {
         void visit(Element element) {
             element.visit(e -> {
                 VariableExpression ve;
+                NewObject newObject;
+                MethodCall methodCall;
+                MethodReference methodReference;
                 if (e instanceof org.e2immu.analyser.model.Expression ex &&
                         (ve = ex.asInstanceOf(VariableExpression.class)) != null) {
                     if (ve.variable() instanceof FieldReference fieldReference &&
                             restrictToType.contains(fieldReference.fieldInfo.owner)) {
                         methodsAndFields.add(fieldReference.fieldInfo);
                     }
-                } else if (e instanceof MethodCall methodCall && restrictToType.contains(methodCall.methodInfo.typeInfo)) {
+                } else if ((methodCall = e.asInstanceOf(MethodCall.class)) != null
+                        && restrictToType.contains(methodCall.methodInfo.typeInfo)) {
                     methodsAndFields.add(methodCall.methodInfo);
-                } else if (e instanceof MethodReference methodReference &&
+                } else if ((methodReference = e.asInstanceOf(MethodReference.class)) != null &&
                         restrictToType.contains(methodReference.methodInfo.typeInfo)) {
                     methodsAndFields.add(methodReference.methodInfo);
-                } else if (e instanceof NewObject newObject && newObject.constructor() != null &&
+                } else if ((newObject = e.asInstanceOf(NewObject.class)) != null && newObject.constructor() != null &&
                         restrictToType.contains(newObject.constructor().typeInfo)) {
                     methodsAndFields.add(newObject.constructor());
                 } else if (e instanceof ExplicitConstructorInvocation eci) {
@@ -626,7 +630,8 @@ public class Resolver {
     private static void methodCreatesObjectOfSelf(MethodInfo methodInfo, MethodResolution.Builder methodResolution) {
         AtomicBoolean createSelf = new AtomicBoolean();
         methodInfo.methodInspection.get().getMethodBody().visit(element -> {
-            if (element instanceof NewObject newObject) {
+            NewObject newObject;
+            if ((newObject = element.asInstanceOf(NewObject.class)) != null) {
                 if (newObject.parameterizedType().typeInfo == methodInfo.typeInfo) {
                     createSelf.set(true);
                 }

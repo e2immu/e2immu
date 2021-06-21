@@ -248,12 +248,14 @@ public class EvaluateMethodCall {
                                                           int nne) {
         NewObject newObject;
         VariableExpression varEx;
-        if (objectValue instanceof NewObject no) newObject = no;
+        NewObject no;
+        if ((no = objectValue.asInstanceOf(NewObject.class)) != null) newObject = no;
         else if ((varEx = objectValue.asInstanceOf(VariableExpression.class)) != null
                 && varEx.variable() instanceof FieldReference fieldReference) {
             FieldAnalysis fieldAnalysis = evaluationContext.getAnalyserContext().getFieldAnalysis(fieldReference.fieldInfo);
-            if (fieldAnalysis.getEffectivelyFinalValue() instanceof NewObject no) {
-                newObject = no;
+            NewObject no2;
+            if ((no2 = fieldAnalysis.getEffectivelyFinalValue().asInstanceOf(NewObject.class)) != null) {
+                newObject = no2;
             } else {
                 return null;
             }
@@ -320,7 +322,8 @@ public class EvaluateMethodCall {
     }
 
     private static NewObject obtainInstance(EvaluationResult.Builder builder, Expression objectValue) {
-        if (objectValue instanceof NewObject theInstance) {
+        NewObject theInstance;
+        if ((theInstance = objectValue.asInstanceOf(NewObject.class)) != null) {
             return theInstance;
         }
         VariableExpression ve;

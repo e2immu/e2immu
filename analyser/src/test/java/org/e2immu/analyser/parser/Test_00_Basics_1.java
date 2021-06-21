@@ -39,6 +39,14 @@ public class Test_00_Basics_1 extends CommonTestRunner {
         super(true);
     }
 
+    EvaluationResultVisitor evaluationResultVisitor = d -> {
+        if (BASICS_1.equals(d.methodInfo().name)) {
+            if ("0".equals(d.statementId())) {
+                assertEquals("p0", d.evaluationResult().getExpression().toString());
+            }
+        }
+    };
+
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
         if (BASICS_1.equals(d.methodInfo().name)) {
             if ("s1".equals(d.variableName())) {
@@ -58,7 +66,7 @@ public class Test_00_Basics_1 extends CommonTestRunner {
                 }
             }
             if (d.variable() instanceof ParameterInfo p0 && "p0".equals(p0.name)) {
-                String expectValue = "nullable instance type Set<String>";
+                String expectValue = "nullable instance type Set<String>/*@Identity*/";
                 assertEquals(expectValue, d.currentValue().toString());
                 assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
                 assertEquals(MultiLevel.MUTABLE, d.getProperty(VariableProperty.CONTEXT_IMMUTABLE));
@@ -76,7 +84,7 @@ public class Test_00_Basics_1 extends CommonTestRunner {
                     assertEquals(expectImm, d.getProperty(VariableProperty.IMMUTABLE));
                     assertEquals(expectImm, d.variableInfoContainer().getPreviousOrInitial().getProperty(VariableProperty.IMMUTABLE));
                 }
-                if("1".equals(d.statementId())) {
+                if ("1".equals(d.statementId())) {
                     int expectImm = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EFFECTIVELY_E1IMMUTABLE_NOT_E2IMMUTABLE;
                     assertEquals(expectImm, d.variableInfoContainer().getPreviousOrInitial().getProperty(VariableProperty.IMMUTABLE));
                 }
@@ -181,6 +189,7 @@ public class Test_00_Basics_1 extends CommonTestRunner {
     public void test() throws IOException {
         // two warnings: two unused parameters
         testClass(BASICS_1, 0, 2, new DebugConfiguration.Builder()
+                .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)

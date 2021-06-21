@@ -23,6 +23,7 @@ import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.statement.*;
 import org.e2immu.analyser.model.variable.*;
 import org.e2immu.analyser.output.OutputBuilder;
+import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.Pair;
@@ -292,6 +293,10 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         VariableInfo vi = normalValue.get(0);
         if (!vi.isAssigned()) {
             return List.of();
+        }
+        FieldReference fieldReference = new FieldReference(InspectionProvider.DEFAULT, fieldInfo);
+        if (!vi.getValue().variables().contains(fieldReference)) {
+            return normalValue;
         }
         // so now we decide whether to return normalValue, or collect the ConditionalInitializations
         List<VariableInfo> conditionals = variables.stream()
@@ -1109,8 +1114,10 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         int notNull = MultiLevel.bestNotNull(parameterAnalysis.getProperty(NOT_NULL_PARAMETER),
                 parameterInfo.parameterizedType.defaultNotNull());
         Expression state = new BooleanConstant(primitives, true);
-        return NewObject.initialValueOfParameter(index + "-" + parameterInfo.fullyQualifiedName(),
+        Expression newObject = NewObject.initialValueOfParameter(index + "-" + parameterInfo.fullyQualifiedName(),
                 parameterInfo.parameterizedType, state, notNull);
+        return parameterInfo.index == 0 ? new PropertyWrapper(newObject, Map.of(IDENTITY, Level.TRUE), null)
+                : newObject;
     }
 
     public int statementTimeForVariable(AnalyserContext analyserContext, Variable variable, int statementTime) {
@@ -1212,7 +1219,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             if (initialValue.isConstant()) {
                 return new ExpressionAndDelay(initialValue, false);
             }
-            if (initialValue instanceof NewObject) return new ExpressionAndDelay(initialValue, false);
+            if (initialValue.isInstanceOf(NewObject.class)) return new ExpressionAndDelay(initialValue, false);
 
             // TODO will crash when notNull==-1
             NewObject newObject = NewObject.initialValueOfFieldPartOfConstruction(

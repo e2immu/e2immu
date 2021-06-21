@@ -155,7 +155,7 @@ public class Test_00_Basics_9plus extends CommonTestRunner {
 
     @Test
     public void test_11() throws IOException {
-        final String NULLABLE_INSTANCE = "nullable instance type String";
+        final String NULLABLE_INSTANCE = "nullable instance type String/*@Identity*/";
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("test".equals(d.methodInfo().name)) {
                 String value = d.currentValue().toString();
@@ -234,7 +234,7 @@ public class Test_00_Basics_9plus extends CommonTestRunner {
                         assertEquals(MultiLevel.NULLABLE, nne);
                         assertEquals(MultiLevel.NULLABLE, cnn);
                         assertEquals(Level.FALSE, cm);
-                        assertEquals("nullable instance type String", value);
+                        assertEquals("nullable instance type String/*@Identity*/", value);
                         assertEquals("", linkedVariables);
                     }
                     if ("4".equals(d.statementId())) {
@@ -358,6 +358,7 @@ public class Test_00_Basics_9plus extends CommonTestRunner {
             int enn = d.getProperty(VariableProperty.EXTERNAL_NOT_NULL);
             if ("setT".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo p && "t".equals(p.name)) {
+                    assertEquals(Level.TRUE, d.getProperty(VariableProperty.IDENTITY));
                     int expectContainer = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
                     assertEquals(expectContainer, d.getProperty(VariableProperty.CONTAINER), "Statement: " + d.statementId());
                 }

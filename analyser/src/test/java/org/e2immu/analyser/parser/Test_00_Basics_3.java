@@ -15,10 +15,7 @@
 
 package org.e2immu.analyser.parser;
 
-import org.e2immu.analyser.analyser.FlowData;
-import org.e2immu.analyser.analyser.VariableInfo;
-import org.e2immu.analyser.analyser.VariableInfoContainer;
-import org.e2immu.analyser.analyser.VariableProperty;
+import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
@@ -304,6 +301,9 @@ public class Test_00_Basics_3 extends CommonTestRunner {
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("s".equals(d.fieldInfo().name)) {
+                String expect = d.iteration()==0 ? "<f:s>,input2,null": "";
+                assertEquals(expect, ((FieldAnalysisImpl.Builder)d.fieldAnalysis()).sortedValuesString());
+
                 assertEquals(MultiLevel.NULLABLE, d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_NOT_NULL));
                 assertEquals(Level.FALSE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
                 int expectModified = d.iteration() == 0 ? Level.DELAY : Level.FALSE;

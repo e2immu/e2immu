@@ -103,7 +103,9 @@ public class Test_65_ConditionalInitialization extends CommonTestRunner {
             }
         };
 
-        testClass("ConditionalInitialization_1", 0, 0, new DebugConfiguration.Builder()
+        // field occurs in all constructors or at least one static block
+
+        testClass("ConditionalInitialization_1", 0, 1, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build());
@@ -119,8 +121,40 @@ public class Test_65_ConditionalInitialization extends CommonTestRunner {
             }
         };
         // warning: unused parameter; error: assignment to self
-        testClass("ConditionalInitialization_2", 1, 1, new DebugConfiguration.Builder()
+        // field occurs in all constructors or at least one static block
+
+        testClass("ConditionalInitialization_2", 1, 2, new DebugConfiguration.Builder()
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .build());
+    }
+
+    @Test
+    public void test_3() throws IOException {
+        // overwrite the value...
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("ConditionalInitialization_3".equals(d.methodInfo().name)) {
+                if (d.variableName().contains("$CI$")) {
+                    assertEquals("org.e2immu.analyser.testexample.ConditionalInitialization_3.set$CI$0.0.0-E",
+                            d.variableName());
+                    assertEquals("Set.of(\"a\",\"b\")", d.currentValue().toString());
+                }
+            }
+        };
+
+        FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+            if ("set".equals(d.fieldInfo().name)) {
+                String expect = "new HashSet<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/,null";
+                assertEquals(expect, ((FieldAnalysisImpl.Builder) d.fieldAnalysis()).sortedValuesString());
+
+                assertEquals(MultiLevel.NULLABLE, d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_NOT_NULL));
+                assertEquals(MultiLevel.MUTABLE, d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_IMMUTABLE));
+            }
+        };
+
+        // field occurs in all constructors or at least one static block
+        testClass("ConditionalInitialization_3", 0, 1, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build());
     }
 }

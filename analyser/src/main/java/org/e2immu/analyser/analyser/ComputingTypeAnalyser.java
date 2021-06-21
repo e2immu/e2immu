@@ -1017,11 +1017,13 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
                             typeInspection.constructors()));
             if (doNotCallMyOwnConstructFromMethod) {
                 // exactly one field has an initialiser with a constructor
-                long fieldsWithInitialiser = typeInspection.fields().stream().filter(fieldInfo ->
-                        fieldInfo.fieldInspection.get().fieldInitialiserIsSet() &&
-                                fieldInfo.fieldInspection.get().getFieldInitialiser().initialiser() instanceof NewObject no &&
-                                no.constructor() != null &&
-                                typeInspection.constructors().contains(no.constructor())).count();
+                long fieldsWithInitialiser = typeInspection.fields().stream().filter(fieldInfo -> {
+                    NewObject no;
+                    return fieldInfo.fieldInspection.get().fieldInitialiserIsSet() &&
+                            (no = fieldInfo.fieldInspection.get().getFieldInitialiser().initialiser().asInstanceOf(NewObject.class)) != null &&
+                            no.constructor() != null &&
+                            typeInspection.constructors().contains(no.constructor());
+                }).count();
                 if (fieldsWithInitialiser == 1L) {
                     log(TYPE_ANALYSER, "Type {} is @Singleton, found exactly one new object creation in field initialiser",
                             typeInfo.fullyQualifiedName);

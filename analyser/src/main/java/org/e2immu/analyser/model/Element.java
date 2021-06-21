@@ -14,7 +14,6 @@
 
 package org.e2immu.analyser.model;
 
-import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
@@ -81,6 +80,18 @@ public interface Element {
     }
 
     default TypeInfo definesType() {
+        return null;
+    }
+
+    default boolean isInstanceOf(Class<? extends Expression> clazz) {
+        return clazz.isAssignableFrom(getClass());
+    }
+
+    @SuppressWarnings("unchecked")
+    default <T extends Expression> T asInstanceOf(Class<T> clazz) {
+        if (clazz.isAssignableFrom(getClass())) {
+            return (T) this;
+        }
         return null;
     }
 }

@@ -86,7 +86,8 @@ public class ExplicitTypes {
 
              UNLESS the method is abstract, (hence the type is abstract), and the modification status is not set
              */
-            if (element instanceof MethodCall mc) {
+            MethodCall mc;
+            if ((mc = element.asInstanceOf(MethodCall.class)) != null) {
                 if (notAbstractNoModificationStatus(mc.methodInfo)) {
                     add(mc.object.returnType(), UsedAs.METHOD);
                 }
@@ -94,7 +95,8 @@ public class ExplicitTypes {
             }
 
             // new A() -> A cannot be replaced by unbound type parameter
-            if (element instanceof NewObject newObject) {
+            NewObject newObject;
+            if ((newObject = element.asInstanceOf(NewObject.class)) != null) {
                 add(newObject.parameterizedType(), UsedAs.NEW_OBJECT);
                 if (newObject.constructor() != null) { // can be null, anonymous implementation of interface
                     addTypesFromParameters(newObject.constructor(), UsedAs.NEW_OBJECT);
@@ -102,12 +104,13 @@ public class ExplicitTypes {
             }
 
             // x = new Y() -> the type of x cannot be replaced by an unbound type parameter
-            if (element instanceof Assignment assignment && assignment.value instanceof NewObject) {
+            if (element instanceof Assignment assignment && assignment.value.isInstanceOf(NewObject.class)) {
                 add(assignment.target.returnType(), UsedAs.ASSIGN_TO_NEW_OBJECT);
             }
 
             // a.b -> type of a == owner of b cannot be replaced by unbound type parameter
-            if (element instanceof VariableExpression ve && ve.variable() instanceof FieldReference fr) {
+            VariableExpression ve;
+            if ((ve = element.asInstanceOf(VariableExpression.class)) != null && ve.variable() instanceof FieldReference fr) {
                 add(fr.fieldInfo.owner.asParameterizedType(inspectionProvider), UsedAs.FIELD_ACCESS);
             }
 
@@ -123,7 +126,8 @@ public class ExplicitTypes {
 
             // add the subject of the cast, i.e., if T t is unbound, then
             // (String)t forces T to become explicit
-            if (element instanceof Cast cast) {
+            Cast cast;
+            if ((cast = element.asInstanceOf(Cast.class)) != null) {
                 ParameterizedType expressionType = cast.expression().returnType();
                 ParameterizedType castType = cast.parameterizedType();
                 TypeInfo bestType = castType.bestTypeInfo();

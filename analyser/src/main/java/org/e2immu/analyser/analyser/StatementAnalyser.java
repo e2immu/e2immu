@@ -2832,7 +2832,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             Expression value = variableInfo.getValue();
             // important! do not use variable in the next statement, but variableInfo.variable()
             // we could have redirected from a variable field to a local variable copy
-            return value instanceof NewObject && (!forwardEvaluationInfo.assignToField() ||
+            return value.isInstanceOf(NewObject.class) && (!forwardEvaluationInfo.assignToField() ||
                     !(variable instanceof LocalVariableReference lvr && lvr.variable.nature().localCopyOf() == null))
                     ? new VariableExpression(variableInfo.variable()) : value;
         }
@@ -2849,7 +2849,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                         "Variable " + variable.fullyQualifiedName() + " has been assigned a VariableValue value pointing to itself";
                 return currentInstance(ve.variable(), statementTime);
             }
-            if (value instanceof NewObject instance) return instance;
+            NewObject newObject;
+            if ((newObject = value.asInstanceOf(NewObject.class)) != null) return newObject;
             return null;
         }
 

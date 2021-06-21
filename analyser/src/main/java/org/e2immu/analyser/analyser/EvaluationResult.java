@@ -400,7 +400,10 @@ public record EvaluationResult(EvaluationContext evaluationContext,
          */
         public NewObject currentInstance(Variable variable) {
             ChangeData currentExpression = valueChanges.get(variable);
-            if (currentExpression != null && currentExpression.value instanceof NewObject instance) return instance;
+            NewObject newObject;
+            if (currentExpression != null && currentExpression.value != null &&
+                    (newObject = currentExpression.value.asInstanceOf(NewObject.class)) != null)
+                return newObject;
             assert evaluationContext != null;
 
             return evaluationContext.currentInstance(variable, statementTime);

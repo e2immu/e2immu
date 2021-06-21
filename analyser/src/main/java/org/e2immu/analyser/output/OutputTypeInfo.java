@@ -177,7 +177,8 @@ public class OutputTypeInfo {
                     outputBuilder.add(new Text(fieldInfo.name));
                     FieldInspection.FieldInitialiser fieldInitialiser = fieldInfo.fieldInspection.get().getFieldInitialiser();
                     Expression initialiser = fieldInitialiser == null ? null : fieldInitialiser.initialiser();
-                    if (initialiser instanceof NewObject newObject) {
+                    NewObject newObject;
+                    if (initialiser != null && (newObject = initialiser.asInstanceOf(NewObject.class)) != null) {
                         if (!newObject.parameterExpressions().isEmpty()) {
                             Guide.GuideGenerator args = Guide.defaultGuideGenerator();
                             outputBuilder.add(Symbol.LEFT_PARENTHESIS).add(args.start());
