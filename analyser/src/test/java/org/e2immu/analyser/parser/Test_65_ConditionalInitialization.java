@@ -14,10 +14,20 @@
 
 package org.e2immu.analyser.parser;
 
+import org.e2immu.analyser.analyser.FieldAnalysisImpl;
+import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
+import org.e2immu.analyser.model.Level;
+import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.visitor.FieldAnalyserVisitor;
+import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
+import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
+import org.e2immu.analyser.visitor.TypeAnalyserVisitor;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_65_ConditionalInitialization extends CommonTestRunner {
 
@@ -27,19 +37,90 @@ public class Test_65_ConditionalInitialization extends CommonTestRunner {
 
     @Test
     public void test_0() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("ConditionalInitialization_0".equals(d.methodInfo().name)) {
+                if (d.variableName().contains("$CI$")) {
+                    assertEquals("org.e2immu.analyser.testexample.ConditionalInitialization_0.set$CI$0.0.0-E",
+                            d.variableName());
+                    if ("1.0.0".equals(d.statementId()) || "0.0.0".equals(d.statementId()))
+                        fail("Should not exist here");
+                    // holds for "0", "1"
+                    String expectValue = d.iteration() == 0 ? "<s:Set<E>>" : "Set.of(\"a\",\"b\")";
+                    assertEquals(expectValue, d.currentValue().toString());
+                }
+            }
+        };
+
+        FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+            if ("set".equals(d.fieldInfo().name)) {
+                String expect = d.iteration() == 0 ? "<s:Set<E>>,new HashSet<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/"
+                        : "Set.of(\"a\",\"b\"),new HashSet<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/";
+                assertEquals(expect, ((FieldAnalysisImpl.Builder) d.fieldAnalysis()).sortedValuesString());
+
+                assertEquals(Level.FALSE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
+                assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_NOT_NULL));
+
+                int expectExtImm = d.iteration() == 0 ? Level.DELAY : MultiLevel.MUTABLE;
+                assertEquals(expectExtImm, d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_IMMUTABLE));
+            }
+        };
+
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("ConditionalInitialization_0".equals(d.typeInfo().simpleName)) {
+                assertEquals(MultiLevel.MUTABLE, d.typeAnalysis().getProperty(VariableProperty.IMMUTABLE));
+            }
+        };
+
         testClass("ConditionalInitialization_0", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
                 .build());
     }
 
     @Test
     public void test_1() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("ConditionalInitialization_1".equals(d.methodInfo().name)) {
+                if (d.variableName().contains("$CI$")) {
+                    assertEquals("org.e2immu.analyser.testexample.ConditionalInitialization_1.set$CI$0.0.0-E",
+                            d.variableName());
+                    if ("0.1.0".equals(d.statementId())) fail("Should not exist here");
+                    // holds for "0"
+                    assertEquals("Set.of(\"a\",\"b\")", d.currentValue().toString());
+                }
+            }
+        };
+
+        FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+            if ("set".equals(d.fieldInfo().name)) {
+                String expect = "Set.of(\"a\",\"b\"),new HashSet<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/,setParam";
+                assertEquals(expect, ((FieldAnalysisImpl.Builder) d.fieldAnalysis()).sortedValuesString());
+
+                assertEquals(MultiLevel.NULLABLE, d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_NOT_NULL));
+                int expectExtImm = d.iteration() == 0 ? Level.DELAY : MultiLevel.MUTABLE;
+                assertEquals(expectExtImm, d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_IMMUTABLE));
+            }
+        };
+
         testClass("ConditionalInitialization_1", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build());
     }
 
     @Test
     public void test_2() throws IOException {
-        testClass("ConditionalInitialization_2", 0, 0, new DebugConfiguration.Builder()
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("setSet".equals(d.methodInfo().name)) {
+                if ("0.0.0".equals(d.statementId())) {
+                    assertNotNull(d.haveError(Message.Label.ASSIGNMENT_TO_SELF));
+                }
+            }
+        };
+        // warning: unused parameter; error: assignment to self
+        testClass("ConditionalInitialization_2", 1, 1, new DebugConfiguration.Builder()
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build());
     }
 }

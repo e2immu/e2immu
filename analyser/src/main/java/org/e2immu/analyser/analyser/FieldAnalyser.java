@@ -614,49 +614,49 @@ public class FieldAnalyser extends AbstractAnalyser {
     record OccursAndDelay(boolean occurs, boolean delay) {
     }
 
+    // NOTE: we're also considering non-private methods here, like setters: IS THIS WISE?
+
     private OccursAndDelay occursInAllConstructors(List<FieldAnalysisImpl.ValueAndPropertyProxy> values,
                                                    boolean ignorePrivateConstructors) {
         boolean occurs = true;
         boolean delays = false;
         for (MethodAnalyser methodAnalyser : myMethodsAndConstructors) {
-            if (methodAnalyser.methodAnalysis.getProperty(VariableProperty.FINALIZER) != Level.TRUE) {
-                if (!methodAnalyser.methodInfo.isPrivate() || !ignorePrivateConstructors) {
-                    boolean added = false;
-                    for (VariableInfo vi : methodAnalyser.getFieldAsVariable(fieldInfo, false)) {
-                        if (vi.isAssigned()) {
-                            Expression expression = vi.getValue();
-                            VariableExpression ve;
-                            if ((ve = expression.asInstanceOf(VariableExpression.class)) != null
-                                    && ve.variable() instanceof LocalVariableReference) {
-                                throw new UnsupportedOperationException("Method " + methodAnalyser.methodInfo.fullyQualifiedName + ": " +
-                                        fieldInfo.fullyQualifiedName() + " is local variable " + expression);
-                            }
-                            values.add(new FieldAnalysisImpl.ValueAndPropertyProxy() {
-                                @Override
-                                public Expression getValue() {
-                                    return vi.getValue();
-                                }
-
-                                @Override
-                                public int getProperty(VariableProperty variableProperty) {
-                                    return vi.getProperty(variableProperty);
-                                }
-
-                                @Override
-                                public boolean isDelayedValue() {
-                                    return vi.isDelayed();
-                                }
-                            });
-                            added = true;
-                            if (vi.isDelayed()) {
-                                log(DELAYED, "Delay consistent value for field {}", fqn);
-                                delays = true;
-                            }
+            if (methodAnalyser.methodAnalysis.getProperty(VariableProperty.FINALIZER) != Level.TRUE &&
+                    (!methodAnalyser.methodInfo.isPrivate() ||
+                            methodAnalyser.methodInfo.isConstructor && !ignorePrivateConstructors)) {
+                boolean added = false;
+                for (VariableInfo vi : methodAnalyser.getFieldAsVariableAssigned(fieldInfo)) {
+                    Expression expression = vi.getValue();
+                    VariableExpression ve;
+                    if ((ve = expression.asInstanceOf(VariableExpression.class)) != null
+                            && ve.variable() instanceof LocalVariableReference) {
+                        throw new UnsupportedOperationException("Method " + methodAnalyser.methodInfo.fullyQualifiedName + ": " +
+                                fieldInfo.fullyQualifiedName() + " is local variable " + expression);
+                    }
+                    values.add(new FieldAnalysisImpl.ValueAndPropertyProxy() {
+                        @Override
+                        public Expression getValue() {
+                            return vi.getValue();
                         }
+
+                        @Override
+                        public int getProperty(VariableProperty variableProperty) {
+                            return vi.getProperty(variableProperty);
+                        }
+
+                        @Override
+                        public boolean isDelayedValue() {
+                            return vi.isDelayed();
+                        }
+                    });
+                    added = true;
+                    if (vi.isDelayed()) {
+                        log(DELAYED, "Delay consistent value for field {}", fqn);
+                        delays = true;
                     }
-                    if (!added && methodAnalyser.methodInfo.isConstructor) {
-                        occurs = false;
-                    }
+                }
+                if (!added && methodAnalyser.methodInfo.isConstructor) {
+                    occurs = false;
                 }
             }
         }

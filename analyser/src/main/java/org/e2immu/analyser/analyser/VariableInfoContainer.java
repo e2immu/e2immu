@@ -168,11 +168,11 @@ public interface VariableInfoContainer {
 
     void ensureEvaluation(String assignmentId, String readId, int statementTime, Set<Integer> readAtStatementTimes);
 
-    void merge(EvaluationContext evaluationContext,
-               Expression stateOfDestination,
-               boolean atLeastOneBlockExecuted,
-               List<StatementAnalysis.ConditionAndVariableInfo> mergeSources,
-               GroupPropertyValues groupPropertyValues);
+    Expression merge(EvaluationContext evaluationContext,
+                     Expression stateOfDestination,
+                     boolean atLeastOneBlockExecuted,
+                     List<StatementAnalysis.ConditionAndVariableInfo> mergeSources,
+                     GroupPropertyValues groupPropertyValues);
 
     /*
     Statement time is irrelevant for all but variable fields.
@@ -209,4 +209,7 @@ public interface VariableInfoContainer {
         return getStatementIndexOfThisLoopOrShadowVariable() != null;
     }
 
+    default boolean isConditionalInitialization() {
+        return variableNature() instanceof VariableNature.ConditionalInitialization;
+    }
 }

@@ -208,7 +208,12 @@ public abstract class MethodAnalyser extends AbstractAnalyser implements HoldsAn
         getLocallyCreatedPrimaryTypeAnalysers().forEach(PrimaryTypeAnalyser::write);
     }
 
-    public abstract List<VariableInfo> getFieldAsVariable(FieldInfo fieldInfo, boolean b);
+    public abstract List<VariableInfo> getFieldAsVariable(FieldInfo fieldInfo, boolean includeLocalCopies);
+
+    public List<VariableInfo> getFieldAsVariableAssigned(FieldInfo fieldInfo) {
+        return getFieldAsVariable(fieldInfo, false).stream().filter(VariableInfo::isAssigned)
+                .toList();
+    }
 
     @Override
     public Stream<DelayDebugNode> streamNodes() {

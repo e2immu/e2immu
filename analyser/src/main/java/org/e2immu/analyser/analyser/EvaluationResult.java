@@ -514,6 +514,12 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             }
         }
 
+        public Builder assignmentToSelfIgnored(Variable variable) {
+            Message message = Message.newMessage(evaluationContext.getLocation(), Message.Label.ASSIGNMENT_TO_SELF, variable.fullyQualifiedName());
+            messages.add(message);
+            return this;
+        }
+
         /*
         Called from Assignment and from LocalVariableCreation.
         Linked1Variables are not directly involved with assignments; handled later.

@@ -102,6 +102,7 @@ public class ContextPropertyWriter {
                                            LocalCopyData localCopyData) {
         // delays in dependency graph
         statementAnalysis.variableStream(level)
+                .filter(vi -> vi.isNotConditionalInitialization())
                 .forEach(variableInfo -> {
                     LinkedVariables linkedVariables = connections.apply(variableInfo);
                     if (linkedVariables == LinkedVariables.DELAY) {
@@ -151,6 +152,8 @@ public class ContextPropertyWriter {
 
         // NOTE: this used to be safeVariableStream but don't think that is needed anymore
         statementAnalysis.variableStream(level)
+                // filter out conditional initialization copies
+                .filter(vi -> vi.isNotConditionalInitialization())
                 .forEach(variableInfo -> {
                     Variable baseVariable = variableInfo.variable();
                     Set<Variable> variablesBaseLinksTo =

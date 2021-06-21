@@ -1,5 +1,7 @@
 package org.e2immu.analyser.model.variable;
 
+import org.e2immu.analyser.model.FieldInfo;
+
 public interface VariableNature {
 
     /*
@@ -77,7 +79,7 @@ public interface VariableNature {
 
         public String suffix() {
             if (assignmentId != null) {
-                return "$" + statementTime + "$" + assignmentId; // FIXME .replace(".", "_"); why?
+                return "$" + statementTime + "$" + assignmentId;
             }
             return "$" + statementTime;
         }
@@ -146,5 +148,13 @@ public interface VariableNature {
             return true;
         }
     }
+
+    /*
+    situation 9
+
+    copy for conditional assignments of fields
+    Meant for variable, static fields (ConditionalInitialization tests)
+     */
+    record ConditionalInitialization(String statementIndex, FieldInfo source) implements VariableNature {}
 }
 

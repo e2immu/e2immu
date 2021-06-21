@@ -27,6 +27,7 @@ import org.e2immu.support.SetOnce;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
 
@@ -309,6 +310,10 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
 
         public boolean valuesIsNotSet() {
             return !values.isFinal();
+        }
+
+        public String sortedValuesString() {
+            return values.get().stream().map(p -> p.getValue().toString()).sorted().collect(Collectors.joining(","));
         }
     }
 }

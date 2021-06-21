@@ -15,7 +15,10 @@
 package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.LocalVariable;
+import org.e2immu.analyser.model.LocalVariableModifier;
 import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.model.variable.VariableNature;
@@ -89,6 +92,27 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
                 Level.MERGE);
     }
 
+    /*
+    factory method for conditional initialization
+     */
+    public static String conditionalInitializationSuffix(VariableInfo vi) {
+        return "$CI$" + vi.getAssignmentId();
+    }
+
+    public static VariableInfoContainerImpl copyOfFieldForConditionalInitialization(VariableInfo vi, String index) {
+        Objects.requireNonNull(vi);
+        FieldReference fr = (FieldReference) vi.variable();
+        String suffix = conditionalInitializationSuffix(vi);
+        VariableNature.ConditionalInitialization ci = new VariableNature.ConditionalInitialization(index, fr.fieldInfo);
+        LocalVariable lv = new LocalVariable(Set.of(LocalVariableModifier.FINAL), fr.simpleName() + suffix,
+                fr.fullyQualifiedName() + suffix, fr.parameterizedType(), List.of(), fr.getOwningType(), ci);
+        LocalVariableReference newVariable = new LocalVariableReference(lv);
+        VariableInfoImpl initial = new VariableInfoImpl(newVariable, vi.getAssignmentId(),
+                NOT_YET_READ, NOT_A_VARIABLE_FIELD, Set.of(), vi.valueIsSet() ? null : vi.getValue());
+        initial.newVariable(false);
+        initial.setValue(vi.getValue(), vi.isDelayed());
+        return new VariableInfoContainerImpl(ci, Either.right(initial), null, null);
+    }
 
     /*
     factory method for new variables
@@ -461,14 +485,14 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
     }
 
     @Override
-    public void merge(EvaluationContext evaluationContext,
+    public Expression merge(EvaluationContext evaluationContext,
                       Expression stateOfDestination,
                       boolean atLeastOneBlockExecuted,
                       List<StatementAnalysis.ConditionAndVariableInfo> mergeSources,
                       GroupPropertyValues groupPropertyValues) {
         Objects.requireNonNull(mergeSources);
         Objects.requireNonNull(evaluationContext);
-        assert merge != null;
+        assert merge != null : "For variable " + getPreviousOrInitial().variable().fullyQualifiedName();
 
         VariableInfoImpl existing = currentExcludingMerge();
         if (!merge.isSet()) {
@@ -478,5 +502,6 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
             merge.get().mergeIntoMe(evaluationContext, stateOfDestination, atLeastOneBlockExecuted, existing,
                     mergeSources, groupPropertyValues);
         }
+        return merge.get().getValue();
     }
 }

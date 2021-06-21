@@ -1141,6 +1141,12 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
     }
 
     @Override
+    public List<VariableInfo> getFieldAsVariableAssigned(FieldInfo fieldInfo) {
+        StatementAnalysis lastStatement = methodAnalysis.getLastStatement();
+        return lastStatement == null ? List.of() : methodAnalysis.getLastStatement().assignmentInfo(fieldInfo);
+    }
+
+    @Override
     public List<VariableInfo> getFieldAsVariable(FieldInfo fieldInfo, boolean includeLocalCopies) {
         StatementAnalysis lastStatement = methodAnalysis.getLastStatement();
         return lastStatement == null ? List.of() :

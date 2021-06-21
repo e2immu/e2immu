@@ -15,7 +15,9 @@
 package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.Variable;
+import org.e2immu.analyser.model.variable.VariableNature;
 import org.e2immu.analyser.util.StringUtil;
 
 import java.util.Map;
@@ -130,4 +132,22 @@ public interface VariableInfo {
     }
 
     boolean staticallyAssignedVariablesIsSet();
+
+    default boolean isNotConditionalInitialization() {
+        return !(variable() instanceof LocalVariableReference lvr) ||
+                !(lvr.variable.nature() instanceof VariableNature.ConditionalInitialization);
+    }
+
+    default boolean isConditionalInitializationNotCreatedHere(String index) {
+        if (variable() instanceof LocalVariableReference lvr &&
+                lvr.variable.nature() instanceof VariableNature.ConditionalInitialization ci) {
+            return !index.equals(ci.statementIndex());
+        }
+        return false;
+    }
+
+    default boolean isCopyOfVariableField() {
+       return variable() instanceof LocalVariableReference lvr
+                && lvr.variable.nature() instanceof VariableNature.CopyOfVariableField;
+    }
 }

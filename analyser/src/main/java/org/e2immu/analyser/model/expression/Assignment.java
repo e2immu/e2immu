@@ -222,6 +222,12 @@ public class Assignment implements Expression {
         } else {
             resultOfExpression = valueResult.value();
             assignedToTarget = valueResult.value();
+
+            IsVariableExpression ive;
+            if ((ive = value.asInstanceOf(IsVariableExpression.class)) != null && ive.variable().equals(newVariableTarget)) {
+                builder.assignmentToSelfIgnored(newVariableTarget);
+                return builder.setExpression(resultOfExpression).build();
+            }
         }
         assert assignedToTarget != null;
         assert assignedToTarget != EmptyExpression.EMPTY_EXPRESSION;

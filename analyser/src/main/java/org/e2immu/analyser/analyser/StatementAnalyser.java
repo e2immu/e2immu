@@ -2452,6 +2452,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                     .map(e -> e.getValue().current())
                     .filter(vi -> !(vi.variable() instanceof ReturnVariable)) // that's for the compiler!
                     .filter(this::uselessForDependentVariable)
+                    .filter(VariableInfo::isNotConditionalInitialization)
                     .filter(vi -> vi.notReadAfterAssignment(index()))
                     .forEach(variableInfo -> {
                         boolean isLocalAndLocalToThisBlock = statementAnalysis.isLocalVariableAndLocalToThisBlock(variableInfo.name());
@@ -2494,6 +2495,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                     .filter(e -> e.getValue().getStatementIndexOfThisLoopVariable() == null &&
                             e.getValue().variableNature() != VariableNature.FROM_ENCLOSING_METHOD)
                     .map(e -> e.getValue().current())
+                    .filter(VariableInfo::isNotConditionalInitialization)
                     .filter(vi -> !(vi.variable() instanceof DependentVariable))
                     .filter(vi -> statementAnalysis.isLocalVariableAndLocalToThisBlock(vi.name()) && !vi.isRead())
                     .forEach(vi -> statementAnalysis.ensure(Message.newMessage(getLocation(),
