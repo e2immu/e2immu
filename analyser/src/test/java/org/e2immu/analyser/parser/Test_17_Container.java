@@ -68,8 +68,10 @@ public class Test_17_Container extends CommonTestRunner {
                 }
                 if (S.equals(d.variableName())) {
                     if ("1".equals(d.statementId())) {
-                        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL,
-                                d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL_EXPRESSION));
+                        String expected = d.iteration() == 0 ? "<f:s>" : "instance type Set<String>";
+                        assertEquals(expected, d.currentValue().toString());
+                        int expectNne = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
+                        assertEquals(expectNne, d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL_EXPRESSION));
                     }
                     if ("0".equals(d.statementId()) || "1".equals(d.statementId())) {
                         int expectEnn = d.iteration() <= 1 ? Level.DELAY : MultiLevel.NOT_INVOLVED;
@@ -387,7 +389,7 @@ public class Test_17_Container extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if (CONTAINER_5.equals(d.methodInfo().name) &&
                     d.variable() instanceof ParameterInfo p && "coll5".equals(p.name)) {
-                assertEquals("nullable instance type Collection<String>", d.currentValue().toString());
+                assertEquals("nullable instance type Collection<String>/*@Identity*/", d.currentValue().toString());
                 assertEquals("", d.variableInfo().getLinkedVariables().toString());
                 if ("0".equals(d.statementId())) {
                     assertEquals(Level.DELAY, d.getProperty(VariableProperty.CONTEXT_MODIFIED_DELAY));
@@ -395,8 +397,6 @@ public class Test_17_Container extends CommonTestRunner {
                 if ("1".equals(d.statementId())) {
                     int expectCm = d.iteration() <= 1 ? Level.DELAY : Level.FALSE;
                     assertEquals(expectCm, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
-                    int expectMom = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
-                    assertEquals(expectMom, d.getProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD));
                 }
             }
             int n = d.methodInfo().methodInspection.get().getParameters().size();

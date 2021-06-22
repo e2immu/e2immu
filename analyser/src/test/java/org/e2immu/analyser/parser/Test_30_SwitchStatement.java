@@ -107,7 +107,7 @@ public class Test_30_SwitchStatement extends CommonTestRunner {
     public void test_6() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("method".equals(d.methodInfo().name) && "3".equals(d.statementId()) && "res".equals(d.variableName())) {
-                assertEquals("nullable instance type String", d.currentValue().toString());
+                assertEquals("instance type String", d.currentValue().toString());
                 assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
             }
         };

@@ -201,7 +201,7 @@ public class Test_33_ExternalNotNull extends CommonTestRunner {
                 if (d.variable() instanceof ParameterInfo p1 && "p1".equals(p1.name) && "5".equals(d.statementId())) {
                     int expectEnn = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
                     assertEquals(expectEnn, d.getProperty(EXTERNAL_NOT_NULL));
-                    String expectValue = d.iteration() == 0 ? "<p:p1>" : "nullable instance type String";
+                    String expectValue = d.iteration() == 0 ? "<p:p1>" : "nullable instance type String/*@Identity*/";
                     assertEquals(expectValue, d.currentValue().toString());
                 }
             }

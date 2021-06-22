@@ -550,8 +550,7 @@ public record NewObject(
             MethodAnalysis constructorAnalysis = evaluationContext.getAnalyserContext().getMethodAnalysis(constructor);
             NewObject no = MethodCall.checkCompanionMethodsModifying(res.k, evaluationContext, constructor, constructorAnalysis,
                     null, initialInstance, res.v);
-            int nne = constructorAnalysis.getProperty(VariableProperty.NOT_NULL_EXPRESSION);
-            instance = no == null ? DelayedExpression.forNewObject(parameterizedType, nne) : no;
+            instance = no == null ? DelayedExpression.forNewObject(parameterizedType, MultiLevel.EFFECTIVELY_NOT_NULL) : no;
         } else {
             instance = initialInstance;
         }

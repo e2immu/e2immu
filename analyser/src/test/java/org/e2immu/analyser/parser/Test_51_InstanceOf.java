@@ -16,7 +16,6 @@ package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
@@ -43,8 +42,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
             if ("method".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ReturnVariable) {
                     if ("0".equals(d.statementId())) {
-                        String expect = d.iteration() == 0 ? "in instanceof Number number&&null!=in?<s:String>:<return value>" :
-                                "in instanceof Number number&&null!=in?\"Number: \"+in:<return value>";
+                        String expect = "in instanceof Number number&&null!=in?\"Number: \"+in:<return value>";
                         assertEquals(expect, d.currentValue().toString());
                     }
                 }
@@ -70,11 +68,8 @@ public class Test_51_InstanceOf extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("InstanceOf_1".equals(d.methodInfo().name) && "0".equals(d.statementId())) {
                 if (d.variable() instanceof FieldReference fr && "number".equals(fr.fieldInfo.name)) {
-                    String expect = d.iteration() == 0 ? "in instanceof Number number&&null!=in?<s:Object>:3.14"
-                            : "in instanceof Number number&&null!=in?in:3.14";
-                    assertEquals(expect, d.currentValue().toString());
-                    int expectNne = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
-                    assertEquals(expectNne, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                    assertEquals("in instanceof Number number&&null!=in?in:3.14", d.currentValue().toString());
+                    assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
                 }
                 if (d.variable() instanceof LocalVariableReference lvr && "number".equals(lvr.simpleName())) {
                     assertEquals("in", d.currentValue().toString());

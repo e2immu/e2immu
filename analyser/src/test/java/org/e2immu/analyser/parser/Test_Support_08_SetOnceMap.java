@@ -81,7 +81,7 @@ public class Test_Support_08_SetOnceMap extends CommonTestRunner {
             }
             if ("get".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo k && "k".equals(k.name)) {
-                    String expectValue = d.iteration() <= 1 ? "<p:k>" : "nullable instance type K";
+                    String expectValue = d.iteration() <= 1 ? "<p:k>" : "nullable instance type K/*@Identity*/";
                     assertEquals(expectValue, d.currentValue().toString());
                     String expectDelay = d.iteration() <= 1 ? LinkedVariables.DELAY_STRING : "";
                     assertEquals(expectDelay, d.variableInfo().getLinkedVariables().toString());
@@ -100,11 +100,11 @@ public class Test_Support_08_SetOnceMap extends CommonTestRunner {
                 }
                 if (d.variable() instanceof ParameterInfo k && "k".equals(k.name)) {
                     if ("0".equals(d.statementId())) {
-                        assertEquals("nullable instance type K", d.currentValue().toString());
+                        assertEquals("nullable instance type K/*@Identity*/", d.currentValue().toString());
                         assertEquals("", d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("3.0.0".equals(d.statementId())) {
-                        String expectValue = d.iteration() <= 1 ? "<p:k>" : "nullable instance type K";
+                        String expectValue = d.iteration() <= 1 ? "<p:k>" : "nullable instance type K/*@Identity*/";
                         assertEquals(expectValue, d.currentValue().toString());
                         String expectDelay = d.iteration() <= 1 ? LinkedVariables.DELAY_STRING : "";
                         assertEquals(expectDelay, d.variableInfo().getLinkedVariables().toString());

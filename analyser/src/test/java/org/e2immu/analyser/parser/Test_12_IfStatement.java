@@ -18,6 +18,8 @@ import org.e2immu.analyser.analyser.LinkedVariables;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.Level;
+import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
@@ -76,6 +78,13 @@ public class Test_12_IfStatement extends CommonTestRunner {
             if ("get2".equals(d.methodInfo().name) && d.variable() instanceof This) {
                 int expectCm = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
                 assertEquals(expectCm, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
+            }
+            if ("get1".equals(d.methodInfo().name) && d.variable() instanceof ReturnVariable) {
+                String expected = d.iteration() == 0 ? "null==<m:get>?defaultValue1:<m:get>"
+                        : "null==map.get(label1)?defaultValue1:map.get(label1)";
+                assertEquals(expected, d.currentValue().toString());
+                int expectNotNull = d.iteration()==0 ? Level.DELAY: MultiLevel.EFFECTIVELY_NOT_NULL;
+                assertEquals(expectNotNull, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
             }
         };
 

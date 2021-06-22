@@ -364,6 +364,7 @@ class VariableInfoImpl implements VariableInfo {
                                     List<StatementAnalysis.ConditionAndVariableInfo> mergeSources) {
         mergePropertiesIgnoreValue(existingValuesWillBeOverwritten, previous, mergeSources, new GroupPropertyValues());
     }
+
     /*
         We know that in each of the merge sources, the variable is either read or assigned to
      */
@@ -379,7 +380,7 @@ class VariableInfoImpl implements VariableInfo {
                 previous.mergeValue(evaluationContext, stateOfDestination, atLeastOneBlockExecuted, mergeSources));
         setValue(mergedValue, evaluationContext.isDelayed(mergedValue));
         mergeStatementTime(evaluationContext, atLeastOneBlockExecuted, previous.getStatementTime(), mergeSources);
-        if(!mergedValue.isDelayed(evaluationContext)) {
+        if (!mergedValue.isDelayed(evaluationContext)) {
             setMergedValueProperties(evaluationContext, mergedValue);
         }
         mergePropertiesIgnoreValue(atLeastOneBlockExecuted, previous, mergeSources, groupPropertyValues);
@@ -506,7 +507,7 @@ class VariableInfoImpl implements VariableInfo {
 
     // used by change data
     public static Map<VariableProperty, Integer> mergeIgnoreAbsent
-            (Map<VariableProperty, Integer> m1, Map<VariableProperty, Integer> m2) {
+    (Map<VariableProperty, Integer> m1, Map<VariableProperty, Integer> m2) {
         if (m2.isEmpty()) return m1;
         if (m1.isEmpty()) return m2;
         Map<VariableProperty, Integer> map = new HashMap<>();
@@ -590,12 +591,15 @@ class VariableInfoImpl implements VariableInfo {
         StatementAnalysis.ConditionAndVariableInfo eLast = reduced.get(reduced.size() - 1);
         if (eLast.condition().isBoolValueTrue()) return eLast.variableInfo().getValue();
 
-        if (reduced.stream().allMatch(cav -> cav.variableInfo().getValue().isDelayed(evaluationContext))) {
+        if (reduced.stream().anyMatch(cav -> cav.variableInfo().getValue().isDelayed(evaluationContext))) {
             // all are delayed, they're not all identical delayed field references.
-            return currentValue;
+            return mergeHelper.delayedConclusion();
         }
         // no clue
-        return mergeHelper.noConclusion();
+
+        int worstNotNull = reduced.stream().mapToInt(cav -> cav.variableInfo().getProperty(NOT_NULL_EXPRESSION))
+                .min().orElseThrow();
+        return mergeHelper.noConclusion(worstNotNull);
     }
 
     /*

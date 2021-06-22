@@ -319,8 +319,8 @@ public record ConditionManager(Expression condition,
         return isDelayed() || parent != null && parent.isDelayed();
     }
 
-    public boolean isStateDelayed() {
-        return stateIsDelayed != null;
+    public boolean isStateDelayedOrPreconditionDelayed() {
+        return stateIsDelayed != null || preconditionIsDelayed != null;
     }
 
     public static record EvaluationContextImpl(AnalyserContext analyserContext) implements EvaluationContext {

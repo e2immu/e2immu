@@ -188,7 +188,7 @@ public class Lambda implements Expression {
         Expression result;
 
         if (evaluationContext.getLocalPrimaryTypeAnalysers() == null) {
-            result = DelayedExpression.forMethod(methodInfo, Level.DELAY);
+            result = DelayedExpression.forMethod(methodInfo);
         } else {
             MethodAnalysis methodAnalysis = evaluationContext.findMethodAnalysisOfLambda(methodInfo);
             if (methodInfo.hasReturnValue()) {
@@ -197,8 +197,7 @@ public class Lambda implements Expression {
                     InlinedMethod inlineValue = srv.asInstanceOf(InlinedMethod.class);
                     result = Objects.requireNonNullElse(inlineValue, srv);
                 } else {
-                    int nne = methodAnalysis.getProperty(VariableProperty.NOT_NULL_EXPRESSION);
-                    result = DelayedExpression.forMethod(methodInfo, nne);
+                    result = DelayedExpression.forMethod(methodInfo);
                 }
             } else {
                 result = NewObject.forGetInstance(evaluationContext.newObjectIdentifier(),

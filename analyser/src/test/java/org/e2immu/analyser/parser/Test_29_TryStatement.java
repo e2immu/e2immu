@@ -18,8 +18,12 @@ import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Level;
+import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.expression.ConstantExpression;
+import org.e2immu.analyser.model.expression.NewObject;
 import org.e2immu.analyser.model.expression.StringConcat;
+import org.e2immu.analyser.model.expression.StringConstant;
+import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
@@ -27,7 +31,8 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class Test_29_TryStatement extends CommonTestRunner {
 
@@ -41,10 +46,27 @@ public class Test_29_TryStatement extends CommonTestRunner {
         final String METHOD_FQN = TYPE + ".method(java.lang.String)";
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-            if ("method".equals(d.methodInfo().name) && METHOD_FQN.equals(d.variableName())) {
+            if ("method".equals(d.methodInfo().name) && d.variable() instanceof ReturnVariable) {
+                if ("0.0.0".equals(d.statementId())) {
+                    assertTrue(d.currentValue() instanceof StringConcat);
+                    assertEquals("\"Hi\"+Integer.parseInt(s)", d.currentValue().toString());
+                    assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                }
+                if ("0.1.0".equals(d.statementId())) {
+                    assertTrue(d.currentValue() instanceof StringConstant);
+                    assertEquals("\"Null\"", d.currentValue().toString());
+                    assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                }
+                if ("0.2.0".equals(d.statementId())) {
+                    assertTrue(d.currentValue() instanceof StringConstant);
+                    assertEquals("\"Not a number\"", d.currentValue().toString());
+                    assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                }
                 if ("0".equals(d.statementId())) {
-                    // meaning: no idea
-                    assertEquals("nullable instance type String", d.currentValue().toString());
+                    // meaning: no idea, but not null
+                    assertTrue(d.currentValue() instanceof NewObject);
+                    assertEquals("instance type String", d.currentValue().toString());
+                    assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
                 }
             }
         };
@@ -64,7 +86,7 @@ public class Test_29_TryStatement extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
                 Expression srv = d.methodAnalysis().getSingleReturnValue();
-                assertEquals("nullable instance type String", srv.toString());
+                assertEquals("instance type String", srv.toString());
             }
         };
 

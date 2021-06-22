@@ -199,7 +199,8 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
                     if ("4".equals(d.statementId())) {
                         String expectValue = d.iteration() == 0 ? "<m:someMinorMethod>" : "Basics_6.someMinorMethod(field$0)";
                         assertEquals(expectValue, d.currentValue().toString());
-                        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                        int effectivelyNotNull = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
+                        assertEquals(effectivelyNotNull, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
                     }
                 }
             }
@@ -434,7 +435,7 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
                     assertTrue(d.variableInfoContainer().hasMerge());
                     assertEquals("0" + VariableInfoContainer.Level.MERGE, d.variableInfo().getReadId());
 
-                    String expectValue = d.iteration() == 0 ? "b?<p:p>:"+INSTANCE_TYPE_INT_IDENTITY : INSTANCE_TYPE_INT_IDENTITY;
+                    String expectValue = d.iteration() == 0 ? "b?<p:p>:" + INSTANCE_TYPE_INT_IDENTITY : INSTANCE_TYPE_INT_IDENTITY;
                     assertEquals(expectValue, d.currentValue().toString());
                     int expectIdentity = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
                     assertEquals(expectIdentity, d.getProperty(VariableProperty.IDENTITY));
@@ -453,7 +454,7 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
                 if ("1.0.0".equals(d.statementId())) {
                     String expectValue = d.iteration() == 0 ? "<f:out>" : "instance type PrintStream";
                     assertEquals(expectValue, d.currentValue().toString());
-                    int expectNne = d.iteration() == 0 ? Level.DELAY: MultiLevel.EFFECTIVELY_NOT_NULL;
+                    int expectNne = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
                     assertEquals(expectNne, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
                     assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
                 }

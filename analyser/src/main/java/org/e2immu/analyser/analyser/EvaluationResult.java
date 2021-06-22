@@ -532,7 +532,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                                   LinkedVariables linkedVariables,
                                   LinkedVariables staticallyAssignedVariables) {
             assert evaluationContext != null;
-            boolean stateIsDelayed = evaluationContext.getConditionManager().isStateDelayed();
+            boolean stateIsDelayed = evaluationContext.getConditionManager().isStateDelayedOrPreconditionDelayed();
             boolean resultOfExpressionIsDelayed = evaluationContext.isDelayed(resultOfExpression);
             // NOTE NOTE: we cannot use the @NotNull of t he result in DelayedExpresion.forState (Loops_1 is a good counter-example)
             boolean markAssignment = resultOfExpression != EmptyExpression.EMPTY_EXPRESSION;
@@ -543,7 +543,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             Expression value = stateIsDelayed
                     && !resultOfExpressionIsDelayed
                     && !evaluationContext.getConditionManager().isReasonForDelay(assignmentTarget)
-                    ? DelayedExpression.forState(resultOfExpression.returnType(), Level.DELAY) : resultOfExpression;
+                    ? DelayedExpression.forState(resultOfExpression.returnType()) : resultOfExpression;
 
             ChangeData newEcd;
             ChangeData ecd = valueChanges.get(assignmentTarget);

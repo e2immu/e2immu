@@ -48,15 +48,16 @@ public record UnknownExpression(ParameterizedType parameterizedType, String msg)
 
     @Override
     public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty, boolean duringEvaluation) {
-        if(Primitives.isPrimitiveExcludingVoid(parameterizedType)) {
+        if (Primitives.isPrimitiveExcludingVoid(parameterizedType)) {
             return primitiveGetProperty(variableProperty);
         }
-        TypeAnalysis typeAnalysis = evaluationContext.getAnalyserContext().getTypeAnalysis(parameterizedType.typeInfo);
+        TypeAnalysis typeAnalysis = parameterizedType.typeInfo == null ? null
+                : evaluationContext.getAnalyserContext().getTypeAnalysis(parameterizedType.typeInfo);
         switch (variableProperty) {
             case IMMUTABLE:
-                return typeAnalysis.getProperty(VariableProperty.IMMUTABLE);
+                return typeAnalysis == null ? MultiLevel.NOT_INVOLVED : typeAnalysis.getProperty(VariableProperty.IMMUTABLE);
             case CONTAINER:
-                return typeAnalysis.getProperty(VariableProperty.CONTAINER);
+                return typeAnalysis == null ? Level.FALSE : typeAnalysis.getProperty(VariableProperty.CONTAINER);
             case NOT_NULL_EXPRESSION:
                 return MultiLevel.NULLABLE;
             case CONTEXT_MODIFIED:

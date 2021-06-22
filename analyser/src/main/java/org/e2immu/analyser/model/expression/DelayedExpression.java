@@ -29,47 +29,49 @@ import static org.e2immu.analyser.model.MultiLevel.EFFECTIVELY_NOT_NULL;
 @E2Container
 public record DelayedExpression(String msg,
                                 String debug,
-                                ParameterizedType parameterizedType,
-                                int notNull) implements Expression {
+                                ParameterizedType parameterizedType) implements Expression {
 
-    public static DelayedExpression forMethod(MethodInfo methodInfo, int notNull) {
+    public static DelayedExpression forMethod(MethodInfo methodInfo) {
         return new DelayedExpression("<m:" + methodInfo.name + ">",
-                "<method:" + methodInfo.fullyQualifiedName + ">", methodInfo.returnType(), notNull);
+                "<method:" + methodInfo.fullyQualifiedName + ">", methodInfo.returnType());
     }
 
     /*
     expression with delayed state
      */
-    public static Expression forState(ParameterizedType parameterizedType, int notNull) {
+    public static Expression forState(ParameterizedType parameterizedType) {
         return new DelayedExpression("<s:" + parameterizedType.printSimple() + ">",
-                "<state:" + parameterizedType.detailedString() + ">", parameterizedType, notNull);
+                "<state:" + parameterizedType.detailedString() + ">", parameterizedType);
     }
 
     public static Expression forNewObject(ParameterizedType parameterizedType, int notNull) {
         assert notNull >= EFFECTIVELY_NOT_NULL;
         return new DelayedExpression("<new:" + parameterizedType.printSimple() + ">",
-                "<new:" + parameterizedType.detailedString() + ">", parameterizedType, notNull);
+                "<new:" + parameterizedType.detailedString() + ">", parameterizedType);
     }
 
-    public static Expression forReplacementObject(ParameterizedType parameterizedType, int notNull) {
+    public static Expression forReplacementObject(ParameterizedType parameterizedType) {
         return new DelayedExpression("<replace:" + parameterizedType.printSimple() + ">",
-                "<replace:" + parameterizedType.detailedString() + ">", parameterizedType, notNull);
+                "<replace:" + parameterizedType.detailedString() + ">", parameterizedType);
     }
 
     public static Expression forArrayLength(Primitives primitives) {
         return new DelayedExpression("<delayed array length>",
-                "<delayed array length>", primitives.intParameterizedType, EFFECTIVELY_NOT_NULL);
+                "<delayed array length>", primitives.intParameterizedType);
     }
 
     public static Expression forPrecondition(Primitives primitives) {
-        return new DelayedExpression("<precondition>", "<precondition>", primitives.booleanParameterizedType,
-                EFFECTIVELY_NOT_NULL);
+        return new DelayedExpression("<precondition>", "<precondition>", primitives.booleanParameterizedType);
     }
 
     public static Expression forInstanceOf(Primitives primitives, ParameterizedType parameterizedType) {
         return new DelayedExpression("<instanceOf:" + parameterizedType.printSimple() + ">",
-                "<instanceOf:" + parameterizedType.detailedString() + ">", primitives.booleanParameterizedType,
-                EFFECTIVELY_NOT_NULL);
+                "<instanceOf:" + parameterizedType.detailedString() + ">", primitives.booleanParameterizedType);
+    }
+
+    public static Expression forMerge(ParameterizedType parameterizedType) {
+        return new DelayedExpression("<merge:" + parameterizedType.printSimple() + ">",
+                "<merge:" + parameterizedType.detailedString() + ">", parameterizedType);
     }
 
     /*
@@ -129,10 +131,6 @@ public record DelayedExpression(String msg,
 
     @Override
     public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty, boolean duringEvaluation) {
-        if (VariableProperty.NOT_NULL_EXPRESSION == variableProperty) {
-            assert !Primitives.isPrimitiveExcludingVoid(parameterizedType) || notNull == EFFECTIVELY_NOT_NULL;
-            return notNull;
-        }
         return Level.DELAY;
     }
 

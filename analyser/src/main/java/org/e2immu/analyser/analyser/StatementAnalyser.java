@@ -2950,7 +2950,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                                 map.put(new VariableExpression(variable), newObject);
                             }
 
-                            Expression delayed = DelayedExpression.forReplacementObject(variable.parameterizedType(), nne);
+                            Expression delayed = DelayedExpression.forReplacementObject(variable.parameterizedType());
                             map.put(DelayedVariableExpression.forVariable(e.getValue().current().variable()), delayed);
                         });
                 return mergeValue.reEvaluate(this, map).value();
