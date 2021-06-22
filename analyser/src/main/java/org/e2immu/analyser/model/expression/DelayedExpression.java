@@ -51,6 +51,11 @@ public record DelayedExpression(String msg,
                 "<new:" + parameterizedType.detailedString() + ">", parameterizedType, notNull);
     }
 
+    public static Expression forReplacementObject(ParameterizedType parameterizedType, int notNull) {
+        return new DelayedExpression("<replace:" + parameterizedType.printSimple() + ">",
+                "<replace:" + parameterizedType.detailedString() + ">", parameterizedType, notNull);
+    }
+
     public static Expression forArrayLength(Primitives primitives) {
         return new DelayedExpression("<delayed array length>",
                 "<delayed array length>", primitives.intParameterizedType, EFFECTIVELY_NOT_NULL);

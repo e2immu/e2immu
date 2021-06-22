@@ -37,7 +37,6 @@ import java.util.stream.Stream;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_00_Basics_4plus extends CommonTestRunner {
-
     public Test_00_Basics_4plus() {
         super(true);
     }
@@ -400,6 +399,7 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
         final String I101_FQN = I + "$1$1_0_1-E";
         final String INC3_RETURN_VAR = "org.e2immu.analyser.testexample.Basics_7.increment3()";
         final String I_DELAYED = "<f:i>";
+        final String INSTANCE_TYPE_INT_IDENTITY = "instance type int/*@Identity*/";
 
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("increment".equals(d.methodInfo().name) && "3".equals(d.statementId())) {
@@ -419,11 +419,25 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
             if ("Basics_7".equals(d.methodInfo().name) && d.variable() instanceof ParameterInfo p && "p".equals(p.name)) {
                 if ("0.0.0".equals(d.statementId())) {
                     assertEquals("0.0.0" + VariableInfoContainer.Level.EVALUATION, d.variableInfo().getReadId());
+                    assertEquals(INSTANCE_TYPE_INT_IDENTITY, d.currentValue().toString());
+                }
+                if ("0.0.1".equals(d.statementId())) {
+                    // READ IMPLICITLY via the variable 'i'
+                    assertEquals("0.0.1" + VariableInfoContainer.Level.EVALUATION, d.variableInfo().getReadId());
+                    String expectValue = d.iteration() == 0 ? "<p:p>" : INSTANCE_TYPE_INT_IDENTITY;
+                    assertEquals(expectValue, d.currentValue().toString());
+
+                    int expectIdentity = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
+                    assertEquals(expectIdentity, d.getProperty(VariableProperty.IDENTITY));
                 }
                 if ("0".equals(d.statementId())) {
                     assertTrue(d.variableInfoContainer().hasMerge());
                     assertEquals("0" + VariableInfoContainer.Level.MERGE, d.variableInfo().getReadId());
-                    assertEquals(Level.TRUE, d.getProperty(VariableProperty.IDENTITY));
+
+                    String expectValue = d.iteration() == 0 ? "b?<p:p>:"+INSTANCE_TYPE_INT_IDENTITY : INSTANCE_TYPE_INT_IDENTITY;
+                    assertEquals(expectValue, d.currentValue().toString());
+                    int expectIdentity = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
+                    assertEquals(expectIdentity, d.getProperty(VariableProperty.IDENTITY));
                 }
             }
 
@@ -432,13 +446,15 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
                 if ("0.0.1".equals(d.statementId())) {
                     String expectValue = d.iteration() == 0 ? "<f:out>" : "instance type PrintStream";
                     assertEquals(expectValue, d.currentValue().toString());
-                    assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                    int expectNne = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
+                    assertEquals(expectNne, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
                     assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
                 }
                 if ("1.0.0".equals(d.statementId())) {
                     String expectValue = d.iteration() == 0 ? "<f:out>" : "instance type PrintStream";
                     assertEquals(expectValue, d.currentValue().toString());
-                    assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                    int expectNne = d.iteration() == 0 ? Level.DELAY: MultiLevel.EFFECTIVELY_NOT_NULL;
+                    assertEquals(expectNne, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
                     assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
                 }
             }
@@ -670,10 +686,6 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
                     }
                     assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
                 }
-            }
-            if (d.iteration() > 0) {
-                int enn = d.getProperty(VariableProperty.EXTERNAL_NOT_NULL);
-                assertTrue(enn != Level.DELAY, "Statement " + d.statementId() + " var " + d.variable().fullyQualifiedName());
             }
         };
 

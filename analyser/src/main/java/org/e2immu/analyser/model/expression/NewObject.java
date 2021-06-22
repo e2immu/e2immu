@@ -486,7 +486,6 @@ public record NewObject(
     private String text() {
         TypeInfo bestType = parameterizedType.bestTypeInfo();
         if (Primitives.isPrimitiveExcludingVoid(bestType)) return "";
-        if (minimalNotNull == Level.DELAY) return "nullable? ";
         if (minimalNotNull < MultiLevel.EFFECTIVELY_NOT_NULL) return "nullable ";
         return "";
     }

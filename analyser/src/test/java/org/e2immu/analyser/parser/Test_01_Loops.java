@@ -314,12 +314,14 @@ public class Test_01_Loops extends CommonTestRunner {
                         assertEquals(Level.DELAY, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
                     } else {
                         // the ENN has been set on s$1, not on s
-                        assertEquals(Level.DELAY, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                        // FIXME the value property must be set when the value is set!
+                        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
                         assertEquals("instance type String", d.currentValue().toString());
                     }
                     assertEquals("", d.variableInfo().getLinkedVariables().toString());
                 }
             }
+            // FIXME inconsistent currently s$1 is NNE NULLABLE, s is not (?)
             if ("s$1".equals(d.variableName())) {
                 assertTrue(d.iteration() > 0);
                 if ("1.0.0".equals(d.statementId())) {
@@ -346,11 +348,11 @@ public class Test_01_Loops extends CommonTestRunner {
                     assertEquals("", d.variableInfo().getLinkedVariables().toString());
                 }
                 if ("1".equals(d.statementId())) {
-                    String expectValue = d.iteration() == 0 ? "<new:String>" : "nullable instance type String";
+                    String expectValue = d.iteration() == 0 ? "<replace:String>" : "instance type String";
                     assertEquals(expectValue, d.currentValue().toString());
                 }
                 if ("2".equals(d.statementId())) {
-                    String expectValue = d.iteration() == 0 ? "<new:String>" : "nullable instance type String";
+                    String expectValue = d.iteration() == 0 ? "<replace:String>" : "instance type String";
                     assertEquals(expectValue, d.currentValue().toString());
                     int expectNne = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
                     assertEquals(expectNne, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
@@ -358,7 +360,7 @@ public class Test_01_Loops extends CommonTestRunner {
             }
             if ("org.e2immu.analyser.testexample.Loops_2.method()".equals(d.variableName())) {
                 if ("2".equals(d.statementId())) {
-                    String expect = d.iteration() == 0 ? "<new:String>" : "res"; // indirection
+                    String expect = d.iteration() == 0 ? "<replace:String>" : "res"; // indirection
                     assertEquals(expect, d.currentValue().toString());
                 }
             }

@@ -30,6 +30,7 @@ public class FieldReference extends VariableWithConcreteReturnType {
     // can be a Resolved field again, but ends with This
     // can be null, in which case this is a reference to a static field
     public final Expression scope;
+    public final boolean isStatic;
 
     public FieldReference(InspectionProvider inspectionProvider, FieldInfo fieldInfo) {
         this(inspectionProvider, fieldInfo,
@@ -45,8 +46,10 @@ public class FieldReference extends VariableWithConcreteReturnType {
                         fieldInfo.owner.asParameterizedType(inspectionProvider), scope.returnType()));
         this.fieldInfo = Objects.requireNonNull(fieldInfo);
         this.scope = scope;
+        this.isStatic = fieldInfo.isStatic(inspectionProvider);
 
-        assert !fieldInfo.isStatic(inspectionProvider) || !(scope instanceof VariableExpression)
+        assert isStatic || scope != null : "Must have a scope if the field is not static";
+        assert !(isStatic && scope instanceof VariableExpression)
                 : "Have variable expression scope on static field " + fullyQualifiedName();
     }
 
@@ -94,7 +97,7 @@ public class FieldReference extends VariableWithConcreteReturnType {
 
     @Override
     public String fullyQualifiedName() {
-        if (scope == null || scopeIsThis()) {
+        if (isStatic || scopeIsThis()) {
             return fieldInfo.fullyQualifiedName();
         }
         return fieldInfo.fullyQualifiedName() + "#" + scope.output(Qualification.FULLY_QUALIFIED_NAME);
@@ -127,7 +130,7 @@ public class FieldReference extends VariableWithConcreteReturnType {
 
     @Override
     public boolean isStatic() {
-        return fieldInfo.isStatic();
+        return isStatic;
     }
 
     @Override

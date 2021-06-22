@@ -121,6 +121,9 @@ public class InlineConditional implements Expression {
             int nneIfFalse = notChild.getProperty(ifFalse, VariableProperty.NOT_NULL_EXPRESSION, true, false);
             return Math.min(nneIfFalse, nneIfTrue);
         }
+        if(EvaluationContext.VALUE_PROPERTIES.contains(variableProperty)) {
+            return new MultiExpression(ifTrue, ifFalse).getProperty(evaluationContext, variableProperty, duringEvaluation);
+        }
         return new MultiExpression(condition, ifTrue, ifFalse).getProperty(evaluationContext, variableProperty, duringEvaluation);
     }
 

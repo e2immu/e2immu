@@ -360,7 +360,7 @@ public class FieldAnalyser extends AbstractAnalyser {
                 finalNotNullValue = bestOverContext;
             }
         } else {
-            boolean hardNull = fieldAnalysis.getValues().stream().anyMatch(e -> e instanceof NullConstant);
+            boolean hardNull = fieldAnalysis.getValues().stream().anyMatch(e -> e.getValue() instanceof NullConstant);
             if (hardNull) {
                 finalNotNullValue = MultiLevel.NULLABLE;
             } else {
@@ -650,6 +650,7 @@ public class FieldAnalyser extends AbstractAnalyser {
                             return vi.isDelayed();
                         }
                     });
+                    occurrences++;
                     added = true;
                     if (vi.isDelayed()) {
                         log(DELAYED, "Delay consistent value for field {}", fqn);
@@ -658,8 +659,6 @@ public class FieldAnalyser extends AbstractAnalyser {
                 }
                 if (!added && methodAnalyser.methodInfo.isConstructor) {
                     occurs = false;
-                } else {
-                    occurrences++;
                 }
             }
         }

@@ -748,8 +748,6 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                     }
                 }
             } else {
-                Map<VariableProperty, Integer> merged = mergePreviousAndChange(variable, vi1.getProperties().toImmutableMap(),
-                        changeData.properties(), groupPropertyValues);
                 if (changeData.value() != null) {
                     // a modifying method caused an updated instance value
                     // for statically assigned variables, EMPTY means: take the value of the initial, unless it has no value
@@ -758,6 +756,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                                     vi1.staticallyAssignedVariablesIsSet() ? vi1.getStaticallyAssignedVariables() : LinkedVariables.EMPTY :
                                     changeData.staticallyAssignedVariables());
                     boolean valueIsDelayed = sharedState.evaluationContext.isDelayed(changeData.value());
+                    Map<VariableProperty, Integer> merged = mergePreviousAndChange(variable, vi1.getProperties().toImmutableMap(),
+                            changeData.properties(), groupPropertyValues, true);
                     vic.setValue(changeData.value(), valueIsDelayed, staticallyAssigned, merged, false);
                 } else {
                     LinkedVariables sav = remap(remapStaticallyAssignedVariables, vi1.getStaticallyAssignedVariables());
@@ -766,11 +766,15 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                         // we're not assigning (and there is no change in instance because of a modifying method)
                         // only then we copy from INIT to EVAL
                         // so we must integrate set properties
+                        Map<VariableProperty, Integer> merged = mergePreviousAndChange(variable, vi1.getProperties().toImmutableMap(),
+                                changeData.properties(), groupPropertyValues, true);
                         vic.setValue(vi1.getValue(), vi1.isDelayed(), sav, merged, false);
                     } else {
-                        // delayed situation;
+                        // delayed situation; do not copy the value properties
                         // not an assignment, so we must copy the statically assigned variables!
                         vic.setStaticallyAssignedVariables(sav, false);
+                        Map<VariableProperty, Integer> merged = mergePreviousAndChange(variable, vi1.getProperties().toImmutableMap(),
+                                changeData.properties(), groupPropertyValues, false);
                         merged.forEach((k, v) -> vic.setProperty(k, v, false, EVALUATION));
                     }
                 }
@@ -1162,7 +1166,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
     private Map<VariableProperty, Integer> mergePreviousAndChange(Variable variable,
                                                                   Map<VariableProperty, Integer> previous,
                                                                   Map<VariableProperty, Integer> changeData,
-                                                                  GroupPropertyValues groupPropertyValues) {
+                                                                  GroupPropertyValues groupPropertyValues,
+                                                                  boolean allowValueProperties) {
         Set<VariableProperty> both = new HashSet<>(previous.keySet());
         both.addAll(changeData.keySet());
         both.addAll(GroupPropertyValues.PROPERTIES);
@@ -1211,9 +1216,9 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 groupPropertyValues.set(k, variable, value);
             } else {
                 switch (k) {
-                    // value properties are copied from previous, because there is NO assignment!
-                    case CONTAINER, IMMUTABLE, NOT_NULL_EXPRESSION, MODIFIED_OUTSIDE_METHOD, IDENTITY, FLUENT -> {
-                        if (prev != Level.DELAY) res.put(k, prev);
+                    // value properties are copied from previous, only when the value from previous is copied as well
+                    case NOT_NULL_EXPRESSION, CONTAINER, IMMUTABLE, IDENTITY, INDEPENDENT -> {
+                        if (allowValueProperties && prev != Level.DELAY) res.put(k, prev);
                     }
                     // all other are copied from change data
                     default -> {
@@ -2944,7 +2949,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                                 map.put(new VariableExpression(variable), newObject);
                             }
 
-                            Expression delayed = DelayedExpression.forNewObject(variable.parameterizedType(), nne);
+                            Expression delayed = DelayedExpression.forReplacementObject(variable.parameterizedType(), nne);
                             map.put(DelayedVariableExpression.forVariable(e.getValue().current().variable()), delayed);
                         });
                 return mergeValue.reEvaluate(this, map).value();

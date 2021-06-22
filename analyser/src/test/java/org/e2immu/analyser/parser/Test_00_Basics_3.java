@@ -115,6 +115,8 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                         assertEquals("instance type PrintStream", d.currentValue().toString());
                     }
                     assertEquals(VariableInfoContainer.NOT_A_VARIABLE_FIELD, d.variableInfo().getStatementTime());
+                    int expectNne = d.iteration() == 0 ? Level.DELAY : MultiLevel.NULLABLE;
+                    assertEquals(expectNne, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
                 } else if ("0.1.0".equals(d.statementId())) {
                     assertTrue(d.iteration() > 0);
                     assertEquals(VariableInfoContainer.NOT_YET_READ, d.variableInfo().getReadId());
@@ -125,6 +127,10 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                     String expectValue = d.iteration() == 0 ? "<field:java.lang.System.out>" : "instance type PrintStream";
                     assertEquals(expectValue, d.currentValue().debugOutput());
                     assertEquals(VariableInfoContainer.NOT_A_VARIABLE_FIELD, d.variableInfo().getStatementTime());
+                    assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+
+                    int expectNne = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
+                    assertEquals(expectNne, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
                 }
 
                 // completely independent of the iterations, we always should have @NotNull because of context
@@ -193,7 +199,7 @@ public class Test_00_Basics_3 extends CommonTestRunner {
 
                     int expectCm = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
                     assertEquals(expectCm, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
-                    assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                    //assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
                 }
             }
             if ("setS2".equals(d.methodInfo().name) && S.equals(d.variableName())) {
@@ -301,8 +307,8 @@ public class Test_00_Basics_3 extends CommonTestRunner {
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("s".equals(d.fieldInfo().name)) {
-                String expect = d.iteration()==0 ? "<f:s>,input2,null": "";
-                assertEquals(expect, ((FieldAnalysisImpl.Builder)d.fieldAnalysis()).sortedValuesString());
+                String expect = d.iteration() == 0 ? "<f:s>,input2,null" : "input1.contains(\"a\")?\"xyz\":\"abc\",input2,null";
+                assertEquals(expect, ((FieldAnalysisImpl.Builder) d.fieldAnalysis()).sortedValuesString());
 
                 assertEquals(MultiLevel.NULLABLE, d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_NOT_NULL));
                 assertEquals(Level.FALSE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));

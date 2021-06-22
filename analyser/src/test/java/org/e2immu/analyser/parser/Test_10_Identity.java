@@ -81,7 +81,7 @@ public class Test_10_Identity extends CommonTestRunner {
                     int expectCm = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
                     assertEquals(expectCm, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
 
-                    String expectValue = d.iteration() == 0 ? "<p:s>" : "nullable instance type String";
+                    String expectValue = d.iteration() == 0 ? "<p:s>" : "nullable instance type String/*@Identity*/";
                     assertEquals(expectValue, d.currentValue().toString());
                     assertEquals("", d.variableInfo().getLinkedVariables().toString());
 
@@ -92,7 +92,8 @@ public class Test_10_Identity extends CommonTestRunner {
             if (d.methodInfo().name.equals("idem") && d.variable() instanceof ReturnVariable) {
                 if ("1".equals(d.statementId())) {
                     assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
-                    assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                    int expectNne = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
+                    assertEquals(expectNne, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
                 }
             }
         };

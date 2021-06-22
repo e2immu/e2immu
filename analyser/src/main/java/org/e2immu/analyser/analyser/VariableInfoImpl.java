@@ -298,7 +298,7 @@ class VariableInfoImpl implements VariableInfo {
             new MergeOp(CONTEXT_DEPENDENT, MAX, CONTEXT_DEPENDENT.falseValue)
     );
 
-    // IDENTITY, IMMUTABLE, CONTAINER, NOT_NULL_EXPRESSION, INDEPENDENT
+    // value properties: IDENTITY, IMMUTABLE, CONTAINER, NOT_NULL_EXPRESSION, INDEPENDENT
     private static final List<MergeOp> MERGE_WITHOUT_VALUE_PROPERTIES = List.of(
             new MergeOp(SCOPE_DELAY, Math::max, Level.DELAY),
             new MergeOp(METHOD_CALLED, Math::max, Level.DELAY),
@@ -379,7 +379,9 @@ class VariableInfoImpl implements VariableInfo {
                 previous.mergeValue(evaluationContext, stateOfDestination, atLeastOneBlockExecuted, mergeSources));
         setValue(mergedValue, evaluationContext.isDelayed(mergedValue));
         mergeStatementTime(evaluationContext, atLeastOneBlockExecuted, previous.getStatementTime(), mergeSources);
-        setMergedValueProperties(evaluationContext, mergedValue);
+        if(!mergedValue.isDelayed(evaluationContext)) {
+            setMergedValueProperties(evaluationContext, mergedValue);
+        }
         mergePropertiesIgnoreValue(atLeastOneBlockExecuted, previous, mergeSources, groupPropertyValues);
         mergeLinkedVariables(atLeastOneBlockExecuted, previous, mergeSources);
         mergeStaticallyAssignedVariables(atLeastOneBlockExecuted, previous, mergeSources);

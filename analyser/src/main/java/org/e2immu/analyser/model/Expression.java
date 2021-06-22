@@ -78,7 +78,7 @@ public interface Expression extends Element, Comparable<Expression> {
     }
 
     default boolean isDelayed(EvaluationContext evaluationContext) {
-        return false;
+        return subElements().stream().anyMatch(element -> element instanceof Expression e && e.isDelayed(evaluationContext));
     }
 
     default boolean isDiscreteType() {
