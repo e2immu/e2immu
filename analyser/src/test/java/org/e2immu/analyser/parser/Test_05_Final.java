@@ -79,7 +79,7 @@ public class Test_05_Final extends CommonTestRunner {
                     if (d.iteration() == 0) {
                         expectValue = "<f:s1>+\" \"+<f:s2>+\" \"+<f:s3>+\" \"+<f:s4>";
                     } else if (d.iteration() == 1) {
-                        expectValue = "<f:s1>+\" \"+<f:s2>+\" \"+\"abc\"+\" \"+" + S4_0;
+                        expectValue = "<f:s1>+\" \"+s2+\" \"+\"abc\"+\" \"+" + S4_0;
                     } else {
                         expectValue = "s1+\" \"+s2+\" \"+\"abc\"+\" \"+" + S4_0;
                     }
@@ -116,7 +116,7 @@ public class Test_05_Final extends CommonTestRunner {
                     }
 
                     if ("0".equals(d.statementId())) {
-                        String expectValue = d.iteration() == 0 ? "null==<f:s5>?<s:String>:null" : "\"abc\"";
+                        String expectValue = d.iteration() == 0 ? "null==<f:s5>?\"abc\":null" : "\"abc\"";
                         assertEquals(expectValue, d.currentValue().toString());
                         VariableInfo viC = d.variableInfoContainer().getPreviousOrInitial();
                         assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, viC.getProperty(VariableProperty.IMMUTABLE));
@@ -125,13 +125,12 @@ public class Test_05_Final extends CommonTestRunner {
                         assertEquals(expectM, viM.getProperty(VariableProperty.IMMUTABLE));
                     }
                     if ("0.0.0".equals(d.statementId())) {
-                        String expect = d.iteration() == 0 ? "<s:String>" : "\"abc\"";
-                        assertEquals(expect, d.currentValue().toString());
+                        assertEquals("\"abc\"", d.currentValue().toString());
                         VariableInfo viC = d.variableInfoContainer().getPreviousOrInitial();
-                        assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, viC.getProperty(VariableProperty.IMMUTABLE));
+                        int expectImm = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_E2IMMUTABLE;
+                        assertEquals(expectImm, viC.getProperty(VariableProperty.IMMUTABLE));
                         VariableInfo viE = d.variableInfoContainer().best(VariableInfoContainer.Level.EVALUATION);
-                        int expectEval = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_E2IMMUTABLE;
-                        assertEquals(expectEval, viE.getProperty(VariableProperty.IMMUTABLE));
+                        assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, viE.getProperty(VariableProperty.IMMUTABLE));
                     }
                 }
             }
@@ -194,12 +193,8 @@ public class Test_05_Final extends CommonTestRunner {
                 assertEquals("", d.fieldAnalysis().getLinkedVariables().toString());
             }
             if ("s2".equals(d.fieldInfo().name)) {
-                if (d.iteration() > 0) {
-                    assertEquals("[null,s2]", d.fieldAnalysis().getEffectivelyFinalValue().debugOutput());
-                    assertTrue(d.fieldAnalysis().getEffectivelyFinalValue() instanceof MultiValue);
-                } else {
-                    assertNull(d.fieldAnalysis().getEffectivelyFinalValue());
-                }
+                assertEquals("[null,s2]", d.fieldAnalysis().getEffectivelyFinalValue().debugOutput());
+                assertTrue(d.fieldAnalysis().getEffectivelyFinalValue() instanceof MultiValue);
                 assertEquals("", d.fieldAnalysis().getLinkedVariables().toString());
             }
             if ("s4".equals(d.fieldInfo().name)) {

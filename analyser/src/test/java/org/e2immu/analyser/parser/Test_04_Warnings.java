@@ -37,8 +37,6 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_04_Warnings extends CommonTestRunner {
 
-    public static final String NULLABLE_INSTANCE_TYPE_STRING = "nullable instance type String";
-
     public Test_04_Warnings() {
         super(true);
     }
@@ -328,6 +326,9 @@ public class Test_04_Warnings extends CommonTestRunner {
     // method must be static
     @Test
     public void test5() throws IOException {
+        final String NULLABLE_INSTANCE_TYPE_STRING = "nullable instance type String";
+        final String NULLABLE_INSTANCE_TYPE_STRING_IDENTITY = "nullable instance type String/*@Identity*/";
+
         TypeMapVisitor typeMapVisitor = typeMap -> {
             TypeInfo stream = typeMap.get(Stream.class);
             assertNotNull(stream);
@@ -353,10 +354,10 @@ public class Test_04_Warnings extends CommonTestRunner {
             if ("apply".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo p && "s".equals(p.name)) {
                     if ("0".equals(d.statementId())) {
-                        assertEquals(NULLABLE_INSTANCE_TYPE_STRING, d.currentValue().toString());
+                        assertEquals(NULLABLE_INSTANCE_TYPE_STRING_IDENTITY, d.currentValue().toString());
                     }
                     if ("1".equals(d.statementId())) {
-                        String expectValue = d.iteration() == 0 ? "<p:s>" : NULLABLE_INSTANCE_TYPE_STRING;
+                        String expectValue = d.iteration() == 0 ? "<p:s>" : NULLABLE_INSTANCE_TYPE_STRING_IDENTITY;
                         assertEquals(expectValue, d.currentValue().toString());
                     }
                 }

@@ -58,8 +58,7 @@ public class Test_09_EvaluatesToConstant extends CommonTestRunner {
                 }
             }
             if ("1.0.1".equals(d.statementAnalysis().index)) {
-                String expectState = d.iteration() == 0 ? "param.contains(\"a\")&&null!=<s:String>" : "param.contains(\"a\")";
-                assertEquals(expectState, d.absoluteState().toString());
+                assertEquals("param.contains(\"a\")", d.absoluteState().toString());
                 if (d.iteration() >= 1) {
                     assertNotNull(d.haveError(Message.Label.CONDITION_EVALUATES_TO_CONSTANT));
                 }
@@ -94,7 +93,7 @@ public class Test_09_EvaluatesToConstant extends CommonTestRunner {
 
         if ("method3".equals(d.methodInfo().name)) {
             if (d.variable() instanceof ParameterInfo p && "param".equals(p.name)) {
-                assertEquals("nullable instance type String", d.currentValue().toString());
+                assertEquals("nullable instance type String/*@Identity*/", d.currentValue().toString());
                 if ("0".equals(d.statementId())) {
                     int expectCnn = d.iteration() == 0 ? Level.DELAY : MultiLevel.NULLABLE;
                     assertEquals(expectCnn, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
@@ -106,10 +105,8 @@ public class Test_09_EvaluatesToConstant extends CommonTestRunner {
             }
             if ("a".equals(d.variableName()) && "1.0.0".equals(d.statementId())) {
                 // the delay comes from the CNN == -1 value of PARAM, delayed condition in 1
-                String expectValue = d.iteration() == 0 ? "<s:String>" : "\"xzy\"";
-                assertEquals(expectValue, d.currentValue().toString());
-                int expectNne = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
-                assertEquals(expectNne, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                assertEquals("\"xzy\"", d.currentValue().toString());
+                assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
             }
             if (d.variable() instanceof ReturnVariable) {
                 if ("0".equals(d.statementId())) {
@@ -132,14 +129,12 @@ public class Test_09_EvaluatesToConstant extends CommonTestRunner {
                 if ("1.0.1".equals(d.statementId())) {
                     assertEquals("", d.variableInfo().getLinkedVariables().toString());
                     assertEquals(Level.FALSE, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
-                    int expectEnn = d.iteration() == 0 ? Level.DELAY : MultiLevel.NOT_INVOLVED;
-                    assertEquals(expectEnn, d.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
+                    assertEquals(MultiLevel.NOT_INVOLVED, d.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
                 }
                 if ("1".equals(d.statementId())) {
                     assertEquals("", d.variableInfo().getLinkedVariables().toString());
                     assertEquals(Level.FALSE, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
-                    int expectEnn = d.iteration() == 0 ? Level.DELAY : MultiLevel.NOT_INVOLVED;
-                    assertEquals(expectEnn, d.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
+                    assertEquals(MultiLevel.NOT_INVOLVED, d.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
                 }
             }
         }
@@ -183,7 +178,7 @@ public class Test_09_EvaluatesToConstant extends CommonTestRunner {
      */
     @Test
     public void test() throws IOException {
-        testClass("EvaluatesToConstant", 4, 0, new DebugConfiguration.Builder()
+        testClass("EvaluatesToConstant", 6, 0, new DebugConfiguration.Builder()
                         .addStatementAnalyserVisitor(statementAnalyserVisitor)
                         .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)

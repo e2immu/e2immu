@@ -1561,15 +1561,16 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                             translatedDelay(EVALUATION_OF_MAIN_EXPRESSION,
                                     lvr.parameterizedType().fullyQualifiedName() + D_IMMUTABLE,
                                     lvc.localVariable.name() + "@" + index() + D_CONTEXT_IMMUTABLE);
+                    int initialNotNull = lvr.parameterizedType().defaultNotNull();
                     Map<VariableProperty, Integer> properties =
                             Map.of(CONTEXT_MODIFIED, Level.FALSE,
                                     CONTEXT_PROPAGATE_MOD, Level.FALSE,
                                     EXTERNAL_NOT_NULL, MultiLevel.NOT_INVOLVED,
-                                    CONTEXT_NOT_NULL, lvr.parameterizedType().defaultNotNull(),
+                                    CONTEXT_NOT_NULL, initialNotNull,
                                     EXTERNAL_IMMUTABLE, MultiLevel.NOT_INVOLVED,
                                     CONTEXT_IMMUTABLE, defaultImmutable);
 
-                    vic.setValue(NewObject.forCatchOrThis(index() + "-" + name,
+                    vic.setValue(NewObject.forLoopVariable(index() + "-" + name, initialNotNull,
                             statementAnalysis.primitives, lvr.parameterizedType()), false,
                             LinkedVariables.EMPTY, properties, true);
                     vic.setLinkedVariables(LinkedVariables.EMPTY, true);

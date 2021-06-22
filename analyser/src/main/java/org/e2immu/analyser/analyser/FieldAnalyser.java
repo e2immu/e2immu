@@ -411,7 +411,8 @@ public class FieldAnalyser extends AbstractAnalyser {
     private int notNullBreakParameterDelay(FieldAnalysisImpl.ValueAndPropertyProxy proxy) {
         int nne = proxy.getProperty(VariableProperty.NOT_NULL_EXPRESSION);
         if (nne != Level.DELAY) return nne;
-        if (proxy.getValue().variables().stream().allMatch(v -> v instanceof ParameterInfo)) {
+        List<Variable> variables = proxy.getValue().variables();
+        if (!variables.isEmpty() && variables.stream().allMatch(v -> v instanceof ParameterInfo)) {
             return MultiLevel.NULLABLE;
         }
         return Level.DELAY;
@@ -611,7 +612,7 @@ public class FieldAnalyser extends AbstractAnalyser {
         return Level.DELAY;
     }
 
-    record OccursAndDelay(boolean occurs, int count, boolean delay) {
+    record OccursAndDelay(boolean occurs, int occurrenceCountForError, boolean delay) {
     }
 
     // NOTE: we're also considering non-private methods here, like setters: IS THIS WISE?
@@ -620,7 +621,7 @@ public class FieldAnalyser extends AbstractAnalyser {
                                                    boolean ignorePrivateConstructors) {
         boolean occurs = true;
         boolean delays = false;
-        int occurrences = 0;
+        int occurrenceCountForError = 0;
         for (MethodAnalyser methodAnalyser : myMethodsAndConstructors) {
             if (methodAnalyser.methodAnalysis.getProperty(VariableProperty.FINALIZER) != Level.TRUE &&
                     (!methodAnalyser.methodInfo.isPrivate() ||
@@ -650,7 +651,7 @@ public class FieldAnalyser extends AbstractAnalyser {
                             return vi.isDelayed();
                         }
                     });
-                    occurrences++;
+                    if (!fieldInspection.isStatic()) occurrenceCountForError++;
                     added = true;
                     if (vi.isDelayed()) {
                         log(DELAYED, "Delay consistent value for field {}", fqn);
@@ -662,7 +663,7 @@ public class FieldAnalyser extends AbstractAnalyser {
                 }
             }
         }
-        return new OccursAndDelay(occurs, occurrences, delays);
+        return new OccursAndDelay(occurs, occurrenceCountForError, delays);
     }
 
     private OccursAndDelay occursInStaticBlocks(List<MethodAnalyser> staticBlocks, List<FieldAnalysisImpl.ValueAndPropertyProxy> values) {
@@ -736,15 +737,15 @@ public class FieldAnalyser extends AbstractAnalyser {
         // collect all the other values, bail out when delays
 
         boolean occursInAllConstructorsOrOneStaticBlock;
-        boolean occursInAllConstructorsOrOneStaticBlockExcludeNone;
+        boolean cannotGoTogetherWithInitialiser;
         if (fieldInfo.isExplicitlyFinal() && haveInitialiser) {
             occursInAllConstructorsOrOneStaticBlock = true;
-            occursInAllConstructorsOrOneStaticBlockExcludeNone = false;
+            cannotGoTogetherWithInitialiser = false;
         } else {
             boolean ignorePrivateConstructors = myTypeAnalyser.ignorePrivateConstructorsForFieldValue();
             OccursAndDelay oad = occursInAllConstructors(values, ignorePrivateConstructors);
             occursInAllConstructorsOrOneStaticBlock = oad.occurs;
-            occursInAllConstructorsOrOneStaticBlockExcludeNone = oad.count > 0;
+            cannotGoTogetherWithInitialiser = oad.occurrenceCountForError > 0;
             delays |= oad.delay;
 
             if (fieldInspection.isStatic()) {
@@ -760,7 +761,7 @@ public class FieldAnalyser extends AbstractAnalyser {
                 }).reduce(false, (v, w) -> v || w);
             }
         }
-        if (!delays && haveInitialiser && occursInAllConstructorsOrOneStaticBlockExcludeNone) {
+        if (!delays && haveInitialiser && cannotGoTogetherWithInitialiser) {
             Message message = Message.newMessage(new Location(fieldInfo), Message.Label.UNNECESSARY_FIELD_INITIALIZER);
             messages.add(message);
         }

@@ -321,6 +321,7 @@ public class Test_01_Loops extends CommonTestRunner {
                     assertEquals("", d.variableInfo().getLinkedVariables().toString());
                 }
             }
+            // code puts CNN to 5 on evaluation of statement 1, so s$1 seems OK; why do we use CNN? and not NNE?
             // FIXME inconsistent currently s$1 is NNE NULLABLE, s is not (?)
             if ("s$1".equals(d.variableName())) {
                 assertTrue(d.iteration() > 0);
@@ -436,13 +437,13 @@ public class Test_01_Loops extends CommonTestRunner {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
-                    String expect = d.iteration() == 0 ? "<new:int>>=10" : "instance type int>=10";
+                    String expect = d.iteration() == 0 ? "<replace:int>>=10" : "instance type int>=10";
                     assertEquals(expect, d.state().toString());
                     assertNull(d.haveError(Message.Label.INLINE_CONDITION_EVALUATES_TO_CONSTANT));
                 }
                 if ("1".equals(d.statementId())) {
                     assertEquals("true", d.condition().toString());
-                    String expectState = d.iteration() == 0 ? "<new:int>>=10" : "instance type int>=10";
+                    String expectState = d.iteration() == 0 ? "<replace:int>>=10" : "instance type int>=10";
                     assertEquals(expectState, d.state().toString());
                     assertNull(d.haveError(Message.Label.INLINE_CONDITION_EVALUATES_TO_CONSTANT));
                 }
@@ -479,13 +480,13 @@ public class Test_01_Loops extends CommonTestRunner {
                         assertEquals(expect, d.currentValue().toString());
                     }
                     if ("0".equals(d.statementId())) {
-                        String expect = d.iteration() == 0 ? "1==<new:int>?<s:int>:<return value>"
+                        String expect = d.iteration() == 0 ? "1==<replace:int>?<s:int>:<return value>"
                                 : "0==instance type int?4:<return value>";
                         assertEquals(expect, d.currentValue().toString());
                     }
                     if ("1".equals(d.statementId())) {
                         String expect = d.iteration() == 0
-                                ? "<new:int>>=10?0:1==<new:int>&&<new:int><=9?<s:int>:<return value>"
+                                ? "<replace:int>>=10?0:1==<replace:int>&&<replace:int><=9?<s:int>:<return value>"
                                 : "instance type int>=10?0:0==instance type int?4:<return value>";
                         assertEquals(expect, d.currentValue().toString());
                     }

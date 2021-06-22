@@ -66,7 +66,7 @@ public class Test_07_DependentVariables extends CommonTestRunner {
         }
         if ("method2".equals(d.methodInfo().name)) {
             if (A2.equals(d.variableName())) {
-                assertEquals("instance type int", d.currentValue().toString());
+                assertEquals("instance type int/*@Identity*/", d.currentValue().toString());
             }
             if ("b".equals(d.variableName())) {
                 assertEquals("a", d.variableInfo().getValue().toString());

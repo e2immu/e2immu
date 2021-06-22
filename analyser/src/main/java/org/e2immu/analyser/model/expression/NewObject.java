@@ -105,6 +105,14 @@ public record NewObject(
                 new BooleanConstant(primitives, true));
     }
 
+    // never null, never more interesting.
+    public static NewObject forLoopVariable(String identifier, int initialNotNull,
+                                           Primitives primitives, ParameterizedType parameterizedType) {
+        Diamond diamond = parameterizedType.parameters.isEmpty() ? Diamond.NO : Diamond.SHOW_ALL;
+        return new NewObject(identifier, null, parameterizedType, diamond, List.of(), initialNotNull,
+                null, null,
+                new BooleanConstant(primitives, true));
+    }
     /*
      local variable, defined outside a loop, will be assigned inside the loop
      don't assume that this instance is non-null straight away; state is also generic at this point

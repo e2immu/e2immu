@@ -286,24 +286,45 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         return streamOfLatestInfoOfVariablesReferringTo(fieldInfo, allowLocalCopies).toList();
     }
 
+    // next to this.field, and local copies, we also have fields with a non-this scope.
+    // all values that contain the field itself get blocked;
+
     public List<VariableInfo> assignmentInfo(FieldInfo fieldInfo) {
         List<VariableInfo> normalValue = latestInfoOfVariablesReferringTo(fieldInfo, false);
         if (normalValue.isEmpty()) return normalValue;
-        assert normalValue.size() == 1; // there cannot be more than one if we discard local copies
-        VariableInfo vi = normalValue.get(0);
-        if (!vi.isAssigned()) {
-            return List.of();
+        List<VariableInfo> result = new ArrayList<>();
+        VariableInfo viThis = null;
+        for (VariableInfo vi : normalValue) {
+            if (vi.isAssigned()) {
+                if (vi.variable() instanceof FieldReference fr && (fr.isStatic || fr.scopeIsThis())) {
+                    assert viThis == null;
+                    viThis = vi;
+                } else {
+                    result.add(vi);
+                }
+            }
         }
+        if (viThis == null) return result;
+
         FieldReference fieldReference = new FieldReference(InspectionProvider.DEFAULT, fieldInfo);
-        if (!vi.getValue().variables().contains(fieldReference)) {
-            return normalValue;
+
+        DelayedVariableExpression dve;
+        boolean viThisHasDelayedValue = (dve = viThis.getValue().asInstanceOf(DelayedVariableExpression.class)) != null &&
+                dve.variable() instanceof FieldReference fr && fr.fieldInfo == fieldInfo;
+        boolean partialAssignment = viThis.getValue().variables().contains(fieldReference);
+        if (viThisHasDelayedValue || !partialAssignment) {
+            result.add(viThis);
+            return result;
         }
+        // else: do not at viThis to the result
+
         // so now we decide whether to return normalValue, or collect the ConditionalInitializations
         List<VariableInfo> conditionals = variables.stream()
                 .filter(e -> e.getValue().variableNature() instanceof VariableNature.ConditionalInitialization ci
                         && ci.source() == fieldInfo)
                 .map(e -> e.getValue().current()).toList();
-        return conditionals.isEmpty() ? normalValue : conditionals;
+        result.addAll(conditionals);
+        return result;
     }
 
     public boolean containsMessage(Message.Label messageLabel) {

@@ -21,10 +21,7 @@ import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.variable.Variable;
-import org.e2immu.analyser.visitor.EvaluationResultVisitor;
-import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
-import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
-import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
+import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -318,7 +315,7 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                         assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
                         assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
                         assertEquals(LinkedVariables.EMPTY, d.variableInfo().getStaticallyAssignedVariables());
-                        assertEquals("nullable instance type Object", d.currentValue().toString());
+                        assertEquals("nullable instance type Object/*@Identity*/", d.currentValue().toString());
                         assertEquals("", d.variableInfo().getLinkedVariables().toString());
                     }
                     if (RETURN5.equals(d.variableName())) {
@@ -348,7 +345,7 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                     }
                     if (RETURN5.equals(d.variableName())) {
                         String expectValue = d.iteration() == 0 ?
-                                "null!=o&&<field:org.e2immu.analyser.testexample.ConditionalChecks_4.i#o>==<field:org.e2immu.analyser.testexample.ConditionalChecks_4.i>&&o.getClass()==this.getClass()&&o!=this":
+                                "null!=o&&<field:org.e2immu.analyser.testexample.ConditionalChecks_4.i#o>==<field:org.e2immu.analyser.testexample.ConditionalChecks_4.i>&&o.getClass()==this.getClass()&&o!=this" :
                                 RETURN_VALUE;
                         assertEquals(expectValue, d.currentValue().debugOutput());
                         assertEquals(d.iteration() == 0, d.currentValueIsDelayed());
@@ -429,11 +426,19 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
             }
         };
 
+        FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+            if ("i".equals(d.fieldInfo().name)) {
+                assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_NOT_NULL));
+                assertEquals(Level.TRUE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
+            }
+        };
+
         testClass("ConditionalChecks_4", 0, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build(), new AnalyserConfiguration.Builder().setSkipTransformations(true).build());
     }
 
