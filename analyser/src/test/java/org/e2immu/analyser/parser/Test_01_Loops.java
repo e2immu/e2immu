@@ -315,8 +315,9 @@ public class Test_01_Loops extends CommonTestRunner {
                     } else {
                         // the ENN has been set on s$1, not on s
                         // FIXME the value property must be set when the value is set!
-                        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
-                        assertEquals("instance type String", d.currentValue().toString());
+                        assertEquals("nullable instance type String", d.currentValue().toString());
+                        int expectNne = d.iteration()==1 ? Level.DELAY: MultiLevel.NULLABLE;
+                        assertEquals(expectNne, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
                     }
                     assertEquals("", d.variableInfo().getLinkedVariables().toString());
                 }
@@ -349,20 +350,22 @@ public class Test_01_Loops extends CommonTestRunner {
                     assertEquals("", d.variableInfo().getLinkedVariables().toString());
                 }
                 if ("1".equals(d.statementId())) {
-                    String expectValue = d.iteration() == 0 ? "<replace:String>" : "instance type String";
+                    String expectValue = d.iteration() == 0 ? "<replace:String>" : "nullable instance type String";
                     assertEquals(expectValue, d.currentValue().toString());
                 }
                 if ("2".equals(d.statementId())) {
-                    String expectValue = d.iteration() == 0 ? "<replace:String>" : "instance type String";
+                    String expectValue = d.iteration() == 0 ? "<replace:String>" : "nullable instance type String";
                     assertEquals(expectValue, d.currentValue().toString());
-                    int expectNne = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
+                    int expectNne = d.iteration() == 0 ? Level.DELAY : MultiLevel.NULLABLE;
                     assertEquals(expectNne, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
                 }
             }
-            if ("org.e2immu.analyser.testexample.Loops_2.method()".equals(d.variableName())) {
+            if (d.variable() instanceof ReturnVariable) {
                 if ("2".equals(d.statementId())) {
                     String expect = d.iteration() == 0 ? "<replace:String>" : "res"; // indirection
                     assertEquals(expect, d.currentValue().toString());
+                    int expectNne = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
+                    assertEquals(expectNne, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
                 }
             }
         };
