@@ -1634,14 +1634,16 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
     private List<Assignment> patternVariables(SharedState sharedState, Expression expression) {
         List<FindInstanceOfPatterns.InstanceOfPositive> instanceOfList = FindInstanceOfPatterns.find(expression);
         boolean haveElse = statementAnalysis.statement instanceof IfElseStatement ifElse && ifElse.elseBlock != Block.EMPTY_BLOCK;
-
+        StatementAnalyser firstSubBlock = !(statementAnalysis.statement instanceof IfElseStatement) ? null :
+                navigationData.blocks.get().get(0).orElse(null);
         // create local variables
         instanceOfList.stream()
                 .filter(instanceOf -> instanceOf.instanceOf().patternVariable() != null)
                 .filter(instanceOf -> !statementAnalysis.variables.isSet(instanceOf.instanceOf().patternVariable().simpleName()))
                 .forEach(instanceOf -> {
                     LocalVariableReference lvr = instanceOf.instanceOf().patternVariable();
-                    String scope = instanceOf.positive() ? index() + ".0.0" : haveElse ? index() + ".1.0" : index();
+                    String scope = instanceOf.positive() ? index() + ".0.0" : haveElse ? index() + ".1.0" :
+                            indexOnlyIfEscapeInSubBlock(firstSubBlock);
                     Variable scopeVariable = instanceOf.instanceOf().expression() instanceof IsVariableExpression ve ?
                             ve.variable() : null;
                     VariableNature variableNature = new VariableNature.Pattern(scope, instanceOf.positive(), scopeVariable);
@@ -1660,6 +1662,13 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                         new VariableExpression(iop.instanceOf().patternVariable()), //  PropertyWrapper.propertyWrapper(
                         iop.instanceOf().expression())) //, Map.of(NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL))
                 .toList();
+    }
+
+    private String indexOnlyIfEscapeInSubBlock(StatementAnalyser subBlock) {
+        if (subBlock == null) return "xx";
+        // TODO no idea how to implement... (could be a delay, we have no idea yet because sub-blocks are handled later
+        // and we cannot overwrite VIC's variableNature)
+        return navigationData.next.get().map(StatementAnalyser::index).orElse("xx");
     }
 
     private List<Expression> localVariablesInLoop(SharedState sharedState) {

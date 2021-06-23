@@ -44,7 +44,9 @@ public interface VariableNature {
         return true;
     }
 
-    default boolean ignoreCurrent(String index) { return false; }
+    default boolean ignoreCurrent(String index) {
+        return false;
+    }
 
     class Marker implements VariableNature {
     }
@@ -60,18 +62,22 @@ public interface VariableNature {
 
         // do not move up beyond block of definition!
         public NormalLocalVariable(String statementIndex) {
-            int dot = statementIndex.lastIndexOf('.');
-            if (dot == -1) parentBlockIndex = "";
-            else {
-                int dot2 = statementIndex.substring(0, dot).lastIndexOf('.');
-                this.parentBlockIndex = statementIndex.substring(0, dot2);
-            }
+            parentBlockIndex = computeParentBlockIndex(statementIndex);
         }
 
         @Override
         public boolean acceptForSubBlockMerging(String index) {
             return !index.equals(parentBlockIndex);
         }
+    }
+
+    private static String computeParentBlockIndex(String statementIndex) {
+        int dot = statementIndex.lastIndexOf('.');
+        if (dot == -1) return "";
+
+        int dot2 = statementIndex.substring(0, dot).lastIndexOf('.');
+        return statementIndex.substring(0, dot2);
+
     }
 
     /*
@@ -93,10 +99,21 @@ public interface VariableNature {
     if(!(x instanceof Y y)) { ... here y does NOT exist } else { ... here, y exists! }
 
      */
-    record Pattern(String scope, boolean isPositive, Variable localCopyOf) implements VariableNature {
+    record Pattern(String scope, String parentBlockIndex, boolean isPositive,
+                   Variable localCopyOf) implements VariableNature {
+        public Pattern(String scope, boolean isPositive, Variable localCopyOf) {
+            this(scope, VariableNature.computeParentBlockIndex(scope), isPositive, localCopyOf);
+        }
+
         @Override
         public boolean doNotCopyToNextStatement(boolean previousIsParent, String indexOfPrevious, String index) {
-            return !StringUtil.inScopeOf(scope, index);
+            boolean res = !StringUtil.inScopeOf(scope, index);
+            return res;
+        }
+
+        @Override
+        public boolean acceptForSubBlockMerging(String index) {
+            return !index.equals(parentBlockIndex);
         }
     }
 

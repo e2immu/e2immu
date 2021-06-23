@@ -20,6 +20,7 @@ import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
+import org.e2immu.analyser.model.variable.VariableNature;
 import org.e2immu.analyser.visitor.EvaluationResultVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
@@ -88,24 +89,26 @@ public class Test_51_InstanceOf extends CommonTestRunner {
             if ("method".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
                     if (d.variable() instanceof LocalVariableReference lvr && "number".equals(lvr.simpleName())) {
-                        assertEquals("in/*@NotNull*/", d.currentValue().toString());
+                        assertEquals("in", d.currentValue().toString());
                     }
                 }
                 if ("0.0.0".equals(d.statementId())) {
                     if (d.variable() instanceof LocalVariableReference lvr && "number".equals(lvr.simpleName())) {
-                        assertEquals("in/*@NotNull*/", d.currentValue().toString());
+                        assertEquals("in", d.currentValue().toString());
                     }
                     if (d.variable() instanceof LocalVariableReference lvr && "integer".equals(lvr.simpleName())) {
-                        assertEquals("in/*@NotNull*/", d.currentValue().toString());
+                        assertEquals("in", d.currentValue().toString());
                     }
                 }
-                assertFalse("1".equals(d.statementId()) && d.variable() instanceof LocalVariableReference,
-                        "Found " + d.variable().fullyQualifiedName());
+                if ("1".equals(d.statementId())) {
+                    assertFalse(d.variable() instanceof LocalVariableReference,
+                            "Found " + d.variable().fullyQualifiedName());
+                }
             }
         };
 
         testClass("InstanceOf_2", 0, 0, new DebugConfiguration.Builder()
-                //.addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 
@@ -119,13 +122,18 @@ public class Test_51_InstanceOf extends CommonTestRunner {
     public void test_4() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
-                assertFalse("0.0.0".equals(d.statementId()) && d.variable() instanceof LocalVariableReference,
-                        "Found " + d.variable().fullyQualifiedName() + " in if() { } part");
-                if ("0.1.0".equals(d.statementId()) && "number".equals(d.variableName())) {
-                    assertEquals("", d.currentValue().toString());
+                if ("0.0.0".equals(d.statementId())) {
+                    assertFalse(d.variable() instanceof LocalVariableReference,
+                            "Found " + d.variable().fullyQualifiedName() + " in if() { } part");
                 }
+
                 if ("1".equals(d.statementId()) && "number".equals(d.variableName())) {
-                    assertEquals("", d.currentValue().toString());
+                    assertEquals("in", d.currentValue().toString());
+                    if (d.variableInfoContainer().variableNature() instanceof VariableNature.Pattern pattern) {
+                        assertFalse(pattern.isPositive());
+                        assertEquals("", pattern.parentBlockIndex());
+                        assertEquals("1", pattern.scope());
+                    }
                 }
             }
         };
@@ -139,13 +147,24 @@ public class Test_51_InstanceOf extends CommonTestRunner {
     public void test_5() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
-                assertFalse("1.0.0".equals(d.statementId()) && d.variable() instanceof LocalVariableReference,
-                        "Found " + d.variable().fullyQualifiedName() + " in if() { } part");
-                if ("1.1.0".equals(d.statementId()) && "number".equals(d.variableName())) {
-                    assertEquals("", d.currentValue().toString());
+                if ("1".equals(d.statementId())) {
+                    if (d.variableInfoContainer().variableNature() instanceof VariableNature.Pattern pattern) {
+                        assertFalse(pattern.isPositive());
+                        assertEquals("1", pattern.parentBlockIndex());
+                        assertEquals("1.1.0", pattern.scope());
+                    }
                 }
-                assertFalse("2".equals(d.statementId()) && d.variable() instanceof LocalVariableReference,
-                        "Found " + d.variable().fullyQualifiedName() + " in 2");
+                if ("1.0.0".equals(d.statementId())) {
+                    assertFalse(d.variableInfoContainer().variableNature() instanceof VariableNature.Pattern,
+                            "Found " + d.variable().fullyQualifiedName() + " in if() { } part");
+                }
+                if ("1.1.0".equals(d.statementId()) && "number".equals(d.variableName())) {
+                    assertEquals("in", d.currentValue().toString());
+                }
+                if ("2".equals(d.statementId())) {
+                    assertFalse(d.variableInfoContainer().variableNature() instanceof VariableNature.Pattern,
+                            "Found " + d.variable().fullyQualifiedName() + " in 2");
+                }
             }
         };
 

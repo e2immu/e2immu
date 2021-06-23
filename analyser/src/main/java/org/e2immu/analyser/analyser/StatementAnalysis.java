@@ -511,6 +511,9 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
     }
 
     private boolean explicitlyPropagate(StatementAnalysis copyFrom, boolean copyIsParent, VariableInfoContainer vic) {
+        if(vic.variableNature() instanceof VariableNature.Pattern pattern) {
+            return StringUtil.inScopeOf(pattern.scope(), index);
+        }
         if (copyIsParent) {
             if (vic.variableNature() instanceof VariableNature.ConditionalInitialization) return false;
             // we'd only copy fields if they are used somewhere in the block. BUT there are "hidden" fields
