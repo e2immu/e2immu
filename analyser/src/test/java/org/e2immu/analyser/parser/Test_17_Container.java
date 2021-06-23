@@ -68,7 +68,7 @@ public class Test_17_Container extends CommonTestRunner {
                 }
                 if (S.equals(d.variableName())) {
                     if ("1".equals(d.statementId())) {
-                        String expected = d.iteration() == 0 ? "<f:s>" : "instance type Set<String>";
+                        String expected = d.iteration() == 0 ? "<f:s>" : "instance type Set<String>/*@Identity*/";
                         assertEquals(expected, d.currentValue().toString());
                         int expectNne = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
                         assertEquals(expectNne, d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL_EXPRESSION));

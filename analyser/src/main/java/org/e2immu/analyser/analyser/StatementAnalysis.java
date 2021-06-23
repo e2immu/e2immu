@@ -1036,7 +1036,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
     // note: .distinct() may not work
     private Stream<AcceptForMerging> makeVariableStream(List<ConditionAndLastStatement> lastStatements) {
         return Stream.concat(variables.stream().map(e -> new AcceptForMerging(e.getValue(),
-                     e.getValue().variableNature().acceptVariableForMerging(index))),
+                        e.getValue().variableNature().acceptVariableForMerging(index))),
                 lastStatements.stream().flatMap(st -> st.lastStatement.statementAnalysis.variables.stream().map(e ->
                         new AcceptForMerging(e.getValue(), e.getValue().variableNature().acceptForSubBlockMerging(index))))
         );
@@ -1121,10 +1121,9 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         int notNull = MultiLevel.bestNotNull(parameterAnalysis.getProperty(NOT_NULL_PARAMETER),
                 parameterInfo.parameterizedType.defaultNotNull());
         Expression state = new BooleanConstant(primitives, true);
-        Expression newObject = NewObject.initialValueOfParameter(index + "-" + parameterInfo.fullyQualifiedName(),
-                parameterInfo.parameterizedType, state, notNull);
-        return parameterInfo.index == 0 ? new PropertyWrapper(newObject, Map.of(IDENTITY, Level.TRUE), null)
-                : newObject;
+        return NewObject.initialValueOfParameter(index + "-" + parameterInfo.fullyQualifiedName(),
+                parameterInfo.parameterizedType, state, notNull,
+                parameterInfo.index == 0);
     }
 
     public int statementTimeForVariable(AnalyserContext analyserContext, Variable variable, int statementTime) {

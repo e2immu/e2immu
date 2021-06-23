@@ -319,9 +319,9 @@ public record VariableExpression(Variable variable, String name) implements Expr
             }
             if (scopeValue instanceof VariableExpression scopeVe && scopeVe.variable instanceof FieldReference scopeFr) {
                 FieldAnalysis fieldAnalysis = evaluationContext.getAnalyserContext().getFieldAnalysis(scopeFr.fieldInfo);
+                Expression efv = fieldAnalysis.getEffectivelyFinalValue();
                 NewObject no2;
-                if ((no2 = fieldAnalysis.getEffectivelyFinalValue().asInstanceOf(NewObject.class)) != null &&
-                        no2.constructor() != null) {
+                if (efv != null && (no2 = efv.asInstanceOf(NewObject.class)) != null && no2.constructor() != null) {
                     return extractNewObject(evaluationContext, no2, fr.fieldInfo);
                 }
             }

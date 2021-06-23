@@ -79,7 +79,7 @@ public class Test_00_Basics_2 extends CommonTestRunner {
                     assertEquals("<p:collection>", d.currentValue().toString());
                     assertTrue(d.currentValueIsDelayed());
                 } else {
-                    assertEquals("instance type Collection<String>/*this.contains(" + STRING_0 + ")*/",
+                    assertEquals("instance type Collection<String>/*this.contains(" + STRING_0 + ")*//*@Identity*/",
                             d.currentValue().toString());
                 }
                 assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
