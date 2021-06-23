@@ -42,7 +42,7 @@ public class Test_Util_03_StringUtil extends CommonTestRunner {
                         assertEquals("n<=10?Integer.toString(i):<return value>", d.currentValue().toString());
                     }
                     if("2".equals(d.statementId())) {
-                        assertEquals("n<=100?i>=10&&n>=11&&n<=100?Integer.toString(i):\"0\"+Integer.toString(i):n<=10?Integer.toString(i):<return value>", d.currentValue().toString());
+                        assertEquals("n<=100?i>=10&&n>=11?Integer.toString(i):\"0\"+Integer.toString(i):n<=10?Integer.toString(i):<return value>", d.currentValue().toString());
                     }
                 }
             }

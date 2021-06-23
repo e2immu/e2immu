@@ -28,8 +28,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_51_InstanceOf extends CommonTestRunner {
 
@@ -43,7 +42,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
             if ("method".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ReturnVariable) {
                     if ("0".equals(d.statementId())) {
-                        String expect = "in instanceof Number number&&null!=in?\"Number: \"+in:<return value>";
+                        String expect = "in instanceof Number&&null!=in?\"Number: \"+in:<return value>";
                         assertEquals(expect, d.currentValue().toString());
                     }
                 }
@@ -52,7 +51,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
-                    assertEquals("!(in instanceof Number number)||null==in",
+                    assertEquals("!(in instanceof Number)||null==in",
                             d.conditionManagerForNextStatement().state().toString());
                 }
             }
@@ -69,7 +68,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("InstanceOf_1".equals(d.methodInfo().name) && "0".equals(d.statementId())) {
                 if (d.variable() instanceof FieldReference fr && "number".equals(fr.fieldInfo.name)) {
-                    assertEquals("in instanceof Number number&&null!=in?in:3.14", d.currentValue().toString());
+                    assertEquals("in instanceof Number&&null!=in?in:3.14", d.currentValue().toString());
                     assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
                 }
                 if (d.variable() instanceof LocalVariableReference lvr && "number".equals(lvr.simpleName())) {
@@ -87,22 +86,33 @@ public class Test_51_InstanceOf extends CommonTestRunner {
     public void test_2() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
-                if ("0".equals(d.statementId())) {
-                    if (d.variable() instanceof LocalVariableReference lvr && "number".equals(lvr.simpleName())) {
+                if (d.variable() instanceof LocalVariableReference lvr && "number".equals(lvr.simpleName())) {
+                    if ("0".equals(d.statementId())) {
                         assertEquals("in", d.currentValue().toString());
                     }
+                    if ("0.0.0".equals(d.statementId())) {
+                        assertEquals("in", d.currentValue().toString());
+                    }
+                    assertNotEquals("1", d.statementId());
                 }
-                if ("0.0.0".equals(d.statementId())) {
-                    if (d.variable() instanceof LocalVariableReference lvr && "number".equals(lvr.simpleName())) {
-                        assertEquals("in", d.currentValue().toString());
-                    }
-                    if (d.variable() instanceof LocalVariableReference lvr && "integer".equals(lvr.simpleName())) {
-                        assertEquals("in", d.currentValue().toString());
-                    }
+                if (d.variable() instanceof LocalVariableReference lvr && "integer".equals(lvr.simpleName())) {
+                    assertEquals("in", d.currentValue().toString());
+                    assertNotEquals("0.1.1", d.statementId());
+                    assertNotEquals("1", d.statementId());
                 }
-                if ("1".equals(d.statementId())) {
-                    assertFalse(d.variable() instanceof LocalVariableReference,
-                            "Found " + d.variable().fullyQualifiedName());
+                if (d.variable() instanceof ReturnVariable) {
+                    if ("0.0.0.0.0".equals(d.statementId())) {
+                        assertEquals("\"Integer: \"+in", d.currentValue().toString());
+                    }
+                    if ("0.0.0".equals(d.statementId())) {
+                        assertEquals("in instanceof Integer?\"Integer: \"+in:<return value>", d.currentValue().toString());
+                    }
+                    if ("0.0.1".equals(d.statementId())) {
+                        assertEquals("in instanceof Integer&&in instanceof Number&&null!=in?\"Integer: \"+in:\"Number: \"+in", d.currentValue().toString());
+                    }
+                    if("0".equals(d.statementId())) {
+                        assertEquals("in instanceof Number&&null!=in?in instanceof Integer?\"Integer: \"+in:\"Number: \"+in:<return value>", d.currentValue().toString());
+                    }
                 }
             }
         };

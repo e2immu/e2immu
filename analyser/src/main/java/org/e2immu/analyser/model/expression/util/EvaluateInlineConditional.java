@@ -116,12 +116,34 @@ public class EvaluateInlineConditional {
             }
         }
 
+        // x&y ? (y&z ? a : b) : c --> x&y ? (z ? a : b) : c
+        if (ifTrue instanceof InlineConditional ifTrueInline && ifTrueInline.condition instanceof And and) {
+            Expression ifTrueCondition = removeCommonClauses(evaluationContext, condition, and);
+            if (!ifTrueCondition.equals(ifTrueInline.condition)) {
+                return conditionalValueConditionResolved(evaluationContext,
+                        condition, new InlineConditional(evaluationContext.getAnalyserContext(), ifTrueCondition,
+                                ifTrueInline.ifTrue, ifTrueInline.ifFalse), ifFalse);
+            }
+        }
+
         // standardization... we swap!
         // this will result in  a != null ? a: x ==>  null == a ? x : a as the default form
 
         return builder.setExpression(new InlineConditional(evaluationContext.getAnalyserContext(),
                 condition, ifTrue, ifFalse)).build();
         // TODO more advanced! if a "large" part of ifTrue or ifFalse appears in condition, we should create a temp variable
+    }
+
+    private static Expression removeCommonClauses(EvaluationContext evaluationContext, Expression condition, And and) {
+        return new And(evaluationContext.getPrimitives()).append(evaluationContext,
+                and.expressions().stream().filter(e -> !inExpression(e, condition)).toArray(Expression[]::new));
+    }
+
+    private static boolean inExpression(Expression e, Expression container) {
+        if (container instanceof And and) {
+            return and.expressions().contains(e);
+        }
+        return container.equals(e);
     }
 
     private static Expression edgeCases(EvaluationContext evaluationContext, Primitives primitives,

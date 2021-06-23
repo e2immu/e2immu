@@ -51,7 +51,7 @@ public record InstanceOf(Primitives primitives,
         InstanceOf that = (InstanceOf) o;
         return parameterizedType.equals(that.parameterizedType)
                 && expression.equals(that.expression)
-                && patternVariable.equals(that.patternVariable);
+                && Objects.equals(patternVariable, that.patternVariable);
     }
 
     @Override
@@ -159,8 +159,9 @@ public record InstanceOf(Primitives primitives,
         // whatever it is, it is not null; we're more interested in that, than it its type which is guarded by the compiler
         Expression notNull = Negation.negate(evaluationContext,
                 Equals.equals(evaluationContext, expression, NullConstant.NULL_CONSTANT));
+        InstanceOf newInstanceOf = new InstanceOf(primitives, parameterizedType, evaluationResult.getExpression(), null);
         return builder
-                .setExpression(new And(evaluationContext.getPrimitives()).append(evaluationContext, this, notNull))
+                .setExpression(new And(evaluationContext.getPrimitives()).append(evaluationContext, newInstanceOf, notNull))
                 .build();
     }
 
