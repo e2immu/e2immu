@@ -73,8 +73,7 @@ public class Test_01_Loops extends CommonTestRunner {
                 assertEquals(expect, inLoop);
 
                 if ("2.0.0".equals(d.statementId())) {
-                    String expectValue = d.iteration() == 0 ? DELAYED_BY_STATE : "\"abc\"";
-                    assertEquals(expectValue, d.currentValue().toString());
+                    assertEquals("\"abc\"", d.currentValue().toString());
                 }
             }
             if ("org.e2immu.analyser.testexample.Loops_0.this".equals(d.variableName())) {
@@ -477,21 +476,21 @@ public class Test_01_Loops extends CommonTestRunner {
                     assertEquals("org.e2immu.analyser.testexample.Loops_4.method()", d.variableName());
                     if ("0.0.0.0.0".equals(d.statementId())) {
                         // delayed state
-                        String expect = d.iteration() == 0 ? "<s:int>" : "4";
+                        String expect = "4";
                         assertEquals(expect, d.currentValue().toString());
                     }
                     if ("0.0.0".equals(d.statementId())) {
-                        String expect = d.iteration() == 0 ? "1==<v:i>?<s:int>:<return value>" : "0==i$0?4:<return value>";
+                        String expect = d.iteration() == 0 ? "1==<v:i>?4:<return value>" : "0==i$0?4:<return value>";
                         assertEquals(expect, d.currentValue().toString());
                     }
                     if ("0".equals(d.statementId())) {
-                        String expect = d.iteration() == 0 ? "1==<replace:int>?<s:int>:<return value>"
+                        String expect = d.iteration() == 0 ? "1==<replace:int>?4:<return value>"
                                 : "0==instance type int?4:<return value>";
                         assertEquals(expect, d.currentValue().toString());
                     }
                     if ("1".equals(d.statementId())) {
                         String expect = d.iteration() == 0
-                                ? "<replace:int>>=10?0:1==<replace:int>&&<replace:int><=9?<s:int>:<return value>"
+                                ? "<replace:int>>=10?0:1==<replace:int>&&<replace:int><=9?4:<return value>"
                                 : "instance type int>=10?0:0==instance type int?4:<return value>";
                         assertEquals(expect, d.currentValue().toString());
                     }
@@ -559,7 +558,7 @@ public class Test_01_Loops extends CommonTestRunner {
                 }
             }
             if (d.variable() instanceof ReturnVariable && "2".equals(d.statementId())) {
-                String expectReturn = d.iteration() == 0 ? "1==<v:i>?<s:int>:<return value>" :
+                String expectReturn = d.iteration() == 0 ? "1==<v:i>?5:<return value>" :
                         "0==instance type int?5:<return value>";
                 assertEquals(expectReturn, d.currentValue().toString());
             }

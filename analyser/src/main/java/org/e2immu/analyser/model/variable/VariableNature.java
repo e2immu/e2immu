@@ -36,10 +36,6 @@ public interface VariableNature {
         return "";
     }
 
-    default String assignmentId() {
-        return null;
-    }
-
     default boolean acceptForSubBlockMerging(String index) {
         return true;
     }
@@ -47,6 +43,8 @@ public interface VariableNature {
     default boolean acceptVariableForMerging(String index) {
         return true;
     }
+
+    default boolean ignoreCurrent(String index) { return false; }
 
     class Marker implements VariableNature {
     }
@@ -94,12 +92,11 @@ public interface VariableNature {
 
     if(!(x instanceof Y y)) { ... here y does NOT exist } else { ... here, y exists! }
 
-    The assignmentId will be the statement ID + "-E".
      */
-    record Pattern(String assignmentId, boolean isPositive, Variable localCopyOf) implements VariableNature {
+    record Pattern(String scope, boolean isPositive, Variable localCopyOf) implements VariableNature {
         @Override
         public boolean doNotCopyToNextStatement(boolean previousIsParent, String indexOfPrevious, String index) {
-            return !StringUtil.inScopeOf(assignmentId, index);
+            return !StringUtil.inScopeOf(scope, index);
         }
     }
 
@@ -115,6 +112,11 @@ public interface VariableNature {
                                FieldReference localCopyOf) implements VariableNature {
         public CopyOfVariableField {
             assert localCopyOf != null;
+        }
+
+        @Override
+        public boolean ignoreCurrent(String index) {
+            return assignmentId != null && assignmentId.startsWith(index);
         }
 
         public String suffix() {
@@ -167,6 +169,11 @@ public interface VariableNature {
         @Override
         public String getStatementIndexOfThisLoopOrLoopCopyVariable() {
             return statementIndex;
+        }
+
+        @Override
+        public boolean ignoreCurrent(String index) {
+            return assignmentId != null && assignmentId.startsWith(index);
         }
     }
 

@@ -888,8 +888,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                             })
                             .filter(cav -> acceptVariableForMerging(cav, inSwitchStatementOldStyle)).toList();
                     boolean ignoreCurrent;
-                    if (toMerge.size() == 1 && (toMerge.get(0).variableNature.assignmentId() != null
-                            && toMerge.get(0).variableNature.assignmentId().startsWith(index) && !atLeastOneBlockExecuted ||
+                    if (toMerge.size() == 1 && (toMerge.get(0).variableNature.ignoreCurrent(index) && !atLeastOneBlockExecuted ||
                             variable instanceof FieldReference fr && onlyOneCopy(evaluationContext, fr)) ||
                             destination.variableNature() == VariableNature.CREATED_IN_MERGE) {
                         ignoreCurrent = true;
