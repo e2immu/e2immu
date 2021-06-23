@@ -1533,8 +1533,14 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                     // create the local (loop) variable
 
                     lvr = new LocalVariableReference(lvc.localVariable);
-                    VariableNature variableNature = statement() instanceof LoopStatement
-                            ? new VariableNature.LoopVariable(index()) : lvc.localVariable.nature();
+                    VariableNature variableNature;
+                    if(statement() instanceof LoopStatement) {
+                        variableNature = new VariableNature.LoopVariable(index());
+                    } else if(statement() instanceof TryStatement) {
+                        variableNature = new VariableNature.TryResource(index());
+                    } else {
+                        variableNature = lvc.localVariable.nature();
+                    }
                     vic = VariableInfoContainerImpl.newVariable(lvr, VariableInfoContainer.NOT_A_VARIABLE_FIELD,
                             variableNature, statementAnalysis.navigationData.hasSubBlocks());
                     newVariable = true;

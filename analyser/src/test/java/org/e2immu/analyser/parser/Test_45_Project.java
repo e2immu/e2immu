@@ -72,14 +72,10 @@ public class Test_45_Project extends CommonTestRunner {
                     }
                 }
                 if (d.variable() instanceof ReturnVariable && "3".equals(d.statementId())) {
-                    String expectValue = switch (d.iteration()) {
-                        case 0 -> "null==<m:get>?<s:>:<f:value>";
-                        case 1, 2 -> "null==<m:get>?null:kvStore.get(key).value";
-                        default -> "null==kvStore.get(key)?null:kvStore.get(key).value";
-                    };
+                    String expectValue = d.iteration() == 0 ? "null==<m:get>?null:<f:value>" :
+                            "null==kvStore.get(key)?null:kvStore.get(key).value";
                     assertEquals(expectValue, d.currentValue().toString());
-                    int expectNne = d.iteration() == 0 ? Level.DELAY : MultiLevel.NULLABLE;
-                    assertEquals(expectNne, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                    assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
                 }
             }
             if (d.variable() instanceof FieldReference fr && "read".equals(fr.fieldInfo.name)) {

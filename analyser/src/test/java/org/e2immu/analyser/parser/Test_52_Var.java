@@ -15,9 +15,13 @@
 package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.config.DebugConfiguration;
+import org.e2immu.analyser.model.variable.VariableNature;
+import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_52_Var extends CommonTestRunner {
 
@@ -65,7 +69,21 @@ public class Test_52_Var extends CommonTestRunner {
     @Test
     public void test_5() throws IOException {
         // expect one potential null ptr (result of sw.append())
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("sw".equals(d.variableName())) {
+                if ("0.0.0".equals(d.statementId())) {
+                    assertEquals("instance type StringWriter", d.currentValue().toString());
+                    assertTrue(d.variableInfoContainer().variableNature() instanceof VariableNature.TryResource);
+                } else if ("0".equals(d.statementId())) {
+                    assertFalse(d.variableInfoContainer().hasMerge());
+                    assertEquals("instance type StringWriter", d.currentValue().toString());
+                } else {
+                    fail(d.statementId()); // sw should not exist here! (0.1.0, catch clause)
+                }
+            }
+        };
         testClass("Var_5", 0, 1, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 }

@@ -137,17 +137,4 @@ public interface VariableInfo {
         return !(variable() instanceof LocalVariableReference lvr) ||
                 !(lvr.variable.nature() instanceof VariableNature.ConditionalInitialization);
     }
-
-    default boolean isConditionalInitializationNotCreatedHere(String index) {
-        if (variable() instanceof LocalVariableReference lvr &&
-                lvr.variable.nature() instanceof VariableNature.ConditionalInitialization ci) {
-            return !index.equals(ci.statementIndex());
-        }
-        return false;
-    }
-
-    default boolean isCopyOfVariableField() {
-       return variable() instanceof LocalVariableReference lvr
-                && lvr.variable.nature() instanceof VariableNature.CopyOfVariableField;
-    }
 }

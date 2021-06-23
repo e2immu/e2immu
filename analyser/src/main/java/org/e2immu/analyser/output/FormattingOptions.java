@@ -33,16 +33,20 @@ public record FormattingOptions(int lengthOfLine,
     @Container
     public static class Builder {
 
-        private int lengthOfLine = 120;
-        private int spacesInTab = 4;
-        private int tabsForLineSplit = 2;
-        private boolean binaryOperatorsAtEndOfLine = true;
+        private int lengthOfLine;
+        private int spacesInTab;
+        private int tabsForLineSplit;
+        private boolean binaryOperatorsAtEndOfLine;
         private boolean debug;
         private boolean compact;
         private boolean allFieldsRequireThis;
         private boolean allStaticFieldsRequireType;
 
         public Builder() {
+            this.lengthOfLine = 120;
+            this.spacesInTab = 4;
+            this.tabsForLineSplit = 2;
+            this.binaryOperatorsAtEndOfLine = true;
         }
 
         public Builder(FormattingOptions options) {

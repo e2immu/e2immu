@@ -451,6 +451,9 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         } else if (vic.variableNature() instanceof VariableNature.Pattern pattern
                 && !StringUtil.inScopeOf(pattern.assignmentId(), index)) {
             return; // skip
+        } else if (vic.variableNature() instanceof VariableNature.TryResource tryResource &&
+                !index.startsWith(tryResource.statementIndex() + ".0.0")) {
+            return;//skip
         } else {
             // make a simple reference copy; potentially resetting localVariableInLoopDefinedOutside
             newVic = VariableInfoContainerImpl.existingVariable(vic, index, previousIsParent, navigationData.hasSubBlocks());
@@ -1045,15 +1048,26 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         return Stream.concat(variables.stream().map(e -> new AcceptForMerging(e.getValue(),
                         !index.equals(e.getValue().getStatementIndexOfThisLoopOrShadowVariable()))),
                 lastStatements.stream().flatMap(st -> st.lastStatement.statementAnalysis.variables.stream().map(e -> {
-                    VariableInfo vi = e.getValue().current();
-                    // we don't copy up local variables, unless they're local copies of fields
-                    // conditional initialization is always copied up, but it is not merged where it is created
-                    boolean accept = (!vi.variable().isLocal() || vi.isConditionalInitializationNotCreatedHere(index) ||
-                            vi.isCopyOfVariableField()) &&
-                            !index.equals(e.getValue().getStatementIndexOfThisLoopOrShadowVariable());
-                    return new AcceptForMerging(e.getValue(), accept);
+                    VariableInfoContainer vic = e.getValue();
+                    VariableInfo vi = vic.current();
+                    boolean accept = (!vi.variable().isLocal() || acceptLocalSubBlockVariableForMerging(vic)) &&
+                            !index.equals(vic.getStatementIndexOfThisLoopOrShadowVariable());
+                    return new AcceptForMerging(vic, accept);
                 }))
         );
+    }
+
+    private boolean acceptLocalSubBlockVariableForMerging(VariableInfoContainer vic) {
+        // allow conditional initializers, but only if they're not created exactly here
+        return vic.variableNature() instanceof VariableNature.ConditionalInitialization ci &&
+                !index.equals(ci.statementIndex())
+
+                // allow try-resource, but not beyond index.0.0 back up to index
+                || vic.variableNature() instanceof VariableNature.TryResource tryResource &&
+                !index.equals(tryResource.statementIndex())
+
+                // allow copies of variable fields
+                || vic.variableNature() instanceof VariableNature.CopyOfVariableField;
     }
 
     /*

@@ -156,5 +156,13 @@ public interface VariableNature {
     Meant for variable, static fields (ConditionalInitialization tests)
      */
     record ConditionalInitialization(String statementIndex, FieldInfo source) implements VariableNature {}
+
+    /*
+    situation 10
+
+    try resource variable
+    Value in VIC overrides the default one in the local variable
+     */
+    record TryResource(String statementIndex) implements VariableNature {}
 }
 

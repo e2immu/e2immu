@@ -50,7 +50,7 @@ public class Test_Support_00_Either extends CommonTestRunner {
                     assertEquals(expectContainer, d.getProperty(VariableProperty.CONTAINER));
                 }
                 if ("1".equals(d.statementId())) {
-                    String expectValue = d.iteration() == 0 ? "<p:orElse>" : "nullable instance type A";
+                    String expectValue = d.iteration() == 0 ? "<p:orElse>" : "nullable instance type A/*@Identity*/";
                     assertEquals(expectValue, d.currentValue().toString());
                 }
             }
