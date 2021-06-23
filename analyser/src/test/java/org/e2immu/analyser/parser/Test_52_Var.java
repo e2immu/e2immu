@@ -14,9 +14,15 @@
 
 package org.e2immu.analyser.parser;
 
+import org.e2immu.analyser.analyser.VariableInfoContainer;
+import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
+import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.VariableNature;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
+import org.e2immu.analyser.visitor.TypeMapVisitor;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -75,15 +81,38 @@ public class Test_52_Var extends CommonTestRunner {
                     assertEquals("instance type StringWriter", d.currentValue().toString());
                     assertTrue(d.variableInfoContainer().variableNature() instanceof VariableNature.TryResource);
                 } else if ("0".equals(d.statementId())) {
-                    assertFalse(d.variableInfoContainer().hasMerge());
+                    assertEquals("new StringWriter()", d.variableInfoContainer()
+                            .best(VariableInfoContainer.Level.EVALUATION).getValue().toString());
+                    assertTrue(d.variableInfoContainer().hasMerge());
                     assertEquals("instance type StringWriter", d.currentValue().toString());
                 } else {
                     fail(d.statementId()); // sw should not exist here! (0.1.0, catch clause)
                 }
             }
+            if (d.variable() instanceof ReturnVariable) {
+                if ("0.0.0".equals(d.statementId())) {
+                    assertEquals("sw.append(s).toString()", d.currentValue().toString());
+                    // explicit as result of the method, rather than governed by the type
+                    assertEquals(MultiLevel.MUTABLE, d.getProperty(VariableProperty.IMMUTABLE));
+                }
+                if ("0.1.0".equals(d.statementId())) {
+                    assertEquals("\"Error!\"", d.currentValue().toString());
+                    assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, d.getProperty(VariableProperty.IMMUTABLE));
+                }
+                if ("0".equals(d.statementId())) {
+                    assertEquals("nullable instance type String", d.currentValue().toString());
+                }
+            }
         };
+        TypeMapVisitor typeMapVisitor = typeMap -> {
+            TypeInfo typeInfo = typeMap.get(String.class);
+            int imm = typeInfo.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE);
+            assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, imm);
+        };
+
         testClass("Var_5", 0, 1, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addTypeMapVisitor(typeMapVisitor)
                 .build());
     }
 }

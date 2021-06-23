@@ -1,8 +1,20 @@
 package org.e2immu.analyser.model.variable;
 
 import org.e2immu.analyser.model.FieldInfo;
+import org.e2immu.analyser.util.StringUtil;
 
 public interface VariableNature {
+
+    static VariableNature normal(Variable variable, String index) {
+        if (variable instanceof LocalVariableReference) {
+            return new NormalLocalVariable(index);
+        }
+        return NORMAL;
+    }
+
+    default boolean doNotCopyToNextStatement(boolean previousIsParent, String indexOfPrevious, String index) {
+        return false;
+    }
 
     /*
     Is true starting from the eval expression of the loop statement, down to all statements in the block.
@@ -28,8 +40,12 @@ public interface VariableNature {
         return null;
     }
 
-    default String statementIndex() {
-        return null;
+    default boolean acceptForSubBlockMerging(String index) {
+        return true;
+    }
+
+    default boolean acceptVariableForMerging(String index) {
+        return true;
     }
 
     class Marker implements VariableNature {
@@ -37,8 +53,28 @@ public interface VariableNature {
 
     /*
     situation 1: normal variable (default value, rather than null)
+    local variable gets VIC value (analysis only) for merging
      */
     Marker NORMAL = new Marker();
+
+    class NormalLocalVariable implements VariableNature {
+        public final String parentBlockIndex;
+
+        // do not move up beyond block of definition!
+        public NormalLocalVariable(String statementIndex) {
+            int dot = statementIndex.lastIndexOf('.');
+            if (dot == -1) parentBlockIndex = "";
+            else {
+                int dot2 = statementIndex.substring(0, dot).lastIndexOf('.');
+                this.parentBlockIndex = statementIndex.substring(0, dot2);
+            }
+        }
+
+        @Override
+        public boolean acceptForSubBlockMerging(String index) {
+            return !index.equals(parentBlockIndex);
+        }
+    }
 
     /*
     situation 2: A dependent variable was created inside a block, without a clear reference to a single variable;
@@ -61,6 +97,10 @@ public interface VariableNature {
     The assignmentId will be the statement ID + "-E".
      */
     record Pattern(String assignmentId, boolean isPositive, Variable localCopyOf) implements VariableNature {
+        @Override
+        public boolean doNotCopyToNextStatement(boolean previousIsParent, String indexOfPrevious, String index) {
+            return !StringUtil.inScopeOf(assignmentId, index);
+        }
     }
 
     /*
@@ -110,6 +150,21 @@ public interface VariableNature {
         }
 
         @Override
+        public boolean doNotCopyToNextStatement(boolean previousIsParent, String indexOfPrevious, String index) {
+            return indexOfPrevious != null && (indexOfPrevious.equals(statementIndex));
+        }
+
+        @Override
+        public boolean acceptForSubBlockMerging(String index) {
+            return !index.equals(statementIndex);
+        }
+
+        @Override
+        public boolean acceptVariableForMerging(String index) {
+            return !index.equals(statementIndex);
+        }
+
+        @Override
         public String getStatementIndexOfThisLoopOrLoopCopyVariable() {
             return statementIndex;
         }
@@ -121,15 +176,30 @@ public interface VariableNature {
 
     Only stored in the VIC, because the LocalVariable has been created before we know statement IDs.
      */
-    record LoopVariable(String statementIndexOfLoop) implements VariableNature {
+    record LoopVariable(String statementIndex) implements VariableNature {
         @Override
         public boolean isLocalVariableInLoopDefinedOutside() {
             return true;
         }
 
         @Override
+        public boolean doNotCopyToNextStatement(boolean previousIsParent, String indexOfPrevious, String index) {
+            return indexOfPrevious != null && (indexOfPrevious.equals(statementIndex));
+        }
+
+        @Override
+        public boolean acceptForSubBlockMerging(String index) {
+            return !index.equals(statementIndex);
+        }
+
+        @Override
+        public boolean acceptVariableForMerging(String index) {
+            return !index.equals(statementIndex);
+        }
+
+        @Override
         public String getStatementIndexOfThisLoopOrLoopCopyVariable() {
-            return statementIndexOfLoop;
+            return statementIndex;
         }
     }
 
@@ -153,16 +223,33 @@ public interface VariableNature {
     situation 9
 
     copy for conditional assignments of fields
-    Meant for variable, static fields (ConditionalInitialization tests)
+    Meant for variable, static fields (ConditionalInitialization tests).
+    Only travels "upwards" to the end of the method (never down into blocks)
      */
-    record ConditionalInitialization(String statementIndex, FieldInfo source) implements VariableNature {}
+    record ConditionalInitialization(String statementIndex, FieldInfo source) implements VariableNature {
+        @Override
+        public boolean doNotCopyToNextStatement(boolean previousIsParent, String indexOfPrevious, String index) {
+            return previousIsParent;
+        }
+
+        @Override
+        public boolean acceptForSubBlockMerging(String index) {
+            return !index.equals(statementIndex);
+        }
+    }
 
     /*
     situation 10
 
     try resource variable
     Value in VIC overrides the default one in the local variable
+    The variable only exists in statementIndex-Evaluation + sub-block 0
      */
-    record TryResource(String statementIndex) implements VariableNature {}
+    record TryResource(String statementIndex) implements VariableNature {
+        @Override
+        public boolean doNotCopyToNextStatement(boolean previousIsParent, String indexOfPrevious, String index) {
+            return !index.startsWith(statementIndex + ".0.");
+        }
+    }
 }
 

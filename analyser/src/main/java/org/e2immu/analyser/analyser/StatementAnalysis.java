@@ -435,25 +435,15 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
 
         if (markCopyOfEnclosingMethod) {
             newVic = VariableInfoContainerImpl.copyOfExistingVariableInEnclosingMethod(vic, navigationData.hasSubBlocks());
-        } else if (!vic.isLocalVariableInLoopDefinedOutside() && statement instanceof LoopStatement && variable.isLocal()) {
+        } else if (!vic.variableNature().isLocalVariableInLoopDefinedOutside()
+                && statement instanceof LoopStatement && variable.isLocal()) {
             // as we move into a loop statement, the VariableInLoop is added to obtain local variable in loop defined outside
             // the variable itself will not be used anymore, only its "local copy" associated with the loop
             // however, the loop may turn out to be completely empty, in which case the initial value is kept
             // so we must keep the initial value
             newVic = VariableInfoContainerImpl.existingLocalVariableIntoLoop(vic, index, previousIsParent);
-        } else if (indexOfPrevious != null && (indexOfPrevious.equals(vic.getStatementIndexOfThisLoopOrShadowVariable()))) {
-            /* this is the very specific situation that the previous statement introduced a loop variable (or a shadow copy)
-             this loop variable should not go beyond the loop statement
-            */
+        } else if (vic.variableNature().doNotCopyToNextStatement(previousIsParent, indexOfPrevious, index)) {
             return; // skip
-        } else if (vic.isConditionalInitialization() && previousIsParent) {
-            return; // skip
-        } else if (vic.variableNature() instanceof VariableNature.Pattern pattern
-                && !StringUtil.inScopeOf(pattern.assignmentId(), index)) {
-            return; // skip
-        } else if (vic.variableNature() instanceof VariableNature.TryResource tryResource &&
-                !index.startsWith(tryResource.statementIndex() + ".0.0")) {
-            return;//skip
         } else {
             // make a simple reference copy; potentially resetting localVariableInLoopDefinedOutside
             newVic = VariableInfoContainerImpl.existingVariable(vic, index, previousIsParent, navigationData.hasSubBlocks());
@@ -522,7 +512,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
 
     private boolean explicitlyPropagate(StatementAnalysis copyFrom, boolean copyIsParent, VariableInfoContainer vic) {
         if (copyIsParent) {
-            if (vic.isConditionalInitialization()) return false;
+            if (vic.variableNature() instanceof VariableNature.ConditionalInitialization) return false;
             // we'd only copy fields if they are used somewhere in the block. BUT there are "hidden" fields
             // such as local variables with an array initialiser containing fields as a value; conclusion: copy all, but don't merge unless used.
             if (vic.variableNature() instanceof VariableNature.CopyOfVariableInLoop loopCopy) {
@@ -531,7 +521,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             return true;
         }
         // don't continue local copies of loop variables beyond the loop
-        return !copyFrom.index.equals(vic.getStatementIndexOfThisLoopOrShadowVariable());
+        return !copyFrom.index.equals(vic.variableNature().getStatementIndexOfThisLoopOrLoopCopyVariable());
     }
 
 
@@ -1046,28 +1036,10 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
     // note: .distinct() may not work
     private Stream<AcceptForMerging> makeVariableStream(List<ConditionAndLastStatement> lastStatements) {
         return Stream.concat(variables.stream().map(e -> new AcceptForMerging(e.getValue(),
-                        !index.equals(e.getValue().getStatementIndexOfThisLoopOrShadowVariable()))),
-                lastStatements.stream().flatMap(st -> st.lastStatement.statementAnalysis.variables.stream().map(e -> {
-                    VariableInfoContainer vic = e.getValue();
-                    VariableInfo vi = vic.current();
-                    boolean accept = (!vi.variable().isLocal() || acceptLocalSubBlockVariableForMerging(vic)) &&
-                            !index.equals(vic.getStatementIndexOfThisLoopOrShadowVariable());
-                    return new AcceptForMerging(vic, accept);
-                }))
+                     e.getValue().variableNature().acceptVariableForMerging(index))),
+                lastStatements.stream().flatMap(st -> st.lastStatement.statementAnalysis.variables.stream().map(e ->
+                        new AcceptForMerging(e.getValue(), e.getValue().variableNature().acceptForSubBlockMerging(index))))
         );
-    }
-
-    private boolean acceptLocalSubBlockVariableForMerging(VariableInfoContainer vic) {
-        // allow conditional initializers, but only if they're not created exactly here
-        return vic.variableNature() instanceof VariableNature.ConditionalInitialization ci &&
-                !index.equals(ci.statementIndex())
-
-                // allow try-resource, but not beyond index.0.0 back up to index
-                || vic.variableNature() instanceof VariableNature.TryResource tryResource &&
-                !index.equals(tryResource.statementIndex())
-
-                // allow copies of variable fields
-                || vic.variableNature() instanceof VariableNature.CopyOfVariableField;
     }
 
     /*
@@ -1334,7 +1306,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                     return new VariableInfoImpl(variable);
                 }
             }
-            if (vic.isLocalVariableInLoopDefinedOutside()) {
+            if (vic.variableNature().isLocalVariableInLoopDefinedOutside()) {
                 StatementAnalysis relevantLoop = mostEnclosingLoop();
                 if (relevantLoop.localVariablesAssignedInThisLoop.isFrozen()) {
                     if (relevantLoop.localVariablesAssignedInThisLoop.contains(fqn)) {
@@ -1429,7 +1401,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
     public boolean isLocalVariableAndLocalToThisBlock(String variableName) {
         if (!variables.isSet(variableName)) return false;
         VariableInfoContainer vic = variables.get(variableName);
-        if (vic.isLocalVariableInLoopDefinedOutside()) return false;
+        if (vic.variableNature().isLocalVariableInLoopDefinedOutside()) return false;
         VariableInfo variableInfo = vic.current();
         if (!variableInfo.variable().isLocal()) return false;
         if (parent == null) return true;

@@ -64,7 +64,7 @@ public class Test_48_Store extends CommonTestRunner {
                         VariableInfo eval = d.variableInfoContainer().best(VariableInfoContainer.Level.EVALUATION);
                         String expectLinks = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "";
                         assertEquals(expectLinks, eval.getLinkedVariables().toString());
-                        String expectValue = d.iteration() == 0 ? "<v:entry>" : "instance type Entry<String,Object>";
+                        String expectValue = d.iteration() == 0 ? "<v:entry>" : "nullable instance type Entry<String,Object>";
                         assertEquals(expectValue, eval.getValue().toString());
                         assertEquals(Level.TRUE, eval.getProperty(VariableProperty.CONTEXT_PROPAGATE_MOD));
                         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, eval.getProperty(VariableProperty.CONTEXT_NOT_NULL));
@@ -91,7 +91,8 @@ public class Test_48_Store extends CommonTestRunner {
                 if ("countRemoved".equals(d.variableName())) {
                     if ("1".equals(d.statementId())) {
                         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
-                        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                        int expectNne = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
+                        assertEquals(expectNne, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
                     }
                     if ("1.0.0.0.0.0.0.0.0".equals(d.statementId())) {
                         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
@@ -199,7 +200,7 @@ public class Test_48_Store extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("flexible".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo object && "object".equals(object.name)) {
-                    String expectValue = d.iteration() == 0 ? "<p:object>" : "nullable instance type Object";
+                    String expectValue = d.iteration() == 0 ? "<p:object>" : "nullable instance type Object/*@Identity*/";
                     assertEquals(expectValue, d.currentValue().toString());
                 }
                 if ("s".equals(d.variableName())) {
@@ -225,6 +226,11 @@ public class Test_48_Store extends CommonTestRunner {
                         assertEquals("ar.result()", d.currentValue().toString());
                         assertTrue(d.variableInfo().valueIsSet());
                         assertTrue(d.currentValue() instanceof MethodCall);
+                    }
+                }
+                if("port".equals(d.variableName())) {
+                    if("0".equals(d.statementId())) {
+                        fail("Variable should not exist here");
                     }
                 }
             }

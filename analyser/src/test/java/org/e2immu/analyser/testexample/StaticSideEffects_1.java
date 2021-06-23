@@ -1,14 +1,17 @@
 package org.e2immu.analyser.testexample;
 
-import org.e2immu.annotation.E2Container;
+import org.e2immu.annotation.*;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
 // no static side effects: inside type; modification and assignment inside constructor
-@E2Container
+@Container
 public class StaticSideEffects_1<K> {
     public final K k;
     public final int count;
+    @Modified
+    @Variable
+    @Nullable
     private static AtomicInteger counter;
 
     public StaticSideEffects_1(K k) {

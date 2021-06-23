@@ -724,7 +724,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                     immutableAtAssignment = DELAYS;
                 }
 
-                if (vic.isLocalVariableInLoopDefinedOutside()) {
+                if (vic.variableNature().isLocalVariableInLoopDefinedOutside()) {
                     VariableInfoContainer local = addToAssignmentsInLoop(vic, variable.fullyQualifiedName());
                     // assign the value of the assignment to the local copy created
                     if (local != null) {
@@ -823,7 +823,9 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 VariableInfoContainer vic = e.getValue();
                 Variable variable = e.getKey();
                 VariableInfo vi1 = vic.getPreviousOrInitial();
-                if (!(variable instanceof This) && !(variable instanceof ReturnVariable) && !vic.isLocalCopy()
+                if (!(variable instanceof This)
+                        && !(variable instanceof ReturnVariable)
+                        && !(vic.variableNature() instanceof VariableNature.CopyOfVariableInLoop)
                         && !vi1.isConfirmedVariableField()) {
                     LinkedVariables lv = remap(remapStaticallyAssignedVariables, vi1.getStaticallyAssignedVariables());
                     if (!lv.equals(vi1.getStaticallyAssignedVariables())) {
@@ -1260,7 +1262,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         if (!statementAnalysis.variables.isSet(variable.fullyQualifiedName())) {
             assert variable.variableNature() == VariableNature.NORMAL;
             vic = statementAnalysis.createVariable(evaluationContext, variable,
-                    statementAnalysis.flowData.getInitialTime(), VariableNature.NORMAL);
+                    statementAnalysis.flowData.getInitialTime(), VariableNature.normal(variable, index()));
             initial = vic.getPreviousOrInitial();
             if (initial.variable().needsNewVariableWithoutValueCall()) {
                 vic.newVariableWithoutValue();
@@ -1395,7 +1397,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         while (sa != null) {
             if (!sa.variables.isSet(fullyQualifiedName)) return null;
             VariableInfoContainer localVic = sa.variables.get(fullyQualifiedName);
-            if (!localVic.isLocalVariableInLoopDefinedOutside()) return null;
+            if (!localVic.variableNature().isLocalVariableInLoopDefinedOutside()) return null;
             if (sa.statement instanceof LoopStatement) {
                 if (!sa.localVariablesAssignedInThisLoop.contains(fullyQualifiedName)) {
                     sa.localVariablesAssignedInThisLoop.add(fullyQualifiedName);
@@ -1534,12 +1536,12 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
 
                     lvr = new LocalVariableReference(lvc.localVariable);
                     VariableNature variableNature;
-                    if(statement() instanceof LoopStatement) {
+                    if (statement() instanceof LoopStatement) {
                         variableNature = new VariableNature.LoopVariable(index());
-                    } else if(statement() instanceof TryStatement) {
+                    } else if (statement() instanceof TryStatement) {
                         variableNature = new VariableNature.TryResource(index());
                     } else {
-                        variableNature = lvc.localVariable.nature();
+                        variableNature = new VariableNature.NormalLocalVariable(index());
                     }
                     vic = VariableInfoContainerImpl.newVariable(lvr, VariableInfoContainer.NOT_A_VARIABLE_FIELD,
                             variableNature, statementAnalysis.navigationData.hasSubBlocks());
@@ -2504,7 +2506,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             // at the end of the block, check for variables created in this block
             // READ is set in the first iteration, so there is no reason to expect delays
             statementAnalysis.variables.stream()
-                    .filter(e -> e.getValue().getStatementIndexOfThisLoopVariable() == null &&
+                    .filter(e -> !(e.getValue().variableNature() instanceof VariableNature.LoopVariable) &&
                             e.getValue().variableNature() != VariableNature.FROM_ENCLOSING_METHOD)
                     .map(e -> e.getValue().current())
                     .filter(VariableInfo::isNotConditionalInitialization)
@@ -2521,7 +2523,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 && !statementAnalysis.containsMessage(Message.Label.EMPTY_LOOP)
                 && myMethodAnalyser.methodInfo.isNotATestMethod()) {
             statementAnalysis.variables.stream()
-                    .filter(e -> index().equals(e.getValue().getStatementIndexOfThisLoopVariable()))
+                    .filter(e -> e.getValue().variableNature() instanceof VariableNature.LoopVariable loopVariable &&
+                            loopVariable.statementIndex().equals(index()))
                     .forEach(e -> {
                         String loopVarFqn = e.getKey();
                         StatementAnalyser first = navigationData.blocks.get().get(0).orElse(null);
@@ -2945,7 +2948,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             if (statementAnalysis.statement instanceof LoopStatement) {
                 Map<Expression, Expression> map = new HashMap<>();
                 statementAnalysis.variables.stream()
-                        .filter(e -> statementAnalysis.index.equals(e.getValue().getStatementIndexOfThisLoopOrShadowVariable()))
+                        .filter(e -> statementAnalysis.index.equals(e.getValue()
+                                .variableNature().getStatementIndexOfThisLoopOrLoopCopyVariable()))
                         .forEach(e -> {
                             VariableInfo eval = e.getValue().best(EVALUATION);
                             Variable variable = eval.variable();

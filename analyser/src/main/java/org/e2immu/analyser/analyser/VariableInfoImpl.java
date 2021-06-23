@@ -591,7 +591,7 @@ class VariableInfoImpl implements VariableInfo {
         StatementAnalysis.ConditionAndVariableInfo eLast = reduced.get(reduced.size() - 1);
         if (eLast.condition().isBoolValueTrue()) return eLast.variableInfo().getValue();
 
-        if (reduced.stream().anyMatch(cav -> cav.variableInfo().getValue().isDelayed(evaluationContext))) {
+        if (reduced.stream().anyMatch(cav -> !cav.variableInfo().valueIsSet())) {
             // all are delayed, they're not all identical delayed field references.
             return mergeHelper.delayedConclusion();
         }

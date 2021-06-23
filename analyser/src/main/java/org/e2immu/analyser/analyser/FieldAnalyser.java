@@ -1042,7 +1042,7 @@ public class FieldAnalyser extends AbstractAnalyser {
         } else {
             // final if only written in constructors, or methods exclusively reached from constructors
             // for static fields, we'll take ALL methods and constructors (only the static blocks are allowed)
-            Stream<MethodAnalyser> stream = allMethodsAndConstructorsAndOtherStaticBlocks(true);
+            Stream<MethodAnalyser> stream = methodsForFinal();
             isFinal = stream.filter(m -> fieldInspection.isStatic() ||
                     m.methodInfo.methodResolution.get().partOfConstruction().accessibleFromTheOutside())
                     .flatMap(m -> m.getFieldAsVariableStream(fieldInfo, false))
@@ -1064,11 +1064,20 @@ public class FieldAnalyser extends AbstractAnalyser {
         return DONE;
     }
 
-    private Stream<MethodAnalyser> allMethodsAndConstructorsAndOtherStaticBlocks(boolean alsoMyOwnConstructors) {
+    private Stream<MethodAnalyser> methodsForModification() {
         if (fieldInspection.isStatic()) {
-            return Stream.concat(allMethodsAndConstructors(alsoMyOwnConstructors), otherStaticBlocks());
+            // look at all methods, except MY static blocks
+            return Stream.concat(allMethodsAndConstructors(true), otherStaticBlocks());
         }
-        return allMethodsAndConstructors(alsoMyOwnConstructors);
+        // look at all methods and constructors, but ignore my constructors
+        return allMethodsAndConstructors(false);
+    }
+
+    private Stream<MethodAnalyser> methodsForFinal() {
+        if (fieldInspection.isStatic()) {
+            return Stream.concat(allMethodsAndConstructors(true), otherStaticBlocks());
+        }
+        return allMethodsAndConstructors(true);
     }
 
     private AnalysisStatus analysePropagateModification() {
@@ -1118,7 +1127,7 @@ public class FieldAnalyser extends AbstractAnalyser {
             return DONE;
         }
 
-        Stream<MethodAnalyser> stream = allMethodsAndConstructorsAndOtherStaticBlocks(false);
+        Stream<MethodAnalyser> stream = methodsForModification();
         boolean modified = fieldCanBeWrittenFromOutsideThisPrimaryType ||
                 stream.flatMap(m -> m.getFieldAsVariableStream(fieldInfo, true))
                         .filter(VariableInfo::isRead)
@@ -1130,8 +1139,8 @@ public class FieldAnalyser extends AbstractAnalyser {
             return DONE;
         }
 
-        // we only consider methods, not constructors!
-        Stream<MethodAnalyser> stream2 = allMethodsAndConstructorsAndOtherStaticBlocks(false);
+        // we only consider methods, not constructors (unless the field is static)!
+        Stream<MethodAnalyser> stream2 = methodsForModification();
         boolean allContextModificationsDefined = stream2.allMatch(m -> {
             List<VariableInfo> variableInfoList = m.getFieldAsVariable(fieldInfo, true);
             // AggregatingMethodAnalyser returns empty list, so cast is safe

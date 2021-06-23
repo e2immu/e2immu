@@ -181,35 +181,4 @@ public interface VariableInfoContainer {
 
      */
     void setStatementTime(int statementTime);
-
-    default boolean isLocalVariableInLoopDefinedOutside() {
-        return variableNature().isLocalVariableInLoopDefinedOutside();
-    }
-
-    default String getStatementIndexOfThisLoopOrShadowVariable() {
-        return variableNature().getStatementIndexOfThisLoopOrLoopCopyVariable();
-    }
-
-    // TODO assignment ID or statement index?
-    default String getStatementIndexOfPatternVariable() {
-        if (variableNature() instanceof VariableNature.Pattern pattern) {
-            return pattern.assignmentId();
-        }
-        return null;
-    }
-
-    default String getStatementIndexOfThisLoopVariable() {
-        if (variableNature() instanceof VariableNature.LoopVariable loopVariable) {
-            return loopVariable.statementIndexOfLoop();
-        }
-        return null;
-    }
-
-    default boolean isLocalCopy() {
-        return getStatementIndexOfThisLoopOrShadowVariable() != null;
-    }
-
-    default boolean isConditionalInitialization() {
-        return variableNature() instanceof VariableNature.ConditionalInitialization;
-    }
 }

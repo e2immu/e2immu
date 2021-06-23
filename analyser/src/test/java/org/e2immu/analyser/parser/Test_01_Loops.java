@@ -69,7 +69,7 @@ public class Test_01_Loops extends CommonTestRunner {
             if ("res1".equals(d.variableName())) {
                 assertTrue(d.variable() instanceof LocalVariableReference);
                 boolean expect = d.statementId().startsWith("2");
-                boolean inLoop = d.variableInfoContainer().isLocalVariableInLoopDefinedOutside();
+                boolean inLoop = d.variableInfoContainer().variableNature().isLocalVariableInLoopDefinedOutside();
                 assertEquals(expect, inLoop);
 
                 if ("2.0.0".equals(d.statementId())) {
@@ -91,7 +91,7 @@ public class Test_01_Loops extends CommonTestRunner {
             if ("i".equals(d.variableName())) {
                 if (d.variable() instanceof LocalVariableReference) {
                     boolean expect = d.statementId().startsWith("2");
-                    boolean inLoop = d.variableInfoContainer().isLocalVariableInLoopDefinedOutside();
+                    boolean inLoop = d.variableInfoContainer().variableNature().isLocalVariableInLoopDefinedOutside();
                     assertEquals(expect, inLoop);
                 } else fail();
                 if ("1".equals(d.statementId())) {
@@ -206,15 +206,16 @@ public class Test_01_Loops extends CommonTestRunner {
                 }
             }
             if ("res2".equals(d.variableName())) {
-                if ("2.0.0".equals(d.statementId())) {
-                    assertEquals("2", d.variableInfoContainer().variableNature().statementIndex());
-                }
                 if ("2.0.1.0.0".equals(d.statementId())) {
-                    assertEquals("2", d.variableInfoContainer().variableNature().statementIndex());
+                    if (d.variableInfoContainer().variableNature() instanceof VariableNature.VariableDefinedOutsideLoop v) {
+                        assertEquals("2", v.statementIndex());
+                    } else fail();
                     assertTrue(d.variableInfoContainer().variableNature() instanceof VariableNature.VariableDefinedOutsideLoop);
                 }
-                if ("2.0.1".equals(d.statementId())) {
-                    assertEquals("2", d.variableInfoContainer().variableNature().statementIndex());
+                if ("2.0.0".equals(d.statementId()) || "2.0.1".equals(d.statementId())) {
+                    if (d.variableInfoContainer().variableNature() instanceof VariableNature.VariableDefinedOutsideLoop v) {
+                        assertEquals("2", v.statementIndex());
+                    } else fail();
                 }
                 if ("2.0.2".equals(d.statementId())) {
                     // statement says: res="abc", but the value takes the state into account
@@ -379,7 +380,9 @@ public class Test_01_Loops extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
                 if ("1".equals(d.statementId()) && "s".equals(d.variableName())) {
-                    assertEquals("1", d.variableInfoContainer().getStatementIndexOfThisLoopVariable());
+                    if (d.variableInfoContainer().variableNature() instanceof VariableNature.LoopVariable loopVariable) {
+                        assertEquals("1", loopVariable.statementIndex());
+                    } else fail();
                 }
                 if ("res".equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {
@@ -454,7 +457,9 @@ public class Test_01_Loops extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
                 if ("i".equals(d.variableName())) {
-                    assertEquals("0", d.variableInfoContainer().getStatementIndexOfThisLoopVariable());
+                    if (d.variableInfoContainer().variableNature() instanceof VariableNature.LoopVariable loopVariable) {
+                        assertEquals("0", loopVariable.statementIndex());
+                    } else fail();
                     if ("0.0.0.0.0".equals(d.statementId())) {
                         String expect = d.iteration() == 0 ? "1+<v:i>" : "1+i$0";
                         assertEquals(expect, d.currentValue().toString());
@@ -537,8 +542,9 @@ public class Test_01_Loops extends CommonTestRunner {
             }
             if ("i".equals(d.variableName())) {
                 if ("1.0.0".equals(d.statementId())) {
-                    assertEquals("1", d.variableInfoContainer().variableNature().statementIndex());
-                    assertTrue(d.variableInfoContainer().variableNature() instanceof VariableNature.VariableDefinedOutsideLoop);
+                    if (d.variableInfoContainer().variableNature() instanceof VariableNature.VariableDefinedOutsideLoop v) {
+                        assertEquals("1", v.statementIndex());
+                    } else fail();
                     String expect = d.iteration() == 0 ? "1+<v:i>" : "1+i$1";
                     assertEquals(expect, d.currentValue().toString());
                 }
