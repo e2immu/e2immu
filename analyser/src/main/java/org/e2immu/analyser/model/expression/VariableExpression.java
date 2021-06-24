@@ -57,6 +57,10 @@ public record VariableExpression(Variable variable, String name) implements Expr
         if (translated != variable) {
             return new VariableExpression(translated);
         }
+        Expression translated2 = translationMap.directExpression(this);
+        if(translated2 != null) {
+            return translated2;
+        }
         return this;
     }
 

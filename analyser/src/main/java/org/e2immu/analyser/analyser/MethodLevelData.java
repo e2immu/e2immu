@@ -79,7 +79,7 @@ public class MethodLevelData implements DelayDebugger {
     One by one, the causes of the delay get removed until the set is empty.
     The reason it is a set and not a counter is that accounting is not that simple in a multi-pass system.
     It is safe to remove the same object twice; with a counter, this is much more tricky.
-    
+
     The reason it is a map (rather than a set) is that we delay removal by a fixed number of iterations: the removal is necessary
     to break delays in one direction (Modification_20) but the removal cannot take place too quickly (Modification_21).
     Rather than having a fixed number of iterations between marking the removal and actually removing, we should

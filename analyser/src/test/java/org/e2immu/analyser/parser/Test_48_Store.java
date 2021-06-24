@@ -26,6 +26,7 @@ import org.e2immu.analyser.model.expression.MethodCall;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.This;
+import org.e2immu.analyser.model.variable.VariableNature;
 import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
 
@@ -228,8 +229,8 @@ public class Test_48_Store extends CommonTestRunner {
                         assertTrue(d.currentValue() instanceof MethodCall);
                     }
                 }
-                if("port".equals(d.variableName())) {
-                    if("0".equals(d.statementId())) {
+                if ("port".equals(d.variableName())) {
+                    if ("0".equals(d.statementId())) {
                         fail("Variable should not exist here");
                     }
                 }
@@ -262,4 +263,50 @@ public class Test_48_Store extends CommonTestRunner {
                 .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
                 .build());
     }
+
+
+    @Test
+    public void test_8() throws IOException {
+
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("handleMultiSet".equals(d.methodInfo().name)) {
+                if ("entry".equals(d.variableName())) {
+                    assertNotEquals("2", d.statementId());
+                    assertTrue(d.variableInfoContainer().variableNature() instanceof VariableNature.LoopVariable);
+                    String expectValue = d.iteration() == 0 && d.statementId().compareTo("1.0") > 0 ? "<v:entry>"
+                            : "nullable instance type Entry<String,Object>";
+                    assertEquals(expectValue, d.currentValue().toString(), d.statementId());
+                }
+                if ("countUpdated".equals(d.variableName())) {
+                    if ("0".equals(d.statementId())) {
+                        assertEquals("0", d.currentValue().toString());
+                    }
+                    if ("1.0.1.0.0".equals(d.statementId())) {
+                        String expect = d.iteration() == 0 ? "1+<v:countUpdated>" :
+                                "!projectName.equals(entry.getValue())||null==projectName?1+countUpdated$1:countUpdated$1";
+                        assertEquals(expect, d.currentValue().toString());
+                        assertEquals(d.iteration() == 0, d.currentValueIsDelayed());
+                    }
+                    if ("1.0.1".equals(d.statementId())) {
+                        String expect = d.iteration() == 0
+                                ? "!projectName.equals(entry.getValue())||null==projectName?1+<v:countUpdated>:0"
+                                : "!projectName.equals(entry.getValue())||null==projectName?1+countUpdated$1:0";
+                        assertEquals(expect, d.currentValue().toString());
+                        assertEquals(d.iteration() == 0, d.currentValueIsDelayed());
+                    }
+                    // FIXME value does not seem to get resolved
+                    if ("1".equals(d.statementId()) || "2".equals(d.statementId())) {
+                        String expect = d.iteration() == 0
+                                ? "!projectName.equals((nullable instance type Entry<String,Object>).getValue())||null==projectName?1+<v:countUpdated>:0"
+                                : "!projectName.equals((nullable instance type Entry<String,Object>).getValue())||null==projectName?1+instance type int:0";
+                        assertEquals(expect, d.currentValue().toString());
+                    }
+                }
+            }
+        };
+        testClass(List.of("Project_0", "Store_8"), 2, 13, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .build(), new AnalyserConfiguration.Builder().build(), new AnnotatedAPIConfiguration.Builder().build());
+    }
+
 }

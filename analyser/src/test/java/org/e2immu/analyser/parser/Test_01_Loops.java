@@ -316,7 +316,7 @@ public class Test_01_Loops extends CommonTestRunner {
                         // the ENN has been set on s$1, not on s
                         // FIXME the value property must be set when the value is set!
                         assertEquals("nullable instance type String", d.currentValue().toString());
-                        int expectNne = d.iteration()==1 ? Level.DELAY: MultiLevel.NULLABLE;
+                        int expectNne = d.iteration() == 1 ? Level.DELAY : MultiLevel.NULLABLE;
                         assertEquals(expectNne, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
                     }
                     assertEquals("", d.variableInfo().getLinkedVariables().toString());
@@ -350,11 +350,11 @@ public class Test_01_Loops extends CommonTestRunner {
                     assertEquals("", d.variableInfo().getLinkedVariables().toString());
                 }
                 if ("1".equals(d.statementId())) {
-                    String expectValue = d.iteration() == 0 ? "<replace:String>" : "nullable instance type String";
+                    String expectValue = d.iteration() == 0 ? "<v:s>" : "nullable instance type String";
                     assertEquals(expectValue, d.currentValue().toString());
                 }
                 if ("2".equals(d.statementId())) {
-                    String expectValue = d.iteration() == 0 ? "<replace:String>" : "nullable instance type String";
+                    String expectValue = d.iteration() == 0 ? "<v:s>" : "nullable instance type String";
                     assertEquals(expectValue, d.currentValue().toString());
                     int expectNne = d.iteration() == 0 ? Level.DELAY : MultiLevel.NULLABLE;
                     assertEquals(expectNne, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
@@ -362,7 +362,7 @@ public class Test_01_Loops extends CommonTestRunner {
             }
             if (d.variable() instanceof ReturnVariable) {
                 if ("2".equals(d.statementId())) {
-                    String expect = d.iteration() == 0 ? "<replace:String>" : "res"; // indirection
+                    String expect = d.iteration() == 0 ? "<v:s>" : "res"; // indirection
                     assertEquals(expect, d.currentValue().toString());
                     int expectNne = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
                     assertEquals(expectNne, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
@@ -442,13 +442,13 @@ public class Test_01_Loops extends CommonTestRunner {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
-                    String expect = d.iteration() == 0 ? "<replace:int>>=10" : "instance type int>=10";
+                    String expect = d.iteration() == 0 ? "<v:i>>=10" : "instance type int>=10";
                     assertEquals(expect, d.state().toString());
                     assertNull(d.haveError(Message.Label.INLINE_CONDITION_EVALUATES_TO_CONSTANT));
                 }
                 if ("1".equals(d.statementId())) {
                     assertEquals("true", d.condition().toString());
-                    String expectState = d.iteration() == 0 ? "<replace:int>>=10" : "instance type int>=10";
+                    String expectState = d.iteration() == 0 ? "<v:i>>=10" : "instance type int>=10";
                     assertEquals(expectState, d.state().toString());
                     assertNull(d.haveError(Message.Label.INLINE_CONDITION_EVALUATES_TO_CONSTANT));
                 }
@@ -492,8 +492,7 @@ public class Test_01_Loops extends CommonTestRunner {
                         assertEquals(expect, d.currentValue().toString());
                     }
                     if ("1".equals(d.statementId())) {
-                        String expect = d.iteration() == 0
-                                ? "<replace:int>>=10?0:1==<replace:int>&&<replace:int><=9?4:<return value>"
+                        String expect = d.iteration() == 0 ? "<v:i>>=10?0:1==<replace:int>&&<v:i><=9?4:<return value>"
                                 : "instance type int>=10?0:0==instance type int?4:<return value>";
                         assertEquals(expect, d.currentValue().toString());
                     }

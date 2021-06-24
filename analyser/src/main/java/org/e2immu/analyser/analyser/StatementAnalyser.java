@@ -2955,7 +2955,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         @Override
         public Expression replaceLocalVariables(Expression mergeValue) {
             if (statementAnalysis.statement instanceof LoopStatement) {
-                Map<Expression, Expression> map = new HashMap<>();
+                TranslationMapImpl.Builder translationMap = new TranslationMapImpl.Builder();
                 statementAnalysis.variables.stream()
                         .filter(e -> statementAnalysis.index.equals(e.getValue()
                                 .variableNature().getStatementIndexOfThisLoopOrLoopCopyVariable()))
@@ -2966,13 +2966,14 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                             if (nne != Level.DELAY) {
                                 Expression newObject = NewObject.genericMergeResult(index() + "-" + variable.fullyQualifiedName(),
                                         getPrimitives(), e.getValue().current(), nne);
-                                map.put(new VariableExpression(variable), newObject);
+                                translationMap.put(new VariableExpression(variable), newObject);
                             }
 
                             Expression delayed = DelayedExpression.forReplacementObject(variable.parameterizedType());
-                            map.put(DelayedVariableExpression.forVariable(e.getValue().current().variable()), delayed);
+                            translationMap.put(DelayedVariableExpression.forVariable(e.getValue().current().variable()),
+                                    delayed);
                         });
-                return mergeValue.reEvaluate(this, map).value();
+                return mergeValue.translate(translationMap.build());
             }
             return mergeValue;
         }
