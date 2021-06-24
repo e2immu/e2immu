@@ -294,7 +294,6 @@ public class Test_48_Store extends CommonTestRunner {
                         assertEquals(expect, d.currentValue().toString());
                         assertEquals(d.iteration() == 0, d.currentValueIsDelayed());
                     }
-                    // FIXME value does not seem to get resolved
                     if ("1".equals(d.statementId()) || "2".equals(d.statementId())) {
                         String expect = d.iteration() == 0
                                 ? "!projectName.equals((nullable instance type Entry<String,Object>).getValue())||null==projectName?1+<v:countUpdated>:0"

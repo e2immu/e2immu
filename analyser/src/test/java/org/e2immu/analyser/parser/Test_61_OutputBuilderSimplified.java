@@ -298,10 +298,42 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
     }
 
     // again, simplifying to find the infinite loop; this time, everything is immutable
+    // but when/how do we reach that conclusion?
     @Test
     public void test_11() throws IOException {
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("OutputBuilderSimplified_11".equals(d.typeInfo().simpleName)) {
+                assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, d.typeAnalysis().getProperty(VariableProperty.IMMUTABLE));
+            }
+            if ("$1".equals(d.typeInfo().simpleName)) {
+                int expectImm = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_E2IMMUTABLE;
+                assertEquals(expectImm, d.typeAnalysis().getProperty(VariableProperty.IMMUTABLE));
+            }
+            if ("$2".equals(d.typeInfo().simpleName)) {
+                int expectImm = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EFFECTIVELY_E2IMMUTABLE;
+                assertEquals(expectImm, d.typeAnalysis().getProperty(VariableProperty.IMMUTABLE));
+            }
+        };
 
-        testClass("OutputBuilderSimplified_11", 0, 0, new DebugConfiguration.Builder()
+        FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+            if ("countMid".equals(d.fieldInfo().name)) {
+                int expectMom = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
+                assertEquals(expectMom, d.fieldAnalysis().getProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD));
+            }
+        };
+
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("get".equals(d.methodInfo().name) && "$1".equals(d.methodInfo().typeInfo.simpleName)) {
+                int expectMm = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
+                assertEquals(expectMm, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
+            }
+        };
+
+        // ignoring the result of a non-modifying method call
+        testClass("OutputBuilderSimplified_11", 0, 1, new DebugConfiguration.Builder()
+                .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 }

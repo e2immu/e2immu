@@ -937,8 +937,18 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
                 if (modified == Level.FALSE || !typeAnalysis.isEventual()) {
                     int returnTypeImmutable = methodAnalyser.methodAnalysis.getProperty(VariableProperty.IMMUTABLE);
                     int returnTypeE2Immutable = MultiLevel.value(returnTypeImmutable, MultiLevel.E2IMMUTABLE);
-                    boolean returnTypeNotMyType = typeInfo != analyserContext.getMethodInspection(methodAnalyser.methodInfo).getReturnType().typeInfo;
-                    if (returnTypeE2Immutable == MultiLevel.DELAY && returnTypeNotMyType) {
+
+                    ParameterizedType returnType;
+                    Expression srv = methodAnalyser.methodAnalysis.getSingleReturnValue();
+                    if (srv != null) {
+                        // concrete
+                        returnType = srv.returnType();
+                    } else {
+                        // formal; this one may come earlier, but that's OK; the only thing it can do is facilitate a delay
+                        returnType = analyserContext.getMethodInspection(methodAnalyser.methodInfo).getReturnType();
+                    }
+                    boolean returnTypePartOfMyself = returnTypeNestedOrChild(returnType);
+                    if (returnTypeE2Immutable == MultiLevel.DELAY && !returnTypePartOfMyself) {
                         log(DELAYED, "Return type of {} not known if @E2Immutable, delaying", methodAnalyser.methodInfo.distinguishingName());
                         return DELAYS;
                     }
@@ -946,7 +956,7 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
                         // rule 5, continued: if not primitive, not E2Immutable, then the result must be Independent of the support types
                         int independent = methodAnalyser.methodAnalysis.getProperty(VariableProperty.INDEPENDENT);
                         if (independent == Level.DELAY) {
-                            if (typeContainsMyselfAndE2ImmutableComponents(methodAnalyser.methodInfo.returnType())) {
+                            if (returnType.typeInfo == typeInfo) {
                                 log(IMMUTABLE_LOG, "Cannot decide if method {} is independent, but given that its return type is a self reference, don't care",
                                         methodAnalyser.methodInfo.fullyQualifiedName);
                             } else {
@@ -991,9 +1001,17 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
         return DONE;
     }
 
-    private boolean typeContainsMyselfAndE2ImmutableComponents(ParameterizedType parameterizedType) {
-        return parameterizedType.typeInfo == typeInfo;
-        // TODO make more complicated
+    private boolean returnTypeNestedOrChild(ParameterizedType returnType) {
+        if (returnType.typeInfo == null) return false;
+        return returnTypeNestedOrChild(returnType.typeInfo);
+    }
+
+    private boolean returnTypeNestedOrChild(TypeInfo returnType) {
+        if (returnType == typeInfo) return true;
+        TypeInspection typeInspection = analyserContext.getTypeInspection(returnType);
+        if(typeInspection.isStatic()) return false; // must be a nested (non-static) type
+        return returnType.packageNameOrEnclosingType.isRight() &&
+                returnTypeNestedOrChild(returnType.packageNameOrEnclosingType.getRight());
     }
 
     /* we will implement two schemas
