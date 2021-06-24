@@ -55,6 +55,8 @@ public class MethodLevelData implements DelayDebugger {
     public static final String LINKS_HAVE_BEEN_ESTABLISHED = "linksHaveBeenEstablished";
     public static final String COMBINE_PRECONDITION = "combinePrecondition";
 
+    private static final int ITERATIONS_TO_WAIT = 2;
+
     // part of modification status for dealing with circular methods
     private final SetOnce<Boolean> callsPotentiallyCircularMethod = new SetOnce<>();
 
@@ -70,7 +72,20 @@ public class MethodLevelData implements DelayDebugger {
     // not for local processing, but so that we know in the method and field analyser that this process has been completed
     public final FlipSwitch linksHaveBeenEstablished = new FlipSwitch();
 
-    private final EventuallyFinal<Set<WithInspectionAndAnalysis>> causesOfContextModificationDelay = new EventuallyFinal<>();
+    /*
+    The map causesOfContextModificationDelay is essentially a set which records which objects were the cause of a context modification
+    delay. It is used to break infinite delay loops.
+    The eventually final object becomes final when the set is empty: there are no causes of delay anymore.
+    One by one, the causes of the delay get removed until the set is empty.
+    The reason it is a set and not a counter is that accounting is not that simple in a multi-pass system.
+    It is safe to remove the same object twice; with a counter, this is much more tricky.
+    
+    The reason it is a map (rather than a set) is that we delay removal by a fixed number of iterations: the removal is necessary
+    to break delays in one direction (Modification_20) but the removal cannot take place too quickly (Modification_21).
+    Rather than having a fixed number of iterations between marking the removal and actually removing, we should
+    find a better, more definitive solution.
+     */
+    private final EventuallyFinal<Map<WithInspectionAndAnalysis, Integer>> causesOfContextModificationDelay = new EventuallyFinal<>();
     private final DelayDebugger delayDebugCollector = new DelayDebugCollector();
 
     public void addCircularCall() {
@@ -93,27 +108,33 @@ public class MethodLevelData implements DelayDebugger {
     public void causesOfContextModificationDelayAddVariable(Map<WithInspectionAndAnalysis, Boolean> map, boolean allowRemoval) {
         assert causesOfContextModificationDelay.isVariable();
         if (causesOfContextModificationDelay.get() == null) {
-            causesOfContextModificationDelay.setVariable(new HashSet<>());
+            causesOfContextModificationDelay.setVariable(new HashMap<>());
         }
-        Set<WithInspectionAndAnalysis> set = causesOfContextModificationDelay.get();
+        Map<WithInspectionAndAnalysis, Integer> causes = causesOfContextModificationDelay.get();
         map.forEach((k, v) -> {
-            if (v) set.add(k);
-            else if (allowRemoval) set.remove(k);
+            if (v) causes.put(k, ITERATIONS_TO_WAIT);
+            else if (allowRemoval) {
+                Integer count = causes.get(k);
+                if (count != null) {
+                    if (count == 0) causes.remove(k);
+                    else causes.put(k, count - 1);
+                }
+            }
         });
     }
 
     public void causesOfContextModificationDelaySetFinal() {
-        causesOfContextModificationDelay.setFinal(Set.of());
+        causesOfContextModificationDelay.setFinal(Map.of());
     }
 
     public Set<WithInspectionAndAnalysis> getCausesOfContextModificationDelay() {
-        return causesOfContextModificationDelay.get();
+        return causesOfContextModificationDelay.get().keySet();
     }
 
     public boolean acceptLinksHaveBeenEstablished(Predicate<WithInspectionAndAnalysis> canBeIgnored) {
         if (linksHaveBeenEstablished.isSet()) return true;
-        Set<WithInspectionAndAnalysis> causes = causesOfContextModificationDelay.get();
-        if (causes != null && !causes.isEmpty() && causes.stream().allMatch(canBeIgnored)) {
+        Map<WithInspectionAndAnalysis, Integer> causes = causesOfContextModificationDelay.get();
+        if (causes != null && !causes.isEmpty() && causes.keySet().stream().allMatch(canBeIgnored)) {
             log(LINKED_VARIABLES, "Accepting a limited version of linksHaveBeenEstablished to break delay cycle");
             return true;
         }
@@ -153,22 +174,24 @@ public class MethodLevelData implements DelayDebugger {
         if (causesOfContextModificationDelay.isFinal()) return DONE;
         if (sharedState.previous != null && sharedState.previous.causesOfContextModificationDelay.isVariable()) {
             if (causesOfContextModificationDelay.get() == null) {
-                causesOfContextModificationDelay.setVariable(new HashSet<>());
+                causesOfContextModificationDelay.setVariable(new HashMap<>());
             }
-            boolean added = causesOfContextModificationDelay.get()
-                    .addAll(sharedState.previous.causesOfContextModificationDelay.get());
-            assert !added || sharedState.previous.causesOfContextModificationDelay.get().stream().allMatch(cause ->
+            boolean added =
+                    sharedState.previous.causesOfContextModificationDelay.get().entrySet().stream()
+                    .map(e ->  causesOfContextModificationDelay.get().put(e.getKey(), e.getValue()))
+                    .reduce(false, (i, resultOfPut) -> resultOfPut == null, (a, b)-> a||b);
+            assert !added || sharedState.previous.causesOfContextModificationDelay.get().keySet().stream().allMatch(cause ->
                     foundDelay(sharedState.where(MERGE_CAUSES_OF_CONTEXT_MODIFICATION_DELAY),
                             cause.fullyQualifiedName() + D_CAUSES_OF_CONTENT_MODIFICATION_DELAY));
         }
         sharedState.statementAnalysis.lastStatementsOfNonEmptySubBlocks().stream()
                 .filter(sa -> sa.methodLevelData.causesOfContextModificationDelay.get() != null)
-                .flatMap(sa -> sa.methodLevelData.causesOfContextModificationDelay.get().stream())
+                .flatMap(sa -> sa.methodLevelData.causesOfContextModificationDelay.get().entrySet().stream())
                 .forEach(set -> {
                     if (set != null) {
-                        boolean added = causesOfContextModificationDelay.get().add(set);
-                        assert !added || foundDelay(sharedState.where(MERGE_CAUSES_OF_CONTEXT_MODIFICATION_DELAY),
-                                set.fullyQualifiedName() + D_CAUSES_OF_CONTENT_MODIFICATION_DELAY);
+                        Integer prev = causesOfContextModificationDelay.get().put(set.getKey(), set.getValue());
+                        assert prev == null || foundDelay(sharedState.where(MERGE_CAUSES_OF_CONTEXT_MODIFICATION_DELAY),
+                                set.getKey().fullyQualifiedName() + D_CAUSES_OF_CONTENT_MODIFICATION_DELAY);
                     }
                 });
         if (causesOfContextModificationDelay.get() == null || causesOfContextModificationDelay.get().isEmpty()) {

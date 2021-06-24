@@ -146,10 +146,11 @@ public class Test_45_Project extends CommonTestRunner {
 
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("set".equals(d.methodInfo().name)) {
+                int done = "1".equals(d.statementId()) || "2".equals(d.statementId()) ? 0: 1;
                 if ("1.0.0".equals(d.statementId()) || "1".equals(d.statementId()) || "2".equals(d.statementId())) {
-                    String expect = d.iteration() == 0 ? CONTAINER : "[]";
+                    String expect = d.iteration() <= done ? CONTAINER : "[]";
                     assertEquals(expect, d.statementAnalysis().methodLevelData
-                            .getCausesOfContextModificationDelay().toString());
+                            .getCausesOfContextModificationDelay().toString(), d.statementId());
                 }
             }
         };
