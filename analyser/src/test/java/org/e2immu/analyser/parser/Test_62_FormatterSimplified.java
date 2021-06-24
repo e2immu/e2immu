@@ -14,26 +14,31 @@
 
 package org.e2immu.analyser.parser;
 
-import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.model.Level;
-import org.e2immu.analyser.visitor.FieldAnalyserVisitor;
+import org.e2immu.analyser.visitor.TypeAnalyserVisitor;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+// sub-records in records; an issue because of JavaParser 3.22.1
 
 public class Test_62_FormatterSimplified extends CommonTestRunner {
 
-    // AtomicInteger, System.out, ...
     public Test_62_FormatterSimplified() {
         super(true);
     }
 
     @Test
     public void test_0() throws IOException {
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("ForwardInfo".equals(d.typeInfo().simpleName)) {
+                assertTrue(d.typeInspection().isStatic());
+            }
+        };
         testClass("FormatterSimplified_0", 0, 0, new DebugConfiguration.Builder()
+                .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
                 .build());
     }
 

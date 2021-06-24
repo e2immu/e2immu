@@ -217,9 +217,6 @@ public class TypeInspector {
     private void doRecordDeclaration(ExpressionContext expressionContext,
                                      RecordDeclaration recordDeclaration) {
         builder.setTypeNature(TypeNature.RECORD);
-        if (!typeInfo.isPrimaryType()) {
-            builder.addTypeModifier(TypeModifier.STATIC);
-        }
 
         doTypeParameters(expressionContext, recordDeclaration);
         doImplementedTypes(expressionContext, recordDeclaration.getImplementedTypes());

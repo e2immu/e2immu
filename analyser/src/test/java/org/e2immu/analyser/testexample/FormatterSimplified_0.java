@@ -4,7 +4,7 @@ import org.e2immu.analyser.output.*;
 
 // https://github.com/javaparser/javaparser/issues/3260
 
-public record FormatterSimplified_0(FormattingOptions options) {
+public record FormatterSimplified_0(int options) {
 
     record ForwardInfo(int chars, String string) {
         public boolean isGuide() {
