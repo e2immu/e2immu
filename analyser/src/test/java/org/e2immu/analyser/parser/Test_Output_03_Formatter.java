@@ -15,11 +15,17 @@
 
 package org.e2immu.analyser.parser;
 
+import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
+import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.model.variable.ReturnVariable;
+import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class Test_Output_03_Formatter extends CommonTestRunner {
 
@@ -29,8 +35,16 @@ public class Test_Output_03_Formatter extends CommonTestRunner {
 
     @Test
     public void test() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("$2".equals(d.methodInfo().typeInfo.simpleName) && "apply".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ReturnVariable && "0.0.2.0.2".equals(d.statementId())) {
+                    assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                }
+            }
+        };
         testOutputClass(List.of("Formatter", "ElementarySpace", "OutputElement", "FormattingOptions", "Guide"),
                 0, 0, new DebugConfiguration.Builder()
+                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         .build());
     }
 

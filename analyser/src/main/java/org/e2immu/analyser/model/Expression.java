@@ -48,7 +48,7 @@ public interface Expression extends Element, Comparable<Expression> {
 
     @Override
     default Expression translate(TranslationMap translationMap) {
-       throw new UnsupportedOperationException("all expressions need to have this implemented! "+getClass());
+        throw new UnsupportedOperationException("all expressions need to have this implemented! " + getClass());
     }
 
     // ********************************
@@ -78,7 +78,12 @@ public interface Expression extends Element, Comparable<Expression> {
     }
 
     default boolean isDelayed(EvaluationContext evaluationContext) {
-        return subElements().stream().anyMatch(element -> element instanceof Expression e && e.isDelayed(evaluationContext));
+        // not a stream, much easier to debug like this!
+        for (Element element : subElements()) {
+            boolean delayed = element instanceof Expression e && e.isDelayed(evaluationContext);
+            if (delayed) return true;
+        }
+        return false;
     }
 
     default boolean isDiscreteType() {

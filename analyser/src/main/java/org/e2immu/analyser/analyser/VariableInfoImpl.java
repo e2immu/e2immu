@@ -599,7 +599,9 @@ class VariableInfoImpl implements VariableInfo {
 
         int worstNotNull = reduced.stream().mapToInt(cav -> cav.variableInfo().getProperty(NOT_NULL_EXPRESSION))
                 .min().orElseThrow();
-        return mergeHelper.noConclusion(worstNotNull);
+        int worstNotNullIncludingCurrent = atLeastOneBlockExecuted ? worstNotNull:
+                Math.min(worstNotNull, evaluationContext.getProperty(currentValue, NOT_NULL_EXPRESSION, false, true ));
+        return mergeHelper.noConclusion(worstNotNullIncludingCurrent);
     }
 
     /*

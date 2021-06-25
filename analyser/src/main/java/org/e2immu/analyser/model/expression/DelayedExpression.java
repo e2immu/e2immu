@@ -131,6 +131,8 @@ public record DelayedExpression(String msg,
 
     @Override
     public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty, boolean duringEvaluation) {
+        if(variableProperty == VariableProperty.NOT_NULL_EXPRESSION &&
+                Primitives.isPrimitiveExcludingVoid(parameterizedType)) return EFFECTIVELY_NOT_NULL;
         return Level.DELAY;
     }
 

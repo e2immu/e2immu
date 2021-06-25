@@ -922,7 +922,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
 
         if (statementAnalysis.methodLevelData.causesOfContextModificationDelayIsVariable()) {
             statementAnalysis.methodLevelData.causesOfContextModificationDelayAddVariable(evaluationResult
-                    .causesOfContextModificationDelay(), true);// FIXME cmStatus == DONE);See Modification_19/20/21
+                    .causesOfContextModificationDelay(), true);
         }
         status = cmStatus.combine(status);
 

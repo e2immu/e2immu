@@ -130,7 +130,10 @@ public record VariableExpression(Variable variable, String name) implements Expr
 
     @Override
     public boolean isDelayed(EvaluationContext evaluationContext) {
-        return evaluationContext.variableIsDelayed(variable);
+        if(variable instanceof FieldReference fr) {
+            return fr.scope != null && fr.scope.isDelayed(evaluationContext);
+        }
+        return false; // should have taken DelayedVariableExpression otherwise
     }
 
     @Override
