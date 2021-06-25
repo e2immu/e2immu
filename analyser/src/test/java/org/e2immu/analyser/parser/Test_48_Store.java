@@ -296,8 +296,8 @@ public class Test_48_Store extends CommonTestRunner {
                     }
                     if ("1".equals(d.statementId()) || "2".equals(d.statementId())) {
                         String expect = d.iteration() == 0
-                                ? "!projectName.equals((nullable instance type Entry<String,Object>).getValue())||null==projectName?1+<v:countUpdated>:0"
-                                : "!projectName.equals((nullable instance type Entry<String,Object>).getValue())||null==projectName?1+instance type int:0";
+                                ? "(projectName.equals((nullable instance type Entry<String,Object>).getValue())||body.entrySet().isEmpty())&&(body.entrySet().isEmpty()||null!=projectName)?0:1+<v:countUpdated>"
+                                : "(projectName.equals((nullable instance type Entry<String,Object>).getValue())||body.entrySet().isEmpty())&&(body.entrySet().isEmpty()||null!=projectName)?0:1+instance type int";
                         assertEquals(expect, d.currentValue().toString());
                     }
                 }

@@ -80,6 +80,12 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .build());
     }
+    @Test
+    public void test_2() throws IOException {
+        testClass("TrieSimplified_2", 0, 0, new DebugConfiguration.Builder()
+
+                .build());
+    }
 
     @Test
     public void test_3() throws IOException {

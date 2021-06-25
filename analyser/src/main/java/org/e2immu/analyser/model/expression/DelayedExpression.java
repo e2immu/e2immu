@@ -74,6 +74,11 @@ public record DelayedExpression(String msg,
                 "<merge:" + parameterizedType.detailedString() + ">", parameterizedType);
     }
 
+    public static Expression forUnspecifiedLoopCondition(ParameterizedType booleanParameterizedType) {
+        String name = "<loopIsNotEmptyCondition>";
+        return new DelayedExpression(name, name, booleanParameterizedType);
+    }
+
     /*
     variable fields have different values according to statement time, but then, at this point we cannot know yet
     whether the field will be variable or not.

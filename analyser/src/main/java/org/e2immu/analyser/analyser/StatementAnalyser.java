@@ -2231,14 +2231,6 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         return analysisStatus;
     }
 
-    private boolean allValuesTheSame(int[] times) {
-        int v = times[0];
-        for (int i = 1; i < times.length; i++) {
-            if (times[i] != v) return false;
-        }
-        return true;
-    }
-
     /*
     an old-style switch statement is analysed as a single block where return and break statements at the level
     below the statement have no hard interrupt value (see flow data).
@@ -2368,7 +2360,9 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             FlowData.Execution firstBlockStatementsExecution = structure.statementExecution().apply(value, evaluationContext);
             FlowData.Execution firstBlockExecution = statementAnalysis.flowData.execution(firstBlockStatementsExecution);
 
-            executions.add(makeExecutionOfPrimaryBlock(sharedState.localConditionManager, firstBlockExecution, startOfBlocks, value,
+            executions.add(makeExecutionOfPrimaryBlock(sharedState.evaluationContext,
+                    sharedState.localConditionManager,
+                    firstBlockExecution, startOfBlocks, value,
                     valueIsDelayed));
             start = 1;
         }
@@ -2418,7 +2412,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         return executions;
     }
 
-    private ExecutionOfBlock makeExecutionOfPrimaryBlock(ConditionManager localConditionManager,
+    private ExecutionOfBlock makeExecutionOfPrimaryBlock(EvaluationContext evaluationContext,
+                                                         ConditionManager localConditionManager,
                                                          FlowData.Execution firstBlockExecution,
                                                          List<Optional<StatementAnalyser>> startOfBlocks,
                                                          Expression value,
@@ -2429,6 +2424,12 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         if (firstBlockExecution == NEVER) {
             cm = null;
             condition = null;
+        } else if (statementAnalysis.statement instanceof ForEachStatement) {
+            // the expression is not a condition; however, we add one to ensure that the content is not empty
+            condition = isNotEmpty(evaluationContext, value, valueIsDelayed != null);
+            Set<Variable> isDelayedSet = evaluationContext.isDelayedSet(condition);
+            cm = localConditionManager.newAtStartOfNewBlockDoNotChangePrecondition(statementAnalysis.primitives, condition,
+                    isDelayedSet);
         } else if (structure.expressionIsCondition()) {
             cm = localConditionManager.newAtStartOfNewBlockDoNotChangePrecondition(statementAnalysis.primitives, value,
                     valueIsDelayed);
@@ -2439,6 +2440,32 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         }
         return new ExecutionOfBlock(firstBlockExecution, startOfBlocks.get(0).orElse(null), cm, condition,
                 false, null);
+    }
+
+    private Expression isNotEmpty(EvaluationContext evaluationContext, Expression value, boolean valueIsDelayed) {
+        if (value instanceof ArrayInitializer ai) {
+            return new BooleanConstant(evaluationContext.getPrimitives(), ai.multiExpression.expressions().length > 0);
+        }
+        ParameterizedType returnType = value.returnType();
+        if (returnType.arrays > 0) {
+            return new GreaterThanZero(evaluationContext.getPrimitives().booleanParameterizedType,
+                    new ArrayLength(evaluationContext.getPrimitives(), value), false);
+        }
+        if (returnType.typeInfo != null) {
+            TypeInfo collection = returnType.typeInfo.recursivelyImplements(evaluationContext.getAnalyserContext(),
+                    "java.util.Collection");
+            if (collection != null) {
+                MethodInfo isEmpty = collection.findUniqueMethod("isEmpty", 0);
+                return Negation.negate(evaluationContext, new MethodCall(false, value, isEmpty,
+                        isEmpty.returnType(), List.of()));
+            }
+        }
+        // TODO if instance of collection
+        if (valueIsDelayed) {
+            return DelayedExpression.forUnspecifiedLoopCondition(evaluationContext.getPrimitives().booleanParameterizedType);
+        }
+        return NewObject.forUnspecifiedLoopCondition(evaluationContext.statementIndex(),
+                evaluationContext.getPrimitives());
     }
 
     private Expression defaultCondition(EvaluationContext evaluationContext, List<ExecutionOfBlock> executions) {

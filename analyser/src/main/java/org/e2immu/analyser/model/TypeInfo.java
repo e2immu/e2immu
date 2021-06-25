@@ -483,4 +483,19 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         }
         return "Type";
     }
+
+    public TypeInfo recursivelyImplements(InspectionProvider inspectionProvider, String fqn) {
+        if (fullyQualifiedName.equals(fqn)) return this;
+        TypeInspection inspection = inspectionProvider.getTypeInspection(this);
+        ParameterizedType parentClass = inspection.parentClass();
+        if (parentClass != null && !Primitives.isJavaLangObject(parentClass)) {
+            TypeInfo res = parentClass.typeInfo.recursivelyImplements(inspectionProvider, fqn);
+            if (res != null) return res;
+        }
+        for (ParameterizedType implemented : inspection.interfacesImplemented()) {
+            TypeInfo res = implemented.typeInfo.recursivelyImplements(inspectionProvider, fqn);
+            if (res != null) return res;
+        }
+        return null;
+    }
 }

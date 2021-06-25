@@ -762,6 +762,9 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
     @Override
     public int internalCompareTo(Expression v) {
+        if(v instanceof InlineConditional inline) {
+            return internalCompareTo(inline.condition);
+        }
         MethodCall mv = (MethodCall) v;
         int c = methodInfo.fullyQualifiedName().compareTo(mv.methodInfo.fullyQualifiedName());
         if (c != 0) return c;

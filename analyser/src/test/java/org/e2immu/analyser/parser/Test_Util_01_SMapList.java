@@ -36,6 +36,8 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_Util_01_SMapList extends CommonTestRunner {
 
+    public static final String COPY_OF_TMP = "Map.copyOf((instance type Set<Entry<K,V>>).isEmpty()?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:instance type HashMap<A,List<B>>/*AnnotatedAPI.isKnown(true)&&0==this.size()*/)";
+
     public Test_Util_01_SMapList() {
         super(true);
     }
@@ -191,7 +193,7 @@ public class Test_Util_01_SMapList extends CommonTestRunner {
         if ("immutable".equals(d.methodInfo().name)) {
             if (d.variable() instanceof ReturnVariable) {
                 if ("2".equals(d.statementId())) {
-                    String expectValue = d.iteration() == 0 ? "<m:copyOf>" : "Map.copyOf(tmp)";
+                    String expectValue = d.iteration() == 0 ? "<m:copyOf>" : COPY_OF_TMP;
                     assertEquals(expectValue, d.currentValue().toString());
                     int expectImm = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_E2IMMUTABLE;
                     assertEquals(expectImm, d.getProperty(VariableProperty.IMMUTABLE));
@@ -275,7 +277,7 @@ public class Test_Util_01_SMapList extends CommonTestRunner {
             if (d.iteration() == 0) {
                 assertNull(d.methodAnalysis().getSingleReturnValue());
             } else {
-                assertEquals("Map.copyOf(tmp)", d.methodAnalysis().getSingleReturnValue().toString());
+                assertEquals(COPY_OF_TMP, d.methodAnalysis().getSingleReturnValue().toString());
             }
             int expectImm = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_E2IMMUTABLE;
             assertEquals(expectImm, d.methodAnalysis().getProperty(VariableProperty.IMMUTABLE));

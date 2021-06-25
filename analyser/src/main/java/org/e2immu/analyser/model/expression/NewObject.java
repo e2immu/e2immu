@@ -71,6 +71,12 @@ public record NewObject(
                 null, arrayInitializer, state);
     }
 
+    public static Expression forUnspecifiedLoopCondition(String identifier, Primitives primitives) {
+        return new NewObject(identifier, null, primitives.booleanParameterizedType, Diamond.NO, List.of(),
+                MultiLevel.EFFECTIVELY_NOT_NULL, false, null, null,
+                new BooleanConstant(primitives, true));
+    }
+
     public static Expression instanceFromSam(Primitives primitives,
                                              MethodInfo sam,
                                              ParameterizedType parameterizedType) {

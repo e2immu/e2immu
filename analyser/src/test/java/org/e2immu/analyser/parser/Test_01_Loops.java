@@ -661,4 +661,58 @@ public class Test_01_Loops extends CommonTestRunner {
                 .build());
     }
 
+    @Test
+    public void test_9() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("add".equals(d.methodInfo().name)) {
+                if ("node".equals(d.variableName())) {
+                    if ("0".equals(d.statementId())) {
+                        String expect = d.iteration() == 0 ? "<f:in>" : "\"abc\"";
+                        assertEquals(expect, d.currentValue().toString());
+                    }
+                    if ("1".equals(d.statementId())) {
+                        String expect = d.iteration() == 0 ? "strings.length>0?null:<f:in>" :
+                                "strings.length>0?null:\"abc\"";
+                        assertEquals(expect, d.currentValue().toString());
+                    }
+                }
+                if ("node$1$1.0.0-E".equals(d.variableName())) {
+                    String expected = d.iteration() == 0 ? "strings.length>0?null:<v:node>"
+                            : "strings.length>0?null:node$1";
+                    assertEquals(expected, d.currentValue().toString());
+                }
+            }
+        };
+        testClass("Loops_9", 0, 1, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .build());
+    }
+
+    @Test
+    public void test_10() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("add".equals(d.methodInfo().name)) {
+                if ("node".equals(d.variableName())) {
+                    if ("0".equals(d.statementId())) {
+                        String expect = d.iteration() == 0 ? "<f:in>" : "\"abc\"";
+                        assertEquals(expect, d.currentValue().toString());
+                    }
+                    if ("1".equals(d.statementId())) {
+                        String expect = d.iteration() == 0 ? "strings.isEmpty()?<f:in>:null" :
+                                "strings.isEmpty()?\"abc\":null";
+                        assertEquals(expect, d.currentValue().toString());
+                    }
+                }
+                if ("node$1$1.0.0-E".equals(d.variableName())) {
+                    String expected = d.iteration() == 0 ? "strings.isEmpty()?<v:node>:null"
+                            : "strings.isEmpty()?node$1:null";
+                    assertEquals(expected, d.currentValue().toString());
+                }
+            }
+        };
+        testClass("Loops_10", 0, 1, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .build());
+    }
+
 }
