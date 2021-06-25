@@ -395,7 +395,7 @@ public class ExpressionContext {
     }
 
     private org.e2immu.analyser.model.Statement assertStatement(AssertStmt assertStmt) {
-        Expression check = parseExpression(assertStmt.getCheck());
+        Expression check = parseExpression(assertStmt.getCheck(), ForwardReturnTypeInfo.expectBoolean(typeContext));
         Expression message = assertStmt.getMessage().map(this::parseExpression).orElse(null);
         return new AssertStatement(check, message);
     }
@@ -494,7 +494,8 @@ public class ExpressionContext {
     }
 
     private org.e2immu.analyser.model.Statement ifThenElseStatement(IfStmt statement) {
-        org.e2immu.analyser.model.Expression conditional = parseExpression(statement.getCondition());
+        org.e2immu.analyser.model.Expression conditional = parseExpression(statement.getCondition(),
+                ForwardReturnTypeInfo.expectBoolean(typeContext));
         ExpressionContext ifContext = newVariableContext("if-block");
         Block ifBlock = ifContext.parseBlockOrStatement(statement.getThenStmt());
         inherit(ifContext);

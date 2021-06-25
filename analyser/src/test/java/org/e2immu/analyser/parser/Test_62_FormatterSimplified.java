@@ -15,11 +15,13 @@
 package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.config.DebugConfiguration;
+import org.e2immu.analyser.visitor.EvaluationResultVisitor;
 import org.e2immu.analyser.visitor.TypeAnalyserVisitor;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 // sub-records in records; an issue because of JavaParser 3.22.1
@@ -42,4 +44,19 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
                 .build());
     }
 
+    @Test
+    public void test_1() throws IOException {
+        EvaluationResultVisitor evaluationResultVisitor = d -> {
+            if ("forward".equals(d.methodInfo().name)) {
+                if ("0".equals(d.statementId())) {
+                    assertEquals("writer.apply(new ForwardInfo(start,9,null,false))",
+                            d.evaluationResult().getExpression().toString());
+                    assertEquals("Type java.lang.Boolean", d.evaluationResult().getExpression().returnType().toString());
+                }
+            }
+        };
+        testClass("FormatterSimplified_1", 0, 0, new DebugConfiguration.Builder()
+                .addEvaluationResultVisitor(evaluationResultVisitor)
+                .build());
+    }
 }

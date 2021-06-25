@@ -222,7 +222,9 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         int modified = evaluationContext.getAnalyserContext()
                 .getMethodAnalysis(methodInfo).getProperty(VariableProperty.MODIFIED_METHOD);
         EvaluationResult mv = EvaluateMethodCall.methodValue(modified, evaluationContext, methodInfo,
-                evaluationContext.getAnalyserContext().getMethodAnalysis(methodInfo), reObject.value(), reParamValues);
+                evaluationContext.getAnalyserContext().getMethodAnalysis(methodInfo),
+                objectIsImplicit, reObject.value(), concreteReturnType,
+                reParamValues);
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext).compose(reParams)
                 .compose(reObject, mv);
         if (reObject.value() instanceof IsVariableExpression ve) {
@@ -403,7 +405,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             complianceWithForwardRequirements(builder, methodAnalysis, methodInspection, forwardEvaluationInfo, contentNotNullRequired);
 
             EvaluationResult mv = EvaluateMethodCall.methodValue(modified, evaluationContext, methodInfo,
-                    methodAnalysis, objectValue, parameterValues);
+                    methodAnalysis, objectIsImplicit, objectValue, concreteReturnType, parameterValues);
             builder.compose(mv);
             if (mv.value() == objectValue && mv.value().isInstanceOf(NewObject.class) && modifiedInstance != null) {
                 result = modifiedInstance;
@@ -481,7 +483,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                                            List<Expression> parameterValues) {
         Logger.log(DELAYED, "Delayed method call because the object value or one of the parameter values of {} is delayed: {}",
                 methodInfo.name, parameterValues);
-        builder.setExpression(DelayedExpression.forMethod(methodInfo));
+        builder.setExpression(DelayedExpression.forMethod(methodInfo, concreteReturnType));
         // set scope delay
         delay(evaluationContext, builder, objectValue, contextModifiedDelay);
         return builder.build();

@@ -31,9 +31,9 @@ public record DelayedExpression(String msg,
                                 String debug,
                                 ParameterizedType parameterizedType) implements Expression {
 
-    public static DelayedExpression forMethod(MethodInfo methodInfo) {
+    public static DelayedExpression forMethod(MethodInfo methodInfo, ParameterizedType concreteReturnType) {
         return new DelayedExpression("<m:" + methodInfo.name + ">",
-                "<method:" + methodInfo.fullyQualifiedName + ">", methodInfo.returnType());
+                "<method:" + methodInfo.fullyQualifiedName + ">", concreteReturnType);
     }
 
     /*

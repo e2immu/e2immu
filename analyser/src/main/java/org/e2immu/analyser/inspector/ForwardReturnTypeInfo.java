@@ -8,6 +8,13 @@ Information about the return type of an expression, passed on in a forwarding wa
  */
 public record ForwardReturnTypeInfo(ParameterizedType type, MethodTypeParameterMap sam) {
 
+    // we'd rather have java.lang.Boolean, because as soon as type parameters are involved, primitives
+    // are boxed
+    public static ForwardReturnTypeInfo expectBoolean(TypeContext typeContext) {
+        return new ForwardReturnTypeInfo(typeContext.getPrimitives()
+                .boxedBooleanTypeInfo.asSimpleParameterizedType(), null);
+    }
+
     public static final ForwardReturnTypeInfo NO_INFO = new ForwardReturnTypeInfo(null, null);
 
     public static ForwardReturnTypeInfo computeSAM(ParameterizedType type, TypeContext typeContext) {

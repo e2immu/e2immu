@@ -1162,6 +1162,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
 
         assert cImm == null || cImm != Level.DELAY || foundDelay("mergeAssignment",
                 variable.fullyQualifiedName() + "@" + index() + D_CONTEXT_IMMUTABLE);
+
+        res.keySet().removeAll(GroupPropertyValues.DELAY_PROPERTIES);
         return res;
     }
 

@@ -72,7 +72,8 @@ public record ConditionManager(Expression condition,
      */
     private static void checkBooleanOrUnknown(Expression v) {
         if (!v.isUnknown() && Primitives.isNotBooleanOrBoxedBoolean(v.returnType())) {
-            throw new UnsupportedOperationException("Need an unknown or boolean value in the condition manager; got " + v);
+            throw new UnsupportedOperationException("Need an unknown or boolean value in the condition manager; got " + v
+            + " with return type "+v.returnType());
         }
     }
 
