@@ -48,7 +48,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import static org.e2immu.analyser.inspector.TypeInspectionImpl.InspectionState.BY_HAND;
 import static org.e2immu.analyser.util.Logger.LogTarget.LAMBDA;
 import static org.e2immu.analyser.util.Logger.log;
 
@@ -61,7 +60,7 @@ public class ConvertMethodReference {
                                                                  ExpressionContext expressionContext) {
         MethodTypeParameterMap method = functionalInterfaceType.findSingleAbstractMethodOfInterface(expressionContext.typeContext);
         TypeInfo typeInfo = new TypeInfo(enclosingType, expressionContext.anonymousTypeCounters.newIndex(expressionContext.primaryType));
-        TypeInspectionImpl.Builder builder = expressionContext.typeContext.typeMapBuilder.add(typeInfo, BY_HAND);
+        TypeInspectionImpl.Builder builder = expressionContext.typeContext.typeMapBuilder.add(typeInfo, TypeInspectionImpl.InspectionState.BY_HAND);
 
         builder.setTypeNature(TypeNature.CLASS);
         builder.addInterfaceImplemented(functionalInterfaceType);

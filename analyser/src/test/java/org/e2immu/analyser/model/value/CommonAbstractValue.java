@@ -34,8 +34,6 @@ import org.junit.jupiter.api.BeforeAll;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import static org.e2immu.analyser.inspector.TypeInspectionImpl.InspectionState.BY_HAND;
-
 public abstract class CommonAbstractValue {
     protected static TypeMapImpl.Builder TYPE_MAP_BUILDER;
     protected static Primitives PRIMITIVES;
@@ -169,7 +167,7 @@ public abstract class CommonAbstractValue {
     static ParameterInfo createParameter() {
         assert PRIMITIVES != null;
         if (!PRIMITIVES.objectTypeInfo.typeInspection.isSet()) {
-            PRIMITIVES.objectTypeInfo.typeInspection.set(new TypeInspectionImpl.Builder(PRIMITIVES.objectTypeInfo, BY_HAND)
+            PRIMITIVES.objectTypeInfo.typeInspection.set(new TypeInspectionImpl.Builder(PRIMITIVES.objectTypeInfo, TypeInspectionImpl.InspectionState.BY_HAND)
                     .noParent(PRIMITIVES)
                     .build());
         }
@@ -183,7 +181,7 @@ public abstract class CommonAbstractValue {
         ParameterInfo p0 = methodInfo.methodInspection.get().getParameters().get(0);
         p0.setAnalysis(new ParameterAnalysisImpl.Builder(PRIMITIVES, null, p0));
 
-        someType.typeInspection.set(new TypeInspectionImpl.Builder(someType, BY_HAND)
+        someType.typeInspection.set(new TypeInspectionImpl.Builder(someType, TypeInspectionImpl.InspectionState.BY_HAND)
                 .noParent(PRIMITIVES)
                 .addMethod(methodInfo)
                 .build());

@@ -48,6 +48,7 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
     public final List<ParameterizedType> interfacesImplemented;
     public final TypeModifier access;
     public final AnnotationMode annotationMode;
+    public final Inspector inspector;
 
     private TypeInspectionImpl(TypeInfo typeInfo,
                                TypeNature typeNature,
@@ -63,6 +64,7 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
                                List<TypeInfo> permittedWhenSealed,
                                List<AnnotationExpression> annotations,
                                AnnotationMode annotationMode,
+                               Inspector inspector,
                                boolean synthetic) {
         super(annotations, synthetic);
         this.parentClass = parentClass;
@@ -78,6 +80,12 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
         this.access = access;
         this.annotationMode = annotationMode;
         this.permittedWhenSealed = permittedWhenSealed;
+        this.inspector = inspector;
+    }
+
+    @Override
+    public Inspector inspector() {
+        return inspector;
     }
 
     @Override
@@ -156,19 +164,22 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
     }
 
     public enum InspectionState {
-        TRIGGER_BYTECODE_INSPECTION(1),
-        STARTING_BYTECODE(2),
-        FINISHED_BYTECODE(3),
-        TRIGGER_JAVA_PARSER(4),
-        STARTING_JAVA_PARSER(5),
-        FINISHED_JAVA_PARSER(6),
-        BY_HAND(7),
-        BUILT(8);
+        TRIGGER_BYTECODE_INSPECTION(1, Inspector.BYTE_CODE_INSPECTION),
+        STARTING_BYTECODE(2, Inspector.BYTE_CODE_INSPECTION),
+        FINISHED_BYTECODE(3, Inspector.BYTE_CODE_INSPECTION),
+        TRIGGER_JAVA_PARSER(4, Inspector.JAVA_PARSER_INSPECTION),
+        STARTING_JAVA_PARSER(5, Inspector.JAVA_PARSER_INSPECTION),
+        FINISHED_JAVA_PARSER(6, Inspector.JAVA_PARSER_INSPECTION),
+        BY_HAND_WITHOUT_STATEMENTS(7, Inspector.BY_HAND_WITHOUT_STATEMENTS),
+        BY_HAND(7, Inspector.BY_HAND),
+        BUILT(8, null);
 
-        public final int state;
+        private final int state;
+        private final Inspector inspector;
 
-        InspectionState(int state) {
+        InspectionState(int state, Inspector inspector) {
             this.state = state;
+            this.inspector = inspector;
         }
 
         public boolean ge(InspectionState other) {
@@ -181,6 +192,10 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
 
         public boolean lt(InspectionState other) {
             return state < other.state;
+        }
+
+        public Inspector getInspector() {
+            return Objects.requireNonNull(inspector, "Need to query before the type is built!");
         }
     }
 
@@ -199,11 +214,18 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
         private ParameterizedType parentClass;
         private final List<ParameterizedType> interfacesImplemented = new ArrayList<>();
         private final TypeInfo typeInfo;
+        private final Inspector inspector;
         private InspectionState inspectionState;
 
         public Builder(TypeInfo typeInfo, InspectionState inspectionState) {
             this.typeInfo = typeInfo;
             this.inspectionState = inspectionState;
+            this.inspector = inspectionState.getInspector();
+        }
+
+        @Override
+        public Inspector inspector() {
+            return inspector;
         }
 
         @Override
@@ -347,6 +369,7 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
                     permittedWhenSealed(),
                     getAnnotations(),
                     annotationMode(),
+                    inspector,
                     isSynthetic());
         }
 

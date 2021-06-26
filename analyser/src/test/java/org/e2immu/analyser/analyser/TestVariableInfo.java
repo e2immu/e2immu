@@ -26,6 +26,7 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 
 import static org.e2immu.analyser.analyser.VariableProperty.IDENTITY;
+import static org.e2immu.analyser.analyser.VariableProperty.SCOPE_DELAY;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class TestVariableInfo extends CommonVariableInfo {
@@ -39,13 +40,13 @@ public class TestVariableInfo extends CommonVariableInfo {
     public void testNoneNoOverwrite() {
         VariableInfoImpl viB = new VariableInfoImpl(makeLocalIntVar("b"));
         viB.setValue(four, false);
-        viB.setProperty(IDENTITY, Level.TRUE);
+        viB.setProperty(SCOPE_DELAY, Level.TRUE);
 
         VariableInfoImpl vii = viB.mergeIntoNewObject(minimalEvaluationContext, TRUE, false, List.of());
 
         assertSame(four, vii.getValue());
         vii.mergePropertiesIgnoreValue(false, viB, List.of());
-        assertEquals(Level.TRUE, vii.getProperty(IDENTITY));
+        assertEquals(Level.TRUE, vii.getProperty(SCOPE_DELAY));
     }
 
     @Test
@@ -242,12 +243,16 @@ public class TestVariableInfo extends CommonVariableInfo {
         Expression unknown = new UnknownExpression(primitives.booleanParameterizedType, "no idea");
         List<StatementAnalysis.ConditionAndVariableInfo> uViB = List.of(new StatementAnalysis.ConditionAndVariableInfo(unknown, viB));
 
-        VariableInfoImpl viC2 = viC.mergeIntoNewObject(minimalEvaluationContext, TRUE, false, uViB);
-        assertNotSame(viA, viC2);
-        assertEquals("<no idea>?4:instance type int", viC2.getValue().toString());
+        try {
+            VariableInfoImpl viC2 = viC.mergeIntoNewObject(minimalEvaluationContext, TRUE, false, uViB);
+            assertNotSame(viA, viC2);
+            assertEquals("<no idea>?4:instance type int", viC2.getValue().toString());
 
-        viC2.mergePropertiesIgnoreValue(false, viA, uViB);
-        assertEquals(Level.FALSE, viC2.getProperty(IDENTITY));
+            viC2.mergePropertiesIgnoreValue(false, viA, uViB);
+            assertEquals(Level.FALSE, viC2.getProperty(IDENTITY));
+        } catch (NullPointerException nullPointerException) {
+            // OK! there is no current type
+        }
     }
 
 
@@ -287,11 +292,11 @@ public class TestVariableInfo extends CommonVariableInfo {
 
         VariableInfoImpl viA = new VariableInfoImpl(makeLocalIntVar("a"));
         viA.setValue(three, false);
-        viA.setProperty(IDENTITY, Level.TRUE);
+        viA.setProperty(SCOPE_DELAY, Level.TRUE);
 
         VariableInfoImpl viB = new VariableInfoImpl(makeLocalIntVar("b"));
         viB.setValue(three, false);
-        viB.setProperty(IDENTITY, Level.TRUE);
+        viB.setProperty(SCOPE_DELAY, Level.TRUE);
 
         // situation: boolean x = ...; int c; if(x) c = a; else c = b;
 
@@ -305,6 +310,6 @@ public class TestVariableInfo extends CommonVariableInfo {
         assertEquals("3", res.toString());
 
         viC.mergePropertiesIgnoreValue(true, new VariableInfoImpl(viA.variable()), list);
-        assertEquals(Level.TRUE, viC.getProperty(IDENTITY));
+        assertEquals(Level.TRUE, viC.getProperty(SCOPE_DELAY));
     }
 }

@@ -42,7 +42,7 @@ import java.util.Map;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import static org.e2immu.analyser.inspector.TypeInspectionImpl.InspectionState.BY_HAND;
+import static org.e2immu.analyser.inspector.TypeInspectionImpl.InspectionState.BY_HAND_WITHOUT_STATEMENTS;
 
 /*
 Given a number of types, compose one annotated API "file" per package, in the style of the JavaUtil, JavaLang classes.
@@ -184,7 +184,7 @@ public record Composer(TypeMap typeMap, String destinationPackage, Predicate<Wit
     private TypeInspectionImpl.Builder newTypeBuilder(TypeInfo packageType, TypeInspection typeToCopy, boolean topLevel) {
         String typeName = typeToCopy.typeInfo().simpleName;
         TypeInfo typeInfo = new TypeInfo(packageType, topLevel ? typeName + "$" : typeName);
-        TypeInspectionImpl.Builder builder = new TypeInspectionImpl.Builder(typeInfo, BY_HAND);
+        TypeInspectionImpl.Builder builder = new TypeInspectionImpl.Builder(typeInfo, BY_HAND_WITHOUT_STATEMENTS);
         builder.noParent(typeMap.getPrimitives())
                 .setTypeNature(TypeNature.CLASS)
                 .addTypeModifier(TypeModifier.STATIC);
@@ -194,7 +194,7 @@ public record Composer(TypeMap typeMap, String destinationPackage, Predicate<Wit
     private TypeInspectionImpl.Builder newPackageTypeBuilder(String packageName) {
         String camelCasePackageName = convertToCamelCase(packageName);
         TypeInfo typeInfo = new TypeInfo(destinationPackage, camelCasePackageName);
-        TypeInspectionImpl.Builder builder = new TypeInspectionImpl.Builder(typeInfo, BY_HAND);
+        TypeInspectionImpl.Builder builder = new TypeInspectionImpl.Builder(typeInfo, BY_HAND_WITHOUT_STATEMENTS);
         builder.noParent(typeMap.getPrimitives())
                 .setTypeNature(TypeNature.CLASS)
                 .addTypeModifier(TypeModifier.PUBLIC);

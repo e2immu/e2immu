@@ -58,6 +58,8 @@ public interface TypeInspection extends Inspection {
 
     AnnotationMode annotationMode();
 
+    Inspector inspector();
+
     /**
      * Returns the types permitted to extend from this type.
      *

@@ -358,15 +358,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         TypeInspection inspection = typeInspection.get();
         // we don't analyse annotations at the moment
         if (inspection.typeNature() == TypeNature.ANNOTATION) return true;
-
-        // shallow if all methods shallow, and no fields more than a constant
-        boolean allMethodsShallow = inspection.methodsAndConstructors(TypeInspection.Methods.INCLUDE_SUBTYPES).allMatch(MethodInfo::shallowAnalysis);
-        if (allMethodsShallow) {
-            return inspection.fields().stream().noneMatch(fieldInfo -> fieldInfo.fieldInspection.isSet() &&
-                    fieldInfo.fieldInspection.get().fieldInitialiserIsSet() &&
-                    !(fieldInfo.fieldInspection.get().getFieldInitialiser().initialiser() instanceof ConstantExpression));
-        }
-        return false;
+        return !inspection.inspector().statements();
     }
 
     @Override

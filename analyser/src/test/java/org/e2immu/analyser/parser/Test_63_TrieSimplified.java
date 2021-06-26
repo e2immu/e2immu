@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.parser;
 
+import org.e2immu.analyser.analyser.LinkedVariables;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.Level;
@@ -21,17 +22,14 @@ import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterAnalysis;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.variable.DependentVariable;
+import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
-import org.e2immu.analyser.visitor.EvaluationResultVisitor;
-import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
-import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
-import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
+import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_63_TrieSimplified extends CommonTestRunner {
 
@@ -80,10 +78,65 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .build());
     }
+
     @Test
     public void test_2() throws IOException {
-        testClass("TrieSimplified_2", 0, 0, new DebugConfiguration.Builder()
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("TrieNode".equals(d.typeInfo().simpleName)) {
+                fail(); // no code
+            }
+        };
 
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("add".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof FieldReference fr && "root".equals(fr.fieldInfo.name)) {
+                    String expect = d.iteration() == 0 ? "<f:root>" : "instance type TrieNode<T>";
+                    assertEquals(expect, d.currentValue().toString());
+
+                    String expectLv = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "";
+                    assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
+                }
+
+                if ("node".equals(d.variableName())) {
+                    String expect = d.iteration() == 0 ? "<f:root>" : "root";
+                    assertEquals(expect, d.currentValue().toString());
+
+                    if ("0".equals(d.statementId()) || "1".equals(d.statementId())) {
+                        int expectCm = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
+                        assertEquals(expectCm, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
+                    }
+                    if ("2".equals(d.statementId())) {
+                        String expectLv = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "this.root";
+                        assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
+
+                        //   int expectCm = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
+                        //   assertEquals(expectCm, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
+                    }
+                }
+                if (d.variable() instanceof ReturnVariable) {
+                    if ("0".equals(d.statementId()) || "1".equals(d.statementId())) {
+                        assertEquals("<return value>", d.currentValue().toString());
+
+                        int expectCm = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
+                        assertEquals(expectCm, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
+                    }
+                    if ("2".equals(d.statementId())) {
+                        String expect = d.iteration() == 0 ? "<f:root>" : "root";
+                        assertEquals(expect, d.currentValue().toString());
+
+                        //    String expectLv = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "";
+                        //     assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
+
+                        //     int expectCm = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
+                        //     assertEquals(expectCm, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
+                    }
+                }
+            }
+        };
+
+        testClass("TrieSimplified_2", 0, 0, new DebugConfiguration.Builder()
+                .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
+                //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 
@@ -197,9 +250,102 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
         };
 
         testClass("TrieSimplified_3", 0, 0, new DebugConfiguration.Builder()
-             //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-             //   .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-         //       .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                //   .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                //       .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .build());
+    }
+
+    // added some code to TrieNode test 2
+    @Test
+    public void test_4() throws IOException {
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("TrieNode".equals(d.typeInfo().simpleName)) {
+                int expectImm = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_E2IMMUTABLE;
+                assertEquals(expectImm, d.typeAnalysis().getProperty(VariableProperty.IMMUTABLE));
+            }
+        };
+
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("add".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof FieldReference fr && "root".equals(fr.fieldInfo.name)) {
+                    String expect = d.iteration() <= 2 ? "<f:root>" : "new TrieNode<>()";
+                    assertEquals(expect, d.currentValue().toString());
+
+                    String expectLv = d.iteration() <= 1 ? LinkedVariables.DELAY_STRING : "";
+                    assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
+
+                    // here, ENN is computed in the group 'root', 'node'
+                    if ("0".equals(d.statementId()) || "1".equals(d.statementId())) {
+                        int enn = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
+                        assertEquals(enn, d.getProperty(VariableProperty.EXTERNAL_NOT_NULL), d.statementId());
+                    }
+                    // from here on, the return variable is part of the equivalence group
+                    // it only receives a value and proper links from iteration 3 onward
+                    if ("2".equals(d.statementId())) {
+                        int enn = d.iteration() <= 2 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
+                        assertEquals(enn, d.getProperty(VariableProperty.EXTERNAL_NOT_NULL), d.statementId());
+                    }
+                }
+
+                if ("node".equals(d.variableName())) {
+                    String expect = d.iteration() <= 2 ? "<f:root>" : "root";
+                    assertEquals(expect, d.currentValue().toString(), "statement " + d.statementId());
+
+                    if ("0".equals(d.statementId()) || "1".equals(d.statementId())) {
+                        int expectCm = d.iteration() <= 1 ? Level.DELAY : Level.FALSE;
+                        assertEquals(expectCm, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
+
+                        int enn = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
+                        assertEquals(enn, d.getProperty(VariableProperty.EXTERNAL_NOT_NULL), d.statementId());
+                    }
+                    if ("2".equals(d.statementId())) {
+                        String expectLv = d.iteration() <= 1 ? LinkedVariables.DELAY_STRING : "";
+                        assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
+
+                        int expectCm = d.iteration() <= 1 ? Level.DELAY : Level.FALSE;
+                        assertEquals(expectCm, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
+                    }
+                }
+                if (d.variable() instanceof ReturnVariable) {
+                    if ("0".equals(d.statementId()) || "1".equals(d.statementId())) {
+                        assertEquals("<return value>", d.currentValue().toString());
+
+                        int expectCm = d.iteration() <= 1 ? Level.DELAY : Level.FALSE;
+                        assertEquals(expectCm, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
+
+                        assertEquals(MultiLevel.NOT_INVOLVED, d.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
+                    }
+                    if ("2".equals(d.statementId())) {
+                        String expect = d.iteration() <= 2 ? "<f:root>" : "root";
+                        assertEquals(expect, d.currentValue().toString());
+
+                        String expectLv = d.iteration() <= 1 ? LinkedVariables.DELAY_STRING : "";
+                        assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
+
+                        int expectCm = d.iteration() <= 1 ? Level.DELAY : Level.FALSE;
+                        assertEquals(expectCm, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
+                    }
+                }
+            }
+        };
+
+        FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+            if ("root".equals(d.fieldInfo().name)) {
+                assertEquals(Level.TRUE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
+                if (d.iteration() <= 1) {
+                    assertNull(d.fieldAnalysis().getEffectivelyFinalValue());
+                } else {
+                    assertEquals("new TrieNode<>()", d.fieldAnalysis().getEffectivelyFinalValue().toString());
+                }
+                assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_NOT_NULL));
+            }
+        };
+
+        testClass("TrieSimplified_4", 0, 0, new DebugConfiguration.Builder()
+                .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build());
     }
 }

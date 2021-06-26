@@ -151,7 +151,7 @@ public class TypeMapImpl implements TypeMap {
                 add(typeInfo, TRIGGER_BYTECODE_INSPECTION);
             }
             for (TypeInfo typeInfo : getPrimitives().primitiveByName.values()) {
-                add(typeInfo, BY_HAND);
+                add(typeInfo, BY_HAND_WITHOUT_STATEMENTS);
             }
             e2ImmuAnnotationExpressions.streamTypes().forEach(typeInfo -> add(typeInfo, TRIGGER_BYTECODE_INSPECTION));
         }

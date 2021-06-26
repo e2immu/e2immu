@@ -24,7 +24,7 @@ import org.e2immu.analyser.model.*;
 
 import java.util.*;
 
-import static org.e2immu.analyser.inspector.TypeInspectionImpl.InspectionState.BY_HAND;
+import static org.e2immu.analyser.inspector.TypeInspectionImpl.InspectionState.BY_HAND_WITHOUT_STATEMENTS;
 import static org.e2immu.analyser.model.Analysis.AnalysisMode.CONTRACTED;
 import static org.e2immu.analyser.model.ParameterizedType.NOT_ASSIGNABLE;
 
@@ -318,7 +318,7 @@ public class Primitives {
     // normally, this information is read from the annotated APIs
     public void setInspectionOfBoxedTypesForTesting() {
         for (TypeInfo ti : boxed) {
-            ti.typeInspection.set(new TypeInspectionImpl.Builder(ti, BY_HAND)
+            ti.typeInspection.set(new TypeInspectionImpl.Builder(ti, BY_HAND_WITHOUT_STATEMENTS)
                     .setTypeNature(TypeNature.CLASS)
                     .noParent(this)
                     .build());
@@ -336,7 +336,7 @@ public class Primitives {
 
     public Primitives() {
         for (TypeInfo ti : primitives) {
-            ti.typeInspection.set(new TypeInspectionImpl.Builder(ti, BY_HAND)
+            ti.typeInspection.set(new TypeInspectionImpl.Builder(ti, BY_HAND_WITHOUT_STATEMENTS)
                     .setTypeNature(TypeNature.PRIMITIVE)
                     .noParent(this)
                     .build());
@@ -364,7 +364,7 @@ public class Primitives {
                 annotationTypeVerify, annotationTypeVerifyAbsent));
         processEnum(annotationModeTypeInfo, List.of(annotationModeDefensive, annotationModeOffensive));
 
-        functionalInterface.typeInspection.set(new TypeInspectionImpl.Builder(functionalInterface, BY_HAND)
+        functionalInterface.typeInspection.set(new TypeInspectionImpl.Builder(functionalInterface, BY_HAND_WITHOUT_STATEMENTS)
                 .setTypeNature(TypeNature.ANNOTATION)
                 .noParent(this)
                 .build());
@@ -384,7 +384,7 @@ public class Primitives {
     }
 
     public static boolean isBoxedExcludingVoid(ParameterizedType parameterizedType) {
-        return  parameterizedType.arrays == 0 &&
+        return parameterizedType.arrays == 0 &&
                 isBoxedExcludingVoid(parameterizedType.typeInfo);
     }
 
@@ -396,7 +396,8 @@ public class Primitives {
 
     private void processEnum(TypeInfo typeInfo, List<FieldInfo> fields) {
         MethodInspectionImpl.Builder valueOfBuilder = new MethodInspectionImpl.Builder(typeInfo, "valueOf").setStatic(true);
-        ParameterInspectionImpl.Builder valueOf0Builder = new ParameterInspectionImpl.Builder(stringParameterizedType, "s", 0);
+        ParameterInspectionImpl.Builder valueOf0Builder =
+                new ParameterInspectionImpl.Builder(stringParameterizedType, "s", 0);
         ParameterizedType typeInfoAsPt = typeInfo.asSimpleParameterizedType();
         MethodInfo valueOf = valueOfBuilder.setReturnType(typeInfoAsPt)
                 .addParameter(valueOf0Builder)
@@ -407,7 +408,7 @@ public class Primitives {
         MethodInfo name = nameBuilder.setReturnType(stringParameterizedType)
                 .addModifier(MethodModifier.PUBLIC)
                 .build(InspectionProvider.DEFAULT).getMethodInfo();
-        TypeInspectionImpl.Builder typeInspectionBuilder = new TypeInspectionImpl.Builder(typeInfo, BY_HAND)
+        TypeInspectionImpl.Builder typeInspectionBuilder = new TypeInspectionImpl.Builder(typeInfo, BY_HAND_WITHOUT_STATEMENTS)
                 .setTypeNature(TypeNature.ENUM)
                 .addTypeModifier(TypeModifier.PUBLIC)
                 .noParent(this)

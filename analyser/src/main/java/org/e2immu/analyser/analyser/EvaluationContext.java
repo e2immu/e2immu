@@ -255,7 +255,13 @@ public interface EvaluationContext extends DelayDebugger {
     default boolean isDelayed(Expression expression) {
         if (expression instanceof DelayedExpression || expression instanceof DelayedVariableExpression) return true;
         try {
-            return expression.subElements().stream().anyMatch(e -> e instanceof Expression expr && isDelayed(expr));
+            // not a stream, easier to debug
+            for (Element sub : expression.subElements()) {
+                if (sub instanceof Expression e && isDelayed(e)) {
+                    return true;
+                }
+            }
+            return false;
         } catch (RuntimeException runtimeException) {
             LOGGER.error("Error computing isDelayed on type " + expression.getClass());
             throw runtimeException;
@@ -305,5 +311,7 @@ public interface EvaluationContext extends DelayDebugger {
         return null;
     }
 
-    default String statementIndex() { return "-"; }
+    default String statementIndex() {
+        return "-";
+    }
 }

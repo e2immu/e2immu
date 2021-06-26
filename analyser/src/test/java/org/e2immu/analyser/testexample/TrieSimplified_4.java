@@ -5,13 +5,21 @@ import java.util.Map;
 
 // semantic nonsense, infinite loop
 
-public class TrieSimplified_2<T> {
+public class TrieSimplified_4<T> {
 
     private final TrieNode<T> root = new TrieNode<>();
 
     private static class TrieNode<T> {
         List<T> data;
         Map<String, TrieNode<T>> map;
+
+        @Override
+        public String toString() {
+            return "TrieNode{" +
+                    "data=" + data +
+                    ", map=" + map +
+                    '}';
+        }
     }
 
     public TrieNode<T> add() {

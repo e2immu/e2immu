@@ -34,7 +34,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
-import static org.e2immu.analyser.inspector.TypeInspectionImpl.InspectionState.BY_HAND;
 import static org.e2immu.analyser.util.Logger.LogTarget.LAMBDA;
 import static org.e2immu.analyser.util.Logger.log;
 
@@ -189,7 +188,8 @@ public class ParseLambdaExpr {
         typeMapBuilder.registerMethodInspection(builder);
 
         TypeInfo typeInfo = methodInfo.typeInfo;
-        TypeInspectionImpl.Builder typeInspectionBuilder = typeMapBuilder.ensureTypeInspection(typeInfo, BY_HAND);
+        TypeInspectionImpl.Builder typeInspectionBuilder = typeMapBuilder.ensureTypeInspection(typeInfo,
+                TypeInspectionImpl.InspectionState.BY_HAND);
         typeInspectionBuilder.noParent(typeMapBuilder.getPrimitives());
         typeInspectionBuilder.setTypeNature(TypeNature.CLASS);
         typeInspectionBuilder.addInterfaceImplemented(functionalInterfaceType);
