@@ -484,4 +484,12 @@ public class Test_04_Warnings extends CommonTestRunner {
                         .build(),
                 new AnalyserConfiguration.Builder().build());
     }
-}
+
+
+    @Test
+    public void test8() throws IOException {
+        // field initializer
+        testClass("Warnings_8", 0, 1, new DebugConfiguration.Builder()
+                        .build(),
+                new AnalyserConfiguration.Builder().build());
+    }}

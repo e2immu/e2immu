@@ -14,7 +14,6 @@ public class TrieSimplified_3<T> {
 
     @Container
     private static class TrieNode<T> {
-        List<T> data;
         Map<String, TrieNode<T>> map;
     }
 
@@ -23,9 +22,9 @@ public class TrieSimplified_3<T> {
     private TrieNode<T> goTo(String[] strings, int upToPosition) {
         TrieNode<T> node = root;
         for (int i = 0; i < upToPosition; i++) {
-            if (node.map == null) return null;
-            node = node.map.get(strings[i]);
-            if (node == null) return null;
+            if (node.map == null) return null; // eval to true, always return null
+            node = node.map.get(strings[i]); // statement should be unreachable from it 1
+            if (node == null) return null; // unreachable from it 1
         }
         return node;
     }

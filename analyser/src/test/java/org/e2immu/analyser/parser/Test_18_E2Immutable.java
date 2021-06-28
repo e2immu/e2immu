@@ -240,4 +240,10 @@ public class Test_18_E2Immutable extends CommonTestRunner {
                 .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
                 .build());
     }
+
+    @Test
+    public void test_10() throws IOException {
+        testClass("E2Immutable_10", 0, 0, new DebugConfiguration.Builder()
+                .build());
+    }
 }

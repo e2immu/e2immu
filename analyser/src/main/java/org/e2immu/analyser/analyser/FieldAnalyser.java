@@ -651,7 +651,10 @@ public class FieldAnalyser extends AbstractAnalyser {
                             return vi.isDelayed();
                         }
                     });
-                    if (!fieldInspection.isStatic()) occurrenceCountForError++;
+                    if (!fieldInspection.isStatic() && methodAnalyser.methodInfo.isConstructor){
+                        // we'll warn for the combination of field initializer, and occurrence in at least one constructor
+                        occurrenceCountForError++;
+                    }
                     added = true;
                     if (vi.isDelayed()) {
                         log(DELAYED, "Delay consistent value for field {}", fqn);

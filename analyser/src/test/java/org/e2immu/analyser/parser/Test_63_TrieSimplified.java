@@ -15,13 +15,12 @@
 package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.LinkedVariables;
+import org.e2immu.analyser.analyser.VariableInfoContainer;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
-import org.e2immu.analyser.model.ParameterAnalysis;
 import org.e2immu.analyser.model.ParameterInfo;
-import org.e2immu.analyser.model.variable.DependentVariable;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.visitor.*;
@@ -79,180 +78,157 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                 .build());
     }
 
+    // see also test_4; difference: before introduction of "Inspector", TrieNode was not analysed, since it has no statements
     @Test
     public void test_2() throws IOException {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("TrieNode".equals(d.typeInfo().simpleName)) {
-                fail(); // no code
+                int expectImm = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_E2IMMUTABLE;
+                assertEquals(expectImm, d.typeAnalysis().getProperty(VariableProperty.IMMUTABLE));
             }
         };
 
-        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-            if ("add".equals(d.methodInfo().name)) {
-                if (d.variable() instanceof FieldReference fr && "root".equals(fr.fieldInfo.name)) {
-                    String expect = d.iteration() == 0 ? "<f:root>" : "instance type TrieNode<T>";
-                    assertEquals(expect, d.currentValue().toString());
-
-                    String expectLv = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "";
-                    assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
-                }
-
-                if ("node".equals(d.variableName())) {
-                    String expect = d.iteration() == 0 ? "<f:root>" : "root";
-                    assertEquals(expect, d.currentValue().toString());
-
-                    if ("0".equals(d.statementId()) || "1".equals(d.statementId())) {
-                        int expectCm = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
-                        assertEquals(expectCm, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
-                    }
-                    if ("2".equals(d.statementId())) {
-                        String expectLv = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "this.root";
-                        assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
-
-                        //   int expectCm = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
-                        //   assertEquals(expectCm, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
-                    }
-                }
-                if (d.variable() instanceof ReturnVariable) {
-                    if ("0".equals(d.statementId()) || "1".equals(d.statementId())) {
-                        assertEquals("<return value>", d.currentValue().toString());
-
-                        int expectCm = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
-                        assertEquals(expectCm, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
-                    }
-                    if ("2".equals(d.statementId())) {
-                        String expect = d.iteration() == 0 ? "<f:root>" : "root";
-                        assertEquals(expect, d.currentValue().toString());
-
-                        //    String expectLv = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "";
-                        //     assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
-
-                        //     int expectCm = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
-                        //     assertEquals(expectCm, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
-                    }
-                }
-            }
-        };
-
-        testClass("TrieSimplified_2", 0, 0, new DebugConfiguration.Builder()
+        testClass("TrieSimplified_2", 0, 1, new DebugConfiguration.Builder()
                 .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
-                //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 
     @Test
     public void test_3() throws IOException {
 
-        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+        EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("goTo".equals(d.methodInfo().name)) {
-                if ("1.0.0".equals(d.statementId()) || "1.0.1".equals(d.statementId())) {
-                    String expectState = d.iteration() == 0 ? "null!=<f:map>" : "null!=map$0";
-                    assertEquals(expectState, d.state().toString());
+                if ("1.0.0".equals(d.statementId())) {
+                    String expectValue = d.iteration() == 0 ? "null==<f:map>" : "true";
+                    assertEquals(expectValue, d.evaluationResult().getExpression().toString());
                 }
-                if ("1.0.2".equals(d.statementId())) {
-                    String expectState = d.iteration() == 0 ? "null!=<v:node>&&null!=<f:map>" :
-                            "null!=map$0.get(nullable instance type String)&&null!=map$0";
-                    assertEquals(expectState, d.state().toString());
+                if ("1.0.1".equals(d.statementId()) || "1.0.2".equals(d.statementId())) {
+                    // unreachable in iteration 1
+                    assertEquals(0, d.iteration());
                 }
             }
         };
+
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("goTo".equals(d.methodInfo().name)) {
+                if ("1.0.0".equals(d.statementId())) {
+                    String expectState = d.iteration() == 0 ? "null!=<f:map>" : "false";
+                    assertEquals(expectState, d.state().toString());
+                }
+                if ("1.0.1".equals(d.statementId())) {
+                    assertEquals(d.iteration() > 0, d.statementAnalysis().flowData.isUnreachable());
+                }
+                if ("1.0.2".equals(d.statementId())) {
+                    assertEquals(d.iteration() > 0, d.statementAnalysis().flowData.isUnreachable());
+                }
+                if ("1.0.2.0.0".equals(d.statementId())) {
+                    assertEquals(0, d.iteration());
+                }
+            }
+        };
+
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("goTo".equals(d.methodInfo().name)) {
-                if (d.variable() instanceof ParameterInfo pi && "strings".equals(pi.name)) {
-                    if ("1.0.1".equals(d.statementId()) || "1".equals(d.statementId()) || "2".equals(d.statementId())) {
+                if (d.variable() instanceof FieldReference fieldReference && "root".equals(fieldReference.fieldInfo.name)) {
+                    if ("0".equals(d.statementId())) {
+                        String expectValue = d.iteration() <= 1 ? "<f:root>" : "root";
+                        assertEquals(expectValue, d.currentValue().toString());
+
                         int expectCm = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
-                        //    assertEquals(expectCm, d.getProperty(VariableProperty.CONTEXT_MODIFIED), d.statementId());
+                        //  assertEquals(expectCm, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
                     }
                 }
-                if (d.variable() instanceof DependentVariable dv) {
-                    assertEquals("org.e2immu.analyser.testexample.TrieSimplified_3.goTo(java.lang.String[],int):0:strings[i]", dv.simpleName());
-                    if ("1.0.1".equals(d.statementId())) {
-                        assertEquals(Level.FALSE, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
+                if ("root$0".equals(d.variableName())) {
+                    fail(); // root is final, so there will be no copies for a variable field
+                }
+
+                if (d.variable() instanceof ParameterInfo pi && "strings".equals(pi.name)) {
+                    if ("1".equals(d.statementId()) || "2".equals(d.statementId())) {
+                        int expectCm = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
+                        //assertEquals(expectCm, d.getProperty(VariableProperty.CONTEXT_MODIFIED), d.statementId());
                     }
                 }
                 if ("node".equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {
-                        String expectValue = d.iteration() == 0 ? "<f:root>" : "root";
+                        String expectValue = d.iteration() <= 1 ? "<f:root>" : "root";
                         assertEquals(expectValue, d.currentValue().toString());
-                    }
-                    if ("1.0.1".equals(d.statementId())) {
-                        String expectValue = d.iteration() == 0 ? "<m:get>" : "null==map$0?node$1:map$0.get(nullable instance type String)";
-                        assertEquals(expectValue, d.currentValue().toString());
-                        int expectNne = d.iteration() == 0 ? Level.DELAY : MultiLevel.NULLABLE;
-                        assertEquals(expectNne, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
                     }
                     if ("1".equals(d.statementId())) {
-                        String expectValue = d.iteration() == 0 ? "upToPosition-<replace:int>>=1?<m:get>:<f:root>" :
-                                "-(instance type int)+upToPosition>=1?null==map$0?nullable instance type TrieNode<T>:map$0.get(nullable instance type String):root";
+                        String expectValue = d.iteration() == 0 ? "upToPosition><replace:int>?<m:get>:<f:root>" : "<f:root>";
                         assertEquals(expectValue, d.currentValue().toString());
                     }
                     if ("2".equals(d.statementId())) {
-                        String expectValue = d.iteration() <= 2 ? "upToPosition-<replace:int>>=1?<m:get>:<f:root>" :
-                                "-(instance type int)+upToPosition>=1?null==map$0?nullable instance type TrieNode<T>:map$0.get(nullable instance type String):root";
+                        String expectValue = d.iteration() <= 1 ? "upToPosition><replace:int>?<m:get>:<f:root>" : "root";
                         assertEquals(expectValue, d.currentValue().toString());
                     }
                 }
                 if ("node$1".equals(d.variableName())) {
                     assertEquals("nullable instance type TrieNode<T>", d.currentValue().toString());
-                    int expectNne;
-                    if ("1.0.0.0.0".equals(d.statementId()) || "1".equals(d.statementId())) {
-                        expectNne = MultiLevel.EFFECTIVELY_NOT_NULL;
-                    } else {
-                        expectNne = MultiLevel.NULLABLE;
-                    }
-                    assertEquals(expectNne, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION), d.statementId());
-                }
-                if ("node$1$1.0.1-E".equals(d.variableName())) {
-                    assertNotEquals("1.0.0", d.statementId());
-
-                    String expectValue = d.iteration() == 0 ? "<m:get>"
-                            : "null==map$0?node$1:map$0.get(nullable instance type String)";
-                    assertEquals(expectValue, d.currentValue().toString());
-
-                    int expectNne = d.iteration() == 0 ? Level.DELAY : MultiLevel.NULLABLE;
-                    assertEquals(expectNne, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                    assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION), d.statementId());
                 }
                 if (d.variable() instanceof ReturnVariable) {
-                    if ("1.0.0".equals(d.statementId()) || "1.0.1".equals(d.statementId())) {
-                        String expectValue = d.iteration() == 0 ? "null==<f:map>?null:<return value>" : "null==map$0?null:<return value>";
-                        assertEquals(expectValue, d.currentValue().toString());
-                    }
-                    if ("1.0.2".equals(d.statementId())) {
-                        String expectValue = d.iteration() == 0 ? "null==<v:node>?<s:>:null==<f:map>?null:<return value>"
-                                : "null==map$0.get(nullable instance type String)||null==map$0?null:<return value>";
+                    if ("1.0.0".equals(d.statementId())) {
+                        String expectValue = d.iteration() == 0 ? "null==<f:map>?null:<return value>" : "null";
                         assertEquals(expectValue, d.currentValue().toString());
                     }
                     if ("1".equals(d.statementId())) {
                         String expectValue = d.iteration() == 0
-                                ? "upToPosition-<replace:int>>=1?null==<v:node>?<s:>:null==<f:map>?null:<return value>:<return value>"
-                                : "-(instance type int)+upToPosition>=1&&(null==map$0.get(nullable instance type String)||null==map$0)?null:<return value>";
+                                ? "upToPosition><replace:int>?null==<v:node>?<s:>:null==<f:map>?null:<return value>:<return value>"
+                                : "upToPosition>instance type int?null:<return value>";
                         assertEquals(expectValue, d.currentValue().toString(), d.variableName());
                     }
                     if ("2".equals(d.statementId())) {
                         String expectValue = d.iteration() == 0
-                                ? "<replace:int>>=upToPosition?upToPosition-<replace:int>>=1?<m:get>:<f:root>:null==<f:map>&&upToPosition-<replace:int>>=1&&upToPosition-<replace:int>>=1&&upToPosition-<replace:int>>=1&&upToPosition-<replace:int>>=1&&upToPosition-<replace:int>>=1&&upToPosition-<replace:int>>=1&&upToPosition-<replace:int>>=1?null:<return value>"
-                                : "instance type int>=upToPosition?root:-(instance type int)+upToPosition>=1&&(null==<m:get>||null==(-(instance type int)+upToPosition>=1?nullable instance type Map<String,TrieNode<T>>:<v:map$0>))?null:<return value>";
+                                ? "<v:i>>=upToPosition?upToPosition><replace:int>?<m:get>:<f:root>:null==<f:map>&&upToPosition><replace:int>&&upToPosition-<v:i>>=1?null:<return value>"
+                                : "instance type int>=upToPosition?<f:root>:null";
                         assertEquals(expectValue, d.currentValue().toString(), d.variableName());
                     }
                 }
             }
         };
 
-        // FIXME the problem is statement 2; full of delays, in node -> in retvar -> ...; statement 1 looks fully OK
+        FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+            if ("root".equals(d.fieldInfo().name)) {
+                assertEquals(Level.TRUE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
+                // wait until TrieNode is immutable
+                if (d.iteration() <= 1) {
+                    assertNull(d.fieldAnalysis().getEffectivelyFinalValue());
+                } else {
+                    assertEquals("", d.fieldAnalysis().getEffectivelyFinalValue().toString());
+                }
+            }
+            if ("map".equals(d.fieldInfo().name)) {
+                assertEquals("null", d.fieldAnalysis().getEffectivelyFinalValue().toString());
+            }
+        };
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("goTo".equals(d.methodInfo().name)) {
-                ParameterAnalysis strings = d.parameterAnalyses().get(0);
-                int expectMv = d.iteration() <= 2 ? Level.DELAY : Level.FALSE;
-                assertEquals(expectMv, strings.getProperty(VariableProperty.CONTEXT_MODIFIED));
-                assertEquals(expectMv, strings.getProperty(VariableProperty.MODIFIED_VARIABLE));
+                int expectMm = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
+                assertEquals(expectMm, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
+            }
+        };
+
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("TrieNode".equals(d.typeInfo().simpleName)) {
+                // we need to wait at least one iteration on implicitly immutable
+                // iteration 1 delayed because of @Modified of goTo
+                int expectImm = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_E2IMMUTABLE;
+                assertEquals(expectImm, d.typeAnalysis().getProperty(VariableProperty.IMMUTABLE));
+            }
+            if ("TrieSimplified_3".equals(d.typeInfo().simpleName)) {
+                assertEquals("[Type param T, Type param T]",
+                        d.typeAnalysis().getImplicitlyImmutableDataTypes().toString());
             }
         };
 
         testClass("TrieSimplified_3", 0, 0, new DebugConfiguration.Builder()
-                //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                //   .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                //       .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
+                .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build());
     }
 
@@ -276,14 +252,23 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                     assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
 
                     // here, ENN is computed in the group 'root', 'node'
-                    if ("0".equals(d.statementId()) || "1".equals(d.statementId())) {
+                    if ("0".equals(d.statementId())) {
                         int enn = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
                         assertEquals(enn, d.getProperty(VariableProperty.EXTERNAL_NOT_NULL), d.statementId());
+                        int expectStatementTime = d.iteration() == 0 ? VariableInfoContainer.VARIABLE_FIELD_DELAY
+                                : VariableInfoContainer.NOT_A_VARIABLE_FIELD;
+                        assertEquals(expectStatementTime, d.variableInfo().getStatementTime());
+                    }
+                    if ("1".equals(d.statementId())) {
+                        int expectStatementTime = d.iteration() == 0 ? VariableInfoContainer.VARIABLE_FIELD_DELAY
+                                : VariableInfoContainer.NOT_A_VARIABLE_FIELD;
+                        // this seems to be the one... we have -1 in iteration 1 !!!
+                        assertEquals(expectStatementTime, d.variableInfo().getStatementTime());
                     }
                     // from here on, the return variable is part of the equivalence group
                     // it only receives a value and proper links from iteration 3 onward
                     if ("2".equals(d.statementId())) {
-                        int enn = d.iteration() <= 2 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
+                        int enn = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
                         assertEquals(enn, d.getProperty(VariableProperty.EXTERNAL_NOT_NULL), d.statementId());
                     }
                 }
@@ -342,7 +327,7 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
             }
         };
 
-        testClass("TrieSimplified_4", 0, 0, new DebugConfiguration.Builder()
+        testClass("TrieSimplified_4", 0, 1, new DebugConfiguration.Builder()
                 .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)

@@ -537,7 +537,7 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
                 fieldAnalyser -> fieldAnalyser.fieldAnalysis.getProperty(VariableProperty.FINAL) == Level.FALSE ||
                         fieldAnalyser.fieldAnalysis.getEffectivelyFinalValue() != null);
         if (!fieldsReady) {
-            log(DELAYED, "Delaying container, need assignedToField to be set");
+            log(DELAYED, "Delaying container, need effectively final value to be known for final fields");
             return DELAYS;
         }
         boolean allReady = myMethodAndConstructorAnalysersExcludingSAMs.stream()

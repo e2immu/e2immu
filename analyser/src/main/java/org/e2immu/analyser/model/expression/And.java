@@ -445,6 +445,9 @@ public record And(Primitives primitives, List<Expression> expressions) implement
 
     @Override
     public int internalCompareTo(Expression v) {
+        if(v instanceof InlineConditional inlineConditional) {
+            return internalCompareTo(inlineConditional.condition);
+        }
         And andValue = (And) v;
         return ListUtil.compare(expressions, andValue.expressions);
     }

@@ -482,6 +482,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         for (VariableProperty variableProperty : GroupPropertyValues.PROPERTIES) {
             groupPropertyValues.setIfKeyAbsent(variableProperty, v, org.e2immu.analyser.model.Level.DELAY);
         }
+        mergeImpl.setStatementTime(eval.getStatementTime());
     }
 
     @Override

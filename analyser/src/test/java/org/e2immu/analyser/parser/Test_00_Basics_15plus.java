@@ -17,14 +17,15 @@ package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.Analysis;
+import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
+import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_00_Basics_15plus extends CommonTestRunner {
     public Test_00_Basics_15plus() {
@@ -57,6 +58,26 @@ public class Test_00_Basics_15plus extends CommonTestRunner {
     @Test
     public void test_17() throws IOException {
         testClass("Basics_17", 0, 0, new DebugConfiguration.Builder()
+                .build());
+    }
+
+
+    @Test
+    public void test_18() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("get".equals(d.methodInfo().name)) {
+                if ("4".equals(d.statementId())) {
+                    if ("a$1.i".equals(d.variable().toString())) {
+                        assertEquals("instance type int", d.currentValue().toString());
+                    }
+                    if ("a$0.i".equals(d.variable().toString())) {
+                        assertEquals("instance type int", d.currentValue().toString());
+                    }
+                }
+            }
+        };
+        testClass("Basics_18", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 }
