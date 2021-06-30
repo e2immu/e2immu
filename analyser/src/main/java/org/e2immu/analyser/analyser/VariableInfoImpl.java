@@ -280,6 +280,7 @@ class VariableInfoImpl implements VariableInfo {
             new MergeOp(PROPAGATE_MODIFICATION_DELAY, Math::max, Level.DELAY),
             new MergeOp(CONTEXT_NOT_NULL_DELAY, Math::max, Level.DELAY),
             new MergeOp(CONTEXT_IMMUTABLE_DELAY, Math::max, Level.DELAY),
+            new MergeOp(EXTERNAL_IMMUTABLE_BREAK_DELAY, Math::max, Level.DELAY),
 
             new MergeOp(CONTEXT_NOT_NULL_FOR_PARENT, Math::max, Level.DELAY),
             new MergeOp(CONTEXT_NOT_NULL_FOR_PARENT_DELAY, Math::max, Level.DELAY),
@@ -310,6 +311,7 @@ class VariableInfoImpl implements VariableInfo {
             new MergeOp(PROPAGATE_MODIFICATION_DELAY, Math::max, Level.DELAY),
             new MergeOp(CONTEXT_NOT_NULL_DELAY, Math::max, Level.DELAY),
             new MergeOp(CONTEXT_IMMUTABLE_DELAY, Math::max, Level.DELAY),
+            new MergeOp(EXTERNAL_IMMUTABLE_BREAK_DELAY, Math::max, Level.DELAY),
 
             new MergeOp(CONTEXT_NOT_NULL_FOR_PARENT, Math::max, Level.DELAY),
             new MergeOp(CONTEXT_NOT_NULL_FOR_PARENT_DELAY, Math::max, Level.DELAY),

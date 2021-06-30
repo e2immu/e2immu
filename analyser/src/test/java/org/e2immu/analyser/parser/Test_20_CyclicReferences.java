@@ -85,11 +85,11 @@ public class Test_20_CyclicReferences extends CommonTestRunner {
             if ("methodA".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ReturnVariable) {
                     if ("0.0.0".equals(d.statementId())) {
-                        String expectValue = d.iteration() <= 2 ? "<m:methodB>" : "!\"a\".equals(paramA)&&\"b\".equals(paramA)";
+                        String expectValue = d.iteration() <= 1 ? "<m:methodB>" : "!\"a\".equals(paramA)&&\"b\".equals(paramA)";
                         assertEquals(expectValue, d.currentValue().toString());
                     }
                     if ("1".equals(d.statementId())) {
-                        String expectValue = d.iteration() <= 2 ? "<m:equals>&&!<m:equals>" : "\"a\".equals(paramA)&&!\"b\".equals(paramA)";
+                        String expectValue = d.iteration() <= 1 ? "<m:equals>&&!<m:equals>" : "\"a\".equals(paramA)&&!\"b\".equals(paramA)";
                         assertEquals(expectValue, d.currentValue().toString());
                     }
                 }

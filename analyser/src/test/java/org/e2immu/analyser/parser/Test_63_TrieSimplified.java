@@ -131,11 +131,21 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
             if ("goTo".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof FieldReference fieldReference && "root".equals(fieldReference.fieldInfo.name)) {
                     if ("0".equals(d.statementId())) {
-                        String expectValue = d.iteration() <= 1 ? "<f:root>" : "root";
+                        String expectValue = d.iteration() <= 2 ? "<f:root>" : "root";
                         assertEquals(expectValue, d.currentValue().toString());
 
+                        String expectLv = d.iteration() <= 1 ? "*" : "";
+                        assertEquals(expectLv, d.variableInfo().getLinkedVariables().toDetailedString());
+
+                        int expectBreak = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
+                        assertEquals(expectBreak, d.getProperty(VariableProperty.EXTERNAL_IMMUTABLE_BREAK_DELAY));
+
                         int expectCm = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
-                        //  assertEquals(expectCm, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
+                        assertEquals(expectCm, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
+                    }
+                    if("2".equals(d.statementId())) {
+                        int expectCm = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
+                        assertEquals(expectCm, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
                     }
                 }
                 if ("root$0".equals(d.variableName())) {
@@ -150,8 +160,11 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                 }
                 if ("node".equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {
-                        String expectValue = d.iteration() <= 1 ? "<f:root>" : "root";
+                        String expectValue = d.iteration() <= 2 ? "<f:root>" : "root";
                         assertEquals(expectValue, d.currentValue().toString());
+
+                        int expectCm = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
+                        assertEquals(expectCm, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
                     }
                     if ("1".equals(d.statementId())) {
                         String expectValue = d.iteration() == 0 ? "upToPosition><replace:int>?<m:get>:<f:root>" : "<f:root>";
@@ -160,6 +173,9 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                     if ("2".equals(d.statementId())) {
                         String expectValue = d.iteration() <= 1 ? "upToPosition><replace:int>?<m:get>:<f:root>" : "root";
                         assertEquals(expectValue, d.currentValue().toString());
+
+                        int expectCm = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
+                        assertEquals(expectCm, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
                     }
                 }
                 if ("node$1".equals(d.variableName())) {
@@ -190,6 +206,7 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("root".equals(d.fieldInfo().name)) {
                 assertEquals(Level.TRUE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
+                assertEquals(Level.TRUE, d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_IMMUTABLE_BREAK_DELAY));
                 // wait until TrieNode is immutable
                 if (d.iteration() <= 1) {
                     assertNull(d.fieldAnalysis().getEffectivelyFinalValue());
@@ -204,8 +221,8 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("goTo".equals(d.methodInfo().name)) {
-                int expectMm = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
-                assertEquals(expectMm, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
+                   int expectMm = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
+                   assertEquals(expectMm, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
             }
         };
 
@@ -223,12 +240,12 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
         };
 
         testClass("TrieSimplified_3", 0, 0, new DebugConfiguration.Builder()
-              //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-              //  .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-              //  .addStatementAnalyserVisitor(statementAnalyserVisitor)
-               // .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
-              //  .addEvaluationResultVisitor(evaluationResultVisitor)
-              //  .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                //  .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                  .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
+                //  .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build());
     }
 

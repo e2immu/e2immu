@@ -168,11 +168,11 @@ public class Test_10_Identity extends CommonTestRunner {
                 assertEquals(expectParamNotNull, d.parameterAnalyses().get(0).getProperty(VariableProperty.NOT_NULL_PARAMETER));
             }
             if ("idem2".equals(d.methodInfo().name)) {
-                int expectModified = d.iteration() <= 1 ? Level.DELAY : Level.FALSE;
+                int expectModified = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
                 assertEquals(expectModified, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
-                int expectIdentity = d.iteration() <= 1 ? Level.DELAY : Level.TRUE;
+                int expectIdentity = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
                 assertEquals(expectIdentity, d.methodAnalysis().getProperty(VariableProperty.IDENTITY));
-                if (d.iteration() > 1) {
+                if (d.iteration() >= 1) {
                     assertEquals("s/*@Immutable,@NotNull*/", d.methodAnalysis().getSingleReturnValue().toString());
                 } else {
                     assertNull(d.methodAnalysis().getSingleReturnValue());
@@ -267,11 +267,7 @@ public class Test_10_Identity extends CommonTestRunner {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("idem4".equals(d.methodInfo().name) && "1".equals(d.statementId())) {
                 // double property wrapper
-                String expect = switch (d.iteration()) {
-                    case 0 -> "<m:equals>?<m:idem>:<p:s>";
-                    case 1 -> "\"a\".equals(s)?<m:idem>:s";
-                    default -> "s/*@Immutable,@NotNull*//*@Immutable,@NotNull*/";
-                };
+                String expect = d.iteration() == 0 ? "<m:equals>?<m:idem>:<p:s>" : "s/*@Immutable,@NotNull*//*@Immutable,@NotNull*/";
                 assertEquals(expect, d.evaluationResult().value().toString());
             }
         };
@@ -279,9 +275,9 @@ public class Test_10_Identity extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             MethodAnalysis methodAnalysis = d.methodAnalysis();
             if ("idem4".equals(d.methodInfo().name)) {
-                int expectMm = d.iteration() <= 2 ? Level.DELAY : Level.FALSE;
+                int expectMm = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
                 assertEquals(expectMm, methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD));
-                int expectIdentity = d.iteration() <= 2 ? Level.DELAY : Level.TRUE;
+                int expectIdentity = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
                 assertEquals(expectIdentity, methodAnalysis.getProperty(VariableProperty.IDENTITY));
             }
         };

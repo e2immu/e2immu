@@ -142,14 +142,11 @@ public class Test_50_InspectionGaps extends CommonTestRunner {
             }
 
             if ("createUnmodifiable".equals(d.methodInfo().name)) {
-                if (d.iteration() == 0) {
-                    assertNull(d.methodAnalysis().getSingleReturnValue());
-                } else {
-                    assertEquals("new ArrayList<>(list)", d.methodAnalysis().getSingleReturnValue().toString());
-                }
-                int expectNne = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
+                assertEquals("new ArrayList<>(list)", d.methodAnalysis().getSingleReturnValue().toString());
+
+                int expectNne = MultiLevel.EFFECTIVELY_NOT_NULL;
                 assertEquals(expectNne, d.methodAnalysis().getProperty(VariableProperty.NOT_NULL_EXPRESSION));
-                int expectModified = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
+                int expectModified = Level.FALSE;
                 assertEquals(expectModified, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
 
                 int expectIndependent = d.iteration() == 0 ? Level.DELAY : MultiLevel.INDEPENDENT;
@@ -167,9 +164,9 @@ public class Test_50_InspectionGaps extends CommonTestRunner {
                 assertTrue(statement0 instanceof ReturnStatement returnStatement &&
                         returnStatement.expression instanceof NewObject); // and not UnknownObjectCreation
 
-                int expectModified = d.iteration() <= 1 ? Level.DELAY : Level.FALSE;
+                int expectModified = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
                 assertEquals(expectModified, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
-                int expectNne = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
+                int expectNne = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
                 assertEquals(expectNne, d.methodAnalysis().getProperty(VariableProperty.NOT_NULL_EXPRESSION));
 
             }

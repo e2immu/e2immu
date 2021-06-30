@@ -791,9 +791,10 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
         if (methodAnalysis.getProperty(variableProperty) != Level.DELAY) return DONE;
         MethodLevelData methodLevelData = methodAnalysis.methodLevelData();
 
-        // first step, check field assignments
+        // first step, check (my) field assignments
         boolean fieldAssignments = methodAnalysis.getLastStatement().variableStream()
-                .filter(vi -> vi.variable() instanceof FieldReference)
+                .filter(vi -> vi.variable() instanceof FieldReference fr &&
+                        fieldInMyTypeHierarchy(fr.fieldInfo, methodInfo.typeInfo))
                 .anyMatch(VariableInfo::isAssigned);
         if (fieldAssignments) {
             log(MODIFICATION, "Method {} is @Modified: fields are being assigned", methodInfo.distinguishingName());
@@ -803,8 +804,13 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
 
         // if there are no field assignments, there may be modifying method calls
 
-        // second step, check that linking has been computed
-        if (!methodLevelData.linksHaveBeenEstablished.isSet()) {
+        // second step, check that CM is present (this generally implies that links have been established)
+        Optional<VariableInfo> noContextModified = methodAnalysis.getLastStatement().variableStream()
+                .filter(vi -> vi.variable() instanceof FieldReference fr &&
+                        fieldInMyTypeHierarchy(fr.fieldInfo, methodInfo.typeInfo))
+                .filter(vi -> vi.getProperty(CONTEXT_MODIFIED) == Level.DELAY)
+                .findFirst();
+         if (noContextModified.isPresent()) {
             assert translatedDelay(COMPUTE_MODIFIED, methodInfo.fullyQualifiedName + ":" + methodAnalysis.getLastStatement().index + D_LINKS_HAVE_BEEN_ESTABLISHED,
                     methodInfo.fullyQualifiedName + D_MODIFIED_METHOD);
             log(DELAYED, "Method {}: Not deciding on @Modified yet, delaying because linking not computed",
@@ -874,6 +880,15 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
         // (we could call non-@NM methods on parameters or local variables, but that does not influence this annotation)
         methodAnalysis.setProperty(variableProperty, isModified ? Level.TRUE : Level.FALSE);
         return DONE;
+    }
+
+    public boolean fieldInMyTypeHierarchy(FieldInfo fieldInfo, TypeInfo typeInfo) {
+        if (typeInfo == fieldInfo.owner) return true;
+        TypeInspection inspection = analyserContext.getTypeInspection(typeInfo);
+        if (!Primitives.isJavaLangObject(inspection.parentClass())) {
+            return fieldInMyTypeHierarchy(fieldInfo, inspection.parentClass().typeInfo);
+        }
+        return typeInfo.primaryType() == fieldInfo.owner.primaryType();
     }
 
     private Boolean findOtherModifyingElements() {

@@ -156,7 +156,7 @@ public class Test_Support_08_SetOnceMap extends CommonTestRunner {
                 assertEquals("get,isSet", d.methodInfo().methodResolution.get().methodsOfOwnClassReached()
                         .stream().map(m -> m.name).sorted().collect(Collectors.joining(",")));
 
-                int expectMm = d.iteration() <= 2 ? Level.DELAY : Level.TRUE;
+                int expectMm = d.iteration() <= 1 ? Level.DELAY : Level.TRUE;
                 assertEquals(expectMm, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
             }
             if ("isSet".equals(d.methodInfo().name)) {
