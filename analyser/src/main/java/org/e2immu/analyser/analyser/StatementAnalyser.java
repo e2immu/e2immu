@@ -790,9 +790,9 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             }
 
             LinkedVariables mergedLinkedVariables = writeMergedLinkedVariables(changeData, variable, vi, vi1);
-            if (mergedLinkedVariables != LinkedVariables.DELAY && vi.isNotDelayed() || mergedLinkedVariables == EMPTY_OVERRIDE) {
+            if (!mergedLinkedVariables.isDelayed() && vi.isNotDelayed() || mergedLinkedVariables == EMPTY_OVERRIDE) {
                 vic.setLinkedVariables(mergedLinkedVariables, false);
-            } else if (vi.getLinkedVariables() == LinkedVariables.DELAY) {
+            } else if (vi.getLinkedVariables().isDelayed()) {
                 status = DELAYS;
                 linkedDelays = true;
                 assert foundDelay(EVALUATION_OF_MAIN_EXPRESSION, variable.fullyQualifiedName() + "@" + index() + D_LINKED_VARIABLES_SET);
@@ -809,7 +809,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 }
             }
 
-            if (changeData.linked1Variables() == LinkedVariables.DELAY) {
+            if (changeData.linked1Variables().isDelayed()) {
                 status = DELAYS;
                 linked1Delays = true;
             }
@@ -1094,7 +1094,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 set.addAll(lv.variables());
             }
         });
-        return new LinkedVariables(set);
+        return new LinkedVariables(set, linkedVariables.isDelayed());
     }
 
     private void addToMap(GroupPropertyValues groupPropertyValues,
@@ -1283,7 +1283,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         vic.ensureEvaluation(assignmentId, readId, statementTime, changeData.readAtStatementTime());
     }
 
-    private static final LinkedVariables EMPTY_OVERRIDE = new LinkedVariables(Set.of());
+    private static final LinkedVariables EMPTY_OVERRIDE = new LinkedVariables(Set.of(), false);
 
     private LinkedVariables writeMergedLinkedVariables(EvaluationResult.ChangeData changeData,
                                                        Variable variable,
@@ -1297,17 +1297,17 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 return EMPTY_OVERRIDE;
             }
         }
-        if (changeData.linkedVariables() == LinkedVariables.DELAY) {
+        if (changeData.linkedVariables().isDelayed()) {
             log(DELAYED, "Apply of {}, {} is delayed because of linked variables of {}",
                     index(), myMethodAnalyser.methodInfo.fullyQualifiedName,
                     variable.fullyQualifiedName());
-            return LinkedVariables.DELAY;
+            return changeData.linkedVariables();
         }
 
         if (vi.getStatementTime() == VariableInfoContainer.VARIABLE_FIELD_DELAY) {
             log(DELAYED, "Apply of statement {}, {} is delayed because of variable field delay",
                     index(), myMethodAnalyser.methodInfo.fullyQualifiedName);
-            return LinkedVariables.DELAY;
+            return changeData.linkedVariables();
         }
 
         // no assignment, we need to copy, potentially add to previous value
@@ -1316,22 +1316,22 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         LinkedVariables toAddFromPreviousValue;
         if (changeData.markAssignment()) {
             if (vi.isConfirmedVariableField()) {
-                if (previousValue == LinkedVariables.DELAY) {
+                toAddFromPreviousValue = previousValue.removeAllButLocalCopiesOf(variable);
+                if (previousValue.isDelayed()) {
                     log(DELAYED, "Apply of {}, {} is delayed because of previous value delay of linked variables of variable field {}",
                             index(), myMethodAnalyser.methodInfo.fullyQualifiedName,
                             variable.fullyQualifiedName());
-                    return LinkedVariables.DELAY;
+                    return toAddFromPreviousValue.merge(changeData.linkedVariables());
                 }
-                toAddFromPreviousValue = previousValue.removeAllButLocalCopiesOf(variable);
             } else {
                 toAddFromPreviousValue = LinkedVariables.EMPTY;
             }
         } else {
-            if (previousValue == LinkedVariables.DELAY) {
+            if (previousValue.isDelayed()) {
                 log(DELAYED, "Apply of {}, {} is delayed because of previous value delay of linked variables of {}",
                         index(), myMethodAnalyser.methodInfo.fullyQualifiedName,
                         variable.fullyQualifiedName());
-                return LinkedVariables.DELAY;
+                return previousValue.merge(changeData.linkedVariables());
             }
             toAddFromPreviousValue = previousValue;
         }
@@ -1340,7 +1340,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         log(ANALYSER, "Set linked variables of {} to {} in {}, {}",
                 variable, mergedValue, index(), myMethodAnalyser.methodInfo.fullyQualifiedName);
 
-        assert mergedValue != LinkedVariables.DELAY;
+        assert !mergedValue.isDelayed();
         return mergedValue;
     }
 
@@ -1701,7 +1701,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                         read,
                         newValue,
                         mergeValueAndLoopVar(valueProps, vi.getProperties().toImmutableMap()),
-                        new LinkedVariables(Set.of(vi.variable())),
+                        new LinkedVariables(Set.of(vi.variable()), false),
                         true);
                 statementAnalysis.variables.put(loopCopyFqn, newVic);
             }
@@ -2460,9 +2460,9 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                         isEmpty.returnType(), List.of()));
             }
         }
-        // TODO if instance of collection
         if (valueIsDelayed) {
-            return DelayedExpression.forUnspecifiedLoopCondition(evaluationContext.getPrimitives().booleanParameterizedType);
+            return DelayedExpression.forUnspecifiedLoopCondition(evaluationContext.getPrimitives().booleanParameterizedType,
+                    value.variables());
         }
         return NewObject.forUnspecifiedLoopCondition(evaluationContext.statementIndex(),
                 evaluationContext.getPrimitives());
@@ -2946,22 +2946,22 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             if (implicit == Boolean.TRUE) {
                 return LinkedVariables.EMPTY;
             }
+            boolean delayed = implicit == null;
+
             // first try immutable
             boolean isSelf = variable.parameterizedType().isAssignableFromTo(analyserContext,
                     getCurrentType().asParameterizedType(analyserContext));
             VariableInfo variableInfo = statementAnalysis.initialValueForReading(variable, getInitialStatementTime(), true);
             if (!isSelf) {
                 int immutable = variableInfo.getProperty(IMMUTABLE);
-                if (immutable == Level.DELAY) return LinkedVariables.DELAY;
-                if (MultiLevel.isAtLeastEventuallyE2ImmutableAfter(immutable)) return LinkedVariables.EMPTY;
+                if (MultiLevel.isAtLeastEventuallyE2ImmutableAfter(immutable)) {
+                    return LinkedVariables.EMPTY;
+                }
+                if (immutable == Level.DELAY) delayed = true;
             }
-            if (implicit == null) return LinkedVariables.DELAY;
 
-            if (variableInfo.linkedVariablesIsSet()) {
-                LinkedVariables linkToMe = new LinkedVariables(Set.of(variable));
-                return variableInfo.getLinkedVariables().merge(linkToMe);
-            } // otherwise, there's delays already, so keep on delaying
-            return LinkedVariables.DELAY;
+            LinkedVariables linkToMe = new LinkedVariables(Set.of(variable), delayed);
+            return variableInfo.getLinkedVariables().merge(linkToMe);
         }
 
         @Override
@@ -2998,7 +2998,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                                 translationMap.put(new VariableExpression(variable), newObject);
                             }
 
-                            Expression delayed = DelayedExpression.forReplacementObject(variable.parameterizedType());
+                            Expression delayed = DelayedExpression.forReplacementObject(variable.parameterizedType(),
+                                  List.copyOf(  eval.getLinkedVariables().variables()));
                             translationMap.put(DelayedVariableExpression.forVariable(e.getValue().current().variable()),
                                     delayed);
                         });

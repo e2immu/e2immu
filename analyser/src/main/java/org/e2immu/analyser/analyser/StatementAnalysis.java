@@ -679,7 +679,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                 FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(fieldReference.fieldInfo);
                 Map<VariableProperty, Integer> propertyMap = VariableProperty.FROM_ANALYSER_TO_PROPERTIES.stream()
                         .collect(Collectors.toUnmodifiableMap(vp -> vp, fieldAnalysis::getProperty));
-                LinkedVariables assignedToOriginal = new LinkedVariables(Set.of(fieldReference));
+                LinkedVariables assignedToOriginal = new LinkedVariables(Set.of(fieldReference), false);
 
                 for (int statementTime : eval.getReadAtStatementTimes()) {
                     LocalVariableReference localCopy = createCopyOfVariableField(fieldReference, initial, statementTime);
@@ -751,7 +751,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             VariableInfoContainer newVic = VariableInfoContainerImpl.newVariable(lvr,
                     VariableInfoContainer.NOT_A_VARIABLE_FIELD, lvr.variableNature(), navigationData.hasSubBlocks());
             newVic.newVariableWithoutValue(); // at initial level
-            newVic.setStaticallyAssignedVariables(new LinkedVariables(Set.of(original)), true);
+            newVic.setStaticallyAssignedVariables(new LinkedVariables(Set.of(original), false), true);
             String assigned = index() + VariableInfoContainer.Level.INITIAL;
             String read = index() + EVALUATION;
             newVic.ensureEvaluation(assigned, read, VariableInfoContainer.NOT_A_VARIABLE_FIELD, Set.of());

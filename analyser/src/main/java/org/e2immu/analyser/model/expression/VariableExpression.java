@@ -274,7 +274,8 @@ public record VariableExpression(Variable variable, String name) implements Expr
 
     @Override
     public LinkedVariables linkedVariables(EvaluationContext evaluationContext) {
-        throw new UnsupportedOperationException(); // should be caught be evaluation context
+        throw new UnsupportedOperationException("For context "+evaluationContext.getClass());
+        // should be caught be evaluation context
     }
 
     @Override

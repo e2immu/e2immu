@@ -52,7 +52,7 @@ class VariableInfoImpl implements VariableInfo {
 
     private final VariableProperties properties = new VariableProperties();
     private final EventuallyFinal<Expression> value = new EventuallyFinal<>();
-    private final SetOnce<LinkedVariables> linkedVariables = new SetOnce<>();
+    private final EventuallyFinal<LinkedVariables> linkedVariables = new EventuallyFinal<>();
     private final SetOnce<Integer> statementTime = new SetOnce<>();
 
     private final SetOnce<LinkedVariables> staticallyAssignedVariables = new SetOnce<>();
@@ -69,6 +69,7 @@ class VariableInfoImpl implements VariableInfo {
         this.readId = readId;
         this.readAtStatementTimes = Set.of();
         value.setVariable(DelayedVariableExpression.forVariable(variable));
+        linkedVariables.setVariable(LinkedVariables.DELAYED_EMPTY);
     }
 
     // normal one for creating an initial or evaluation
@@ -86,6 +87,7 @@ class VariableInfoImpl implements VariableInfo {
         }
         this.readAtStatementTimes = Objects.requireNonNull(readAtStatementTimes);
         value.setVariable(delayedValue == null ? DelayedVariableExpression.forVariable(variable) : delayedValue);
+        linkedVariables.setVariable(LinkedVariables.DELAYED_EMPTY);
     }
 
     @Override
@@ -125,7 +127,7 @@ class VariableInfoImpl implements VariableInfo {
 
     @Override
     public LinkedVariables getLinkedVariables() {
-        return linkedVariables.getOrDefault(LinkedVariables.DELAY);
+        return linkedVariables.get();
     }
 
     @Override
@@ -185,7 +187,7 @@ class VariableInfoImpl implements VariableInfo {
 
     void setProperty(VariableProperty variableProperty, int value) {
         assert !GroupPropertyValues.DELAY_PROPERTIES.contains(variableProperty) :
-                "?? trying to add a delay property to a variable: "+variableProperty;
+                "?? trying to add a delay property to a variable: " + variableProperty;
         try {
             properties.put(variableProperty, value);
         } catch (RuntimeException e) {
@@ -206,9 +208,11 @@ class VariableInfoImpl implements VariableInfo {
     }
 
     void setLinkedVariables(LinkedVariables linkedVariables) {
-        assert linkedVariables != null && linkedVariables != LinkedVariables.DELAY;
-        if (!linkedVariablesIsSet() || !getLinkedVariables().equals(linkedVariables)) {
-            this.linkedVariables.set(linkedVariables);
+        assert linkedVariables != null;
+        if (linkedVariables.isDelayed()) {
+            this.linkedVariables.setVariable(linkedVariables);
+        } else if (!linkedVariablesIsSet() || !getLinkedVariables().equals(linkedVariables)) {
+            this.linkedVariables.setFinal(linkedVariables);
         }
     }
 
@@ -434,22 +438,17 @@ class VariableInfoImpl implements VariableInfo {
     void mergeLinkedVariables(boolean existingValuesWillBeOverwritten,
                               VariableInfo existing,
                               List<StatementAnalysis.ConditionAndVariableInfo> merge) {
-        Set<Variable> merged = new HashSet<>();
+        LinkedVariables lv;
         if (!existingValuesWillBeOverwritten) {
-            if (existing.linkedVariablesIsSet()) {
-                merged.addAll(existing.getLinkedVariables().variables());
-            } else if (existing.isAssigned()) {
-                return; // DELAY
-            }
-            // typical situation: int a; if(x) { a = 5; }. Existing has not been assigned
-            // this will end up an error when the variable is read before being assigned
+            lv = existing.getLinkedVariables();
+        } else {
+            lv = LinkedVariables.EMPTY;
         }
         for (StatementAnalysis.ConditionAndVariableInfo cav : merge) {
             VariableInfo vi = cav.variableInfo();
-            if (!vi.linkedVariablesIsSet()) return; // DELAY
-            merged.addAll(vi.getLinkedVariables().variables());
+            lv = lv.merge(vi.getLinkedVariables());
         }
-        setLinkedVariables(new LinkedVariables(merged));
+        setLinkedVariables(lv);
     }
 
 
@@ -467,7 +466,7 @@ class VariableInfoImpl implements VariableInfo {
             VariableInfo vi = cav.variableInfo();
             merged.addAll(vi.getStaticallyAssignedVariables().variables());
         }
-        setStaticallyAssignedVariables(new LinkedVariables(merged));
+        setStaticallyAssignedVariables(new LinkedVariables(merged, false));
     }
 
     /*
@@ -599,8 +598,8 @@ class VariableInfoImpl implements VariableInfo {
 
         int worstNotNull = reduced.stream().mapToInt(cav -> cav.variableInfo().getProperty(NOT_NULL_EXPRESSION))
                 .min().orElseThrow();
-        int worstNotNullIncludingCurrent = atLeastOneBlockExecuted ? worstNotNull:
-                Math.min(worstNotNull, evaluationContext.getProperty(currentValue, NOT_NULL_EXPRESSION, false, true ));
+        int worstNotNullIncludingCurrent = atLeastOneBlockExecuted ? worstNotNull :
+                Math.min(worstNotNull, evaluationContext.getProperty(currentValue, NOT_NULL_EXPRESSION, false, true));
         return mergeHelper.noConclusion(worstNotNullIncludingCurrent);
     }
 

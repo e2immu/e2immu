@@ -135,7 +135,7 @@ public record InstanceOf(Primitives primitives,
         }
         if (value.isDelayed(evaluationContext)) {
             return builder.setExpression(DelayedExpression
-                    .forInstanceOf(evaluationContext.getPrimitives(), parameterizedType)).build();
+                    .forInstanceOf(evaluationContext.getPrimitives(), parameterizedType, value.variables())).build();
         }
         if (value instanceof NullConstant) {
             return builder.setExpression(new BooleanConstant(evaluationContext.getPrimitives(), false)).build();

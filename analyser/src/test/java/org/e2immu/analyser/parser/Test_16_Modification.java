@@ -146,7 +146,7 @@ public class Test_16_Modification extends CommonTestRunner {
                 String expect = d.iteration() == 0 ? GET_FIRST_VALUE_DELAYED : GET_FIRST_VALUE;
 
                 assertEquals(expect, d.currentValue().toString());
-                assertNotSame(LinkedVariables.DELAY, d.currentValue().linkedVariables(d.evaluationContext()));
+                assertFalse(d.evaluationContext().linkedVariables(d.currentValue()).isDelayed());
             }
         };
 
@@ -219,7 +219,7 @@ public class Test_16_Modification extends CommonTestRunner {
                     if (d.iteration() > 0) {
                         assertEquals("this.set3", d.variableInfo().getLinkedVariables().toString());
                     } else {
-                        assertSame(LinkedVariables.DELAY, d.variableInfo().getLinkedVariables());
+                        assertTrue(d.variableInfo().getLinkedVariables().isDelayed());
                     }
                 }
                 if ("1".equals(d.statementId())) {
@@ -243,7 +243,7 @@ public class Test_16_Modification extends CommonTestRunner {
                     if (d.iteration() > 0) {
                         assertEquals("this.set3", d.variableInfo().getLinkedVariables().toString());
                     } else {
-                        assertSame(LinkedVariables.DELAY, d.variableInfo().getLinkedVariables());
+                        assertTrue(d.variableInfo().getLinkedVariables().isDelayed());
                     }
                 }
             }
@@ -599,7 +599,7 @@ public class Test_16_Modification extends CommonTestRunner {
                     assertEquals(expectCm, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
                 }
                 if (d.iteration() == 0) {
-                    assertSame(LinkedVariables.DELAY, d.variableInfo().getLinkedVariables());
+                    assertTrue(d.variableInfo().getLinkedVariables().isDelayed());
                 } else {
                     assertEquals("this.s2", d.variableInfo().getLinkedVariables().toString());
                 }

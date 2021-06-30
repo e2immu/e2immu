@@ -976,7 +976,7 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
     private int computeConstructorIndependenceViaStaticallyAssignedVariables(Set<ParameterInfo> parameters) {
         Optional<VariableInfo> staticallyAssignedDelayed = methodAnalysis.getLastStatement().variableStream()
                 .filter(vi -> vi.variable() instanceof FieldReference)
-                .filter(vi -> vi.getStaticallyAssignedVariables() == LinkedVariables.DELAY)
+                .filter(vi -> vi.getStaticallyAssignedVariables().isDelayed())
                 .findFirst();
         if (staticallyAssignedDelayed.isPresent()) {
             return Level.DELAY;
@@ -984,7 +984,7 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
 
         Optional<VariableInfo> implicitlyImmutableNotSet = methodAnalysis.getLastStatement().variableStream()
                 .filter(vi -> vi.variable() instanceof FieldReference)
-                .filter(vi -> !isImplicitlyImmutableDataTypeSet(vi.variable(), analyserContext))
+                .filter(vi -> delayOnImplicitlyImmutableTypeOfVariable(vi.variable(), analyserContext))
                 .findFirst();
         if (implicitlyImmutableNotSet.isPresent()) {
             return Level.DELAY;
@@ -1015,7 +1015,7 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
     private int computeConstructorIndependenceViaLinkedVariables(Set<ParameterInfo> parameters) {
         boolean allLinkedVariablesSet = methodAnalysis.getLastStatement().variableStream()
                 .filter(vi -> vi.variable() instanceof FieldReference)
-                .allMatch(vi -> vi.getLinkedVariables() != LinkedVariables.DELAY);
+                .noneMatch(vi -> vi.getLinkedVariables().isDelayed());
         if (!allLinkedVariablesSet) {
             return Level.DELAY;
         }
@@ -1044,8 +1044,8 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
         // @Dependent1
 
         LinkedVariables staticallyAssigned = returnVariable.getStaticallyAssignedVariables();
-        boolean implicitlyImmutableDelayed = staticallyAssigned == LinkedVariables.DELAY ||
-                staticallyAssigned.variables().stream().anyMatch(v -> !isImplicitlyImmutableDataTypeSet(v, analyserContext));
+        boolean implicitlyImmutableDelayed = staticallyAssigned.isDelayed() ||
+                staticallyAssigned.variables().stream().anyMatch(v -> delayOnImplicitlyImmutableTypeOfVariable(v, analyserContext));
         if (implicitlyImmutableDelayed) {
             log(DELAYED, "Delaying @Independent on {}, implicitly immutable status not know for assigned field",
                     methodInfo.fullyQualifiedName);
@@ -1064,7 +1064,7 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
         // @Independent
 
         LinkedVariables linkedVariables = returnVariable.getLinkedVariables();
-        if (linkedVariables == LinkedVariables.DELAY) {
+        if (linkedVariables.isDelayed()) {
             log(DELAYED, "Delaying @Independent on {}, implicitly immutable status not known for all field references",
                     methodInfo.fullyQualifiedName);
             return Level.DELAY;
@@ -1100,9 +1100,9 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
         return myOwnType ? MultiLevel.INDEPENDENT : MultiLevel.DEPENDENT;
     }
 
-    public static boolean isImplicitlyImmutableDataTypeSet(Variable v, AnalysisProvider analysisProvider) {
-        return !(v instanceof FieldReference) ||
-                analysisProvider.getFieldAnalysis(((FieldReference) v).fieldInfo).isOfImplicitlyImmutableDataType() != null;
+    public static boolean delayOnImplicitlyImmutableTypeOfVariable(Variable v, AnalysisProvider analysisProvider) {
+        return v instanceof FieldReference &&
+                analysisProvider.getFieldAnalysis(((FieldReference) v).fieldInfo).isOfImplicitlyImmutableDataType() == null;
     }
 
     public static boolean isFieldOfImplicitlyImmutableType(Variable variable, AnalysisProvider analysisProvider) {

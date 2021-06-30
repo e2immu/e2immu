@@ -37,7 +37,6 @@ import static org.e2immu.analyser.analyser.StatementAnalyser.EVALUATION_OF_MAIN_
 import static org.e2immu.analyser.analyser.util.DelayDebugger.D_LINKED_VARIABLES;
 import static org.e2immu.analyser.analyser.util.DelayDebugger.D_LINKED_VARIABLES_SET;
 import static org.e2immu.analyser.util.Logger.LogTarget.EXPRESSION;
-import static org.e2immu.analyser.util.Logger.LogTarget.LINKED_VARIABLES;
 import static org.e2immu.analyser.util.Logger.log;
 
 public class Assignment implements Expression {
@@ -246,7 +245,7 @@ public class Assignment implements Expression {
 
             // check illegal assignment into nested type
             if (complainAboutAssignmentOutsideType &&
-                    checkIllAdvisedAssignment(at, fieldReference, evaluationContext.getCurrentType(),
+                    checkIllAdvisedAssignment(fieldReference, evaluationContext.getCurrentType(),
                             fieldReference.fieldInfo.isStatic(evaluationContext.getAnalyserContext()))) {
                 builder.addErrorAssigningToFieldOutsideType(fieldReference.fieldInfo);
             }
@@ -254,23 +253,16 @@ public class Assignment implements Expression {
             builder.addParameterShouldNotBeAssignedTo(parameterInfo);
         }
 
-        LinkedVariables linkedVariables;
-        // connect the value to the assignment target
-        if (evaluationContext.isNotDelayed(resultOfExpression)) {
-            linkedVariables = evaluationContext.linkedVariables(resultOfExpression);
-            assert linkedVariables != null : "Expression " + resultOfExpression + " " + resultOfExpression.getClass();
-            log(LINKED_VARIABLES, "In assignment, link {} to [{}]", at.fullyQualifiedName(), linkedVariables);
-        } else {
-            linkedVariables = LinkedVariables.DELAY;
-        }
-        assert linkedVariables != LinkedVariables.DELAY ||
+        LinkedVariables linkedVariables = evaluationContext.linkedVariables(resultOfExpression);
+        assert !linkedVariables.isDelayed() ||
                 evaluationContext.translatedDelay(EVALUATION_OF_MAIN_EXPRESSION,
                         "EXPRESSION " + resultOfExpression + "@" + evaluationContext.statementIndex() + D_LINKED_VARIABLES,
                         at.fullyQualifiedName() + "@" + evaluationContext.statementIndex() + D_LINKED_VARIABLES_SET);
 
+        // there are no delays on staticallyAssignedVariables
         LinkedVariables staticallyAssignedVariables;
         if (value instanceof IsVariableExpression variableExpression) {
-            staticallyAssignedVariables = new LinkedVariables(Set.of(variableExpression.variable()));
+            staticallyAssignedVariables = new LinkedVariables(Set.of(variableExpression.variable()), false);
         } else {
             staticallyAssignedVariables = LinkedVariables.EMPTY;
         }
@@ -278,7 +270,7 @@ public class Assignment implements Expression {
 
     }
 
-    private static boolean checkIllAdvisedAssignment(Variable at, FieldReference fieldReference, TypeInfo currentType, boolean isStatic) {
+    private static boolean checkIllAdvisedAssignment(FieldReference fieldReference, TypeInfo currentType, boolean isStatic) {
         TypeInfo owner = fieldReference.fieldInfo.owner;
         if (owner.primaryType() != currentType.primaryType()) return true; // outside primary type
         if (owner == currentType) { // in the same type

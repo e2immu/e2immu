@@ -976,7 +976,7 @@ public class FieldAnalyser extends AbstractAnalyser {
                 .filter(v -> !(v instanceof LocalVariableReference)) // especially local variable copies of the field itself
                 .filter(v -> myTypeAnalyser.typeAnalysis.getImplicitlyImmutableDataTypes().contains(v.parameterizedType()))
                 .collect(Collectors.toSet());
-        fieldAnalysis.linked1Variables.set(new LinkedVariables(linked1Variables));
+        fieldAnalysis.linked1Variables.set(new LinkedVariables(linked1Variables, false));
         log(LINKED_VARIABLES, "FA: Set link1s of {} to [{}]", fqn,
                 Variable.fullyQualifiedName(linked1Variables));
 
@@ -1018,7 +1018,7 @@ public class FieldAnalyser extends AbstractAnalyser {
                 .flatMap(vi -> vi.getLinkedVariables().variables().stream())
                 .filter(v -> !(v instanceof LocalVariableReference)) // especially local variable copies of the field itself
                 .collect(Collectors.toSet());
-        fieldAnalysis.linkedVariables.set(new LinkedVariables(linkedVariables));
+        fieldAnalysis.linkedVariables.set(new LinkedVariables(linkedVariables, false));
         log(LINKED_VARIABLES, "FA: Set links of {} to [{}]", fqn, Variable.fullyQualifiedName(linkedVariables));
 
         // explicitly adding the annotation here; it will not be inspected.
@@ -1354,6 +1354,19 @@ public class FieldAnalyser extends AbstractAnalyser {
         @Override
         public String newObjectIdentifier() {
             return fqn;
+        }
+
+        @Override
+        public LinkedVariables linkedVariables(Expression value) {
+            if (value instanceof VariableExpression variableExpression) {
+                return linkedVariables(variableExpression.variable());
+            }
+            return value.linkedVariables(this);
+        }
+
+        @Override
+        public LinkedVariables linkedVariables(Variable variable) {
+            return LinkedVariables.EMPTY; // TODO make sure this is right
         }
     }
 

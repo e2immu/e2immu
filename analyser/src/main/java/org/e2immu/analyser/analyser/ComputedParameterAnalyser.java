@@ -390,7 +390,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyser {
 
         // variable field, no direct assignment to parameter
         LinkedVariables linked = fieldAnalysis.getLinkedVariables();
-        if (linked == LinkedVariables.DELAY) {
+        if (linked.isDelayed()) {
             return DELAYED;
         }
         return linked.variables().contains(parameterInfo) ? ParameterAnalysis.AssignedOrLinked.LINKED : NO;

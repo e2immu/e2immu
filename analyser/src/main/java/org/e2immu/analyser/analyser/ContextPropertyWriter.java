@@ -102,10 +102,10 @@ public class ContextPropertyWriter {
                                            LocalCopyData localCopyData) {
         // delays in dependency graph
         statementAnalysis.variableStream(level)
-                .filter(vi -> vi.isNotConditionalInitialization())
+                .filter(VariableInfo::isNotConditionalInitialization)
                 .forEach(variableInfo -> {
                     LinkedVariables linkedVariables = connections.apply(variableInfo);
-                    if (linkedVariables == LinkedVariables.DELAY) {
+                    if (linkedVariables.isDelayed()) {
                         if (!(variableInfo.variable() instanceof LocalVariableReference) || variableInfo.isAssigned()) {
                             log(DELAYED, "Delaying MethodLevelData for {} in {}: linked variables not set",
                                     variableInfo.variable().fullyQualifiedName(), evaluationContext.getLocation());
@@ -153,7 +153,7 @@ public class ContextPropertyWriter {
         // NOTE: this used to be safeVariableStream but don't think that is needed anymore
         statementAnalysis.variableStream(level)
                 // filter out conditional initialization copies
-                .filter(vi -> vi.isNotConditionalInitialization())
+                .filter(VariableInfo::isNotConditionalInitialization)
                 .forEach(variableInfo -> {
                     Variable baseVariable = variableInfo.variable();
                     Set<Variable> variablesBaseLinksTo =

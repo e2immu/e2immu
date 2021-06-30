@@ -84,8 +84,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
                 NOT_YET_READ, NOT_A_VARIABLE_FIELD, Set.of(), outside.valueIsSet() ? null : outside.getValue());
         initial.newVariable(false);
         initial.setValue(outside.getValue(), outside.isDelayed());
-        if (outside.getLinkedVariables() != LinkedVariables.DELAY)
-            initial.setLinkedVariables(outside.getLinkedVariables());
+        if (!outside.getLinkedVariables().isDelayed()) initial.setLinkedVariables(outside.getLinkedVariables());
         return new VariableInfoContainerImpl(VariableNature.FROM_ENCLOSING_METHOD,
                 Either.right(initial),
                 statementHasSubBlocks ? new SetOnce<>() : null,
@@ -487,10 +486,10 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
 
     @Override
     public Expression merge(EvaluationContext evaluationContext,
-                      Expression stateOfDestination,
-                      boolean atLeastOneBlockExecuted,
-                      List<StatementAnalysis.ConditionAndVariableInfo> mergeSources,
-                      GroupPropertyValues groupPropertyValues) {
+                            Expression stateOfDestination,
+                            boolean atLeastOneBlockExecuted,
+                            List<StatementAnalysis.ConditionAndVariableInfo> mergeSources,
+                            GroupPropertyValues groupPropertyValues) {
         Objects.requireNonNull(mergeSources);
         Objects.requireNonNull(evaluationContext);
         assert merge != null : "For variable " + getPreviousOrInitial().variable().fullyQualifiedName();

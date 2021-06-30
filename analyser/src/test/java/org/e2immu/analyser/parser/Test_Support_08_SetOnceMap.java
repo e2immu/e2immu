@@ -53,7 +53,7 @@ public class Test_Support_08_SetOnceMap extends CommonTestRunner {
             if ("put".equals(d.methodInfo().name)) {
                 if ("3.0.0".equals(d.statementId())) {
                     String expect = switch (d.iteration()) {
-                        case 0 -> "!<m:isSet>";
+                        case 0 -> "<precondition>";
                         case 1 -> "!<m:containsKey>";
                         default -> "!map.containsKey(k)";
                     };

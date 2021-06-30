@@ -216,7 +216,7 @@ public class Test_17_Container extends CommonTestRunner {
                 if ("set3".equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {
                         if (d.iteration() == 0) {
-                            assertSame(LinkedVariables.DELAY, d.variableInfo().getLinkedVariables());
+                            assertTrue(d.variableInfo().getLinkedVariables().isDelayed());
                         } else {
                             assertEquals("s$0",
                                     d.variableInfo().getLinkedVariables().toString());
@@ -227,7 +227,7 @@ public class Test_17_Container extends CommonTestRunner {
                         assertEquals(expectCm, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
 
                         if (d.iteration() == 0) {
-                            assertSame(LinkedVariables.DELAY, d.variableInfo().getLinkedVariables());
+                            assertTrue(d.variableInfo().getLinkedVariables().isDelayed());
                         } else {
                             assertEquals("s$0", d.variableInfo().getLinkedVariables().toString());
                         }
@@ -239,7 +239,7 @@ public class Test_17_Container extends CommonTestRunner {
                     if ("0".equals(d.statementId())) {
                         assertEquals("[0]", d.variableInfo().getReadAtStatementTimes().toString());
                         if (d.iteration() == 0) {
-                            assertSame(LinkedVariables.DELAY, d.variableInfo().getLinkedVariables());
+                            assertTrue(d.variableInfo().getLinkedVariables().isDelayed());
                         } else {
                             assertEquals("", d.variableInfo().getLinkedVariables().toString());
                             assertEquals("", d.variableInfo().getLinkedVariables().toString());
@@ -247,7 +247,7 @@ public class Test_17_Container extends CommonTestRunner {
                     }
                     if ("1.0.0".equals(d.statementId())) {
                         if (d.iteration() == 0) {
-                            assertSame(LinkedVariables.DELAY, d.variableInfo().getLinkedVariables());
+                            assertTrue(d.variableInfo().getLinkedVariables().isDelayed());
                         } else {
                             assertEquals("", d.variableInfo().getLinkedVariables().toString());
                             // set3 -> s$0 -> this.s (-> s$0)
@@ -257,7 +257,7 @@ public class Test_17_Container extends CommonTestRunner {
                     if ("1".equals(d.statementId())) {
                         // here we merge with the info in "0"
                         if (d.iteration() == 0) {
-                            assertSame(LinkedVariables.DELAY, d.variableInfo().getLinkedVariables());
+                            assertTrue(d.variableInfo().getLinkedVariables().isDelayed());
                         } else {
                             assertEquals("", d.variableInfo().getLinkedVariables().toString());
                             assertEquals(Level.TRUE, d.getProperty(VariableProperty.CONTEXT_MODIFIED));

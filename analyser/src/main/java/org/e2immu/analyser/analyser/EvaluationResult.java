@@ -543,7 +543,8 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             Expression value = stateIsDelayed
                     && !resultOfExpressionIsDelayed
                     && !evaluationContext.getConditionManager().isReasonForDelay(assignmentTarget)
-                    ? DelayedExpression.forState(resultOfExpression.returnType()) : resultOfExpression;
+                    ? DelayedExpression.forState(resultOfExpression.returnType(),
+                    evaluationContext.linkedVariables(resultOfExpression).variablesAsList()) : resultOfExpression;
 
             ChangeData newEcd;
             ChangeData ecd = valueChanges.get(assignmentTarget);
@@ -601,7 +602,8 @@ public record EvaluationResult(EvaluationContext evaluationContext,
         public void link1(Variable inArgument, Variable inScope) {
             ChangeData newEcd;
             ChangeData ecd = valueChanges.get(inArgument);
-            LinkedVariables linked1 = inScope == null ? LinkedVariables.DELAY : new LinkedVariables(Set.of(inScope));
+            LinkedVariables linked1 = inScope == null ? LinkedVariables.DELAYED_EMPTY :
+                    new LinkedVariables(Set.of(inScope), false);
             if (ecd == null) {
                 newEcd = new ChangeData(null, false, false, Set.of(), LinkedVariables.EMPTY,
                         LinkedVariables.EMPTY, linked1, Map.of());

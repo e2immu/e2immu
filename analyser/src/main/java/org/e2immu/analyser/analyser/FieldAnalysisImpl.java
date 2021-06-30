@@ -215,12 +215,12 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
 
         @Override
         public LinkedVariables getLinkedVariables() {
-            return linkedVariables.getOrDefault(LinkedVariables.DELAY);
+            return linkedVariables.getOrDefault(LinkedVariables.DELAYED_EMPTY);
         }
 
         @Override
         public LinkedVariables getLinked1Variables() {
-            return linked1Variables.getOrDefault(LinkedVariables.DELAY);
+            return linked1Variables.getOrDefault(LinkedVariables.DELAYED_EMPTY);
         }
 
         @Override

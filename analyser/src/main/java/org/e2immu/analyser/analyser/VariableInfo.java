@@ -38,7 +38,7 @@ public interface VariableInfo {
     LinkedVariables getLinkedVariables();
 
     default boolean linkedVariablesIsSet() {
-        return getLinkedVariables() != LinkedVariables.DELAY;
+        return !getLinkedVariables().isDelayed();
     }
 
     Expression getValue();

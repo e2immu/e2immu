@@ -451,7 +451,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 if (raiseErrorForFinalizer(evaluationContext, builder, ve.variable())) return false;
                 // check links of this variable
                 LinkedVariables linked = evaluationContext.linkedVariables(ve.variable());
-                if (linked == LinkedVariables.DELAY) {
+                if (linked.isDelayed()) {
                     // we'll have to come back, we need to know the linked variables
                     return true;
                 }
@@ -483,7 +483,8 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                                            List<Expression> parameterValues) {
         Logger.log(DELAYED, "Delayed method call because the object value or one of the parameter values of {} is delayed: {}",
                 methodInfo.name, parameterValues);
-        builder.setExpression(DelayedExpression.forMethod(methodInfo, concreteReturnType));
+        builder.setExpression(DelayedExpression.forMethod(methodInfo, concreteReturnType,
+                evaluationContext.linkedVariables(objectValue).variablesAsList()));
         // set scope delay
         delay(evaluationContext, builder, objectValue, contextModifiedDelay);
         return builder.build();
@@ -684,19 +685,20 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         Set<Variable> result = new HashSet<>();
         int i = 0;
         int n = methodInfo.methodInspection.get().getParameters().size();
+        boolean delayed = false;
         for (Expression p : parameterValues) {
             ParameterInfo parameterInfo = methodInfo.methodInspection.get().getParameters().get(Math.min(n - 1, i));
             int modified = evaluationContext.getAnalyserContext()
                     .getParameterAnalysis(parameterInfo).getProperty(VariableProperty.MODIFIED_VARIABLE);
-            if (modified == Level.DELAY) return LinkedVariables.DELAY;
-            if (modified == Level.TRUE) {
+            if (modified != Level.FALSE) {
+                if (modified == Level.DELAY) delayed = true;
                 LinkedVariables cd = evaluationContext.linkedVariables(p);
-                if (cd == LinkedVariables.DELAY) return LinkedVariables.DELAY;
+                if (cd.isDelayed()) delayed = true;
                 result.addAll(cd.variables());
             }
             i++;
         }
-        return new LinkedVariables(result);
+        return new LinkedVariables(result, delayed);
     }
 
     private int notNullRequirementOnScope(int notNullRequirement) {
@@ -762,7 +764,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
     @Override
     public int internalCompareTo(Expression v) {
-        if(v instanceof InlineConditional inline) {
+        if (v instanceof InlineConditional inline) {
             return internalCompareTo(inline.condition);
         }
         MethodCall mv = (MethodCall) v;
@@ -844,6 +846,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
         // RULE 4: if the return type is E2IMMU, then no links at all
         boolean notSelf = returnType.typeInfo != evaluationContext.getCurrentType();
+        boolean delayed = false;
         if (notSelf) {
             int immutable = MultiLevel.value(methodAnalysis.getProperty(VariableProperty.IMMUTABLE), MultiLevel.E2IMMUTABLE);
             if (immutable == MultiLevel.DELAY) {
@@ -851,7 +854,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                         methodInfo.fullyQualifiedName + D_IMMUTABLE,
                         "EXPRESSION " + this + "@" + evaluationContext.statementIndex() + D_LINKED_VARIABLES);
 
-                return LinkedVariables.DELAY;
+                delayed = true;
             }
             if (immutable >= MultiLevel.EVENTUAL_AFTER) {
                 return LinkedVariables.EMPTY;
@@ -879,13 +882,11 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         }
 
         // delays
-        if (independent == Level.DELAY || objectE2Immutable == MultiLevel.DELAY ||
-                identity == Level.DELAY || implicitlyImmutable == null) {
-            return LinkedVariables.DELAY;
-        }
+        delayed |= independent == Level.DELAY || objectE2Immutable == MultiLevel.DELAY ||
+                identity == Level.DELAY || implicitlyImmutable == null;
 
         // link to the object
-        return evaluationContext.linkedVariables(object);
+        return evaluationContext.linkedVariables(object).merge(new LinkedVariables(Set.of(), delayed));
     }
 
     private boolean ignoreLinkingBecauseOfScope() {

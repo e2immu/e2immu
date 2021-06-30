@@ -71,7 +71,7 @@ public record Cast(Expression expression, ParameterizedType parameterizedType) i
 
     @Override
     public LinkedVariables linkedVariables(EvaluationContext evaluationContext) {
-        return expression.linkedVariables(evaluationContext);
+        return evaluationContext.linkedVariables(expression);
     }
 
     @Override

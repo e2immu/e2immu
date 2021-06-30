@@ -28,6 +28,7 @@ import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.analyser.util.Pair;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.NotNull;
@@ -200,7 +201,10 @@ public record NewObject(
                                                 Expression array,
                                                 Variable variable) {
         int notNull = evaluationContext.getProperty(array, VariableProperty.NOT_NULL_EXPRESSION, true, false);
-        if (notNull == Level.DELAY) return DelayedExpression.forNewObject(variable.parameterizedType(), Level.DELAY);
+        if (notNull == Level.DELAY) {
+            return DelayedExpression.forNewObject(variable.parameterizedType(), Level.DELAY,
+                    ListUtil.concatImmutable(List.of(variable), array.variables()));
+        }
         int notNullOfElement = MultiLevel.oneLevelLess(notNull);
         return new NewObject(identifier, null, variable.parameterizedType(), Diamond.SHOW_ALL, List.of(), notNullOfElement,
                 false, null, null,
@@ -369,10 +373,11 @@ public record NewObject(
 
         boolean notSelf = constructor.typeInfo != evaluationContext.getCurrentType();
         boolean beingAnalysed = !constructor.typeInfo.shallowAnalysis();
+        boolean delayed;
         if (notSelf && beingAnalysed) {
-            if (independent == Level.DELAY) return LinkedVariables.DELAY;
-            if (immutable == MultiLevel.DELAY) return LinkedVariables.DELAY;
-            if (typeIndependent == MultiLevel.DELAY) return LinkedVariables.DELAY;
+            delayed = independent == Level.DELAY || immutable == MultiLevel.DELAY || typeIndependent == MultiLevel.DELAY;
+        } else {
+            delayed = false;
         }
 
         // default case: assume dependent
@@ -380,10 +385,10 @@ public record NewObject(
         Set<Variable> result = new HashSet<>();
         for (Expression value : parameterExpressions) {
             LinkedVariables sub = evaluationContext.linkedVariables(value);
-            if (sub == LinkedVariables.DELAY) return LinkedVariables.DELAY;
+            delayed |= sub.isDelayed();
             result.addAll(sub.variables());
         }
-        return new LinkedVariables(result);
+        return new LinkedVariables(result, delayed);
     }
 
     @Override
@@ -576,7 +581,8 @@ public record NewObject(
             MethodAnalysis constructorAnalysis = evaluationContext.getAnalyserContext().getMethodAnalysis(constructor);
             NewObject no = MethodCall.checkCompanionMethodsModifying(res.k, evaluationContext, constructor, constructorAnalysis,
                     null, initialInstance, res.v);
-            instance = no == null ? DelayedExpression.forNewObject(parameterizedType, MultiLevel.EFFECTIVELY_NOT_NULL) : no;
+            instance = no == null ? DelayedExpression.forNewObject(parameterizedType, MultiLevel.EFFECTIVELY_NOT_NULL,
+                    evaluationContext.linkedVariables(initialInstance).variablesAsList()) : no;
         } else {
             instance = initialInstance;
         }

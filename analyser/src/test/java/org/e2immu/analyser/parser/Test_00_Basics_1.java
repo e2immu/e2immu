@@ -95,7 +95,7 @@ public class Test_00_Basics_1 extends CommonTestRunner {
             if (FIELD1.equals(d.variableName())) {
                 assertTrue(d.variableInfo().isRead());
                 if (d.iteration() == 0) {
-                    assertSame(LinkedVariables.DELAY, d.variableInfo().getLinkedVariables());
+                    assertTrue(d.variableInfo().getLinkedVariables().isDelayed());
                 } else {
                     assertEquals("", d.variableInfo().getLinkedVariables().toString());
                 }
@@ -113,7 +113,7 @@ public class Test_00_Basics_1 extends CommonTestRunner {
             if (GET_F1_RETURN.equals(d.variableName())) {
                 assertTrue(d.variableInfo().isAssigned());
                 if (d.iteration() == 0) {
-                    assertSame(LinkedVariables.DELAY, d.variableInfo().getLinkedVariables());
+                    assertTrue(d.variableInfo().getLinkedVariables().isDelayed());
                 } else {
                     assertEquals("this.f1", d.variableInfo().getLinkedVariables().toString()); // without p0
                 }

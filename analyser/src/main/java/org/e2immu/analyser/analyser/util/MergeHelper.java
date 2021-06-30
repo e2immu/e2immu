@@ -26,6 +26,8 @@ import org.e2immu.analyser.model.expression.NewObject;
 import org.e2immu.analyser.model.expression.util.EvaluateInlineConditional;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 
+import java.util.List;
+
 /*
 Different situations but they need to be dealt with in more or less the same way.
 Each time we have two triples of (value, state on assignment, assignment id): (s1, v1, a1), (s2, v2, a2)
@@ -171,6 +173,6 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfo vi) 
     }
 
     public Expression delayedConclusion() {
-        return DelayedExpression.forMerge(vi.variable().parameterizedType());
+        return DelayedExpression.forMerge(vi.variable().parameterizedType(), List.copyOf(vi.getLinkedVariables().variables()));
     }
 }

@@ -73,7 +73,7 @@ public record ConditionManager(Expression condition,
     private static void checkBooleanOrUnknown(Expression v) {
         if (!v.isUnknown() && Primitives.isNotBooleanOrBoxedBoolean(v.returnType())) {
             throw new UnsupportedOperationException("Need an unknown or boolean value in the condition manager; got " + v
-            + " with return type "+v.returnType());
+                    + " with return type " + v.returnType());
         }
     }
 
@@ -354,6 +354,19 @@ public record ConditionManager(Expression condition,
         @Override
         public Stream<DelayDebugNode> streamNodes() {
             throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public LinkedVariables linkedVariables(Expression value) {
+            if (value instanceof VariableExpression variableExpression) {
+                return linkedVariables(variableExpression.variable());
+            }
+            return value.linkedVariables(this);
+        }
+
+        @Override
+        public LinkedVariables linkedVariables(Variable variable) {
+            return LinkedVariables.EMPTY; // TODO make sure this is right
         }
     }
 }

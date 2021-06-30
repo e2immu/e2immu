@@ -15,7 +15,7 @@
 package org.e2immu.analyser.util;
 
 import org.e2immu.annotation.NotModified;
-import org.e2immu.annotation.NotNull;
+import org.e2immu.annotation.NotNull1;
 import org.e2immu.annotation.UtilityClass;
 
 import java.util.HashSet;
@@ -27,12 +27,12 @@ public class SetUtil {
     private SetUtil() {
     }
 
-    @SafeVarargs
-    public static <T> Set<T> immutableUnion(@NotNull @NotModified Set<T>... sets) {
-        Set<T> builder = new HashSet<>();
-        for (Set<T> set : sets) {
-            builder.addAll(set);
-        }
+    public static <T> Set<T> immutableUnion(@NotNull1 @NotModified Set<T> set1,
+                                            @NotNull1 @NotModified Set<T> set2) {
+        if (set1.isEmpty()) return set2;
+        if (set2.isEmpty()) return set1;
+        Set<T> builder = new HashSet<>(set1);
+        builder.addAll(set2);
         return Set.copyOf(builder);
     }
 }
