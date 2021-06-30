@@ -127,6 +127,21 @@ public class DependencyGraph<T> extends Freezable {
         nodeMap.values().forEach(n -> consumer.accept(n.t, n.dependsOn));
     }
 
+    public void visitBidirectionalGroups(Consumer<List<T>> consumer) {
+        Set<T> done = new HashSet<>();
+        for (Map.Entry<T, Node<T>> e : nodeMap.entrySet()) {
+            T t = e.getKey();
+            if (!done.contains(t)) {
+                Set<T> dependencies = dependencies(t);
+                List<T> list = new ArrayList<>(dependencies.size() + 1);
+                list.add(t);
+                list.addAll(dependencies);
+                done.addAll(list);
+                consumer.accept(list);
+            }
+        }
+    }
+
 
     @Only(before = "frozen")
     @Modified

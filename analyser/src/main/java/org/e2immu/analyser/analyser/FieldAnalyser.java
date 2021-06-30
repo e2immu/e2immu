@@ -1148,7 +1148,8 @@ public class FieldAnalyser extends AbstractAnalyser {
             // AggregatingMethodAnalyser returns empty list, so cast is safe
             return variableInfoList.isEmpty() ||
                     variableInfoList.stream().noneMatch(VariableInfo::isRead) ||
-                    ((ComputingMethodAnalyser) m).methodLevelData().acceptLinksHaveBeenEstablished(ignoreMyConstructors);
+                    variableInfoList.stream().noneMatch(vi -> vi.getProperty(VariableProperty.CONTEXT_MODIFIED)==Level.DELAY);
+                //    ((ComputingMethodAnalyser) m).methodLevelData().acceptLinksHaveBeenEstablished(ignoreMyConstructors);
         });
 
         if (allContextModificationsDefined) {

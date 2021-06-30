@@ -15,6 +15,7 @@
 package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.LinkedVariables;
+import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analyser.VariableInfoContainer;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
@@ -129,12 +130,38 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("goTo".equals(d.methodInfo().name)) {
-                if (d.variable() instanceof FieldReference fieldReference && "root".equals(fieldReference.fieldInfo.name)) {
-                    if ("0".equals(d.statementId())) {
-                        String expectValue = d.iteration() <= 2 ? "<f:root>" : "root";
+                if (d.variable() instanceof FieldReference fieldReference && "map".equals(fieldReference.fieldInfo.name)) {
+                    if ("1.0.0.0.0".equals(d.statementId())) {
+                        int expectCm = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
+                        //assertEquals(expectCm, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
+                    }
+                    if ("1.0.0".equals(d.statementId())) {
+                        String expectValue = d.iteration() == 0 ? "<f:map>" : "null";
                         assertEquals(expectValue, d.currentValue().toString());
 
-                        String expectLv = d.iteration() <= 1 ? "*" : "";
+                        String expectLinked = d.iteration() == 0 ? "*" : "";
+                        assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toDetailedString());
+
+                        int expectCm = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
+                        VariableInfo eval = d.variableInfoContainer().best(VariableInfoContainer.Level.EVALUATION);
+                        assertEquals(expectCm, eval.getProperty(VariableProperty.CONTEXT_MODIFIED));
+                        assertEquals(expectCm, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
+                    }
+                    if ("1".equals(d.statementId())) {
+                        int expectCm = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
+                        assertEquals(expectCm, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
+                    }
+                    if ("2".equals(d.statementId())) {
+                        int expectCm = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
+                        assertEquals(expectCm, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
+                    }
+                }
+                if (d.variable() instanceof FieldReference fieldReference && "root".equals(fieldReference.fieldInfo.name)) {
+                    if ("0".equals(d.statementId())) {
+                        String expectValue = d.iteration() <= 2 ? "<f:root>" : "instance type TrieNode<T>";
+                        assertEquals(expectValue, d.currentValue().toString());
+
+                        String expectLv = d.iteration() <= 2 ? "*" : "";
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toDetailedString());
 
                         int expectBreak = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
@@ -143,7 +170,7 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                         int expectCm = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
                         assertEquals(expectCm, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
                     }
-                    if("2".equals(d.statementId())) {
+                    if ("2".equals(d.statementId())) {
                         int expectCm = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
                         assertEquals(expectCm, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
                     }
@@ -171,7 +198,7 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                         assertEquals(expectValue, d.currentValue().toString());
                     }
                     if ("2".equals(d.statementId())) {
-                        String expectValue = d.iteration() <= 1 ? "upToPosition><replace:int>?<m:get>:<f:root>" : "root";
+                        String expectValue = d.iteration() <= 2 ? "upToPosition><replace:int>?<m:get>:<f:root>" : "root";
                         assertEquals(expectValue, d.currentValue().toString());
 
                         int expectCm = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
@@ -211,18 +238,21 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                 if (d.iteration() <= 1) {
                     assertNull(d.fieldAnalysis().getEffectivelyFinalValue());
                 } else {
-                    assertEquals("", d.fieldAnalysis().getEffectivelyFinalValue().toString());
+                    assertEquals("instance type TrieNode<T>", d.fieldAnalysis().getEffectivelyFinalValue().toString());
                 }
+                int expectMom = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
+                assertEquals(expectMom, d.fieldAnalysis().getProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD));
             }
             if ("map".equals(d.fieldInfo().name)) {
                 assertEquals("null", d.fieldAnalysis().getEffectivelyFinalValue().toString());
+                assertEquals(Level.TRUE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
             }
         };
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("goTo".equals(d.methodInfo().name)) {
-                   int expectMm = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
-                   assertEquals(expectMm, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
+                int expectMm = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
+                assertEquals(expectMm, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
             }
         };
 
@@ -230,7 +260,7 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
             if ("TrieNode".equals(d.typeInfo().simpleName)) {
                 // we need to wait at least one iteration on implicitly immutable
                 // iteration 1 delayed because of @Modified of goTo
-                int expectImm = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_E2IMMUTABLE;
+                int expectImm = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_E1IMMUTABLE_NOT_E2IMMUTABLE;
                 assertEquals(expectImm, d.typeAnalysis().getProperty(VariableProperty.IMMUTABLE));
             }
             if ("TrieSimplified_3".equals(d.typeInfo().simpleName)) {
@@ -242,9 +272,9 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
         testClass("TrieSimplified_3", 0, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                //  .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                  .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
-                //  .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
+                .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build());
     }

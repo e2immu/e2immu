@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.analyser;
 
+import org.e2immu.analyser.analyser.util.DelayDebugger;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
@@ -21,10 +22,12 @@ import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.expression.DelayedVariableExpression;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.FieldReference;
+import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.util.DependencyGraph;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -35,6 +38,8 @@ import java.util.stream.Collectors;
 import static org.e2immu.analyser.analyser.AnalysisStatus.*;
 import static org.e2immu.analyser.analyser.VariableInfoContainer.Level.EVALUATION;
 import static org.e2immu.analyser.analyser.VariableProperty.CONTEXT_DEPENDENT;
+import static org.e2immu.analyser.util.Logger.LogTarget.DELAYED;
+import static org.e2immu.analyser.util.Logger.log;
 
 /*
 deals with 2 situations:
@@ -42,7 +47,7 @@ deals with 2 situations:
 2- a variable which has a TEMP_DEPENDENT1 property, becomes dependent1 IF linked to field
  */
 public class Linked1Writer {
-
+    private static final String LINKED1_WRITER = "Linked1Writer";
     private final AtomicReference<AnalysisStatus> analysisStatus = new AtomicReference<>(DONE);
     private final StatementAnalysis statementAnalysis;
     private final DependencyGraph<Variable> dependencyGraph = new DependencyGraph<>();
@@ -52,9 +57,8 @@ public class Linked1Writer {
                          Function<VariableInfo, LinkedVariables> connections,
                          ContextPropertyWriter.LocalCopyData localCopyData) {
         this.statementAnalysis = statementAnalysis;
-        ContextPropertyWriter.fillDependencyGraph(statementAnalysis, evaluationContext,
-                connections, EVALUATION, dependencyGraph, analysisStatus, "LINKED_1",
-                localCopyData);
+        fillDependencyGraph(statementAnalysis, evaluationContext,
+                connections, localCopyData);
     }
 
     public AnalysisStatus write(Map<Variable, EvaluationResult.ChangeData> changeDataMap) {
@@ -63,16 +67,44 @@ public class Linked1Writer {
 
         statementAnalysis.variables.stream().map(Map.Entry::getValue).forEach(vic -> {
             VariableInfo best = vic.best(EVALUATION);
-            handleLinked1Variables(vic, best, changeDataMap.get(best.variable()), analysisStatus, progress);
+            handleLinked1Variables(vic, best, changeDataMap.get(best.variable()), progress);
         });
 
         return analysisStatus.get() == DELAYS ? (progress.get() ? PROGRESS : DELAYS) : DONE;
     }
 
+    private void fillDependencyGraph(StatementAnalysis statementAnalysis,
+                                     EvaluationContext evaluationContext,
+                                     Function<VariableInfo, LinkedVariables> connections,
+                                     ContextPropertyWriter.LocalCopyData localCopyData) {
+        // delays in dependency graph
+        statementAnalysis.variableStream(EVALUATION)
+                .filter(VariableInfo::isNotConditionalInitialization)
+                .forEach(variableInfo -> {
+                    LinkedVariables linkedVariables = connections.apply(variableInfo);
+                    boolean ignoreDelay = variableInfo.getProperty(VariableProperty.EXTERNAL_IMMUTABLE_BREAK_DELAY) == Level.TRUE;
+                    if (linkedVariables.isDelayed() && !ignoreDelay) {
+                        if (!(variableInfo.variable() instanceof LocalVariableReference) || variableInfo.isAssigned()) {
+                            log(DELAYED, "Delaying MethodLevelData for {} in {}: linked1 variables not set",
+                                    variableInfo.variable().fullyQualifiedName(), evaluationContext.getLocation());
+
+                            assert statementAnalysis.translatedDelay(LINKED1_WRITER,
+                                    variableInfo.variable().fullyQualifiedName() + "@" + statementAnalysis.index + DelayDebugger.D_LINKED_VARIABLES_SET,
+                                    statementAnalysis.fullyQualifiedName() + ".LINKED1");
+                            analysisStatus.set(DELAYS);
+                        }
+                    } else {
+                        Variable from = variableInfo.variable();
+                        List<Variable> to = linkedVariables.variables().stream()
+                                .filter(t -> localCopyData.accept(from, t)).toList();
+                        dependencyGraph.addNode(from, to, true);
+                    }
+                });
+    }
+
     private void handleLinked1Variables(VariableInfoContainer vic,
                                         VariableInfo best,
                                         EvaluationResult.ChangeData changeData,
-                                        AtomicReference<AnalysisStatus> analysisStatus,
                                         AtomicBoolean progress) {
         Variable inArgument = best.variable();
 

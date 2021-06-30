@@ -71,11 +71,11 @@ public class Test_45_Project_AAPI extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("Container".equals(d.methodInfo().name) && d.methodInfo().isConstructor) {
                 ParameterAnalysis p0 = d.parameterAnalyses().get(0);
-                int expectMom = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
+                int expectMom = d.iteration() <= 1 ? Level.DELAY : Level.FALSE;
                 assertEquals(expectMom, p0.getProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD));
                 int expectCm = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
                 assertEquals(expectCm, p0.getProperty(VariableProperty.CONTEXT_MODIFIED));
-                int expectMv = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
+                int expectMv = d.iteration() <= 1 ? Level.DELAY : Level.FALSE;
                 assertEquals(expectMv, p0.getProperty(VariableProperty.MODIFIED_VARIABLE));
             }
         };

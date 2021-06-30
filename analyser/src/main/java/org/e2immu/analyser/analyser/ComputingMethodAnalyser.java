@@ -813,8 +813,8 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
          if (noContextModified.isPresent()) {
             assert translatedDelay(COMPUTE_MODIFIED, methodInfo.fullyQualifiedName + ":" + methodAnalysis.getLastStatement().index + D_LINKS_HAVE_BEEN_ESTABLISHED,
                     methodInfo.fullyQualifiedName + D_MODIFIED_METHOD);
-            log(DELAYED, "Method {}: Not deciding on @Modified yet, delaying because linking not computed",
-                    methodInfo.distinguishingName());
+            log(DELAYED, "Method {}: Not deciding on @Modified yet: no context modified for {}",
+                    methodInfo.distinguishingName(), noContextModified.get().variable().simpleName());
             return DELAYS;
         }
         boolean isModified = methodAnalysis.getLastStatement().variableStream()

@@ -28,8 +28,6 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.AnalysisStatus.*;
 import static org.e2immu.analyser.util.Logger.LogTarget.DELAYED;
@@ -39,7 +37,7 @@ public class ContextPropertyWriter {
     private static final Logger LOGGER = LoggerFactory.getLogger(ContextPropertyWriter.class);
     public static final String CONTEXT_PROPERTY_WRITER = "ContextPropertyWriter";
 
-    private final DependencyGraph<Variable> dependencyGraph = new DependencyGraph<>();
+    private final DependencyGraph<AugmentedVariable> dependencyGraph = new DependencyGraph<>();
 
     record LocalCopy(LocalVariableReference localVariableReference, int index) {
     }
@@ -89,24 +87,47 @@ public class ContextPropertyWriter {
         return new LocalCopyData(map);
     }
 
-    /*
-    method separate because reused by Linked1Writer
-     */
-    public static void fillDependencyGraph(StatementAnalysis statementAnalysis,
-                                           EvaluationContext evaluationContext,
-                                           Function<VariableInfo, LinkedVariables> connections,
-                                           VariableInfoContainer.Level level,
-                                           DependencyGraph<Variable> dependencyGraph,
-                                           AtomicReference<AnalysisStatus> analysisStatus,
-                                           String variablePropertyNameForDebugging,
-                                           LocalCopyData localCopyData) {
+    record AugmentedVariable(Variable variable, Boolean delayed, Boolean breakImmutable) {
+
+        public AugmentedVariable(Variable v) {
+            this(v, null, null);
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            AugmentedVariable that = (AugmentedVariable) o;
+            return variable.equals(that.variable);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(variable);
+        }
+    }
+
+    private AnalysisStatus fillDependencyGraph(StatementAnalysis statementAnalysis,
+                                               EvaluationContext evaluationContext,
+                                               Function<VariableInfo, LinkedVariables> connections,
+                                               VariableInfoContainer.Level level,
+                                               String variablePropertyNameForDebugging,
+                                               LocalCopyData localCopyData,
+                                               AtomicBoolean onlyDoSetsWithBreak) {
         // delays in dependency graph
+        AtomicReference<AnalysisStatus> analysisStatus = new AtomicReference<>(DONE);
         statementAnalysis.variableStream(level)
                 .filter(VariableInfo::isNotConditionalInitialization)
                 .forEach(variableInfo -> {
                     LinkedVariables linkedVariables = connections.apply(variableInfo);
-                    boolean ignoreDelay = variableInfo.getProperty(VariableProperty.EXTERNAL_IMMUTABLE_BREAK_DELAY) == Level.TRUE;
-                    if (linkedVariables.isDelayed() && !ignoreDelay) {
+                    boolean externalImmutableBreak;
+                    if (onlyDoSetsWithBreak != null) {
+                        externalImmutableBreak = variableInfo.getProperty(VariableProperty.EXTERNAL_IMMUTABLE_BREAK_DELAY) == Level.TRUE;
+                        if (externalImmutableBreak) onlyDoSetsWithBreak.set(true);
+                    } else {
+                        externalImmutableBreak = false;
+                    }
+                    if (linkedVariables.isDelayed() && !externalImmutableBreak) {
                         if (!(variableInfo.variable() instanceof LocalVariableReference) || variableInfo.isAssigned()) {
                             log(DELAYED, "Delaying MethodLevelData for {} in {}: linked variables not set",
                                     variableInfo.variable().fullyQualifiedName(), evaluationContext.getLocation());
@@ -116,16 +137,29 @@ public class ContextPropertyWriter {
                                     statementAnalysis.fullyQualifiedName() + "." + variablePropertyNameForDebugging);
                             analysisStatus.set(DELAYS);
                         }
-                    } else {
-                        Variable from = variableInfo.variable();
-                        List<Variable> to = linkedVariables.variables().stream()
-                                .filter(t -> localCopyData.accept(from, t)).toList();
-                        dependencyGraph.addNode(from, to, true);
                     }
+
+                    AugmentedVariable from = new AugmentedVariable(variableInfo.variable(),
+                            linkedVariables.isDelayed(), externalImmutableBreak);
+                    List<AugmentedVariable> to = linkedVariables.variables().stream()
+                            .filter(t -> localCopyData.accept(from.variable, t))
+                            .filter(t -> statementAnalysis.variables.isSet(t.fullyQualifiedName()))
+                            .map(AugmentedVariable::new)
+                            .toList();
+                    dependencyGraph.addNode(from, to, true);
                 });
+        return analysisStatus.get();
     }
 
     /**
+     * Assign a single summarized value for each linked variable group.
+     * <p>
+     * No delay -> assign all values
+     * Delay + No break immutable -> do not assign values
+     * Delay + Break immutable -> does the delay occur in the break groups only?
+     * YES: assign all
+     * NO: only break groups (in partial mode)
+     *
      * @param statementAnalysis the statement
      * @param evaluationContext the eval context, used for creating EVAL level if needed
      * @param connections       either getLinkedVariables, or getStaticallyAssignedVariables
@@ -140,65 +174,75 @@ public class ContextPropertyWriter {
                                 VariableInfoContainer.Level level,
                                 Set<Variable> doNotWrite,
                                 LocalCopyData localCopyData) {
-        final AtomicReference<AnalysisStatus> analysisStatus = new AtomicReference<>(DONE);
-        fillDependencyGraph(statementAnalysis, evaluationContext, connections, level, dependencyGraph, analysisStatus,
-                variableProperty.name(), localCopyData);
+        final AtomicBoolean onlyDoSetsWithBreak = variableProperty == VariableProperty.CONTEXT_MODIFIED ? new AtomicBoolean() : null;
 
-        if (analysisStatus.get() == DELAYS) return analysisStatus.get();
+        AnalysisStatus graphStatus = fillDependencyGraph(statementAnalysis, evaluationContext, connections, level,
+                variableProperty.name(), localCopyData, onlyDoSetsWithBreak);
+
+        if (graphStatus == DELAYS && (onlyDoSetsWithBreak == null || !onlyDoSetsWithBreak.get()))
+            return graphStatus;
 
         final AtomicBoolean progress = new AtomicBoolean();
+        final boolean inPartialMode = graphStatus == DELAYS && delayOutsideBreakGroups();
 
         // we make a copy of the values, because in summarizeModification there is the possibility of adding to the map
         Map<VariableInfoContainer, Integer> valuesToSet = new HashMap<>();
 
-        // NOTE: this used to be safeVariableStream but don't think that is needed anymore
-        statementAnalysis.variableStream(level)
-                // filter out conditional initialization copies
-                .filter(VariableInfo::isNotConditionalInitialization)
-                .forEach(variableInfo -> {
-                    Variable baseVariable = variableInfo.variable();
-                    Set<Variable> variablesBaseLinksTo =
-                            Stream.concat(Stream.of(baseVariable), dependencyGraph.dependencies(baseVariable).stream())
-                                    .filter(v -> statementAnalysis.variables.isSet(v.fullyQualifiedName()))
-                                    .collect(Collectors.toSet());
-                    int summary = summarizeContext(statementAnalysis, variablesBaseLinksTo, variableProperty, propertyValues);
-                    if (summary == Level.DELAY) analysisStatus.set(DELAYS);
-                    // this loop is critical, see Container_3, do not remove it again :-)
-                    try {
-                        for (Variable linkedVariable : variablesBaseLinksTo) {
-                            if (!doNotWrite.contains(linkedVariable)) {
-                                assignToLinkedVariable(statementAnalysis, progress, summary, linkedVariable,
-                                        variableProperty, level, valuesToSet);
-                            }
-                        }
-                    } catch (RuntimeException re) {
-                        LOGGER.error("Summary {}: {}, vars: {}", variableProperty, summary, variablesBaseLinksTo);
-                        throw re;
+        AtomicReference<AnalysisStatus> summaryStatus = new AtomicReference<>(DONE);
+        dependencyGraph.visitBidirectionalGroups(list -> {
+            int summary = summarizeContext(statementAnalysis, list, variableProperty, propertyValues);
+            if (summary == Level.DELAY) summaryStatus.set(DELAYS);
+
+            if (inPartialMode) {
+                boolean haveBreakInSet = list.stream().anyMatch(av -> av.breakImmutable != null && av.breakImmutable);
+                if (!haveBreakInSet) return;
+            }
+            // this loop is critical, see Container_3, do not remove it again :-)
+            try {
+                for (AugmentedVariable av : list) {
+                    if (!doNotWrite.contains(av.variable)) {
+                        assignToLinkedVariable(statementAnalysis, progress, summary, av.variable,
+                                variableProperty, level, valuesToSet);
                     }
-                });
+                }
+            } catch (RuntimeException re) {
+                LOGGER.error("Summary {}: {}, vars: {}", variableProperty, summary, list);
+                throw re;
+            }
+        });
         valuesToSet.forEach((k, v) -> {
             if (v != Level.DELAY) {
                 k.setProperty(variableProperty, v, level);
             }
         });
-        return analysisStatus.get() == DELAYS ? (progress.get() ? PROGRESS : DELAYS) : DONE;
+        return graphStatus.combine(summaryStatus.get()) == DELAYS ? (progress.get() ? PROGRESS : DELAYS) : DONE;
+    }
+
+    private boolean delayOutsideBreakGroups() {
+        AtomicBoolean delayOutsideBreakGroup = new AtomicBoolean();
+        dependencyGraph.visitBidirectionalGroups(list -> {
+            boolean delay = list.stream().anyMatch(av -> av.delayed != null && av.delayed);
+            boolean breakGroup = list.stream().anyMatch(av -> av.breakImmutable != null && av.breakImmutable);
+            if (delay && !breakGroup) delayOutsideBreakGroup.set(true);
+        });
+        return delayOutsideBreakGroup.get();
     }
 
     private static int summarizeContext(StatementAnalysis statementAnalysis,
-                                        Set<Variable> linkedVariables,
+                                        List<AugmentedVariable> linkedVariables,
                                         VariableProperty variableProperty,
                                         Map<Variable, Integer> values) {
         boolean hasDelays = false;
         int max = Level.DELAY;
-        for (Variable variable : linkedVariables) {
-            Integer v = values.get(variable);
+        for (AugmentedVariable av : linkedVariables) {
+            Integer v = values.get(av.variable);
             if (v == null) {
-                throw new NullPointerException("Expect " + variable.fullyQualifiedName() + " to be known for "
+                throw new NullPointerException("Expect " + av.variable.fullyQualifiedName() + " to be known for "
                         + variableProperty + ", map is " + values);
             }
             if (v == Level.DELAY) {
                 assert statementAnalysis.translatedDelay(CONTEXT_PROPERTY_WRITER,
-                        variable.fullyQualifiedName() + "@" + statementAnalysis.index + "." + variableProperty.name(),
+                        av.variable.fullyQualifiedName() + "@" + statementAnalysis.index + "." + variableProperty.name(),
                         statementAnalysis.fullyQualifiedName() + "." + variableProperty.name());
 
                 hasDelays = true;

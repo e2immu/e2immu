@@ -12,7 +12,7 @@ import java.util.Map;
 public class TrieSimplified_3<T> {
     private final TrieNode<T> root = new TrieNode<>();
 
-    @Container
+    @E1Container
     private static class TrieNode<T> {
         Map<String, TrieNode<T>> map;
     }
