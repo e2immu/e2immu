@@ -178,8 +178,8 @@ public class MethodLevelData implements DelayDebugger {
             }
             boolean added =
                     sharedState.previous.causesOfContextModificationDelay.get().entrySet().stream()
-                    .map(e ->  causesOfContextModificationDelay.get().put(e.getKey(), e.getValue()))
-                    .reduce(false, (i, resultOfPut) -> resultOfPut == null, (a, b)-> a||b);
+                            .map(e -> causesOfContextModificationDelay.get().put(e.getKey(), e.getValue()))
+                            .reduce(false, (i, resultOfPut) -> resultOfPut == null, (a, b) -> a || b);
             assert !added || sharedState.previous.causesOfContextModificationDelay.get().keySet().stream().allMatch(cause ->
                     foundDelay(sharedState.where(MERGE_CAUSES_OF_CONTEXT_MODIFICATION_DELAY),
                             cause.fullyQualifiedName() + D_CAUSES_OF_CONTENT_MODIFICATION_DELAY));
@@ -276,7 +276,8 @@ public class MethodLevelData implements DelayDebugger {
                 // local variables that have been created, but not yet assigned/read; reject ConditionalInitialization
                 .filter(vi -> !(vi.variable() instanceof LocalVariableReference)
                         || (vi.isAssigned() || vi.isRead()) && vi.isNotConditionalInitialization())
-                .filter(vi -> !vi.linkedVariablesIsSet()
+                .filter(vi -> (!vi.linkedVariablesIsSet() &&
+                        vi.getProperty(VariableProperty.EXTERNAL_IMMUTABLE_BREAK_DELAY) != Level.TRUE)
                         || vi.getProperty(VariableProperty.CONTEXT_MODIFIED) == Level.DELAY)
                 .findFirst();
         if (delayed.isPresent()) {

@@ -845,15 +845,14 @@ public class FieldAnalyser extends AbstractAnalyser {
                 // but that's too early to know now
                 int immutable = fieldAnalysis.getProperty(VariableProperty.EXTERNAL_IMMUTABLE);
                 if (immutable == Level.DELAY) {
-                    int partialResultForImmutable = fieldAnalysis.getProperty(VariableProperty.PARTIAL_EXTERNAL_IMMUTABLE);
-                    if (partialResultForImmutable != Level.DELAY) {
-                        immutable = partialResultForImmutable;
-                    }
+                    // see analyseImmutable, @BeforeMark
+                    immutable = fieldAnalysis.getProperty(VariableProperty.PARTIAL_EXTERNAL_IMMUTABLE);
                 }
                 boolean fieldOfOwnType = fieldInfo.type.typeInfo == fieldInfo.owner;
 
                 if (immutable == Level.DELAY && !fieldOfOwnType) {
                     log(DELAYED, "Waiting with effectively final value  until decision on @E2Immutable for {}", fqn);
+                    fieldAnalysis.setProperty(VariableProperty.EXTERNAL_IMMUTABLE_BREAK_DELAY, Level.TRUE);
                     return DELAYS;
                 }
                 boolean downgradeFromNewInstanceWithConstructor = !fieldOfOwnType && immutable != MultiLevel.EFFECTIVELY_E2IMMUTABLE;

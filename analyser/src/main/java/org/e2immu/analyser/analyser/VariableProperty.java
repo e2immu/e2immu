@@ -40,6 +40,9 @@ public enum VariableProperty {
     IN_NOT_NULL_CONTEXT("in not-null context"),
     CANDIDATE_FOR_NULL_PTR_WARNING("candidate for null pointer warning"),
 
+    // on final fields with constructor initializer, we need to decide on constructor or instance
+    EXTERNAL_IMMUTABLE_BREAK_DELAY("break immutable delay"),
+
     /*
     @NotNull, @Nullable property.
     Multiple aspects worth mentioning. See MultiLevel for the different values this property can take.

@@ -223,12 +223,12 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
         };
 
         testClass("TrieSimplified_3", 0, 0, new DebugConfiguration.Builder()
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
-                .addEvaluationResultVisitor(evaluationResultVisitor)
-                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+              //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+              //  .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+              //  .addStatementAnalyserVisitor(statementAnalyserVisitor)
+               // .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
+              //  .addEvaluationResultVisitor(evaluationResultVisitor)
+              //  .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build());
     }
 

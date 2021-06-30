@@ -105,7 +105,8 @@ public class ContextPropertyWriter {
                 .filter(VariableInfo::isNotConditionalInitialization)
                 .forEach(variableInfo -> {
                     LinkedVariables linkedVariables = connections.apply(variableInfo);
-                    if (linkedVariables.isDelayed()) {
+                    boolean ignoreDelay = variableInfo.getProperty(VariableProperty.EXTERNAL_IMMUTABLE_BREAK_DELAY) == Level.TRUE;
+                    if (linkedVariables.isDelayed() && !ignoreDelay) {
                         if (!(variableInfo.variable() instanceof LocalVariableReference) || variableInfo.isAssigned()) {
                             log(DELAYED, "Delaying MethodLevelData for {} in {}: linked variables not set",
                                     variableInfo.variable().fullyQualifiedName(), evaluationContext.getLocation());
@@ -238,7 +239,7 @@ public class ContextPropertyWriter {
                 valuesToSet.put(vic, Level.DELAY);
             }
         } else if (current < newValue && newValue != Level.DELAY) {
-            if(vi.isConfirmedVariableField()) {
+            if (vi.isConfirmedVariableField()) {
                 // allow; the reason are conflicting values on different local copies, both linking to this
                 // confirmed variable field. (see TrieSimplified_0, among others.) They do not matter, as
                 // the context values for MethodAnalyser and FieldAnalyser is taken over ALL the local copies as well.

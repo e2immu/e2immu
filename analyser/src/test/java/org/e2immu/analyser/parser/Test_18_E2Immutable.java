@@ -24,6 +24,7 @@ import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.expression.InlinedMethod;
 import org.e2immu.analyser.model.variable.FieldReference;
+import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
 
@@ -243,7 +244,56 @@ public class Test_18_E2Immutable extends CommonTestRunner {
 
     @Test
     public void test_10() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+
+            if ("method".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof FieldReference fieldReference && "sub".equals(fieldReference.fieldInfo.name)) {
+                    String expectValue = d.iteration() <= 2 ? "<f:sub>" : "new Sub()";
+                    assertEquals(expectValue, d.currentValue().toString());
+
+                    // no linked variables, but initially delayed
+                    assertEquals(d.iteration() <= 1, d.variableInfo().getLinkedVariables().isDelayed());
+                    String expectLinked = d.iteration() <= 1 ? "*" : "";
+                    assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toDetailedString());
+
+                    int expectBreakDelay = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
+                    assertEquals(expectBreakDelay, d.getProperty(VariableProperty.EXTERNAL_IMMUTABLE_BREAK_DELAY));
+
+                    int expectCm = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
+                    assertEquals(expectCm, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
+
+                    int imm = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EFFECTIVELY_E2IMMUTABLE;
+                    assertEquals(imm, d.getProperty(VariableProperty.IMMUTABLE));
+                }
+                if (d.variable() instanceof ReturnVariable) {
+                    // no linked variables
+                    assertFalse(d.variableInfo().getLinkedVariables().isDelayed());
+                    assertEquals("", d.variableInfo().getLinkedVariables().toDetailedString());
+                }
+            }
+        };
+
+        TypeAnalyserVisitor typeAnalyserVisitor =d-> {
+            if("Sub".equals(d.typeInfo().simpleName)) {
+                int imm = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_E2IMMUTABLE;
+                assertEquals(imm, d.typeAnalysis().getProperty(VariableProperty.IMMUTABLE));
+            }
+        };
+
+        FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+            if ("sub".equals(d.fieldInfo().name)) {
+                if (d.iteration() <= 1) {
+                    assertNull(d.fieldAnalysis().getEffectivelyFinalValue());
+                } else {
+                    assertEquals("new Sub()", d.fieldAnalysis().getEffectivelyFinalValue().toString());
+                }
+            }
+        };
+
         testClass("E2Immutable_10", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
                 .build());
     }
 }
