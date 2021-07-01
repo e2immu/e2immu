@@ -21,7 +21,7 @@ public class TrieSimplified_5<T> {
             if (node.map == null) {
                 node.map = new HashMap<>();
                 newTrieNode = new TrieNode<>();
-                node.map.put(s, newTrieNode);
+                node.map.put(s, newTrieNode); // 1.0.1.0.2
             } else {
                 newTrieNode = node.map.get(s);
                 if (newTrieNode == null) {

@@ -282,18 +282,21 @@ public class ContextPropertyWriter {
                         vi.variable().fullyQualifiedName() + "@" + statementAnalysis.index + "." + variableProperty.name());
                 valuesToSet.put(vic, Level.DELAY);
             }
-        } else if (current < newValue && newValue != Level.DELAY) {
-            if (vi.isConfirmedVariableField()) {
-                // allow; the reason are conflicting values on different local copies, both linking to this
-                // confirmed variable field. (see TrieSimplified_0, among others.) They do not matter, as
-                // the context values for MethodAnalyser and FieldAnalyser is taken over ALL the local copies as well.
-                return;
-            }
-            throw new UnsupportedOperationException("? already have " + current + ", computed "
-                    + newValue + " variable " + vi.variable().fullyQualifiedName() + ", prop " + variableProperty);
-        } /* else: it is possible that the previous value was higher: statements at the end of the block
+        }
+    }
+    // allow; the reason are conflicting values on different local copies, both linking to this
+    // confirmed variable field. (see TrieSimplified_0, among others.) They do not matter, as
+    // the context values for MethodAnalyser and FieldAnalyser is taken over ALL the local copies as well.
+
+            /*
+            yet another situation where overwriting seems to make no sense: in the first iteration, when
+            variables in loop but defined outside still use the original variable, conflicts may arise (TrieSimplified_5)
+             */
+    //      throw new UnsupportedOperationException("? already have " + current + ", computed "
+    //             + newValue + " variable " + vi.variable().fullyQualifiedName() + ", prop " + variableProperty);
+         /* else: it is possible that the previous value was higher: statements at the end of the block
         can become unreachable, which may lower the context value; see Loops_7
         */
-    }
+
 
 }

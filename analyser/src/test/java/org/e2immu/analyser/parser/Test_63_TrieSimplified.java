@@ -24,6 +24,7 @@ import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
+import org.e2immu.analyser.model.variable.VariableNature;
 import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
 
@@ -399,9 +400,47 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                 .build());
     }
 
+    /*
+    problem to fix: 1 - 5 CNN in statement 2 (node = newTrieNode); node is CNN 5, newTrieNode CNN 1;
+    node becomes node$1 in iteration 1
+     */
     @Test
     public void test_5() throws IOException {
-       testClass("TrieSimplified_5", 0, 1, new DebugConfiguration.Builder()
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if("add".equals(d.methodInfo().name)) {
+                if("node".equals(d.variableName())) {
+                    int cnn = d.getProperty(VariableProperty.CONTEXT_NOT_NULL);
+                    if ("1.0.1.0.0".equals(d.statementId())) {
+                        assertTrue(d.variableInfoContainer().variableNature() instanceof VariableNature.VariableDefinedOutsideLoop);
+                        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, cnn);
+                    }
+                    if ("1.0.1".equals(d.statementId())) {
+                        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, cnn);
+                    }
+                }
+                if ("newTrieNode".equals(d.variableName())) {
+                    int cnn = d.getProperty(VariableProperty.CONTEXT_NOT_NULL);
+                    int nne = d.getProperty(VariableProperty.NOT_NULL_EXPRESSION);
+                    if ("1.0.1.0.1".equals(d.statementId())) {
+                        assertEquals(MultiLevel.NULLABLE, cnn);
+                        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, nne);
+                    }
+                    if ("1.0.1.1.0".equals(d.statementId())) {
+                        assertEquals(MultiLevel.NULLABLE, cnn);
+                    }
+                    if ("1.0.1.1.1.0.0".equals(d.statementId())) {
+                        assertEquals(MultiLevel.NULLABLE, cnn);
+                        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, nne);
+                    }
+                    if ("1.0.1".equals(d.statementId())) {
+                        assertEquals(MultiLevel.NULLABLE, cnn);
+                    }
+                }
+            }
+        };
+        // 2x potential null pointer warning, seems correct
+        testClass("TrieSimplified_5", 0, 2, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 }

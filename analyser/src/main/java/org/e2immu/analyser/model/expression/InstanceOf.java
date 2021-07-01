@@ -79,14 +79,18 @@ public record InstanceOf(Primitives primitives,
 
     @Override
     public int internalCompareTo(Expression v) {
-        if (expression instanceof VariableExpression ve
-                && v instanceof InstanceOf other
-                && other.expression instanceof VariableExpression ve2) {
-            int c = ve.variable().fullyQualifiedName().compareTo(ve2.variable().fullyQualifiedName());
-            if (c == 0) c = parameterizedType.detailedString().compareTo(other.parameterizedType.detailedString());
-            return c;
+        if (v instanceof InstanceOf other) {
+            if (expression instanceof VariableExpression ve
+                    && other.expression instanceof VariableExpression ve2) {
+                int c = ve.variable().fullyQualifiedName().compareTo(ve2.variable().fullyQualifiedName());
+                if (c == 0) c = parameterizedType.detailedString().compareTo(other.parameterizedType.detailedString());
+                return c;
+            }
+            int c = parameterizedType.fullyQualifiedName().compareTo(other.parameterizedType.fullyQualifiedName());
+            if (c != 0) return c;
+            return expression.compareTo(other.expression);
         }
-        return expression.internalCompareTo(v);
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -153,7 +157,7 @@ public record InstanceOf(Primitives primitives,
             return builder.compose(er).setExpression(er.value()).build();
         }
         if (value.isInstanceOf(MethodCall.class)) {
-            return builder.setExpression(new UnknownExpression(returnType(), "instanceof value")).build(); // no clue, too deep
+            return builder.setExpression(this).build(); // no clue, too deep
         }
 
         // whatever it is, it is not null; we're more interested in that, than it its type which is guarded by the compiler

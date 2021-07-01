@@ -59,4 +59,16 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .build());
     }
+
+    @Test
+    public void test_2() throws IOException {
+        testClass("FormatterSimplified_2", 0, 0, new DebugConfiguration.Builder()
+                .build());
+    }
+
+    @Test
+    public void test_3() throws IOException {
+        testClass("FormatterSimplified_3", 4, 0, new DebugConfiguration.Builder()
+                .build());
+    }
 }
