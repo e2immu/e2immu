@@ -40,8 +40,8 @@ public class Test_65_ConditionalInitialization extends CommonTestRunner {
     public void test_0() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("ConditionalInitialization_0".equals(d.methodInfo().name)) {
-                if(d.variable() instanceof FieldReference fr && "set".equals(fr.fieldInfo.name)) {
-                    if("0.0.0".equals(d.statementId())) {
+                if (d.variable() instanceof FieldReference fr && "set".equals(fr.fieldInfo.name)) {
+                    if ("0.0.0".equals(d.statementId())) {
                         assertEquals("Set.of(\"a\",\"b\")", d.currentValue().toString());
                     }
                 }
@@ -120,7 +120,7 @@ public class Test_65_ConditionalInitialization extends CommonTestRunner {
     public void test_2() throws IOException {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("setSet".equals(d.methodInfo().name)) {
-                if ("0.0.0".equals(d.statementId())) {
+                if ("0.0.0".equals(d.statementId()) && d.iteration() > 0) {
                     assertNotNull(d.haveError(Message.Label.ASSIGNMENT_TO_SELF));
                 }
             }

@@ -1,5 +1,6 @@
 package org.e2immu.analyser.testexample;
 
+import org.e2immu.annotation.NotModified;
 import org.e2immu.annotation.NotNull;
 
 import java.util.Map;
@@ -9,6 +10,7 @@ Variant on _0; we have 2 null ptr warnings. Completely incorrect, I'd say.
  */
 public class TrieSimplified_1<T> {
 
+    @NotModified
     private final TrieNode<T> root = new TrieNode<>();
 
     private static class TrieNode<T> {
@@ -16,6 +18,7 @@ public class TrieSimplified_1<T> {
     }
 
     @NotNull
+    @NotModified
     public TrieNode<T> add(@NotNull String s) {
         if (root.map == null) {
             //
@@ -30,6 +33,7 @@ public class TrieSimplified_1<T> {
     }
 
     @NotNull
+    @NotModified
     public synchronized TrieNode<T> addSynchronized(@NotNull String s) {
         if (root.map == null) {
             //

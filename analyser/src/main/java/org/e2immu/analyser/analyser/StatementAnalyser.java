@@ -936,7 +936,9 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
 
         // odds and ends
 
-        evaluationResult.messages().getMessageStream().forEach(statementAnalysis::ensure);
+        if(!evaluationResult.someValueWasDelayed()) {
+            evaluationResult.messages().getMessageStream().forEach(statementAnalysis::ensure);
+        }
 
         // not checking on DONE anymore because any delay will also have crept into the precondition itself??
         if (evaluationResult.precondition() != null) {
@@ -1220,9 +1222,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 groupPropertyValues.set(k, variable, value);
             } else {
                 switch (k) {
-                    case EXTERNAL_IMMUTABLE_BREAK_DELAY -> {
-                        res.put(k, Math.max(prev, change));
-                    }
+                    case EXTERNAL_IMMUTABLE_BREAK_DELAY -> res.put(k, Math.max(prev, change));
                     // value properties are copied from previous, only when the value from previous is copied as well
                     case NOT_NULL_EXPRESSION, CONTAINER, IMMUTABLE, IDENTITY, INDEPENDENT -> {
                         if (allowValueProperties && prev != Level.DELAY) res.put(k, prev);
@@ -1996,7 +1996,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                                 firstStatement.index), Message.Label.UNREACHABLE_STATEMENT));
                     }
                     // guaranteed to be reached in block is always ALWAYS because it is the first statement
-                    firstStatement.flowData.setGuaranteedToBeReachedInMethod(isTrue ? ALWAYS : NEVER);
+                    setExecutionOfSubBlock(firstStatement, isTrue ? ALWAYS : NEVER);
                 });
                 if (blocks.size() == 2) {
                     blocks.get(1).ifPresent(firstStatement -> {
@@ -2005,7 +2005,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                             firstStatement.ensure(Message.newMessage(new Location(myMethodAnalyser.methodInfo,
                                     firstStatement.index), Message.Label.UNREACHABLE_STATEMENT));
                         }
-                        firstStatement.flowData.setGuaranteedToBeReachedInMethod(isTrue ? NEVER : ALWAYS);
+                        setExecutionOfSubBlock(firstStatement, isTrue ? NEVER : ALWAYS);
                     });
                 }
             } else if (statementAnalysis.statement instanceof AssertStatement) {
@@ -2026,6 +2026,19 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             return evaluated;
         }
         return value;
+    }
+
+    private void setExecutionOfSubBlock(StatementAnalysis firstStatement, FlowData.Execution execution) {
+        FlowData.Execution mine = statementAnalysis.flowData.getGuaranteedToBeReachedInMethod();
+        FlowData.Execution combined = switch (mine) {
+            case ALWAYS -> execution;
+            case NEVER -> NEVER;
+            case CONDITIONALLY -> CONDITIONALLY;
+            default -> throw new UnsupportedOperationException();
+        };
+        if (firstStatement.flowData.getGuaranteedToBeReachedInMethod() != NEVER || combined != CONDITIONALLY) {
+            firstStatement.flowData.setGuaranteedToBeReachedInMethod(combined);
+        } // else: we'll keep NEVER
     }
 
     private AnalysisStatus subBlocks(SharedState sharedState) {
@@ -3002,7 +3015,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                             }
 
                             Expression delayed = DelayedExpression.forReplacementObject(variable.parameterizedType(),
-                                  List.copyOf(  eval.getLinkedVariables().variables()));
+                                    List.copyOf(eval.getLinkedVariables().variables()));
                             translationMap.put(DelayedVariableExpression.forVariable(e.getValue().current().variable()),
                                     delayed);
                         });

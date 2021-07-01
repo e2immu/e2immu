@@ -1,10 +1,12 @@
 package org.e2immu.analyser.testexample;
 
+import org.e2immu.annotation.E1Container;
 import org.e2immu.annotation.NotNull;
 
 import java.util.HashMap;
 import java.util.Map;
 
+@E1Container
 public class TrieSimplified_0<T> {
 
     private final TrieNode<T> root = new TrieNode<>();
@@ -19,7 +21,7 @@ public class TrieSimplified_0<T> {
         for (String s : strings) {
             TrieNode<T> newTrieNode;
             if (node.map == null) {
-            //    node.map = new HashMap<>();
+                node.map = new HashMap<>();
             } else {
                 newTrieNode = node.map.get(s);
                 if (newTrieNode == null) {
@@ -39,7 +41,7 @@ public class TrieSimplified_0<T> {
             TrieNode<T> newTrieNode;
             synchronized (root) {
                 if (node.map == null) {
-                    //    node.map = new HashMap<>();
+                    node.map = new HashMap<>();
                 } else {
                     newTrieNode = node.map.get(s);
                     if (newTrieNode == null) {
