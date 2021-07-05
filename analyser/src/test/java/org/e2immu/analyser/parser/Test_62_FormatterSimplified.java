@@ -16,6 +16,7 @@ package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.visitor.EvaluationResultVisitor;
+import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.visitor.TypeAnalyserVisitor;
 import org.junit.jupiter.api.Test;
 
@@ -69,6 +70,28 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
     @Test
     public void test_3() throws IOException {
         testClass("FormatterSimplified_3", 4, 0, new DebugConfiguration.Builder()
+                .build());
+    }
+
+    @Test
+    public void test_4() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("forward".equals(d.methodInfo().name)) {
+                if(d.variableName().contains("lastOneWasSpace")) {
+                    System.out.println(d.variableName()+": "+d.statementId());
+                }
+                if ("lastOneWasSpace$4$4.0.0:M".equals(d.variableName())) {
+                    if ("4.0.0".equals(d.statementId())) {
+                        assertEquals("", d.currentValue().toString());
+                    }
+                    if ("4.0.1.0.0".equals(d.statementId())) {
+                        assertEquals("", d.currentValue().toString());
+                    }
+                }
+            }
+        };
+        testClass("FormatterSimplified_4", 4, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 }

@@ -79,7 +79,13 @@ public record InstanceOf(Primitives primitives,
 
     @Override
     public int internalCompareTo(Expression v) {
-        if (v instanceof InstanceOf other) {
+        Expression e;
+        if(v instanceof InlineConditional inlineConditional) {
+            e = inlineConditional.condition;
+        } else {
+            e = v;
+        }
+        if (e instanceof InstanceOf other) {
             if (expression instanceof VariableExpression ve
                     && other.expression instanceof VariableExpression ve2) {
                 int c = ve.variable().fullyQualifiedName().compareTo(ve2.variable().fullyQualifiedName());
@@ -90,7 +96,7 @@ public record InstanceOf(Primitives primitives,
             if (c != 0) return c;
             return expression.compareTo(other.expression);
         }
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException("Comparing to "+e+" -- "+e.getClass());
     }
 
     @Override
