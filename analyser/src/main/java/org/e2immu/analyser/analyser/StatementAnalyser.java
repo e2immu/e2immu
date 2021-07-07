@@ -701,7 +701,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             assert vi != vi1 : "There should already be a different EVALUATION object";
 
             if (changeData.markAssignment()) {
-                if (conditionsForOverwritingPreviousAssignment(vi1, changeData,
+                if (conditionsForOverwritingPreviousAssignment(vi1, vic, changeData,
                         sharedState.localConditionManager, sharedState.evaluationContext)) {
                     statementAnalysis.ensure(Message.newMessage(getLocation(),
                             Message.Label.OVERWRITING_PREVIOUS_ASSIGNMENT, "variable " + variable.simpleName()));
@@ -942,7 +942,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
 
         // odds and ends
 
-        if(!evaluationResult.someValueWasDelayed()) {
+        if (!evaluationResult.someValueWasDelayed()) {
             evaluationResult.messages().getMessageStream().forEach(statementAnalysis::ensure);
         }
 
@@ -991,6 +991,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
     }
 
     private boolean conditionsForOverwritingPreviousAssignment(VariableInfo vi1,
+                                                               VariableInfoContainer vic,
                                                                EvaluationResult.ChangeData changeData,
                                                                ConditionManager conditionManager,
                                                                EvaluationContext evaluationContext) {
@@ -1004,7 +1005,17 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             ConditionManager atAssignment = sa.stateData.conditionManagerForNextStatement.get();
             Expression myAbsoluteState = conditionManager.absoluteState(evaluationContext);
             Expression initialAbsoluteState = atAssignment.absoluteState(evaluationContext);
-            return initialAbsoluteState.equals(myAbsoluteState);
+            if (!initialAbsoluteState.equals(myAbsoluteState)) return false;
+            // now check if we're in loop block, and there was an assignment outside
+            // this loop block will not have an effect on the absolute state (See Loops_2, Loops_13)
+            VariableInfoContainer initialVic = sa.variables.get(vi1.variable().fullyQualifiedName());
+            if (!(initialVic.variableNature() instanceof VariableNature.VariableDefinedOutsideLoop) &&
+                    vic.variableNature() instanceof VariableNature.VariableDefinedOutsideLoop loop &&
+                    !index().equals(loop.statementIndex())) {
+                // do raise an error when the assignment is in the loop condition
+                return false;
+            }
+            return true;
         }
         return false;
     }
