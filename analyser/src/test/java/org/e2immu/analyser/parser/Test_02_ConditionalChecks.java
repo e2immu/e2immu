@@ -467,6 +467,12 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                 if ("1.0.0".equals(d.statementId())) {
                     assertEquals("q>=5?\"abc\":\"xyz\"", d.currentValue().toString());
                 }
+                if ("1.0.0.0.0".equals(d.statementId())) {
+                    assertEquals("\"abc\"", d.currentValue().toString());
+                }
+                if ("1.0.0.1.0".equals(d.statementId())) {
+                    assertEquals("\"xyz\"", d.currentValue().toString());
+                }
                 if ("1.1.0".equals(d.statementId())) {
                     assertEquals("q<=-1?\"tuv\":null", d.currentValue().toString());
                 }

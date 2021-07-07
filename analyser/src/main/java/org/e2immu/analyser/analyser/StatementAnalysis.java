@@ -1195,7 +1195,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
 
         for (VariableProperty vp : FROM_FIELD_ANALYSER_TO_PROPERTIES) {
             int value = fieldAnalysis.getPropertyVerifyContracted(vp);
-            // FIXME we're not passing on 'our' analyserContext instead relying on that of the field, which does not know the lambda we're in at the moment
+            // IMPROVE we're not passing on 'our' analyserContext instead relying on that of the field, which does not know the lambda we're in at the moment
             result.put(vp, value);
         }
         return result;

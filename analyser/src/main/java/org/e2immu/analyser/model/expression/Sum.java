@@ -124,4 +124,16 @@ public class Sum extends BinaryOperator {
         return outputBuilder.add(outputInParenthesis(qualification, precedence(), rhs));
     }
 
+    public Expression isZero(EvaluationContext evaluationContext) {
+        if(lhs instanceof Negation negation && !(rhs instanceof Negation)) {
+            return Equals.equals(evaluationContext, negation.expression, rhs);
+        }
+        if(rhs instanceof Negation negation && !(lhs instanceof Negation)) {
+            return Equals.equals(evaluationContext, lhs, negation.expression);
+        }
+        if(lhs instanceof Negation nLhs) {
+            return Equals.equals(evaluationContext, nLhs, rhs);
+        }
+        return Equals.equals(evaluationContext, lhs, Negation.negate(evaluationContext, rhs));
+    }
 }

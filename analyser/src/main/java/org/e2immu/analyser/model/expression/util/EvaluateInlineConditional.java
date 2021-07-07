@@ -126,6 +126,64 @@ public class EvaluateInlineConditional {
             }
         }
 
+
+        // x ? x||y : z   -->   x ? true : z   --> x||z
+        // x ? !x||y : z  -->   x ? y : z
+        if (ifTrue instanceof Or or) {
+            if( or.expressions().contains(condition)) {
+                Expression res = new Or(evaluationContext.getPrimitives()).append(evaluationContext, condition, ifFalse);
+                return builder.setExpression(res).build();
+            }
+            Expression notCondition = Negation.negate(evaluationContext, condition);
+            if(or.expressions().contains(notCondition)) {
+                Expression newOr = new Or(evaluationContext.getPrimitives()).append(evaluationContext,
+                        or.expressions().stream().filter(e -> !e.equals(notCondition)).toArray(Expression[]::new));
+                return conditionalValueConditionResolved(evaluationContext, condition, newOr, ifFalse);
+            }
+        }
+        // x ? y : x||z --> x ? y: z
+        // x ? y : !x||z --> x ? y: true --> !x || y
+        if (ifFalse instanceof Or or) {
+            if(or.expressions().contains(condition)) {
+                Expression newOr = new Or(evaluationContext.getPrimitives()).append(evaluationContext,
+                        or.expressions().stream().filter(e -> !e.equals(condition)).toArray(Expression[]::new));
+                return conditionalValueConditionResolved(evaluationContext, condition, ifTrue, newOr);
+            }
+            Expression notCondition = Negation.negate(evaluationContext, condition);
+            if (or.expressions().contains(notCondition)) {
+                Expression res = new Or(evaluationContext.getPrimitives()).append(evaluationContext, notCondition, ifTrue);
+                return builder.setExpression(res).build();
+            }
+        }
+        // x ? x&&y : z --> x ? y : z
+        // x ? !x&&y : z --> x ? false : z --> !x && z
+        if (ifTrue instanceof And and) {
+            if (and.expressions().contains(condition)) {
+                Expression newAnd = new And(evaluationContext.getPrimitives()).append(evaluationContext,
+                        and.expressions().stream().filter(e -> !e.equals(condition)).toArray(Expression[]::new));
+                return conditionalValueConditionResolved(evaluationContext, condition, newAnd, ifFalse);
+            }
+            Expression notCondition = Negation.negate(evaluationContext, condition);
+            if (and.expressions().contains(notCondition)) {
+                Expression res = new And(evaluationContext.getPrimitives()).append(evaluationContext, notCondition, ifFalse);
+                return builder.setExpression(res).build();
+            }
+        }
+        // x ? y : !x&&z => x ? y : z
+        // x ? y : x&&z --> x ? y : false --> x && y
+        if (ifFalse instanceof And and) {
+            if (and.expressions().contains(condition)) {
+                Expression res = new And(evaluationContext.getPrimitives()).append(evaluationContext, condition, ifTrue);
+                return builder.setExpression(res).build();
+            }
+            Expression notCondition = Negation.negate(evaluationContext, condition);
+            if (and.expressions().contains(notCondition)) {
+                Expression newAnd = new And(evaluationContext.getPrimitives()).append(evaluationContext,
+                        and.expressions().stream().filter(e -> !e.equals(notCondition)).toArray(Expression[]::new));
+                return conditionalValueConditionResolved(evaluationContext, condition, ifTrue, newAnd);
+            }
+        }
+
         // standardization... we swap!
         // this will result in  a != null ? a: x ==>  null == a ? x : a as the default form
 

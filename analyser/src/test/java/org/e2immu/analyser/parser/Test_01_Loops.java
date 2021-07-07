@@ -715,4 +715,69 @@ public class Test_01_Loops extends CommonTestRunner {
                 .build());
     }
 
+
+    @Test
+    public void test_11() throws IOException {
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("method".equals(d.methodInfo().name)) {
+                if ("3".equals(d.statementId()) && d.iteration() > 0) {
+                    assertEquals("count,entry",
+                            d.statementAnalysis().localVariablesAssignedInThisLoop.toImmutableSet()
+                                    .stream().sorted().collect(Collectors.joining(",")));
+                }
+            }
+        };
+        // potential null pointer exception
+        testClass("Loops_11", 0, 1, new DebugConfiguration.Builder()
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .build());
+    }
+
+
+    @Test
+    public void test_12() throws IOException {
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("method".equals(d.methodInfo().name)) {
+                if ("2".equals(d.statementId()) && d.iteration() > 0) {
+                    assertEquals("[i]", // and not RES!
+                            d.statementAnalysis().localVariablesAssignedInThisLoop.toImmutableSet().toString());
+                }
+            }
+        };
+        // errors: overwriting previous assignment, empty loop, unused local variable, useless assignment
+        // warning: parameter n not used
+        testClass("Loops_12", 4, 1, new DebugConfiguration.Builder()
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .build());
+    }
+
+    @Test
+    public void test_13() throws IOException {
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("method".equals(d.methodInfo().name)) {
+                if ("2".equals(d.statementId()) && d.iteration() > 0) {
+                    assertEquals("i,res1",
+                            d.statementAnalysis().localVariablesAssignedInThisLoop.toImmutableSet()
+                                    .stream().sorted().collect(Collectors.joining(",")));
+                }
+            }
+        };
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("method".equals(d.methodInfo().name)) {
+                if ("i".equals(d.variableName())) {
+                    if ("2.0.0".equals(d.statementId())) {
+                        assertEquals("2-E", d.variableInfo().getAssignmentId());
+                    }
+                }
+            }
+        };
+
+        // overwriting previous assignment, 1x (not for i++ !)
+        testClass("Loops_13", 1, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .build());
+    }
+
+
 }

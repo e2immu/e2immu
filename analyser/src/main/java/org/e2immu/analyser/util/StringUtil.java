@@ -112,4 +112,12 @@ public class StringUtil {
         if (!index.startsWith(withoutDot)) return false;
         return index.compareTo(scope) >= 0;
     }
+
+    public static String stripLevel(String assignmentId) {
+        int dash = assignmentId.lastIndexOf('-');
+        if (dash >= 0) return assignmentId.substring(0, dash);
+        int colon = assignmentId.lastIndexOf(':');
+        if (colon >= 0) return assignmentId.substring(0, colon);
+        throw new UnsupportedOperationException("? " + assignmentId);
+    }
 }

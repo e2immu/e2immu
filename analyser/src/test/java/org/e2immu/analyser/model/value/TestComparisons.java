@@ -15,8 +15,10 @@
 package org.e2immu.analyser.model.value;
 
 import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.expression.And;
 import org.e2immu.analyser.model.expression.GreaterThanZero;
+import org.e2immu.analyser.model.expression.NewObject;
 import org.e2immu.analyser.model.expression.Sum;
 import org.e2immu.analyser.model.expression.util.InequalitySolver;
 import org.junit.jupiter.api.Test;
@@ -315,5 +317,21 @@ public class TestComparisons extends CommonAbstractValue {
         assertEquals(2, jGeI.variables().size());
         Expression combo2 = newAndAppend(combined, jGeI);
         assertTrue(combo2.isBoolValueFalse(), "Got: " + combo2);
+    }
+
+    @Test
+    public void testLoops7() {
+        NewObject i1 = NewObject.forLoopVariable("1", MultiLevel.EFFECTIVELY_NOT_NULL, PRIMITIVES, PRIMITIVES.intParameterizedType);
+        NewObject i2 = NewObject.forLoopVariable("1", MultiLevel.EFFECTIVELY_NOT_NULL, PRIMITIVES, PRIMITIVES.intParameterizedType);
+        assertEquals(i1, i2);
+        Expression iGtI1 = GreaterThanZero.greater(minimalEvaluationContext, i, i1, false);
+        assertEquals("i>instance type int", iGtI1.toString());
+        Expression iLeI2 = GreaterThanZero.less(minimalEvaluationContext, i, i2, true);
+        assertEquals("instance type int>=i", iLeI2.toString());
+        assertEquals("false", newAndAppend(iGtI1, iLeI2).toString());
+        assertEquals("false", newAndAppend(iLeI2, iGtI1).toString());
+
+        Expression iGeI1 = GreaterThanZero.greater(minimalEvaluationContext, i, i1, true);
+        assertEquals("instance type int==i", newAndAppend(iGeI1, iLeI2).toString());
     }
 }

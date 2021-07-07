@@ -355,6 +355,21 @@ public record And(Primitives primitives, List<Expression> expressions) implement
                 }
                 return Action.FALSE;
             }
+            Expression notGe2 = Negation.negate(evaluationContext, ge2.expression());
+            if (ge1.expression().equals(notGe2)) {
+                if (ge1.allowEquals() && ge2.allowEquals()) {
+                    // x >= 0, x <= 0 ==> x == 0
+                    Expression result;
+                    if (ge1.expression() instanceof Sum sum) {
+                        result = sum.isZero(evaluationContext);
+                    } else {
+                        result = Equals.equals(evaluationContext, ge1.expression(), new IntConstant(evaluationContext.getPrimitives(), 0));
+                    }
+                    newConcat.set(newConcat.size() - 1, result);
+                    return Action.SKIP;
+                }
+                return Action.FALSE;
+            }
         }
 
         return Action.ADD;

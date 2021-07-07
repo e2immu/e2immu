@@ -38,7 +38,7 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
 
     @Test
     public void test_1() throws IOException {
-        testClass("ExplicitConstructorInvocation_1", 0, 0, new DebugConfiguration.Builder()
+        testClass("ExplicitConstructorInvocation_1", 1, 0, new DebugConfiguration.Builder()
                 .build());
     }
 

@@ -200,4 +200,34 @@ public class TestConditionalValue extends CommonAbstractValue {
         Expression e1 = inline(newAndAppend(a, b), inline(newAndAppend(b, c), newInt(3), newInt(4)), newInt(5));
         assertEquals("a&&b?c?3:4:5", e1.toString());
     }
+
+    @Test
+    public void inlineOr() {
+        Expression e1 = inline(a, newOrAppend(a, b), c);
+        assertEquals("a||c", e1.toString());
+
+        Expression e2 = inline(a, b, newOrAppend(negate(a), c));
+        assertEquals("!a||b", e2.toString());
+
+        Expression e3 = inline(a, newOrAppend(negate(a), b), c);
+        assertEquals("a?b:c", e3.toString());
+
+        Expression e4 = inline(a, b, newOrAppend(a, c));
+        assertEquals("a?b:c", e4.toString());
+    }
+
+    @Test
+    public void inlineAnd() {
+        Expression e1 = inline(a, newAndAppend(a, b), c);
+        assertEquals("a?b:c", e1.toString());
+
+        Expression e2 = inline(a, newAndAppend(negate(a), b), c);
+        assertEquals("!a&&c", e2.toString());
+
+        Expression e3 = inline(a, b, newAndAppend(a, c));
+        assertEquals("a&&b", e3.toString());
+
+        Expression e4 = inline(a, b, newAndAppend(negate(a), c));
+        assertEquals("a?b:c", e4.toString());
+    }
 }

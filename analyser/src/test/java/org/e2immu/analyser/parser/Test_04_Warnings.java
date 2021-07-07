@@ -249,8 +249,7 @@ public class Test_04_Warnings extends CommonTestRunner {
             assertEquals(MethodResolution.CallStatus.NOT_CALLED_AT_ALL, method1.methodResolution.get().partOfConstruction());
         };
 
-
-        testClass("Warnings_1", 5, 2, new DebugConfiguration.Builder()
+        testClass("Warnings_1", 6, 2, new DebugConfiguration.Builder()
                         .addStatementAnalyserVisitor(statementAnalyserVisitor)
                         .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
@@ -492,4 +491,13 @@ public class Test_04_Warnings extends CommonTestRunner {
         testClass("Warnings_8", 0, 1, new DebugConfiguration.Builder()
                         .build(),
                 new AnalyserConfiguration.Builder().build());
-    }}
+    }
+
+    @Test
+    public void test9() throws IOException {
+        // useless assignment
+        testClass("Warnings_9", 1, 0, new DebugConfiguration.Builder()
+                        .build(),
+                new AnalyserConfiguration.Builder().build());
+    }
+}

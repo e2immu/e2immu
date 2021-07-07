@@ -701,6 +701,12 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             assert vi != vi1 : "There should already be a different EVALUATION object";
 
             if (changeData.markAssignment()) {
+                if (conditionsForOverwritingPreviousAssignment(vi1, changeData,
+                        sharedState.localConditionManager, sharedState.evaluationContext)) {
+                    statementAnalysis.ensure(Message.newMessage(getLocation(),
+                            Message.Label.OVERWRITING_PREVIOUS_ASSIGNMENT, "variable " + variable.simpleName()));
+                }
+
                 Expression valueToWrite = maybeValueNeedsState(sharedState, vic, vi1, bestValue(changeData, vi1));
                 boolean valueToWriteIsDelayed = sharedState.evaluationContext.isDelayed(valueToWrite);
 
@@ -982,6 +988,25 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
 
         return new ApplyStatusAndEnnStatus(status, ennStatus.combine(extImmStatus
                 .combine(cImmStatus.combine(immutableAtAssignment))));
+    }
+
+    private boolean conditionsForOverwritingPreviousAssignment(VariableInfo vi1,
+                                                               EvaluationResult.ChangeData changeData,
+                                                               ConditionManager conditionManager,
+                                                               EvaluationContext evaluationContext) {
+        if (vi1.isAssigned() && !vi1.isRead() && changeData.markAssignment() &&
+                changeData.readAtStatementTime().isEmpty() && !(vi1.variable() instanceof ReturnVariable)) {
+            String index = StringUtil.stripLevel(vi1.getAssignmentId());
+            StatementAnalysis sa = myMethodAnalyser.findStatementAnalyser(index).statementAnalysis;
+            if (sa.stateData.conditionManagerForNextStatement.isVariable()) {
+                return false; // we'll be back
+            }
+            ConditionManager atAssignment = sa.stateData.conditionManagerForNextStatement.get();
+            Expression myAbsoluteState = conditionManager.absoluteState(evaluationContext);
+            Expression initialAbsoluteState = atAssignment.absoluteState(evaluationContext);
+            return initialAbsoluteState.equals(myAbsoluteState);
+        }
+        return false;
     }
 
     private static final int SUB_CM_NOT_PRESENT = -2;
@@ -2841,7 +2866,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                     Expression valueIsNull = Equals.equals(this, value, NullConstant.NULL_CONSTANT, false);
                     Expression evaluation = conditionManager.evaluate(this, valueIsNull);
                     if (evaluation.isBoolValueFalse()) {
-                        // FIXME should not necessarily be ENN, could be 45 depending
+                        // IMPROVE should not necessarily be ENN, could be 45 depending
                         return MultiLevel.bestNotNull(MultiLevel.EFFECTIVELY_NOT_NULL, directNN);
                     }
                 }

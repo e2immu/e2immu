@@ -155,8 +155,8 @@ public class Test_Util_01_SMapList extends CommonTestRunner {
                 }
                 // merge of the two above
                 if ("1.0.1".equals(d.statementId())) {
-                    String expectValue = d.iteration() == 0 ? "null==<m:get>?<v:change>||null==<m:get>:<m:addAll>"
-                            : "null==destination.get(e$1.getKey())?change$1||null==destination.get(e$1.getKey()):destination.get(e$1.getKey()).addAll(e$1.getValue())";
+                    String expectValue = d.iteration() == 0 ? "<m:addAll>||null==<m:get>"
+                            : "destination.get(e$1.getKey()).addAll(e$1.getValue())||null==destination.get(e$1.getKey())";
                     assertEquals(expectValue, d.currentValue().toString());
                     int expected = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
                     assertEquals(expected, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
