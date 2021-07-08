@@ -496,8 +496,9 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
 
         VariableInfoImpl existing = currentExcludingMerge();
         if (!merge.isSet()) {
-            merge.set(existing.mergeIntoNewObject(evaluationContext, stateOfDestination, atLeastOneBlockExecuted,
-                    mergeSources, groupPropertyValues));
+            VariableInfoImpl vii = existing.mergeIntoNewObject(evaluationContext, stateOfDestination, atLeastOneBlockExecuted,
+                    mergeSources, groupPropertyValues);
+            merge.set(vii);
         } else {
             merge.get().mergeIntoMe(evaluationContext, stateOfDestination, atLeastOneBlockExecuted, existing,
                     mergeSources, groupPropertyValues);

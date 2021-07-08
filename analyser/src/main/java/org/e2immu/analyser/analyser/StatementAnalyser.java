@@ -739,6 +739,9 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                         Map<VariableProperty, Integer> merged2 = mergeAssignment(localVar, valueToWriteIsDelayed, valueProperties, varProperties,
                                 changeData.properties(), groupPropertyValues);
                         remapStaticallyAssignedVariables.put(localVar, local.getPreviousOrInitial().getStaticallyAssignedVariables());
+
+                        local.ensureEvaluation(index() + EVALUATION, VariableInfoContainer.NOT_YET_READ,
+                                statementAnalysis.statementTime(EVALUATION), Set.of());
                         local.setValue(valueToWrite, valueToWriteIsDelayed, changeData.staticallyAssignedVariables(), merged2,
                                 false);
                         // because of the static assignment we can start empty
@@ -1009,13 +1012,10 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             // now check if we're in loop block, and there was an assignment outside
             // this loop block will not have an effect on the absolute state (See Loops_2, Loops_13)
             VariableInfoContainer initialVic = sa.variables.get(vi1.variable().fullyQualifiedName());
-            if (!(initialVic.variableNature() instanceof VariableNature.VariableDefinedOutsideLoop) &&
-                    vic.variableNature() instanceof VariableNature.VariableDefinedOutsideLoop loop &&
-                    !index().equals(loop.statementIndex())) {
-                // do raise an error when the assignment is in the loop condition
-                return false;
-            }
-            return true;
+            // do raise an error when the assignment is in the loop condition
+            return initialVic.variableNature() instanceof VariableNature.VariableDefinedOutsideLoop ||
+                    !(vic.variableNature() instanceof VariableNature.VariableDefinedOutsideLoop loop) ||
+                    index().equals(loop.statementIndex());
         }
         return false;
     }
@@ -1113,8 +1113,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 contextNotNull.put(loopVar, oneLevelLess);
                 externalNotNull.put(loopVar, MultiLevel.NOT_INVOLVED);
 
-                LocalVariableReference copyVar = statementAnalysis.createLocalLoopCopy(loopVar, index(),
-                        VariableInfoContainer.NOT_YET_ASSIGNED);
+                LocalVariableReference copyVar = statementAnalysis.createLocalLoopCopy(loopVar, index());
                 if (contextNotNull.containsKey(copyVar)) {
                     // can be delayed to the next iteration
                     contextNotNull.put(copyVar, MultiLevel.EFFECTIVELY_NOT_NULL);
@@ -1435,6 +1434,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
     private VariableInfoContainer addToAssignmentsInLoop(VariableInfoContainer vic, String fullyQualifiedName) {
         StatementAnalysis sa = statementAnalysis;
         String loopIndex = null;
+        boolean frozen = false;
         while (sa != null) {
             if (!sa.variables.isSet(fullyQualifiedName)) return null;
             VariableInfoContainer localVic = sa.variables.get(fullyQualifiedName);
@@ -1444,13 +1444,16 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                     sa.localVariablesAssignedInThisLoop.add(fullyQualifiedName);
                 }
                 loopIndex = sa.index;
+                frozen = sa.localVariablesAssignedInThisLoop.isFrozen();
             }
             sa = sa.parent;
         }
         assert loopIndex != null;
-
-        VariableInfo vi = vic.best(EVALUATION);
-        return statementAnalysis.ensureLocalLoopCopy(vi.variable(), loopIndex, vi.getAssignmentId());
+        if(!frozen) return null; // too early to do an assignment
+        Variable variable = vic.getPreviousOrInitial().variable();
+        Variable loopCopy = statementAnalysis.createLocalLoopCopy(variable, loopIndex);
+        // loop copy must exist already!
+        return statementAnalysis.variables.get(loopCopy.fullyQualifiedName());
     }
 
     private Expression bestValue(EvaluationResult.ChangeData valueChangeData, VariableInfo vi1) {
@@ -1729,21 +1732,20 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             VariableInfo vi = vic.best(EVALUATION); // NOT merge, merge is after the loop
             // assign to local variable that has been created at Level 2 in this statement
             String assigned = index() + VariableInfoContainer.Level.INITIAL;
-            LocalVariableReference loopCopy = statementAnalysis.createLocalLoopCopy(vi.variable(), index(), index());
+            LocalVariableReference loopCopy = statementAnalysis.createLocalLoopCopy(vi.variable(), index());
             String loopCopyFqn = loopCopy.fullyQualifiedName();
-            if (!statementAnalysis.variables.isSet(loopCopyFqn)) {
-                String read = index() + EVALUATION;
-                Expression newValue = NewObject.localVariableInLoop(index() + "-" + loopCopyFqn,
-                        statementAnalysis.primitives, vi.variable().parameterizedType());
-                Map<VariableProperty, Integer> valueProps = sharedState.evaluationContext.getValueProperties(newValue);
-                VariableInfoContainer newVic = VariableInfoContainerImpl.newLoopVariable(loopCopy, assigned,
-                        read,
-                        newValue,
-                        mergeValueAndLoopVar(valueProps, vi.getProperties().toImmutableMap()),
-                        new LinkedVariables(Set.of(vi.variable()), false),
-                        true);
-                statementAnalysis.variables.put(loopCopyFqn, newVic);
-            }
+            assert !statementAnalysis.variables.isSet(loopCopyFqn);
+            String read = index() + EVALUATION;
+            Expression newValue = NewObject.localVariableInLoop(index() + "-" + loopCopyFqn,
+                    statementAnalysis.primitives, vi.variable().parameterizedType());
+            Map<VariableProperty, Integer> valueProps = sharedState.evaluationContext.getValueProperties(newValue);
+            VariableInfoContainer newVic = VariableInfoContainerImpl.newLoopVariable(loopCopy, assigned,
+                    read,
+                    newValue,
+                    mergeValueAndLoopVar(valueProps, vi.getProperties().toImmutableMap()),
+                    new LinkedVariables(Set.of(vi.variable()), false),
+                    true);
+            statementAnalysis.variables.put(loopCopyFqn, newVic);
         });
         return expressionsToEvaluate;
     }

@@ -107,8 +107,7 @@ public interface VariableNature {
 
         @Override
         public boolean doNotCopyToNextStatement(boolean previousIsParent, String indexOfPrevious, String index) {
-            boolean res = !StringUtil.inScopeOf(scope, index);
-            return res;
+            return !StringUtil.inScopeOf(scope, index);
         }
 
         @Override
@@ -152,20 +151,13 @@ public interface VariableNature {
     assignment ID when there has been an assignment inside the loop
      */
     record CopyOfVariableInLoop(String statementIndex,
-                                String assignmentId,
                                 Variable localCopyOf) implements VariableNature {
         public CopyOfVariableInLoop {
-            assert statementIndex != null;
             assert localCopyOf != null;
-            assert assignmentId == null || assignmentId.startsWith(statementIndex);
         }
 
         public String suffix() {
-            String first = "$" + statementIndex;
-            if (assignmentId != null) {
-                return first + "$" + assignmentId;
-            }
-            return first;
+            return "$" + statementIndex;
         }
 
         @Override
@@ -186,11 +178,6 @@ public interface VariableNature {
         @Override
         public String getStatementIndexOfThisLoopOrLoopCopyVariable() {
             return statementIndex;
-        }
-
-        @Override
-        public boolean ignoreCurrent(String index) {
-            return assignmentId != null && assignmentId.startsWith(index);
         }
     }
 

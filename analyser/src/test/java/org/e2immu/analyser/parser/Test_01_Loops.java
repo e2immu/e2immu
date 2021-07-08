@@ -792,12 +792,21 @@ public class Test_01_Loops extends CommonTestRunner {
                     }
                 }
                 if ("i$2".equals(d.variableName())) {
-                    if ("2.0.0".equals(d.statementId())) {
-                        String expect = d.iteration() == 0 ? "<v:i>" : "instance type int";
+                    assertTrue(d.iteration() > 0);
+                    if ("2.0.0".equals(d.statementId()) || "2.0.1".equals(d.statementId())) {
+                        String expect = "instance type int";
+                        assertEquals(expect, d.currentValue().toString());
+                    }
+                    if ("2.0.2".equals(d.statementId())) {
+                        String expect = "1+i$2"; // self reference is fine
                         assertEquals(expect, d.currentValue().toString());
                     }
                 }
                 if ("j".equals(d.variableName())) {
+                    if ("2.0.0.0.0".equals(d.statementId())) {
+                        String expect = d.iteration() == 0 ? "3==<v:i>?10:<v:j>": "3==i$2?10:j$2";
+                        assertEquals(expect, d.currentValue().toString());
+                    }
                     if ("2.0.0".equals(d.statementId())) {
                         String expect = d.iteration() == 0 ? "3==<v:i>?10:9" : "3==i$2?10:9";
                         assertEquals(expect, d.currentValue().toString());
@@ -808,40 +817,43 @@ public class Test_01_Loops extends CommonTestRunner {
                     }
                 }
                 if ("j$2".equals(d.variableName())) {
-                    if ("2.0.0".equals(d.statementId())) {
-                        String expect = d.iteration() == 0 ? "<v:j>" : "instance type int";
+                    assertTrue(d.iteration() > 0);
+                    if ("2.0.0.0.0".equals(d.statementId())) {
+                        String expect = "3==i$2?10:j$2"; // self reference: evalContext.currentValue in maybeValueNeedsState
                         assertEquals(expect, d.currentValue().toString());
                     }
-                }
-                // created in the assignment in 2.0.0.0.0
-                if ("j$2$2.0.0.0.0-E".equals(d.variableName())) {
-                    assertTrue(d.statementId().compareTo("2") >= 0); // not in 0, 1
-                    String expect = d.iteration() == 0 ? "3==<v:i>?10:<v:j>" : "3==i$2?10:j$2";
-                    assertEquals(expect, d.currentValue().toString());
-                }
-
-                // created in the assignment in 2.0.1.0.0
-                // The previous value of j is required in "maybeValueNeedsState" --  this should be the j
-                // assigned in the merge of 2.0.0 (j$2$2.0.0:M)
-
-                if ("j$2$2.0.1.0.0-E".equals(d.variableName())) {
-                    assertTrue(d.statementId().compareTo("2.0.1") >= 0); // not in 2.0.0*
-
-                    if ("2.0.1.0.0".equals(d.statementId()) || "2.0.1".equals(d.statementId())) {
-                        // FIXME iteration 2 should see <v:j$2$2.0.0:M> converted into j$2
-                        String expect = d.iteration() == 0 ? "6==<v:i>?11:<v:j>" : "6==i$2?11:<v:j$2$2.0.0:M>";
+                    if ("2.0.0".equals(d.statementId())) { // FIXME no self reference?
+                        String expect = "3==i$2?10:instance type int";
+                        assertEquals(expect, d.currentValue().toString());
+                    }
+                    if ("2.0.1.0.0".equals(d.statementId())) {
+                        // FIXME 10 is not correct, should be 3==i$2?10:9
+                        String expect = "6==i$2?11:10";
+                        assertEquals(expect, d.currentValue().toString());
+                    }
+                    if ("2.0.1".equals(d.statementId())) {
+                        String expect = "6==i$2?11:3==i$2?10:instance type int";
                         assertEquals(expect, d.currentValue().toString());
                     }
                     if ("2.0.2".equals(d.statementId())) {
-                        // FIXME <v:i> and <v:j> need converting
-                        String expect = "6==<v:i>?11:<v:j>";
+                        String expect = "6==<v:i>?11:3==<v:i>?10:<v:j$2>";
                         assertEquals(expect, d.currentValue().toString());
                     }
                 }
             }
         };
+
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("method".equals(d.methodInfo().name) && "2".equals(d.statementId())) {
+                assertTrue(d.statementAnalysis().localVariablesAssignedInThisLoop.isFrozen());
+                assertEquals("i,j", d.statementAnalysis().localVariablesAssignedInThisLoop.toImmutableSet()
+                        .stream().sorted().collect(Collectors.joining(",")));
+            }
+        };
+
         testClass("Loops_14", 0, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build());
     }
 }

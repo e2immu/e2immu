@@ -515,13 +515,9 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             return StringUtil.inScopeOf(pattern.scope(), index);
         }
         if (copyIsParent) {
-            if (vic.variableNature() instanceof VariableNature.ConditionalInitialization) return false;
+            return !(vic.variableNature() instanceof VariableNature.ConditionalInitialization);
             // we'd only copy fields if they are used somewhere in the block. BUT there are "hidden" fields
             // such as local variables with an array initialiser containing fields as a value; conclusion: copy all, but don't merge unless used.
-            if (vic.variableNature() instanceof VariableNature.CopyOfVariableInLoop loopCopy) {
-                return loopCopy.assignmentId() == null || !loopCopy.assignmentId().startsWith(parent.index);
-            }
-            return true;
         }
         // don't continue local copies of loop variables beyond the loop
         return !copyFrom.index.equals(vic.variableNature().getStatementIndexOfThisLoopOrLoopCopyVariable());
@@ -743,27 +739,6 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         return messages.stream();
     }
 
-    public VariableInfoContainer ensureLocalLoopCopy(Variable original, String loopIndex, String assignmentId) {
-        LocalVariableReference lvr = createLocalLoopCopy(original, loopIndex, assignmentId);
-        String newFqn = lvr.fullyQualifiedName();
-
-        if (!variables.isSet(newFqn)) {
-            VariableInfoContainer newVic = VariableInfoContainerImpl.newVariable(lvr,
-                    VariableInfoContainer.NOT_A_VARIABLE_FIELD, lvr.variableNature(), navigationData.hasSubBlocks());
-            newVic.newVariableWithoutValue(); // at initial level
-            newVic.setStaticallyAssignedVariables(new LinkedVariables(Set.of(original), false), true);
-            String assigned = index() + VariableInfoContainer.Level.INITIAL;
-            String read = index() + EVALUATION;
-            newVic.ensureEvaluation(assigned, read, VariableInfoContainer.NOT_A_VARIABLE_FIELD, Set.of());
-
-            variables.put(newFqn, newVic);
-
-            // value and properties will be set in main apply
-            return newVic;
-        }
-        return variables.get(newFqn);
-    }
-
     LocalVariableReference createCopyOfVariableField(FieldReference fieldReference,
                                                      VariableInfo fieldVi,
                                                      int statementTime) {
@@ -789,15 +764,8 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         return createLocalCopy(fieldReference, copy);
     }
 
-    LocalVariableReference createLocalLoopCopy(Variable original, String statementIndexOfLoop, String assignmentId) {
-        String copyAssignmentId;
-        if (assignmentId.compareTo(statementIndexOfLoop) > 0) {
-            copyAssignmentId = assignmentId; // double $
-        } else {
-            copyAssignmentId = null; // single $
-        }
-        VariableNature.CopyOfVariableInLoop copy = new VariableNature.CopyOfVariableInLoop(statementIndexOfLoop,
-                copyAssignmentId, original);
+    LocalVariableReference createLocalLoopCopy(Variable original, String statementIndexOfLoop) {
+         VariableNature.CopyOfVariableInLoop copy = new VariableNature.CopyOfVariableInLoop(statementIndexOfLoop, original);
         return createLocalCopy(original, copy);
     }
 
@@ -1311,10 +1279,8 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                 StatementAnalysis relevantLoop = mostEnclosingLoop();
                 if (relevantLoop.localVariablesAssignedInThisLoop.isFrozen()) {
                     if (relevantLoop.localVariablesAssignedInThisLoop.contains(fqn)) {
-                        LocalVariableReference localCopy = createLocalLoopCopy(vi.variable(), relevantLoop.index, vi.getAssignmentId());
-                        if(!variables.isSet(localCopy.fullyQualifiedName())) {
-                            return new VariableInfoImpl(localCopy); // will be created later; no value, no state for now
-                        }
+                        LocalVariableReference localCopy = createLocalLoopCopy(vi.variable(), relevantLoop.index);
+                        // at this point we are certain the local copy exists
                         VariableInfoContainer newVic = variables.get(localCopy.fullyQualifiedName());
                         return newVic.getPreviousOrInitial();
                     }
