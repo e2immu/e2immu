@@ -779,5 +779,69 @@ public class Test_01_Loops extends CommonTestRunner {
                 .build());
     }
 
+    @Test
+    public void test_14() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("method".equals(d.methodInfo().name)) {
+                if ("i".equals(d.variableName())) {
+                    if ("2.0.0".equals(d.statementId())) {
+                        // the 0 is inaccessible, because inside loop 2, i$2 is read rather than i
+                        // this you can see in the "j"-"2.0.0" value
+                        String expect = d.iteration() == 0 ? "<v:i>" : "0";
+                        assertEquals(expect, d.currentValue().toString());
+                    }
+                }
+                if ("i$2".equals(d.variableName())) {
+                    if ("2.0.0".equals(d.statementId())) {
+                        String expect = d.iteration() == 0 ? "<v:i>" : "instance type int";
+                        assertEquals(expect, d.currentValue().toString());
+                    }
+                }
+                if ("j".equals(d.variableName())) {
+                    if ("2.0.0".equals(d.statementId())) {
+                        String expect = d.iteration() == 0 ? "3==<v:i>?10:9" : "3==i$2?10:9";
+                        assertEquals(expect, d.currentValue().toString());
+                    }
+                    if ("2.0.1".equals(d.statementId()) || "2.0.2".equals(d.statementId())) {
+                        String expect = d.iteration() == 0 ? "6==<v:i>?11:3==<v:i>?10:9" : "6==i$2?11:3==i$2?10:9";
+                        assertEquals(expect, d.currentValue().toString());
+                    }
+                }
+                if ("j$2".equals(d.variableName())) {
+                    if ("2.0.0".equals(d.statementId())) {
+                        String expect = d.iteration() == 0 ? "<v:j>" : "instance type int";
+                        assertEquals(expect, d.currentValue().toString());
+                    }
+                }
+                // created in the assignment in 2.0.0.0.0
+                if ("j$2$2.0.0.0.0-E".equals(d.variableName())) {
+                    assertTrue(d.statementId().compareTo("2") >= 0); // not in 0, 1
+                    String expect = d.iteration() == 0 ? "3==<v:i>?10:<v:j>" : "3==i$2?10:j$2";
+                    assertEquals(expect, d.currentValue().toString());
+                }
 
+                // created in the assignment in 2.0.1.0.0
+                // The previous value of j is required in "maybeValueNeedsState" --  this should be the j
+                // assigned in the merge of 2.0.0 (j$2$2.0.0:M)
+
+                if ("j$2$2.0.1.0.0-E".equals(d.variableName())) {
+                    assertTrue(d.statementId().compareTo("2.0.1") >= 0); // not in 2.0.0*
+
+                    if ("2.0.1.0.0".equals(d.statementId()) || "2.0.1".equals(d.statementId())) {
+                        // FIXME iteration 2 should see <v:j$2$2.0.0:M> converted into j$2
+                        String expect = d.iteration() == 0 ? "6==<v:i>?11:<v:j>" : "6==i$2?11:<v:j$2$2.0.0:M>";
+                        assertEquals(expect, d.currentValue().toString());
+                    }
+                    if ("2.0.2".equals(d.statementId())) {
+                        // FIXME <v:i> and <v:j> need converting
+                        String expect = "6==<v:i>?11:<v:j>";
+                        assertEquals(expect, d.currentValue().toString());
+                    }
+                }
+            }
+        };
+        testClass("Loops_14", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .build());
+    }
 }

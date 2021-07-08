@@ -1312,6 +1312,9 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                 if (relevantLoop.localVariablesAssignedInThisLoop.isFrozen()) {
                     if (relevantLoop.localVariablesAssignedInThisLoop.contains(fqn)) {
                         LocalVariableReference localCopy = createLocalLoopCopy(vi.variable(), relevantLoop.index, vi.getAssignmentId());
+                        if(!variables.isSet(localCopy.fullyQualifiedName())) {
+                            return new VariableInfoImpl(localCopy); // will be created later; no value, no state for now
+                        }
                         VariableInfoContainer newVic = variables.get(localCopy.fullyQualifiedName());
                         return newVic.getPreviousOrInitial();
                     }
