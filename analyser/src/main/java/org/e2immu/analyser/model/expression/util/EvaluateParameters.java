@@ -38,6 +38,7 @@ public class EvaluateParameters {
 
     public static Pair<EvaluationResult.Builder, List<Expression>> transform(List<Expression> parameterExpressions,
                                                                              EvaluationContext evaluationContext,
+                                                                             ForwardEvaluationInfo forwardEvaluationInfo,
                                                                              MethodInfo methodInfo,
                                                                              int notModified1Scope,
                                                                              boolean recursiveOrPartOfCallCycle,
@@ -140,7 +141,8 @@ public class EvaluateParameters {
 
                 minNotNullOverParameters = Math.min(minNotNullOverParameters, contextNotNull);
 
-                ForwardEvaluationInfo forward = new ForwardEvaluationInfo(map, true, false);
+                ForwardEvaluationInfo forward = new ForwardEvaluationInfo(map, true,
+                        forwardEvaluationInfo.assignmentTarget());
                 parameterResult = parameterExpression.evaluate(evaluationContext, forward);
                 parameterValue = parameterResult.value();
 

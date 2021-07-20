@@ -319,7 +319,8 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 VariableProperty.CONTEXT_MODIFIED, modified,
                 VariableProperty.CONTEXT_IMMUTABLE_DELAY, immutableData.delay,
                 VariableProperty.CONTEXT_IMMUTABLE, immutableData.required,
-                VariableProperty.NEXT_CONTEXT_IMMUTABLE, immutableData.next), true, false));
+                VariableProperty.NEXT_CONTEXT_IMMUTABLE, immutableData.next), true,
+                forwardEvaluationInfo.assignmentTarget()));
 
         // null scope
         Expression objectValue = objectResult.value();
@@ -330,7 +331,8 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         // process parameters
         int notModified1Scope = evaluationContext.getProperty(objectValue, VariableProperty.NOT_MODIFIED_1, true, false);
         Pair<EvaluationResult.Builder, List<Expression>> res = EvaluateParameters.transform(parameterExpressions,
-                evaluationContext, methodInfo, notModified1Scope, recursiveCall || partOfCallCycle, objectValue);
+                evaluationContext,forwardEvaluationInfo,
+                methodInfo, notModified1Scope, recursiveCall || partOfCallCycle, objectValue);
         List<Expression> parameterValues = res.v;
         builder.compose(objectResult, res.k.build());
 

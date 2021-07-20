@@ -384,6 +384,7 @@ class VariableInfoImpl implements VariableInfo {
 
         Expression mergedValue = evaluationContext.replaceLocalVariables(
                 previous.mergeValue(evaluationContext, stateOfDestination, atLeastOneBlockExecuted, mergeSources));
+
         setValue(mergedValue, evaluationContext.isDelayed(mergedValue));
         mergeStatementTime(evaluationContext, atLeastOneBlockExecuted, previous.getStatementTime(), mergeSources);
         if (!mergedValue.isDelayed(evaluationContext)) {
@@ -542,7 +543,7 @@ class VariableInfoImpl implements VariableInfo {
                                   Expression stateOfDestination,
                                   boolean atLeastOneBlockExecuted,
                                   List<StatementAnalysis.ConditionAndVariableInfo> mergeSources) {
-        Expression currentValue = getValue();
+        Expression currentValue = getVariableValue(variable);
         if (!atLeastOneBlockExecuted && currentValue.isUnknown()) return currentValue;
 
         if (mergeSources.isEmpty()) {
@@ -556,18 +557,20 @@ class VariableInfoImpl implements VariableInfo {
         List<StatementAnalysis.ConditionAndVariableInfo> reduced =
                 mergeSources.stream().filter(cav -> !cav.alwaysEscapes()).toList();
 
-        boolean allValuesIdentical = reduced.stream().allMatch(cav -> currentValue.equals(cav.variableInfo().getValue()));
+        boolean allValuesIdentical = reduced.stream().allMatch(cav ->
+                currentValue.equals(cav.variableInfo().getVariableValue(variable)));
         if (allValuesIdentical) return currentValue;
         boolean allReducedIdentical = atLeastOneBlockExecuted && reduced.stream().skip(1)
-                .allMatch(cav -> specialEquals(reduced.get(0).variableInfo().getValue(), cav.variableInfo().getValue()));
-        if (allReducedIdentical) return reduced.get(0).variableInfo().getValue();
+                .allMatch(cav -> specialEquals(reduced.get(0).variableInfo().getVariableValue(variable),
+                        cav.variableInfo().getVariableValue(variable)));
+        if (allReducedIdentical) return reduced.get(0).variableInfo().getVariableValue(variable);
 
         MergeHelper mergeHelper = new MergeHelper(evaluationContext, this);
 
         if (reduced.size() == 1) {
             StatementAnalysis.ConditionAndVariableInfo e = reduced.get(0);
             if (atLeastOneBlockExecuted) {
-                return e.variableInfo().getValue();
+                return e.variableInfo().getVariableValue(variable);
             }
             Expression result = mergeHelper.one(e.variableInfo(), stateOfDestination, e.condition());
             if (result != null) return result;
@@ -582,7 +585,7 @@ class VariableInfoImpl implements VariableInfo {
                 Expression result = mergeHelper.twoComplementary(e.variableInfo(), stateOfDestination, e.condition(), e2.variableInfo());
                 if (result != null) return result;
             } else if (e2.condition().isBoolValueTrue()) {
-                return e2.variableInfo().getValue();
+                return e2.variableInfo().getVariableValue(variable);
             }
         }
 
@@ -590,7 +593,7 @@ class VariableInfoImpl implements VariableInfo {
 
         // one thing we can already do: if the try statement ends with a 'finally', we return this value
         StatementAnalysis.ConditionAndVariableInfo eLast = reduced.get(reduced.size() - 1);
-        if (eLast.condition().isBoolValueTrue()) return eLast.variableInfo().getValue();
+        if (eLast.condition().isBoolValueTrue()) return eLast.variableInfo().getVariableValue(variable);
 
         if (reduced.stream().anyMatch(cav -> !cav.variableInfo().valueIsSet())) {
             // all are delayed, they're not all identical delayed field references.

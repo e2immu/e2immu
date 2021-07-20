@@ -188,59 +188,58 @@ public class Test_01_Loops extends CommonTestRunner {
                 }
             }
         };
-        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-            if (!"method".equals(d.methodInfo().name)) return;
-            if ("res2$2$2_0_2-E".equals(d.variableName())) {
-                assertTrue(d.variableInfo().isRead());
-            }
-            if ("res2$2".equals(d.variableName())) {
-                assertTrue(d.iteration() > 0);
-                if ("2.0.0".equals(d.statementId())) {
-                    assertEquals("nullable instance type String", d.currentValue().toString());
-                    assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
-                }
-                if ("2.0.2".equals(d.statementId())) {
-                    assertEquals("nullable instance type String", d.currentValue().toString());
-                    assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
-                }
-            }
-            if ("res2".equals(d.variableName())) {
-                if ("2.0.1.0.0".equals(d.statementId())) {
-                    if (d.variableInfoContainer().variableNature() instanceof VariableNature.VariableDefinedOutsideLoop v) {
-                        assertEquals("2", v.statementIndex());
-                    } else fail();
-                    assertTrue(d.variableInfoContainer().variableNature() instanceof VariableNature.VariableDefinedOutsideLoop);
-                }
-                if ("2.0.0".equals(d.statementId()) || "2.0.1".equals(d.statementId())) {
-                    if (d.variableInfoContainer().variableNature() instanceof VariableNature.VariableDefinedOutsideLoop v) {
-                        assertEquals("2", v.statementIndex());
-                    } else fail();
-                }
-                if ("2.0.2".equals(d.statementId())) {
-                    // statement says: res="abc", but the value takes the state into account
-                    String expectValue = d.iteration() == 0 ? DELAYED_BY_STATE : "-1-i$2+n>=1?\"abc\":res2$2";
-                    assertEquals(expectValue, d.variableInfo().getValue().toString());
-                    // clearly, NNE has to follow the value rather than the actual assignment
-                    int expectNNE = d.iteration() == 0 ? Level.DELAY : MultiLevel.NULLABLE;
-                    assertEquals(expectNNE, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
-                }
-                if ("2".equals(d.statementId())) {
-                    String expectValue = d.iteration() == 0 ? DELAYED_BY_STATE : END_RESULT;
-                    assertEquals(expectValue, d.variableInfo().getValue().toString());
 
-                    // first, understanding how this works...
-                    Primitives primitives = d.evaluationContext().getCurrentStatement().statementAnalysis.primitives;
-                    NewObject string1 = NewObject.forTesting(primitives, primitives.stringParameterizedType);
-                    assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, string1.getProperty(d.evaluationContext(), VariableProperty.NOT_NULL_EXPRESSION, true));
-                    Map<VariableProperty, Integer> map = Map.of(VariableProperty.NOT_NULL_EXPRESSION, MultiLevel.NULLABLE);
-                    Expression string1Wrapped = PropertyWrapper.propertyWrapper(string1, map);
-                    assertEquals(MultiLevel.NULLABLE, string1Wrapped.getProperty(d.evaluationContext(), VariableProperty.NOT_NULL_EXPRESSION, true));
-                    Expression inline = EvaluateInlineConditional.conditionalValueConditionResolved(d.evaluationContext(),
-                            GreaterThanZero.greater(d.evaluationContext(), NewObject.forTesting(primitives, primitives.intParameterizedType),
-                                    new IntConstant(primitives, 0), true),
-                            new StringConstant(primitives, "abc"), string1Wrapped).value();
-                    assertEquals(END_RESULT_NO_OPERATIONS, inline.toString());
-                    assertEquals(MultiLevel.NULLABLE, inline.getProperty(d.evaluationContext(), VariableProperty.NOT_NULL_EXPRESSION, true));
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("method".equals(d.methodInfo().name)) {
+                if ("res2$2".equals(d.variableName())) {
+                    assertTrue(d.iteration() > 0);
+                    if ("2.0.0".equals(d.statementId())) {
+                        assertEquals("nullable instance type String", d.currentValue().toString());
+                        assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                    }
+                    if ("2.0.2".equals(d.statementId())) {
+                        assertEquals("-1-i$2+n>=1?\"abc\":nullable instance type String", d.currentValue().toString());
+                        assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                    }
+                }
+                if ("res2".equals(d.variableName())) {
+                    if ("2.0.1.0.0".equals(d.statementId())) {
+                        if (d.variableInfoContainer().variableNature() instanceof VariableNature.VariableDefinedOutsideLoop v) {
+                            assertEquals("2", v.statementIndex());
+                        } else fail();
+                        assertTrue(d.variableInfoContainer().variableNature() instanceof VariableNature.VariableDefinedOutsideLoop);
+                    }
+                    if ("2.0.0".equals(d.statementId()) || "2.0.1".equals(d.statementId())) {
+                        if (d.variableInfoContainer().variableNature() instanceof VariableNature.VariableDefinedOutsideLoop v) {
+                            assertEquals("2", v.statementIndex());
+                        } else fail();
+                    }
+                    if ("2.0.2".equals(d.statementId())) {
+                        // statement says: res="abc", but the value takes the state into account
+                        String expectValue = d.iteration() == 0 ? DELAYED_BY_STATE : "-1-i$2+n>=1?\"abc\":res2$2";
+                        assertEquals(expectValue, d.variableInfo().getValue().toString());
+                        // clearly, NNE has to follow the value rather than the actual assignment
+                        int expectNNE = d.iteration() == 0 ? Level.DELAY : MultiLevel.NULLABLE;
+                        assertEquals(expectNNE, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                    }
+                    if ("2".equals(d.statementId())) {
+                        String expectValue = d.iteration() == 0 ? DELAYED_BY_STATE : END_RESULT;
+                        assertEquals(expectValue, d.variableInfo().getValue().toString());
+
+                        // first, understanding how this works...
+                        Primitives primitives = d.evaluationContext().getCurrentStatement().statementAnalysis.primitives;
+                        NewObject string1 = NewObject.forTesting(primitives, primitives.stringParameterizedType);
+                        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, string1.getProperty(d.evaluationContext(), VariableProperty.NOT_NULL_EXPRESSION, true));
+                        Map<VariableProperty, Integer> map = Map.of(VariableProperty.NOT_NULL_EXPRESSION, MultiLevel.NULLABLE);
+                        Expression string1Wrapped = PropertyWrapper.propertyWrapper(string1, map);
+                        assertEquals(MultiLevel.NULLABLE, string1Wrapped.getProperty(d.evaluationContext(), VariableProperty.NOT_NULL_EXPRESSION, true));
+                        Expression inline = EvaluateInlineConditional.conditionalValueConditionResolved(d.evaluationContext(),
+                                GreaterThanZero.greater(d.evaluationContext(), NewObject.forTesting(primitives, primitives.intParameterizedType),
+                                        new IntConstant(primitives, 0), true),
+                                new StringConstant(primitives, "abc"), string1Wrapped).value();
+                        assertEquals(END_RESULT_NO_OPERATIONS, inline.toString());
+                        assertEquals(MultiLevel.NULLABLE, inline.getProperty(d.evaluationContext(), VariableProperty.NOT_NULL_EXPRESSION, true));
+                    }
                 }
             }
         };
@@ -539,7 +538,9 @@ public class Test_01_Loops extends CommonTestRunner {
             if (!"method".equals(d.methodInfo().name)) return;
             if ("i$1".equals(d.variableName())) {
                 assertTrue(d.iteration() > 0);
-                assertEquals("instance type int", d.currentValue().toString());
+                if("1.0.0".equals(d.statementId())) {
+                    assertEquals("1+i$1", d.currentValue().toString());
+                }
             }
             if ("i".equals(d.variableName())) {
                 if ("1.0.0".equals(d.statementId())) {
@@ -798,13 +799,13 @@ public class Test_01_Loops extends CommonTestRunner {
                         assertEquals(expect, d.currentValue().toString());
                     }
                     if ("2.0.2".equals(d.statementId())) {
-                        String expect = "1+i$2"; // self reference is fine
+                        String expect = "n>i$2?1+i$2:instance type int";
                         assertEquals(expect, d.currentValue().toString());
                     }
                 }
                 if ("j".equals(d.variableName())) {
                     if ("2.0.0.0.0".equals(d.statementId())) {
-                        String expect = d.iteration() == 0 ? "3==<v:i>?10:<v:j>": "3==i$2?10:j$2";
+                        String expect = d.iteration() == 0 ? "3==<v:i>?10:<v:j>" : "3==i$2?10:j$2";
                         assertEquals(expect, d.currentValue().toString());
                     }
                     if ("2.0.0".equals(d.statementId())) {
@@ -818,25 +819,13 @@ public class Test_01_Loops extends CommonTestRunner {
                 }
                 if ("j$2".equals(d.variableName())) {
                     assertTrue(d.iteration() > 0);
-                    if ("2.0.0.0.0".equals(d.statementId())) {
-                        String expect = "3==i$2?10:j$2"; // self reference: evalContext.currentValue in maybeValueNeedsState
-                        assertEquals(expect, d.currentValue().toString());
-                    }
-                    if ("2.0.0".equals(d.statementId())) { // FIXME no self reference?
+                    if ("2.0.0.0.0".equals(d.statementId()) || "2.0.0".equals(d.statementId())) {
                         String expect = "3==i$2?10:instance type int";
                         assertEquals(expect, d.currentValue().toString());
                     }
-                    if ("2.0.1.0.0".equals(d.statementId())) {
-                        // FIXME 10 is not correct, should be 3==i$2?10:9
-                        String expect = "6==i$2?11:10";
-                        assertEquals(expect, d.currentValue().toString());
-                    }
-                    if ("2.0.1".equals(d.statementId())) {
+                    if ("2.0.1.0.0".equals(d.statementId())
+                            || "2.0.1".equals(d.statementId()) || "2.0.2".equals(d.statementId())) {
                         String expect = "6==i$2?11:3==i$2?10:instance type int";
-                        assertEquals(expect, d.currentValue().toString());
-                    }
-                    if ("2.0.2".equals(d.statementId())) {
-                        String expect = "6==<v:i>?11:3==<v:i>?10:<v:j$2>";
                         assertEquals(expect, d.currentValue().toString());
                     }
                 }
@@ -844,10 +833,16 @@ public class Test_01_Loops extends CommonTestRunner {
         };
 
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
-            if ("method".equals(d.methodInfo().name) && "2".equals(d.statementId())) {
-                assertTrue(d.statementAnalysis().localVariablesAssignedInThisLoop.isFrozen());
-                assertEquals("i,j", d.statementAnalysis().localVariablesAssignedInThisLoop.toImmutableSet()
-                        .stream().sorted().collect(Collectors.joining(",")));
+            if ("method".equals(d.methodInfo().name)) {
+                if ("2".equals(d.statementId())) {
+                    assertTrue(d.statementAnalysis().localVariablesAssignedInThisLoop.isFrozen());
+                    assertEquals("i,j", d.statementAnalysis().localVariablesAssignedInThisLoop.toImmutableSet()
+                            .stream().sorted().collect(Collectors.joining(",")));
+                }
+                if ("2.0.0".equals(d.statementId())) {
+                    String expected = d.iteration() == 0 ? "n><v:i>" : "n>i$2";
+                    assertEquals(expected, d.absoluteState().toString());
+                }
             }
         };
 

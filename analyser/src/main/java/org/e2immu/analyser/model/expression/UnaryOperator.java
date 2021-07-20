@@ -76,7 +76,7 @@ public class UnaryOperator implements Expression {
 
     @Override
     public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
-        EvaluationResult evaluationResult = expression.evaluate(evaluationContext, ForwardEvaluationInfo.NOT_NULL);
+        EvaluationResult evaluationResult = expression.evaluate(evaluationContext, forwardEvaluationInfo.copyNotNull());
         return new EvaluationResult.Builder(evaluationContext)
                 .compose(evaluationResult)
                 .setExpression(computeValue(evaluationContext, evaluationContext.getPrimitives(), evaluationResult))

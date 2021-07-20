@@ -119,8 +119,8 @@ public class ArrayAccess implements Expression {
 
     @Override
     public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
-        EvaluationResult array = expression.evaluate(evaluationContext, ForwardEvaluationInfo.NOT_NULL);
-        EvaluationResult indexValue = index.evaluate(evaluationContext, ForwardEvaluationInfo.NOT_NULL);
+        EvaluationResult array = expression.evaluate(evaluationContext, forwardEvaluationInfo.copyNotNull());
+        EvaluationResult indexValue = index.evaluate(evaluationContext, forwardEvaluationInfo.copyNotNull());
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext).compose(array, indexValue);
 
         if (array.value() instanceof ArrayInitializer arrayValue && indexValue.value() instanceof Numeric in) {

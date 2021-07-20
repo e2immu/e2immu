@@ -34,7 +34,7 @@ public class EventuallyFinalExtension {
             try {
                 eventuallyFinal.setFinal(t);
             } catch (RuntimeException re) {
-                LOGGER.error("Overwriting effectively value: old: {}, new {}", eventuallyFinal.get(), t);
+                LOGGER.error("Overwriting final value: old: {}, new {}", eventuallyFinal.get(), t);
                 throw re;
             }
         }

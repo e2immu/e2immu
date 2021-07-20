@@ -16,6 +16,8 @@ package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.model.variable.FieldReference;
+import org.e2immu.analyser.model.variable.Variable;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -23,13 +25,17 @@ import java.util.StringJoiner;
 
 public record ForwardEvaluationInfo(Map<VariableProperty, Integer> properties,
                                     boolean notAssignmentTarget,
-                                    boolean assignToField) {
+                                    Variable assignmentTarget) {
 
     public ForwardEvaluationInfo(Map<VariableProperty, Integer> properties, boolean notAssignmentTarget,
-                                 boolean assignToField) {
+                                 Variable assignmentTarget) {
         this.properties = Map.copyOf(properties);
         this.notAssignmentTarget = notAssignmentTarget;
-        this.assignToField = assignToField;
+        this.assignmentTarget = assignmentTarget;
+    }
+
+    public boolean assignToField() {
+        return assignmentTarget instanceof FieldReference;
     }
 
     public int getProperty(VariableProperty variableProperty) {
@@ -48,26 +54,36 @@ public record ForwardEvaluationInfo(Map<VariableProperty, Integer> properties,
     }
 
     public static ForwardEvaluationInfo DEFAULT = new ForwardEvaluationInfo(
-            Map.of(VariableProperty.CONTEXT_NOT_NULL, MultiLevel.NULLABLE), true, false);
+            Map.of(VariableProperty.CONTEXT_NOT_NULL, MultiLevel.NULLABLE), true, null);
+
+    public ForwardEvaluationInfo copyDefault() {
+        return new ForwardEvaluationInfo(Map.of(VariableProperty.CONTEXT_NOT_NULL, MultiLevel.NULLABLE), true, assignmentTarget);
+    }
 
     // the FALSE on not-null is because we intend to set it, so it really does not matter what the current value is
     public static ForwardEvaluationInfo ASSIGNMENT_TARGET = new ForwardEvaluationInfo(
             Map.of(VariableProperty.CONTEXT_NOT_NULL, MultiLevel.NULLABLE),
-            false, false);
+            false, null);
 
     public static ForwardEvaluationInfo NOT_NULL = new ForwardEvaluationInfo(
             Map.of(VariableProperty.CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL),
-            true, false);
+            true, null);
+
+    public ForwardEvaluationInfo copyNotNull() {
+        return new ForwardEvaluationInfo(
+                Map.of(VariableProperty.CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL),
+                true, assignmentTarget);
+    }
 
     public ForwardEvaluationInfo copyModificationEnsureNotNull() {
         Map<VariableProperty, Integer> map = new HashMap<>();
         map.put(VariableProperty.CONTEXT_MODIFIED,
                 properties.getOrDefault(VariableProperty.CONTEXT_MODIFIED, Level.DELAY));
         map.put(VariableProperty.CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
-        return new ForwardEvaluationInfo(map, true, assignToField);
+        return new ForwardEvaluationInfo(map, true, assignmentTarget);
     }
 
-    public ForwardEvaluationInfo copyAddAssignToField() {
-        return new ForwardEvaluationInfo(properties, notAssignmentTarget, true);
+    public ForwardEvaluationInfo copyAddAssignmentTarget(Variable variable) {
+        return new ForwardEvaluationInfo(properties, notAssignmentTarget, variable);
     }
 }

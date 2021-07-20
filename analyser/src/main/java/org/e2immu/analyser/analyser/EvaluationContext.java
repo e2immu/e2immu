@@ -74,6 +74,10 @@ public interface EvaluationContext extends DelayDebugger {
         throw new UnsupportedOperationException();
     }
 
+    default EvaluationContext dropConditionManager() {
+        throw new UnsupportedOperationException();
+    }
+
     default EvaluationContext child(Expression condition, boolean disableEvaluationOfMethodCallsUsingCompanionMethods) {
         return child(condition);
     }

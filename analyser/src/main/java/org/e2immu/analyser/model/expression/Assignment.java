@@ -181,9 +181,8 @@ public class Assignment implements Expression {
     @Override
     public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
-        VariableExpression ve;
-        boolean assignToField = (ve = target.asInstanceOf(VariableExpression.class)) != null && ve.variable() instanceof FieldReference;
-        ForwardEvaluationInfo fwd = assignToField ? forwardEvaluationInfo.copyAddAssignToField() : forwardEvaluationInfo;
+        VariableExpression ve = target.asInstanceOf(VariableExpression.class);
+        ForwardEvaluationInfo fwd = forwardEvaluationInfo.copyAddAssignmentTarget(ve == null ? null : ve.variable());
 
         EvaluationResult valueResult = value.evaluate(evaluationContext, fwd);
 

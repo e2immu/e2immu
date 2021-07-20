@@ -707,7 +707,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                             Message.Label.OVERWRITING_PREVIOUS_ASSIGNMENT, "variable " + variable.simpleName()));
                 }
 
-                Expression valueToWrite = maybeValueNeedsState(sharedState, vic, vi1, bestValue(changeData, vi1));
+                Expression bestValue = bestValue(changeData, vi1);
+                Expression valueToWrite = maybeValueNeedsState(sharedState, vic, variable, bestValue);
                 boolean valueToWriteIsDelayed = sharedState.evaluationContext.isDelayed(valueToWrite);
 
                 log(ANALYSER, "Write value {} to variable {}", valueToWrite, variable.fullyQualifiedName());
@@ -735,14 +736,17 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                     // assign the value of the assignment to the local copy created
                     if (local != null) {
                         Variable localVar = local.current().variable();
-                        log(ANALYSER, "Write value {} to local copy variable {}", valueToWrite, localVar.fullyQualifiedName());
+                        // calculation needs to be done again, this time with the local copy rather than the original
+                        // (so that we can replace the local one with instance)
+                        Expression valueToWrite2 = maybeValueNeedsState(sharedState, vic, localVar, bestValue);
+                        log(ANALYSER, "Write value {} to local copy variable {}", valueToWrite2, localVar.fullyQualifiedName());
                         Map<VariableProperty, Integer> merged2 = mergeAssignment(localVar, valueToWriteIsDelayed, valueProperties, varProperties,
                                 changeData.properties(), groupPropertyValues);
                         remapStaticallyAssignedVariables.put(localVar, local.getPreviousOrInitial().getStaticallyAssignedVariables());
 
                         local.ensureEvaluation(index() + EVALUATION, VariableInfoContainer.NOT_YET_READ,
                                 statementAnalysis.statementTime(EVALUATION), Set.of());
-                        local.setValue(valueToWrite, valueToWriteIsDelayed, changeData.staticallyAssignedVariables(), merged2,
+                        local.setValue(valueToWrite2, valueToWriteIsDelayed, changeData.staticallyAssignedVariables(), merged2,
                                 false);
                         // because of the static assignment we can start empty
                         local.setLinkedVariables(LinkedVariables.EMPTY, false);
@@ -756,7 +760,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                         status = DELAYS;
                     }
                 }
-            } else {
+            } else if (!assignmentToNonCopy(vic, evaluationResult)) {
                 if (changeData.value() != null) {
                     // a modifying method caused an updated instance value
                     // for statically assigned variables, EMPTY means: take the value of the initial, unless it has no value
@@ -991,6 +995,15 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
 
         return new ApplyStatusAndEnnStatus(status, ennStatus.combine(extImmStatus
                 .combine(cImmStatus.combine(immutableAtAssignment))));
+    }
+
+    private boolean assignmentToNonCopy(VariableInfoContainer vic, EvaluationResult evaluationResult) {
+        if (vic.variableNature() instanceof VariableNature.CopyOfVariableInLoop) {
+            Variable original = vic.variableNature().localCopyOf();
+            EvaluationResult.ChangeData changeData = evaluationResult.changeData().get(original);
+            if (changeData != null && changeData.markAssignment()) return true;
+        }
+        return false;
     }
 
     private boolean conditionsForOverwritingPreviousAssignment(VariableInfo vi1,
@@ -1393,7 +1406,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
 
     Q: what is the best place for this piece of code? EvalResult?? This here seems too late
      */
-    private Expression maybeValueNeedsState(SharedState sharedState, VariableInfoContainer vic, VariableInfo vi1,
+    private Expression maybeValueNeedsState(SharedState sharedState, VariableInfoContainer vic, Variable variable,
                                             Expression value) {
         boolean valueIsDelayed = sharedState.evaluationContext.isDelayed(value);
         if (valueIsDelayed || !(vic.variableNature() instanceof VariableNature.VariableDefinedOutsideLoop)) {
@@ -1413,12 +1426,17 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             state = null;
         }
         if (state != null) {
+            ForwardEvaluationInfo fwd = new ForwardEvaluationInfo(Map.of(), true, variable);
             // do not take vi1 itself, but "the" local copy of the variable
-            Expression valueOfVariablePreAssignment = sharedState.evaluationContext.currentValue(vi1.variable(),
-                    statementAnalysis.statementTime(VariableInfoContainer.Level.INITIAL),
-                    ForwardEvaluationInfo.DEFAULT);
-            InlineConditional inlineConditional = new InlineConditional(analyserContext, state, value, valueOfVariablePreAssignment);
-            return inlineConditional.optimise(sharedState.evaluationContext);
+            Expression valueOfVariablePreAssignment = sharedState.evaluationContext.currentValue(variable,
+                    statementAnalysis.statementTime(VariableInfoContainer.Level.INITIAL), fwd);
+            // we re-evaluate to move from i$2 (local copy) to instance again,  if the target is i$2 itself
+
+          //  Expression stateReevaluated = state.evaluate(sharedState.evaluationContext, fwd).getExpression();
+         //   Expression reValue = value.evaluate(sharedState.evaluationContext, fwd).getExpression();
+            InlineConditional inlineConditional = new InlineConditional(analyserContext, state,
+                    value, valueOfVariablePreAssignment);
+            return inlineConditional.optimise(sharedState.evaluationContext.dropConditionManager());
         }
         return value;
     }
@@ -1449,7 +1467,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             sa = sa.parent;
         }
         assert loopIndex != null;
-        if(!frozen) return null; // too early to do an assignment
+        if (!frozen) return null; // too early to do an assignment
         Variable variable = vic.getPreviousOrInitial().variable();
         Variable loopCopy = statementAnalysis.createLocalLoopCopy(variable, loopIndex);
         // loop copy must exist already!
@@ -1734,18 +1752,19 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             String assigned = index() + VariableInfoContainer.Level.INITIAL;
             LocalVariableReference loopCopy = statementAnalysis.createLocalLoopCopy(vi.variable(), index());
             String loopCopyFqn = loopCopy.fullyQualifiedName();
-            assert !statementAnalysis.variables.isSet(loopCopyFqn);
-            String read = index() + EVALUATION;
-            Expression newValue = NewObject.localVariableInLoop(index() + "-" + loopCopyFqn,
-                    statementAnalysis.primitives, vi.variable().parameterizedType());
-            Map<VariableProperty, Integer> valueProps = sharedState.evaluationContext.getValueProperties(newValue);
-            VariableInfoContainer newVic = VariableInfoContainerImpl.newLoopVariable(loopCopy, assigned,
-                    read,
-                    newValue,
-                    mergeValueAndLoopVar(valueProps, vi.getProperties().toImmutableMap()),
-                    new LinkedVariables(Set.of(vi.variable()), false),
-                    true);
-            statementAnalysis.variables.put(loopCopyFqn, newVic);
+            if(!statementAnalysis.variables.isSet(loopCopyFqn)) {
+                String read = index() + EVALUATION;
+                Expression newValue = NewObject.localVariableInLoop(index() + "-" + loopCopyFqn,
+                        statementAnalysis.primitives, vi.variable().parameterizedType());
+                Map<VariableProperty, Integer> valueProps = sharedState.evaluationContext.getValueProperties(newValue);
+                VariableInfoContainer newVic = VariableInfoContainerImpl.newLoopVariable(loopCopy, assigned,
+                        read,
+                        newValue,
+                        mergeValueAndLoopVar(valueProps, vi.getProperties().toImmutableMap()),
+                        new LinkedVariables(Set.of(vi.variable()), false),
+                        true);
+                statementAnalysis.variables.put(loopCopyFqn, newVic);
+            }
         });
         return expressionsToEvaluate;
     }
@@ -2774,6 +2793,12 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                     disableEvaluationOfMethodCallsUsingCompanionMethods);
         }
 
+        @Override
+        public EvaluationContext dropConditionManager() {
+            ConditionManager cm = ConditionManager.initialConditionManager(getPrimitives());
+            return new EvaluationContextImpl(iteration, cm, closure, disableEvaluationOfMethodCallsUsingCompanionMethods);
+        }
+
         public EvaluationContext childState(Expression state) {
             Set<Variable> stateIsDelayed = isDelayedSet(state);
             return new EvaluationContextImpl(iteration, conditionManager.addState(state, stateIsDelayed), closure,
@@ -2936,12 +2961,14 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         @Override
         public Expression currentValue(Variable variable, int statementTime, ForwardEvaluationInfo forwardEvaluationInfo) {
             VariableInfo variableInfo = findForReading(variable, statementTime, forwardEvaluationInfo.isNotAssignmentTarget());
-            Expression value = variableInfo.getValue();
+
             // important! do not use variable in the next statement, but variableInfo.variable()
             // we could have redirected from a variable field to a local variable copy
-            return value.isInstanceOf(NewObject.class) && (!forwardEvaluationInfo.assignToField() ||
-                    !(variable instanceof LocalVariableReference lvr && lvr.variable.nature().localCopyOf() == null))
-                    ? new VariableExpression(variableInfo.variable()) : value;
+            if (forwardEvaluationInfo.assignToField()
+                    && variable instanceof LocalVariableReference lvr && lvr.variable.nature().localCopyOf() == null) {
+                return variableInfo.getValue();
+            }
+            return variableInfo.getVariableValue(forwardEvaluationInfo.assignmentTarget());
         }
 
         @Override

@@ -103,7 +103,7 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
                     VariableProperty.CONTEXT_MODIFIED_DELAY, contextModifiedDelay,
                     VariableProperty.CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
 
-            scopeForward = new ForwardEvaluationInfo(map, true, false);
+            scopeForward = new ForwardEvaluationInfo(map, true, forwardEvaluationInfo.assignmentTarget());
 
             // as in MethodCall, we transfer modification of static methods onto 'this'
             if (methodInfo.methodInspection.get().isStatic()) {
@@ -113,7 +113,7 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
                 builder.setProperty(thisType, VariableProperty.METHOD_CALLED, Level.TRUE);
             }
         } else {
-            scopeForward = ForwardEvaluationInfo.NOT_NULL;
+            scopeForward = forwardEvaluationInfo.copyNotNull();
         }
         EvaluationResult scopeResult = scope.evaluate(evaluationContext, scopeForward);
         builder.compose(scopeResult);

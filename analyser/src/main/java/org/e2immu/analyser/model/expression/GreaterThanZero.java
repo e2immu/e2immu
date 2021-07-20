@@ -254,7 +254,9 @@ public record GreaterThanZero(ParameterizedType booleanParameterizedType,
 
     @Override
     public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
-        return new EvaluationResult.Builder().setExpression(this).build();
+        EvaluationResult er = expression.evaluate(evaluationContext, forwardEvaluationInfo);
+        GreaterThanZero gtz = new GreaterThanZero(booleanParameterizedType, er.getExpression(), allowEquals);
+        return new EvaluationResult.Builder().compose(er).setExpression(gtz).build();
     }
 
     @Override

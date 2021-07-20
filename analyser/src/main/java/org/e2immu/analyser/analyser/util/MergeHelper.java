@@ -115,27 +115,31 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfo vi) 
     */
 
     public Expression one(VariableInfo vi1, Expression stateOfParent, Expression condition) {
+        Expression vi1value = vi1.getVariableValue(vi.variable());
         if (condition.isBoolValueTrue()) {
 
             // this if-statement replays the code in level 3 return statement:
             // it is identical to do if(x) return a; return b or if(x) return a; if(!x) return b;
             if (vi.variable() instanceof ReturnVariable) {
-                if (stateOfParent.isBoolValueTrue()) return vi1.getValue();
+                if (stateOfParent.isBoolValueTrue()) return vi1value;
                 if (vi.variable().parameterizedType().equals(evaluationContext.getPrimitives().booleanParameterizedType)) {
-                    return and(stateOfParent, vi1.getValue());
+                    return and(stateOfParent, vi1value);
                 }
-                return inlineConditional(stateOfParent, vi1.getValue(), vi.getValue());
+                return inlineConditional(stateOfParent, vi1value, vi.getValue());
             }
-            return vi1.getValue(); // so we by-pass the "safe" in inlineConditional
+            return vi1value; // so we by-pass the "safe" in inlineConditional
         }
-        return inlineConditional(condition, vi1.getValue(), vi.getValue());
+        return inlineConditional(condition, vi1value, vi.getValue());
     }
 
     public Expression twoComplementary(VariableInfo vi1, Expression stateOfParent, Expression firstCondition, VariableInfo vi2) {
         Expression two;
-        if (firstCondition.isBoolValueTrue()) two = vi1.getValue(); // to bypass the error check on "safe"
-        else if (firstCondition.isBoolValueFalse()) two = vi2.getValue();
-        else two = inlineConditional(firstCondition, vi1.getValue(), vi2.getValue());
+
+        if (firstCondition.isBoolValueTrue())
+            two = vi1.getVariableValue(vi.variable()); // to bypass the error check on "safe"
+        else if (firstCondition.isBoolValueFalse()) two = vi2.getVariableValue(vi.variable());
+        else
+            two = inlineConditional(firstCondition, vi1.getVariableValue(vi.variable()), vi2.getVariableValue(vi.variable()));
 
         if (vi.variable() instanceof ReturnVariable) {
             if (stateOfParent.isBoolValueTrue()) return two;

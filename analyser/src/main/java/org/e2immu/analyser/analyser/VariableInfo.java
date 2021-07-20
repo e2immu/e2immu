@@ -15,6 +15,8 @@
 package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.expression.NewObject;
+import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.model.variable.VariableNature;
@@ -42,6 +44,15 @@ public interface VariableInfo {
     }
 
     Expression getValue();
+
+    default Expression getVariableValue(Variable myself) {
+        Expression value = getValue();
+        Variable v = variable();
+        if (!v.equals(myself) && value.isInstanceOf(NewObject.class)) {
+            return new VariableExpression(v);
+        }
+        return value;
+    }
 
     default boolean isDelayed() {
         return !valueIsSet();

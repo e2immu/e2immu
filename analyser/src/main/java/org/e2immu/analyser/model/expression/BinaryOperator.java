@@ -123,13 +123,14 @@ public class BinaryOperator implements Expression {
         // we need to handle the short-circuit operators differently
         Primitives primitives = evaluationContext.getPrimitives();
         if (operator == primitives.orOperatorBool) {
-            return shortCircuit(evaluationContext, false);
+            return shortCircuit(evaluationContext, forwardEvaluationInfo, false);
         }
         if (operator == primitives.andOperatorBool) {
-            return shortCircuit(evaluationContext, true);
+            return shortCircuit(evaluationContext, forwardEvaluationInfo, true);
         }
 
-        ForwardEvaluationInfo forward = allowsForNullOperands(primitives) ? ForwardEvaluationInfo.DEFAULT : ForwardEvaluationInfo.NOT_NULL;
+        ForwardEvaluationInfo forward = allowsForNullOperands(primitives)
+                ? forwardEvaluationInfo.copyDefault() : forwardEvaluationInfo.copyNotNull();
         EvaluationResult leftResult = lhs.evaluate(evaluationContext, forward);
         EvaluationResult rightResult = rhs.evaluate(evaluationContext, forward);
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext).compose(leftResult, rightResult);
@@ -249,8 +250,10 @@ public class BinaryOperator implements Expression {
         throw new UnsupportedOperationException("Operator " + operator.fullyQualifiedName());
     }
 
-    private EvaluationResult shortCircuit(EvaluationContext evaluationContext, boolean and) {
-        ForwardEvaluationInfo forward = ForwardEvaluationInfo.NOT_NULL;
+    private EvaluationResult shortCircuit(EvaluationContext evaluationContext,
+                                          ForwardEvaluationInfo forwardEvaluationInfo,
+                                          boolean and) {
+        ForwardEvaluationInfo forward = forwardEvaluationInfo.copyNotNull();
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
         Primitives primitives = evaluationContext.getPrimitives();
 

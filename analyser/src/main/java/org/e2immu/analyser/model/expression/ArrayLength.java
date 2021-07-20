@@ -88,7 +88,7 @@ public record ArrayLength(Primitives primitives,
 
     @Override
     public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
-        EvaluationResult result = scope.evaluate(evaluationContext, ForwardEvaluationInfo.NOT_NULL);
+        EvaluationResult result = scope.evaluate(evaluationContext, forwardEvaluationInfo.copyNotNull());
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext).compose(result);
 
         if (result.value() instanceof ArrayInitializer arrayInitializer) {
