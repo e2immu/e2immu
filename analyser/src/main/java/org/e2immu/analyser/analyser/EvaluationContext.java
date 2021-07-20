@@ -318,4 +318,16 @@ public interface EvaluationContext extends DelayDebugger {
     default String statementIndex() {
         return "-";
     }
+
+    default boolean firstAssignmentOfFieldInConstructor(Variable variable) {
+        MethodAnalyser cm = getCurrentMethod();
+        if (cm == null) return false;
+        if (!cm.methodInfo.isConstructor) return false;
+        if (!(variable instanceof FieldReference)) return false;
+        return !hasBeenAssigned(variable);
+    }
+
+    default boolean hasBeenAssigned(Variable variable) {
+        return false;
+    }
 }

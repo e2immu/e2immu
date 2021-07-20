@@ -63,7 +63,8 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
 
     @Test
     public void test_2() throws IOException {
-        testClass("FormatterSimplified_2", 0, 0, new DebugConfiguration.Builder()
+        // one method must be static (returns null)
+        testClass("FormatterSimplified_2", 1, 5, new DebugConfiguration.Builder()
                 .build());
     }
 
@@ -75,22 +76,27 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
 
     @Test
     public void test_4() throws IOException {
+        EvaluationResultVisitor evaluationResultVisitor = d -> {
+            if ("4.0.0.0.0".equals(d.statementId())) {
+                String expect = d.iteration() == 0 ? "<m:combine>" : "lastOneWasSpace$4";
+                assertEquals(expect, d.evaluationResult().value().toString());
+            }
+        };
+
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("forward".equals(d.methodInfo().name)) {
-                if(d.variableName().contains("lastOneWasSpace")) {
-                    System.out.println(d.variableName()+": "+d.statementId());
-                }
-                if ("lastOneWasSpace$4$4.0.0:M".equals(d.variableName())) {
+                if ("lastOneWasSpace$4".equals(d.variableName())) {
                     if ("4.0.0".equals(d.statementId())) {
-                        assertEquals("", d.currentValue().toString());
+                        assertEquals("nullable instance type ElementarySpace", d.currentValue().toString());
                     }
                     if ("4.0.1.0.0".equals(d.statementId())) {
-                        assertEquals("", d.currentValue().toString());
+                        assertEquals("null==lastOneWasSpace$4?null:lastOneWasSpace$4", d.currentValue().toString());
                     }
                 }
             }
         };
-        testClass("FormatterSimplified_4", 4, 0, new DebugConfiguration.Builder()
+        testClass("FormatterSimplified_4", 2, 2, new DebugConfiguration.Builder()
+                .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }

@@ -500,4 +500,21 @@ public class Test_04_Warnings extends CommonTestRunner {
                         .build(),
                 new AnalyserConfiguration.Builder().build());
     }
+
+    @Test
+    public void test10() throws IOException {
+        // assigning a variable to itself
+        testClass("Warnings_10", 1, 0, new DebugConfiguration.Builder()
+                        .build(),
+                new AnalyserConfiguration.Builder().build());
+    }
+
+    @Test
+    public void test11() throws IOException {
+        // assigning a variable to its current value
+        // assigning to itself
+        testClass("Warnings_11", 1, 1, new DebugConfiguration.Builder()
+                        .build(),
+                new AnalyserConfiguration.Builder().build());
+    }
 }

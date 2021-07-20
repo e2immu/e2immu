@@ -739,14 +739,23 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                         // calculation needs to be done again, this time with the local copy rather than the original
                         // (so that we can replace the local one with instance)
                         Expression valueToWrite2 = maybeValueNeedsState(sharedState, vic, localVar, bestValue);
-                        log(ANALYSER, "Write value {} to local copy variable {}", valueToWrite2, localVar.fullyQualifiedName());
+                        Expression valueToWriteCorrected;
+                        IsVariableExpression ive;
+                        if ((ive = valueToWrite2.asInstanceOf(IsVariableExpression.class)) != null &&
+                                ive.variable().equals(localVar)) {
+                            // not allowing j$2 to be assigned to j$2; assign to initial instead
+                            valueToWriteCorrected = local.getPreviousOrInitial().getValue();
+                        } else {
+                            valueToWriteCorrected = valueToWrite2;
+                        }
+                        log(ANALYSER, "Write value {} to local copy variable {}", valueToWriteCorrected, localVar.fullyQualifiedName());
                         Map<VariableProperty, Integer> merged2 = mergeAssignment(localVar, valueToWriteIsDelayed, valueProperties, varProperties,
                                 changeData.properties(), groupPropertyValues);
                         remapStaticallyAssignedVariables.put(localVar, local.getPreviousOrInitial().getStaticallyAssignedVariables());
 
                         local.ensureEvaluation(index() + EVALUATION, VariableInfoContainer.NOT_YET_READ,
                                 statementAnalysis.statementTime(EVALUATION), Set.of());
-                        local.setValue(valueToWrite2, valueToWriteIsDelayed, changeData.staticallyAssignedVariables(), merged2,
+                        local.setValue(valueToWriteCorrected, valueToWriteIsDelayed, changeData.staticallyAssignedVariables(), merged2,
                                 false);
                         // because of the static assignment we can start empty
                         local.setLinkedVariables(LinkedVariables.EMPTY, false);
@@ -3162,6 +3171,15 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 return type.typeInfo.findMethodImplementing(abstractMethodInfo);
             }
             return null;
+        }
+
+
+        @Override
+        public boolean hasBeenAssigned(Variable variable) {
+            VariableInfoContainer vic = statementAnalysis.variables.getOrDefaultNull(variable.fullyQualifiedName());
+            if (vic == null) return false;
+            VariableInfo vi = vic.getPreviousOrInitial();
+            return vi.isAssigned();
         }
 
         @Override

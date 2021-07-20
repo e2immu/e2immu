@@ -523,6 +523,11 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             return this;
         }
 
+        public void assignmentToCurrentValue(Variable variable) {
+            Message message = Message.newMessage(evaluationContext.getLocation(), Message.Label.ASSIGNMENT_TO_CURRENT_VALUE, variable.fullyQualifiedName());
+            messages.add(message);
+        }
+
         /*
         Called from Assignment and from LocalVariableCreation.
         Linked1Variables are not directly involved with assignments; handled later.

@@ -40,7 +40,7 @@ public class FormatterSimplified_2 {
     interface Guide extends OutputElement {
     }
 
-    boolean forward(List<OutputElement> list, Function<ForwardInfo, Boolean> writer, int start, int maxChars) {
+    static boolean forward(List<OutputElement> list, Function<ForwardInfo, Boolean> writer, int start, int maxChars) {
         OutputElement outputElement;
         int pos = start;
         int chars = 0;
@@ -100,7 +100,7 @@ public class FormatterSimplified_2 {
         return false;
     }
 
-    private ElementarySpace combine(ElementarySpace lastOneWasSpace, ElementarySpace elementarySpace) {
-        return lastOneWasSpace == null ? elementarySpace: lastOneWasSpace;
+    private static ElementarySpace combine(ElementarySpace lastOneWasSpace, ElementarySpace elementarySpace) {
+        return lastOneWasSpace == null ? elementarySpace : lastOneWasSpace;
     }
 }

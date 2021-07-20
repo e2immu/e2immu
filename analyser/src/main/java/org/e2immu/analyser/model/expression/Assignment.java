@@ -188,7 +188,7 @@ public class Assignment implements Expression {
 
         EvaluationResult targetResult = target.evaluate(evaluationContext, ForwardEvaluationInfo.ASSIGNMENT_TARGET);
         builder.compose(valueResult);
-        builder.composeIgnoreExpression(targetResult);
+
 
         // re-assess the index in dependent variables TODO feels shaky implementation (re-assessing the index is correct)
         VariableExpression variableValue;
@@ -221,12 +221,31 @@ public class Assignment implements Expression {
             resultOfExpression = valueResult.value();
             assignedToTarget = valueResult.value();
 
+            /*
+            we compare to value and not resultOfExpression here, to catch a literal j = j assignment
+            the resultOfExpression may be different!
+            however, this does not catch j = idem(j), with idem @Identity; for that, we'll need resultOfExpression,
+            but that needs comparing against the current value
+             */
             IsVariableExpression ive;
             if ((ive = value.asInstanceOf(IsVariableExpression.class)) != null && ive.variable().equals(newVariableTarget)) {
-                builder.assignmentToSelfIgnored(newVariableTarget);
-                return builder.setExpression(resultOfExpression).build();
+                return builder.assignmentToSelfIgnored(newVariableTarget).build();
+            }
+
+            EvaluationResult currentTargetValue = target.evaluate(evaluationContext, fwd);
+            Expression currentValue = currentTargetValue.value();
+            IsVariableExpression ive2;
+            if (currentValue != null && (currentValue.equals(assignedToTarget) ||
+                    ((ive2 = assignedToTarget.asInstanceOf(IsVariableExpression.class)) != null)
+                            && newVariableTarget.equalsOrEqualToCopy(ive2.variable())) &&
+                    !evaluationContext.firstAssignmentOfFieldInConstructor(newVariableTarget)) {
+                log(EXPRESSION, "Assigning identical value {} to {}", currentValue, newVariableTarget);
+                builder.assignmentToCurrentValue(newVariableTarget);
+                // do continue! we do not want to ignore the assignment
             }
         }
+        builder.composeIgnoreExpression(targetResult);
+
         assert assignedToTarget != null;
         assert assignedToTarget != EmptyExpression.EMPTY_EXPRESSION;
         doAssignmentWork(builder, evaluationContext, newVariableTarget, assignedToTarget);
