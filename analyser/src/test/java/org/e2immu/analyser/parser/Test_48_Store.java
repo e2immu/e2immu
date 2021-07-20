@@ -282,8 +282,7 @@ public class Test_48_Store extends CommonTestRunner {
                         assertEquals("0", d.currentValue().toString());
                     }
                     if ("1.0.1.0.0".equals(d.statementId())) {
-                        String expect = d.iteration() == 0 ? "1+<v:countUpdated>" :
-                                "!projectName.equals(entry.getValue())||null==projectName?1+countUpdated$1:countUpdated$1";
+                        String expect = d.iteration() == 0 ? "1+<v:countUpdated>" : "1+countUpdated$1";
                         assertEquals(expect, d.currentValue().toString());
                         assertEquals(d.iteration() == 0, d.currentValueIsDelayed());
                     }

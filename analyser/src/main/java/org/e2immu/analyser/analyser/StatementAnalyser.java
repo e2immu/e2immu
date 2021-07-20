@@ -848,22 +848,6 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             }
         }
 
-        for (Map.Entry<Variable, VariableInfoContainer> e : existingVariablesNotVisited.entrySet()) {
-            VariableInfoContainer vic = e.getValue();
-            if (vic.hasEvaluation()) {
-                /* so we have an evaluation, but we did not get the chance to copy from previous into evaluation.
-                 (this happened because an evaluation was ensured for some other reason than the pure
-                  evaluation of the expression).
-                At least for IMMUTABLE we need to copy the value from previous into evaluation, because
-                the next statement will copy it from there
-                 */
-                VariableInfo prev = vic.getPreviousOrInitial();
-                int immPrev = prev.getProperty(IMMUTABLE);
-                if (immPrev != Level.DELAY) {
-                    vic.setProperty(IMMUTABLE, immPrev, EVALUATION);
-                }
-            }
-        }
         // the second one is across clusters of variables
 
         addToMap(groupPropertyValues, CONTEXT_NOT_NULL, x -> x.parameterizedType().defaultNotNull(), true);
@@ -1001,7 +985,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         if (vic.variableNature() instanceof VariableNature.CopyOfVariableInLoop) {
             Variable original = vic.variableNature().localCopyOf();
             EvaluationResult.ChangeData changeData = evaluationResult.changeData().get(original);
-            if (changeData != null && changeData.markAssignment()) return true;
+            return changeData != null && changeData.markAssignment();
         }
         return false;
     }
@@ -1416,24 +1400,15 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         // variable defined outside loop, now in loop, not delayed
 
         ConditionManager localConditionManager = sharedState.localConditionManager;
-        //if (localConditionManager.isDelayed()) return NoValue.EMPTY;
-        Expression state;
+
         if (!localConditionManager.state().isBoolValueTrue()) {
-            state = localConditionManager.state();
-        } else if (!localConditionManager.condition().isBoolValueTrue()) {
-            state = localConditionManager.condition();
-        } else {
-            state = null;
-        }
-        if (state != null) {
+            Expression state = localConditionManager.state();
+
             ForwardEvaluationInfo fwd = new ForwardEvaluationInfo(Map.of(), true, variable);
             // do not take vi1 itself, but "the" local copy of the variable
             Expression valueOfVariablePreAssignment = sharedState.evaluationContext.currentValue(variable,
                     statementAnalysis.statementTime(VariableInfoContainer.Level.INITIAL), fwd);
-            // we re-evaluate to move from i$2 (local copy) to instance again,  if the target is i$2 itself
 
-          //  Expression stateReevaluated = state.evaluate(sharedState.evaluationContext, fwd).getExpression();
-         //   Expression reValue = value.evaluate(sharedState.evaluationContext, fwd).getExpression();
             InlineConditional inlineConditional = new InlineConditional(analyserContext, state,
                     value, valueOfVariablePreAssignment);
             return inlineConditional.optimise(sharedState.evaluationContext.dropConditionManager());
@@ -1564,7 +1539,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
     The special thing about creating variables at level 2 in a statement is that they are not transferred to the next statement,
     nor are they merged into level 4.
      */
-    private List<Expression> initialisersAndUpdaters(SharedState sharedState) {
+    private List<Expression> initializersAndUpdaters(SharedState sharedState) {
         List<Expression> expressionsToEvaluate = new ArrayList<>();
 
         // part 1: Create a local variable x for(X x: Xs) {...}, or in catch(Exception e), or for(int i=...), or int i=3, j=4;
@@ -1752,7 +1727,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             String assigned = index() + VariableInfoContainer.Level.INITIAL;
             LocalVariableReference loopCopy = statementAnalysis.createLocalLoopCopy(vi.variable(), index());
             String loopCopyFqn = loopCopy.fullyQualifiedName();
-            if(!statementAnalysis.variables.isSet(loopCopyFqn)) {
+            if (!statementAnalysis.variables.isSet(loopCopyFqn)) {
                 String read = index() + EVALUATION;
                 Expression newValue = NewObject.localVariableInLoop(index() + "-" + loopCopyFqn,
                         statementAnalysis.primitives, vi.variable().parameterizedType());
@@ -1778,7 +1753,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
 
 
     private AnalysisStatus evaluationOfMainExpression(SharedState sharedState) {
-        List<Expression> expressionsFromInitAndUpdate = initialisersAndUpdaters(sharedState);
+        List<Expression> expressionsFromInitAndUpdate = initializersAndUpdaters(sharedState);
         List<Expression> expressionsFromLocalVariablesInLoop = localVariablesInLoop(sharedState);
         /*
         if we're in a loop statement and there are delays (localVariablesAssignedInThisLoop not frozen)
