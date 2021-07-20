@@ -141,7 +141,7 @@ public class Test_Util_01_SMapList extends CommonTestRunner {
             if ("change".equals(d.variableName())) {
                 if ("1.0.1.0.1".equals(d.statementId())) {
                     String expectValue = d.iteration() == 0 ? "<v:change>||null==<m:get>" : "change$1||null==destination.get(e$1.getKey())";
-                    assertEquals(expectValue, d.currentValue().toString());
+                    assertEquals("true", d.currentValue().toString());
                     assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
                     assertEquals("", d.variableInfo().getLinkedVariables().toString());
                 }
@@ -165,27 +165,7 @@ public class Test_Util_01_SMapList extends CommonTestRunner {
             }
             if ("change$1".equals(d.variableName())) {
                 if ("1.0.1.0.1".equals(d.statementId())) {
-                    String expectValue = d.iteration() == 0 ? "xx" : "instance type boolean";
-                    assertEquals(expectValue, d.currentValue().toString());
-                    String expectLinked = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "change";
-                    assertEquals(expectLinked, d.variableInfo().getStaticallyAssignedVariables().toString());
-                }
-            }
-            if ("change$1$1_0_1_0_1-E".equals(d.variableName())) {
-                if ("1.0.1.0.1".equals(d.statementId())) {
-                    String expectValue = d.iteration() == 0 ? "<s:boolean>" : "change$1||null==destination.get(e$1.getKey())";
-                    assertEquals(expectValue, d.currentValue().toString());
-                    assertEquals("", d.variableInfo().getStaticallyAssignedVariables().toString());
-                    assertTrue(d.variableInfoContainer().variableNature() instanceof VariableNature.CopyOfVariableInLoop);
-                    assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
-                }
-                if ("1.0.1.0.0".equals(d.statementId()) || "1.0.1.1.0".equals(d.statementId())) {
-                    fail("The variable should not exist here");
-                }
-                if ("1.0.1".equals(d.statementId())) {
-                    assertTrue(d.variableInfoContainer().variableNature() instanceof VariableNature.CopyOfVariableInLoop);
-                    String expectValue = d.iteration() == 0 ? "<s:boolean>" : "change$1||null==destination.get(e$1.getKey())";
-                    assertEquals(expectValue, d.currentValue().toString());
+                    assertEquals("true", d.currentValue().toString());
                     assertEquals("", d.variableInfo().getStaticallyAssignedVariables().toString());
                 }
             }

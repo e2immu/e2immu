@@ -110,7 +110,7 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                 }
                 if ("2".equals(d.statementId())) {
                     String expected = switch (d.iteration()) {
-                        case 0 -> "<v:i>>=upToPosition?upToPosition><replace:int>?<m:get>:<f:root>:null==<f:map>&&upToPosition><replace:int>&&upToPosition-<v:i>>=1?null:<return value>";
+                        case 0 -> "<v:i>>=<p:upToPosition>?upToPosition><replace:int>?<m:get>:<f:root>:null==<f:map>&&<p:upToPosition>><replace:int>&&<p:upToPosition>-<v:i>>=1?null:<return value>";
                         case 1, 2 -> "instance type int>=upToPosition?<f:root>:null";
                         default -> "instance type int>=upToPosition?root:null";
                     };
@@ -239,7 +239,7 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                     }
                     if ("2".equals(d.statementId())) {
                         String expectValue = switch (d.iteration()) {
-                            case 0 -> "<v:i>>=upToPosition?upToPosition><replace:int>?<m:get>:<f:root>:null==<f:map>&&upToPosition><replace:int>&&upToPosition-<v:i>>=1?null:<return value>";
+                            case 0 -> "<v:i>>=<p:upToPosition>?upToPosition><replace:int>?<m:get>:<f:root>:null==<f:map>&&<p:upToPosition>><replace:int>&&<p:upToPosition>-<v:i>>=1?null:<return value>";
                             case 1, 2 -> "instance type int>=upToPosition?<f:root>:null";
                             default -> "instance type int>=upToPosition?root:null";
                         };
