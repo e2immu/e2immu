@@ -26,6 +26,7 @@ import org.e2immu.analyser.model.expression.MethodCall;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.This;
+import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.model.variable.VariableNature;
 import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
@@ -33,6 +34,7 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -84,7 +86,9 @@ public class Test_48_Store extends CommonTestRunner {
     public void test_2() throws IOException {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("1.0.0.0.0.0.0.0.0".equals(d.statementId())) {
-                assertEquals(d.iteration() == 0 ? 1 : 2, d.evaluationResult().changeData().size());
+                String expect = d.iteration() == 0 ? "countRemoved" : "countRemoved,countRemoved$1.0.0";
+                assertEquals(expect, d.evaluationResult().changeData().keySet().stream()
+                        .map(Variable::fullyQualifiedName).sorted().collect(Collectors.joining(",")));
             }
         };
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
@@ -97,10 +101,19 @@ public class Test_48_Store extends CommonTestRunner {
                     }
                     if ("1.0.0.0.0.0.0.0.0".equals(d.statementId())) {
                         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+                        String expect = d.iteration() == 0 ? "1+<v:countRemoved>" : "1+countRemoved$1.0.0";
+                        assertEquals(expect, d.currentValue().toString());
                     }
                 }
                 if ("countRemoved$1.0.0".equals(d.variableName())) {
                     if ("1.0.0.0.0.0.0.0.0".equals(d.statementId())) {
+                        assertTrue(d.iteration() > 0);
+                        if (d.variable().variableNature() instanceof VariableNature.CopyOfVariableInLoop copy) {
+                            assertEquals("1.0.0", copy.statementIndex());
+                        } else {
+                            fail();
+                        }
+                        assertEquals("1+countRemoved$1.0.0", d.currentValue().toString());
                         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
                     }
                 }

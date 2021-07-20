@@ -313,8 +313,6 @@ public class Test_01_Loops extends CommonTestRunner {
                             assertEquals("<v:s>", d.currentValue().toString());
                             assertEquals(Level.DELAY, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
                         } else {
-                            // the ENN has been set on s$1, not on s
-                            // FIXME the value property must be set when the value is set!
                             assertEquals("nullable instance type String", d.currentValue().toString());
                             int expectNne = d.iteration() == 1 ? Level.DELAY : MultiLevel.NULLABLE;
                             assertEquals(expectNne, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
@@ -322,8 +320,6 @@ public class Test_01_Loops extends CommonTestRunner {
                         assertEquals("", d.variableInfo().getLinkedVariables().toString());
                     }
                 }
-                // code puts CNN to 5 on evaluation of statement 1, so s$1 seems OK; why do we use CNN? and not NNE?
-                // FIXME inconsistent currently s$1 is NNE NULLABLE, s is not (?)
                 if ("s$1".equals(d.variableName())) {
                     assertTrue(d.iteration() > 0);
                     if ("1.0.0".equals(d.statementId())) {

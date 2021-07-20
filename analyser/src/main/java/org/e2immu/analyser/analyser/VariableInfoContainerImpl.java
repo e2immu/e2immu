@@ -419,7 +419,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
     /*
     Copy from one statement to the next, iteration 1+, into 'evaluation'
     when reading and assigning don't do it. This occurs when another variable
-    holds this variable as a value. And evaluation level is created, even though
+    holds this variable as a value. An evaluation level is created, even though
     the variable is not read/assigned in the main expression.
      */
     @Override

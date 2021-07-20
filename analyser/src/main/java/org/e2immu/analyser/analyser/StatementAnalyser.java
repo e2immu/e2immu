@@ -1438,6 +1438,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 }
                 loopIndex = sa.index;
                 frozen = sa.localVariablesAssignedInThisLoop.isFrozen();
+                break; // we've found the loop
             }
             sa = sa.parent;
         }
