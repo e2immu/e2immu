@@ -750,6 +750,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                                 false);
                         // because of the static assignment we can start empty
                         local.setLinkedVariables(LinkedVariables.EMPTY, false);
+                        // so that there's no problem when overwriting IMMUTABLE after this loop
+                        existingVariablesNotVisited.remove(localVar);
                     }
                 }
                 if (variable instanceof FieldReference fr) {
@@ -844,6 +846,26 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                     if (!lv.equals(vi1.getStaticallyAssignedVariables())) {
                         vic.writeStaticallyAssignedVariablesToEvaluation(lv);
                     }
+                }
+            }
+        }
+
+        // OutputBuilderSimplified 2, statement 0 in "go", shows why we may want to copy from prev -> eval
+        // This should not happen when due to an assignment, the loop copy also gets a new value. See loop above,
+        // where we remove the loop copy from existingVarsNotVisited. Example in Loops_2, 9, 10
+        for (Map.Entry<Variable, VariableInfoContainer> e : existingVariablesNotVisited.entrySet()) {
+            VariableInfoContainer vic = e.getValue();
+            if (vic.hasEvaluation()) {
+                /* so we have an evaluation, but we did not get the chance to copy from previous into evaluation.
+                 (this happened because an evaluation was ensured for some other reason than the pure
+                  evaluation of the expression).
+                At least for IMMUTABLE we need to copy the value from previous into evaluation, because
+                the next statement will copy it from there
+                 */
+                VariableInfo prev = vic.getPreviousOrInitial();
+                int immPrev = prev.getProperty(IMMUTABLE);
+                if (immPrev != Level.DELAY) {
+                    vic.setProperty(IMMUTABLE, immPrev, EVALUATION);
                 }
             }
         }

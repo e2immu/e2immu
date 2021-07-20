@@ -81,13 +81,19 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
                         int expectContextImm = d.iteration() <= 2 ? Level.DELAY : MultiLevel.MUTABLE;
                         assertEquals(expectContextImm, cImm);
                     }
+                    int expectImm = d.iteration() <= 2 ? Level.DELAY : MultiLevel.EFFECTIVELY_E1IMMUTABLE_NOT_E2IMMUTABLE;
+                    assertEquals(expectImm, d.getProperty(VariableProperty.IMMUTABLE));
                 }
+
                 if (d.variable() instanceof ParameterInfo p && "o2".equals(p.name)) {
                     assertEquals(Level.DELAY, d.getProperty(VariableProperty.CONTEXT_IMMUTABLE_DELAY));
 
                     int cImm = d.getProperty(VariableProperty.CONTEXT_IMMUTABLE);
                     if ("0".equals(d.statementId())) {
                         assertEquals(MultiLevel.MUTABLE, cImm);
+
+                        String expect = "nullable instance type OutputBuilderSimplified_2";
+                        assertEquals(expect, d.currentValue().toString(), d.statementId());
                     }
                     if ("1".equals(d.statementId())) {
                         String expectedValue = d.iteration() <= 1 ? "<p:o2>" : "nullable instance type OutputBuilderSimplified_2";
@@ -104,9 +110,12 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
                         assertEquals(expectContextImm, cImm);
                     }
                     if ("0.0.0".equals(d.statementId())) {
-                        int expectImm = d.iteration() <= 2 ? Level.DELAY : MultiLevel.EFFECTIVELY_E1IMMUTABLE_NOT_E2IMMUTABLE;
-                        assertEquals(expectImm, d.getProperty(VariableProperty.IMMUTABLE));
+                        assertEquals("nullable instance type OutputBuilderSimplified_2", d.currentValue().toString());
+
                     }
+                    int expectImm = d.iteration() <= 2 ? Level.DELAY : MultiLevel.EFFECTIVELY_E1IMMUTABLE_NOT_E2IMMUTABLE;
+                    assertEquals(expectImm, d.getProperty(VariableProperty.IMMUTABLE));
+
                 }
             }
         };
