@@ -115,6 +115,10 @@ public class Test_66_VariableScope extends CommonTestRunner {
                         assertEquals("e", d.currentValue().toString());
                         assertEquals(MultiLevel.MUTABLE, d.getProperty(VariableProperty.IMMUTABLE));
                     }
+                    if ("1".equals(d.statementId())) {
+                        assertEquals("instance type IOException", d.currentValue().toString());
+                        assertEquals(MultiLevel.MUTABLE, d.getProperty(VariableProperty.IMMUTABLE));
+                    }
                 }
             }
         };

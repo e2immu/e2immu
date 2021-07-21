@@ -331,7 +331,7 @@ public class Test_01_Loops extends CommonTestRunner {
                 }
                 if ("res$1".equals(d.variableName())) {
                     assertTrue(d.iteration() > 0);
-                    if("1.0.0".equals(d.statementId())) {
+                    if ("1.0.0".equals(d.statementId())) {
                         assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, d.getProperty(VariableProperty.IMMUTABLE));
                     }
                 }
@@ -832,7 +832,7 @@ public class Test_01_Loops extends CommonTestRunner {
                         assertEquals(expect, d.currentValue().toString());
                     }
                     if ("2.0.1".equals(d.statementId()) || "2.0.2".equals(d.statementId())) {
-                        String expect = d.iteration() == 0 ? "6==<v:i>?11:3==<v:i>?10:9" : "6==i$2?11:3==i$2?10:9";
+                        String expect = d.iteration() == 0 ? "6==<v:i>?<s:int>:3==<v:i>?10:9" : "6==i$2?11:3==i$2?10:9";
                         assertEquals(expect, d.currentValue().toString());
                     }
                 }
@@ -841,8 +841,11 @@ public class Test_01_Loops extends CommonTestRunner {
                     if ("2.0.0.0.0".equals(d.statementId()) || "2.0.0".equals(d.statementId())) {
                         assertEquals("instance type int", d.currentValue().toString());
                     }
-                    if ("2.0.1.0.0".equals(d.statementId()) || "2.0.1".equals(d.statementId()) || "2.0.2".equals(d.statementId())) {
-                        assertEquals("instance type int", d.currentValue().toString());
+                    if ("2.0.1.0.0".equals(d.statementId())) {
+                        assertEquals("11", d.currentValue().toString());
+                    }
+                    if ("2.0.1".equals(d.statementId()) || "2.0.2".equals(d.statementId())) {
+                        assertEquals("6==i$2?11:instance type int", d.currentValue().toString());
                     }
                 }
             }

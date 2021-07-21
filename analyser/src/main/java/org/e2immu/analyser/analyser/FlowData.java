@@ -117,6 +117,26 @@ public class FlowData {
         return interruptsFlow.get().values().stream().reduce(Execution.NEVER, Execution::best);
     }
 
+    // if interrupt status is empty, we return ALWAYS -- we're good to proceed
+    // if interrupt status is ALWAYS, we return NEVER -- this execution will not be reachable
+    // if interrupt status is NEVER, or there is no interrupt, we return ALWAYS -- this we can reach
+    // if interrupt status are ALWAYS and NEVER, we should interpret as CONDITIONALLY
+    private Execution interruptStatusToExecution() {
+        if (!interruptsFlowIsSet()) return Execution.DELAYED_EXECUTION;
+        List<Execution> execs = interruptsFlow.get().entrySet().stream()
+                // NO -> ALWAYS is filtered out; NO - CONDITIONALLY needs to be kept!
+                .filter(e -> e.getKey() != NO || e.getValue() != Execution.ALWAYS)
+                .map(Map.Entry::getValue).toList();
+        if (execs.isEmpty()) return Execution.ALWAYS;
+        boolean allAlways = execs.stream().allMatch(e -> e == Execution.ALWAYS);
+        if (allAlways) {
+            return Execution.NEVER;
+        }
+        boolean allNever = execs.stream().allMatch(e -> e == Execution.NEVER);
+        if (allNever) return Execution.ALWAYS;
+        return Execution.CONDITIONALLY;
+    }
+
     public InterruptsFlow bestAlwaysInterrupt() {
         if (!interruptsFlowIsSet()) return DELAYED;
         return interruptsFlow.get().entrySet().stream().filter(e -> e.getValue() == Execution.ALWAYS)
@@ -193,11 +213,6 @@ public class FlowData {
             return level <= other.level ? this : other;
         }
 
-        public Execution complement() {
-            if (this == ALWAYS) return NEVER;
-            if (this == NEVER) return ALWAYS;
-            return this;
-        }
 
         public Execution best(Execution other) {
             if (this == DELAYED_EXECUTION || other == DELAYED_EXECUTION) return DELAYED_EXECUTION;
@@ -250,7 +265,7 @@ public class FlowData {
 
         Execution prev = previousStatement.flowData.getGuaranteedToBeReachedInCurrentBlock();
         // ALWAYS = always interrupted, NEVER = never interrupted, CONDITIONALLY = potentially interrupted
-        Execution interrupt = previousStatement.flowData.interruptStatus().complement();
+        Execution interrupt = previousStatement.flowData.interruptStatusToExecution();
         Execution execBasedOnState = state.isBoolValueFalse() ? Execution.NEVER : Execution.ALWAYS;
         Execution executionInCurrentBlock = prev.worst(interrupt).worst(execBasedOnState);
 
@@ -309,15 +324,25 @@ public class FlowData {
         List<StatementAnalyser> lastStatementsOfSubBlocks = statementAnalyser.lastStatementsOfNonEmptySubBlocks();
         for (StatementAnalyser subAnalyser : lastStatementsOfSubBlocks) {
             if (!subAnalyser.statementAnalysis.flowData.interruptsFlowIsSet()) {
-                log(Logger.LogTarget.DELAYED, "Delaying interrupts flow, substatement {} has no interruptsFlow yet",
+                log(Logger.LogTarget.DELAYED, "Delaying interrupts flow, sub-statement {} has no interruptsFlow yet",
                         subAnalyser.index());
                 return DELAYS;
             }
-            for (Map.Entry<InterruptsFlow, Execution> entry : subAnalyser.statementAnalysis.flowData.interruptsFlow.get().entrySet()) {
+            Map<InterruptsFlow, Execution> subInterrupts = subAnalyser.statementAnalysis.flowData.interruptsFlow.get();
+            if (subInterrupts.isEmpty()) {
+                // in this sub-block, there are no interrupts...
+                Execution subAnalyserExecution = subAnalyser.statementAnalysis.flowData.blockExecution.getOrDefault(Execution.DELAYED_EXECUTION);
+                if (subAnalyserExecution == Execution.DELAYED_EXECUTION) {
+                    log(Logger.LogTarget.DELAYED, "Delaying interrupts flow, received DELAYED_EXECUTION from sub-statement {} execution",
+                            subAnalyser.index());
+                    return DELAYS;
+                }
+                builder.put(NO, subAnalyserExecution);
+            } else for (Map.Entry<InterruptsFlow, Execution> entry : subInterrupts.entrySet()) {
                 InterruptsFlow i = entry.getKey();
                 Execution e = entry.getValue();
                 if (e == Execution.DELAYED_EXECUTION) {
-                    log(Logger.LogTarget.DELAYED, "Delaying interrupts flow, received DELAYED_EXECUTION from sub statement {} interruptsFlow",
+                    log(Logger.LogTarget.DELAYED, "Delaying interrupts flow, received DELAYED_EXECUTION from sub-statement {} interruptsFlow",
                             subAnalyser.index());
                     return DELAYS;
                 }
@@ -327,7 +352,7 @@ public class FlowData {
                 }
                 Execution subAnalyserExecution = subAnalyser.statementAnalysis.flowData.blockExecution.getOrDefault(Execution.DELAYED_EXECUTION);
                 if (subAnalyserExecution == Execution.DELAYED_EXECUTION) {
-                    log(Logger.LogTarget.DELAYED, "Delaying interrupts flow, received DELAYED_EXECUTION from sub statement {} execution",
+                    log(Logger.LogTarget.DELAYED, "Delaying interrupts flow, received DELAYED_EXECUTION from sub-statement {} execution",
                             subAnalyser.index());
                     return DELAYS;
                 }
