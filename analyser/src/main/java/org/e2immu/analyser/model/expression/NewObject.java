@@ -185,6 +185,18 @@ public record NewObject(
                 new BooleanConstant(primitives, true));
     }
 
+
+    // null-status derived from variable in evaluation context
+    public static NewObject genericMergeResult(String identifier,
+                                               Primitives primitives,
+                                               ParameterizedType parameterizedType,
+                                               int notNull) {
+        return new NewObject(identifier, null, parameterizedType,
+                Diamond.SHOW_ALL, List.of(), notNull,
+                false,
+                null, null, new BooleanConstant(primitives, true));
+    }
+
     // null-status derived from variable in evaluation context
     public static NewObject genericMergeResult(String identifier,
                                                Primitives primitives,

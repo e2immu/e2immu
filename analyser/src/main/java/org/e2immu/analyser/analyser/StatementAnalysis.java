@@ -794,10 +794,50 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                                            boolean alwaysEscapes,
                                            VariableNature variableNature,
                                            String firstStatementIndexForOldStyleSwitch,
-                                           String indexOfLastStatement) {
+                                           String indexOfLastStatement,
+                                           String indexOfCurrentStatement,
+                                           StatementAnalysis lastStatement,
+                                           Variable myself) {
         // for testing
         public ConditionAndVariableInfo(Expression condition, VariableInfo variableInfo) {
-            this(condition, variableInfo, false, VariableNature.METHOD_WIDE, null, "0");
+            this(condition, variableInfo, false, VariableNature.METHOD_WIDE, null, "0", "-", null, variableInfo.variable());
+        }
+
+        public Expression value() {
+            Expression value = variableInfo.getVariableValue(myself);
+            List<Variable> variables = value.variables();
+            if (variables.isEmpty()) return value;
+            Map<Variable, Expression> replacements = new HashMap<>();
+            for (Variable variable : variables) {
+                // Test 26 Enum 1 shows that the variable may not exist
+                VariableInfoContainer vic = lastStatement.variables.getOrDefaultNull(variable.fullyQualifiedName());
+                if (vic != null && !vic.variableNature().acceptForSubBlockMerging(indexOfCurrentStatement)) {
+                    Expression currentValue = vic.current().getValue();
+                    replacements.put(variable, currentValue);
+                }
+            }
+            if (replacements.isEmpty()) return value;
+            removeSelfReferences(replacements);
+            TranslationMapImpl.Builder builder = new TranslationMapImpl.Builder();
+            replacements.forEach((variable, v) -> builder.put(new VariableExpression(variable), v));
+            TranslationMap translationMap = builder.build();
+            if (translationMap.isEmpty()) return value;
+            return value.translate(translationMap);
+        }
+
+        private void removeSelfReferences(Map<Variable, Expression> map) {
+            Map<Variable, Expression> overwrite = new HashMap<>();
+            for (Map.Entry<Variable, Expression> e : map.entrySet()) {
+                List<Variable> vars = e.getValue().variables();
+                for (Variable v : vars) {
+                    if (map.containsKey(v) && !overwrite.containsKey(v)) {
+                        NewObject newObject = NewObject.genericMergeResult(indexOfCurrentStatement, lastStatement.primitives,
+                                v.parameterizedType(), myself.parameterizedType().defaultNotNull());
+                        overwrite.put(v, newObject);
+                    }
+                }
+            }
+            map.putAll(overwrite);
         }
     }
 
@@ -857,7 +897,10 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                                 return new ConditionAndVariableInfo(e2.condition,
                                         vic2.current(), e2.alwaysEscapes,
                                         vic2.variableNature(), e2.firstStatementIndexForOldStyleSwitch,
-                                        e2.lastStatement.statementAnalysis.index);
+                                        e2.lastStatement.statementAnalysis.index,
+                                        index,
+                                        e2.lastStatement.statementAnalysis,
+                                        variable);
                             })
                             .filter(cav -> acceptVariableForMerging(cav, inSwitchStatementOldStyle)).toList();
                     boolean ignoreCurrent;

@@ -114,8 +114,7 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfo vi) 
     } --> ret v
     */
 
-    public Expression one(VariableInfo vi1, Expression stateOfParent, Expression condition) {
-        Expression vi1value = vi1.getVariableValue(vi.variable());
+    public Expression one(Expression vi1value, Expression stateOfParent, Expression condition) {
         if (condition.isBoolValueTrue()) {
 
             // this if-statement replays the code in level 3 return statement:
@@ -132,14 +131,14 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfo vi) 
         return inlineConditional(condition, vi1value, vi.getValue());
     }
 
-    public Expression twoComplementary(VariableInfo vi1, Expression stateOfParent, Expression firstCondition, VariableInfo vi2) {
+    public Expression twoComplementary(Expression e1, Expression stateOfParent, Expression firstCondition, Expression e2) {
         Expression two;
 
         if (firstCondition.isBoolValueTrue())
-            two = vi1.getVariableValue(vi.variable()); // to bypass the error check on "safe"
-        else if (firstCondition.isBoolValueFalse()) two = vi2.getVariableValue(vi.variable());
+            two = e1; // to bypass the error check on "safe"
+        else if (firstCondition.isBoolValueFalse()) two = e2;
         else
-            two = inlineConditional(firstCondition, vi1.getVariableValue(vi.variable()), vi2.getVariableValue(vi.variable()));
+            two = inlineConditional(firstCondition, e1, e2);
 
         if (vi.variable() instanceof ReturnVariable) {
             if (stateOfParent.isBoolValueTrue()) return two;

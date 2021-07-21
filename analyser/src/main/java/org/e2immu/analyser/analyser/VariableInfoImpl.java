@@ -563,16 +563,16 @@ class VariableInfoImpl implements VariableInfo {
         boolean allReducedIdentical = atLeastOneBlockExecuted && reduced.stream().skip(1)
                 .allMatch(cav -> specialEquals(reduced.get(0).variableInfo().getVariableValue(variable),
                         cav.variableInfo().getVariableValue(variable)));
-        if (allReducedIdentical) return reduced.get(0).variableInfo().getVariableValue(variable);
+        if (allReducedIdentical) return reduced.get(0).value();
 
         MergeHelper mergeHelper = new MergeHelper(evaluationContext, this);
 
         if (reduced.size() == 1) {
             StatementAnalysis.ConditionAndVariableInfo e = reduced.get(0);
             if (atLeastOneBlockExecuted) {
-                return e.variableInfo().getVariableValue(variable);
+                return e.value();
             }
-            Expression result = mergeHelper.one(e.variableInfo(), stateOfDestination, e.condition());
+            Expression result = mergeHelper.one(e.value(), stateOfDestination, e.condition());
             if (result != null) return result;
         }
 
@@ -582,10 +582,10 @@ class VariableInfoImpl implements VariableInfo {
             StatementAnalysis.ConditionAndVariableInfo e2 = reduced.get(1);
 
             if (e2.condition().equals(negated)) {
-                Expression result = mergeHelper.twoComplementary(e.variableInfo(), stateOfDestination, e.condition(), e2.variableInfo());
+                Expression result = mergeHelper.twoComplementary(e.value(), stateOfDestination, e.condition(), e2.value());
                 if (result != null) return result;
             } else if (e2.condition().isBoolValueTrue()) {
-                return e2.variableInfo().getVariableValue(variable);
+                return e2.value();
             }
         }
 
@@ -593,7 +593,7 @@ class VariableInfoImpl implements VariableInfo {
 
         // one thing we can already do: if the try statement ends with a 'finally', we return this value
         StatementAnalysis.ConditionAndVariableInfo eLast = reduced.get(reduced.size() - 1);
-        if (eLast.condition().isBoolValueTrue()) return eLast.variableInfo().getVariableValue(variable);
+        if (eLast.condition().isBoolValueTrue()) return eLast.value();
 
         if (reduced.stream().anyMatch(cav -> !cav.variableInfo().valueIsSet())) {
             // all are delayed, they're not all identical delayed field references.

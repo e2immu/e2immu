@@ -157,7 +157,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
                     }
                     if ("0.1.0".equals(d.statementId())) {
                         // here, the variable is expected
-                        assertEquals("", d.currentValue().toString());
+                        assertEquals("instance type RuntimeException", d.currentValue().toString());
                     }
                     if ("0".equals(d.statementId())) {
                         fail("At 0 in writeLine");
@@ -185,7 +185,19 @@ public class Test_66_VariableScope extends CommonTestRunner {
     public void test_4() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("writeLine".equals(d.methodInfo().name)) {
-
+                if ("e".equals(d.variableName())) {
+                    if ("1.1.0".equals(d.statementId())) {
+                        assertEquals("instance type IOException", d.currentValue().toString());
+                        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.currentValue().getProperty(d.evaluationContext(), VariableProperty.NOT_NULL_EXPRESSION, true));
+                        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                    }
+                }
+                if ("ioe".equals(d.variableName())) {
+                    if ("1.1.0".equals(d.statementId())) {
+                        assertEquals("e", d.currentValue().toString());
+                        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                    }
+                }
             }
         };
         testClass("VariableScope_4", 0, 0, new DebugConfiguration.Builder()

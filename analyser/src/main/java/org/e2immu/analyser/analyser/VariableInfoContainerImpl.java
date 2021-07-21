@@ -154,6 +154,8 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         initial.newVariable(true);
         initial.setValue(value, false);
         initial.setProperty(VariableProperty.IMMUTABLE, immutable);
+        initial.setProperty(VariableProperty.NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL);
+        initial.setProperty(VariableProperty.IDENTITY, org.e2immu.analyser.model.Level.FALSE);
         initial.setLinkedVariables(LinkedVariables.EMPTY);
 
         return new VariableInfoContainerImpl(new VariableNature.NormalLocalVariable(index),

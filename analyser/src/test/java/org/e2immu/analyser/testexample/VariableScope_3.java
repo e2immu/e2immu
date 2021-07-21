@@ -11,7 +11,7 @@ public class VariableScope_3 {
     }
 
     // there's a problem with 'e' being used 2x
-    void writeLine(List<OutputElement> list, Writer writer, int start, int end) throws IOException {
+    static void writeLine(List<OutputElement> list, Writer writer, int start, int end) throws IOException {
         try {
             forward(list, forwardInfo -> {
                 try {
