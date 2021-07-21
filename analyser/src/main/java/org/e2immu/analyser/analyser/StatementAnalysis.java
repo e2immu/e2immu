@@ -919,6 +919,10 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                                     }
                                 }
                             }
+                            if (atLeastOneBlockExecuted && checkForOverwritingPreviousAssignment(variable, current, toMerge)) {
+                                ensure(Message.newMessage(new Location(methodAnalysis.getMethodInfo(), index),
+                                        Message.Label.OVERWRITING_PREVIOUS_ASSIGNMENT, variable.simpleName()));
+                            }
                         } catch (Throwable throwable) {
                             LOGGER.warn("Caught exception while merging variable {} in {}, {}", fqn,
                                     methodAnalysis.getMethodInfo().fullyQualifiedName, index);
@@ -990,6 +994,60 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                 groupPropertyValues.getMap(CONTEXT_PROPAGATE_MOD), MERGE, doNotWrite, localCopyData);
 
         return ennStatus.combine(cnnStatus).combine(cmStatus).combine(extImmStatus).combine(cImmStatus);
+    }
+
+    private boolean checkForOverwritingPreviousAssignment(Variable variable,
+                                                          VariableInfo initial,
+                                                          List<ConditionAndVariableInfo> toMerge) {
+        String fqn = variable.fullyQualifiedName();
+        if (!(variable instanceof LocalVariableReference)) return false;
+        if (!initial.notReadAfterAssignment(index)) return false;
+        // so now we know it is a local variable, it has been assigned to outside the sub-blocks, but not yet read
+        for (ConditionAndVariableInfo cav : toMerge) {
+            VariableInfoContainer localVic = cav.lastStatement.variables.getOrDefaultNull(fqn);
+            if (localVic != null) {
+                VariableInfo current = localVic.current();
+                if (!current.isAssigned()) {
+                    if (!current.isRead()) continue;
+                    return false;
+                }
+                if (current.isRead()) {
+                    if (current.getReadId().compareTo(current.getAssignmentId()) < 0) {
+                        return false;
+                    }
+                    // so there is reading AFTER... but
+                    // we'll need to double check that there was no reading before the assignment!
+                    String assignmentIndex = StringUtil.stripLevel(current.getAssignmentId());
+                    if (assignmentIndex.compareTo(index) >= 0) {
+                        StatementAnalysis sa = navigateTo(assignmentIndex);
+                        VariableInfoContainer atAssignment = sa.variables.get(fqn);
+                        VariableInfo vi1 = atAssignment.current();
+                        assert vi1.isAssigned();
+                        if (vi1.isRead() && vi1.getReadId().compareTo(vi1.getAssignmentId()) < 0) {
+                            return false;
+                        }
+                    } // else: assignment was before this merge... no bother; any reading will be after or not our problem
+                }
+            }
+        }
+        return true;
+    }
+
+    // identical code in statement analyser
+    private StatementAnalysis navigateTo(String target) {
+        if (index.equals(target)) return this;
+        if (target.startsWith(index)) {
+            // go into sub-block
+            int n = index.length();
+            int blockIndex = Integer.parseInt(target.substring(n + 1, target.indexOf('.', n + 1)));
+            StatementAnalysis inSub = navigationData.blocks.get().get(blockIndex)
+                    .orElseThrow(() -> new UnsupportedOperationException("Looking for " + target + ", block " + blockIndex));
+            return inSub.navigateTo(target);
+        }
+        if (index.compareTo(target) < 0 && navigationData.next.get().isPresent()) {
+            return navigationData.next.get().get().navigateTo(target);
+        }
+        throw new UnsupportedOperationException("? have index " + index + ", looking for " + target);
     }
 
     /*

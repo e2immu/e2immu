@@ -2152,20 +2152,21 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         return null;
     }
 
-    public StatementAnalyser navigateTo(String index) {
+    // identical code in statement analysis
+    public StatementAnalyser navigateTo(String target) {
         String myIndex = index();
-        if (myIndex.equals(index)) return this;
-        if (index.startsWith(myIndex)) {
+        if (myIndex.equals(target)) return this;
+        if (target.startsWith(myIndex)) {
             // go into sub-block
             int n = myIndex.length();
-            int blockIndex = Integer.parseInt(index.substring(n + 1, index.indexOf('.', n + 1)));
+            int blockIndex = Integer.parseInt(target.substring(n + 1, target.indexOf('.', n + 1)));
             return navigationData.blocks.get().get(blockIndex)
-                    .orElseThrow(() -> new UnsupportedOperationException("Looking for " + index + ", block " + blockIndex));
+                    .orElseThrow(() -> new UnsupportedOperationException("Looking for " + target + ", block " + blockIndex));
         }
-        if (myIndex.compareTo(index) < 0 && navigationData.next.get().isPresent()) {
-            return navigationData.next.get().get().navigateTo(index);
+        if (myIndex.compareTo(target) < 0 && navigationData.next.get().isPresent()) {
+            return navigationData.next.get().get().navigateTo(target);
         }
-        throw new UnsupportedOperationException("? have index " + myIndex + ", looking for " + index);
+        throw new UnsupportedOperationException("? have index " + myIndex + ", looking for " + target);
     }
 
     private record ExecutionOfBlock(FlowData.Execution execution,
