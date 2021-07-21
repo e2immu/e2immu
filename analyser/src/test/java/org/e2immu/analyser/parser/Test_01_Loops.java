@@ -16,11 +16,10 @@ package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
-import org.e2immu.analyser.model.expression.*;
-import org.e2immu.analyser.model.expression.util.EvaluateInlineConditional;
+import org.e2immu.analyser.model.expression.ArrayInitializer;
+import org.e2immu.analyser.model.expression.BooleanConstant;
 import org.e2immu.analyser.model.statement.ForEachStatement;
 import org.e2immu.analyser.model.statement.WhileStatement;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
@@ -33,7 +32,6 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 import static org.e2immu.analyser.analyser.FlowData.Execution.*;
@@ -97,7 +95,7 @@ public class Test_01_Loops extends CommonTestRunner {
                     assertEquals("0", d.currentValue().toString());
                 }
                 if ("2".equals(d.statementId())) {
-                    String expect = d.iteration() == 0 ? "1+<v:i>" : "1+instance type int";
+                    String expect = d.iteration() == 0 ? "1+<v:i>" : "instance type int";
                     assertEquals(expect, d.currentValue().toString());
                 }
                 if ("2.0.1".equals(d.statementId())) {
@@ -105,7 +103,7 @@ public class Test_01_Loops extends CommonTestRunner {
                     assertEquals(expect, d.currentValue().toString());
                 }
                 if ("3".equals(d.statementId())) {
-                    String expect = d.iteration() == 0 ? "1+<v:i>" : "1+instance type int";
+                    String expect = d.iteration() == 0 ? "1+<v:i>" : "instance type int";
                     assertEquals(expect, d.currentValue().toString());
                 }
             }
@@ -168,10 +166,6 @@ public class Test_01_Loops extends CommonTestRunner {
 
     @Test
     public void test1() throws IOException {
-        // weirdly written but there is no dedicated logic in place
-        final String END_RESULT = "-1-(instance type int)+n>=1?\"abc\":nullable instance type String";
-        final String END_RESULT_NO_OPERATIONS = "instance type int>=0?\"abc\":instance type String";
-
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
                 if ("2.0.0".equals(d.statementId())) {
@@ -183,7 +177,7 @@ public class Test_01_Loops extends CommonTestRunner {
                     assertEquals(expect, d.evaluationResult().value().toString());
                 }
                 if ("3".equals(d.statementId())) {
-                    String expect = d.iteration() == 0 ? DELAYED_BY_STATE : END_RESULT;
+                    String expect = d.iteration() == 0 ? DELAYED_BY_STATE : "res2";
                     assertEquals(expect, d.evaluationResult().value().toString());
                 }
             }
@@ -223,22 +217,8 @@ public class Test_01_Loops extends CommonTestRunner {
                         assertEquals(expectNNE, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
                     }
                     if ("2".equals(d.statementId())) {
-                        String expectValue = d.iteration() == 0 ? DELAYED_BY_STATE : END_RESULT;
+                        String expectValue = d.iteration() == 0 ? DELAYED_BY_STATE : "nullable instance type String";
                         assertEquals(expectValue, d.variableInfo().getValue().toString());
-
-                        // first, understanding how this works...
-                        Primitives primitives = d.evaluationContext().getCurrentStatement().statementAnalysis.primitives;
-                        NewObject string1 = NewObject.forTesting(primitives, primitives.stringParameterizedType);
-                        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, string1.getProperty(d.evaluationContext(), VariableProperty.NOT_NULL_EXPRESSION, true));
-                        Map<VariableProperty, Integer> map = Map.of(VariableProperty.NOT_NULL_EXPRESSION, MultiLevel.NULLABLE);
-                        Expression string1Wrapped = PropertyWrapper.propertyWrapper(string1, map);
-                        assertEquals(MultiLevel.NULLABLE, string1Wrapped.getProperty(d.evaluationContext(), VariableProperty.NOT_NULL_EXPRESSION, true));
-                        Expression inline = EvaluateInlineConditional.conditionalValueConditionResolved(d.evaluationContext(),
-                                GreaterThanZero.greater(d.evaluationContext(), NewObject.forTesting(primitives, primitives.intParameterizedType),
-                                        new IntConstant(primitives, 0), true),
-                                new StringConstant(primitives, "abc"), string1Wrapped).value();
-                        assertEquals(END_RESULT_NO_OPERATIONS, inline.toString());
-                        assertEquals(MultiLevel.NULLABLE, inline.getProperty(d.evaluationContext(), VariableProperty.NOT_NULL_EXPRESSION, true));
                     }
                 }
             }
@@ -342,19 +322,19 @@ public class Test_01_Loops extends CommonTestRunner {
                         assertEquals("", d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("1".equals(d.statementId())) {
-                        String expectValue = d.iteration() == 0 ? "<v:s>" : "nullable instance type String";
+                        String expectValue = d.iteration() == 0 ? "<merge:String>" : "instance type String";
                         assertEquals(expectValue, d.currentValue().toString());
                     }
                     if ("2".equals(d.statementId())) {
-                        String expectValue = d.iteration() == 0 ? "<v:s>" : "nullable instance type String";
+                        String expectValue = d.iteration() == 0 ? "<merge:String>" : "instance type String";
                         assertEquals(expectValue, d.currentValue().toString());
-                        int expectNne = d.iteration() == 0 ? Level.DELAY : MultiLevel.NULLABLE;
+                        int expectNne = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
                         assertEquals(expectNne, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
                     }
                 }
                 if (d.variable() instanceof ReturnVariable) {
                     if ("2".equals(d.statementId())) {
-                        String expect = d.iteration() == 0 ? "<v:s>" : "res"; // indirection
+                        String expect = d.iteration() == 0 ? "<merge:String>" : "res"; // indirection
                         assertEquals(expect, d.currentValue().toString());
                         int expectNne = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
                         assertEquals(expectNne, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
@@ -480,13 +460,13 @@ public class Test_01_Loops extends CommonTestRunner {
                         assertEquals(expect, d.currentValue().toString());
                     }
                     if ("0".equals(d.statementId())) {
-                        String expect = d.iteration() == 0 ? "1==<replace:int>?4:<return value>"
-                                : "0==instance type int?4:<return value>";
+                        String expect = d.iteration() == 0 ? "<replace:int><=9?<merge:int>:<return value>"
+                                : "instance type int<=9?instance type int:<return value>";
                         assertEquals(expect, d.currentValue().toString());
                     }
                     if ("1".equals(d.statementId())) {
-                        String expect = d.iteration() == 0 ? "<v:i>>=10?0:1==<replace:int>&&<v:i><=9?4:<return value>"
-                                : "instance type int>=10?0:0==instance type int?4:<return value>";
+                        String expect = d.iteration() == 0 ? "<v:i>>=10?0:<replace:int><=9&&<v:i><=9?<merge:int>:<return value>"
+                                : "instance type int>=10?0:instance type int";
                         assertEquals(expect, d.currentValue().toString());
                     }
                 }
@@ -556,7 +536,7 @@ public class Test_01_Loops extends CommonTestRunner {
             }
             if (d.variable() instanceof ReturnVariable && "2".equals(d.statementId())) {
                 String expectReturn = d.iteration() == 0 ? "1==<v:i>?5:<return value>" :
-                        "0==instance type int?5:<return value>";
+                        "instance type int<=9?instance type int:<return value>";
                 assertEquals(expectReturn, d.currentValue().toString());
             }
         };

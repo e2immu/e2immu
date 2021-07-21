@@ -139,8 +139,14 @@ public class FlowData {
 
     public InterruptsFlow bestAlwaysInterrupt() {
         if (!interruptsFlowIsSet()) return DELAYED;
-        return interruptsFlow.get().entrySet().stream().filter(e -> e.getValue() == Execution.ALWAYS)
-                .map(Map.Entry::getKey).reduce(NO, InterruptsFlow::best);
+        InterruptsFlow best = NO;
+        for(Map.Entry<InterruptsFlow, Execution> e: interruptsFlow.get().entrySet()) {
+            Execution execution = e.getValue();
+            if(execution != Execution.ALWAYS) return NO;
+            InterruptsFlow interruptsFlow = e.getKey();
+            best = interruptsFlow.best(best);
+        }
+        return best;
     }
 
     public Execution execution(Execution statementsExecution) {

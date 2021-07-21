@@ -797,10 +797,11 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                                            String indexOfLastStatement,
                                            String indexOfCurrentStatement,
                                            StatementAnalysis lastStatement,
-                                           Variable myself) {
+                                           Variable myself,
+                                           EvaluationContext evaluationContext) {
         // for testing
         public ConditionAndVariableInfo(Expression condition, VariableInfo variableInfo) {
-            this(condition, variableInfo, false, VariableNature.METHOD_WIDE, null, "0", "-", null, variableInfo.variable());
+            this(condition, variableInfo, false, VariableNature.METHOD_WIDE, null, "0", "-", null, variableInfo.variable(), null);
         }
 
         public Expression value() {
@@ -817,27 +818,12 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                 }
             }
             if (replacements.isEmpty()) return value;
-            removeSelfReferences(replacements);
-            TranslationMapImpl.Builder builder = new TranslationMapImpl.Builder();
-            replacements.forEach((variable, v) -> builder.put(new VariableExpression(variable), v));
-            TranslationMap translationMap = builder.build();
-            if (translationMap.isEmpty()) return value;
-            return value.translate(translationMap);
-        }
-
-        private void removeSelfReferences(Map<Variable, Expression> map) {
-            Map<Variable, Expression> overwrite = new HashMap<>();
-            for (Map.Entry<Variable, Expression> e : map.entrySet()) {
-                List<Variable> vars = e.getValue().variables();
-                for (Variable v : vars) {
-                    if (map.containsKey(v) && !overwrite.containsKey(v)) {
-                        NewObject newObject = NewObject.genericMergeResult(indexOfCurrentStatement, lastStatement.primitives,
-                                v.parameterizedType(), myself.parameterizedType().defaultNotNull());
-                        overwrite.put(v, newObject);
-                    }
-                }
+            if (evaluationContext.isDelayed(value)) {
+                return DelayedExpression.forMerge(variableInfo.variable().parameterizedType(), variables);
             }
-            map.putAll(overwrite);
+            int notNull = variableInfo.getProperty(NOT_NULL_EXPRESSION);
+            return NewObject.genericMergeResult(indexOfCurrentStatement, lastStatement.primitives,
+                    variableInfo.variable().parameterizedType(), notNull);
         }
     }
 
@@ -900,7 +886,8 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                                         e2.lastStatement.statementAnalysis.index,
                                         index,
                                         e2.lastStatement.statementAnalysis,
-                                        variable);
+                                        variable,
+                                        evaluationContext);
                             })
                             .filter(cav -> acceptVariableForMerging(cav, inSwitchStatementOldStyle)).toList();
                     boolean ignoreCurrent;

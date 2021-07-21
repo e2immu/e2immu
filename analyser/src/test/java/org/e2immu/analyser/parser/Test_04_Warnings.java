@@ -510,7 +510,7 @@ public class Test_04_Warnings extends CommonTestRunner {
     @Test
     public void test12() throws IOException {
         // See also VariableScope_1, but this one focuses on the warnings
-        // re-assigning a variable
+        // re-assigning a variable (not completely trivial, has to be implemented inside the merge)
         // throws declaration, but nothing thrown TODO
         testClass("Warnings_12", 0, 1, new DebugConfiguration.Builder()
                         .build());

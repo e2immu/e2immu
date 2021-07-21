@@ -1,6 +1,9 @@
 package org.e2immu.analyser.testexample;
 
 
+import org.e2immu.annotation.NotNull;
+import org.e2immu.annotation.Nullable;
+
 import java.io.IOException;
 import java.io.Writer;
 import java.util.List;
@@ -8,7 +11,8 @@ import java.util.List;
 public class VariableScope_4 {
     // only difference between VS_4 and VS_2 is the redundant = null on ioe (statement 0)
 
-    static IOException writeLine(List<String> list, Writer writer) {
+    @Nullable
+    static IOException writeLine(@NotNull List<String> list, @NotNull Writer writer) {
         IOException ioe = null;
         try {
             for (String outputElement : list) {

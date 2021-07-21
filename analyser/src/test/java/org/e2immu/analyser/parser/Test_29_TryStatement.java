@@ -168,4 +168,49 @@ public class Test_29_TryStatement extends CommonTestRunner {
         testClass("TryStatement_5", 0, 0, new DebugConfiguration.Builder()
                 .build());
     }
+
+    @Test
+    public void test_6() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("method".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ReturnVariable) {
+                    if ("2".equals(d.statementId())) {
+                        assertEquals("instance type boolean?null:\"Hi\"+Integer.parseInt(s)", d.currentValue().toString());
+                    }
+                }
+            }
+        };
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("method".equals(d.methodInfo().name)) {
+                if ("1".equals(d.statementId())) {
+                    assertEquals("instance type boolean", d.conditionManagerForNextStatement().state().toString());
+                }
+                if ("2".equals(d.statementId())) {
+                    assertEquals("instance type boolean", d.state().toString());
+                }
+            }
+        };
+        testClass("TryStatement_6", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .build());
+    }
+
+    @Test
+    public void test_7() throws IOException {
+        testClass("TryStatement_7", 0, 0, new DebugConfiguration.Builder()
+                .build());
+    }
+
+    @Test
+    public void test_8() throws IOException {
+        testClass("TryStatement_8", 0, 0, new DebugConfiguration.Builder()
+                .build());
+    }
+
+    @Test
+    public void test_9() throws IOException {
+        testClass("TryStatement_9", 0, 0, new DebugConfiguration.Builder()
+                .build());
+    }
 }

@@ -19,6 +19,7 @@ import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.TypeAnalysis;
 import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.VariableNature;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
@@ -73,7 +74,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
                         assertEquals(expect, d.currentValue().toString());
                     } else if ("1.0.2".equals(d.statementId()) || "1.0.3".equals(d.statementId())) {
                         String expect = d.iteration() == 0 ? "<replace:int><=9?<v:j>+<m:nextInt>:0" :
-                                "instance type int<=9?r.nextInt()+instance type int:0";
+                                "instance type int<=9?instance type int:0";
                         assertEquals(expect, d.currentValue().toString());
                     } else fail(d.statementId()); // no other statements
                 }
@@ -83,8 +84,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
                 }
                 if ("k".equals(d.variableName())) {
                     if ("2".equals(d.statementId())) {
-                        String expect = d.iteration() == 0 ? "<replace:int><=9?<v:j>+<m:nextInt>:0" :
-                                "instance type int<=9?r.nextInt()+instance type int:0";
+                        String expect = d.iteration() == 0 ? "<merge:int>" : "instance type int<=9?instance type int:0";
                         assertEquals(expect, d.currentValue().toString());
                     }
                 }
@@ -109,15 +109,30 @@ public class Test_66_VariableScope extends CommonTestRunner {
                     } else fail();
                     assertEquals("instance type IOException", d.currentValue().toString());
                     assertEquals(MultiLevel.MUTABLE, d.getProperty(VariableProperty.IMMUTABLE));
+                    assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.currentValue().getProperty(d.evaluationContext(), VariableProperty.NOT_NULL_EXPRESSION, true));
+                    assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
                 }
                 if ("ioe".equals(d.variableName())) {
                     if ("1.1.0".equals(d.statementId())) {
                         assertEquals("e", d.currentValue().toString());
                         assertEquals(MultiLevel.MUTABLE, d.getProperty(VariableProperty.IMMUTABLE));
+                        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
                     }
                     if ("1".equals(d.statementId())) {
                         assertEquals("instance type IOException", d.currentValue().toString());
                         assertEquals(MultiLevel.MUTABLE, d.getProperty(VariableProperty.IMMUTABLE));
+                        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                    }
+                }
+                if (d.variable() instanceof ReturnVariable) {
+                    if ("1.0.1".equals(d.statementId())) {
+                        assertEquals("null", d.currentValue().toString());
+                    }
+                    if ("1".equals(d.statementId())) {
+                        assertEquals("null", d.currentValue().toString());
+                    }
+                    if ("2".equals(d.statementId())) {
+                        assertEquals("instance type boolean?ioe:null", d.currentValue().toString());
                     }
                 }
             }

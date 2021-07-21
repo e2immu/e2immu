@@ -136,7 +136,7 @@ public record Or(Primitives primitives, List<Expression> expressions) implements
         }
 
         if (finalValues.isEmpty()) {
-            log(EXPRESSION, "Empty disjuction returned as false");
+            log(EXPRESSION, "Empty disjunction returned as false");
             return new BooleanConstant(primitives, false);
         }
 

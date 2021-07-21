@@ -2363,6 +2363,23 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
 
     private Expression addToStateAfterStatement(EvaluationContext evaluationContext, List<ExecutionOfBlock> list) {
         BooleanConstant TRUE = new BooleanConstant(evaluationContext.getPrimitives(), true);
+        if (statementAnalysis.statement instanceof TryStatement) {
+            ExecutionOfBlock main = list.get(0);
+            if (main.escapesAlways()) {
+                Expression[] conditionsWithoutEscape = list.stream()
+                        // without escape, and remove main and finally
+                        .filter(executionOfBlock -> !executionOfBlock.escapesAlways() && !executionOfBlock.condition.isBoolValueTrue())
+                        .map(executionOfBlock -> executionOfBlock.condition)
+                        .toArray(Expression[]::new);
+                return new Or(statementAnalysis.primitives).append(evaluationContext, conditionsWithoutEscape);
+            }
+            Expression[] conditionsWithEscape = list.stream()
+                    // with escape, and remove main and finally
+                    .filter(executionOfBlock -> executionOfBlock.escapesAlways() && !executionOfBlock.condition.isBoolValueTrue())
+                    .map(executionOfBlock -> Negation.negate(evaluationContext, executionOfBlock.condition))
+                    .toArray(Expression[]::new);
+            return new And(statementAnalysis.primitives).append(evaluationContext, conditionsWithEscape);
+        }
         if (statementAnalysis.statement instanceof IfElseStatement) {
             ExecutionOfBlock e0 = list.get(0);
             if (list.size() == 1) {
