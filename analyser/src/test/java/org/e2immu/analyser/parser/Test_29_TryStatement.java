@@ -159,4 +159,13 @@ public class Test_29_TryStatement extends CommonTestRunner {
         testClass("TryStatement_4", 0, 0, new DebugConfiguration.Builder()
                 .build());
     }
+
+    // two try statements inside each other, same catch variable 'e'
+    // value is already final error while merging e in stmt 0
+    // See also Test_62_FormatterSimplified.test 6
+    @Test
+    public void test_5() throws IOException {
+        testClass("TryStatement_5", 0, 0, new DebugConfiguration.Builder()
+                .build());
+    }
 }

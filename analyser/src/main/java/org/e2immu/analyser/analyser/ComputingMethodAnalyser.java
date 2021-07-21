@@ -135,6 +135,9 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
 
         } else {
             methodAnalysis.minimalInfoForEmptyMethod(methodAnalysis.primitives);
+            for(ParameterAnalyser parameterAnalyser: parameterAnalysers) {
+                parameterAnalyser.parameterAnalysis.minimalInfoForEmptyMethod();
+            }
         }
         analyserComponents = builder.build();
     }

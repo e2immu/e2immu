@@ -180,6 +180,12 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
             }
             return inMap;
         }
+
+        public void minimalInfoForEmptyMethod() {
+            properties.put(VariableProperty.MODIFIED_VARIABLE, Level.FALSE);
+            properties.put(VariableProperty.NOT_NULL_PARAMETER, parameterInfo.parameterizedType.defaultNotNull());
+            properties.put(VariableProperty.PROPAGATE_MODIFICATION, Level.FALSE);
+        }
     }
 
 }

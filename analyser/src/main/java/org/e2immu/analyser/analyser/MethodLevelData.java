@@ -82,7 +82,7 @@ public class MethodLevelData implements DelayDebugger {
 
     The reason it is a map (rather than a set) is that we delay removal by a fixed number of iterations: the removal is necessary
     to break delays in one direction (Modification_20) but the removal cannot take place too quickly (Modification_21).
-    Rather than having a fixed number of iterations between marking the removal and actually removing, we should
+    IMPROVE Rather than having a fixed number of iterations between marking the removal and actually removing, we should
     find a better, more definitive solution.
      */
     private final EventuallyFinal<Map<WithInspectionAndAnalysis, Integer>> causesOfContextModificationDelay = new EventuallyFinal<>();
@@ -131,14 +131,14 @@ public class MethodLevelData implements DelayDebugger {
         return causesOfContextModificationDelay.get().keySet();
     }
 
-    public boolean acceptLinksHaveBeenEstablished(Predicate<WithInspectionAndAnalysis> canBeIgnored) {
-        if (linksHaveBeenEstablished.isSet()) return true;
+    public boolean linksHaveNotYetBeenEstablished(Predicate<WithInspectionAndAnalysis> canBeIgnored) {
+        if (linksHaveBeenEstablished.isSet()) return false;
         Map<WithInspectionAndAnalysis, Integer> causes = causesOfContextModificationDelay.get();
         if (causes != null && !causes.isEmpty() && causes.keySet().stream().allMatch(canBeIgnored)) {
             log(LINKED_VARIABLES, "Accepting a limited version of linksHaveBeenEstablished to break delay cycle");
-            return true;
+            return false;
         }
-        return false;
+        return true;
     }
 
     record SharedState(StatementAnalyserResult.Builder builder,

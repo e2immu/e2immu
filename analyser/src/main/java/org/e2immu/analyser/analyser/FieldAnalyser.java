@@ -574,7 +574,7 @@ public class FieldAnalyser extends AbstractAnalyser {
                 .filter(ma -> ma instanceof ComputingMethodAnalyser)
                 .filter(ma -> !ma.methodInfo.isPrivate() && ((ComputingMethodAnalyser) ma).methodLevelData() != null)
                 .filter(ma -> ma.methodAnalysis.getProperty(VariableProperty.FINALIZER) != Level.TRUE)
-                .filter(ma -> !((ComputingMethodAnalyser) ma).methodLevelData().acceptLinksHaveBeenEstablished(ignoreMyConstructors))
+                .filter(ma -> ((ComputingMethodAnalyser) ma).methodLevelData().linksHaveNotYetBeenEstablished(ignoreMyConstructors))
                 .findFirst();
         if (delayLinkedVariables.isPresent()) {
             log(DELAYED, "Exposure computation on {} delayed by links of {}", fqn,
@@ -1164,7 +1164,7 @@ public class FieldAnalyser extends AbstractAnalyser {
             allMethodsAndConstructors(false).filter(m -> !m.methodInfo.isConstructor &&
                     !m.getFieldAsVariable(fieldInfo, true).isEmpty() &&
                     m.getFieldAsVariable(fieldInfo, true).stream().anyMatch(VariableInfo::isRead) &&
-                    !((ComputingMethodAnalyser) m).methodLevelData().acceptLinksHaveBeenEstablished(ignoreMyConstructors))
+                    ((ComputingMethodAnalyser) m).methodLevelData().linksHaveNotYetBeenEstablished(ignoreMyConstructors))
                     .forEach(m -> log(DELAYED, "... method {} reads the field, but we're still waiting on links to be established", m.methodInfo.name));
         }
         return DELAYS;

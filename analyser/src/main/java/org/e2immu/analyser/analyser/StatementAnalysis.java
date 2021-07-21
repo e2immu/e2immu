@@ -511,7 +511,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
     }
 
     private boolean explicitlyPropagate(StatementAnalysis copyFrom, boolean copyIsParent, VariableInfoContainer vic) {
-        if(vic.variableNature() instanceof VariableNature.Pattern pattern) {
+        if (vic.variableNature() instanceof VariableNature.Pattern pattern) {
             return StringUtil.inScopeOf(pattern.scope(), index);
         }
         if (copyIsParent) {
@@ -690,7 +690,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                                 initial.getValue() :
                                 NewObject.localCopyOfVariableField(index + "-" + localCopy.fullyQualifiedName(),
                                         primitives, fieldReference.parameterizedType());
-                        assert initialValue != null && evaluationContext.isNotDelayed(initialValue);
+                        boolean initialValueIsDelayed = evaluationContext.isDelayed(initialValue);
                         Map<VariableProperty, Integer> valueMap = evaluationContext.getValueProperties(initialValue);
                         Map<VariableProperty, Integer> combined = new HashMap<>(propertyMap);
                         valueMap.forEach((k, v) -> combined.merge(k, v, Math::max));
@@ -698,8 +698,10 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                             combined.put(vp, vp == EXTERNAL_NOT_NULL
                                     || vp == EXTERNAL_IMMUTABLE ? MultiLevel.NOT_INVOLVED : vp.falseValue);
                         }
-                        lvrVic.setValue(initialValue, false, assignedToOriginal, combined, true);
-                        lvrVic.setLinkedVariables(LinkedVariables.EMPTY, true);
+                        lvrVic.setValue(initialValue, initialValueIsDelayed, assignedToOriginal, combined, true);
+                        if (!initialValueIsDelayed) {
+                            lvrVic.setLinkedVariables(LinkedVariables.EMPTY, true);
+                        }
                     }
                 }
             }
@@ -765,7 +767,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
     }
 
     LocalVariableReference createLocalLoopCopy(Variable original, String statementIndexOfLoop) {
-         VariableNature.CopyOfVariableInLoop copy = new VariableNature.CopyOfVariableInLoop(statementIndexOfLoop, original);
+        VariableNature.CopyOfVariableInLoop copy = new VariableNature.CopyOfVariableInLoop(statementIndexOfLoop, original);
         return createLocalCopy(original, copy);
     }
 
