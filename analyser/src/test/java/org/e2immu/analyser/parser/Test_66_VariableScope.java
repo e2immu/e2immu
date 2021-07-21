@@ -15,13 +15,13 @@
 package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.config.DebugConfiguration;
+import org.e2immu.analyser.model.variable.VariableNature;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_66_VariableScope extends CommonTestRunner {
 
@@ -31,6 +31,84 @@ public class Test_66_VariableScope extends CommonTestRunner {
 
     @Test
     public void test_0() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("method".equals(d.methodInfo().name)) {
+                if ("j".equals(d.variableName())) {
+                    if ("0".equals(d.statementId()) || "1".equals(d.statementId())) {
+                        fail("j exists in statement " + d.statementId());
+                    } else if (d.statementId().startsWith("0.0")) {
+                        assertEquals("i", d.currentValue().toString());
+                    } else if ("2".equals(d.statementId()) || "3".equals(d.statementId())) {
+                        String expect = d.iteration() == 0 ? "3*<p:i>" : "3*i";
+                        assertEquals(expect, d.currentValue().toString());
+                    } else fail(); // no other statements
+                }
+            }
+        };
+        // potential null pointer in out
+        testClass("VariableScope_0", 0, 1, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .build());
+    }
+
+
+    @Test
+    public void test_1() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("method".equals(d.methodInfo().name)) {
+                if ("j".equals(d.variableName())) {
+                    if ("0".equals(d.statementId()) || "2".equals(d.statementId())) {
+                        fail("j exists in statement " + d.statementId());
+                    } else if ("1.0.0".equals(d.statementId()) || "1.0.1".equals(d.statementId())) {
+                        assertEquals("0", d.currentValue().toString());
+                    } else if ("1.0.2.0.0".equals(d.statementId())) {
+                        String expect = d.iteration() == 0 ? "<v:j>+<m:nextInt>" : "r.nextInt()+j$1.0.2";
+                        assertEquals(expect, d.currentValue().toString());
+                    } else if ("1.0.2".equals(d.statementId()) || "1.0.3".equals(d.statementId())) {
+                        String expect = d.iteration() == 0 ? "<replace:int><=9?<v:j>+<m:nextInt>:0" :
+                                "instance type int<=9?r.nextInt()+instance type int:0";
+                        assertEquals(expect, d.currentValue().toString());
+                    } else fail(d.statementId()); // no other statements
+                }
+                if ("j$1.0.2".equals(d.variableName())) {
+                    assertTrue(d.iteration() > 0);
+                    assertNotEquals("2", d.statementId());
+                }
+                if ("k".equals(d.variableName())) {
+                    if ("2".equals(d.statementId())) {
+                        String expect = d.iteration() == 0 ? "<replace:int><=9?<v:j>+<m:nextInt>:0" :
+                                "instance type int<=9?r.nextInt()+instance type int:0";
+                        assertEquals(expect, d.currentValue().toString());
+                    }
+                }
+            }
+        };
+        testClass("VariableScope_1", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .build());
+    }
+
+
+    @Test
+    public void test_2() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("writeLine".equals(d.methodInfo().name)) {
+                if ("e".equals(d.variableName())) {
+                    if ("1".equals(d.statementId()) || "2".equals(d.statementId())) {
+                        fail("At " + d.statementId() + " in writeLine");
+                    }
+                    assertTrue(d.variable().variableNature() instanceof VariableNature.NormalLocalVariable);
+                }
+            }
+        };
+        testClass("VariableScope_2", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .build());
+    }
+
+
+    @Test
+    public void test_3() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("writeLine".equals(d.methodInfo().name)) {
                 if ("e".equals(d.variableName())) {
@@ -58,9 +136,20 @@ public class Test_66_VariableScope extends CommonTestRunner {
                 }
             }
         };
-        testClass("VariableScope_0", 0, 0, new DebugConfiguration.Builder()
+        testClass("VariableScope_3", 0, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 
+    @Test
+    public void test_4() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("writeLine".equals(d.methodInfo().name)) {
+
+            }
+        };
+        testClass("VariableScope_4", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .build());
+    }
 }

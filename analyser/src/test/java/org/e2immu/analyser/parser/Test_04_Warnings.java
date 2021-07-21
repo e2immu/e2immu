@@ -69,8 +69,7 @@ public class Test_04_Warnings extends CommonTestRunner {
         testClass("Warnings_0", 3, 0, new DebugConfiguration.Builder()
                         .addStatementAnalyserVisitor(statementAnalyserVisitor)
                         .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                        .build(),
-                new AnalyserConfiguration.Builder().setSkipTransformations(true).build());
+                        .build());
     }
 
 
@@ -255,8 +254,7 @@ public class Test_04_Warnings extends CommonTestRunner {
                         .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                         .addEvaluationResultVisitor(evaluationResultVisitor)
                         .addTypeMapVisitor(typeMapVisitor)
-                        .build(),
-                new AnalyserConfiguration.Builder().setSkipTransformations(true).build());
+                        .build());
     }
 
     // division by zero
@@ -283,8 +281,7 @@ public class Test_04_Warnings extends CommonTestRunner {
 
         testClass("Warnings_2", 3, 0, new DebugConfiguration.Builder()
                         .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                        .build(),
-                new AnalyserConfiguration.Builder().setSkipTransformations(true).build());
+                        .build());
     }
 
     // parameter should not be assigned to
@@ -309,16 +306,14 @@ public class Test_04_Warnings extends CommonTestRunner {
         testClass("Warnings_3", 2, 0, new DebugConfiguration.Builder()
                         .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                        .build(),
-                new AnalyserConfiguration.Builder().setSkipTransformations(true).build());
+                        .build());
     }
 
     // modifying an immutable set
     @Test
     public void test4() throws IOException {
         testClass("Warnings_4", 1, 0, new DebugConfiguration.Builder()
-                        .build(),
-                new AnalyserConfiguration.Builder().setSkipTransformations(true).build());
+                        .build());
     }
 
 
@@ -472,16 +467,14 @@ public class Test_04_Warnings extends CommonTestRunner {
     public void test6() throws IOException {
         // one on the type
         testClass("Warnings_6", 1, 0, new DebugConfiguration.Builder()
-                        .build(),
-                new AnalyserConfiguration.Builder().build());
+                        .build());
     }
 
     @Test
     public void test7() throws IOException {
         // one on the method, one on the type
         testClass("Warnings_7", 2, 0, new DebugConfiguration.Builder()
-                        .build(),
-                new AnalyserConfiguration.Builder().build());
+                        .build());
     }
 
 
@@ -489,24 +482,21 @@ public class Test_04_Warnings extends CommonTestRunner {
     public void test8() throws IOException {
         // field initializer
         testClass("Warnings_8", 0, 1, new DebugConfiguration.Builder()
-                        .build(),
-                new AnalyserConfiguration.Builder().build());
+                        .build());
     }
 
     @Test
     public void test9() throws IOException {
         // useless assignment
         testClass("Warnings_9", 1, 0, new DebugConfiguration.Builder()
-                        .build(),
-                new AnalyserConfiguration.Builder().build());
+                        .build());
     }
 
     @Test
     public void test10() throws IOException {
         // assigning a variable to itself
         testClass("Warnings_10", 1, 0, new DebugConfiguration.Builder()
-                        .build(),
-                new AnalyserConfiguration.Builder().build());
+                        .build());
     }
 
     @Test
@@ -514,7 +504,15 @@ public class Test_04_Warnings extends CommonTestRunner {
         // assigning a variable to its current value
         // assigning to itself
         testClass("Warnings_11", 1, 1, new DebugConfiguration.Builder()
-                        .build(),
-                new AnalyserConfiguration.Builder().build());
+                        .build());
+    }
+
+    @Test
+    public void test12() throws IOException {
+        // See also VariableScope_1, but this one focuses on the warnings
+        // re-assigning a variable
+        // throws declaration, but nothing thrown TODO
+        testClass("Warnings_12", 0, 1, new DebugConfiguration.Builder()
+                        .build());
     }
 }
