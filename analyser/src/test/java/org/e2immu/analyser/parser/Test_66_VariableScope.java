@@ -14,12 +14,19 @@
 
 package org.e2immu.analyser.parser;
 
+import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
+import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.model.TypeAnalysis;
+import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.variable.VariableNature;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
+import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
+import org.e2immu.analyser.visitor.TypeMapVisitor;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -94,14 +101,43 @@ public class Test_66_VariableScope extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("writeLine".equals(d.methodInfo().name)) {
                 if ("e".equals(d.variableName())) {
-                    if ("1".equals(d.statementId()) || "2".equals(d.statementId())) {
+                    if (!"1.1.0".equals(d.statementId())) {
                         fail("At " + d.statementId() + " in writeLine");
                     }
-                    assertTrue(d.variable().variableNature() instanceof VariableNature.NormalLocalVariable);
+                    if (d.variableInfoContainer().variableNature() instanceof VariableNature.NormalLocalVariable nlv) {
+                        assertEquals("1", nlv.parentBlockIndex);
+                    } else fail();
+                    assertEquals("instance type IOException", d.currentValue().toString());
+                    assertEquals(MultiLevel.MUTABLE, d.getProperty(VariableProperty.IMMUTABLE));
+                }
+                if ("ioe".equals(d.variableName())) {
+                    if ("1.1.0".equals(d.statementId())) {
+                        assertEquals("e", d.currentValue().toString());
+                        assertEquals(MultiLevel.MUTABLE, d.getProperty(VariableProperty.IMMUTABLE));
+                    }
                 }
             }
         };
+
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("writeLine".equals(d.methodInfo().name)) {
+                if ("1".equals(d.statementId())) {
+                    assertEquals("no interrupt=CONDITIONALLY,return=ALWAYS",
+                            d.statementAnalysis().flowData.getInterruptsFlow().entrySet().stream()
+                                    .map(Object::toString).sorted().collect(Collectors.joining(",")));
+                }
+            }
+        };
+
+        TypeMapVisitor typeMapVisitor = typeMap -> {
+            TypeInfo ioException = typeMap.get(IOException.class);
+            TypeAnalysis ioExceptionAnalysis = ioException.typeAnalysis.get();
+            assertEquals(MultiLevel.MUTABLE, ioExceptionAnalysis.getProperty(VariableProperty.IMMUTABLE));
+        };
+
         testClass("VariableScope_2", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addTypeMapVisitor(typeMapVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }

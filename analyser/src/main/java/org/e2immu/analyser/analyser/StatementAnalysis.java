@@ -380,7 +380,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             if (closure.getCurrentMethod() != null) {
                 for (ParameterInfo parameterInfo : closure.getCurrentMethod().methodInspection.getParameters()) {
                     VariableNature variableNature = inClosure
-                            ? VariableNature.FROM_ENCLOSING_METHOD : VariableNature.NORMAL;
+                            ? VariableNature.FROM_ENCLOSING_METHOD : VariableNature.METHOD_WIDE;
                     createVariable(closure, parameterInfo, 0, variableNature);
                 }
             }
@@ -390,7 +390,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         // for now, other variations on this are not explicitly present at the moment IMPROVE?
         if (!currentMethod.methodInspection.get().isStatic()) {
             This thisVariable = new This(evaluationContext.getAnalyserContext(), currentMethod.typeInfo);
-            createVariable(evaluationContext, thisVariable, 0, VariableNature.NORMAL);
+            createVariable(evaluationContext, thisVariable, 0, VariableNature.METHOD_WIDE);
         }
 
         // we'll copy local variables from outside this method
@@ -407,7 +407,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
 
     private void createReturnVariableAtBeginningOfEachBlock(EvaluationContext evaluationContext) {
         Variable retVar = new ReturnVariable(methodAnalysis.getMethodInfo());
-        VariableInfoContainer vic = createVariable(evaluationContext, retVar, 0, VariableNature.NORMAL);
+        VariableInfoContainer vic = createVariable(evaluationContext, retVar, 0, VariableNature.METHOD_WIDE);
         READ_FROM_RETURN_VALUE_PROPERTIES.forEach(vp ->
                 vic.setProperty(vp, vp.falseValue, INITIAL));
         int notNull = Primitives.isPrimitiveExcludingVoid(methodAnalysis.getMethodInfo().returnType()) ?
@@ -797,7 +797,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                                            String indexOfLastStatement) {
         // for testing
         public ConditionAndVariableInfo(Expression condition, VariableInfo variableInfo) {
-            this(condition, variableInfo, false, VariableNature.NORMAL, null, "0");
+            this(condition, variableInfo, false, VariableNature.METHOD_WIDE, null, "0");
         }
     }
 
@@ -841,7 +841,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                     if (!variables.isSet(fqn)) {
                         VariableNature nature = vic.variableNature();
                         // created in merge: see Enum_1, a dependent variable created inside the loop
-                        VariableNature newNature = nature == VariableNature.NORMAL
+                        VariableNature newNature = nature instanceof VariableNature.NormalLocalVariable
                                 ? VariableNature.CREATED_IN_MERGE : nature;
                         destination = createVariable(evaluationContext, variable, statementTime, newNature);
                         if (variable.needsNewVariableWithoutValueCall()) destination.newVariableWithoutValue();

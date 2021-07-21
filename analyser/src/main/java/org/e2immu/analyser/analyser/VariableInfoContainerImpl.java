@@ -122,7 +122,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         VariableInfoImpl initial = new VariableInfoImpl(variable, NOT_YET_ASSIGNED,
                 readId, NOT_A_VARIABLE_FIELD, Set.of(), null);
         VariableNature variableNature = variable instanceof LocalVariableReference lvr
-                ? lvr.variable.nature() : VariableNature.NORMAL;
+                ? lvr.variable.nature() : VariableNature.METHOD_WIDE;
         // no newVariable, because either setValue is called immediately after this method, or the explicit newVariableWithoutValue()
         return new VariableInfoContainerImpl(variableNature, Either.right(initial),
                 statementHasSubBlocks ? new SetOnce<>() : null, null);
@@ -142,18 +142,21 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
 
     /*
         factory method for new catch variables
-         */
+        we need to overwrite the VariableNature because the original one has no index to define the scope
+    */
     public static VariableInfoContainerImpl newCatchVariable(LocalVariableReference lvr,
                                                              String index,
                                                              Expression value,
+                                                             int immutable,
                                                              boolean statementHasSubBlocks) {
         VariableInfoImpl initial = new VariableInfoImpl(lvr, index + Level.INITIAL,
                 index + Level.EVALUATION, NOT_A_VARIABLE_FIELD, Set.of(), null);
         initial.newVariable(true);
         initial.setValue(value, false);
+        initial.setProperty(VariableProperty.IMMUTABLE, immutable);
         initial.setLinkedVariables(LinkedVariables.EMPTY);
 
-        return new VariableInfoContainerImpl(lvr.variable.nature(),
+        return new VariableInfoContainerImpl(new VariableNature.NormalLocalVariable(index),
                 Either.right(initial), statementHasSubBlocks ? new SetOnce<>() : null, null);
     }
 

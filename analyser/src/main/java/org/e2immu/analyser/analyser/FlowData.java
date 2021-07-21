@@ -265,10 +265,10 @@ public class FlowData {
     public AnalysisStatus analyse(StatementAnalyser statementAnalyser, StatementAnalysis previousStatement, Execution blockExecution) {
         AnalysisStatus analysisStatus = setBlockExecution(blockExecution);
         Statement statement = statementAnalyser.statement();
-        boolean oldStyleSwitch  = statementAnalyser.parent() != null &&
+        boolean oldStyleSwitch = statementAnalyser.parent() != null &&
                 statementAnalyser.parent().statement instanceof SwitchStatementOldStyle;
 
-        if(!oldStyleSwitch) {
+        if (!oldStyleSwitch) {
             if (statement instanceof ReturnStatement) {
                 setInterruptsFlow(Map.of(RETURN, Execution.ALWAYS));
                 return DONE.combine(analysisStatus);

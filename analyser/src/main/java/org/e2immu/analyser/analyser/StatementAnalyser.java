@@ -1328,7 +1328,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         VariableInfoContainer vic;
         VariableInfo initial;
         if (!statementAnalysis.variables.isSet(variable.fullyQualifiedName())) {
-            assert variable.variableNature() == VariableNature.NORMAL;
+            assert variable.variableNature() instanceof VariableNature.NormalLocalVariable;
             vic = statementAnalysis.createVariable(evaluationContext, variable,
                     statementAnalysis.flowData.getInitialTime(), VariableNature.normal(variable, index()));
             initial = vic.getPreviousOrInitial();
@@ -1586,6 +1586,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 VariableInfoContainer vic = VariableInfoContainerImpl.newCatchVariable(lvr, index(),
                         NewObject.forCatchOrThis(index() + "-" + lvr.fullyQualifiedName(),
                                 statementAnalysis.primitives, lvr.parameterizedType()),
+                        lvr.parameterizedType().defaultImmutable(analyserContext),
                         statementAnalysis.navigationData.hasSubBlocks());
                 statementAnalysis.variables.put(name, vic);
             }

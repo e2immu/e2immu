@@ -73,7 +73,7 @@ public record LocalVariable(Set<LocalVariableModifier> modifiers,
         private String name;
         private String simpleName;
         private TypeInfo owningType;
-        private VariableNature nature = VariableNature.NORMAL;
+        private VariableNature nature = VariableNature.METHOD_WIDE;
 
         public Builder setOwningType(TypeInfo owningType) {
             this.owningType = owningType;

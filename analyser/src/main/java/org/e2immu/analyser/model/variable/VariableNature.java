@@ -9,7 +9,7 @@ public interface VariableNature {
         if (variable instanceof LocalVariableReference) {
             return new NormalLocalVariable(index);
         }
-        return NORMAL;
+        return METHOD_WIDE;
     }
 
     default boolean doNotCopyToNextStatement(boolean previousIsParent, String indexOfPrevious, String index) {
@@ -48,30 +48,32 @@ public interface VariableNature {
         return false;
     }
 
-    class Marker implements VariableNature {
-    }
+    NormalLocalVariable METHOD_WIDE = new NormalLocalVariable();
 
     /*
     situation 1: normal variable (default value, rather than null)
     local variable gets VIC value (analysis only) for merging
-     */
-    Marker NORMAL = new Marker();
-
+   */
     class NormalLocalVariable implements VariableNature {
         public final String parentBlockIndex;
 
         // do not move up beyond block of definition!
+        public NormalLocalVariable() {
+            parentBlockIndex = "";
+        }
+
         public NormalLocalVariable(String statementIndex) {
             parentBlockIndex = computeParentBlockIndex(statementIndex);
         }
 
         @Override
         public boolean acceptForSubBlockMerging(String index) {
-            return !index.equals(parentBlockIndex);
+            return parentBlockIndex.isEmpty() || !index.equals(parentBlockIndex);
         }
     }
 
     private static String computeParentBlockIndex(String statementIndex) {
+        assert !statementIndex.isEmpty();
         int dot = statementIndex.lastIndexOf('.');
         if (dot == -1) return "";
 
@@ -85,7 +87,7 @@ public interface VariableNature {
     now it still needs to exist after that block (see Enum_1 as example)
     this copy is created during the merge phase at the end of the block.
     */
-    Marker CREATED_IN_MERGE = new Marker();
+    NormalLocalVariable CREATED_IN_MERGE = new NormalLocalVariable();
 
     /*
     situation 3: a local pattern variable, often a local copy
@@ -217,7 +219,7 @@ public interface VariableNature {
     /*
     situation 7
      */
-    Marker FROM_ENCLOSING_METHOD = new Marker();
+    NormalLocalVariable FROM_ENCLOSING_METHOD = new NormalLocalVariable();
 
     /*
     situation 8
