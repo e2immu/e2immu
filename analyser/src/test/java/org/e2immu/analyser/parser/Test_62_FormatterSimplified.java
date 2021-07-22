@@ -69,7 +69,8 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
     @Test
     public void test_2() throws IOException {
         // one method must be static (returns null)
-        testClass("FormatterSimplified_2", 1, 5, new DebugConfiguration.Builder()
+        // 2x overwriting previous assignment... we can live with that
+        testClass("FormatterSimplified_2", 3, 5, new DebugConfiguration.Builder()
                 .build());
     }
 

@@ -1019,6 +1019,12 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                     }
                     String assignmentIndex = current.getAssignmentIds().getLatestAssignmentIndex();
                     if (assignmentIndex.compareTo(index) < 0) continue;
+                    String earliestAssignmentIndex = current.getAssignmentIds().getEarliestAssignmentIndex();
+                    if (earliestAssignmentIndex.compareTo(index) < 0) {
+                        // some branch is still relying on the earlier value
+                        return false;
+                    }
+
                     countAssignments++;
                     StatementAnalysis sa = navigateTo(assignmentIndex);
                     assert sa != null;

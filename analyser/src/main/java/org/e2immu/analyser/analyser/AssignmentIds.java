@@ -60,4 +60,8 @@ public class AssignmentIds implements Comparable<AssignmentIds> {
     public String toString() {
         return String.join(",", ids);
     }
+
+    public String getEarliestAssignmentIndex() {
+        return ids.isEmpty() ? "-" : ids.ceiling("-");
+    }
 }
