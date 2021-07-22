@@ -50,8 +50,7 @@ public class Test_04_Warnings extends CommonTestRunner {
             if ("Warnings_0".equals(d.methodInfo().name) && "1".equals(d.statementId())) {
                 assertEquals(WHERE + "1: Unused local variable: a",
                         d.haveError(Message.Label.UNUSED_LOCAL_VARIABLE));
-                assertEquals(WHERE + "1: Useless assignment: a",
-                        d.haveError(Message.Label.USELESS_ASSIGNMENT));
+                assertNull(d.haveError(Message.Label.USELESS_ASSIGNMENT));
 
                 AnalysisStatus expectStatus = d.iteration() == 0 ? AnalysisStatus.PROGRESS : AnalysisStatus.DONE;
                 assertEquals(expectStatus, d.result().analysisStatus());
@@ -65,7 +64,7 @@ public class Test_04_Warnings extends CommonTestRunner {
             }
         };
 
-        testClass("Warnings_0", 3, 0, new DebugConfiguration.Builder()
+        testClass("Warnings_0", 2, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build());
@@ -102,11 +101,9 @@ public class Test_04_Warnings extends CommonTestRunner {
                     assertEquals("t.length()>=19", d.state().toString());
                 }
             }
-            // ERROR: Unused variable "a" Gone since 20210403
-            // ERROR: useless assignment to "a" as well
-            if ("UnusedLocalVariableChecks".equals(d.methodInfo().name) && "0".equals(d.statementId())) {
-                assertEquals("ERROR in Method org.e2immu.analyser.testexample.Warnings_1.method1(java.lang.String):2: Unused local variable: s",
-                        d.haveError(Message.Label.USELESS_ASSIGNMENT));
+            if ("Warnings_1".equals(d.methodInfo().name) && "0".equals(d.statementId())) {
+                assertEquals("ERROR in Method org.e2immu.analyser.testexample.Warnings_1.Warnings_1():0: Unused local variable: a",
+                        d.haveError(Message.Label.UNUSED_LOCAL_VARIABLE));
 
                 assertEquals(AnalysisStatus.DONE, analysisStatus);
             }
@@ -247,7 +244,7 @@ public class Test_04_Warnings extends CommonTestRunner {
             assertEquals(MethodResolution.CallStatus.NOT_CALLED_AT_ALL, method1.methodResolution.get().partOfConstruction());
         };
 
-        testClass("Warnings_1", 6, 2, new DebugConfiguration.Builder()
+        testClass("Warnings_1", 5, 2, new DebugConfiguration.Builder()
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)

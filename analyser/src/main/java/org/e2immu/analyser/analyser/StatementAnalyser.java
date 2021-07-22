@@ -399,9 +399,9 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                                 previous == null ? null : previous.index,
                                 statementAnalysis.stateData))
                         .add(CHECK_UNUSED_RETURN_VALUE, sharedState -> checkUnusedReturnValueOfMethodCall())
-                        .add(CHECK_USELESS_ASSIGNMENTS, sharedState -> checkUselessAssignments())
                         .add(CHECK_UNUSED_LOCAL_VARIABLES, sharedState -> checkUnusedLocalVariables())
                         .add(CHECK_UNUSED_LOOP_VARIABLES, sharedState -> checkUnusedLoopVariables())
+                        .add(CHECK_USELESS_ASSIGNMENTS, sharedState -> checkUselessAssignments())
                         .build();
             }
 
@@ -2585,6 +2585,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
      *     <li NYR + local variable created higher up + return: <code>int i=0; if(xxx) { i=3; return; }</code></li>
      *     <li>NYR + escape: <code>int i=0; if(xxx) { i=3; throw new UnsupportedOperationException(); }</code></li>
      * </ul>
+     * Comes after unused local variable, we do not want 2 errors
      */
     private AnalysisStatus checkUselessAssignments() {
         InterruptsFlow bestAlwaysInterrupt = statementAnalysis.flowData.bestAlwaysInterrupt();
@@ -2598,21 +2599,28 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         boolean alwaysInterrupts = bestAlwaysInterrupt != InterruptsFlow.NO;
         boolean atEndOfBlock = navigationData.next.get().isEmpty();
         if ((atEndOfBlock || alwaysInterrupts) && myMethodAnalyser.methodInfo.isNotATestMethod()) {
+            // important to be after this statement, because assignments need to be "earlier" in notReadAfterAssignment
+            String indexEndOfBlock = StringUtil.beyond(index());
             statementAnalysis.variables.stream()
                     .filter(e -> e.getValue().variableNature() != VariableNature.FROM_ENCLOSING_METHOD)
                     .map(e -> e.getValue().current())
                     .filter(vi -> !(vi.variable() instanceof ReturnVariable)) // that's for the compiler!
                     .filter(this::uselessForDependentVariable)
                     .filter(VariableInfo::isNotConditionalInitialization)
-                    .filter(vi -> vi.notReadAfterAssignment(index()))
+                    .filter(vi -> vi.notReadAfterAssignment(indexEndOfBlock))
                     .forEach(variableInfo -> {
                         boolean isLocalAndLocalToThisBlock = statementAnalysis.isLocalVariableAndLocalToThisBlock(variableInfo.name());
                         if (bestAlwaysInterrupt == InterruptsFlow.ESCAPE ||
                                 isLocalAndLocalToThisBlock ||
                                 variableInfo.variable().isLocal() && bestAlwaysInterrupt == InterruptsFlow.RETURN &&
                                         localVariableAssignmentInThisBlock(variableInfo)) {
-                            statementAnalysis.ensure(Message.newMessage(getLocation(),
-                                    Message.Label.USELESS_ASSIGNMENT, variableInfo.name()));
+                            Location location = getLocation();
+                            Message unusedLv = Message.newMessage(location,
+                                    Message.Label.UNUSED_LOCAL_VARIABLE, variableInfo.name());
+                            if (!statementAnalysis.messages.contains(unusedLv)) {
+                                statementAnalysis.ensure(Message.newMessage(location,
+                                        Message.Label.USELESS_ASSIGNMENT, variableInfo.name()));
+                            }
                         }
                     });
         }

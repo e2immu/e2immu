@@ -182,7 +182,7 @@ public class Test_48_Store extends CommonTestRunner {
             }
         };
 
-        testClass(List.of("Project_0", "Store_3"), 5, 11, new DebugConfiguration.Builder()
+        testClass(List.of("Project_0", "Store_3"), 3, 11, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
@@ -250,7 +250,7 @@ public class Test_48_Store extends CommonTestRunner {
             }
         };
 
-        testClass("Store_6", 2, 0, new DebugConfiguration.Builder()
+        testClass("Store_6", 1, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }

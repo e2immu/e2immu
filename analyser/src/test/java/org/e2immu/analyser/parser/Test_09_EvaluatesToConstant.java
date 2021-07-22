@@ -178,7 +178,7 @@ public class Test_09_EvaluatesToConstant extends CommonTestRunner {
      */
     @Test
     public void test() throws IOException {
-        testClass("EvaluatesToConstant", 6, 0, new DebugConfiguration.Builder()
+        testClass("EvaluatesToConstant", 5, 0, new DebugConfiguration.Builder()
                         .addStatementAnalyserVisitor(statementAnalyserVisitor)
                         .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)

@@ -22,7 +22,7 @@ public class Loops_1 {
     @Constant(absent = true)
     @NotNull(absent = true)
     public static String method(int n) {
-        String res2 = null; // = null forced upon us by compiler!
+        String res2 = null; // assignment forced upon us by compiler!
         int i = 0;
         while (true) { // executed at least once, but assignment may not be reachable
             ++i; // as opposed to Loops_0, which has i++

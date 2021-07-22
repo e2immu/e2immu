@@ -75,7 +75,7 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
 
     @Test
     public void test_3() throws IOException {
-        testClass("FormatterSimplified_3", 4, 0, new DebugConfiguration.Builder()
+        testClass("FormatterSimplified_3", 2, 0, new DebugConfiguration.Builder()
                 .build());
     }
 

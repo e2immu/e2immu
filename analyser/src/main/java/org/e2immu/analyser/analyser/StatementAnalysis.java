@@ -919,7 +919,8 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                                     }
                                 }
                             }
-                            if (atLeastOneBlockExecuted && checkForOverwritingPreviousAssignment(variable, current, toMerge)) {
+                            if (atLeastOneBlockExecuted &&
+                                    checkForOverwritingPreviousAssignment(variable, current, vic.variableNature(), toMerge)) {
                                 ensure(Message.newMessage(new Location(methodAnalysis.getMethodInfo(), index),
                                         Message.Label.OVERWRITING_PREVIOUS_ASSIGNMENT, variable.simpleName()));
                             }
@@ -998,42 +999,56 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
 
     private boolean checkForOverwritingPreviousAssignment(Variable variable,
                                                           VariableInfo initial,
+                                                          VariableNature variableNature,
                                                           List<ConditionAndVariableInfo> toMerge) {
         String fqn = variable.fullyQualifiedName();
         if (!(variable instanceof LocalVariableReference)) return false;
-        if (!initial.notReadAfterAssignment(index)) return false;
-        // so now we know it is a local variable, it has been assigned to outside the sub-blocks, but not yet read
-        for (ConditionAndVariableInfo cav : toMerge) {
-            VariableInfoContainer localVic = cav.lastStatement.variables.getOrDefaultNull(fqn);
-            if (localVic != null) {
-                VariableInfo current = localVic.current();
-                if (!current.isAssigned()) {
-                    if (!current.isRead()) continue;
-                    return false;
-                }
-                if (current.isRead()) {
-                    if (current.getReadId().compareTo(current.getAssignmentId()) < 0) {
+        if (variableNature instanceof VariableNature.LoopVariable ||
+                variableNature instanceof VariableNature.Pattern) return false;
+        if (initial.notReadAfterAssignment(index)) {
+            // so now we know it is a local variable, it has been assigned to outside the sub-blocks, but not yet read
+            int countAssignments = 0;
+            for (ConditionAndVariableInfo cav : toMerge) {
+                VariableInfoContainer localVic = cav.lastStatement.variables.getOrDefaultNull(fqn);
+                if (localVic != null) {
+                    VariableInfo current = localVic.current();
+                    if (!current.isAssigned()) {
+                        if (!current.isRead()) continue;
                         return false;
                     }
-                    // so there is reading AFTER... but
-                    // we'll need to double check that there was no reading before the assignment!
                     String assignmentIndex = StringUtil.stripLevel(current.getAssignmentId());
-                    if (assignmentIndex.compareTo(index) >= 0) {
-                        StatementAnalysis sa = navigateTo(assignmentIndex);
+                    if (assignmentIndex.compareTo(index) < 0) continue;
+                    countAssignments++;
+                    StatementAnalysis sa = navigateTo(assignmentIndex);
+                    assert sa != null;
+                    if (sa.flowData.getGuaranteedToBeReachedInCurrentBlock() != FlowData.Execution.ALWAYS)
+                        return false;
+                    if (current.isRead()) {
+                        if (current.getReadId().compareTo(current.getAssignmentId()) < 0) {
+                            return false;
+                        }
+                        // so there is reading AFTER... but
+                        // we'll need to double check that there was no reading before the assignment!
+                        // secondly, we want to ensure that the assignment takes place unconditionally in the block
+
                         VariableInfoContainer atAssignment = sa.variables.get(fqn);
                         VariableInfo vi1 = atAssignment.current();
                         assert vi1.isAssigned();
-                        if (vi1.isRead() && vi1.getReadId().compareTo(vi1.getAssignmentId()) < 0) {
+                        // <= here instead of <; solves e.g. i+=1 (i = i + 1, read first, then assigned, same stmt)
+                        if (vi1.isRead() && vi1.getReadId().compareTo(vi1.getAssignmentId()) <= 0) {
                             return false;
                         }
-                    } // else: assignment was before this merge... no bother; any reading will be after or not our problem
+
+                        // else: assignment was before this merge... no bother; any reading will be after or not our problem
+                    }
                 }
             }
+            return countAssignments > 0; // if not assigned, not read... just ignore
         }
-        return true;
+        return false;
     }
 
-    // identical code in statement analyser
+    // almost identical code in statement analyser; serves a different purpose though
     private StatementAnalysis navigateTo(String target) {
         if (index.equals(target)) return this;
         if (target.startsWith(index)) {

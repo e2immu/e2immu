@@ -563,7 +563,7 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                 }
             }
         };
-        testClass("ConditionalChecks_6", 0, 1, new DebugConfiguration.Builder()
+        testClass("ConditionalChecks_6", 1, 1, new DebugConfiguration.Builder()
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)

@@ -120,4 +120,9 @@ public class StringUtil {
         if (colon >= 0) return assignmentId.substring(0, colon);
         throw new UnsupportedOperationException("? " + assignmentId);
     }
+
+    // add a character so that we're definitely beyond this index
+    public static String beyond(String index) {
+        return index + "~";
+    }
 }

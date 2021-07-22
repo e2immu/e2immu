@@ -9,7 +9,7 @@ public class Loops_13 {
     @Constant("abc")
     @NotNull
     public static String method(int n) {
-        String res1= "x";
+        String res1 = "x"; // assignment still necessary according to compiler
         int i = 0;
         while ((i=3)>0) {
             res1 = "abc";

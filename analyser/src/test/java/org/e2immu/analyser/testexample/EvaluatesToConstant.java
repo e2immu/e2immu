@@ -25,7 +25,6 @@ import org.e2immu.annotation.NotNull;
 
  ERROR in M:method3:1.0.1.0.0: Unreachable statement
  ERROR in M:method3:1.0.1: Condition in 'if' or 'switch' statement evaluates to constant
- ERROR in M:method3:2: Useless assignment: b
  ERROR in M:method3:2: Unused local variable: b
 
  The errors involving b in method3 are not really wrong

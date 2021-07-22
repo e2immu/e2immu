@@ -138,6 +138,7 @@ public interface VariableInfo {
 
     default boolean notReadAfterAssignment(String index) {
         return isAssigned()
+                && getAssignmentId().compareTo(index) < 0 // assigned before me!
                 && (!isRead() || getReadId().compareTo(getAssignmentId()) < 0)
                 && StringUtil.inSameBlock(getAssignmentId(), index);
     }

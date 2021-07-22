@@ -262,6 +262,7 @@ public class Test_01_Loops extends CommonTestRunner {
             }
         };
 
+        // because the assignment to res2 is not guaranteed to be executed, there is no error
         testClass("Loops_1", 0, 0, new DebugConfiguration.Builder()
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
@@ -343,7 +344,9 @@ public class Test_01_Loops extends CommonTestRunner {
             }
         };
 
-        testClass("Loops_2", 0, 0, new DebugConfiguration.Builder()
+        // overwrite assignment, because loop is guaranteed to be executed, and assignment is guaranteed to be
+        // executed inside the block
+        testClass("Loops_2", 1, 0, new DebugConfiguration.Builder()
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
@@ -556,7 +559,7 @@ public class Test_01_Loops extends CommonTestRunner {
 
     @Test
     public void test6() throws IOException {
-        testClass("Loops_6", 2, 0, new DebugConfiguration.Builder()
+        testClass("Loops_6", 1, 0, new DebugConfiguration.Builder()
                 .build());
     }
 
@@ -746,9 +749,12 @@ public class Test_01_Loops extends CommonTestRunner {
                 }
             }
         };
-        // errors: overwriting previous assignment, empty loop, unused local variable, useless assignment
+        // errors:
+        // 1- overwriting previous assignment: in condition
+        // 2- empty loop
+        // 3- unused local variable (in stmt 3, because the loop is empty, i is not used)
         // warning: parameter n not used
-        testClass("Loops_12", 4, 1, new DebugConfiguration.Builder()
+        testClass("Loops_12", 3, 1, new DebugConfiguration.Builder()
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build());
     }
@@ -774,8 +780,9 @@ public class Test_01_Loops extends CommonTestRunner {
             }
         };
 
-        // overwriting previous assignment, 1x (not for i++ !)
-        testClass("Loops_13", 1, 0, new DebugConfiguration.Builder()
+        // overwriting previous assignment, for i (in the condition) and res1
+        // (even though the compiler forces us to assign a value, this is bad programming)
+        testClass("Loops_13", 2, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());

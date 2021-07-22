@@ -215,7 +215,8 @@ public class Test_66_VariableScope extends CommonTestRunner {
                 }
             }
         };
-        testClass("VariableScope_4", 0, 0, new DebugConfiguration.Builder()
+        // 1 error: overwriting assignment to ioe
+        testClass("VariableScope_4", 1, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
