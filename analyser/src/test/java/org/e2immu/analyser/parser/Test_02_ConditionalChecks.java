@@ -466,6 +466,7 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
             if ("method".equals(d.methodInfo().name) & "s".equals(d.variableName())) {
                 if ("1.0.0".equals(d.statementId())) {
                     assertEquals("q>=5?\"abc\":\"xyz\"", d.currentValue().toString());
+                    assertEquals("1.0.0.0.0-E,1.0.0.1.0-E,1.0.0:M", d.variableInfo().getAssignmentIds().toString());
                 }
                 if ("1.0.0.0.0".equals(d.statementId())) {
                     assertEquals("\"abc\"", d.currentValue().toString());
@@ -475,9 +476,12 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                 }
                 if ("1.1.0".equals(d.statementId())) {
                     assertEquals("q<=-1?\"tuv\":null", d.currentValue().toString());
+                    assertEquals("0-E,1.1.0.0.0-E,1.1.0:M", d.variableInfo().getAssignmentIds().toString());
                 }
                 if ("1".equals(d.statementId())) {
                     assertEquals("p<=2?q>=5?\"abc\":\"xyz\":q<=-1?\"tuv\":null", d.currentValue().toString());
+                    assertEquals("0-E,1.0.0.0.0-E,1.0.0.1.0-E,1.0.0:M,1.1.0.0.0-E,1.1.0:M,1:M",
+                            d.variableInfo().getAssignmentIds().toString());
                 }
             }
         };

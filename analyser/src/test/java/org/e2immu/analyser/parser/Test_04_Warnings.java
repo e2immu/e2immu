@@ -158,7 +158,7 @@ public class Test_04_Warnings extends CommonTestRunner {
             }
             if ("checkArray2".equals(d.methodInfo().name)) {
                 String read = d.variableInfo().getReadId();
-                String assigned = d.variableInfo().getAssignmentId();
+                String assigned = d.variableInfo().getAssignmentIds().getLatestAssignment();
 
                 if ("0".equals(d.statementId()) && "integers".equals(d.variableName())) {
                     assertEquals("0" + E, assigned); // integers=, and integers[i]=

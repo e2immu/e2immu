@@ -441,7 +441,7 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
         StatementAnalysis lastStatement = methodAnalysis.getLastStatement();
         VariableInfo vi = lastStatement.findOrNull(fieldReference, VariableInfoContainer.Level.MERGE);
         if (vi != null && vi.isAssigned()) {
-            Matcher m = INDEX_PATTERN.matcher(vi.getAssignmentId());
+            Matcher m = INDEX_PATTERN.matcher(vi.getAssignmentIds().getLatestAssignment());
             if (m.matches()) {
                 int index = Integer.parseInt(m.group(1)) - 1;
                 if (index >= 0) {

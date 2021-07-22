@@ -67,6 +67,9 @@ public class Test_17_Container extends CommonTestRunner {
                     }
                 }
                 if (S.equals(d.variableName())) {
+                    if ("0".equals(d.statementId())) {
+                        assertEquals("p", d.currentValue().toString());
+                    }
                     if ("1".equals(d.statementId())) {
                         String expected = d.iteration() == 0 ? "<f:s>" : "instance type Set<String>/*@Identity*/";
                         assertEquals(expected, d.currentValue().toString());

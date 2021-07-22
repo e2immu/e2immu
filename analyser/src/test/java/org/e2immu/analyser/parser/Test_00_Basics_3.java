@@ -91,14 +91,14 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                     assertEquals("instance type Basics_3", d.currentValue().toString());
                 }
                 if ("0.0.0".equals(d.statementId())) {
-                    assertEquals(VariableInfoContainer.NOT_YET_ASSIGNED, d.variableInfo().getAssignmentId());
+                    assertTrue(d.variableInfo().getAssignmentIds().hasNotYetBeenAssigned());
                     assertEquals("0.0.0" + E, d.variableInfo().getReadId());
                     if (d.iteration() > 0) {
                         assertEquals("instance type Basics_3", d.currentValue().toString());
                     }
                 }
                 if ("0.1.0".equals(d.statementId())) {
-                    assertEquals(VariableInfoContainer.NOT_YET_ASSIGNED, d.variableInfo().getAssignmentId());
+                    assertTrue(d.variableInfo().getAssignmentIds().hasNotYetBeenAssigned());
                     assertEquals("0.1.0" + E, d.variableInfo().getReadId());
                     if (d.iteration() > 0) {
                         assertEquals("instance type Basics_3", d.currentValue().toString());
@@ -188,6 +188,7 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                     }
                     assertEquals("", d.variableInfo().getLinkedVariables().toString());
                     assertTrue(d.variableInfo().isAssigned());
+                    assertEquals("0.0.1-E,0.1.0-E,0:M", d.variableInfo().getAssignmentIds().toString());
                 }
                 if ("1".equals(d.statementId())) {
                     String expected = d.iteration() == 0 ? "<f:s>" : "input1.contains(\"a\")?\"xyz\":\"abc\"";

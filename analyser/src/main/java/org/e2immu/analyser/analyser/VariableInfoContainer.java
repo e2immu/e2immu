@@ -43,14 +43,14 @@ public interface VariableInfoContainer {
     // see TestLevelSuffixes to visually understand the order
 
     String NOT_YET_READ = "-";
-    String NOT_YET_ASSIGNED = "-";
 
     boolean hasEvaluation();
 
     boolean hasMerge();
 
     default boolean isNotAssignedInThisStatement() {
-        return !hasEvaluation() || getPreviousOrInitial().getAssignmentId().compareTo(best(Level.EVALUATION).getAssignmentId()) >= 0;
+        return !hasEvaluation() ||
+                getPreviousOrInitial().getAssignmentIds().compareTo(best(Level.EVALUATION).getAssignmentIds()) >= 0;
     }
 
     default boolean isReadInThisStatement() {
@@ -93,15 +93,6 @@ public interface VariableInfoContainer {
         public String toString() {
             return label;
         }
-    }
-
-    /*
-    method is here so we know we need to search for - and :
-     */
-    static String statementId(String assignmentId) {
-        assert assignmentId.endsWith(Level.INITIAL.label) || assignmentId.endsWith(Level.EVALUATION.label)
-                || assignmentId.endsWith(Level.MERGE.label);
-        return assignmentId.substring(0, assignmentId.length() - 2);
     }
 
     /*
@@ -166,7 +157,7 @@ public interface VariableInfoContainer {
      */
     void copy();
 
-    void ensureEvaluation(String assignmentId, String readId, int statementTime, Set<Integer> readAtStatementTimes);
+    void ensureEvaluation(AssignmentIds assignmentIds, String readId, int statementTime, Set<Integer> readAtStatementTimes);
 
     Expression merge(EvaluationContext evaluationContext,
                      Expression stateOfDestination,

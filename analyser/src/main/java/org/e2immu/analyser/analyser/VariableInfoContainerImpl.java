@@ -33,6 +33,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
+import static org.e2immu.analyser.analyser.AssignmentIds.NOT_YET_ASSIGNED;
+
 public class VariableInfoContainerImpl extends Freezable implements VariableInfoContainer {
     private static final Logger LOGGER = LoggerFactory.getLogger(VariableInfoContainerImpl.class);
 
@@ -95,7 +97,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
     factory method for conditional initialization
      */
     public static String conditionalInitializationSuffix(VariableInfo vi) {
-        return "$CI$" + vi.getAssignmentId();
+        return "$CI$" + vi.getAssignmentIds().getLatestAssignment();
     }
 
     public static VariableInfoContainerImpl copyOfFieldForConditionalInitialization(VariableInfo vi, String index) {
@@ -106,7 +108,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         LocalVariable lv = new LocalVariable(Set.of(LocalVariableModifier.FINAL), fr.simpleName() + suffix,
                 fr.fullyQualifiedName() + suffix, fr.parameterizedType(), List.of(), fr.getOwningType(), ci);
         LocalVariableReference newVariable = new LocalVariableReference(lv);
-        VariableInfoImpl initial = new VariableInfoImpl(newVariable, vi.getAssignmentId(),
+        VariableInfoImpl initial = new VariableInfoImpl(newVariable, vi.getAssignmentIds(),
                 NOT_YET_READ, NOT_A_VARIABLE_FIELD, Set.of(), vi.valueIsSet() ? null : vi.getValue());
         initial.newVariable(false);
         initial.setValue(vi.getValue(), vi.isDelayed());
@@ -149,7 +151,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
                                                              Expression value,
                                                              int immutable,
                                                              boolean statementHasSubBlocks) {
-        VariableInfoImpl initial = new VariableInfoImpl(lvr, index + Level.INITIAL,
+        VariableInfoImpl initial = new VariableInfoImpl(lvr, new AssignmentIds(index + Level.INITIAL),
                 index + Level.EVALUATION, NOT_A_VARIABLE_FIELD, Set.of(), null);
         initial.newVariable(true);
         initial.setValue(value, false);
@@ -172,7 +174,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
                                                             Map<VariableProperty, Integer> properties,
                                                             LinkedVariables staticallyAssignedVariables,
                                                             boolean statementHasSubBlocks) {
-        VariableInfoImpl initial = new VariableInfoImpl(lvr, assignedId, readId,
+        VariableInfoImpl initial = new VariableInfoImpl(lvr, new AssignmentIds(assignedId), readId,
                 VariableInfoContainer.NOT_A_VARIABLE_FIELD, Set.of(), null);
         initial.setValue(value, false);
         properties.forEach(initial::setProperty);
@@ -351,7 +353,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
     }
 
     @Override
-    public void ensureEvaluation(String assignmentId, String readId, int statementTime, Set<Integer> readAtStatementTimes) {
+    public void ensureEvaluation(AssignmentIds assignmentIds, String readId, int statementTime, Set<Integer> readAtStatementTimes) {
         if (!evaluation.isSet()) {
             VariableInfoImpl pi = (VariableInfoImpl) getPreviousOrInitial();
 
@@ -360,7 +362,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
             assert !readId.equals(NOT_YET_READ) || !assignmentId.equals(NOT_YET_ASSIGNED) || !pi.isRead();
              */
 
-            VariableInfoImpl eval = new VariableInfoImpl(pi.variable(), assignmentId, readId, statementTime,
+            VariableInfoImpl eval = new VariableInfoImpl(pi.variable(), assignmentIds, readId, statementTime,
                     readAtStatementTimes, pi.valueIsSet() ? null : pi.getValue());
             evaluation.set(eval);
             if (!pi.valueIsSet()) {
@@ -376,7 +378,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         VariableInfo vi1 = getPreviousOrInitial();
         VariableInfoImpl write;
         if (!evaluation.isSet()) {
-            write = new VariableInfoImpl(vi1.variable(), vi1.getAssignmentId(), vi1.getReadId(), vi1.getStatementTime(),
+            write = new VariableInfoImpl(vi1.variable(), vi1.getAssignmentIds(), vi1.getReadId(), vi1.getStatementTime(),
                     vi1.getReadAtStatementTimes(), vi1.valueIsSet() ? null : vi1.getValue());
             if (vi1.linkedVariablesIsSet()) write.setLinkedVariables(vi1.getLinkedVariables());
             if (vi1.valueIsSet()) write.setValue(vi1.getValue(), false);
@@ -411,7 +413,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
     }
 
     private VariableInfoImpl prepareForWritingContextProperties(VariableInfo vi1) {
-        VariableInfoImpl write = new VariableInfoImpl(vi1.variable(), vi1.getAssignmentId(),
+        VariableInfoImpl write = new VariableInfoImpl(vi1.variable(), vi1.getAssignmentIds(),
                 vi1.getReadId(), vi1.getStatementTime(), vi1.getReadAtStatementTimes(), vi1.valueIsSet() ? null : vi1.getValue());
         if (vi1.linkedVariablesIsSet()) write.setLinkedVariables(vi1.getLinkedVariables());
         if (vi1.valueIsSet()) write.setValue(vi1.getValue(), false);

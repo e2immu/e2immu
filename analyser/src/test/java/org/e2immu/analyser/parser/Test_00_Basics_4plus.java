@@ -616,11 +616,13 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
                         assertEquals("l", d.currentValue().toString());
                     }
                     if ("3".equals(d.statementId())) {
-                        assertEquals("3" + VariableInfoContainer.Level.EVALUATION, d.variableInfo().getAssignmentId());
+                        assertEquals("3" + VariableInfoContainer.Level.EVALUATION,
+                                d.variableInfo().getAssignmentIds().toString());
                         assertEquals("1+l", d.currentValue().toString());
                     }
                     if ("6".equals(d.statementId())) {
-                        assertEquals("6" + VariableInfoContainer.Level.EVALUATION, d.variableInfo().getAssignmentId());
+                        assertEquals("6" + VariableInfoContainer.Level.EVALUATION,
+                                d.variableInfo().getAssignmentIds().toString());
                         assertEquals("2+l", d.currentValue().toString());
                     }
                 }

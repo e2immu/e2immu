@@ -229,7 +229,8 @@ public class Test_16_Modification extends CommonTestRunner {
                     assertTrue(d.variableInfo().isRead());
                     assertEquals("this.set3", d.variableInfo().getStaticallyAssignedVariables().toString());
 
-                    assertTrue(d.variableInfo().getReadId().compareTo(d.variableInfo().getAssignmentId()) > 0);
+                    assertTrue(d.variableInfo().getReadId()
+                            .compareTo(d.variableInfo().getAssignmentIds().getLatestAssignment()) > 0);
                     if (d.iteration() == 0) {
                         // there is a variable info at levels 0 and 3
                         assertTrue(d.currentValueIsDelayed());

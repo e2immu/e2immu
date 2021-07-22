@@ -686,7 +686,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                         String indexOfStatementTime = flowData.assignmentIdOfStatementTime.get(statementTime);
 
                         Expression initialValue = statementTime == initial.getStatementTime() &&
-                                initial.getAssignmentId().compareTo(indexOfStatementTime) >= 0 ?
+                                initial.getAssignmentIds().getLatestAssignmentIndex().compareTo(indexOfStatementTime) >= 0 ?
                                 initial.getValue() :
                                 NewObject.localCopyOfVariableField(index + "-" + localCopy.fullyQualifiedName(),
                                         primitives, fieldReference.parameterizedType());
@@ -754,8 +754,9 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
 
         String copyAssignmentId;
         String indexOfStatementTime = flowData.assignmentIdOfStatementTime.get(statementTime);
-        if (statementTime == fieldVi.getStatementTime() && fieldVi.getAssignmentId().compareTo(indexOfStatementTime) >= 0) {
-            copyAssignmentId = fieldVi.getAssignmentId(); // double $
+        if (statementTime == fieldVi.getStatementTime() &&
+                fieldVi.getAssignmentIds().getLatestAssignment().compareTo(indexOfStatementTime) >= 0) {
+            copyAssignmentId = fieldVi.getAssignmentIds().getLatestAssignment(); // double $
         } else {
             copyAssignmentId = null; // single $
         }
@@ -913,7 +914,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
 
                             if (variable instanceof FieldReference fr && resultingValue.variables().contains(fr)) {
                                 for (StatementAnalysis.ConditionAndVariableInfo source : toMerge) {
-                                    if (StringUtil.inSameBlock(source.variableInfo.getAssignmentId(),
+                                    if (StringUtil.inSameBlock(source.variableInfo.getAssignmentIds().getLatestAssignmentIndex(),
                                             source.indexOfLastStatement)) {
                                         addConditionalAssignmentCopy(source.variableInfo);
                                     }
@@ -1016,7 +1017,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                         if (!current.isRead()) continue;
                         return false;
                     }
-                    String assignmentIndex = StringUtil.stripLevel(current.getAssignmentId());
+                    String assignmentIndex = current.getAssignmentIds().getLatestAssignmentIndex();
                     if (assignmentIndex.compareTo(index) < 0) continue;
                     countAssignments++;
                     StatementAnalysis sa = navigateTo(assignmentIndex);
@@ -1024,7 +1025,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                     if (sa.flowData.getGuaranteedToBeReachedInCurrentBlock() != FlowData.Execution.ALWAYS)
                         return false;
                     if (current.isRead()) {
-                        if (current.getReadId().compareTo(current.getAssignmentId()) < 0) {
+                        if (current.getReadId().compareTo(current.getAssignmentIds().getLatestAssignment()) < 0) {
                             return false;
                         }
                         // so there is reading AFTER... but
@@ -1035,7 +1036,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                         VariableInfo vi1 = atAssignment.current();
                         assert vi1.isAssigned();
                         // <= here instead of <; solves e.g. i+=1 (i = i + 1, read first, then assigned, same stmt)
-                        if (vi1.isRead() && vi1.getReadId().compareTo(vi1.getAssignmentId()) <= 0) {
+                        if (vi1.isRead() && vi1.getReadId().compareTo(vi1.getAssignmentIds().getLatestAssignment()) <= 0) {
                             return false;
                         }
 
@@ -1096,8 +1097,9 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             assert cav.firstStatementIndexForOldStyleSwitch != null;
             // if the variable is assigned in the block, it has to be assigned after the first index
             // "the block" is the switch statement; otherwise,
-            if (cav.variableInfo.getAssignmentId().compareTo(index) > 0) {
-                return cav.firstStatementIndexForOldStyleSwitch.compareTo(cav.variableInfo.getAssignmentId()) <= 0;
+            String cavLatest = cav.variableInfo.getAssignmentIds().getLatestAssignmentIndex();
+            if (cavLatest.compareTo(index) > 0) {
+                return cav.firstStatementIndexForOldStyleSwitch.compareTo(cavLatest) <= 0;
             }
             return cav.firstStatementIndexForOldStyleSwitch.compareTo(cav.variableInfo.getReadId()) <= 0;
         }
@@ -1520,7 +1522,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         return new And(evaluationContext.getPrimitives()).append(evaluationContext, variableStream()
                 .filter(vi -> vi.variable() instanceof FieldReference
                         && vi.isAssigned()
-                        && index().equals(VariableInfoContainer.statementId(vi.getAssignmentId())))
+                        && index().equals(vi.getAssignmentIds().getLatestAssignmentIndex()))
                 .map(vi -> {
                     if (vi.variable() instanceof FieldReference fieldReference) {
                         if (vi.getValue() instanceof NullConstant) {

@@ -57,7 +57,7 @@ public class AssignmentIncompatibleWithPrecondition {
                 boolean assigned = variableInfo.isAssigned();
                 if (assigned) {
                     Expression pcExpression = precondition.expression();
-                    String index = VariableInfoContainer.statementId(variableInfo.getAssignmentId());
+                    String index = variableInfo.getAssignmentIds().getLatestAssignmentIndex();
                     log(EVENTUALLY, "Field {} is assigned in {}, {}", variable.fullyQualifiedName(),
                             methodAnalyser.methodInfo.distinguishingName(), index);
 

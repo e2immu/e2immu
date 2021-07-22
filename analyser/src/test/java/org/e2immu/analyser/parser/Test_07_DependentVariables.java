@@ -36,7 +36,7 @@ public class Test_07_DependentVariables extends CommonTestRunner {
         if ("method1".equals(d.methodInfo().name)) {
 
             String read = d.variableInfo().getReadId();
-            String assigned = d.variableInfo().getAssignmentId();
+            String assigned = d.variableInfo().getAssignmentIds().getLatestAssignment();
 
             if ("1".equals(d.statementId()) && "array[0]".equals(d.variableName())) {
                 assertEquals("12", d.currentValue().toString());

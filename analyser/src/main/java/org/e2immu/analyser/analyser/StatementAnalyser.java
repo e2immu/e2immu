@@ -753,7 +753,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                                 changeData.properties(), groupPropertyValues);
                         remapStaticallyAssignedVariables.put(localVar, local.getPreviousOrInitial().getStaticallyAssignedVariables());
 
-                        local.ensureEvaluation(index() + EVALUATION, VariableInfoContainer.NOT_YET_READ,
+                        local.ensureEvaluation(new AssignmentIds(index() + EVALUATION), VariableInfoContainer.NOT_YET_READ,
                                 statementAnalysis.statementTime(EVALUATION), Set.of());
                         local.setValue(valueToWriteCorrected, valueToWriteIsDelayed, changeData.staticallyAssignedVariables(), merged2,
                                 false);
@@ -1028,7 +1028,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                                                                EvaluationContext evaluationContext) {
         if (vi1.isAssigned() && !vi1.isRead() && changeData.markAssignment() &&
                 changeData.readAtStatementTime().isEmpty() && !(vi1.variable() instanceof ReturnVariable)) {
-            String index = StringUtil.stripLevel(vi1.getAssignmentId());
+            String index = vi1.getAssignmentIds().getLatestAssignmentIndex();
             StatementAnalysis sa = myMethodAnalyser.findStatementAnalyser(index).statementAnalysis;
             if (sa.stateData.conditionManagerForNextStatement.isVariable()) {
                 return false; // we'll be back
@@ -1340,13 +1340,13 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             initial = vic.getPreviousOrInitial();
         }
         String id = index() + EVALUATION;
-        String assignmentId = changeData.markAssignment() ? id : initial.getAssignmentId();
+        AssignmentIds assignmentIds = changeData.markAssignment() ? new AssignmentIds(id) : initial.getAssignmentIds();
         // we do not set readId to the empty set when markAssignment... we'd rather keep the old value
         // we will compare the recency anyway
         String readId = changeData.readAtStatementTime().isEmpty() ? initial.getReadId() : id;
         int statementTime = statementAnalysis.statementTimeForVariable(analyserContext, variable, newStatementTime);
 
-        vic.ensureEvaluation(assignmentId, readId, statementTime, changeData.readAtStatementTime());
+        vic.ensureEvaluation(assignmentIds, readId, statementTime, changeData.readAtStatementTime());
     }
 
     private static final LinkedVariables EMPTY_OVERRIDE = new LinkedVariables(Set.of(), false);
@@ -1540,7 +1540,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         VariableInfoContainer vic = statementAnalysis.findForWriting(nullVariable);
         if (!vic.hasEvaluation()) {
             VariableInfo initial = vic.getPreviousOrInitial();
-            vic.ensureEvaluation(initial.getAssignmentId(), initial.getReadId(), initial.getStatementTime(), initial.getReadAtStatementTimes());
+            vic.ensureEvaluation(initial.getAssignmentIds(), initial.getReadId(), initial.getStatementTime(), initial.getReadAtStatementTimes());
         }
         if (delays) {
             vic.setProperty(CONTEXT_NOT_NULL_FOR_PARENT_DELAY, Level.TRUE, EVALUATION);
@@ -2629,7 +2629,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
 
     private boolean uselessForDependentVariable(VariableInfo variableInfo) {
         if (variableInfo.variable() instanceof DependentVariable dv) {
-            return dv.arrayVariable != null && !variableHasBeenReadAfter(dv.arrayVariable, variableInfo.getAssignmentId());
+            return dv.arrayVariable != null && !variableHasBeenReadAfter(dv.arrayVariable,
+                    variableInfo.getAssignmentIds().getLatestAssignment());
         }
         return true;
     }
@@ -2643,7 +2644,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
     private boolean localVariableAssignmentInThisBlock(VariableInfo variableInfo) {
         assert variableInfo.variable().isLocal();
         if (!variableInfo.isAssigned()) return false;
-        return StringUtil.inSameBlock(variableInfo.getAssignmentId(), index());
+        return StringUtil.inSameBlock(variableInfo.getAssignmentIds().getLatestAssignmentIndex(), index());
     }
 
     private AnalysisStatus checkUnusedLocalVariables() {

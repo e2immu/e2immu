@@ -774,7 +774,7 @@ public class Test_01_Loops extends CommonTestRunner {
             if ("method".equals(d.methodInfo().name)) {
                 if ("i".equals(d.variableName())) {
                     if ("2.0.0".equals(d.statementId())) {
-                        assertEquals("2-E", d.variableInfo().getAssignmentId());
+                        assertEquals("2-E", d.variableInfo().getAssignmentIds().toString());
                     }
                 }
             }

@@ -26,8 +26,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import static org.e2immu.analyser.analyser.VariableInfoContainer.Level.INITIAL;
-import static org.e2immu.analyser.analyser.VariableInfoContainer.*;
+import static org.e2immu.analyser.analyser.VariableInfoContainer.NOT_YET_READ;
+import static org.e2immu.analyser.analyser.VariableInfoContainer.VARIABLE_FIELD_DELAY;
 
 public interface VariableInfo {
     String name();
@@ -108,11 +108,14 @@ public interface VariableInfo {
     int getStatementTime();
 
     /**
-     * @return the empty string if has not been an assignment in this method yet; otherwise the statement id
+     * @return the empty set if has not been an assignment in this method yet; otherwise the statement ids
      * of the latest assignment to this variable (field, local variable, dependent variable), followed
      * by "-E" for evaluation or ":M" for merge (see Level)
+     * <p>
+     * The last one in the tree set is the last assignment. The other ones are earlier assignments
+     * which still contribute to the value, i.e., the last assignment was conditional
      */
-    String getAssignmentId();
+    AssignmentIds getAssignmentIds();
 
     String getReadId();
 
@@ -125,7 +128,7 @@ public interface VariableInfo {
     }
 
     default boolean isAssigned() {
-        return !getAssignmentId().equals(NOT_YET_ASSIGNED) && !getAssignmentId().equals(INITIAL.label);
+        return !getAssignmentIds().hasNotYetBeenAssigned();
     }
 
     default boolean isConfirmedVariableField() {
@@ -137,10 +140,12 @@ public interface VariableInfo {
     }
 
     default boolean notReadAfterAssignment(String index) {
-        return isAssigned()
-                && getAssignmentId().compareTo(index) < 0 // assigned before me!
-                && (!isRead() || getReadId().compareTo(getAssignmentId()) < 0)
-                && StringUtil.inSameBlock(getAssignmentId(), index);
+        AssignmentIds assignmentIds = getAssignmentIds();
+        if (assignmentIds.hasNotYetBeenAssigned()) return false;
+        String latest = getAssignmentIds().getLatestAssignment();
+        return latest.compareTo(index) < 0 // assigned before me!
+                && (!isRead() || getReadId().compareTo(latest) < 0)
+                && StringUtil.inSameBlock(latest, index);
     }
 
     boolean staticallyAssignedVariablesIsSet();

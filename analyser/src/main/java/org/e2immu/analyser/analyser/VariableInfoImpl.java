@@ -29,12 +29,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
-import java.util.function.Function;
 import java.util.function.IntBinaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static org.e2immu.analyser.analyser.VariableInfoContainer.*;
+import static org.e2immu.analyser.analyser.VariableInfoContainer.NOT_A_VARIABLE_FIELD;
+import static org.e2immu.analyser.analyser.VariableInfoContainer.NOT_YET_READ;
 import static org.e2immu.analyser.analyser.VariableProperty.*;
 import static org.e2immu.analyser.util.EventuallyFinalExtension.setFinalAllowEquals;
 
@@ -42,7 +42,7 @@ class VariableInfoImpl implements VariableInfo {
     private static final Logger LOGGER = LoggerFactory.getLogger(VariableInfoImpl.class);
 
     private final Variable variable;
-    private final String assignmentId;
+    private final AssignmentIds assignmentIds;
     private final String readId;
     // goal, for now: from iteration 0 to iteration 1, when a field has been read, collect the statement times
     // it is too early to know if the field will be variable or nor; if variable, new local copies need
@@ -59,13 +59,13 @@ class VariableInfoImpl implements VariableInfo {
 
     // ONLY for testing!
     VariableInfoImpl(Variable variable) {
-        this(variable, NOT_YET_ASSIGNED, NOT_YET_READ, NOT_A_VARIABLE_FIELD, Set.of(), null);
+        this(variable, AssignmentIds.NOT_YET_ASSIGNED, NOT_YET_READ, NOT_A_VARIABLE_FIELD, Set.of(), null);
     }
 
     // used by merge code
-    private VariableInfoImpl(Variable variable, String assignmentId, String readId) {
+    private VariableInfoImpl(Variable variable, AssignmentIds assignmentIds, String readId) {
         this.variable = Objects.requireNonNull(variable);
-        this.assignmentId = assignmentId;
+        this.assignmentIds = assignmentIds;
         this.readId = readId;
         this.readAtStatementTimes = Set.of();
         value.setVariable(DelayedVariableExpression.forVariable(variable));
@@ -74,13 +74,13 @@ class VariableInfoImpl implements VariableInfo {
 
     // normal one for creating an initial or evaluation
     VariableInfoImpl(Variable variable,
-                     String assignmentId,
+                     AssignmentIds assignmentIds,
                      String readId,
                      int statementTime,
                      Set<Integer> readAtStatementTimes,
                      Expression delayedValue) {
         this.variable = Objects.requireNonNull(variable);
-        this.assignmentId = Objects.requireNonNull(assignmentId);
+        this.assignmentIds = Objects.requireNonNull(assignmentIds);
         this.readId = Objects.requireNonNull(readId);
         if (statementTime != VariableInfoContainer.VARIABLE_FIELD_DELAY) {
             this.statementTime.set(statementTime);
@@ -96,8 +96,8 @@ class VariableInfoImpl implements VariableInfo {
     }
 
     @Override
-    public String getAssignmentId() {
-        return assignmentId;
+    public AssignmentIds getAssignmentIds() {
+        return assignmentIds;
     }
 
     @Override
@@ -347,9 +347,10 @@ class VariableInfoImpl implements VariableInfo {
                                                boolean atLeastOneBlockExecuted,
                                                List<StatementAnalysis.ConditionAndVariableInfo> mergeSources,
                                                GroupPropertyValues groupPropertyValues) {
-        String mergedAssignmentId = mergedId(evaluationContext, getAssignmentId(), VariableInfo::getAssignmentId, mergeSources);
-        String mergedReadId = mergedId(evaluationContext, getReadId(), VariableInfo::getReadId, mergeSources);
-        VariableInfoImpl newObject = new VariableInfoImpl(variable, mergedAssignmentId, mergedReadId);
+        AssignmentIds mergedAssignmentIds = mergedAssignmentIds(evaluationContext, atLeastOneBlockExecuted,
+                getAssignmentIds(), mergeSources);
+        String mergedReadId = mergedReadId(evaluationContext, getReadId(), mergeSources);
+        VariableInfoImpl newObject = new VariableInfoImpl(variable, mergedAssignmentIds, mergedReadId);
         newObject.mergeIntoMe(evaluationContext, stateOfDestination, atLeastOneBlockExecuted, this, mergeSources,
                 groupPropertyValues);
         return newObject;
@@ -400,20 +401,38 @@ class VariableInfoImpl implements VariableInfo {
         map.forEach(this::setProperty);
     }
 
-    private static String mergedId(EvaluationContext evaluationContext,
-                                   String previousId,
-                                   Function<VariableInfo, String> getter,
-                                   List<StatementAnalysis.ConditionAndVariableInfo> merge) {
+    private static String mergedReadId(EvaluationContext evaluationContext,
+                                       String previousId,
+                                       List<StatementAnalysis.ConditionAndVariableInfo> merge) {
         // null current statement in tests
-        String currentStatementIdE = (evaluationContext.getCurrentStatement() == null ? NOT_YET_ASSIGNED :
+        String currentStatementIdE = (evaluationContext.getCurrentStatement() == null ? "-" :
                 evaluationContext.getCurrentStatement().index()) + VariableInfoContainer.Level.EVALUATION;
-        String currentStatementIdM = (evaluationContext.getCurrentStatement() == null ? NOT_YET_ASSIGNED :
+        String currentStatementIdM = (evaluationContext.getCurrentStatement() == null ? "-" :
                 evaluationContext.getCurrentStatement().index()) + VariableInfoContainer.Level.MERGE;
         boolean inSubBlocks =
                 merge.stream()
                         .map(StatementAnalysis.ConditionAndVariableInfo::variableInfo)
-                        .anyMatch(vi -> getter.apply(vi).compareTo(currentStatementIdE) > 0);
+                        .anyMatch(vi -> vi.getReadId().compareTo(currentStatementIdE) > 0);
         return inSubBlocks ? currentStatementIdM : previousId;
+    }
+
+    private static AssignmentIds mergedAssignmentIds(EvaluationContext evaluationContext,
+                                                     boolean atLeastOneBlockExecuted,
+                                                     AssignmentIds previousIds,
+                                                     List<StatementAnalysis.ConditionAndVariableInfo> merge) {
+        // null current statement in tests
+        String currentStatementIdE = (evaluationContext.getCurrentStatement() == null ? "-" :
+                evaluationContext.getCurrentStatement().index()) + VariableInfoContainer.Level.EVALUATION;
+        String currentStatementIdM = (evaluationContext.getCurrentStatement() == null ? "-" :
+                evaluationContext.getCurrentStatement().index()) + VariableInfoContainer.Level.MERGE;
+        boolean inSubBlocks =
+                merge.stream()
+                        .map(StatementAnalysis.ConditionAndVariableInfo::variableInfo)
+                        .anyMatch(vi -> vi.getAssignmentIds().getLatestAssignment().compareTo(currentStatementIdE) > 0);
+        if (!inSubBlocks) return previousIds;
+        Stream<AssignmentIds> sub = merge.stream().map(cav -> cav.variableInfo().getAssignmentIds());
+        Stream<AssignmentIds> inclPrev = atLeastOneBlockExecuted ? sub : Stream.concat(Stream.of(previousIds), sub);
+        return new AssignmentIds(currentStatementIdM, inclPrev);
     }
 
     /*

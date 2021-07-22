@@ -681,10 +681,10 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                     // parameters are already present, fields should become present if they're not local
                     .filter(variableInfo -> acceptForMarking(variableInfo.variable(), methodAnalysis.getMethodInfo().typeInfo))
                     .forEach(variableInfo -> {
-                        if (variableInfo.getReadId().compareTo(VariableInfoContainer.NOT_YET_READ) > 0) {
+                        if (variableInfo.isRead()) {
                             markRead(variableInfo.variable());
                         }
-                        if (variableInfo.getAssignmentId().compareTo(VariableInfoContainer.NOT_YET_READ) > 0) {
+                        if (variableInfo.isAssigned()) {
                             assignment(variableInfo.variable(), variableInfo.getValue(), variableInfo.getLinkedVariables(),
                                     variableInfo.getStaticallyAssignedVariables());
                         }
