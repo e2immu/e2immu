@@ -683,10 +683,10 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                         VariableInfoContainer lvrVic = VariableInfoContainerImpl.newLocalCopyOfVariableField(localCopy,
                                 index + INITIAL, navigationData.hasSubBlocks());
                         variables.put(localCopy.fullyQualifiedName(), lvrVic);
-                        String indexOfStatementTime = flowData.assignmentIdOfStatementTime.get(statementTime);
+                        String assignmentIdOfStatementTime = flowData.assignmentIdOfStatementTime.get(statementTime);
 
                         Expression initialValue = statementTime == initial.getStatementTime() &&
-                                initial.getAssignmentIds().getLatestAssignmentIndex().compareTo(indexOfStatementTime) >= 0 ?
+                                initial.getAssignmentIds().getLatestAssignment().compareTo(assignmentIdOfStatementTime) >= 0 ?
                                 initial.getValue() :
                                 NewObject.localCopyOfVariableField(index + "-" + localCopy.fullyQualifiedName(),
                                         primitives, fieldReference.parameterizedType());
