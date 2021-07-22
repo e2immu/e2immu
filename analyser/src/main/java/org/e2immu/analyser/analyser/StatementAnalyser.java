@@ -2080,11 +2080,12 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 } else {
                     message = Message.Label.ASSERT_EVALUATES_TO_CONSTANT_FALSE;
                     Optional<StatementAnalysis> next = statementAnalysis.navigationData.next.get();
-                    next.ifPresent(nextAnalysis -> {
+                    if (next.isPresent()) {
+                        StatementAnalysis nextAnalysis = next.get();
                         nextAnalysis.flowData.setGuaranteedToBeReached(NEVER);
                         nextAnalysis.ensure(Message.newMessage(new Location(myMethodAnalyser.methodInfo, nextAnalysis.index),
                                 Message.Label.UNREACHABLE_STATEMENT));
-                    });
+                    }
                 }
             } else throw new UnsupportedOperationException();
             statementAnalysis.ensure(Message.newMessage(sharedState.evaluationContext.getLocation(), message));

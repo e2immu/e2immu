@@ -132,4 +132,17 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
+
+    @Test
+    public void test_6() throws IOException {
+        testClass("FormatterSimplified_6", 0, 0, new DebugConfiguration.Builder()
+                .build());
+    }
+
+
+    @Test
+    public void test_7() throws IOException {
+        testClass("FormatterSimplified_7", 0, 0, new DebugConfiguration.Builder()
+                .build());
+    }
 }
