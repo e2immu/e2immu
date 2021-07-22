@@ -26,6 +26,8 @@ import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.ListUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.function.Predicate;
@@ -35,6 +37,7 @@ import static org.e2immu.analyser.util.Logger.LogTarget.EXPRESSION;
 import static org.e2immu.analyser.util.Logger.log;
 
 public record And(Primitives primitives, List<Expression> expressions) implements Expression {
+    private static final Logger LOGGER = LoggerFactory.getLogger(And.class);
 
     public And {
         Objects.requireNonNull(primitives);
@@ -54,9 +57,16 @@ public record And(Primitives primitives, List<Expression> expressions) implement
     public Expression append(EvaluationContext evaluationContext, Expression... values) {
 
         // STEP 1: check that all values return boolean!
-
-        if (Arrays.stream(values).anyMatch(v -> v.isUnknown() || v.returnType() == null || Primitives.isNotBooleanOrBoxedBoolean(v.returnType()))) {
-            throw new UnsupportedOperationException("Internal error, values are " + Arrays.toString(values));
+        for (Expression v : values) {
+            if (v.isUnknown()) {
+                throw new UnsupportedOperationException("Unknown value " + v + " in And");
+            }
+            if (v.returnType() == null) {
+                throw new UnsupportedOperationException("Null return type for " + v + " in And");
+            }
+            if (Primitives.isNotBooleanOrBoxedBoolean(v.returnType())) {
+                throw new UnsupportedOperationException("Non-boolean return type for " + v + " in And: " + v.returnType());
+            }
         }
 
         // STEP 2: trivial reductions
@@ -436,7 +446,8 @@ public record And(Primitives primitives, List<Expression> expressions) implement
     For this to work, it is crucial that the clauses are presented in the correct order!
      */
     @Override
-    public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
+    public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo
+            forwardEvaluationInfo) {
         List<EvaluationResult> clauseResults = new ArrayList<>(expressions.size());
         EvaluationContext context = evaluationContext;
         List<Expression> sortedExpressions = new ArrayList<>(expressions);
@@ -460,7 +471,7 @@ public record And(Primitives primitives, List<Expression> expressions) implement
 
     @Override
     public int internalCompareTo(Expression v) {
-        if(v instanceof InlineConditional inlineConditional) {
+        if (v instanceof InlineConditional inlineConditional) {
             return internalCompareTo(inlineConditional.condition);
         }
         And andValue = (And) v;
@@ -473,7 +484,8 @@ public record And(Primitives primitives, List<Expression> expressions) implement
     }
 
     @Override
-    public EvaluationResult reEvaluate(EvaluationContext evaluationContext, Map<Expression, Expression> translation) {
+    public EvaluationResult reEvaluate(EvaluationContext
+                                               evaluationContext, Map<Expression, Expression> translation) {
         List<EvaluationResult> reClauseERs = expressions.stream()
                 .map(v -> v.reEvaluate(evaluationContext, translation)).collect(Collectors.toList());
         Expression[] reClauses = reClauseERs.stream().map(EvaluationResult::value).toArray(Expression[]::new);
@@ -491,7 +503,8 @@ public record And(Primitives primitives, List<Expression> expressions) implement
     }
 
     @Override
-    public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty, boolean duringEvaluation) {
+    public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty,
+                           boolean duringEvaluation) {
         return UnknownExpression.primitiveGetProperty(variableProperty);
     }
 

@@ -145,4 +145,11 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
         testClass("FormatterSimplified_7", 0, 0, new DebugConfiguration.Builder()
                 .build());
     }
+
+    // caused the changes for TestConditionalValue.testReturnType; then goes to the error of test_6
+    @Test
+    public void test_8() throws IOException {
+        testClass("FormatterSimplified_8", 0, 0, new DebugConfiguration.Builder()
+                .build());
+    }
 }

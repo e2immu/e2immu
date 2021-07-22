@@ -19,7 +19,7 @@ import java.util.Stack;
 import java.util.function.Function;
 
 
-public class FormatterSimplified_6 {
+public class FormatterSimplified_8 {
 
     record ForwardInfo(int pos, int chars, String string, Guide guide, boolean symbol) {
         public boolean isGuide() {
@@ -37,19 +37,12 @@ public class FormatterSimplified_6 {
         int index();
     }
 
-    Boolean lookAhead(List<OutputElement> list) {
-        forward(list, forwardInfo -> {
-            if (!forwardInfo.symbol && !forwardInfo.isGuide()) {
-                assert forwardInfo.guide == null;
-                return true;
-            }
-            assert new Stack<GuideOnStack>().peek().forwardInfo.guide.index() == 9;
-            return list.get(forwardInfo.pos) instanceof Guide;
-        });
-        return null;
+    Boolean lookAhead(ForwardInfo forwardInfo) {
+        if (!forwardInfo.symbol && !forwardInfo.isGuide()) {
+            assert forwardInfo.guide == null;
+            return true;
+        }
+        assert new Stack<GuideOnStack>().peek().forwardInfo.guide.index() == 9;
+        return false;
     }
-
-    static void forward(List<OutputElement> list, Function<ForwardInfo, Boolean> writer) {
-    }
-
 }

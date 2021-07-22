@@ -230,4 +230,17 @@ public class TestConditionalValue extends CommonAbstractValue {
         Expression e4 = inline(a, b, newAndAppend(negate(a), c));
         assertEquals("a?b:c", e4.toString());
     }
+
+    @Test
+    public void testReturnType() {
+        Expression a = DelayedExpression.forState(PRIMITIVES.booleanParameterizedType, List.of());
+        ParameterizedType boxed = PRIMITIVES.boxedBooleanTypeInfo.asParameterizedType(InspectionProvider.DEFAULT);
+        Expression b = new UnknownExpression(boxed, "return value");
+        Expression inline = inline(c, a, b);
+        assertEquals("c?<s:boolean>:<return value>", inline.toString());
+        assertEquals(boxed, inline.returnType());
+        Expression inline2 = inline(c, b, a);
+        assertEquals("c?<return value>:<s:boolean>", inline2.toString());
+        assertEquals(boxed, inline2.returnType());
+    }
 }

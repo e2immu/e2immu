@@ -798,9 +798,15 @@ public class ParameterizedType {
             if (otherIsBoxed) return other;
             return inspectionProvider.getPrimitives().boxed(otherBestType).asParameterizedType(inspectionProvider);
         }
-        if (isPrimitive || otherIsPrimitive)
+        if (isPrimitive || otherIsPrimitive) {
+            if (isPrimitive && otherIsBoxed && inspectionProvider.getPrimitives().boxed(bestType).equals(otherBestType)) {
+                return other;
+            }
+            if (otherIsPrimitive && isBoxed && inspectionProvider.getPrimitives().boxed(otherBestType).equals(bestType)) {
+                return this;
+            }
             return inspectionProvider.getPrimitives().objectParameterizedType; // no common type
-
+        }
         if (other == ParameterizedType.NULL_CONSTANT) return this;
         if (this == ParameterizedType.NULL_CONSTANT) return other;
 
