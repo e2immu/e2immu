@@ -174,7 +174,7 @@ public class Test_09_EvaluatesToConstant extends CommonTestRunner {
     };
 
     /*
-    whether b is used or not: 6 or 4 warnings; not too important at the moment
+    whether b is used or not: 5 or 3 warnings; not too important at the moment
      */
     @Test
     public void test() throws IOException {
