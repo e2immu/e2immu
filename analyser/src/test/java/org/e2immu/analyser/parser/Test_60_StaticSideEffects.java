@@ -26,6 +26,7 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class Test_60_StaticSideEffects extends CommonTestRunner {
 
@@ -63,15 +64,20 @@ public class Test_60_StaticSideEffects extends CommonTestRunner {
                 if ("1.0.0".equals(d.statementId())) {
                     String expected = d.iteration() == 0 ? "null==<f:counter>" : "null==counter";
                     assertEquals(expected, d.condition().toString());
+                    assertTrue(d.statementAnalysis().flowData.interruptsFlowIsSet());
                 }
             }
         };
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("StaticSideEffects_1".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof FieldReference fr && "counter".equals(fr.fieldInfo.name)) {
+                    if ("0".equals(d.statementId())) {
+                        assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+                    }
                     if ("1.0.0".equals(d.statementId())) {
                         assertEquals("new AtomicInteger()", d.currentValue().toString());
                         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                        assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
                     }
                     if ("1".equals(d.statementId())) {
                         String expectedValue = d.iteration() == 0
@@ -80,10 +86,12 @@ public class Test_60_StaticSideEffects extends CommonTestRunner {
                         assertEquals(expectedValue, d.currentValue().toString());
                         int expected = d.iteration() == 0 ? Level.DELAY : MultiLevel.NULLABLE;
                         assertEquals(expected, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                        assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
                     }
                     if ("2".equals(d.statementId())) {
                         int expectCm = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
                         assertEquals(expectCm, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
+                        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.CONTEXT_NOT_NULL));
                     }
                 }
             }

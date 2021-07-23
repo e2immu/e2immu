@@ -140,9 +140,9 @@ public class FlowData {
     public InterruptsFlow bestAlwaysInterrupt() {
         if (!interruptsFlowIsSet()) return DELAYED;
         InterruptsFlow best = NO;
-        for(Map.Entry<InterruptsFlow, Execution> e: interruptsFlow.get().entrySet()) {
+        for (Map.Entry<InterruptsFlow, Execution> e : interruptsFlow.get().entrySet()) {
             Execution execution = e.getValue();
-            if(execution != Execution.ALWAYS) return NO;
+            if (execution != Execution.ALWAYS) return NO;
             InterruptsFlow interruptsFlow = e.getKey();
             best = interruptsFlow.best(best);
         }
@@ -283,8 +283,7 @@ public class FlowData {
         return executionInCurrentBlock == Execution.DELAYED_EXECUTION ? DELAYS : DONE;
     }
 
-    public AnalysisStatus analyse(StatementAnalyser statementAnalyser, StatementAnalysis previousStatement, Execution blockExecution) {
-        AnalysisStatus analysisStatus = setBlockExecution(blockExecution);
+    public AnalysisStatus analyseInterruptsFlow(StatementAnalyser statementAnalyser, StatementAnalysis previousStatement) {
         Statement statement = statementAnalyser.statement();
         boolean oldStyleSwitch = statementAnalyser.parent() != null &&
                 statementAnalyser.parent().statement instanceof SwitchStatementOldStyle;
@@ -292,21 +291,26 @@ public class FlowData {
         if (!oldStyleSwitch) {
             if (statement instanceof ReturnStatement) {
                 setInterruptsFlow(Map.of(RETURN, Execution.ALWAYS));
-                return DONE.combine(analysisStatus);
+                return DONE;
             }
             if (statement instanceof ThrowStatement) {
                 setInterruptsFlow(Map.of(ESCAPE, Execution.ALWAYS));
-                return DONE.combine(analysisStatus);
+                return DONE;
             }
             if (statement instanceof BreakStatement breakStatement) {
                 setInterruptsFlow(Map.of(InterruptsFlow.createBreak(breakStatement.label), Execution.ALWAYS));
-                return DONE.combine(analysisStatus);
+                return DONE;
             }
+        }
+
+        if (statement instanceof ExpressionAsStatement || statement instanceof EmptyStatement) {
+            setInterruptsFlow(Map.of());
+            return DONE;
         }
 
         if (statement instanceof ContinueStatement continueStatement) {
             setInterruptsFlow(Map.of(InterruptsFlow.createContinue(continueStatement.label), Execution.ALWAYS));
-            return DONE.combine(analysisStatus);
+            return DONE;
         }
         // in case there is no explicit return statement at the end of the method...
         // this one is probably completely irrelevant
@@ -314,8 +318,11 @@ public class FlowData {
                 statementAnalyser.navigationData.next.get().isEmpty();
         if (endOfBlockTopLevel) {
             setInterruptsFlow(Map.of(RETURN, Execution.ALWAYS));
-            return DONE.combine(analysisStatus);
+            return DONE;
         }
+
+        // all the obvious ones have been done; for the rest we need to ensure that blockExecution has been set already
+        if (!blockExecution.isSet()) return DELAYS;
 
         if (previousStatement != null && !previousStatement.flowData.interruptsFlowIsSet()) {
             log(Logger.LogTarget.DELAYED, "Delaying interrupts flow, previous statement {} has no interruptsFlow yet",
@@ -366,7 +373,7 @@ public class FlowData {
             }
         }
         setInterruptsFlow(Map.copyOf(builder));
-        return DONE.combine(analysisStatus);
+        return DONE;
     }
 
     private void setInterruptsFlow(Map<InterruptsFlow, Execution> map) {
@@ -375,7 +382,7 @@ public class FlowData {
         }
     }
 
-    private AnalysisStatus setBlockExecution(Execution blockExecution) {
+    public AnalysisStatus setBlockExecution(Execution blockExecution) {
         if (blockExecution != Execution.DELAYED_EXECUTION) {
             if ((!this.blockExecution.isSet() || !this.blockExecution.get().equals(blockExecution))) {
                 this.blockExecution.set(blockExecution);

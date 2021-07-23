@@ -14,16 +14,14 @@
 
 package org.e2immu.analyser.parser;
 
+import org.e2immu.analyser.analyser.FlowData;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterAnalysis;
 import org.e2immu.analyser.model.ParameterInfo;
-import org.e2immu.analyser.visitor.EvaluationResultVisitor;
-import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
-import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
-import org.e2immu.analyser.visitor.TypeAnalyserVisitor;
+import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -135,7 +133,29 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
 
     @Test
     public void test_6() throws IOException {
+        EvaluationResultVisitor evaluationResultVisitor = d -> {
+            if ("apply".equals(d.methodInfo().name)) {
+                if ("0.0.0".equals(d.statementId())) {
+                    String expect = d.iteration() == 0 ? "null==<f:guide>" : "false";
+                    assertEquals(expect, d.evaluationResult().value().toString());
+                    assertEquals(d.iteration() <= 1, d.evaluationResult().someValueWasDelayed());
+                }
+            }
+        };
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("apply".equals(d.methodInfo().name)) {
+                if ("0.0.0".equals(d.statementId())) {
+                    assertEquals(d.iteration() > 1, d.statementAnalysis().flowData.interruptsFlowIsSet());
+                }
+                if ("0.0.1".equals(d.statementId())) {
+                    FlowData.Execution expect = d.iteration() <= 1 ? FlowData.Execution.DELAYED_EXECUTION : FlowData.Execution.NEVER;
+                    assertSame(expect, d.statementAnalysis().flowData.getGuaranteedToBeReachedInCurrentBlock());
+                }
+            }
+        };
         testClass("FormatterSimplified_6", 0, 0, new DebugConfiguration.Builder()
+                .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build());
     }
 

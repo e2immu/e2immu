@@ -59,7 +59,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
     public static final String EVALUATION_OF_MAIN_EXPRESSION = "evaluationOfMainExpression";
     public static final String SUB_BLOCKS = "subBlocks";
     public static final String ANALYSE_TYPES_IN_STATEMENT = "analyseTypesInStatement";
-    public static final String ANALYSE_FLOW_DATA = "analyseFlowData";
+    public static final String SET_BLOCK_EXECUTION = "setBlockExecution";
+    public static final String ANALYSE_INTERRUPTS_FLOW = "analyseInterruptsFlow";
     public static final String FREEZE_ASSIGNMENT_IN_BLOCK = "freezeAssignmentInBlock";
     public static final String CHECK_NOT_NULL_ESCAPES_AND_PRECONDITIONS = "checkNotNullEscapesAndPreconditions";
     public static final String CHECK_UNUSED_RETURN_VALUE = "checkUnusedReturnValue";
@@ -390,8 +391,10 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                         .add(ANALYSE_TYPES_IN_STATEMENT, this::analyseTypesInStatement)
                         .add(EVALUATION_OF_MAIN_EXPRESSION, this::evaluationOfMainExpression)
                         .add(SUB_BLOCKS, this::subBlocks)
-                        .add(ANALYSE_FLOW_DATA, sharedState -> statementAnalysis.flowData.analyse(this, previous,
-                                sharedState.forwardAnalysisInfo.execution()))
+                        .add(SET_BLOCK_EXECUTION, sharedState -> statementAnalysis.flowData
+                                .setBlockExecution(sharedState.forwardAnalysisInfo.execution()))
+                        .add(ANALYSE_INTERRUPTS_FLOW, sharedState -> statementAnalysis.flowData
+                                .analyseInterruptsFlow(this, previous))
                         .add(FREEZE_ASSIGNMENT_IN_BLOCK, this::freezeAssignmentInBlock)
                         .add(CHECK_NOT_NULL_ESCAPES_AND_PRECONDITIONS, this::checkNotNullEscapesAndPreconditions)
                         .add(ANALYSE_METHOD_LEVEL_DATA, sharedState -> statementAnalysis.methodLevelData.analyse(sharedState, statementAnalysis,
