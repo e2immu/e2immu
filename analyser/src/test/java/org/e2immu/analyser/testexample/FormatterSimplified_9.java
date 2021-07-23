@@ -40,10 +40,6 @@ public class FormatterSimplified_9 {
 
     Boolean lookAhead(List<OutputElement> list) {
         forward(list, forwardInfo -> {
-            if (!forwardInfo.symbol && !forwardInfo.isGuide()) {
-                assert forwardInfo.guide == null;
-                return true;
-            }
             ForwardInfo fwdInfo = new Stack<GuideOnStack>().peek().forwardInfo;
             assert fwdInfo != null && fwdInfo.guide.index() == 9;
             return list.get(forwardInfo.pos) instanceof Guide;
