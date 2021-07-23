@@ -14,17 +14,15 @@
 
 package org.e2immu.analyser.testexample;
 
-import org.e2immu.annotation.NotNull;
-import org.e2immu.annotation.Nullable;
-
 import java.util.List;
 import java.util.Stack;
 import java.util.function.Function;
 
+// causes an error with StaticallyAssignedVariables
 
-public class FormatterSimplified_6 {
+public class FormatterSimplified_9 {
 
-    record ForwardInfo(int pos, int chars, @Nullable String string, @NotNull Guide guide, boolean symbol) {
+    record ForwardInfo(int pos, int chars, String string, Guide guide, boolean symbol) {
         public boolean isGuide() {
             return string == null;
         }
@@ -40,13 +38,14 @@ public class FormatterSimplified_6 {
         int index();
     }
 
-    static Boolean lookAhead(List<OutputElement> list) {
+    Boolean lookAhead(List<OutputElement> list) {
         forward(list, forwardInfo -> {
             if (!forwardInfo.symbol && !forwardInfo.isGuide()) {
                 assert forwardInfo.guide == null;
                 return true;
             }
-            assert new Stack<GuideOnStack>().peek().forwardInfo.guide.index() == 9;
+            ForwardInfo fwdInfo = new Stack<GuideOnStack>().peek().forwardInfo;
+            assert fwdInfo != null && fwdInfo.guide.index() == 9;
             return list.get(forwardInfo.pos) instanceof Guide;
         });
         return null;

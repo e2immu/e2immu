@@ -21,6 +21,7 @@ import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterAnalysis;
 import org.e2immu.analyser.model.ParameterInfo;
+import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
 
@@ -142,6 +143,7 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
                 }
             }
         };
+
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("apply".equals(d.methodInfo().name)) {
                 if ("0.0.0".equals(d.statementId())) {
@@ -153,9 +155,36 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
                 }
             }
         };
-        testClass("FormatterSimplified_6", 0, 0, new DebugConfiguration.Builder()
+
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("apply".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof FieldReference fr && "guide".equals(fr.fieldInfo.name)) {
+                    if ("1".equals(d.statementId())) {
+                        int expectCnn = switch (d.variableName()) {
+                            case "org.e2immu.analyser.testexample.FormatterSimplified_6.ForwardInfo.guide#(new java.util.Stack<org.e2immu.analyser.testexample.FormatterSimplified_6.GuideOnStack>()).peek().forwardInfo" -> MultiLevel.EFFECTIVELY_NOT_NULL;
+                            case "org.e2immu.analyser.testexample.FormatterSimplified_6.ForwardInfo.guide#(new java.util.Stack<org.e2immu.analyser.testexample.FormatterSimplified_6.GuideOnStack>()/*0==this.size()*/).peek().forwardInfo",
+                                    "org.e2immu.analyser.testexample.FormatterSimplified_6.ForwardInfo.guide#forwardInfo" -> MultiLevel.NULLABLE;
+                            default -> throw new UnsupportedOperationException("? " + d.variableName());
+                        };
+                        assertEquals(expectCnn, d.getProperty(VariableProperty.CONTEXT_NOT_NULL), d.variableName());
+                    }
+                }
+            }
+        };
+
+        FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+            if ("guide".equals(d.fieldInfo().name)) {
+                int expectEnn = MultiLevel.EFFECTIVELY_NOT_NULL;
+                assertEquals(expectEnn, d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_NOT_NULL));
+            }
+        };
+
+        // guide becomes ENN, which is harsh, but for now we'll keep it as is
+        testClass("FormatterSimplified_6", 2, 1, new DebugConfiguration.Builder()
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build());
     }
 
@@ -170,6 +199,12 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
     @Test
     public void test_8() throws IOException {
         testClass("FormatterSimplified_8", 0, 0, new DebugConfiguration.Builder()
+                .build());
+    }
+
+    @Test
+    public void test_9() throws IOException {
+        testClass("FormatterSimplified_9", 0, 0, new DebugConfiguration.Builder()
                 .build());
     }
 }

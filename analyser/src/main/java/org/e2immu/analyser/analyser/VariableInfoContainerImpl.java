@@ -300,7 +300,14 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
             int inMap = variableInfo.getProperty(vp, org.e2immu.analyser.model.Level.DELAY);
             if (v > inMap) variableInfo.setProperty(vp, v);
         });
-        variableInfo.setStaticallyAssignedVariables(staticallyAssignedVariables);
+        try {
+            variableInfo.setStaticallyAssignedVariables(staticallyAssignedVariables);
+        } catch (IllegalStateException ise) {
+            LOGGER.error("Variable {}: try to set statically assigned variables to {}, already have {}",
+                    variableInfo.variable().fullyQualifiedName(),
+                    staticallyAssignedVariables, variableInfo.getStaticallyAssignedVariables());
+            throw ise;
+        }
     }
 
     @Override
