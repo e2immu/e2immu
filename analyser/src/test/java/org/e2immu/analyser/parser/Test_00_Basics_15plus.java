@@ -17,7 +17,6 @@ package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.Analysis;
-import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.junit.jupiter.api.Test;
@@ -80,12 +79,4 @@ public class Test_00_Basics_15plus extends CommonTestRunner {
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
-
-
-    @Test
-    public void test_19() throws IOException {
-        testClass("Basics_19", 0, 0, new DebugConfiguration.Builder()
-                .build());
-    }
-
 }

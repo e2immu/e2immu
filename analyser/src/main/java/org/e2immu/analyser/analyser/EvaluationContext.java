@@ -96,8 +96,11 @@ public interface EvaluationContext extends DelayDebugger {
 
     default Stream<ParameterAnalysis> getParameterAnalyses(MethodInfo methodInfo) {
         MethodAnalyser methodAnalyser = getAnalyserContext().getMethodAnalyser(methodInfo);
-        return methodAnalyser != null ? methodAnalyser.getParameterAnalysers().stream().map(ParameterAnalyser::getParameterAnalysis)
-                : methodInfo.methodInspection.get().getParameters().stream().map(parameterInfo -> parameterInfo.parameterAnalysis.get());
+        return methodAnalyser != null ? methodAnalyser.getParameterAnalysers().stream()
+                .map(ParameterAnalyser::getParameterAnalysis)
+                : methodInfo.methodInspection.get(methodInfo.fullyQualifiedName)
+                .getParameters().stream().map(parameterInfo ->
+                        parameterInfo.parameterAnalysis.get(parameterInfo.fullyQualifiedName()));
     }
 
     /**

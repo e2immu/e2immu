@@ -66,6 +66,11 @@ public record InlinedMethod(MethodInfo methodInfo, Expression expression,
     }
 
     @Override
+    public Expression translate(TranslationMap translationMap) {
+        return new InlinedMethod(methodInfo, expression.translate(translationMap), applicability);
+    }
+
+    @Override
     public boolean isNumeric() {
         return expression.isNumeric();
     }
@@ -152,7 +157,7 @@ public record InlinedMethod(MethodInfo methodInfo, Expression expression,
         return switch (applicability) {
             case EVERYWHERE -> true;
             case NONE -> false;
-            case TYPE -> evaluationContext.getCurrentType().equals(methodInfo.typeInfo);
+            case TYPE -> evaluationContext.getCurrentType().primaryType().equals(methodInfo.typeInfo.primaryType());
             case METHOD -> methodInfo.equals(evaluationContext.getCurrentMethod().methodInfo);
             case PACKAGE -> evaluationContext.getCurrentType().packageName().equals(methodInfo.typeInfo.packageName());
             default -> throw new UnsupportedOperationException("TODO");

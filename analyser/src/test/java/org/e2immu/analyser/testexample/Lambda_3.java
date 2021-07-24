@@ -14,9 +14,11 @@
 
 package org.e2immu.analyser.testexample;
 
-public class Basics_19 {
+import java.util.function.Supplier;
 
-    record X(String k) {
+public class Lambda_3 {
+
+    record X(int k) {
     }
 
     private int i;
@@ -30,8 +32,9 @@ public class Basics_19 {
     }
 
     public int method(X x) {
-        if(x.k.length() < 3) return 3;
-        int j = new X(x.k.length()+"X").k.length() + i;
-        return 2 * j;
+        if(x.k < 3) return 3;
+        Supplier<Integer> f = () -> new X(x.k).k;
+        int j = f.get();
+        return i * j;
     }
 }

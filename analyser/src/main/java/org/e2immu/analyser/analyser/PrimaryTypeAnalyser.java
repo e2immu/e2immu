@@ -321,7 +321,11 @@ public class PrimaryTypeAnalyser implements AnalyserContext, Analyser, HoldsAnal
 
     @Override
     public FieldAnalyser getFieldAnalyser(FieldInfo fieldInfo) {
-        return fieldAnalysers.get(fieldInfo);
+        FieldAnalyser fieldAnalyser = fieldAnalysers.get(fieldInfo);
+        if (fieldAnalyser == null && parent != null) {
+            return parent.getFieldAnalyser(fieldInfo);
+        }
+        return fieldAnalyser;
     }
 
     @Override
@@ -331,7 +335,11 @@ public class PrimaryTypeAnalyser implements AnalyserContext, Analyser, HoldsAnal
 
     @Override
     public MethodAnalyser getMethodAnalyser(MethodInfo methodInfo) {
-        return methodAnalysers.get(methodInfo);
+        MethodAnalyser methodAnalyser = methodAnalysers.get(methodInfo);
+        if (methodAnalyser == null && parent != null) {
+            return parent.getMethodAnalyser(methodInfo);
+        }
+        return methodAnalyser;
     }
 
     @Override
@@ -341,12 +349,20 @@ public class PrimaryTypeAnalyser implements AnalyserContext, Analyser, HoldsAnal
 
     @Override
     public TypeAnalyser getTypeAnalyser(TypeInfo typeInfo) {
-        return typeAnalysers.get(typeInfo);
+        TypeAnalyser typeAnalyser = typeAnalysers.get(typeInfo);
+        if (typeAnalyser == null && parent != null) {
+            return parent.getTypeAnalyser(typeInfo);
+        }
+        return typeAnalyser;
     }
 
     @Override
     public ParameterAnalyser getParameterAnalyser(ParameterInfo parameterInfo) {
-        return parameterAnalysers.get(parameterInfo);
+        ParameterAnalyser parameterAnalyser = parameterAnalysers.get(parameterInfo);
+        if (parameterAnalyser == null && parent != null) {
+            return parent.getParameterAnalyser(parameterInfo);
+        }
+        return parameterAnalyser;
     }
 
     @Override

@@ -15,8 +15,14 @@
 package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.config.DebugConfiguration;
+import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
+import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.junit.jupiter.api.Test;
+
 import java.io.IOException;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class Test_57_Lambda extends CommonTestRunner {
 
@@ -34,6 +40,71 @@ public class Test_57_Lambda extends CommonTestRunner {
     @Test
     public void test_1() throws IOException {
         testClass("Lambda_1", 0, 0, new DebugConfiguration.Builder()
+                .build());
+    }
+
+
+    @Test
+    public void test_2() throws IOException {
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("get".equals(d.methodInfo().name) && d.iteration() > 0) {
+                assertEquals("i", d.methodAnalysis().getSingleReturnValue().toString());
+            }
+            if ("method".equals(d.methodInfo().name) && d.iteration() > 0) {
+                Expression srv = d.methodAnalysis().getSingleReturnValue();
+                assertEquals("i*i", srv.toString());
+            }
+        };
+        testClass("Lambda_2", 0, 0, new DebugConfiguration.Builder()
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .build());
+    }
+
+    @Test
+    public void test_3() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("method".equals(d.methodInfo().name)) {
+                if ("j".equals(d.variableName())) {
+                    if ("2".equals(d.statementId())) {
+                        String expect = d.iteration() == 0 ? "<m:get>" : "x.k";
+                        assertEquals(expect, d.currentValue().toString());
+                        assertEquals("", d.variableInfo().getStaticallyAssignedVariables().toString());
+                    }
+                }
+            }
+        };
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("method".equals(d.methodInfo().name) && d.iteration() > 0) {
+                assertEquals("x.k>=3?x.k*i:3", d.methodAnalysis().getSingleReturnValue().toString());
+            }
+        };
+        testClass("Lambda_3", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .build());
+    }
+
+    @Test
+    public void test_4() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("method".equals(d.methodInfo().name)) {
+                if ("j".equals(d.variableName())) {
+                    if ("2".equals(d.statementId())) {
+                        String expect = d.iteration() == 0 ? "<m:get>" : "x.k";
+                        assertEquals(expect, d.currentValue().toString());
+                        assertEquals("", d.variableInfo().getStaticallyAssignedVariables().toString());
+                    }
+                }
+            }
+        };
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("method".equals(d.methodInfo().name) && d.iteration() > 0) {
+                assertEquals("x.k>=3?x.k*i:3", d.methodAnalysis().getSingleReturnValue().toString());
+            }
+        };
+        testClass("Lambda_4", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 }
