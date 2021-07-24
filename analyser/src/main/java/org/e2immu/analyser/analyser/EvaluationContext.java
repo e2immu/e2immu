@@ -184,14 +184,6 @@ public interface EvaluationContext extends DelayDebugger {
         return Map.copyOf(builder);
     }
 
-    default Map<VariableProperty, Integer> getVariableProperties(Expression valueToWrite, int statementTime) {
-        if (valueToWrite instanceof IsVariableExpression ve) {
-            return Map.of(EXTERNAL_NOT_NULL, getPropertyFromPreviousOrInitial(ve.variable(), EXTERNAL_NOT_NULL, statementTime),
-                    EXTERNAL_IMMUTABLE, getPropertyFromPreviousOrInitial(ve.variable(), EXTERNAL_IMMUTABLE, statementTime));
-        }
-        return Map.of();
-    }
-
     /*
     This default implementation is the correct one for basic tests and the companion analyser (we cannot use companions in the
     companion analyser, that would be chicken-and-egg).

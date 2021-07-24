@@ -718,11 +718,9 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 // first do the properties that come with the value; later, we'll write the ones in changeData
                 Map<VariableProperty, Integer> valueProperties = sharedState.evaluationContext
                         .getValueProperties(valueToWrite, variable instanceof ReturnVariable);
-                Map<VariableProperty, Integer> varProperties =
-                        sharedState.evaluationContext.getVariableProperties(valueToWrite,
-                                statementAnalysis.statementTime(EVALUATION));
+
                 Map<VariableProperty, Integer> merged = mergeAssignment(variable, valueToWriteIsDelayed,
-                        valueProperties, varProperties, changeData.properties(), groupPropertyValues);
+                        valueProperties,  changeData.properties(), groupPropertyValues);
 
                 remapStaticallyAssignedVariables.put(variable, vi1.getStaticallyAssignedVariables());
                 vic.setValue(valueToWrite, valueToWriteIsDelayed, changeData.staticallyAssignedVariables(),
@@ -752,7 +750,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                             valueToWriteCorrected = valueToWrite2;
                         }
                         log(ANALYSER, "Write value {} to local copy variable {}", valueToWriteCorrected, localVar.fullyQualifiedName());
-                        Map<VariableProperty, Integer> merged2 = mergeAssignment(localVar, valueToWriteIsDelayed, valueProperties, varProperties,
+                        Map<VariableProperty, Integer> merged2 = mergeAssignment(localVar, valueToWriteIsDelayed, valueProperties,
                                 changeData.properties(), groupPropertyValues);
                         remapStaticallyAssignedVariables.put(localVar, local.getPreviousOrInitial().getStaticallyAssignedVariables());
 
@@ -1208,23 +1206,22 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
     private Map<VariableProperty, Integer> mergeAssignment(Variable variable,
                                                            boolean valueIsDelayed,
                                                            Map<VariableProperty, Integer> valueProps,
-                                                           Map<VariableProperty, Integer> variableProps,
                                                            Map<VariableProperty, Integer> changeData,
                                                            GroupPropertyValues groupPropertyValues) {
         Map<VariableProperty, Integer> res = new HashMap<>(valueProps);
-        variableProps.forEach(res::put);
         changeData.forEach(res::put);
-        Integer enn = res.remove(EXTERNAL_NOT_NULL);
-        groupPropertyValues.set(EXTERNAL_NOT_NULL, variable, enn == null ?
-                (valueIsDelayed ? Level.DELAY : MultiLevel.NOT_INVOLVED) : enn);
+
+        // reasoning: only relevant when assigning to a field, this assignment is in StaticallyAssignedVars, so
+        // the field's value is taken anyway
+        groupPropertyValues.set(EXTERNAL_NOT_NULL, variable, MultiLevel.NOT_INVOLVED);
+        groupPropertyValues.set(EXTERNAL_IMMUTABLE, variable,MultiLevel.NOT_INVOLVED);
+
         Integer cnn = res.remove(CONTEXT_NOT_NULL);
         groupPropertyValues.set(CONTEXT_NOT_NULL, variable, cnn == null ? variable.parameterizedType().defaultNotNull() : cnn);
         Integer cm = res.remove(CONTEXT_MODIFIED);
         groupPropertyValues.set(CONTEXT_MODIFIED, variable, cm == null ? Level.FALSE : cm);
         Integer pm = res.remove(CONTEXT_PROPAGATE_MOD);
         groupPropertyValues.set(CONTEXT_PROPAGATE_MOD, variable, pm == null ? Level.FALSE : pm);
-        Integer extImm = res.remove(EXTERNAL_IMMUTABLE);
-        groupPropertyValues.set(EXTERNAL_IMMUTABLE, variable, extImm == null ? (valueIsDelayed ? Level.DELAY : MultiLevel.NOT_INVOLVED) : extImm);
         Integer cImm = res.remove(CONTEXT_IMMUTABLE);
         groupPropertyValues.set(CONTEXT_IMMUTABLE, variable, cImm == null ? MultiLevel.FALSE : cImm);
 
