@@ -26,6 +26,7 @@ import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Space;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.output.Text;
+import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.ListUtil;
@@ -84,6 +85,13 @@ public record NewObject(
         return new NewObject(sam.fullyQualifiedName, null, parameterizedType, Diamond.NO, List.of(),
                 MultiLevel.EFFECTIVELY_NOT_NULL, false,
                 sam.typeInfo, null, new BooleanConstant(primitives, true));
+    }
+
+    public static Expression genericFieldAccess(InspectionProvider inspectionProvider, String identifier, FieldInfo fieldInfo) {
+        return new NewObject(identifier + ":" + fieldInfo.fullyQualifiedName(), null,
+                fieldInfo.owner.asParameterizedType(inspectionProvider), Diamond.NO, List.of(),
+                MultiLevel.EFFECTIVELY_NOT_NULL, false, null, null,
+                new BooleanConstant(inspectionProvider.getPrimitives(), true));
     }
 
     /*

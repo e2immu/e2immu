@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.visitor;
 
+import org.e2immu.analyser.analyser.AnalysisProvider;
 import org.e2immu.analyser.analyser.AnalysisStatus;
 import org.e2immu.analyser.model.TypeAnalysis;
 import org.e2immu.analyser.model.TypeInfo;
@@ -29,6 +30,7 @@ public interface TypeAnalyserVisitor {
                 TypeInfo typeInfo,
                 TypeInspection typeInspection,
                 TypeAnalysis typeAnalysis,
-                Map<String, AnalysisStatus> statuses) {
+                Map<String, AnalysisStatus> statuses,
+                AnalysisProvider analysisProvider) {
     }
 }

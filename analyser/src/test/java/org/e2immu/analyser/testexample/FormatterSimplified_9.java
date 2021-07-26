@@ -14,31 +14,43 @@
 
 package org.e2immu.analyser.testexample;
 
+import org.e2immu.annotation.E1Container;
+import org.e2immu.annotation.NotModified;
+
 import java.util.List;
 import java.util.Stack;
 import java.util.function.Function;
 
-// causes an error with StaticallyAssignedVariables
+// causes an error with StaticallyAssignedVariables -> fixed
+// cyclic dependency: fwdInfo has no LV because ForwardInfo not yet IMMUTABLE,
+// ForwardInfo waiting for modification on guide in apply before any idea on IMMUTABLE
 
 public class FormatterSimplified_9 {
 
+    // no annotation -> Mutable
+    interface OutputElement {
+
+    }
+
+    // no annotation -> Mutable
+    interface Guide extends OutputElement {
+        @NotModified // FIXME I'd forgotten!
+        int index();
+    }
+
+    @E1Container // because Guide is mutable
     record ForwardInfo(int pos, int chars, String string, Guide guide, boolean symbol) {
         public boolean isGuide() {
             return string == null;
         }
     }
 
+    @E1Container // because ForwardInfo is @E1Container
     record GuideOnStack(ForwardInfo forwardInfo) {
+
     }
 
-    interface OutputElement {
-    }
-
-    interface Guide extends OutputElement {
-        int index();
-    }
-
-    Boolean lookAhead(List<OutputElement> list) {
+    static Boolean lookAhead(List<OutputElement> list) {
         forward(list, forwardInfo -> {
             ForwardInfo fwdInfo = new Stack<GuideOnStack>().peek().forwardInfo;
             assert fwdInfo != null && fwdInfo.guide.index() == 9;

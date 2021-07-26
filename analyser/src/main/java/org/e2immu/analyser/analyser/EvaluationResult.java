@@ -339,6 +339,10 @@ public record EvaluationResult(EvaluationContext evaluationContext,
         }
 
         public Builder markRead(Variable variable) {
+            return markRead(variable, true);
+        }
+
+        private Builder markRead(Variable variable, boolean recurse) {
             ChangeData ecd = valueChanges.get(variable);
             ChangeData newEcd;
             if (ecd == null) {
@@ -354,8 +358,8 @@ public record EvaluationResult(EvaluationContext evaluationContext,
 
             // we do this because this. is often implicit (all other scopes will be marked read explicitly!)
             // when explicit, there may be two MarkRead modifications, which will eventually be merged
-            if (variable instanceof FieldReference fieldReference && fieldReference.scope instanceof VariableExpression ve) {
-                markRead(ve.variable());
+            if (recurse && variable instanceof FieldReference fr && fr.scope instanceof VariableExpression ve) {
+                markRead(ve.variable(), true);
             }
             return this;
         }
@@ -666,44 +670,59 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             return statementTime;
         }
 
-        private boolean acceptForMarking(Variable variable, TypeInfo subType) {
+        private Variable acceptForMarkingRemoveScopeOfFields(Variable variable, TypeInfo subType) {
             assert evaluationContext != null;
-            return evaluationContext.isPresent(variable) ||
-                    variable instanceof FieldReference fieldReference &&
-                            fieldReference.fieldInfo.owner != subType &&
-                            fieldReference.fieldInfo.owner.primaryType() == subType.primaryType();
+            if (evaluationContext.isPresent(variable)) return variable;
+            if (variable instanceof FieldReference fieldReference &&
+                    fieldReference.fieldInfo.owner != subType &&
+                    fieldReference.fieldInfo.owner.primaryType() == subType.primaryType()) {
+                // remove the scope, replace by "this" when our this has access to them; replace by "instance type ..."
+                // when the type is static
+                if(evaluationContext.getCurrentType().hasAccessToFieldsOf(evaluationContext.getAnalyserContext(),
+                        fieldReference.fieldInfo.owner)) {
+                    return new FieldReference(evaluationContext.getAnalyserContext(), fieldReference.fieldInfo);
+                }
+                return new FieldReference(evaluationContext.getAnalyserContext(), fieldReference.fieldInfo,
+                        NewObject.genericFieldAccess(
+                                evaluationContext.getAnalyserContext(),
+                                evaluationContext.newObjectIdentifier(), fieldReference.fieldInfo));
+            }
+            return null;
         }
 
         public void markVariablesFromSubMethod(MethodAnalysis methodAnalysis) {
             StatementAnalysis statementAnalysis = methodAnalysis.getLastStatement();
             if (statementAnalysis == null) return; // nothing we can do here
             statementAnalysis.variableStream()
-                    // parameters are already present, fields should become present if they're not local
-                    .filter(variableInfo -> acceptForMarking(variableInfo.variable(), methodAnalysis.getMethodInfo().typeInfo))
                     .forEach(variableInfo -> {
-                        if (variableInfo.isRead()) {
-                            markRead(variableInfo.variable());
-                        }
-                        if (variableInfo.isAssigned()) {
-                            assignment(variableInfo.variable(), variableInfo.getValue(), variableInfo.getLinkedVariables(),
-                                    variableInfo.getStaticallyAssignedVariables());
+                        Variable variable = acceptForMarkingRemoveScopeOfFields(variableInfo.variable(),
+                                methodAnalysis.getMethodInfo().typeInfo);
+                        if (variable != null) {
+                            if (variableInfo.isRead()) {
+                                markRead(variable, false);
+                            }
+                            if (variableInfo.isAssigned()) {
+                                // FIXME clean up LV, Stat Ass Vars, Value
+                                assignment(variable, variableInfo.getValue(), variableInfo.getLinkedVariables(),
+                                        variableInfo.getStaticallyAssignedVariables());
+                            }
                         }
                     });
         }
 
         public void markVariablesFromPrimaryTypeAnalyser(PrimaryTypeAnalyser pta) {
             pta.methodAnalyserStream().forEach(ma -> markVariablesFromSubMethod(ma.methodAnalysis));
-            pta.fieldAnalyserStream().forEach(fa -> markVariablesFromSubFieldInitialisers(fa.fieldAnalysis, fa.primaryType));
+            pta.fieldAnalyserStream().forEach(fa -> markVariablesFromSubFieldInitializers(fa.fieldAnalysis, fa.primaryType));
         }
 
-        private void markVariablesFromSubFieldInitialisers(FieldAnalysisImpl.Builder fieldAnalysis, TypeInfo
-                subType) {
+        private void markVariablesFromSubFieldInitializers(FieldAnalysisImpl.Builder fieldAnalysis, TypeInfo subType) {
             assert evaluationContext != null;
             Expression initialValue = fieldAnalysis.getInitialValue();
             if (initialValue == EmptyExpression.EMPTY_EXPRESSION || initialValue == null) return;
-            initialValue.variables().stream()
-                    .filter(variable -> acceptForMarking(variable, subType))
-                    .forEach(this::markRead);
+            initialValue.variables().forEach(variable -> {
+                Variable v = acceptForMarkingRemoveScopeOfFields(variable, subType);
+                if (v != null) markRead(v);
+            });
         }
 
         public void addDelayOnPrecondition() {

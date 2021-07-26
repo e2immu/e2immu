@@ -719,8 +719,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 Map<VariableProperty, Integer> valueProperties = sharedState.evaluationContext
                         .getValueProperties(valueToWrite, variable instanceof ReturnVariable);
 
-                Map<VariableProperty, Integer> merged = mergeAssignment(variable, valueToWriteIsDelayed,
-                        valueProperties,  changeData.properties(), groupPropertyValues);
+                Map<VariableProperty, Integer> merged = mergeAssignment(variable, valueProperties,
+                        changeData.properties(), groupPropertyValues);
 
                 remapStaticallyAssignedVariables.put(variable, vi1.getStaticallyAssignedVariables());
                 vic.setValue(valueToWrite, valueToWriteIsDelayed, changeData.staticallyAssignedVariables(),
@@ -750,7 +750,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                             valueToWriteCorrected = valueToWrite2;
                         }
                         log(ANALYSER, "Write value {} to local copy variable {}", valueToWriteCorrected, localVar.fullyQualifiedName());
-                        Map<VariableProperty, Integer> merged2 = mergeAssignment(localVar, valueToWriteIsDelayed, valueProperties,
+                        Map<VariableProperty, Integer> merged2 = mergeAssignment(localVar, valueProperties,
                                 changeData.properties(), groupPropertyValues);
                         remapStaticallyAssignedVariables.put(localVar, local.getPreviousOrInitial().getStaticallyAssignedVariables());
 
@@ -1204,7 +1204,6 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
     There is no overlap between valueProps and variableProps
      */
     private Map<VariableProperty, Integer> mergeAssignment(Variable variable,
-                                                           boolean valueIsDelayed,
                                                            Map<VariableProperty, Integer> valueProps,
                                                            Map<VariableProperty, Integer> changeData,
                                                            GroupPropertyValues groupPropertyValues) {
@@ -1214,7 +1213,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         // reasoning: only relevant when assigning to a field, this assignment is in StaticallyAssignedVars, so
         // the field's value is taken anyway
         groupPropertyValues.set(EXTERNAL_NOT_NULL, variable, MultiLevel.NOT_INVOLVED);
-        groupPropertyValues.set(EXTERNAL_IMMUTABLE, variable,MultiLevel.NOT_INVOLVED);
+        groupPropertyValues.set(EXTERNAL_IMMUTABLE, variable, MultiLevel.NOT_INVOLVED);
 
         Integer cnn = res.remove(CONTEXT_NOT_NULL);
         groupPropertyValues.set(CONTEXT_NOT_NULL, variable, cnn == null ? variable.parameterizedType().defaultNotNull() : cnn);
@@ -1356,8 +1355,9 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                                                        VariableInfo vi,
                                                        VariableInfo vi1) {
         // regardless of what's being delayed or not, if the type is immutable there cannot be links
-        TypeInfo bestType = variable.parameterizedType().bestTypeInfo();
-        if (bestType != null && bestType != myMethodAnalyser.methodInfo.typeInfo) {
+
+        if (!variable.parameterizedType().ignoreImmutableForLinkedVariables(analyserContext, myMethodAnalyser.methodInfo.typeInfo)) {
+            TypeInfo bestType = variable.parameterizedType().bestTypeInfo();
             int immutable = analyserContext.getTypeAnalysis(bestType).getProperty(IMMUTABLE);
             if (immutable == MultiLevel.EFFECTIVELY_E2IMMUTABLE) {
                 return EMPTY_OVERRIDE;
@@ -2118,6 +2118,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         if (statementAnalysis.statement instanceof AssertStatement) {
             Expression assertion = statementAnalysis.stateData.valueOfExpression.get();
             boolean expressionIsDelayed = statementAnalysis.stateData.valueOfExpression.isVariable();
+            // NOTE that it is possible that assertion is not delayed, but the valueOfExpression is delayed
+            // because of other delays in the apply method (see setValueOfExpression call in evaluationOfMainExpression)
 
             if (moveConditionToParameter(sharedState.evaluationContext, assertion) == null) {
                 Expression translated = Objects.requireNonNullElse(
@@ -3065,20 +3067,15 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             }
             boolean delayed = implicit == null;
 
-            // first try immutable
-            boolean isSelf = variable.parameterizedType().isAssignableFromTo(analyserContext,
-                    getCurrentType().asParameterizedType(analyserContext));
-            VariableInfo variableInfo = statementAnalysis.initialValueForReading(variable, getInitialStatementTime(), true);
-            if (!isSelf) {
+            if (!variable.parameterizedType().ignoreImmutableForLinkedVariables(analyserContext, getCurrentType())) {
+                VariableInfo variableInfo = statementAnalysis.initialValueForReading(variable, getInitialStatementTime(), true);
                 int immutable = variableInfo.getProperty(IMMUTABLE);
                 if (MultiLevel.isAtLeastEventuallyE2ImmutableAfter(immutable)) {
                     return LinkedVariables.EMPTY;
                 }
                 if (immutable == Level.DELAY) delayed = true;
             }
-
-            LinkedVariables linkToMe = new LinkedVariables(Set.of(variable), delayed);
-            return variableInfo.getLinkedVariables().merge(linkToMe);
+            return new LinkedVariables(Set.of(variable), delayed);
         }
 
         @Override

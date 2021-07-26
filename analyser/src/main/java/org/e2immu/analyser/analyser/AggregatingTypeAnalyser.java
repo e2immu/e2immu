@@ -82,7 +82,8 @@ public class AggregatingTypeAnalyser extends TypeAnalyser {
                         typeInfo,
                         analyserContext.getTypeInspection(typeInfo),
                         typeAnalysis,
-                        analyserComponents.getStatusesAsMap()));
+                        analyserComponents.getStatusesAsMap(),
+                        analyserContext));
             }
         }
         return analysisStatus;

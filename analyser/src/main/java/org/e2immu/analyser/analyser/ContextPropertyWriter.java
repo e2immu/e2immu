@@ -129,7 +129,7 @@ public class ContextPropertyWriter {
                     }
                     if (linkedVariables.isDelayed() && !externalImmutableBreak) {
                         if (!(variableInfo.variable() instanceof LocalVariableReference) || variableInfo.isAssigned()) {
-                            log(DELAYED, "Delaying MethodLevelData for {} in {}: linked variables not set",
+                            log(DELAYED, "Delaying context computation for {} in {}: linked variables not set",
                                     variableInfo.variable().fullyQualifiedName(), evaluationContext.getLocation());
 
                             assert statementAnalysis.translatedDelay(CONTEXT_PROPERTY_WRITER,

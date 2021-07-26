@@ -314,7 +314,7 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                     String expect = d.iteration() <= 2 ? "<f:root>" : "new TrieNode<>()";
                     assertEquals(expect, d.currentValue().toString());
 
-                    String expectLv = d.iteration() <= 1 ? LinkedVariables.DELAY_STRING : "";
+                    String expectLv = d.iteration() <= 2 ? LinkedVariables.DELAY_STRING : "";
                     assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
 
                     // here, ENN is computed in the group 'root', 'node'
@@ -351,7 +351,7 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                         assertEquals(enn, d.getProperty(VariableProperty.EXTERNAL_NOT_NULL), d.statementId());
                     }
                     if ("2".equals(d.statementId())) {
-                        String expectLv = d.iteration() <= 1 ? LinkedVariables.DELAY_STRING : "";
+                        String expectLv = d.iteration() <= 2 ? LinkedVariables.DELAY_STRING : "this.root";
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
 
                         int expectCm = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
@@ -371,7 +371,7 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                         String expect = d.iteration() <= 2 ? "<f:root>" : "root";
                         assertEquals(expect, d.currentValue().toString());
 
-                        String expectLv = d.iteration() <= 1 ? LinkedVariables.DELAY_STRING : "";
+                        String expectLv = d.iteration() <= 2 ? LinkedVariables.DELAY_STRING : "this.root";
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
 
                         int expectCm = d.iteration() == 0 ? Level.DELAY : Level.FALSE;

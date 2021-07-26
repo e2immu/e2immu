@@ -342,6 +342,11 @@ public class JavaUtil extends AnnotatedAPI {
         @Independent
         public Stack$(@NotNull1 Collection<? extends E> c) {
         }
+
+        @NotModified
+        public E peek() {
+            return null;
+        }
     }
 
     @Container

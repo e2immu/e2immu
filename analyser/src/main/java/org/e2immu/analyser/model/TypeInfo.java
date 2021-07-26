@@ -14,7 +14,6 @@
 
 package org.e2immu.analyser.model;
 
-import org.e2immu.analyser.model.expression.ConstantExpression;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.OutputTypeInfo;
 import org.e2immu.analyser.parser.InspectionProvider;
@@ -489,5 +488,30 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
             if (res != null) return res;
         }
         return null;
+    }
+
+    /*
+    this and otherSubType share the same primary type; we know nothing more than that
+     */
+    public boolean hasAccessToFieldsOf(InspectionProvider inspectionProvider, TypeInfo otherSubType) {
+        if (this == otherSubType) return true;
+        List<TypeInfo> parentClasses = parentClasses(inspectionProvider);
+        if (parentClasses.contains(otherSubType)) return true;
+        List<TypeInfo> otherParentClasses = otherSubType.parentClasses(inspectionProvider);
+        return otherParentClasses.contains(this);
+    }
+
+    private List<TypeInfo> parentClasses(InspectionProvider inspectionProvider) {
+        TypeInfo start = this;
+        List<TypeInfo> result = new ArrayList<>();
+        while (true) {
+            TypeInspection inspection = inspectionProvider.getTypeInspection(start);
+            ParameterizedType parent = inspection.parentClass();
+            if (parent != null && !Primitives.isJavaLangObject(parent)) {
+                result.add(parent.typeInfo);
+                start = parent.typeInfo;
+            } else break;
+        }
+        return result;
     }
 }

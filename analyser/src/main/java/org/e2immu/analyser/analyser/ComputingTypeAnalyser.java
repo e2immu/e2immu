@@ -184,7 +184,8 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
                         typeInfo,
                         analyserContext.getTypeInspection(typeInfo),
                         typeAnalysis,
-                        analyserComponents.getStatusesAsMap()));
+                        analyserComponents.getStatusesAsMap(),
+                        analyserContext));
             }
 
             return analysisStatus;

@@ -252,8 +252,8 @@ public class Test_18_E2Immutable extends CommonTestRunner {
                     assertEquals(expectValue, d.currentValue().toString());
 
                     // no linked variables, but initially delayed
-                    assertEquals(d.iteration() <= 1, d.variableInfo().getLinkedVariables().isDelayed());
-                    String expectLinked = d.iteration() <= 1 ? "*" : "";
+                    assertEquals(d.iteration() <= 2, d.variableInfo().getLinkedVariables().isDelayed());
+                    String expectLinked = d.iteration() <= 2 ? "*" : "";
                     assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toDetailedString());
 
                     int expectBreakDelay = d.iteration() == 0 ? Level.DELAY : Level.TRUE;

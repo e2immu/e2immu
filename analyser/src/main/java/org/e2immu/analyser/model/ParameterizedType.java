@@ -15,6 +15,7 @@
 package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.analyser.AnalysisProvider;
+import org.e2immu.analyser.analyser.ExpandableAnalyserContextImpl;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.inspector.MethodTypeParameterMap;
 import org.e2immu.analyser.inspector.TypeContext;
@@ -909,5 +910,14 @@ public class ParameterizedType {
     // for delay debugging
     public String fullyQualifiedName() {
         return detailedString();
+    }
+
+    public boolean ignoreImmutableForLinkedVariables(ExpandableAnalyserContextImpl analyserContext, TypeInfo currentType) {
+        boolean isSelf = isAssignableFromTo(analyserContext, currentType.asParameterizedType(analyserContext));
+        if (isSelf) return true;
+        TypeInfo best = bestTypeInfo();
+        if(best == null) return true;
+        TypeInfo pt =  best.primaryType();
+        return pt == currentType.primaryType();
     }
 }

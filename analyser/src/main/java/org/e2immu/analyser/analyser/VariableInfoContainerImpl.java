@@ -315,7 +315,14 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         ensureNotFrozen();
         Objects.requireNonNull(linkedVariables);
         VariableInfoImpl variableInfo = initialOrEvaluation ? previousOrInitial.getRight() : evaluation.get();
-        variableInfo.setLinkedVariables(linkedVariables);
+        try {
+            variableInfo.setLinkedVariables(linkedVariables);
+        } catch (IllegalStateException ise) {
+            LOGGER.error("Variable {}: try to overwrite linked variables to {}, already have {}",
+                    variableInfo.variable().fullyQualifiedName(),
+                    linkedVariables, variableInfo.getLinkedVariables());
+            throw ise;
+        }
     }
 
     @Override
