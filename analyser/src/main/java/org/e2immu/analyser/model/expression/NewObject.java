@@ -17,6 +17,7 @@ package org.e2immu.analyser.model.expression;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.util.DelayDebugger;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.expression.util.EvaluateMethodCall;
 import org.e2immu.analyser.model.expression.util.EvaluateParameters;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.model.variable.FieldReference;
@@ -34,10 +35,7 @@ import org.e2immu.analyser.util.Pair;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.NotNull;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -567,6 +565,16 @@ public record NewObject(
     @Override
     public List<? extends Element> subElements() {
         return parameterExpressions;
+    }
+
+    @Override
+    public EvaluationResult reEvaluate(EvaluationContext evaluationContext, Map<Expression, Expression> translation) {
+        List<EvaluationResult> reParams = parameterExpressions.stream().map(v -> v.reEvaluate(evaluationContext, translation)).collect(Collectors.toList());
+        List<Expression> reParamValues = reParams.stream().map(EvaluationResult::value).collect(Collectors.toList());
+        NewObject newObject = new NewObject(identifier, constructor, parameterizedType,
+                diamond, reParamValues, minimalNotNull, identity, anonymousClass, arrayInitializer, state);
+        EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext).compose(reParams);
+        return builder.setExpression(newObject).build();
     }
 
     @Override

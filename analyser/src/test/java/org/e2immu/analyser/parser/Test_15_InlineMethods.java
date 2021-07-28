@@ -28,15 +28,23 @@ public class Test_15_InlineMethods extends CommonTestRunner {
         super(false);
     }
 
-    TypeMapVisitor typeMapVisitor = typeMap -> {
-        MethodInfo unaryMinusInt = typeMap.getPrimitives().unaryMinusOperatorInt;
-        assertEquals("int.-(int)", unaryMinusInt.fullyQualifiedName());
-    };
-
     @Test
-    public void test() throws IOException {
+    public void test_0() throws IOException {
+        TypeMapVisitor typeMapVisitor = typeMap -> {
+            MethodInfo unaryMinusInt = typeMap.getPrimitives().unaryMinusOperatorInt;
+            assertEquals("int.-(int)", unaryMinusInt.fullyQualifiedName());
+        };
         testClass("InlineMethods_0", 0, 0, new DebugConfiguration.Builder()
                 .addTypeMapVisitor(typeMapVisitor)
+                .build());
+    }
+
+    /*
+    tests that the inlined method leaves no parameter lingering (assert statement in StatementAnalysis.initialValueForReading)
+     */
+    @Test
+    public void test_1() throws IOException {
+        testClass("InlineMethods_1", 0, 0, new DebugConfiguration.Builder()
                 .build());
     }
 
