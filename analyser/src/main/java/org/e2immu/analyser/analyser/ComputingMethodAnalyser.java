@@ -135,7 +135,7 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
 
         } else {
             methodAnalysis.minimalInfoForEmptyMethod(methodAnalysis.primitives);
-            for(ParameterAnalyser parameterAnalyser: parameterAnalysers) {
+            for (ParameterAnalyser parameterAnalyser : parameterAnalysers) {
                 parameterAnalyser.parameterAnalysis.minimalInfoForEmptyMethod();
             }
         }
@@ -619,35 +619,24 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
             immutable = MultiLevel.EFFECTIVELY_E2IMMUTABLE;
         } else {
             VariableInfo variableInfo = getReturnAsVariable();
-            ParameterizedType pt = variableInfo.variable().parameterizedType();
-            if (pt.arrays == 0 && pt.typeInfo == methodInfo.typeInfo) {
-                /* the reason we introduce this "hack" is that IMMUTABLE of my own type often comes late
-                it really is a hack because other types that come late are missed as well.
-                 */
-                immutable = typeAnalysis.getProperty(IMMUTABLE);
 
-                assert immutable != Level.DELAY || translatedDelay(COMPUTE_IMMUTABLE,
-                        typeAnalysis.getTypeInfo().fullyQualifiedName + D_IMMUTABLE,
-                        methodInfo.fullyQualifiedName + D_IMMUTABLE);
-            } else {
-                int dynamic = variableInfo.getProperty(IMMUTABLE);
-                assert dynamic != Level.DELAY || translatedDelay(COMPUTE_IMMUTABLE,
-                        variableInfo.variable().fullyQualifiedName() + "@" + methodAnalysis.getLastStatement().index + D_IMMUTABLE,
-                        methodInfo.fullyQualifiedName + D_IMMUTABLE);
+            int dynamic = variableInfo.getProperty(IMMUTABLE);
+            assert dynamic != Level.DELAY || translatedDelay(COMPUTE_IMMUTABLE,
+                    variableInfo.variable().fullyQualifiedName() + "@" + methodAnalysis.getLastStatement().index + D_IMMUTABLE,
+                    methodInfo.fullyQualifiedName + D_IMMUTABLE);
 
-                int dynamicExt = variableInfo.getProperty(EXTERNAL_IMMUTABLE);
-                assert dynamicExt != Level.DELAY || translatedDelay(COMPUTE_IMMUTABLE,
-                        variableInfo.variable().fullyQualifiedName() + "@" + methodAnalysis.getLastStatement().index + D_EXTERNAL_IMMUTABLE,
-                        methodInfo.fullyQualifiedName + D_IMMUTABLE);
+            int dynamicExt = variableInfo.getProperty(EXTERNAL_IMMUTABLE);
+            assert dynamicExt != Level.DELAY || translatedDelay(COMPUTE_IMMUTABLE,
+                    variableInfo.variable().fullyQualifiedName() + "@" + methodAnalysis.getLastStatement().index + D_EXTERNAL_IMMUTABLE,
+                    methodInfo.fullyQualifiedName + D_IMMUTABLE);
 
-                int formalImmutable = methodInfo.returnType().defaultImmutable(analyserContext);
-                assert formalImmutable != Level.DELAY || translatedDelay(COMPUTE_IMMUTABLE,
-                        methodInfo.returnType().bestTypeInfo().fullyQualifiedName() + D_IMMUTABLE,
-                        methodInfo.fullyQualifiedName + D_IMMUTABLE);
+            int formalImmutable = methodInfo.returnType().defaultImmutable(analyserContext);
+            assert formalImmutable != Level.DELAY || translatedDelay(COMPUTE_IMMUTABLE,
+                    methodInfo.returnType().bestTypeInfo().fullyQualifiedName() + D_IMMUTABLE,
+                    methodInfo.fullyQualifiedName + D_IMMUTABLE);
 
-                immutable = dynamic == Level.DELAY || dynamicExt == Level.DELAY || formalImmutable == Level.DELAY ?
-                        Level.DELAY : Math.max(formalImmutable, Math.max(dynamicExt, dynamic));
-            }
+            immutable = dynamic == Level.DELAY || dynamicExt == Level.DELAY || formalImmutable == Level.DELAY ?
+                    Level.DELAY : Math.max(formalImmutable, Math.max(dynamicExt, dynamic));
         }
         if (immutable == Level.DELAY) {
             log(DELAYED, "Delaying @Immutable on {}", methodInfo.fullyQualifiedName);
@@ -813,7 +802,7 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
                         fieldInMyTypeHierarchy(fr.fieldInfo, methodInfo.typeInfo))
                 .filter(vi -> vi.getProperty(CONTEXT_MODIFIED) == Level.DELAY)
                 .findFirst();
-         if (noContextModified.isPresent()) {
+        if (noContextModified.isPresent()) {
             assert translatedDelay(COMPUTE_MODIFIED, methodInfo.fullyQualifiedName + ":" + methodAnalysis.getLastStatement().index + D_LINKS_HAVE_BEEN_ESTABLISHED,
                     methodInfo.fullyQualifiedName + D_MODIFIED_METHOD);
             log(DELAYED, "Method {}: Not deciding on @Modified yet: no context modified for {}",

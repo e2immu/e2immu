@@ -136,7 +136,7 @@ public class Test_45_Project extends CommonTestRunner {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("set".equals(d.methodInfo().name)) {
                 if ("1.0.0".equals(d.statementId())) {
-                    String expect = d.iteration() <= 1
+                    String expect = d.iteration() <= 2
                             ? "{org.e2immu.analyser.testexample.Project_2.Container.Container(java.lang.String)=true}"
                             : "{org.e2immu.analyser.testexample.Project_2.Container.Container(java.lang.String)=false}";
                     assertEquals(expect, d.evaluationResult().causesOfContextModificationDelay().toString());
@@ -146,7 +146,7 @@ public class Test_45_Project extends CommonTestRunner {
 
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("set".equals(d.methodInfo().name)) {
-                int done = "1".equals(d.statementId()) ? 0 : 1;
+                int done = "1".equals(d.statementId()) ? 0 : 2;
                 if ("1.0.0".equals(d.statementId()) || "1".equals(d.statementId()) || "2".equals(d.statementId())) {
                     String expect = d.iteration() <= done ? CONTAINER : "[]";
                     assertEquals(expect, d.statementAnalysis().methodLevelData
@@ -169,11 +169,11 @@ public class Test_45_Project extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("Container".equals(d.methodInfo().name) && d.methodInfo().isConstructor) {
                 ParameterAnalysis p0 = d.parameterAnalyses().get(0);
-                int expectMom = d.iteration() <= 1 ? Level.DELAY : Level.FALSE;
+                int expectMom = d.iteration() <= 2 ? Level.DELAY : Level.FALSE;
                 assertEquals(expectMom, p0.getProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD));
                 int expectCm = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
                 assertEquals(expectCm, p0.getProperty(VariableProperty.CONTEXT_MODIFIED));
-                int expectMv = d.iteration() <= 1 ? Level.DELAY : Level.FALSE;
+                int expectMv = d.iteration() <= 2 ? Level.DELAY : Level.FALSE;
                 assertEquals(expectMv, p0.getProperty(VariableProperty.MODIFIED_VARIABLE));
             }
         };

@@ -380,27 +380,30 @@ public record NewObject(
 
         TypeAnalysis typeAnalysisOfConstructor = evaluationContext.getAnalyserContext()
                 .getTypeAnalysis(constructor.typeInfo);
-        int immutable = typeAnalysisOfConstructor.getProperty(VariableProperty.IMMUTABLE);
-        int typeIndependent = typeAnalysisOfConstructor.getProperty(VariableProperty.INDEPENDENT);
+        boolean delayed = false;
+        if (parameterizedType().applyImmutableToLinkedVariables(evaluationContext.getAnalyserContext(),
+                evaluationContext.getCurrentType())) {
+            int immutable = typeAnalysisOfConstructor.getProperty(VariableProperty.IMMUTABLE);
+            if (MultiLevel.isAtLeastEventuallyE2Immutable(immutable)) { // RULE 3
+                return LinkedVariables.EMPTY;
+            }
+            delayed = immutable == Level.DELAY;
+
+            int typeIndependent = typeAnalysisOfConstructor.getProperty(VariableProperty.INDEPENDENT);
+            if (typeIndependent == MultiLevel.EFFECTIVE) { // RULE 3
+                return LinkedVariables.EMPTY;
+            }
+            delayed |= typeIndependent == Level.DELAY;
+        }
+
+
         MethodAnalysis methodAnalysisOfConstructor = evaluationContext.getAnalyserContext()
                 .getMethodAnalysis(constructor);
         int independent = methodAnalysisOfConstructor.getProperty(VariableProperty.INDEPENDENT);
-
-        if (MultiLevel.isAtLeastEventuallyE2Immutable(immutable) || independent == MultiLevel.EFFECTIVE
-                || typeIndependent == MultiLevel.EFFECTIVE) { // RULE 3
+        if (independent == MultiLevel.EFFECTIVE) { // RULE 3
             return LinkedVariables.EMPTY;
         }
-
-        boolean notSelf = constructor.typeInfo != evaluationContext.getCurrentType();
-        boolean beingAnalysed = !constructor.typeInfo.shallowAnalysis();
-        boolean delayed;
-        if (notSelf && beingAnalysed) {
-            delayed = independent == Level.DELAY || immutable == MultiLevel.DELAY || typeIndependent == MultiLevel.DELAY;
-        } else {
-            delayed = false;
-        }
-
-        // default case: assume dependent
+        delayed |= independent == Level.DELAY;
 
         Set<Variable> result = new HashSet<>();
         for (Expression value : parameterExpressions) {

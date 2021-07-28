@@ -1231,11 +1231,11 @@ public class Test_16_Modification extends CommonTestRunner {
         };
 
         testClass("Modification_19", 0, 0, new DebugConfiguration.Builder()
-                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
+             //   .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+             //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+              //  .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+             //   .addStatementAnalyserVisitor(statementAnalyserVisitor)
+             //   .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
                 .build());
     }
 

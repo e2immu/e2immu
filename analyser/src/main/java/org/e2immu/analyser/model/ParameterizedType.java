@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.model;
 
+import org.e2immu.analyser.analyser.AnalyserContext;
 import org.e2immu.analyser.analyser.AnalysisProvider;
 import org.e2immu.analyser.analyser.ExpandableAnalyserContextImpl;
 import org.e2immu.analyser.analyser.VariableProperty;
@@ -912,12 +913,13 @@ public class ParameterizedType {
         return detailedString();
     }
 
-    public boolean ignoreImmutableForLinkedVariables(ExpandableAnalyserContextImpl analyserContext, TypeInfo currentType) {
-        boolean isSelf = isAssignableFromTo(analyserContext, currentType.asParameterizedType(analyserContext));
-        if (isSelf) return true;
+    public boolean applyImmutableToLinkedVariables(AnalyserContext analyserContext, TypeInfo currentType) {
+        if(typeInfo != null && typeInfo.shallowAnalysis()) return true;
+        boolean isSelf = typeInfo == currentType || isAssignableFromTo(analyserContext, currentType.asParameterizedType(analyserContext));
+        if (isSelf) return false;
         TypeInfo best = bestTypeInfo();
-        if(best == null) return true;
+        if(best == null) return false;
         TypeInfo pt =  best.primaryType();
-        return pt == currentType.primaryType();
+        return pt != currentType.primaryType();
     }
 }

@@ -16,6 +16,7 @@ package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.expression.InlinedMethod;
 import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.junit.jupiter.api.Test;
@@ -23,6 +24,7 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class Test_57_Lambda extends CommonTestRunner {
 
@@ -104,6 +106,48 @@ public class Test_57_Lambda extends CommonTestRunner {
         };
         testClass("Lambda_4", 0, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .build());
+    }
+
+    @Test
+    public void test_5() throws IOException {
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("method".equals(d.methodInfo().name)) {
+                Expression e = d.methodAnalysis().getSingleReturnValue();
+                assertEquals("a*a+a*b+b*-b+a*-b", e.toString());
+                assertTrue(e instanceof InlinedMethod);
+            }
+            if ("direct".equals(d.methodInfo().name)) {
+                Expression e = d.methodAnalysis().getSingleReturnValue();
+                assertEquals("a*a+a*b+b*-b+a*-b", e.toString());
+                assertTrue(e instanceof InlinedMethod);
+            }
+        };
+        testClass("Lambda_5", 0, 0, new DebugConfiguration.Builder()
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .build());
+    }
+
+    @Test
+    public void test_6() throws IOException {
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("method".equals(d.methodInfo().name)) {
+                Expression e = d.methodAnalysis().getSingleReturnValue();
+                if (d.iteration() > 0) {
+                    assertEquals("a*a+a*b+a*-i+b*-i", e.toString());
+                    assertTrue(e instanceof InlinedMethod);
+                }
+            }
+            if ("direct".equals(d.methodInfo().name)) {
+                Expression e = d.methodAnalysis().getSingleReturnValue();
+                if (d.iteration() > 0) {
+                    assertEquals("a*a+a*b+a*-i+b*-i", e.toString());
+                    assertTrue(e instanceof InlinedMethod);
+                }
+            }
+        };
+        testClass("Lambda_6", 0, 0, new DebugConfiguration.Builder()
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }

@@ -1356,7 +1356,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                                                        VariableInfo vi1) {
         // regardless of what's being delayed or not, if the type is immutable there cannot be links
 
-        if (!variable.parameterizedType().ignoreImmutableForLinkedVariables(analyserContext, myMethodAnalyser.methodInfo.typeInfo)) {
+        if (variable.parameterizedType().applyImmutableToLinkedVariables(analyserContext, myMethodAnalyser.methodInfo.typeInfo)) {
             TypeInfo bestType = variable.parameterizedType().bestTypeInfo();
             int immutable = analyserContext.getTypeAnalysis(bestType).getProperty(IMMUTABLE);
             if (immutable == MultiLevel.EFFECTIVELY_E2IMMUTABLE) {
@@ -3067,7 +3067,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             }
             boolean delayed = implicit == null;
 
-            if (!variable.parameterizedType().ignoreImmutableForLinkedVariables(analyserContext, getCurrentType())) {
+            if (variable.parameterizedType().applyImmutableToLinkedVariables(analyserContext, getCurrentType())) {
                 VariableInfo variableInfo = statementAnalysis.initialValueForReading(variable, getInitialStatementTime(), true);
                 int immutable = variableInfo.getProperty(IMMUTABLE);
                 if (MultiLevel.isAtLeastEventuallyE2ImmutableAfter(immutable)) {

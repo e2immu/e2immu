@@ -331,7 +331,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         // process parameters
         int notModified1Scope = evaluationContext.getProperty(objectValue, VariableProperty.NOT_MODIFIED_1, true, false);
         Pair<EvaluationResult.Builder, List<Expression>> res = EvaluateParameters.transform(parameterExpressions,
-                evaluationContext,forwardEvaluationInfo,
+                evaluationContext, forwardEvaluationInfo,
                 methodInfo, notModified1Scope, recursiveCall || partOfCallCycle, objectValue);
         List<Expression> parameterValues = res.v;
         builder.compose(objectResult, res.k.build());
@@ -839,28 +839,12 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         // RULE 2: @Identity links to the 1st parameter
         int identity = methodAnalysis.getProperty(VariableProperty.IDENTITY);
         if (identity == Level.TRUE) return evaluationContext.linkedVariables(parameterExpressions.get(0));
+        boolean delayed = identity == Level.DELAY;
 
         // RULE 3: the current implementation doesn't link to "this" as object.
         // see the method for other restrictions
         if (ignoreLinkingBecauseOfScope()) {
             return LinkedVariables.EMPTY;
-        }
-
-        // RULE 4: if the return type is E2IMMU, then no links at all
-        boolean notSelf = returnType.typeInfo != evaluationContext.getCurrentType();
-        boolean delayed = false;
-        if (notSelf) {
-            int immutable = MultiLevel.value(methodAnalysis.getProperty(VariableProperty.IMMUTABLE), MultiLevel.E2IMMUTABLE);
-            if (immutable == MultiLevel.DELAY) {
-                assert evaluationContext.translatedDelay(EVALUATION_OF_MAIN_EXPRESSION,
-                        methodInfo.fullyQualifiedName + D_IMMUTABLE,
-                        "EXPRESSION " + this + "@" + evaluationContext.statementIndex() + D_LINKED_VARIABLES);
-
-                delayed = true;
-            }
-            if (immutable >= MultiLevel.EVENTUAL_AFTER) {
-                return LinkedVariables.EMPTY;
-            }
         }
 
         // RULE 5: neither can implicitly immutable types
@@ -869,12 +853,33 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         if (implicitlyImmutable != null && implicitlyImmutable.contains(methodInfo.returnType())) {
             return LinkedVariables.EMPTY;
         }
+        delayed |= implicitlyImmutable == null;
+
+        // RULE 4: if the return type is @E2Immutable, then no links at all
+
+        if (returnType.applyImmutableToLinkedVariables(evaluationContext.getAnalyserContext(),
+                evaluationContext.getCurrentType())) {
+            int immutable = methodAnalysis.getProperty(VariableProperty.IMMUTABLE);
+            if (MultiLevel.isAtLeastEventuallyE2ImmutableAfter(immutable)) {
+                return LinkedVariables.EMPTY;
+            }
+            if (immutable == Level.DELAY) {
+                assert evaluationContext.translatedDelay(EVALUATION_OF_MAIN_EXPRESSION,
+                        methodInfo.fullyQualifiedName + D_IMMUTABLE,
+                        "EXPRESSION " + this + "@" + evaluationContext.statementIndex() + D_LINKED_VARIABLES);
+
+                delayed = true;
+            }
+        }
 
         // RULE 6: level 2 immutable object cannot link
-        int objectImmutable = evaluationContext.getProperty(object, VariableProperty.IMMUTABLE, true, false);
-        int objectE2Immutable = MultiLevel.value(objectImmutable, MultiLevel.E2IMMUTABLE);
-        if (objectE2Immutable >= MultiLevel.EVENTUAL_AFTER) {
-            return LinkedVariables.EMPTY;
+        if (object.returnType().applyImmutableToLinkedVariables(evaluationContext.getAnalyserContext(),
+                evaluationContext.getCurrentType())) {
+            int objectImmutable = evaluationContext.getProperty(object, VariableProperty.IMMUTABLE, true, false);
+            if (MultiLevel.isAtLeastEventuallyE2ImmutableAfter(objectImmutable)) {
+                return LinkedVariables.EMPTY;
+            }
+            delayed |= objectImmutable == Level.DELAY;
         }
 
         // RULE 7: independent method: no link to object
@@ -882,12 +887,9 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         if (independent == MultiLevel.EFFECTIVE) {
             return LinkedVariables.EMPTY;
         }
+        delayed |= independent == Level.DELAY;
 
-        // delays
-        delayed |= independent == Level.DELAY || objectE2Immutable == MultiLevel.DELAY ||
-                identity == Level.DELAY || implicitlyImmutable == null;
-
-        // link to the object
+        // link to the object, and all the variables linked to object
         return evaluationContext.linkedVariables(object).merge(new LinkedVariables(Set.of(), delayed));
     }
 

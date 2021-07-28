@@ -21,6 +21,8 @@ import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterAnalysis;
 import org.e2immu.analyser.model.ParameterInfo;
+import org.e2immu.analyser.model.expression.InlineConditional;
+import org.e2immu.analyser.model.expression.InlinedMethod;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.visitor.*;
@@ -273,7 +275,48 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
     // delay, but not minimized; see 9
     @Test
     public void test_7() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("combiner".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ReturnVariable) {
+                    String expect = d.iteration() <= 2 ? "<m:apply>"
+                            : "b.list.isEmpty()||!Space.NONE==separator?nullable instance type OutputBuilderSimplified_7/*@Identity*/:instance type OutputBuilderSimplified_7/*@Identity*/.list.isEmpty()?Space.NONE==separator?nullable instance type OutputBuilderSimplified_7/*@Identity*/:instance type OutputBuilderSimplified_7/*@Identity*/:b";
+                    assertEquals(expect, d.currentValue().toString());
+                    if (d.iteration() > 3) {
+                        // cannot be inlined, as it is modifying
+                        assertTrue(d.currentValue() instanceof InlineConditional, "Class is "+d.currentValue().getClass());
+                    }
+                    // FIXME which component is not immutable?
+                    int expectImm = d.iteration() <= 3 ? Level.DELAY : MultiLevel.EFFECTIVELY_E1IMMUTABLE_NOT_E2IMMUTABLE;
+                    assertEquals(expectImm, d.variableInfo().getProperty(VariableProperty.IMMUTABLE));
+                }
+            }
+        };
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("OutputBuilderSimplified_7".equals(d.typeInfo().simpleName)) {
+                int expectImm = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EFFECTIVELY_E1IMMUTABLE_NOT_E2IMMUTABLE;
+                assertEquals(expectImm, d.typeAnalysis().getProperty(VariableProperty.IMMUTABLE));
+            }
+        };
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("apply".equals(d.methodInfo().name) && "$4".equals(d.methodInfo().typeInfo.simpleName)) {
+                ParameterAnalysis p1 = d.parameterAnalyses().get(1);
+                assertEquals(MultiLevel.NOT_INVOLVED, p1.getProperty(VariableProperty.EXTERNAL_IMMUTABLE));
+                int cImm = d.iteration() <= 3 ? Level.DELAY : MultiLevel.MUTABLE;
+                assertEquals(cImm, p1.getProperty(VariableProperty.CONTEXT_IMMUTABLE));
+
+                int expectImm = d.iteration() <= 3 ? Level.DELAY : MultiLevel.EFFECTIVELY_E1IMMUTABLE_NOT_E2IMMUTABLE;
+                assertEquals(expectImm, p1.getProperty(VariableProperty.IMMUTABLE));
+            }
+            if ("combiner".equals(d.methodInfo().name)) {
+                // FIXME
+                int expectImm = d.iteration() <= 30 ? Level.DELAY : MultiLevel.EFFECTIVELY_E1IMMUTABLE_NOT_E2IMMUTABLE;
+                assertEquals(expectImm, d.methodAnalysis().getProperty(VariableProperty.IMMUTABLE));
+            }
+        };
         testClass("OutputBuilderSimplified_7", 0, 0, new DebugConfiguration.Builder()
+                .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 

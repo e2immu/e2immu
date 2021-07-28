@@ -1370,6 +1370,8 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                                                boolean isNotAssignmentTarget) {
         String fqn = variable.fullyQualifiedName();
         if (!variables.isSet(fqn)) {
+            assert !(variable instanceof ParameterInfo) : "Parameter " + variable.fullyQualifiedName() +
+                    " should be known in " + methodAnalysis.getMethodInfo().fullyQualifiedName + ", statement " + index;
             return new VariableInfoImpl(variable); // no value, no state; will be created by a MarkRead
         }
         VariableInfoContainer vic = variables.get(fqn);
