@@ -36,7 +36,7 @@ public record TypeResolution(SortedType sortedType,
     public static class Builder {
         private SortedType sortedType;
         private Set<TypeInfo> circularDependencies;
-        private Set<TypeInfo> superTypesExcludingJavaLangObject;
+        private Set<TypeInfo> superTypesExcludingJavaLangObject = Set.of();
         private int countImplementations;
         private int countGeneratedImplementations;
         private TypeInfo implementingType; // valid value only when counts == 1

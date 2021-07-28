@@ -21,6 +21,7 @@ import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
+import org.e2immu.analyser.resolver.SortedType;
 
 import java.util.Arrays;
 import java.util.List;
@@ -97,7 +98,7 @@ public class EnumMethods {
         valueOfBuilder.readyToComputeFQN(expressionContext.typeContext);
 
         if (insertCode(expressionContext.typeContext)) {
-            var codeBlock = returnValueOf(expressionContext, enumType, builder, valuesBuilder,
+            var codeBlock = returnValueOf(expressionContext, enumType, valuesBuilder,
                     nameBuilder, valueOfBuilder.getParameters().get(0), notModifiedContract);
             valueOfBuilder.setInspectedBlock(codeBlock);
         } else {
@@ -122,7 +123,6 @@ public class EnumMethods {
      */
     private static Block returnValueOf(ExpressionContext expressionContext,
                                        TypeInfo enumType,
-                                       TypeInspectionImpl.Builder enumTypeBuilder,
                                        MethodInspectionImpl.Builder valuesMethod,
                                        MethodInspectionImpl.Builder nameMethod,
                                        ParameterInfo nameParameter,
@@ -151,7 +151,7 @@ public class EnumMethods {
 
         var functionalInterfaceType = enumPredicate(typeContext, enumType);
         var predicateBuilder = predicate(functionalInterfaceType,
-                expressionContext, enumType, enumTypeBuilder, notModifiedContract, nameMethod, nameParameter);
+                expressionContext, enumType, notModifiedContract, nameMethod, nameParameter);
         var implementationMethod = predicateBuilder.getMethodInfo()
                 .typeInfo.asParameterizedType(typeContext);
         var lambda = new Lambda(typeContext, functionalInterfaceType, implementationMethod, List.of(Lambda.OutputVariant.EMPTY));
@@ -180,7 +180,6 @@ public class EnumMethods {
     private static MethodInspectionImpl.Builder predicate(ParameterizedType functionalInterfaceType,
                                                           ExpressionContext expressionContext,
                                                           TypeInfo enumType,
-                                                          TypeInspectionImpl.Builder enumTypeBuilder,
                                                           AnnotationExpression notModifiedContract,
                                                           MethodInspectionImpl.Builder nameMethod,
                                                           ParameterInfo nameParameter) {
@@ -212,7 +211,10 @@ public class EnumMethods {
         expressionContext.typeContext.typeMapBuilder.registerMethodInspection(predicate);
         builder.addMethod(predicate.getMethodInfo());
 
-        enumTypeBuilder.addSubType(lambdaType);
+        var lambdaTypeResolution = new TypeResolution.Builder()
+                .setSortedType(new SortedType(lambdaType, List.of(lambdaType, predicate.getMethodInfo())))
+                .build();
+        lambdaType.typeResolution.set(lambdaTypeResolution);
         return predicate;
     }
 

@@ -25,4 +25,8 @@ public class Basics_5 {
         }).findAny().get();
     }
 
+    public static String add2(String input2) {
+        return Stream.of(input2).map(s2 -> s2 == null ? "null" : s2 + "something").findAny().get();
+    }
+
 }

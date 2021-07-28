@@ -59,17 +59,15 @@ public class Test_26_Enum_withAPI extends CommonTestRunner {
             }
             if ("test".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo name && "name".equals(name.name)) {
-                    int expectExtImm = d.iteration() == 0 ? Level.DELAY : MultiLevel.NOT_INVOLVED;
-                    assertEquals(expectExtImm, d.getProperty(VariableProperty.EXTERNAL_IMMUTABLE));
-                    int expectEnn = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
-                    assertEquals(expectEnn, d.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
+                    assertEquals(MultiLevel.NOT_INVOLVED, d.getProperty(VariableProperty.EXTERNAL_IMMUTABLE));
+                    assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.EXTERNAL_NOT_NULL));
                 }
             }
         };
 
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("test".equals(d.methodInfo().name)) {
-                assertEquals(d.iteration() > 0, d.statementAnalysis().methodLevelData.linksHaveBeenEstablished.isSet());
+                assertTrue(d.statementAnalysis().methodLevelData.linksHaveBeenEstablished.isSet());
             }
             if ("values".equals(d.methodInfo().name)) {
                 assertEquals(d.iteration() > 0, d.statementAnalysis().methodLevelData.linksHaveBeenEstablished.isSet());
@@ -102,11 +100,8 @@ public class Test_26_Enum_withAPI extends CommonTestRunner {
                 // predicate implements "test"
                 assertFalse(d.methodInfo().methodResolution.get().overrides().isEmpty());
                 assertEquals(Level.FALSE, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
-                if (d.iteration() == 0) {
-                    assertNull(d.methodAnalysis().getSingleReturnValue());
-                } else {
-                    assertEquals("(instance type String).equals(name)", d.methodAnalysis().getSingleReturnValue().toString());
-                }
+
+                assertEquals("(instance type String).equals(name)", d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("valueOf".equals(d.methodInfo().name)) {
                 assertEquals(Level.FALSE, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
