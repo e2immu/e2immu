@@ -1649,7 +1649,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                                     CONTEXT_IMMUTABLE, defaultImmutable);
 
                     vic.setValue(NewObject.forLoopVariable(index() + "-" + name, initialNotNull,
-                            statementAnalysis.primitives, lvr.parameterizedType()), false,
+                                    statementAnalysis.primitives, lvr.parameterizedType()), false,
                             LinkedVariables.EMPTY, properties, true);
                     vic.setLinkedVariables(LinkedVariables.EMPTY, true);
                 } else {
@@ -2957,26 +2957,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
 
         @Override
         public boolean notNullAccordingToConditionManager(Variable variable) {
-            Set<Variable> notNullVariablesInState = conditionManager.findIndividualNullInState(this, false);
-            if (notNullVariablesInState.contains(variable)) return true;
-            Set<Variable> notNullVariablesInCondition = conditionManager
-                    .findIndividualNullInCondition(this, false);
-            if (notNullVariablesInCondition.contains(variable)) return true;
-            FieldReference fieldReference;
-            if (variable instanceof FieldReference fr) {
-                fieldReference = fr;
-            } else if (variable instanceof LocalVariableReference lvr &&
-                    lvr.variable.nature() instanceof VariableNature.CopyOfVariableField copy) {
-                fieldReference = copy.localCopyOf();
-                VariableInfo variableInfo = statementAnalysis.findOrThrow(fieldReference);
-                if (variableInfo.isAssigned()) return false;
-                // IMPROVE this is only valid if the statement time of the local copy is the same as that of the precondition
-                // but how to do that?
-            } else return false;
-
-            Set<Variable> notNullVariablesInPrecondition = conditionManager
-                    .findIndividualNullInPrecondition(this, false);
-            return notNullVariablesInPrecondition.contains(fieldReference);
+            return notNullAccordingToConditionManager(variable, statementAnalysis::findOrThrow);
         }
 
         /*
@@ -3041,16 +3022,6 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         @Override
         public AnalyserContext getAnalyserContext() {
             return analyserContext;
-        }
-
-        @Override
-        public LinkedVariables linkedVariables(Expression value) {
-            assert value != null;
-            VariableExpression ve;
-            if ((ve = value.asInstanceOf(VariableExpression.class)) != null) {
-                return linkedVariables(ve.variable());
-            }
-            return value.linkedVariables(this);
         }
 
         /*

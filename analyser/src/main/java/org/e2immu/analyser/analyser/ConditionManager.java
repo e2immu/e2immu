@@ -357,16 +357,8 @@ public record ConditionManager(Expression condition,
         }
 
         @Override
-        public LinkedVariables linkedVariables(Expression value) {
-            if (value instanceof VariableExpression variableExpression) {
-                return linkedVariables(variableExpression.variable());
-            }
-            return value.linkedVariables(this);
-        }
-
-        @Override
         public LinkedVariables linkedVariables(Variable variable) {
-            return LinkedVariables.EMPTY; // TODO make sure this is right
+            return LinkedVariables.EMPTY;
         }
     }
 }

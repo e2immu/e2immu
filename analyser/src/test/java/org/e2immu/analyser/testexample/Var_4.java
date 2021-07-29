@@ -29,6 +29,7 @@ public class Var_4 {
 
     @Test
     public void test() {
-        assertEquals("yyy", repeater(3).apply("y"));
+        String applied = repeater(3).apply("y");
+        assertEquals("yyy", applied);
     }
 }

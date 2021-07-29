@@ -221,7 +221,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         List<Expression> reParamValues = reParams.stream().map(EvaluationResult::value).collect(Collectors.toList());
         int modified = evaluationContext.getAnalyserContext()
                 .getMethodAnalysis(methodInfo).getProperty(VariableProperty.MODIFIED_METHOD);
-        EvaluationResult mv = EvaluateMethodCall.methodValue(modified, evaluationContext, methodInfo,
+        EvaluationResult mv = new EvaluateMethodCall(evaluationContext).methodValue(modified, methodInfo,
                 evaluationContext.getAnalyserContext().getMethodAnalysis(methodInfo),
                 objectIsImplicit, reObject.value(), concreteReturnType,
                 reParamValues);
@@ -406,7 +406,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             MethodInspection methodInspection = methodInfo.methodInspection.get();
             complianceWithForwardRequirements(builder, methodAnalysis, methodInspection, forwardEvaluationInfo, contentNotNullRequired);
 
-            EvaluationResult mv = EvaluateMethodCall.methodValue(modified, evaluationContext, methodInfo,
+            EvaluationResult mv = new EvaluateMethodCall(evaluationContext).methodValue(modified, methodInfo,
                     methodAnalysis, objectIsImplicit, objectValue, concreteReturnType, parameterValues);
             builder.compose(mv);
             if (mv.value() == objectValue && mv.value().isInstanceOf(NewObject.class) && modifiedInstance != null) {
@@ -602,7 +602,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                         // the parameters are available
 
                         if (aspectMethod != null && !methodInfo.isConstructor) {
-                            // first: pre (POSTCONDITION, MODIFICATION)
+                            // first: pre (POST CONDITION, MODIFICATION)
                             filterResult = EvaluateMethodCall.filter(evaluationContext, aspectMethod, newState.get(), List.of());
                         } else {
                             filterResult = null;

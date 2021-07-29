@@ -17,10 +17,15 @@ package org.e2immu.analyser.parser;
 import org.e2immu.analyser.analyser.VariableInfoContainer;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
+import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.model.ParameterAnalysis;
 import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.model.expression.InlinedMethod;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.VariableNature;
+import org.e2immu.analyser.visitor.EvaluationResultVisitor;
+import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.visitor.TypeMapVisitor;
 import org.junit.jupiter.api.Test;
@@ -64,10 +69,38 @@ public class Test_52_Var extends CommonTestRunner {
     }
 
     // lambda
-    // TODO add a test for @NotNull on the function returned
     @Test
     public void test_4() throws IOException {
+        EvaluationResultVisitor evaluationResultVisitor = d -> {
+            if ("test".equals(d.methodInfo().name)) {
+                if ("0".equals(d.statementId())) {
+                    assertEquals("\"y\".repeat(3)", d.evaluationResult().value().toString());
+                }
+            }
+        };
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("apply".equals(d.methodInfo().name) && "$1".equals(d.methodInfo().typeInfo.simpleName)) {
+                if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
+                    assertEquals("apply", inlinedMethod.methodInfo().name);
+                } else fail();
+                assertEquals("x.repeat(i)", d.methodAnalysis().getSingleReturnValue().toString());
+                ParameterAnalysis p0 = d.methodAnalysis().getParameterAnalyses().get(0);
+                int expectNnp = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
+                assertEquals(expectNnp, p0.getProperty(VariableProperty.NOT_NULL_PARAMETER));
+            }
+            if ("repeater".equals(d.methodInfo().name)) {
+                if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
+                    assertEquals("repeater", inlinedMethod.methodInfo().name);
+                    if (inlinedMethod.expression() instanceof InlinedMethod inlinedMethod2) {
+                        assertEquals("apply", inlinedMethod2.methodInfo().name);
+                    } else fail();
+                } else fail();
+                assertEquals("x.repeat(i)", d.methodAnalysis().getSingleReturnValue().toString());
+            }
+        };
         testClass("Var_4", 0, 0, new DebugConfiguration.Builder()
+                .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 

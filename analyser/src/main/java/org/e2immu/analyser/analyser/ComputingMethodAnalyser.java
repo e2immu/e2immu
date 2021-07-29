@@ -522,7 +522,8 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
             if (modified == Level.FALSE) {
                 InlinedMethod.Applicability applicability = applicability(value);
                 if (applicability != InlinedMethod.Applicability.NONE) {
-                    value = new InlinedMethod(methodInfo, replaceFields(sharedState.evaluationContext, value), applicability);
+                    LocalCopiesReplaced lcr = replaceFields(sharedState.evaluationContext, value);
+                    value = new InlinedMethod(methodInfo, lcr.expression, lcr.variables, applicability);
                 }
             }
         }
@@ -650,9 +651,14 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
     /*
     replace local copies of fields to fields
      */
-    private Expression replaceFields(EvaluationContext evaluationContext, Expression value) {
+
+    private record LocalCopiesReplaced(Expression expression, Set<Variable> variables) {
+    }
+
+    private LocalCopiesReplaced replaceFields(EvaluationContext evaluationContext, Expression value) {
         TranslationMapImpl.Builder builder = new TranslationMapImpl.Builder();
         boolean change = false;
+        Set<Variable> variables = new HashSet<>();
         for (Variable variable : value.variables()) {
             if (variable instanceof LocalVariableReference lvr) {
                 FieldInfo fieldInfo = extractFieldFromLocal(lvr);
@@ -660,11 +666,16 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
                     FieldReference fieldReference = new FieldReference(evaluationContext.getAnalyserContext(), fieldInfo);
                     builder.put(variable, fieldReference);
                     change = true;
+                    variables.add(fieldReference);
+                } else {
+                    variables.add(lvr);
                 }
+            } else {
+                variables.add(variable);
             }
         }
-        if (!change) return value;
-        return value.translate(builder.build());
+        if (!change) return new LocalCopiesReplaced(value, variables);
+        return new LocalCopiesReplaced(value.translate(builder.build()), variables);
     }
 
     private FieldInfo extractFieldFromLocal(LocalVariableReference lvr) {

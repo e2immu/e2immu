@@ -1357,14 +1357,6 @@ public class FieldAnalyser extends AbstractAnalyser {
         }
 
         @Override
-        public LinkedVariables linkedVariables(Expression value) {
-            if (value instanceof VariableExpression variableExpression) {
-                return linkedVariables(variableExpression.variable());
-            }
-            return value.linkedVariables(this);
-        }
-
-        @Override
         public LinkedVariables linkedVariables(Variable variable) {
             return LinkedVariables.EMPTY; // TODO make sure this is right
         }

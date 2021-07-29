@@ -14,19 +14,21 @@
 
 package org.e2immu.analyser.model.expression;
 
-import org.e2immu.analyser.analyser.EvaluationContext;
-import org.e2immu.analyser.analyser.EvaluationResult;
-import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
-import org.e2immu.analyser.analyser.VariableProperty;
+import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.util.DelayDebugNode;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
+import org.e2immu.analyser.model.variable.This;
+import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Text;
+import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.analyser.util.SetUtil;
 
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.VariableProperty.INDEPENDENT;
 import static org.e2immu.analyser.analyser.VariableProperty.MODIFIED_METHOD;
@@ -42,7 +44,9 @@ import static org.e2immu.analyser.analyser.VariableProperty.MODIFIED_METHOD;
 
  Properties that rely on the return value, should come from the Value. Properties to do with modification, should come from the method.
  */
-public record InlinedMethod(MethodInfo methodInfo, Expression expression,
+public record InlinedMethod(MethodInfo methodInfo,
+                            Expression expression,
+                            Set<Variable> variablesOfExpression,
                             Applicability applicability) implements Expression {
 
     public enum Applicability {
@@ -67,7 +71,11 @@ public record InlinedMethod(MethodInfo methodInfo, Expression expression,
 
     @Override
     public Expression translate(TranslationMap translationMap) {
-        return new InlinedMethod(methodInfo, expression.translate(translationMap), applicability);
+        return new InlinedMethod(methodInfo,
+                expression.translate(translationMap),
+                variablesOfExpression.stream()
+                        .map(translationMap::translateVariable).collect(Collectors.toUnmodifiableSet()),
+                applicability);
     }
 
     @Override
@@ -125,7 +133,16 @@ public record InlinedMethod(MethodInfo methodInfo, Expression expression,
 
     @Override
     public EvaluationResult reEvaluate(EvaluationContext evaluationContext, Map<Expression, Expression> translation) {
-        return expression.reEvaluate(evaluationContext, translation);
+        Set<Variable> targetVariables = translation.values().stream().filter(e -> e instanceof VariableExpression)
+                .map(e -> ((VariableExpression)e).variable()).collect(Collectors.toUnmodifiableSet());
+        EvaluationContext closure = new EvaluationContextImpl(evaluationContext, targetVariables);
+        EvaluationResult result = expression.reEvaluate(closure, translation);
+        if (expression instanceof InlinedMethod im) {
+            InlinedMethod newIm = new InlinedMethod(im.methodInfo(), result.getExpression(),
+                    new HashSet<>(result.getExpression().variables()), im.applicability);
+            return new EvaluationResult.Builder().compose(result).setExpression(newIm).build();
+        }
+        return result;
     }
 
     @Override
@@ -168,5 +185,283 @@ public record InlinedMethod(MethodInfo methodInfo, Expression expression,
     public NewObject getInstance(EvaluationResult evaluationContext) {
         // TODO verify this
         return expression.getInstance(evaluationContext);
+    }
+
+    private class EvaluationContextImpl extends AbstractEvaluationContextImpl {
+        private final EvaluationContext evaluationContext;
+        private final Set<Variable> acceptedVariables;
+
+        protected EvaluationContextImpl(EvaluationContext evaluationContext, Set<Variable> targetVariables) {
+            super(evaluationContext.getIteration(),
+                    ConditionManager.initialConditionManager(evaluationContext.getPrimitives()), null);
+            this.evaluationContext = evaluationContext;
+            this.acceptedVariables = SetUtil.immutableUnion(variablesOfExpression, targetVariables);
+        }
+
+        protected EvaluationContextImpl(EvaluationContextImpl parent, ConditionManager conditionManager) {
+            super(parent.iteration, conditionManager, null);
+            this.evaluationContext = parent.evaluationContext;
+            this.acceptedVariables = parent.acceptedVariables;
+        }
+
+        private void ensureVariableIsKnown(Variable variable) {
+            if (!(variable instanceof This)) {
+                assert acceptedVariables.contains(variable) : "there should be no other variables in this expression: " +
+                        variable + " is not in " + variablesOfExpression();
+            }
+        }
+
+        @Override
+        public TypeInfo getCurrentType() {
+            return applicability == Applicability.EVERYWHERE ? null : evaluationContext.getCurrentType();
+        }
+
+        @Override
+        public MethodAnalyser getCurrentMethod() {
+            return applicability == Applicability.METHOD ? evaluationContext.getCurrentMethod() : null;
+        }
+
+        @Override
+        public StatementAnalyser getCurrentStatement() {
+            return null;
+        }
+
+        @Override
+        public Location getLocation() {
+            return evaluationContext.getLocation();
+        }
+
+        @Override
+        public Location getLocation(Expression expression) {
+            return evaluationContext.getLocation(expression);
+        }
+
+        @Override
+        public Primitives getPrimitives() {
+            return evaluationContext.getPrimitives();
+        }
+
+        @Override
+        public EvaluationContext child(Expression condition) {
+            return child(condition, false);
+        }
+
+        @Override
+        public EvaluationContext dropConditionManager() {
+            ConditionManager cm = ConditionManager.initialConditionManager(getPrimitives());
+            return new EvaluationContextImpl(this, cm);
+        }
+
+        @Override
+        public EvaluationContext child(Expression condition, boolean disableEvaluationOfMethodCallsUsingCompanionMethods) {
+            Set<Variable> conditionIsDelayed = isDelayedSet(condition);
+            return new EvaluationContextImpl(this,
+                    conditionManager.newAtStartOfNewBlockDoNotChangePrecondition(getPrimitives(), condition, conditionIsDelayed));
+        }
+
+        @Override
+        public EvaluationContext childState(Expression state) {
+            Set<Variable> stateIsDelayed = isDelayedSet(state);
+            return new EvaluationContextImpl(this, conditionManager.addState(state, stateIsDelayed));
+        }
+
+        @Override
+        public Expression currentValue(Variable variable, int statementTime, ForwardEvaluationInfo forwardEvaluationInfo) {
+            ensureVariableIsKnown(variable);
+            return new VariableExpression(variable);
+        }
+
+        @Override
+        public AnalyserContext getAnalyserContext() {
+            return evaluationContext.getAnalyserContext();
+        }
+
+        @Override
+        public Stream<ParameterAnalysis> getParameterAnalyses(MethodInfo methodInfo) {
+            return evaluationContext.getParameterAnalyses(methodInfo);
+        }
+
+        @Override
+        public int getProperty(Expression value, VariableProperty variableProperty, boolean duringEvaluation, boolean ignoreStateInConditionManager) {
+            return evaluationContext.getProperty(value, variableProperty, duringEvaluation, ignoreStateInConditionManager);
+        }
+
+        @Override
+        public int getProperty(Variable variable, VariableProperty variableProperty) {
+            ensureVariableIsKnown(variable);
+            return variableProperty.falseValue; // FIXME
+        }
+
+        @Override
+        public int getPropertyFromPreviousOrInitial(Variable variable, VariableProperty variableProperty, int statementTime) {
+            ensureVariableIsKnown(variable);
+            return variableProperty.falseValue; // FIXME
+        }
+
+        @Override
+        public boolean notNullAccordingToConditionManager(Variable variable) {
+            return notNullAccordingToConditionManager(variable, fr -> {
+                throw new UnsupportedOperationException("there should be no local copies of field references!");
+            });
+        }
+
+        @Override
+        public LinkedVariables linkedVariables(Variable variable) {
+            ensureVariableIsKnown(variable);
+            return LinkedVariables.EMPTY;
+        }
+
+        @Override
+        public Map<VariableProperty, Integer> getValueProperties(Expression value) {
+            return evaluationContext.getValueProperties(value);
+        }
+
+        @Override
+        public Map<VariableProperty, Integer> getValueProperties(Expression value, boolean ignoreConditionInConditionManager) {
+            return evaluationContext.getValueProperties(value, ignoreConditionInConditionManager);
+        }
+
+        // FIXME nullable
+        @Override
+        public NewObject currentInstance(Variable variable, int statementTime) {
+            ensureVariableIsKnown(variable);
+            return NewObject.forInlinedMethod(evaluationContext.getPrimitives(), evaluationContext.newObjectIdentifier(),
+                    variable.parameterizedType(), MultiLevel.NULLABLE);
+        }
+
+        @Override
+        public boolean disableEvaluationOfMethodCallsUsingCompanionMethods() {
+            return evaluationContext.disableEvaluationOfMethodCallsUsingCompanionMethods();
+        }
+
+        @Override
+        public int getInitialStatementTime() {
+            return evaluationContext.getInitialStatementTime();
+        }
+
+        @Override
+        public int getFinalStatementTime() {
+            return evaluationContext.getFinalStatementTime();
+        }
+
+        @Override
+        public boolean allowedToIncrementStatementTime() {
+            return evaluationContext.allowedToIncrementStatementTime();
+        }
+
+        @Override
+        public Expression replaceLocalVariables(Expression expression) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Expression acceptAndTranslatePrecondition(Expression rest) {
+            return evaluationContext.acceptAndTranslatePrecondition(rest);
+        }
+
+        @Override
+        public boolean isPresent(Variable variable) {
+            return variablesOfExpression.contains(variable);
+        }
+
+        @Override
+        public List<PrimaryTypeAnalyser> getLocalPrimaryTypeAnalysers() {
+            return evaluationContext.getLocalPrimaryTypeAnalysers();
+        }
+
+        @Override
+        public Stream<Map.Entry<String, VariableInfoContainer>> localVariableStream() {
+            return evaluationContext.localVariableStream();
+        }
+
+        @Override
+        public MethodAnalysis findMethodAnalysisOfLambda(MethodInfo methodInfo) {
+            return evaluationContext.findMethodAnalysisOfLambda(methodInfo);
+        }
+
+        @Override
+        public LinkedVariables getStaticallyAssignedVariables(Variable variable, int statementTime) {
+            return evaluationContext.getStaticallyAssignedVariables(variable, statementTime);
+        }
+
+        @Override
+        public boolean variableIsDelayed(Variable variable) {
+            return false; // nothing can be delayed here
+        }
+
+        @Override
+        public boolean isDelayed(Expression expression) {
+            return false; // nothing can be delayed here
+        }
+
+        @Override
+        public Set<Variable> isDelayedSet(Expression expression) {
+            return null; // nothing can be delayed here
+        }
+
+        @Override
+        public boolean isNotDelayed(Expression expression) {
+            return true; // nothing can be delayed here
+        }
+
+        @Override
+        public String newObjectIdentifier() {
+            return evaluationContext.newObjectIdentifier();
+        }
+
+        @Override
+        public This currentThis() {
+            return evaluationContext.currentThis();
+        }
+
+        @Override
+        public Boolean isCurrentlyLinkedToField(Expression objectValue) {
+            return evaluationContext.isCurrentlyLinkedToField(objectValue);
+        }
+
+        @Override
+        public boolean cannotBeModified(Expression value) {
+            return evaluationContext.cannotBeModified(value);
+        }
+
+        @Override
+        public MethodInfo concreteMethod(Variable variable, MethodInfo methodInfo) {
+            return evaluationContext.concreteMethod(variable, methodInfo);
+        }
+
+        @Override
+        public String statementIndex() {
+            return evaluationContext.statementIndex();
+        }
+
+        @Override
+        public boolean firstAssignmentOfFieldInConstructor(Variable variable) {
+            return evaluationContext.firstAssignmentOfFieldInConstructor(variable);
+        }
+
+        @Override
+        public boolean hasBeenAssigned(Variable variable) {
+            return evaluationContext.hasBeenAssigned(variable);
+        }
+
+        @Override
+        public boolean foundDelay(String where, String delayFqn) {
+            return evaluationContext.foundDelay(where, delayFqn);
+        }
+
+        @Override
+        public boolean translatedDelay(String where, String delayFromFqn, String newDelayFqn) {
+            return evaluationContext.translatedDelay(where, delayFromFqn, newDelayFqn);
+        }
+
+        @Override
+        public boolean createDelay(String where, String delayFqn) {
+            return evaluationContext.createDelay(where, delayFqn);
+        }
+
+        @Override
+        public Stream<DelayDebugNode> streamNodes() {
+            return Stream.of();
+        }
     }
 }

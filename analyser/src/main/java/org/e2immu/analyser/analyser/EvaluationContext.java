@@ -155,6 +155,11 @@ public interface EvaluationContext extends DelayDebugger {
     }
 
     default LinkedVariables linkedVariables(Expression value) {
+        assert value != null;
+        VariableExpression ve;
+        if ((ve = value.asInstanceOf(VariableExpression.class)) != null) {
+            return linkedVariables(ve.variable());
+        }
         return value.linkedVariables(this);
     }
 

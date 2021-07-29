@@ -29,7 +29,15 @@ public class Lambda_6 {
         return (a + b) * (a - i);
     }
 
+    public int applyDirect() {
+        return direct(i, i);
+    }
+
     public BinaryOperator<Integer> method() {
         return (a, b) -> (a + b) * (a - i);
+    }
+
+    public int applyMethod() {
+        return method().apply(i, i);
     }
 }

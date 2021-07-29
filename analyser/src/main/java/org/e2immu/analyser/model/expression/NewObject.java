@@ -17,7 +17,6 @@ package org.e2immu.analyser.model.expression;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.util.DelayDebugger;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.expression.util.EvaluateMethodCall;
 import org.e2immu.analyser.model.expression.util.EvaluateParameters;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.model.variable.FieldReference;
@@ -90,6 +89,12 @@ public record NewObject(
                 fieldInfo.owner.asParameterizedType(inspectionProvider), Diamond.NO, List.of(),
                 MultiLevel.EFFECTIVELY_NOT_NULL, false, null, null,
                 new BooleanConstant(inspectionProvider.getPrimitives(), true));
+    }
+
+    public static NewObject forInlinedMethod(Primitives primitives, String identifier,
+                                              ParameterizedType parameterizedType, int notNull) {
+        return new NewObject(identifier, null, parameterizedType, Diamond.SHOW_ALL, List.of(),
+                notNull, false, null, null, new BooleanConstant(primitives, true));
     }
 
     /*

@@ -33,28 +33,43 @@ import static org.e2immu.analyser.util.Logger.log;
 
 public class EvaluateMethodCall {
 
-    private EvaluateMethodCall() {
-        throw new UnsupportedOperationException();
+    private final EvaluationContext evaluationContext;
+    private final AnalyserContext analyserContext;
+    private final Primitives primitives;
+
+    public EvaluateMethodCall(EvaluationContext evaluationContext) {
+        this.evaluationContext = evaluationContext;
+        Objects.requireNonNull(evaluationContext);
+        this.primitives = evaluationContext.getPrimitives();
+        this.analyserContext = evaluationContext.getAnalyserContext();
     }
 
-    // static, also used in MethodValue re-evaluation
-    public static EvaluationResult methodValue(int modified,
-                                               EvaluationContext evaluationContext,
-                                               MethodInfo methodInfo,
-                                               MethodAnalysis methodAnalysis,
-                                               boolean objectIsImplicit,
-                                               Expression objectValue,
-                                               ParameterizedType concreteReturnType,
-                                               List<Expression> parameters) {
+    public EvaluationResult methodValue(int modified,
+                                        MethodInfo methodInfo,
+                                        MethodAnalysis methodAnalysis,
+                                        boolean objectIsImplicit,
+                                        Expression objectValue,
+                                        ParameterizedType concreteReturnType,
+                                        List<Expression> parameters) {
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
-
-        Objects.requireNonNull(evaluationContext);
-
         boolean recursiveCall = evaluationContext.getCurrentMethod() != null &&
                 evaluationContext.getCurrentMethod().methodInfo == methodInfo;
         if (recursiveCall) {
             MethodCall methodValue = new MethodCall(objectValue, methodInfo, parameters);
             return builder.setExpression(methodValue).build();
+        }
+        /* before we use the evaluation context to compute values on variables, we must check whether we're actually
+          executing an inlined method
+
+          we also have to take care to take the concrete method, and not the formal functional interface
+         */
+        InlinedMethod inlineValue;
+        if (methodInfo.typeInfo.typeInspection.get().isFunctionalInterface() &&
+                (inlineValue = objectValue.asInstanceOf(InlinedMethod.class)) != null &&
+                inlineValue.canBeApplied(evaluationContext)) {
+            Map<Expression, Expression> translationMap = EvaluatePreconditionFromMethod.translationMap(analyserContext,
+                    inlineValue.methodInfo(), parameters, objectValue);
+            return inlineValue.reEvaluate(evaluationContext, translationMap);
         }
 
         List<Variable> linkedVariablesWhenDelayed = evaluationContext.linkedVariables(objectValue).variablesAsList();
@@ -65,10 +80,10 @@ public class EvaluateMethodCall {
         }
 
         if (AnnotatedAPIAnalyser.IS_KNOWN_FQN.equals(methodInfo.fullyQualifiedName) &&
-                !evaluationContext.getAnalyserContext().inAnnotatedAPIAnalysis() &&
+                !analyserContext.inAnnotatedAPIAnalysis() &&
                 parameters.get(0) instanceof BooleanConstant boolValue) {
             Expression clause = new MethodCall(objectValue, methodInfo,
-                    List.of(new BooleanConstant(evaluationContext.getPrimitives(), true)));
+                    List.of(new BooleanConstant(primitives, true)));
             if (boolValue.constant()) {
                 Filter filter = new Filter(evaluationContext, Filter.FilterMode.ACCEPT);
                 // isKnown(true) -> return BoolValue.TRUE or BoolValue.FALSE, depending on state
@@ -76,7 +91,7 @@ public class EvaluateMethodCall {
                 Filter.FilterResult<Expression> res = filter.filter(absoluteState,
                         new Filter.ExactValue(filter.getDefaultRest(), clause));
                 boolean isKnown = !res.accepted().isEmpty();
-                Expression result = new BooleanConstant(evaluationContext.getPrimitives(), isKnown);
+                Expression result = new BooleanConstant(primitives, isKnown);
                 return builder.setExpression(result).build();
             } else {
                 // isKnown(false)-> return MethodValue
@@ -85,36 +100,36 @@ public class EvaluateMethodCall {
         }
 
         // static eval: Integer.toString(3)
-        Expression knownStaticEvaluation = computeStaticEvaluation(evaluationContext.getPrimitives(), methodInfo, parameters);
+        Expression knownStaticEvaluation = computeStaticEvaluation(methodInfo, parameters);
         if (knownStaticEvaluation != null) {
             return builder.setExpression(knownStaticEvaluation).build();
         }
 
         // eval on constant, like "abc".length()
-        Expression evaluationOnConstant = computeEvaluationOnConstant(evaluationContext.getPrimitives(),
-                methodInfo, objectValue);
+        Expression evaluationOnConstant = computeEvaluationOnConstant(methodInfo, objectValue);
         if (evaluationOnConstant != null) {
             return builder.setExpression(evaluationOnConstant).build();
         }
 
-        Expression evaluationOfEquals = computeEvaluationOfEquals(evaluationContext,
-                methodInfo, concreteReturnType, objectValue, linkedVariablesWhenDelayed, parameters);
+        Expression evaluationOfEquals = computeEvaluationOfEquals(methodInfo, concreteReturnType, objectValue,
+                linkedVariablesWhenDelayed, parameters);
         if (evaluationOfEquals != null) {
             return builder.setExpression(evaluationOfEquals).build();
         }
 
         if (!evaluationContext.disableEvaluationOfMethodCallsUsingCompanionMethods()) {
             // boolean added = set.add(e);  -- if the set is empty, we know the result will be "true"
-            Expression assistedByCompanion = valueAssistedByCompanion(builder, evaluationContext,
-                    objectValue, methodInfo, methodAnalysis, parameters);
+            Expression assistedByCompanion = valueAssistedByCompanion(builder, objectValue, methodInfo, methodAnalysis,
+                    parameters);
             if (assistedByCompanion != null) {
                 return builder.setExpression(assistedByCompanion).build();
             }
         }
         if (modified == Level.FALSE) {
-            if (!evaluationContext.getAnalyserContext().inAnnotatedAPIAnalysis()) {
+            if (!analyserContext.inAnnotatedAPIAnalysis()) {
                 // new object returned, with a transfer of the aspect; 5 == stringBuilder.length() in aspect -> 5 == stringBuilder.toString().length()
-                Expression newInstance = newInstanceWithTransferCompanion(builder, evaluationContext, objectValue, methodInfo, methodAnalysis, parameters);
+                Expression newInstance = newInstanceWithTransferCompanion(builder, objectValue, methodInfo,
+                        methodAnalysis, parameters);
                 if (newInstance != null) {
                     return builder.setExpression(newInstance).build();
                 }
@@ -123,7 +138,7 @@ public class EvaluateMethodCall {
             // TYPE 1: boolean expression of aspect; e.g., xx == aspect method (5 == string.length())
             // TYPE 2: boolean clause; e.g., contains("a")
             Filter.FilterResult<MethodCall> evaluationOnInstance =
-                    computeEvaluationOnInstance(builder, evaluationContext, methodInfo, objectValue, parameters);
+                    computeEvaluationOnInstance(builder, methodInfo, objectValue, parameters);
             if (evaluationOnInstance != null && !evaluationOnInstance.accepted().isEmpty()) {
                 Expression value = evaluationOnInstance.accepted().values().stream().findFirst().orElseThrow();
                 return builder.setExpression(value).build();
@@ -148,33 +163,21 @@ public class EvaluateMethodCall {
             return builder.setExpression(nameInEnum).build();
         }
 
-        InlinedMethod inlineValue;
-        if (methodInfo.typeInfo.typeInspection.get().isFunctionalInterface() &&
-                (inlineValue = objectValue.asInstanceOf(InlinedMethod.class)) != null &&
-                inlineValue.canBeApplied(evaluationContext)) {
-            Map<Expression, Expression> translationMap = EvaluatePreconditionFromMethod.translationMap(evaluationContext.getAnalyserContext(),
-                    methodInfo, parameters, objectValue);
-            EvaluationResult reInline = inlineValue.reEvaluate(evaluationContext, translationMap);
-            return builder.compose(reInline).setExpression(reInline.value()).build();
-        }
-
         if (methodAnalysis.isComputed() && !methodInfo.methodResolution.get().ignoreMeBecauseOfPartOfCallCycle()) {
             // singleReturnValue implies non-modifying
             if (methodAnalysis.getSingleReturnValue() != null) {
                 // if this method was identity?
                 Expression srv = methodAnalysis.getSingleReturnValue();
-                if (srv.isInstanceOf(InlinedMethod.class)) {
-                    InlinedMethod iv = srv.asInstanceOf(InlinedMethod.class);
-
+                InlinedMethod iv;
+                if ((iv = srv.asInstanceOf(InlinedMethod.class)) != null) {
                     if (isLocalCall(objectValue, evaluationContext.getCurrentType())
-                            || hasFinalFields(evaluationContext.getAnalyserContext(), iv.expression())) {
-                        EvaluationResult shortCut = tryEvaluationShortCut(evaluationContext, builder, objectValue,
-                                linkedVariablesWhenDelayed, iv);
+                            || hasFinalFields(analyserContext, iv.expression())) {
+                        EvaluationResult shortCut = tryEvaluationShortCut(builder, objectValue, linkedVariablesWhenDelayed, iv);
                         if (shortCut != null) return shortCut;
 
                         Map<Expression, Expression> translationMap = EvaluatePreconditionFromMethod
-                                .translationMap(evaluationContext.getAnalyserContext(), methodInfo, parameters, objectValue);
-                        EvaluationResult reSrv = srv.reEvaluate(evaluationContext, translationMap);
+                                .translationMap(analyserContext, methodInfo, parameters, objectValue);
+                        EvaluationResult reSrv = iv.reEvaluate(evaluationContext, translationMap);
                         return builder.compose(reSrv).setExpression(reSrv.value()).build();
                     }
                 }
@@ -207,7 +210,7 @@ public class EvaluateMethodCall {
         return objectValue instanceof VariableExpression ve && ve.variable() instanceof This;
     }
 
-    private static boolean hasFinalFields(AnalysisProvider analysisProvider, Expression expression) {
+    private boolean hasFinalFields(AnalysisProvider analysisProvider, Expression expression) {
         // TODO delays?
         return expression.variables().stream().allMatch(v -> !(v instanceof FieldReference fr) ||
                 analysisProvider.getFieldAnalysis(fr.fieldInfo).getProperty(VariableProperty.FINAL) == Level.TRUE);
@@ -219,30 +222,30 @@ public class EvaluateMethodCall {
     name is always dedicated.
     valueOf is only dedicated when there are no annotated APIs (it "implementation" uses the Stream class)
      */
-    private static Expression computeNameInEnum(EvaluationContext evaluationContext,
-                                                MethodInfo methodInfo,
-                                                Expression objectValue) {
+    private Expression computeNameInEnum(EvaluationContext evaluationContext,
+                                         MethodInfo methodInfo,
+                                         Expression objectValue) {
         boolean isName = "name".equals(methodInfo.name);
         boolean isValueOf = "valueOf".equals(methodInfo.name);
         if (!isName && !isValueOf) return null;
-        TypeInspection typeInspection = evaluationContext.getAnalyserContext().getTypeInspection(methodInfo.typeInfo);
+        TypeInspection typeInspection = analyserContext.getTypeInspection(methodInfo.typeInfo);
         if (typeInspection.typeNature() != TypeNature.ENUM) return null;
         if (isName) {
             VariableExpression ve;
             if ((ve = objectValue.asInstanceOf(VariableExpression.class)) != null
                     && ve.variable() instanceof FieldReference fr
                     && fr.fieldInfo.owner == methodInfo.typeInfo) {
-                return new StringConstant(evaluationContext.getPrimitives(), fr.fieldInfo.name);
+                return new StringConstant(primitives, fr.fieldInfo.name);
             }
-            return NewObject.forGetInstance(evaluationContext.newObjectIdentifier(), evaluationContext.getPrimitives(),
-                    evaluationContext.getPrimitives().stringParameterizedType);
+            return NewObject.forGetInstance(evaluationContext.newObjectIdentifier(), primitives,
+                    primitives.stringParameterizedType);
         }
-        MethodInspection methodInspection = evaluationContext.getAnalyserContext().getMethodInspection(methodInfo);
+        MethodInspection methodInspection = analyserContext.getMethodInspection(methodInfo);
         if (methodInspection.getMethodBody().structure.haveStatements()) {
             return null; // implementation present
         }
         // no implementation, we'll provide something (we could actually implement the method, but why?)
-        return NewObject.forGetInstance(evaluationContext.newObjectIdentifier(), evaluationContext.getPrimitives(),
+        return NewObject.forGetInstance(evaluationContext.newObjectIdentifier(), primitives,
                 objectValue.returnType());
     }
 
@@ -253,18 +256,17 @@ public class EvaluateMethodCall {
 
     See also FieldAccess which has a similar method
     */
-    private static EvaluationResult tryEvaluationShortCut(EvaluationContext evaluationContext,
-                                                          EvaluationResult.Builder builder,
-                                                          Expression objectValue,
-                                                          List<Variable> linkedVariablesWhenDelayed,
-                                                          InlinedMethod iv) {
+    private EvaluationResult tryEvaluationShortCut(EvaluationResult.Builder builder,
+                                                   Expression objectValue,
+                                                   List<Variable> linkedVariablesWhenDelayed,
+                                                   InlinedMethod iv) {
         NewObject newObject;
         VariableExpression varEx;
         NewObject no;
         if ((no = objectValue.asInstanceOf(NewObject.class)) != null) newObject = no;
         else if ((varEx = objectValue.asInstanceOf(VariableExpression.class)) != null
                 && varEx.variable() instanceof FieldReference fieldReference) {
-            FieldAnalysis fieldAnalysis = evaluationContext.getAnalyserContext().getFieldAnalysis(fieldReference.fieldInfo);
+            FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(fieldReference.fieldInfo);
             NewObject no2;
             if ((no2 = fieldAnalysis.getEffectivelyFinalValue().asInstanceOf(NewObject.class)) != null) {
                 newObject = no2;
@@ -279,7 +281,7 @@ public class EvaluateMethodCall {
             Variable variable = ve.variable();
             if (variable instanceof FieldReference) {
                 FieldInfo fieldInfo = ((FieldReference) variable).fieldInfo;
-                FieldAnalysis fieldAnalysis = evaluationContext.getAnalyserContext().getFieldAnalysis(fieldInfo);
+                FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(fieldInfo);
                 if (fieldAnalysis.getProperty(VariableProperty.FINAL) == Level.TRUE) {
 
                     int i = 0;
@@ -303,28 +305,27 @@ public class EvaluateMethodCall {
         return null;
     }
 
-    private static Expression computeEvaluationOfEquals(EvaluationContext evaluationContext,
-                                                        MethodInfo methodInfo,
-                                                        ParameterizedType concreteReturnType,
-                                                        Expression objectValue,
-                                                        List<Variable> linkedVariablesWhenDelayed,
-                                                        List<Expression> parameters) {
+    private Expression computeEvaluationOfEquals(MethodInfo methodInfo,
+                                                 ParameterizedType concreteReturnType,
+                                                 Expression objectValue,
+                                                 List<Variable> linkedVariablesWhenDelayed,
+                                                 List<Expression> parameters) {
         if ("equals".equals(methodInfo.name) && parameters.size() == 1) {
             Expression paramValue = parameters.get(0);
-            Boolean nonModifying = nonModifying(evaluationContext, paramValue);
+            Boolean nonModifying = nonModifying(paramValue);
             if (nonModifying == null) {
                 log(Logger.LogTarget.DELAYED, "Delaying method value because @Modified delayed on {}",
                         methodInfo.fullyQualifiedName);
                 return DelayedExpression.forMethod(methodInfo, concreteReturnType, linkedVariablesWhenDelayed);
             }
             if (paramValue.equals(objectValue) && nonModifying) {
-                return new BooleanConstant(evaluationContext.getPrimitives(), true);
+                return new BooleanConstant(primitives, true);
             }
         }
         return null;
     }
 
-    private static Boolean nonModifying(EvaluationContext evaluationContext, Expression expression) {
+    private Boolean nonModifying(Expression expression) {
         if (expression instanceof MethodCall) {
             int modified = evaluationContext.getProperty(expression, VariableProperty.MODIFIED_METHOD, false, false);
             if (modified == Level.DELAY) {
@@ -335,7 +336,7 @@ public class EvaluateMethodCall {
         return true;
     }
 
-    private static NewObject obtainInstance(EvaluationResult.Builder builder, Expression objectValue) {
+    private NewObject obtainInstance(EvaluationResult.Builder builder, Expression objectValue) {
         NewObject theInstance;
         if ((theInstance = objectValue.asInstanceOf(NewObject.class)) != null) {
             return theInstance;
@@ -347,12 +348,11 @@ public class EvaluateMethodCall {
         return null;
     }
 
-    private static Expression valueAssistedByCompanion(EvaluationResult.Builder builder,
-                                                       EvaluationContext evaluationContext,
-                                                       Expression objectValue,
-                                                       MethodInfo methodInfo,
-                                                       MethodAnalysis methodAnalysis,
-                                                       List<Expression> parameterValues) {
+    private Expression valueAssistedByCompanion(EvaluationResult.Builder builder,
+                                                Expression objectValue,
+                                                MethodInfo methodInfo,
+                                                MethodAnalysis methodAnalysis,
+                                                List<Expression> parameterValues) {
         NewObject instance = obtainInstance(builder, objectValue);
         if (instance == null) {
             return null;
@@ -382,13 +382,13 @@ public class EvaluateMethodCall {
             if (Primitives.isBoolean(methodInfo.returnType().typeInfo)) {
                 // State is: (org.e2immu.annotatedapi.AnnotatedAPI.this.isKnown(true) and 0 == java.util.Collection.this.size())
                 // Resulting value: (java.util.Set.contains(java.lang.Object) and not (0 == java.util.Collection.this.size()))
-                Expression reduced = new And(evaluationContext.getPrimitives()).append(evaluationContext, instance.state(), resultingValue);
+                Expression reduced = new And(primitives).append(evaluationContext, instance.state(), resultingValue);
                 if (reduced instanceof BooleanConstant) {
                     return reduced;
                 }
                 if (reduced.equals(instance.state())) {
                     // only truths have been added
-                    return new BooleanConstant(evaluationContext.getPrimitives(), true);
+                    return new BooleanConstant(primitives, true);
                 }
             } else if (resultingValue instanceof InlineConditional || resultingValue instanceof And) {
                 // resulting value is expected to be an inline operator, its condition to be combined with the instance state
@@ -403,11 +403,10 @@ public class EvaluateMethodCall {
     }
 
     // IMPROVE add parameters
-    private static Expression newInstanceWithTransferCompanion(EvaluationResult.Builder builder,
-                                                               EvaluationContext evaluationContext,
-                                                               Expression objectValue, MethodInfo methodInfo,
-                                                               MethodAnalysis methodAnalysis,
-                                                               List<Expression> parameterValues) {
+    private Expression newInstanceWithTransferCompanion(EvaluationResult.Builder builder,
+                                                        Expression objectValue, MethodInfo methodInfo,
+                                                        MethodAnalysis methodAnalysis,
+                                                        List<Expression> parameterValues) {
         NewObject instance = obtainInstance(builder, objectValue);
         if (instance == null) {
             return null;
@@ -418,15 +417,15 @@ public class EvaluateMethodCall {
                 .forEach(e -> {
                     // we're assuming the aspects retain their name, but apart from the name we allow them to be different methods
                     CompanionMethodName cmn = e.getKey();
-                    MethodInfo oldAspectMethod = evaluationContext.getAnalyserContext()
+                    MethodInfo oldAspectMethod = analyserContext
                             .getTypeAnalysis(instance.parameterizedType().typeInfo).getAspects().get(cmn.aspect());
                     Expression oldValue = new MethodCall(
-                            new VariableExpression(new This(evaluationContext.getAnalyserContext(), oldAspectMethod.typeInfo)),
+                            new VariableExpression(new This(analyserContext, oldAspectMethod.typeInfo)),
                             oldAspectMethod, List.of());
-                    MethodInfo newAspectMethod = evaluationContext.getAnalyserContext()
+                    MethodInfo newAspectMethod = analyserContext
                             .getTypeAnalysis(methodInfo.typeInfo).getAspects().get(cmn.aspect());
                     Expression newValue = new MethodCall(
-                            new VariableExpression(new This(evaluationContext.getAnalyserContext(), newAspectMethod.typeInfo)),
+                            new VariableExpression(new This(analyserContext, newAspectMethod.typeInfo)),
                             newAspectMethod, List.of());
                     translationMap.put(oldValue, newValue);
                     CompanionAnalysis companionAnalysis = e.getValue();
@@ -445,11 +444,10 @@ public class EvaluateMethodCall {
     // example 1: instance type java.util.ArrayList()[0 == java.util.ArrayList.this.size()].size()
     // this approach is independent of the companion methods: it simply searches for clauses related to the method
     // in the instance state
-    private static Filter.FilterResult<MethodCall> computeEvaluationOnInstance(EvaluationResult.Builder builder,
-                                                                               EvaluationContext evaluationContext,
-                                                                               MethodInfo methodInfo,
-                                                                               Expression objectValue,
-                                                                               List<Expression> parameterValues) {
+    private Filter.FilterResult<MethodCall> computeEvaluationOnInstance(EvaluationResult.Builder builder,
+                                                                        MethodInfo methodInfo,
+                                                                        Expression objectValue,
+                                                                        List<Expression> parameterValues) {
         // look for a clause that has "this.methodInfo" as a MethodValue
         NewObject instance = obtainInstance(builder, objectValue);
         if (instance == null) {
@@ -458,10 +456,12 @@ public class EvaluateMethodCall {
         return filter(evaluationContext, methodInfo, instance.state(), parameterValues);
     }
 
-    public static Filter.FilterResult<MethodCall> filter(EvaluationContext evaluationContext,
-                                                         MethodInfo methodInfo,
-                                                         Expression state,
-                                                         List<Expression> parameterValues) {
+    // also used separately in MethodCall
+    public static Filter.FilterResult<MethodCall> filter(
+            EvaluationContext evaluationContext,
+            MethodInfo methodInfo,
+            Expression state,
+            List<Expression> parameterValues) {
         Filter filter = new Filter(evaluationContext, Filter.FilterMode.ACCEPT);
         List<Filter.FilterMethod<MethodCall>> filters = List.of(
                 new Filter.MethodCallBooleanResult(filter.getDefaultRest(), methodInfo, parameterValues,
@@ -470,7 +470,7 @@ public class EvaluateMethodCall {
         return filter.filter(state, filters);
     }
 
-    private static Expression computeStaticEvaluation(Primitives primitives, MethodInfo methodInfo, List<Expression> parameters) {
+    private Expression computeStaticEvaluation(MethodInfo methodInfo, List<Expression> parameters) {
         if ("java.lang.Integer.toString(int)".equals(methodInfo.fullyQualifiedName()) &&
                 parameters.get(0).isConstant()) {
             return new StringConstant(primitives, Integer.toString(((IntConstant) parameters.get(0)).constant()));
@@ -478,7 +478,7 @@ public class EvaluateMethodCall {
         return null;
     }
 
-    private static Expression computeEvaluationOnConstant(Primitives primitives, MethodInfo methodInfo, Expression objectValue) {
+    private Expression computeEvaluationOnConstant(MethodInfo methodInfo, Expression objectValue) {
         if (!objectValue.isConstant()) return null;
         StringConstant stringValue;
         if ("java.lang.String.length()".equals(methodInfo.fullyQualifiedName()) &&
