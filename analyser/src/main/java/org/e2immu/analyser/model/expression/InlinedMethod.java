@@ -42,17 +42,30 @@ import java.util.stream.Stream;
 
  Properties that rely on the return value, should come from the Value. Properties to do with modification, should come from the method.
  */
-public record InlinedMethod(MethodInfo methodInfo,
-                            Expression expression,
-                            Set<Variable> variablesOfExpression,
-                            boolean containsVariableFields) implements Expression {
+public class InlinedMethod extends ElementImpl implements Expression {
+    private final MethodInfo methodInfo;
+    private final Expression expression;
+    private final Set<Variable> variablesOfExpression;
+    private final boolean containsVariableFields;
+
+    public InlinedMethod(Identifier identifier,
+                         MethodInfo methodInfo,
+                         Expression expression,
+                         Set<Variable> variablesOfExpression,
+                         boolean containsVariableFields) {
+        super(identifier);
+        this.methodInfo = Objects.requireNonNull(methodInfo);
+        this.expression = Objects.requireNonNull(expression);
+        this.variablesOfExpression = Objects.requireNonNull(variablesOfExpression);
+        this.containsVariableFields = containsVariableFields;
+    }
 
     @Override
     public Expression translate(TranslationMap translationMap) {
         Set<Variable> translatedVariables = variablesOfExpression.stream()
                 .map(translationMap::translateVariable).collect(Collectors.toUnmodifiableSet());
         // TODO lack of AnalysisProvider, so we copy containsVariableFields rather than computing it
-        return new InlinedMethod(methodInfo, expression.translate(translationMap), translatedVariables,
+        return new InlinedMethod(identifier, methodInfo, expression.translate(translationMap), translatedVariables,
                 containsVariableFields);
     }
 
@@ -113,7 +126,7 @@ public record InlinedMethod(MethodInfo methodInfo,
             boolean haveVariableFields = newVariables.stream()
                     .anyMatch(v -> v instanceof FieldReference fr && evaluationContext.getAnalyserContext()
                             .getFieldAnalysis(fr.fieldInfo).getProperty(VariableProperty.FINAL) == Level.FALSE);
-            InlinedMethod newIm = new InlinedMethod(im.methodInfo(), result.getExpression(),
+            InlinedMethod newIm = new InlinedMethod(identifier, im.methodInfo(), result.getExpression(),
                     newVariables, haveVariableFields);
             return new EvaluationResult.Builder().compose(result).setExpression(newIm).build();
         }
@@ -149,10 +162,18 @@ public record InlinedMethod(MethodInfo methodInfo,
         return !containsVariableFields || evaluationContext.getCurrentType().primaryType().equals(methodInfo.typeInfo.primaryType());
     }
 
+    public MethodInfo methodInfo() {
+        return methodInfo;
+    }
+
     @Override
     public NewObject getInstance(EvaluationResult evaluationContext) {
         // TODO verify this
         return expression.getInstance(evaluationContext);
+    }
+
+    public Expression expression() {
+        return expression;
     }
 
     private class EvaluationContextImpl extends AbstractEvaluationContextImpl {
@@ -175,7 +196,7 @@ public record InlinedMethod(MethodInfo methodInfo,
         private void ensureVariableIsKnown(Variable variable) {
             if (!(variable instanceof This)) {
                 assert acceptedVariables.contains(variable) : "there should be no other variables in this expression: " +
-                        variable + " is not in " + variablesOfExpression();
+                        variable + " is not in " + variablesOfExpression;
             }
         }
 

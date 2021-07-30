@@ -25,7 +25,8 @@ import java.util.stream.Collectors;
 public class LocalClassDeclaration extends StatementWithStructure {
     public final TypeInfo typeInfo;
 
-    public LocalClassDeclaration(TypeInfo typeInfo) {
+    public LocalClassDeclaration(Identifier identifier, TypeInfo typeInfo) {
+        super(identifier);
         this.typeInfo = typeInfo;
     }
 

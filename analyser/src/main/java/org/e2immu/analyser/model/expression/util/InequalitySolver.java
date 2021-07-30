@@ -48,7 +48,7 @@ public class InequalitySolver {
         this.evaluationContext = evaluationContext;
         Map<OneVariable, List<Expression>> builder = new HashMap<>();
         if (expression instanceof And and) {
-            and.expressions().forEach(e -> tryToAddSingleNumericVariableComparison(builder, e));
+            and.getExpressions().forEach(e -> tryToAddSingleNumericVariableComparison(builder, e));
         } else {
             tryToAddSingleNumericVariableComparison(builder, expression);
         }
@@ -114,7 +114,7 @@ public class InequalitySolver {
 
     public Boolean evaluate(Expression expression) {
         if (expression instanceof And and) {
-            return and.expressions().stream().map(this::accept)
+            return and.getExpressions().stream().map(this::accept)
                     .reduce(true, (v1, v2) -> v1 == null ? v2 : v2 == null ? v1 : v1 && v2);
         }
         return accept(expression);

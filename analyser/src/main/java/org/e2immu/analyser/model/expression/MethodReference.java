@@ -35,8 +35,9 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
     // either "this", a variable, or a type
     public final Expression scope;
 
-    public MethodReference(Expression scope, MethodInfo methodInfo, ParameterizedType concreteType) {
-        super(methodInfo, concreteType);
+    public MethodReference(Identifier identifier,
+                           Expression scope, MethodInfo methodInfo, ParameterizedType concreteType) {
+        super(identifier, methodInfo, concreteType);
         this.scope = scope;
     }
 
@@ -55,9 +56,8 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
 
     @Override
     public Expression translate(TranslationMap translationMap) {
-        return new MethodReference(translationMap.translateExpression(scope),
-                methodInfo,
-                translationMap.translateType(concreteReturnType));
+        return new MethodReference(identifier, translationMap.translateExpression(scope),
+                methodInfo, translationMap.translateType(concreteReturnType));
     }
 
     @Override

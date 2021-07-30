@@ -164,8 +164,8 @@ public record Composer(TypeMap typeMap, String destinationPackage, Predicate<Wit
             } else {
                 defaultReturnValue = NullConstant.NULL_CONSTANT;
             }
-            Statement returnStatement = new ReturnStatement(defaultReturnValue);
-            Block block = new Block.BlockBuilder().addStatement(returnStatement).build();
+            Statement returnStatement = new ReturnStatement(Identifier.generate(), defaultReturnValue);
+            Block block = new Block.BlockBuilder(Identifier.generate()).addStatement(returnStatement).build();
             builder.setInspectedBlock(block);
         }
         for (ParameterInfo p : methodInspection.getParameters()) {

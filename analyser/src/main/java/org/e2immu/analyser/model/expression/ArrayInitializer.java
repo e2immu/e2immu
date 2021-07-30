@@ -35,7 +35,7 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 @E2Container
-public class ArrayInitializer implements Expression {
+public class ArrayInitializer extends ElementImpl implements Expression {
 
     public final MultiExpression multiExpression;
     private final ParameterizedType commonType;
@@ -44,6 +44,7 @@ public class ArrayInitializer implements Expression {
     public ArrayInitializer(InspectionProvider inspectionProvider,
                             List<Expression> values,
                             ParameterizedType formalCommonType) {
+        super(Identifier.generate());
         this.multiExpression = MultiExpression.create(values);
         this.commonType = formalCommonType.commonType(inspectionProvider, multiExpression.commonType(inspectionProvider));
         this.inspectionProvider = inspectionProvider;

@@ -17,10 +17,7 @@ package org.e2immu.analyser.inspector.expr;
 import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
-import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.PackagePrefix;
-import org.e2immu.analyser.model.ParameterizedType;
-import org.e2immu.analyser.model.Qualification;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.Precedence;
 import org.e2immu.analyser.output.OutputBuilder;
 
@@ -49,5 +46,10 @@ record PackagePrefixExpression(PackagePrefix packagePrefix) implements Expressio
     @Override
     public int order() {
         return 0;
+    }
+
+    @Override
+    public Identifier getIdentifier() {
+        return Identifier.CONSTANT;
     }
 }

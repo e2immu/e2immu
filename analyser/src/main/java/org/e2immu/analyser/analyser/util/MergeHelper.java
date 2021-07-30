@@ -122,7 +122,7 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfo vi) 
             if (vi.variable() instanceof ReturnVariable) {
                 if (stateOfParent.isBoolValueTrue()) return vi1value;
                 if (vi.variable().parameterizedType().equals(evaluationContext.getPrimitives().booleanParameterizedType)) {
-                    return and(stateOfParent, vi1value);
+                    return And.and(evaluationContext, stateOfParent, vi1value);
                 }
                 return inlineConditional(stateOfParent, vi1value, vi.getValue());
             }
@@ -146,10 +146,6 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfo vi) 
             return inlineConditional(stateOfParent, two, vi.getValue());
         }
         return two;
-    }
-
-    private Expression and(Expression... expressions) {
-        return new And(evaluationContext.getPrimitives()).append(evaluationContext, expressions);
     }
 
     private Expression inlineConditional(Expression condition, Expression ifTrue, Expression ifFalse) {

@@ -83,4 +83,9 @@ public record UnevaluatedObjectCreation(ParameterizedType formalType) implements
     public int order() {
         return 0;
     }
+
+    @Override
+    public Identifier getIdentifier() {
+        return Identifier.CONSTANT;
+    }
 }

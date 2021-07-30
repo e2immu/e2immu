@@ -30,7 +30,7 @@ import java.util.Objects;
  * Only not evaluated. Replaced by VariableExpression
  */
 @E2Container
-public class ArrayAccess implements Expression {
+public class ArrayAccess extends ElementImpl implements Expression {
 
     public final Expression expression;
     public final Expression index;
@@ -38,6 +38,7 @@ public class ArrayAccess implements Expression {
     public final ParameterizedType returnType;
 
     public ArrayAccess(@NotNull Expression expression, @NotNull Expression index) {
+        super(Identifier.generate());
         this.expression = Objects.requireNonNull(expression);
         this.index = Objects.requireNonNull(index);
         this.returnType = expression.returnType().copyWithOneFewerArrays();

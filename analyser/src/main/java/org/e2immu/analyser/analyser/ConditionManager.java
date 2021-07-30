@@ -172,7 +172,7 @@ public record ConditionManager(Expression condition,
         } else {
             expressions = new Expression[]{condition, state, parent.absoluteState(evaluationContext)};
         }
-        return new And(evaluationContext.getPrimitives()).append(evaluationContext, expressions);
+        return And.and(evaluationContext, expressions);
     }
 
     public Expression stateUpTo(EvaluationContext evaluationContext, int recursions) {
@@ -184,7 +184,7 @@ public record ConditionManager(Expression condition,
         } else {
             expressions = new Expression[]{condition, state, parent.stateUpTo(evaluationContext, recursions - 1)};
         }
-        return new And(evaluationContext.getPrimitives()).append(evaluationContext, expressions);
+        return And.and(evaluationContext, expressions);
     }
 
     /**
@@ -200,27 +200,25 @@ public record ConditionManager(Expression condition,
         if (precondition.isEmpty()) {
             combinedWithPrecondition = absoluteState;
         } else {
-            combinedWithPrecondition = new And(evaluationContext.getPrimitives())
-                    .append(evaluationContext, absoluteState, precondition.expression());
+            combinedWithPrecondition = And.and(evaluationContext, absoluteState, precondition.expression());
         }
 
         // this one solves boolean problems; in a boolean context, there is no difference
         // between the value and the condition
-        Expression resultWithPrecondition = new And(evaluationContext.getPrimitives())
-                .append(evaluationContext, combinedWithPrecondition, value);
+        Expression resultWithPrecondition = And.and(evaluationContext, combinedWithPrecondition, value);
         if (resultWithPrecondition.equals(combinedWithPrecondition)) {
             // constant true: adding the value has no effect at all
             return new BooleanConstant(evaluationContext.getPrimitives(), true);
         }
         // return the result without precondition
-        return new And(evaluationContext.getPrimitives()).append(evaluationContext, absoluteState, value);
+        return And.and(evaluationContext, absoluteState, value);
     }
 
 
     private static Expression combine(EvaluationContext evaluationContext, Expression e1, Expression e2) {
         Objects.requireNonNull(e2);
         if (e1.isUnknown() || e2.isUnknown()) throw new UnsupportedOperationException();
-        return new And(evaluationContext.getPrimitives()).append(evaluationContext, e1, e2);
+        return And.and(evaluationContext, e1, e2);
     }
 
     /**
@@ -281,7 +279,7 @@ public record ConditionManager(Expression condition,
 
         if (parent == null) return mine;
         Expression fromParent = parent.precondition(evaluationContext);
-        return new And(evaluationContext.getPrimitives()).append(evaluationContext, mine, fromParent);
+        return And.and(evaluationContext, mine, fromParent);
     }
 
     private static Filter.FilterResult<Variable> obtainVariableFilter(Expression defaultRest, Variable variable, Expression value) {
@@ -302,8 +300,7 @@ public record ConditionManager(Expression condition,
         if (precondition.isEmpty()) {
             combinedWithPrecondition = absoluteState;
         } else {
-            combinedWithPrecondition = new And(evaluationContext.getPrimitives())
-                    .append(evaluationContext, absoluteState, precondition.expression());
+            combinedWithPrecondition = And.and(evaluationContext, absoluteState, precondition.expression());
         }
 
         Filter.FilterResult<Variable> filterResult = filter.filter(combinedWithPrecondition,

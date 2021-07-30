@@ -14,17 +14,21 @@
 
 package org.e2immu.analyser.model.statement;
 
+import org.e2immu.analyser.model.ElementImpl;
+import org.e2immu.analyser.model.Identifier;
 import org.e2immu.analyser.model.Statement;
 
-public abstract class StatementWithStructure implements Statement {
+public abstract class StatementWithStructure extends ElementImpl implements Statement {
     public final Structure structure;
     public static final Structure EMPTY_CODE_ORGANIZATION = new Structure.Builder().build();
 
-    public StatementWithStructure() {
+    public StatementWithStructure(Identifier identifier) {
+        super(identifier);
         structure = EMPTY_CODE_ORGANIZATION;
     }
 
-    public StatementWithStructure(Structure structure) {
+    public StatementWithStructure(Identifier identifier, Structure structure) {
+        super(identifier);
         this.structure = structure;
     }
 

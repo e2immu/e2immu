@@ -34,6 +34,8 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
     @NotNull
     public final String fullyQualifiedName;
 
+    public final Identifier identifier;
+
     // when this type is an inner or nested class of an enclosing class
     public final Either<String, TypeInfo> packageNameOrEnclosingType;
 
@@ -67,10 +69,19 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         return simpleName;
     }
 
+    @Override
+    public Identifier getIdentifier() {
+        return identifier;
+    }
+
     public TypeInfo(String packageName, String simpleName) {
+        this(Identifier.generate(), packageName, simpleName);
+    }
+
+    public TypeInfo(Identifier identifier, String packageName, String simpleName) {
         assert packageName != null && !packageName.isBlank();
         assert simpleName != null && !simpleName.isBlank();
-
+        this.identifier = identifier;
         this.simpleName = Objects.requireNonNull(simpleName);
         this.packageNameOrEnclosingType = Either.left(packageName);
         if (Primitives.JAVA_PRIMITIVE.equals(packageName)) {
@@ -81,9 +92,14 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
     }
 
     public TypeInfo(TypeInfo enclosingType, String simpleName) {
+        this(Identifier.generate(), enclosingType, simpleName);
+    }
+
+    public TypeInfo(Identifier identifier, TypeInfo enclosingType, String simpleName) {
         this.simpleName = Objects.requireNonNull(simpleName);
         this.packageNameOrEnclosingType = Either.right(enclosingType);
         this.fullyQualifiedName = enclosingType.fullyQualifiedName + "." + simpleName;
+        this.identifier = identifier;
     }
 
     @Override
@@ -116,9 +132,9 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         }
         List<FieldInfo> fields = visibleFields(inspectionProvider);
         return Arrays.stream(csv.split(",")).filter(s -> !s.isBlank()).map(s ->
-                fields.stream().filter(f -> f.name.equals(s))
-                        .findFirst()
-                        .orElseThrow(() -> new UnsupportedOperationException("Cannot find field " + s + " in type " + fullyQualifiedName)))
+                        fields.stream().filter(f -> f.name.equals(s))
+                                .findFirst()
+                                .orElseThrow(() -> new UnsupportedOperationException("Cannot find field " + s + " in type " + fullyQualifiedName)))
                 .collect(Collectors.toUnmodifiableSet());
     }
 

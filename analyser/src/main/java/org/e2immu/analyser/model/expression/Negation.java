@@ -39,8 +39,8 @@ public class Negation extends UnaryOperator implements ExpressionWrapper {
         return WRAPPER_ORDER_NEGATED;
     }
 
-    private Negation(MethodInfo operator, Expression value) {
-        super(operator, value, value.isNumeric() ? Precedence.PLUSPLUS : Precedence.UNARY);
+    private Negation(Identifier identifier, MethodInfo operator, Expression value) {
+        super(identifier, operator, value, value.isNumeric() ? Precedence.PLUSPLUS : Precedence.UNARY);
         if (value.isInstanceOf(Negation.class)) throw new UnsupportedOperationException();
     }
 
@@ -52,7 +52,7 @@ public class Negation extends UnaryOperator implements ExpressionWrapper {
 
     @Override
     public Expression translate(TranslationMap translationMap) {
-        return new Negation(operator, translationMap.translateExpression(expression));
+        return new Negation(identifier, operator, translationMap.translateExpression(expression));
     }
 
     public static Expression negate(EvaluationContext evaluationContext, @NotNull Expression v) {
@@ -70,12 +70,12 @@ public class Negation extends UnaryOperator implements ExpressionWrapper {
             Expression[] negated = or.expressions().stream()
                     .map(ov -> Negation.negate(evaluationContext, ov))
                     .toArray(Expression[]::new);
-            return new And(evaluationContext.getPrimitives()).append(evaluationContext, negated);
+            return And.and(evaluationContext, negated);
         }
         if (v instanceof And and) {
-            List<Expression> negated = and.expressions().stream()
+            List<Expression> negated = and.getExpressions().stream()
                     .map(av -> Negation.negate(evaluationContext, av)).collect(Collectors.toList());
-            return new Or(evaluationContext.getPrimitives()).append(evaluationContext, negated);
+            return Or.or(evaluationContext, negated.toArray(Expression[]::new));
         }
         if (v instanceof Sum sum) {
             return sum.negate(evaluationContext);
@@ -98,7 +98,7 @@ public class Negation extends UnaryOperator implements ExpressionWrapper {
         MethodInfo operator = v.isNumeric() ?
                 evaluationContext.getPrimitives().unaryMinusOperatorInt :
                 evaluationContext.getPrimitives().logicalNotOperatorBool;
-        return new Negation(operator, v);
+        return new Negation(Identifier.generate(), operator, v);
     }
 
     @Override

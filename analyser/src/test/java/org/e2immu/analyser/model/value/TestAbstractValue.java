@@ -15,6 +15,7 @@
 package org.e2immu.analyser.model.value;
 
 import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.Identifier;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.variable.Variable;
 import org.junit.jupiter.api.Test;
@@ -83,12 +84,15 @@ public class TestAbstractValue extends CommonAbstractValue {
 
     @Test
     public void testInstanceOf() {
-        Expression iva = new InstanceOf(PRIMITIVES, PRIMITIVES.stringParameterizedType, a, null);
+        Expression iva = new InstanceOf(Identifier.generate(),
+                PRIMITIVES, PRIMITIVES.stringParameterizedType, a, null);
         assertEquals("a instanceof String", iva.toString());
-        Expression ivb = new InstanceOf(PRIMITIVES, PRIMITIVES.stringParameterizedType, b, null);
+        Expression ivb = new InstanceOf(Identifier.generate(),
+                PRIMITIVES, PRIMITIVES.stringParameterizedType, b, null);
         Expression or = newOrAppend(ivb, iva);
         assertEquals("a instanceof String||b instanceof String", or.toString());
-        Expression iva2 = new InstanceOf(PRIMITIVES, PRIMITIVES.objectParameterizedType, a, null);
+        Expression iva2 = new InstanceOf(Identifier.generate(),
+                PRIMITIVES, PRIMITIVES.objectParameterizedType, a, null);
         Expression or2 = newOrAppend(iva, iva2);
         assertEquals("a instanceof Object||a instanceof String", or2.toString());
     }

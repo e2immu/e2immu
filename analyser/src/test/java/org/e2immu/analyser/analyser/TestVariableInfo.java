@@ -211,10 +211,8 @@ public class TestVariableInfo extends CommonVariableInfo {
         // if(x==4) return a;
         // return c;  (which has state added: not (x))
 
-        Expression combinedState =
-                new And(minimalEvaluationContext.getPrimitives()).append(minimalEvaluationContext,
-                        Negation.negate(minimalEvaluationContext, xEquals3),
-                        Negation.negate(minimalEvaluationContext, xEquals4));
+        Expression combinedState = And.and(minimalEvaluationContext, Negation.negate(minimalEvaluationContext, xEquals3),
+                Negation.negate(minimalEvaluationContext, xEquals4));
 
         Expression ret4 = EvaluateInlineConditional.conditionalValueConditionResolved(minimalEvaluationContext,
                 combinedState, two, ret3.getValue()).getExpression();

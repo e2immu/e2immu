@@ -95,7 +95,7 @@ public class Filter {
                     }
                 } else if (v instanceof And andValue) {
                     if (filterMode == FilterMode.ACCEPT || filterMode == FilterMode.ALL) {
-                        filterResult.set(processAndOr(andValue.expressions(), filterMethods));
+                        filterResult.set(processAndOr(andValue.getExpressions(), filterMethods));
                     }
                 } else if (v instanceof Or orValue) {
                     if (filterMode == FilterMode.REJECT || filterMode == FilterMode.ALL) {
@@ -139,9 +139,9 @@ public class Filter {
         if (restList.isEmpty()) rest = defaultRest(evaluationContext.getPrimitives(), filterMode);
         else if (restList.size() == 1) rest = restList.get(0);
         else if (filterMode == FilterMode.REJECT) {
-            rest = new Or(evaluationContext.getPrimitives()).append(evaluationContext, restList.toArray(Expression[]::new));
+            rest = Or.or(evaluationContext, restList);
         } else {
-            rest = new And(evaluationContext.getPrimitives()).append(evaluationContext, restList.toArray(Expression[]::new));
+            rest = And.and(evaluationContext, restList.toArray(Expression[]::new));
         }
         return new FilterResult<>(acceptedCombined, rest);
     }

@@ -15,6 +15,7 @@
 package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.Identifier;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.Qualification;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
@@ -98,5 +99,10 @@ public record LongConstant(Primitives primitives, long constant) implements Cons
     @Override
     public boolean isNumeric() {
         return true;
+    }
+
+    @Override
+    public Identifier getIdentifier() {
+        return Identifier.CONSTANT;
     }
 }

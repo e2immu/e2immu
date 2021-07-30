@@ -33,11 +33,15 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 public class Block extends StatementWithStructure {
-    public static final Block EMPTY_BLOCK = new Block(List.of(), null);
     public final String label;
     public final Structure structure;
 
-    private Block(@NotNull List<Statement> statements, String label) {
+    public static Block emptyBlock(Identifier identifier) {
+        return new Block(identifier, List.of(), null);
+    }
+
+    private Block(Identifier identifier, @NotNull List<Statement> statements, String label) {
+        super(identifier);
         structure = new Structure.Builder()
                 .setStatementExecution(StatementExecution.ALWAYS)
                 .setStatements(statements).build();
@@ -48,6 +52,11 @@ public class Block extends StatementWithStructure {
     public static class BlockBuilder {
         private final List<Statement> statements = new ArrayList<>();
         private String label;
+        private final Identifier identifier;
+
+        public BlockBuilder(Identifier identifier) {
+            this.identifier = identifier;
+        }
 
         @Fluent
         public BlockBuilder setLabel(String label) {
@@ -64,9 +73,9 @@ public class Block extends StatementWithStructure {
         @NotModified
         @NotNull
         public Block build() {
-            if (statements.isEmpty()) return Block.EMPTY_BLOCK;
+            if (statements.isEmpty()) return emptyBlock(identifier);
             // NOTE: we don't do labels on empty blocks. that's pretty useless anyway
-            return new Block(List.copyOf(statements), label);
+            return new Block(identifier, List.copyOf(statements), label);
         }
 
         public int size() {
@@ -215,11 +224,15 @@ public class Block extends StatementWithStructure {
 
     @Override
     public Statement translate(TranslationMap translationMap) {
-        if (this == EMPTY_BLOCK) return this;
-        return new Block(structure.statements().stream()
+        if (isEmpty()) return this;
+        return new Block(identifier, structure.statements().stream()
                 .flatMap(st -> Objects.requireNonNull(translationMap.translateStatement(st),
-                        "Translation of statement of " + st.getClass() + " returns null: "+st).stream())
+                        "Translation of statement of " + st.getClass() + " returns null: " + st).stream())
                 .collect(Collectors.toList()), label);
+    }
+
+    public boolean isEmpty() {
+        return structure.statements().isEmpty();
     }
 
     @Override

@@ -439,12 +439,12 @@ public class Resolver {
 
         boolean doBlock = !methodInspection.inspectedBlockIsSet();
         if (doBlock) {
-            Block.BlockBuilder blockBuilder = new Block.BlockBuilder();
+            BlockStmt block = methodInspection.getBlock();
+            Block.BlockBuilder blockBuilder = new Block.BlockBuilder(block == null ? Identifier.generate() : Identifier.from(block));
             if (methodInspection.compactConstructor) {
                 addCompactConstructorSyntheticAssignments(expressionContext.typeContext, blockBuilder,
                         typeInspection, methodInspection);
             }
-            BlockStmt block = methodInspection.getBlock();
             if (block != null && !block.getStatements().isEmpty()) {
                 log(RESOLVER, "Parsing block of method {}", methodInfo.name);
                 doBlock(subContext, methodInfo, methodInspection, block, blockBuilder);
@@ -478,7 +478,7 @@ public class Resolver {
                 VariableExpression target = new VariableExpression(new FieldReference(inspectionProvider, fieldInfo));
                 VariableExpression parameter = new VariableExpression(methodInspection.getParameters().get(i++));
                 Assignment assignment = new Assignment(inspectionProvider.getPrimitives(), target, parameter);
-                blockBuilder.addStatement(new ExpressionAsStatement(assignment, true));
+                blockBuilder.addStatement(new ExpressionAsStatement(Identifier.generate(), assignment, true));
             }
         }
     }

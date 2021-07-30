@@ -58,7 +58,7 @@ public record VariableExpression(Variable variable, String name) implements Expr
             return new VariableExpression(translated);
         }
         Expression translated2 = translationMap.directExpression(this);
-        if(translated2 != null) {
+        if (translated2 != null) {
             return translated2;
         }
         return this;
@@ -67,6 +67,11 @@ public record VariableExpression(Variable variable, String name) implements Expr
     @Override
     public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty, boolean duringEvaluation) {
         throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Identifier getIdentifier() {
+        return Identifier.CONSTANT;
     }
 
     @Override
@@ -130,7 +135,7 @@ public record VariableExpression(Variable variable, String name) implements Expr
 
     @Override
     public boolean isDelayed(EvaluationContext evaluationContext) {
-        if(variable instanceof FieldReference fr) {
+        if (variable instanceof FieldReference fr) {
             return fr.scope != null && fr.scope.isDelayed(evaluationContext);
         }
         return false; // should have taken DelayedVariableExpression otherwise
@@ -274,7 +279,7 @@ public record VariableExpression(Variable variable, String name) implements Expr
 
     @Override
     public LinkedVariables linkedVariables(EvaluationContext evaluationContext) {
-        throw new UnsupportedOperationException("For context "+evaluationContext.getClass());
+        throw new UnsupportedOperationException("For context " + evaluationContext.getClass());
         // should be caught be evaluation context
     }
 

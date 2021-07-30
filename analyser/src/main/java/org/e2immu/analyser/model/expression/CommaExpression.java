@@ -17,28 +17,26 @@ package org.e2immu.analyser.model.expression;
 import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
-import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.ParameterizedType;
-import org.e2immu.analyser.model.Qualification;
-import org.e2immu.analyser.model.TranslationMap;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
-public record CommaExpression(List<Expression> expressions) implements Expression {
+public class CommaExpression extends ElementImpl implements Expression {
 
-    public CommaExpression {
+    private final List<Expression> expressions;
+
+    public CommaExpression(List<Expression> expressions) {
+        super(Identifier.generate());
         assert expressions.size() > 1;
+        this.expressions = expressions;
     }
 
     public static Expression comma(EvaluationContext evaluationContext, List<Expression> input) {
-        List<Expression> expressions = input.stream()
-                .filter(e -> !(e instanceof ConstantExpression))
-                .collect(Collectors.toUnmodifiableList());
+        List<Expression> expressions = input.stream().filter(e -> !(e instanceof ConstantExpression)).toList();
         if (expressions.size() == 0) return new BooleanConstant(evaluationContext.getPrimitives(), true);
         if (expressions.size() == 1) return expressions.get(0);
         if (expressions.stream().anyMatch(Expression::isUnknown)) throw new UnsupportedOperationException();
@@ -91,6 +89,10 @@ public record CommaExpression(List<Expression> expressions) implements Expressio
 
     @Override
     public Expression translate(TranslationMap translationMap) {
-        return new CommaExpression(expressions.stream().map(translationMap::translateExpression).collect(Collectors.toUnmodifiableList()));
+        return new CommaExpression(expressions.stream().map(translationMap::translateExpression).toList());
+    }
+
+    public List<Expression> expressions() {
+        return expressions;
     }
 }

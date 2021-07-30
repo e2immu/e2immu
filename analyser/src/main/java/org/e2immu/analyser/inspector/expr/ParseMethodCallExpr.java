@@ -109,7 +109,9 @@ public record ParseMethodCallExpr(InspectionProvider inspectionProvider) {
             computedScope = scope;
         }
         // TODO check that getConcreteReturnType() is correct here (20201204)
-        return new MethodCall(objectIsImplicit, computedScope, methodInfo, mapExpansion.isEmpty() ? method.getConcreteReturnType() :
+        return new MethodCall(Identifier.from(methodCallExpr),
+                objectIsImplicit, computedScope, methodInfo,
+                mapExpansion.isEmpty() ? method.getConcreteReturnType() :
                 method.expand(mapExpansion).getConcreteReturnType(), newParameterExpressions);
     }
 

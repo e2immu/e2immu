@@ -33,7 +33,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.Predicate;
 
-public class LocalVariableCreation implements Expression {
+public class LocalVariableCreation extends ElementImpl implements Expression {
 
     public final LocalVariable localVariable;
     public final LocalVariableReference localVariableReference;
@@ -44,14 +44,16 @@ public class LocalVariableCreation implements Expression {
     public LocalVariableCreation(
             @NotNull InspectionProvider inspectionProvider,
             @NotNull LocalVariable localVariable) {
-        this(inspectionProvider, localVariable, EmptyExpression.EMPTY_EXPRESSION, false);
+        this(Identifier.generate(), inspectionProvider, localVariable, EmptyExpression.EMPTY_EXPRESSION, false);
     }
 
     public LocalVariableCreation(
+            Identifier identifier,
             @NotNull InspectionProvider inspectionProvider,
             @NotNull LocalVariable localVariable,
             @NotNull Expression expression,
             boolean isVar) {
+        super(identifier);
         this.localVariable = Objects.requireNonNull(localVariable);
         this.expression = Objects.requireNonNull(expression);
         this.inspectionProvider = inspectionProvider;
@@ -75,7 +77,8 @@ public class LocalVariableCreation implements Expression {
 
     @Override
     public Expression translate(TranslationMap translationMap) {
-        return new LocalVariableCreation(inspectionProvider, translationMap.translateLocalVariable(localVariable),
+        return new LocalVariableCreation(identifier,
+                inspectionProvider, translationMap.translateLocalVariable(localVariable),
                 translationMap.translateExpression(expression), isVar);
     }
 

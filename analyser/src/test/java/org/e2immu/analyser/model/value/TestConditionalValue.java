@@ -82,7 +82,7 @@ public class TestConditionalValue extends CommonAbstractValue {
         Expression cv2 = EvaluateInlineConditional.conditionalValueConditionResolved(child, isFactA, a, b).value();
         assertSame(a, cv2);
 
-        EvaluationContext child2 = minimalEvaluationContext.child(new And(PRIMITIVES).append(minimalEvaluationContext, a, b));
+        EvaluationContext child2 = minimalEvaluationContext.child(And.and(minimalEvaluationContext, a, b));
         assertEquals("a&&b", child2.getConditionManager().condition().toString());
         assertTrue(child.getConditionManager().state().isBoolValueTrue());
         assertEquals("a&&b", child2.getConditionManager().absoluteState(child2).toString());
@@ -94,8 +94,7 @@ public class TestConditionalValue extends CommonAbstractValue {
         assertSame(a, cv3b);
 
         EvaluationContext child3 = minimalEvaluationContext.child(
-                new Or(PRIMITIVES).append(minimalEvaluationContext, c,
-                        new And(PRIMITIVES).append(minimalEvaluationContext, a, b)));
+                new Or(PRIMITIVES).append(minimalEvaluationContext, c, And.and(minimalEvaluationContext, a, b)));
         assertEquals("(a||c)&&(b||c)", child3.getConditionManager().absoluteState(child3).toString());
         Expression cv4 = EvaluateInlineConditional.conditionalValueConditionResolved(child3, isFactA, a, b).value();
         assertSame(b, cv4);
@@ -105,9 +104,9 @@ public class TestConditionalValue extends CommonAbstractValue {
     public void test4() {
         Expression cv1 = inline(a, b, c);
         assertEquals("a?b:c", cv1.toString());
-        Expression and1 = new And(PRIMITIVES).append(minimalEvaluationContext, a, cv1);
+        Expression and1 = And.and(minimalEvaluationContext, a, cv1);
         assertEquals("a&&b", and1.toString());
-        Expression and2 = new And(PRIMITIVES).append(minimalEvaluationContext, negate(a), cv1);
+        Expression and2 = And.and(minimalEvaluationContext, negate(a), cv1);
         assertEquals("!a&&c", and2.toString());
     }
 

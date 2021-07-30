@@ -91,7 +91,7 @@ public class AssignmentIncompatibleWithPrecondition {
                         // normal object null checking for now
                         Expression notNull = statementAnalysis.notNullValuesAsExpression(evaluationContext);
                         Expression state = statementAnalysis.stateData.conditionManagerForNextStatement.get().state();
-                        Expression combined = new And(evaluationContext.getPrimitives()).append(evaluationContext, state, notNull);
+                        Expression combined = And.and(evaluationContext, state, notNull);
 
                         if (isCompatible(evaluationContext, combined, pcExpression)) {
                             if (statementAnalysis.stateData.conditionManagerForNextStatement.isVariable()) {
@@ -144,7 +144,7 @@ public class AssignmentIncompatibleWithPrecondition {
     }
 
     private static boolean isCompatible(EvaluationContext evaluationContext, Expression v1, Expression v2) {
-        Expression and = new And(evaluationContext.getPrimitives()).append(evaluationContext, v1, v2);
+        Expression and = And.and(evaluationContext, v1, v2);
         return v1.equals(and) || v2.equals(and);
     }
 }

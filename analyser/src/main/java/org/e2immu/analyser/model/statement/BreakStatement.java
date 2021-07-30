@@ -15,13 +15,14 @@
 package org.e2immu.analyser.model.statement;
 
 import org.e2immu.analyser.analyser.StatementAnalysis;
+import org.e2immu.analyser.model.Identifier;
 import org.e2immu.analyser.model.Qualification;
 import org.e2immu.analyser.output.*;
 
 public class BreakStatement extends BreakOrContinueStatement {
 
-    public BreakStatement(String label) {
-        super(label);
+    public BreakStatement(Identifier identifier, String label) {
+        super(identifier, label);
     }
 
     @Override

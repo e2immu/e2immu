@@ -27,7 +27,7 @@ import java.util.Optional;
 import java.util.stream.Stream;
 
 public class FieldInfo implements WithInspectionAndAnalysis {
-
+    private final Identifier identifier;
     public final ParameterizedType type;
     public final String name;
 
@@ -35,14 +35,16 @@ public class FieldInfo implements WithInspectionAndAnalysis {
     public final SetOnce<FieldInspection> fieldInspection = new SetOnce<>();
     public final SetOnce<FieldAnalysis> fieldAnalysis = new SetOnce<>();
 
-    public FieldInfo(ParameterizedType type, String name, TypeInfo owner) {
-        Objects.requireNonNull(type);
-        Objects.requireNonNull(name);
-        Objects.requireNonNull(owner);
+    public FieldInfo(Identifier identifier, ParameterizedType type, String name, TypeInfo owner) {
+        this.type = Objects.requireNonNull(type);
+        this.name = Objects.requireNonNull(name);
+        this.owner = Objects.requireNonNull(owner);
+        this.identifier = Objects.requireNonNull(identifier);
+    }
 
-        this.type = type;
-        this.name = name;
-        this.owner = owner;
+    @Override
+    public Identifier getIdentifier() {
+        return identifier;
     }
 
     @Override

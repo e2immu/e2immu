@@ -23,9 +23,10 @@ import java.util.List;
 
 public class SynchronizedStatement extends StatementWithExpression {
 
-    public SynchronizedStatement(Expression expression,
+    public SynchronizedStatement(Identifier identifier,
+                                 Expression expression,
                                  Block block) {
-        super(new Structure.Builder()
+        super(identifier, new Structure.Builder()
                 .setExpression(expression)
                 .setForwardEvaluationInfo(ForwardEvaluationInfo.NOT_NULL)
                 .setStatementExecution(StatementExecution.ALWAYS)
@@ -34,7 +35,7 @@ public class SynchronizedStatement extends StatementWithExpression {
 
     @Override
     public Statement translate(TranslationMap translationMap) {
-        return new SynchronizedStatement(translationMap.translateExpression(structure.expression()),
+        return new SynchronizedStatement(identifier, translationMap.translateExpression(structure.expression()),
                 translationMap.translateBlock(structure.block()));
     }
 

@@ -15,14 +15,15 @@
 package org.e2immu.analyser.model.statement;
 
 import org.e2immu.analyser.model.Element;
+import org.e2immu.analyser.model.Identifier;
 
 import java.util.List;
 
 public abstract class LoopStatement extends StatementWithExpression {
     public final String label;
 
-    protected LoopStatement(Structure structure, String label) {
-        super(structure, structure.expression());
+    protected LoopStatement(Identifier identifier, Structure structure, String label) {
+        super(identifier, structure, structure.expression());
         this.label = label;
     }
 

@@ -86,7 +86,7 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
         this.typeAnalysis = typeAnalysis;
 
         Block block = methodInspection.getMethodBody();
-        if (block == Block.EMPTY_BLOCK) {
+        if (block.isEmpty()) {
             firstStatementAnalyser = null;
         } else {
             firstStatementAnalyser = StatementAnalyser.recursivelyCreateAnalysisObjects(analyserContext,
@@ -428,8 +428,7 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
         log(EVENTUALLY, "Did prep work for @Only, @Mark, found precondition on variables {} in {}", precondition,
                 filterResult.accepted().keySet(), methodInfo.distinguishingName());
 
-        Expression and = new And(sharedState.evaluationContext().getPrimitives()).append(sharedState.evaluationContext,
-                preconditionExpressions);
+        Expression and = And.and(sharedState.evaluationContext, preconditionExpressions);
         methodAnalysis.preconditionForEventual.set(Optional.of(new Precondition(and, precondition.causes())));
         return DONE;
     }
@@ -604,7 +603,8 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
         if (value instanceof InlineConditional inline) {
             if (inline.ifTrue.isInitialReturnExpression()) return removeInitialReturnExpression(inline.ifFalse);
             if (inline.ifFalse.isInitialReturnExpression()) return removeInitialReturnExpression(inline.ifTrue);
-            return new InlineConditional(analyserContext, inline.condition, removeInitialReturnExpression(inline.ifTrue),
+            return new InlineConditional(Identifier.generate(),
+                    analyserContext, inline.condition, removeInitialReturnExpression(inline.ifTrue),
                     removeInitialReturnExpression(inline.ifFalse));
         }
         return value;
@@ -695,7 +695,7 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
         } else {
             finalValue = value.translate(translationMap);
         }
-        return new InlinedMethod(methodInfo, finalValue, variables, containsVariableFields);
+        return new InlinedMethod(Identifier.generate(), methodInfo, finalValue, variables, containsVariableFields);
     }
 
 

@@ -63,4 +63,9 @@ public record ContractMark(Set<FieldInfo> fields) implements Expression {
     public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty, boolean duringEvaluation) {
         return Level.FALSE;
     }
+
+    @Override
+    public Identifier getIdentifier() {
+        return Identifier.CONSTANT;
+    }
 }

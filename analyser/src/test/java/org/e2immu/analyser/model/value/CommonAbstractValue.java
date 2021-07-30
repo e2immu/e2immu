@@ -149,11 +149,11 @@ public abstract class CommonAbstractValue {
     }
 
     protected static Expression newAndAppend(Expression... values) {
-        return new And(PRIMITIVES).append(minimalEvaluationContext, values);
+        return And.and(minimalEvaluationContext, values);
     }
 
     protected static Expression newOrAppend(Expression... values) {
-        return new Or(PRIMITIVES).append(minimalEvaluationContext, values);
+        return Or.or(minimalEvaluationContext, values);
     }
 
     protected static Expression negate(Expression value) {

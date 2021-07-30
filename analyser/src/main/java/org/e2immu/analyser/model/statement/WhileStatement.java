@@ -24,10 +24,11 @@ import org.e2immu.analyser.output.Text;
 
 public class WhileStatement extends LoopStatement {
 
-    public WhileStatement(String label,
+    public WhileStatement(Identifier identifier,
+                          String label,
                           Expression expression,
                           Block block) {
-        super(new Structure.Builder()
+        super(identifier, new Structure.Builder()
                 .setStatementExecution((v, ec) -> {
                     if(ec.isDelayed(v)) return FlowData.Execution.DELAYED_EXECUTION;
                     if (v.isBoolValueFalse()) return FlowData.Execution.NEVER;
@@ -42,7 +43,7 @@ public class WhileStatement extends LoopStatement {
 
     @Override
     public Statement translate(TranslationMap translationMap) {
-        return new WhileStatement(label, translationMap.translateExpression(expression),
+        return new WhileStatement(identifier, label, translationMap.translateExpression(expression),
                 translationMap.translateBlock(structure.block()));
     }
 

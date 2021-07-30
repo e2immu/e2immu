@@ -140,16 +140,16 @@ public class TestTypeInfoStream {
                 //.addAnnotation(new AnnotationExpression(jdk.override))
                 //.addExceptionType(new ParameterizedType(jdk.ioException))
                 .setInspectedBlock(
-                        new Block.BlockBuilder()
+                        new Block.BlockBuilder(Identifier.generate())
                                 .addStatement(
-                                        new ExpressionAsStatement(
-                                                new LocalVariableCreation(inspectionProvider,
+                                        new ExpressionAsStatement(Identifier.generate(),
+                                                new LocalVariableCreation(Identifier.generate(), inspectionProvider,
                                                         mapLocalVariable,
                                                         creationExpression, false)
                                         )
                                 )
                                 .addStatement(
-                                        new ForEachStatement(null,
+                                        new ForEachStatement(Identifier.generate(), null,
                                                 new LocalVariableCreation(inspectionProvider,
                                                         new LocalVariable.Builder()
                                                                 .setOwningType(testTypeInfo)
@@ -157,11 +157,11 @@ public class TestTypeInfoStream {
                                                                 .setParameterizedType(new ParameterizedType(mapEntry, List.of(primitives.stringParameterizedType, typeT)))
                                                                 .build()),
                                                 new VariableExpression(new LocalVariableReference(mapLocalVariable, creationExpression)),
-                                                new Block.BlockBuilder()
-                                                        .addStatement(new IfElseStatement(
+                                                new Block.BlockBuilder(Identifier.generate())
+                                                        .addStatement(new IfElseStatement(Identifier.generate(),
                                                                 new BooleanConstant(primitives, true),
-                                                                new Block.BlockBuilder().build(),
-                                                                Block.EMPTY_BLOCK
+                                                                new Block.BlockBuilder(Identifier.generate()).build(),
+                                                                Block.emptyBlock(Identifier.generate())
                                                         ))
                                                         .build()
                                         )
@@ -209,7 +209,7 @@ public class TestTypeInfoStream {
         TypeInfo testEquivalent = new TypeInfo(TEST_PACKAGE, "TestEquivalent");
         MethodInfo referenceMethodInfo = new MethodInspectionImpl.Builder(testEquivalent, "reference")
                 .setReturnType(primitives.stringParameterizedType)
-                .setInspectedBlock(new Block.BlockBuilder().build())
+                .setInspectedBlock(new Block.BlockBuilder(Identifier.generate()).build())
                 .build(IP).getMethodInfo();
         testEquivalent.typeInspection.set(new TypeInspectionImpl.Builder(testEquivalent, BY_HAND)
                 .noParent(primitives)
@@ -238,11 +238,11 @@ public class TestTypeInfoStream {
                 .addAnnotation(new AnnotationExpressionImpl(commutative, List.of()))
                 .addAnnotation(new AnnotationExpressionImpl(testEquivalent, List.of(new StringConstant(primitives, "hello"))))
                 .setInspectedBlock(
-                        new Block.BlockBuilder().addStatement(
-                                new ReturnStatement(new BinaryOperator(primitives,
-                                        new VariableExpression(x), primitives.plusOperatorInt, new VariableExpression(y), Precedence.ADDITIVE
-                                ))
-                        ).build())
+                        new Block.BlockBuilder(Identifier.generate()).addStatement(
+                                new ReturnStatement(Identifier.generate(),
+                                        new BinaryOperator(Identifier.generate(), primitives,
+                                                new VariableExpression(x), primitives.plusOperatorInt,
+                                                new VariableExpression(y), Precedence.ADDITIVE))).build())
                 .build(IP).getMethodInfo();
         intSum.methodResolution.set(new MethodResolution.Builder().build());
         TypeInspection testTypeInspection = new TypeInspectionImpl.Builder(testTypeInfo, BY_HAND)

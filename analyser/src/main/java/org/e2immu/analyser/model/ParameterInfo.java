@@ -37,7 +37,7 @@ import java.util.Set;
 @Container
 //@ContextClass(after="this.analyse()")
 public class ParameterInfo implements Variable, WithInspectionAndAnalysis, Comparable<ParameterInfo> {
-
+    public final Identifier identifier;
     public final ParameterizedType parameterizedType;
     public final String name;
     public final int index;
@@ -46,12 +46,22 @@ public class ParameterInfo implements Variable, WithInspectionAndAnalysis, Compa
     public final SetOnce<ParameterInspection> parameterInspection = new SetOnce<>();
     public final MethodInfo owner;
 
-    public ParameterInfo(MethodInfo owner, ParameterizedType parameterizedType, String name, int index) {
+    public ParameterInfo(Identifier identifier,
+                         MethodInfo owner,
+                         ParameterizedType parameterizedType,
+                         String name,
+                         int index) {
+        this.identifier = Objects.requireNonNull(identifier);
         // can be null, in lambda's
         this.parameterizedType = parameterizedType;
         this.name = Objects.requireNonNull(name);
         this.index = index;
         this.owner = Objects.requireNonNull(owner);
+    }
+
+    @Override
+    public Identifier getIdentifier() {
+        return identifier;
     }
 
     @Override

@@ -641,7 +641,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
         }
 
         private Expression combinePrecondition(Expression e1, Expression e2) {
-            return new And(evaluationContext.getPrimitives()).append(evaluationContext, e1, e2);
+            return And.and(evaluationContext, e1, e2);
         }
 
         public void modifyingMethodAccess(Variable variable, NewObject newInstance, LinkedVariables linkedVariables) {

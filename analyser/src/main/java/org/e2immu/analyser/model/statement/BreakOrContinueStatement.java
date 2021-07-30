@@ -14,10 +14,13 @@
 
 package org.e2immu.analyser.model.statement;
 
+import org.e2immu.analyser.model.Identifier;
+
 public abstract class BreakOrContinueStatement extends StatementWithStructure {
     public final String label;
 
-    public BreakOrContinueStatement(String label) {
+    public BreakOrContinueStatement(Identifier identifier, String label) {
+        super(identifier);
         this.label = label;
     }
 

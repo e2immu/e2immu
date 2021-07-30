@@ -1527,7 +1527,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
     private static final int EXACTLY_NULL = 0;
 
     public Expression notNullValuesAsExpression(EvaluationContext evaluationContext) {
-        return new And(evaluationContext.getPrimitives()).append(evaluationContext, variableStream()
+        return And.and(evaluationContext, variableStream()
                 .filter(vi -> vi.variable() instanceof FieldReference
                         && vi.isAssigned()
                         && index().equals(vi.getAssignmentIds().getLatestAssignmentIndex()))

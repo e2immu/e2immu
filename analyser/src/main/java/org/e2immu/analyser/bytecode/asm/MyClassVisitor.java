@@ -288,7 +288,7 @@ public class MyClassVisitor extends ClassVisitor {
                 this::getOrCreateTypeInfo,
                 signature != null ? signature : descriptor).parameterizedType;
 
-        FieldInfo fieldInfo = new FieldInfo(type, name, currentType);
+        FieldInfo fieldInfo = new FieldInfo(Identifier.generate(), type, name, currentType);
         FieldInspectionImpl.Builder fieldInspectionBuilder = new FieldInspectionImpl.Builder();
         typeContext.typeMapBuilder.registerFieldInspection(fieldInfo, fieldInspectionBuilder);
 

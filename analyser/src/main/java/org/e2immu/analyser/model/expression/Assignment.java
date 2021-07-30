@@ -39,7 +39,7 @@ import static org.e2immu.analyser.analyser.util.DelayDebugger.D_LINKED_VARIABLES
 import static org.e2immu.analyser.util.Logger.LogTarget.EXPRESSION;
 import static org.e2immu.analyser.util.Logger.log;
 
-public class Assignment implements Expression {
+public class Assignment extends ElementImpl implements Expression {
 
     public final Expression target;
     public final Expression value;
@@ -56,14 +56,21 @@ public class Assignment implements Expression {
     public final boolean complainAboutAssignmentOutsideType;
 
     public Assignment(Primitives primitives, @NotNull Expression target, @NotNull Expression value) {
-        this(primitives, target, value, null, null, true);
+        this(Identifier.generate(), primitives,
+                target, value, null, null, true);
     }
 
-    public Assignment(Primitives primitives,
+    public Assignment(Identifier identifier, Primitives primitives, @NotNull Expression target, @NotNull Expression value) {
+        this(identifier, primitives, target, value, null, null, true);
+    }
+
+    public Assignment(Identifier identifier,
+                      Primitives primitives,
                       @NotNull Expression target, @NotNull Expression value,
                       MethodInfo assignmentOperator,
                       Boolean prefixPrimitiveOperator,
                       boolean complainAboutAssignmentOutsideType) {
+        super(identifier);
         this.complainAboutAssignmentOutsideType = complainAboutAssignmentOutsideType;
         this.target = Objects.requireNonNull(target);
         this.value = Objects.requireNonNull(value);
@@ -100,7 +107,7 @@ public class Assignment implements Expression {
 
     @Override
     public Expression translate(TranslationMap translationMap) {
-        return new Assignment(primitives, translationMap.translateExpression(target),
+        return new Assignment(identifier, primitives, translationMap.translateExpression(target),
                 translationMap.translateExpression(value), assignmentOperator, prefixPrimitiveOperator,
                 complainAboutAssignmentOutsideType);
     }
@@ -201,7 +208,8 @@ public class Assignment implements Expression {
         Expression resultOfExpression;
         Expression assignedToTarget;
         if (binaryOperator != null) {
-            BinaryOperator operation = new BinaryOperator(primitives, new VariableExpression(newVariableTarget), binaryOperator, value,
+            BinaryOperator operation = new BinaryOperator(identifier,
+                    primitives, new VariableExpression(newVariableTarget), binaryOperator, value,
                     BinaryOperator.precedence(evaluationContext.getPrimitives(), binaryOperator));
             EvaluationResult operationResult = operation.evaluate(evaluationContext, forwardEvaluationInfo);
             builder.compose(operationResult);

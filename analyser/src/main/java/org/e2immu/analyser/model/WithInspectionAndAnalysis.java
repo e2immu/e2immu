@@ -24,6 +24,8 @@ import java.util.stream.Stream;
 
 public interface WithInspectionAndAnalysis {
 
+    Identifier getIdentifier();
+
     Inspection getInspection();
 
     boolean hasBeenInspected();

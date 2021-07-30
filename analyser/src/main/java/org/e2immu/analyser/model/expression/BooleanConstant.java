@@ -18,6 +18,7 @@ package org.e2immu.analyser.model.expression;
 import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.Identifier;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.Qualification;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
@@ -87,5 +88,10 @@ public record BooleanConstant(Primitives primitives,
 
     public Expression negate() {
         return new BooleanConstant(primitives, !constant);
+    }
+
+    @Override
+    public Identifier getIdentifier() {
+        return Identifier.CONSTANT;
     }
 }

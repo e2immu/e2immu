@@ -34,8 +34,13 @@ public class ForStatement extends LoopStatement {
      * @param condition Cannot be null, but can be EmptyExpression
      * @param block     cannot be null, but can be EmptyBlock
      */
-    public ForStatement(String label, List<Expression> initialisers, Expression condition, List<Expression> updaters, Block block) {
-        super(new Structure.Builder()
+    public ForStatement(Identifier identifier,
+                        String label,
+                        List<Expression> initialisers,
+                        Expression condition,
+                        List<Expression> updaters,
+                        Block block) {
+        super(identifier, new Structure.Builder()
                 .setStatementExecution(StatementExecution.CONDITIONALLY)
                 .setCreateVariablesInsideBlock(true)
                 .addInitialisers(initialisers)
@@ -47,7 +52,7 @@ public class ForStatement extends LoopStatement {
 
     @Override
     public Statement translate(TranslationMap translationMap) {
-        return new ForStatement(label,
+        return new ForStatement(identifier, label,
                 structure.initialisers().stream().map(translationMap::translateExpression).collect(Collectors.toList()),
                 translationMap.translateExpression(expression),
                 structure.updaters().stream().map(translationMap::translateExpression).collect(Collectors.toList()),

@@ -201,7 +201,7 @@ public class ExpressionContext {
     // method makes changes to variableContext
 
     private Block parseBlockOrStatement(Statement stmt, String labelOfBlock) {
-        Block.BlockBuilder blockBuilder = new Block.BlockBuilder().setLabel(labelOfBlock);
+        Block.BlockBuilder blockBuilder = new Block.BlockBuilder(Identifier.from(stmt)).setLabel(labelOfBlock);
         if (stmt.isBlockStmt()) {
             for (Statement statement : stmt.asBlockStmt().getStatements()) {
                 parseStatement(blockBuilder, statement, null);
@@ -215,6 +215,7 @@ public class ExpressionContext {
     // method modifies the blockBuilder...
     private void parseStatement(@NotNull Block.BlockBuilder blockBuilder, @NotNull @NotModified Statement statement, String labelOfStatement) {
         try {
+            Identifier identifier = Identifier.from(statement);
             if (statement.isLabeledStmt()) {
                 if (labelOfStatement != null) throw new UnsupportedOperationException();
                 String label = statement.asLabeledStmt().getLabel().asString();
@@ -224,53 +225,53 @@ public class ExpressionContext {
 
             org.e2immu.analyser.model.Statement newStatement;
             if (statement.isReturnStmt()) {
-                newStatement = new ReturnStatement(((ReturnStmt) statement).getExpression()
+                newStatement = new ReturnStatement(identifier, ((ReturnStmt) statement).getExpression()
                         .map(this::parseExpression).orElse(EmptyExpression.EMPTY_EXPRESSION));
             } else if (statement.isYieldStmt()) {
                 Expression expr = parseExpression(((YieldStmt) statement).getExpression(),
                         Objects.requireNonNull(typeOfEnclosingSwitchExpression));
-                newStatement = new YieldStatement(expr);
+                newStatement = new YieldStatement(identifier, expr);
             } else if (statement.isExpressionStmt()) {
                 Expression expression = parseExpression(((ExpressionStmt) statement).getExpression());
-                newStatement = new ExpressionAsStatement(expression);
+                newStatement = new ExpressionAsStatement(identifier, expression);
                 variableContext.addAll(expression.newLocalVariables());
             } else if (statement.isForEachStmt()) {
                 newStatement = forEachStatement(labelOfStatement, (ForEachStmt) statement);
             } else if (statement.isWhileStmt()) {
-                newStatement = whileStatement(labelOfStatement, (WhileStmt) statement);
+                newStatement = whileStatement(labelOfStatement, (WhileStmt) statement, identifier);
             } else if (statement.isBlockStmt()) {
                 ExpressionContext context = newVariableContext("block");
                 newStatement = context.parseBlockOrStatement(statement, labelOfStatement);
                 inherit(context);
             } else if (statement.isIfStmt()) {
-                newStatement = ifThenElseStatement((IfStmt) statement);
+                newStatement = ifThenElseStatement((IfStmt) statement, identifier);
             } else if (statement.isSynchronizedStmt()) {
-                newStatement = synchronizedStatement((SynchronizedStmt) statement);
+                newStatement = synchronizedStatement((SynchronizedStmt) statement, identifier);
             } else if (statement.isThrowStmt()) {
-                newStatement = new ThrowStatement(parseExpression(((ThrowStmt) statement).getExpression()));
+                newStatement = new ThrowStatement(identifier, parseExpression(((ThrowStmt) statement).getExpression()));
             } else if (statement.isLocalClassDeclarationStmt()) {
-                newStatement = localClassDeclaration((LocalClassDeclarationStmt) statement);
+                newStatement = localClassDeclaration((LocalClassDeclarationStmt) statement, identifier);
             } else if (statement.isExplicitConstructorInvocationStmt()) {
                 // this( ... )
-                newStatement = explicitConstructorInvocation((ExplicitConstructorInvocationStmt) statement);
+                newStatement = explicitConstructorInvocation((ExplicitConstructorInvocationStmt) statement, identifier);
             } else if (statement.isTryStmt()) {
-                newStatement = tryStatement(statement.asTryStmt());
+                newStatement = tryStatement(statement.asTryStmt(), identifier);
             } else if (statement.isContinueStmt()) {
                 String label = statement.asContinueStmt().getLabel().map(SimpleName::asString).orElse(null);
-                newStatement = new ContinueStatement(label);
+                newStatement = new ContinueStatement(identifier, label);
             } else if (statement.isBreakStmt()) {
                 String label = statement.asBreakStmt().getLabel().map(SimpleName::asString).orElse(null);
-                newStatement = new BreakStatement(label);
+                newStatement = new BreakStatement(identifier, label);
             } else if (statement.isDoStmt()) {
-                newStatement = doStatement(labelOfStatement, statement.asDoStmt());
+                newStatement = doStatement(labelOfStatement, statement.asDoStmt(), identifier);
             } else if (statement.isForStmt()) {
-                newStatement = forStatement(labelOfStatement, statement.asForStmt());
+                newStatement = forStatement(labelOfStatement, statement.asForStmt(), identifier);
             } else if (statement.isAssertStmt()) {
-                newStatement = assertStatement(statement.asAssertStmt());
+                newStatement = assertStatement(statement.asAssertStmt(), identifier);
             } else if (statement.isEmptyStmt()) {
-                newStatement = EmptyStatement.EMPTY_STATEMENT;
+                newStatement = new EmptyStatement(identifier);
             } else if (statement.isSwitchStmt()) {
-                newStatement = switchStatement(statement.asSwitchStmt());
+                newStatement = switchStatement(statement.asSwitchStmt(), identifier);
             } else if (statement.isUnparsableStmt()) {
                 LOGGER.warn("Skipping unparsable statement at {}", statement.getBegin());
                 newStatement = null;
@@ -287,7 +288,7 @@ public class ExpressionContext {
         }
     }
 
-    private org.e2immu.analyser.model.Statement switchStatement(@NotNull SwitchStmt switchStmt) {
+    private org.e2immu.analyser.model.Statement switchStatement(@NotNull SwitchStmt switchStmt, Identifier identifier) {
         Expression selector = parseExpression(switchStmt.getSelector());
         ExpressionContext newExpressionContext;
         TypeInfo enumType = selectorIsEnumType(selector);
@@ -300,11 +301,11 @@ public class ExpressionContext {
             newExpressionContext = this;
         }
         if (switchStmt.getEntries().isEmpty()) {
-            return new SwitchStatementNewStyle(selector, List.of());
+            return new SwitchStatementNewStyle(identifier, selector, List.of());
         }
         if (switchStmt.getEntries().stream().anyMatch(e ->
                 e.getType() == com.github.javaparser.ast.stmt.SwitchEntry.Type.STATEMENT_GROUP)) {
-            var res = switchStatementOldStyle(newExpressionContext, selector, switchStmt);
+            var res = switchStatementOldStyle(newExpressionContext, selector, switchStmt, identifier);
             inherit(newExpressionContext);
             return res;
         }
@@ -313,7 +314,7 @@ public class ExpressionContext {
                 .map(entry -> newExpressionContext.switchEntry(selector, entry))
                 .collect(Collectors.toList());
         inherit(newExpressionContext);
-        return new SwitchStatementNewStyle(selector, entries);
+        return new SwitchStatementNewStyle(identifier, selector, entries);
     }
 
     /*
@@ -321,9 +322,10 @@ public class ExpressionContext {
      */
     private org.e2immu.analyser.model.Statement switchStatementOldStyle(ExpressionContext expressionContextWithEnums,
                                                                         Expression selector,
-                                                                        SwitchStmt switchStmt) {
+                                                                        SwitchStmt switchStmt,
+                                                                        Identifier identifier) {
         List<SwitchStatementOldStyle.SwitchLabel> labels = new ArrayList<>();
-        Block.BlockBuilder blockBuilder = new Block.BlockBuilder();
+        Block.BlockBuilder blockBuilder = new Block.BlockBuilder(identifier);
         for (com.github.javaparser.ast.stmt.SwitchEntry switchEntry : switchStmt.getEntries()) {
             boolean first = true;
             for (Statement statement : switchEntry.getStatements()) {
@@ -346,7 +348,7 @@ public class ExpressionContext {
                 }
             }
         }
-        return new SwitchStatementOldStyle(selector, blockBuilder.build(), labels);
+        return new SwitchStatementOldStyle(identifier, selector, blockBuilder.build(), labels);
     }
 
     public TypeInfo selectorIsEnumType(@NotNull Expression selector) {
@@ -357,28 +359,31 @@ public class ExpressionContext {
         return null;
     }
 
-    public SwitchEntry switchEntry(Expression switchVariableAsExpression, @NotNull com.github.javaparser.ast.stmt.SwitchEntry switchEntry) {
+    public SwitchEntry switchEntry(Expression switchVariableAsExpression,
+                                   @NotNull com.github.javaparser.ast.stmt.SwitchEntry switchEntry) {
         List<Expression> labels = switchEntry.getLabels().stream().map(this::parseExpression).collect(Collectors.toList());
         switch (switchEntry.getType()) {
             case STATEMENT_GROUP -> throw new UnsupportedOperationException("In other method");
 
             case EXPRESSION, THROWS_STATEMENT -> {
-                Block.BlockBuilder blockBuilder = new Block.BlockBuilder();
+                Block.BlockBuilder blockBuilder = new Block.BlockBuilder(Identifier.from(switchEntry));
                 for (Statement statement : switchEntry.getStatements()) {
                     parseStatement(blockBuilder, statement, null);
                 }
-                return new SwitchEntry.StatementsEntry(typeContext.getPrimitives(),
+                return new SwitchEntry.StatementsEntry(Identifier.from(switchEntry),
+                        typeContext.getPrimitives(),
                         switchVariableAsExpression, labels, blockBuilder.build().structure.statements());
             }
             case BLOCK -> {
                 Block block = parseBlockOrStatement(switchEntry.getStatements().get(0));
-                return new SwitchEntry.BlockEntry(typeContext.getPrimitives(), switchVariableAsExpression, labels, block);
+                return new SwitchEntry.BlockEntry(Identifier.from(switchEntry),
+                        typeContext.getPrimitives(), switchVariableAsExpression, labels, block);
             }
             default -> throw new UnsupportedOperationException("Unknown type " + switchEntry.getType());
         }
     }
 
-    private org.e2immu.analyser.model.Statement forStatement(String label, ForStmt forStmt) {
+    private org.e2immu.analyser.model.Statement forStatement(String label, ForStmt forStmt, Identifier identifier) {
         List<Expression> initializers = forStmt.getInitialization().stream().map(this::parseExpression).collect(Collectors.toList());
         ExpressionContext newExpressionContext = newVariableContext("for-loop");
         for (Expression initialiser : initializers) {
@@ -391,16 +396,16 @@ public class ExpressionContext {
         List<Expression> updaters = forStmt.getUpdate().stream().map(newExpressionContext::parseExpression).collect(Collectors.toList());
         Block block = newExpressionContext.parseBlockOrStatement(forStmt.getBody());
         inherit(newExpressionContext);
-        return new ForStatement(label, initializers, condition, updaters, block);
+        return new ForStatement(identifier, label, initializers, condition, updaters, block);
     }
 
-    private org.e2immu.analyser.model.Statement assertStatement(AssertStmt assertStmt) {
+    private org.e2immu.analyser.model.Statement assertStatement(AssertStmt assertStmt, Identifier identifier) {
         Expression check = parseExpression(assertStmt.getCheck(), ForwardReturnTypeInfo.expectBoolean(typeContext));
         Expression message = assertStmt.getMessage().map(this::parseExpression).orElse(null);
-        return new AssertStatement(check, message);
+        return new AssertStatement(identifier, check, message);
     }
 
-    private org.e2immu.analyser.model.Statement tryStatement(TryStmt tryStmt) {
+    private org.e2immu.analyser.model.Statement tryStatement(TryStmt tryStmt, Identifier identifier) {
         List<Expression> resources = new ArrayList<>();
         ExpressionContext tryExpressionContext = newVariableContext("try-resources");
         for (com.github.javaparser.ast.expr.Expression resource : tryStmt.getResources()) {
@@ -430,41 +435,43 @@ public class ExpressionContext {
                     .setOwningType(owningType())
                     .setName(name).setSimpleName(name).setParameterizedType(typeOfVariable).build();
             LocalVariableCreation lvc = new LocalVariableCreation(typeContext, localVariable);
-            TryStatement.CatchParameter catchParameter = new TryStatement.CatchParameter(lvc, unionOfTypes);
+            TryStatement.CatchParameter catchParameter = new TryStatement.CatchParameter(Identifier.from(catchClause), lvc, unionOfTypes);
             ExpressionContext catchExpressionContext = newVariableContext("catch-clause");
             catchExpressionContext.variableContext.add(localVariable, EmptyExpression.EMPTY_EXPRESSION);
             Block block = catchExpressionContext.parseBlockOrStatement(catchClause.getBody());
             inherit(catchExpressionContext);
             catchClauses.add(new Pair<>(catchParameter, block));
         }
-        Block finallyBlock = tryStmt.getFinallyBlock().map(this::parseBlockOrStatement).orElse(Block.EMPTY_BLOCK);
-        return new TryStatement(resources, tryBlock, catchClauses, finallyBlock);
+        Block finallyBlock = tryStmt.getFinallyBlock().map(this::parseBlockOrStatement).orElse(Block.emptyBlock(Identifier.generate()));
+        return new TryStatement(identifier, resources, tryBlock, catchClauses, finallyBlock);
     }
 
-    private org.e2immu.analyser.model.Statement whileStatement(String label, WhileStmt statement) {
+    private org.e2immu.analyser.model.Statement whileStatement(String label, WhileStmt statement, Identifier identifier) {
         org.e2immu.analyser.model.Expression expression = parseExpression(statement.getCondition());
         ExpressionContext context = newVariableContext("while-block");
         Block block = context.parseBlockOrStatement(statement.getBody());
         inherit(context);
-        return new WhileStatement(label, expression, block);
+        return new WhileStatement(identifier, label, expression, block);
     }
 
-    private org.e2immu.analyser.model.Statement doStatement(String label, DoStmt statement) {
+    private org.e2immu.analyser.model.Statement doStatement(String label, DoStmt statement, Identifier identifier) {
         ExpressionContext context = newVariableContext("do-block");
         Block block = context.parseBlockOrStatement(statement.getBody());
         inherit(context);
         org.e2immu.analyser.model.Expression expression = parseExpression(statement.getCondition());
-        return new DoStatement(label, expression, block);
+        return new DoStatement(identifier, label, expression, block);
     }
 
-    private org.e2immu.analyser.model.Statement explicitConstructorInvocation(ExplicitConstructorInvocationStmt statement) {
+    private org.e2immu.analyser.model.Statement explicitConstructorInvocation(ExplicitConstructorInvocationStmt statement,
+                                                                              Identifier identifier) {
         List<org.e2immu.analyser.model.Expression> parameterExpressions = statement.getArguments()
                 .stream().map(this::parseExpression).collect(Collectors.toList());
         MethodInfo constructor = enclosingType.findConstructor(typeContext, parameterExpressions);
-        return new ExplicitConstructorInvocation(!statement.isThis(), constructor, parameterExpressions);
+        return new ExplicitConstructorInvocation(identifier, !statement.isThis(), constructor, parameterExpressions);
     }
 
-    private org.e2immu.analyser.model.Statement localClassDeclaration(LocalClassDeclarationStmt statement) {
+    private org.e2immu.analyser.model.Statement localClassDeclaration(LocalClassDeclarationStmt statement,
+                                                                      Identifier identifier) {
         String localName = statement.getClassDeclaration().getNameAsString();
         String typeName = StringUtil.capitalise(enclosingMethod.name) + "$" + localName + "$" + anonymousTypeCounters.newIndex(primaryType);
         TypeInfo typeInfo = new TypeInfo(enclosingType, typeName);
@@ -474,15 +481,15 @@ public class ExpressionContext {
 
         typeContext.addToContext(localName, typeInfo, true);
         addNewlyCreatedType(typeInfo);
-        return new LocalClassDeclaration(typeInfo);
+        return new LocalClassDeclaration(identifier, typeInfo);
     }
 
-    private org.e2immu.analyser.model.Statement synchronizedStatement(SynchronizedStmt statement) {
+    private org.e2immu.analyser.model.Statement synchronizedStatement(SynchronizedStmt statement, Identifier identifier) {
         org.e2immu.analyser.model.Expression expression = parseExpression(statement.getExpression());
         ExpressionContext context = newVariableContext("synchronized-block");
         Block block = context.parseBlockOrStatement(statement.getBody());
         inherit(context);
-        return new SynchronizedStatement(expression, block);
+        return new SynchronizedStatement(identifier, expression, block);
     }
 
     private void inherit(ExpressionContext context) {
@@ -493,7 +500,7 @@ public class ExpressionContext {
         return ParseForEachStmt.parse(this, label, forEachStmt);
     }
 
-    private org.e2immu.analyser.model.Statement ifThenElseStatement(IfStmt statement) {
+    private org.e2immu.analyser.model.Statement ifThenElseStatement(IfStmt statement, Identifier identifier) {
         org.e2immu.analyser.model.Expression conditional = parseExpression(statement.getCondition(),
                 ForwardReturnTypeInfo.expectBoolean(typeContext));
         ExpressionContext ifContext = newVariableContext("if-block");
@@ -505,9 +512,9 @@ public class ExpressionContext {
             elseBlock = elseContext.parseBlockOrStatement(statement.getElseStmt().get());
             inherit(elseContext);
         } else {
-            elseBlock = Block.EMPTY_BLOCK;
+            elseBlock = Block.emptyBlock(identifier);
         }
-        return new IfElseStatement(conditional, ifBlock, elseBlock);
+        return new IfElseStatement(identifier, conditional, ifBlock, elseBlock);
     }
 
     @NotNull
@@ -518,6 +525,7 @@ public class ExpressionContext {
     public org.e2immu.analyser.model.Expression parseExpression(@NotNull com.github.javaparser.ast.expr.Expression expression,
                                                                 ForwardReturnTypeInfo forwardReturnTypeInfo) {
         assert forwardReturnTypeInfo != null;
+        Identifier identifier = Identifier.from(expression);
         try {
             if (expression.isStringLiteralExpr()) {
                 StringLiteralExpr stringLiteralExpr = (StringLiteralExpr) expression;
@@ -557,7 +565,8 @@ public class ExpressionContext {
                     typeInfo = null;
                 }
                 MethodInfo operatorMethod = BinaryOperator.getOperator(typeContext.getPrimitives(), binaryExpr.getOperator(), typeInfo);
-                return new BinaryOperator(typeContext.getPrimitives(), lhs, operatorMethod, rhs,
+                return new BinaryOperator(identifier,
+                        typeContext.getPrimitives(), lhs, operatorMethod, rhs,
                         BinaryOperator.precedence(typeContext.getPrimitives(), operatorMethod));
             }
             if (expression.isUnaryExpr()) {
@@ -570,15 +579,11 @@ public class ExpressionContext {
                 if (primitives.isPreOrPostFixOperator(operator)) {
                     boolean isPrefix = primitives.isPrefixOperator(operator);
                     MethodInfo associatedAssignment = primitives.prePostFixToAssignment(operator);
-                    return new Assignment(typeContext.getPrimitives(),
+                    return new Assignment(identifier, typeContext.getPrimitives(),
                             exp, new IntConstant(typeContext.getPrimitives(), 1), associatedAssignment, isPrefix,
                             true);
                 }
-                return new UnaryOperator(
-                        operator,
-                        exp,
-                        UnaryOperator.precedence(unaryExpr.getOperator())
-                );
+                return new UnaryOperator(identifier, operator, exp, UnaryOperator.precedence(unaryExpr.getOperator()));
             }
 
             if (expression.isThisExpr()) {
@@ -658,7 +663,7 @@ public class ExpressionContext {
                 vde.getAnnotations().forEach(ae -> localVariable.addAnnotation(AnnotationInspector.inspect(this, ae)));
                 vde.getModifiers().forEach(m -> localVariable.addModifier(LocalVariableModifier.from(m)));
                 LocalVariable lv = localVariable.setOwningType(owningType()).build();
-                return new LocalVariableCreation(typeContext, lv, initializer, isVar);
+                return new LocalVariableCreation(identifier, typeContext, lv, initializer, isVar);
             }
             if (expression.isAssignExpr()) {
                 AssignExpr assignExpr = (AssignExpr) expression;
@@ -669,9 +674,10 @@ public class ExpressionContext {
                         target.returnType().isType() && Primitives.isPrimitiveExcludingVoid(target.returnType())) {
                     ParameterizedType widestType = typeContext.getPrimitives().widestType(value.returnType(), target.returnType());
                     MethodInfo primitiveOperator = Assignment.operator(typeContext.getPrimitives(), assignExpr.getOperator(), widestType.typeInfo);
-                    return new Assignment(typeContext.getPrimitives(), target, value, primitiveOperator, null, true);
+                    return new Assignment(identifier, typeContext.getPrimitives(), target, value, primitiveOperator,
+                            null, true);
                 }
-                return new Assignment(typeContext.getPrimitives(), target, value);
+                return new Assignment(identifier, typeContext.getPrimitives(), target, value);
             }
             if (expression.isMethodCallExpr()) {
                 return new ParseMethodCallExpr(typeContext).parse(this, expression.asMethodCallExpr(), forwardReturnTypeInfo);
@@ -687,7 +693,7 @@ public class ExpressionContext {
                         forwardReturnTypeInfo);
                 org.e2immu.analyser.model.Expression ifFalse = parseExpression(conditionalExpr.getElseExpr(),
                         forwardReturnTypeInfo);
-                return new InlineConditional(typeContext, condition, ifTrue, ifFalse);
+                return new InlineConditional(identifier, typeContext, condition, ifTrue, ifFalse);
             }
             if (expression.isFieldAccessExpr()) {
                 return ParseFieldAccessExpr.parse(this, expression.asFieldAccessExpr());
@@ -706,7 +712,7 @@ public class ExpressionContext {
                         .map(this::parseExpression).collect(Collectors.toList()), forwardReturnTypeInfo.type());
             }
             if (expression.isEnclosedExpr()) {
-                return new EnclosedExpression(parseExpression(((EnclosedExpr) expression).getInner()));
+                return new EnclosedExpression(identifier, parseExpression(((EnclosedExpr) expression).getInner()));
             }
             if (expression.isLongLiteralExpr()) {
                 String value = expression.asLongLiteralExpr().getValue();
@@ -744,7 +750,7 @@ public class ExpressionContext {
                 if (patternVariable != null) {
                     variableContext.add(patternVariable);
                 }
-                return new InstanceOf(typeContext.getPrimitives(), type, e, patternVariable);
+                return new InstanceOf(identifier, typeContext.getPrimitives(), type, e, patternVariable);
             }
             if (expression.isSingleMemberAnnotationExpr()) {
                 SingleMemberAnnotationExpr sma = expression.asSingleMemberAnnotationExpr();

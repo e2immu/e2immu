@@ -14,19 +14,20 @@
 
 package org.e2immu.analyser.model.expression;
 
-import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.MethodInfo;
-import org.e2immu.analyser.model.ParameterizedType;
+import org.e2immu.analyser.model.*;
 import org.e2immu.annotation.NotNull;
 
 import java.util.Objects;
 
-public abstract class ExpressionWithMethodReferenceResolution implements Expression {
+public abstract class ExpressionWithMethodReferenceResolution extends ElementImpl implements Expression {
 
     public final MethodInfo methodInfo;
     public final ParameterizedType concreteReturnType;
 
-    protected ExpressionWithMethodReferenceResolution(@NotNull MethodInfo methodInfo, @NotNull ParameterizedType concreteReturnType) {
+    protected ExpressionWithMethodReferenceResolution(Identifier identifier,
+                                                      @NotNull MethodInfo methodInfo,
+                                                      @NotNull ParameterizedType concreteReturnType) {
+        super(identifier);
         this.concreteReturnType = Objects.requireNonNull(concreteReturnType);
         this.methodInfo = Objects.requireNonNull(methodInfo);
     }

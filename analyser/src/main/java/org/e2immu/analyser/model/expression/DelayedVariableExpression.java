@@ -145,4 +145,9 @@ public record DelayedVariableExpression(String msg, String debug,
     public List<Variable> variables() {
         return List.of(variable);
     }
+
+    @Override
+    public Identifier getIdentifier() {
+        return Identifier.CONSTANT;
+    }
 }

@@ -157,4 +157,9 @@ public class MultiValue implements Expression {
         return NewObject.forGetInstance(evaluationResult.evaluationContext().newObjectIdentifier(),
                 inspectionProvider.getPrimitives(), returnType());
     }
+
+    @Override
+    public Identifier getIdentifier() {
+        return Identifier.CONSTANT; // internal only
+    }
 }

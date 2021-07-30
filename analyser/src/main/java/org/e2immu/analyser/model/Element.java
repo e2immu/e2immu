@@ -25,6 +25,8 @@ import java.util.stream.Collectors;
 
 public interface Element {
 
+    Identifier getIdentifier();
+
     // definition
 
     default List<? extends Element> subElements() {

@@ -17,6 +17,7 @@ package org.e2immu.analyser.model.expression;
 import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.Identifier;
 import org.e2immu.analyser.model.Qualification;
 import org.e2immu.analyser.model.TranslationMap;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
@@ -31,26 +32,31 @@ public class Sum extends BinaryOperator {
 
     @Override
     public Expression translate(TranslationMap translationMap) {
-        return new Sum(primitives, lhs.translate(translationMap), rhs.translate(translationMap));
+        return new Sum(identifier, primitives, lhs.translate(translationMap), rhs.translate(translationMap));
     }
 
-    private Sum(Primitives primitives, Expression lhs, Expression rhs) {
-        super(primitives, lhs, primitives.plusOperatorInt, rhs, Precedence.ADDITIVE);
+    private Sum(Identifier identifier, Primitives primitives, Expression lhs, Expression rhs) {
+        super(identifier, primitives, lhs, primitives.plusOperatorInt, rhs, Precedence.ADDITIVE);
     }
 
     public EvaluationResult reEvaluate(EvaluationContext evaluationContext, Map<Expression, Expression> translation) {
         EvaluationResult reLhs = lhs.reEvaluate(evaluationContext, translation);
         EvaluationResult reRhs = rhs.reEvaluate(evaluationContext, translation);
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext).compose(reLhs, reRhs);
-        return builder.setExpression(Sum.sum(evaluationContext, reLhs.getExpression(), reRhs.getExpression())).build();
+        return builder.setExpression(Sum.sum(identifier, evaluationContext, reLhs.getExpression(), reRhs.getExpression())).build();
     }
 
     // we try to maintain a sum of products
     public static Expression sum(EvaluationContext evaluationContext, Expression l, Expression r) {
-        return sum(evaluationContext, l, r, true);
+        return sum(Identifier.generate(), evaluationContext, l, r, true);
     }
 
-    private static Expression sum(EvaluationContext evaluationContext, Expression l, Expression r, boolean tryAgain) {
+    public static Expression sum(Identifier identifier, EvaluationContext evaluationContext, Expression l, Expression r) {
+        return sum(identifier, evaluationContext, l, r, true);
+    }
+
+    private static Expression sum(Identifier identifier,
+                                  EvaluationContext evaluationContext, Expression l, Expression r, boolean tryAgain) {
         Primitives primitives = evaluationContext.getPrimitives();
 
         if (l.equals(r)) return Product.product(evaluationContext, new IntConstant(primitives, 2), l);
@@ -68,8 +74,8 @@ public class Sum extends BinaryOperator {
 
         // a + (b+c)
         if (l instanceof Numeric ln && r instanceof Sum s && s.lhs instanceof Numeric l2) {
-            return Sum.sum(evaluationContext, IntConstant.intOrDouble(primitives, ln.doubleValue() + l2.doubleValue()),
-                    s.rhs);
+            return Sum.sum(identifier, evaluationContext,
+                    IntConstant.intOrDouble(primitives, ln.doubleValue() + l2.doubleValue()), s.rhs);
         }
 
         // (a+b) + (c+d)
@@ -77,7 +83,7 @@ public class Sum extends BinaryOperator {
             Expression[] expressions = new Expression[]{s1.lhs, s1.rhs, s2.lhs, s2.rhs};
             Arrays.sort(expressions);
             if (!s1.lhs.equals(expressions[0]) || !s1.rhs.equals(expressions[1])) {
-                return Sum.sum(evaluationContext, Sum.sum(evaluationContext, expressions[0], expressions[1]),
+                return Sum.sum(identifier, evaluationContext, Sum.sum(evaluationContext, expressions[0], expressions[1]),
                         Sum.sum(evaluationContext, expressions[2], expressions[3]));
             }
         }
@@ -97,11 +103,12 @@ public class Sum extends BinaryOperator {
                     IntConstant.intOrDouble(primitives, lpLn.doubleValue() + rpLn.doubleValue()), lp.rhs);
         }
 
-        Sum s = l.compareTo(r) < 0 ? new Sum(primitives, l, r) : new Sum(primitives, r, l);
+        Sum s = l.compareTo(r) < 0 ? new Sum(Identifier.generate(), primitives, l, r)
+                : new Sum(Identifier.generate(), primitives, r, l);
 
         // re-running the sum to solve substitutions of variables to constants
         if (tryAgain) {
-            return Sum.sum(evaluationContext, s.lhs, s.rhs, false);
+            return Sum.sum(identifier, evaluationContext, s.lhs, s.rhs, false);
         }
 
         return s;
@@ -114,7 +121,7 @@ public class Sum extends BinaryOperator {
 
     // -(lhs + rhs) = -lhs + -rhs
     public Expression negate(EvaluationContext evaluationContext) {
-        return Sum.sum(evaluationContext,
+        return Sum.sum(identifier, evaluationContext,
                 Negation.negate(evaluationContext, lhs),
                 Negation.negate(evaluationContext, rhs));
     }

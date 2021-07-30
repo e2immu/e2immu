@@ -14,7 +14,6 @@
 
 package org.e2immu.analyser.model.statement;
 
-import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.analyser.StatementAnalysis;
 import org.e2immu.analyser.model.*;
@@ -24,8 +23,8 @@ import java.util.List;
 
 public class ThrowStatement extends StatementWithExpression {
 
-    public ThrowStatement(Expression expression) {
-        super(new Structure.Builder().setExpression(expression)
+    public ThrowStatement(Identifier identifier, Expression expression) {
+        super(identifier, new Structure.Builder().setExpression(expression)
                 .setForwardEvaluationInfo(ForwardEvaluationInfo.NOT_NULL).build(), expression);
     }
 
@@ -36,7 +35,7 @@ public class ThrowStatement extends StatementWithExpression {
 
     @Override
     public Statement translate(TranslationMap translationMap) {
-        return new ThrowStatement(translationMap.translateExpression(expression));
+        return new ThrowStatement(identifier, translationMap.translateExpression(expression));
     }
 
     @Override

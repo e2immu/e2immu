@@ -18,6 +18,7 @@ import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.Identifier;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
@@ -25,11 +26,11 @@ import org.e2immu.analyser.parser.Primitives;
 
 public class StringConcat extends BinaryOperator {
 
-    private StringConcat(Primitives primitives, Expression lhs, Expression rhs) {
-        super(primitives, lhs, primitives.plusOperatorInt, rhs, Precedence.STRING_CONCAT);
+    private StringConcat(Identifier identifier, Primitives primitives, Expression lhs, Expression rhs) {
+        super(identifier, primitives, lhs, primitives.plusOperatorInt, rhs, Precedence.STRING_CONCAT);
     }
 
-    public static Expression stringConcat(EvaluationContext evaluationContext, Expression l, Expression r) {
+    public static Expression stringConcat(Identifier identifier, EvaluationContext evaluationContext, Expression l, Expression r) {
         StringConstant lsv = l.asInstanceOf(StringConstant.class);
         StringConstant rsv = r.asInstanceOf(StringConstant.class);
         Primitives primitives = evaluationContext.getPrimitives();
@@ -49,7 +50,7 @@ public class StringConcat extends BinaryOperator {
         // any unknown lingering
         if (l.isUnknown() || r.isUnknown()) throw new UnsupportedOperationException();
 
-        return new StringConcat(primitives, l, r);
+        return new StringConcat(identifier, primitives, l, r);
     }
 
     @Override

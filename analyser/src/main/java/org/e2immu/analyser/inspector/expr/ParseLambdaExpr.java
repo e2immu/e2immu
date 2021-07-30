@@ -86,7 +86,8 @@ public class ParseLambdaExpr {
             }
             types.add(parameterType);
             ParameterInspectionImpl.Builder parameterBuilder =
-                    new ParameterInspectionImpl.Builder(parameterType, parameter.getName().asString(), cnt++);
+                    new ParameterInspectionImpl.Builder(Identifier.from(parameter),
+                            parameterType, parameter.getName().asString(), cnt++);
             // parameter analysis will be set later
             applyMethodInspectionBuilder.addParameter(parameterBuilder);
         }
@@ -121,8 +122,8 @@ public class ParseLambdaExpr {
 
         expressionContext.addNewlyCreatedType(anonymousType);
 
-        return new Lambda(inspectionProvider, functionalType, anonymousType.asParameterizedType(inspectionProvider),
-                outputVariants);
+        return new Lambda(Identifier.from(lambdaExpr), inspectionProvider,
+                functionalType, anonymousType.asParameterizedType(inspectionProvider), outputVariants);
     }
 
     private record Evaluation(Block block, ParameterizedType inferredReturnType) {
@@ -141,18 +142,20 @@ public class ParseLambdaExpr {
                 log(LAMBDA, "Body results in unevaluated method call, so I can't be evaluated either");
                 return null;
             }
+            Identifier identifier = Identifier.from(lambdaExpr);
             ParameterizedType inferredReturnType = expr.returnType();
             if (forwardReturnTypeInfo.isVoid()) {
                 // we don't expect/want a value, even if the inferredReturnType provides one
-                return new Evaluation(new Block.BlockBuilder().addStatement(new ExpressionAsStatement(expr)).build(),
+                return new Evaluation(new Block.BlockBuilder(identifier)
+                        .addStatement(new ExpressionAsStatement(identifier, expr)).build(),
                         inferredReturnType);
             }
             // but if we expect one, the inferredReturnType cannot be void (would be a compiler error)
             if (Primitives.isVoid(inferredReturnType)) {
                 throw new UnsupportedOperationException();
             }
-            return new Evaluation(new Block.BlockBuilder().addStatement(new ReturnStatement(expr)).build(),
-                    inferredReturnType);
+            return new Evaluation(new Block.BlockBuilder(identifier)
+                    .addStatement(new ReturnStatement(identifier, expr)).build(), inferredReturnType);
         }
         // not an expression, so we must have a block...
         Block block = newExpressionContext.parseBlockOrStatement(lambdaExpr.getBody());

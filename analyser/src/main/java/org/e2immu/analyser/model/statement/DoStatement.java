@@ -23,10 +23,11 @@ import org.e2immu.analyser.output.Text;
 
 public class DoStatement extends LoopStatement {
 
-    public DoStatement(String label,
+    public DoStatement(Identifier identifier,
+                       String label,
                        Expression expression,
                        Block block) {
-        super(new Structure.Builder()
+        super(identifier, new Structure.Builder()
                 .setStatementExecution(StatementExecution.ALWAYS)
                 .setForwardEvaluationInfo(ForwardEvaluationInfo.NOT_NULL)
                 .setExpression(expression)
@@ -36,7 +37,7 @@ public class DoStatement extends LoopStatement {
 
     @Override
     public Statement translate(TranslationMap translationMap) {
-        return new DoStatement(label, translationMap.translateExpression(expression),
+        return new DoStatement(identifier, label, translationMap.translateExpression(expression),
                 translationMap.translateBlock(structure.block()));
     }
 

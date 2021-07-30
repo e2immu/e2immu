@@ -33,15 +33,23 @@ import java.util.Objects;
 
 
 @E2Container
-public record InstanceOf(Primitives primitives,
-                         ParameterizedType parameterizedType,
-                         Expression expression,
-                         LocalVariableReference patternVariable) implements Expression {
+public class InstanceOf extends ElementImpl implements Expression {
 
-    public InstanceOf {
-        Objects.requireNonNull(parameterizedType);
-        Objects.requireNonNull(expression);
-        Objects.requireNonNull(primitives);
+    private final Primitives primitives;
+    private final ParameterizedType parameterizedType;
+    private final Expression expression;
+    private final LocalVariableReference patternVariable;
+
+    public InstanceOf(Identifier identifier,
+                      Primitives primitives,
+                      ParameterizedType parameterizedType,
+                      Expression expression,
+                      LocalVariableReference patternVariable) {
+        super(identifier);
+        this.parameterizedType = Objects.requireNonNull(parameterizedType);
+        this.expression = Objects.requireNonNull(expression);
+        this.primitives = Objects.requireNonNull(primitives);
+        this.patternVariable = patternVariable;
     }
 
     @Override
@@ -66,7 +74,7 @@ public record InstanceOf(Primitives primitives,
 
     @Override
     public Expression translate(TranslationMap translationMap) {
-        return new InstanceOf(primitives,
+        return new InstanceOf(identifier, primitives,
                 translationMap.translateType(parameterizedType),
                 expression == null ? null : expression.translate(translationMap),
                 patternVariable == null ? null : (LocalVariableReference) translationMap.translateVariable(patternVariable));
@@ -80,7 +88,7 @@ public record InstanceOf(Primitives primitives,
     @Override
     public int internalCompareTo(Expression v) {
         Expression e;
-        if(v instanceof InlineConditional inlineConditional) {
+        if (v instanceof InlineConditional inlineConditional) {
             e = inlineConditional.condition;
         } else {
             e = v;
@@ -96,7 +104,7 @@ public record InstanceOf(Primitives primitives,
             if (c != 0) return c;
             return expression.compareTo(other.expression);
         }
-        throw new UnsupportedOperationException("Comparing to "+e+" -- "+e.getClass());
+        throw new UnsupportedOperationException("Comparing to " + e + " -- " + e.getClass());
     }
 
     @Override
@@ -169,9 +177,10 @@ public record InstanceOf(Primitives primitives,
         // whatever it is, it is not null; we're more interested in that, than it its type which is guarded by the compiler
         Expression notNull = Negation.negate(evaluationContext,
                 Equals.equals(evaluationContext, expression, NullConstant.NULL_CONSTANT));
-        InstanceOf newInstanceOf = new InstanceOf(primitives, parameterizedType, evaluationResult.getExpression(), null);
+        InstanceOf newInstanceOf = new InstanceOf(identifier,
+                primitives, parameterizedType, evaluationResult.getExpression(), null);
         return builder
-                .setExpression(new And(evaluationContext.getPrimitives()).append(evaluationContext, newInstanceOf, notNull))
+                .setExpression(And.and(evaluationContext, newInstanceOf, notNull))
                 .build();
     }
 
@@ -202,5 +211,17 @@ public record InstanceOf(Primitives primitives,
     @Override
     public UpgradableBooleanMap<TypeInfo> typesReferenced() {
         return UpgradableBooleanMap.of(expression.typesReferenced(), parameterizedType.typesReferenced(true));
+    }
+
+    public LocalVariableReference patternVariable() {
+        return patternVariable;
+    }
+
+    public ParameterizedType parameterizedType() {
+        return parameterizedType;
+    }
+
+    public Expression expression() {
+        return expression;
     }
 }

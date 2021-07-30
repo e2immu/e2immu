@@ -50,18 +50,20 @@ public record CreatePreconditionCompanion(InspectionProvider inspectionProvider,
         builder.setReturnType(inspectionProvider.getPrimitives().booleanParameterizedType);
 
         if (aspect != null) {
-            builder.addParameter(new ParameterInspectionImpl.Builder(inspectionProvider.getPrimitives().intParameterizedType,
-                    aspect, 0).setVarArgs(false));
+            builder.addParameter(new ParameterInspectionImpl.Builder(Identifier.generate(),
+                    inspectionProvider.getPrimitives().intParameterizedType, aspect, 0).setVarArgs(false));
         }
         int offset = aspect == null ? 0 : 1;
         for (ParameterInfo parameterInfo : mainInspection.getParameters()) {
-            builder.addParameter(new ParameterInspectionImpl.Builder(parameterInfo.parameterizedType(),
-                    parameterInfo.name, parameterInfo.index + offset).setVarArgs(false));
+            builder.addParameter(new ParameterInspectionImpl.Builder(Identifier.generate(),
+                    parameterInfo.parameterizedType(), parameterInfo.name, parameterInfo.index + offset)
+                    .setVarArgs(false));
         }
         builder.readyToComputeFQN(inspectionProvider); // so we can grab the parameters
 
         Expression expression = parseEvaluatedExpression(value, aspect, mainInspection, builder.getParameters());
-        Block block = new Block.BlockBuilder().addStatement(new ReturnStatement(expression)).build();
+        Block block = new Block.BlockBuilder(Identifier.generate())
+                .addStatement(new ReturnStatement(Identifier.generate(), expression)).build();
         builder.setInspectedBlock(block);
         builder.addModifier(MethodModifier.PRIVATE);
         if (mainInspection.isStatic()) builder.addModifier(MethodModifier.STATIC);
@@ -71,7 +73,10 @@ public record CreatePreconditionCompanion(InspectionProvider inspectionProvider,
 
     // translate the aspect into the first parameter
     // rewire the parameters from the main method to the aspect method
-    private Expression parseEvaluatedExpression(Expression value, String aspect, MethodInspection mainInspection, List<ParameterInfo> newParameters) {
+    private Expression parseEvaluatedExpression(Expression value,
+                                                String aspect,
+                                                MethodInspection mainInspection,
+                                                List<ParameterInfo> newParameters) {
         if (aspect != null) {
             MethodInfo aspectMethod = analysisProvider.getTypeAnalysis(mainInspection.getMethodInfo().typeInfo).getAspects().get(aspect);
             MethodCall methodCall = aspectCall(aspectMethod);
@@ -99,7 +104,7 @@ public record CreatePreconditionCompanion(InspectionProvider inspectionProvider,
     }
 
     private MethodCall aspectCall(MethodInfo aspectMethod) {
-        return new MethodCall(new VariableExpression(new This(inspectionProvider, aspectMethod.typeInfo)),
+        return new MethodCall(Identifier.generate(), new VariableExpression(new This(inspectionProvider, aspectMethod.typeInfo)),
                 aspectMethod, List.of());
     }
 }

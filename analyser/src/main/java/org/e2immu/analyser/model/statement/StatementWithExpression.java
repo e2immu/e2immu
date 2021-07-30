@@ -15,6 +15,7 @@
 package org.e2immu.analyser.model.statement;
 
 import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.Identifier;
 
 /**
  * there are a few situations where the expression in the structure is not the same
@@ -24,8 +25,8 @@ public abstract class StatementWithExpression extends StatementWithStructure {
 
     public final Expression expression;
 
-    protected StatementWithExpression(Structure structure, Expression expression) {
-        super(structure);
+    protected StatementWithExpression(Identifier identifier, Structure structure, Expression expression) {
+        super(identifier, structure);
         this.expression = expression;
     }
 }

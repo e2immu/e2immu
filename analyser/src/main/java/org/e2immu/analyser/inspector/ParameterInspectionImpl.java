@@ -37,19 +37,21 @@ public class ParameterInspectionImpl extends InspectionImpl implements Parameter
 
     @Container(builds = ParameterInspectionImpl.class)
     public static class Builder extends AbstractInspectionBuilder<Builder> implements ParameterInspection {
-
+        private final Identifier identifier;
         private boolean varArgs;
         private String name;
         private ParameterizedType parameterizedType;
         private int index = -1;
 
-        public Builder() {
+        public Builder(Identifier identifier) {
+            this.identifier = identifier;
         }
 
-        public Builder(ParameterizedType parameterizedType, String name, int index) {
+        public Builder(Identifier identifier, ParameterizedType parameterizedType, String name, int index) {
             this.name = name;
             this.index = index;
             this.parameterizedType = parameterizedType;
+            this.identifier = identifier;
         }
 
         public Builder setIndex(int index) {
@@ -100,7 +102,7 @@ public class ParameterInspectionImpl extends InspectionImpl implements Parameter
             assert owner != null : "No owner for parameter " + name;
             assert index >= 0 : "Forgot to set index";
             ParameterInspectionImpl inspection = new ParameterInspectionImpl(getAnnotations(), varArgs);
-            ParameterInfo parameterInfo = new ParameterInfo(owner, parameterizedType, name, index);
+            ParameterInfo parameterInfo = new ParameterInfo(identifier, owner, parameterizedType, name, index);
             parameterInfo.parameterInspection.set(inspection);
             return parameterInfo;
         }

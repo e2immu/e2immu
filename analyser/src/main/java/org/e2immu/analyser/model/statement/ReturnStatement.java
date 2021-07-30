@@ -18,8 +18,6 @@ import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.analyser.StatementAnalysis;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.EmptyExpression;
-import org.e2immu.analyser.model.expression.VariableExpression;
-import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Space;
 import org.e2immu.analyser.output.Symbol;
@@ -29,8 +27,10 @@ import java.util.List;
 
 public class ReturnStatement extends StatementWithExpression {
 
-    public ReturnStatement(Expression expression) {
-        super(new Structure.Builder().setExpression(expression).setForwardEvaluationInfo(ForwardEvaluationInfo.DEFAULT).build(),
+    public ReturnStatement(Identifier identifier, Expression expression) {
+        super(identifier,
+                new Structure.Builder().setExpression(expression)
+                        .setForwardEvaluationInfo(ForwardEvaluationInfo.DEFAULT).build(),
                 expression);
     }
 
@@ -46,7 +46,7 @@ public class ReturnStatement extends StatementWithExpression {
 
     @Override
     public Statement translate(TranslationMap translationMap) {
-        return new ReturnStatement(translationMap.translateExpression(expression));
+        return new ReturnStatement(identifier, translationMap.translateExpression(expression));
     }
 
     @Override

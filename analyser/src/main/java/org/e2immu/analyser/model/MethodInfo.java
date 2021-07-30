@@ -17,8 +17,8 @@ package org.e2immu.analyser.model;
 import org.e2immu.analyser.analyser.AnalyserContext;
 import org.e2immu.analyser.analyser.AnalysisProvider;
 import org.e2immu.analyser.inspector.MethodResolution;
-import org.e2immu.analyser.model.statement.Block;
-import org.e2immu.analyser.output.*;
+import org.e2immu.analyser.output.OutputBuilder;
+import org.e2immu.analyser.output.OutputMethodInfo;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
@@ -27,12 +27,15 @@ import org.e2immu.annotation.E2Immutable;
 import org.e2immu.annotation.NotNull;
 import org.e2immu.support.SetOnce;
 
-import java.util.*;
+import java.util.Iterator;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
 
 @Container
 @E2Immutable(after = "TypeAnalyser.analyse()") // and not MethodAnalyser.analyse(), given the back reference
 public class MethodInfo implements WithInspectionAndAnalysis {
-
+    public final Identifier identifier;
     public final TypeInfo typeInfo; // back reference, only @ContextClass after...
     public final String name;
     public final String fullyQualifiedName;
@@ -43,14 +46,9 @@ public class MethodInfo implements WithInspectionAndAnalysis {
     public final SetOnce<MethodAnalysis> methodAnalysis = new SetOnce<>();
     public final SetOnce<MethodResolution> methodResolution = new SetOnce<>();
 
-    // for constructors
-    public MethodInfo(@NotNull TypeInfo typeInfo, String fullyQualifiedName, String distinguishingName) {
-        this(typeInfo, dropDollar(typeInfo.simpleName), fullyQualifiedName, distinguishingName, true);
-    }
-
-    // for methods
-    public MethodInfo(@NotNull TypeInfo typeInfo, @NotNull String name, String fullyQualifiedName, String distinguishingName) {
-        this(typeInfo, dropDollarGetClass(name), fullyQualifiedName, distinguishingName, false);
+    @Override
+    public Identifier getIdentifier() {
+        return identifier;
     }
 
     public static String dropDollarGetClass(String string) {
@@ -72,16 +70,14 @@ public class MethodInfo implements WithInspectionAndAnalysis {
      * it is possible to observe a method without being able to see its return type. That does not make
      * the method a constructor... we cannot use the returnTypeObserved == null as isConstructor
      */
-    public MethodInfo(@NotNull TypeInfo typeInfo, @NotNull String name, String fullyQualifiedName,
+    public MethodInfo(Identifier identifier,
+                      @NotNull TypeInfo typeInfo, @NotNull String name, String fullyQualifiedName,
                       String distinguishingName, boolean isConstructor) {
-        Objects.requireNonNull(typeInfo);
-        Objects.requireNonNull(name);
-        Objects.requireNonNull(fullyQualifiedName);
-        Objects.requireNonNull(distinguishingName);
-        this.typeInfo = typeInfo;
-        this.name = name;
-        this.fullyQualifiedName = fullyQualifiedName;
-        this.distinguishingName = distinguishingName;
+        this.identifier = Objects.requireNonNull(identifier);
+        this.typeInfo = Objects.requireNonNull(typeInfo);
+        this.name = Objects.requireNonNull(name);
+        this.fullyQualifiedName = Objects.requireNonNull(fullyQualifiedName);
+        this.distinguishingName = Objects.requireNonNull(distinguishingName);
         this.isConstructor = isConstructor;
     }
 
@@ -263,7 +259,7 @@ public class MethodInfo implements WithInspectionAndAnalysis {
      * @return true when we can skip the analysers
      */
     public boolean shallowAnalysis() {
-        return methodInspection.isSet() && methodInspection.get().getMethodBody() == Block.EMPTY_BLOCK;
+        return methodInspection.isSet() && methodInspection.get().getMethodBody().isEmpty();
     }
 
     public boolean hasStatements() {

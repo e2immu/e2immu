@@ -15,6 +15,7 @@
 package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.Identifier;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.expression.BooleanConstant;
 import org.e2immu.analyser.model.expression.Equals;
@@ -57,7 +58,7 @@ public abstract class AbstractEvaluationContextImpl implements EvaluationContext
 
     @Override
     public boolean isNotNull0(Expression value, boolean useEnnInsteadOfCnn) {
-        Expression valueIsNull = new Equals(getPrimitives(), NullConstant.NULL_CONSTANT, value);
+        Expression valueIsNull = new Equals(Identifier.generate(), getPrimitives(), NullConstant.NULL_CONSTANT, value);
         Expression combined = conditionManager.evaluate(this, valueIsNull);
         if (combined instanceof BooleanConstant boolValue) {
             return !boolValue.constant();

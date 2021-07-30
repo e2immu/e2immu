@@ -28,9 +28,13 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.Predicate;
 
-public record Cast(Expression expression, ParameterizedType parameterizedType) implements Expression {
+public class Cast extends ElementImpl implements Expression {
+
+    private final Expression expression;
+    private final ParameterizedType parameterizedType;
 
     public Cast(Expression expression, ParameterizedType parameterizedType) {
+        super(Identifier.generate());
         this.expression = Objects.requireNonNull(expression);
         this.parameterizedType = Objects.requireNonNull(parameterizedType);
     }
@@ -105,5 +109,13 @@ public record Cast(Expression expression, ParameterizedType parameterizedType) i
         if (predicate.test(expression)) {
             expression.visit(predicate);
         }
+    }
+
+    public Expression getExpression() {
+        return expression;
+    }
+
+    public ParameterizedType getParameterizedType() {
+        return parameterizedType;
     }
 }

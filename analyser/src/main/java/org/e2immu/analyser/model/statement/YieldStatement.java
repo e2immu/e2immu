@@ -14,7 +14,8 @@
 
 package org.e2immu.analyser.model.statement;
 
-import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
+import org.e2immu.analyser.analyser.StatementAnalysis;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.output.OutputBuilder;
@@ -26,9 +27,10 @@ import java.util.List;
 
 public class YieldStatement extends StatementWithExpression {
 
-    public YieldStatement(Expression expression) {
-        super(new Structure.Builder().setExpression(expression).setForwardEvaluationInfo(ForwardEvaluationInfo.DEFAULT).build(),
-                expression);
+    public YieldStatement(Identifier identifier, Expression expression) {
+        super(identifier, new Structure.Builder()
+                .setExpression(expression)
+                .setForwardEvaluationInfo(ForwardEvaluationInfo.DEFAULT).build(), expression);
     }
 
     @Override
@@ -43,7 +45,7 @@ public class YieldStatement extends StatementWithExpression {
 
     @Override
     public Statement translate(TranslationMap translationMap) {
-        return new YieldStatement(translationMap.translateExpression(expression));
+        return new YieldStatement(identifier, translationMap.translateExpression(expression));
     }
 
     @Override

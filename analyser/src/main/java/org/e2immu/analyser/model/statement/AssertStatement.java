@@ -27,10 +27,10 @@ public class AssertStatement extends StatementWithStructure {
 
     public final Expression message; // can be null
 
-    public AssertStatement(Expression check, Expression message) {
+    public AssertStatement(Identifier identifier, Expression check, Expression message) {
         // IMPORTANT NOTE: we're currently NOT adding message!
         // we regard it as external to the code
-        super(new Structure.Builder()
+        super(identifier, new Structure.Builder()
                 .setExpression(check)
                 .setExpressionIsCondition(true)
                 .build());
@@ -39,7 +39,7 @@ public class AssertStatement extends StatementWithStructure {
 
     @Override
     public Statement translate(TranslationMap translationMap) {
-        return new AssertStatement(translationMap.translateExpression(structure.expression()), message);
+        return new AssertStatement(identifier, translationMap.translateExpression(structure.expression()), message);
     }
 
     @Override

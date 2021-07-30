@@ -33,7 +33,7 @@ import java.util.stream.Collectors;
 import static org.e2immu.analyser.util.Logger.LogTarget.EXPRESSION;
 import static org.e2immu.analyser.util.Logger.log;
 
-public record Or(Primitives primitives, List<Expression> expressions) implements Expression {
+public record Or(Identifier identifier, Primitives primitives, List<Expression> expressions) implements Expression {
 
     public Or {
         Objects.requireNonNull(primitives);
@@ -42,15 +42,23 @@ public record Or(Primitives primitives, List<Expression> expressions) implements
 
     // testing only
     public Or(Primitives primitives) {
-        this(primitives, List.of());
+        this(Identifier.generate(), primitives, List.of());
     }
 
-    public Expression append(EvaluationContext evaluationContext, Expression... values) {
+    public static Expression or(EvaluationContext evaluationContext, Expression... values) {
+        return new Or(evaluationContext.getPrimitives()).append(evaluationContext, values);
+    }
+
+    public static Expression or(EvaluationContext evaluationContext, List<Expression> values) {
+        return new Or(evaluationContext.getPrimitives()).append(evaluationContext, values);
+    }
+
+    private Expression append(EvaluationContext evaluationContext, Expression... values) {
         return append(evaluationContext, Arrays.asList(values));
     }
 
     // we try to maintain a CNF
-    public Expression append(EvaluationContext evaluationContext, List<Expression> values) {
+    private Expression append(EvaluationContext evaluationContext, List<Expression> values) {
 
         // STEP 1: trivial reductions
 
@@ -105,8 +113,8 @@ public record Or(Primitives primitives, List<Expression> expressions) implements
                 if (value.equals(prev)) {
                     changes = true;
                 } else if (value instanceof And andValue) {
-                    if (andValue.expressions().size() == 1) {
-                        newConcat.add(andValue.expressions().get(0));
+                    if (andValue.getExpressions().size() == 1) {
+                        newConcat.add(andValue.getExpressions().get(0));
                         changes = true;
                     } else if (firstAnd == null) {
                         firstAnd = andValue;
@@ -123,11 +131,11 @@ public record Or(Primitives primitives, List<Expression> expressions) implements
         }
         ArrayList<Expression> finalValues = concat;
         if (firstAnd != null) {
-            Expression[] components = firstAnd.expressions().stream()
+            Expression[] components = firstAnd.getExpressions().stream()
                     .map(v -> append(evaluationContext, ListUtil.immutableConcat(finalValues, List.of(v))))
                     .toArray(Expression[]::new);
             log(EXPRESSION, "Found And-clause {} in {}, components for new And are {}", firstAnd, this, Arrays.toString(components));
-            return new And(primitives).append(evaluationContext, components);
+            return And.and(evaluationContext, components);
         }
         if (finalValues.size() == 1) return finalValues.get(0);
 
@@ -140,7 +148,7 @@ public record Or(Primitives primitives, List<Expression> expressions) implements
             return new BooleanConstant(primitives, false);
         }
 
-        return new Or(primitives, finalValues);
+        return new Or(identifier, primitives, finalValues);
     }
 
     private void recursivelyAdd(ArrayList<Expression> concat, List<Expression> collect) {
@@ -252,9 +260,12 @@ public record Or(Primitives primitives, List<Expression> expressions) implements
 
     @Override
     public Expression translate(TranslationMap translationMap) {
-        List<Expression> translated = expressions.stream().map(e -> e.translate(translationMap))
-                .collect(Collectors.toUnmodifiableList());
-        return new Or(primitives, translated);
+        List<Expression> translated = expressions.stream().map(e -> e.translate(translationMap)).toList();
+        return new Or(identifier, primitives, translated);
     }
 
+    @Override
+    public Identifier getIdentifier() {
+        return identifier;
+    }
 }

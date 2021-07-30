@@ -173,7 +173,7 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
     private void analyseIsFact(MethodInfo methodInfo) {
         ParameterInfo parameterInfo = methodInfo.methodInspection.get().getParameters().get(0);
         ParameterAnalysisImpl.Builder parameterAnalysis = new ParameterAnalysisImpl.Builder(
-              getPrimitives(), this, parameterInfo);
+                getPrimitives(), this, parameterInfo);
         parameterAnalysis.setProperty(VariableProperty.IDENTITY, Level.FALSE);
         parameterAnalysis.setProperty(VariableProperty.NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL);
         parameterAnalysis.setProperty(VariableProperty.CONTEXT_NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
@@ -192,8 +192,8 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
         builder.setProperty(VariableProperty.IMMUTABLE, MultiLevel.MUTABLE);
         builder.setProperty(VariableProperty.CONTAINER, Level.FALSE);
         builder.companionAnalyses.freeze();
-        builder.singleReturnValue.set(new InlinedMethod(methodInfo, new VariableExpression(parameterInfo),
-                Set.of(parameterInfo), false));
+        builder.singleReturnValue.set(new InlinedMethod(Identifier.generate(),
+                methodInfo, new VariableExpression(parameterInfo), Set.of(parameterInfo), false));
         log(ANALYSER, "Provided analysis of dedicated method {}", methodInfo.fullyQualifiedName());
         methodInfo.setAnalysis(builder.build());
     }

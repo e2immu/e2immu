@@ -30,12 +30,14 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.Predicate;
 
-public class UnaryOperator implements Expression {
+public class UnaryOperator extends ElementImpl implements Expression {
     public final Expression expression;
     public final Precedence precedence;
     public final MethodInfo operator;
 
-    public UnaryOperator(@NotNull MethodInfo operator, @NotNull Expression expression, Precedence precedence) {
+    public UnaryOperator(Identifier identifier,
+                         @NotNull MethodInfo operator, @NotNull Expression expression, Precedence precedence) {
+        super(identifier);
         this.expression = Objects.requireNonNull(expression);
         this.precedence = precedence;
         this.operator = Objects.requireNonNull(operator);
@@ -57,7 +59,7 @@ public class UnaryOperator implements Expression {
 
     @Override
     public Expression translate(TranslationMap translationMap) {
-        return new UnaryOperator(operator, translationMap.translateExpression(expression), precedence);
+        return new UnaryOperator(identifier, operator, translationMap.translateExpression(expression), precedence);
     }
 
     @Override
@@ -95,18 +97,18 @@ public class UnaryOperator implements Expression {
         if (operator == primitives.bitWiseNotOperatorInt) {
             if (v instanceof IntConstant ic)
                 return new IntConstant(primitives, ~ic.constant());
-            return new UnaryOperator(operator, v, precedence);
+            return new UnaryOperator(identifier, operator, v, precedence);
         }
         if (operator == primitives.postfixDecrementOperatorInt
                 || operator == primitives.prefixDecrementOperatorInt) {
             if (v instanceof IntConstant ic)
                 return new IntConstant(primitives, ic.constant() - 1);
-            return new UnaryOperator(operator, v, precedence);
+            return new UnaryOperator(identifier, operator, v, precedence);
         }
         if (operator == primitives.postfixIncrementOperatorInt || operator == primitives.prefixIncrementOperatorInt) {
             if (v instanceof IntConstant ic)
                 return new IntConstant(primitives, ic.constant() + 1);
-            return new UnaryOperator(operator, v, precedence);
+            return new UnaryOperator(identifier, operator, v, precedence);
         }
         throw new UnsupportedOperationException();
     }

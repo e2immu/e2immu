@@ -68,14 +68,15 @@ public class MethodInspector {
     public void inspect(AnnotationMemberDeclaration amd, ExpressionContext expressionContext) {
         String name = amd.getNameAsString();
         log(INSPECTOR, "Inspecting annotation member {} in {}", name, typeInfo.fullyQualifiedName);
-        MethodInspectionImpl.Builder tempBuilder = new MethodInspectionImpl.Builder(typeInfo, name);
+        MethodInspectionImpl.Builder tempBuilder = new MethodInspectionImpl.Builder(Identifier.from(amd), typeInfo, name);
         MethodInspectionImpl.Builder builder = fqnIsKnown(expressionContext.typeContext, tempBuilder);
 
         addAnnotations(builder, amd.getAnnotations(), expressionContext);
         if (fullInspection) {
             addModifiers(builder, amd.getModifiers());
             Expression expression = amd.getDefaultValue().map(expressionContext::parseExpression).orElse(EmptyExpression.EMPTY_EXPRESSION);
-            Block body = new Block.BlockBuilder().addStatement(new ReturnStatement(expression)).build();
+            Block body = new Block.BlockBuilder(Identifier.generate())
+                    .addStatement(new ReturnStatement(Identifier.generate(), expression)).build();
             builder.setInspectedBlock(body);
             ParameterizedType returnType = ParameterizedTypeFactory.from(expressionContext.typeContext, amd.getType());
             builder.setReturnType(returnType);
@@ -141,7 +142,9 @@ public class MethodInspector {
         return candidate.map(inspectionProvider::getMethodInspection).orElse(null);
     }
 
-    static boolean identicalParameterLists(InspectionProvider inspectionProvider, MethodInfo candidate, MethodInspectionImpl.Builder me,
+    static boolean identicalParameterLists(InspectionProvider inspectionProvider,
+                                           MethodInfo candidate,
+                                           MethodInspectionImpl.Builder me,
                                            ParameterizedType superTypeDefinition) {
         MethodInspection candidateInspection = inspectionProvider.getMethodInspection(candidate);
         if (candidateInspection.getParameters().size() != me.getParameters().size()) return false;
@@ -181,10 +184,12 @@ public class MethodInspector {
                         ExpressionContext expressionContext,
                         Map<CompanionMethodName, MethodInspectionImpl.Builder> companionMethods,
                         List<FieldInfo> fields) {
-        MethodInspectionImpl.Builder tempBuilder = MethodInspectionImpl.Builder.compactConstructor(typeInfo);
+        MethodInspectionImpl.Builder tempBuilder = MethodInspectionImpl.Builder
+                .compactConstructor(Identifier.from(ccd), typeInfo);
         int i = 0;
         for (FieldInfo fieldInfo : fields) {
-            ParameterInspectionImpl.Builder pib = new ParameterInspectionImpl.Builder(fieldInfo.type, fieldInfo.name, i++);
+            ParameterInspectionImpl.Builder pib = new ParameterInspectionImpl.Builder(Identifier.generate(),
+                    fieldInfo.type, fieldInfo.name, i++);
             pib.setVarArgs(false);
             tempBuilder.addParameter(pib);
         }
@@ -210,10 +215,11 @@ public class MethodInspector {
      */
     public void inspect(InitializerDeclaration id,
                         ExpressionContext expressionContext,
-                        int identifier) {
-        MethodInspectionImpl.Builder tempBuilder = MethodInspectionImpl.Builder.createStaticBlock(typeInfo, identifier);
+                        int staticBlockIdentifier) {
+        MethodInspectionImpl.Builder tempBuilder = MethodInspectionImpl.Builder.createStaticBlock(
+                Identifier.from(id), typeInfo, staticBlockIdentifier);
         MethodInspectionImpl.Builder builder = fqnIsKnown(expressionContext.typeContext, tempBuilder);
-        assert fullInspection: "? otherwise we would not see them";
+        assert fullInspection : "? otherwise we would not see them";
         typeMapBuilder.registerMethodInspection(builder);
         builder.setBlock(id.getBody());
     }
@@ -227,7 +233,7 @@ public class MethodInspector {
                         Map<CompanionMethodName, MethodInspectionImpl.Builder> companionMethods,
                         TypeInspector.DollarResolver dollarResolver,
                         boolean makePrivate) {
-        MethodInspectionImpl.Builder tempBuilder = new MethodInspectionImpl.Builder(typeInfo);
+        MethodInspectionImpl.Builder tempBuilder = new MethodInspectionImpl.Builder(Identifier.from(cd), typeInfo);
         addParameters(tempBuilder, cd.getParameters(), expressionContext, dollarResolver);
         MethodInspectionImpl.Builder builder = fqnIsKnown(expressionContext.typeContext, tempBuilder);
         inspectParameters(cd.getParameters(), builder.getParameterBuilders(), expressionContext);
@@ -259,7 +265,8 @@ public class MethodInspector {
                         Map<CompanionMethodName, MethodInspectionImpl.Builder> companionMethods,
                         TypeInspector.DollarResolver dollarResolver) {
         try {
-            MethodInspectionImpl.Builder tempBuilder = new MethodInspectionImpl.Builder(typeInfo, methodName);
+            MethodInspectionImpl.Builder tempBuilder = new MethodInspectionImpl
+                    .Builder(Identifier.from(md), typeInfo, methodName);
 
             int tpIndex = 0;
             ExpressionContext newContext = md.getTypeParameters().isEmpty() ? expressionContext :
@@ -331,7 +338,8 @@ public class MethodInspector {
         for (Parameter parameter : parameters) {
             ParameterizedType pt = ParameterizedTypeFactory.from(expressionContext.typeContext, parameter.getType(),
                     parameter.isVarArgs(), dollarResolver);
-            ParameterInspectionImpl.Builder pib = new ParameterInspectionImpl.Builder(pt, parameter.getNameAsString(), i++);
+            ParameterInspectionImpl.Builder pib = new ParameterInspectionImpl.Builder(Identifier.from(parameter),
+                    pt, parameter.getNameAsString(), i++);
             pib.setVarArgs(parameter.isVarArgs());
             // we do not copy annotations yet, that happens after readFQN
             builder.addParameter(pib);

@@ -96,4 +96,9 @@ public record ClassExpression(Primitives primitives,
     public ParameterizedType getValue() {
         return parameterizedType;
     }
+
+    @Override
+    public Identifier getIdentifier() {
+        return Identifier.CONSTANT;
+    }
 }

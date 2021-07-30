@@ -51,9 +51,11 @@ public class ParseForEachStmt {
         newVariableContext.add(localVariable, expression);
         Block block = expressionContext.newVariableContextForEachLoop(newVariableContext)
                 .parseBlockOrStatement(forEachStmt.getBody());
-        LocalVariableCreation lvc = new LocalVariableCreation(expressionContext.typeContext,
+        LocalVariableCreation lvc = new LocalVariableCreation(
+                Identifier.from(vde),
+                expressionContext.typeContext,
                 localVariable, EmptyExpression.EMPTY_EXPRESSION, isVar);
-        return new ForEachStatement(label, lvc, expression, block);
+        return new ForEachStatement(Identifier.from(forEachStmt), label, lvc, expression, block);
     }
 
     private static ParameterizedType extractTypeParameterOfIterableOf(ExpressionContext expressionContext, Expression expression) {

@@ -44,7 +44,7 @@ import java.util.stream.Collectors;
 
  */
 public record NewObject(
-        String identifier, // variable FQN + assignment ID
+        Identifier identifier, // variable FQN + assignment ID
         MethodInfo constructor,
         ParameterizedType parameterizedType,
         Diamond diamond,
@@ -59,7 +59,7 @@ public record NewObject(
     /*
     specific situation, new X[] { 0, 1, 2 } array initialiser
      */
-    public static Expression withArrayInitialiser(String identifier,
+    public static Expression withArrayInitialiser(Identifier identifier,
                                                   MethodInfo arrayCreationConstructor,
                                                   ParameterizedType parameterizedType,
                                                   List<Expression> parameterExpressions,
@@ -70,7 +70,7 @@ public record NewObject(
                 null, arrayInitializer, state);
     }
 
-    public static Expression forUnspecifiedLoopCondition(String identifier, Primitives primitives) {
+    public static Expression forUnspecifiedLoopCondition(Identifier identifier, Primitives primitives) {
         return new NewObject(identifier, null, primitives.booleanParameterizedType, Diamond.NO, List.of(),
                 MultiLevel.EFFECTIVELY_NOT_NULL, false, null, null,
                 new BooleanConstant(primitives, true));
@@ -79,25 +79,25 @@ public record NewObject(
     public static Expression instanceFromSam(Primitives primitives,
                                              MethodInfo sam,
                                              ParameterizedType parameterizedType) {
-        return new NewObject(sam.fullyQualifiedName, null, parameterizedType, Diamond.NO, List.of(),
+        return new NewObject(sam.getIdentifier(), null, parameterizedType, Diamond.NO, List.of(),
                 MultiLevel.EFFECTIVELY_NOT_NULL, false,
                 sam.typeInfo, null, new BooleanConstant(primitives, true));
     }
 
-    public static Expression genericFieldAccess(InspectionProvider inspectionProvider, String identifier, FieldInfo fieldInfo) {
-        return new NewObject(identifier + ":" + fieldInfo.fullyQualifiedName(), null,
+    public static Expression genericFieldAccess(InspectionProvider inspectionProvider, Identifier identifier, FieldInfo fieldInfo) {
+        return new NewObject(identifier, null,
                 fieldInfo.owner.asParameterizedType(inspectionProvider), Diamond.NO, List.of(),
                 MultiLevel.EFFECTIVELY_NOT_NULL, false, null, null,
                 new BooleanConstant(inspectionProvider.getPrimitives(), true));
     }
 
-    public static NewObject forInlinedMethod(Primitives primitives, String identifier,
+    public static NewObject forInlinedMethod(Primitives primitives, Identifier identifier,
                                              ParameterizedType parameterizedType, int notNull) {
         return new NewObject(identifier, null, parameterizedType, Diamond.SHOW_ALL, List.of(),
                 notNull, false, null, null, new BooleanConstant(primitives, true));
     }
 
-    public static Expression forMethodResult(Primitives primitives, String identifier,
+    public static Expression forMethodResult(Primitives primitives, Identifier identifier,
                                              ParameterizedType parameterizedType, int notNull) {
         return new NewObject(identifier, null, parameterizedType, Diamond.SHOW_ALL, List.of(),
                 notNull, false, null, null, new BooleanConstant(primitives, true));
@@ -118,13 +118,13 @@ public record NewObject(
     }
 
     public static NewObject forTesting(Primitives primitives, ParameterizedType parameterizedType) {
-        return new NewObject("-", null, parameterizedType, Diamond.SHOW_ALL, List.of(),
+        return new NewObject(Identifier.generate(), null, parameterizedType, Diamond.SHOW_ALL, List.of(),
                 MultiLevel.EFFECTIVELY_NOT_NULL, false, null, null,
                 new BooleanConstant(primitives, true));
     }
 
     // never null, never more interesting.
-    public static NewObject forCatchOrThis(String identifier,
+    public static NewObject forCatchOrThis(Identifier identifier,
                                            Primitives primitives, ParameterizedType parameterizedType) {
         Diamond diamond = parameterizedType.parameters.isEmpty() ? Diamond.NO : Diamond.SHOW_ALL;
         return new NewObject(identifier, null, parameterizedType, diamond, List.of(), MultiLevel.EFFECTIVELY_NOT_NULL,
@@ -133,7 +133,7 @@ public record NewObject(
     }
 
     // never null, never more interesting.
-    public static NewObject forLoopVariable(String identifier, int initialNotNull,
+    public static NewObject forLoopVariable(Identifier identifier, int initialNotNull,
                                             Primitives primitives, ParameterizedType parameterizedType) {
         Diamond diamond = parameterizedType.parameters.isEmpty() ? Diamond.NO : Diamond.SHOW_ALL;
         return new NewObject(identifier, null, parameterizedType, diamond, List.of(), initialNotNull,
@@ -145,14 +145,14 @@ public record NewObject(
      don't assume that this instance is non-null straight away; state is also generic at this point
      */
 
-    public static NewObject localVariableInLoop(String identifier,
+    public static NewObject localVariableInLoop(Identifier identifier,
                                                 Primitives primitives, ParameterizedType parameterizedType) {
         return new NewObject(identifier, null, parameterizedType, Diamond.SHOW_ALL, List.of(),
                 parameterizedType.defaultNotNull(), false, null, null,
                 new BooleanConstant(primitives, true));
     }
 
-    public static NewObject localCopyOfVariableField(String identifier,
+    public static NewObject localCopyOfVariableField(Identifier identifier,
                                                      Primitives primitives, ParameterizedType parameterizedType) {
         return new NewObject(identifier, null, parameterizedType, Diamond.SHOW_ALL, List.of(),
                 parameterizedType.defaultNotNull(), false, null, null,
@@ -162,7 +162,7 @@ public record NewObject(
     /*
     not-null always in properties
      */
-    public static NewObject initialValueOfParameter(String identifier,
+    public static NewObject initialValueOfParameter(Identifier identifier,
                                                     ParameterizedType parameterizedType,
                                                     Expression state,
                                                     int contractNotNull,
@@ -171,7 +171,7 @@ public record NewObject(
                 identity, null, null, state);
     }
 
-    public static NewObject initialValueOfFieldPartOfConstruction(String identifier,
+    public static NewObject initialValueOfFieldPartOfConstruction(Identifier identifier,
                                                                   EvaluationContext evaluationContext,
                                                                   FieldReference fieldReference) {
         int notNull = evaluationContext.getProperty(fieldReference, VariableProperty.NOT_NULL_EXPRESSION);
@@ -181,7 +181,7 @@ public record NewObject(
     }
 
     /* like a local variable in loop*/
-    public static NewObject initialValueOfExternalField(String identifier,
+    public static NewObject initialValueOfExternalField(Identifier identifier,
                                                         Primitives primitives,
                                                         ParameterizedType parameterizedType,
                                                         int minimalNotNull) {
@@ -190,7 +190,7 @@ public record NewObject(
     }
 
     // null-status derived from variable in evaluation context
-    public static NewObject genericMergeResult(String identifier,
+    public static NewObject genericMergeResult(Identifier identifier,
                                                Primitives primitives,
                                                VariableInfo variableInfo) {
         int notNull = MultiLevel.bestNotNull(variableInfo.getProperty(VariableProperty.NOT_NULL_EXPRESSION),
@@ -204,7 +204,7 @@ public record NewObject(
 
 
     // null-status derived from variable in evaluation context
-    public static NewObject genericMergeResult(String identifier,
+    public static NewObject genericMergeResult(Identifier identifier,
                                                Primitives primitives,
                                                ParameterizedType parameterizedType,
                                                int notNull) {
@@ -215,7 +215,7 @@ public record NewObject(
     }
 
     // null-status derived from variable in evaluation context
-    public static NewObject genericMergeResult(String identifier,
+    public static NewObject genericMergeResult(Identifier identifier,
                                                Primitives primitives,
                                                VariableInfo variableInfo,
                                                int notNull) {
@@ -225,7 +225,7 @@ public record NewObject(
                 null, null, new BooleanConstant(primitives, true));
     }
 
-    public static Expression genericArrayAccess(String identifier,
+    public static Expression genericArrayAccess(Identifier identifier,
                                                 EvaluationContext evaluationContext,
                                                 Expression array,
                                                 Variable variable) {
@@ -243,7 +243,7 @@ public record NewObject(
     /*
     When creating an anonymous instance of a class (new SomeType() { })
      */
-    public static NewObject withAnonymousClass(String identifier,
+    public static NewObject withAnonymousClass(Identifier identifier,
                                                Primitives primitives,
                                                @NotNull ParameterizedType parameterizedType,
                                                @NotNull TypeInfo anonymousClass,
@@ -258,7 +258,7 @@ public record NewObject(
 
     cannot be null, we're applying a method on it.
      */
-    public static NewObject forGetInstance(String identifier,
+    public static NewObject forGetInstance(Identifier identifier,
                                            Primitives primitives,
                                            ParameterizedType parameterizedType) {
         return new NewObject(identifier, null, parameterizedType, Diamond.SHOW_ALL, List.of(),
@@ -272,7 +272,7 @@ public record NewObject(
     2nd version, one with known state, used by EvaluationResult.currentInstance
     cannot be null, we're applying a method on it.
     */
-    public static NewObject forGetInstance(String identifier,
+    public static NewObject forGetInstance(Identifier identifier,
                                            ParameterizedType parameterizedType,
                                            Expression state,
                                            int minimalNotNull) {
@@ -283,7 +283,7 @@ public record NewObject(
     /*
     Result of actual object creation expressions (new XX, xx::new, ...)
      */
-    public static NewObject objectCreation(String identifier,
+    public static NewObject objectCreation(Identifier identifier,
                                            Primitives primitives,
                                            MethodInfo constructor,
                                            ParameterizedType parameterizedType,
@@ -293,7 +293,7 @@ public record NewObject(
                 false, null, null, new BooleanConstant(primitives, true));
     }
 
-    public NewObject(String identifier,
+    public NewObject(Identifier identifier,
                      MethodInfo constructor,
                      ParameterizedType parameterizedType,
                      Diamond diamond,
@@ -667,5 +667,10 @@ public record NewObject(
             return true;
         });
         return thisVar.get();
+    }
+
+    @Override
+    public Identifier getIdentifier() {
+        return identifier;
     }
 }

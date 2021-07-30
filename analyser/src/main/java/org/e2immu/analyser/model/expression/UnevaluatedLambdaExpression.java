@@ -93,4 +93,9 @@ public record UnevaluatedLambdaExpression(Set<Integer> numberOfParameters,
     public int order() {
         return 0;
     }
+
+    @Override
+    public Identifier getIdentifier() {
+        return Identifier.CONSTANT;
+    }
 }

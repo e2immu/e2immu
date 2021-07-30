@@ -173,7 +173,7 @@ public record DetectEventual(MethodInfo methodInfo,
                 negated = false;
             }
             Set<FieldInfo> fields = new HashSet<>();
-            for (Expression part : and.expressions()) {
+            for (Expression part : and.getExpressions()) {
                 MethodAnalysis.Eventual eventual = singleTestMark(part);
                 if (eventual == MethodAnalysis.DELAYED_EVENTUAL) return eventual;
                 if (eventual == MethodAnalysis.NOT_EVENTUAL || eventual.test() == Boolean.FALSE) {

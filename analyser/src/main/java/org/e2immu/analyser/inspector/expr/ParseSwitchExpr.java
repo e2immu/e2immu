@@ -53,7 +53,8 @@ public class ParseSwitchExpr {
         // if the entry is a BlockEntry, we must look at the yield statement
         MultiExpression yieldExpressions = new MultiExpression(extractYieldsFromEntries(entries));
         ParameterizedType parameterizedType = yieldExpressions.commonType(expressionContext.typeContext);
-        return new SwitchExpression(selector, entries, parameterizedType, yieldExpressions);
+        return new SwitchExpression(Identifier.from(switchExpr),
+                selector, entries, parameterizedType, yieldExpressions);
     }
 
     private static Expression[] extractYieldsFromEntries(List<SwitchEntry> entries) {

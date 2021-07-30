@@ -76,6 +76,11 @@ public record StringConstant(Primitives primitives,
     }
 
     @Override
+    public Identifier getIdentifier() {
+        return Identifier.CONSTANT;
+    }
+
+    @Override
     public NewObject getInstance(EvaluationResult evaluationResult) {
         // TODO apply code from method call to produce a decent state
         return NewObject.objectCreation("StringConstant-" + constant,

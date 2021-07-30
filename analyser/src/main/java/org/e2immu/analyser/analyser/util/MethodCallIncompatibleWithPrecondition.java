@@ -68,8 +68,7 @@ public class MethodCallIncompatibleWithPrecondition {
                      */
                     Expression normalisedPrecondition = normaliseMethods(evaluationContext, preconditionInTermsOfAspect);
                     Expression normalisedStateWithInvariants = normaliseMethods(evaluationContext, stateWithInvariants);
-                    Expression and = new And(evaluationContext.getPrimitives()).append(evaluationContext,
-                            normalisedPrecondition, normalisedStateWithInvariants);
+                    Expression and = And.and(evaluationContext, normalisedPrecondition, normalisedStateWithInvariants);
                     if (and.isBoolValueFalse()) return true;
                 }
             }
@@ -157,7 +156,6 @@ public class MethodCallIncompatibleWithPrecondition {
             }
             return true;
         });
-        return new And(evaluationContext.getPrimitives()).append(evaluationContext,
-                additionalComponents.toArray(Expression[]::new));
+        return And.and(evaluationContext, additionalComponents.toArray(Expression[]::new));
     }
 }

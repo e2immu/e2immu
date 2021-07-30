@@ -208,4 +208,9 @@ public record PropertyWrapper(Expression expression,
     public int hashCode() {
         return Objects.hash(expression);
     }
+
+    @Override
+    public Identifier getIdentifier() {
+        return expression.getIdentifier();
+    }
 }

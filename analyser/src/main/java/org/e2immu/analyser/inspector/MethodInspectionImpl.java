@@ -196,6 +196,7 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
         public final boolean isConstructor;
         public final boolean compactConstructor;
         public final int staticBlockIdentifier;
+        private final Identifier identifier;
 
         private final Map<CompanionMethodName, Builder> companionMethods = new LinkedHashMap<>();
         private BlockStmt block;
@@ -211,33 +212,40 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
         /* constructor */
 
         public Builder(TypeInfo owner) {
-            this(owner, owner.simpleName, true, false, NOT_A_STATIC_BLOCK);
+            this(Identifier.generate(),owner, owner.simpleName, true, false, NOT_A_STATIC_BLOCK);
         }
-
+        public Builder(Identifier identifier, TypeInfo owner) {
+            this(identifier, owner, owner.simpleName, true, false, NOT_A_STATIC_BLOCK);
+        }
         /* method */
 
         public Builder(TypeInfo owner, String name) {
-            this(owner, name, false, false, NOT_A_STATIC_BLOCK);
+            this(Identifier.generate(), owner, name, false, false, NOT_A_STATIC_BLOCK);
+        }
+        public Builder(Identifier identifier, TypeInfo owner, String name) {
+            this(identifier, owner, name, false, false, NOT_A_STATIC_BLOCK);
         }
 
         /* compact constructor */
 
-        public static Builder compactConstructor(TypeInfo owner) {
-            return new Builder(owner, owner.simpleName, true, true, NOT_A_STATIC_BLOCK);
+        public static Builder compactConstructor(Identifier identifier, TypeInfo owner) {
+            return new Builder(identifier, owner, owner.simpleName, true, true, NOT_A_STATIC_BLOCK);
         }
 
         /* static block */
 
-        public static Builder createStaticBlock(TypeInfo owner, int identifier) {
-            String name = TypeInspection.createStaticBlockMethodName(identifier);
-            return new Builder(owner, name, false, false, identifier);
+        public static Builder createStaticBlock(Identifier identifier, TypeInfo owner, int staticBlockIdentifier) {
+            String name = TypeInspection.createStaticBlockMethodName(staticBlockIdentifier);
+            return new Builder(identifier, owner, name, false, false, staticBlockIdentifier);
         }
 
-        private Builder(TypeInfo owner,
+        private Builder(Identifier identifier,
+                TypeInfo owner,
                         String name,
                         boolean isConstructor,
                         boolean isCompact,
                         int staticBlockIdentifier) {
+            this.identifier = identifier;
             this.owner = owner;
             this.name = name;
             this.isConstructor = isConstructor;
@@ -342,7 +350,7 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
         @NotNull
         public MethodInspectionImpl build(InspectionProvider inspectionProvider) {
             if (inspectedBlock == null) {
-                inspectedBlock = Block.EMPTY_BLOCK;
+                inspectedBlock = Block.emptyBlock(Identifier.generate());
             }
 
             // all companion methods have to have been built already!
@@ -404,7 +412,7 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
             distinguishingName = owner.fullyQualifiedName + "." + name + "(" + parameters.stream()
                     .map(p -> p.getParameterizedType().distinguishingName(inspectionProvider, p.isVarArgs()))
                     .collect(Collectors.joining(",")) + ")";
-            this.methodInfo = new MethodInfo(owner, name, fullyQualifiedName, distinguishingName, isConstructor);
+            this.methodInfo = new MethodInfo(identifier, owner, name, fullyQualifiedName, distinguishingName, isConstructor);
             typeParameters.forEach(tp -> ((TypeParameterImpl) tp).setMethodInfo(methodInfo));
         }
 

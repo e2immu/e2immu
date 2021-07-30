@@ -83,4 +83,9 @@ public record UnevaluatedMethodCall(String methodName) implements Expression {
     public int order() {
         return 0;
     }
+
+    @Override
+    public Identifier getIdentifier() {
+        return Identifier.CONSTANT;
+    }
 }

@@ -17,6 +17,7 @@ package org.e2immu.analyser.model.expression;
 import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.Identifier;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.parser.Primitives;
 
@@ -24,18 +25,18 @@ import java.util.Map;
 
 public class BitwiseXor extends BinaryOperator {
 
-    private BitwiseXor(Primitives primitives, Expression lhs, Expression rhs) {
-        super(primitives, lhs, primitives.bitwiseAndOperatorInt, rhs, Precedence.OR);
+    private BitwiseXor(Identifier identifier, Primitives primitives, Expression lhs, Expression rhs) {
+        super(identifier, primitives, lhs, primitives.bitwiseAndOperatorInt, rhs, Precedence.OR);
     }
 
     public EvaluationResult reEvaluate(EvaluationContext evaluationContext, Map<Expression, Expression> translation) {
         EvaluationResult reLhs = lhs.reEvaluate(evaluationContext, translation);
         EvaluationResult reRhs = rhs.reEvaluate(evaluationContext, translation);
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext).compose(reLhs, reRhs);
-        return builder.setExpression(BitwiseXor.bitwiseXor(evaluationContext, reLhs.value(), reRhs.value())).build();
+        return builder.setExpression(BitwiseXor.bitwiseXor(identifier, evaluationContext, reLhs.value(), reRhs.value())).build();
     }
 
-    public static Expression bitwiseXor(EvaluationContext evaluationContext, Expression l, Expression r) {
+    public static Expression bitwiseXor(Identifier identifier, EvaluationContext evaluationContext, Expression l, Expression r) {
         Primitives primitives = evaluationContext.getPrimitives();
         if (l instanceof IntConstant li && r instanceof IntConstant ri)
             return new IntConstant(primitives, li.constant() ^ ri.constant());
@@ -43,7 +44,7 @@ public class BitwiseXor extends BinaryOperator {
         // any unknown lingering
         if (l.isUnknown() || r.isUnknown()) throw new UnsupportedOperationException();
 
-        return new BitwiseXor(primitives, l, r);
+        return new BitwiseXor(identifier, primitives, l, r);
     }
 
     @Override

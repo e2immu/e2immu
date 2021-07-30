@@ -26,7 +26,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Stream;
 
-public class Lambda implements Expression {
+public class Lambda extends ElementImpl implements Expression {
     public enum OutputVariant {
         TYPED, // (@Modified X x, Y y) -> ...
         VAR,   // (var x, @NotNull var y) -> ...
@@ -64,10 +64,12 @@ public class Lambda implements Expression {
      * @param abstractFunctionalType e.g. java.util.Supplier
      * @param implementation         anonymous type, with single abstract method with implementation block
      */
-    public Lambda(InspectionProvider inspectionProvider,
+    public Lambda(Identifier identifier,
+                  InspectionProvider inspectionProvider,
                   ParameterizedType abstractFunctionalType,
                   ParameterizedType implementation,
                   List<OutputVariant> outputVariants) {
+        super(identifier);
         methodInfo = inspectionProvider.getTypeInspection(implementation.typeInfo).methods().get(0);
         MethodInspection methodInspection = inspectionProvider.getMethodInspection(methodInfo);
         this.block = methodInspection.getMethodBody();

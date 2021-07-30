@@ -36,12 +36,13 @@ public class EvaluateMethodCall {
     private final EvaluationContext evaluationContext;
     private final AnalyserContext analyserContext;
     private final Primitives primitives;
+    private final Identifier identifier;
 
-    public EvaluateMethodCall(EvaluationContext evaluationContext) {
-        this.evaluationContext = evaluationContext;
-        Objects.requireNonNull(evaluationContext);
+    public EvaluateMethodCall(Identifier identifier, EvaluationContext evaluationContext) {
+        this.evaluationContext = Objects.requireNonNull(evaluationContext);
         this.primitives = evaluationContext.getPrimitives();
         this.analyserContext = evaluationContext.getAnalyserContext();
+        this.identifier = Objects.requireNonNull(identifier);
     }
 
     public EvaluationResult methodValue(int modified,
@@ -55,7 +56,7 @@ public class EvaluateMethodCall {
         boolean recursiveCall = evaluationContext.getCurrentMethod() != null &&
                 evaluationContext.getCurrentMethod().methodInfo == methodInfo;
         if (recursiveCall) {
-            MethodCall methodValue = new MethodCall(objectValue, methodInfo, parameters);
+            MethodCall methodValue = new MethodCall(identifier, objectValue, methodInfo, parameters);
             return builder.setExpression(methodValue).build();
         }
 
@@ -85,7 +86,7 @@ public class EvaluateMethodCall {
         if (AnnotatedAPIAnalyser.IS_KNOWN_FQN.equals(methodInfo.fullyQualifiedName) &&
                 !analyserContext.inAnnotatedAPIAnalysis() &&
                 parameters.get(0) instanceof BooleanConstant boolValue) {
-            Expression clause = new MethodCall(objectValue, methodInfo,
+            Expression clause = new MethodCall(identifier, objectValue, methodInfo,
                     List.of(new BooleanConstant(primitives, true)));
             if (boolValue.constant()) {
                 Filter filter = new Filter(evaluationContext, Filter.FilterMode.ACCEPT);
@@ -195,7 +196,8 @@ public class EvaluateMethodCall {
         }
 
         Expression methodValue = switch (modified) {
-            case Level.FALSE -> new MethodCall(objectIsImplicit, objectValue, methodInfo, concreteReturnType, parameters);
+            case Level.FALSE -> new MethodCall(identifier, objectIsImplicit, objectValue, methodInfo,
+                    concreteReturnType, parameters);
             case Level.TRUE -> {
                 int notNull = methodAnalysis.getProperty(NOT_NULL_EXPRESSION);
                 if (notNull == Level.DELAY) {
@@ -395,7 +397,7 @@ public class EvaluateMethodCall {
             if (Primitives.isBoolean(methodInfo.returnType().typeInfo)) {
                 // State is: (org.e2immu.annotatedapi.AnnotatedAPI.this.isKnown(true) and 0 == java.util.Collection.this.size())
                 // Resulting value: (java.util.Set.contains(java.lang.Object) and not (0 == java.util.Collection.this.size()))
-                Expression reduced = new And(primitives).append(evaluationContext, instance.state(), resultingValue);
+                Expression reduced = And.and(evaluationContext, instance.state(), resultingValue);
                 if (reduced instanceof BooleanConstant) {
                     return reduced;
                 }
@@ -432,12 +434,12 @@ public class EvaluateMethodCall {
                     CompanionMethodName cmn = e.getKey();
                     MethodInfo oldAspectMethod = analyserContext
                             .getTypeAnalysis(instance.parameterizedType().typeInfo).getAspects().get(cmn.aspect());
-                    Expression oldValue = new MethodCall(
+                    Expression oldValue = new MethodCall(identifier,
                             new VariableExpression(new This(analyserContext, oldAspectMethod.typeInfo)),
                             oldAspectMethod, List.of());
                     MethodInfo newAspectMethod = analyserContext
                             .getTypeAnalysis(methodInfo.typeInfo).getAspects().get(cmn.aspect());
-                    Expression newValue = new MethodCall(
+                    Expression newValue = new MethodCall(identifier,
                             new VariableExpression(new This(analyserContext, newAspectMethod.typeInfo)),
                             newAspectMethod, List.of());
                     translationMap.put(oldValue, newValue);

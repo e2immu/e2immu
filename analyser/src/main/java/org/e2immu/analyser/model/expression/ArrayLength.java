@@ -29,11 +29,13 @@ import java.util.List;
 import java.util.Objects;
 
 @E2Container
-public record ArrayLength(Primitives primitives,
-                          Expression scope) implements Expression {
+public class ArrayLength extends ElementImpl implements Expression {
+    private final Primitives primitives;
+    private final Expression scope;
 
     public ArrayLength(Primitives primitives,
                        @NotNull Expression scope) {
+        super(Identifier.generate());
         this.scope = Objects.requireNonNull(scope);
         this.primitives = primitives;
     }

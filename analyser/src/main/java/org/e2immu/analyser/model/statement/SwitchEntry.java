@@ -34,9 +34,10 @@ public abstract class SwitchEntry extends StatementWithStructure {
     public final Expression switchVariableAsExpression;
     protected final Primitives primitives;
 
-    private SwitchEntry(Primitives primitives,
+    private SwitchEntry(Identifier identifier,
+                        Primitives primitives,
                         Structure structure, Expression switchVariableAsExpression, List<Expression> labels) {
-        super(structure);
+        super(identifier, structure);
         this.labels = labels;
         this.switchVariableAsExpression = switchVariableAsExpression;
         this.primitives = primitives;
@@ -75,7 +76,7 @@ public abstract class SwitchEntry extends StatementWithStructure {
         Expression or = equality(primitives, labels.get(0), switchVariableAsExpression, operator);
         // we group multiple "labels" into one disjunction
         for (int i = 1; i < labels.size(); i++) {
-            or = new BinaryOperator(primitives, or, primitives.orOperatorBool,
+            or = new BinaryOperator(Identifier.generate(), primitives, or, primitives.orOperatorBool,
                     equality(primitives, labels.get(i), switchVariableAsExpression, operator),
                     Precedence.LOGICAL_OR);
         }
@@ -83,7 +84,8 @@ public abstract class SwitchEntry extends StatementWithStructure {
     }
 
     private static Expression equality(Primitives primitives, Expression label, Expression switchVariableAsExpression, MethodInfo operator) {
-        return new BinaryOperator(primitives, switchVariableAsExpression, operator, label, Precedence.EQUALITY);
+        return new BinaryOperator(Identifier.generate(),
+                primitives, switchVariableAsExpression, operator, label, Precedence.EQUALITY);
     }
 
     private static MethodInfo operator(Primitives primitives, Expression switchVariableAsExpression) {
@@ -110,11 +112,12 @@ public abstract class SwitchEntry extends StatementWithStructure {
     public static class StatementsEntry extends SwitchEntry {
 
         public StatementsEntry(
+                Identifier identifier,
                 Primitives primitives,
                 Expression switchVariableAsExpression,
                 List<Expression> labels,
                 List<Statement> statements) {
-            super(primitives, new Structure.Builder()
+            super(identifier, primitives, new Structure.Builder()
                     .setExpression(generateConditionExpression(primitives, labels, switchVariableAsExpression))
                     .setStatements(statements == null ? List.of() : statements)
                     .build(), switchVariableAsExpression, labels);
@@ -122,7 +125,8 @@ public abstract class SwitchEntry extends StatementWithStructure {
 
         @Override
         public Statement translate(TranslationMap translationMap) {
-            return new StatementsEntry(primitives, translationMap.translateExpression(switchVariableAsExpression),
+            return new StatementsEntry(identifier, primitives,
+                    translationMap.translateExpression(switchVariableAsExpression),
                     labels.stream().map(translationMap::translateExpression).collect(Collectors.toList()),
                     structure.statements().stream()
                             .flatMap(st -> translationMap.translateStatement(st).stream()).collect(Collectors.toList()));
@@ -168,9 +172,10 @@ public abstract class SwitchEntry extends StatementWithStructure {
 
     public static class BlockEntry extends SwitchEntry {
 
-        public BlockEntry(Primitives primitives,
+        public BlockEntry(Identifier identifier,
+                          Primitives primitives,
                           Expression switchVariableAsExpression, List<Expression> labels, Block block) {
-            super(primitives,
+            super(identifier, primitives,
                     new Structure.Builder()
                             .setExpression(generateConditionExpression(primitives, labels, switchVariableAsExpression))
                             .setStatementExecution((x, y) -> SwitchEntry.statementExecution(labels, x, y))
@@ -181,7 +186,7 @@ public abstract class SwitchEntry extends StatementWithStructure {
 
         @Override
         public Statement translate(TranslationMap translationMap) {
-            return new BlockEntry(primitives, translationMap.translateExpression(switchVariableAsExpression),
+            return new BlockEntry(identifier, primitives, translationMap.translateExpression(switchVariableAsExpression),
                     labels.stream().map(translationMap::translateExpression).collect(Collectors.toList()),
                     translationMap.translateBlock(structure.block()));
         }

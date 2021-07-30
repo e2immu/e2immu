@@ -50,18 +50,20 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     public final Expression object;
     public final List<Expression> parameterExpressions;
 
-    public MethodCall(Expression object,
+    public MethodCall(Identifier identifier,
+                      Expression object,
                       MethodInfo methodInfo,
                       List<Expression> parameterExpressions) {
-        this(false, object, methodInfo, methodInfo.returnType(), parameterExpressions);
+        this(identifier, false, object, methodInfo, methodInfo.returnType(), parameterExpressions);
     }
 
-    public MethodCall(boolean objectIsImplicit,
+    public MethodCall(Identifier identifier,
+                      boolean objectIsImplicit,
                       Expression object,
                       MethodInfo methodInfo,
                       ParameterizedType returnType,
                       List<Expression> parameterExpressions) {
-        super(methodInfo, returnType);
+        super(identifier, methodInfo, returnType);
         this.object = Objects.requireNonNull(object);
         this.parameterExpressions = Objects.requireNonNull(parameterExpressions);
         this.objectIsImplicit = objectIsImplicit;
@@ -79,7 +81,8 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         Expression asExpression = translationMap.directExpression(this);
         if (asExpression != null) return asExpression;
         MethodInfo translatedMethod = translationMap.translateMethod(methodInfo);
-        return new MethodCall(objectIsImplicit,
+        return new MethodCall(identifier,
+                objectIsImplicit,
                 translationMap.translateExpression(object),
                 translatedMethod,
                 translatedMethod.returnType(),
@@ -221,7 +224,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         List<Expression> reParamValues = reParams.stream().map(EvaluationResult::value).collect(Collectors.toList());
         int modified = evaluationContext.getAnalyserContext()
                 .getMethodAnalysis(methodInfo).getProperty(VariableProperty.MODIFIED_METHOD);
-        EvaluationResult mv = new EvaluateMethodCall(evaluationContext).methodValue(modified, methodInfo,
+        EvaluationResult mv = new EvaluateMethodCall(identifier, evaluationContext).methodValue(modified, methodInfo,
                 evaluationContext.getAnalyserContext().getMethodAnalysis(methodInfo),
                 objectIsImplicit, reObject.value(), concreteReturnType,
                 reParamValues);
@@ -406,7 +409,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             MethodInspection methodInspection = methodInfo.methodInspection.get();
             complianceWithForwardRequirements(builder, methodAnalysis, methodInspection, forwardEvaluationInfo, contentNotNullRequired);
 
-            EvaluationResult mv = new EvaluateMethodCall(evaluationContext).methodValue(modified, methodInfo,
+            EvaluationResult mv = new EvaluateMethodCall(identifier, evaluationContext).methodValue(modified, methodInfo,
                     methodAnalysis, objectIsImplicit, objectValue, concreteReturnType, parameterValues);
             builder.compose(mv);
             if (mv.value() == objectValue && mv.value().isInstanceOf(NewObject.class) && modifiedInstance != null) {
@@ -620,8 +623,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                         newState.set(res.rest());
                     } else {
                         Expression startFrom = filterResult != null ? filterResult.rest() : newState.get();
-                        newState.set(new And(evaluationContext.getPrimitives()).append(evaluationContext, startFrom,
-                                companionValueTranslated));
+                        newState.set(And.and(evaluationContext, startFrom, companionValueTranslated));
                     }
                 });
         if (containsEmptyExpression(newState.get())) {

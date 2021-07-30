@@ -20,7 +20,9 @@ import org.e2immu.analyser.inspector.ForwardReturnTypeInfo;
 import org.e2immu.analyser.inspector.MethodTypeParameterMap;
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.expression.*;
+import org.e2immu.analyser.model.expression.MethodReference;
+import org.e2immu.analyser.model.expression.TypeExpression;
+import org.e2immu.analyser.model.expression.UnevaluatedLambdaExpression;
 import org.e2immu.analyser.parser.InspectionProvider;
 
 import java.util.*;
@@ -130,7 +132,8 @@ public class ParseMethodReferenceExpr {
                 types, method.getConcreteReturnType());
         log(METHOD_CALL, "End parsing method reference {}, found {}", methodNameForErrorReporting,
                 method.methodInspection.getDistinguishingName());
-        return new MethodReference(scope, method.methodInspection.getMethodInfo(), functionalType);
+        return new MethodReference(Identifier.from(methodReferenceExpr),
+                scope, method.methodInspection.getMethodInfo(), functionalType);
     }
 
     private static ParameterizedType typeOfMethodCandidate(InspectionProvider inspectionProvider,
@@ -200,7 +203,8 @@ public class ParseMethodReferenceExpr {
         TypeInfo intFunction = expressionContext.typeContext.typeMapBuilder.get("java.util.function.IntFunction");
         if (intFunction == null) throw new UnsupportedOperationException("? need IntFunction");
         ParameterizedType intFunctionPt = new ParameterizedType(intFunction, List.of(parameterizedType));
-        return new MethodReference(new TypeExpression(parameterizedType, Diamond.NO), arrayConstructor, intFunctionPt);
+        return new MethodReference(Identifier.generate(),
+                new TypeExpression(parameterizedType, Diamond.NO), arrayConstructor, intFunctionPt);
     }
 
     public static boolean scopeIsAType(Expression scope) {

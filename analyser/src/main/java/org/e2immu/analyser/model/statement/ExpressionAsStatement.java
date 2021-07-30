@@ -28,12 +28,12 @@ public class ExpressionAsStatement extends StatementWithExpression {
 
     private final boolean synthetic;
 
-    public ExpressionAsStatement(Expression expression) {
-        this(expression, false);
+    public ExpressionAsStatement(Identifier identifier, Expression expression) {
+        this(identifier, expression, false);
     }
 
-    public ExpressionAsStatement(Expression expression, boolean synthetic) {
-        super(createCodeOrganization(expression), expression);
+    public ExpressionAsStatement(Identifier identifier, Expression expression, boolean synthetic) {
+        super(identifier, createCodeOrganization(expression), expression);
         this.synthetic = synthetic;
     }
 
@@ -58,7 +58,7 @@ public class ExpressionAsStatement extends StatementWithExpression {
 
     @Override
     public Statement translate(TranslationMap translationMap) {
-        return new ExpressionAsStatement(translationMap.translateExpression(expression));
+        return new ExpressionAsStatement(identifier, translationMap.translateExpression(expression));
     }
 
     @Override

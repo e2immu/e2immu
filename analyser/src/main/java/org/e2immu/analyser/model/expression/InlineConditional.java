@@ -33,16 +33,18 @@ import java.util.function.Predicate;
 /**
  * a ? b : c
  */
-public class InlineConditional implements Expression {
+public class InlineConditional extends ElementImpl implements Expression {
     public final Expression condition;
     public final Expression ifTrue;
     public final Expression ifFalse;
     public final InspectionProvider inspectionProvider;
 
-    public InlineConditional(InspectionProvider inspectionProvider,
+    public InlineConditional(Identifier identifier,
+                             InspectionProvider inspectionProvider,
                              Expression condition,
                              Expression ifTrue,
                              Expression ifFalse) {
+        super(identifier);
         this.condition = Objects.requireNonNull(condition);
         this.ifFalse = Objects.requireNonNull(ifFalse);
         this.ifTrue = Objects.requireNonNull(ifTrue);
@@ -66,7 +68,7 @@ public class InlineConditional implements Expression {
 
     @Override
     public Expression translate(TranslationMap translationMap) {
-        return new InlineConditional(inspectionProvider,
+        return new InlineConditional(identifier, inspectionProvider,
                 translationMap.translateExpression(condition),
                 translationMap.translateExpression(ifTrue),
                 translationMap.translateExpression(ifFalse));

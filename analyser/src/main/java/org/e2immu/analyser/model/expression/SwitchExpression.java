@@ -32,16 +32,27 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Stream;
 
-public record SwitchExpression(Expression selector,
-                               List<SwitchEntry> switchEntries,
-                               ParameterizedType returnType,
-                               MultiExpression yieldExpressions) implements Expression, HasSwitchLabels {
+public class SwitchExpression extends ElementImpl implements Expression, HasSwitchLabels {
 
-    public SwitchExpression {
+    private final Expression selector;
+    private final List<SwitchEntry> switchEntries;
+    private final ParameterizedType returnType;
+    private final MultiExpression yieldExpressions;
+
+    public SwitchExpression(Identifier identifier,
+                            Expression selector,
+                            List<SwitchEntry> switchEntries,
+                            ParameterizedType returnType,
+                            MultiExpression yieldExpressions) {
+        super(identifier);
         switchEntries.forEach(e -> {
             Objects.requireNonNull(e.switchVariableAsExpression);
             Objects.requireNonNull(e.labels);
         });
+        this.selector = selector;
+        this.switchEntries = switchEntries;
+        this.returnType = returnType;
+        this.yieldExpressions = yieldExpressions;
     }
 
     @Override
@@ -65,7 +76,7 @@ public record SwitchExpression(Expression selector,
                 .add(selector.output(qualification))
                 .add(Symbol.RIGHT_PARENTHESIS)
                 .add(switchEntries.stream().map(switchEntry ->
-                        switchEntry.output(qualification, blockGenerator, null))
+                                switchEntry.output(qualification, blockGenerator, null))
                         .collect(OutputBuilder.joining(Space.ONE_IS_NICE_EASY_SPLIT, Symbol.LEFT_BRACE,
                                 Symbol.RIGHT_BRACE, blockGenerator)));
     }
@@ -109,16 +120,16 @@ public record SwitchExpression(Expression selector,
             }
         }
         builder.compose(selectorResult);
-        builder.setExpression(new SwitchExpression(selectorValue, switchEntries, returnType, MultiExpression.create(newYieldExpressions)));
+        builder.setExpression(new SwitchExpression(identifier,
+                selectorValue, switchEntries, returnType, MultiExpression.create(newYieldExpressions)));
         return builder.build();
     }
 
     private Expression convertDefaultToNegationOfAllOthers(EvaluationContext evaluationContext, Expression expression) {
         if (!(expression instanceof EmptyExpression)) return expression;
-        return new And(evaluationContext.getPrimitives()).append(evaluationContext,
-                switchEntries.stream().flatMap(se -> se.labels.stream()).map(label ->
+        return And.and(evaluationContext, switchEntries.stream().flatMap(se -> se.labels.stream()).map(label ->
                         Negation.negate(evaluationContext, Equals.equals(evaluationContext, label, selector)))
-                        .toArray(Expression[]::new));
+                .toArray(Expression[]::new));
     }
 
     @Override
@@ -137,5 +148,10 @@ public record SwitchExpression(Expression selector,
             return UnknownExpression.primitiveGetProperty(variableProperty);
         }
         return yieldExpressions.getProperty(evaluationContext, variableProperty, duringEvaluation);
+    }
+
+    @Override
+    public ParameterizedType returnType() {
+        return returnType;
     }
 }

@@ -17,6 +17,7 @@ package org.e2immu.analyser.model.expression;
 import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.Identifier;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.parser.Primitives;
 
@@ -24,18 +25,19 @@ import java.util.Map;
 
 public class SignedShiftRight extends BinaryOperator {
 
-    private SignedShiftRight(Primitives primitives, Expression lhs, Expression rhs) {
-        super(primitives, lhs, primitives.signedRightShiftOperatorInt, rhs, Precedence.SHIFT);
+    private SignedShiftRight(Identifier identifier, Primitives primitives, Expression lhs, Expression rhs) {
+        super(identifier, primitives, lhs, primitives.signedRightShiftOperatorInt, rhs, Precedence.SHIFT);
     }
 
     public EvaluationResult reEvaluate(EvaluationContext evaluationContext, Map<Expression, Expression> translation) {
         EvaluationResult reLhs = lhs.reEvaluate(evaluationContext, translation);
         EvaluationResult reRhs = rhs.reEvaluate(evaluationContext, translation);
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext).compose(reLhs, reRhs);
-        return builder.setExpression(SignedShiftRight.shiftRight(evaluationContext, reLhs.value(), reRhs.value())).build();
+        return builder.setExpression(SignedShiftRight.shiftRight(identifier,
+                evaluationContext, reLhs.value(), reRhs.value())).build();
     }
 
-    public static Expression shiftRight(EvaluationContext evaluationContext, Expression l, Expression r) {
+    public static Expression shiftRight(Identifier identifier, EvaluationContext evaluationContext, Expression l, Expression r) {
         if (l instanceof Numeric ln && ln.doubleValue() == 0) return l;
         if (r instanceof Numeric rn && rn.doubleValue() == 0) return l;
 
@@ -46,7 +48,7 @@ public class SignedShiftRight extends BinaryOperator {
         // any unknown lingering
         if (l.isUnknown() || r.isUnknown()) throw new UnsupportedOperationException();
 
-        return new SignedShiftRight(primitives, l, r);
+        return new SignedShiftRight(identifier, primitives, l, r);
     }
 
     @Override

@@ -48,7 +48,7 @@ public class FindInstanceOfPatterns {
             return List.of(new InstanceOfPositive(instanceOf, true));
         }
         if (expression instanceof And and) {
-            return and.expressions().stream().flatMap(e -> find(e).stream()).toList();
+            return and.getExpressions().stream().flatMap(e -> find(e).stream()).toList();
         }
         if (expression instanceof BinaryOperator binaryOperator && Primitives.isBinaryAnd(binaryOperator.operator)) {
             return ListUtil.immutableConcat(find(binaryOperator.lhs), find(binaryOperator.rhs));

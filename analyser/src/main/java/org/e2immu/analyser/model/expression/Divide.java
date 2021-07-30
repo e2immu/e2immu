@@ -17,17 +17,19 @@ package org.e2immu.analyser.model.expression;
 import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.Identifier;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Primitives;
 
 public class Divide extends BinaryOperator {
 
-    private Divide(Primitives primitives, Expression lhs, Expression rhs) {
-        super(primitives, lhs, primitives.divideOperatorInt, rhs, Precedence.MULTIPLICATIVE);
+    private Divide(Identifier identifier, Primitives primitives, Expression lhs, Expression rhs) {
+        super(identifier, primitives, lhs, primitives.divideOperatorInt, rhs, Precedence.MULTIPLICATIVE);
     }
 
-    public static EvaluationResult divide(EvaluationContext evaluationContext, Expression l, Expression r) {
+    public static EvaluationResult divide(Identifier identifier,
+                                          EvaluationContext evaluationContext, Expression l, Expression r) {
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
 
         if (l instanceof Numeric ln && ln.doubleValue() == 0) return builder.setExpression(l).build();
@@ -44,7 +46,7 @@ public class Divide extends BinaryOperator {
         // any unknown lingering
         if (l.isUnknown() || r.isUnknown()) throw new UnsupportedOperationException();
 
-        return builder.setExpression(new Divide(primitives, l, r)).build();
+        return builder.setExpression(new Divide(identifier, primitives, l, r)).build();
     }
 
     @Override

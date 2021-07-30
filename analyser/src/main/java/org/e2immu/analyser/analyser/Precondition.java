@@ -83,8 +83,7 @@ public record Precondition(Expression expression, List<PreconditionCause> causes
     }
 
     public Precondition combine(EvaluationContext evaluationContext, Precondition other) {
-        Expression combinedExpression = new And(evaluationContext.getPrimitives())
-                .append(evaluationContext, expression, other.expression);
+        Expression combinedExpression = And.and(evaluationContext, expression, other.expression);
         return new Precondition(combinedExpression, ListUtil.concatImmutable(causes, other.causes));
     }
 

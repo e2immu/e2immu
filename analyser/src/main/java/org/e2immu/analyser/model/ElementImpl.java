@@ -12,23 +12,18 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.model.statement;
+package org.e2immu.analyser.model;
 
-import org.e2immu.analyser.analyser.StatementAnalysis;
-import org.e2immu.analyser.model.Identifier;
-import org.e2immu.analyser.model.Qualification;
-import org.e2immu.analyser.output.OutputBuilder;
-import org.e2immu.analyser.output.Symbol;
+public abstract class ElementImpl implements Element {
 
-public class EmptyStatement extends StatementWithStructure {
+    public final Identifier identifier;
 
-    public EmptyStatement(Identifier identifier) {
-        super(identifier);
+    protected ElementImpl(Identifier identifier) {
+        this.identifier = identifier;
     }
 
     @Override
-    public OutputBuilder output(Qualification qualification, StatementAnalysis statementAnalysis) {
-        return new OutputBuilder().add(Symbol.SEMICOLON);
+    public Identifier getIdentifier() {
+        return identifier;
     }
 }
-

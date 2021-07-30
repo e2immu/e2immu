@@ -223,7 +223,7 @@ public class TypeInspector {
 
         List<FieldInfo> recordFields = recordDeclaration.getParameters().stream().map(parameter -> {
             ParameterizedType type = ParameterizedTypeFactory.from(expressionContext.typeContext, parameter.getType());
-            FieldInfo fieldInfo = new FieldInfo(type, parameter.getNameAsString(), typeInfo);
+            FieldInfo fieldInfo = new FieldInfo(Identifier.generate(), type, parameter.getNameAsString(), typeInfo);
 
             FieldInspectionImpl.Builder fieldBuilder = new FieldInspectionImpl.Builder();
             fieldBuilder.setSynthetic(true);
@@ -243,7 +243,7 @@ public class TypeInspector {
         List<FieldInfo> enumFields = new ArrayList<>();
 
         enumDeclaration.getEntries().forEach(enumConstantDeclaration -> {
-            FieldInfo fieldInfo = new FieldInfo(typeInfo.asSimpleParameterizedType(),
+            FieldInfo fieldInfo = new FieldInfo(Identifier.generate(), typeInfo.asSimpleParameterizedType(),
                     enumConstantDeclaration.getNameAsString(), typeInfo);
             FieldInspectionImpl.Builder fieldBuilder = new FieldInspectionImpl.Builder();
             fieldBuilder.setSynthetic(true);
@@ -377,7 +377,7 @@ public class TypeInspector {
                     ParameterizedType pt = ParameterizedTypeFactory.from(expressionContext.typeContext, vd.getType());
 
                     String name = vd.getNameAsString();
-                    FieldInfo fieldInfo = new FieldInfo(pt, name, typeInfo);
+                    FieldInfo fieldInfo = new FieldInfo(Identifier.from(fd), pt, name, typeInfo);
 
                     FieldInspection inMap = expressionContext.typeContext.getFieldInspection(fieldInfo);
                     FieldInspectionImpl.Builder fieldInspectionBuilder;
@@ -507,7 +507,7 @@ public class TypeInspector {
 
     private MethodInfo createEmptyConstructor(TypeContext typeContext, boolean makePrivate) {
         MethodInspectionImpl.Builder builder = new MethodInspectionImpl.Builder(typeInfo);
-        builder.setInspectedBlock(Block.EMPTY_BLOCK)
+        builder.setInspectedBlock(Block.emptyBlock(Identifier.generate()))
                 .setSynthetic(true)
                 .addModifier(makePrivate ? MethodModifier.PRIVATE : MethodModifier.PUBLIC)
                 .readyToComputeFQN(typeContext);

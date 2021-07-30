@@ -95,11 +95,11 @@ public class ConvertMethodReference {
         }
         Statement statement;
         if (methodBuilder.isVoid()) {
-            statement = new ExpressionAsStatement(newReturnExpression);
+            statement = new ExpressionAsStatement(Identifier.generate(), newReturnExpression);
         } else {
-            statement = new ReturnStatement(newReturnExpression);
+            statement = new ReturnStatement(Identifier.generate(), newReturnExpression);
         }
-        Block block = new Block.BlockBuilder().addStatement(statement).build();
+        Block block = new Block.BlockBuilder(methodReference.identifier).addStatement(statement).build();
 
         if (Logger.isLogEnabled(LAMBDA)) {
             log(LAMBDA, "Result of translating block: {}", block.output(Qualification.FULLY_QUALIFIED_NAME, null));
@@ -110,7 +110,7 @@ public class ConvertMethodReference {
 
     private static Expression methodCallNoParameters(ParameterInfo firstParameter, MethodInspection concreteMethod) {
         Expression newScope = new VariableExpression(firstParameter);
-        return new MethodCall(newScope, concreteMethod.getMethodInfo(), List.of());
+        return new MethodCall(Identifier.generate(), newScope, concreteMethod.getMethodInfo(), List.of());
     }
 
     /*
@@ -129,7 +129,7 @@ public class ConvertMethodReference {
             i++;
         }
         // FIXME concreteTypes should be used somehow
-        return new MethodCall(scope, concreteMethod.getMethodInfo(), parameterExpressions);
+        return new MethodCall(Identifier.generate(), scope, concreteMethod.getMethodInfo(), parameterExpressions);
     }
 
 }

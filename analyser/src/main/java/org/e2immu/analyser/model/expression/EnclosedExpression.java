@@ -26,7 +26,14 @@ import java.util.List;
 import java.util.Objects;
 
 @E2Container
-public record EnclosedExpression(Expression inner) implements Expression {
+public class EnclosedExpression extends ElementImpl implements Expression {
+
+    private final Expression inner;
+
+    public EnclosedExpression(Identifier identifier, Expression inner) {
+        super(identifier);
+        this.inner = inner;
+    }
 
     @Override
     public boolean equals(Object o) {
@@ -43,7 +50,7 @@ public record EnclosedExpression(Expression inner) implements Expression {
 
     @Override
     public Expression translate(TranslationMap translationMap) {
-        return new EnclosedExpression(translationMap.translateExpression(inner));
+        return new EnclosedExpression(identifier, translationMap.translateExpression(inner));
     }
 
     @Override
@@ -84,5 +91,9 @@ public record EnclosedExpression(Expression inner) implements Expression {
     @Override
     public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
         return inner.evaluate(evaluationContext, forwardEvaluationInfo);
+    }
+
+    public Expression inner() {
+        return inner;
     }
 }

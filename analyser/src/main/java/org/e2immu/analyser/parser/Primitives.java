@@ -180,15 +180,22 @@ public class Primitives {
 
     public final TypeInfo annotationTypeTypeInfo = new TypeInfo(ORG_E2IMMU_ANNOTATION, "AnnotationType");
     private final ParameterizedType annotationTypePt = annotationTypeTypeInfo.asSimpleParameterizedType();
-    public final FieldInfo annotationTypeComputed = new FieldInfo(annotationTypePt, "COMPUTED", annotationTypeTypeInfo);
-    public final FieldInfo annotationTypeVerify = new FieldInfo(annotationTypePt, "VERIFY", annotationTypeTypeInfo);
-    public final FieldInfo annotationTypeVerifyAbsent = new FieldInfo(annotationTypePt, "VERIFY_ABSENT", annotationTypeTypeInfo);
-    public final FieldInfo annotationTypeContract = new FieldInfo(annotationTypePt, "CONTRACT", annotationTypeTypeInfo);
-    public final FieldInfo annotationTypeContractAbsent = new FieldInfo(annotationTypePt, "CONTRACT_ABSENT", annotationTypeTypeInfo);
+    public final FieldInfo annotationTypeComputed = new FieldInfo(Identifier.generate(),
+            annotationTypePt, "COMPUTED", annotationTypeTypeInfo);
+    public final FieldInfo annotationTypeVerify = new FieldInfo(Identifier.generate(),
+            annotationTypePt, "VERIFY", annotationTypeTypeInfo);
+    public final FieldInfo annotationTypeVerifyAbsent = new FieldInfo(Identifier.generate(),
+            annotationTypePt, "VERIFY_ABSENT", annotationTypeTypeInfo);
+    public final FieldInfo annotationTypeContract = new FieldInfo(Identifier.generate(),
+            annotationTypePt, "CONTRACT", annotationTypeTypeInfo);
+    public final FieldInfo annotationTypeContractAbsent = new FieldInfo(Identifier.generate(),
+            annotationTypePt, "CONTRACT_ABSENT", annotationTypeTypeInfo);
 
     public final TypeInfo annotationModeTypeInfo = new TypeInfo(ORG_E2IMMU_ANNOTATION, "AnnotationMode");
-    public final FieldInfo annotationModeDefensive = new FieldInfo(annotationTypePt, "DEFENSIVE", annotationModeTypeInfo);
-    public final FieldInfo annotationModeOffensive = new FieldInfo(annotationTypePt, "OFFENSIVE", annotationModeTypeInfo);
+    public final FieldInfo annotationModeDefensive = new FieldInfo(Identifier.generate(),
+            annotationTypePt, "DEFENSIVE", annotationModeTypeInfo);
+    public final FieldInfo annotationModeOffensive = new FieldInfo(Identifier.generate(),
+            annotationTypePt, "OFFENSIVE", annotationModeTypeInfo);
 
     public final TypeInfo functionalInterface = new TypeInfo(JAVA_LANG, "FunctionalInterface");
     public final AnnotationExpression functionalInterfaceAnnotationExpression =
@@ -243,7 +250,8 @@ public class Primitives {
         int i = 0;
         MethodInspectionImpl.Builder builder = new MethodInspectionImpl.Builder(owner, name).setStatic(true);
         for (ParameterizedType parameterizedType : parameterizedTypes) {
-            ParameterInspectionImpl.Builder pb = new ParameterInspectionImpl.Builder(parameterizedType, "p" + i, i++);
+            ParameterInspectionImpl.Builder pb = new ParameterInspectionImpl.Builder(Identifier.generate(),
+                    parameterizedType, "p" + i, i++);
             builder.addParameter(pb); // inspection built when method is built
         }
         builder.setReturnType(returnType);
@@ -397,7 +405,7 @@ public class Primitives {
     private void processEnum(TypeInfo typeInfo, List<FieldInfo> fields) {
         MethodInspectionImpl.Builder valueOfBuilder = new MethodInspectionImpl.Builder(typeInfo, "valueOf").setStatic(true);
         ParameterInspectionImpl.Builder valueOf0Builder =
-                new ParameterInspectionImpl.Builder(stringParameterizedType, "s", 0);
+                new ParameterInspectionImpl.Builder(Identifier.generate(), stringParameterizedType, "s", 0);
         ParameterizedType typeInfoAsPt = typeInfo.asSimpleParameterizedType();
         MethodInfo valueOf = valueOfBuilder.setReturnType(typeInfoAsPt)
                 .addParameter(valueOf0Builder)

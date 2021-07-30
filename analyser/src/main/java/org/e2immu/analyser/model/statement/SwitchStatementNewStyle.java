@@ -30,8 +30,8 @@ import java.util.stream.Stream;
 public class SwitchStatementNewStyle extends StatementWithExpression implements HasSwitchLabels {
     public final List<SwitchEntry> switchEntries;
 
-    public SwitchStatementNewStyle(Expression selector, List<SwitchEntry> switchEntries) {
-        super(codeOrganization(selector, switchEntries), selector);
+    public SwitchStatementNewStyle(Identifier identifier, Expression selector, List<SwitchEntry> switchEntries) {
+        super(identifier, codeOrganization(selector, switchEntries), selector);
         this.switchEntries = List.copyOf(switchEntries);
     }
 
@@ -51,7 +51,7 @@ public class SwitchStatementNewStyle extends StatementWithExpression implements 
 
     @Override
     public Statement translate(TranslationMap translationMap) {
-        return new SwitchStatementNewStyle(translationMap.translateExpression(expression),
+        return new SwitchStatementNewStyle(identifier, translationMap.translateExpression(expression),
                 switchEntries.stream().map(se -> (SwitchEntry) se.translate(translationMap)).collect(Collectors.toList()));
     }
 

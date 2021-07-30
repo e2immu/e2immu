@@ -26,8 +26,6 @@ import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.ListUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.function.Predicate;
@@ -36,25 +34,34 @@ import java.util.stream.Collectors;
 import static org.e2immu.analyser.util.Logger.LogTarget.EXPRESSION;
 import static org.e2immu.analyser.util.Logger.log;
 
-public record And(Primitives primitives, List<Expression> expressions) implements Expression {
-    private static final Logger LOGGER = LoggerFactory.getLogger(And.class);
+public class And extends ElementImpl implements Expression {
+    private final Primitives primitives;
+    private final List<Expression> expressions;
 
-    public And {
-        Objects.requireNonNull(primitives);
-        Objects.requireNonNull(expressions);
+    public And(Primitives primitives, List<Expression> expressions) {
+        this(Identifier.generate(), primitives, expressions);
     }
 
-    // testing only
-    public And(Primitives primitives) {
-        this(primitives, List.of());
+    private And(Identifier identifier, Primitives primitives, List<Expression> expressions) {
+        super(identifier);
+        this.primitives = Objects.requireNonNull(primitives);
+        this.expressions = Objects.requireNonNull(expressions);
+    }
+
+    private And(Primitives primitives) {
+        this(Identifier.generate(), primitives, List.of());
     }
 
     private enum Action {
         SKIP, REPLACE, FALSE, TRUE, ADD, ADD_CHANGE
     }
 
+    public static Expression and(EvaluationContext evaluationContext, Expression... values) {
+        return new And(evaluationContext.getPrimitives()).append(evaluationContext, values);
+    }
+
     // we try to maintain a CNF
-    public Expression append(EvaluationContext evaluationContext, Expression... values) {
+    private Expression append(EvaluationContext evaluationContext, Expression... values) {
 
         // STEP 1: check that all values return boolean!
         for (Expression v : values) {
@@ -143,7 +150,7 @@ public record And(Primitives primitives, List<Expression> expressions) implement
             log(EXPRESSION, "And reduced to 1 component: {}", concat.get(0));
             return concat.get(0);
         }
-        And res = new And(primitives, List.copyOf(concat));
+        And res = new And(identifier, primitives, List.copyOf(concat));
         log(EXPRESSION, "Constructed {}", res);
         return res;
     }
@@ -201,7 +208,7 @@ public record And(Primitives primitives, List<Expression> expressions) implement
                     return Action.FALSE;
                 }
                 // replace
-                Expression orValue = new Or(primitives).append(evaluationContext, remaining);
+                Expression orValue = Or.or(evaluationContext, remaining);
                 newConcat.add(orValue);
                 return Action.SKIP;
             }
@@ -235,7 +242,7 @@ public record And(Primitives primitives, List<Expression> expressions) implement
                 }
             }
             if (ok && !equal.isEmpty()) {
-                Expression orValue = new Or(primitives).append(evaluationContext, equal);
+                Expression orValue = Or.or(evaluationContext, equal);
                 newConcat.set(newConcat.size() - 1, orValue);
                 return Action.SKIP;
             }
@@ -322,7 +329,8 @@ public record And(Primitives primitives, List<Expression> expressions) implement
                 // if b==y then the end result should be x>b
                 if (y == xb.b() && ge.allowEquals()) {
                     newConcat.remove(newConcat.size() - 1);
-                    newConcat.add(new GreaterThanZero(ge.booleanParameterizedType(), ge.expression(), false));
+                    newConcat.add(new GreaterThanZero(ge.getIdentifier(), ge.booleanParameterizedType(),
+                            ge.expression(), false));
                     return Action.SKIP;
                 }
             }
@@ -460,7 +468,7 @@ public record And(Primitives primitives, List<Expression> expressions) implement
         Expression[] clauses = clauseResults.stream().map(EvaluationResult::value).toArray(Expression[]::new);
         return new EvaluationResult.Builder()
                 .compose(clauseResults)
-                .setExpression(new And(primitives).append(evaluationContext, clauses))
+                .setExpression(And.and(evaluationContext, clauses))
                 .build();
     }
 
@@ -491,7 +499,7 @@ public record And(Primitives primitives, List<Expression> expressions) implement
         Expression[] reClauses = reClauseERs.stream().map(EvaluationResult::value).toArray(Expression[]::new);
         return new EvaluationResult.Builder()
                 .compose(reClauseERs)
-                .setExpression(new And(primitives).append(evaluationContext, reClauses))
+                .setExpression(And.and(evaluationContext, reClauses))
                 .build();
     }
 
@@ -512,11 +520,20 @@ public record And(Primitives primitives, List<Expression> expressions) implement
     public Expression translate(TranslationMap translationMap) {
         if (translationMap.isEmpty()) return this;
         List<Expression> translated = expressions.stream().map(e -> e.translate(translationMap)).toList();
-        return new And(primitives, translated);
+        return new And(identifier, primitives, translated);
     }
 
     @Override
     public List<? extends Element> subElements() {
+        return expressions;
+    }
+
+    @Override
+    public Identifier getIdentifier() {
+        return identifier;
+    }
+
+    public List<Expression> getExpressions() {
         return expressions;
     }
 }

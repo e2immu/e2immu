@@ -30,10 +30,11 @@ public class IfElseStatement extends StatementWithExpression {
     // for convenience, it's also in structure.subStatements.get(0).block
     public final Block elseBlock;
 
-    public IfElseStatement(Expression expression,
+    public IfElseStatement(Identifier identifier,
+                           Expression expression,
                            Block ifBlock,
                            Block elseBlock) {
-        super(createCodeOrganization(expression, ifBlock, elseBlock), expression);
+        super(identifier, createCodeOrganization(expression, ifBlock, elseBlock), expression);
         this.elseBlock = elseBlock;
     }
 
@@ -45,7 +46,7 @@ public class IfElseStatement extends StatementWithExpression {
                 .setForwardEvaluationInfo(ForwardEvaluationInfo.NOT_NULL)
                 .setBlock(ifBlock)
                 .setStatementExecution(IfElseStatement::standardExecution);
-        if (elseBlock != Block.EMPTY_BLOCK) {
+        if (!elseBlock.isEmpty()) {
             builder.addSubStatement(new Structure.Builder().setExpression(EmptyExpression.DEFAULT_EXPRESSION)
                     .setStatementExecution(StatementExecution.DEFAULT)
                     .setBlock(elseBlock)
@@ -63,7 +64,7 @@ public class IfElseStatement extends StatementWithExpression {
 
     @Override
     public Statement translate(TranslationMap translationMap) {
-        return new IfElseStatement(
+        return new IfElseStatement(identifier,
                 translationMap.translateExpression(expression),
                 translationMap.translateBlock(structure.block()),
                 translationMap.translateBlock(elseBlock));
@@ -77,7 +78,7 @@ public class IfElseStatement extends StatementWithExpression {
                 .add(Symbol.RIGHT_PARENTHESIS)
                 .addIfNotNull(messageComment(statementAnalysis))
                 .add(structure.block().output(qualification, StatementAnalysis.startOfBlock(statementAnalysis, 0)));
-        if (elseBlock != Block.EMPTY_BLOCK) {
+        if (!elseBlock.isEmpty()) {
             outputBuilder.add(new Text("else"))
                     .add(elseBlock.output(qualification, StatementAnalysis.startOfBlock(statementAnalysis, 1)));
         }
@@ -86,7 +87,7 @@ public class IfElseStatement extends StatementWithExpression {
 
     @Override
     public List<? extends Element> subElements() {
-        if (elseBlock == Block.EMPTY_BLOCK) {
+        if (elseBlock.isEmpty()) {
             return List.of(expression, structure.block());
         }
         return List.of(expression, structure.block(), elseBlock);

@@ -16,6 +16,7 @@ package org.e2immu.analyser.model.expression;
 
 
 import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.Identifier;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.Qualification;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
@@ -88,5 +89,10 @@ public record ShortConstant(Primitives primitives,
     @Override
     public OutputBuilder output(Qualification qualification) {
         return new OutputBuilder().add(new Text(Short.toString(constant)));
+    }
+
+    @Override
+    public Identifier getIdentifier() {
+        return Identifier.CONSTANT;
     }
 }

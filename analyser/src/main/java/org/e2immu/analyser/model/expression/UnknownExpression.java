@@ -28,10 +28,19 @@ import java.util.Objects;
 /**
  * Contains "some value".
  */
-public record UnknownExpression(ParameterizedType parameterizedType, String msg) implements Expression {
+public class UnknownExpression extends ElementImpl implements Expression {
 
     public static final String RETURN_VALUE = "return value";
     public static final String VARIABLE = "variable value";
+
+    private final ParameterizedType parameterizedType;
+    private final String msg;
+
+    public UnknownExpression(ParameterizedType parameterizedType, String msg) {
+        super(Identifier.generate());
+        this.parameterizedType = Objects.requireNonNull(parameterizedType);
+        this.msg = Objects.requireNonNull(msg);
+    }
 
     @Override
     public boolean equals(Object o) {
@@ -122,5 +131,9 @@ public record UnknownExpression(ParameterizedType parameterizedType, String msg)
     @Override
     public int order() {
         return 0;
+    }
+
+    public String msg() {
+        return msg;
     }
 }

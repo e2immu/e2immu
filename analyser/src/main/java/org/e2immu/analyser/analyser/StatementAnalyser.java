@@ -257,14 +257,13 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 Expression toAdd;
                 if (label == EmptyExpression.DEFAULT_EXPRESSION) {
                     toAdd = Negation.negate(evaluationContext,
-                            new Or(evaluationContext.getPrimitives()).append(evaluationContext,
-                                    base.switchIdToLabels().values().stream()
-                                            .filter(e -> e != EmptyExpression.DEFAULT_EXPRESSION).toArray(Expression[]::new)));
+                            Or.or(evaluationContext, base.switchIdToLabels().values().stream()
+                                    .filter(e -> e != EmptyExpression.DEFAULT_EXPRESSION).toList()));
                 } else {
                     toAdd = label;
                 }
                 if (startFrom.isBoolValueTrue()) return toAdd;
-                return new And(evaluationContext.getPrimitives()).append(evaluationContext, startFrom, toAdd);
+                return And.and(evaluationContext, startFrom, toAdd);
             }
             return startFrom;
         }
@@ -1441,8 +1440,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             Expression valueOfVariablePreAssignment = sharedState.evaluationContext.currentValue(variable,
                     statementAnalysis.statementTime(VariableInfoContainer.Level.INITIAL), fwd);
 
-            InlineConditional inlineConditional = new InlineConditional(analyserContext, state,
-                    value, valueOfVariablePreAssignment);
+            InlineConditional inlineConditional = new InlineConditional(Identifier.generate(),
+                    analyserContext, state, value, valueOfVariablePreAssignment);
             return inlineConditional.optimise(sharedState.evaluationContext.dropConditionManager());
         }
         return value;
@@ -1704,7 +1703,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
 
     private List<Assignment> patternVariables(SharedState sharedState, Expression expression) {
         List<FindInstanceOfPatterns.InstanceOfPositive> instanceOfList = FindInstanceOfPatterns.find(expression);
-        boolean haveElse = statementAnalysis.statement instanceof IfElseStatement ifElse && ifElse.elseBlock != Block.EMPTY_BLOCK;
+        boolean haveElse = statementAnalysis.statement instanceof IfElseStatement ifElse && !ifElse.elseBlock.isEmpty();
         StatementAnalyser firstSubBlock = !(statementAnalysis.statement instanceof IfElseStatement) ? null :
                 navigationData.blocks.get().get(0).orElse(null);
         // create local variables
@@ -1961,7 +1960,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                     if (variableInfo.isAssigned()) {
                         EvaluationResult translated = variableInfo.getValue()
                                 .reEvaluate(sharedState.evaluationContext, translation);
-                        Assignment assignment = new Assignment(statementAnalysis.primitives,
+                        Assignment assignment = new Assignment(Identifier.generate(),
+                                statementAnalysis.primitives,
                                 new VariableExpression(new FieldReference(analyserContext, fieldInfo)),
                                 translated.value(), null, null, false);
                         builder.compose(translated);
@@ -2004,12 +2004,11 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                     localConditionManager.withoutState(statementAnalysis.primitives), sharedState.evaluationContext.getClosure());
             if (myMethodAnalyser.methodInfo.returnType().equals(statementAnalysis.primitives.booleanParameterizedType)) {
                 // state, boolean; evaluation of And will add clauses to the context one by one
-                toEvaluate = new And(statementAnalysis.primitives).append(evaluationContext, localConditionManager.state(),
-                        structure.expression());
+                toEvaluate = And.and(evaluationContext, localConditionManager.state(), structure.expression());
             } else {
                 // state, not boolean
-                InlineConditional inlineConditional = new InlineConditional(analyserContext, localConditionManager.state(),
-                        structure.expression(), currentReturnValue);
+                InlineConditional inlineConditional = new InlineConditional(Identifier.generate(),
+                        analyserContext, localConditionManager.state(), structure.expression(), currentReturnValue);
                 toEvaluate = inlineConditional.optimise(evaluationContext);
             }
         }
@@ -2376,14 +2375,14 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                         .filter(executionOfBlock -> !executionOfBlock.escapesAlways() && !executionOfBlock.condition.isBoolValueTrue())
                         .map(executionOfBlock -> executionOfBlock.condition)
                         .toArray(Expression[]::new);
-                return new Or(statementAnalysis.primitives).append(evaluationContext, conditionsWithoutEscape);
+                return Or.or(evaluationContext, conditionsWithoutEscape);
             }
             Expression[] conditionsWithEscape = list.stream()
                     // with escape, and remove main and finally
                     .filter(executionOfBlock -> executionOfBlock.escapesAlways() && !executionOfBlock.condition.isBoolValueTrue())
                     .map(executionOfBlock -> Negation.negate(evaluationContext, executionOfBlock.condition))
                     .toArray(Expression[]::new);
-            return new And(statementAnalysis.primitives).append(evaluationContext, conditionsWithEscape);
+            return And.and(evaluationContext, conditionsWithEscape);
         }
         if (statementAnalysis.statement instanceof IfElseStatement) {
             ExecutionOfBlock e0 = list.get(0);
@@ -2419,7 +2418,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             Expression[] components = list.stream().filter(ExecutionOfBlock::escapesAlwaysButNotWithPrecondition)
                     .map(e -> e.condition).toArray(Expression[]::new);
             if (components.length == 0) return TRUE;
-            return new And(evaluationContext.getPrimitives()).append(evaluationContext, components);
+            return And.and(evaluationContext, components);
         }
 
         /*
@@ -2432,7 +2431,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             statementAnalysis.stateData.statesOfInterruptsStream().forEach(stateOnInterrupt ->
                     ors.add(evaluationContext.replaceLocalVariables(stateOnInterrupt)));
             ors.add(evaluationContext.replaceLocalVariables(Negation.negate(evaluationContext, list.get(0).condition)));
-            return new Or(statementAnalysis.primitives).append(evaluationContext, ors);
+            return Or.or(evaluationContext, ors.toArray(Expression[]::new));
         }
 
         if (statementAnalysis.statement instanceof SynchronizedStatement && list.get(0).startOfBlock != null) {
@@ -2551,7 +2550,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         }
         ParameterizedType returnType = value.returnType();
         if (returnType.arrays > 0) {
-            return new GreaterThanZero(evaluationContext.getPrimitives().booleanParameterizedType,
+            return new GreaterThanZero(Identifier.generate(), evaluationContext.getPrimitives().booleanParameterizedType,
                     new ArrayLength(evaluationContext.getPrimitives(), value), false);
         }
         if (returnType.typeInfo != null) {
@@ -2559,7 +2558,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                     "java.util.Collection");
             if (collection != null) {
                 MethodInfo isEmpty = collection.findUniqueMethod("isEmpty", 0);
-                return Negation.negate(evaluationContext, new MethodCall(false, value, isEmpty,
+                return Negation.negate(evaluationContext, new MethodCall(Identifier.generate(), false, value, isEmpty,
                         isEmpty.returnType(), List.of()));
             }
         }
@@ -2572,14 +2571,13 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
     }
 
     private Expression defaultCondition(EvaluationContext evaluationContext, List<ExecutionOfBlock> executions) {
-        Primitives primitives = evaluationContext.getPrimitives();
         List<Expression> previousConditions = executions.stream().map(e -> e.condition).collect(Collectors.toList());
         if (previousConditions.isEmpty()) {
-            return new BooleanConstant(primitives, true);
+            return new BooleanConstant(evaluationContext.getPrimitives(), true);
         }
         Expression[] negated = previousConditions.stream().map(c -> Negation.negate(evaluationContext, c))
                 .toArray(Expression[]::new);
-        return new And(primitives).append(evaluationContext, negated);
+        return And.and(evaluationContext, negated);
     }
 
     /**
@@ -2940,7 +2938,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 // assert !Primitives.isPrimitiveExcludingVoid(value.returnType()) || directNN == MultiLevel.EFFECTIVELY_NOT_NULL;
 
                 if (directNN == MultiLevel.NULLABLE) {
-                    Expression valueIsNull = Equals.equals(this, value, NullConstant.NULL_CONSTANT, false);
+                    Expression valueIsNull = Equals.equals(Identifier.generate(),
+                            this, value, NullConstant.NULL_CONSTANT, false);
                     Expression evaluation = conditionManager.evaluate(this, valueIsNull);
                     if (evaluation.isBoolValueFalse()) {
                         // IMPROVE should not necessarily be ENN, could be 45 depending

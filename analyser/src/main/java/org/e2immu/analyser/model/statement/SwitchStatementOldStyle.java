@@ -60,8 +60,8 @@ public class SwitchStatementOldStyle extends StatementWithExpression implements 
     public final List<SwitchLabel> switchLabels;
     public final List<Expression> labelExpressions;
 
-    public SwitchStatementOldStyle(Expression selector, Block block, List<SwitchLabel> switchLabels) {
-        super(new Structure.Builder()
+    public SwitchStatementOldStyle(Identifier identifier, Expression selector, Block block, List<SwitchLabel> switchLabels) {
+        super(identifier, new Structure.Builder()
                 .setExpression(selector)
                 .setForwardEvaluationInfo(ForwardEvaluationInfo.NOT_NULL)
                 .setStatementExecution(StatementExecution.ALWAYS)
@@ -77,7 +77,7 @@ public class SwitchStatementOldStyle extends StatementWithExpression implements 
 
     @Override
     public Statement translate(TranslationMap translationMap) {
-        return new SwitchStatementOldStyle(translationMap.translateExpression(expression),
+        return new SwitchStatementOldStyle(identifier, translationMap.translateExpression(expression),
                 (Block) structure.block().translate(translationMap),
                 switchLabels.stream().map(sl -> sl.translate(translationMap)).collect(Collectors.toList()));
     }
@@ -117,12 +117,11 @@ public class SwitchStatementOldStyle extends StatementWithExpression implements 
 
     public Map<String, Expression> startingPointToLabels(EvaluationContext evaluationContext, StatementAnalysis firstStatement) {
         return switchLabelMap(firstStatement).entrySet().stream().collect(Collectors.toUnmodifiableMap(Map.Entry::getKey,
-                e -> new Or(evaluationContext.getPrimitives()).append(evaluationContext,
-                        e.getValue().stream()
-                                .map(switchLabel ->
-                                        switchLabel.expression == EmptyExpression.DEFAULT_EXPRESSION ? switchLabel.expression :
-                                                Equals.equals(evaluationContext, expression, switchLabel.expression))
-                                .collect(Collectors.toList()))));
+                e -> Or.or(evaluationContext, e.getValue().stream()
+                        .map(switchLabel ->
+                                switchLabel.expression == EmptyExpression.DEFAULT_EXPRESSION ? switchLabel.expression :
+                                        Equals.equals(evaluationContext, expression, switchLabel.expression))
+                        .toList())));
     }
 
     public boolean atLeastOneBlockExecuted() {

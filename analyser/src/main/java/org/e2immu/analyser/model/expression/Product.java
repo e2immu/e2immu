@@ -17,6 +17,7 @@ package org.e2immu.analyser.model.expression;
 import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.Identifier;
 import org.e2immu.analyser.model.TranslationMap;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.parser.Primitives;
@@ -27,22 +28,26 @@ public class Product extends BinaryOperator {
 
     @Override
     public Expression translate(TranslationMap translationMap) {
-        return new Product(primitives, lhs.translate(translationMap), rhs.translate(translationMap));
+        return new Product(identifier, primitives, lhs.translate(translationMap), rhs.translate(translationMap));
     }
 
-    private Product(Primitives primitives, Expression lhs, Expression rhs) {
-        super(primitives, lhs, primitives.multiplyOperatorInt, rhs, Precedence.MULTIPLICATIVE);
+    private Product(Identifier identifier, Primitives primitives, Expression lhs, Expression rhs) {
+        super(identifier, primitives, lhs, primitives.multiplyOperatorInt, rhs, Precedence.MULTIPLICATIVE);
     }
 
     public EvaluationResult reEvaluate(EvaluationContext evaluationContext, Map<Expression, Expression> translation) {
         EvaluationResult reLhs = lhs.reEvaluate(evaluationContext, translation);
         EvaluationResult reRhs = rhs.reEvaluate(evaluationContext, translation);
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext).compose(reLhs, reRhs);
-        return builder.setExpression(Product.product(evaluationContext, reLhs.value(), reRhs.value())).build();
+        return builder.setExpression(Product.product(identifier, evaluationContext, reLhs.value(), reRhs.value())).build();
+    }
+
+    public static Expression product(EvaluationContext evaluationContext, Expression l, Expression r) {
+        return product(Identifier.generate(), evaluationContext, l, r);
     }
 
     // we try to maintain a sum of products
-    public static Expression product(EvaluationContext evaluationContext, Expression l, Expression r) {
+    public static Expression product(Identifier identifier, EvaluationContext evaluationContext, Expression l, Expression r) {
         Primitives primitives = evaluationContext.getPrimitives();
 
         if (l instanceof Numeric ln && ln.doubleValue() == 0 ||
@@ -59,15 +64,15 @@ public class Product extends BinaryOperator {
         if (l.isUnknown() || r.isUnknown()) throw new UnsupportedOperationException();
 
         if (r instanceof Sum sum) {
-            return Sum.sum(evaluationContext, product(evaluationContext, l, sum.lhs),
+            return Sum.sum(identifier, evaluationContext, product(evaluationContext, l, sum.lhs),
                     product(evaluationContext, l, sum.rhs));
         }
         if (l instanceof Sum sum) {
-            return Sum.sum(evaluationContext,
+            return Sum.sum(identifier, evaluationContext,
                     product(evaluationContext, sum.lhs, r),
                     product(evaluationContext, sum.rhs, r));
         }
-        return l.compareTo(r) < 0 ? new Product(primitives, l, r) : new Product(primitives, r, l);
+        return l.compareTo(r) < 0 ? new Product(identifier, primitives, l, r) : new Product(identifier, primitives, r, l);
     }
 
     @Override

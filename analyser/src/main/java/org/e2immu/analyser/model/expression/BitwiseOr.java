@@ -17,6 +17,7 @@ package org.e2immu.analyser.model.expression;
 import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.Identifier;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.parser.Primitives;
 
@@ -24,18 +25,18 @@ import java.util.Map;
 
 public class BitwiseOr extends BinaryOperator {
 
-    private BitwiseOr(Primitives primitives, Expression lhs, Expression rhs) {
-        super(primitives, lhs, primitives.bitwiseAndOperatorInt, rhs, Precedence.OR);
+    private BitwiseOr(Identifier identifier, Primitives primitives, Expression lhs, Expression rhs) {
+        super(identifier, primitives, lhs, primitives.bitwiseAndOperatorInt, rhs, Precedence.OR);
     }
 
     public EvaluationResult reEvaluate(EvaluationContext evaluationContext, Map<Expression, Expression> translation) {
         EvaluationResult reLhs = lhs.reEvaluate(evaluationContext, translation);
         EvaluationResult reRhs = rhs.reEvaluate(evaluationContext, translation);
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext).compose(reLhs, reRhs);
-        return builder.setExpression(BitwiseOr.bitwiseOr(evaluationContext, reLhs.value(), reRhs.value())).build();
+        return builder.setExpression(BitwiseOr.bitwiseOr(identifier, evaluationContext, reLhs.value(), reRhs.value())).build();
     }
 
-    public static Expression bitwiseOr(EvaluationContext evaluationContext, Expression l, Expression r) {
+    public static Expression bitwiseOr(Identifier identifier, EvaluationContext evaluationContext, Expression l, Expression r) {
         if (l instanceof Numeric ln && ln.doubleValue() == 0) return r;
         if (r instanceof Numeric rn && rn.doubleValue() == 0) return l;
 
@@ -46,7 +47,7 @@ public class BitwiseOr extends BinaryOperator {
         // any unknown lingering
         if (l.isUnknown() || r.isUnknown()) throw new UnsupportedOperationException();
 
-        return new BitwiseOr(primitives, l, r);
+        return new BitwiseOr(identifier, primitives, l, r);
     }
 
     @Override

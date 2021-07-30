@@ -37,7 +37,7 @@ public class ParseArrayCreationExpr {
         List<Expression> indexExpressions = arrayCreationExpr.getLevels()
                 .stream().map(level -> level.getDimension().map(expressionContext::parseExpression)
                         .orElse(new IntConstant(expressionContext.typeContext.getPrimitives(), 0))).collect(Collectors.toList());
-        return NewObject.withArrayInitialiser("unevaluated array",
+        return NewObject.withArrayInitialiser(Identifier.generate(),
                 createArrayCreationConstructor(expressionContext.typeContext, parameterizedType),
                 parameterizedType, indexExpressions, arrayInitializer,
                 new BooleanConstant(expressionContext.typeContext.getPrimitives(), true));
@@ -46,11 +46,11 @@ public class ParseArrayCreationExpr {
     // new Type[3]; this method creates the constructor that makes this array, without attaching said constructor to the type
     static MethodInfo createArrayCreationConstructor(TypeContext typeContext, ParameterizedType parameterizedType) {
         MethodInspectionImpl.Builder builder = new MethodInspectionImpl.Builder(parameterizedType.typeInfo)
-                .setInspectedBlock(Block.EMPTY_BLOCK)
+                .setInspectedBlock(Block.emptyBlock(Identifier.generate()))
                 .setReturnType(parameterizedType)
                 .addModifier(MethodModifier.PUBLIC);
         for (int i = 0; i < parameterizedType.arrays; i++) {
-            ParameterInspectionImpl.Builder p = new ParameterInspectionImpl.Builder(
+            ParameterInspectionImpl.Builder p = new ParameterInspectionImpl.Builder(Identifier.generate(),
                     typeContext.getPrimitives().intParameterizedType, "dim" + i, i);
             builder.addParameter(p);
         }

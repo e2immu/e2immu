@@ -128,8 +128,8 @@ public class ExplicitTypes {
             // (String)t forces T to become explicit
             Cast cast;
             if ((cast = element.asInstanceOf(Cast.class)) != null) {
-                ParameterizedType expressionType = cast.expression().returnType();
-                ParameterizedType castType = cast.parameterizedType();
+                ParameterizedType expressionType = cast.getExpression().returnType();
+                ParameterizedType castType = cast.getParameterizedType();
                 TypeInfo bestType = castType.bestTypeInfo();
                 if (bestType != null) {
                     if (bestType == typeBeingAnalysed) {

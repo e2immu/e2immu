@@ -17,17 +17,18 @@ package org.e2immu.analyser.model.expression;
 import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.Identifier;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Primitives;
 
 public class Remainder extends BinaryOperator {
 
-    private Remainder(Primitives primitives, Expression lhs, Expression rhs) {
-        super(primitives, lhs, primitives.remainderOperatorInt, rhs, Precedence.MULTIPLICATIVE);
+    private Remainder(Identifier identifier, Primitives primitives, Expression lhs, Expression rhs) {
+        super(identifier, primitives, lhs, primitives.remainderOperatorInt, rhs, Precedence.MULTIPLICATIVE);
     }
 
-    public static EvaluationResult remainder(EvaluationContext evaluationContext, Expression l, Expression r) {
+    public static EvaluationResult remainder(Identifier identifier, EvaluationContext evaluationContext, Expression l, Expression r) {
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
         if (l instanceof Numeric ln && ln.doubleValue() == 0) return builder.setExpression(l).build();
         if (r instanceof Numeric rn && rn.doubleValue() == 0) {
@@ -42,7 +43,7 @@ public class Remainder extends BinaryOperator {
         // any unknown lingering
         if (l.isUnknown() || r.isUnknown()) throw new UnsupportedOperationException();
 
-        return builder.setExpression(new Remainder(primitives, l, r)).build();
+        return builder.setExpression(new Remainder(identifier, primitives, l, r)).build();
     }
 
     @Override

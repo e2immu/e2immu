@@ -36,16 +36,17 @@ public class TryStatement extends StatementWithStructure {
     public final Block finallyBlock;
     private final List<? extends Element> subElements;
 
-    public TryStatement(List<Expression> resources,
+    public TryStatement(Identifier identifier,
+                        List<Expression> resources,
                         Block tryBlock,
                         List<Pair<CatchParameter, Block>> catchClauses,
                         Block finallyBlock) {
-        super(codeOrganization(resources, tryBlock, catchClauses, finallyBlock));
+        super(identifier, codeOrganization(resources, tryBlock, catchClauses, finallyBlock));
         this.resources = List.copyOf(resources);
         this.catchClauses = List.copyOf(catchClauses);
         this.finallyBlock = finallyBlock;
         subElements = ListUtil.immutableConcat(List.of(tryBlock), catchClauses.stream().map(Pair::getV).collect(Collectors.toList()),
-                finallyBlock == Block.EMPTY_BLOCK ? List.of() : List.of(finallyBlock));
+                finallyBlock.isEmpty() ? List.of() : List.of(finallyBlock));
     }
 
     private static Structure codeOrganization(List<Expression> resources,
@@ -75,7 +76,7 @@ public class TryStatement extends StatementWithStructure {
 
     @Override
     public Statement translate(TranslationMap translationMap) {
-        return new TryStatement(resources.stream().map(translationMap::translateExpression).collect(Collectors.toList()),
+        return new TryStatement(identifier, resources.stream().map(translationMap::translateExpression).collect(Collectors.toList()),
                 translationMap.translateBlock(structure.block()),
                 catchClauses.stream().map(p -> new Pair<>(
                         TranslationMapImpl.ensureExpressionType(p.k.translate(translationMap), CatchParameter.class),
@@ -83,9 +84,14 @@ public class TryStatement extends StatementWithStructure {
                 translationMap.translateBlock(finallyBlock));
     }
 
-    public static record CatchParameter(LocalVariableCreation localVariableCreation,
-                                        List<ParameterizedType> unionOfTypes) implements Expression {
-        public CatchParameter(LocalVariableCreation localVariableCreation, List<ParameterizedType> unionOfTypes) {
+    public static class CatchParameter extends ElementImpl implements Expression {
+        public final LocalVariableCreation localVariableCreation;
+        public final List<ParameterizedType> unionOfTypes;
+
+        public CatchParameter(Identifier identifier,
+                              LocalVariableCreation localVariableCreation,
+                              List<ParameterizedType> unionOfTypes) {
+            super(identifier);
             this.localVariableCreation = localVariableCreation;
             this.unionOfTypes = List.copyOf(unionOfTypes);
         }
@@ -146,7 +152,7 @@ public class TryStatement extends StatementWithStructure {
                     .add(pair.v.output(qualification, StatementAnalysis.startOfBlock(statementAnalysis, i)));
             i++;
         }
-        if (finallyBlock != Block.EMPTY_BLOCK) {
+        if (!finallyBlock.isEmpty()) {
             outputBuilder
                     .add(new Text("finally"))
                     .add(finallyBlock.output(qualification, StatementAnalysis.startOfBlock(statementAnalysis, i)));

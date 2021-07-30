@@ -17,6 +17,7 @@ package org.e2immu.analyser.model.expression;
 import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.Identifier;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.TranslationMap;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
@@ -28,14 +29,15 @@ import java.util.*;
 public class Equals extends BinaryOperator {
 
     // public for testing
-    public Equals(Primitives primitives, Expression lhs, Expression rhs) {
-        super(primitives, lhs, lhs.isNumeric() ? primitives.equalsOperatorInt : primitives.equalsOperatorObject,
+    public Equals(Identifier identifier, Primitives primitives, Expression lhs, Expression rhs) {
+        super(identifier, primitives, lhs, lhs.isNumeric() ? primitives.equalsOperatorInt : primitives.equalsOperatorObject,
                 rhs, Precedence.EQUALITY);
     }
 
     @Override
     public Expression translate(TranslationMap translationMap) {
-        return new Equals(primitives, translationMap.translateExpression(lhs), translationMap.translateExpression(rhs));
+        return new Equals(identifier, primitives, translationMap.translateExpression(lhs),
+                translationMap.translateExpression(rhs));
     }
 
     @Override
@@ -47,10 +49,15 @@ public class Equals extends BinaryOperator {
     }
 
     public static Expression equals(EvaluationContext evaluationContext, Expression l, Expression r) {
-        return equals(evaluationContext, l, r, true);
+        return equals(Identifier.generate(), evaluationContext, l, r, true);
     }
 
-    public static Expression equals(EvaluationContext evaluationContext, Expression l, Expression r, boolean checkForNull) {
+    public static Expression equals(Identifier identifier, EvaluationContext evaluationContext, Expression l, Expression r) {
+        return equals(identifier, evaluationContext, l, r, true);
+    }
+
+    public static Expression equals(Identifier identifier,
+                                    EvaluationContext evaluationContext, Expression l, Expression r, boolean checkForNull) {
         Primitives primitives = evaluationContext.getPrimitives();
         if (l.equals(r)) return new BooleanConstant(primitives, true);
 
@@ -84,11 +91,11 @@ public class Equals extends BinaryOperator {
         Expression newRight = sum(evaluationContext, ct.rightTerms);
 
         if (ct.common.isEmpty()) {
-            return newLeft.compareTo(newRight) < 0 ? new Equals(primitives, newLeft, newRight) :
-                    new Equals(primitives, newRight, newLeft);
+            return newLeft.compareTo(newRight) < 0 ? new Equals(identifier, primitives, newLeft, newRight) :
+                    new Equals(identifier, primitives, newRight, newLeft);
         }
         // recurse
-        return Equals.equals(evaluationContext, newLeft, newRight);
+        return Equals.equals(identifier, evaluationContext, newLeft, newRight);
     }
 
     // (a ? null: b) == null with guaranteed b != null --> !a
@@ -105,7 +112,7 @@ public class Equals extends BinaryOperator {
         if (c instanceof InlineConditional inline2) {
             // silly check a1?b1:c1 == a1?b2:c2 === b1 == b2 && c1 == c2
             if (inline2.condition.equals(inlineConditional.condition)) {
-                return new And(evaluationContext.getPrimitives()).append(evaluationContext,
+                return And.and(evaluationContext,
                         Equals.equals(evaluationContext, inlineConditional.ifTrue, inline2.ifTrue),
                         Equals.equals(evaluationContext, inlineConditional.ifFalse, inline2.ifFalse));
             }
@@ -130,7 +137,7 @@ public class Equals extends BinaryOperator {
 
         if (ifTrueGuaranteedNotEqual) {
             Expression notCondition = Negation.negate(evaluationContext, inlineConditional.condition);
-            return new And(evaluationContext.getPrimitives()).append(evaluationContext,
+            return And.and(evaluationContext,
                     notCondition, Equals.equals(evaluationContext, inlineConditional.ifFalse, c));
         }
 
@@ -148,18 +155,15 @@ public class Equals extends BinaryOperator {
         }
 
         if (ifFalseGuaranteedNotEqual) {
-            return new And(evaluationContext.getPrimitives()).append(evaluationContext,
+            return And.and(evaluationContext,
                     inlineConditional.condition, Equals.equals(evaluationContext, inlineConditional.ifTrue, c));
         }
 
         // we try to do something with recursive results
         if (recursively1 != null && recursively2 != null) {
             Expression notCondition = Negation.negate(evaluationContext, inlineConditional.condition);
-            return new Or(evaluationContext.getPrimitives()).append(evaluationContext,
-                    new And(evaluationContext.getPrimitives()).append(evaluationContext,
-                            inlineConditional.condition, recursively1),
-                    new And(evaluationContext.getPrimitives()).append(evaluationContext,
-                            notCondition, recursively2));
+            return Or.or(evaluationContext, And.and(evaluationContext, inlineConditional.condition, recursively1),
+                    And.and(evaluationContext, notCondition, recursively2));
         }
         return null;
     }
@@ -177,7 +181,7 @@ public class Equals extends BinaryOperator {
         if (c instanceof InlineConditional inline2) {
             // silly check a1?b1:c1 != a1?b2:c2 === b1 != b2 || c1 != c2
             if (inline2.condition.equals(inlineConditional.condition)) {
-                return new Or(evaluationContext.getPrimitives()).append(evaluationContext,
+                return Or.or(evaluationContext,
                         Negation.negate(evaluationContext, Equals.equals(evaluationContext, inlineConditional.ifTrue, inline2.ifTrue)),
                         Negation.negate(evaluationContext, Equals.equals(evaluationContext, inlineConditional.ifFalse, inline2.ifFalse)));
             }
@@ -196,12 +200,11 @@ public class Equals extends BinaryOperator {
         }
         if (ifTrueGuaranteedEqual) {
             Expression notCondition = Negation.negate(evaluationContext, inlineConditional.condition);
-            return new And(evaluationContext.getPrimitives()).append(evaluationContext,
+            return And.and(evaluationContext,
                     notCondition, Negation.negate(evaluationContext, Equals.equals(evaluationContext, inlineConditional.ifFalse, c)));
         }
         if (ifFalseGuaranteedEqual) {
-            return new And(evaluationContext.getPrimitives()).append(evaluationContext,
-                    inlineConditional.condition,
+            return And.and(evaluationContext, inlineConditional.condition,
                     Negation.negate(evaluationContext, Equals.equals(evaluationContext, inlineConditional.ifTrue, c)));
         }
         return null;
@@ -235,25 +238,23 @@ public class Equals extends BinaryOperator {
             equalsToIfFalse = c.equals(inlineConditional.ifFalse);
         }
         if (equalsToIfTrue) {
-            if (recursively2 != null)
-                return new Or(evaluationContext.getPrimitives()).append(evaluationContext, inlineConditional.condition, recursively2);
+            if (recursively2 != null) return Or.or(evaluationContext, inlineConditional.condition, recursively2);
             if (!equalsToIfFalse) return inlineConditional.condition;
         }
         if (equalsToIfFalse) {
-            if (recursively1 != null)
-                return new Or(evaluationContext.getPrimitives()).append(evaluationContext, notCondition, recursively1);
+            if (recursively1 != null) return Or.or(evaluationContext, notCondition, recursively1);
             if (!equalsToIfTrue) return notCondition;
             // FIXME here it goes wrong: !notNull does not mean: always null
         }
         List<Expression> ors = new ArrayList<>();
         if (recursively1 != null) {
-            ors.add(new And(evaluationContext.getPrimitives()).append(evaluationContext, inlineConditional.condition, recursively1));
+            ors.add(And.and(evaluationContext, inlineConditional.condition, recursively1));
         }
         if (recursively2 != null) {
-            ors.add(new And(evaluationContext.getPrimitives()).append(evaluationContext, notCondition, recursively2));
+            ors.add(And.and(evaluationContext, notCondition, recursively2));
         }
         if (!ors.isEmpty()) {
-            return new Or(evaluationContext.getPrimitives()).append(evaluationContext, ors.toArray(Expression[]::new));
+            return Or.or(evaluationContext, ors);
         }
         return null;
     }
