@@ -134,7 +134,7 @@ public record Composer(TypeMap typeMap, String destinationPackage, Predicate<Wit
 
     private FieldInfo createField(FieldInfo fieldInfo, TypeInfo owner) {
         FieldInspection inspection = fieldInfo.fieldInspection.get();
-        FieldInfo newField = new FieldInfo(fieldInfo.type, fieldInfo.name, owner);
+        FieldInfo newField = new FieldInfo(Identifier.generate(), fieldInfo.type, fieldInfo.name, owner);
         FieldInspectionImpl.Builder builder = new FieldInspectionImpl.Builder();
         inspection.getModifiers()
                 .stream().filter(m -> m != FieldModifier.PUBLIC).forEach(builder::addModifier);
@@ -170,7 +170,7 @@ public record Composer(TypeMap typeMap, String destinationPackage, Predicate<Wit
         }
         for (ParameterInfo p : methodInspection.getParameters()) {
             ParameterInspectionImpl.Builder newParameterBuilder = new ParameterInspectionImpl.Builder(
-                    p.parameterizedType, p.name, p.index);
+                    Identifier.generate(), p.parameterizedType, p.name, p.index);
             if (p.parameterInspection.get().isVarArgs()) {
                 newParameterBuilder.setVarArgs(true);
             }
@@ -198,7 +198,7 @@ public record Composer(TypeMap typeMap, String destinationPackage, Predicate<Wit
         builder.noParent(typeMap.getPrimitives())
                 .setTypeNature(TypeNature.CLASS)
                 .addTypeModifier(TypeModifier.PUBLIC);
-        FieldInfo packageField = new FieldInfo(typeMap.getPrimitives().stringParameterizedType,
+        FieldInfo packageField = new FieldInfo(Identifier.generate(), typeMap.getPrimitives().stringParameterizedType,
                 "PACKAGE_NAME", typeInfo);
         FieldInspectionImpl.Builder packageFieldInspectionBuilder = new FieldInspectionImpl.Builder();
         packageFieldInspectionBuilder

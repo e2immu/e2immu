@@ -1207,7 +1207,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                                                            Map<VariableProperty, Integer> changeData,
                                                            GroupPropertyValues groupPropertyValues) {
         Map<VariableProperty, Integer> res = new HashMap<>(valueProps);
-        changeData.forEach(res::put);
+        res.putAll(changeData);
 
         // reasoning: only relevant when assigning to a field, this assignment is in StaticallyAssignedVars, so
         // the field's value is taken anyway
@@ -1584,8 +1584,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             if (!statementAnalysis.variables.isSet(name)) {
                 LocalVariableReference lvr = new LocalVariableReference(catchVariable.localVariable);
                 VariableInfoContainer vic = VariableInfoContainerImpl.newCatchVariable(lvr, index(),
-                        NewObject.forCatchOrThis(index() + "-" + lvr.fullyQualifiedName(),
-                                statementAnalysis.primitives, lvr.parameterizedType()),
+                        NewObject.forCatchOrThis(index(), lvr, statementAnalysis.primitives),
                         lvr.parameterizedType().defaultImmutable(analyserContext),
                         statementAnalysis.navigationData.hasSubBlocks());
                 statementAnalysis.variables.put(name, vic);
@@ -1648,9 +1647,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                                     EXTERNAL_IMMUTABLE, MultiLevel.NOT_INVOLVED,
                                     CONTEXT_IMMUTABLE, defaultImmutable);
 
-                    vic.setValue(NewObject.forLoopVariable(index() + "-" + name, initialNotNull,
-                                    statementAnalysis.primitives, lvr.parameterizedType()), false,
-                            LinkedVariables.EMPTY, properties, true);
+                    vic.setValue(NewObject.forLoopVariable(index(), lvr, initialNotNull, statementAnalysis.primitives),
+                            false, LinkedVariables.EMPTY, properties, true);
                     vic.setLinkedVariables(LinkedVariables.EMPTY, true);
                 } else {
                     initialiserToEvaluate = lvc; // == expression
@@ -1762,8 +1760,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             String loopCopyFqn = loopCopy.fullyQualifiedName();
             if (!statementAnalysis.variables.isSet(loopCopyFqn)) {
                 String read = index() + EVALUATION;
-                Expression newValue = NewObject.localVariableInLoop(index() + "-" + loopCopyFqn,
-                        statementAnalysis.primitives, vi.variable().parameterizedType());
+                Expression newValue = NewObject.localVariableInLoop(index(), vi.variable(), statementAnalysis.primitives);
                 Map<VariableProperty, Integer> valueProps = sharedState.evaluationContext.getValueProperties(newValue);
                 VariableInfoContainer newVic = VariableInfoContainerImpl.newLoopVariable(loopCopy, assigned,
                         read,
@@ -1780,7 +1777,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
     private static Map<VariableProperty, Integer> mergeValueAndLoopVar(Map<VariableProperty, Integer> value,
                                                                        Map<VariableProperty, Integer> loopVar) {
         Map<VariableProperty, Integer> res = new HashMap<>(value);
-        loopVar.forEach(res::put);
+        res.putAll(loopVar);
         return res;
     }
 
@@ -2491,8 +2488,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 conditionForSubStatement = null; // will not be executed anyway
                 conditionForSubStatementIsDelayed = null;
             } else if (statement() instanceof TryStatement) { // catch
-                conditionForSubStatement = NewObject.forCatchOrThis(index() + "-condition",
-                        statementAnalysis.primitives, statementAnalysis.primitives.booleanParameterizedType);
+                conditionForSubStatement = NewObject.forUnspecifiedCatchCondition(index(), statementAnalysis.primitives);
                 conditionForSubStatementIsDelayed = null;
             } else if (statement() instanceof SwitchStatementNewStyle newStyle) {
                 SwitchEntry switchEntry = newStyle.switchEntries.get(count);
@@ -2566,8 +2562,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             return DelayedExpression.forUnspecifiedLoopCondition(evaluationContext.getPrimitives().booleanParameterizedType,
                     value.variables());
         }
-        return NewObject.forUnspecifiedLoopCondition(evaluationContext.statementIndex(),
-                evaluationContext.getPrimitives());
+        return NewObject.forUnspecifiedLoopCondition(index(), evaluationContext.getPrimitives());
     }
 
     private Expression defaultCondition(EvaluationContext evaluationContext, List<ExecutionOfBlock> executions) {
@@ -2769,11 +2764,6 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         @Override
         public String statementIndex() {
             return statementAnalysis.index;
-        }
-
-        @Override
-        public String newObjectIdentifier() {
-            return index();
         }
 
         @Override
@@ -3078,8 +3068,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                             Variable variable = eval.variable();
                             int nne = getProperty(eval.getValue(), NOT_NULL_EXPRESSION, true, false);
                             if (nne != Level.DELAY) {
-                                Expression newObject = NewObject.genericMergeResult(index() + "-" + variable.fullyQualifiedName(),
-                                        getPrimitives(), e.getValue().current(), nne);
+                                Expression newObject = NewObject.genericMergeResult(index(), e.getValue().current(), getPrimitives(),
+                                        nne);
                                 translationMap.put(new VariableExpression(variable), newObject);
                             }
 

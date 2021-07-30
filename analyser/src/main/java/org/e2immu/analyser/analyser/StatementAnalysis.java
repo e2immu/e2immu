@@ -688,8 +688,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                         Expression initialValue = statementTime == initial.getStatementTime() &&
                                 initial.getAssignmentIds().getLatestAssignment().compareTo(assignmentIdOfStatementTime) >= 0 ?
                                 initial.getValue() :
-                                NewObject.localCopyOfVariableField(index + "-" + localCopy.fullyQualifiedName(),
-                                        primitives, fieldReference.parameterizedType());
+                                NewObject.localCopyOfVariableField(index, fieldReference, primitives);
                         boolean initialValueIsDelayed = evaluationContext.isDelayed(initialValue);
                         Map<VariableProperty, Integer> valueMap = evaluationContext.getValueProperties(initialValue);
                         Map<VariableProperty, Integer> combined = new HashMap<>(propertyMap);
@@ -823,8 +822,8 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                 return DelayedExpression.forMerge(variableInfo.variable().parameterizedType(), variables);
             }
             int notNull = variableInfo.getProperty(NOT_NULL_EXPRESSION);
-            return NewObject.genericMergeResult(indexOfCurrentStatement, lastStatement.primitives,
-                    variableInfo.variable().parameterizedType(), notNull);
+            return NewObject.genericMergeResult(indexOfCurrentStatement, variableInfo.variable(), lastStatement.primitives,
+                    notNull);
         }
     }
 
@@ -1156,10 +1155,9 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             vic.setLinkedVariables(LinkedVariables.EMPTY, true);
 
         } else if (variable instanceof This) {
-            vic.setValue(NewObject.forCatchOrThis(
-                    index + "-" + variable.fullyQualifiedName(),
-                    primitives, variable.parameterizedType()), false, LinkedVariables.EMPTY,
-                    typePropertyMap(analyserContext, methodAnalysis.getMethodInfo().typeInfo, true), true);
+            vic.setValue(NewObject.forCatchOrThis(index, variable, primitives),
+                    false, LinkedVariables.EMPTY, typePropertyMap(analyserContext,
+                            methodAnalysis.getMethodInfo().typeInfo, true), true);
             vic.setLinkedVariables(LinkedVariables.EMPTY, true);
             vic.setProperty(NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL, INITIAL);
             vic.setProperty(EXTERNAL_NOT_NULL, MultiLevel.NOT_INVOLVED, INITIAL);
@@ -1204,9 +1202,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         int notNull = MultiLevel.bestNotNull(parameterAnalysis.getProperty(NOT_NULL_PARAMETER),
                 parameterInfo.parameterizedType.defaultNotNull());
         Expression state = new BooleanConstant(primitives, true);
-        return NewObject.initialValueOfParameter(index + "-" + parameterInfo.fullyQualifiedName(),
-                parameterInfo.parameterizedType, state, notNull,
-                parameterInfo.index == 0);
+        return NewObject.initialValueOfParameter(parameterInfo, state, notNull, parameterInfo.index == 0);
     }
 
     public int statementTimeForVariable(AnalyserContext analyserContext, Variable variable, int statementTime) {
@@ -1311,8 +1307,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             if (initialValue.isInstanceOf(NewObject.class)) return new ExpressionAndDelay(initialValue, false);
 
             // TODO will crash when notNull==-1
-            NewObject newObject = NewObject.initialValueOfFieldPartOfConstruction(
-                    newObjectIdentifier, evaluationContext, fieldReference);
+            NewObject newObject = NewObject.initialValueOfFieldPartOfConstruction(index, evaluationContext, fieldReference);
             return new ExpressionAndDelay(newObject, false);
         }
 
@@ -1345,8 +1340,8 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                 }
             }
         }
-        NewObject newObject = NewObject.initialValueOfExternalField(newObjectIdentifier,
-                primitives, fieldReference.parameterizedType(), notNull);
+        NewObject newObject = NewObject.initialValueOfExternalVariableField(fieldReference, index,
+                primitives, notNull);
         return new ExpressionAndDelay(newObject, false);
     }
 

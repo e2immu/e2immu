@@ -80,7 +80,6 @@ public class StringConcat extends BinaryOperator {
 
     @Override
     public NewObject getInstance(EvaluationResult evaluationResult) {
-        return NewObject.forGetInstance(evaluationResult.evaluationContext().newObjectIdentifier(),
-                evaluationResult.evaluationContext().getPrimitives(), returnType());
+        return NewObject.forGetInstance(identifier, evaluationResult.evaluationContext().getPrimitives(), returnType());
     }
 }

@@ -39,15 +39,17 @@ A final field can have been initialised with multiple different values; in some 
 it pays to keep track of all of them.
  */
 @E2Container
-public class MultiValue implements Expression {
+public class MultiValue extends ElementImpl implements Expression {
 
     public final MultiExpression multiExpression;
     private final ParameterizedType commonType;
     private final InspectionProvider inspectionProvider;
 
-    public MultiValue(InspectionProvider inspectionProvider,
+    public MultiValue(Identifier identifier,
+                      InspectionProvider inspectionProvider,
                       MultiExpression multiExpression,
                       ParameterizedType formalCommonType) {
+        super(identifier);
         this.commonType = formalCommonType.commonType(inspectionProvider, multiExpression.commonType(inspectionProvider));
         this.multiExpression = multiExpression;
         this.inspectionProvider = inspectionProvider;
@@ -60,13 +62,13 @@ public class MultiValue implements Expression {
         MultiExpression reMulti = new MultiExpression(reValues);
         return new EvaluationResult.Builder()
                 .compose(reClauseERs)
-                .setExpression(new MultiValue(evaluationContext.getAnalyserContext(), reMulti, commonType))
+                .setExpression(new MultiValue(identifier, evaluationContext.getAnalyserContext(), reMulti, commonType))
                 .build();
     }
 
     @Override
     public Expression translate(TranslationMap translationMap) {
-        return new MultiValue(inspectionProvider, new MultiExpression(multiExpression.stream()
+        return new MultiValue(identifier, inspectionProvider, new MultiExpression(multiExpression.stream()
                 .map(translationMap::translateExpression).toArray(Expression[]::new)), translationMap.translateType(commonType));
     }
 
@@ -154,12 +156,6 @@ public class MultiValue implements Expression {
 
     @Override
     public NewObject getInstance(EvaluationResult evaluationResult) {
-        return NewObject.forGetInstance(evaluationResult.evaluationContext().newObjectIdentifier(),
-                inspectionProvider.getPrimitives(), returnType());
-    }
-
-    @Override
-    public Identifier getIdentifier() {
-        return Identifier.CONSTANT; // internal only
+        return NewObject.forGetInstance(identifier, inspectionProvider.getPrimitives(), returnType());
     }
 }

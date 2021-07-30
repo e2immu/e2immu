@@ -167,8 +167,7 @@ public class ArrayAccess extends ElementImpl implements Expression {
                         }
                     } else {
                         // the result is not known, lets return an unknown instance
-                        Expression newObject = NewObject.genericArrayAccess(evaluationContext.newObjectIdentifier()
-                                        + "-" + dependentVariable.fullyQualifiedName(), evaluationContext, array.value(),
+                        Expression newObject = NewObject.genericArrayAccess(identifier, evaluationContext, array.value(),
                                 dependentVariable);
                         builder.setExpression(newObject);
 

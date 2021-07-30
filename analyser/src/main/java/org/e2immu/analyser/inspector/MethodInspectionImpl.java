@@ -301,8 +301,8 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
 
         // the following two methods are used by the bytecode inspector
 
-        public ParameterInspectionImpl.Builder newParameterInspectionBuilder(int index) {
-            ParameterInspectionImpl.Builder builder = new ParameterInspectionImpl.Builder().setIndex(index);
+        public ParameterInspectionImpl.Builder newParameterInspectionBuilder(Identifier identifier, int index) {
+            ParameterInspectionImpl.Builder builder = new ParameterInspectionImpl.Builder(identifier).setIndex(index);
             addParameter(builder);
             return builder;
         }

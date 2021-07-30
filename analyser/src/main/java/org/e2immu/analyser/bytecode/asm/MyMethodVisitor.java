@@ -20,6 +20,7 @@ import org.e2immu.analyser.bytecode.JetBrainsAnnotationTranslator;
 import org.e2immu.analyser.inspector.MethodInspectionImpl;
 import org.e2immu.analyser.inspector.ParameterInspectionImpl;
 import org.e2immu.analyser.inspector.TypeInspectionImpl;
+import org.e2immu.analyser.model.Identifier;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.inspector.TypeContext;
@@ -64,7 +65,7 @@ public class MyMethodVisitor extends MethodVisitor {
         hasNameFromLocalVar = new boolean[numberOfParameters];
         parameterInspectionBuilders = new ParameterInspectionImpl.Builder[numberOfParameters];
         for (int i = 0; i < numberOfParameters; i++) {
-            parameterInspectionBuilders[i] = methodInspectionBuilder.newParameterInspectionBuilder(i);
+            parameterInspectionBuilders[i] = methodInspectionBuilder.newParameterInspectionBuilder(Identifier.generate(), i);
         }
         this.lastParameterIsVarargs = lastParameterIsVarargs;
     }

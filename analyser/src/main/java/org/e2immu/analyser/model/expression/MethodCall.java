@@ -97,8 +97,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     @Override
     public NewObject getInstance(EvaluationResult evaluationResult) {
         if (Primitives.isPrimitiveExcludingVoid(returnType())) return null;
-        return NewObject.forGetInstance(evaluationResult.evaluationContext().newObjectIdentifier(),
-                evaluationResult.evaluationContext().getPrimitives(), returnType());
+        return NewObject.forGetInstance(identifier, evaluationResult.evaluationContext().getPrimitives(), returnType());
     }
 
     @Override

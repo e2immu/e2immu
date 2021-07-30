@@ -184,6 +184,7 @@ public class MethodTypeParameterMap {
 
         for (ParameterInfo p : methodInspection.getParameters()) {
             ParameterInspectionImpl.Builder newParameterBuilder = new ParameterInspectionImpl.Builder(
+                    Identifier.generate(),
                     getConcreteTypeOfParameter(p.index), p.name, p.index);
             if (p.parameterInspection.get().isVarArgs()) {
                 newParameterBuilder.setVarArgs(true);

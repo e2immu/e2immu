@@ -15,6 +15,7 @@
 package org.e2immu.analyser.model.value;
 
 import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.Identifier;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.parser.Primitives;
@@ -25,7 +26,7 @@ import static org.junit.jupiter.api.Assertions.*;
 public class TestEqualsConstantInline extends CommonAbstractValue {
 
     private static InlineConditional inline(Expression c, Expression a, Expression b) {
-        return new InlineConditional(minimalEvaluationContext.getAnalyserContext(), c, a, b);
+        return new InlineConditional(Identifier.generate(), minimalEvaluationContext.getAnalyserContext(), c, a, b);
     }
 
     //(a ? null: b) == null with guaranteed b != null --> a

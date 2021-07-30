@@ -1227,10 +1227,5 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
             }
             return value.getProperty(this, variableProperty, true);
         }
-
-        @Override
-        public String newObjectIdentifier() {
-            return methodInfo.fullyQualifiedName;
-        }
     }
 }

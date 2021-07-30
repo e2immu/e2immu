@@ -83,7 +83,7 @@ public record StringConstant(Primitives primitives,
     @Override
     public NewObject getInstance(EvaluationResult evaluationResult) {
         // TODO apply code from method call to produce a decent state
-        return NewObject.objectCreation("StringConstant-" + constant,
+        return NewObject.objectCreation(Identifier.stringConstant(constant),
                 primitives, oneParameterConstructor(), primitives.stringParameterizedType, Diamond.NO, List.of(this));
     }
 

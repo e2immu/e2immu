@@ -162,7 +162,6 @@ public class ArrayInitializer extends ElementImpl implements Expression {
 
     @Override
     public NewObject getInstance(EvaluationResult evaluationContext) {
-        return NewObject.forGetInstance(evaluationContext.evaluationContext().newObjectIdentifier(),
-                inspectionProvider.getPrimitives(), returnType());
+        return NewObject.forGetInstance(identifier, inspectionProvider.getPrimitives(), returnType());
     }
 }

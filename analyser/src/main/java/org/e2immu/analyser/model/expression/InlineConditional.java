@@ -123,7 +123,7 @@ public class InlineConditional extends ElementImpl implements Expression {
             int nneIfFalse = notChild.getProperty(ifFalse, VariableProperty.NOT_NULL_EXPRESSION, true, false);
             return Math.min(nneIfFalse, nneIfTrue);
         }
-        if(EvaluationContext.VALUE_PROPERTIES.contains(variableProperty)) {
+        if (EvaluationContext.VALUE_PROPERTIES.contains(variableProperty)) {
             return new MultiExpression(ifTrue, ifFalse).getProperty(evaluationContext, variableProperty, duringEvaluation);
         }
         return new MultiExpression(condition, ifTrue, ifFalse).getProperty(evaluationContext, variableProperty, duringEvaluation);
@@ -144,8 +144,7 @@ public class InlineConditional extends ElementImpl implements Expression {
     @Override
     public NewObject getInstance(EvaluationResult evaluationResult) {
         if (Primitives.isPrimitiveExcludingVoid(returnType())) return null;
-        return NewObject.forGetInstance(evaluationResult.evaluationContext().newObjectIdentifier(),
-                evaluationResult.evaluationContext().getPrimitives(), returnType());
+        return NewObject.forGetInstance(identifier, evaluationResult.evaluationContext().getPrimitives(), returnType());
     }
 
     @Override

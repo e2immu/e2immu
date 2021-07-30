@@ -67,8 +67,7 @@ public class EnumMethods {
                 enumType.asParameterizedType(expressionContext.typeContext));
         var valuesReturnType = new ParameterizedType(enumType, 1);
         var returnNewArray = new ReturnStatement(Identifier.generate(),
-                NewObject.withArrayInitialiser(enumType.fullyQualifiedName,
-                        null,
+                NewObject.withArrayInitialiser(null,
                         valuesReturnType, List.of(), arrayInitializer, new BooleanConstant(primitives, true)));
         var valuesBlock = new Block.BlockBuilder(Identifier.generate()).addStatement(returnNewArray).build();
         var valuesBuilder = new MethodInspectionImpl.Builder(enumType, "values")
@@ -90,8 +89,8 @@ public class EnumMethods {
                 .addModifier(MethodModifier.PUBLIC)
                 .addAnnotation(notNullContract)
                 .addAnnotation(notModifiedContract);
-        var valueOfP0B = new ParameterInspectionImpl.Builder(primitives.stringParameterizedType,
-                "name", 0)
+        var valueOfP0B = new ParameterInspectionImpl.Builder(Identifier.generate(),
+                primitives.stringParameterizedType, "name", 0)
                 .addAnnotation(notPropagateMod)
                 .addAnnotation(e2Container)
                 .addAnnotation(notNullContract);
@@ -203,7 +202,7 @@ public class EnumMethods {
                 .addModifier(MethodModifier.PUBLIC)
                 .addAnnotation(notModifiedContract);
 
-        var predicate0Builder = new ParameterInspectionImpl.Builder(enumPt, "v", 0);
+        var predicate0Builder = new ParameterInspectionImpl.Builder(Identifier.generate(), enumPt, "v", 0);
         predicate.addParameter(predicate0Builder);
         predicate.readyToComputeFQN(expressionContext.typeContext);
 

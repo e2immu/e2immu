@@ -92,11 +92,6 @@ public abstract class CommonVariableInfo {
         }
 
         @Override
-        public String newObjectIdentifier() {
-            return "-";
-        }
-
-        @Override
         public Stream<DelayDebugNode> streamNodes() {
             throw new UnsupportedOperationException();
         }

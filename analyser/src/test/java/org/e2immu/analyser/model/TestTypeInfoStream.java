@@ -63,7 +63,8 @@ public class TestTypeInfoStream {
 
         TypeParameter typeParameterT = new TypeParameterImpl(containerTypeInfo, "T", 0);
 
-        FieldInfo logger = new FieldInfo(loggerTypeInfo.asSimpleParameterizedType(), "LOGGER", testTypeInfo);
+        FieldInfo logger = new FieldInfo(Identifier.generate(),
+                loggerTypeInfo.asSimpleParameterizedType(), "LOGGER", testTypeInfo);
 
         ParameterizedType typeT = new ParameterizedType(typeParameterT, 0, ParameterizedType.WildCard.NONE);
 
@@ -131,9 +132,9 @@ public class TestTypeInfoStream {
                 .setParameterizedType(new ParameterizedType(map, List.of(primitives.stringParameterizedType, typeT)))
                 .build();
         MethodInfo hashMapConstructor = new MethodInspectionImpl.Builder(hashMap).build(IP).getMethodInfo();
-        Expression creationExpression = NewObject.objectCreation("-", primitives, hashMapConstructor,
+        Expression creationExpression = NewObject.objectCreation(Identifier.generate(), primitives, hashMapConstructor,
                 hashMapParameterizedType, Diamond.NO, List.of());
-        ParameterInspectionImpl.Builder p0 = new ParameterInspectionImpl.Builder(typeT, "value", 0);
+        ParameterInspectionImpl.Builder p0 = new ParameterInspectionImpl.Builder(Identifier.generate(), typeT, "value", 0);
         MethodInfo put = new MethodInspectionImpl.Builder(testTypeInfo, "put")
                 .setReturnType(typeT)
                 .addParameter(p0)
@@ -170,22 +171,22 @@ public class TestTypeInfoStream {
                 .build(IP).getMethodInfo();
         put.methodResolution.set(new MethodResolution.Builder().build());
 
-        FieldInfo intFieldInContainer = new FieldInfo(primitives.intParameterizedType, "i", containerTypeInfo);
+        FieldInfo intFieldInContainer = new FieldInfo(Identifier.generate(), primitives.intParameterizedType, "i", containerTypeInfo);
         intFieldInContainer.fieldInspection.set(new FieldInspectionImpl.Builder()
                 .setInspectedInitialiserExpression(new IntConstant(primitives, 27))
                 .build());
 
-        FieldInfo doubleFieldInContainer = new FieldInfo(primitives.doubleParameterizedType, "d", containerTypeInfo);
+        FieldInfo doubleFieldInContainer = new FieldInfo(Identifier.generate(), primitives.doubleParameterizedType, "d", containerTypeInfo);
         doubleFieldInContainer.fieldInspection.set(new FieldInspectionImpl.Builder()
                 .addModifier(FieldModifier.PRIVATE).build());
 
-        FieldInfo stringFieldInContainer = new FieldInfo(primitives.stringParameterizedType, "s", containerTypeInfo);
+        FieldInfo stringFieldInContainer = new FieldInfo(Identifier.generate(), primitives.stringParameterizedType, "s", containerTypeInfo);
         stringFieldInContainer.fieldInspection.set(new FieldInspectionImpl.Builder()
                 .addModifier(FieldModifier.FINAL)
                 .setInspectedInitialiserExpression(new StringConstant(primitives, "first value"))
                 .build());
 
-        FieldInfo tInContainer = new FieldInfo(typeT, "t", containerTypeInfo);
+        FieldInfo tInContainer = new FieldInfo(Identifier.generate(), typeT, "t", containerTypeInfo);
         tInContainer.fieldInspection.set(new FieldInspectionImpl.Builder()
                 .setInspectedInitialiserExpression(new NullConstant())
                 .build());
@@ -220,8 +221,10 @@ public class TestTypeInfoStream {
         MethodInspectionImpl.Builder intSumBuilder = new MethodInspectionImpl.Builder(testTypeInfo, "sum")
                 .setReturnType(primitives.intParameterizedType).setStatic(true);
 
-        ParameterInspectionImpl.Builder xb = new ParameterInspectionImpl.Builder(primitives.intParameterizedType, "x", 0);
-        ParameterInspectionImpl.Builder yb = new ParameterInspectionImpl.Builder(primitives.intParameterizedType, "y", 1);
+        ParameterInspectionImpl.Builder xb = new ParameterInspectionImpl.Builder(Identifier.generate(),
+                primitives.intParameterizedType, "x", 0);
+        ParameterInspectionImpl.Builder yb = new ParameterInspectionImpl.Builder(Identifier.generate(),
+                primitives.intParameterizedType, "y", 1);
 
         ParameterizedType exceptionType = exception.asParameterizedType(inspectionProvider);
 

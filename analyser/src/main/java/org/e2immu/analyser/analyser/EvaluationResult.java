@@ -678,14 +678,12 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                     fieldReference.fieldInfo.owner.primaryType() == subType.primaryType()) {
                 // remove the scope, replace by "this" when our this has access to them; replace by "instance type ..."
                 // when the type is static
-                if(evaluationContext.getCurrentType().hasAccessToFieldsOf(evaluationContext.getAnalyserContext(),
+                if (evaluationContext.getCurrentType().hasAccessToFieldsOf(evaluationContext.getAnalyserContext(),
                         fieldReference.fieldInfo.owner)) {
                     return new FieldReference(evaluationContext.getAnalyserContext(), fieldReference.fieldInfo);
                 }
                 return new FieldReference(evaluationContext.getAnalyserContext(), fieldReference.fieldInfo,
-                        NewObject.genericFieldAccess(
-                                evaluationContext.getAnalyserContext(),
-                                evaluationContext.newObjectIdentifier(), fieldReference.fieldInfo));
+                        NewObject.genericFieldAccess(evaluationContext.getAnalyserContext(), fieldReference.fieldInfo));
             }
             return null;
         }

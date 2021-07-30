@@ -14,7 +14,10 @@
 
 package org.e2immu.analyser.model.expression;
 
-import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.EvaluationContext;
+import org.e2immu.analyser.analyser.EvaluationResult;
+import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
+import org.e2immu.analyser.analyser.StatementAnalysis;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ReturnStatement;
@@ -143,8 +146,8 @@ public class Lambda extends ElementImpl implements Expression {
         } else {
             outputBuilder.add(Symbol.LEFT_PARENTHESIS)
                     .add(parameters.stream().map(pi -> parameterOutputVariants.get(pi.index)
-                            .output(pi, qualification)
-                            .add(pi.output(qualification)))
+                                    .output(pi, qualification)
+                                    .add(pi.output(qualification)))
                             .collect(OutputBuilder.joining(Symbol.COMMA)))
                     .add(Symbol.RIGHT_PARENTHESIS);
         }
@@ -202,8 +205,8 @@ public class Lambda extends ElementImpl implements Expression {
                     result = DelayedExpression.forMethod(methodInfo, implementation, List.of());
                 }
             } else {
-                result = NewObject.forGetInstance(evaluationContext.newObjectIdentifier(),
-                        parameterizedType, new BooleanConstant(evaluationContext.getPrimitives(), true),
+                result = NewObject.forGetInstance(identifier, parameterizedType,
+                        new BooleanConstant(evaluationContext.getPrimitives(), true),
                         MultiLevel.EFFECTIVELY_NOT_NULL);
             }
             builder.markVariablesFromSubMethod(methodAnalysis);
@@ -215,8 +218,7 @@ public class Lambda extends ElementImpl implements Expression {
 
     @Override
     public NewObject getInstance(EvaluationResult evaluationResult) {
-        return NewObject.forGetInstance(evaluationResult.evaluationContext().newObjectIdentifier(),
-                evaluationResult.evaluationContext().getPrimitives(), returnType());
+        return NewObject.forGetInstance(identifier, evaluationResult.evaluationContext().getPrimitives(), returnType());
     }
 
     @Override

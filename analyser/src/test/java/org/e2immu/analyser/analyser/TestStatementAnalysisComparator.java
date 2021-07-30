@@ -15,6 +15,7 @@
 package org.e2immu.analyser.analyser;
 
 import ch.qos.logback.classic.Level;
+import org.e2immu.analyser.model.Identifier;
 import org.e2immu.analyser.model.MethodAnalysis;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.Statement;
@@ -42,7 +43,7 @@ public class TestStatementAnalysisComparator {
     @BeforeEach
     public void before() {
         primitives = new Primitives();
-        emptyStatement = new ExpressionAsStatement(EmptyExpression.EMPTY_EXPRESSION);
+        emptyStatement = new ExpressionAsStatement(Identifier.generate(), EmptyExpression.EMPTY_EXPRESSION);
     }
 
     @Test

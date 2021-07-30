@@ -204,7 +204,10 @@ public class EvaluateMethodCall {
                     yield DelayedExpression.forMethod(methodInfo, concreteReturnType, linkedVariablesWhenDelayed);
                 }
                 yield NewObject.forMethodResult(evaluationContext.getPrimitives(),
-                        evaluationContext.newObjectIdentifier(), concreteReturnType, notNull);
+                        Identifier.joined(ListUtil.immutableConcat(
+                                List.of(methodInfo.identifier, objectValue.getIdentifier()),
+                                parameters.stream().map(Expression::getIdentifier).toList())),
+                        concreteReturnType, notNull);
             }
             default -> DelayedExpression.forMethod(methodInfo, concreteReturnType, linkedVariablesWhenDelayed);
         };
@@ -252,16 +255,14 @@ public class EvaluateMethodCall {
                     && fr.fieldInfo.owner == methodInfo.typeInfo) {
                 return new StringConstant(primitives, fr.fieldInfo.name);
             }
-            return NewObject.forGetInstance(evaluationContext.newObjectIdentifier(), primitives,
-                    primitives.stringParameterizedType);
+            return NewObject.forGetInstance(identifier, primitives, primitives.stringParameterizedType);
         }
         MethodInspection methodInspection = analyserContext.getMethodInspection(methodInfo);
         if (methodInspection.getMethodBody().structure.haveStatements()) {
             return null; // implementation present
         }
         // no implementation, we'll provide something (we could actually implement the method, but why?)
-        return NewObject.forGetInstance(evaluationContext.newObjectIdentifier(), primitives,
-                objectValue.returnType());
+        return NewObject.forGetInstance(identifier, primitives, objectValue.returnType());
     }
 
     /*
@@ -452,8 +453,7 @@ public class EvaluateMethodCall {
         Expression newState = instance.state().reEvaluate(evaluationContext, translationMap).value();
         // TODO object flow
         int notNull = Math.max(MultiLevel.EFFECTIVELY_NOT_NULL, methodAnalysis.getProperty(NOT_NULL_EXPRESSION));
-        return NewObject.forGetInstance(evaluationContext.newObjectIdentifier() + "-" + methodInfo.fullyQualifiedName,
-                methodInfo.returnType(), newState, notNull);
+        return NewObject.forGetInstance(identifier, methodInfo.returnType(), newState, notNull);
     }
 
     // example 1: instance type java.util.ArrayList()[0 == java.util.ArrayList.this.size()].size()

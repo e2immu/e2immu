@@ -651,7 +651,7 @@ public class FieldAnalyser extends AbstractAnalyser {
                             return vi.isDelayed();
                         }
                     });
-                    if (!fieldInspection.isStatic() && methodAnalyser.methodInfo.isConstructor){
+                    if (!fieldInspection.isStatic() && methodAnalyser.methodInfo.isConstructor) {
                         // we'll warn for the combination of field initializer, and occurrence in at least one constructor
                         occurrenceCountForError++;
                     }
@@ -866,7 +866,7 @@ public class FieldAnalyser extends AbstractAnalyser {
             }
         } else {
             MultiExpression multiExpression = MultiExpression.create(expressions);
-            effectivelyFinalValue = new MultiValue(analyserContext, multiExpression, fieldInfo.type);
+            effectivelyFinalValue = new MultiValue(fieldInfo.getIdentifier(), analyserContext, multiExpression, fieldInfo.type);
         }
 
         // check constant, but before we set the effectively final value
@@ -1046,7 +1046,7 @@ public class FieldAnalyser extends AbstractAnalyser {
             // for static fields, we'll take ALL methods and constructors (only the static blocks are allowed)
             Stream<MethodAnalyser> stream = methodsForFinal();
             isFinal = stream.filter(m -> fieldInspection.isStatic() ||
-                    m.methodInfo.methodResolution.get().partOfConstruction().accessibleFromTheOutside())
+                            m.methodInfo.methodResolution.get().partOfConstruction().accessibleFromTheOutside())
                     .flatMap(m -> m.getFieldAsVariableStream(fieldInfo, false))
                     .noneMatch(VariableInfo::isAssigned);
         }
@@ -1148,8 +1148,8 @@ public class FieldAnalyser extends AbstractAnalyser {
             // AggregatingMethodAnalyser returns empty list, so cast is safe
             return variableInfoList.isEmpty() ||
                     variableInfoList.stream().noneMatch(VariableInfo::isRead) ||
-                    variableInfoList.stream().noneMatch(vi -> vi.getProperty(VariableProperty.CONTEXT_MODIFIED)==Level.DELAY);
-                //    ((ComputingMethodAnalyser) m).methodLevelData().acceptLinksHaveBeenEstablished(ignoreMyConstructors);
+                    variableInfoList.stream().noneMatch(vi -> vi.getProperty(VariableProperty.CONTEXT_MODIFIED) == Level.DELAY);
+            //    ((ComputingMethodAnalyser) m).methodLevelData().acceptLinksHaveBeenEstablished(ignoreMyConstructors);
         });
 
         if (allContextModificationsDefined) {
@@ -1162,9 +1162,9 @@ public class FieldAnalyser extends AbstractAnalyser {
             log(DELAYED, "Cannot yet conclude if field {}'s contents have been modified, not all read or links",
                     fqn);
             allMethodsAndConstructors(false).filter(m -> !m.methodInfo.isConstructor &&
-                    !m.getFieldAsVariable(fieldInfo, true).isEmpty() &&
-                    m.getFieldAsVariable(fieldInfo, true).stream().anyMatch(VariableInfo::isRead) &&
-                    ((ComputingMethodAnalyser) m).methodLevelData().linksHaveNotYetBeenEstablished(ignoreMyConstructors))
+                            !m.getFieldAsVariable(fieldInfo, true).isEmpty() &&
+                            m.getFieldAsVariable(fieldInfo, true).stream().anyMatch(VariableInfo::isRead) &&
+                            ((ComputingMethodAnalyser) m).methodLevelData().linksHaveNotYetBeenEstablished(ignoreMyConstructors))
                     .forEach(m -> log(DELAYED, "... method {} reads the field, but we're still waiting on links to be established", m.methodInfo.name));
         }
         return DELAYS;
@@ -1349,11 +1349,6 @@ public class FieldAnalyser extends AbstractAnalyser {
             }
 
             throw new UnsupportedOperationException("Variable of " + variable.getClass() + " not implemented here");
-        }
-
-        @Override
-        public String newObjectIdentifier() {
-            return fqn;
         }
 
         @Override

@@ -175,7 +175,8 @@ public abstract class CommonAbstractValue {
         someType.typeAnalysis.set(new TypeAnalysisImpl.Builder(Analysis.AnalysisMode.CONTRACTED,
                 PRIMITIVES, someType, null).build());
         MethodInspectionImpl.Builder methodBuilder = new MethodInspectionImpl.Builder(someType, "type");
-        ParameterInspectionImpl.Builder pi = new ParameterInspectionImpl.Builder(PRIMITIVES.stringParameterizedType, "p", 0);
+        ParameterInspectionImpl.Builder pi = new ParameterInspectionImpl.Builder(Identifier.generate(),
+                PRIMITIVES.stringParameterizedType, "p", 0);
         methodBuilder.setReturnType(PRIMITIVES.stringParameterizedType).addParameter(pi);
         MethodInfo methodInfo = methodBuilder.build(InspectionProvider.DEFAULT).getMethodInfo();
         ParameterInfo p0 = methodInfo.methodInspection.get().getParameters().get(0);
@@ -240,11 +241,6 @@ public abstract class CommonAbstractValue {
         @Override
         public TypeInfo getCurrentType() {
             return PRIMITIVES.booleanTypeInfo;
-        }
-
-        @Override
-        public String newObjectIdentifier() {
-            return "-";
         }
 
         @Override

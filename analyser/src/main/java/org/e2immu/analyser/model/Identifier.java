@@ -16,7 +16,9 @@ package org.e2immu.analyser.model;
 
 import com.github.javaparser.Position;
 import com.github.javaparser.ast.Node;
+import org.e2immu.analyser.model.variable.Variable;
 
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -33,7 +35,7 @@ public interface Identifier {
     Identifier CONSTANT = new IncrementalIdentifier();
 
     static Identifier from(Node node) {
-        if(node == null) return Identifier.generate();
+        if (node == null) return Identifier.generate();
         Optional<Position> position = node.getBegin();
         if (position.isEmpty()) return new IncrementalIdentifier();
         Position p = position.get();
@@ -42,6 +44,45 @@ public interface Identifier {
 
     static Identifier generate() {
         return new IncrementalIdentifier();
+    }
+
+    static Identifier stringConstant(String constant) {
+        return new StringConstantIdentifier(constant);
+    }
+
+    static Identifier variable(Variable variable) {
+        return new VariableIdentifier(variable, "-");
+    }
+
+    static Identifier variable(Variable variable, String index) {
+        return new VariableIdentifier(variable, index);
+    }
+
+    static Identifier catchCondition(String index) {
+        return new CatchConditionIdentifier(index);
+    }
+
+    static Identifier loopCondition(String index) {
+        return new LoopConditionIdentifier(index);
+    }
+
+    static Identifier joined(List<Identifier> identifiers) {
+        return new ListOfIdentifiers(identifiers);
+    }
+
+    record ListOfIdentifiers(List<Identifier> identifiers) implements Identifier {
+    }
+
+    record LoopConditionIdentifier(String index) implements Identifier {
+    }
+
+    record CatchConditionIdentifier(String index) implements Identifier {
+    }
+
+    record VariableIdentifier(Variable variable, String index) implements Identifier {
+    }
+
+    record StringConstantIdentifier(String constant) implements Identifier {
     }
 
     record PositionalIdentifier(int line, int pos) implements Identifier {

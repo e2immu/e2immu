@@ -162,13 +162,13 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfo vi) 
     }
 
     public Expression noConclusion() {
-        return NewObject.genericMergeResult(evaluationContext.newObjectIdentifier() + "-" +
-                vi.variable().fullyQualifiedName(), evaluationContext.getPrimitives(), vi);
+        return NewObject.genericMergeResult(evaluationContext.getCurrentStatement().index(),
+                evaluationContext.getPrimitives(), vi);
     }
 
     public Expression noConclusion(int notNull) {
-        return NewObject.genericMergeResult(evaluationContext.newObjectIdentifier() + "-" +
-                vi.variable().fullyQualifiedName(), evaluationContext.getPrimitives(), vi, notNull);
+        return NewObject.genericMergeResult(evaluationContext.getCurrentStatement().index(),
+                vi, evaluationContext.getPrimitives(), notNull);
     }
 
     public Expression delayedConclusion() {

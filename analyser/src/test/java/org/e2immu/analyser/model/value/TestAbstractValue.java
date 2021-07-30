@@ -129,7 +129,8 @@ public class TestAbstractValue extends CommonAbstractValue {
 
     @Test
     public void testIsNotNull() {
-        Expression v = Negation.negate(minimalEvaluationContext, new Equals(PRIMITIVES, NullConstant.NULL_CONSTANT, a));
+        Expression v = Negation.negate(minimalEvaluationContext, new Equals(Identifier.generate(),
+                PRIMITIVES, NullConstant.NULL_CONSTANT, a));
         assertEquals("null!=a", v.toString());
         Map<Variable, Boolean> nullClauses = nullClauses(v, Filter.FilterMode.REJECT);
         assertEquals(1, nullClauses.size());

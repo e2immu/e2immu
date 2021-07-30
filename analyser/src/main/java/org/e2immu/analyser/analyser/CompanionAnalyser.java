@@ -203,11 +203,6 @@ public class CompanionAnalyser implements DelayDebugger {
         }
 
         @Override
-        public String newObjectIdentifier() {
-            return companionMethod.fullyQualifiedName;
-        }
-
-        @Override
         public Primitives getPrimitives() {
             return analyserContext.getPrimitives();
         }

@@ -16,7 +16,10 @@ package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.analyser.util.DelayDebugger;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.expression.*;
+import org.e2immu.analyser.model.expression.DelayedExpression;
+import org.e2immu.analyser.model.expression.DelayedVariableExpression;
+import org.e2immu.analyser.model.expression.NewObject;
+import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
@@ -292,12 +295,6 @@ public interface EvaluationContext extends DelayDebugger {
             throw runtimeException;
         }
     }
-
-    default boolean isNotDelayed(Expression expression) {
-        return !isDelayed(expression);
-    }
-
-    String newObjectIdentifier();
 
     default This currentThis() {
         return new This(getAnalyserContext(), getCurrentType());

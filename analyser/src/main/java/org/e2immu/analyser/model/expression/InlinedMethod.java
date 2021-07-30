@@ -176,6 +176,10 @@ public class InlinedMethod extends ElementImpl implements Expression {
         return expression;
     }
 
+    public boolean containsVariableFields() {
+        return containsVariableFields;
+    }
+
     private class EvaluationContextImpl extends AbstractEvaluationContextImpl {
         private final EvaluationContext evaluationContext;
         private final Set<Variable> acceptedVariables;
@@ -194,10 +198,8 @@ public class InlinedMethod extends ElementImpl implements Expression {
         }
 
         private void ensureVariableIsKnown(Variable variable) {
-            if (!(variable instanceof This)) {
-                assert acceptedVariables.contains(variable) : "there should be no other variables in this expression: " +
-                        variable + " is not in " + variablesOfExpression;
-            }
+            assert variable instanceof This || acceptedVariables.contains(variable) :
+                    "there should be no other variables in this expression: " + variable + " is not in " + variablesOfExpression;
         }
 
         @Override
@@ -314,7 +316,7 @@ public class InlinedMethod extends ElementImpl implements Expression {
         @Override
         public NewObject currentInstance(Variable variable, int statementTime) {
             ensureVariableIsKnown(variable);
-            return NewObject.forInlinedMethod(evaluationContext.getPrimitives(), evaluationContext.newObjectIdentifier(),
+            return NewObject.forInlinedMethod(identifier, evaluationContext.getPrimitives(),
                     variable.parameterizedType(), MultiLevel.NULLABLE);
         }
 
@@ -386,16 +388,6 @@ public class InlinedMethod extends ElementImpl implements Expression {
         @Override
         public Set<Variable> isDelayedSet(Expression expression) {
             return null; // nothing can be delayed here
-        }
-
-        @Override
-        public boolean isNotDelayed(Expression expression) {
-            return true; // nothing can be delayed here
-        }
-
-        @Override
-        public String newObjectIdentifier() {
-            return evaluationContext.newObjectIdentifier();
         }
 
         @Override

@@ -339,11 +339,6 @@ public record ConditionManager(Expression condition,
         }
 
         @Override
-        public String newObjectIdentifier() {
-            throw new UnsupportedOperationException("Should not be called");
-        }
-
-        @Override
         public Expression currentValue(Variable variable, int statementTime, ForwardEvaluationInfo forwardEvaluationInfo) {
             return new VariableExpression(variable);
         }

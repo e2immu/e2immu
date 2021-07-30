@@ -1285,11 +1285,6 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
         }
 
         @Override
-        public String newObjectIdentifier() {
-            return typeInfo.fullyQualifiedName;
-        }
-
-        @Override
         public Stream<DelayDebugNode> streamNodes() {
             throw new UnsupportedOperationException();
         }

@@ -33,10 +33,8 @@ public class TestConditionalValue extends CommonAbstractValue {
 
     @Test
     public void test1() {
-        Expression cv1 = new InlineConditional(minimalEvaluationContext.getAnalyserContext(),
-                a, newInt(3), newInt(4));
-        Expression cv2 = new InlineConditional(minimalEvaluationContext.getAnalyserContext(),
-                a, newInt(3), newInt(4));
+        Expression cv1 = inline(a, newInt(3), newInt(4));
+        Expression cv2 = inline(a, newInt(3), newInt(4));
         assertEquals("a?3:4", cv1.toString());
         assertEquals("a?3:4", cv2.toString());
         assertEquals(cv1, cv2);
@@ -63,13 +61,16 @@ public class TestConditionalValue extends CommonAbstractValue {
     public void test3() {
         TypeInfo annotatedAPI = new TypeInfo("org.e2immu.annotatedapi", "AnnotatedAPI");
         ParameterizedType annotatedAPIPt = new ParameterizedType(annotatedAPI, 0);
-        MethodInfo isFact = new MethodInfo(annotatedAPI, "isFact", AnnotatedAPIAnalyser.IS_FACT_FQN, AnnotatedAPIAnalyser.IS_FACT_FQN, false);
+        MethodInfo isFact = new MethodInfo(Identifier.generate(),
+                annotatedAPI, "isFact", AnnotatedAPIAnalyser.IS_FACT_FQN, AnnotatedAPIAnalyser.IS_FACT_FQN, false);
         isFact.methodInspection.set(new MethodInspectionImpl.Builder(annotatedAPI)
                 .setStatic(true)
                 .setReturnType(PRIMITIVES.booleanParameterizedType).build(InspectionProvider.DEFAULT));
-        Expression isFactA = new MethodCall(new TypeExpression(annotatedAPIPt, Diamond.NO), isFact, List.of(a));
+        Expression isFactA = new MethodCall(Identifier.generate(),
+                new TypeExpression(annotatedAPIPt, Diamond.NO), isFact, List.of(a));
         assertEquals("AnnotatedAPI.isFact(a)", isFactA.toString());
-        Expression isFactB = new MethodCall(new TypeExpression(annotatedAPIPt, Diamond.NO), isFact, List.of(b));
+        Expression isFactB = new MethodCall(Identifier.generate(),
+                new TypeExpression(annotatedAPIPt, Diamond.NO), isFact, List.of(b));
         assertEquals("AnnotatedAPI.isFact(b)", isFactB.toString());
 
         assertTrue(minimalEvaluationContext.getConditionManager().state().isBoolValueTrue());
@@ -94,7 +95,7 @@ public class TestConditionalValue extends CommonAbstractValue {
         assertSame(a, cv3b);
 
         EvaluationContext child3 = minimalEvaluationContext.child(
-                new Or(PRIMITIVES).append(minimalEvaluationContext, c, And.and(minimalEvaluationContext, a, b)));
+                Or.or(minimalEvaluationContext, c, And.and(minimalEvaluationContext, a, b)));
         assertEquals("(a||c)&&(b||c)", child3.getConditionManager().absoluteState(child3).toString());
         Expression cv4 = EvaluateInlineConditional.conditionalValueConditionResolved(child3, isFactA, a, b).value();
         assertSame(b, cv4);
