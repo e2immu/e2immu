@@ -92,7 +92,13 @@ public record NewObject(
     }
 
     public static NewObject forInlinedMethod(Primitives primitives, String identifier,
-                                              ParameterizedType parameterizedType, int notNull) {
+                                             ParameterizedType parameterizedType, int notNull) {
+        return new NewObject(identifier, null, parameterizedType, Diamond.SHOW_ALL, List.of(),
+                notNull, false, null, null, new BooleanConstant(primitives, true));
+    }
+
+    public static Expression forMethodResult(Primitives primitives, String identifier,
+                                             ParameterizedType parameterizedType, int notNull) {
         return new NewObject(identifier, null, parameterizedType, Diamond.SHOW_ALL, List.of(),
                 notNull, false, null, null, new BooleanConstant(primitives, true));
     }

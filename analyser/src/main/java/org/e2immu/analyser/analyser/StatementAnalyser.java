@@ -1310,7 +1310,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
     }
 
     /*
-    first of all in 'apply' we need to ensure that all variables exist, and have a proper assignmentId and readId.
+    As the first action in 'apply', we need to ensure that all variables exist, and have a proper assignmentId and readId.
 
     We need to do:
     - generally ensure a EVALUATION level for each variable occurring, with correct assignmentId, readId
@@ -1327,7 +1327,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         VariableInfoContainer vic;
         VariableInfo initial;
         if (!statementAnalysis.variables.isSet(variable.fullyQualifiedName())) {
-            assert variable.variableNature() instanceof VariableNature.NormalLocalVariable;
+            assert variable.variableNature() instanceof VariableNature.NormalLocalVariable :
+                    "Encountering variable " + variable.fullyQualifiedName() + " of nature " + variable.variableNature();
             vic = statementAnalysis.createVariable(evaluationContext, variable,
                     statementAnalysis.flowData.getInitialTime(), VariableNature.normal(variable, index()));
             initial = vic.getPreviousOrInitial();

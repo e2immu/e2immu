@@ -35,11 +35,10 @@ public class Test_00_Basics_2 extends CommonTestRunner {
     private static final String TYPE = "org.e2immu.analyser.testexample.Basics_2";
     private static final String STRING_PARAMETER = TYPE + ".setString(java.lang.String):0:string";
     private static final String STRING_FIELD = TYPE + ".string";
-    private static final String STRING_0 =  "string$0";
+    private static final String STRING_0 = "string$0";
 
     private static final String THIS = TYPE + ".this";
     private static final String COLLECTION = TYPE + ".add(java.util.Collection<java.lang.String>):0:collection";
-    private static final String METHOD_VALUE_ADD = "collection.add(" + STRING_0 + ")";
     private static final String ADD = TYPE + ".add(java.util.Collection<java.lang.String>)";
 
     public Test_00_Basics_2() {
@@ -156,8 +155,6 @@ public class Test_00_Basics_2 extends CommonTestRunner {
             if ("setString".equals(d.methodInfo().name)) {
                 assert fieldAsVariable != null;
                 assertTrue(fieldAsVariable.isAssigned());
-                int expectFieldModified = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
-                //  assertEquals(expectFieldModified, fieldAsVariable.getProperty(VariableProperty.MODIFIED_OUTSIDE_METHOD));
                 assertEquals(Level.FALSE, fieldAsVariable.getProperty(VariableProperty.CONTEXT_MODIFIED));
             }
             if ("add".equals(d.methodInfo().name)) {
@@ -187,7 +184,7 @@ public class Test_00_Basics_2 extends CommonTestRunner {
             assertTrue(d.haveMarkRead(THIS));
         }
         if (d.methodInfo().name.equals("add") && "0".equals(d.statementId())) {
-            String expectEvalString = d.iteration() == 0 ? "<m:add>" : METHOD_VALUE_ADD;
+            String expectEvalString = d.iteration() == 0 ? "<m:add>" : "instance type boolean";
             assertEquals(expectEvalString, d.evaluationResult().value().toString());
         }
     };

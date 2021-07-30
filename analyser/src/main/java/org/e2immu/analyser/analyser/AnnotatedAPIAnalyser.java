@@ -193,7 +193,7 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
         builder.setProperty(VariableProperty.CONTAINER, Level.FALSE);
         builder.companionAnalyses.freeze();
         builder.singleReturnValue.set(new InlinedMethod(methodInfo, new VariableExpression(parameterInfo),
-                Set.of(parameterInfo), InlinedMethod.Applicability.EVERYWHERE));
+                Set.of(parameterInfo), false));
         log(ANALYSER, "Provided analysis of dedicated method {}", methodInfo.fullyQualifiedName());
         methodInfo.setAnalysis(builder.build());
     }

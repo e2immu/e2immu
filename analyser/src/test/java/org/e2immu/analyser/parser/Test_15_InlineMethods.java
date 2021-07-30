@@ -14,14 +14,26 @@
 
 package org.e2immu.analyser.parser;
 
+import org.e2immu.analyser.analyser.VariableProperty;
+import org.e2immu.analyser.config.AnalyserConfiguration;
+import org.e2immu.analyser.config.AnnotatedAPIConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.visitor.TypeMapVisitor;
+import org.e2immu.analyser.model.Level;
+import org.e2immu.analyser.model.MethodAnalysis;
 import org.e2immu.analyser.model.MethodInfo;
+import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.model.expression.InlinedMethod;
+import org.e2immu.analyser.model.expression.Sum;
+import org.e2immu.analyser.visitor.EvaluationResultVisitor;
+import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
+import org.e2immu.analyser.visitor.TypeMapVisitor;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.util.List;
+import java.util.Random;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_15_InlineMethods extends CommonTestRunner {
     public Test_15_InlineMethods() {
@@ -46,6 +58,113 @@ public class Test_15_InlineMethods extends CommonTestRunner {
     public void test_1() throws IOException {
         testClass("InlineMethods_1", 0, 0, new DebugConfiguration.Builder()
                 .build());
+    }
+
+    @Test
+    public void test_2() throws IOException {
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("plus".equals(d.methodInfo().name) && d.iteration() > 0) {
+                if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
+                    assertEquals("i+r", inlinedMethod.toString());
+                    //  assertSame(InlinedMethod.Applicability.EVERYWHERE, inlinedMethod.applicability());
+                } else fail();
+            }
+            if ("difference31".equals(d.methodInfo().name) && d.iteration() > 0) {
+                assertEquals("2", d.methodAnalysis().getSingleReturnValue().toString());
+            }
+            if ("difference11".equals(d.methodInfo().name) && d.iteration() > 0) {
+                assertEquals("0", d.methodAnalysis().getSingleReturnValue().toString());
+            }
+        };
+        testClass("InlineMethods_2", 0, 0, new DebugConfiguration.Builder()
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .build());
+    }
+
+    @Test
+    public void test_3() throws IOException {
+        EvaluationResultVisitor evaluationResultVisitor = d -> {
+            if ("plusRandom".equals(d.methodInfo().name)) {
+                if ("1".equals(d.statementId())) {
+                    assertEquals("i+r", d.evaluationResult().value().toString());
+                    assertTrue(d.evaluationResult().value() instanceof Sum);
+                }
+            }
+        };
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("plusRandom".equals(d.methodInfo().name)) {
+                if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
+                    assertEquals("i+instance type int", inlinedMethod.toString());
+                } else {
+                    fail("Have " + d.methodAnalysis().getSingleReturnValue().getClass());
+                }
+            }
+            if ("difference31".equals(d.methodInfo().name)) {
+                assertEquals("2+instance type int-instance type int", d.methodAnalysis().getSingleReturnValue().toString());
+            }
+            if ("difference11".equals(d.methodInfo().name)) {
+                assertEquals("instance type int-instance type int", d.methodAnalysis().getSingleReturnValue().toString());
+            }
+        };
+
+        TypeMapVisitor typeMapVisitor = typeMap -> {
+            TypeInfo random = typeMap.get(Random.class);
+            MethodInfo nextInt = random.findUniqueMethod("nextInt", 0);
+            MethodAnalysis nextIntAnalysis = nextInt.methodAnalysis.get();
+            assertEquals(Level.TRUE, nextIntAnalysis.getProperty(VariableProperty.MODIFIED_METHOD));
+        };
+
+        testClass("InlineMethods_3", 0, 0, new DebugConfiguration.Builder()
+                .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addTypeMapVisitor(typeMapVisitor)
+                .build());
+    }
+
+    @Test
+    public void test_4() throws IOException {
+        testClass("InlineMethods_4", 0, 0, new DebugConfiguration.Builder()
+                .build());
+    }
+
+
+    @Test
+    public void test_5() throws IOException {
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("expand3".equals(d.methodInfo().name) && d.iteration() > 0) {
+                assertEquals("a+b", d.methodAnalysis().getSingleReturnValue().toString());
+            }
+        };
+        testClass("InlineMethods_5", 0, 0, new DebugConfiguration.Builder()
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .build());
+    }
+
+    @Test
+    public void test_6() throws IOException {
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("expand".equals(d.methodInfo().name) && d.iteration() > 0) {
+                assertEquals("a+b", d.methodAnalysis().getSingleReturnValue().toString());
+            }
+        };
+        testClass("InlineMethods_6", 0, 0, new DebugConfiguration.Builder()
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .build());
+    }
+
+    @Test
+    public void test_7() throws IOException {
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("expand".equals(d.methodInfo().name) && d.iteration() > 0) {
+                assertEquals("a+b", d.methodAnalysis().getSingleReturnValue().toString());
+            }
+            if ("doNotExpand".equals(d.methodInfo().name) && d.iteration() > 0) {
+                assertEquals("a+b", d.methodAnalysis().getSingleReturnValue().toString());
+            }
+        };
+        testClass(List.of("InlineMethods6", "InlineMethods_7"), 0, 0, new DebugConfiguration.Builder()
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .build(), new AnalyserConfiguration.Builder().build(), new AnnotatedAPIConfiguration.Builder().build());
     }
 
 }

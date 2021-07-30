@@ -211,6 +211,12 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
                 } else {
                     assertSame(MethodAnalysis.DELAYED_EVENTUAL, eventual);
                 }
+
+                if (d.iteration() > 1) {
+                    assertEquals("", d.methodAnalysis().getSingleReturnValue().toString());
+                } else {
+                    assertNull(d.methodAnalysis().getSingleReturnValue());
+                }
             }
 
             if ("get".equals(d.methodInfo().name)) {
@@ -221,6 +227,9 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
                     assertEquals("null!=t", d.methodAnalysis().getPreconditionForEventual()
                             .expression().toString());
                     assertEquals("t", d.methodAnalysis().getSingleReturnValue().toString());
+                    if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
+                        assertTrue(inlinedMethod.containsVariableFields());
+                    } else fail();
                 }
                 int expectModified = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
                 assertEquals(expectModified, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
@@ -263,8 +272,10 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
                 assertNull(d.methodAnalysis().getPreconditionForEventual());
                 if (d.iteration() > 0) {
                     assertEquals("null!=t", d.methodAnalysis().getSingleReturnValue().toString());
-                    assertTrue(d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod im
-                            && im.expression() instanceof Negation);
+                    if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod im) {
+                        assertTrue(im.expression() instanceof Negation);
+                        assertTrue(im.containsVariableFields());
+                    }
                 }
                 int expectModified = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
                 assertEquals(expectModified, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));

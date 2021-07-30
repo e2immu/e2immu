@@ -18,6 +18,7 @@ import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.util.DelayDebugNode;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
+import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.OutputBuilder;
@@ -30,13 +31,10 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static org.e2immu.analyser.analyser.VariableProperty.INDEPENDENT;
-import static org.e2immu.analyser.analyser.VariableProperty.MODIFIED_METHOD;
-
 /*
- can only be created as the single result value of a method
+ can only be created as the single result value of a non-modifying method
 
- will be substituted at any time in MethodCall
+ will be substituted in MethodCall
 
  Big question: do properties come from the expression, or from the method??
  In the case of Supplier.get() (which is modifying by default), the expression may for example be a parameterized string (t + "abc").
@@ -47,35 +45,15 @@ import static org.e2immu.analyser.analyser.VariableProperty.MODIFIED_METHOD;
 public record InlinedMethod(MethodInfo methodInfo,
                             Expression expression,
                             Set<Variable> variablesOfExpression,
-                            Applicability applicability) implements Expression {
-
-    public enum Applicability {
-        EVERYWHERE(0), // no references to fields, static or otherwise, unless they are public
-        PROTECTED(1), // reference to protected fields
-        PACKAGE(2),  // reference to package-private fields
-        TYPE(3),   // can only be applied in the same type (reference to private fields)
-        METHOD(4), // can only be applied in the same method (reference to local variables)
-
-        NONE(5); // cannot be expressed properly
-
-        public final int order;
-
-        Applicability(int order) {
-            this.order = order;
-        }
-
-        public Applicability mostRestrictive(Applicability other) {
-            return order < other.order ? other : this;
-        }
-    }
+                            boolean containsVariableFields) implements Expression {
 
     @Override
     public Expression translate(TranslationMap translationMap) {
-        return new InlinedMethod(methodInfo,
-                expression.translate(translationMap),
-                variablesOfExpression.stream()
-                        .map(translationMap::translateVariable).collect(Collectors.toUnmodifiableSet()),
-                applicability);
+        Set<Variable> translatedVariables = variablesOfExpression.stream()
+                .map(translationMap::translateVariable).collect(Collectors.toUnmodifiableSet());
+        // TODO lack of AnalysisProvider, so we copy containsVariableFields rather than computing it
+        return new InlinedMethod(methodInfo, expression.translate(translationMap), translatedVariables,
+                containsVariableFields);
     }
 
     @Override
@@ -116,30 +94,27 @@ public record InlinedMethod(MethodInfo methodInfo,
     }
 
     /*
-    an inline method has properties on the method, and properties on the expression. these are on the method.
-    */
-    private final static Set<VariableProperty> METHOD_PROPERTIES_IN_INLINE_SAM = Set.of(MODIFIED_METHOD, INDEPENDENT);
-
+    These values only matter when the InlinedMethod cannot get expanded. In this case, it is simply
+    a method call, and the result of the method should be used.
+     */
     @Override
     public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty, boolean duringEvaluation) {
-        return switch (variableProperty) {
-            case MODIFIED_METHOD, INDEPENDENT -> evaluationContext.getAnalyserContext()
-                    .getMethodAnalysis(methodInfo).getProperty(variableProperty);
-            case NOT_NULL_EXPRESSION -> MultiLevel.EFFECTIVELY_NOT_NULL;
-            case IMMUTABLE -> MultiLevel.EFFECTIVELY_E2IMMUTABLE; // a method is immutable
-            default -> evaluationContext.getProperty(expression, variableProperty, duringEvaluation, false);
-        };
+        return evaluationContext.getAnalyserContext().getMethodAnalysis(methodInfo).getProperty(variableProperty);
     }
 
     @Override
     public EvaluationResult reEvaluate(EvaluationContext evaluationContext, Map<Expression, Expression> translation) {
-        Set<Variable> targetVariables = translation.values().stream().filter(e -> e instanceof VariableExpression)
-                .map(e -> ((VariableExpression)e).variable()).collect(Collectors.toUnmodifiableSet());
+        Set<Variable> targetVariables = translation.values().stream()
+                .flatMap(e -> e.variables().stream()).collect(Collectors.toUnmodifiableSet());
         EvaluationContext closure = new EvaluationContextImpl(evaluationContext, targetVariables);
         EvaluationResult result = expression.reEvaluate(closure, translation);
         if (expression instanceof InlinedMethod im) {
+            Set<Variable> newVariables = new HashSet<>(result.getExpression().variables());
+            boolean haveVariableFields = newVariables.stream()
+                    .anyMatch(v -> v instanceof FieldReference fr && evaluationContext.getAnalyserContext()
+                            .getFieldAnalysis(fr.fieldInfo).getProperty(VariableProperty.FINAL) == Level.FALSE);
             InlinedMethod newIm = new InlinedMethod(im.methodInfo(), result.getExpression(),
-                    new HashSet<>(result.getExpression().variables()), im.applicability);
+                    newVariables, haveVariableFields);
             return new EvaluationResult.Builder().compose(result).setExpression(newIm).build();
         }
         return result;
@@ -171,14 +146,7 @@ public record InlinedMethod(MethodInfo methodInfo,
     }
 
     public boolean canBeApplied(EvaluationContext evaluationContext) {
-        return switch (applicability) {
-            case EVERYWHERE -> true;
-            case NONE -> false;
-            case TYPE -> evaluationContext.getCurrentType().primaryType().equals(methodInfo.typeInfo.primaryType());
-            case METHOD -> methodInfo.equals(evaluationContext.getCurrentMethod().methodInfo);
-            case PACKAGE -> evaluationContext.getCurrentType().packageName().equals(methodInfo.typeInfo.packageName());
-            default -> throw new UnsupportedOperationException("TODO");
-        };
+        return !containsVariableFields || evaluationContext.getCurrentType().primaryType().equals(methodInfo.typeInfo.primaryType());
     }
 
     @Override
@@ -213,12 +181,12 @@ public record InlinedMethod(MethodInfo methodInfo,
 
         @Override
         public TypeInfo getCurrentType() {
-            return applicability == Applicability.EVERYWHERE ? null : evaluationContext.getCurrentType();
+            return evaluationContext.getCurrentType();
         }
 
         @Override
         public MethodAnalyser getCurrentMethod() {
-            return applicability == Applicability.METHOD ? evaluationContext.getCurrentMethod() : null;
+            return evaluationContext.getCurrentMethod();
         }
 
         @Override

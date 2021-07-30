@@ -58,6 +58,13 @@ public class EvaluateMethodCall {
             MethodCall methodValue = new MethodCall(objectValue, methodInfo, parameters);
             return builder.setExpression(methodValue).build();
         }
+
+        // no value (method call on field that does not have effective value yet)
+        if (evaluationContext.isDelayed(objectValue)) {
+            List<Variable> linkedVariablesWhenDelayed = evaluationContext.linkedVariables(objectValue).variablesAsList();
+            return delay(builder, methodInfo, concreteReturnType, linkedVariablesWhenDelayed);
+        }
+
         /* before we use the evaluation context to compute values on variables, we must check whether we're actually
           executing an inlined method
 
@@ -74,10 +81,6 @@ public class EvaluateMethodCall {
 
         List<Variable> linkedVariablesWhenDelayed = evaluationContext.linkedVariables(objectValue).variablesAsList();
 
-        // no value (method call on field that does not have effective value yet)
-        if (evaluationContext.isDelayed(objectValue)) {
-            return delay(builder, methodInfo, concreteReturnType, linkedVariablesWhenDelayed);
-        }
 
         if (AnnotatedAPIAnalyser.IS_KNOWN_FQN.equals(methodInfo.fullyQualifiedName) &&
                 !analyserContext.inAnnotatedAPIAnalysis() &&
@@ -191,8 +194,18 @@ public class EvaluateMethodCall {
             }
         }
 
-        // normal method value
-        MethodCall methodValue = new MethodCall(objectIsImplicit, objectValue, methodInfo, concreteReturnType, parameters);
+        Expression methodValue = switch (modified) {
+            case Level.FALSE -> new MethodCall(objectIsImplicit, objectValue, methodInfo, concreteReturnType, parameters);
+            case Level.TRUE -> {
+                int notNull = methodAnalysis.getProperty(NOT_NULL_EXPRESSION);
+                if (notNull == Level.DELAY) {
+                    yield DelayedExpression.forMethod(methodInfo, concreteReturnType, linkedVariablesWhenDelayed);
+                }
+                yield NewObject.forMethodResult(evaluationContext.getPrimitives(),
+                        evaluationContext.newObjectIdentifier(), concreteReturnType, notNull);
+            }
+            default -> DelayedExpression.forMethod(methodInfo, concreteReturnType, linkedVariablesWhenDelayed);
+        };
         return builder.setExpression(methodValue).build();
     }
 

@@ -151,4 +151,10 @@ public class Test_57_Lambda extends CommonTestRunner {
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
+
+    @Test
+    public void test_7() throws IOException {
+        testClass("Lambda_7", 0, 0, new DebugConfiguration.Builder()
+                .build());
+    }
 }

@@ -24,6 +24,7 @@ import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.parser.Primitives;
 
+import java.util.Arrays;
 import java.util.Map;
 
 public class Sum extends BinaryOperator {
@@ -71,6 +72,15 @@ public class Sum extends BinaryOperator {
                     s.rhs);
         }
 
+        // (a+b) + (c+d)
+        if (l instanceof Sum s1 && r instanceof Sum s2) {
+            Expression[] expressions = new Expression[]{s1.lhs, s1.rhs, s2.lhs, s2.rhs};
+            Arrays.sort(expressions);
+            if (!s1.lhs.equals(expressions[0]) || !s1.rhs.equals(expressions[1])) {
+                return Sum.sum(evaluationContext, Sum.sum(evaluationContext, expressions[0], expressions[1]),
+                        Sum.sum(evaluationContext, expressions[2], expressions[3]));
+            }
+        }
         // a + x*a
         if (l instanceof Product lp && lp.lhs instanceof Numeric lpLn && r.equals(lp.rhs))
             return Product.product(evaluationContext,
@@ -86,6 +96,7 @@ public class Sum extends BinaryOperator {
             return Product.product(evaluationContext,
                     IntConstant.intOrDouble(primitives, lpLn.doubleValue() + rpLn.doubleValue()), lp.rhs);
         }
+
         Sum s = l.compareTo(r) < 0 ? new Sum(primitives, l, r) : new Sum(primitives, r, l);
 
         // re-running the sum to solve substitutions of variables to constants
@@ -125,13 +136,13 @@ public class Sum extends BinaryOperator {
     }
 
     public Expression isZero(EvaluationContext evaluationContext) {
-        if(lhs instanceof Negation negation && !(rhs instanceof Negation)) {
+        if (lhs instanceof Negation negation && !(rhs instanceof Negation)) {
             return Equals.equals(evaluationContext, negation.expression, rhs);
         }
-        if(rhs instanceof Negation negation && !(lhs instanceof Negation)) {
+        if (rhs instanceof Negation negation && !(lhs instanceof Negation)) {
             return Equals.equals(evaluationContext, lhs, negation.expression);
         }
-        if(lhs instanceof Negation nLhs) {
+        if (lhs instanceof Negation nLhs) {
             return Equals.equals(evaluationContext, nLhs, rhs);
         }
         return Equals.equals(evaluationContext, lhs, Negation.negate(evaluationContext, rhs));

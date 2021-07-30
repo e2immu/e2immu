@@ -30,7 +30,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -520,10 +519,14 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
                 return DELAYS;
             }
             if (modified == Level.FALSE) {
-                InlinedMethod.Applicability applicability = applicability(value);
-                if (applicability != InlinedMethod.Applicability.NONE) {
-                    LocalCopiesReplaced lcr = replaceFields(sharedState.evaluationContext, value);
-                    value = new InlinedMethod(methodInfo, lcr.expression, lcr.variables, applicability);
+                /*
+                 As a general rule, we make non-modifying methods inline-able, even if they contain references to variable
+                 fields and local loop variables. It'll depend on where they are expanded
+                 whether the result is something sensible or not.
+                 */
+                value = createInlinedMethod(value, methodAnalysis.getLastStatement());
+                if (value == null) {
+                    return DELAYS;
                 }
             }
         }
@@ -649,40 +652,52 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
     }
 
     /*
-    replace local copies of fields to fields
+    Create an inlined method based on the returned value
      */
-
-    private record LocalCopiesReplaced(Expression expression, Set<Variable> variables) {
-    }
-
-    private LocalCopiesReplaced replaceFields(EvaluationContext evaluationContext, Expression value) {
-        TranslationMapImpl.Builder builder = new TranslationMapImpl.Builder();
-        boolean change = false;
+    private InlinedMethod createInlinedMethod(Expression value, StatementAnalysis lastStatement) {
         Set<Variable> variables = new HashSet<>();
+        TranslationMapImpl.Builder builder = new TranslationMapImpl.Builder();
+        boolean containsVariableFields = false;
         for (Variable variable : value.variables()) {
+            FieldInfo fieldInfo;
             if (variable instanceof LocalVariableReference lvr) {
-                FieldInfo fieldInfo = extractFieldFromLocal(lvr);
-                if (fieldInfo != null) {
-                    FieldReference fieldReference = new FieldReference(evaluationContext.getAnalyserContext(), fieldInfo);
-                    builder.put(variable, fieldReference);
-                    change = true;
-                    variables.add(fieldReference);
+                if (lvr.variable.nature() instanceof VariableNature.CopyOfVariableField copy &&
+                        copy.localCopyOf().scopeIsThis()) {
+                    fieldInfo = copy.localCopyOf().fieldInfo;
                 } else {
-                    variables.add(lvr);
+                    // all local variables that are not copies of variable fields are replaced by a NewObject;
+                    // this NewObject should be their value
+                    VariableInfo vi = lastStatement.findOrThrow(lvr);
+                    builder.put(new VariableExpression(lvr), vi.getValue());
+                    fieldInfo = null;
                 }
+            } else if (value instanceof FieldReference fieldReference) {
+                fieldInfo = fieldReference.fieldInfo;
             } else {
-                variables.add(variable);
+                fieldInfo = null;
+            }
+            if (fieldInfo != null) {
+                int effectivelyFinal = analyserContext.getFieldAnalysis(fieldInfo).getProperty(VariableProperty.FINAL);
+                if (effectivelyFinal == Level.DELAY) {
+                    assert translatedDelay(COMPUTE_RETURN_VALUE, methodInfo.fullyQualifiedName + D_MODIFIED_METHOD,
+                            fieldInfo.fullyQualifiedName() + D_FINAL);
+                    return null;
+                }
+                if (effectivelyFinal == Level.FALSE) {
+                    containsVariableFields = true;
+                }
             }
         }
-        if (!change) return new LocalCopiesReplaced(value, variables);
-        return new LocalCopiesReplaced(value.translate(builder.build()), variables);
+        Expression finalValue;
+        TranslationMap translationMap = builder.build();
+        if (translationMap.isEmpty()) {
+            finalValue = value;
+        } else {
+            finalValue = value.translate(translationMap);
+        }
+        return new InlinedMethod(methodInfo, finalValue, variables, containsVariableFields);
     }
 
-    private FieldInfo extractFieldFromLocal(LocalVariableReference lvr) {
-        if (lvr.variable.nature() instanceof VariableNature.CopyOfVariableField copy &&
-                copy.localCopyOf().scopeIsThis()) return copy.localCopyOf().fieldInfo;
-        return null;
-    }
 
     private boolean noReturnStatementReachable() {
         StatementAnalysis firstStatement = methodAnalysis.getFirstStatement();
@@ -702,49 +717,6 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
             sa = sa.navigationData.next.get().get();
         }
         return false;
-    }
-
-    private InlinedMethod.Applicability applicabilityField(FieldInfo fieldInfo) {
-        Set<FieldModifier> fieldModifiers = fieldInfo.fieldInspection.get().getModifiers();
-        if (fieldModifiers.contains(FieldModifier.PRIVATE)) return InlinedMethod.Applicability.TYPE;
-        if (fieldModifiers.contains(FieldModifier.PUBLIC)) return InlinedMethod.Applicability.EVERYWHERE;
-        return InlinedMethod.Applicability.PACKAGE;
-    }
-
-    private InlinedMethod.Applicability applicability(Expression value) {
-        AtomicReference<InlinedMethod.Applicability> applicability = new AtomicReference<>(InlinedMethod.Applicability.EVERYWHERE);
-        value.visit(v -> {
-            if (v.isUnknown()) {
-                applicability.set(InlinedMethod.Applicability.NONE);
-                return false;
-            }
-            NewObject newObject;
-            if ((newObject = v.asInstanceOf(NewObject.class)) != null && newObject.constructor() == null) {
-                applicability.set(InlinedMethod.Applicability.NONE);
-                return false;
-            }
-            VariableExpression valueWithVariable;
-            if ((valueWithVariable = v.asInstanceOf(VariableExpression.class)) != null) {
-                Variable variable = valueWithVariable.variable();
-                if (variable instanceof LocalVariableReference lvr) {
-                    FieldInfo fieldInfo = extractFieldFromLocal(lvr);
-                    if (fieldInfo != null) {
-                        InlinedMethod.Applicability fieldApplicability = applicabilityField(fieldInfo);
-                        InlinedMethod.Applicability current = applicability.get();
-                        applicability.set(current.mostRestrictive(fieldApplicability));
-                    } else {
-                        // TODO make a distinction between a local variable, and a local var outside a lambda
-                        applicability.set(InlinedMethod.Applicability.NONE);
-                    }
-                } else if (variable instanceof FieldReference) {
-                    InlinedMethod.Applicability fieldApplicability = applicabilityField(((FieldReference) variable).fieldInfo);
-                    InlinedMethod.Applicability current = applicability.get();
-                    applicability.set(current.mostRestrictive(fieldApplicability));
-                }
-            }
-            return true; // go deeper
-        });
-        return applicability.get();
     }
 
     private AnalysisStatus computeModifiedInternalCycles() {
