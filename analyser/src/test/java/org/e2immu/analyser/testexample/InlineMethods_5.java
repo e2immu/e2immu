@@ -47,6 +47,7 @@ public class InlineMethods_5 {
     }
 
     public static int expand3(int a, int b) {
-        return new InlineMethods_5(a).sum(b);
+        InlineMethods_5 il5 = new InlineMethods_5(a);
+        return il5.sum(b);
     }
 }

@@ -23,9 +23,11 @@ import org.e2immu.analyser.model.MethodAnalysis;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.expression.InlinedMethod;
+import org.e2immu.analyser.model.expression.NewObject;
 import org.e2immu.analyser.model.expression.Sum;
 import org.e2immu.analyser.visitor.EvaluationResultVisitor;
 import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
+import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.visitor.TypeMapVisitor;
 import org.junit.jupiter.api.Test;
 
@@ -94,16 +96,16 @@ public class Test_15_InlineMethods extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("plusRandom".equals(d.methodInfo().name)) {
                 if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
-                    assertEquals("i+instance type int", inlinedMethod.toString());
+                    assertEquals("i+r", inlinedMethod.toString());
                 } else {
                     fail("Have " + d.methodAnalysis().getSingleReturnValue().getClass());
                 }
             }
             if ("difference31".equals(d.methodInfo().name)) {
-                assertEquals("2+instance type int-instance type int", d.methodAnalysis().getSingleReturnValue().toString());
+                assertEquals("2+instance type int-(instance type int)", d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("difference11".equals(d.methodInfo().name)) {
-                assertEquals("instance type int-instance type int", d.methodAnalysis().getSingleReturnValue().toString());
+                assertEquals("instance type int-(instance type int)", d.methodAnalysis().getSingleReturnValue().toString());
             }
         };
 
@@ -130,12 +132,43 @@ public class Test_15_InlineMethods extends CommonTestRunner {
 
     @Test
     public void test_5() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("expand3".equals(d.methodInfo().name)) {
+                if ("il5".equals(d.variableName())) {
+                    if ("0".equals(d.statementId())) {
+                        assertEquals("new InlineMethods_5(a)", d.currentValue().toString());
+                        if (d.currentValue() instanceof NewObject newObject) {
+                            assertEquals(1, newObject.parameterExpressions().size());
+                        } else fail();
+                    }
+                }
+            }
+        };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
-            if ("expand3".equals(d.methodInfo().name) && d.iteration() > 0) {
-                assertEquals("a+b", d.methodAnalysis().getSingleReturnValue().toString());
+            if ("sum".equals(d.methodInfo().name)) {
+                if (d.iteration() == 0) assertNull(d.methodAnalysis().getSingleReturnValue());
+                else {
+                    assertEquals("i+j", d.methodAnalysis().getSingleReturnValue().toString());
+                    assertTrue(d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod);
+                }
+            }
+            if ("sum5".equals(d.methodInfo().name)) {
+                if (d.iteration() == 0) assertNull(d.methodAnalysis().getSingleReturnValue());
+                else {
+                    assertEquals("5+i", d.methodAnalysis().getSingleReturnValue().toString());
+                    assertTrue(d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod);
+                }
+            }
+            if ("expand3".equals(d.methodInfo().name)) {
+                if (d.iteration() <= 1) assertNull(d.methodAnalysis().getSingleReturnValue());
+                else {
+                    assertEquals("a+b", d.methodAnalysis().getSingleReturnValue().toString());
+                    assertTrue(d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod);
+                }
             }
         };
         testClass("InlineMethods_5", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
@@ -143,8 +176,20 @@ public class Test_15_InlineMethods extends CommonTestRunner {
     @Test
     public void test_6() throws IOException {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("sum".equals(d.methodInfo().name)) {
+                if (d.iteration() == 0) assertNull(d.methodAnalysis().getSingleReturnValue());
+                else {
+                    assertEquals("i$0+j", d.methodAnalysis().getSingleReturnValue().toString());
+                    if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
+                        assertTrue(inlinedMethod.containsVariableFields());
+                    } else fail();
+                }
+            }
+            if ("expandSum".equals(d.methodInfo().name) && d.iteration() > 0) {
+                //    assertEquals("a+b", d.methodAnalysis().getSingleReturnValue().toString());
+            }
             if ("expand".equals(d.methodInfo().name) && d.iteration() > 0) {
-                assertEquals("a+b", d.methodAnalysis().getSingleReturnValue().toString());
+                //    assertEquals("a+b", d.methodAnalysis().getSingleReturnValue().toString());
             }
         };
         testClass("InlineMethods_6", 0, 0, new DebugConfiguration.Builder()

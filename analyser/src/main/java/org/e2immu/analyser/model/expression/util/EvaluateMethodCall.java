@@ -75,8 +75,8 @@ public class EvaluateMethodCall {
         if (methodInfo.typeInfo.typeInspection.get().isFunctionalInterface() &&
                 (inlineValue = objectValue.asInstanceOf(InlinedMethod.class)) != null &&
                 inlineValue.canBeApplied(evaluationContext)) {
-            Map<Expression, Expression> translationMap = EvaluatePreconditionFromMethod.translationMap(analyserContext,
-                    inlineValue.methodInfo(), parameters, objectValue);
+            Map<Expression, Expression> translationMap = inlineValue.translationMap(evaluationContext,
+                    parameters, objectValue, evaluationContext.getCurrentType(), identifier);
             return inlineValue.reEvaluate(evaluationContext, translationMap);
         }
 
@@ -179,8 +179,8 @@ public class EvaluateMethodCall {
                         EvaluationResult shortCut = tryEvaluationShortCut(builder, objectValue, linkedVariablesWhenDelayed, iv);
                         if (shortCut != null) return shortCut;
 
-                        Map<Expression, Expression> translationMap = EvaluatePreconditionFromMethod
-                                .translationMap(analyserContext, methodInfo, parameters, objectValue);
+                        Map<Expression, Expression> translationMap = iv.translationMap(evaluationContext,
+                                parameters, objectValue, evaluationContext.getCurrentType(), identifier);
                         EvaluationResult reSrv = iv.reEvaluate(evaluationContext, translationMap);
                         return builder.compose(reSrv).setExpression(reSrv.value()).build();
                     }
@@ -270,7 +270,7 @@ public class EvaluateMethodCall {
     We have an instance object, like new Pair("a", "b"), and then a getter applying to this instance object
     this we can resolve immediately
 
-    See also FieldAccess which has a similar method
+    See also InlinedMethod which has a similar method
     */
     private EvaluationResult tryEvaluationShortCut(EvaluationResult.Builder builder,
                                                    Expression objectValue,

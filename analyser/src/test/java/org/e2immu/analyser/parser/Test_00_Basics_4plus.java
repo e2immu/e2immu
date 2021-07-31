@@ -22,6 +22,7 @@ import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.expression.InlinedMethod;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
@@ -197,7 +198,8 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
 
                 if (d.variable() instanceof ReturnVariable) {
                     if ("4".equals(d.statementId())) {
-                        String expectValue = d.iteration() == 0 ? "<m:someMinorMethod>" : "Basics_6.someMinorMethod(field$0)";
+                        String expectValue = d.iteration() == 0 ? "<m:someMinorMethod>" : "v3" ;
+                        // FIXME add: as effect of companion method: /*this.length==field$0.length*/ in state
                         assertEquals(expectValue, d.currentValue().toString());
                         int effectivelyNotNull = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
                         assertEquals(effectivelyNotNull, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
@@ -323,6 +325,10 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
             MethodInfo toLowerCase = string.findUniqueMethod("toLowerCase", 0);
             assertFalse(toLowerCase.methodResolution.get().allowsInterrupts());
 
+            MethodInfo toUpperCase = string.findUniqueMethod("toUpperCase", 0);
+            assertFalse(toLowerCase.methodResolution.get().allowsInterrupts());
+            assertEquals(Level.FALSE, toUpperCase.methodAnalysis.get().getProperty(VariableProperty.MODIFIED_METHOD));
+
             TypeInfo printStream = typeMap.get(PrintStream.class);
             MethodInfo println = printStream.findUniqueMethod("println", 0);
             assertTrue(println.methodResolution.get().allowsInterrupts());
@@ -330,6 +336,9 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("someMinorMethod".equals(d.methodInfo().name)) {
+                assertEquals("instance type String", // FIXME as effect of companion: "/*this.length==s.length*/",
+                        d.methodAnalysis().getSingleReturnValue().toString());
+                assertTrue(d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod);
                 assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.methodAnalysis().getProperty(VariableProperty.NOT_NULL_EXPRESSION));
 
                 assertFalse(d.methodInfo().methodResolution.get().allowsInterrupts());
@@ -650,7 +659,7 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
                     String staticallyAssigned = d.variableInfo().getStaticallyAssignedVariables().toString();
                     if ("0".equals(d.statementId()) || "2".equals(d.statementId())
                             || "3".equals(d.statementId()) || "4.0.0.0.0".equals(d.statementId())
-                            || "4".equals(d.statementId())) { // FIXME is this correct?? At 4, I'd assume some combination of this.i and ""
+                            || "4".equals(d.statementId())) {
                         String expectValue = d.iteration() == 0 ? "<f:i>" : I1;
                         assertEquals(expectValue, d.currentValue().toString());
                         assertEquals("this.i", staticallyAssigned);

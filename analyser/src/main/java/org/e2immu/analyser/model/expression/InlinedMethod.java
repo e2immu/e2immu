@@ -23,6 +23,7 @@ import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Text;
+import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.SetUtil;
 
@@ -178,6 +179,110 @@ public class InlinedMethod extends ElementImpl implements Expression {
 
     public boolean containsVariableFields() {
         return containsVariableFields;
+    }
+
+    /*
+    We're assuming that the parameters of the method occur in the value, so it's simpler to iterate
+
+     */
+    public Map<Expression, Expression> translationMap(EvaluationContext evaluationContext,
+                                                      List<Expression> parameters,
+                                                      Expression scope,
+                                                      TypeInfo typeOfTranslation,
+                                                      Identifier identifierOfMethodCall) {
+        Map<Expression, Expression> builder = new HashMap<>();
+        InspectionProvider inspectionProvider = evaluationContext.getAnalyserContext();
+
+        for (Variable variable : variablesOfExpression) {
+            Expression replacement = null;
+            if (variable instanceof ParameterInfo parameterInfo && parameterInfo.getMethod() == methodInfo) {
+                if (parameterInfo.parameterInspection.get().isVarArgs()) {
+                    replacement = new ArrayInitializer(inspectionProvider, parameters
+                            .subList(parameterInfo.index, parameters.size()),
+                            parameterInfo.parameterizedType);
+                } else {
+                    replacement = parameters.get(parameterInfo.index);
+                }
+            } else if (variable instanceof FieldReference fieldReference &&
+                    visibleIn(inspectionProvider, fieldReference.fieldInfo, typeOfTranslation)) {
+                boolean staticField = fieldReference.fieldInfo.isStatic(inspectionProvider);
+                // maybe the final field is linked to a parameter, and we have a value for that parameter?
+                if (!staticField) {
+                    FieldAnalysis fieldAnalysis = evaluationContext.getAnalyserContext().getFieldAnalysis(fieldReference.fieldInfo);
+                    int effectivelyFinal = fieldAnalysis.getProperty(VariableProperty.FINAL);
+                    if (effectivelyFinal == Level.TRUE) {
+                        NewObject newObject = scope.asInstanceOf(NewObject.class);
+                        VariableExpression ve;
+                        if (newObject == null && (ve = scope.asInstanceOf(VariableExpression.class)) != null) {
+                            Expression value = evaluationContext.currentInstance(ve.variable(),
+                                    evaluationContext.getInitialStatementTime());
+                            newObject = value.asInstanceOf(NewObject.class);
+                        }
+                        if (newObject != null && newObject.constructor() != null) {
+                            // only now we can start to take a look at the parameters
+                            int index = indexOfParameterLinkedToFinalField(evaluationContext, newObject.constructor(),
+                                    fieldReference.fieldInfo);
+                            if (index >= 0) {
+                                replacement = newObject.getParameterExpressions().get(index);
+                            }
+                        }
+                    }
+                }
+                VariableExpression ve;
+                if (replacement == null && (ve = scope.asInstanceOf(VariableExpression.class)) != null &&
+                        (staticField || fieldReference.scopeIsThis())) {
+                    FieldReference scopeField = new FieldReference(inspectionProvider, fieldReference.fieldInfo,
+                            staticField ? null : ve);
+                    replacement = new VariableExpression(scopeField);
+                }
+
+            } else if (variable instanceof This) {
+                VariableExpression ve;
+                if ((ve = scope.asInstanceOf(VariableExpression.class)) != null) {
+                    builder.put(new VariableExpression(variable), ve);
+                }
+            }
+            if (replacement == null) {
+                replacement = NewObject.forGetInstance(Identifier.joined(List.of(identifierOfMethodCall,
+                                Identifier.variable(variable))),
+                        inspectionProvider.getPrimitives(), variable.parameterizedType());
+            }
+            builder.put(new VariableExpression(variable), replacement);
+        }
+
+        return Map.copyOf(builder);
+    }
+
+    private int indexOfParameterLinkedToFinalField(EvaluationContext evaluationContext,
+                                                   MethodInfo constructor,
+                                                   FieldInfo fieldInfo) {
+        int i = 0;
+        List<ParameterAnalysis> parameterAnalyses = evaluationContext
+                .getParameterAnalyses(constructor).collect(Collectors.toList());
+        for (ParameterAnalysis parameterAnalysis : parameterAnalyses) {
+            if (!parameterAnalysis.assignedToFieldIsFrozen()) {
+                return -2; // delays
+            }
+            Map<FieldInfo, ParameterAnalysis.AssignedOrLinked> assigned = parameterAnalysis.getAssignedToField();
+            ParameterAnalysis.AssignedOrLinked assignedOrLinked = assigned.get(fieldInfo);
+            if (assignedOrLinked == ParameterAnalysis.AssignedOrLinked.ASSIGNED) {
+                return i;
+            }
+            i++;
+        }
+        return -1; // nothing
+    }
+
+    private boolean visibleIn(InspectionProvider inspectionProvider, FieldInfo fieldInfo, TypeInfo here) {
+        FieldInspection fieldInspection = inspectionProvider.getFieldInspection(fieldInfo);
+        return switch (fieldInspection.getAccess()) {
+            case PRIVATE -> here.primaryType().equals(fieldInfo.primaryType());
+            case PACKAGE -> here.primaryType().packageNameOrEnclosingType.getLeft()
+                    .equals(fieldInfo.owner.primaryType().packageNameOrEnclosingType.getLeft());
+            case PROTECTED -> here.primaryType().equals(fieldInfo.primaryType()) ||
+                    here.hasAsParentClass(inspectionProvider, fieldInfo.owner);
+            default -> true;
+        };
     }
 
     private class EvaluationContextImpl extends AbstractEvaluationContextImpl {

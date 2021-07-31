@@ -530,4 +530,18 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         }
         return result;
     }
+
+    public boolean hasAsParentClass(InspectionProvider inspectionProvider, TypeInfo target) {
+        if (target == this) return true;
+        TypeInspection inspection = inspectionProvider.getTypeInspection(this);
+        ParameterizedType parent = inspection.parentClass();
+        if (parent != null) {
+            if (Primitives.isJavaLangObject(parent)) {
+                return target == parent.typeInfo;
+            } else {
+                return parent.typeInfo.hasAsParentClass(inspectionProvider, target);
+            }
+        }
+        return false;
+    }
 }

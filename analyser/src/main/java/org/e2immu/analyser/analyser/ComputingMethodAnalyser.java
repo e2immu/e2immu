@@ -21,7 +21,9 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ReturnStatement;
-import org.e2immu.analyser.model.variable.*;
+import org.e2immu.analyser.model.variable.FieldReference;
+import org.e2immu.analyser.model.variable.This;
+import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Primitives;
@@ -523,7 +525,7 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
                  fields and local loop variables. It'll depend on where they are expanded
                  whether the result is something sensible or not.
                  */
-                value = createInlinedMethod(value, methodAnalysis.getLastStatement());
+                value = createInlinedMethod(value);
                 if (value == null) {
                     return DELAYS;
                 }
@@ -654,29 +656,12 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
     /*
     Create an inlined method based on the returned value
      */
-    private InlinedMethod createInlinedMethod(Expression value, StatementAnalysis lastStatement) {
+    private InlinedMethod createInlinedMethod(Expression value) {
         Set<Variable> variables = new HashSet<>();
-        TranslationMapImpl.Builder builder = new TranslationMapImpl.Builder();
         boolean containsVariableFields = false;
         for (Variable variable : value.variables()) {
-            FieldInfo fieldInfo;
-            if (variable instanceof LocalVariableReference lvr) {
-                if (lvr.variable.nature() instanceof VariableNature.CopyOfVariableField copy &&
-                        copy.localCopyOf().scopeIsThis()) {
-                    fieldInfo = copy.localCopyOf().fieldInfo;
-                } else {
-                    // all local variables that are not copies of variable fields are replaced by a NewObject;
-                    // this NewObject should be their value
-                    VariableInfo vi = lastStatement.findOrThrow(lvr);
-                    builder.put(new VariableExpression(lvr), vi.getValue());
-                    fieldInfo = null;
-                }
-            } else if (value instanceof FieldReference fieldReference) {
-                fieldInfo = fieldReference.fieldInfo;
-            } else {
-                fieldInfo = null;
-            }
-            if (fieldInfo != null) {
+            if (variable instanceof FieldReference fieldReference) {
+                FieldInfo fieldInfo = fieldReference.fieldInfo;
                 int effectivelyFinal = analyserContext.getFieldAnalysis(fieldInfo).getProperty(VariableProperty.FINAL);
                 if (effectivelyFinal == Level.DELAY) {
                     assert translatedDelay(COMPUTE_RETURN_VALUE, methodInfo.fullyQualifiedName + D_MODIFIED_METHOD,
@@ -687,15 +672,9 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
                     containsVariableFields = true;
                 }
             }
+            variables.add(variable);
         }
-        Expression finalValue;
-        TranslationMap translationMap = builder.build();
-        if (translationMap.isEmpty()) {
-            finalValue = value;
-        } else {
-            finalValue = value.translate(translationMap);
-        }
-        return new InlinedMethod(Identifier.generate(), methodInfo, finalValue, variables, containsVariableFields);
+        return new InlinedMethod(Identifier.generate(), methodInfo, value, variables, containsVariableFields);
     }
 
 
