@@ -191,7 +191,7 @@ public interface Expression extends Element, Comparable<Expression> {
         return isInstanceOf(BooleanConstant.class);
     }
 
-   default  Expression removeAllReturnValueParts() {
-        return this;
-   }
+    default Expression removeAllReturnValueParts() {
+        throw new UnsupportedOperationException("Implement! " + getClass());
+    }
 }

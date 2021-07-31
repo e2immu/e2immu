@@ -18,6 +18,7 @@ package org.e2immu.analyser.parser;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.expression.InlinedMethod;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.testexample.Enum_7;
@@ -256,6 +257,15 @@ public class Test_26_Enum extends CommonTestRunner {
             if ("highest".equals(d.methodInfo().name)) {
                 int expectConstant = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
                 assertEquals(expectConstant, d.methodAnalysis().getProperty(VariableProperty.CONSTANT));
+            }
+            if ("values".equals(d.methodInfo().name)) {
+                if (d.iteration() == 0) assertNull(d.methodAnalysis().getSingleReturnValue());
+                else {
+                    assertEquals("{ONE,TWO,THREE}", d.methodAnalysis().getSingleReturnValue().toString());
+                    if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
+                        assertFalse(inlinedMethod.containsVariableFields());
+                    } else fail();
+                }
             }
         };
 

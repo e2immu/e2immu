@@ -184,4 +184,10 @@ public class UnaryOperator extends ElementImpl implements Expression {
     public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty, boolean duringEvaluation) {
         throw new UnsupportedOperationException("Not yet evaluated");
     }
+
+    @Override
+    public Expression removeAllReturnValueParts() {
+        if( expression.isReturnValue()) return expression;
+        return new UnaryOperator(identifier, operator, expression.removeAllReturnValueParts(), precedence);
+    }
 }

@@ -167,7 +167,7 @@ public class Filter {
                 if (l != null && r == null) {
                     // must make a new one because we could have remapped a local copy to its field
                     Expression expr;
-                    if (acceptAndRemapLocalCopy) {
+                    if (acceptAndRemapLocalCopy && l.translationMap != null) {
                         expr = equalsValue.translate(l.translationMap);
                     } else {
                         expr = value;
@@ -176,7 +176,7 @@ public class Filter {
                 }
                 if (r != null && l == null) {
                     Expression expr;
-                    if (acceptAndRemapLocalCopy) {
+                    if (acceptAndRemapLocalCopy && r.translationMap != null) {
                         expr = equalsValue.translate(r.translationMap);
                     } else {
                         expr = value;
@@ -190,18 +190,25 @@ public class Filter {
                     return new FilterResult<FieldReference>(Map.of(fr, gt0), defaultRest);
                 }
             } else if (Primitives.isBoolean(value.returnType())) {
-                FieldReference fieldReference = extractBooleanFieldReference(analyserContext, value, acceptAndRemapLocalCopy);
-                if (fieldReference != null) {
-                    return new FilterResult<FieldReference>(Map.of(fieldReference, value), defaultRest);
+                FieldReferenceAndTranslationMap b = extractBooleanFieldReference(analyserContext, value,
+                        acceptAndRemapLocalCopy);
+                if (b != null) {
+                    Expression expr;
+                    if (acceptAndRemapLocalCopy && b.translationMap != null) {
+                        expr = value.translate(b.translationMap);
+                    } else {
+                        expr = value;
+                    }
+                    return new FilterResult<FieldReference>(Map.of(b.fieldReference, expr), defaultRest);
                 }
             }
             return null;
         };
     }
 
-    private static FieldReference extractBooleanFieldReference(AnalyserContext analyserContext,
-                                                               Expression value,
-                                                               boolean acceptAndRemapLocalCopy) {
+    private static FieldReferenceAndTranslationMap extractBooleanFieldReference(AnalyserContext analyserContext,
+                                                                                Expression value,
+                                                                                boolean acceptAndRemapLocalCopy) {
         Expression v;
         if (value instanceof Negation negation) v = negation.expression;
         else v = value;
@@ -217,13 +224,17 @@ public class Filter {
             v = mc.object;
         }
         VariableExpression ve;
+        TranslationMapImpl.Builder builder = new TranslationMapImpl.Builder();
         if ((ve = v.asInstanceOf(VariableExpression.class)) != null
                 && ve.variable() instanceof FieldReference fr
-                && acceptScope(fr.scope)) return fr;
+                && acceptScope(fr.scope)) return new FieldReferenceAndTranslationMap(fr, builder.build());
         if (acceptAndRemapLocalCopy && ((ve = v.asInstanceOf(VariableExpression.class)) != null)
                 && ve.variable() instanceof LocalVariableReference lvr
                 && lvr.variable.nature() instanceof VariableNature.CopyOfVariableField copy
-                && acceptScope(copy.localCopyOf().scope)) return copy.localCopyOf();
+                && acceptScope(copy.localCopyOf().scope)) {
+            return new FieldReferenceAndTranslationMap(copy.localCopyOf(),
+                    builder.put(lvr, copy.localCopyOf()).build());
+        }
         return null;
     }
 

@@ -1192,5 +1192,21 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
             }
             return value.getProperty(this, variableProperty, true);
         }
+
+        // needed in re-evaluation of inlined method in DetectEventual, before calling analyseExpression
+        @Override
+        public Expression currentValue(Variable variable, int statementTime, ForwardEvaluationInfo forwardEvaluationInfo) {
+            return new VariableExpression(variable);
+        }
+
+        @Override
+        public MethodAnalyser getCurrentMethod() {
+            return ComputingMethodAnalyser.this;
+        }
+
+        @Override
+        public TypeInfo getCurrentType() {
+            return methodInfo.typeInfo;
+        }
     }
 }

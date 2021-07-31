@@ -43,8 +43,7 @@ public class Test_Support_01_FlipSwitch extends CommonTestRunner {
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("isSet".equals(d.fieldInfo().name)) {
                 assertEquals(Level.FALSE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
-                String expectValue = "<variable value>";
-                assertEquals(expectValue, d.fieldAnalysis().getEffectivelyFinalValue().toString());
+                assertEquals("<variable value>", d.fieldAnalysis().getEffectivelyFinalValue().toString());
                 assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL,
                         d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_NOT_NULL));
             }
@@ -56,9 +55,6 @@ public class Test_Support_01_FlipSwitch extends CommonTestRunner {
                         lvr.variable.nature() instanceof VariableNature.CopyOfVariableField copy &&
                         "isSet".equals(copy.localCopyOf().fieldInfo.name)) {
                     assertEquals("isSet$0", d.variableInfo().variable().simpleName());
-                    String expectAssigned = d.statementId().startsWith("0.0.0") ? "this.isSet" : "";
-                    //assertEquals(expectAssigned, d.variableInfo().getStaticallyAssignedVariables().toString(),
-                    //        "Statement " + d.statementId());
                 }
                 if (d.variable() instanceof FieldReference fr && "isSet".equals(fr.fieldInfo.name)) {
                     if ("0.0.0".equals(d.statementId())) {

@@ -131,7 +131,7 @@ public class Test_48_Store extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("handleMultiSet".equals(d.methodInfo().name)) {
                 if ("project".equals(d.variableName())) {
-                    String expectValue = d.iteration() == 0 ? "<m:getOrCreate>" : "this.getOrCreate()";
+                    String expectValue = d.iteration() == 0 ? "<m:getOrCreate>" : "instance type Project_0";
                     assertEquals(expectValue, d.currentValue().toString());
 
                     // it 1: Store_3 is still immutable delayed

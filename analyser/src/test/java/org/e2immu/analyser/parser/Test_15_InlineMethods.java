@@ -207,7 +207,7 @@ public class Test_15_InlineMethods extends CommonTestRunner {
                 assertEquals("variableField.i", d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("doNotExpand".equals(d.methodInfo().name) && d.iteration() > 0) {
-                assertEquals("instance type int", d.methodAnalysis().getSingleReturnValue().toString());
+                assertEquals("variableField.getI()", d.methodAnalysis().getSingleReturnValue().toString());
                 // non-modifying, so inlined!
                 assertTrue(d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod);
             }

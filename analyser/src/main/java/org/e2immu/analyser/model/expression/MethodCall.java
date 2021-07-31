@@ -34,6 +34,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.StatementAnalyser.EVALUATION_OF_MAIN_EXPRESSION;
 import static org.e2immu.analyser.analyser.util.DelayDebugger.D_IMMUTABLE;
@@ -907,7 +908,9 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
     @Override
     public List<Variable> variables() {
-        return object.variables();
+        return Stream.concat(object.variables().stream(),
+                        parameterExpressions.stream().flatMap(e -> e.variables().stream()))
+                .toList();
     }
 
     public boolean objectIsThisOrSuper(InspectionProvider inspectionProvider) {

@@ -84,4 +84,14 @@ public class Product extends BinaryOperator {
     public boolean isNumeric() {
         return true;
     }
+
+    @Override
+    public Expression removeAllReturnValueParts() {
+        boolean removeLhs = lhs.isReturnValue();
+        boolean removeRhs = rhs.isReturnValue();
+        if (removeLhs && removeRhs) return lhs; // nothing we can do
+        if (removeLhs) return rhs;
+        if (removeRhs) return lhs;
+        return new Product(identifier, primitives, lhs.removeAllReturnValueParts(), rhs.removeAllReturnValueParts());
+    }
 }

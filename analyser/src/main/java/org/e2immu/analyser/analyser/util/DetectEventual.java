@@ -18,11 +18,13 @@ import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.variable.FieldReference;
+import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Primitives;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.DELAYED;
 import static org.e2immu.analyser.util.Logger.log;
@@ -90,7 +92,7 @@ public record DetectEventual(MethodInfo methodInfo,
             */
             Expression srv = methodAnalysis.getSingleReturnValue();
             if (srv != null && typeAnalysis.approvedPreconditionsIsNotEmpty(e2) && srv instanceof InlinedMethod im) {
-                FieldsAndBefore fieldsAndBefore = analyseExpression(evaluationContext, e2, im.expression());
+                FieldsAndBefore fieldsAndBefore = analyseExpression(evaluationContext, e2, im.expression(), true);
                 if (fieldsAndBefore == NO_FIELDS) return MethodAnalysis.NOT_EVENTUAL;
                 return new MethodAnalysis.Eventual(fieldsAndBefore.fields, false, null, !fieldsAndBefore.before);
             }
@@ -102,7 +104,7 @@ public record DetectEventual(MethodInfo methodInfo,
          */
         if (precondition.isEmpty()) return MethodAnalysis.NOT_EVENTUAL;
 
-        FieldsAndBefore fieldsAndBefore = analyseExpression(evaluationContext, e2, precondition.get().expression());
+        FieldsAndBefore fieldsAndBefore = analyseExpression(evaluationContext, e2, precondition.get().expression(), false);
         if (fieldsAndBefore == NO_FIELDS) return MethodAnalysis.NOT_EVENTUAL;
 
         // fieldsAndBefore.before == true -> @Mark or @Only(before); otherwise @OnlyAfter
@@ -226,10 +228,13 @@ public record DetectEventual(MethodInfo methodInfo,
     private record FieldsAndBefore(Set<FieldInfo> fields, boolean before) {
     }
 
-    private FieldsAndBefore analyseExpression(EvaluationContext evaluationContext, boolean e2, Expression expression) {
+    private FieldsAndBefore analyseExpression(EvaluationContext evaluationContext,
+                                              boolean e2,
+                                              Expression expression,
+                                              boolean allowLocalCopies) {
         Filter filter = new Filter(evaluationContext, Filter.FilterMode.ACCEPT);
         Filter.FilterResult<FieldReference> filterResult = filter.filter(expression,
-                filter.individualFieldClause(evaluationContext.getAnalyserContext()));
+                filter.individualFieldClause(evaluationContext.getAnalyserContext(), allowLocalCopies));
         boolean allAfter = true;
         boolean allBefore = true;
         Set<FieldInfo> fields = new HashSet<>();
@@ -239,12 +244,13 @@ public record DetectEventual(MethodInfo methodInfo,
                 Expression approvedPreconditionBefore = typeAnalysis.getApprovedPreconditions(e2, adjustedFieldReference);
                 FieldInfo field = typeAnalysis.translateToVisibleField(e.getKey());
                 if (field != null) {
-                    if (approvedPreconditionBefore.equals(e.getValue())) {
+                    Expression value = e.getValue();
+                    if (approvedPreconditionBefore.equals(value)) {
                         allAfter = false;
                         fields.add(field);
                     } else {
                         Expression negated = Negation.negate(evaluationContext, approvedPreconditionBefore);
-                        if (negated.equals(e.getValue())) {
+                        if (negated.equals(value)) {
                             allBefore = false;
                             fields.add(field);
                         }

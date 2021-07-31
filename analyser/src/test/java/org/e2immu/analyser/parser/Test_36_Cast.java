@@ -68,7 +68,7 @@ public class Test_36_Cast extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("incrementedT".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ReturnVariable) {
-                    String expectValue = d.iteration() == 0 ? "<m:increment>" : "t.increment()";
+                    String expectValue = d.iteration() == 0 ? "<m:increment>" : "instance type int";
                     assertEquals(expectValue, d.currentValue().toString());
                     int expectImm = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_E2IMMUTABLE; // = int
                     assertEquals(expectImm, d.getProperty(VariableProperty.IMMUTABLE));

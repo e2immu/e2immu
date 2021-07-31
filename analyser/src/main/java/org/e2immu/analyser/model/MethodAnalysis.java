@@ -15,6 +15,7 @@
 package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 

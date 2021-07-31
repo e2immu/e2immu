@@ -19,6 +19,7 @@ import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.testexample.Enum_0;
 import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
@@ -207,14 +208,26 @@ public class Test_26_Enum_withAPI extends CommonTestRunner {
 
     @Test
     public void test5() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("returnTwo".equals(d.methodInfo().name)) {
+                assertFalse(d.variableName().contains("name"));
+                if (d.variable() instanceof FieldReference fr && "TWO".equals(fr.fieldInfo.name)) {
+                    int expectCm = d.iteration() <= 20 ? Level.DELAY : Level.FALSE;
+                    assertEquals(expectCm, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
+                }
+            }
+        };
+
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("returnTwo".equals(d.methodInfo().name)) {
                 int expectImm = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EFFECTIVELY_E2IMMUTABLE;
-                assertEquals(expectImm, d.methodAnalysis().getProperty(VariableProperty.IMMUTABLE));
+                //   assertEquals(expectImm, d.methodAnalysis().getProperty(VariableProperty.IMMUTABLE));
             }
         };
+
         testClass("Enum_5", 0, 0, new DebugConfiguration.Builder()
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 

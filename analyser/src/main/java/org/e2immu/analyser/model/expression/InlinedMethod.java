@@ -157,8 +157,14 @@ public class InlinedMethod extends ElementImpl implements Expression {
         }
     }
 
+    @Override
+    public List<Variable> variables() {
+        return List.copyOf(variablesOfExpression);
+    }
+
     public boolean canBeApplied(EvaluationContext evaluationContext) {
-        return !containsVariableFields || evaluationContext.getCurrentType().primaryType().equals(methodInfo.typeInfo.primaryType());
+        return !containsVariableFields ||
+                evaluationContext.getCurrentType().primaryType().equals(methodInfo.typeInfo.primaryType());
     }
 
     public MethodInfo methodInfo() {
@@ -193,6 +199,7 @@ public class InlinedMethod extends ElementImpl implements Expression {
 
         for (Variable variable : variablesOfExpression) {
             Expression replacement = null;
+            boolean replace = true;
             FieldReference fieldReference = null;
             if (variable instanceof ParameterInfo parameterInfo && parameterInfo.getMethod() == methodInfo) {
                 if (parameterInfo.parameterInspection.get().isVarArgs()) {
@@ -218,10 +225,13 @@ public class InlinedMethod extends ElementImpl implements Expression {
                     visibleIn(inspectionProvider, fieldReference.fieldInfo, typeOfTranslation)) {
                 boolean staticField = fieldReference.fieldInfo.isStatic(inspectionProvider);
                 // maybe the final field is linked to a parameter, and we have a value for that parameter?
-                if (!staticField) {
-                    FieldAnalysis fieldAnalysis = evaluationContext.getAnalyserContext().getFieldAnalysis(fieldReference.fieldInfo);
-                    int effectivelyFinal = fieldAnalysis.getProperty(VariableProperty.FINAL);
-                    if (effectivelyFinal == Level.TRUE) {
+
+                FieldAnalysis fieldAnalysis = evaluationContext.getAnalyserContext().getFieldAnalysis(fieldReference.fieldInfo);
+                int effectivelyFinal = fieldAnalysis.getProperty(VariableProperty.FINAL);
+                if (effectivelyFinal == Level.TRUE) {
+                    if (staticField) {
+                        replace = false;
+                    } else {
                         NewObject newObject = scope.asInstanceOf(NewObject.class);
                         VariableExpression ve;
                         if (newObject == null && (ve = scope.asInstanceOf(VariableExpression.class)) != null) {
@@ -239,6 +249,7 @@ public class InlinedMethod extends ElementImpl implements Expression {
                         }
                     }
                 }
+
                 VariableExpression ve;
                 if (replacement == null && (ve = scope.asInstanceOf(VariableExpression.class)) != null &&
                         (staticField || fieldReference.scopeIsThis())) {
@@ -248,12 +259,15 @@ public class InlinedMethod extends ElementImpl implements Expression {
                 }
 
             }
-            if (replacement == null) {
-                replacement = NewObject.forGetInstance(Identifier.joined(List.of(identifierOfMethodCall,
-                                Identifier.variable(variable))),
-                        inspectionProvider.getPrimitives(), variable.parameterizedType());
+            if (replace) {
+                if (replacement == null) {
+                    replacement = NewObject.forGetInstance(Identifier.joined(List.of(identifierOfMethodCall,
+                                    Identifier.variable(variable))),
+                            inspectionProvider.getPrimitives(), variable.parameterizedType());
+                }
+
+                builder.put(new VariableExpression(variable), replacement);
             }
-            builder.put(new VariableExpression(variable), replacement);
         }
 
         return Map.copyOf(builder);
@@ -310,7 +324,9 @@ public class InlinedMethod extends ElementImpl implements Expression {
 
         private void ensureVariableIsKnown(Variable variable) {
             assert variable instanceof This || acceptedVariables.contains(variable) :
-                    "there should be no other variables in this expression: " + variable + " is not in " + variablesOfExpression;
+                    "there should be no other variables in this expression: " +
+                            variable + " is not in accepted variables\n" + acceptedVariables +
+                            " of expression\n" + expression+"\nvariablesOfExpression is "+variablesOfExpression;
         }
 
         @Override

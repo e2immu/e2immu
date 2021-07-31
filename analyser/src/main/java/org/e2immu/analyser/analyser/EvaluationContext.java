@@ -90,7 +90,7 @@ public interface EvaluationContext extends DelayDebugger {
     }
 
     default Expression currentValue(Variable variable, int statementTime, ForwardEvaluationInfo forwardEvaluationInfo) {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException("In "+getClass());
     }
 
     default AnalyserContext getAnalyserContext() {

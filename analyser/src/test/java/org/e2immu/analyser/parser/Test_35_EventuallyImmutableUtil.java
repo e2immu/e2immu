@@ -22,8 +22,8 @@ import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.expression.InlinedMethod;
 import org.e2immu.analyser.model.expression.VariableExpression;
-import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
+import org.e2immu.analyser.model.variable.VariableNature;
 import org.e2immu.analyser.testexample.EventuallyImmutableUtil_0;
 import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
@@ -52,11 +52,12 @@ public class Test_35_EventuallyImmutableUtil extends CommonTestRunner {
                 if (d.iteration() == 0) {
                     assertNull(d.methodAnalysis().getSingleReturnValue());
                 } else {
-                    assertEquals("isSet", d.methodAnalysis().getSingleReturnValue().toString());
+                    assertEquals("isSet$0", d.methodAnalysis().getSingleReturnValue().toString());
                     if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
-                        assertEquals("isSet", inlinedMethod.expression().toString());
+                        assertEquals("isSet$0", inlinedMethod.expression().toString());
                         if (inlinedMethod.expression() instanceof VariableExpression variableExpression) {
-                            if (variableExpression.variable() instanceof FieldReference fr && fr.scope instanceof VariableExpression ve) {
+                            if (variableExpression.variable().variableNature() instanceof VariableNature.CopyOfVariableField cvf &&
+                                    cvf.localCopyOf().scope instanceof VariableExpression ve) {
                                 assertEquals("org.e2immu.support.FlipSwitch.this", ve.variable().fullyQualifiedName());
                             } else fail();
                         } else fail();

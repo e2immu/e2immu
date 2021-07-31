@@ -44,8 +44,8 @@ public class Test_45_Project extends CommonTestRunner {
                 if ("2.0.1.0.1".equals(d.statementId())) {
                     String expected = switch (d.iteration()) {
                         case 0 -> "<m:isAfter>&&<m:isBefore>&&null!=<f:read>";
-                        case 1 -> "read$7.plusMillis(readWithinMillis).isAfter(LocalDateTime.now().toInstant(ZoneOffset.UTC))&&<m:isBefore>&&null!=read$7";
-                        default -> "read$7.plusMillis(readWithinMillis).isAfter(LocalDateTime.now().toInstant(ZoneOffset.UTC))&&read$7.isBefore(entry$2.getValue().updated)&&null!=read$7";
+                        case 1 -> "instance type boolean&&<m:isBefore>&&null!=read$7";
+                        default -> "instance type boolean&&instance type boolean&&null!=read$7";
                     };
                     assertEquals(expected, d.evaluationResult().getExpression().toString());
                     EvaluationResult.ChangeData changeData = d.findValueChangeByToString("container.read");
@@ -89,8 +89,8 @@ public class Test_45_Project extends CommonTestRunner {
                 if ("2.0.1.0.1.0.0".equals(d.statementId())) {
                     String expectedCondition = switch (d.iteration()) {
                         case 0 -> "<m:isAfter>&&<m:isBefore>&&null!=<f:read>";
-                        case 1 -> "read$7.plusMillis(readWithinMillis).isAfter(LocalDateTime.now().toInstant(ZoneOffset.UTC))&&<m:isBefore>&&null!=read$7";
-                        default -> "read$7.plusMillis(readWithinMillis).isAfter(LocalDateTime.now().toInstant(ZoneOffset.UTC))&&read$7.isBefore(entry$2.getValue().updated)&&null!=read$7";
+                        case 1 -> "instance type boolean&&<m:isBefore>&&null!=read$7";
+                        default -> "instance type boolean&&instance type boolean&&null!=read$7";
                     };
                     assertEquals(expectedCondition, d.condition().toString());
                     assertEquals("true", d.state().toString());

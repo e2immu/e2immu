@@ -173,17 +173,11 @@ public class EvaluateMethodCall {
                 // if this method was identity?
                 Expression srv = methodAnalysis.getSingleReturnValue();
                 InlinedMethod iv;
-                if ((iv = srv.asInstanceOf(InlinedMethod.class)) != null) {
-                    if (isLocalCall(objectValue, evaluationContext.getCurrentType())
-                            || hasFinalFields(analyserContext, iv.expression())) {
-                        EvaluationResult shortCut = tryEvaluationShortCut(builder, objectValue, linkedVariablesWhenDelayed, iv);
-                        if (shortCut != null) return shortCut;
-
-                        Map<Expression, Expression> translationMap = iv.translationMap(evaluationContext,
-                                parameters, objectValue, evaluationContext.getCurrentType(), identifier);
-                        EvaluationResult reSrv = iv.reEvaluate(evaluationContext, translationMap);
-                        return builder.compose(reSrv).setExpression(reSrv.value()).build();
-                    }
+                if ((iv = srv.asInstanceOf(InlinedMethod.class)) != null && iv.canBeApplied(evaluationContext)) {
+                    Map<Expression, Expression> translationMap = iv.translationMap(evaluationContext,
+                            parameters, objectValue, evaluationContext.getCurrentType(), identifier);
+                    EvaluationResult reSrv = iv.reEvaluate(evaluationContext, translationMap);
+                    return builder.compose(reSrv).setExpression(reSrv.value()).build();
                 }
                 if (srv.isConstant()) {
                     return builder.setExpression(srv).build();
