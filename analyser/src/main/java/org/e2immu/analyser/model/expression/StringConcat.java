@@ -82,4 +82,15 @@ public class StringConcat extends BinaryOperator {
     public NewObject getInstance(EvaluationResult evaluationResult) {
         return NewObject.forGetInstance(identifier, evaluationResult.evaluationContext().getPrimitives(), returnType());
     }
+
+
+    @Override
+    public Expression removeAllReturnValueParts() {
+        boolean removeLhs = lhs.isReturnValue();
+        boolean removeRhs = rhs.isReturnValue();
+        if (removeLhs && removeRhs) return lhs; // nothing we can do
+        if (removeLhs) return rhs;
+        if (removeRhs) return lhs;
+        return new StringConcat(identifier, primitives, lhs.removeAllReturnValueParts(), rhs.removeAllReturnValueParts());
+    }
 }

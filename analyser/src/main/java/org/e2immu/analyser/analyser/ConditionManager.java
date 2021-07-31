@@ -108,6 +108,11 @@ public record ConditionManager(Expression condition,
                 precondition, preconditionIsDelayed, this);
     }
 
+
+    /* does not add a new layer */
+    public ConditionManager replaceState(Expression state, Set<Variable> stateIsDelayed) {
+        return new ConditionManager(condition, conditionIsDelayed, state, stateIsDelayed, precondition, preconditionIsDelayed, parent);
+    }
     /*
     we guarantee a parent so that the condition counts!
      */

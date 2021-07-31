@@ -154,4 +154,14 @@ public class Sum extends BinaryOperator {
         }
         return Equals.equals(evaluationContext, lhs, Negation.negate(evaluationContext, rhs));
     }
+
+    @Override
+    public Expression removeAllReturnValueParts() {
+        boolean removeLhs = lhs.isReturnValue();
+        boolean removeRhs = rhs.isReturnValue();
+        if (removeLhs && removeRhs) return lhs; // nothing we can do
+        if (removeLhs) return rhs;
+        if (removeRhs) return lhs;
+        return new Sum(identifier, primitives, lhs.removeAllReturnValueParts(), rhs.removeAllReturnValueParts());
+    }
 }

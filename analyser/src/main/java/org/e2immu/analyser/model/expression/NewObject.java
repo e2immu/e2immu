@@ -666,7 +666,7 @@ public record NewObject(
 
         int immutable = forwardEvaluationInfo.getProperty(VariableProperty.CONTEXT_IMMUTABLE);
         if (MultiLevel.isAfter(immutable)) {
-            res.k.raiseError(Message.Label.EVENTUAL_AFTER_REQUIRED);
+            res.k.raiseError(getIdentifier(), Message.Label.EVENTUAL_AFTER_REQUIRED);
         }
         return res.k.build();
     }

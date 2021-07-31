@@ -185,11 +185,14 @@ public class Test_15_InlineMethods extends CommonTestRunner {
                     } else fail();
                 }
             }
-            if ("expandSum".equals(d.methodInfo().name) && d.iteration() > 0) {
-                //    assertEquals("a+b", d.methodAnalysis().getSingleReturnValue().toString());
+            if ("expandSum".equals(d.methodInfo().name)) {
+                if (d.iteration() == 0) assertNull(d.methodAnalysis().getSingleReturnValue());
+                else {
+                    assertEquals("3*k+k*i", d.methodAnalysis().getSingleReturnValue().toString());
+                }
             }
             if ("expand".equals(d.methodInfo().name) && d.iteration() > 0) {
-                //    assertEquals("a+b", d.methodAnalysis().getSingleReturnValue().toString());
+                assertEquals("variableField.i", d.methodAnalysis().getSingleReturnValue().toString());
             }
         };
         testClass("InlineMethods_6", 0, 0, new DebugConfiguration.Builder()
@@ -201,13 +204,15 @@ public class Test_15_InlineMethods extends CommonTestRunner {
     public void test_7() throws IOException {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("expand".equals(d.methodInfo().name) && d.iteration() > 0) {
-                assertEquals("a+b", d.methodAnalysis().getSingleReturnValue().toString());
+                assertEquals("variableField.i", d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("doNotExpand".equals(d.methodInfo().name) && d.iteration() > 0) {
-                assertEquals("a+b", d.methodAnalysis().getSingleReturnValue().toString());
+                assertEquals("instance type int", d.methodAnalysis().getSingleReturnValue().toString());
+                // non-modifying, so inlined!
+                assertTrue(d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod);
             }
         };
-        testClass(List.of("InlineMethods6", "InlineMethods_7"), 0, 0, new DebugConfiguration.Builder()
+        testClass(List.of("InlineMethods_6", "InlineMethods_7"), 0, 0, new DebugConfiguration.Builder()
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build(), new AnalyserConfiguration.Builder().build(), new AnnotatedAPIConfiguration.Builder().build());
     }

@@ -38,10 +38,9 @@ public interface StatementAnalyserVisitor {
 
         // shortcut
 
-        public String haveError(Message.Label message) {
+        public Message haveError(Message.Label message) {
             return statementAnalysis.localMessageStream()
                     .filter(m -> m.message() == message)
-                    .map(Message::toString)
                     .findFirst()
                     .orElse(null);
         }

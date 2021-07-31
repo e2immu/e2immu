@@ -14,37 +14,37 @@
 
 package org.e2immu.analyser.testexample;
 
-// variable field
+// reverse of Precondition_1, but should work in exactly the same way!
 
-import org.e2immu.annotation.Constant;
+public class Precondition_5 {
 
-public class InlineMethods_6 {
+    private int i;
 
-    static class VariableField {
-        private int i;
-
-        public int getI() {
-            return i;
+    boolean setPositive1$Precondition() { return i >= 0; }
+    public void setPositive1(int j1) {
+        if(i >= 0) {
+            this.i = j1;
         }
+        throw new UnsupportedOperationException();
+    }
 
-        public void setI(int i) {
-            this.i = i;
-        }
-
-        private int sum(int j) {
-            return i + j;
-        }
-
-        public int expandSum(int k) {
-            return k * sum(3); // sum should be expanded here
+    static boolean setPositive2$Precondition(int j1) { return j1 >= 0; }
+    public void setPositive2(int j1) {
+        if (j1 >= 0) {
+            this.i = j1;
+        } else {
+            throw new UnsupportedOperationException();
         }
     }
 
-    // because it is a variable field, we do not link the field i to the parameter of setI (we *could*)
-    @Constant(absent = true)
-    public static int expand() {
-        VariableField variableField = new VariableField();
-        variableField.setI(3);
-        return variableField.getI(); // variable field expansion still allowed, same primary type
+    private boolean setPositive4$Precondition(int j3) { return i >= 0 && j3 >= 0; }
+    public void setPositive4(int j3) {
+        if (i >= 0 && j3 >= 0) this.i = j3; else throw new UnsupportedOperationException();
     }
+
+    // this avoids a field not used exception.
+    public int getI() {
+        return i;
+    }
+
 }

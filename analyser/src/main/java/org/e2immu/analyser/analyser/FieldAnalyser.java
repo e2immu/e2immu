@@ -1280,8 +1280,8 @@ public class FieldAnalyser extends AbstractAnalyser {
         }
 
         @Override
-        public Location getLocation(Expression expression) {
-            return new Location(fieldInfo, expression);
+        public Location getLocation(Identifier identifier) {
+            return new Location(fieldInfo, identifier);
         }
 
         // rest will be more or less the same as for Methods

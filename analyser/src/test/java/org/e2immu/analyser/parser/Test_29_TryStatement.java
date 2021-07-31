@@ -31,8 +31,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_29_TryStatement extends CommonTestRunner {
 
@@ -116,12 +115,10 @@ public class Test_29_TryStatement extends CommonTestRunner {
 
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("method".equals(d.methodInfo().name) && "1.1.1".equals(d.statementId())) {
-                assertEquals("ERROR in Method org.e2immu.analyser.testexample.TryStatement_2.method(java.lang.String):1.1.1: Useless assignment: res",
-                        d.haveError(Message.Label.USELESS_ASSIGNMENT));
+                assertNotNull(d.haveError(Message.Label.USELESS_ASSIGNMENT));
             }
             if ("method".equals(d.methodInfo().name) && "1.2.1".equals(d.statementId())) {
-                assertEquals("ERROR in Method org.e2immu.analyser.testexample.TryStatement_2.method(java.lang.String):1.2.1: Useless assignment: res",
-                        d.haveError(Message.Label.USELESS_ASSIGNMENT));
+                assertNotNull(d.haveError(Message.Label.USELESS_ASSIGNMENT));
             }
         };
 

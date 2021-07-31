@@ -42,14 +42,13 @@ public class Test_04_Warnings extends CommonTestRunner {
 
     @Test
     public void test0() throws IOException {
-        final String WHERE = "ERROR in Method org.e2immu.analyser.testexample.Warnings_0.Warnings_0():";
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
 
             // ERROR: Unused variable "a"
             // ERROR: useless assignment to "a" as well
             if ("Warnings_0".equals(d.methodInfo().name) && "1".equals(d.statementId())) {
-                assertEquals(WHERE + "1: Unused local variable: a",
-                        d.haveError(Message.Label.UNUSED_LOCAL_VARIABLE));
+                Message message = d.haveError(Message.Label.UNUSED_LOCAL_VARIABLE);
+                assertNotNull(message);
                 assertNull(d.haveError(Message.Label.USELESS_ASSIGNMENT));
 
                 AnalysisStatus expectStatus = d.iteration() == 0 ? AnalysisStatus.PROGRESS : AnalysisStatus.DONE;
@@ -92,8 +91,8 @@ public class Test_04_Warnings extends CommonTestRunner {
                 // ERROR: t.trim() result is not used
                 if ("2".equals(d.statementId())) {
                     // ERROR: unused variable "s"
-                    assertEquals("ERROR in Method org.e2immu.analyser.testexample.Warnings_1.method1(java.lang.String):2: Unused local variable: s",
-                            d.haveError(Message.Label.UNUSED_LOCAL_VARIABLE));
+                    assertEquals("org.e2immu.analyser.testexample.Warnings_1.method1(java.lang.String)",
+                            d.haveError(Message.Label.UNUSED_LOCAL_VARIABLE).location().info.fullyQualifiedName());
                     assertNull(d.haveError(Message.Label.USELESS_ASSIGNMENT));
                     if (d.iteration() >= 2) {
                         assertNotNull(d.haveError(Message.Label.IGNORING_RESULT_OF_METHOD_CALL));
@@ -102,8 +101,8 @@ public class Test_04_Warnings extends CommonTestRunner {
                 }
             }
             if ("Warnings_1".equals(d.methodInfo().name) && "0".equals(d.statementId())) {
-                assertEquals("ERROR in Method org.e2immu.analyser.testexample.Warnings_1.Warnings_1():0: Unused local variable: a",
-                        d.haveError(Message.Label.UNUSED_LOCAL_VARIABLE));
+                assertEquals("org.e2immu.analyser.testexample.Warnings_1.Warnings_1()",
+                        d.haveError(Message.Label.UNUSED_LOCAL_VARIABLE).location().info.fullyQualifiedName());
 
                 assertEquals(AnalysisStatus.DONE, analysisStatus);
             }
@@ -111,8 +110,7 @@ public class Test_04_Warnings extends CommonTestRunner {
                 assertEquals(AnalysisStatus.DONE, analysisStatus);
             }
             if ("checkArray2".equals(d.methodInfo().name) && "2".equals(d.statementId())) {
-                assertEquals("ERROR in Method org.e2immu.analyser.testexample.Warnings_1.checkArray2():2: Useless assignment: integers[i]",
-                        d.haveError(Message.Label.USELESS_ASSIGNMENT));
+                assertTrue(d.haveError(Message.Label.USELESS_ASSIGNMENT).detailedMessage().endsWith("integers[i]"));
 
                 assertEquals(AnalysisStatus.DONE, analysisStatus);
             }
@@ -127,8 +125,7 @@ public class Test_04_Warnings extends CommonTestRunner {
                 }
             }
             if ("checkForEach".equals(d.methodInfo().name) && "1".equals(d.statementId())) {
-                assertEquals("WARN in Method org.e2immu.analyser.testexample.Warnings_1.checkForEach():1: Unused loop variable: loopVar",
-                        d.haveError(Message.Label.UNUSED_LOOP_VARIABLE));
+                assertTrue(d.haveError(Message.Label.UNUSED_LOOP_VARIABLE).detailedMessage().endsWith("loopVar"));
             }
         };
 

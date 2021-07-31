@@ -18,9 +18,7 @@ import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.util.DelayDebugNode;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
-import org.e2immu.analyser.model.variable.FieldReference;
-import org.e2immu.analyser.model.variable.This;
-import org.e2immu.analyser.model.variable.Variable;
+import org.e2immu.analyser.model.variable.*;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.parser.InspectionProvider;
@@ -195,6 +193,7 @@ public class InlinedMethod extends ElementImpl implements Expression {
 
         for (Variable variable : variablesOfExpression) {
             Expression replacement = null;
+            FieldReference fieldReference = null;
             if (variable instanceof ParameterInfo parameterInfo && parameterInfo.getMethod() == methodInfo) {
                 if (parameterInfo.parameterInspection.get().isVarArgs()) {
                     replacement = new ArrayInitializer(inspectionProvider, parameters
@@ -203,7 +202,19 @@ public class InlinedMethod extends ElementImpl implements Expression {
                 } else {
                     replacement = parameters.get(parameterInfo.index);
                 }
-            } else if (variable instanceof FieldReference fieldReference &&
+            } else if (variable instanceof This) {
+                VariableExpression ve;
+                if ((ve = scope.asInstanceOf(VariableExpression.class)) != null) {
+                    builder.put(new VariableExpression(variable), ve);
+                }
+            } else if (variable instanceof FieldReference fr) {
+                fieldReference = fr;
+            } else if (variable instanceof LocalVariableReference lvr
+                    && lvr.variableNature() instanceof VariableNature.CopyOfVariableField cvf) {
+                fieldReference = cvf.localCopyOf();
+            }
+
+            if (fieldReference != null &&
                     visibleIn(inspectionProvider, fieldReference.fieldInfo, typeOfTranslation)) {
                 boolean staticField = fieldReference.fieldInfo.isStatic(inspectionProvider);
                 // maybe the final field is linked to a parameter, and we have a value for that parameter?
@@ -236,11 +247,6 @@ public class InlinedMethod extends ElementImpl implements Expression {
                     replacement = new VariableExpression(scopeField);
                 }
 
-            } else if (variable instanceof This) {
-                VariableExpression ve;
-                if ((ve = scope.asInstanceOf(VariableExpression.class)) != null) {
-                    builder.put(new VariableExpression(variable), ve);
-                }
             }
             if (replacement == null) {
                 replacement = NewObject.forGetInstance(Identifier.joined(List.of(identifierOfMethodCall,
@@ -328,8 +334,8 @@ public class InlinedMethod extends ElementImpl implements Expression {
         }
 
         @Override
-        public Location getLocation(Expression expression) {
-            return evaluationContext.getLocation(expression);
+        public Location getLocation(Identifier identifier) {
+            return evaluationContext.getLocation(identifier);
         }
 
         @Override

@@ -288,7 +288,7 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
                     assertEquals(0, timeM);
                 }
                 if ("3".equals(d.statementId())) {
-                    String msg = d.haveError(Message.Label.ASSERT_EVALUATES_TO_CONSTANT_TRUE);
+                    Message msg = d.haveError(Message.Label.ASSERT_EVALUATES_TO_CONSTANT_TRUE);
                     if (d.iteration() == 0) assertNull(msg);
                     else assertNotNull(msg);
                 }

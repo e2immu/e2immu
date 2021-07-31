@@ -244,4 +244,14 @@ public class InlineConditional extends ElementImpl implements Expression {
     public List<? extends Element> subElements() {
         return List.of(condition, ifTrue, ifFalse);
     }
+
+    @Override
+    public Expression removeAllReturnValueParts() {
+        boolean removeTrue = ifTrue.isReturnValue();
+        boolean removeFalse = ifFalse.isReturnValue();
+        if (removeTrue && removeFalse) return ifTrue; // nothing we can do
+        if (removeTrue) return ifFalse;
+        if (removeFalse) return ifTrue;
+        return this;
+    }
 }

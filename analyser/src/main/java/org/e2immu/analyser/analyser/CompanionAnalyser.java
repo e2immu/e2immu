@@ -223,8 +223,8 @@ public class CompanionAnalyser implements DelayDebugger {
         }
 
         @Override
-        public Location getLocation(Expression expression) {
-            return new Location(companionMethod);
+        public Location getLocation(Identifier identifier) {
+            return new Location(companionMethod, identifier);
         }
 
         @Override

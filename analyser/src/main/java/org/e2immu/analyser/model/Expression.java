@@ -59,6 +59,11 @@ public interface Expression extends Element, Comparable<Expression> {
         return false;
     }
 
+    default boolean isReturnValue() {
+        UnknownExpression ue = asInstanceOf(UnknownExpression.class);
+        return ue != null && UnknownExpression.RETURN_VALUE.equals(ue.msg());
+    }
+
     @Override
     default int compareTo(Expression v) {
         return ExpressionComparator.SINGLETON.compare(this, v);
@@ -185,4 +190,8 @@ public interface Expression extends Element, Comparable<Expression> {
     default boolean isBooleanConstant() {
         return isInstanceOf(BooleanConstant.class);
     }
+
+   default  Expression removeAllReturnValueParts() {
+        return this;
+   }
 }

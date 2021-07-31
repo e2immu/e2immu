@@ -64,7 +64,7 @@ public interface EvaluationContext extends DelayDebugger {
         return null;
     }
 
-    default Location getLocation(Expression expression) {
+    default Location getLocation(Identifier identifier) {
         return null;
     }
 

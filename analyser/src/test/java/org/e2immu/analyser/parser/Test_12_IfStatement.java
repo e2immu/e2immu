@@ -19,6 +19,7 @@ import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.model.expression.InlinedMethod;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
@@ -189,9 +190,35 @@ public class Test_12_IfStatement extends CommonTestRunner {
                 assertEquals(unreachable, d.statementAnalysis().flowData.alwaysEscapesViaException());
             }
         };
-
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("pad".equals(d.methodInfo().name)) {
+                assertEquals("\"\"+i", d.methodAnalysis().getSingleReturnValue().toString());
+                assertTrue(d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod);
+            }
+        };
         testClass("IfStatement_7", 0, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .build());
+    }
+
+    @Test
+    public void test_8() throws IOException {
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("pad".equals(d.methodInfo().name)) {
+                boolean unreachable = "1".equals(d.statementId()) || "1.0.0".equals(d.statementId()) || "1.1.0".equals(d.statementId());
+                assertEquals(unreachable, d.statementAnalysis().flowData.alwaysEscapesViaException(), d.statementId());
+            }
+        };
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("pad".equals(d.methodInfo().name)) {
+                assertEquals("\"\"+i", d.methodAnalysis().getSingleReturnValue().toString());
+                assertTrue(d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod);
+            }
+        };
+        testClass("IfStatement_8", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 }

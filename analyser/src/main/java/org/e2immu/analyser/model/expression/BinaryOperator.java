@@ -261,7 +261,7 @@ public class BinaryOperator extends ElementImpl implements Expression {
         EvaluationResult l = lhs.evaluate(evaluationContext, forward);
         Expression constant = new BooleanConstant(primitives, !and);
         if (l.value().equals(constant)) {
-            builder.raiseError(Message.Label.PART_OF_EXPRESSION_EVALUATES_TO_CONSTANT);
+            builder.raiseError(lhs.getIdentifier(), Message.Label.PART_OF_EXPRESSION_EVALUATES_TO_CONSTANT);
             return builder.compose(l).build();
         }
 
@@ -271,7 +271,7 @@ public class BinaryOperator extends ElementImpl implements Expression {
         EvaluationResult r = rhs.evaluate(child, forward);
         builder.compose(l, r);
         if (r.value() instanceof BooleanConstant booleanConstant) {
-            builder.raiseError(Message.Label.PART_OF_EXPRESSION_EVALUATES_TO_CONSTANT);
+            builder.raiseError(rhs.getIdentifier(), Message.Label.PART_OF_EXPRESSION_EVALUATES_TO_CONSTANT);
             if (and && booleanConstant.getValue() || !and && !booleanConstant.getValue()) {
                 // x && true, x || false
                 builder.setExpression(l.value());
@@ -505,5 +505,16 @@ public class BinaryOperator extends ElementImpl implements Expression {
         String otherVarStr = otherVariables.stream().map(vv -> vv.fullyQualifiedName())
                 .sorted().collect(Collectors.joining(","));
         return myVarStr.compareTo(otherVarStr);
+    }
+
+    @Override
+    public Expression removeAllReturnValueParts() {
+        boolean removeLhs = lhs.isReturnValue();
+        boolean removeRhs = rhs.isReturnValue();
+        if (removeLhs && removeRhs) return lhs; // nothing we can do
+        if (removeLhs) return rhs;
+        if (removeRhs) return lhs;
+        return new BinaryOperator(identifier, primitives, lhs.removeAllReturnValueParts(),
+                operator, rhs.removeAllReturnValueParts(), precedence);
     }
 }

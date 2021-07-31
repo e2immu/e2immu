@@ -215,7 +215,7 @@ public record VariableExpression(Variable variable, String name) implements Expr
         int contextImmutable = forwardEvaluationInfo.getProperty(VariableProperty.CONTEXT_IMMUTABLE);
         int nextImmutable = forwardEvaluationInfo.getProperty(VariableProperty.NEXT_CONTEXT_IMMUTABLE);
         if (contextImmutable > MultiLevel.MUTABLE) {
-            builder.variableOccursInEventuallyImmutableContext(variable, contextImmutable, nextImmutable);
+            builder.variableOccursInEventuallyImmutableContext(getIdentifier(), variable, contextImmutable, nextImmutable);
         }
 
         int contextImmutableDelay = forwardEvaluationInfo.getProperty(VariableProperty.CONTEXT_IMMUTABLE_DELAY);

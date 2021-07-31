@@ -23,6 +23,7 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.testexample.Precondition_4;
+import org.e2immu.analyser.testexample.Precondition_5;
 import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
 
@@ -288,6 +289,20 @@ public class Test_14_Precondition extends CommonTestRunner {
         MethodInfo test = pc4.findUniqueMethod("test", 1);
 
         MethodAnalysis methodAnalysis = test.methodAnalysis.get();
+        assertEquals(1, methodAnalysis.getComputedCompanions().size());
+        assertEquals("return !strings.contains(\"a\");", methodAnalysis.getComputedCompanions().values()
+                .stream().findFirst().orElseThrow()
+                .methodInspection.get().getMethodBody().structure.statements().get(0).minimalOutput());
+    }
+
+    @Test
+    public void test_5() throws IOException {
+        TypeContext typeContext = testClass("Precondition_5", 0, 0, new DebugConfiguration.Builder()
+                .build());
+        TypeInfo pc4 = typeContext.getFullyQualified(Precondition_5.class);
+        MethodInfo setPositive1 = pc4.findUniqueMethod("setPositive1", 1);
+
+        MethodAnalysis methodAnalysis = setPositive1.methodAnalysis.get();
         assertEquals(1, methodAnalysis.getComputedCompanions().size());
         assertEquals("return !strings.contains(\"a\");", methodAnalysis.getComputedCompanions().values()
                 .stream().findFirst().orElseThrow()

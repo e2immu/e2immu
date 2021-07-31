@@ -1853,6 +1853,11 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             } else {
                 result = toEvaluate.evaluate(sharedState.evaluationContext, structure.forwardEvaluationInfo());
             }
+            if (statementAnalysis.statement instanceof ThrowStatement) {
+                if (myMethodAnalyser.methodInfo.hasReturnValue()) {
+                    result = modifyReturnValueRemoveConditionBasedOnState(sharedState, result);
+                }
+            }
             if (statementAnalysis.statement instanceof AssertStatement) {
                 result = handleNotNullClausesInAssertStatement(sharedState.evaluationContext, result);
             }
@@ -1905,6 +1910,28 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             LOGGER.warn("Failed to evaluate main expression in statement {}", statementAnalysis.index);
             throw rte;
         }
+    }
+
+    /*
+    fixme: this works in simpler situations, but does not when (much) more complex.
+
+     */
+    private EvaluationResult modifyReturnValueRemoveConditionBasedOnState(SharedState sharedState,
+                                                                          EvaluationResult result) {
+        if (sharedState.previous == null) return result; // first statement of block, no need to change
+        ReturnVariable returnVariable = new ReturnVariable(myMethodAnalyser.methodInfo);
+        VariableInfo vi = sharedState.previous.findOrThrow(returnVariable);
+        if (!vi.getValue().isReturnValue()) {
+            // remove all return_value parts
+            Expression newValue = vi.getValue().removeAllReturnValueParts();
+            EvaluationResult.Builder builder = new EvaluationResult.Builder(sharedState.evaluationContext).compose(result);
+            Assignment assignment = new Assignment(statementAnalysis.primitives,
+                    new VariableExpression(returnVariable), newValue);
+            EvaluationResult assRes = assignment.evaluate(sharedState.evaluationContext, ForwardEvaluationInfo.DEFAULT);
+            builder.compose(assRes);
+            return builder.build();
+        }
+        return result;
     }
 
     private EvaluationResult handleNotNullClausesInAssertStatement(EvaluationContext evaluationContext,
@@ -2055,7 +2082,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                     boolean isTrue = evaluated.isBoolValueTrue();
                     if (!isTrue) {
                         firstStatement.ensure(Message.newMessage(new Location(myMethodAnalyser.methodInfo,
-                                firstStatement.index), Message.Label.UNREACHABLE_STATEMENT));
+                                        firstStatement.index, firstStatement.statement.getIdentifier()),
+                                Message.Label.UNREACHABLE_STATEMENT));
                     }
                     // guaranteed to be reached in block is always ALWAYS because it is the first statement
                     setExecutionOfSubBlock(firstStatement, isTrue ? ALWAYS : NEVER);
@@ -2065,7 +2093,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                         boolean isTrue = evaluated.isBoolValueTrue();
                         if (isTrue) {
                             firstStatement.ensure(Message.newMessage(new Location(myMethodAnalyser.methodInfo,
-                                    firstStatement.index), Message.Label.UNREACHABLE_STATEMENT));
+                                            firstStatement.index, firstStatement.statement.getIdentifier()),
+                                    Message.Label.UNREACHABLE_STATEMENT));
                         }
                         setExecutionOfSubBlock(firstStatement, isTrue ? NEVER : ALWAYS);
                     });
@@ -2080,7 +2109,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                     if (next.isPresent()) {
                         StatementAnalysis nextAnalysis = next.get();
                         nextAnalysis.flowData.setGuaranteedToBeReached(NEVER);
-                        nextAnalysis.ensure(Message.newMessage(new Location(myMethodAnalyser.methodInfo, nextAnalysis.index),
+                        nextAnalysis.ensure(Message.newMessage(new Location(myMethodAnalyser.methodInfo, nextAnalysis.index,
+                                        nextAnalysis.statement.getIdentifier()),
                                 Message.Label.UNREACHABLE_STATEMENT));
                     }
                 }
@@ -2798,12 +2828,13 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
 
         @Override
         public Location getLocation() {
-            return new Location(myMethodAnalyser.methodInfo, statementAnalysis.index);
+            return new Location(myMethodAnalyser.methodInfo, statementAnalysis.index,
+                    statementAnalysis.statement.getIdentifier());
         }
 
         @Override
-        public Location getLocation(Expression expression) {
-            return new Location(myMethodAnalyser.methodInfo, statementAnalysis.index, expression);
+        public Location getLocation(Identifier identifier) {
+            return new Location(myMethodAnalyser.methodInfo, statementAnalysis.index, identifier);
         }
 
         @Override

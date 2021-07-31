@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -113,7 +114,7 @@ public abstract class CommonTestRunner {
                 .setDebugConfiguration(debugConfiguration)
                 .setAnalyserConfiguration(analyserConfiguration)
                 .setAnnotatedAPIConfiguration(annotatedAPIConfiguration)
-                .addDebugLogTargets(List.of(ANALYSER,
+                .addDebugLogTargets(Stream.of(ANALYSER,
                         //INSPECTOR,
                         //RESOLVER,
                         PRIMARY_TYPE_ANALYSER,
@@ -129,7 +130,7 @@ public abstract class CommonTestRunner {
                         NOT_NULL,
                         MODIFICATION,
                         EVENTUALLY
-                ).stream().map(Enum::toString).collect(Collectors.joining(",")))
+                ).map(Enum::toString).collect(Collectors.joining(",")))
                 .setInputConfiguration(inputConfigurationBuilder.build())
                 .build();
         return execute(configuration, errorsToExpect, warningsToExpect);
@@ -185,7 +186,7 @@ public abstract class CommonTestRunner {
 
         Configuration configuration = new Configuration.Builder()
                 .setAnnotatedAPIConfiguration(annotatedAPIConfiguration)
-                .addDebugLogTargets(List.of(ANALYSER,
+                .addDebugLogTargets(Stream.of(ANALYSER,
                         LAMBDA,
                         DELAYED,
                         FINAL,
@@ -198,7 +199,7 @@ public abstract class CommonTestRunner {
                         MODIFICATION,
                         EVENTUALLY
 
-                ).stream().map(Enum::toString).collect(Collectors.joining(",")))
+                ).map(Enum::toString).collect(Collectors.joining(",")))
                 .setDebugConfiguration(debugConfiguration)
                 .setInputConfiguration(builder.build())
                 .build();

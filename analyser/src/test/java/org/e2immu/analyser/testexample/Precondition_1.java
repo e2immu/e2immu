@@ -51,7 +51,7 @@ public class Precondition_1 {
         this.i = j2;
     }
 
-    // this avoid a field not used exception.
+    // this avoids a field not used exception.
     public int getI() {
         return i;
     }

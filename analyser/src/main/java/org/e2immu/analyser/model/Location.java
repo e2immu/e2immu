@@ -18,51 +18,46 @@ import java.util.Objects;
 
 public class Location {
     public final WithInspectionAndAnalysis info;
-    public final String statementWithinMethod;
-    public final Expression expression; // in the same statement, there can be multiple identical flows starting...
+    public final String statementIndexInMethod;
+    public final Identifier identifier;
 
     public Location(WithInspectionAndAnalysis info) {
-        this(info, null, null);
+        this(info, null, info.getIdentifier());
     }
 
-    public Location(WithInspectionAndAnalysis info, Expression expression) {
-        this(info, null, expression);
+    public Location(WithInspectionAndAnalysis info, Identifier identifier) {
+        this(info, null, identifier);
     }
 
-    public Location(MethodInfo methodInfo, String statementIndex) {
-        this(methodInfo, statementIndex, null);
-    }
-
-    public Location(WithInspectionAndAnalysis info, String statementWithinMethod, Expression expression) {
+    public Location(WithInspectionAndAnalysis info, String statementIndexInMethod, Identifier identifier) {
         this.info = Objects.requireNonNull(info);
-        this.statementWithinMethod = statementWithinMethod;
-        this.expression = expression;
+        this.statementIndexInMethod = statementIndexInMethod;
+        this.identifier = Objects.requireNonNull(identifier);
     }
 
+    /*
+    Important: we look at the WithInspection (Type, method, field) and the statement index,
+    but not at the identifier. This allows us to check if a certain error is present, or not, as in
+    StatementAnalyser.checkUselessAssignments()
+     */
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Location location = (Location) o;
-        return Objects.equals(info, location.info) &&
-                Objects.equals(statementWithinMethod, location.statementWithinMethod) &&
-                Objects.equals(expression, location.expression);
+        return info.equals(location.info) && Objects.equals(statementIndexInMethod, location.statementIndexInMethod);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(info, statementWithinMethod, expression);
+        return Objects.hash(info, statementIndexInMethod);
     }
 
     @Override
     public String toString() {
-        return info == null ? "<no location>" : info.niceClassName() + " " + info.fullyQualifiedName()
-                + (statementWithinMethod == null ? "" : ":" + statementWithinMethod)
-                + (expression == null ? "" : "#" + expression);
-    }
-
-    public static String typeLetter(WithInspectionAndAnalysis info) {
-        return Character.toString(info.getClass().getSimpleName().charAt(0));
+        return info.niceClassName() + " " + info.fullyQualifiedName()
+                + (identifier instanceof Identifier.PositionalIdentifier pi ? " (line " + pi.line() + ", pos " + pi.pos() + ")" :
+                (statementIndexInMethod == null ? "" : " (statement " + statementIndexInMethod + ")"));
     }
 
     public String detailedLocation() {
@@ -74,6 +69,6 @@ public class Location {
             else type = "Method";
         } else if (info instanceof ParameterInfo) type = "Parameter";
         else throw new UnsupportedOperationException();
-        return type + " " + info.fullyQualifiedName() + (statementWithinMethod == null ? "" : ", statement " + statementWithinMethod);
+        return type + " " + info.fullyQualifiedName() + (statementIndexInMethod == null ? "" : ", statement " + statementIndexInMethod);
     }
 }

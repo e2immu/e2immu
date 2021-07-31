@@ -209,7 +209,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
                 if (d.iteration() == 0) {
                     assertNull(d.methodAnalysis().getSingleReturnValue());
                 } else {
-                    assertEquals("i", d.methodAnalysis().getSingleReturnValue().toString());
+                    assertEquals("i$0", d.methodAnalysis().getSingleReturnValue().toString());
                 }
             }
         };

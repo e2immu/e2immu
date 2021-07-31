@@ -188,7 +188,7 @@ public class Test_16_Modification extends CommonTestRunner {
                 if (d.iteration() == 0) {
                     assertTrue(d.evaluationResult().someValueWasDelayed());
                 } else {
-                    assertEquals("set3.add(v)", d.evaluationResult().value().toString());
+                    assertEquals("instance type boolean", d.evaluationResult().value().toString());
                     int v = d.evaluationResult().changeData().entrySet().stream()
                             .filter(e -> e.getKey().fullyQualifiedName().equals("local3"))
                             .map(Map.Entry::getValue)
@@ -799,7 +799,7 @@ public class Test_16_Modification extends CommonTestRunner {
                     assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
                 }
                 if (d.variable() instanceof ReturnVariable && "2".equals(d.statementId())) {
-                    String expectValue = d.iteration() <= 2 ? "<m:addAll>" : "c.set.addAll(localD.set)";
+                    String expectValue = d.iteration() <= 2 ? "<m:addAll>" : "instance type boolean";
                     assertEquals(expectValue, d.currentValue().toString());
                 }
             }

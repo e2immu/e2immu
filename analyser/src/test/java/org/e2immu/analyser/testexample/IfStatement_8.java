@@ -14,37 +14,18 @@
 
 package org.e2immu.analyser.testexample;
 
-// variable field
+import org.e2immu.annotation.NotNull;
 
-import org.e2immu.annotation.Constant;
+public class IfStatement_8 {
 
-public class InlineMethods_6 {
-
-    static class VariableField {
-        private int i;
-
-        public int getI() {
-            return i;
+    @NotNull
+    public static String pad(int i) {
+        if (i <= 9) return "" + i;
+        if (i >= 190) { // escapes always; variant on IfStatement_7, but now change to return value is in Merge
+            throw new UnsupportedOperationException();
+        } else {
+            throw new RuntimeException();
         }
-
-        public void setI(int i) {
-            this.i = i;
-        }
-
-        private int sum(int j) {
-            return i + j;
-        }
-
-        public int expandSum(int k) {
-            return k * sum(3); // sum should be expanded here
-        }
-    }
-
-    // because it is a variable field, we do not link the field i to the parameter of setI (we *could*)
-    @Constant(absent = true)
-    public static int expand() {
-        VariableField variableField = new VariableField();
-        variableField.setI(3);
-        return variableField.getI(); // variable field expansion still allowed, same primary type
     }
 }
+

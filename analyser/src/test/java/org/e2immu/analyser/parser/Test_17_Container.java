@@ -209,7 +209,7 @@ public class Test_17_Container extends CommonTestRunner {
 
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("add".equals(d.methodInfo().name) && "1.0.0".equals(d.statementId())) {
-                String expectValue = d.iteration() == 0 ? "<m:add>" : "s$0.add(s3)";
+                String expectValue = d.iteration() == 0 ? "<m:add>" : "instance type boolean";
                 assertEquals(expectValue, d.evaluationResult().value().toString());
             }
         };

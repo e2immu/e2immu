@@ -21,9 +21,7 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ReturnStatement;
-import org.e2immu.analyser.model.variable.FieldReference;
-import org.e2immu.analyser.model.variable.This;
-import org.e2immu.analyser.model.variable.Variable;
+import org.e2immu.analyser.model.variable.*;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Primitives;
@@ -127,7 +125,7 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
                     .add(OBTAIN_MOST_COMPLETE_PRECONDITION, (sharedState) -> obtainMostCompletePrecondition())
                     .add(COMPUTE_MODIFIED, (sharedState) -> methodInfo.isConstructor ? DONE : computeModified())
                     .add(COMPUTE_MODIFIED_CYCLES, (sharedState -> methodInfo.isConstructor ? DONE : computeModifiedInternalCycles()))
-                    .add(COMPUTE_RETURN_VALUE, (sharedState) -> methodInfo.noReturnValue() ? DONE : computeReturnValue(sharedState))
+                    .add(COMPUTE_RETURN_VALUE, (sharedState) -> methodInfo.noReturnValue() ? DONE : computeReturnValue())
                     .add(COMPUTE_IMMUTABLE, sharedState -> methodInfo.noReturnValue() ? DONE : computeImmutable())
                     .add(DETECT_MISSING_STATIC_MODIFIER, (iteration) -> methodInfo.isConstructor ? DONE : detectMissingStaticModifier())
                     .add(EVENTUAL_PREP_WORK, (sharedState) -> methodInfo.isConstructor ? DONE : eventualPrepWork(sharedState))
@@ -457,7 +455,7 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
 
     // singleReturnValue is associated with @Constant; to be able to grab the actual Value object
     // but we cannot assign this value too early: first, there should be no evaluation anymore with NO_VALUES in them
-    private AnalysisStatus computeReturnValue(SharedState sharedState) {
+    private AnalysisStatus computeReturnValue() {
         assert !methodAnalysis.singleReturnValue.isSet();
 
         // some immediate short-cuts.
@@ -478,8 +476,8 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
         }
 
         VariableInfo variableInfo = getReturnAsVariable();
-        Expression valueWithReturn = variableInfo.getValue();
-        if (variableInfo.isDelayed() || valueWithReturn.isInitialReturnExpression()) {
+        Expression value = variableInfo.getValue();
+        if (variableInfo.isDelayed() || value.isInitialReturnExpression()) {
 
             // it is possible that none of the return statements are reachable... in which case there should be no delay,
             // and no SRV
@@ -493,20 +491,10 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
                 return DONE;
             }
             log(DELAYED, "Method {} has return value {}, delaying", methodInfo.distinguishingName(),
-                    valueWithReturn.debugOutput());
+                    value.debugOutput());
             return DELAYS;
         }
 
-        Expression value;
-        boolean computeNotNullFromValue;
-        if (methodAnalysis.getFirstStatement().lastStatementIsEscape()) {
-            // we may need to remove the
-            value = removeInitialReturnExpression(valueWithReturn);
-            computeNotNullFromValue = true;
-        } else {
-            value = valueWithReturn;
-            computeNotNullFromValue = false;
-        }
         // try to compute the dynamic immutable status of value
 
         Expression valueBeforeInlining = value;
@@ -531,19 +519,12 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
                 }
             }
         }
-        /*
-        in normal situations, the @NotNull value is taken from the return value.
-        When the last statement escapes, this value will have been changed; very likely, at least one
-        inline conditional has been removed. We compute not-null directly on the value
-        TODO this may result in evaluation trouble -- local variables not known to the method analyser
-         */
-        int notNull = computeNotNullFromValue ?
-                value.getProperty(sharedState.evaluationContext, NOT_NULL_EXPRESSION, false) :
-                variableInfo.getProperty(VariableProperty.NOT_NULL_EXPRESSION);
 
+        int notNull = variableInfo.getProperty(VariableProperty.NOT_NULL_EXPRESSION);
         if (notNull != Level.DELAY) {
             methodAnalysis.setProperty(VariableProperty.NOT_NULL_EXPRESSION, notNull);
         } else {
+            // TODO add assert
             log(DELAYED, "Delaying return value of {}, waiting for NOT_NULL", methodInfo.fullyQualifiedName);
             return DELAYS;
         }
@@ -660,8 +641,13 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
         Set<Variable> variables = new HashSet<>();
         boolean containsVariableFields = false;
         for (Variable variable : value.variables()) {
+            FieldInfo fieldInfo;
             if (variable instanceof FieldReference fieldReference) {
-                FieldInfo fieldInfo = fieldReference.fieldInfo;
+                fieldInfo = fieldReference.fieldInfo;
+            } else if (variable instanceof LocalVariableReference lvr && lvr.variableNature() instanceof VariableNature.CopyOfVariableField cvf) {
+                fieldInfo = cvf.localCopyOf().fieldInfo;
+            } else fieldInfo = null;
+            if (fieldInfo != null) {
                 int effectivelyFinal = analyserContext.getFieldAnalysis(fieldInfo).getProperty(VariableProperty.FINAL);
                 if (effectivelyFinal == Level.DELAY) {
                     assert translatedDelay(COMPUTE_RETURN_VALUE, methodInfo.fullyQualifiedName + D_MODIFIED_METHOD,

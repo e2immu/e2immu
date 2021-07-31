@@ -151,4 +151,10 @@ public class Negation extends UnaryOperator implements ExpressionWrapper {
     public ParameterizedType returnType() {
         return expression.returnType();
     }
+
+    @Override
+    public Expression removeAllReturnValueParts() {
+        if(expression.isReturnValue()) return expression;
+        return new Negation(identifier, operator, expression.removeAllReturnValueParts());
+    }
 }

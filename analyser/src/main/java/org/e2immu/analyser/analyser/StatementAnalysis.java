@@ -339,7 +339,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
 
     @Override
     public Location location() {
-        return new Location(methodAnalysis.getMethodInfo(), index);
+        return new Location(methodAnalysis.getMethodInfo(), index, statement.getIdentifier());
     }
 
     // ****************************************************************************************
@@ -921,7 +921,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                             }
                             if (atLeastOneBlockExecuted &&
                                     checkForOverwritingPreviousAssignment(variable, current, vic.variableNature(), toMerge)) {
-                                ensure(Message.newMessage(new Location(methodAnalysis.getMethodInfo(), index),
+                                ensure(Message.newMessage(new Location(methodAnalysis.getMethodInfo(), index, statement.getIdentifier()),
                                         Message.Label.OVERWRITING_PREVIOUS_ASSIGNMENT, variable.simpleName()));
                             }
                         } catch (Throwable throwable) {

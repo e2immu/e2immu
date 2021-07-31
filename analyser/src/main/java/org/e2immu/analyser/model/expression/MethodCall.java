@@ -327,7 +327,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         // null scope
         Expression objectValue = objectResult.value();
         if (objectValue.isInstanceOf(NullConstant.class)) {
-            builder.raiseError(Message.Label.NULL_POINTER_EXCEPTION);
+            builder.raiseError(object.getIdentifier(), Message.Label.NULL_POINTER_EXCEPTION);
         }
 
         // process parameters
@@ -470,11 +470,11 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         if (variable instanceof FieldReference && (evaluationContext.getCurrentMethod() == null ||
                 evaluationContext.getCurrentMethod().methodAnalysis.getProperty(VariableProperty.FINALIZER) != Level.TRUE)) {
             // ensure that the current method has been marked @Finalizer
-            builder.raiseError(Message.Label.FINALIZER_METHOD_CALLED_ON_FIELD_NOT_IN_FINALIZER);
+            builder.raiseError(getIdentifier(), Message.Label.FINALIZER_METHOD_CALLED_ON_FIELD_NOT_IN_FINALIZER);
             return true;
         }
         if (variable instanceof ParameterInfo) {
-            builder.raiseError(Message.Label.FINALIZER_METHOD_CALLED_ON_PARAMETER);
+            builder.raiseError(getIdentifier(), Message.Label.FINALIZER_METHOD_CALLED_ON_PARAMETER);
             return true;
         }
         return false;
@@ -716,7 +716,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             ParameterizedType type = objectValue.returnType();
             if (type != null && type.typeInfo != null && type.typeInfo ==
                     evaluationContext.getPrimitives().stringTypeInfo) {
-                builder.raiseError(Message.Label.UNNECESSARY_METHOD_CALL, "toString()");
+                builder.raiseError(getIdentifier(), Message.Label.UNNECESSARY_METHOD_CALL, "toString()");
             }
         }
 
@@ -730,16 +730,16 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         MethodAnalysis methodAnalysis = evaluationContext.getAnalyserContext().getMethodAnalysis(method);
         int modified = methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD);
         if (modified == Level.TRUE && evaluationContext.cannotBeModified(objectValue)) {
-            builder.raiseError(Message.Label.CALLING_MODIFYING_METHOD_ON_E2IMMU,
+            builder.raiseError(getIdentifier(), Message.Label.CALLING_MODIFYING_METHOD_ON_E2IMMU,
                     "Method: " + methodInfo.distinguishingName() + ", Type: " + objectValue.returnType());
         }
     }
 
-    private static void complianceWithForwardRequirements(EvaluationResult.Builder builder,
-                                                          MethodAnalysis methodAnalysis,
-                                                          MethodInspection methodInspection,
-                                                          ForwardEvaluationInfo forwardEvaluationInfo,
-                                                          boolean contentNotNullRequired) {
+    private void complianceWithForwardRequirements(EvaluationResult.Builder builder,
+                                                   MethodAnalysis methodAnalysis,
+                                                   MethodInspection methodInspection,
+                                                   ForwardEvaluationInfo forwardEvaluationInfo,
+                                                   boolean contentNotNullRequired) {
         if (!contentNotNullRequired) {
             int requiredNotNull = forwardEvaluationInfo.getProperty(VariableProperty.CONTEXT_NOT_NULL);
             if (MultiLevel.isEffectivelyNotNull(requiredNotNull)) {
@@ -747,7 +747,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 if (methodNotNull != Level.DELAY) {
                     boolean isNotNull = MultiLevel.isEffectivelyNotNull(methodNotNull);
                     if (!isNotNull) {
-                        builder.raiseError(Message.Label.POTENTIAL_NULL_POINTER_EXCEPTION,
+                        builder.raiseError(getIdentifier(), Message.Label.POTENTIAL_NULL_POINTER_EXCEPTION,
                                 "Result of method call " + methodInspection.getFullyQualifiedName());
                     }
                 } // else: delaying is fine

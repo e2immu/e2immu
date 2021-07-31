@@ -128,6 +128,19 @@ public class Test_26_Enum extends CommonTestRunner {
                         assertEquals(Level.FALSE, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
                     }
                 }
+                if (d.variable() instanceof ReturnVariable) {
+                    if ("0.0.0".equals(d.statementId())) {
+                        String expected = d.iteration() == 0 ? "this==<v:<m:values>[<v:i>]>?<v:i>:<return value>"
+                                : "instance type Enum_1==this?1+i$0:<return value>";
+                        assertEquals(expected, d.currentValue().toString());
+                    }
+                    if ("0".equals(d.statementId())) {
+                        String expected = d.iteration() == 0
+                                ? "<delayed array length>><replace:int>?<merge:int>:<return value>"
+                                : "instance type int<=2?instance type int:<return value>";
+                        assertEquals(expected, d.currentValue().toString());
+                    }
+                }
             }
         };
 
@@ -173,7 +186,7 @@ public class Test_26_Enum extends CommonTestRunner {
     @Test
     public void test3() throws IOException {
         final String TYPE = "org.e2immu.analyser.testexample.Enum_3";
-        final String ONE = TYPE + ".THREE";
+        final String ONE = TYPE + ".ONE";
         final String TWO = TYPE + ".TWO";
         final String THREE = TYPE + ".THREE";
         final String THIS = TYPE + ".this";

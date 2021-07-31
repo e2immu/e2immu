@@ -88,8 +88,7 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                 if ("3".equals(d.statementId())) {
                     assertEquals("true", d.statementAnalysis().stateData.valueOfExpression.get().toString());
                     assertEquals("false", d.state().toString()); // after the statement...
-                    assertEquals("ERROR in Method org.e2immu.analyser.testexample.ConditionalChecks_0.method1(boolean,boolean):3: Condition in 'if' or 'switch' statement evaluates to constant",
-                            d.haveError(Message.Label.CONDITION_EVALUATES_TO_CONSTANT));
+                    assertNotNull(d.haveError(Message.Label.CONDITION_EVALUATES_TO_CONSTANT));
                     assertEquals(FlowData.Execution.CONDITIONALLY, inBlock);
                     assertEquals(FlowData.Execution.CONDITIONALLY, inMethod);
                     assertTrue(d.statementAnalysis().methodLevelData.combinedPrecondition.get().isEmpty());

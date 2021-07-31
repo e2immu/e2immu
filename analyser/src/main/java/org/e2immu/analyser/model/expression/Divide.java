@@ -34,7 +34,7 @@ public class Divide extends BinaryOperator {
 
         if (l instanceof Numeric ln && ln.doubleValue() == 0) return builder.setExpression(l).build();
         if (r instanceof Numeric rn && rn.doubleValue() == 0) {
-            builder.raiseError(Message.Label.DIVISION_BY_ZERO);
+            builder.raiseError(identifier, Message.Label.DIVISION_BY_ZERO);
             return builder.setExpression(l).build();
         }
         if (r instanceof Numeric rn && rn.doubleValue() == 1) return builder.setExpression(l).build();

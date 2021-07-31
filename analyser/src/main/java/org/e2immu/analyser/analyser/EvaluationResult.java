@@ -364,22 +364,22 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             return this;
         }
 
-        public void raiseError(Message.Label messageLabel) {
+        public void raiseError(Identifier identifier, Message.Label messageLabel) {
             assert evaluationContext != null;
             StatementAnalyser statementAnalyser = evaluationContext.getCurrentStatement();
             if (statementAnalyser != null) {
-                Message message = Message.newMessage(evaluationContext.getLocation(), messageLabel);
+                Message message = Message.newMessage(evaluationContext.getLocation(identifier), messageLabel);
                 messages.add(message);
             } else { // e.g. companion analyser
                 LOGGER.warn("Analyser error: {}", messageLabel);
             }
         }
 
-        public void raiseError(Message.Label messageLabel, String extra) {
+        public void raiseError(Identifier identifier, Message.Label messageLabel, String extra) {
             assert evaluationContext != null;
             StatementAnalyser statementAnalyser = evaluationContext.getCurrentStatement();
             if (statementAnalyser != null) {
-                Message message = Message.newMessage(evaluationContext.getLocation(), messageLabel, extra);
+                Message message = Message.newMessage(evaluationContext.getLocation(identifier), messageLabel, extra);
                 messages.add(message);
             } else {
                 LOGGER.warn("Analyser error: {}, {}", messageLabel, extra);
@@ -447,15 +447,16 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             setProperty(variable, VariableProperty.CONTEXT_IMMUTABLE_DELAY, Level.TRUE);
         }
 
-        public void variableOccursInEventuallyImmutableContext(Variable variable, int requiredImmutable, int nextImmutable) {
+        public void variableOccursInEventuallyImmutableContext(Identifier identifier,
+                                                               Variable variable, int requiredImmutable, int nextImmutable) {
             // context immutable starts at 1, but this code only kicks in once it has received a value
             // before that value (before the first eventual call, the precondition system reigns
             int currentImmutable = getPropertyFromInitial(variable, VariableProperty.CONTEXT_IMMUTABLE);
             if (currentImmutable >= MultiLevel.EVENTUALLY_E1IMMUTABLE_BEFORE_MARK) {
                 if (MultiLevel.isBefore(requiredImmutable) && !MultiLevel.isBefore(currentImmutable)) {
-                    raiseError(Message.Label.EVENTUAL_BEFORE_REQUIRED);
+                    raiseError(identifier, Message.Label.EVENTUAL_BEFORE_REQUIRED);
                 } else if (MultiLevel.isAfter(requiredImmutable) && !MultiLevel.isAfter(currentImmutable)) {
-                    raiseError(Message.Label.EVENTUAL_AFTER_REQUIRED);
+                    raiseError(identifier, Message.Label.EVENTUAL_AFTER_REQUIRED);
                 }
             }
             // everything proceeds as normal
