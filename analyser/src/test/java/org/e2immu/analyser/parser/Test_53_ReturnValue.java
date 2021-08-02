@@ -49,8 +49,7 @@ public class Test_53_ReturnValue extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("nextInt".equals(d.methodInfo().name)) {
                 if (d.iteration() > 2) {
-                    // FIXME do we want this?? I'd say NO
-                    assertEquals("random.next()%max", d.methodAnalysis().getSingleReturnValue().toString());
+                    assertEquals("instance type int%max", d.methodAnalysis().getSingleReturnValue().toString());
                 }
             }
         };

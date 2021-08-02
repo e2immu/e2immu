@@ -17,10 +17,7 @@ package org.e2immu.analyser.parser;
 import org.e2immu.analyser.analyser.VariableInfoContainer;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.model.Level;
-import org.e2immu.analyser.model.MultiLevel;
-import org.e2immu.analyser.model.ParameterAnalysis;
-import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.InlinedMethod;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.VariableNature;
@@ -82,23 +79,32 @@ public class Test_52_Var extends CommonTestRunner {
             if ("apply".equals(d.methodInfo().name) && "$1".equals(d.methodInfo().typeInfo.simpleName)) {
                 if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
                     assertEquals("apply", inlinedMethod.methodInfo().name);
+                    assertEquals("x.repeat(i)", d.methodAnalysis().getSingleReturnValue().toString());
                 } else fail();
-                assertEquals("x.repeat(i)", d.methodAnalysis().getSingleReturnValue().toString());
+
+                // @NotNull on parameter of apply
                 ParameterAnalysis p0 = d.methodAnalysis().getParameterAnalyses().get(0);
                 int expectNnp = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
                 assertEquals(expectNnp, p0.getProperty(VariableProperty.NOT_NULL_PARAMETER));
+
+                assertEquals(Level.FALSE, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
             }
             if ("repeater".equals(d.methodInfo().name)) {
                 if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
                     assertEquals("repeater", inlinedMethod.methodInfo().name);
                     if (inlinedMethod.expression() instanceof InlinedMethod inlinedMethod2) {
                         assertEquals("apply", inlinedMethod2.methodInfo().name);
+                        assertEquals("x.repeat(i)", d.methodAnalysis().getSingleReturnValue().toString());
+                        assertFalse(inlinedMethod.containsVariableFields());
+                        assertEquals(2, inlinedMethod.variables().size());
+                        assertTrue(inlinedMethod.variables().stream().allMatch(v -> v instanceof ParameterInfo));
                     } else fail();
                 } else fail();
-                assertEquals("x.repeat(i)", d.methodAnalysis().getSingleReturnValue().toString());
+                assertEquals(Level.FALSE, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
             }
         };
-        testClass("Var_4", 0, 0, new DebugConfiguration.Builder()
+        // no annotated API, so we have no idea if repeater is @NotNull or not -> repeater(3) may return null
+        testClass("Var_4", 0, 1, new DebugConfiguration.Builder()
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
@@ -124,7 +130,7 @@ public class Test_52_Var extends CommonTestRunner {
             }
             if (d.variable() instanceof ReturnVariable) {
                 if ("0.0.0".equals(d.statementId())) {
-                    assertEquals("sw.append(s).toString()", d.currentValue().toString());
+                    assertEquals("(nullable instance type StringWriter).toString()", d.currentValue().toString());
                     // explicit as result of the method, rather than governed by the type
                     assertEquals(MultiLevel.MUTABLE, d.getProperty(VariableProperty.IMMUTABLE));
                 }

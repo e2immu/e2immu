@@ -201,13 +201,17 @@ public class InlinedMethod extends ElementImpl implements Expression {
             Expression replacement = null;
             boolean replace = true;
             FieldReference fieldReference = null;
-            if (variable instanceof ParameterInfo parameterInfo && parameterInfo.getMethod() == methodInfo) {
-                if (parameterInfo.parameterInspection.get().isVarArgs()) {
-                    replacement = new ArrayInitializer(inspectionProvider, parameters
-                            .subList(parameterInfo.index, parameters.size()),
-                            parameterInfo.parameterizedType);
+            if (variable instanceof ParameterInfo parameterInfo) {
+                if (parameterInfo.getMethod() == methodInfo) {
+                    if (parameterInfo.parameterInspection.get().isVarArgs()) {
+                        replacement = new ArrayInitializer(inspectionProvider, parameters
+                                .subList(parameterInfo.index, parameters.size()),
+                                parameterInfo.parameterizedType);
+                    } else {
+                        replacement = parameters.get(parameterInfo.index);
+                    }
                 } else {
-                    replacement = parameters.get(parameterInfo.index);
+                    replace = false;
                 }
             } else if (variable instanceof This) {
                 VariableExpression ve;
@@ -221,43 +225,46 @@ public class InlinedMethod extends ElementImpl implements Expression {
                 fieldReference = cvf.localCopyOf();
             }
 
-            if (fieldReference != null &&
-                    visibleIn(inspectionProvider, fieldReference.fieldInfo, typeOfTranslation)) {
+            if (fieldReference != null) {
                 boolean staticField = fieldReference.fieldInfo.isStatic(inspectionProvider);
-                // maybe the final field is linked to a parameter, and we have a value for that parameter?
+                boolean scopeIsThis = fieldReference.scopeIsThis();
+                if (!staticField && !scopeIsThis) {
+                    replace = false;
+                    // the variables of the scope are dealt with separately
+                } else if (visibleIn(inspectionProvider, fieldReference.fieldInfo, typeOfTranslation)) {
+                    // maybe the final field is linked to a parameter, and we have a value for that parameter?
 
-                FieldAnalysis fieldAnalysis = evaluationContext.getAnalyserContext().getFieldAnalysis(fieldReference.fieldInfo);
-                int effectivelyFinal = fieldAnalysis.getProperty(VariableProperty.FINAL);
-                if (effectivelyFinal == Level.TRUE) {
-                    if (staticField) {
-                        replace = false;
-                    } else {
-                        NewObject newObject = scope.asInstanceOf(NewObject.class);
-                        VariableExpression ve;
-                        if (newObject == null && (ve = scope.asInstanceOf(VariableExpression.class)) != null) {
-                            Expression value = evaluationContext.currentInstance(ve.variable(),
-                                    evaluationContext.getInitialStatementTime());
-                            newObject = value.asInstanceOf(NewObject.class);
-                        }
-                        if (newObject != null && newObject.constructor() != null) {
-                            // only now we can start to take a look at the parameters
-                            int index = indexOfParameterLinkedToFinalField(evaluationContext, newObject.constructor(),
-                                    fieldReference.fieldInfo);
-                            if (index >= 0) {
-                                replacement = newObject.getParameterExpressions().get(index);
+                    FieldAnalysis fieldAnalysis = evaluationContext.getAnalyserContext().getFieldAnalysis(fieldReference.fieldInfo);
+                    int effectivelyFinal = fieldAnalysis.getProperty(VariableProperty.FINAL);
+                    if (effectivelyFinal == Level.TRUE) {
+                        if (staticField) {
+                            replace = false;
+                        } else {
+                            NewObject newObject = scope.asInstanceOf(NewObject.class);
+                            VariableExpression ve;
+                            if (newObject == null && (ve = scope.asInstanceOf(VariableExpression.class)) != null) {
+                                Expression value = evaluationContext.currentInstance(ve.variable(),
+                                        evaluationContext.getInitialStatementTime());
+                                newObject = value.asInstanceOf(NewObject.class);
+                            }
+                            if (newObject != null && newObject.constructor() != null) {
+                                // only now we can start to take a look at the parameters
+                                int index = indexOfParameterLinkedToFinalField(evaluationContext, newObject.constructor(),
+                                        fieldReference.fieldInfo);
+                                if (index >= 0) {
+                                    replacement = newObject.getParameterExpressions().get(index);
+                                }
                             }
                         }
                     }
-                }
 
-                VariableExpression ve;
-                if (replacement == null && (ve = scope.asInstanceOf(VariableExpression.class)) != null &&
-                        (staticField || fieldReference.scopeIsThis())) {
-                    FieldReference scopeField = new FieldReference(inspectionProvider, fieldReference.fieldInfo,
-                            staticField ? null : ve);
-                    replacement = new VariableExpression(scopeField);
+                    VariableExpression ve;
+                    if (replacement == null && (ve = scope.asInstanceOf(VariableExpression.class)) != null) {
+                        FieldReference scopeField = new FieldReference(inspectionProvider, fieldReference.fieldInfo,
+                                staticField ? null : ve);
+                        replacement = new VariableExpression(scopeField);
+                    }
                 }
-
             }
             if (replace) {
                 if (replacement == null) {
@@ -326,7 +333,7 @@ public class InlinedMethod extends ElementImpl implements Expression {
             assert variable instanceof This || acceptedVariables.contains(variable) :
                     "there should be no other variables in this expression: " +
                             variable + " is not in accepted variables\n" + acceptedVariables +
-                            " of expression\n" + expression+"\nvariablesOfExpression is "+variablesOfExpression;
+                            " of expression\n" + expression + "\nvariablesOfExpression is " + variablesOfExpression;
         }
 
         @Override

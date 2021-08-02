@@ -14,17 +14,19 @@
 
 package org.e2immu.analyser.parser;
 
+import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.expression.InlinedMethod;
+import org.e2immu.analyser.visitor.FieldAnalyserVisitor;
 import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_57_Lambda extends CommonTestRunner {
 
@@ -50,11 +52,11 @@ public class Test_57_Lambda extends CommonTestRunner {
     public void test_2() throws IOException {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("get".equals(d.methodInfo().name) && d.iteration() > 0) {
-                assertEquals("i", d.methodAnalysis().getSingleReturnValue().toString());
+                assertEquals("i$0", d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("method".equals(d.methodInfo().name) && d.iteration() > 0) {
                 Expression srv = d.methodAnalysis().getSingleReturnValue();
-                assertEquals("i*i", srv.toString());
+                assertEquals("j*i$1", srv.toString());
             }
         };
         testClass("Lambda_2", 0, 0, new DebugConfiguration.Builder()
@@ -73,16 +75,41 @@ public class Test_57_Lambda extends CommonTestRunner {
                         assertEquals("", d.variableInfo().getStaticallyAssignedVariables().toString());
                     }
                 }
+                if ("f".equals(d.variableName())) {
+                    if ("1".equals(d.statementId())) {
+                        String expected = d.iteration() == 0 ? "<m:get>" : "x.k";
+                        assertEquals(expected, d.currentValue().toString());
+                        if (d.iteration() > 0) {
+                            if (d.currentValue() instanceof InlinedMethod inlinedMethod) {
+                                assertEquals(2, inlinedMethod.variables().size()); // x, x.k
+                                assertFalse(inlinedMethod.containsVariableFields());
+                            } else fail("Class " + d.currentValue().getClass());
+                        }
+                    }
+                }
             }
         };
+
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("method".equals(d.methodInfo().name) && d.iteration() > 0) {
-                assertEquals("x.k>=3?x.k*i:3", d.methodAnalysis().getSingleReturnValue().toString());
+                assertEquals("x.k>=3?x.k*i$1:3", d.methodAnalysis().getSingleReturnValue().toString());
+            }
+            if ("get".equals(d.methodInfo().name)) {
+                int expected = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
+                assertEquals(expected, d.methodAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
             }
         };
+
+        FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+            if ("k".equals(d.fieldInfo().name)) {
+                assertEquals(Level.TRUE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
+            }
+        };
+
         testClass("Lambda_3", 0, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build());
     }
 
@@ -101,7 +128,7 @@ public class Test_57_Lambda extends CommonTestRunner {
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("method".equals(d.methodInfo().name) && d.iteration() > 0) {
-                assertEquals("x.k>=3?x.k*i:3", d.methodAnalysis().getSingleReturnValue().toString());
+                assertEquals("x.k>=3?x.k*i$1:3", d.methodAnalysis().getSingleReturnValue().toString());
             }
         };
         testClass("Lambda_4", 0, 0, new DebugConfiguration.Builder()
@@ -115,12 +142,12 @@ public class Test_57_Lambda extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
                 Expression e = d.methodAnalysis().getSingleReturnValue();
-                assertEquals("a*a+a*b+b*-b+a*-b", e.toString());
+                assertEquals("a*a+b*-b+a*b+a*-b", e.toString());
                 assertTrue(e instanceof InlinedMethod);
             }
             if ("direct".equals(d.methodInfo().name)) {
                 Expression e = d.methodAnalysis().getSingleReturnValue();
-                assertEquals("a*a+a*b+b*-b+a*-b", e.toString());
+                assertEquals("a*a+b*-b+a*b+a*-b", e.toString());
                 assertTrue(e instanceof InlinedMethod);
             }
         };
