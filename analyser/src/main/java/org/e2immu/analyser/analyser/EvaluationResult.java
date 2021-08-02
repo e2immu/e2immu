@@ -544,7 +544,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             assert evaluationContext != null;
             boolean stateIsDelayed = evaluationContext.getConditionManager().isStateDelayedOrPreconditionDelayed();
             boolean resultOfExpressionIsDelayed = evaluationContext.isDelayed(resultOfExpression);
-            // NOTE NOTE: we cannot use the @NotNull of t he result in DelayedExpresion.forState (Loops_1 is a good counter-example)
+            // NOTE: we cannot use the @NotNull of the result in DelayedExpression.forState (Loops_1 is a good counter-example)
             boolean markAssignment = resultOfExpression != EmptyExpression.EMPTY_EXPRESSION;
 
             // in case both state and result of expression are delayed, we give preference to the result

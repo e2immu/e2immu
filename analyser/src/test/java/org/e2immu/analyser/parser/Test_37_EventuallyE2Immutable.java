@@ -214,13 +214,17 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
 
     @Test
     public void test_3() throws IOException {
-        String TYPE = "org.e2immu.analyser.testexample.EventuallyE2Immutable_3";
-        String OTHER_T_0 = TYPE + ".t#other$0";
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("error1".equals(d.methodInfo().name)) {
                 if ("0.0.0".equals(d.statementId())) {
                     String expectCondition = d.iteration() == 0 ? "!<m:isSet>" : "null==other.t";
                     assertEquals(expectCondition, d.condition().output(Qualification.FULLY_QUALIFIED_NAME).toString());
+                }
+            }
+
+            if ("error3".equals(d.methodInfo().name) || "error4".equals(d.methodInfo().name)) {
+                if ("1".equals(d.statementId())) {
+                    if (d.iteration() > 2) assertNotNull(d.haveError(Message.Label.EVENTUAL_BEFORE_REQUIRED));
                 }
             }
         };
@@ -229,7 +233,8 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
             if ("error4".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo other && "other".equals(other.name)) {
                     if ("0".equals(d.statementId())) {
-                        String expectValue = d.iteration() == 0 ? "<p:other>" : "instance type EventuallyE2Immutable_3<T>/*@Identity*/";
+                        String expectValue = d.iteration() == 0 ? "<p:other>"
+                                : "instance type EventuallyE2Immutable_3<T>/*@Identity*/";
                         assertEquals(expectValue, d.currentValue().toString());
                         int expectCImm = d.iteration() <= 2 ? Level.DELAY : MultiLevel.EVENTUALLY_E2IMMUTABLE_AFTER_MARK;
                         assertEquals(expectCImm, d.getProperty(VariableProperty.CONTEXT_IMMUTABLE));

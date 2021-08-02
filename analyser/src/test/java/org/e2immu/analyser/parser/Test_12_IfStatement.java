@@ -202,6 +202,7 @@ public class Test_12_IfStatement extends CommonTestRunner {
                 .build());
     }
 
+    /* IMPROVE FOR LATER this test is for the next code push
     @Test
     public void test_8() throws IOException {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
@@ -220,5 +221,5 @@ public class Test_12_IfStatement extends CommonTestRunner {
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
-    }
+    }*/
 }
