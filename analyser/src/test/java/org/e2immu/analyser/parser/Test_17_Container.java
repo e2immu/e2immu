@@ -490,7 +490,7 @@ public class Test_17_Container extends CommonTestRunner {
                     sorted.getAnalysis().getProperty(VariableProperty.NOT_NULL_EXPRESSION));
 
             // The type is an @E2Container, so @NotModified is implied; but it need not actually be present!!
-            assertEquals(Level.DELAY, sortedAnalysis.getProperty(VariableProperty.MODIFIED_METHOD));
+            assertEquals(Level.FALSE, sortedAnalysis.getProperty(VariableProperty.MODIFIED_METHOD));
         };
 
         testClass("Container_6", 0, 0, new DebugConfiguration.Builder()

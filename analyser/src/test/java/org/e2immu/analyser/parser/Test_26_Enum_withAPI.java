@@ -212,7 +212,7 @@ public class Test_26_Enum_withAPI extends CommonTestRunner {
             if ("returnTwo".equals(d.methodInfo().name)) {
                 assertFalse(d.variableName().contains("name"));
                 if (d.variable() instanceof FieldReference fr && "TWO".equals(fr.fieldInfo.name)) {
-                    int expectCm = d.iteration() <= 20 ? Level.DELAY : Level.FALSE;
+                    int expectCm = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
                     assertEquals(expectCm, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
                 }
             }
@@ -221,7 +221,7 @@ public class Test_26_Enum_withAPI extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("returnTwo".equals(d.methodInfo().name)) {
                 int expectImm = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EFFECTIVELY_E2IMMUTABLE;
-                //   assertEquals(expectImm, d.methodAnalysis().getProperty(VariableProperty.IMMUTABLE));
+                assertEquals(expectImm, d.methodAnalysis().getProperty(VariableProperty.IMMUTABLE));
             }
         };
 

@@ -149,6 +149,10 @@ public class Test_45_Project extends CommonTestRunner {
             TypeInfo map = typeMap.get(Map.class);
             MethodInfo get = map.findUniqueMethod("get", 1);
             assertEquals(MultiLevel.NULLABLE, get.methodAnalysis.get().getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+
+            MethodInfo putInMap = map.findUniqueMethod("put", 2);
+            assertEquals(Level.TRUE, putInMap.getAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
+
             TypeInfo hashMap = typeMap.get(HashMap.class);
             MethodInfo put = hashMap.findUniqueMethod("put", 2);
             assertEquals(Level.TRUE, put.getAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));

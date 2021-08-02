@@ -15,7 +15,6 @@
 package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.analyser.*;
-import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 
@@ -163,7 +162,13 @@ public interface MethodAnalysis extends Analysis {
 
             // unless: abstract methods, not annotated for modification. They remain as they are
             if (variableProperty == VariableProperty.MODIFIED_METHOD && getMethodInfo().isAbstract()) {
-                return Level.DELAY;
+                if (getMethodInfo().typeInfo.typeInspection.get().isFunctionalInterface()) {
+                    return Level.DELAY;
+                }
+                TypeAnalysis typeAnalysis = analysisProvider.getTypeAnalysis(getMethodInfo().typeInfo);
+                if (typeAnalysis.getProperty(VariableProperty.IMMUTABLE) == MultiLevel.EFFECTIVELY_E2IMMUTABLE) {
+                    return Level.FALSE;
+                }
             }
             return variableProperty.valueWhenAbsent(annotationMode());
         }
