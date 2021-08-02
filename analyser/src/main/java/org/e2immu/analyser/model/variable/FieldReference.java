@@ -53,6 +53,14 @@ public class FieldReference extends VariableWithConcreteReturnType {
                 : "Have variable expression scope on static field " + fullyQualifiedName();
     }
 
+    // called from VariableExpression.translate, where no inspection provider is present
+    public FieldReference(FieldInfo fieldInfo, Expression scope, ParameterizedType parameterizedType, boolean isStatic) {
+        super(parameterizedType);
+        this.fieldInfo = fieldInfo;
+        this.scope = scope;
+        this.isStatic = isStatic;
+    }
+
     @Override
     public TypeInfo getOwningType() {
         return fieldInfo.owner;

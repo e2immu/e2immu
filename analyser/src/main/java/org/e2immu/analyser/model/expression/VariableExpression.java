@@ -61,6 +61,14 @@ public record VariableExpression(Variable variable, String name) implements Expr
         if (translated2 != null) {
             return translated2;
         }
+        if (variable instanceof FieldReference fieldReference && fieldReference.scope != null) {
+            Expression translatedScope = fieldReference.scope.translate(translationMap);
+            if (!translatedScope.equals(fieldReference.scope)) {
+                ParameterizedType translatedType = translationMap.translateType(fieldReference.parameterizedType());
+                return new VariableExpression(new FieldReference(fieldReference.fieldInfo, translatedScope,
+                        translatedType, fieldReference.isStatic));
+            }
+        }
         return this;
     }
 

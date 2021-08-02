@@ -988,11 +988,9 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                             index(), myMethodAnalyser.methodInfo.fullyQualifiedName);
                     status = DELAYS;
                 } else {
-                    Expression untranslated = evaluationResult.untranslatedPrecondition();
-                    if (untranslated != null) {
-                        checkPreconditionCompatibilityWithConditionManager(sharedState.evaluationContext, untranslated,
+                        checkPreconditionCompatibilityWithConditionManager(sharedState.evaluationContext,
+                                preconditionExpression,
                                 sharedState.localConditionManager);
-                    }
                 }
             }
         } else if (!statementAnalysis.stateData.preconditionIsFinal()) {
@@ -1067,9 +1065,9 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
     }
 
     private void checkPreconditionCompatibilityWithConditionManager(EvaluationContext evaluationContext,
-                                                                    Expression untranslated,
+                                                                    Expression preconditionExpression,
                                                                     ConditionManager localConditionManager) {
-        Expression result = localConditionManager.evaluate(evaluationContext, untranslated);
+        Expression result = localConditionManager.evaluate(evaluationContext, preconditionExpression);
         if (result.isBoolValueFalse()) {
             statementAnalysis.ensure(Message.newMessage(getLocation(), Message.Label.INCOMPATIBLE_PRECONDITION));
         }

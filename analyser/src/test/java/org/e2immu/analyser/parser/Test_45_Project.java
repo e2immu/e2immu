@@ -49,14 +49,17 @@ public class Test_45_Project extends CommonTestRunner {
                     };
                     assertEquals(expected, d.evaluationResult().getExpression().toString());
                     EvaluationResult.ChangeData changeData = d.findValueChangeByToString("container.read");
-                    int expectCnn = Level.DELAY; // FIXME here's the error
-                    //    assertEquals(expectCnn, changeData.getProperty(VariableProperty.CONTEXT_NOT_NULL));
+                    assertEquals(Level.DELAY, changeData.getProperty(VariableProperty.CONTEXT_NOT_NULL));
                 }
                 if ("2.0.1.0.1.0.0".equals(d.statementId())) {
                     String expected = switch (d.iteration()) {
                         case 0, 1 -> "<m:put>";
                         default -> "result.put(entry$2.getKey(),entry$2.getValue().value)";
                     };
+                    assertEquals(expected, d.evaluationResult().getExpression().toString());
+                }
+                if ("3".equals(d.statementId())) {
+                    String expected = d.iteration() < 2 ? "<m:debug>" : "<no return value>";
                     assertEquals(expected, d.evaluationResult().getExpression().toString());
                 }
             }
@@ -81,6 +84,25 @@ public class Test_45_Project extends CommonTestRunner {
             if (d.variable() instanceof FieldReference fr && "read".equals(fr.fieldInfo.name)) {
                 int cnn = d.getProperty(VariableProperty.CONTEXT_NOT_NULL);
                 assertTrue(cnn <= MultiLevel.NULLABLE, "Problem: " + d.statementId() + " in " + d.methodInfo().name);
+            }
+            if ("recentlyReadAndUpdatedAfterwards".equals(d.methodInfo().name)) {
+                if ("result".equals(d.variableName())) {
+                    if ("2".equals(d.statementId())) {
+                        String expected = switch (d.iteration()) {
+                            case 0 -> "<m:entrySet>.isEmpty()||<m:contains>||!<m:isAfter>||!<m:isBefore>||null==<f:read>?new HashMap<>():<v:result>";
+                            case 1 -> "kvStore.entrySet().isEmpty()?new HashMap<>():<merge:Map<String,String>>";
+                            default -> "kvStore.entrySet().isEmpty()?new HashMap<>():instance type java.util.Map"; 
+                        };
+                        assertEquals(expected, d.currentValue().toString());
+                        String expectedVars = switch (d.iteration()) {
+                            case 0 -> "[kvStore, org.e2immu.analyser.testexample.Project_0.recentlyReadAndUpdatedAfterwards(java.util.Set<java.lang.String>,long):0:queried, container.read, container.read, container.read, result]";
+                            // NOTE: read$7 is still present (copy of variable field)
+                            case 1 -> "[kvStore, org.e2immu.analyser.testexample.Project_0.recentlyReadAndUpdatedAfterwards(java.util.Set<java.lang.String>,long):0:queried, read$7, read$7, result]";
+                            default -> "[]";
+                        };
+                        assertEquals(expectedVars, d.currentValue().variables().toString());
+                    }
+                }
             }
         };
 

@@ -62,7 +62,6 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                                Messages messages,
                                Map<Variable, ChangeData> changeData,
                                Precondition precondition,
-                               Expression untranslatedPrecondition,
                                boolean addCircularCall,
                                Map<WithInspectionAndAnalysis, Boolean> causesOfContextModificationDelay) {
 
@@ -245,13 +244,6 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                     precondition = precondition.combine(evaluationContext, evaluationResult.precondition);
                 }
             }
-            if (evaluationResult.untranslatedPrecondition != null) {
-                if (untranslatedPrecondition == null) {
-                    untranslatedPrecondition = evaluationResult.untranslatedPrecondition;
-                } else {
-                    untranslatedPrecondition = combinePrecondition(untranslatedPrecondition, evaluationResult.untranslatedPrecondition);
-                }
-            }
             causesOfContextModificationDelays.putAll(evaluationResult.causesOfContextModificationDelay);
         }
 
@@ -281,8 +273,9 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             return new EvaluationResult(evaluationContext, statementTime, value,
                     storedExpressions == null ? null : List.copyOf(storedExpressions),
                     someValueWasDelayed,
-                    messages, valueChanges, precondition,
-                    untranslatedPrecondition,
+                    messages,
+                    valueChanges,
+                    precondition,
                     addCircularCallOrUndeclaredFunctionalInterface,
                     Map.copyOf(causesOfContextModificationDelays));
         }

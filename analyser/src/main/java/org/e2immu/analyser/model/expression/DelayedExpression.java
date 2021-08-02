@@ -150,9 +150,26 @@ public record DelayedExpression(String msg,
         return Level.DELAY;
     }
 
+    // See Loops_19: during merging, local loop variables are replaced. The variables in the DelayedExpression.variables
+    // list need to be replaced as well.
     @Override
     public Expression translate(TranslationMap translationMap) {
-        return this;
+        if (variables.isEmpty()) return this;
+        return new DelayedExpression(msg, debug, translationMap.translateType(parameterizedType),
+                variables.stream()
+                        .map(v -> {
+                            Variable translated = translationMap.translateVariable(v);
+                            if(translated != v) return translated;
+                            // the variable has not been translated. Check variable expressions
+                            VariableExpression ve = new VariableExpression(v);
+                            Expression translatedVe = translationMap.translateExpression(ve);
+                            if(!translatedVe.variables().contains(v)) {
+                                return null; // this one can disappear, replaced by NewObject
+                            }
+                            return v; // no effect
+                        })
+                        .filter(Objects::nonNull)
+                        .toList());
     }
 
     @Override

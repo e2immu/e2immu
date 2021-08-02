@@ -46,7 +46,7 @@ public class Test_01_Loops extends CommonTestRunner {
     }
 
     @Test
-    public void test0() throws IOException {
+    public void test_0() throws IOException {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if (!"method".equals(d.methodInfo().name)) return;
             if ("2".equals(d.statementId())) {
@@ -165,7 +165,7 @@ public class Test_01_Loops extends CommonTestRunner {
     }
 
     @Test
-    public void test1() throws IOException {
+    public void test_1() throws IOException {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
                 if ("2.0.0".equals(d.statementId())) {
@@ -271,7 +271,7 @@ public class Test_01_Loops extends CommonTestRunner {
     }
 
     @Test
-    public void test2() throws IOException {
+    public void test_2() throws IOException {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
                 if ("1".equals(d.statementId())) {
@@ -354,7 +354,7 @@ public class Test_01_Loops extends CommonTestRunner {
 
     // explicitly empty loop
     @Test
-    public void test3() throws IOException {
+    public void test_3() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
                 if ("1".equals(d.statementId()) && "s".equals(d.variableName())) {
@@ -414,7 +414,7 @@ public class Test_01_Loops extends CommonTestRunner {
     }
 
     @Test
-    public void test4() throws IOException {
+    public void test_4() throws IOException {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
@@ -471,6 +471,8 @@ public class Test_01_Loops extends CommonTestRunner {
                         String expect = d.iteration() == 0 ? "<v:i>>=10?0:<replace:int><=9&&<v:i><=9?<merge:int>:<return value>"
                                 : "instance type int>=10?0:instance type int";
                         assertEquals(expect, d.currentValue().toString());
+                        String expectVars = d.iteration() == 0 ? "[i, i]" : "[]";
+                        assertEquals(expectVars, d.currentValue().variables().toString());
                     }
                 }
             }
@@ -497,7 +499,7 @@ public class Test_01_Loops extends CommonTestRunner {
     }
 
     @Test
-    public void test5() throws IOException {
+    public void test_5() throws IOException {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
                 if ("1.0.0".equals(d.statementId())) {
@@ -558,13 +560,13 @@ public class Test_01_Loops extends CommonTestRunner {
     }
 
     @Test
-    public void test6() throws IOException {
+    public void test_6() throws IOException {
         testClass("Loops_6", 1, 0, new DebugConfiguration.Builder()
                 .build());
     }
 
     @Test
-    public void test7() throws IOException {
+    public void test_7() throws IOException {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
                 if ("1".equals(d.statementId())) {
@@ -855,6 +857,117 @@ public class Test_01_Loops extends CommonTestRunner {
         testClass("Loops_14", 0, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .build());
+    }
+
+    // IMPROVE this is really not good (res can have only 2 values, 3 and 4)
+    // 16, 17 are variants, same problem
+
+    @Test
+    public void test_15() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("method".equals(d.methodInfo().name)) {
+                if ("res".equals(d.variableName())) {
+                    if ("1".equals(d.statementId())) {
+                        String expected = d.iteration() == 0 ? "<replace:int><=9?<merge:int>:3"
+                                : "instance type int<=9?instance type int:3";
+                        assertEquals(expected, d.currentValue().toString());
+                    }
+                }
+            }
+        };
+        testClass("Loops_15", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .build());
+    }
+
+    @Test
+    public void test_16() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("method".equals(d.methodInfo().name)) {
+                if ("res".equals(d.variableName())) {
+                    if ("1".equals(d.statementId())) {
+                        String expected = d.iteration() == 0 ? "(instance type Set<Entry<K,V>>).isEmpty()?3:<merge:int>"
+                                : "(instance type Set<Entry<K,V>>).isEmpty()?3:instance type int";
+                        assertEquals(expected, d.currentValue().toString());
+                    }
+                }
+            }
+        };
+        testClass("Loops_16", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .build());
+    }
+
+    @Test
+    public void test_17() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("method".equals(d.methodInfo().name)) {
+                if ("res".equals(d.variableName())) {
+                    if ("1".equals(d.statementId())) {
+                        String expected = d.iteration() == 0 ? "<m:entrySet>.isEmpty()?3:<merge:int>"
+                                : "(instance type Set<Entry<K,V>>).isEmpty()?3:instance type int";
+                        assertEquals(expected, d.currentValue().toString());
+                    }
+                }
+            }
+        };
+        testClass("Loops_17", 0, 1, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .build());
+    }
+
+
+    // looks very much like Project_0.recentlyReadAndUpdatedAfterwards, which has multiple problems
+    @Test
+    public void test_18() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("method".equals(d.methodInfo().name)) {
+                if ("result".equals(d.variableName())) {
+                    if ("1".equals(d.statementId())) {
+                        String expected = d.iteration() == 0
+                                ? "<m:entrySet>.isEmpty()||<m:contains>||0==<f:read>?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:<v:result>"
+                                : "(instance type Set<Entry<K,V>>).isEmpty()?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:instance type Map<String,String>";
+                        assertEquals(expected, d.currentValue().toString());
+                        String expectVars = d.iteration() == 0 ? "[kvStore, org.e2immu.analyser.testexample.Loops_18.method(java.util.Set<java.lang.String>):0:queried, container.read, result]" : "[]";
+                        assertEquals(expectVars, d.currentValue().variables().toString());
+                    }
+                }
+            }
+        };
+        testClass("Loops_18", 0, 1, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .build());
+    }
+
+
+    // looks very much like Project_0.recentlyReadAndUpdatedAfterwards, which has multiple problems
+    // Solution: DelayedExpression.translate()
+    @Test
+    public void test_19() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("method".equals(d.methodInfo().name)) {
+                if ("result".equals(d.variableName())) {
+                    if ("1".equals(d.statementId())) {
+                        String expected = switch (d.iteration()) {
+                            case 0 -> "<m:entrySet>.isEmpty()||<m:contains>||!<m:isAfter>||!<m:isBefore>||null==<f:read>?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:<v:result>";
+                            case 1 -> "(instance type Set<Entry<K,V>>).isEmpty()?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:<merge:Map<String,String>>";
+                            default -> "(instance type Set<Entry<K,V>>).isEmpty()?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:instance type Map<String,String>";
+                        };
+                        assertEquals(expected, d.currentValue().toString());
+
+                        String expectVars = switch (d.iteration()) {
+                            case 0 -> "[kvStore, org.e2immu.analyser.testexample.Loops_19.method(java.util.Set<java.lang.String>,long,org.e2immu.analyser.testexample.Loops_19.Date):0:queried, container.read, container.read, container.read, result]";
+                            case 1 -> "[org.e2immu.analyser.testexample.Loops_19.method(java.util.Set<java.lang.String>,long,org.e2immu.analyser.testexample.Loops_19.Date):0:queried, result]";
+                            default -> "[]";
+                        }; // without the special code in  <merge:Map<String,String>> contains a lot of entry$1, which is a CopyOfVarInLoop, which should not be auto-generated outside the loop
+                        assertEquals(expectVars, d.currentValue().variables().toString());
+                    }
+                }
+            }
+        };
+        testClass("Loops_19", 0, 1, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 }
