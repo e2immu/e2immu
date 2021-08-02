@@ -70,7 +70,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
                     } else if ("1.0.0".equals(d.statementId()) || "1.0.1".equals(d.statementId())) {
                         assertEquals("0", d.currentValue().toString());
                     } else if ("1.0.2.0.0".equals(d.statementId())) {
-                        String expect = d.iteration() == 0 ? "<v:j>+<m:nextInt>" : "r.nextInt()+j$1.0.2";
+                        String expect = d.iteration() == 0 ? "<v:j>+<m:nextInt>" : "instance type int+j$1.0.2";
                         assertEquals(expect, d.currentValue().toString());
                     } else if ("1.0.2".equals(d.statementId()) || "1.0.3".equals(d.statementId())) {
                         String expect = d.iteration() == 0 ? "<replace:int><=9?<v:j>+<m:nextInt>:0" :

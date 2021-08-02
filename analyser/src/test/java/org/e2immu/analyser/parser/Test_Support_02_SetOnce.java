@@ -37,6 +37,8 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+// FIXME delay issue (too quickly final)
+
 public class Test_Support_02_SetOnce extends CommonTestRunner {
 
     public Test_Support_02_SetOnce() {

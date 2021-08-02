@@ -24,6 +24,7 @@ import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -87,11 +88,35 @@ public class Test_45_Project extends CommonTestRunner {
             }
             if ("recentlyReadAndUpdatedAfterwards".equals(d.methodInfo().name)) {
                 if ("result".equals(d.variableName())) {
+                    if("2.0.1.0.1.0.0".equals(d.statementId())) {
+                        String expected = switch (d.iteration()) {
+                            case 0, 1 -> "<v:result>";
+                            // FIXME modification code broken
+                            default -> "kvStore.entrySet().isEmpty()?new HashMap<>():instance type java.util.Map";
+                        };
+                        assertEquals(expected, d.currentValue().toString());
+                    }
+                    if("2.0.1.0.1".equals(d.statementId())) {
+                        String expected = switch (d.iteration()) {
+                            case 0 -> "<m:isAfter>&&<m:isBefore>&&null!=<f:read>?<v:result>:new HashMap<>()";
+                            case 1 -> "instance type boolean&&<m:isBefore>&&null!=read$7?<v:result>:new HashMap<>()";
+                            default -> "kvStore.entrySet().isEmpty()?new HashMap<>():instance type java.util.Map";
+                        };
+                        assertEquals(expected, d.currentValue().toString());
+                    }
+                    if("2.0.1".equals(d.statementId())) {
+                        String expected = switch (d.iteration()) {
+                            case 0 -> "<m:contains>||!<m:isAfter>||!<m:isBefore>||null==<f:read>?new HashMap<>():<v:result>";
+                            case 1 -> "!instance type boolean||queried.contains(entry$2.getKey())||!<m:isBefore>||null==read$7?new HashMap<>():<v:result>";
+                            default -> "kvStore.entrySet().isEmpty()?new HashMap<>():instance type java.util.Map";
+                        };
+                        assertEquals(expected, d.currentValue().toString());
+                    }
                     if ("2".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
                             case 0 -> "<m:entrySet>.isEmpty()||<m:contains>||!<m:isAfter>||!<m:isBefore>||null==<f:read>?new HashMap<>():<v:result>";
                             case 1 -> "kvStore.entrySet().isEmpty()?new HashMap<>():<merge:Map<String,String>>";
-                            default -> "kvStore.entrySet().isEmpty()?new HashMap<>():instance type java.util.Map"; 
+                            default -> "kvStore.entrySet().isEmpty()?new HashMap<>():instance type java.util.Map";
                         };
                         assertEquals(expected, d.currentValue().toString());
                         String expectedVars = switch (d.iteration()) {
@@ -124,6 +149,9 @@ public class Test_45_Project extends CommonTestRunner {
             TypeInfo map = typeMap.get(Map.class);
             MethodInfo get = map.findUniqueMethod("get", 1);
             assertEquals(MultiLevel.NULLABLE, get.methodAnalysis.get().getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+            TypeInfo hashMap = typeMap.get(HashMap.class);
+            MethodInfo put = hashMap.findUniqueMethod("put", 2);
+            assertEquals(Level.TRUE, put.getAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
         };
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {

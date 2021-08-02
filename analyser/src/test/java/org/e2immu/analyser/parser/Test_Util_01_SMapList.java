@@ -147,7 +147,7 @@ public class Test_Util_01_SMapList extends CommonTestRunner {
                 }
                 // 2nd branch, merge of an if-statement
                 if ("1.0.1.1.0".equals(d.statementId())) {
-                    String expectValue = d.iteration() == 0 ? "<m:addAll>" : "destination.get(e$1.getKey()).addAll(e$1.getValue())";
+                    String expectValue = d.iteration() == 0 ? "<m:addAll>" : "instance type boolean";
                     assertEquals(expectValue, d.currentValue().toString());
                     int expected = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
                     assertEquals(expected, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
@@ -156,7 +156,7 @@ public class Test_Util_01_SMapList extends CommonTestRunner {
                 // merge of the two above
                 if ("1.0.1".equals(d.statementId())) {
                     String expectValue = d.iteration() == 0 ? "<m:addAll>||null==<m:get>"
-                            : "destination.get(e$1.getKey()).addAll(e$1.getValue())||null==destination.get(e$1.getKey())";
+                            : "instance type boolean||null==destination.get(e$1.getKey())";
                     assertEquals(expectValue, d.currentValue().toString());
                     int expected = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
                     assertEquals(expected, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
