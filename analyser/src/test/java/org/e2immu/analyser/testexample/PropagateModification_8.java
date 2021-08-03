@@ -14,41 +14,41 @@
 
 package org.e2immu.analyser.testexample;
 
-import org.e2immu.annotation.Modified;
+import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.NotModified;
+import org.e2immu.annotation.NotNull;
 import org.e2immu.annotation.PropagateModification;
 
-public class PropagateModification_3 {
+// almost exact copy of 1, but now without the @PropagateModification on accept
+public class PropagateModification_8 {
 
+    @E2Container
     abstract static class ClassWithConsumer<T> {
         private final String name;
-        private int countCalls;
 
         public ClassWithConsumer(String name) {
             this.name = name;
         }
 
-        @PropagateModification
-        abstract void accept(T t);
+        // implicitly modifying
+        abstract void accept(@NotNull T t);
 
         public String getName() {
             return name;
         }
-
-        public int increment() {
-            return countCalls++;
-        }
     }
 
+    @NotNull
     private final String string;
 
-    public PropagateModification_3(String in) {
+    public PropagateModification_8(@NotNull String in) {
         this.string = in;
     }
 
-    // in this example, the abstract method is not called, so there's no need for @PropagateModification
+    // do not write @NotModified on myConsumer, because the type is @E2Container (implicit!)
     @NotModified
-    public String forEach(@Modified ClassWithConsumer<String> myConsumer) {
-        return string + ": Consumer is " + myConsumer.getName() + ", count " + myConsumer.increment();
+    public void forEach(ClassWithConsumer<String> myConsumer) {
+        System.out.println("Consumer is " + myConsumer.getName());
+        myConsumer.accept(string);
     }
 }

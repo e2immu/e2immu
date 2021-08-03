@@ -14,41 +14,37 @@
 
 package org.e2immu.analyser.testexample;
 
-import org.e2immu.annotation.Modified;
-import org.e2immu.annotation.NotModified;
-import org.e2immu.annotation.PropagateModification;
+import org.e2immu.annotation.E2Container;
+import org.e2immu.annotation.NotNull;
 
-public class PropagateModification_3 {
+// causes scope equality problems (expands into Extended.this.name and ClassWithConsumer.this.name)
 
+public class PropagateModification_7 {
+
+    @E2Container
     abstract static class ClassWithConsumer<T> {
         private final String name;
-        private int countCalls;
 
         public ClassWithConsumer(String name) {
             this.name = name;
         }
 
-        @PropagateModification
-        abstract void accept(T t);
+        // default: @Modified
+        abstract String accept(@NotNull T t);
 
         public String getName() {
             return name;
         }
+    }
 
-        public int increment() {
-            return countCalls++;
+    static class Extended extends ClassWithConsumer<Integer> {
+        public Extended(String name) {
+            super(name);
         }
-    }
 
-    private final String string;
-
-    public PropagateModification_3(String in) {
-        this.string = in;
-    }
-
-    // in this example, the abstract method is not called, so there's no need for @PropagateModification
-    @NotModified
-    public String forEach(@Modified ClassWithConsumer<String> myConsumer) {
-        return string + ": Consumer is " + myConsumer.getName() + ", count " + myConsumer.increment();
+        @Override
+        String accept(Integer integer) {
+            return getName() + "=" + integer;
+        }
     }
 }

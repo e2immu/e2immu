@@ -297,8 +297,12 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
             throw ise;
         }
         propertiesToSet.forEach((vp, v) -> {
-            int inMap = variableInfo.getProperty(vp, org.e2immu.analyser.model.Level.DELAY);
-            if (v > inMap) variableInfo.setProperty(vp, v);
+            if (valueIsDelayed && EvaluationContext.VALUE_PROPERTIES.contains(vp)) {
+                LOGGER.warn("Not setting " + vp + " to " + v + " on " + variableInfo.variable().fullyQualifiedName());
+            } else {
+                int inMap = variableInfo.getProperty(vp, org.e2immu.analyser.model.Level.DELAY);
+                if (v > inMap) variableInfo.setProperty(vp, v);
+            }
         });
         try {
             variableInfo.setStaticallyAssignedVariables(staticallyAssignedVariables);

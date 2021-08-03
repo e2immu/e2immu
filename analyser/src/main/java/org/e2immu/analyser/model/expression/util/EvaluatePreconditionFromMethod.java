@@ -53,11 +53,16 @@ public class EvaluatePreconditionFromMethod {
             // the precondition is using parameter info's as variables so we'll have to substitute
             Map<Expression, Expression> translationMap = translationMap(evaluationContext.getAnalyserContext(),
                     methodInfo, parameterValues, scopeObject);
-            EvaluationResult eRreEvaluated = precondition.expression().reEvaluate(evaluationContext, translationMap);
-            Expression reEvaluated = eRreEvaluated.value();
+            Expression reEvaluated;
+            if (!translationMap.isEmpty()) {
+                EvaluationResult eRreEvaluated = precondition.expression().reEvaluate(evaluationContext, translationMap);
+                reEvaluated = eRreEvaluated.value();
+                builder.composeIgnoreExpression(eRreEvaluated);
+            } else {
+                reEvaluated = precondition.expression();
+            }
             // composing the effects of re-evaluation introduces the field(s) of the precondition to the statement
             // the result of the re-evaluation may cause delays
-            builder.composeIgnoreExpression(eRreEvaluated);
 
             // see SetOnceMap, get() inside if(isSet()) throw new X(" "+get())
             Expression inCondition = evaluationContext.getConditionManager().evaluate(evaluationContext, reEvaluated);
@@ -65,7 +70,7 @@ public class EvaluatePreconditionFromMethod {
 
                 // from the result we either may infer another condition, or values to be set...
 
-                // NOT_NULL
+                // NOT_NULL on parameters -> not in PC but as annotations on the parameter
                 Filter filter = new Filter(evaluationContext, Filter.FilterMode.ACCEPT);
                 Filter.FilterResult<ParameterInfo> filterResult = filter.filter(reEvaluated,
                         filter.individualNullOrNotNullClauseOnParameter());
@@ -77,9 +82,7 @@ public class EvaluatePreconditionFromMethod {
                 }
 
                 // all the rest: preconditions
-                Expression rest = filterResult.rest();
-                builder.addUntranslatedPrecondition(rest);
-                Expression translated = evaluationContext.acceptAndTranslatePrecondition(rest);
+                Expression translated = evaluationContext.acceptAndTranslatePrecondition(filterResult.rest());
                 if (translated != null) {
                     builder.addPrecondition(new Precondition(translated,
                             List.of(new Precondition.MethodCallCause(methodInfo, scopeObject))));
@@ -88,10 +91,10 @@ public class EvaluatePreconditionFromMethod {
         }
     }
 
-    public static Map<Expression, Expression> translationMap(InspectionProvider inspectionProvider,
-                                                             MethodInfo methodInfo,
-                                                             List<Expression> parameters,
-                                                             Expression scope) {
+    private static Map<Expression, Expression> translationMap(InspectionProvider inspectionProvider,
+                                                              MethodInfo methodInfo,
+                                                              List<Expression> parameters,
+                                                              Expression scope) {
         Map<Expression, Expression> builder = new HashMap<>();
         List<ParameterInfo> methodParameters = methodInfo.methodInspection.get().getParameters();
         int i = 0;
@@ -109,7 +112,9 @@ public class EvaluatePreconditionFromMethod {
                 boolean staticField = fieldInfo.isStatic(inspectionProvider);
                 FieldReference thisField = new FieldReference(inspectionProvider, fieldInfo);
                 FieldReference scopeField = new FieldReference(inspectionProvider, fieldInfo, staticField ? null : ve);
-                builder.put(new VariableExpression(thisField), new VariableExpression(scopeField));
+                if (!thisField.equals(scopeField)) {
+                    builder.put(new VariableExpression(thisField), new VariableExpression(scopeField));
+                }
             }
         }
         return Map.copyOf(builder);

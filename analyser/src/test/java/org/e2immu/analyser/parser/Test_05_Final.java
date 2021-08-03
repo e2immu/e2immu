@@ -104,7 +104,8 @@ public class Test_05_Final extends CommonTestRunner {
                     String expectValue = d.iteration() == 0 ? "s1+<f:s3>" : "s1+\"abc\"";
                     assertEquals(expectValue, d.currentValue().toString());
                     assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL_EXPRESSION));
-                    assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION)); // nothing that points to not null
+                    int expected = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
+                    assertEquals(expected, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION)); // nothing that points to not null
 
                     if (d.iteration() > 0) {
                         assertTrue(d.currentValue().isInstanceOf(StringConcat.class));
@@ -193,7 +194,7 @@ public class Test_05_Final extends CommonTestRunner {
                 assertEquals("", d.fieldAnalysis().getLinkedVariables().toString());
             }
             if ("s2".equals(d.fieldInfo().name)) {
-                if(d.iteration()==0) {
+                if (d.iteration() == 0) {
                     assertNull(d.fieldAnalysis().getEffectivelyFinalValue());
                 } else {
                     assertEquals("[null,s2]", d.fieldAnalysis().getEffectivelyFinalValue().debugOutput());

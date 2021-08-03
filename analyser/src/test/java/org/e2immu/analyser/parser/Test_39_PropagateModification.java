@@ -21,6 +21,7 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.testexample.PropagateModification_0;
 import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
+import org.e2immu.analyser.visitor.TypeAnalyserVisitor;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -78,15 +79,15 @@ public class Test_39_PropagateModification extends CommonTestRunner {
             if ("forEach".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo p && "myConsumer".equals(p.name)) {
                     if ("0".equals(d.statementId())) {
-                        int expectCm = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
+                        int expectCm = d.iteration() <= 1 ? Level.DELAY : Level.FALSE;
                         assertEquals(expectCm, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
-                        int expectPm = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
+                        int expectPm = d.iteration() <= 1 ? Level.DELAY : Level.FALSE;
                         assertEquals(expectPm, d.getProperty(VariableProperty.CONTEXT_PROPAGATE_MOD));
                     }
                     if ("1".equals(d.statementId())) {
-                        int expectCm = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
+                        int expectCm = d.iteration() <= 1 ? Level.DELAY : Level.FALSE;
                         assertEquals(expectCm, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
-                        int expectPm = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
+                        int expectPm = d.iteration() <= 1 ? Level.DELAY : Level.TRUE;
                         assertEquals(expectPm, d.getProperty(VariableProperty.CONTEXT_PROPAGATE_MOD));
                     }
                 }
@@ -96,8 +97,15 @@ public class Test_39_PropagateModification extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("forEach".equals(d.methodInfo().name)) {
                 ParameterAnalysis myConsumer = d.parameterAnalyses().get(0);
-                int expectMv = d.iteration() <= 1 ? Level.DELAY : Level.FALSE;
+                int expectMv = d.iteration() <= 2 ? Level.DELAY : Level.FALSE;
                 assertEquals(expectMv, myConsumer.getProperty(VariableProperty.MODIFIED_VARIABLE));
+            }
+        };
+
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("ClassWithConsumer".equals(d.typeInfo().simpleName)) {
+                int expectImm = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_E2IMMUTABLE;
+                assertEquals(expectImm, d.typeAnalysis().getProperty(VariableProperty.IMMUTABLE));
             }
         };
 
@@ -105,6 +113,7 @@ public class Test_39_PropagateModification extends CommonTestRunner {
         testClass("PropagateModification_1", 0, 1, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
                 .build());
     }
 
@@ -119,6 +128,39 @@ public class Test_39_PropagateModification extends CommonTestRunner {
     @Test
     public void test_3() throws IOException {
         testClass("PropagateModification_3", 0, 0, new DebugConfiguration.Builder()
+                .build());
+    }
+
+    // TODO 4, 5, 6
+
+    @Test
+    public void test_7() throws IOException {
+        TypeContext typeContext = testClass("PropagateModification_7", 0, 0,
+                new DebugConfiguration.Builder()
+                        .build());
+
+        // verify that the default for accept is @Modified
+        TypeInfo classWithConsumer = typeContext
+                .getFullyQualified("org.e2immu.analyser.testexample.PropagateModification_7.ClassWithConsumer", true);
+        MethodInfo accept = classWithConsumer.findUniqueMethod("accept", 1);
+        assertEquals(Level.TRUE, accept.getAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
+    }
+
+    @Test
+    public void test_8() throws IOException {
+        testClass("PropagateModification_8", 0, 1, new DebugConfiguration.Builder()
+                .build());
+    }
+
+    @Test
+    public void test_9() throws IOException {
+        testClass("PropagateModification_9", 0, 1, new DebugConfiguration.Builder()
+                .build());
+    }
+
+    @Test
+    public void test_10() throws IOException {
+        testClass("PropagateModification_9", 0, 1, new DebugConfiguration.Builder()
                 .build());
     }
 }

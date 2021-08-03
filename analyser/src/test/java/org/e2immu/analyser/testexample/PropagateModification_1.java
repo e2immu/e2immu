@@ -29,6 +29,7 @@ public class PropagateModification_1 {
             this.name = name;
         }
 
+        @PropagateModification
         abstract void accept(@NotNull T t);
 
         public String getName() {

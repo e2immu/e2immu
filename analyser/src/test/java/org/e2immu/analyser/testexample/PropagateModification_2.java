@@ -30,6 +30,7 @@ public class PropagateModification_2 {
         }
 
         // in test1 we demand @NotNull, here we do not
+        @PropagateModification
         abstract void accept(T t);
 
         public String getName() {

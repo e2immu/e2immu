@@ -1525,7 +1525,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
             if (delays) return DELAYS;
         }
         if (statementAnalysis.stateData.preconditionIsEmpty()) {
-            // it could have been set from the assert (subBlocks) or apply via a method call
+            // it could have been set from the assert statement (subBlocks) or apply via a method call
             statementAnalysis.stateData.setPreconditionAllowEquals(Precondition.empty(statementAnalysis.primitives));
         } else if (!statementAnalysis.stateData.preconditionIsFinal()) {
             return DELAYS;

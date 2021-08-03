@@ -16,9 +16,11 @@ package org.e2immu.analyser.testexample;
 
 import org.e2immu.annotation.Modified;
 import org.e2immu.annotation.NotModified;
+import org.e2immu.annotation.Nullable;
 import org.e2immu.annotation.PropagateModification;
 
-public class PropagateModification_3 {
+// variant on _2, but now without the @PropagateModification on accept (explicit @NotModified)
+public class PropagateModification_10 {
 
     abstract static class ClassWithConsumer<T> {
         private final String name;
@@ -28,7 +30,8 @@ public class PropagateModification_3 {
             this.name = name;
         }
 
-        @PropagateModification
+        // in test1 we demand @NotNull, here we do not
+        @NotModified
         abstract void accept(T t);
 
         public String getName() {
@@ -40,15 +43,18 @@ public class PropagateModification_3 {
         }
     }
 
+    @Nullable
     private final String string;
 
-    public PropagateModification_3(String in) {
+    public PropagateModification_10(String in) {
         this.string = in;
     }
 
-    // in this example, the abstract method is not called, so there's no need for @PropagateModification
     @NotModified
-    public String forEach(@Modified ClassWithConsumer<String> myConsumer) {
-        return string + ": Consumer is " + myConsumer.getName() + ", count " + myConsumer.increment();
+    public void forEach(@Modified ClassWithConsumer<String> myConsumer) {
+        System.out.println("Consumer is " + myConsumer.getName());
+        if (myConsumer.increment() % 2 == 0) {
+            myConsumer.accept(string);
+        }
     }
 }

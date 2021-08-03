@@ -262,7 +262,12 @@ public class InlinedMethod extends ElementImpl implements Expression {
                     if (replacement == null && (ve = scope.asInstanceOf(VariableExpression.class)) != null) {
                         FieldReference scopeField = new FieldReference(inspectionProvider, fieldReference.fieldInfo,
                                 staticField ? null : ve);
-                        replacement = new VariableExpression(scopeField);
+                        boolean delayed = evaluationContext.variableIsDelayed(scopeField);
+                        if (delayed) {
+                            replacement = DelayedVariableExpression.forField(scopeField);
+                        } else {
+                            replacement = new VariableExpression(scopeField);
+                        }
                     }
                 }
             }

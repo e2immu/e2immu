@@ -181,7 +181,6 @@ public record EvaluationResult(EvaluationContext evaluationContext,
         private int statementTime;
         private final Map<Variable, ChangeData> valueChanges = new HashMap<>();
         private Precondition precondition;
-        private Expression untranslatedPrecondition;
         private boolean addCircularCallOrUndeclaredFunctionalInterface;
         private boolean someValueWasDelayed;
         private final Map<WithInspectionAndAnalysis, Boolean> causesOfContextModificationDelays = new HashMap<>();
@@ -624,18 +623,6 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             } else {
                 precondition = precondition.combine(evaluationContext, newPrecondition);
             }
-        }
-
-        public void addUntranslatedPrecondition(Expression expression) {
-            if (untranslatedPrecondition == null) {
-                untranslatedPrecondition = expression;
-            } else {
-                untranslatedPrecondition = combinePrecondition(untranslatedPrecondition, expression);
-            }
-        }
-
-        private Expression combinePrecondition(Expression e1, Expression e2) {
-            return And.and(evaluationContext, e1, e2);
         }
 
         public void modifyingMethodAccess(Variable variable, NewObject newInstance, LinkedVariables linkedVariables) {

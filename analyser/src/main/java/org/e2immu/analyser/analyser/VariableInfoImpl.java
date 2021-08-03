@@ -230,7 +230,9 @@ class VariableInfoImpl implements VariableInfo {
                 throw ise;
             }
         } else {
-            assert !(value instanceof DelayedExpression); // simple safe-guard, others are more difficult to check
+            assert !(value.isInstanceOf(DelayedExpression.class)); // simple safe-guard, others are more difficult to check
+            assert !(value.isInstanceOf(DelayedVariableExpression.class));
+
             setFinalAllowEquals(this.value, value);
         }
     }

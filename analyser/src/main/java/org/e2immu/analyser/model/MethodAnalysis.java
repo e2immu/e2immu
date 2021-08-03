@@ -162,7 +162,9 @@ public interface MethodAnalysis extends Analysis {
 
             // unless: abstract methods, not annotated for modification. They remain as they are
             if (variableProperty == VariableProperty.MODIFIED_METHOD && getMethodInfo().isAbstract()) {
-                if (getMethodInfo().typeInfo.typeInspection.get().isFunctionalInterface()) {
+                int propModMethod = analysisProvider.getMethodAnalysis(getMethodInfo())
+                        .getProperty(VariableProperty.PROPAGATE_MODIFICATION);
+                if (getMethodInfo().typeInfo.typeInspection.get().isFunctionalInterface() || propModMethod == Level.TRUE) {
                     return Level.DELAY;
                 }
                 TypeAnalysis typeAnalysis = analysisProvider.getTypeAnalysis(getMethodInfo().typeInfo);

@@ -90,7 +90,7 @@ public interface EvaluationContext extends DelayDebugger {
     }
 
     default Expression currentValue(Variable variable, int statementTime, ForwardEvaluationInfo forwardEvaluationInfo) {
-        throw new UnsupportedOperationException("In "+getClass());
+        throw new UnsupportedOperationException("In " + getClass());
     }
 
     default AnalyserContext getAnalyserContext() {
@@ -260,7 +260,9 @@ public interface EvaluationContext extends DelayDebugger {
     }
 
     default boolean isDelayed(Expression expression) {
-        if (expression instanceof DelayedExpression || expression instanceof DelayedVariableExpression) return true;
+        if (expression.isInstanceOf(DelayedExpression.class) || expression.isInstanceOf(DelayedVariableExpression.class)) {
+            return true;
+        }
         try {
             // not a stream, easier to debug
             for (Element sub : expression.subElements()) {
@@ -276,8 +278,9 @@ public interface EvaluationContext extends DelayDebugger {
     }
 
     default Set<Variable> isDelayedSet(Expression expression) {
-        if (expression instanceof DelayedExpression) return Set.of();
-        if (expression instanceof DelayedVariableExpression dve) return Set.of(dve.variable());
+        if (expression.isInstanceOf(DelayedExpression.class)) return Set.of();
+        DelayedVariableExpression dve;
+        if ((dve = expression.asInstanceOf(DelayedVariableExpression.class)) != null) return Set.of(dve.variable());
         try {
             Set<Variable> set = null;
             for (Element element : expression.subElements()) {

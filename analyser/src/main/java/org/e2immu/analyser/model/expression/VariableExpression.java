@@ -124,21 +124,29 @@ public record VariableExpression(Variable variable, String name) implements Expr
             if ((ve = inMap.asInstanceOf(VariableExpression.class)) != null) {
                 return ve.evaluate(evaluationContext, ForwardEvaluationInfo.DEFAULT);
             }
-            return new EvaluationResult.Builder().setExpression(inMap).build();
+            DelayedVariableExpression dve;
+            EvaluationResult.Builder builder = new EvaluationResult.Builder();
+            if ((dve = inMap.asInstanceOf(DelayedVariableExpression.class)) != null) {
+                // causes problems with local copies (Loops_19)
+                //   return dve.evaluate(evaluationContext, ForwardEvaluationInfo.DEFAULT);
+                builder.markRead(dve.variable());
+            }
+            return builder.setExpression(inMap).build();
         }
+        EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext).markRead(variable);
         if (variable instanceof FieldReference fieldReference && fieldReference.scope instanceof VariableExpression ve) {
             // the variable itself is not in the map, but we may have to substitute
             // (see EventuallyImmutableUtil_5, s1.bool with substitution s1 -> t.s1
             // IMPROVE how should we go recursive here? we should call reEvaluate, but may bump into
             // unknown fields (t is known, but t.s1 is not), which causes infinite delays.
             Expression scopeInMap = translation.get(ve);
-            if (scopeInMap instanceof VariableExpression newScope) {
+            VariableExpression newScope;
+            if (scopeInMap != null && (newScope = scopeInMap.asInstanceOf(VariableExpression.class)) != null) {
                 Variable newFieldRef = new FieldReference(evaluationContext.getAnalyserContext(), fieldReference.fieldInfo, newScope);
-                return new EvaluationResult.Builder(evaluationContext)
-                        .setExpression(new VariableExpression(newFieldRef)).build();
+                return builder.setExpression(new VariableExpression(newFieldRef)).build();
             }
         }
-        return new EvaluationResult.Builder(evaluationContext).setExpression(this).markRead(variable).build();
+        return builder.setExpression(this).build();
     }
 
     @Override

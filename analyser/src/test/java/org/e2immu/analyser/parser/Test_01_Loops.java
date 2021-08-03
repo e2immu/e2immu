@@ -437,7 +437,9 @@ public class Test_01_Loops extends CommonTestRunner {
                 if ("i".equals(d.variableName())) {
                     if (d.variableInfoContainer().variableNature() instanceof VariableNature.LoopVariable loopVariable) {
                         assertEquals("0", loopVariable.statementIndex());
-                    } else fail();
+                    } else {
+                        fail();
+                    }
                     if ("0.0.0.0.0".equals(d.statementId())) {
                         String expect = d.iteration() == 0 ? "1+<v:i>" : "1+i$0";
                         assertEquals(expect, d.currentValue().toString());
@@ -951,14 +953,14 @@ public class Test_01_Loops extends CommonTestRunner {
                     if ("1".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
                             case 0 -> "<m:entrySet>.isEmpty()||<m:contains>||!<m:isAfter>||!<m:isBefore>||null==<f:read>?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:<v:result>";
-                            case 1 -> "(instance type Set<Entry<K,V>>).isEmpty()?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:<merge:Map<String,String>>";
+                            case 1, 2 -> "(instance type Set<Entry<K,V>>).isEmpty()?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:<merge:Map<String,String>>";
                             default -> "(instance type Set<Entry<K,V>>).isEmpty()?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:instance type Map<String,String>";
                         };
                         assertEquals(expected, d.currentValue().toString());
 
                         String expectVars = switch (d.iteration()) {
                             case 0 -> "[kvStore, org.e2immu.analyser.testexample.Loops_19.method(java.util.Set<java.lang.String>,long,org.e2immu.analyser.testexample.Loops_19.Date):0:queried, container.read, container.read, container.read, result]";
-                            case 1 -> "[org.e2immu.analyser.testexample.Loops_19.method(java.util.Set<java.lang.String>,long,org.e2immu.analyser.testexample.Loops_19.Date):0:queried, result]";
+                            case 1, 2 -> "[org.e2immu.analyser.testexample.Loops_19.method(java.util.Set<java.lang.String>,long,org.e2immu.analyser.testexample.Loops_19.Date):0:queried, result]";
                             default -> "[]";
                         }; // without the special code in  <merge:Map<String,String>> contains a lot of entry$1, which is a CopyOfVarInLoop, which should not be auto-generated outside the loop
                         assertEquals(expectVars, d.currentValue().variables().toString());

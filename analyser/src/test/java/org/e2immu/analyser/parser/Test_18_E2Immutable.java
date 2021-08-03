@@ -179,7 +179,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
     public void test_7() throws IOException {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("accept".equals(d.methodInfo().name) && "$1".equals(d.methodInfo().typeInfo.simpleName)) {
-                String expectValue = d.iteration() == 0 ? "<m:setI>" : "<no return value>";
+                String expectValue = d.iteration() <= 1 ? "<m:setI>" : "<no return value>";
                 assertEquals(expectValue, d.evaluationResult().value().toString());
             }
         };
@@ -262,7 +262,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
                     int expectCm = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
                     assertEquals(expectCm, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
 
-                    int imm = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EFFECTIVELY_E2IMMUTABLE;
+                    int imm = d.iteration() <= 2 ? Level.DELAY : MultiLevel.EFFECTIVELY_E2IMMUTABLE;
                     assertEquals(imm, d.getProperty(VariableProperty.IMMUTABLE));
                 }
                 if (d.variable() instanceof ReturnVariable) {

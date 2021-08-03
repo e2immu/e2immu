@@ -22,6 +22,7 @@ import org.e2immu.analyser.util.SMapList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -54,6 +55,7 @@ public class ShallowMethodAnalyser extends MethodAnalyser {
 
         // IMPROVE reading preconditions from AAPI...
         methodAnalysis.precondition.set(Precondition.empty(analyserContext.getPrimitives()));
+        methodAnalysis.preconditionForEventual.set(Optional.empty());
     }
 
     @Override
