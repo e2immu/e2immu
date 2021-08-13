@@ -16,15 +16,24 @@ package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
+import org.e2immu.analyser.inspector.FieldInspectionImpl;
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.expression.VariableExpression;
+import org.e2immu.analyser.model.variable.FieldReference;
+import org.e2immu.analyser.model.variable.This;
+import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.testexample.PropagateModification_0;
+import org.e2immu.analyser.util.SetUtil;
 import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.visitor.TypeAnalyserVisitor;
+import org.e2immu.analyser.visitor.TypeMapVisitor;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.util.Map;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -135,15 +144,35 @@ public class Test_39_PropagateModification extends CommonTestRunner {
 
     @Test
     public void test_7() throws IOException {
+
+        // test that the different This scopes do not matter in equality of field references
+        TypeMapVisitor typeMapVisitor = typeMap -> {
+            TypeInfo system = typeMap.get(System.class);
+            TypeInfo map = typeMap.get(Map.class);
+            FieldInfo fieldInfo = new FieldInfo(Identifier.CONSTANT,
+                    typeMap.getPrimitives().charParameterizedType, "test", system);
+            fieldInfo.fieldInspection.set(new FieldInspectionImpl.Builder().build());
+            FieldReference fr1 = new FieldReference(typeMap, fieldInfo);
+            FieldReference fr2 = new FieldReference(typeMap, fieldInfo, new VariableExpression(new This(typeMap, map)));
+            assertEquals(fr1, fr2);
+
+            Set<Variable> s1 = Set.of(fr1);
+            Set<Variable> s2 = Set.of(fr2);
+            Set<Variable> one = SetUtil.immutableUnion(s1, s2);
+            assertEquals(1, one.size());
+        };
+
         TypeContext typeContext = testClass("PropagateModification_7", 0, 0,
                 new DebugConfiguration.Builder()
+                        .addTypeMapVisitor(typeMapVisitor)
                         .build());
 
         // verify that the default for accept is @Modified
         TypeInfo classWithConsumer = typeContext
                 .getFullyQualified("org.e2immu.analyser.testexample.PropagateModification_7.ClassWithConsumer", true);
         MethodInfo accept = classWithConsumer.findUniqueMethod("accept", 1);
-        assertEquals(Level.TRUE, accept.getAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
+        assertTrue(accept.isAbstract());
+        assertEquals(Level.FALSE, accept.getAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
     }
 
     @Test

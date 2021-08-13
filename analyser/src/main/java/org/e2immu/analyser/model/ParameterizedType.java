@@ -16,7 +16,6 @@ package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.analyser.AnalyserContext;
 import org.e2immu.analyser.analyser.AnalysisProvider;
-import org.e2immu.analyser.analyser.ExpandableAnalyserContextImpl;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.inspector.MethodTypeParameterMap;
 import org.e2immu.analyser.inspector.TypeContext;
@@ -26,17 +25,12 @@ import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.NotNull;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.function.IntBinaryOperator;
 import java.util.stream.Collectors;
 
 public class ParameterizedType {
-    private static final Logger LOGGER = LoggerFactory.getLogger(ParameterizedType.class);
-
-    public static final ParameterizedType TYPE_OF_NO_FLOW = new ParameterizedType(WildCard.NONE);
     public static final ParameterizedType NULL_CONSTANT = new ParameterizedType(WildCard.NONE);
     public static final ParameterizedType RETURN_TYPE_OF_CONSTRUCTOR = new ParameterizedType(WildCard.NONE);
     public static final ParameterizedType NO_TYPE_GIVEN_IN_LAMBDA = new ParameterizedType(WildCard.NONE);
@@ -593,7 +587,7 @@ public class ParameterizedType {
                 return Primitives.isJavaLangObject(typeInfo) ? IN_HIERARCHY : NOT_ASSIGNABLE;
             }
             return otherTypeBounds.stream().mapToInt(bound ->
-                    numericIsAssignableFrom(inspectionProvider, bound, true, mode, reverseParameters))
+                            numericIsAssignableFrom(inspectionProvider, bound, true, mode, reverseParameters))
                     .min().orElseThrow();
         }
 
@@ -606,7 +600,7 @@ public class ParameterizedType {
             // other is a type
             if (other.typeInfo != null) {
                 return myTypeBounds.stream().mapToInt(bound -> bound.numericIsAssignableFrom(inspectionProvider, other,
-                        true, mode, reverseParameters))
+                                true, mode, reverseParameters))
                         .min().orElseThrow();
             } else if (other.typeParameter != null) {
                 List<ParameterizedType> otherTypeBounds = other.typeParameter.getTypeBounds();
@@ -900,10 +894,12 @@ public class ParameterizedType {
     public int defaultImmutable(AnalysisProvider analysisProvider) {
         if (Primitives.isPrimitiveExcludingVoid(this)) return MultiLevel.EFFECTIVELY_E2IMMUTABLE;
         if (arrays > 0) return MultiLevel.EFFECTIVELY_E1IMMUTABLE_NOT_E2IMMUTABLE;
-        TypeInfo bestType = bestTypeInfo();
-        if (bestType == null) {
-            return MultiLevel.EFFECTIVELY_E2IMMUTABLE;
+        if (typeParameter != null) {
+            if (typeParameter.getTypeBounds().isEmpty()) return MultiLevel.EFFECTIVELY_E2IMMUTABLE;
+            return typeParameter.getTypeBounds().stream().mapToInt(pt -> pt.defaultImmutable(analysisProvider)).min().orElseThrow();
         }
+        TypeInfo bestType = bestTypeInfo();
+        if(bestType == null) return MultiLevel.EFFECTIVELY_E2IMMUTABLE; // null constant, return type of void method
         TypeAnalysis typeAnalysis = analysisProvider.getTypeAnalysis(bestType);
         return typeAnalysis.getProperty(VariableProperty.IMMUTABLE);
     }
@@ -914,12 +910,12 @@ public class ParameterizedType {
     }
 
     public boolean applyImmutableToLinkedVariables(AnalyserContext analyserContext, TypeInfo currentType) {
-        if(typeInfo != null && typeInfo.shallowAnalysis()) return true;
+        if (typeInfo != null && typeInfo.shallowAnalysis()) return true;
         boolean isSelf = typeInfo == currentType || isAssignableFromTo(analyserContext, currentType.asParameterizedType(analyserContext));
         if (isSelf) return false;
         TypeInfo best = bestTypeInfo();
-        if(best == null) return false;
-        TypeInfo pt =  best.primaryType();
+        if (best == null) return false;
+        TypeInfo pt = best.primaryType();
         return pt != currentType.primaryType();
     }
 }

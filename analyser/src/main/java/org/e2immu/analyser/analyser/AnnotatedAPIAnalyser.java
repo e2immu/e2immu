@@ -144,7 +144,7 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
 
         // do the types and fields
         typeAnalyses.forEach((typeInfo, typeAnalysis) -> {
-            // do types and fields; no need to recurse into sub-types, they're included among the primary types
+            // process all types and fields; no need to recurse into sub-types, they're included among the primary types
             shallowTypeAndFieldAnalysis(typeInfo, (TypeAnalysisImpl.Builder) typeAnalysis, e2ImmuAnnotationExpressions);
         });
 
@@ -289,7 +289,7 @@ public class AnnotatedAPIAnalyser implements AnalyserContext {
     public TypeAnalysis getTypeAnalysis(TypeInfo typeInfo) {
         TypeAnalysis typeAnalysis = typeAnalyses.get(typeInfo);
         if (typeAnalysis != null) return typeAnalysis;
-        return typeInfo.typeAnalysis.get();
+        return typeInfo.typeAnalysis.get(typeInfo.fullyQualifiedName);
     }
 
     private void iterativeMethodAnalysis(Map<MethodInfo, MethodAnalyser> nonShallowOrWithCompanions) {

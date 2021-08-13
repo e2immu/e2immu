@@ -83,9 +83,12 @@ public class FieldReference extends VariableWithConcreteReturnType {
     }
 
     @Override
-    public int hashCode() { //
-        // return fieldInfo.hashCode();
-        return Objects.hash(fieldInfo, scope);
+    public int hashCode() {
+        // important: scope cannot be part of the hashCode when it is of type This (See test PropagateModification_7)
+        if (!scopeIsThis()) {
+            return Objects.hash(fieldInfo, scope);
+        }
+        return fieldInfo.hashCode();
     }
 
     @Override

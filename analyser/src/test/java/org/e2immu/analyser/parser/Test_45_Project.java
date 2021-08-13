@@ -79,7 +79,8 @@ public class Test_45_Project extends CommonTestRunner {
                     String expectValue = d.iteration() == 0 ? "null==<m:get>?null:<f:value>" :
                             "null==kvStore.get(key)?null:kvStore.get(key).value";
                     assertEquals(expectValue, d.currentValue().toString());
-                    assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                    int expected = d.iteration() == 0 ? Level.DELAY: MultiLevel.NULLABLE;
+                    assertEquals(expected, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
                 }
             }
             if (d.variable() instanceof FieldReference fr && "read".equals(fr.fieldInfo.name)) {
@@ -88,7 +89,7 @@ public class Test_45_Project extends CommonTestRunner {
             }
             if ("recentlyReadAndUpdatedAfterwards".equals(d.methodInfo().name)) {
                 if ("result".equals(d.variableName())) {
-                    if("2.0.1.0.1.0.0".equals(d.statementId())) {
+                    if ("2.0.1.0.1.0.0".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
                             case 0, 1 -> "<v:result>";
                             // FIXME modification code broken
@@ -96,7 +97,7 @@ public class Test_45_Project extends CommonTestRunner {
                         };
                         assertEquals(expected, d.currentValue().toString());
                     }
-                    if("2.0.1.0.1".equals(d.statementId())) {
+                    if ("2.0.1.0.1".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
                             case 0 -> "<m:isAfter>&&<m:isBefore>&&null!=<f:read>?<v:result>:new HashMap<>()";
                             case 1 -> "instance type boolean&&<m:isBefore>&&null!=read$7?<v:result>:new HashMap<>()";
@@ -104,7 +105,7 @@ public class Test_45_Project extends CommonTestRunner {
                         };
                         assertEquals(expected, d.currentValue().toString());
                     }
-                    if("2.0.1".equals(d.statementId())) {
+                    if ("2.0.1".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
                             case 0 -> "<m:contains>||!<m:isAfter>||!<m:isBefore>||null==<f:read>?new HashMap<>():<v:result>";
                             case 1 -> "!instance type boolean||queried.contains(entry$2.getKey())||!<m:isBefore>||null==read$7?new HashMap<>():<v:result>";
@@ -167,10 +168,10 @@ public class Test_45_Project extends CommonTestRunner {
 
         testClass("Project_0", 1, 11, new DebugConfiguration.Builder()
                 .addTypeMapVisitor(typeMapVisitor)
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                .addEvaluationResultVisitor(evaluationResultVisitor)
+           //     .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+           //     .addStatementAnalyserVisitor(statementAnalyserVisitor)
+            //    .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+           //     .addEvaluationResultVisitor(evaluationResultVisitor)
                 .build());
     }
 
@@ -233,11 +234,11 @@ public class Test_45_Project extends CommonTestRunner {
         };
 
         testClass("Project_2", 0, 0, new DebugConfiguration.Builder()
-                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                .addTypeMapVisitor(typeMapVisitor)
-                .addEvaluationResultVisitor(evaluationResultVisitor)
-                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                //    .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                //    .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                //     .addTypeMapVisitor(typeMapVisitor)
+                //     .addEvaluationResultVisitor(evaluationResultVisitor)
+                //     .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build());
     }
 
@@ -246,4 +247,30 @@ public class Test_45_Project extends CommonTestRunner {
         testClass("Project_3", 1, 3, new DebugConfiguration.Builder()
                 .build());
     }
+
+
+    @Test
+    public void test_4() throws IOException {
+        TypeMapVisitor typeMapVisitor = typeMap -> {
+            TypeInfo map = typeMap.get(Map.class);
+            MethodInfo get = map.findUniqueMethod("get", 1);
+            ParameterInfo p0 = get.methodInspection.get().getParameters().get(0);
+            ParameterAnalysis p0a = p0.parameterAnalysis.get();
+            assertEquals(Level.TRUE, p0a.getProperty(VariableProperty.IDENTITY)); // first property
+
+            assertEquals(Level.TRUE, p0a.getProperty(VariableProperty.MODIFIED_VARIABLE));
+            assertEquals(MultiLevel.NULLABLE, p0a.getProperty(VariableProperty.NOT_NULL_PARAMETER));
+            assertEquals(MultiLevel.DEPENDENT, p0a.getProperty(VariableProperty.INDEPENDENT_PARAMETER));
+
+            assertEquals(Level.TRUE, p0a.getProperty(VariableProperty.CONTAINER));
+            assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, p0a.getProperty(VariableProperty.IMMUTABLE));
+
+            assertEquals(Level.FALSE, p0a.getProperty(VariableProperty.PROPAGATE_MODIFICATION));
+            assertEquals(Level.FALSE, p0a.getProperty(VariableProperty.NOT_MODIFIED_1));
+        };
+        testClass("Project_4", 0, 0, new DebugConfiguration.Builder()
+                .addTypeMapVisitor(typeMapVisitor)
+                .build());
+    }
+
 }

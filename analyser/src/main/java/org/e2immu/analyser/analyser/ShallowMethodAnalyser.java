@@ -92,8 +92,7 @@ public class ShallowMethodAnalyser extends MethodAnalyser {
     }
 
     private void checkContradictions(WithInspectionAndAnalysis where,
-                                     Map<AnnotationExpression,
-                                             List<MethodInfo>> annotations) {
+                                     Map<AnnotationExpression, List<MethodInfo>> annotations) {
         if (annotations.size() < 2) return;
         E2ImmuAnnotationExpressions e2 = analyserContext.getE2ImmuAnnotationExpressions();
         checkContradictions(where, annotations, e2.notModified, e2.modified);

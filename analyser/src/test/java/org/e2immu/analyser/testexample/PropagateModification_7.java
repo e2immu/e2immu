@@ -29,7 +29,7 @@ public class PropagateModification_7 {
             this.name = name;
         }
 
-        // default: @Modified
+        // default: @NotModified, because ClassWithConsumer is @E2Immutable
         abstract String accept(@NotNull T t);
 
         public String getName() {
@@ -44,6 +44,7 @@ public class PropagateModification_7 {
 
         @Override
         String accept(Integer integer) {
+            assert integer != null;
             return getName() + "=" + integer;
         }
     }

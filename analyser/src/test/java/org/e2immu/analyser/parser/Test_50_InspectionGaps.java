@@ -32,7 +32,8 @@ import java.io.IOException;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /*
 tries to catch the remaining problems with the inspection system
@@ -52,6 +53,16 @@ public class Test_50_InspectionGaps extends CommonTestRunner {
 
     @Test
     public void test_1() throws IOException {
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("method1".equals(d.methodInfo().name)) {
+                assertEquals("Type int", d.methodInfo().returnType().toString());
+                ParameterInfo p0 = d.methodInfo().methodInspection.get().getParameters().get(0);
+                assertEquals("Type param T", p0.parameterizedType.toString());
+                TypeParameter tp0 = d.methodInfo().methodInspection.get().getTypeParameters().get(0);
+                assertEquals("[Type java.util.Set<T>]", tp0.getTypeBounds().toString());
+            }
+        };
+
         // informative for test_2; but because it crashes before getting to the visitor, I put it here
         TypeMapVisitor typeMapVisitor = typeMap -> {
             TypeInfo number = typeMap.get(Number.class);
@@ -65,6 +76,7 @@ public class Test_50_InspectionGaps extends CommonTestRunner {
         };
 
         TypeContext typeContext = testClass("InspectionGaps_1", 0, 0, new DebugConfiguration.Builder()
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addTypeMapVisitor(typeMapVisitor)
                 .build());
 
@@ -176,7 +188,7 @@ public class Test_50_InspectionGaps extends CommonTestRunner {
         testClass(List.of("InspectionGaps_11"), List.of("jmods/java.compiler.jmod"),
                 0, 0,
                 new DebugConfiguration.Builder()
-                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                    //    .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder().build(),
                 new AnnotatedAPIConfiguration.Builder().build());
