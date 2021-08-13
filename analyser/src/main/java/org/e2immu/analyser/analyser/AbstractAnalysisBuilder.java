@@ -46,16 +46,12 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
         this.primitives = primitives;
     }
 
-    public int getProperty(VariableProperty variableProperty) {
+    public int getPropertyFromMapDelayWhenAbsent(VariableProperty variableProperty) {
         return properties.getOrDefault(variableProperty, Level.DELAY);
     }
 
-    public int getPropertyAsIs(VariableProperty variableProperty) {
-        return properties.getOrDefault(variableProperty, Level.DELAY);
-    }
-
-    public int internalGetProperty(VariableProperty variableProperty) {
-        return properties.getOrDefault(variableProperty, Level.DELAY);
+    public int getPropertyFromMapNeverDelay(VariableProperty variableProperty) {
+        return properties.getOrDefault(variableProperty, variableProperty.valueWhenAbsent(annotationMode()));
     }
 
     public void setProperty(VariableProperty variableProperty, int i) {

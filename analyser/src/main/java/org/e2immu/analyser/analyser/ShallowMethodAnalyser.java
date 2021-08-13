@@ -43,11 +43,16 @@ public class ShallowMethodAnalyser extends MethodAnalyser {
     public void analyse() {
         Map<WithInspectionAndAnalysis, Map<AnnotationExpression, List<MethodInfo>>> map = collectAnnotations();
         E2ImmuAnnotationExpressions e2 = analyserContext.getE2ImmuAnnotationExpressions();
+        boolean explicitlyEmpty = methodInfo.explicitlyEmptyMethod();
 
         parameterAnalyses.forEach(parameterAnalysis -> {
             ParameterAnalysisImpl.Builder builder = (ParameterAnalysisImpl.Builder) parameterAnalysis;
             messages.addAll(builder.fromAnnotationsIntoProperties(Analyser.AnalyserIdentification.PARAMETER, true,
                     map.getOrDefault(builder.getParameterInfo(), Map.of()).keySet(), e2));
+            if (explicitlyEmpty) {
+                builder.setProperty(VariableProperty.MODIFIED_VARIABLE, Level.FALSE);
+                builder.setProperty(VariableProperty.INDEPENDENT_PARAMETER, MultiLevel.EFFECTIVE);
+            }
         });
 
         messages.addAll(methodAnalysis.fromAnnotationsIntoProperties(Analyser.AnalyserIdentification.METHOD,
@@ -56,6 +61,13 @@ public class ShallowMethodAnalyser extends MethodAnalyser {
         // IMPROVE reading preconditions from AAPI...
         methodAnalysis.precondition.set(Precondition.empty(analyserContext.getPrimitives()));
         methodAnalysis.preconditionForEventual.set(Optional.empty());
+
+        if (explicitlyEmpty) {
+            if (!methodInfo.isConstructor) {
+                methodAnalysis.setProperty(VariableProperty.MODIFIED_METHOD, Level.FALSE);
+            }
+            methodAnalysis.setProperty(VariableProperty.INDEPENDENT, MultiLevel.EFFECTIVE);
+        }
     }
 
     @Override

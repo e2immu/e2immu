@@ -46,18 +46,6 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
     }
 
     @Override
-    public int internalGetProperty(VariableProperty variableProperty) {
-        int inMap = properties.getOrDefault(variableProperty, Level.DELAY);
-        if (inMap == Level.DELAY) {
-            if (variableProperty == VariableProperty.MODIFIED_VARIABLE && parameterInfo.owner.isAbstract()) {
-                return Level.DELAY;
-            }
-            return variableProperty.valueWhenAbsent(annotationMode());
-        }
-        return inMap;
-    }
-
-    @Override
     public Location location() {
         return new Location(parameterInfo);
     }
@@ -169,22 +157,15 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
             return assignedToField.isFrozen();
         }
 
-        @Override
-        public int internalGetProperty(VariableProperty variableProperty) {
-            int inMap = properties.getOrDefault(variableProperty, Level.DELAY);
-            if (inMap == Level.DELAY && parameterInfo.owner.isAbstract()) {
-                if (variableProperty == VariableProperty.MODIFIED_VARIABLE) {
-                    return Level.DELAY;
-                }
-                return variableProperty.valueWhenAbsent(annotationMode());
-            }
-            return inMap;
-        }
-
+        /*
+        empty method = method without code block
+         */
         public void minimalInfoForEmptyMethod() {
             properties.put(VariableProperty.MODIFIED_VARIABLE, Level.FALSE);
             properties.put(VariableProperty.NOT_NULL_PARAMETER, parameterInfo.parameterizedType.defaultNotNull());
             properties.put(VariableProperty.PROPAGATE_MODIFICATION, Level.FALSE);
+            properties.put(VariableProperty.IMMUTABLE, MultiLevel.MUTABLE);
+            properties.put(VariableProperty.INDEPENDENT_PARAMETER, MultiLevel.INDEPENDENT);
         }
     }
 

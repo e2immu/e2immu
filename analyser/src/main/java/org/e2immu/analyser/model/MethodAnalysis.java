@@ -135,29 +135,39 @@ public interface MethodAnalysis extends Analysis {
         }
     }
 
+    /*
+    Note that we do not have to make a distinction between explicitly empty methods and shallow analysis methods.
+    The ShallowMethodAnalyser sets explicit values for this case.
+     */
     default int getMethodProperty(AnalysisProvider analysisProvider, VariableProperty variableProperty) {
+        boolean shallow = getMethodInfo().shallowAnalysis();
+
+        int value = shallow ? getPropertyFromMapNeverDelay(variableProperty) :
+                getPropertyFromMapDelayWhenAbsent(variableProperty);
         return switch (variableProperty) {
-            case MODIFIED_METHOD, FLUENT, IDENTITY, INDEPENDENT, NOT_NULL_EXPRESSION, CONTAINER -> getPropertyCheckOverrides(analysisProvider, variableProperty);
-            default -> internalGetProperty(variableProperty);
+            case MODIFIED_METHOD, FLUENT, IDENTITY, INDEPENDENT, NOT_NULL_EXPRESSION, CONTAINER -> getPropertyCheckOverrides(analysisProvider, variableProperty, shallow, value);
+            default -> value;
         };
     }
 
-    private int getPropertyCheckOverrides(AnalysisProvider analysisProvider, VariableProperty variableProperty) {
-        int mineAsIs = getPropertyAsIs(variableProperty);
-        int mine = influenceOfType(analysisProvider, variableProperty).apply(mineAsIs);
-        int max;
-        if (getMethodInfo().shallowAnalysis()) {
-            int bestOfOverrides = Level.DELAY;
-            for (MethodAnalysis override : getOverrides(analysisProvider)) {
-                int overrideAsIs = override.getPropertyAsIs(variableProperty);
-                int combinedWithType = override.influenceOfType(analysisProvider, variableProperty).apply(overrideAsIs);
-                bestOfOverrides = Math.max(bestOfOverrides, combinedWithType);
-            }
-            max = Math.max(mine, bestOfOverrides);
-        } else {
-            max = mine;
+    private int getPropertyCheckOverrides(AnalysisProvider analysisProvider,
+                                          VariableProperty variableProperty,
+                                          boolean shallow,
+                                          int mineAsIs) {
+        int influencedByType = influenceOfType(analysisProvider, variableProperty).apply(mineAsIs);
+        if (!shallow) return influencedByType;
+
+        // only for shallow methods now
+
+        int bestOfOverrides = Level.DELAY;
+        for (MethodAnalysis override : getOverrides(analysisProvider)) {
+            int overrideAsIs = override.getPropertyFromMapDelayWhenAbsent(variableProperty);
+            int combinedWithType = override.influenceOfType(analysisProvider, variableProperty).apply(overrideAsIs);
+            bestOfOverrides = Math.max(bestOfOverrides, combinedWithType);
         }
-        if (max == Level.DELAY && getMethodInfo().shallowAnalysis()) {
+        int max = Math.max(influencedByType, bestOfOverrides);
+
+        if (max == Level.DELAY) {
             // no information found in the whole hierarchy, we default to the value of the annotation mode
 
             // unless: abstract methods, not annotated for modification. They remain as they are
@@ -180,7 +190,7 @@ public interface MethodAnalysis extends Analysis {
     default int valueFromOverrides(AnalysisProvider analysisProvider, VariableProperty variableProperty) {
         Set<MethodAnalysis> overrides = getOverrides(analysisProvider);
         return overrides.stream()
-                .mapToInt(ma -> ma.getPropertyAsIs(variableProperty)).max().orElse(Level.DELAY);
+                .mapToInt(ma -> ma.getPropertyFromMapDelayWhenAbsent(variableProperty)).max().orElse(Level.DELAY);
     }
 
     default boolean eventualIsSet() {

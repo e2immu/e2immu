@@ -97,47 +97,41 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
         }
 
         AnalyserComponents.Builder<String, SharedState> builder = new AnalyserComponents.Builder<>();
-        if (firstStatementAnalyser != null) {
+        assert firstStatementAnalyser != null;
 
-            // order: Companion analyser, Parameter analysers, Statement analysers, Method analyser parts
-            // rest of the order (as determined in PrimaryTypeAnalyser): fields, types
+        // order: Companion analyser, Parameter analysers, Statement analysers, Method analyser parts
+        // rest of the order (as determined in PrimaryTypeAnalyser): fields, types
 
-            for (CompanionAnalyser companionAnalyser : companionAnalysers.values()) {
-                builder.add(companionAnalyser.companionMethodName.toString(), (sharedState ->
-                        companionAnalyser.analyse(sharedState.evaluationContext.getIteration())));
-            }
-
-            for (ParameterAnalyser parameterAnalyser : parameterAnalysers) {
-                builder.add("Parameter " + parameterAnalyser.parameterInfo.name,
-                        sharedState -> parameterAnalyser.analyse(sharedState.evaluationContext.getIteration()));
-            }
-
-            AnalysisStatus.AnalysisResultSupplier<SharedState> statementAnalyser = (sharedState) -> {
-                StatementAnalyserResult result = firstStatementAnalyser.analyseAllStatementsInBlock(sharedState.evaluationContext.getIteration(),
-                        ForwardAnalysisInfo.startOfMethod(analyserContext.getPrimitives()),
-                        sharedState.evaluationContext.getClosure());
-                this.messages.addAll(result.messages());
-                this.locallyCreatedPrimaryTypeAnalysers.addAll(result.localAnalysers());
-                return result.analysisStatus();
-            };
-
-            builder.add(STATEMENT_ANALYSER, statementAnalyser)
-                    .add(OBTAIN_MOST_COMPLETE_PRECONDITION, (sharedState) -> obtainMostCompletePrecondition())
-                    .add(COMPUTE_MODIFIED, (sharedState) -> methodInfo.isConstructor ? DONE : computeModified())
-                    .add(COMPUTE_MODIFIED_CYCLES, (sharedState -> methodInfo.isConstructor ? DONE : computeModifiedInternalCycles()))
-                    .add(COMPUTE_RETURN_VALUE, (sharedState) -> methodInfo.noReturnValue() ? DONE : computeReturnValue())
-                    .add(COMPUTE_IMMUTABLE, sharedState -> methodInfo.noReturnValue() ? DONE : computeImmutable())
-                    .add(DETECT_MISSING_STATIC_MODIFIER, (iteration) -> methodInfo.isConstructor ? DONE : detectMissingStaticModifier())
-                    .add(EVENTUAL_PREP_WORK, (sharedState) -> methodInfo.isConstructor ? DONE : eventualPrepWork(sharedState))
-                    .add(ANNOTATE_EVENTUAL, (sharedState) -> methodInfo.isConstructor ? DONE : annotateEventual(sharedState))
-                    .add(METHOD_IS_INDEPENDENT, this::methodIsIndependent);
-
-        } else {
-            methodAnalysis.minimalInfoForEmptyMethod(methodAnalysis.primitives);
-            for (ParameterAnalyser parameterAnalyser : parameterAnalysers) {
-                parameterAnalyser.parameterAnalysis.minimalInfoForEmptyMethod();
-            }
+        for (CompanionAnalyser companionAnalyser : companionAnalysers.values()) {
+            builder.add(companionAnalyser.companionMethodName.toString(), (sharedState ->
+                    companionAnalyser.analyse(sharedState.evaluationContext.getIteration())));
         }
+
+        for (ParameterAnalyser parameterAnalyser : parameterAnalysers) {
+            builder.add("Parameter " + parameterAnalyser.parameterInfo.name,
+                    sharedState -> parameterAnalyser.analyse(sharedState.evaluationContext.getIteration()));
+        }
+
+        AnalysisStatus.AnalysisResultSupplier<SharedState> statementAnalyser = (sharedState) -> {
+            StatementAnalyserResult result = firstStatementAnalyser.analyseAllStatementsInBlock(sharedState.evaluationContext.getIteration(),
+                    ForwardAnalysisInfo.startOfMethod(analyserContext.getPrimitives()),
+                    sharedState.evaluationContext.getClosure());
+            this.messages.addAll(result.messages());
+            this.locallyCreatedPrimaryTypeAnalysers.addAll(result.localAnalysers());
+            return result.analysisStatus();
+        };
+
+        builder.add(STATEMENT_ANALYSER, statementAnalyser)
+                .add(OBTAIN_MOST_COMPLETE_PRECONDITION, (sharedState) -> obtainMostCompletePrecondition())
+                .add(COMPUTE_MODIFIED, (sharedState) -> methodInfo.isConstructor ? DONE : computeModified())
+                .add(COMPUTE_MODIFIED_CYCLES, (sharedState -> methodInfo.isConstructor ? DONE : computeModifiedInternalCycles()))
+                .add(COMPUTE_RETURN_VALUE, (sharedState) -> methodInfo.noReturnValue() ? DONE : computeReturnValue())
+                .add(COMPUTE_IMMUTABLE, sharedState -> methodInfo.noReturnValue() ? DONE : computeImmutable())
+                .add(DETECT_MISSING_STATIC_MODIFIER, (iteration) -> methodInfo.isConstructor ? DONE : detectMissingStaticModifier())
+                .add(EVENTUAL_PREP_WORK, (sharedState) -> methodInfo.isConstructor ? DONE : eventualPrepWork(sharedState))
+                .add(ANNOTATE_EVENTUAL, (sharedState) -> methodInfo.isConstructor ? DONE : annotateEventual(sharedState))
+                .add(METHOD_IS_INDEPENDENT, this::methodIsIndependent);
+
         analyserComponents = builder.build();
     }
 
@@ -580,17 +574,6 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
         }
 
         return DONE;
-    }
-
-    private Expression removeInitialReturnExpression(Expression value) {
-        if (value instanceof InlineConditional inline) {
-            if (inline.ifTrue.isInitialReturnExpression()) return removeInitialReturnExpression(inline.ifFalse);
-            if (inline.ifFalse.isInitialReturnExpression()) return removeInitialReturnExpression(inline.ifTrue);
-            return new InlineConditional(Identifier.generate(),
-                    analyserContext, inline.condition, removeInitialReturnExpression(inline.ifTrue),
-                    removeInitialReturnExpression(inline.ifFalse));
-        }
-        return value;
     }
 
     private AnalysisStatus computeImmutable() {

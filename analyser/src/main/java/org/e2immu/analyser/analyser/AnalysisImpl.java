@@ -48,12 +48,12 @@ public abstract class AnalysisImpl implements Analysis {
         return annotations.entrySet().stream();
     }
 
-    public int internalGetProperty(VariableProperty variableProperty) {
+    public int getPropertyFromMapNeverDelay(VariableProperty variableProperty) {
         return properties.getOrDefault(variableProperty, variableProperty.valueWhenAbsent(annotationMode()));
     }
 
     @Override
-    public int getPropertyAsIs(VariableProperty variableProperty) {
+    public int getPropertyFromMapDelayWhenAbsent(VariableProperty variableProperty) {
         return properties.getOrDefault(variableProperty, Level.DELAY);
     }
 

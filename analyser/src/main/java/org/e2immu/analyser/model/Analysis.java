@@ -74,8 +74,27 @@ public interface Analysis {
         return AnnotationCheck.NO_INFORMATION;
     }
 
+    /*
+     public use, consistently implemented by delegating to getXXXProperty,
+     (with XXX = Method, Parameter, Type, Field), which can be called with an AnalysisProvider
+
+     getXXXProperty is then always implemented in XXXAnalysis
+     */
     default int getProperty(VariableProperty variableProperty) {
         return Level.DELAY;
+    }
+
+    // internal use, with obvious implementations in AbstractAnalysisBuilder and AnalysisImpl only
+    default int getPropertyFromMapDelayWhenAbsent(VariableProperty variableProperty) {
+        return Level.DELAY;
+    }
+
+    /**
+     * internal use, with obvious implementations in AbstractAnalysisBuilder and AnalysisImpl only.
+     * Reverts to <code>variableProperty.valueWhenAbsent(annotationMode())</code> when no value present in map.
+     */
+    default int getPropertyFromMapNeverDelay(VariableProperty variableProperty) {
+        return variableProperty.valueWhenAbsent(annotationMode());
     }
 
     Location location();
@@ -114,14 +133,6 @@ public interface Analysis {
      */
     default Map<VariableProperty, Integer> getProperties(Set<VariableProperty> forwardPropertiesOnParameters) {
         return new HashMap<>();
-    }
-
-    default int getPropertyAsIs(VariableProperty variableProperty) {
-        return getProperty(variableProperty);
-    }
-
-    default int internalGetProperty(VariableProperty variableProperty) {
-        return Level.DELAY;
     }
 
     enum AnalysisMode {

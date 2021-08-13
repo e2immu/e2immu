@@ -77,7 +77,10 @@ public interface TypeAnalysis extends Analysis {
 
     default int getTypeProperty(VariableProperty variableProperty) {
         if (variableProperty == VariableProperty.NOT_NULL_EXPRESSION) return MultiLevel.EFFECTIVELY_NOT_NULL;
-        return internalGetProperty(variableProperty);
+        if (getTypeInfo().typePropertiesAreContracted() || getTypeInfo().shallowAnalysis()) {
+            return getPropertyFromMapNeverDelay(variableProperty);
+        }
+        return getPropertyFromMapDelayWhenAbsent(variableProperty);
     }
 
     /**

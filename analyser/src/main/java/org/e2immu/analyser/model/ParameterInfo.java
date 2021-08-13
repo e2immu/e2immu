@@ -14,16 +14,17 @@
 
 package org.e2immu.analyser.model;
 
-import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.OutputBuilder;
+import org.e2immu.analyser.output.QualifiedName;
 import org.e2immu.analyser.output.Space;
 import org.e2immu.analyser.output.Text;
-import org.e2immu.analyser.output.QualifiedName;
-import org.e2immu.support.SetOnce;
+import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.Container;
 import org.e2immu.annotation.NotNull;
+import org.e2immu.support.Either;
+import org.e2immu.support.SetOnce;
 
 import java.util.HashSet;
 import java.util.Objects;
@@ -230,5 +231,20 @@ public class ParameterInfo implements Variable, WithInspectionAndAnalysis, Compa
     @Override
     public String niceClassName() {
         return "Parameter";
+    }
+
+    public boolean isOfUnboundParameterType(InspectionProvider inspectionProvider) {
+        if (parameterizedType.typeParameter != null) {
+            Either<TypeInfo, MethodInfo> owner = parameterizedType.typeParameter.getOwner();
+            TypeParameter original;
+            int index = parameterizedType.typeParameter.getIndex();
+            if (owner.isLeft()) {
+                original = inspectionProvider.getTypeInspection(owner.getLeft()).typeParameters().get(index);
+            } else {
+                original = inspectionProvider.getMethodInspection(owner.getRight()).getTypeParameters().get(index);
+            }
+            return original.getTypeBounds().isEmpty();
+        }
+        return false;
     }
 }

@@ -253,17 +253,22 @@ public class MethodInfo implements WithInspectionAndAnalysis {
         return !noReturnValue();
     }
 
-    /**
-     * Even when we're analysing types, we may skip this method
-     *
-     * @return true when we can skip the analysers
-     */
     public boolean shallowAnalysis() {
-        return methodInspection.isSet() && methodInspection.get().getMethodBody().isEmpty();
+        assert methodInspection.isSet();
+        boolean isShallow = !hasStatements();
+        assert !isShallow || typeInfo.shallowAnalysis();
+        return isShallow;
+    }
+
+    public boolean explicitlyEmptyMethod() {
+        if (hasStatements()) return false;
+        boolean empty = !typeInfo.shallowAnalysis() && !isAbstract();
+        assert !empty || noReturnValue();
+        return empty;
     }
 
     public boolean hasStatements() {
-        return methodInspection.get().getMethodBody().structure.statements().size() > 0;
+        return !methodInspection.get().getMethodBody().isEmpty();
     }
 
     public boolean partOfCallCycle() {

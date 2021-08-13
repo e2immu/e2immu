@@ -16,6 +16,7 @@ package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.analyser.AnalysisProvider;
 import org.e2immu.analyser.analyser.VariableProperty;
+import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 
 import java.util.Map;
@@ -73,13 +74,13 @@ public interface ParameterAnalysis extends Analysis {
     default int getParameterPropertyCheckOverrides(AnalysisProvider analysisProvider,
                                                    ParameterInfo parameterInfo,
                                                    VariableProperty variableProperty) {
-        int mine = getPropertyAsIs(variableProperty);
+        int mine = getPropertyFromMapDelayWhenAbsent(variableProperty);
         int max;
         if (parameterInfo.owner.shallowAnalysis()) {
             int bestOfOverrides = Level.DELAY;
             for (MethodAnalysis override : analysisProvider.getMethodAnalysis(parameterInfo.owner).getOverrides(analysisProvider)) {
                 ParameterAnalysis parameterAnalysis = override.getParameterAnalyses().get(parameterInfo.index);
-                int overrideAsIs = parameterAnalysis.getPropertyAsIs(variableProperty);
+                int overrideAsIs = parameterAnalysis.getPropertyFromMapDelayWhenAbsent(variableProperty);
                 bestOfOverrides = Math.max(bestOfOverrides, overrideAsIs);
             }
             max = Math.max(mine, bestOfOverrides);
@@ -89,7 +90,15 @@ public interface ParameterAnalysis extends Analysis {
         if (max == Level.DELAY && parameterInfo.owner.shallowAnalysis()) {
             // no information found in the whole hierarchy
             if (variableProperty == MODIFIED_VARIABLE && parameterInfo.owner.isAbstract()) {
-                return Level.DELAY;
+                if (parameterInfo.parameterizedType.isFunctionalInterface()) {
+                    return Level.DELAY;
+                }
+                if (parameterInfo.isOfUnboundParameterType(InspectionProvider.DEFAULT)) {
+                    return Level.FALSE;
+                }
+                if (parameterInfo.parameterizedType.isE2Immutable(analysisProvider)) {
+                    return Level.FALSE;
+                }
             }
             return variableProperty.valueWhenAbsent(annotationMode());
         }
@@ -99,20 +108,24 @@ public interface ParameterAnalysis extends Analysis {
     default int getParameterProperty(AnalysisProvider analysisProvider,
                                      ParameterInfo parameterInfo,
                                      VariableProperty variableProperty) {
+        boolean shallow = parameterInfo.getMethod().shallowAnalysis();
         switch (variableProperty) {
             case IDENTITY:
                 return parameterInfo.index == 0 ? Level.TRUE : Level.FALSE;
 
             case INDEPENDENT_PARAMETER:
-                int ip = internalGetProperty(INDEPENDENT_PARAMETER);
+                int ip = getPropertyFromMapDelayWhenAbsent(INDEPENDENT_PARAMETER);
                 if (ip != Level.DELAY) return ip;
+                if (parameterInfo.owner.isAbstract()) {
+                    return getParameterPropertyCheckOverrides(analysisProvider, parameterInfo, MODIFIED_VARIABLE);
+                }
                 int cd = getParameterProperty(analysisProvider, parameterInfo, CONTEXT_DEPENDENT);
                 int i = getParameterProperty(analysisProvider, parameterInfo, INDEPENDENT);
                 if (cd == Level.DELAY || i == Level.DELAY) return Level.DELAY;
                 return MultiLevel.bestNotNull(cd, i);
 
             case PROPAGATE_MODIFICATION:
-                int pm = getPropertyAsIs(PROPAGATE_MODIFICATION);
+                int pm = getPropertyFromMapDelayWhenAbsent(PROPAGATE_MODIFICATION);
                 if (pm != Level.DELAY) return pm; // contracted
                 int cpm = getParameterProperty(analysisProvider, parameterInfo, CONTEXT_PROPAGATE_MOD);
                 int epm = getParameterProperty(analysisProvider, parameterInfo, EXTERNAL_PROPAGATE_MOD);
@@ -121,14 +134,11 @@ public interface ParameterAnalysis extends Analysis {
                 return Level.FALSE;
 
             case MODIFIED_VARIABLE:
-                //if (parameterInfo.parameterizedType.isE2Immutable(analysisProvider) == Boolean.TRUE) {
-                //    return Level.FALSE; FIXME shortcut
-                //}
                 if (!parameterInfo.owner.isPrivate() && analysisProvider.getTypeAnalysis(parameterInfo.owner.typeInfo)
                         .getProperty(VariableProperty.CONTAINER) == Level.TRUE) {
                     return Level.FALSE;
                 }
-                int mv = getPropertyAsIs(MODIFIED_VARIABLE);
+                int mv = getPropertyFromMapDelayWhenAbsent(MODIFIED_VARIABLE);
                 if (mv != Level.DELAY) return mv;// || parameterInfo.owner.isAbstract()) return mv;
                 if (parameterInfo.owner.isAbstract()) {
                     return getParameterPropertyCheckOverrides(analysisProvider, parameterInfo, MODIFIED_VARIABLE);
@@ -140,11 +150,6 @@ public interface ParameterAnalysis extends Analysis {
 
             case CONTEXT_MODIFIED:
             case MODIFIED_OUTSIDE_METHOD: {
-                // if the parameter is level 2 immutable, it cannot be modified
-                // int immutable = getParameterProperty(analysisProvider, parameterInfo, IMMUTABLE);
-                // if (immutable >= MultiLevel.EVENTUALLY_E2IMMUTABLE_AFTER_MARK) {
-                //     return Level.FALSE;
-                // }FIXME shortcut
                 if (!parameterInfo.owner.isPrivate() && analysisProvider.getTypeAnalysis(parameterInfo.owner.typeInfo)
                         .getProperty(VariableProperty.CONTAINER) == Level.TRUE) {
                     return Level.FALSE;
@@ -164,7 +169,7 @@ public interface ParameterAnalysis extends Analysis {
                 if (bestType != null) {
                     withoutImplicitDelay = analysisProvider.getTypeAnalysis(bestType).getProperty(VariableProperty.CONTAINER);
                 } else {
-                    withoutImplicitDelay = Level.best(internalGetProperty(VariableProperty.CONTAINER), Level.FALSE);
+                    withoutImplicitDelay = Level.best(getPropertyFromMapNeverDelay(VariableProperty.CONTAINER), Level.FALSE);
                 }
                 return implicit == null && withoutImplicitDelay != Level.TRUE ? Level.DELAY : withoutImplicitDelay;
             }
@@ -190,7 +195,7 @@ public interface ParameterAnalysis extends Analysis {
                 return MultiLevel.NULLABLE;
 
             case NOT_NULL_PARAMETER:
-                int nnp = internalGetProperty(NOT_NULL_PARAMETER);
+                int nnp = getPropertyFromMapDelayWhenAbsent(NOT_NULL_PARAMETER);
                 if (nnp != Level.DELAY) return nnp;
                 int cnn = getParameterProperty(analysisProvider, parameterInfo, CONTEXT_NOT_NULL);
                 int enn = getParameterProperty(analysisProvider, parameterInfo, EXTERNAL_NOT_NULL);
@@ -212,7 +217,8 @@ public interface ParameterAnalysis extends Analysis {
 
             default:
         }
-        return internalGetProperty(variableProperty);
+        return shallow ? getPropertyFromMapDelayWhenAbsent(variableProperty) :
+                getPropertyFromMapNeverDelay(variableProperty);
     }
 
 

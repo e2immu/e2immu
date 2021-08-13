@@ -86,6 +86,8 @@ public class MethodAnalyserFactory {
             }
             return Analysis.AnalysisMode.CONTRACTED;
         }
+        if(methodInspection.getMethodBody().isEmpty()) return Analysis.AnalysisMode.CONTRACTED;
+
         return allowComputed ? Analysis.AnalysisMode.COMPUTED : Analysis.AnalysisMode.CONTRACTED;
     }
 

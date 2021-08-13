@@ -19,8 +19,6 @@ import org.e2immu.analyser.analyser.LinkedVariables;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.parser.Primitives;
 
-import static org.e2immu.analyser.analyser.VariableProperty.*;
-
 public interface FieldAnalysis extends Analysis {
 
     /**
@@ -52,15 +50,18 @@ public interface FieldAnalysis extends Analysis {
         switch (variableProperty) {
             case IMMUTABLE:
                 if (fieldInfo.type.arrays > 0) return MultiLevel.MUTABLE;
-                int fieldImmutable = internalGetProperty(variableProperty);
-                if (fieldImmutable == Level.DELAY) return Level.DELAY;
-                int typeImmutable = typeImmutable(analysisProvider, fieldInfo, bestType);
+                int fieldImmutable = getPropertyFromMapDelayWhenAbsent(variableProperty);
+                if (fieldImmutable == Level.DELAY && !fieldInfo.owner.shallowAnalysis()) {
+                    return Level.DELAY;
+                }
+                int typeImmutable = fieldInfo.owner == bestType || bestType == null ? MultiLevel.MUTABLE :
+                        analysisProvider.getTypeAnalysis(bestType).getProperty(VariableProperty.IMMUTABLE);
                 return MultiLevel.bestImmutable(typeImmutable, fieldImmutable);
 
             // container is, for fields, a property purely on the type
             case CONTAINER:
                 ParameterizedType concreteType = concreteTypeNullWhenDelayed();
-                if(concreteType == null) return Level.DELAY;
+                if (concreteType == null) return Level.DELAY;
                 return concreteType.typeInfo == null ? Level.TRUE :
                         analysisProvider.getTypeAnalysis(concreteType.typeInfo).getProperty(VariableProperty.CONTAINER);
 
@@ -76,25 +77,11 @@ public interface FieldAnalysis extends Analysis {
 
             default:
         }
-        return internalGetProperty(variableProperty);
-    }
-
-    private int typeImmutable(AnalysisProvider analysisProvider, FieldInfo fieldInfo, TypeInfo bestType) {
-        return fieldInfo.owner == bestType || bestType == null ? MultiLevel.FALSE :
-                analysisProvider.getTypeAnalysis(bestType).getProperty(VariableProperty.IMMUTABLE);
+        if (fieldInfo.owner.shallowAnalysis()) {
+            return getPropertyFromMapNeverDelay(variableProperty);
+        }
+        return getPropertyFromMapDelayWhenAbsent(variableProperty);
     }
 
     Expression getInitialValue();
-
-    default int getPropertyVerifyContracted(VariableProperty variableProperty) {
-        int v = getProperty(variableProperty);
-        // special code to catch contracted values
-        if (variableProperty == NOT_NULL_EXPRESSION) {
-            return MultiLevel.bestNotNull(v, getProperty(EXTERNAL_NOT_NULL));
-        }
-        if (variableProperty == MODIFIED_OUTSIDE_METHOD) {
-            return MultiLevel.bestNotNull(v, getProperty(MODIFIED_VARIABLE));
-        }
-        return v;
-    }
 }
