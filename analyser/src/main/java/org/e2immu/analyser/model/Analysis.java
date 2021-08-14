@@ -103,27 +103,6 @@ public interface Analysis {
         return AnnotationMode.GREEN;
     }
 
-    default OutputBuilder peekIntoAnnotations(AnnotationExpression annotation, Set<TypeInfo> annotationsSeen) {
-        AnnotationParameters parameters = annotation.e2ImmuAnnotationParameters();
-        OutputBuilder outputBuilder = new OutputBuilder();
-        if (parameters != null) {
-            if (!parameters.contract()) {
-                AnnotationCheck annotationCheck = getAnnotation(annotation);
-                outputBuilder.add(Symbol.LEFT_BLOCK_COMMENT)
-                        .add(new Text(annotationCheck.toString()))
-                        .add(Symbol.RIGHT_BLOCK_COMMENT);
-                if (annotationCheck.hasBeenComputed()) {
-                    // no need to add our computed value
-                    annotationsSeen.add(annotation.typeInfo());
-                }
-            } else {
-                // contract, not absent -> no need to add our computed value
-                if (!parameters.absent()) annotationsSeen.add(annotation.typeInfo());
-            }
-        }
-        return outputBuilder;
-    }
-
     default Analysis build() {
         throw new UnsupportedOperationException();
     }

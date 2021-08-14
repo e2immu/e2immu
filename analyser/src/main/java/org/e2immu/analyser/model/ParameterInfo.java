@@ -14,11 +14,9 @@
 
 package org.e2immu.analyser.model;
 
+import org.e2immu.analyser.analyser.AnnotationParameters;
 import org.e2immu.analyser.model.variable.Variable;
-import org.e2immu.analyser.output.OutputBuilder;
-import org.e2immu.analyser.output.QualifiedName;
-import org.e2immu.analyser.output.Space;
-import org.e2immu.analyser.output.Text;
+import org.e2immu.analyser.output.*;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.Container;
@@ -155,8 +153,8 @@ public class ParameterInfo implements Variable, WithInspectionAndAnalysis, Compa
         Set<TypeInfo> annotationsSeen = new HashSet<>();
         for (AnnotationExpression annotation : parameterInspection.getAnnotations()) {
             outputBuilder.add(annotation.output(qualification));
-            if (parameterAnalysis.isSet()) {
-                outputBuilder.add(parameterAnalysis.get().peekIntoAnnotations(annotation, annotationsSeen));
+            if (parameterAnalysis.isSet() && !owner.shallowAnalysis()) {
+                outputBuilder.add(peekIntoAnnotations(annotation, annotationsSeen, parameterAnalysis.get()));
             }
             outputBuilder.add(Space.ONE);
         }
@@ -177,6 +175,29 @@ public class ParameterInfo implements Variable, WithInspectionAndAnalysis, Compa
         outputBuilder.add(new Text(name));
         return outputBuilder;
     }
+
+
+    private OutputBuilder peekIntoAnnotations(AnnotationExpression annotation, Set<TypeInfo> annotationsSeen, ParameterAnalysis parameterAnalysis) {
+        AnnotationParameters parameters = annotation.e2ImmuAnnotationParameters();
+        OutputBuilder outputBuilder = new OutputBuilder();
+        if (parameters != null) {
+            if (!parameters.contract()) {
+                Analysis.AnnotationCheck annotationCheck = parameterAnalysis.getAnnotation(annotation);
+                outputBuilder.add(Symbol.LEFT_BLOCK_COMMENT)
+                        .add(new Text(annotationCheck.toString()))
+                        .add(Symbol.RIGHT_BLOCK_COMMENT);
+                if (annotationCheck.hasBeenComputed()) {
+                    // no need to add our computed value
+                    annotationsSeen.add(annotation.typeInfo());
+                }
+            } else {
+                // contract, not absent -> no need to add our computed value
+                if (!parameters.absent()) annotationsSeen.add(annotation.typeInfo());
+            }
+        }
+        return outputBuilder;
+    }
+
 
     @Override
     public boolean isStatic() {

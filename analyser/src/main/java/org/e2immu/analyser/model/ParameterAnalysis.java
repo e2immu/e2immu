@@ -74,33 +74,39 @@ public interface ParameterAnalysis extends Analysis {
     default int getParameterPropertyCheckOverrides(AnalysisProvider analysisProvider,
                                                    ParameterInfo parameterInfo,
                                                    VariableProperty variableProperty) {
+        boolean shallow = parameterInfo.owner.shallowAnalysis();
         int mine = getPropertyFromMapDelayWhenAbsent(variableProperty);
-        int max;
-        if (parameterInfo.owner.shallowAnalysis()) {
-            int bestOfOverrides = Level.DELAY;
-            for (MethodAnalysis override : analysisProvider.getMethodAnalysis(parameterInfo.owner).getOverrides(analysisProvider)) {
-                ParameterAnalysis parameterAnalysis = override.getParameterAnalyses().get(parameterInfo.index);
-                int overrideAsIs = parameterAnalysis.getPropertyFromMapDelayWhenAbsent(variableProperty);
-                bestOfOverrides = Math.max(bestOfOverrides, overrideAsIs);
-            }
-            max = Math.max(mine, bestOfOverrides);
-        } else {
-            max = mine;
+        if (!shallow) return mine;
+
+        int bestOfOverrides = Level.DELAY;
+        for (MethodAnalysis override : analysisProvider.getMethodAnalysis(parameterInfo.owner).getOverrides(analysisProvider)) {
+            ParameterAnalysis parameterAnalysis = override.getParameterAnalyses().get(parameterInfo.index);
+            int overrideAsIs = parameterAnalysis.getPropertyFromMapDelayWhenAbsent(variableProperty);
+            bestOfOverrides = Math.max(bestOfOverrides, overrideAsIs);
         }
-        if (max == Level.DELAY && parameterInfo.owner.shallowAnalysis()) {
+        int max = Math.max(mine, bestOfOverrides);
+
+        if (max == Level.DELAY) {
             // no information found in the whole hierarchy
-            if (variableProperty == MODIFIED_VARIABLE && parameterInfo.owner.isAbstract()) {
-                if (parameterInfo.parameterizedType.isFunctionalInterface()) {
-                    return Level.DELAY;
+            switch (variableProperty) {
+                case MODIFIED_VARIABLE -> {
+                    if (parameterInfo.parameterizedType.isFunctionalInterface()) {
+                        return Level.DELAY;
+                    }
+                    // note: parameters of unbound type are not necessarily unmodified (see accept's parameter in Consumer)
+                    if (parameterInfo.parameterizedType.isE2Immutable(analysisProvider)) {
+                        return Level.FALSE;
+                    }
                 }
-                if (parameterInfo.isOfUnboundParameterType(InspectionProvider.DEFAULT)) {
-                    return Level.FALSE;
-                }
-                if (parameterInfo.parameterizedType.isE2Immutable(analysisProvider)) {
-                    return Level.FALSE;
+                case INDEPENDENT_PARAMETER -> {
+                    if (parameterInfo.isOfUnboundParameterType(InspectionProvider.DEFAULT) ||
+                            parameterInfo.parameterizedType.isE2Immutable(analysisProvider)) {
+                        return MultiLevel.EFFECTIVE;
+                    }
                 }
             }
             return variableProperty.valueWhenAbsent(annotationMode());
+
         }
         return max;
     }
@@ -108,7 +114,6 @@ public interface ParameterAnalysis extends Analysis {
     default int getParameterProperty(AnalysisProvider analysisProvider,
                                      ParameterInfo parameterInfo,
                                      VariableProperty variableProperty) {
-        boolean shallow = parameterInfo.getMethod().shallowAnalysis();
         switch (variableProperty) {
             case IDENTITY:
                 return parameterInfo.index == 0 ? Level.TRUE : Level.FALSE;
@@ -116,8 +121,8 @@ public interface ParameterAnalysis extends Analysis {
             case INDEPENDENT_PARAMETER:
                 int ip = getPropertyFromMapDelayWhenAbsent(INDEPENDENT_PARAMETER);
                 if (ip != Level.DELAY) return ip;
-                if (parameterInfo.owner.isAbstract()) {
-                    return getParameterPropertyCheckOverrides(analysisProvider, parameterInfo, MODIFIED_VARIABLE);
+                if (parameterInfo.owner.shallowAnalysis()) {
+                    return getParameterPropertyCheckOverrides(analysisProvider, parameterInfo, INDEPENDENT_PARAMETER);
                 }
                 int cd = getParameterProperty(analysisProvider, parameterInfo, CONTEXT_DEPENDENT);
                 int i = getParameterProperty(analysisProvider, parameterInfo, INDEPENDENT);
@@ -126,7 +131,7 @@ public interface ParameterAnalysis extends Analysis {
 
             case PROPAGATE_MODIFICATION:
                 int pm = getPropertyFromMapDelayWhenAbsent(PROPAGATE_MODIFICATION);
-                if (pm != Level.DELAY) return pm; // contracted
+                if (pm != Level.DELAY) return pm; // done, or contracted
                 int cpm = getParameterProperty(analysisProvider, parameterInfo, CONTEXT_PROPAGATE_MOD);
                 int epm = getParameterProperty(analysisProvider, parameterInfo, EXTERNAL_PROPAGATE_MOD);
                 if (cpm == Level.TRUE || epm == Level.TRUE) return Level.TRUE;
@@ -139,8 +144,22 @@ public interface ParameterAnalysis extends Analysis {
                     return Level.FALSE;
                 }
                 int mv = getPropertyFromMapDelayWhenAbsent(MODIFIED_VARIABLE);
-                if (mv != Level.DELAY) return mv;// || parameterInfo.owner.isAbstract()) return mv;
+                if (mv != Level.DELAY) return mv;
                 if (parameterInfo.owner.isAbstract()) {
+                    int mm = analysisProvider.getMethodAnalysis(parameterInfo.owner)
+                            .getMethodProperty(analysisProvider, MODIFIED_METHOD);
+                    if (mm == Level.DELAY) {
+                        // the abstract method either has @PropagateModification, or is the abstract method
+                        // in a functional interface
+                        if (Primitives.isPrimitiveExcludingVoid(parameterInfo.parameterizedType)) {
+                            return Level.FALSE;
+                        }
+                        // IMPROVE what about delays?
+                        if (parameterInfo.parameterizedType.isE2Immutable(analysisProvider)) {
+                            return Level.FALSE;
+                        }
+                        return Level.DELAY; // no decision for this method
+                    }
                     return getParameterPropertyCheckOverrides(analysisProvider, parameterInfo, MODIFIED_VARIABLE);
                 }
                 int cm = getParameterProperty(analysisProvider, parameterInfo, CONTEXT_MODIFIED);
@@ -217,8 +236,7 @@ public interface ParameterAnalysis extends Analysis {
 
             default:
         }
-        return shallow ? getPropertyFromMapDelayWhenAbsent(variableProperty) :
-                getPropertyFromMapNeverDelay(variableProperty);
+        return getParameterPropertyCheckOverrides(analysisProvider, parameterInfo, variableProperty);
     }
 
 

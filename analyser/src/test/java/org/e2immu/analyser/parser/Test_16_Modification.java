@@ -552,9 +552,9 @@ public class Test_16_Modification extends CommonTestRunner {
         };
 
         testClass("Modification_6", 0, 0, new DebugConfiguration.Builder()
-         //       .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-           //     .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-           //     .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                //       .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                //     .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                //     .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addTypeMapVisitor(typeMapVisitor)
                 .build());
     }
@@ -592,37 +592,55 @@ public class Test_16_Modification extends CommonTestRunner {
         };
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-            if ("add".equals(d.methodInfo().name) && "theSet".equals(d.variableName())) {
-                if ("1".equals(d.statementId())) {
-                    int expectCm = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
-                    assertEquals(expectCm, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
+            if ("add".equals(d.methodInfo().name)) {
+                if ("theSet".equals(d.variableName())) {
+                    if ("1".equals(d.statementId())) {
+                        int expectCm = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
+                        assertEquals(expectCm, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
+                    }
+                    if ("2".equals(d.statementId())) {
+                        int expectCm = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
+                        assertEquals(expectCm, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
+                    }
+                    if (d.iteration() == 0) {
+                        assertTrue(d.variableInfo().getLinkedVariables().isDelayed());
+                        assertEquals("*", d.variableInfo().getLinkedVariables().toDetailedString());
+                    } else {
+                        assertEquals("this.s2", d.variableInfo().getLinkedVariables().toString());
+                    }
+                    if (d.statementId().equals("1") && d.iteration() > 0) {
+                        assertEquals("s2", d.currentValue().toString());
+                    }
+                    if (d.statementId().equals("2") && d.iteration() > 0) {
+                        assertEquals("instance type HashSet<String>", d.currentValue().toString());
+                    }
                 }
-                if ("2".equals(d.statementId())) {
-                    int expectCm = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
-                    assertEquals(expectCm, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
+                if (S2.equals(d.variableName())) {
+                    if (d.iteration() > 0) {
+                        assertEquals("", d.variableInfo().getLinkedVariables().toString());
+                    }
+                    if (("2".equals(d.statementId()) || "3".equals(d.statementId())) && d.iteration() > 1) {
+                        assertEquals(Level.TRUE, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
+                    }
+                    if ("3".equals(d.statementId())) {
+                        assertTrue(d.variableInfo().isRead());
+                    }
                 }
-                if (d.iteration() == 0) {
-                    assertTrue(d.variableInfo().getLinkedVariables().isDelayed());
-                    assertEquals("*", d.variableInfo().getLinkedVariables().toDetailedString());
-                } else {
-                    assertEquals("this.s2", d.variableInfo().getLinkedVariables().toString());
-                }
-                if (d.statementId().equals("1") && d.iteration() > 0) {
-                    assertEquals("s2", d.currentValue().toString());
-                }
-                if (d.statementId().equals("2") && d.iteration() > 0) {
-                    assertEquals("instance type HashSet<String>", d.currentValue().toString());
-                }
-            }
-            if ("add".equals(d.methodInfo().name) && S2.equals(d.variableName())) {
-                if (d.iteration() > 0) {
-                    assertEquals("", d.variableInfo().getLinkedVariables().toString());
-                }
-                if (("2".equals(d.statementId()) || "3".equals(d.statementId())) && d.iteration() > 1) {
-                    assertEquals(Level.TRUE, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
-                }
-                if ("3".equals(d.statementId())) {
-                    assertTrue(d.variableInfo().isRead());
+
+                if (d.variable() instanceof ParameterInfo s && "s".equals(s.name)) {
+                    int cd = d.getProperty(VariableProperty.CONTEXT_DEPENDENT);
+                    if ("0".equals(d.statementId())) {
+                        assertEquals(MultiLevel.DEPENDENT, cd);
+                    }
+                    if ("2".equals(d.statementId())) {
+                        int expectCd = d.iteration() == 0 ? Level.DELAY : MultiLevel.DEPENDENT_1;
+                        assertEquals(expectCd, cd);
+                    }
+                    // context dependent follows from one statement to the next, just like context modification does
+                    if ("3".equals(d.statementId())) {
+                        int expectCd = d.iteration() == 0 ? Level.DELAY : MultiLevel.DEPENDENT_1;
+                        assertEquals(expectCd, cd);
+                    }
                 }
             }
         };
@@ -640,11 +658,29 @@ public class Test_16_Modification extends CommonTestRunner {
             }
         };
 
+        TypeMapVisitor typeMapVisitor = typeMap -> {
+            TypeInfo set = typeMap.get(Set.class);
+            MethodInfo add = set.findUniqueMethod("add", 1);
+            ParameterInfo p0Add = add.methodInspection.get().getParameters().get(0);
+            assertEquals(MultiLevel.DEPENDENT_1, p0Add.parameterAnalysis.get()
+                    .getProperty(VariableProperty.INDEPENDENT_PARAMETER));
+        };
+
+        // there is no implicitly immutable content in this type; as a consequence, the parameter s
+        // can never be @Dependent1 (even if it weren't of immutable type String)
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("Modification_9".equals(d.typeInfo().simpleName)) {
+                assertEquals("[]", d.typeAnalysis().getImplicitlyImmutableDataTypes().toString());
+            }
+        };
+
         testClass("Modification_9", 0, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addTypeMapVisitor(typeMapVisitor)
+                .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
                 .build());
     }
 
@@ -1231,11 +1267,11 @@ public class Test_16_Modification extends CommonTestRunner {
         };
 
         testClass("Modification_19", 0, 0, new DebugConfiguration.Builder()
-             //   .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-             //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-              //  .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-             //   .addStatementAnalyserVisitor(statementAnalyserVisitor)
-             //   .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
+                //   .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                //  .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                //   .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                //   .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
                 .build());
     }
 
@@ -1369,8 +1405,8 @@ public class Test_16_Modification extends CommonTestRunner {
                 if ("2".equals(d.statementId())) {
                     if (d.iteration() <= 2) {
                         assertEquals(CONSTRUCTOR + ", " + ADD_ALL, causes);
-                   // } else if (d.iteration() == 3) {
-                  //      assertEquals(CONSTRUCTOR, causes);
+                        // } else if (d.iteration() == 3) {
+                        //      assertEquals(CONSTRUCTOR, causes);
                     } else {
                         assertEquals("", causes);
                     }

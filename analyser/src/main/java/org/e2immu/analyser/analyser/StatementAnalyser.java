@@ -988,9 +988,9 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                             index(), myMethodAnalyser.methodInfo.fullyQualifiedName);
                     status = DELAYS;
                 } else {
-                        checkPreconditionCompatibilityWithConditionManager(sharedState.evaluationContext,
-                                preconditionExpression,
-                                sharedState.localConditionManager);
+                    checkPreconditionCompatibilityWithConditionManager(sharedState.evaluationContext,
+                            preconditionExpression,
+                            sharedState.localConditionManager);
                 }
             }
         } else if (!statementAnalysis.stateData.preconditionIsFinal()) {
@@ -1286,7 +1286,11 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                     case NOT_NULL_EXPRESSION, CONTAINER, IMMUTABLE, IDENTITY, INDEPENDENT -> {
                         if (allowValueProperties && prev != Level.DELAY) res.put(k, prev);
                     }
-                    // all other are copied from change data
+                    case CONTEXT_DEPENDENT -> {
+                        int cd = combineContextDependent(prev, change);
+                        if (cd != Level.DELAY) res.put(k, cd);
+                    }
+                    // all other properties are copied from change data
                     default -> {
                         if (change != Level.DELAY) res.put(k, change);
                     }
@@ -1296,6 +1300,11 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         res.keySet().removeAll(GroupPropertyValues.PROPERTIES);
         res.keySet().removeAll(GroupPropertyValues.DELAY_PROPERTIES);
         return res;
+    }
+
+    private static int combineContextDependent(int prev, int change) {
+        if (prev == Level.DELAY || change == Level.DELAY) return Level.DELAY;
+        return Math.min(prev, change); // DEPENDENT, DEP_1, DEP_2, INDEPENDENT, with DEPENDENT winning
     }
 
     private static int delayOrAtLeastMultiDelay(int prev) {

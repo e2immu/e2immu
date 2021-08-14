@@ -33,7 +33,7 @@ public class OutputMethodInfo {
 
     public static OutputBuilder output(MethodInfo methodInfo, Qualification qualification, AnalysisProvider analysisProvider) {
         MethodInspection inspection = methodInfo.methodInspection.get();
-        if(inspection.isStaticBlock()) {
+        if (inspection.isStaticBlock()) {
             OutputBuilder result = new OutputBuilder().add(new Text("static"));
             Qualification bodyQualification = makeBodyQualification(qualification, inspection);
             MethodAnalysis methodAnalysisOrNull = analysisProvider.getMethodAnalysis(methodInfo);
@@ -76,12 +76,12 @@ public class OutputMethodInfo {
                             .map(pi -> pi.output(qualification)).collect(OutputBuilder.joining(Symbol.COMMA)));
         }
         MethodAnalysis methodAnalysisOrNull = analysisProvider.getMethodAnalysis(methodInfo);
-        if (methodInfo.hasBeenInspected()) {
+        if (inspection.isAbstract()) {
+            afterAnnotations.add(Symbol.SEMICOLON);
+        } else {
             Qualification bodyQualification = makeBodyQualification(qualification, inspection);
             StatementAnalysis firstStatement = methodAnalysisOrNull != null ? methodAnalysisOrNull.getFirstStatement() : null;
             afterAnnotations.add(inspection.getMethodBody().output(bodyQualification, firstStatement));
-        } else {
-            afterAnnotations.add(Space.ONE).add(Symbol.LEFT_BRACE).add(Symbol.RIGHT_BRACE);
         }
 
         Stream<OutputBuilder> annotationStream = methodInfo.buildAnnotationOutput(qualification);

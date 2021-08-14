@@ -15,9 +15,9 @@
 package org.e2immu.analyser.testexample;
 
 import org.e2immu.annotation.E2Container;
+import org.e2immu.annotation.Modified;
 import org.e2immu.annotation.NotModified;
 import org.e2immu.annotation.NotNull;
-import org.e2immu.annotation.PropagateModification;
 
 // almost exact copy of 1, but now without the @PropagateModification on accept
 public class PropagateModification_8 {
@@ -30,8 +30,8 @@ public class PropagateModification_8 {
             this.name = name;
         }
 
-        // implicitly modifying
-        abstract void accept(@NotNull T t);
+        // implicitly @NotModified, because CWC is not a @FunctionalInterface, and it is @E2Immutable after some iterations
+        abstract void abstractAccept(@NotNull T t);
 
         public String getName() {
             return name;
@@ -47,8 +47,9 @@ public class PropagateModification_8 {
 
     // do not write @NotModified on myConsumer, because the type is @E2Container (implicit!)
     @NotModified
-    public void forEach(ClassWithConsumer<String> myConsumer) {
-        System.out.println("Consumer is " + myConsumer.getName());
-        myConsumer.accept(string);
+    public String forEach(ClassWithConsumer<String> myConsumer) {
+        String n = myConsumer.getName();
+        myConsumer.abstractAccept(string);
+        return n;
     }
 }

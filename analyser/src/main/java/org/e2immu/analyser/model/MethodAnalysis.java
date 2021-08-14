@@ -113,6 +113,9 @@ public interface MethodAnalysis extends Analysis {
             case MODIFIED_METHOD:
                 TypeAnalysis typeAnalysis = analysisProvider.getTypeAnalysis(methodInfo.typeInfo);
                 if (!methodInfo.isConstructor &&
+                        // keep this isAbstract check! See PropagateModification_1;
+                        // a type can be @E2Immutable with an abstract method,
+                        // which can still have MODIFIED_METHOD == Level.DELAY rather than Level.FALSE
                         !methodInfo.isAbstract() &&
                         typeAnalysis.getProperty(VariableProperty.IMMUTABLE) == MultiLevel.EFFECTIVELY_E2IMMUTABLE) {
                     return OVERRIDE_FALSE;
@@ -142,18 +145,17 @@ public interface MethodAnalysis extends Analysis {
     default int getMethodProperty(AnalysisProvider analysisProvider, VariableProperty variableProperty) {
         boolean shallow = getMethodInfo().shallowAnalysis();
 
-        int value = shallow ? getPropertyFromMapNeverDelay(variableProperty) :
-                getPropertyFromMapDelayWhenAbsent(variableProperty);
         return switch (variableProperty) {
-            case MODIFIED_METHOD, FLUENT, IDENTITY, INDEPENDENT, NOT_NULL_EXPRESSION, CONTAINER -> getPropertyCheckOverrides(analysisProvider, variableProperty, shallow, value);
-            default -> value;
+            case MODIFIED_METHOD, FLUENT, IDENTITY, INDEPENDENT, NOT_NULL_EXPRESSION, CONTAINER -> getPropertyCheckOverrides(analysisProvider, variableProperty, shallow);
+            default -> shallow ? getPropertyFromMapNeverDelay(variableProperty) :
+                    getPropertyFromMapDelayWhenAbsent(variableProperty);
         };
     }
 
     private int getPropertyCheckOverrides(AnalysisProvider analysisProvider,
                                           VariableProperty variableProperty,
-                                          boolean shallow,
-                                          int mineAsIs) {
+                                          boolean shallow) {
+        int mineAsIs = getPropertyFromMapDelayWhenAbsent(variableProperty);
         int influencedByType = influenceOfType(analysisProvider, variableProperty).apply(mineAsIs);
         if (!shallow) return influencedByType;
 
@@ -170,15 +172,27 @@ public interface MethodAnalysis extends Analysis {
         if (max == Level.DELAY) {
             // no information found in the whole hierarchy, we default to the value of the annotation mode
 
-            // unless: abstract methods, not annotated for modification. They remain as they are
+            // unless: abstract methods, not annotated for modification
             if (variableProperty == VariableProperty.MODIFIED_METHOD && getMethodInfo().isAbstract()) {
                 int propModMethod = analysisProvider.getMethodAnalysis(getMethodInfo())
                         .getProperty(VariableProperty.PROPAGATE_MODIFICATION);
                 if (getMethodInfo().typeInfo.typeInspection.get().isFunctionalInterface() || propModMethod == Level.TRUE) {
                     return Level.DELAY;
                 }
+                /*
+                 In case of a shallow type: if you mark a shallow type as level 2 immutable then its abstract methods are @NotModified by default
+                 See Basics_5, Stream is @E2Container so filter, findAny, map etc. must be @NotModified.
+                 Otherwise, the method is shallow but the type is not. See e.g. PropagateModification_8.
+                 If the type is found to be @E2Immutable, then it makes little sense to mark the method as @Modified,
+                 so we choose @NotModified instead.
+                */
                 TypeAnalysis typeAnalysis = analysisProvider.getTypeAnalysis(getMethodInfo().typeInfo);
-                if (typeAnalysis.getProperty(VariableProperty.IMMUTABLE) == MultiLevel.EFFECTIVELY_E2IMMUTABLE) {
+                int immutable = typeAnalysis.getProperty(VariableProperty.IMMUTABLE);
+                if (immutable == Level.DELAY) {
+                    // even if delay has a meaning (propagate modification) for abstract types
+                    return Level.DELAY;
+                }
+                if (immutable == MultiLevel.EFFECTIVELY_E2IMMUTABLE) {
                     return Level.FALSE;
                 }
             }

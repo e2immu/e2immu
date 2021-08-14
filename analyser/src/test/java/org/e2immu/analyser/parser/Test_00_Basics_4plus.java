@@ -198,7 +198,7 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
 
                 if (d.variable() instanceof ReturnVariable) {
                     if ("4".equals(d.statementId())) {
-                        String expectValue = d.iteration() == 0 ? "<m:someMinorMethod>" : "v3" ;
+                        String expectValue = d.iteration() == 0 ? "<m:someMinorMethod>" : "v3";
                         // FIXME add: as effect of companion method: /*this.length==field$0.length*/ in state
                         assertEquals(expectValue, d.currentValue().toString());
                         int effectivelyNotNull = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
@@ -284,13 +284,12 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
             if ("test4".equals(d.methodInfo().name)) {
                 if ("1".equals(d.statementId())) {
                     assertEquals(0, timeI);
-                    assertEquals(0, timeE);
-                    assertEquals(0, timeM);
+                    assertEquals(1, timeE);
+                    assertEquals(1, timeM);
                 }
                 if ("3".equals(d.statementId())) {
                     Message msg = d.haveError(Message.Label.ASSERT_EVALUATES_TO_CONSTANT_TRUE);
-                    if (d.iteration() == 0) assertNull(msg);
-                    else assertNotNull(msg);
+                    assertNull(msg);
                 }
             }
 
@@ -377,7 +376,7 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
             }
         };
 
-        TypeContext typeContext = testClass("Basics_6", 0, 10, new DebugConfiguration.Builder()
+        TypeContext typeContext = testClass("Basics_6", 0, 9, new DebugConfiguration.Builder()
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)

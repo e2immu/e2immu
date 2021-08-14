@@ -152,7 +152,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyser {
                 .getLastStatement();
         Set<FieldInfo> fieldsAssignedInThisMethod =
                 Resolver.accessibleFieldsStream(analyserContext, parameterInfo.owner.typeInfo,
-                        parameterInfo.owner.typeInfo.primaryType())
+                                parameterInfo.owner.typeInfo.primaryType())
                         .filter(fieldInfo -> isAssignedIn(lastStatementAnalysis, fieldInfo))
                         .collect(Collectors.toSet());
 

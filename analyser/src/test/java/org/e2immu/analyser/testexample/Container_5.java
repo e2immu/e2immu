@@ -52,7 +52,6 @@ public class Container_5 {
     }
 
     @NotModified
-    // note: a t m we do not want @NotModified on consumer, because it is @NotModified by default (functional interface)
     public void visit(@NotNull1 Consumer<String> consumer) {
         list.forEach(consumer);
     }

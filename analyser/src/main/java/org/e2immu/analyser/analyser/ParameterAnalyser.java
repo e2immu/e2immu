@@ -103,7 +103,7 @@ public abstract class ParameterAnalyser extends AbstractAnalyser {
                     .stream()
                     .map(ma -> ma.getMethodInfo().methodInspection.get().getParameters().get(parameterInfo.index))
                     .mapToInt(pi -> analyserContext.getParameterAnalysis(pi).getParameterProperty(analyserContext,
-                            parameterInfo, variableProperty))
+                            pi, variableProperty))
                     .max().orElse(Level.DELAY);
             int value = parameterAnalysis.getProperty(variableProperty);
             if (valueFromOverrides != Level.DELAY && value != Level.DELAY) {

@@ -28,7 +28,7 @@ public class Warnings_7 {
 
     @Container
     interface MustBeContainer {
-        void addToSet(Set<Integer> set);
+        void addToSet(Set<Integer> setInInterface);
     }
 
     @E2Immutable // still, will cause an error because we had expected @E2Container

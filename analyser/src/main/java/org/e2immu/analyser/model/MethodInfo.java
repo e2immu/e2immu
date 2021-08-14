@@ -255,9 +255,7 @@ public class MethodInfo implements WithInspectionAndAnalysis {
 
     public boolean shallowAnalysis() {
         assert methodInspection.isSet();
-        boolean isShallow = !hasStatements();
-        assert !isShallow || typeInfo.shallowAnalysis();
-        return isShallow;
+        return !hasStatements();
     }
 
     public boolean explicitlyEmptyMethod() {

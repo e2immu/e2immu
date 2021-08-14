@@ -31,7 +31,7 @@ public class Modification_9 {
 
     @Modified // modifies s2
     public int add(String s) {
-        Set<String> theSet = s2; // linked to s2, which is linked to set2
+        Set<String> theSet = s2;
         LOGGER.debug("The set has {} elements before adding {}", theSet.size(), s);
         theSet.add(s); // this one modifies s2!
         return 1;

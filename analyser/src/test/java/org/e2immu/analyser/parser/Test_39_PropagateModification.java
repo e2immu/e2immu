@@ -21,22 +21,19 @@ import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.FieldReference;
+import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.testexample.PropagateModification_0;
 import org.e2immu.analyser.util.SetUtil;
-import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
-import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
-import org.e2immu.analyser.visitor.TypeAnalyserVisitor;
-import org.e2immu.analyser.visitor.TypeMapVisitor;
+import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.Map;
 import java.util.Set;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_39_PropagateModification extends CommonTestRunner {
     public Test_39_PropagateModification() {
@@ -96,7 +93,7 @@ public class Test_39_PropagateModification extends CommonTestRunner {
                     if ("1".equals(d.statementId())) {
                         int expectCm = d.iteration() <= 1 ? Level.DELAY : Level.FALSE;
                         assertEquals(expectCm, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
-                        int expectPm = d.iteration() <= 1 ? Level.DELAY : Level.TRUE;
+                        int expectPm = d.iteration() <= 1 ? Level.DELAY : Level.TRUE; // ! Here different !
                         assertEquals(expectPm, d.getProperty(VariableProperty.CONTEXT_PROPAGATE_MOD));
                     }
                 }
@@ -145,7 +142,7 @@ public class Test_39_PropagateModification extends CommonTestRunner {
     @Test
     public void test_7() throws IOException {
 
-        // test that the different This scopes do not matter in equality of field references
+        // test that the different "This" scopes do not matter in equality of field references
         TypeMapVisitor typeMapVisitor = typeMap -> {
             TypeInfo system = typeMap.get(System.class);
             TypeInfo map = typeMap.get(Map.class);
@@ -168,8 +165,8 @@ public class Test_39_PropagateModification extends CommonTestRunner {
                         .build());
 
         // verify that the default for accept is @Modified
-        TypeInfo classWithConsumer = typeContext
-                .getFullyQualified("org.e2immu.analyser.testexample.PropagateModification_7.ClassWithConsumer", true);
+        TypeInfo classWithConsumer = typeContext.getFullyQualified(
+                "org.e2immu.analyser.testexample.PropagateModification_7.ClassWithConsumer", true);
         MethodInfo accept = classWithConsumer.findUniqueMethod("accept", 1);
         assertTrue(accept.isAbstract());
         assertEquals(Level.FALSE, accept.getAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
@@ -177,8 +174,96 @@ public class Test_39_PropagateModification extends CommonTestRunner {
 
     @Test
     public void test_8() throws IOException {
-        testClass("PropagateModification_8", 0, 1, new DebugConfiguration.Builder()
-                .build());
+        FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+            if ("name".equals(d.fieldInfo().name)) {
+                assertEquals(Level.TRUE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
+                assertEquals("name", d.fieldAnalysis().getEffectivelyFinalValue().toString());
+                if (d.fieldAnalysis().getEffectivelyFinalValue() instanceof VariableExpression ve) {
+                    assertTrue(ve.variable() instanceof ParameterInfo);
+                } else fail();
+                assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE,
+                        d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_IMMUTABLE));
+                assertEquals(MultiLevel.NULLABLE, d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_NOT_NULL));
+            }
+        };
+
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("forEach".equals(d.methodInfo().name)) {
+                if ("n".equals(d.variableName())) {
+                    if ("0".equals(d.statementId())) {
+                        String expect = switch (d.iteration()) {
+                            case 0 -> "<m:getName>";
+                            case 1 -> "<f:name>";
+                            default -> "myConsumer.name";
+                        };
+                        assertEquals(expect, d.currentValue().toString());
+                        int expectNne = d.iteration() <= 1 ? Level.DELAY : MultiLevel.NULLABLE;
+                        assertEquals(expectNne, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                    }
+                    if ("1".equals(d.statementId()) || "2".equals(d.statementId())) {
+                        String expect = d.iteration() <= 1 ? "<m:getName>" : "myConsumer.name";
+                        assertEquals(expect, d.currentValue().toString());
+                        int expectNne = d.iteration() <= 1 ? Level.DELAY : MultiLevel.NULLABLE;
+                        assertEquals(expectNne, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                    }
+                }
+                if (d.variable() instanceof FieldReference fr && "name".equals(fr.fieldInfo.name)) {
+                    assertFalse(fr.scopeIsThis());
+                    assertEquals("myConsumer", fr.scope.toString());
+
+                    if ("0".equals(d.statementId())) {
+                        String expect = switch (d.iteration()) {
+                            case 0 -> "<m:getName>";
+                            case 1 -> "<f:name>";
+                            default -> "nullable instance type String";
+                        };
+                        assertEquals(expect, d.currentValue().toString());
+                    }
+
+                    int expectNne = d.iteration() <= 1 ? Level.DELAY : MultiLevel.NULLABLE;
+                    assertEquals(expectNne, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION),
+                            "Statement "+d.statementId());
+                }
+                if (d.variable() instanceof ReturnVariable) {
+                    if ("2".equals(d.statementId())) {
+                        String expect = d.iteration() <= 1 ? "<m:getName>" : "myConsumer.name";
+                        assertEquals(expect, d.currentValue().toString());
+                        int imm = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EFFECTIVELY_E2IMMUTABLE;
+                        assertEquals(imm, d.getProperty(VariableProperty.IMMUTABLE));
+                        int expectNne = d.iteration() <= 1 ? Level.DELAY : MultiLevel.NULLABLE;
+                        assertEquals(expectNne, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
+                    }
+                }
+            }
+        };
+
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("forEach".equals(d.methodInfo().name)) {
+                if (d.iteration() <= 1) {
+                    assertNull(d.methodAnalysis().getSingleReturnValue());
+                } else {
+                    assertEquals("", d.methodAnalysis().getSingleReturnValue().toString());
+                }
+            }
+        };
+
+        TypeContext typeContext = testClass("PropagateModification_8", 2, 1,
+                new DebugConfiguration.Builder()
+                        .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        .build());
+        TypeInfo classWithConsumer = typeContext.getFullyQualified(
+                "org.e2immu.analyser.testexample.PropagateModification_8.ClassWithConsumer", true);
+        MethodInfo accept = classWithConsumer.findUniqueMethod("abstractAccept", 1);
+        assertTrue(accept.isAbstract());
+        assertEquals(Level.TRUE, accept.getAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
+        ParameterInfo p0 = accept.methodInspection.get().getParameters().get(0);
+        ParameterAnalysis p0Ana = p0.parameterAnalysis.get();
+
+        AnnotationExpression ae = p0.getInspection().getAnnotations().get(0);
+        assertFalse(ae.e2ImmuAnnotationParameters().contract()); // not explicitly contracted, acceptVerifyAsContracted
+        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, p0Ana.getProperty(VariableProperty.NOT_NULL_PARAMETER));
     }
 
     @Test

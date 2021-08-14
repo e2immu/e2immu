@@ -281,7 +281,7 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
 
             // dynamic type annotations: @E1Immutable, @E1Container, @E2Immutable, @E2Container
             int typeImmutable = typeImmutable();
-            int fieldImmutable = super.getProperty(VariableProperty.EXTERNAL_IMMUTABLE);
+            int fieldImmutable = getProperty(VariableProperty.EXTERNAL_IMMUTABLE);
             if (MultiLevel.isBetterImmutable(fieldImmutable, typeImmutable)) {
                 doImmutableContainer(e2ImmuAnnotationExpressions, fieldImmutable, true);
             }

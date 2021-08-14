@@ -1,3 +1,4 @@
+
 /*
  * e2immu: a static code analyser for effective and eventual immutability
  * Copyright 2020-2021, Bart Naudts, https://www.e2immu.org
@@ -22,32 +23,41 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.Map;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class Test_00_Basics_19 extends CommonTestRunner {
+public class Test_00_Basics_19_withAPI extends CommonTestRunner {
 
-    public Test_00_Basics_19() {
-        super(false);
+    public Test_00_Basics_19_withAPI() {
+        super(true);
     }
 
     @Test
     public void test() throws IOException {
 
         TypeMapVisitor typeMapVisitor = typeMap -> {
-            TypeInfo map  = typeMap.get(Map.class);
+            TypeInfo map = typeMap.get(Map.class);
             MethodInfo put = map.findUniqueMethod("put", 2);
             ParameterInfo put0Key = put.methodInspection.get().getParameters().get(0);
             ParameterAnalysis put0KeyAnalysis = put0Key.parameterAnalysis.get();
 
             // unbound parameter type, so @NotModified by default
-            assertEquals(Level.TRUE, put0KeyAnalysis.getProperty(VariableProperty.MODIFIED_VARIABLE));
-            assertEquals(MultiLevel.NULLABLE, put0KeyAnalysis.getProperty(VariableProperty.NOT_NULL_PARAMETER));
+            assertEquals(Level.FALSE, put0KeyAnalysis.getProperty(VariableProperty.MODIFIED_VARIABLE));
+            assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, put0KeyAnalysis.getProperty(VariableProperty.NOT_NULL_PARAMETER));
             assertEquals(Level.FALSE, put0KeyAnalysis.getProperty(VariableProperty.PROPAGATE_MODIFICATION));
             assertEquals(MultiLevel.MUTABLE, put0KeyAnalysis.getProperty(VariableProperty.IMMUTABLE));
 
             // no idea if DEP_1 or DEP_2, but INDEPENDENT because unbound
             assertEquals(MultiLevel.INDEPENDENT, put0KeyAnalysis.getProperty(VariableProperty.INDEPENDENT_PARAMETER));
+
+            TypeInfo stream = typeMap.get(Stream.class);
+            TypeAnalysis streamAna = stream.typeAnalysis.get();
+            MethodInfo streamMap = stream.findUniqueMethod("map", 1);
+            MethodAnalysis streamMapAna = streamMap.methodAnalysis.get();
+
+            assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, streamAna.getProperty(VariableProperty.IMMUTABLE));
+            assertEquals(Level.FALSE, streamMapAna.getProperty(VariableProperty.MODIFIED_METHOD));
         };
 
         testClass("Basics_19", 0, 0, new DebugConfiguration.Builder()
