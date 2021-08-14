@@ -1265,16 +1265,6 @@ public class FieldAnalyser extends AbstractAnalyser {
         }
 
         @Override
-        public MethodAnalyser getCurrentMethod() {
-            return null;
-        }
-
-        @Override
-        public StatementAnalyser getCurrentStatement() {
-            return null;
-        }
-
-        @Override
         public Location getLocation() {
             return new Location(fieldInfo);
         }

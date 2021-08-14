@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.parser;
 
+import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.inspector.FieldInspectionImpl;
@@ -212,17 +213,20 @@ public class Test_39_PropagateModification extends CommonTestRunner {
                     assertEquals("myConsumer", fr.scope.toString());
 
                     if ("0".equals(d.statementId())) {
-                        String expect = switch (d.iteration()) {
-                            case 0 -> "<m:getName>";
-                            case 1 -> "<f:name>";
-                            default -> "nullable instance type String";
-                        };
+                        assertTrue(d.iteration() > 0);
+                        VariableInfo vi1 = d.variableInfoContainer().getPreviousOrInitial();
+                        assertEquals("nullable instance type String", vi1.getValue().toString());
+                        assertTrue(d.variableInfoContainer().hasEvaluation());
+
+                        // still delayed value in iteration 1 because "someValueWasDelayed"
+                        // FIXME doesn't appear in EvalResult of iteration 2!
+                        String expect = d.iteration() == 1 ? "<f:name>" : "nullable instance type String";
                         assertEquals(expect, d.currentValue().toString());
                     }
 
                     int expectNne = d.iteration() <= 1 ? Level.DELAY : MultiLevel.NULLABLE;
                     assertEquals(expectNne, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION),
-                            "Statement "+d.statementId());
+                            "Statement " + d.statementId());
                 }
                 if (d.variable() instanceof ReturnVariable) {
                     if ("2".equals(d.statementId())) {
@@ -242,12 +246,12 @@ public class Test_39_PropagateModification extends CommonTestRunner {
                 if (d.iteration() <= 1) {
                     assertNull(d.methodAnalysis().getSingleReturnValue());
                 } else {
-                    assertEquals("", d.methodAnalysis().getSingleReturnValue().toString());
+                    assertEquals("myConsumer.name", d.methodAnalysis().getSingleReturnValue().toString());
                 }
             }
         };
 
-        TypeContext typeContext = testClass("PropagateModification_8", 2, 1,
+        TypeContext typeContext = testClass("PropagateModification_8", 1, 0,
                 new DebugConfiguration.Builder()
                         .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                         .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
@@ -257,13 +261,15 @@ public class Test_39_PropagateModification extends CommonTestRunner {
                 "org.e2immu.analyser.testexample.PropagateModification_8.ClassWithConsumer", true);
         MethodInfo accept = classWithConsumer.findUniqueMethod("abstractAccept", 1);
         assertTrue(accept.isAbstract());
-        assertEquals(Level.TRUE, accept.getAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
+        assertEquals(Level.FALSE, accept.getAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
+
         ParameterInfo p0 = accept.methodInspection.get().getParameters().get(0);
         ParameterAnalysis p0Ana = p0.parameterAnalysis.get();
 
         AnnotationExpression ae = p0.getInspection().getAnnotations().get(0);
         assertFalse(ae.e2ImmuAnnotationParameters().contract()); // not explicitly contracted, acceptVerifyAsContracted
         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, p0Ana.getProperty(VariableProperty.NOT_NULL_PARAMETER));
+        assertEquals(Level.FALSE, p0Ana.getProperty(VariableProperty.MODIFIED_VARIABLE));
     }
 
     @Test

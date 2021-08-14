@@ -351,9 +351,10 @@ public class InlinedMethod extends ElementImpl implements Expression {
             return evaluationContext.getCurrentMethod();
         }
 
+        // important for this to be not null (e.g. PropagateModification_8, it 2 statement 0 of forEach)
         @Override
         public StatementAnalyser getCurrentStatement() {
-            return null;
+            return evaluationContext.getCurrentStatement();
         }
 
         @Override

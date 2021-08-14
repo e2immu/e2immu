@@ -176,8 +176,12 @@ public record VariableExpression(Variable variable, String name) implements Expr
 
         builder.setExpression(adjustedScope);
 
-        // no statement analyser... we're in the shallow analyser
-        if (evaluationContext.getCurrentStatement() == null) return builder.build();
+        // no statement analyser... no need to compute all these properties
+        // mind that all evaluation contexts deriving from the one in StatementAnalyser must have
+        // non-null current statement!! (see e.g. InlinedMethod)
+        if (evaluationContext.getCurrentStatement() == null) {
+            return builder.build();
+        }
 
         if (variable instanceof This thisVar && !thisVar.typeInfo.equals(evaluationContext.getCurrentType())) {
             builder.markRead(evaluationContext.currentThis());
