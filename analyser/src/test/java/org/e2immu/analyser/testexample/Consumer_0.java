@@ -14,28 +14,32 @@
 
 package org.e2immu.analyser.testexample;
 
-import org.e2immu.annotation.NotModified;
-import org.e2immu.annotation.PropagateModification;
+import org.e2immu.annotation.*;
 
-public class PropagateModification_0 {
+@E2Container // computed
+public class ForEachMethod_0<S> {
 
+    // implicitly: @E1Immutable (not @Container, @Modified on parameter t)
     interface MyConsumer<T> {
+        @Modified
         void accept(T t);
     }
 
-    private final String string;
+    // of implicitly immutable type
+    private final S s;
 
-    public PropagateModification_0(String in) {
-        this.string = in;
+    public ForEachMethod_0(@Dependent1 S in) {
+        this.s = in;
+    }
+
+    // Note that @IgnoreModifications is ALWAYS contracted!
+    @NotModified
+    public void forEach(@IgnoreModifications @Dependent2 MyConsumer<S> myConsumer) {
+        myConsumer.accept(s);
     }
 
     @NotModified
-    public void forEach(@NotModified @PropagateModification MyConsumer<String> myConsumer) {
-        myConsumer.accept(string);
-    }
-
-    @NotModified
-    public void visit(@NotModified @PropagateModification MyConsumer<String> myConsumer) {
+    public void visit(@NotModified @Dependent2 MyConsumer<S> myConsumer) {
         forEach(myConsumer);
     }
 }

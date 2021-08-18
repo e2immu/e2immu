@@ -14,47 +14,40 @@
 
 package org.e2immu.analyser.testexample;
 
-import org.e2immu.annotation.Modified;
-import org.e2immu.annotation.NotModified;
-import org.e2immu.annotation.Nullable;
-import org.e2immu.annotation.PropagateModification;
+import org.e2immu.annotation.*;
 
-// variant on _2, but now without the @PropagateModification on accept (explicit @Modified)
-public class PropagateModification_9 {
+/*
+change wrt ForEachMethod_0: interface is now abstract class, with field
+ */
+@E2Container
+public class ForEachMethod_1<S> {
 
+    @E1Container
     abstract static class ClassWithConsumer<T> {
         private final String name;
-        private int countCalls;
 
         public ClassWithConsumer(String name) {
             this.name = name;
         }
 
-        // in test1 we demand @NotNull, here we do not
         @Modified
-        abstract void accept(T t);
+        abstract void accept(@NotNull T t);
 
         public String getName() {
             return name;
         }
-
-        public int increment() {
-            return countCalls++;
-        }
     }
 
-    @Nullable
-    private final String string;
+    @NotNull
+    private final S s;
 
-    public PropagateModification_9(String in) {
-        this.string = in;
+    public ForEachMethod_1(@NotNull S in) {
+        this.s = in;
     }
 
     @NotModified
-    public void forEach(@Modified ClassWithConsumer<String> myConsumer) {
+    public void forEach(@IgnoreModifications @Dependent2 ClassWithConsumer<S> myConsumer) {
         System.out.println("Consumer is " + myConsumer.getName());
-        if (myConsumer.increment() % 2 == 0) {
-            myConsumer.accept(string);
-        }
+        myConsumer.accept(s);
     }
 }

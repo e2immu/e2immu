@@ -14,9 +14,9 @@
 
 package org.e2immu.analyser.testexample;
 
+import org.e2immu.annotation.Dependent1;
 import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.Independent;
-import org.e2immu.annotation.PropagateModification;
 
 /*
 this container holds a single object (a supplier) in an immutable way.
@@ -25,7 +25,6 @@ The type of the supplier and its actions are outside the scope.
 @E2Container
 public class PropagateModification_4<T> {
 
-    @PropagateModification
     private final MySupplier<T> mySupplier;
 
     interface MySupplier<T> {
@@ -33,10 +32,11 @@ public class PropagateModification_4<T> {
     }
 
     @Independent
-    public PropagateModification_4(@PropagateModification MySupplier<T> mySupplier) {
+    public PropagateModification_4(MySupplier<T> mySupplier) {
         this.mySupplier = mySupplier;
     }
 
+    @Dependent1
     public T get() {
         return mySupplier.get();
     }

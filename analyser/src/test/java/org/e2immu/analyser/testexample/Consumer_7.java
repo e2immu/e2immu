@@ -19,17 +19,17 @@ import org.e2immu.annotation.*;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
-import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 /*
-situation: consumer applied to non-parameter of implicitly immutable type
+Different variant on previous tests.
+
  */
-public class AbstractTypeAsParameter_0 {
+public class ForEachMethod_7 {
 
     interface MyConsumer<T> {
-        // UNMARKED
-        void accept(T t); // PARAMETER T unmarked
+        @Modified
+        void accept(T t); // parameter t implicitly @Modified
     }
 
     @E1Container
@@ -41,8 +41,8 @@ public class AbstractTypeAsParameter_0 {
             set.add(x);
         }
 
-        @NotModified // because X is implicitly immutable, the parameter of accept cannot touch it wrt MySet
-        public void forEach(@NotModified @PropagateModification MyConsumer<X> consumer) { // because forEach calls an unmarked method on consumer (and no other modifying method)
+        @NotModified
+        public void forEach(@IgnoreModifications @Dependent2 MyConsumer<X> consumer) {
             for (X x : set) consumer.accept(x);
         }
 

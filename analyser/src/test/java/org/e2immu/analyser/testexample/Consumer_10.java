@@ -55,11 +55,11 @@ public class AbstractTypeAsParameter_02 {
         }
     }
 
-    private static void print(@NotModified1 Configuration configuration) {
+    private static void print(@NotModified Configuration configuration) {
         configuration.forEach(e -> System.out.println(e.getKey() + ": " + e.getValue()));
     }
 
-    private static void change(@Modified1 Configuration configuration) {
+    private static void change(@Modified Configuration configuration) {
         configuration.forEach(e -> e.setValue(e.getValue() + "!"));
     }
 

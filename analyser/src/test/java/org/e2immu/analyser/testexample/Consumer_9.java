@@ -19,35 +19,40 @@ import org.e2immu.annotation.*;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Consumer;
-import java.util.stream.Stream;
 
 /*
 Situation: consumer applied to a non-implicitly immutable field.
 
 This type is not @E2Immutable because doSomething is not @Independent.
 The consumer remains @NotModified, because it is not applied to a parameter.
+FIXME how do we see that? there could be other reasons for doSomething to be @Modified
  */
 
 @E1Container
-public class AbstractTypeAsParameter_3 {
+public class ForEachMethod_9 {
 
+    // not implicitly immutable
     private final Set<Integer> integers;
 
     @Independent
-    public AbstractTypeAsParameter_3(@NotModified Set<Integer> set) {
+    public ForEachMethod_9(@NotModified Set<Integer> set) {
         integers = new HashSet<>(set);
     }
 
-    @NotModified
-    public void doSomething(@NotModified @Dependent Consumer<Set<Integer>> consumer) {
+    @Modified
+    public void doSomething(@IgnoreModifications @Dependent Consumer<Set<Integer>> consumer) {
         consumer.accept(integers);
     }
 
-    public static void enrichWith27(@Modified AbstractTypeAsParameter_3 in) {
+    public static void enrichWith27(@Modified ForEachMethod_9 in) {
         in.doSomething(set -> set.add(27)); // modifying lambda modifies in
     }
 
-    public static void print(@NotModified AbstractTypeAsParameter_3 in) {
+    public static void print(@NotModified ForEachMethod_9 in) {
         in.doSomething(System.out::println); // non-modifying method reference -> in not modified
+    }
+
+    public int size() {
+        return integers.size();
     }
 }

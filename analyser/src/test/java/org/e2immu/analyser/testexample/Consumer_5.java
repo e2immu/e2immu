@@ -14,35 +14,31 @@
 
 package org.e2immu.analyser.testexample;
 
-import org.e2immu.annotation.NotModified;
-import org.e2immu.annotation.PropagateModification;
-
-import java.util.Collection;
+import org.e2immu.annotation.*;
 
 /*
-interesting issue
-
-acceptAll is not an abstract method, but it only makes use of abstract methods.
-As a consequence, it also qualifies for the @PropagateModification rule.
+Exact copy of ForEachMethod_0, but with other names.
  */
-public class PropagateModification_6 {
+@E2Container // computed
+public class ForEachMethod_5<S> {
 
-    interface MyConsumer<T> {
-        void accept(T t);
-
-        default void acceptAll(Collection<? extends T> collection) {
-            collection.forEach(this::accept);
-        }
+    // implicitly: @E1Container
+    interface Set<T> {
+        @Modified
+        void add(@NotModified T t);
     }
 
-    private final Collection<String> strings;
+    // of implicitly immutable type
+    private final S s;
 
-    public PropagateModification_6(Collection<String> in) {
-        this.strings = in;
+    public ForEachMethod_5(@Dependent1 S in) {
+        this.s = in;
     }
 
+    // set is @Modified, the normal way of working.
     @NotModified
-    public void forEach(@NotModified @PropagateModification MyConsumer<String> myConsumer) {
-        myConsumer.acceptAll(strings);
+    public void addToSet(@Modified @Dependent2 Set<S> set) {
+        set.add(s);
     }
+
 }

@@ -14,41 +14,44 @@
 
 package org.e2immu.analyser.testexample;
 
+import org.e2immu.annotation.Dependent2;
 import org.e2immu.annotation.Modified;
 import org.e2immu.annotation.NotModified;
-import org.e2immu.annotation.PropagateModification;
+import org.e2immu.annotation.NotNull1;
 
-public class PropagateModification_3 {
+import java.util.Collection;
 
-    abstract static class ClassWithConsumer<T> {
-        private final String name;
-        private int countCalls;
+/*
+interesting issue
 
-        public ClassWithConsumer(String name) {
-            this.name = name;
-        }
+acceptAll is not an abstract method, but it only makes use of abstract methods.
+As a consequence, it also qualifies for the @Dependent2 rule.
 
-        @PropagateModification
-        abstract void accept(T t);
+We assume that Collection.forEach has an @IgnoreModifications on its parameter.
+ */
+public class ForEachMethod_4<S> {
 
-        public String getName() {
-            return name;
-        }
+    interface MyConsumer<T> {
+        // contracted
+        @Modified
+        void accept(T t);
 
-        public int increment() {
-            return countCalls++;
+        // not contracted
+        @NotModified
+        default void acceptAll(@NotModified @NotNull1 @Dependent2 Collection<? extends T> collection) {
+            collection.forEach(this::accept);
         }
     }
 
-    private final String string;
+    @NotNull1
+    private final Collection<S> strings;
 
-    public PropagateModification_3(String in) {
-        this.string = in;
+    public ForEachMethod_4(@NotNull1 Collection<S> in) {
+        this.strings = in;
     }
 
-    // in this example, the abstract method is not called, so there's no need for @PropagateModification
     @NotModified
-    public String forEach(@Modified ClassWithConsumer<String> myConsumer) {
-        return string + ": Consumer is " + myConsumer.getName() + ", count " + myConsumer.increment();
+    public void forEach(@NotModified @Dependent2 MyConsumer<S> myConsumer) {
+        myConsumer.acceptAll(strings);
     }
 }

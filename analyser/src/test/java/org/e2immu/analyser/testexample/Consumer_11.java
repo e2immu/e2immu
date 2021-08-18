@@ -90,15 +90,15 @@ public class AbstractTypeAsParameter_01 {
         }
     }
 
-    public static void print(@NotModified @NotModified1 MyList<StringBuilder> c) {
+    public static void print(@NotModified MyList<StringBuilder> c) {
         c.forEach(System.out::println); // nan-modifying method implies no modification on c
     }
 
-    public static void addNewLine(@NotModified @Modified1 MyList<StringBuilder> c) {
+    public static void addNewLine(@Modified MyList<StringBuilder> c) {
         c.forEach(sb -> sb.append("\n")); // parameter-modifying lambda propagates modification to c
     }
 
-    public static void replace(@Modified @NotModified1 MyList<StringBuilder> c) {
+    public static void replace(@Modified MyList<StringBuilder> c) {
         c.forEach(sb -> c.add(new StringBuilder("x" + sb))); // object-modifying lambda changing c but not its subgraph
     }
 

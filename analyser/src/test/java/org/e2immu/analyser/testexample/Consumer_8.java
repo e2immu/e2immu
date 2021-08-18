@@ -19,25 +19,30 @@ import org.e2immu.annotation.*;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
-import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 /*
-situation: consumer applied to non-parameter of implicitly immutable type
- */
-public class AbstractTypeAsParameter_4 {
+Different variant on previous tests.
 
-    @E2Container
+ */
+public class ForEachMethod_8 {
+
+    interface MyConsumer<T> {
+        @Modified
+        void accept(T t); // parameter t implicitly @Modified
+    }
+
+    @E1Container
     static class MySet<X> {
         private final Set<X> set = new HashSet<>();
 
-        @Independent
-        public MySet(X x) {
+        @Modified
+        public void add(X x) {
             set.add(x);
         }
 
         @NotModified
-        public void forEach(@NotModified1 Consumer<X> consumer) {
+        public void forEach(@Container @Dependent2 MyConsumer<X> consumer) {
             for (X x : set) consumer.accept(x);
         }
 
@@ -92,6 +97,6 @@ public class AbstractTypeAsParameter_4 {
     }
 
     public static void incrementAll(@NotModified MySet<Y> ySet) {
-        ySet.forEach(Y::increment); // ERROR: not allowed to use modifying methods as argument
+        ySet.forEach(Y::increment); // ERROR: now allowed using modifying methods as argument
     }
 }

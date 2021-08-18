@@ -14,14 +14,17 @@
 
 package org.e2immu.analyser.testexample;
 
+import org.e2immu.annotation.Container;
 import org.e2immu.annotation.Modified;
 import org.e2immu.annotation.NotModified;
-import org.e2immu.annotation.Nullable;
-import org.e2immu.annotation.PropagateModification;
 
-// variant on _2, but now without the @PropagateModification on accept (explicit @NotModified)
-public class PropagateModification_10 {
+/*
+change wrt ForEachMethod_0..2: not calling the abstract method,
+so we have no @Dependent2.
+ */
+public class ForEachMethod_3<S> {
 
+    @Container
     abstract static class ClassWithConsumer<T> {
         private final String name;
         private int countCalls;
@@ -30,31 +33,33 @@ public class PropagateModification_10 {
             this.name = name;
         }
 
-        // in test1 we demand @NotNull, here we do not
-        @NotModified
+        @Modified
         abstract void accept(T t);
 
+        @NotModified
         public String getName() {
             return name;
         }
 
+        @Modified
         public int increment() {
             return countCalls++;
         }
     }
 
-    @Nullable
-    private final String string;
+    private final S s;
 
-    public PropagateModification_10(String in) {
-        this.string = in;
+    public ForEachMethod_3(S in) {
+        this.s = in;
     }
 
+    /*
+     In this example, the abstract method is not called, so there's no need for @Dependent2.
+     The modifying method is called, however, so myConsumer is @Modified.
+     */
+
     @NotModified
-    public void forEach(@Modified ClassWithConsumer<String> myConsumer) {
-        System.out.println("Consumer is " + myConsumer.getName());
-        if (myConsumer.increment() % 2 == 0) {
-            myConsumer.accept(string);
-        }
+    public String forEach(@Modified ClassWithConsumer<S> myConsumer) {
+        return s + ": Consumer is " + myConsumer.getName() + ", count " + myConsumer.increment();
     }
 }

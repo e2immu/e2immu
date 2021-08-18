@@ -14,42 +14,51 @@
 
 package org.e2immu.analyser.testexample;
 
-import org.e2immu.annotation.E2Container;
-import org.e2immu.annotation.Modified;
-import org.e2immu.annotation.NotModified;
-import org.e2immu.annotation.NotNull;
+import org.e2immu.annotation.*;
 
-// almost exact copy of 1, but now without the @PropagateModification on accept
-public class PropagateModification_8 {
+/*
+change wrt ForEachMethod_1: the abstract class's fields are modifiable,
+which allows for other types of modification.
+The method forEach is now @Modified because of the increment() call.
+Other change is the @Nullable on field s.
+ */
+public class ForEachMethod_2<S> {
 
-    @E2Container
+    @Container
     abstract static class ClassWithConsumer<T> {
         private final String name;
+        private int countCalls;
 
         public ClassWithConsumer(String name) {
             this.name = name;
         }
 
-        // implicitly @NotModified, because CWC is not a @FunctionalInterface, and it is @E2Immutable after some iterations
-        abstract void abstractAccept(@NotNull T t);
+        @Modified
+        abstract void accept(T t); // implicit: @NotModified, because @Container
 
+        @NotModified
         public String getName() {
             return name;
         }
+
+        @Modified
+        public int increment() {
+            return countCalls++;
+        }
     }
 
-    @NotNull
-    private final String string;
+    @Nullable
+    private final S s;
 
-    public PropagateModification_8(@NotNull String in) {
-        this.string = in;
+    public ForEachMethod_2(S in) {
+        this.s = in;
     }
 
-    // do not write @NotModified on myConsumer, because the type is @E2Container (implicit!)
     @NotModified
-    public String forEach(ClassWithConsumer<String> myConsumer) {
-        String n = myConsumer.getName();
-        myConsumer.abstractAccept(string);
-        return n;
+    public void forEach(@Modified @Dependent2 ClassWithConsumer<S> myConsumer) {
+        System.out.println("Consumer is " + myConsumer.getName());
+        if (myConsumer.increment() % 2 == 0) {
+            myConsumer.accept(s);
+        }
     }
 }
