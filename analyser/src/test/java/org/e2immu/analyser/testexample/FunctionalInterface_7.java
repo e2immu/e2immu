@@ -23,16 +23,17 @@ import java.util.Objects;
 import java.util.function.Function;
 
 /*
-Situation: consumer applied to other parameter. we assume the worst: the abstract method is modifying.
-In this way, we indicate that the abstract method is applied to the other parameter, rather than a field
-or a variable derived from it.
+Situation: consumer applied to other parameter.
 
-Important: because we have only one means of "linking" the first parameter to the second, applyToString
-cannot be analysed correctly: its first parameter remains modifying.
-Given our predilection for containers, we don't think this is a too serious a problem.
+It is important to realize that Y is not an implicitly immutable type in FunctionalInterface_7.
+Neither does FunctionalInterface_7 have fields.
+So there is no @Dependent1; and applyToParameter cannot propagate modifications.
+It must make parameter Y @Modified.
+
+As an unfortunate consequence, applyGetI incorrectly claims that it modifies its parameter.
  */
 
-public class AbstractTypeAsParameter_1 {
+public class FunctionalInterface_7 {
 
     @Container
     static class Y {
@@ -65,8 +66,9 @@ public class AbstractTypeAsParameter_1 {
         }
     }
 
+    // because there are no fields!
     @NotModified
-    public static int applyToParameter(@Modified Y y, @NotModified Function<Y, Integer> f) {
+    public static int applyToParameter(@Modified Y y, @Modified Function<Y, Integer> f) {
         return f.apply(y);
     }
 
@@ -76,7 +78,7 @@ public class AbstractTypeAsParameter_1 {
     }
 
     @NotModified
-    public static int applyToString(@Modified Y y) {
+    public static int applyGetI(@Modified Y y) {
         return applyToParameter(y, Y::getI);
     }
 }

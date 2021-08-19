@@ -20,7 +20,7 @@ import org.e2immu.annotation.*;
 Exact copy of ForEachMethod_0, but with other names.
  */
 @E2Container // computed
-public class ForEachMethod_5<S> {
+public class Consumer_5<S> {
 
     // implicitly: @E1Container
     interface Set<T> {
@@ -31,7 +31,7 @@ public class ForEachMethod_5<S> {
     // of implicitly immutable type
     private final S s;
 
-    public ForEachMethod_5(@Dependent1 S in) {
+    public Consumer_5(@Dependent1 S in) {
         this.s = in;
     }
 

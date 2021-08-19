@@ -1201,9 +1201,6 @@ public class FieldAnalyser extends AbstractAnalyser {
         check(E1Container.class, e2.e1Container);
         check(E2Container.class, e2.e2Container);
 
-        // checks for dynamic properties of functional interface types
-        check(NotModified1.class, e2.notModified1);
-
         // opposites
         check(org.e2immu.annotation.Variable.class, e2.variableField);
         check(Modified.class, e2.modified);

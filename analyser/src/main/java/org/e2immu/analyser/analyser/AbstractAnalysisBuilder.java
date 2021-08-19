@@ -107,11 +107,6 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
         }
     }
 
-    protected void doNotModified1(E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
-        // @NotModified1
-        annotations.put(e2ImmuAnnotationExpressions.notModified1, getProperty(VariableProperty.NOT_MODIFIED_1) == Level.TRUE);
-    }
-
     protected void doImmutableContainer(E2ImmuAnnotationExpressions e2, int immutable, boolean betterThanFormal) {
         int container = getProperty(VariableProperty.CONTAINER);
         String eventualFieldNames;
@@ -183,15 +178,19 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
         AnnotationExpression testMark = null;
 
         VariableProperty modified = analyserIdentification == Analyser.AnalyserIdentification.FIELD ||
-                analyserIdentification == Analyser.AnalyserIdentification.PARAMETER ? VariableProperty.MODIFIED_VARIABLE : VariableProperty.MODIFIED_METHOD;
-        VariableProperty propagateModification = analyserIdentification == Analyser.AnalyserIdentification.FIELD ?
-                VariableProperty.EXTERNAL_PROPAGATE_MOD : VariableProperty.PROPAGATE_MODIFICATION;
+                analyserIdentification == Analyser.AnalyserIdentification.PARAMETER ? VariableProperty.MODIFIED_VARIABLE
+                : VariableProperty.MODIFIED_METHOD;
         VariableProperty independent = analyserIdentification == Analyser.AnalyserIdentification.PARAMETER ?
                 VariableProperty.INDEPENDENT_PARAMETER : VariableProperty.INDEPENDENT;
 
         for (AnnotationExpression annotationExpression : annotations) {
             AnnotationParameters parameters = annotationExpression.e2ImmuAnnotationParameters();
-            if (parameters != null && (parameters.contract() || acceptVerifyAsContracted && !parameters.absent())) {
+            if (parameters != null && (parameters.contract()
+                    || acceptVerifyAsContracted && !parameters.absent()
+
+                    // exception: @Container on a parameter is always restrictive/contracted
+                    || analyserIdentification == Analyser.AnalyserIdentification.PARAMETER &&
+                    e2ImmuAnnotationExpressions.container.typeInfo() == annotationExpression.typeInfo())) {
                 int trueFalse = parameters.absent() ? Level.FALSE : Level.TRUE;
                 int falseTrue = !parameters.absent() ? Level.FALSE : Level.TRUE;
 
@@ -264,12 +263,8 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
                     log(org.e2immu.analyser.util.Logger.LogTarget.ANALYSER, "Ignoring informative annotation @Linked");
                 } else if (e2ImmuAnnotationExpressions.linked1.typeInfo() == t) {
                     log(org.e2immu.analyser.util.Logger.LogTarget.ANALYSER, "Ignoring informative annotation @Linked1");
-                } else if (e2ImmuAnnotationExpressions.notModified1.typeInfo() == t) {
-                    setProperty(VariableProperty.NOT_MODIFIED_1, trueFalse);
                 } else if (e2ImmuAnnotationExpressions.allowsInterrupt.typeInfo() == t) {
                     log(org.e2immu.analyser.util.Logger.LogTarget.ANALYSER, "@AllowsInterrupt caught earlier on");
-                } else if (e2ImmuAnnotationExpressions.propagateModification.typeInfo() == t) {
-                    setProperty(propagateModification, trueFalse);
                 } else {
                     throw new UnsupportedOperationException("? " + t.fullyQualifiedName);
                 }

@@ -24,25 +24,15 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /*
-situation: consumer applied to field (non-parameter) of implicitly immutable type
+In Road to Immutability.
  */
-public class AbstractTypeAsParameter_01 {
+public class Consumer_11 {
 
     interface MyConsumer<T> {
-        // UNMARKED
-        void accept(T t); // PARAMETER T unmarked
+        @Modified
+        void accept(T t);
     }
 
-    /*
-    all the @Dependent and @Dependent1 in this type could be implicitly present, following the rule that
-    parameters of types that are
-     (1) present as parameters to constructors or modifying methods
-     (2) are also exposed (via return or abstract interface method in parameter),
-    at the base level or at the higher level (via return, e.g. Stream<T> which itself does this))
-    are stored somewhere in the class, implying the dependence.
-
-    in other words, while T is implicitly immutable, it is a type that implies content dependency
-     */
     @E1Container
     static class MyList<T> {
 
@@ -53,16 +43,16 @@ public class AbstractTypeAsParameter_01 {
             list = new ArrayList<>();
         }
 
-        @Independent // implies @Independent on the parameter(s)
-        public MyList(@Dependent1 Collection<? extends T> collection) { // inherited from ArrayList constructor
+        @Independent
+        public MyList(@Dependent2 Collection<? extends T> collection) { // inherited from ArrayList constructor
             list = new ArrayList<>(collection);
         }
 
         @Independent
-        public MyList(@Dependent1 List<? extends T> list) {
+        public MyList(@Dependent2 List<? extends T> list) {
             this.list = new ArrayList<>();
             for (T t : list) { // t tied to list
-                add(t);  // implies @Dependent on t
+                add(t);  // and t tied to this.list, so implies @Dependent2 on list
             }
         }
 
@@ -72,14 +62,14 @@ public class AbstractTypeAsParameter_01 {
         }
 
         @Modified
-        public void add(@Dependent T t) { // @Dependent means @NM + @Linked to fields
+        public void add(@Dependent1 T t) { // @Dependent means @NM + @Linked to fields
             list.add(t);
         }
 
-        @NotModified // because T is implicitly immutable, the parameter of accept cannot touch it wrt Circular
-        public void forEach(@NotModified @PropagateModification @Dependent1 MyConsumer<T> consumer) { // because forEach calls an unmarked method on consumer (and no other modifying method)
+        @NotModified
+        public void forEach(@IgnoreModifications @Dependent2 MyConsumer<T> consumer) {
             for (T t : list) { // t tied to list
-                consumer.accept(t);
+                consumer.accept(t); // and tied to consumer, so @Dep2
             }
         }
 
@@ -102,6 +92,7 @@ public class AbstractTypeAsParameter_01 {
         c.forEach(sb -> c.add(new StringBuilder("x" + sb))); // object-modifying lambda changing c but not its subgraph
     }
 
+    // !! This one is doable, but oneMore2 is not without additional information
     public static String direct(@Modified StringBuilder sb1, @Modified StringBuilder sb2, @Modified StringBuilder sb3) {
         List<StringBuilder> list = new ArrayList<>();
         list.add(sb1); // content links sb1 to list at the 1 level (@Dependent)
@@ -122,7 +113,9 @@ public class AbstractTypeAsParameter_01 {
         return list.stream().map(Object::toString).collect(Collectors.joining());
     }
 
-    public static String oneMore2(@Modified StringBuilder sb1, @Modified StringBuilder sb2, @Modified StringBuilder sb3) {
+    // IMPROVE without something like @Modified1, we cannot see the modification on sb1. There's nothing to distinguish the
+    // type of modification.
+    public static String oneMore2(@NotModified StringBuilder sb1, @NotModified StringBuilder sb2, @NotModified StringBuilder sb3) {
         MyList<StringBuilder> list = new MyList<>();
         list.add(sb1); // content links sb1 to list
         list.add(sb2); // ""

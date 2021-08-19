@@ -317,9 +317,6 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
 
             // @NotNull
             doNotNull(e2ImmuAnnotationExpressions, getProperty(VariableProperty.NOT_NULL_EXPRESSION));
-
-            // dynamic type annotation for types with abstract methods: @NotModified1
-            doNotModified1(e2ImmuAnnotationExpressions);
         }
 
         private boolean allowIndependentOnMethod() {

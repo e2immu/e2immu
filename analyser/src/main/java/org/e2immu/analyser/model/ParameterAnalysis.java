@@ -129,7 +129,7 @@ public interface ParameterAnalysis extends Analysis {
                 if (cd == Level.DELAY || i == Level.DELAY) return Level.DELAY;
                 return MultiLevel.bestNotNull(cd, i);
 
-            case PROPAGATE_MODIFICATION:
+            case PROPAGATE_MODIFICATION: {
                 int pm = getPropertyFromMapDelayWhenAbsent(PROPAGATE_MODIFICATION);
                 if (pm != Level.DELAY) return pm; // done, or contracted
                 int cpm = getParameterProperty(analysisProvider, parameterInfo, CONTEXT_PROPAGATE_MOD);
@@ -137,18 +137,22 @@ public interface ParameterAnalysis extends Analysis {
                 if (cpm == Level.TRUE || epm == Level.TRUE) return Level.TRUE;
                 if (cpm == Level.DELAY || epm == Level.DELAY) return Level.DELAY;
                 return Level.FALSE;
-
-            case MODIFIED_VARIABLE:
+            }
+            case MODIFIED_VARIABLE: {
+                // if the type properties are contracted, and we've decided on @Container, then the parameter is @NotModified
+                // if the method is not abstract and @Container is true, then we must have @NotModified
+                // but if the method is abstract, and @Container is to be computed, the default is @Modified
                 if (!parameterInfo.owner.isPrivate() && analysisProvider.getTypeAnalysis(parameterInfo.owner.typeInfo)
-                        .getProperty(VariableProperty.CONTAINER) == Level.TRUE) {
+                        .getProperty(VariableProperty.CONTAINER) == Level.TRUE
+                        && (!parameterInfo.owner.isAbstract() || parameterInfo.owner.typeInfo.typePropertiesAreContracted())) {
                     return Level.FALSE;
                 }
                 int mv = getPropertyFromMapDelayWhenAbsent(MODIFIED_VARIABLE);
                 if (mv != Level.DELAY) return mv;
                 if (parameterInfo.owner.isAbstract()) {
-                    int mm = analysisProvider.getMethodAnalysis(parameterInfo.owner)
-                            .getMethodProperty(analysisProvider, MODIFIED_METHOD);
-                    if (mm == Level.DELAY) {
+                    int pm = analysisProvider.getMethodAnalysis(parameterInfo.owner).getMethodProperty(analysisProvider,
+                            PROPAGATE_MODIFICATION);
+                    if (pm == Level.TRUE) {
                         // the abstract method either has @PropagateModification, or is the abstract method
                         // in a functional interface
                         if (Primitives.isPrimitiveExcludingVoid(parameterInfo.parameterizedType)) {
@@ -158,15 +162,16 @@ public interface ParameterAnalysis extends Analysis {
                         if (parameterInfo.parameterizedType.isE2Immutable(analysisProvider)) {
                             return Level.FALSE;
                         }
-                        return Level.DELAY; // no decision for this method
+                        return Level.TRUE; // no decision for this method
                     }
+                    if (pm == Level.DELAY) return Level.DELAY; // no decision yet
                     return getParameterPropertyCheckOverrides(analysisProvider, parameterInfo, MODIFIED_VARIABLE);
                 }
                 int cm = getParameterProperty(analysisProvider, parameterInfo, CONTEXT_MODIFIED);
                 int mom = getParameterProperty(analysisProvider, parameterInfo, MODIFIED_OUTSIDE_METHOD);
                 if (cm == Level.DELAY || mom == Level.DELAY) return Level.DELAY;
                 return Math.max(cm, mom);
-
+            }
             case CONTEXT_MODIFIED:
             case MODIFIED_OUTSIDE_METHOD: {
                 if (!parameterInfo.owner.isPrivate() && analysisProvider.getTypeAnalysis(parameterInfo.owner.typeInfo)

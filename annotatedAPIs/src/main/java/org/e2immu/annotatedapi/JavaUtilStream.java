@@ -31,15 +31,19 @@ public class JavaUtilStream {
 
     public interface Collector$<T, A, R> {
         @NotNull1
+        @Modified
         Supplier<A> supplier();
 
         @NotNull
+        @Modified
         BiConsumer<A, T> accumulator();
 
         @NotNull1
+        @Modified
         BinaryOperator<A> combiner();
 
         @NotNull1
+        @Modified
         Function<A, R> finisher();
     }
 
@@ -81,33 +85,39 @@ public class JavaUtilStream {
     public interface Stream$<T> {
 
         @NotNull
-        static <T> Stream<T> empty() { return  null; }
+        static <T> Stream<T> empty() {
+            return null;
+        }
 
         @NotNull
-        static <T> Stream<T> of(@NotNull T t){ return  null; }
+        static <T> Stream<T> of(@NotNull T t) {
+            return null;
+        }
 
         @NotNull
-        static <T> Stream<T> of(@NotNull T... t){ return  null; }
+        static <T> Stream<T> of(@NotNull T... t) {
+            return null;
+        }
 
         long count();
 
         @NotNull
-        <R> Stream<R> map(@PropagateModification @NotNull Function<? super T, ? extends R> mapper);
+        <R> Stream<R> map(@Dependent2 @NotNull @IgnoreModifications Function<? super T, ? extends R> mapper);
 
         @NotNull
-        <R> Stream<R> flatMap(@PropagateModification @NotNull Function<? super T, ? extends Stream<? extends R>> mapper);
+        <R> Stream<R> flatMap(@Dependent2 @NotNull @IgnoreModifications Function<? super T, ? extends Stream<? extends R>> mapper);
 
         @NotNull
-        <R, A> R collect(@NotNull Collector<? super T, A, R> collector);
+        <R, A> R collect(@Dependent2 @NotNull @IgnoreModifications Collector<? super T, A, R> collector);
 
         @NotNull
-        Stream<T> filter(@PropagateModification @NotNull Predicate<? super T> predicate);
+        Stream<T> filter(@Dependent2 @NotNull @IgnoreModifications Predicate<? super T> predicate);
 
         @NotNull
-        IntStream mapToInt(@PropagateModification @NotNull ToIntFunction<? super T> mapper);
+        IntStream mapToInt(@Dependent2 @NotNull @IgnoreModifications ToIntFunction<? super T> mapper);
 
         @NotNull
-        Optional<T> min(@PropagateModification @NotNull Comparator<? super T> comparator);
+        Optional<T> min(@Dependent2 @NotNull Comparator<? super T> comparator);
 
         @NotNull
         Stream<T> sorted();
@@ -119,7 +129,7 @@ public class JavaUtilStream {
         Optional<T> findFirst();
 
         @NotNull
-        void forEach(@PropagateModification Consumer<? super T> action);
+        void forEach(@Dependent2 @NotNull @IgnoreModifications Consumer<? super T> action);
     }
 
 }

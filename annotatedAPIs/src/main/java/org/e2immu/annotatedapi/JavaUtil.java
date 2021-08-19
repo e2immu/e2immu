@@ -17,6 +17,7 @@ package org.e2immu.annotatedapi;
 import org.e2immu.annotation.*;
 
 import java.util.*;
+
 import java.util.function.*;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -45,7 +46,7 @@ public class JavaUtil extends AnnotatedAPI {
     // Note: we can use T instead of E (in the byte-code), since we use distinguishingName instead of fullyQualifiedName
     interface Iterator$<T> {
         @Modified
-        default void forEachRemaining(@PropagateModification Consumer<? super T> action) {
+        default void forEachRemaining(@NotNull @Dependent2 @IgnoreModifications Consumer<? super T> action) {
         }
 
         @Modified
@@ -88,7 +89,7 @@ public class JavaUtil extends AnnotatedAPI {
 
         // there is a "default forEach" in Iterable, but here we can guarantee that consumer is @NotNull1 (its
         // arguments will not be null either)
-        void forEach(@PropagateModification @NotNull1 Consumer<? super E> action) {}
+        void forEach(@Dependent2 @NotNull1 @IgnoreModifications Consumer<? super E> action) {}
 
         boolean remove$Modification$Size(int i, int j) { return i <= j && i >= j - 1; }
         boolean remove$Value$Size(int i, Object object, boolean retVal) { return i != 0 && retVal; }
@@ -134,7 +135,7 @@ public class JavaUtil extends AnnotatedAPI {
         @NotNull1
         @Dependent2
         @NotModified
-        <T> T[] toArray(@NotNull IntFunction<T[]> generator) { return null; }
+        <T> T[] toArray(@NotNull @IgnoreModifications IntFunction<T[]> generator) { return null; }
     }
 
 
@@ -408,13 +409,14 @@ public class JavaUtil extends AnnotatedAPI {
     }
 
     // again this goes against the API, but we want to raise problems when comparing with null
+    @Container
     static class Comparator$<T> {
 
         int compare$Value(T o1, T o2, int retVal) { return o1.equals(o2) || o2.equals(o1) ? 0: retVal; }
         @NotModified
         int compare(@NotModified T o1, @NotModified T o2) { return 0; }
 
-        static <U> java.util.Comparator<U> comparingInt(@NotNull ToIntFunction<? super U> keyExtractor) { return null; }
+        static <U> java.util.Comparator<U> comparingInt(@NotNull @IgnoreModifications ToIntFunction<? super U> keyExtractor) { return null; }
     }
 
     @E2Container
@@ -444,7 +446,7 @@ public class JavaUtil extends AnnotatedAPI {
         }
 
         @NotNull
-        <X extends Throwable> T orElseThrow(@NotNull Supplier<? extends X> exceptionSupplier) {
+        <X extends Throwable> T orElseThrow(@NotNull @IgnoreModifications Supplier<? extends X> exceptionSupplier) {
             return null;
         }
 
@@ -486,7 +488,7 @@ public class JavaUtil extends AnnotatedAPI {
 
         @NotNull
         @Modified
-        V computeIfAbsent(@NotNull K key, @NotNull1 Function<? super K, ? extends V> mappingFunction) { return null; }
+        V computeIfAbsent(@NotNull K key, @NotNull1 @IgnoreModifications Function<? super K, ? extends V> mappingFunction) { return null; }
 
         boolean containsKey$Value$Size(int i, Object key, boolean retVal) { return i != 0 && retVal; }
         @NotModified
@@ -517,7 +519,7 @@ public class JavaUtil extends AnnotatedAPI {
         Set<K> keySet() { return null; }
 
         @NotModified
-        void forEach(@NotNull @PropagateModification BiConsumer<? super K, ? super V> action) { }
+        void forEach(@NotNull @Dependent2 @IgnoreModifications BiConsumer<? super K, ? super V> action) { }
 
         @NotModified
         V get(@NotNull Object key) { return null; }

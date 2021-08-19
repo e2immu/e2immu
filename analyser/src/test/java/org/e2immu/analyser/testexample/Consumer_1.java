@@ -20,7 +20,7 @@ import org.e2immu.annotation.*;
 change wrt ForEachMethod_0: interface is now abstract class, with field
  */
 @E2Container
-public class ForEachMethod_1<S> {
+public class Consumer_1<S> {
 
     @E1Container
     abstract static class ClassWithConsumer<T> {
@@ -41,7 +41,7 @@ public class ForEachMethod_1<S> {
     @NotNull
     private final S s;
 
-    public ForEachMethod_1(@NotNull S in) {
+    public Consumer_1(@NotNull S in) {
         this.s = in;
     }
 

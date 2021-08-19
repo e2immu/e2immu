@@ -29,7 +29,7 @@ As a consequence, it also qualifies for the @Dependent2 rule.
 
 We assume that Collection.forEach has an @IgnoreModifications on its parameter.
  */
-public class ForEachMethod_4<S> {
+public class Consumer_4<S> {
 
     interface MyConsumer<T> {
         // contracted
@@ -46,7 +46,7 @@ public class ForEachMethod_4<S> {
     @NotNull1
     private final Collection<S> strings;
 
-    public ForEachMethod_4(@NotNull1 Collection<S> in) {
+    public Consumer_4(@NotNull1 Collection<S> in) {
         this.strings = in;
     }
 

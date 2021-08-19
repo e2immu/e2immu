@@ -290,9 +290,9 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         }
         // is the method modifying, do we need to wait?
         int modifiedMethod = methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD);
-        boolean propagateModification = abstractMethod && modifiedMethod == Level.DELAY;
-        int modified = alwaysModifying ? Level.TRUE : recursiveCall || partOfCallCycle ||
-                propagateModification ? Level.FALSE : modifiedMethod;
+        boolean propagateModification = methodAnalysis.getProperty(VariableProperty.PROPAGATE_MODIFICATION) == Level.TRUE;
+        int modified = alwaysModifying ? Level.TRUE :
+                recursiveCall || partOfCallCycle || propagateModification ? Level.FALSE : modifiedMethod;
         int contextModifiedDelay = Level.fromBool(modified == Level.DELAY);
         builder.causeOfContextModificationDelay(methodInfo, modified == Level.DELAY);
 

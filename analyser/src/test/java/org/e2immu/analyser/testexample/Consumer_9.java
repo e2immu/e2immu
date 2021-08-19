@@ -23,19 +23,20 @@ import java.util.function.Consumer;
 /*
 Situation: consumer applied to a non-implicitly immutable field.
 
-This type is not @E2Immutable because doSomething is not @Independent.
-The consumer remains @NotModified, because it is not applied to a parameter.
-FIXME how do we see that? there could be other reasons for doSomething to be @Modified
+The consumer 'in' in 'print' is @NotModified; reasoning goes as follows:
+
+the parameter 'consumer' is dependent, so we need to link the modification to the parameter in 'print'.
+In this particular case, there is no modification, so 'in' remains @NotModified.
  */
 
 @E1Container
-public class ForEachMethod_9 {
+public class Consumer_9 {
 
     // not implicitly immutable
     private final Set<Integer> integers;
 
     @Independent
-    public ForEachMethod_9(@NotModified Set<Integer> set) {
+    public Consumer_9(@NotModified Set<Integer> set) {
         integers = new HashSet<>(set);
     }
 
@@ -44,11 +45,11 @@ public class ForEachMethod_9 {
         consumer.accept(integers);
     }
 
-    public static void enrichWith27(@Modified ForEachMethod_9 in) {
+    public static void enrichWith27(@Modified Consumer_9 in) {
         in.doSomething(set -> set.add(27)); // modifying lambda modifies in
     }
 
-    public static void print(@NotModified ForEachMethod_9 in) {
+    public static void print(@NotModified Consumer_9 in) {
         in.doSomething(System.out::println); // non-modifying method reference -> in not modified
     }
 

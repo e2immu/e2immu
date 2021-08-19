@@ -17,26 +17,32 @@ package org.e2immu.analyser.testexample;
 import org.e2immu.annotation.Dependent1;
 import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.Independent;
+import org.e2immu.annotation.NotModified;
 
 /*
-this container holds a single object (a supplier) in an immutable way.
-The type of the supplier and its actions are outside the scope.
+In this example, the type holds an abstract type (a Supplier).
+As opposed to example 4, this Supplier is level 2 immutable.
  */
 @E2Container
-public class PropagateModification_4<T> {
+public class Dependent1_3<T> {
 
+    @NotModified
     private final MySupplier<T> mySupplier;
 
+    @E2Container // contracted, implies that get is @NotModified, @Independent
     interface MySupplier<T> {
+        // we go a little further here, and stipulate that T is content-linked to the fields of the supplier
+        @Dependent1
         T get();
     }
 
-    @Independent
-    public PropagateModification_4(MySupplier<T> mySupplier) {
+    @Independent // not @Dependent1 because mySupplier is not implicitly immutable!
+    public Dependent1_3(MySupplier<T> mySupplier) {
         this.mySupplier = mySupplier;
     }
 
-    @Dependent1
+    @NotModified
+    @Dependent1 // because returns implicitly immutable content of a field, using a method
     public T get() {
         return mySupplier.get();
     }

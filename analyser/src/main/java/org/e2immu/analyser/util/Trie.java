@@ -77,7 +77,7 @@ public class Trie<T> extends Freezable {
     }
 
     @NotModified
-    public void visitLeaves(@NotModified String[] strings, @NotModified1 BiConsumer<String[], List<T>> visitor) {
+    public void visitLeaves(@NotModified String[] strings, @Container BiConsumer<String[], List<T>> visitor) {
         TrieNode<T> node = goTo(strings);
         if (node == null) return;
         if (node.map != null) {
@@ -91,7 +91,7 @@ public class Trie<T> extends Freezable {
 
     @NotModified
     public void visit(String[] strings,
-                      @NotModified1 BiConsumer<String[], List<T>> visitor) {
+                      @Container BiConsumer<String[], List<T>> visitor) {
         TrieNode<T> node = goTo(strings);
         if (node == null) return;
         recursivelyVisit(node, new Stack<>(), visitor);
@@ -100,7 +100,7 @@ public class Trie<T> extends Freezable {
     @NotModified // pushed via contract on visit
     private static <T> void recursivelyVisit(@NotModified TrieNode<T> node,
                                              @Modified Stack<String> strings,
-                                             @NotModified1 BiConsumer<String[], List<T>> visitor) {
+                                             @Container BiConsumer<String[], List<T>> visitor) {
         if (node.data != null) {
             visitor.accept(strings.toArray(String[]::new), node.data);
         }

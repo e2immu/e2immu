@@ -25,7 +25,7 @@ import java.util.stream.Stream;
 Different variant on previous tests.
 
  */
-public class ForEachMethod_7 {
+public class Consumer_7 {
 
     interface MyConsumer<T> {
         @Modified

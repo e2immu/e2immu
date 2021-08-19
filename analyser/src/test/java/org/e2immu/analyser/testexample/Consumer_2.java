@@ -22,7 +22,7 @@ which allows for other types of modification.
 The method forEach is now @Modified because of the increment() call.
 Other change is the @Nullable on field s.
  */
-public class ForEachMethod_2<S> {
+public class Consumer_2<S> {
 
     @Container
     abstract static class ClassWithConsumer<T> {
@@ -50,7 +50,7 @@ public class ForEachMethod_2<S> {
     @Nullable
     private final S s;
 
-    public ForEachMethod_2(S in) {
+    public Consumer_2(S in) {
         this.s = in;
     }
 

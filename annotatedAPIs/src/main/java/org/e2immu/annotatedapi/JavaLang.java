@@ -27,14 +27,15 @@ class JavaLang {
     final static String PACKAGE_NAME = "java.lang";
 
     interface Iterable$<T> {
-        // looping over the collection should not not change it!
         @NotModified
-        void forEach(@NotNull Consumer<? super T> action);
+        void forEach(@NotNull1 @IgnoreModifications @Dependent2 Consumer<? super T> action);
 
         @NotNull
+        @NotModified
         Iterator<T> iterator();
 
         @NotNull
+        @NotModified
         Spliterator<T> spliterator();
     }
 
@@ -53,7 +54,8 @@ class JavaLang {
             return (this.equals(object)) == object.equals(this);
         }
 
-        public boolean equals(@NotModified Object object) {
+        // @NotModified implicit on method and parameter
+        public boolean equals(Object object) {
             return true;
         }
 
@@ -64,7 +66,7 @@ class JavaLang {
         }
 
         @NotNull
-        @NotModified
+        // implicit @NotModified
         public String toString() {
             return "x";
         }
@@ -126,6 +128,7 @@ class JavaLang {
         String getSimpleName() { return null; }
     }
 
+    // is an interface
     static class CharSequence$ {
         @NotModified
         char charAt(int index) { return 0; }
@@ -323,43 +326,51 @@ class JavaLang {
         }
 
         @Fluent
+        @Modified
         StringBuilder append(boolean b) {
             return null;
         }
 
         @Fluent
+        @Modified
         StringBuilder append(char c) {
             return null;
         }
 
         @Fluent
+        @Modified
         StringBuilder append(float f) {
             return null;
         }
 
         @Fluent
+        @Modified
         StringBuilder append(long l) {
             return null;
         }
 
         boolean append$Modification$Len(int post, int prev, int i) { return post == prev + Integer.toString(i).length(); }
         @Fluent
+        @Modified
         StringBuilder append(int i) {
             return null;
         }
 
         @Fluent
+        @Modified
         StringBuilder append(char[] chars) {
             return null;
         }
 
         boolean append$Modification$Len(int post, int prev, String str) { return post == prev + (str == null ? 4: str.length()); }
         @Fluent
+        @Modified
         StringBuilder append(String str) {
             return null;
         }
 
         @Fluent
+        @Modified
         StringBuilder append(Object o) {
             return null;
         }
@@ -410,7 +421,7 @@ class JavaLang {
             return equals(t) || t.equals(this) ? 0 : retVal;
         }
 
-        @NotModified
+        // implicit: @NotModified!
         int compareTo(@NotNull @NotModified T t) {
             return 0;
         }

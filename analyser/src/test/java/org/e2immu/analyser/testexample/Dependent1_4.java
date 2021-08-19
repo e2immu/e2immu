@@ -14,30 +14,42 @@
 
 package org.e2immu.analyser.testexample;
 
-import org.e2immu.annotation.*;
+import org.e2immu.annotation.Dependent1;
+import org.e2immu.annotation.E1Container;
+import org.e2immu.annotation.Independent;
+import org.e2immu.annotation.Modified;
 
 /*
-this container holds a single object (a supplier) in an immutable way.
-The type of the supplier and its actions are outside the scope.
- */
-@E2Container
-public class Dependent1_3<T> {
+Variant on Dependent1_3, but now mutable.
 
+Note that get() is modified! Ignoring the modification of the method can only be done
+in the case of parameters (see ForEachMethod examples).
+ */
+@E1Container
+public class Dependent1_4<T> {
+
+    @Modified
     private final MySupplier<T> mySupplier;
 
-    @E1Container // computed (get is modified, so not E2)
+    // both type annotations are or can be computed
+    @E1Container
+    @Independent
     interface MySupplier<T> {
+        // we mark that get is @Modified, and returns content linked to the fields of the implementation
         @Modified
-        @Dependent1 // computed
+        @Dependent1
         T get();
     }
 
-    @Independent // not @Dependent1 because mySupplier is not implicitly immutable!
-    // how come independent? mySupplier is not @E2Immutable
-    public Dependent1_3(MySupplier<T> mySupplier) {
+    // independent, because while not E2, MySupplier is Independent itself
+    // not Dep1, because mySupplier is not implicitly immutable.
+    @Independent
+    public Dependent1_4(MySupplier<T> mySupplier) {
         this.mySupplier = mySupplier;
     }
 
+    // modified because get() is a modifying method
+    @Modified
     @Dependent1 // because returns implicitly immutable content of a field, using a method
     public T get() {
         return mySupplier.get();

@@ -14,6 +14,7 @@
 
 package org.e2immu.annotatedapi;
 
+import org.e2immu.annotation.Modified;
 import org.e2immu.annotation.NotModified;
 import org.e2immu.annotation.NotNull;
 
@@ -28,6 +29,7 @@ public class JavaUtilFunction {
 
     @FunctionalInterface
     public interface Supplier$<T> {
+        @Modified
         T get();
     }
 
@@ -36,6 +38,7 @@ public class JavaUtilFunction {
 
     @FunctionalInterface
     public interface Consumer$<T> {
+        @Modified
         void accept(T t);
 
         default java.util.function.Consumer<T> andThen(@NotNull java.util.function.Consumer<? super T> after) {
@@ -45,24 +48,29 @@ public class JavaUtilFunction {
 
     @FunctionalInterface
     public interface Predicate$<T> {
+        @Modified
         boolean test(T t);
     }
 
     @FunctionalInterface
     public interface Function$<T, R> {
+        @Modified
         R apply(T t);
 
         @NotNull
+        @NotModified
         default <V> java.util.function.Function<T, V> andThen(@NotNull java.util.function.Function<? super R, ? extends V> after) {
             return null;
         }
 
         @NotNull
+        @NotModified
         default <V> java.util.function.Function<V, R> compose(@NotNull java.util.function.Function<? super V, ? extends T> before) {
             return null;
         }
 
         @NotNull
+        @NotModified
         static <T> java.util.function.Function<T, T> identity() {
             return null;
         }
@@ -71,6 +79,7 @@ public class JavaUtilFunction {
     @FunctionalInterface
     public interface BiFunction$<T, U, R> {
 
+        @Modified
         R apply(T t, U u);
 
         default <V> java.util.function.BiFunction<T, U, V> andThen(@NotNull java.util.function.Function<? super R, ? extends V> after) {
@@ -81,10 +90,12 @@ public class JavaUtilFunction {
     @FunctionalInterface
     public interface BinaryOperator$<T> extends java.util.function.BiFunction<T, T, T> {
 
+        @NotModified
         static <T> java.util.function.BinaryOperator<T> maxBy(@NotNull Comparator<? super T> comparator) {
             return null;
         }
 
+        @NotModified
         static <T> java.util.function.BinaryOperator<T> minBy(@NotNull Comparator<? super T> comparator) {
             return null;
         }
@@ -92,6 +103,7 @@ public class JavaUtilFunction {
 
     @FunctionalInterface
     public interface BiConsumer$<T, U> {
+        @Modified
         void accept(T t, U u);
 
         @NotNull
@@ -102,11 +114,13 @@ public class JavaUtilFunction {
 
     @FunctionalInterface
     public interface ToIntFunction$<R> {
+        @Modified
         int applyAsInt(R value);
     }
 
     @FunctionalInterface
     public interface IntFunction$<R> {
+        @Modified
         R apply(int value);
     }
 }

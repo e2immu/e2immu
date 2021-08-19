@@ -145,9 +145,6 @@ public abstract class MethodAnalyser extends AbstractAnalyser implements HoldsAn
                 check(BeforeMark.class, e2.beforeMark);
                 checkConstant.checkConstantForMethods(messages, methodInfo, methodAnalysis);
 
-                // checks for dynamic properties of functional interface types
-                check(NotModified1.class, e2.notModified1);
-
                 check(Nullable.class, e2.nullable);
             }
             check(NotModified.class, e2.notModified);

@@ -17,7 +17,7 @@ package org.e2immu.analyser.testexample;
 import org.e2immu.annotation.*;
 
 @E2Container // computed
-public class ForEachMethod_0<S> {
+public class Consumer_0<S> {
 
     // implicitly: @E1Immutable (not @Container, @Modified on parameter t)
     interface MyConsumer<T> {
@@ -28,7 +28,7 @@ public class ForEachMethod_0<S> {
     // of implicitly immutable type
     private final S s;
 
-    public ForEachMethod_0(@Dependent1 S in) {
+    public Consumer_0(@Dependent1 S in) {
         this.s = in;
     }
 

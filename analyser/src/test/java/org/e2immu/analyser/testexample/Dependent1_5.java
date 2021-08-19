@@ -20,17 +20,17 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
-public class Dependent1_TODO<T> {
+public class Dependent1_5<T> {
 
     private final Set<T> set ;
 
     @Independent
-    public Dependent1_TODO(Collection<? extends T> collection) {
+    public Dependent1_5(Collection<? extends T> collection) {
         set = new HashSet<>(collection);
     }
 
     @Dependent
-    public Dependent1_TODO(Set<T> set) {
+    public Dependent1_5(Set<T> set) {
        this.set = set;
     }
 

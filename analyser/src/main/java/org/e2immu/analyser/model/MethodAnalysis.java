@@ -169,16 +169,16 @@ public interface MethodAnalysis extends Analysis {
         }
         int max = Math.max(influencedByType, bestOfOverrides);
 
-        if (max == Level.DELAY) {
+        if (max == Level.DELAY && getMethodInfo().isAbstract()) {
+
             // no information found in the whole hierarchy, we default to the value of the annotation mode
+            if (variableProperty == VariableProperty.PROPAGATE_MODIFICATION && getMethodInfo().typeInfo
+                    .typeInspection.get().isFunctionalInterface()) {
+                return Level.TRUE;
+            }
 
             // unless: abstract methods, not annotated for modification
-            if (variableProperty == VariableProperty.MODIFIED_METHOD && getMethodInfo().isAbstract()) {
-                int propModMethod = analysisProvider.getMethodAnalysis(getMethodInfo())
-                        .getProperty(VariableProperty.PROPAGATE_MODIFICATION);
-                if (getMethodInfo().typeInfo.typeInspection.get().isFunctionalInterface() || propModMethod == Level.TRUE) {
-                    return Level.DELAY;
-                }
+            if (variableProperty == VariableProperty.MODIFIED_METHOD) {
                 /*
                  In case of a shallow type: if you mark a shallow type as level 2 immutable then its abstract methods are @NotModified by default
                  See Basics_5, Stream is @E2Container so filter, findAny, map etc. must be @NotModified.
@@ -189,7 +189,6 @@ public interface MethodAnalysis extends Analysis {
                 TypeAnalysis typeAnalysis = analysisProvider.getTypeAnalysis(getMethodInfo().typeInfo);
                 int immutable = typeAnalysis.getProperty(VariableProperty.IMMUTABLE);
                 if (immutable == Level.DELAY) {
-                    // even if delay has a meaning (propagate modification) for abstract types
                     return Level.DELAY;
                 }
                 if (immutable == MultiLevel.EFFECTIVELY_E2IMMUTABLE) {

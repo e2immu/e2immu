@@ -25,7 +25,7 @@ import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
-import org.e2immu.analyser.testexample.PropagateModification_0;
+import org.e2immu.analyser.testexample.Consumer_0;
 import org.e2immu.analyser.util.SetUtil;
 import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
@@ -71,7 +71,7 @@ public class Test_39_PropagateModification extends CommonTestRunner {
                         .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         .build());
         TypeInfo myConsumer = typeContext.getFullyQualified(
-                PropagateModification_0.class.getCanonicalName() + ".MyConsumer", true);
+                Consumer_0.class.getCanonicalName() + ".MyConsumer", true);
         MethodInfo methodInfo = myConsumer.findUniqueMethod("accept", 1);
         assertTrue(methodInfo.isAbstract());
         assertEquals(Level.DELAY, methodInfo.methodAnalysis.get().getProperty(VariableProperty.MODIFIED_METHOD));
@@ -219,7 +219,6 @@ public class Test_39_PropagateModification extends CommonTestRunner {
                         assertTrue(d.variableInfoContainer().hasEvaluation());
 
                         // still delayed value in iteration 1 because "someValueWasDelayed"
-                        // FIXME doesn't appear in EvalResult of iteration 2!
                         String expect = d.iteration() == 1 ? "<f:name>" : "nullable instance type String";
                         assertEquals(expect, d.currentValue().toString());
                     }
@@ -238,6 +237,12 @@ public class Test_39_PropagateModification extends CommonTestRunner {
                         assertEquals(expectNne, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
                     }
                 }
+                if (d.variable() instanceof FieldReference fr && "string".equals(fr.fieldInfo.name)) {
+                    if ("1".equals(d.statementId())) {
+                        int expectCm = d.iteration() <= 1 ? Level.DELAY : Level.TRUE;
+                        assertEquals(expectCm, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
+                    }
+                }
             }
         };
 
@@ -251,7 +256,7 @@ public class Test_39_PropagateModification extends CommonTestRunner {
             }
         };
 
-        TypeContext typeContext = testClass("PropagateModification_8", 1, 0,
+        TypeContext typeContext = testClass("PropagateModification_8", 0, 0,
                 new DebugConfiguration.Builder()
                         .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                         .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
@@ -262,6 +267,7 @@ public class Test_39_PropagateModification extends CommonTestRunner {
         MethodInfo accept = classWithConsumer.findUniqueMethod("abstractAccept", 1);
         assertTrue(accept.isAbstract());
         assertEquals(Level.FALSE, accept.getAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
+        assertEquals(Level.FALSE, accept.getAnalysis().getProperty(VariableProperty.PROPAGATE_MODIFICATION));
 
         ParameterInfo p0 = accept.methodInspection.get().getParameters().get(0);
         ParameterAnalysis p0Ana = p0.parameterAnalysis.get();
@@ -269,7 +275,7 @@ public class Test_39_PropagateModification extends CommonTestRunner {
         AnnotationExpression ae = p0.getInspection().getAnnotations().get(0);
         assertFalse(ae.e2ImmuAnnotationParameters().contract()); // not explicitly contracted, acceptVerifyAsContracted
         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, p0Ana.getProperty(VariableProperty.NOT_NULL_PARAMETER));
-        assertEquals(Level.FALSE, p0Ana.getProperty(VariableProperty.MODIFIED_VARIABLE));
+        assertEquals(Level.TRUE, p0Ana.getProperty(VariableProperty.MODIFIED_VARIABLE));
     }
 
     @Test

@@ -18,20 +18,14 @@ import org.e2immu.annotation.Container;
 import org.e2immu.annotation.Modified;
 import org.e2immu.annotation.NotModified;
 
-/*
-Situation: consumer applied to the parameter itself: we assume the worst: the abstract method is modifying.
-In this way, we indicate that the abstract method is applied to the parameter rather than a field or a variable
-derived from it.
-
-In applyToParameterItself, y is a parameter of abstract type Y.
-In applyToParameterMY and applyToParameterNMY, y is not of abstract type, and normal rules apply.
- */
-public class AbstractTypeAsParameter_2 {
+public class Inheritance_0 {
 
     @Container
     abstract static class Y {
         private int i;
 
+        // if we don't make this @Modified, then we'll have problems in MY
+        @Modified
         public abstract void increment();
 
         public int getI() {
@@ -75,6 +69,38 @@ public class AbstractTypeAsParameter_2 {
 
     @NotModified
     public static int applyToParameterNMY(int i, @NotModified NMY y) {
+        y.increment();
+        return y.getI();
+    }
+
+    static class NMY_NM extends NMY {
+
+        @NotModified
+        @Override
+        public void increment() {
+            System.out.println("sub; i is "+getI());
+        }
+    }
+
+    @NotModified
+    public static int applyToParameterNMY_NM(int i, @NotModified NMY_NM y) {
+        y.increment();
+        return y.getI();
+    }
+
+
+    static class NMY_M extends NMY {
+
+        // CAUSES ERROR: doing worse than parent
+        @Modified
+        @Override
+        public void increment() {
+            set(getI()+1);
+        }
+    }
+
+    @NotModified
+    public static int applyToParameterNMY_M(int i, @NotModified NMY_M y) {
         y.increment();
         return y.getI();
     }

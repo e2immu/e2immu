@@ -14,9 +14,9 @@
 
 package org.e2immu.analyser.testexample;
 
+import org.e2immu.annotation.Container;
 import org.e2immu.annotation.Modified;
 import org.e2immu.annotation.NotModified;
-import org.e2immu.annotation.NotModified1;
 import org.e2immu.annotation.Variable;
 
 import java.util.function.Consumer;
@@ -80,12 +80,12 @@ public class FunctionalInterface_3<T> {
     }
 
     @Modified // we promise not to modify t2, but we can still call acceptDelayedT1...
-    public void acceptT2(@NotModified1(contract = true) Consumer<T> consumer) {
+    public void acceptT2(@Container Consumer<T> consumer) {
         consumer.accept(t2);
     }
 
     @NotModified(contract = true) // we promise not to modify t2, and we cannot call any modifying operation
-    public void acceptT2NonModifying(@NotModified1(contract = true) Consumer<T> consumer) {
+    public void acceptT2NonModifying(@Container Consumer<T> consumer) {
         consumer.accept(t2);
     }
 

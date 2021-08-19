@@ -58,13 +58,11 @@ public class E2ImmuAnnotationExpressions {
     public final AnnotationExpression modified = create(Modified.class);
     public final AnnotationExpression mutableModifiesArguments = create(MutableModifiesArguments.class);
     public final AnnotationExpression notModified = create(NotModified.class);
-    public final AnnotationExpression notModified1 = create(NotModified1.class);
     public final AnnotationExpression notNull = create(NotNull.class);
     public final AnnotationExpression notNull1 = create(NotNull1.class);
     public final AnnotationExpression notNull2 = create(NotNull2.class);
     public final AnnotationExpression nullable = create(Nullable.class);
     public final AnnotationExpression only = create(Only.class);
-    public final AnnotationExpression propagateModification = create(PropagateModification.class);
     public final AnnotationExpression singleton = create(Singleton.class);
     public final AnnotationExpression testMark = create(TestMark.class);
     public final AnnotationExpression utilityClass = create(UtilityClass.class);
@@ -78,8 +76,8 @@ public class E2ImmuAnnotationExpressions {
                 e1Container, e2Container, extensionClass, e1Immutable, e2Immutable,
                 effectivelyFinal, fluent, finalizer, identity, ignoreModifications, independent,
                 linked, linked1, mark, modified, mutableModifiesArguments);
-        add(builder, notModified, notModified1, notNull, notNull1, notNull2, nullable, only, propagateModification,
-                singleton, testMark, utilityClass, variableField);
+        add(builder, notModified, notNull, notNull1, notNull2, nullable, only, singleton, testMark, utilityClass,
+                variableField);
         annotationTypes = Map.copyOf(builder);
     }
 

@@ -72,7 +72,7 @@ public class FunctionalInterface_2 {
     private final Counter myCounter2 = new Counter();
 
     @Modified
-    void acceptMyCounter2(@NotModified1(contract = true) Consumer<Counter> consumer) {
+    void acceptMyCounter2(@Container Consumer<Counter> consumer) {
         consumer.accept(myCounter2);
     }
 

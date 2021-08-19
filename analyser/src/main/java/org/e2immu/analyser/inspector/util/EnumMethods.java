@@ -41,7 +41,6 @@ public class EnumMethods {
 
         var notNullContract = E2ImmuAnnotationExpressions.createContract(primitives, e2.notNull);
         var notModifiedContract = E2ImmuAnnotationExpressions.createContract(primitives, e2.notModified);
-        var notPropagateMod = E2ImmuAnnotationExpressions.createNegativeContract(primitives, e2.propagateModification);
         var e2Container = E2ImmuAnnotationExpressions.createContract(primitives, e2.e2Container);
 
         // name()
@@ -91,7 +90,6 @@ public class EnumMethods {
                 .addAnnotation(notModifiedContract);
         var valueOfP0B = new ParameterInspectionImpl.Builder(Identifier.generate(),
                 primitives.stringParameterizedType, "name", 0)
-                .addAnnotation(notPropagateMod)
                 .addAnnotation(e2Container)
                 .addAnnotation(notNullContract);
         valueOfBuilder.addParameter(valueOfP0B);

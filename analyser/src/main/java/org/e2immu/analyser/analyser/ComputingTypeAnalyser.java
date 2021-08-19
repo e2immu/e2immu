@@ -549,17 +549,18 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
         }
         for (MethodAnalyser methodAnalyser : myMethodAndConstructorAnalysersExcludingSAMs) {
             if (!methodAnalyser.methodInfo.isPrivate()) {
-                for (ParameterAnalyser parameterAnalyser : methodAnalyser.getParameterAnalysers()) {
-                    int modified = parameterAnalyser.parameterAnalysis.getProperty(VariableProperty.MODIFIED_VARIABLE);
+                for (ParameterInfo parameterInfo : methodAnalyser.methodInspection.getParameters()) {
+                    ParameterAnalysis parameterAnalysis = analyserContext.getParameterAnalysis(parameterInfo);
+                    int modified = parameterAnalysis.getProperty(VariableProperty.MODIFIED_VARIABLE);
                     if (modified == Level.DELAY && methodAnalyser.hasCode()) {
                         log(DELAYED, "Delaying container, modification of parameter {} undecided",
-                                parameterAnalyser.parameterInfo.fullyQualifiedName());
+                                parameterInfo.fullyQualifiedName());
                         return DELAYS; // cannot yet decide
                     }
                     if (modified == Level.TRUE) {
                         log(TYPE_ANALYSER, "{} is not a @Container: the content of {} is modified in {}",
                                 typeInfo.fullyQualifiedName,
-                                parameterAnalyser.parameterInfo.fullyQualifiedName(),
+                                parameterInfo.fullyQualifiedName(),
                                 methodAnalyser.methodInfo.distinguishingName());
                         typeAnalysis.setProperty(VariableProperty.CONTAINER, Level.FALSE);
                         return DONE;
@@ -1010,7 +1011,7 @@ public class ComputingTypeAnalyser extends TypeAnalyser {
     private boolean returnTypeNestedOrChild(TypeInfo returnType) {
         if (returnType == typeInfo) return true;
         TypeInspection typeInspection = analyserContext.getTypeInspection(returnType);
-        if(typeInspection.isStatic()) return false; // must be a nested (non-static) type
+        if (typeInspection.isStatic()) return false; // must be a nested (non-static) type
         return returnType.packageNameOrEnclosingType.isRight() &&
                 returnTypeNestedOrChild(returnType.packageNameOrEnclosingType.getRight());
     }

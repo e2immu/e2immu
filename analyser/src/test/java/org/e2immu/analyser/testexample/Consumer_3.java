@@ -22,7 +22,7 @@ import org.e2immu.annotation.NotModified;
 change wrt ForEachMethod_0..2: not calling the abstract method,
 so we have no @Dependent2.
  */
-public class ForEachMethod_3<S> {
+public class Consumer_3<S> {
 
     @Container
     abstract static class ClassWithConsumer<T> {
@@ -49,7 +49,7 @@ public class ForEachMethod_3<S> {
 
     private final S s;
 
-    public ForEachMethod_3(S in) {
+    public Consumer_3(S in) {
         this.s = in;
     }
 

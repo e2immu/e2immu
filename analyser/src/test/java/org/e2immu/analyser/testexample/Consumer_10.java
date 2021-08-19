@@ -22,17 +22,19 @@ import java.util.Map;
 import java.util.stream.Stream;
 
 /*
-situation: consumer applied to field (non-parameter) of implicitly immutable type
+situation: @Dependent instead of @Dependent2, entries of map
  */
-public class AbstractTypeAsParameter_02 {
+public class Consumer_10 {
 
     interface MyConsumer<T> {
-        // UNMARKED
-        void accept(T t); // PARAMETER T unmarked
+        @Modified
+        void accept(T t);
     }
 
     @E1Container
     static class Configuration {
+        // not implicitly immutable; the entries are neither.
+        // the entries are @Container, mutable, dependent.
         private final Map<String, String> map = new HashMap<>();
 
         @Modified
@@ -48,8 +50,8 @@ public class AbstractTypeAsParameter_02 {
         }
 
         @NotModified
-        public void forEach(@PropagateModification // applying an unmarked method
-                            @Dependent1 // content of my fields is exposed (default)
+        public void forEach(@IgnoreModifications
+                            @Dependent
                                     MyConsumer<Map.Entry<String, String>> consumer) {
             map.entrySet().forEach(consumer::accept);
         }

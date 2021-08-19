@@ -122,15 +122,8 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
                 annotations.put(ae, true);
             }
 
-            // @NotModified1
-            doNotModified1(e2ImmuAnnotationExpressions);
-
             // @NotNull
             doNotNull(e2ImmuAnnotationExpressions, getProperty(VariableProperty.NOT_NULL_PARAMETER));
-
-            // @PropagateModification
-            annotations.put(e2ImmuAnnotationExpressions.propagateModification,
-                    getProperty(VariableProperty.PROPAGATE_MODIFICATION) == Level.TRUE);
 
             // @Dependent1,2; @Independent, @Dependent not shown
             int independent = getProperty(VariableProperty.INDEPENDENT_PARAMETER);
