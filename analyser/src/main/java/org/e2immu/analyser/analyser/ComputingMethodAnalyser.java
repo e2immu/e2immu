@@ -995,7 +995,7 @@ public class ComputingMethodAnalyser extends MethodAnalyser implements HoldsAnal
             return MultiLevel.DEPENDENT_1;
         }
         int independent = returnVariable.getProperty(VariableProperty.INDEPENDENT);
-        if (independent == MultiLevel.DEPENDENT_1 || independent == MultiLevel.DEPENDENT_2) {
+        if (independent == MultiLevel.DEPENDENT_1) {
             return independent;
         }
 

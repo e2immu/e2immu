@@ -311,11 +311,11 @@ public record EvaluationResult(EvaluationContext evaluationContext,
 
         }
 
-        private int getNotModified1FromInitial(Expression expression) {
+        private int getContainerFromInitial(Expression expression) {
             if (expression instanceof VariableExpression variableExpression) {
-                return getPropertyFromInitial(variableExpression.variable(), VariableProperty.NOT_MODIFIED_1);
+                return getPropertyFromInitial(variableExpression.variable(), VariableProperty.CONTAINER);
             }
-            return evaluationContext.getProperty(expression, VariableProperty.NOT_MODIFIED_1, true, false);
+            return evaluationContext.getProperty(expression, VariableProperty.CONTAINER, true, false);
         }
 
         /*
@@ -499,18 +499,18 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             }
         }
 
-        public void variableOccursInNotModified1Context(Variable variable, Expression currentExpression) {
+        public void variableOccursInContainerContext(Variable variable, Expression currentExpression) {
             assert evaluationContext != null;
 
             if (evaluationContext.isDelayed(currentExpression)) return; // not yet
             // if we already know that the variable is NOT @NotModified1, then we'll raise an error
-            int notModified1 = getNotModified1FromInitial(currentExpression);
-            if (notModified1 == Level.FALSE) {
+            int container = getContainerFromInitial(currentExpression);
+            if (container == Level.FALSE) {
                 Message message = Message.newMessage(evaluationContext.getLocation(), Message.Label.MODIFICATION_NOT_ALLOWED, variable.simpleName());
                 messages.add(message);
-            } else if (notModified1 == Level.DELAY) {
+            } else if (container == Level.DELAY) {
                 // we only need to mark this in case of doubt (if we already know, we should not mark)
-                setProperty(variable, VariableProperty.NOT_MODIFIED_1, Level.TRUE);
+                setProperty(variable, VariableProperty.CONTAINER, Level.TRUE);
             }
         }
 
@@ -706,10 +706,6 @@ public record EvaluationResult(EvaluationContext evaluationContext,
 
         public void addDelayOnPrecondition() {
             addPrecondition(Precondition.forDelayed(DelayedExpression.forPrecondition(evaluationContext.getPrimitives())));
-        }
-
-        public void markPropagateModification(Variable variable) {
-            setProperty(variable, VariableProperty.CONTEXT_PROPAGATE_MOD, Level.TRUE);
         }
 
         // can be called for multiple parameters, a value of 'true' should always survive

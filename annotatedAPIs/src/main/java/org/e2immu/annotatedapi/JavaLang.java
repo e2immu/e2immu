@@ -28,7 +28,7 @@ class JavaLang {
 
     interface Iterable$<T> {
         @NotModified
-        void forEach(@NotNull1 @IgnoreModifications @Dependent2 Consumer<? super T> action);
+        void forEach(@NotNull1 @Dependent1 Consumer<? super T> action);
 
         @NotNull
         @NotModified

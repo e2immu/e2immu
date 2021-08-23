@@ -125,12 +125,10 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
             // @NotNull
             doNotNull(e2ImmuAnnotationExpressions, getProperty(VariableProperty.NOT_NULL_PARAMETER));
 
-            // @Dependent1,2; @Independent, @Dependent not shown
-            int independent = getProperty(VariableProperty.INDEPENDENT_PARAMETER);
+            // @Dependent1; @Independent, @Dependent not shown
+            int independent = getProperty(VariableProperty.INDEPENDENT);
             if (independent == MultiLevel.DEPENDENT_1) {
                 annotations.put(e2ImmuAnnotationExpressions.dependent1, true);
-            } else if (independent == MultiLevel.DEPENDENT_2) {
-                annotations.put(e2ImmuAnnotationExpressions.dependent2, true);
             }
         }
 
@@ -148,17 +146,6 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
 
         public boolean assignedToFieldIsFrozen() {
             return assignedToField.isFrozen();
-        }
-
-        /*
-        empty method = method without code block
-         */
-        public void minimalInfoForEmptyMethod() {
-            properties.put(VariableProperty.MODIFIED_VARIABLE, Level.FALSE);
-            properties.put(VariableProperty.NOT_NULL_PARAMETER, parameterInfo.parameterizedType.defaultNotNull());
-            properties.put(VariableProperty.PROPAGATE_MODIFICATION, Level.FALSE);
-            properties.put(VariableProperty.IMMUTABLE, MultiLevel.MUTABLE);
-            properties.put(VariableProperty.INDEPENDENT_PARAMETER, MultiLevel.INDEPENDENT);
         }
     }
 

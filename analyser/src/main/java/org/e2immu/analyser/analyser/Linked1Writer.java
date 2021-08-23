@@ -37,7 +37,6 @@ import java.util.stream.Collectors;
 
 import static org.e2immu.analyser.analyser.AnalysisStatus.*;
 import static org.e2immu.analyser.analyser.VariableInfoContainer.Level.EVALUATION;
-import static org.e2immu.analyser.analyser.VariableProperty.CONTEXT_DEPENDENT;
 import static org.e2immu.analyser.util.Logger.LogTarget.DELAYED;
 import static org.e2immu.analyser.util.Logger.log;
 

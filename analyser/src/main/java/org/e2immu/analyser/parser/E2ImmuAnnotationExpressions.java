@@ -40,7 +40,6 @@ public class E2ImmuAnnotationExpressions {
     public final AnnotationExpression container = create(Container.class);
     public final AnnotationExpression dependent = create(Dependent.class);
     public final AnnotationExpression dependent1 = create(Dependent1.class);
-    public final AnnotationExpression dependent2 = create(Dependent2.class);
     public final AnnotationExpression e1Container = create(E1Container.class);
     public final AnnotationExpression e2Container = create(E2Container.class);
     public final AnnotationExpression extensionClass = create(ExtensionClass.class);
@@ -60,7 +59,6 @@ public class E2ImmuAnnotationExpressions {
     public final AnnotationExpression notModified = create(NotModified.class);
     public final AnnotationExpression notNull = create(NotNull.class);
     public final AnnotationExpression notNull1 = create(NotNull1.class);
-    public final AnnotationExpression notNull2 = create(NotNull2.class);
     public final AnnotationExpression nullable = create(Nullable.class);
     public final AnnotationExpression only = create(Only.class);
     public final AnnotationExpression singleton = create(Singleton.class);
@@ -72,12 +70,11 @@ public class E2ImmuAnnotationExpressions {
 
     public E2ImmuAnnotationExpressions() {
         Map<String, TypeInfo> builder = new HashMap<>();
-        add(builder, allowsInterrupt, beforeMark, constant, container, dependent, dependent1, dependent2,
+        add(builder, allowsInterrupt, beforeMark, constant, container, dependent, dependent1,
                 e1Container, e2Container, extensionClass, e1Immutable, e2Immutable,
                 effectivelyFinal, fluent, finalizer, identity, ignoreModifications, independent,
                 linked, linked1, mark, modified, mutableModifiesArguments);
-        add(builder, notModified, notNull, notNull1, notNull2, nullable, only, singleton, testMark, utilityClass,
-                variableField);
+        add(builder, notModified, notNull, notNull1, nullable, only, singleton, testMark, utilityClass, variableField);
         annotationTypes = Map.copyOf(builder);
     }
 

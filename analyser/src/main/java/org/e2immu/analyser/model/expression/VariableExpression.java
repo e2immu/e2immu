@@ -212,9 +212,9 @@ public record VariableExpression(Variable variable, String name) implements Expr
             }
         }
 
-        int notModified1 = forwardEvaluationInfo.getProperty(VariableProperty.NOT_MODIFIED_1);
+        int notModified1 = forwardEvaluationInfo.getProperty(VariableProperty.CONTAINER);
         if (notModified1 == Level.TRUE) {
-            builder.variableOccursInNotModified1Context(variable, adjustedScope);
+            builder.variableOccursInContainerContext(variable, adjustedScope);
         }
 
         int methodCalled = forwardEvaluationInfo.getProperty(VariableProperty.METHOD_CALLED);
@@ -241,19 +241,6 @@ public record VariableExpression(Variable variable, String name) implements Expr
         int contextImmutableDelay = forwardEvaluationInfo.getProperty(VariableProperty.CONTEXT_IMMUTABLE_DELAY);
         if (contextImmutableDelay == Level.TRUE) {
             builder.markContextImmutableDelay(variable);
-        }
-
-        // calling an abstract method without MODIFIED value (Level.DELAY)
-        int propagate = forwardEvaluationInfo.getProperty(VariableProperty.CONTEXT_PROPAGATE_MOD);
-        if (propagate == Level.TRUE) {
-            assert modified == Level.FALSE;
-            builder.markPropagateModification(variable);
-        }
-
-        // forEach(consumer) -> consumer gets a CONTEXT_PROPAGATE_MOD = Level.TRUE
-        int propagateModification = forwardEvaluationInfo.getProperty(VariableProperty.PROPAGATE_MODIFICATION);
-        if (propagateModification == Level.TRUE) {
-            builder.markPropagateModification(variable);
         }
 
         // when we don't know yet if forEach( ...)'s first parameter has the @PropagateModification annotation

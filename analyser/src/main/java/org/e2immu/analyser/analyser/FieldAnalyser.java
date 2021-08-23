@@ -56,14 +56,13 @@ public class FieldAnalyser extends AbstractAnalyser {
     public static final String ANALYSE_IMMUTABLE = "analyseImmutable";
     public static final String ANALYSE_NOT_NULL = "analyseNotNull";
     public static final String ANALYSE_MODIFIED = "analyseModified";
-    public static final String ANALYSE_NOT_MODIFIED_1 = "analyseNotModified1";
+    public static final String ANALYSE_CONTAINER = "analyseContainer";
     public static final String ANALYSE_LINKED = "analyseLinked";
     public static final String FIELD_ERRORS = "fieldErrors";
     public static final String ANALYSE_ASSIGNMENTS = "allAssignmentsHaveBeenSet";
     public static final String ANALYSE_LINKS_HAVE_BEEN_ESTABLISHED = "allLinksHaveBeenEstablished";
     public static final String ANALYSE_CONSTANT = "analyseConstant";
     public static final String ANALYSE_LINKED_1 = "analyseLinked1";
-    public static final String ANALYSE_PROPAGATE_MODIFICATION = "analysePropagateModification";
 
     public final TypeInfo primaryType;
     public final FieldInfo fieldInfo;
@@ -122,8 +121,7 @@ public class FieldAnalyser extends AbstractAnalyser {
                 .add(ANALYSE_FINAL_VALUE, sharedState -> analyseFinalValue())
                 .add(ANALYSE_CONSTANT, sharedState -> analyseConstant())
                 .add(ANALYSE_NOT_NULL, sharedState -> analyseNotNull())
-                .add(ANALYSE_NOT_MODIFIED_1, sharedState -> analyseNotModified1())
-                .add(ANALYSE_PROPAGATE_MODIFICATION, sharedState -> analysePropagateModification())
+                .add(ANALYSE_CONTAINER, sharedState -> analyseContainer())
                 .add(FIELD_ERRORS, sharedState -> fieldErrors())
                 .build();
     }
@@ -283,21 +281,32 @@ public class FieldAnalyser extends AbstractAnalyser {
         return DONE;
     }
 
-    private AnalysisStatus analyseNotModified1() {
-        if (!fieldInfo.type.isFunctionalInterface() || sam == null) return DONE; // not for me
-        assert fieldAnalysis.getProperty(VariableProperty.NOT_MODIFIED_1) == Level.DELAY;
+    private AnalysisStatus analyseContainer() {
+        TypeInfo bestType = fieldInfo.type.bestTypeInfo();
+        if (bestType == null) return DONE;
+        if (!bestType.isAbstract()) return DONE;
 
-        boolean someParameterModificationUnknown = sam.getParameterAnalysers().stream().anyMatch(p ->
-                p.parameterAnalysis.getProperty(VariableProperty.MODIFIED_VARIABLE) == Level.DELAY);
+        assert fieldAnalysis.getProperty(VariableProperty.CONTAINER) == Level.DELAY;
+
+        TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(bestType);
+        int typeContainer = typeAnalysis.getProperty(VariableProperty.CONTAINER);
+        if (typeContainer == Level.DELAY) return DELAYS;
+        if (typeContainer == Level.TRUE) return DONE;
+
+        // only worth doing something when the field is statically not a container
+        boolean someParameterModificationUnknown = methodsForModification()
+                .flatMap(method -> method.getParameterAnalysers().stream())
+                .anyMatch(p -> p.parameterAnalysis.getProperty(VariableProperty.MODIFIED_VARIABLE) == Level.DELAY);
         if (someParameterModificationUnknown) {
-            log(MODIFICATION, "Delaying @NotModified1 on {}, some parameters have no @Modified status yet",
+            log(MODIFICATION, "Delaying @Container on field {}, some parameters have no @Modified status yet",
                     fqn);
         }
-        boolean allParametersNotModified = sam.getParameterAnalysers().stream().allMatch(p ->
-                p.parameterAnalysis.getProperty(VariableProperty.MODIFIED_VARIABLE) == Level.FALSE);
+        boolean allParametersNotModified = methodsForModification()
+                .flatMap(method -> method.getParameterAnalysers().stream()).allMatch(p ->
+                        p.parameterAnalysis.getProperty(VariableProperty.MODIFIED_VARIABLE) == Level.FALSE);
 
-        log(MODIFICATION, "Set @NotModified1 on {} to {}", fqn, allParametersNotModified);
-        fieldAnalysis.setProperty(VariableProperty.NOT_MODIFIED_1, Level.fromBool(allParametersNotModified));
+        log(MODIFICATION, "Set @Container on {} to {}", fqn, allParametersNotModified);
+        fieldAnalysis.setProperty(VariableProperty.CONTAINER, Level.fromBool(allParametersNotModified));
         return DONE;
     }
 
@@ -1082,37 +1091,6 @@ public class FieldAnalyser extends AbstractAnalyser {
         return allMethodsAndConstructors(true);
     }
 
-    private AnalysisStatus analysePropagateModification() {
-        int epm = fieldAnalysis.getProperty(VariableProperty.EXTERNAL_PROPAGATE_MOD);
-        if (epm != Level.DELAY) return DONE;
-        TypeInfo bestTypeInfo = fieldInfo.type.bestTypeInfo();
-        if (bestTypeInfo == null || !bestTypeInfo.isAbstract()) {
-            log(CONTEXT_MODIFICATION, "Type of field {} is not abstract, cannot hold @PropagateModification", fqn);
-            fieldAnalysis.setProperty(VariableProperty.EXTERNAL_PROPAGATE_MOD, Level.FALSE);
-            return DONE;
-        }
-
-        if (!fieldAnalysis.allLinksHaveBeenEstablished.isSet()) {
-            log(DELAYED, "Delaying @PropagateModification, have no linked variables yet for field {}", fqn);
-            return DELAYS;
-        }
-        int max = allMethodsAndConstructors(true)
-                .filter(m -> m.methodAnalysis.getLastStatement() != null)
-                .filter(m -> m.methodAnalysis.getLastStatement().variables.isSet(fqn))
-                .mapToInt(m -> {
-                    VariableInfo variableInfo = m.methodAnalysis.getLastStatement().variables.get(fqn).current();
-                    return variableInfo.getProperty(VariableProperty.CONTEXT_PROPAGATE_MOD);
-                })
-                .max().orElse(Level.FALSE);
-        if (max == Level.DELAY) {
-            log(DELAYED, "{}: Still waiting on propagate modification", fieldInfo.fullyQualifiedName());
-            return DELAYS;
-        }
-        fieldAnalysis.setProperty(VariableProperty.EXTERNAL_PROPAGATE_MOD, max);
-        log(CONTEXT_MODIFICATION, "Set PM of field {} to {}", fqn, max);
-        return DONE;
-    }
-
     private AnalysisStatus analyseModified() {
         int contract = fieldAnalysis.getProperty(VariableProperty.MODIFIED_VARIABLE);
         if (contract != Level.DELAY) {
@@ -1190,7 +1168,6 @@ public class FieldAnalyser extends AbstractAnalyser {
 
         check(NotNull.class, e2.notNull);
         check(NotNull1.class, e2.notNull1);
-        check(NotNull2.class, e2.notNull2);
         CheckFinalNotModified.check(messages, fieldInfo, Final.class, e2.effectivelyFinal, fieldAnalysis, myTypeAnalyser.typeAnalysis);
         CheckFinalNotModified.check(messages, fieldInfo, NotModified.class, e2.notModified, fieldAnalysis, myTypeAnalyser.typeAnalysis);
 

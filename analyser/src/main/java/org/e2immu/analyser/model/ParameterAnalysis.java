@@ -182,8 +182,10 @@ public interface ParameterAnalysis extends Analysis {
                 break;
             }
 
-            // the only way to have a container is for the type to be a container, or for the user to have
-            // contract annotated the parameter with @Container
+            /* the only way to have a container is for the type to be a container, or for the user to have
+             contract annotated the parameter with @Container. This latter situation makes most sense
+             for abstract types
+             */
             case CONTAINER: {
                 Boolean implicit = parameterInfo.parameterizedType.isImplicitlyImmutable(analysisProvider, parameterInfo.owner.typeInfo);
                 if (implicit == Boolean.TRUE) return Level.TRUE;
@@ -232,12 +234,6 @@ public interface ParameterAnalysis extends Analysis {
                 if (Primitives.isPrimitiveExcludingVoid(bestType)) return MultiLevel.EFFECTIVELY_NOT_NULL;
                 break;
             }
-
-            case NOT_MODIFIED_1:
-                if (!parameterInfo.parameterizedType.isFunctionalInterface()) {
-                    return Level.FALSE;
-                }
-                break;
 
             default:
         }

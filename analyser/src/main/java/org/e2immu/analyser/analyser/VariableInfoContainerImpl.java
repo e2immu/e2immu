@@ -190,10 +190,6 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         if (enn == org.e2immu.analyser.model.Level.DELAY) {
             initial.setProperty(VariableProperty.EXTERNAL_NOT_NULL, MultiLevel.NOT_INVOLVED);
         }
-        int pm = initial.getProperty(VariableProperty.CONTEXT_PROPAGATE_MOD);
-        if (pm == org.e2immu.analyser.model.Level.DELAY) {
-            initial.setProperty(VariableProperty.CONTEXT_PROPAGATE_MOD, org.e2immu.analyser.model.Level.FALSE);
-        }
         int extImm = initial.getProperty(VariableProperty.EXTERNAL_IMMUTABLE);
         if (extImm == org.e2immu.analyser.model.Level.DELAY) {
             initial.setProperty(VariableProperty.EXTERNAL_IMMUTABLE, MultiLevel.NOT_INVOLVED);

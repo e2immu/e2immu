@@ -38,11 +38,11 @@ public class Dependent1_5<T> {
         set.add(t); // trivial propagation
     }
 
-    public void addAll(@Dependent2 Collection<? extends T> ts) {
+    public void addAll(@Dependent1 Collection<? extends T> ts) {
         this.set.addAll(ts); // trivial propagation
     }
 
-    public void addAll2(@Dependent2 Collection<? extends T> ts) {
+    public void addAll2(@Dependent1 Collection<? extends T> ts) {
         for (T t : ts) add(t); // other type of propagation
     }
 
@@ -51,7 +51,7 @@ public class Dependent1_5<T> {
         return set;
     }
 
-    @Dependent2 // implying @Independent
+    @Dependent1 // implying @Independent
     @E2Container
     public Set<T> getCopy() {
         return Set.copyOf(set);

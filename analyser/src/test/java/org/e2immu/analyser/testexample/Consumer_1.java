@@ -46,7 +46,7 @@ public class Consumer_1<S> {
     }
 
     @NotModified
-    public void forEach(@IgnoreModifications @Dependent2 ClassWithConsumer<S> myConsumer) {
+    public void forEach(@IgnoreModifications @Dependent1 ClassWithConsumer<S> myConsumer) {
         System.out.println("Consumer is " + myConsumer.getName());
         myConsumer.accept(s);
     }

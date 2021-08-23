@@ -37,7 +37,7 @@ public class Consumer_5<S> {
 
     // set is @Modified, the normal way of working.
     @NotModified
-    public void addToSet(@Modified @Dependent2 Set<S> set) {
+    public void addToSet(@Modified @Dependent1 Set<S> set) {
         set.add(s);
     }
 

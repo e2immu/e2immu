@@ -70,9 +70,7 @@ public abstract class ParameterAnalyser extends AbstractAnalyser {
         check(NotModified.class, e2.notModified);
         check(NotNull.class, e2.notNull);
         check(NotNull1.class, e2.notNull1);
-        check(NotNull2.class, e2.notNull2);
         check(Dependent1.class, e2.dependent1);
-        check(Dependent2.class, e2.dependent2);
 
         check(BeforeMark.class, e2.beforeMark);
         check(E1Immutable.class, e2.e1Immutable);
@@ -93,7 +91,7 @@ public abstract class ParameterAnalyser extends AbstractAnalyser {
     }
 
     private static final Set<VariableProperty> CHECK_WORSE_THAN_PARENT = Set.of(NOT_NULL_PARAMETER, MODIFIED_VARIABLE,
-            NOT_MODIFIED_1, PROPAGATE_MODIFICATION, IMMUTABLE);
+            CONTAINER, INDEPENDENT, IMMUTABLE);
 
     private void checkWorseThanParent() {
         for (VariableProperty variableProperty : CHECK_WORSE_THAN_PARENT) {

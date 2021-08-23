@@ -266,7 +266,6 @@ public class Test_45_Project extends CommonTestRunner {
             assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, p0a.getProperty(VariableProperty.IMMUTABLE));
 
             assertEquals(Level.FALSE, p0a.getProperty(VariableProperty.PROPAGATE_MODIFICATION));
-            assertEquals(Level.FALSE, p0a.getProperty(VariableProperty.NOT_MODIFIED_1));
         };
         testClass("Project_4", 0, 0, new DebugConfiguration.Builder()
                 .addTypeMapVisitor(typeMapVisitor)

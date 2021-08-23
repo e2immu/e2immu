@@ -23,7 +23,6 @@ import static org.e2immu.analyser.analyser.VariableProperty.*;
 public class GroupPropertyValues {
 
     public static final Set<VariableProperty> PROPERTIES = Set.of(
-            VariableProperty.CONTEXT_PROPAGATE_MOD,
             VariableProperty.CONTEXT_MODIFIED,
             VariableProperty.CONTEXT_NOT_NULL,
             VariableProperty.EXTERNAL_NOT_NULL,

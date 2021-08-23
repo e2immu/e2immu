@@ -51,7 +51,7 @@ public class ShallowMethodAnalyser extends MethodAnalyser {
                     map.getOrDefault(builder.getParameterInfo(), Map.of()).keySet(), e2));
             if (explicitlyEmpty) {
                 builder.setProperty(VariableProperty.MODIFIED_VARIABLE, Level.FALSE);
-                builder.setProperty(VariableProperty.INDEPENDENT_PARAMETER, MultiLevel.EFFECTIVE);
+                builder.setProperty(VariableProperty.INDEPENDENT, MultiLevel.EFFECTIVE);
             }
         });
 

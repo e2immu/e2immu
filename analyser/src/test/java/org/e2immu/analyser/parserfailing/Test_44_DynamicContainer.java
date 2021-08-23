@@ -48,7 +48,7 @@ public class Test_44_DynamicContainer extends CommonTestRunner {
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if("apply".equals(d.methodInfo().name) && "consumer".equals(d.variableName())) {
-                assertEquals(Level.TRUE, d.getProperty(VariableProperty.NOT_MODIFIED_1));
+                assertEquals(Level.TRUE, d.getProperty(VariableProperty.CONTAINER));
             }
         };
 

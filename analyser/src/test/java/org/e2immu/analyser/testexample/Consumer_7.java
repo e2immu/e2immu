@@ -42,7 +42,7 @@ public class Consumer_7 {
         }
 
         @NotModified
-        public void forEach(@IgnoreModifications @Dependent2 MyConsumer<X> consumer) {
+        public void forEach(@IgnoreModifications @Dependent1 MyConsumer<X> consumer) {
             for (X x : set) consumer.accept(x);
         }
 

@@ -332,10 +332,10 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         }
 
         // process parameters
-        int notModified1Scope = evaluationContext.getProperty(objectValue, VariableProperty.NOT_MODIFIED_1, true, false);
+        int containerScope = evaluationContext.getProperty(objectValue, VariableProperty.CONTAINER, true, false);
         Pair<EvaluationResult.Builder, List<Expression>> res = EvaluateParameters.transform(parameterExpressions,
                 evaluationContext, forwardEvaluationInfo,
-                methodInfo, notModified1Scope, recursiveCall || partOfCallCycle, objectValue);
+                methodInfo, containerScope, recursiveCall || partOfCallCycle, objectValue);
         List<Expression> parameterValues = res.v;
         builder.compose(objectResult, res.k.build());
 
@@ -426,8 +426,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         Boolean objectValueIsLinkedToField = evaluationContext.isCurrentlyLinkedToField(objectValue);
         int independent = methodAnalysis.getProperty(VariableProperty.INDEPENDENT);
 
-        if (objectValueIsLinkedToField == Boolean.TRUE &&
-                (independent == MultiLevel.DEPENDENT_1 || independent == MultiLevel.DEPENDENT_2)) {
+        if (objectValueIsLinkedToField == Boolean.TRUE && independent == MultiLevel.DEPENDENT_1) {
             Expression wrappedResult = PropertyWrapper.propertyWrapper(result, Map.of(VariableProperty.INDEPENDENT, independent));
             builder.setExpression(wrappedResult);
         /* IMPROVE we'll have to have some delay detection? but is rather sensitive

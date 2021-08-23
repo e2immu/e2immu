@@ -44,12 +44,12 @@ public class Consumer_11 {
         }
 
         @Independent
-        public MyList(@Dependent2 Collection<? extends T> collection) { // inherited from ArrayList constructor
+        public MyList(@Dependent1 Collection<? extends T> collection) { // inherited from ArrayList constructor
             list = new ArrayList<>(collection);
         }
 
         @Independent
-        public MyList(@Dependent2 List<? extends T> list) {
+        public MyList(@Dependent1 List<? extends T> list) {
             this.list = new ArrayList<>();
             for (T t : list) { // t tied to list
                 add(t);  // and t tied to this.list, so implies @Dependent2 on list
@@ -67,7 +67,7 @@ public class Consumer_11 {
         }
 
         @NotModified
-        public void forEach(@IgnoreModifications @Dependent2 MyConsumer<T> consumer) {
+        public void forEach(@IgnoreModifications @Dependent1 MyConsumer<T> consumer) {
             for (T t : list) { // t tied to list
                 consumer.accept(t); // and tied to consumer, so @Dep2
             }

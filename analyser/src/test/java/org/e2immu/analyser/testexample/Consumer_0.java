@@ -34,12 +34,12 @@ public class Consumer_0<S> {
 
     // Note that @IgnoreModifications is ALWAYS contracted!
     @NotModified
-    public void forEach(@IgnoreModifications @Dependent2 MyConsumer<S> myConsumer) {
+    public void forEach(@IgnoreModifications @Dependent1 MyConsumer<S> myConsumer) {
         myConsumer.accept(s);
     }
 
     @NotModified
-    public void visit(@NotModified @Dependent2 MyConsumer<S> myConsumer) {
+    public void visit(@NotModified @Dependent1 MyConsumer<S> myConsumer) {
         forEach(myConsumer);
     }
 }

@@ -253,7 +253,6 @@ class VariableInfoImpl implements VariableInfo {
                 variable.parameterizedType().defaultNotNull()));
         setProperty(VariableProperty.CONTEXT_MODIFIED, Level.FALSE);
         setProperty(EXTERNAL_NOT_NULL, MultiLevel.NOT_INVOLVED);
-        setProperty(CONTEXT_PROPAGATE_MOD, Level.FALSE);
         setProperty(CONTEXT_IMMUTABLE, MultiLevel.MUTABLE); // even if the variable is a primitive...
         setProperty(EXTERNAL_IMMUTABLE, MultiLevel.NOT_INVOLVED);
     }
@@ -298,11 +297,8 @@ class VariableInfoImpl implements VariableInfo {
             new MergeOp(CONTAINER, MIN, CONTAINER.best),
             new MergeOp(IDENTITY, MIN, IDENTITY.best),
 
-            new MergeOp(CONTEXT_PROPAGATE_MOD, MAX_CM, CONTEXT_PROPAGATE_MOD.falseValue),
             new MergeOp(CONTEXT_MODIFIED, MAX_CM, CONTEXT_MODIFIED.falseValue),
-            new MergeOp(MODIFIED_OUTSIDE_METHOD, MAX_CM, MODIFIED_OUTSIDE_METHOD.falseValue),
-
-            new MergeOp(CONTEXT_DEPENDENT, MAX, CONTEXT_DEPENDENT.falseValue)
+            new MergeOp(MODIFIED_OUTSIDE_METHOD, MAX_CM, MODIFIED_OUTSIDE_METHOD.falseValue)
     );
 
     // value properties: IDENTITY, IMMUTABLE, CONTAINER, NOT_NULL_EXPRESSION, INDEPENDENT
@@ -324,11 +320,8 @@ class VariableInfoImpl implements VariableInfo {
             new MergeOp(EXTERNAL_IMMUTABLE, MIN, EXTERNAL_IMMUTABLE.best),
             new MergeOp(CONTEXT_IMMUTABLE, MAX, CONTEXT_IMMUTABLE.falseValue),
 
-            new MergeOp(CONTEXT_PROPAGATE_MOD, MAX_CM, CONTEXT_PROPAGATE_MOD.falseValue),
             new MergeOp(CONTEXT_MODIFIED, MAX_CM, CONTEXT_MODIFIED.falseValue),
-            new MergeOp(MODIFIED_OUTSIDE_METHOD, MAX_CM, MODIFIED_OUTSIDE_METHOD.falseValue),
-
-            new MergeOp(CONTEXT_DEPENDENT, MAX, CONTEXT_DEPENDENT.falseValue)
+            new MergeOp(MODIFIED_OUTSIDE_METHOD, MAX_CM, MODIFIED_OUTSIDE_METHOD.falseValue)
     );
 
     // TESTING ONLY!!

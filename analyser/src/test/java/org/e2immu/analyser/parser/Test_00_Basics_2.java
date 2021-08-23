@@ -49,13 +49,13 @@ public class Test_00_Basics_2 extends CommonTestRunner {
         if (d.iteration() == 0) {
             Map<AnalysisStatus, Set<String>> expect = Map.of(AnalysisStatus.DONE, Set.of(
                     FieldAnalyser.EVALUATE_INITIALISER,
-                    FieldAnalyser.ANALYSE_NOT_MODIFIED_1));
+                    FieldAnalyser.ANALYSE_CONTAINER));
             assertSubMap(expect, d.statuses());
         }
         if (d.iteration() == 1) {
             Map<AnalysisStatus, Set<String>> expect = Map.of(AnalysisStatus.DONE, Set.of(
                     FieldAnalyser.EVALUATE_INITIALISER,
-                    FieldAnalyser.ANALYSE_NOT_MODIFIED_1,
+                    FieldAnalyser.ANALYSE_CONTAINER,
                     FieldAnalyser.ANALYSE_FINAL,
                     FieldAnalyser.ANALYSE_FINAL_VALUE,
                     FieldAnalyser.ANALYSE_NOT_NULL));

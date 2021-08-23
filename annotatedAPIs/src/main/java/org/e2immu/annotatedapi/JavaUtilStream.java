@@ -102,22 +102,22 @@ public class JavaUtilStream {
         long count();
 
         @NotNull
-        <R> Stream<R> map(@Dependent2 @NotNull @IgnoreModifications Function<? super T, ? extends R> mapper);
+        <R> Stream<R> map(@Dependent1 @NotNull Function<? super T, ? extends R> mapper);
 
         @NotNull
-        <R> Stream<R> flatMap(@Dependent2 @NotNull @IgnoreModifications Function<? super T, ? extends Stream<? extends R>> mapper);
+        <R> Stream<R> flatMap(@Dependent1 @NotNull Function<? super T, ? extends Stream<? extends R>> mapper);
 
         @NotNull
-        <R, A> R collect(@Dependent2 @NotNull @IgnoreModifications Collector<? super T, A, R> collector);
+        <R, A> R collect(@Dependent1 @NotNull Collector<? super T, A, R> collector);
 
         @NotNull
-        Stream<T> filter(@Dependent2 @NotNull @IgnoreModifications Predicate<? super T> predicate);
+        Stream<T> filter(@Dependent1 @NotNull Predicate<? super T> predicate);
 
         @NotNull
-        IntStream mapToInt(@Dependent2 @NotNull @IgnoreModifications ToIntFunction<? super T> mapper);
+        IntStream mapToInt(@Dependent1 @NotNull ToIntFunction<? super T> mapper);
 
         @NotNull
-        Optional<T> min(@Dependent2 @NotNull Comparator<? super T> comparator);
+        Optional<T> min(@Dependent1 @NotNull Comparator<? super T> comparator);
 
         @NotNull
         Stream<T> sorted();
@@ -129,7 +129,7 @@ public class JavaUtilStream {
         Optional<T> findFirst();
 
         @NotNull
-        void forEach(@Dependent2 @NotNull @IgnoreModifications Consumer<? super T> action);
+        void forEach(@Dependent1 @NotNull Consumer<? super T> action);
     }
 
 }

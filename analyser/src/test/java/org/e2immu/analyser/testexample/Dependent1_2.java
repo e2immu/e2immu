@@ -33,7 +33,7 @@ public class Dependent1_2<T> {
     }
 
     @Independent
-    public Dependent1_2(@Dependent2 Dependent1_2<T> c) {
+    public Dependent1_2(@Dependent1 Dependent1_2<T> c) {
         x = c.x;
         y = c.y;
         next = c.next;

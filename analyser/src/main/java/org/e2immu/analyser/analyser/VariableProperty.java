@@ -125,48 +125,19 @@ public enum VariableProperty {
     TEMP_MODIFIED_METHOD("@Modified method, temp", Level.FALSE, Level.TRUE, Level.TRUE, Level.FALSE),
 
     /*
-    Higher level modifications @NotModified1 @Modified1
-    TODO: implement
-     */
-    NOT_MODIFIED_1("@NotModified1"),
-
-    /*
-    propagate modification: a parameter of abstract type can have this property when one of its abstract methods
-    has been called in the method. There are no delays, we know of abstract vs concrete immediately.
-    This parameter can be linked to a field, which then gets used in other methods. For that reason, similar to
-    modification and not null, we use the following properties:
-
-    PROPAGATE_MODIFICATION: as overarching property in the parameter analyser
-    CONTEXT_PROPAGATE_MOD: context property in statement analyser
-    EXTERNAL_PROPAGATE_MOD: external property in statement analyser, std in field analyser
-
-    propagation of modification is computed on linked variables; method return values are not relevant
-    @PropagateModification occurs on parameters and fields.
-    */
-    PROPAGATE_MODIFICATION("@PropagateModification"),
-    CONTEXT_PROPAGATE_MOD("context propagate modification"),
-    EXTERNAL_PROPAGATE_MOD("external propagate modification")
-
-    /*
     @Dependent, @Independent, @Dependent1, @Dependent2
 
     INDEPENDENT: overarching value at parameters and methods
-        param: not linked to field? independent;  when assigned: dependent, dependent1 when Impl Imm, dependent2 when  II parts of me linked
+        param: not linked to field? independent;  when assigned: dependent, dependent1 when Impl Imm
         constructor: independent if all parameters independent
         method: @Mod+assignment to fields: independent when return value and parameters independent
                 @NM: computed on return value only (there can be no assignments, so no linked params to fields)
 
-        static method: TODO List.of(), List.copyOf()
-    CONTEXT_DEPENDENT: context property in the statement analyser
-        propagation: same assignment takes place via methods to (field.add(parameter))
-
-    INDEPENDENT_PARAMETER: on parameters, this one combines the value from linked1 fields, and _CONTEXT
+        static method: independence from parameters to return value
 
     @Dependent is the default in green mode, @Independent is the default in red mode.
-     */,
+     */
     INDEPENDENT("@Independent", MultiLevel.DEPENDENT, MultiLevel.INDEPENDENT, MultiLevel.DEPENDENT, MultiLevel.INDEPENDENT),
-    CONTEXT_DEPENDENT("context dependent", MultiLevel.DEPENDENT, MultiLevel.INDEPENDENT, MultiLevel.DEPENDENT, MultiLevel.INDEPENDENT),
-    INDEPENDENT_PARAMETER("@Independent parameter", MultiLevel.DEPENDENT, MultiLevel.INDEPENDENT, MultiLevel.DEPENDENT, MultiLevel.INDEPENDENT),
 
     /*
     group of more simple properties
@@ -194,8 +165,7 @@ public enum VariableProperty {
     copy from field, parameter, this/type to variable, once a value has been determined.
      */
     public static final Set<VariableProperty> FROM_ANALYSER_TO_PROPERTIES
-            = Set.of(IDENTITY, FINAL, EXTERNAL_NOT_NULL, EXTERNAL_IMMUTABLE, MODIFIED_OUTSIDE_METHOD,
-            CONTAINER, NOT_MODIFIED_1);
+            = Set.of(IDENTITY, FINAL, EXTERNAL_NOT_NULL, EXTERNAL_IMMUTABLE, MODIFIED_OUTSIDE_METHOD, CONTAINER);
 
     public final String name;
     public final int best;

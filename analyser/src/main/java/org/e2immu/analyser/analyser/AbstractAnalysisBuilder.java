@@ -81,29 +81,22 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
     protected void doNotNull(E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions, int notNull) {
 
         // not null
-        if (notNull >= MultiLevel.EVENTUALLY_CONTENT2_NOT_NULL) {
-            annotations.put(e2ImmuAnnotationExpressions.notNull2, true);
+        if (notNull >= MultiLevel.EVENTUALLY_CONTENT_NOT_NULL) {
+            annotations.put(e2ImmuAnnotationExpressions.notNull1, true);
             annotations.put(e2ImmuAnnotationExpressions.nullable, false);
         } else {
-            if (notNull != Level.DELAY) annotations.put(e2ImmuAnnotationExpressions.notNull2, false);
-
-            if (notNull >= MultiLevel.EVENTUALLY_CONTENT_NOT_NULL) {
-                annotations.put(e2ImmuAnnotationExpressions.notNull1, true);
-                annotations.put(e2ImmuAnnotationExpressions.nullable, false);
-            } else {
-                if (notNull > Level.DELAY) {
-                    annotations.put(e2ImmuAnnotationExpressions.notNull1, false);
-                }
-                if (notNull >= MultiLevel.EVENTUAL) {
-                    annotations.put(e2ImmuAnnotationExpressions.notNull, true);
-                } else if (notNull > Level.DELAY) {
-                    annotations.put(e2ImmuAnnotationExpressions.notNull, false);
-                }
-
-                boolean nullablePresent = notNull < MultiLevel.EVENTUAL;
-                // a delay on notNull0 on a non-primitive will get nullable present
-                annotations.put(e2ImmuAnnotationExpressions.nullable, nullablePresent);
+            if (notNull > Level.DELAY) {
+                annotations.put(e2ImmuAnnotationExpressions.notNull1, false);
             }
+            if (notNull >= MultiLevel.EVENTUAL) {
+                annotations.put(e2ImmuAnnotationExpressions.notNull, true);
+            } else if (notNull > Level.DELAY) {
+                annotations.put(e2ImmuAnnotationExpressions.notNull, false);
+            }
+
+            boolean nullablePresent = notNull < MultiLevel.EVENTUAL;
+            // a delay on notNull0 on a non-primitive will get nullable present
+            annotations.put(e2ImmuAnnotationExpressions.nullable, nullablePresent);
         }
     }
 
@@ -180,8 +173,6 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
         VariableProperty modified = analyserIdentification == Analyser.AnalyserIdentification.FIELD ||
                 analyserIdentification == Analyser.AnalyserIdentification.PARAMETER ? VariableProperty.MODIFIED_VARIABLE
                 : VariableProperty.MODIFIED_METHOD;
-        VariableProperty independent = analyserIdentification == Analyser.AnalyserIdentification.PARAMETER ?
-                VariableProperty.INDEPENDENT_PARAMETER : VariableProperty.INDEPENDENT;
 
         for (AnnotationExpression annotationExpression : annotations) {
             AnnotationParameters parameters = annotationExpression.e2ImmuAnnotationParameters();
@@ -218,8 +209,6 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
                     notNull = MultiLevel.EFFECTIVELY_NOT_NULL;
                 } else if (e2ImmuAnnotationExpressions.notNull1.typeInfo() == t) {
                     notNull = MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL;
-                } else if (e2ImmuAnnotationExpressions.notNull2.typeInfo() == t) {
-                    notNull = MultiLevel.EFFECTIVELY_CONTENT2_NOT_NULL;
                 } else if (e2ImmuAnnotationExpressions.notModified.typeInfo() == t) {
                     setProperty(modified, falseTrue);
                 } else if (e2ImmuAnnotationExpressions.modified.typeInfo() == t) {
@@ -241,13 +230,11 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
                 } else if (e2ImmuAnnotationExpressions.ignoreModifications.typeInfo() == t) {
                     setProperty(VariableProperty.IGNORE_MODIFICATIONS, trueFalse);
                 } else if (e2ImmuAnnotationExpressions.independent.typeInfo() == t) {
-                    setProperty(independent, MultiLevel.INDEPENDENT);
+                    setProperty(VariableProperty.INDEPENDENT, MultiLevel.INDEPENDENT);
                 } else if (e2ImmuAnnotationExpressions.dependent.typeInfo() == t) {
-                    setProperty(independent, MultiLevel.DEPENDENT);
+                    setProperty(VariableProperty.INDEPENDENT, MultiLevel.DEPENDENT);
                 } else if (e2ImmuAnnotationExpressions.dependent1.typeInfo() == t) {
-                    setProperty(independent, MultiLevel.DEPENDENT_1);
-                } else if (e2ImmuAnnotationExpressions.dependent2.typeInfo() == t) {
-                    setProperty(independent, MultiLevel.DEPENDENT_2);
+                    setProperty(VariableProperty.INDEPENDENT, MultiLevel.DEPENDENT_1);
                 } else if (e2ImmuAnnotationExpressions.mark.typeInfo() == t) {
                     mark = annotationExpression;
                 } else if (e2ImmuAnnotationExpressions.testMark.typeInfo() == t) {

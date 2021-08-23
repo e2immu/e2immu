@@ -46,7 +46,6 @@ public class MultiLevel {
 
     public static final int DEPENDENT = FALSE; // no need for more
     public static final int DEPENDENT_1 = EVENTUAL_BEFORE;
-    public static final int DEPENDENT_2 = EVENTUAL_AFTER;
     public static final int INDEPENDENT = EFFECTIVE;
 
     // IMMUTABLE
@@ -54,7 +53,6 @@ public class MultiLevel {
     public static final int EVENTUALLY_E2IMMUTABLE_BEFORE_MARK = compose(EVENTUAL_BEFORE, EVENTUAL_BEFORE);
     public static final int EVENTUALLY_E1IMMUTABLE_BEFORE_MARK = compose(EVENTUAL_BEFORE);
 
-    public static final int EVENTUALLY_CONTENT2_NOT_NULL = compose(EVENTUAL, EVENTUAL, EVENTUAL);
     public static final int EVENTUALLY_CONTENT_NOT_NULL = compose(EVENTUAL, EVENTUAL);
 
     public static final int EVENTUALLY_E2IMMUTABLE = compose(EVENTUAL, EVENTUAL);

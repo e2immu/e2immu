@@ -469,7 +469,6 @@ public record NewObject(
                 return Level.fromBool(identity);
 
             case CONTEXT_MODIFIED:
-            case NOT_MODIFIED_1:
             case CONTEXT_MODIFIED_DELAY:
             case PROPAGATE_MODIFICATION_DELAY:
             case IGNORE_MODIFICATIONS:

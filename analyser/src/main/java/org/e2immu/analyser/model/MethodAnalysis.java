@@ -171,12 +171,6 @@ public interface MethodAnalysis extends Analysis {
 
         if (max == Level.DELAY && getMethodInfo().isAbstract()) {
 
-            // no information found in the whole hierarchy, we default to the value of the annotation mode
-            if (variableProperty == VariableProperty.PROPAGATE_MODIFICATION && getMethodInfo().typeInfo
-                    .typeInspection.get().isFunctionalInterface()) {
-                return Level.TRUE;
-            }
-
             // unless: abstract methods, not annotated for modification
             if (variableProperty == VariableProperty.MODIFIED_METHOD) {
                 /*

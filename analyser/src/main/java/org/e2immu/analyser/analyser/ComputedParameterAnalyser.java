@@ -204,7 +204,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyser {
                     }
                 }
 
-                // @Dependent1, @Dependent2
+                // @Dependent1
 
                 if (!fieldAnalyser.fieldAnalysis.linked1Variables.isSet()) {
                     log(ANALYSER, "Delaying @Dependent1/2, waiting for linked1variables",
@@ -218,16 +218,6 @@ public class ComputedParameterAnalyser extends ParameterAnalyser {
                             log(ANALYSER, "Set @Dependent1 on parameter {}: field {} linked or assigned; type is ImplicitlyImmutable",
                                     parameterInfo.fullyQualifiedName(), fieldInfo.name);
                         }
-                    } else {
-                        Optional<Variable> ov = lv1.variables().stream().filter(v -> v instanceof FieldReference fr
-                                && fr.scope instanceof VariableExpression ve && ve.variable() == parameterInfo).findFirst();
-                        ov.ifPresent(v -> {
-                            if (!parameterAnalysis.properties.isSet(VariableProperty.INDEPENDENT)) {
-                                parameterAnalysis.properties.put(VariableProperty.INDEPENDENT, MultiLevel.DEPENDENT_2);
-                                log(ANALYSER, "Set @Dependent2 on parameter {}: a field of {} linked or assigned; type is ImplicitlyImmutable",
-                                        parameterInfo.fullyQualifiedName(), fieldInfo.name);
-                            }
-                        });
                     }
                 }
             }
@@ -457,8 +447,11 @@ public class ComputedParameterAnalyser extends ParameterAnalyser {
             }
             parameterAnalysis.setProperty(VariableProperty.CONTEXT_NOT_NULL, MultiLevel.NULLABLE);
 
-            // @NotNull1
-            parameterAnalysis.setProperty(VariableProperty.NOT_MODIFIED_1, Level.FALSE);
+            // @Container
+            parameterAnalysis.setProperty(CONTAINER, Level.FALSE);
+
+            // @IgnoreModifications
+            parameterAnalysis.setProperty(IGNORE_MODIFICATIONS, Level.FALSE);
 
             // @PropagateModification
             if (!parameterAnalysis.properties.isSet(EXTERNAL_PROPAGATE_MOD)) {

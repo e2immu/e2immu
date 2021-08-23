@@ -69,7 +69,7 @@ public class NullConstant implements ConstantExpression<Object> {
         return switch (variableProperty) {
             case NOT_NULL_EXPRESSION -> MultiLevel.NULLABLE;
             case CONTEXT_MODIFIED, CONTEXT_MODIFIED_DELAY, PROPAGATE_MODIFICATION_DELAY,
-                    IGNORE_MODIFICATIONS, NOT_MODIFIED_1, IDENTITY -> FALSE;
+                    IGNORE_MODIFICATIONS, IDENTITY -> FALSE;
 
             // if this becomes a problem we'll have to add a parameterized type as the expression context, and
             // take the value of the parameterized type's best type analysis

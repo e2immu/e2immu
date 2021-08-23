@@ -90,7 +90,6 @@ public class UnknownExpression extends ElementImpl implements Expression {
             case CONTEXT_MODIFIED_DELAY:
             case PROPAGATE_MODIFICATION_DELAY:
             case IDENTITY:
-            case NOT_MODIFIED_1:
                 return Level.FALSE;
             case INDEPENDENT:
                 return MultiLevel.INDEPENDENT;

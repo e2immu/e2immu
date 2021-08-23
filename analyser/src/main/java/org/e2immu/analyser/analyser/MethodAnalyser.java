@@ -134,7 +134,6 @@ public abstract class MethodAnalyser extends AbstractAnalyser implements HoldsAn
             if (!methodInfo.isVoid()) {
                 check(NotNull.class, e2.notNull);
                 check(NotNull1.class, e2.notNull1);
-                check(NotNull2.class, e2.notNull2);
                 check(Fluent.class, e2.fluent);
                 check(Identity.class, e2.identity);
                 check(E1Immutable.class, e2.e1Immutable);
@@ -155,7 +154,6 @@ public abstract class MethodAnalyser extends AbstractAnalyser implements HoldsAn
         // opposites
         check(Dependent.class, e2.dependent);
         check(Dependent1.class, e2.dependent1);
-        check(Dependent2.class, e2.dependent2);
 
         CheckPrecondition.checkPrecondition(messages, methodInfo, methodAnalysis, companionAnalyses);
 
