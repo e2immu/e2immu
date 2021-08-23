@@ -230,13 +230,13 @@ public class E2ImmutableComposition_0 {
      * The array itself is mutable, and is being accessed. It is not modified outside the constructor.
      * <p>
      * In this example, the array is fully shielded and acts as support data.
-     * The data inside the array is untouched, and therefore immutable: nowhere in this type, its fields, methods or constructors
+     * The data inside the array is transparent, and therefore immutable: nowhere in this type, its fields, methods or constructors
      * are accessed, and it is not passed on as an argument where its type is expected.
      * <p>
      * Note that we use a {@link Supplier} to obtain values for the array. If we had used the constructor of {@link One},
-     * the type would not have been untouched.
+     * the type would not have been transparent.
      * <p>
-     * Field composition: Modifiable data containing untouched data
+     * Field composition: Modifiable data containing transparent data
      */
     @E2Container
     static class ImmutableArrayOfImplicitlyImmutableOnes implements NonEmptyImmutableList<One<Integer>> {
@@ -275,8 +275,8 @@ public class E2ImmutableComposition_0 {
     /**
      * Second of a series of variants based on an array field.
      * <p>
-     * This one shows the actual replacement of the untouched immutable data of type {@link One<Integer>}
-     * by the unbound parameter type {@link T}, which is inaccessible rather than untouched.
+     * This one shows the actual replacement of the transparent immutable data of type {@link One<Integer>}
+     * by the unbound parameter type {@link T}, which is inaccessible rather than transparent.
      * <p>
      * Note that we have to use {@link Object} to create the array.
      * <p>
@@ -582,7 +582,8 @@ public class E2ImmutableComposition_0 {
      * Building on {@link ImmutableArrayOfHasSize}.
      * <p>
      * Field composition: Modifiable data containing constant data.
-     * We do not regard the latter is immutable content warranting {@link Dependent1}.
+     * We do not regard the latter as immutable content warranting {@link Dependent1}, whence the absence
+     * of {@link Dependent1} on <code>consumer</code> in <code>visit</code>.
      */
     @E2Container
     static class ArrayOfConstants implements NonEmptyImmutableList<String> {
