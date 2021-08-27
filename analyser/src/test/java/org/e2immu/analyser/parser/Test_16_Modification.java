@@ -628,19 +628,7 @@ public class Test_16_Modification extends CommonTestRunner {
                 }
 
                 if (d.variable() instanceof ParameterInfo s && "s".equals(s.name)) {
-                    int cd = d.getProperty(VariableProperty.CONTEXT_DEPENDENT);
-                    if ("0".equals(d.statementId())) {
-                        assertEquals(MultiLevel.DEPENDENT, cd);
-                    }
-                    if ("2".equals(d.statementId())) {
-                        int expectCd = d.iteration() == 0 ? Level.DELAY : MultiLevel.DEPENDENT_1;
-                        assertEquals(expectCd, cd);
-                    }
-                    // context dependent follows from one statement to the next, just like context modification does
-                    if ("3".equals(d.statementId())) {
-                        int expectCd = d.iteration() == 0 ? Level.DELAY : MultiLevel.DEPENDENT_1;
-                        assertEquals(expectCd, cd);
-                    }
+                    // TODO
                 }
             }
         };
@@ -663,7 +651,7 @@ public class Test_16_Modification extends CommonTestRunner {
             MethodInfo add = set.findUniqueMethod("add", 1);
             ParameterInfo p0Add = add.methodInspection.get().getParameters().get(0);
             assertEquals(MultiLevel.DEPENDENT_1, p0Add.parameterAnalysis.get()
-                    .getProperty(VariableProperty.INDEPENDENT_PARAMETER));
+                    .getProperty(VariableProperty.INDEPENDENT));
         };
 
         // there is no implicitly immutable content in this type; as a consequence, the parameter s

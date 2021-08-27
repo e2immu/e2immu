@@ -43,11 +43,10 @@ public class Test_00_Basics_19 extends CommonTestRunner {
             // unbound parameter type, so @NotModified by default
             assertEquals(Level.TRUE, put0KeyAnalysis.getProperty(VariableProperty.MODIFIED_VARIABLE));
             assertEquals(MultiLevel.NULLABLE, put0KeyAnalysis.getProperty(VariableProperty.NOT_NULL_PARAMETER));
-            assertEquals(Level.FALSE, put0KeyAnalysis.getProperty(VariableProperty.PROPAGATE_MODIFICATION));
             assertEquals(MultiLevel.MUTABLE, put0KeyAnalysis.getProperty(VariableProperty.IMMUTABLE));
 
             // no idea if DEP_1 or DEP_2, but INDEPENDENT because unbound
-            assertEquals(MultiLevel.INDEPENDENT, put0KeyAnalysis.getProperty(VariableProperty.INDEPENDENT_PARAMETER));
+            assertEquals(MultiLevel.INDEPENDENT, put0KeyAnalysis.getProperty(VariableProperty.INDEPENDENT));
         };
 
         testClass("Basics_19", 0, 0, new DebugConfiguration.Builder()

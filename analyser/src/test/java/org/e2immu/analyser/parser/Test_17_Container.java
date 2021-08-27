@@ -459,10 +459,9 @@ public class Test_17_Container extends CommonTestRunner {
             MethodInfo forEach = collection.findUniqueMethod("forEach", 1);
             assertSame(typeMap.getPrimitives().voidTypeInfo, forEach.returnType().typeInfo);
             ParameterInfo param0ListForEach = forEach.methodInspection.get().getParameters().get(0);
+
             assertEquals(Level.TRUE, param0ListForEach.parameterAnalysis.get()
-                    .getProperty(VariableProperty.PROPAGATE_MODIFICATION));
-            assertEquals(Level.TRUE, param0ListForEach.parameterAnalysis.get()
-                    .getProperty(VariableProperty.INDEPENDENT_PARAMETER));
+                    .getProperty(VariableProperty.INDEPENDENT));
 
             TypeInfo hashSet = typeMap.get(HashSet.class);
             MethodInfo constructor1 = hashSet.typeInspection.get().constructors().stream()

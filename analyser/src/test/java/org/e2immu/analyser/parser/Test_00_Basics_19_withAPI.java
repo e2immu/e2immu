@@ -45,11 +45,10 @@ public class Test_00_Basics_19_withAPI extends CommonTestRunner {
             // unbound parameter type, so @NotModified by default
             assertEquals(Level.FALSE, put0KeyAnalysis.getProperty(VariableProperty.MODIFIED_VARIABLE));
             assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, put0KeyAnalysis.getProperty(VariableProperty.NOT_NULL_PARAMETER));
-            assertEquals(Level.FALSE, put0KeyAnalysis.getProperty(VariableProperty.PROPAGATE_MODIFICATION));
             assertEquals(MultiLevel.MUTABLE, put0KeyAnalysis.getProperty(VariableProperty.IMMUTABLE));
 
             // no idea if DEP_1 or DEP_2, but INDEPENDENT because unbound
-            assertEquals(MultiLevel.INDEPENDENT, put0KeyAnalysis.getProperty(VariableProperty.INDEPENDENT_PARAMETER));
+            assertEquals(MultiLevel.INDEPENDENT, put0KeyAnalysis.getProperty(VariableProperty.INDEPENDENT));
 
             TypeInfo stream = typeMap.get(Stream.class);
             TypeAnalysis streamAna = stream.typeAnalysis.get();

@@ -62,8 +62,6 @@ public class Test_Support_05_Lazy extends CommonTestRunner {
         if ("supplier".equals(d.fieldInfo().name)) {
             assertEquals(Level.TRUE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
             if (iteration > 0) assertNotNull(d.fieldAnalysis().getEffectivelyFinalValue());
-            int expectEpm = iteration == 0 ? Level.DELAY : Level.TRUE;
-            assertEquals(expectEpm, d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_PROPAGATE_MOD));
         }
     };
 

@@ -17,7 +17,6 @@ package org.e2immu.analyser.analyser;
 import org.e2immu.analyser.analyser.util.DelayDebugger;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Level;
-import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.expression.DelayedVariableExpression;
 import org.e2immu.analyser.model.expression.VariableExpression;
@@ -123,19 +122,19 @@ public class Linked1Writer {
                         .collect(Collectors.toSet());
                 if (!fieldsInScope.isEmpty()) {
                     // we have a hit!
-                    setProperty = true;
-                    vic.setProperty(CONTEXT_DEPENDENT, MultiLevel.DEPENDENT_1, EVALUATION);
+                    //setProperty = true;
+                    //vic.setProperty(CONTEXT_DEPENDENT, MultiLevel.DEPENDENT_1, EVALUATION);
                 }
             }
         }
 
         if (setProperty) {
             progress.set(true);
-        } else if (inArgument instanceof ParameterInfo && vic.hasEvaluation() &&
+        }/* else if (inArgument instanceof ParameterInfo && vic.hasEvaluation() &&
                 best.getProperty(CONTEXT_DEPENDENT) == Level.DELAY) {
             vic.setProperty(CONTEXT_DEPENDENT, MultiLevel.DEPENDENT, EVALUATION);
             progress.set(true);
-        }
+        }*/
     }
 
     public Boolean isLinkedToField(Expression expression) {

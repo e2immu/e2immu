@@ -31,13 +31,13 @@ public interface ParameterAnalysis extends Analysis {
     }
 
     enum AssignedOrLinked {
-        ASSIGNED(Set.of(EXTERNAL_NOT_NULL, MODIFIED_OUTSIDE_METHOD, EXTERNAL_PROPAGATE_MOD, EXTERNAL_IMMUTABLE)),
-        LINKED(Set.of(MODIFIED_OUTSIDE_METHOD, EXTERNAL_PROPAGATE_MOD)),
+        ASSIGNED(Set.of(EXTERNAL_NOT_NULL, MODIFIED_OUTSIDE_METHOD, EXTERNAL_IMMUTABLE)),
+        LINKED(Set.of(MODIFIED_OUTSIDE_METHOD)),
         NO(Set.of()),
         DELAYED(null);
 
         public static final Set<VariableProperty> PROPERTIES = Set.of(EXTERNAL_NOT_NULL, MODIFIED_OUTSIDE_METHOD,
-                EXTERNAL_PROPAGATE_MOD, EXTERNAL_IMMUTABLE);
+                EXTERNAL_IMMUTABLE);
         private final Set<VariableProperty> propertiesToCopy;
 
         AssignedOrLinked(Set<VariableProperty> propertiesToCopy) {
@@ -98,7 +98,7 @@ public interface ParameterAnalysis extends Analysis {
                         return Level.FALSE;
                     }
                 }
-                case INDEPENDENT_PARAMETER -> {
+                case INDEPENDENT -> {
                     if (parameterInfo.isOfUnboundParameterType(InspectionProvider.DEFAULT) ||
                             parameterInfo.parameterizedType.isE2Immutable(analysisProvider)) {
                         return MultiLevel.EFFECTIVE;
@@ -118,26 +118,14 @@ public interface ParameterAnalysis extends Analysis {
             case IDENTITY:
                 return parameterInfo.index == 0 ? Level.TRUE : Level.FALSE;
 
-            case INDEPENDENT_PARAMETER:
-                int ip = getPropertyFromMapDelayWhenAbsent(INDEPENDENT_PARAMETER);
+            case INDEPENDENT:
+                int ip = getPropertyFromMapDelayWhenAbsent(INDEPENDENT);
                 if (ip != Level.DELAY) return ip;
                 if (parameterInfo.owner.shallowAnalysis()) {
-                    return getParameterPropertyCheckOverrides(analysisProvider, parameterInfo, INDEPENDENT_PARAMETER);
+                    return getParameterPropertyCheckOverrides(analysisProvider, parameterInfo, INDEPENDENT);
                 }
-                int cd = getParameterProperty(analysisProvider, parameterInfo, CONTEXT_DEPENDENT);
-                int i = getParameterProperty(analysisProvider, parameterInfo, INDEPENDENT);
-                if (cd == Level.DELAY || i == Level.DELAY) return Level.DELAY;
-                return MultiLevel.bestNotNull(cd, i);
+                return getParameterProperty(analysisProvider, parameterInfo, INDEPENDENT);
 
-            case PROPAGATE_MODIFICATION: {
-                int pm = getPropertyFromMapDelayWhenAbsent(PROPAGATE_MODIFICATION);
-                if (pm != Level.DELAY) return pm; // done, or contracted
-                int cpm = getParameterProperty(analysisProvider, parameterInfo, CONTEXT_PROPAGATE_MOD);
-                int epm = getParameterProperty(analysisProvider, parameterInfo, EXTERNAL_PROPAGATE_MOD);
-                if (cpm == Level.TRUE || epm == Level.TRUE) return Level.TRUE;
-                if (cpm == Level.DELAY || epm == Level.DELAY) return Level.DELAY;
-                return Level.FALSE;
-            }
             case MODIFIED_VARIABLE: {
                 // if the type properties are contracted, and we've decided on @Container, then the parameter is @NotModified
                 // if the method is not abstract and @Container is true, then we must have @NotModified
@@ -149,6 +137,7 @@ public interface ParameterAnalysis extends Analysis {
                 }
                 int mv = getPropertyFromMapDelayWhenAbsent(MODIFIED_VARIABLE);
                 if (mv != Level.DELAY) return mv;
+                /* TODO replacement code @Dependent1
                 if (parameterInfo.owner.isAbstract()) {
                     int pm = analysisProvider.getMethodAnalysis(parameterInfo.owner).getMethodProperty(analysisProvider,
                             PROPAGATE_MODIFICATION);
@@ -166,7 +155,7 @@ public interface ParameterAnalysis extends Analysis {
                     }
                     if (pm == Level.DELAY) return Level.DELAY; // no decision yet
                     return getParameterPropertyCheckOverrides(analysisProvider, parameterInfo, MODIFIED_VARIABLE);
-                }
+                } */
                 int cm = getParameterProperty(analysisProvider, parameterInfo, CONTEXT_MODIFIED);
                 int mom = getParameterProperty(analysisProvider, parameterInfo, MODIFIED_OUTSIDE_METHOD);
                 if (cm == Level.DELAY || mom == Level.DELAY) return Level.DELAY;

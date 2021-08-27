@@ -57,12 +57,6 @@ public class Test_45_Project_AAPI extends CommonTestRunner {
     @Test
     public void test_2() throws IOException {
 
-        FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
-            if ("value".equals(d.fieldInfo().name)) {
-                assertEquals(Level.FALSE, d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_PROPAGATE_MOD));
-            }
-        };
-
         TypeMapVisitor typeMapVisitor = typeMap -> {
             TypeAnalysis stringAnalysis = typeMap.getPrimitives().stringTypeInfo.typeAnalysis.get();
             assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, stringAnalysis.getProperty(VariableProperty.IMMUTABLE));
@@ -81,7 +75,6 @@ public class Test_45_Project_AAPI extends CommonTestRunner {
         };
 
         testClass("Project_2", 0, 0, new DebugConfiguration.Builder()
-                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addTypeMapVisitor(typeMapVisitor)
                 .build());

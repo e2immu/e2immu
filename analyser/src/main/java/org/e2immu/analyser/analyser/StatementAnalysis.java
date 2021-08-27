@@ -140,18 +140,6 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         }).orElse(replaced);
     }
 
-    public boolean lastStatementIsEscape() {
-        if (flowData.isUnreachable()) {
-            return false;
-        }
-        return followReplacements().navigationData.next.get().map(statementAnalysis -> {
-            if (statementAnalysis.flowData.alwaysEscapesViaException()) {
-                return true;
-            }
-            return statementAnalysis.lastStatementIsEscape();
-        }).orElse(false);
-    }
-
     public List<StatementAnalysis> lastStatementsOfNonEmptySubBlocks() {
         return navigationData.blocks.get().stream()
                 .filter(Optional::isPresent)
@@ -415,10 +403,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         vic.setProperty(CONTEXT_NOT_NULL, notNull, INITIAL);
         vic.setProperty(NOT_NULL_EXPRESSION, notNull, INITIAL);
         vic.setProperty(EXTERNAL_NOT_NULL, MultiLevel.NOT_INVOLVED, INITIAL);
-
         vic.setProperty(CONTEXT_MODIFIED, Level.FALSE, INITIAL);
-        vic.setProperty(CONTEXT_PROPAGATE_MOD, Level.FALSE, INITIAL);
-
         vic.setProperty(CONTEXT_IMMUTABLE, MultiLevel.MUTABLE, INITIAL);
         vic.setProperty(EXTERNAL_IMMUTABLE, MultiLevel.NOT_INVOLVED, INITIAL);
     }
@@ -989,10 +974,6 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                 VariableInfo::getLinkedVariables, CONTEXT_MODIFIED,
                 groupPropertyValues.getMap(CONTEXT_MODIFIED), MERGE, doNotWrite, localCopyData);
 
-        contextPropertyWriter.write(this, evaluationContext,
-                VariableInfo::getLinkedVariables, CONTEXT_PROPAGATE_MOD,
-                groupPropertyValues.getMap(CONTEXT_PROPAGATE_MOD), MERGE, doNotWrite, localCopyData);
-
         return ennStatus.combine(cnnStatus).combine(cmStatus).combine(extImmStatus).combine(cImmStatus);
     }
 
@@ -1148,8 +1129,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             int defaultNotNull = methodAnalysis.getMethodInfo().returnType().defaultNotNull();
             vic.setValue(new UnknownExpression(returnVariable.returnType, UnknownExpression.RETURN_VALUE), false,
                     LinkedVariables.EMPTY, Map.of(CONTEXT_NOT_NULL, defaultNotNull,
-                            CONTEXT_MODIFIED, Level.FALSE,
-                            CONTEXT_PROPAGATE_MOD, Level.FALSE), true);
+                            CONTEXT_MODIFIED, Level.FALSE), true);
             // assignment will be at LEVEL 3
             vic.setLinkedVariables(LinkedVariables.EMPTY, true);
 
@@ -1161,7 +1141,6 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             vic.setProperty(NOT_NULL_EXPRESSION, MultiLevel.EFFECTIVELY_NOT_NULL, INITIAL);
             vic.setProperty(EXTERNAL_NOT_NULL, MultiLevel.NOT_INVOLVED, INITIAL);
             vic.setProperty(EXTERNAL_IMMUTABLE, MultiLevel.NOT_INVOLVED, INITIAL);
-            vic.setProperty(CONTEXT_PROPAGATE_MOD, Level.FALSE, INITIAL);
             vic.setProperty(CONTEXT_IMMUTABLE, MultiLevel.MUTABLE, INITIAL);
 
         } else if ((variable instanceof ParameterInfo parameterInfo)) {
@@ -1171,7 +1150,6 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             vic.setLinkedVariables(LinkedVariables.EMPTY, true);
             Map<VariableProperty, Integer> valueProperties = evaluationContext.getValueProperties(initial);
             valueProperties.forEach((k, v) -> vic.setProperty(k, v, false, INITIAL));
-            vic.setProperty(CONTEXT_DEPENDENT, MultiLevel.DEPENDENT, INITIAL);
             vic.setProperty(CONTEXT_IMMUTABLE, MultiLevel.MUTABLE, INITIAL);
 
         } else if (variable instanceof FieldReference fieldReference) {
@@ -1243,7 +1221,6 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         result.put(CONTEXT_NOT_NULL, contextNotNull);
         result.put(CONTEXT_IMMUTABLE, MultiLevel.MUTABLE);
         result.put(CONTEXT_MODIFIED, Level.FALSE);
-        result.put(CONTEXT_PROPAGATE_MOD, Level.FALSE);
         return result;
     }
 
@@ -1293,7 +1270,6 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         // rather than fieldAnalysis.getLinkedVariables
 
         boolean myOwn = fieldReference.scopeOwnerIs(methodAnalysis.getMethodInfo().typeInfo);
-        String newObjectIdentifier = index + "-" + fieldReference.fieldInfo.fullyQualifiedName();
 
         if (inPartOfConstruction() && myOwn && !fieldReference.fieldInfo.isStatic()) { // instance field that must be initialised
             Expression initialValue = analyserContext.getFieldAnalysis(fieldReference.fieldInfo).getInitialValue();

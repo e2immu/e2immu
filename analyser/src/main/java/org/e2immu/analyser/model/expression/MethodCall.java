@@ -290,9 +290,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         }
         // is the method modifying, do we need to wait?
         int modifiedMethod = methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD);
-        boolean propagateModification = methodAnalysis.getProperty(VariableProperty.PROPAGATE_MODIFICATION) == Level.TRUE;
-        int modified = alwaysModifying ? Level.TRUE :
-                recursiveCall || partOfCallCycle || propagateModification ? Level.FALSE : modifiedMethod;
+        int modified = alwaysModifying ? Level.TRUE : recursiveCall || partOfCallCycle ? Level.FALSE : modifiedMethod;
         int contextModifiedDelay = Level.fromBool(modified == Level.DELAY);
         builder.causeOfContextModificationDelay(methodInfo, modified == Level.DELAY);
 
@@ -351,9 +349,8 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                     builder.markContextModifiedDelay(ve.variable());
                     builder.eraseContextModified(ve.variable());
                 }
-            } else if (propagateModification) {
-                builder.markPropagateModification(ve.variable());
             }
+            // TODO else propagate modification?
         }
 
         // precondition

@@ -152,8 +152,6 @@ public class Test_Support_02_SetOnce extends CommonTestRunner {
                 if (d.variable() instanceof ReturnVariable) {
                     if ("0.0.0".equals(d.statementId())) {
                         // the return variable is not a parameter, so has no CONTEXT_DEPENDENT value
-                        assertEquals(Level.DELAY, d.getProperty(VariableProperty.CONTEXT_DEPENDENT));
-
                         String expect = switch (d.iteration()) {
                             case 0 -> "<m:get>";
                             case 1 -> "<f:t>";

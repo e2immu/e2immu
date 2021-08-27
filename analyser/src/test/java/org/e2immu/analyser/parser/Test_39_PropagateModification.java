@@ -49,8 +49,6 @@ public class Test_39_PropagateModification extends CommonTestRunner {
                 int expectCm = d.iteration() <= 1 ? Level.DELAY : Level.FALSE;
                 assertEquals(expectCm, p0.getProperty(VariableProperty.CONTEXT_MODIFIED));
                 assertEquals(expectCm, p0.getProperty(VariableProperty.MODIFIED_VARIABLE));
-                int expectPm = d.iteration() <= 1 ? Level.DELAY : Level.TRUE;
-                assertEquals(expectPm, p0.getProperty(VariableProperty.PROPAGATE_MODIFICATION));
             }
         };
 
@@ -59,8 +57,6 @@ public class Test_39_PropagateModification extends CommonTestRunner {
                 if (d.variable() instanceof ParameterInfo p && "myConsumer".equals(p.name)) {
                     int expectCm = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
                     assertEquals(expectCm, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
-                    int expectPm = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
-                    assertEquals(expectPm, d.getProperty(VariableProperty.CONTEXT_PROPAGATE_MOD));
                 }
             }
         };
@@ -88,14 +84,10 @@ public class Test_39_PropagateModification extends CommonTestRunner {
                     if ("0".equals(d.statementId())) {
                         int expectCm = d.iteration() <= 1 ? Level.DELAY : Level.FALSE;
                         assertEquals(expectCm, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
-                        int expectPm = d.iteration() <= 1 ? Level.DELAY : Level.FALSE;
-                        assertEquals(expectPm, d.getProperty(VariableProperty.CONTEXT_PROPAGATE_MOD));
                     }
                     if ("1".equals(d.statementId())) {
                         int expectCm = d.iteration() <= 1 ? Level.DELAY : Level.FALSE;
                         assertEquals(expectCm, d.getProperty(VariableProperty.CONTEXT_MODIFIED));
-                        int expectPm = d.iteration() <= 1 ? Level.DELAY : Level.TRUE; // ! Here different !
-                        assertEquals(expectPm, d.getProperty(VariableProperty.CONTEXT_PROPAGATE_MOD));
                     }
                 }
             }
@@ -267,7 +259,6 @@ public class Test_39_PropagateModification extends CommonTestRunner {
         MethodInfo accept = classWithConsumer.findUniqueMethod("abstractAccept", 1);
         assertTrue(accept.isAbstract());
         assertEquals(Level.FALSE, accept.getAnalysis().getProperty(VariableProperty.MODIFIED_METHOD));
-        assertEquals(Level.FALSE, accept.getAnalysis().getProperty(VariableProperty.PROPAGATE_MODIFICATION));
 
         ParameterInfo p0 = accept.methodInspection.get().getParameters().get(0);
         ParameterAnalysis p0Ana = p0.parameterAnalysis.get();

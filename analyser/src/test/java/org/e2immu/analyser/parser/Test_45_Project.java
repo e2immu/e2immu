@@ -79,7 +79,7 @@ public class Test_45_Project extends CommonTestRunner {
                     String expectValue = d.iteration() == 0 ? "null==<m:get>?null:<f:value>" :
                             "null==kvStore.get(key)?null:kvStore.get(key).value";
                     assertEquals(expectValue, d.currentValue().toString());
-                    int expected = d.iteration() == 0 ? Level.DELAY: MultiLevel.NULLABLE;
+                    int expected = d.iteration() == 0 ? Level.DELAY : MultiLevel.NULLABLE;
                     assertEquals(expected, d.getProperty(VariableProperty.NOT_NULL_EXPRESSION));
                 }
             }
@@ -210,12 +210,6 @@ public class Test_45_Project extends CommonTestRunner {
             }
         };
 
-        FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
-            if ("value".equals(d.fieldInfo().name)) {
-                assertEquals(Level.FALSE, d.fieldAnalysis().getProperty(VariableProperty.EXTERNAL_PROPAGATE_MOD));
-            }
-        };
-
         TypeMapVisitor typeMapVisitor = typeMap -> {
             TypeAnalysis stringAnalysis = typeMap.getPrimitives().stringTypeInfo.typeAnalysis.get();
             assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, stringAnalysis.getProperty(VariableProperty.IMMUTABLE));
@@ -234,11 +228,10 @@ public class Test_45_Project extends CommonTestRunner {
         };
 
         testClass("Project_2", 0, 0, new DebugConfiguration.Builder()
-                //    .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                //    .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                //     .addTypeMapVisitor(typeMapVisitor)
-                //     .addEvaluationResultVisitor(evaluationResultVisitor)
-                //     .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addTypeMapVisitor(typeMapVisitor)
+                .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build());
     }
 
@@ -260,12 +253,10 @@ public class Test_45_Project extends CommonTestRunner {
 
             assertEquals(Level.TRUE, p0a.getProperty(VariableProperty.MODIFIED_VARIABLE));
             assertEquals(MultiLevel.NULLABLE, p0a.getProperty(VariableProperty.NOT_NULL_PARAMETER));
-            assertEquals(MultiLevel.DEPENDENT, p0a.getProperty(VariableProperty.INDEPENDENT_PARAMETER));
+            assertEquals(MultiLevel.DEPENDENT, p0a.getProperty(VariableProperty.INDEPENDENT));
 
             assertEquals(Level.TRUE, p0a.getProperty(VariableProperty.CONTAINER));
             assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, p0a.getProperty(VariableProperty.IMMUTABLE));
-
-            assertEquals(Level.FALSE, p0a.getProperty(VariableProperty.PROPAGATE_MODIFICATION));
         };
         testClass("Project_4", 0, 0, new DebugConfiguration.Builder()
                 .addTypeMapVisitor(typeMapVisitor)

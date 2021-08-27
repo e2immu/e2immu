@@ -82,8 +82,7 @@ public class EvaluateParameters {
                         map.put(VariableProperty.CONTEXT_MODIFIED, parameterAnalysis.getProperty(VariableProperty.MODIFIED_VARIABLE));
                         map.put(VariableProperty.CONTEXT_NOT_NULL, parameterAnalysis.getProperty(VariableProperty.NOT_NULL_PARAMETER));
                         map.put(VariableProperty.CONTAINER, parameterAnalysis.getProperty(VariableProperty.CONTAINER));
-                        map.put(VariableProperty.PROPAGATE_MODIFICATION, parameterAnalysis.getProperty(VariableProperty.PROPAGATE_MODIFICATION));
-                        independent = parameterAnalysis.getProperty(VariableProperty.INDEPENDENT_PARAMETER);
+                        independent = parameterAnalysis.getProperty(VariableProperty.INDEPENDENT);
                     }
                 } catch (RuntimeException e) {
                     LOGGER.error("Failed to obtain parameter analysis of {}", parameterInfo.fullyQualifiedName());
@@ -92,6 +91,7 @@ public class EvaluateParameters {
                 if (notModified1Scope == Level.TRUE) {
                     map.put(VariableProperty.CONTEXT_NOT_NULL, Level.FALSE);
                 }
+                /* TODO replacement code @Dependent1
                 {
                     int propagate = map.getOrDefault(VariableProperty.PROPAGATE_MODIFICATION, Level.DELAY);
                     if (propagate == Level.DELAY) {
@@ -103,6 +103,7 @@ public class EvaluateParameters {
                         }
                     }
                 }
+                 */
                 {
                     int contextModified = map.getOrDefault(VariableProperty.CONTEXT_MODIFIED, Level.DELAY);
                     if (contextModified == Level.DELAY) {

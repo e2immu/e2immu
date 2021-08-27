@@ -19,7 +19,6 @@ import org.e2immu.analyser.model.expression.MultiValue;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.statement.ExplicitConstructorInvocation;
 import org.e2immu.analyser.model.variable.FieldReference;
-import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.resolver.Resolver;
@@ -32,6 +31,7 @@ import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.AnalysisStatus.*;
 import static org.e2immu.analyser.analyser.VariableProperty.*;
+import static org.e2immu.analyser.analyser.VariableProperty.INDEPENDENT;
 import static org.e2immu.analyser.model.MultiLevel.*;
 import static org.e2immu.analyser.model.ParameterAnalysis.AssignedOrLinked.*;
 import static org.e2immu.analyser.util.Logger.LogTarget.ANALYSER;
@@ -85,7 +85,6 @@ public class ComputedParameterAnalyser extends ParameterAnalyser {
     private AnalysisStatus analyseFields(SharedState sharedState) {
         boolean changed = false;
         boolean delays = false;
-        boolean checkLinks = true;
 
         if (sharedState.iteration == 0) {
             if (Primitives.isPrimitiveExcludingVoid(parameterInfo.parameterizedType) &&
@@ -107,15 +106,9 @@ public class ComputedParameterAnalyser extends ParameterAnalyser {
                 changed = true;
             }
 
-            int contractDependent = parameterAnalysis.getProperty(INDEPENDENT_PARAMETER);
-            if (contractDependent != Level.DELAY && !parameterAnalysis.properties.isSet(INDEPENDENT_PARAMETER)) {
-                parameterAnalysis.properties.put(INDEPENDENT_PARAMETER, contractDependent);
-                changed = true;
-            }
-
-            int contractPropMod = parameterAnalysis.getProperty(PROPAGATE_MODIFICATION);
-            if (contractPropMod != Level.DELAY && !parameterAnalysis.properties.isSet(EXTERNAL_PROPAGATE_MOD)) {
-                parameterAnalysis.properties.put(EXTERNAL_PROPAGATE_MOD, contractPropMod);
+            int contractDependent = parameterAnalysis.getProperty(INDEPENDENT);
+            if (contractDependent != Level.DELAY && !parameterAnalysis.properties.isSet(INDEPENDENT)) {
+                parameterAnalysis.properties.put(INDEPENDENT, contractDependent);
                 changed = true;
             }
 
@@ -130,7 +123,6 @@ public class ComputedParameterAnalyser extends ParameterAnalyser {
                     parameterAnalysis.setProperty(VariableProperty.EXTERNAL_NOT_NULL, MultiLevel.NOT_INVOLVED); // not involved
                     changed = true;
                 }
-                checkLinks = false;
             } else {
                 int contractNotNull = parameterAnalysis.getProperty(VariableProperty.NOT_NULL_PARAMETER);
                 if (contractNotNull != Level.DELAY && !parameterAnalysis.properties.isSet(VariableProperty.EXTERNAL_NOT_NULL)) {
@@ -159,7 +151,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyser {
         // find a field that's linked to me; bail out when not all field's values are set.
         for (FieldInfo fieldInfo : fieldsAssignedInThisMethod) {
             FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(fieldInfo);
-            ParameterAnalysis.AssignedOrLinked assignedOrLinked = determineAssignedOrLinked(fieldAnalysis, checkLinks);
+            ParameterAnalysis.AssignedOrLinked assignedOrLinked = determineAssignedOrLinked(fieldAnalysis);
             if (assignedOrLinked == DELAYED) {
                 delays = true;
             } else if (parameterAnalysis.addAssignedToField(fieldInfo, assignedOrLinked)) {
@@ -213,8 +205,8 @@ public class ComputedParameterAnalyser extends ParameterAnalyser {
                 } else {
                     LinkedVariables lv1 = fieldAnalyser.fieldAnalysis.linked1Variables.get();
                     if (lv1.contains(parameterInfo)) {
-                        if (!parameterAnalysis.properties.isSet(VariableProperty.INDEPENDENT)) {
-                            parameterAnalysis.properties.put(VariableProperty.INDEPENDENT, MultiLevel.DEPENDENT_1);
+                        if (!parameterAnalysis.properties.isSet(INDEPENDENT)) {
+                            parameterAnalysis.properties.put(INDEPENDENT, MultiLevel.DEPENDENT_1);
                             log(ANALYSER, "Set @Dependent1 on parameter {}: field {} linked or assigned; type is ImplicitlyImmutable",
                                     parameterInfo.fullyQualifiedName(), fieldInfo.name);
                         }
@@ -238,8 +230,8 @@ public class ComputedParameterAnalyser extends ParameterAnalyser {
             }
         }
 
-        if (!parameterAnalysis.properties.isSet(VariableProperty.INDEPENDENT) && !delays) {
-            parameterAnalysis.properties.put(VariableProperty.INDEPENDENT, MultiLevel.NOT_INVOLVED);
+        if (!parameterAnalysis.properties.isSet(INDEPENDENT) && !delays) {
+            parameterAnalysis.properties.put(INDEPENDENT, MultiLevel.NOT_INVOLVED);
         }
 
         assert delays || parameterAnalysis.properties.isSet(VariableProperty.MODIFIED_OUTSIDE_METHOD) &&
@@ -325,8 +317,8 @@ public class ComputedParameterAnalyser extends ParameterAnalyser {
                 parameterAnalysis.setProperty(variableProperty, MultiLevel.NOT_INVOLVED);
             }
         }
-        if (!parameterAnalysis.properties.isSet(VariableProperty.INDEPENDENT)) {
-            parameterAnalysis.properties.put(VariableProperty.INDEPENDENT, MultiLevel.NOT_INVOLVED);
+        if (!parameterAnalysis.properties.isSet(INDEPENDENT)) {
+            parameterAnalysis.properties.put(INDEPENDENT, MultiLevel.NOT_INVOLVED);
         }
         parameterAnalysis.freezeAssignedToField();
         parameterAnalysis.resolveFieldDelays();
@@ -338,7 +330,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyser {
         return vi != null && vi.isAssigned();
     }
 
-    private ParameterAnalysis.AssignedOrLinked determineAssignedOrLinked(FieldAnalysis fieldAnalysis, boolean checkLinks) {
+    private ParameterAnalysis.AssignedOrLinked determineAssignedOrLinked(FieldAnalysis fieldAnalysis) {
         int effFinal = fieldAnalysis.getProperty(VariableProperty.FINAL);
         if (effFinal == Level.DELAY) {
             return DELAYED;
@@ -376,7 +368,6 @@ public class ComputedParameterAnalyser extends ParameterAnalyser {
                 }
             }
         }
-        if (!checkLinks) return NO;
 
         // variable field, no direct assignment to parameter
         LinkedVariables linked = fieldAnalysis.getLinkedVariables();
@@ -387,7 +378,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyser {
     }
 
     public static final VariableProperty[] CONTEXT_PROPERTIES = {VariableProperty.CONTEXT_NOT_NULL,
-            VariableProperty.CONTEXT_MODIFIED, CONTEXT_PROPAGATE_MOD, CONTEXT_DEPENDENT, CONTEXT_IMMUTABLE};
+            VariableProperty.CONTEXT_MODIFIED, CONTEXT_IMMUTABLE};
 
     private AnalysisStatus analyseContext(SharedState sharedState) {
         // no point, we need to have seen the statement+field analysers first.
@@ -453,17 +444,10 @@ public class ComputedParameterAnalyser extends ParameterAnalyser {
             // @IgnoreModifications
             parameterAnalysis.setProperty(IGNORE_MODIFICATIONS, Level.FALSE);
 
-            // @PropagateModification
-            if (!parameterAnalysis.properties.isSet(EXTERNAL_PROPAGATE_MOD)) {
-                parameterAnalysis.setProperty(EXTERNAL_PROPAGATE_MOD, Level.FALSE);
-            }
-            parameterAnalysis.setProperty(CONTEXT_PROPAGATE_MOD, Level.FALSE);
-
             // @Independent
-            if (!parameterAnalysis.properties.isSet(VariableProperty.INDEPENDENT)) {
-                parameterAnalysis.setProperty(VariableProperty.INDEPENDENT, MultiLevel.NOT_INVOLVED);
+            if (!parameterAnalysis.properties.isSet(INDEPENDENT)) {
+                parameterAnalysis.setProperty(INDEPENDENT, MultiLevel.NOT_INVOLVED);
             }
-            parameterAnalysis.setProperty(CONTEXT_DEPENDENT, parameterInfo.parameterizedType.defaultIndependent());
 
             if (!parameterAnalysis.properties.isSet(EXTERNAL_IMMUTABLE)) {
                 parameterAnalysis.setProperty(EXTERNAL_IMMUTABLE, NOT_INVOLVED);

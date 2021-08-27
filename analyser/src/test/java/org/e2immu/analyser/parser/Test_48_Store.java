@@ -69,7 +69,6 @@ public class Test_48_Store extends CommonTestRunner {
                         assertEquals(expectLinks, eval.getLinkedVariables().toString());
                         String expectValue = d.iteration() == 0 ? "<v:entry>" : "nullable instance type Entry<String,Object>";
                         assertEquals(expectValue, eval.getValue().toString());
-                        assertEquals(Level.TRUE, eval.getProperty(VariableProperty.CONTEXT_PROPAGATE_MOD));
                         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, eval.getProperty(VariableProperty.CONTEXT_NOT_NULL));
                     }
                 }

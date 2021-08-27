@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Translation takes place from statement, over expression, down to variable and type.
@@ -61,9 +62,8 @@ public class TranslationMapImpl implements TranslationMap {
     @Override
     public String toString() {
         return "TM{" +
-                List.of(variables.isEmpty() ? "" : variables.toString(),
-                        types.isEmpty() ? "" : types.toString())
-                        .stream().filter(s -> !s.isEmpty()).collect(Collectors.joining("")) +
+                Stream.of(variables.isEmpty() ? "" : variables.toString(),
+                        types.isEmpty() ? "" : types.toString()).filter(s -> !s.isEmpty()).collect(Collectors.joining("")) +
                 '}';
     }
 

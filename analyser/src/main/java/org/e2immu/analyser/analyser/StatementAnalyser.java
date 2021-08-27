@@ -886,7 +886,6 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         addToMap(groupPropertyValues, EXTERNAL_IMMUTABLE, x -> MultiLevel.NOT_INVOLVED, false);
         addToMap(groupPropertyValues, CONTEXT_IMMUTABLE, x -> MultiLevel.NOT_INVOLVED, true);
         addToMap(groupPropertyValues, CONTEXT_MODIFIED, x -> Level.FALSE, true);
-        addToMap(groupPropertyValues, CONTEXT_PROPAGATE_MOD, x -> Level.FALSE, true);
 
         ContextPropertyWriter.LocalCopyData localCopyData =
                 ContextPropertyWriter.localCopyPreferences(groupPropertyValues.allVariables());
@@ -925,14 +924,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                 statementAnalysis.fullyQualifiedName() + "." + EXTERNAL_IMMUTABLE.name());
 
 
-        // the delay for PM is ignored (if any, it will come from CM)
-        // we add the linked variables on top of the statically assigned variables
-        contextPropertyWriter3.write(statementAnalysis, sharedState.evaluationContext,
-                VariableInfo::getLinkedVariables,
-                CONTEXT_PROPAGATE_MOD, groupPropertyValues.getMap(CONTEXT_PROPAGATE_MOD), EVALUATION, Set.of(), localCopyData);
-
         ContextPropertyWriter contextPropertyWriter4 = new ContextPropertyWriter();
-
         AnalysisStatus cImmStatus = contextPropertyWriter4.write(statementAnalysis, sharedState.evaluationContext,
                 VariableInfo::getStaticallyAssignedVariables,
                 CONTEXT_IMMUTABLE, groupPropertyValues.getMap(CONTEXT_IMMUTABLE), EVALUATION, Set.of(), localCopyData);
@@ -1216,8 +1208,6 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         groupPropertyValues.set(CONTEXT_NOT_NULL, variable, cnn == null ? variable.parameterizedType().defaultNotNull() : cnn);
         Integer cm = res.remove(CONTEXT_MODIFIED);
         groupPropertyValues.set(CONTEXT_MODIFIED, variable, cm == null ? Level.FALSE : cm);
-        Integer pm = res.remove(CONTEXT_PROPAGATE_MOD);
-        groupPropertyValues.set(CONTEXT_PROPAGATE_MOD, variable, pm == null ? Level.FALSE : pm);
         Integer cImm = res.remove(CONTEXT_IMMUTABLE);
         groupPropertyValues.set(CONTEXT_IMMUTABLE, variable, cImm == null ? MultiLevel.FALSE : cImm);
 
@@ -1269,13 +1259,6 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                             yield Level.DELAY;
                         }
                     }
-                    case CONTEXT_PROPAGATE_MOD -> {
-                        if (changeData.getOrDefault(PROPAGATE_MODIFICATION_DELAY, Level.DELAY) != Level.TRUE && prev != Level.DELAY) {
-                            yield maxAtLeastFalse(prev, change);
-                        } else {
-                            yield Level.DELAY;
-                        }
-                    }
                     default -> throw new UnsupportedOperationException();
                 };
                 groupPropertyValues.set(k, variable, value);
@@ -1285,10 +1268,6 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                     // value properties are copied from previous, only when the value from previous is copied as well
                     case NOT_NULL_EXPRESSION, CONTAINER, IMMUTABLE, IDENTITY, INDEPENDENT -> {
                         if (allowValueProperties && prev != Level.DELAY) res.put(k, prev);
-                    }
-                    case CONTEXT_DEPENDENT -> {
-                        int cd = combineContextDependent(prev, change);
-                        if (cd != Level.DELAY) res.put(k, cd);
                     }
                     // all other properties are copied from change data
                     default -> {
@@ -1300,11 +1279,6 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
         res.keySet().removeAll(GroupPropertyValues.PROPERTIES);
         res.keySet().removeAll(GroupPropertyValues.DELAY_PROPERTIES);
         return res;
-    }
-
-    private static int combineContextDependent(int prev, int change) {
-        if (prev == Level.DELAY || change == Level.DELAY) return Level.DELAY;
-        return Math.min(prev, change); // DEPENDENT, DEP_1, DEP_2, INDEPENDENT, with DEPENDENT winning
     }
 
     private static int delayOrAtLeastMultiDelay(int prev) {
@@ -1648,7 +1622,6 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser>, 
                     int initialNotNull = lvr.parameterizedType().defaultNotNull();
                     Map<VariableProperty, Integer> properties =
                             Map.of(CONTEXT_MODIFIED, Level.FALSE,
-                                    CONTEXT_PROPAGATE_MOD, Level.FALSE,
                                     EXTERNAL_NOT_NULL, MultiLevel.NOT_INVOLVED,
                                     CONTEXT_NOT_NULL, initialNotNull,
                                     EXTERNAL_IMMUTABLE, MultiLevel.NOT_INVOLVED,

@@ -27,7 +27,6 @@ import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 
 public class MethodReference extends ExpressionWithMethodReferenceResolution {
@@ -91,8 +90,10 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
     public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
 
-        int propagateMod = forwardEvaluationInfo.getProperty(VariableProperty.PROPAGATE_MODIFICATION);
         ForwardEvaluationInfo scopeForward;
+       /*
+       TODO update code @Dependent1
+       int propagateMod = forwardEvaluationInfo.getProperty(VariableProperty.PROPAGATE_MODIFICATION);
         if (propagateMod == Level.TRUE) {
             MethodAnalysis methodAnalysis = evaluationContext.getAnalyserContext().getMethodAnalysis(methodInfo);
             int modified = methodAnalysis.getProperty(VariableProperty.MODIFIED_METHOD);
@@ -112,9 +113,9 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
                 builder.setProperty(thisType, VariableProperty.CONTEXT_MODIFIED_DELAY, contextModifiedDelay);
                 builder.setProperty(thisType, VariableProperty.METHOD_CALLED, Level.TRUE);
             }
-        } else {
-            scopeForward = forwardEvaluationInfo.copyNotNull();
-        }
+        } else {*/
+        scopeForward = forwardEvaluationInfo.copyNotNull();
+        // }
         EvaluationResult scopeResult = scope.evaluate(evaluationContext, scopeForward);
         builder.compose(scopeResult);
         builder.setExpression(this);
