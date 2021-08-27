@@ -40,7 +40,6 @@ public class EvaluateParameters {
                                                                              EvaluationContext evaluationContext,
                                                                              ForwardEvaluationInfo forwardEvaluationInfo,
                                                                              MethodInfo methodInfo,
-                                                                             int notModified1Scope,
                                                                              boolean recursiveOrPartOfCallCycle,
                                                                              Expression scopeObject) {
         int n = methodInfo == null ? 10 : methodInfo.methodInspection.get().getParameters().size();
@@ -88,9 +87,7 @@ public class EvaluateParameters {
                     LOGGER.error("Failed to obtain parameter analysis of {}", parameterInfo.fullyQualifiedName());
                     throw e;
                 }
-                if (notModified1Scope == Level.TRUE) {
-                    map.put(VariableProperty.CONTEXT_NOT_NULL, Level.FALSE);
-                }
+
                 /* TODO replacement code @Dependent1
                 {
                     int propagate = map.getOrDefault(VariableProperty.PROPAGATE_MODIFICATION, Level.DELAY);
@@ -124,19 +121,6 @@ public class EvaluateParameters {
                         map.put(VariableProperty.CONTEXT_NOT_NULL, MultiLevel.NULLABLE); // won't be me to rock the boat
                     } else {
                         map.put(VariableProperty.CONTEXT_NOT_NULL_DELAY, Level.TRUE);
-                    }
-                }
-
-                if (notModified1Scope != Level.TRUE && methodInfo.isSingleAbstractMethod()) {
-                    // we compute on the parameter expression, not the value (chicken and egg)
-                    Boolean cannotBeModified = parameterExpression.returnType()
-                            .isTransparentOrAtLeastEventuallyE2Immutable(evaluationContext.getAnalyserContext(),
-                                    evaluationContext.getCurrentType());
-                    if (cannotBeModified == null) {
-                        map.put(VariableProperty.CONTEXT_MODIFIED_DELAY, Level.TRUE); // DELAY
-                        builder.causeOfContextModificationDelay(methodInfo, true);
-                    } else if (cannotBeModified) {
-                        map.put(VariableProperty.CONTEXT_MODIFIED, Level.FALSE);
                     }
                 }
 

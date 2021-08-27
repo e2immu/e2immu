@@ -628,8 +628,7 @@ public record NewObject(
         // "normal"
 
         Pair<EvaluationResult.Builder, List<Expression>> res = EvaluateParameters.transform(parameterExpressions,
-                evaluationContext, forwardEvaluationInfo,
-                constructor, Level.FALSE, false, null);
+                evaluationContext, forwardEvaluationInfo, constructor, false, null);
 
         ParameterizedType pt;
         if (anonymousClass != null) {

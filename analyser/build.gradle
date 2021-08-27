@@ -50,7 +50,7 @@ dependencies {
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.7.2'
 }
 
-version = '0.2.0'
+version = '0.3.0'
 group 'org.e2immu'
 
 publishing {

@@ -234,12 +234,6 @@ public class MethodInfo implements WithInspectionAndAnalysis {
         return methodInspection.get().getModifiers().contains(MethodModifier.ABSTRACT);
     }
 
-    public boolean isSingleAbstractMethod() {
-        MethodInspection inspection = methodInspection.get();
-        return typeInfo.typeInspection.get().isFunctionalInterface() &&
-                !inspection.isStatic() && !inspection.isDefault();
-    }
-
     public boolean isNotATestMethod() {
         return hasInspectedAnnotation("org.junit.Test").isEmpty() &&
                 hasInspectedAnnotation("org.junit.jupiter.api.Test").isEmpty();

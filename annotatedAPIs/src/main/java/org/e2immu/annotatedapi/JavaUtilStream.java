@@ -27,9 +27,9 @@ import java.util.stream.Stream;
 
 public class JavaUtilStream {
 
-    public static final String PACKAGE_NAME = "java.util.stream";
+    static final String PACKAGE_NAME = "java.util.stream";
 
-    public interface Collector$<T, A, R> {
+    interface Collector$<T, A, R> {
         @NotNull1
         @Modified
         Supplier<A> supplier();
@@ -49,30 +49,22 @@ public class JavaUtilStream {
 
     @UtilityClass
     @Container
-    public class Collectors$ {
+    interface Collectors$ {
         @NotNull1
-        Collector<CharSequence, ?, String> joining() {
-            return null;
-        }
+        Collector<CharSequence, ?, String> joining();
 
         @NotNull1
-        Collector<CharSequence, ?, String> joining(@NotNull CharSequence delimiter) {
-            return null;
-        }
+        Collector<CharSequence, ?, String> joining(@NotNull CharSequence delimiter);
 
         @NotNull1
-        <T> Collector<T, ?, Set<T>> toSet() {
-            return null;
-        }
+        <T> Collector<T, ?, Set<T>> toSet();
 
         @NotNull1
-        <T> Collector<T, ?, List<T>> toList() {
-            return null;
-        }
+        <T> Collector<T, ?, List<T>> toList();
     }
 
     @E2Container
-    public interface IntStream$ {
+    interface IntStream$ {
         long count();
 
         int sum();
@@ -82,24 +74,16 @@ public class JavaUtilStream {
     }
 
     @E2Container
-    public interface Stream$<T> {
+    interface Stream$<T> {
 
         @NotNull
-        static <T> Stream<T> empty() {
-            return null;
-        }
+        <TT> Stream<TT> empty();
 
         @NotNull
-        static <T> Stream<T> of(@NotNull T t) {
-            return null;
-        }
+        <TT> Stream<TT> of(@NotNull TT t);
 
         @NotNull
-        static <T> Stream<T> of(@NotNull T... t) {
-            return null;
-        }
-
-        long count();
+        <TT> Stream<TT> of(@NotNull TT... t);
 
         @NotNull
         <R> Stream<R> map(@Dependent1 @NotNull Function<? super T, ? extends R> mapper);

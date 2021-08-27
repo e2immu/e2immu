@@ -330,10 +330,9 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         }
 
         // process parameters
-        int containerScope = evaluationContext.getProperty(objectValue, VariableProperty.CONTAINER, true, false);
         Pair<EvaluationResult.Builder, List<Expression>> res = EvaluateParameters.transform(parameterExpressions,
                 evaluationContext, forwardEvaluationInfo,
-                methodInfo, containerScope, recursiveCall || partOfCallCycle, objectValue);
+                methodInfo, recursiveCall || partOfCallCycle, objectValue);
         List<Expression> parameterValues = res.v;
         builder.compose(objectResult, res.k.build());
 

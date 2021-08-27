@@ -58,13 +58,6 @@ public interface FieldAnalysis extends Analysis {
                         analysisProvider.getTypeAnalysis(bestType).getProperty(VariableProperty.IMMUTABLE);
                 return MultiLevel.bestImmutable(typeImmutable, fieldImmutable);
 
-            // container is, for fields, a property purely on the type
-            case CONTAINER:
-                ParameterizedType concreteType = concreteTypeNullWhenDelayed();
-                if (concreteType == null) return Level.DELAY;
-                return concreteType.typeInfo == null ? Level.TRUE :
-                        analysisProvider.getTypeAnalysis(concreteType.typeInfo).getProperty(VariableProperty.CONTAINER);
-
             case NOT_NULL_EXPRESSION:
             case CONTEXT_NOT_NULL:
             case NOT_NULL_PARAMETER:

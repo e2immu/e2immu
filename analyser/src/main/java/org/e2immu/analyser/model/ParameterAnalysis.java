@@ -121,10 +121,7 @@ public interface ParameterAnalysis extends Analysis {
             case INDEPENDENT:
                 int ip = getPropertyFromMapDelayWhenAbsent(INDEPENDENT);
                 if (ip != Level.DELAY) return ip;
-                if (parameterInfo.owner.shallowAnalysis()) {
-                    return getParameterPropertyCheckOverrides(analysisProvider, parameterInfo, INDEPENDENT);
-                }
-                return getParameterProperty(analysisProvider, parameterInfo, INDEPENDENT);
+                return getParameterPropertyCheckOverrides(analysisProvider, parameterInfo, INDEPENDENT);
 
             case MODIFIED_VARIABLE: {
                 // if the type properties are contracted, and we've decided on @Container, then the parameter is @NotModified

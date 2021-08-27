@@ -27,119 +27,96 @@ class JavaLang {
     final static String PACKAGE_NAME = "java.lang";
 
     interface Iterable$<T> {
-        @NotModified
         void forEach(@NotNull1 @Dependent1 Consumer<? super T> action);
 
         @NotNull
-        @NotModified
         Iterator<T> iterator();
 
         @NotNull
-        @NotModified
         Spliterator<T> spliterator();
     }
 
     @E2Container
-    static class Object$ {
+    interface Object$ {
         @NotNull
-        protected Object clone() {
-            return null;
-        }
+        Object clone();
 
-        boolean equals$Value(Object object, boolean retVal) {
+        default boolean equals$Value(Object object, boolean retVal) {
             return object != null && (this == object || retVal);
         }
 
-        boolean equals$Invariant(Object object) {
+        default boolean equals$Invariant(Object object) {
             return (this.equals(object)) == object.equals(this);
         }
 
         // @NotModified implicit on method and parameter
-        public boolean equals(Object object) {
-            return true;
-        }
+        boolean equals(Object object);
 
         // final, cannot override to add annotations, so added a $ as a general convention that you can drop that at the end??
         @NotNull
-        public Class<?> getClass$() {
-            return null;
-        }
+        Class<?> getClass$();
 
         @NotNull
-        // implicit @NotModified
-        public String toString() {
-            return "x";
-        }
+        String toString();
     }
 
     @E2Container
-    static class StackTraceElement$ {
+    interface StackTraceElement$ {
     }
 
-    static class Throwable$ {
+    interface Throwable$ {
 
-        @NotModified
-        String getMessage() {
-            return null;
-        }
+        String getMessage();
 
-        @NotModified
-        String getLocalizedMessage() {
-            return null;
-        }
+        String getLocalizedMessage();
 
-        @NotModified
-        Throwable getCause() {
-            return null;
-        }
+        Throwable getCause();
 
+        @Modified
         @Fluent
-        Throwable initCause(Throwable cause) {
-            return null;
-        }
+        Throwable initCause(Throwable cause);
 
-        void addSuppressed(@NotNull Throwable exception) {
-        }
+        @Modified
+        void addSuppressed(@NotNull Throwable exception);
 
+        @Modified
         @Fluent
-        Throwable fillInStackTrace() {
-            return null;
-        }
+        Throwable fillInStackTrace();
 
         @NotNull
-        @NotModified
-        StackTraceElement[] getStackTrace() {
-            return null;
-        }
+        StackTraceElement[] getStackTrace();
 
-        void setStackTrace(@NotNull StackTraceElement[] stackTrace) {
-        }
+        @Modified
+        void setStackTrace(@NotNull StackTraceElement[] stackTrace);
     }
 
     @E2Container
-    static class Class$ {
+    interface Class$ {
         @NotNull
-        String getCanonicalName() { return null; }
+        String getCanonicalName();
 
         @NotNull
-        String getName() { return null; }
+        String getName();
 
         @NotNull
-        String getSimpleName() { return null; }
+        String getSimpleName();
     }
 
-    // is an interface
-    static class CharSequence$ {
-        @NotModified
-        char charAt(int index) { return 0; }
+    @E2Container
+    interface CharSequence$ {
+        char charAt(int index);
 
-        boolean length$Invariant$Len(int l) {
+        default boolean length$Invariant$Len(int l) {
             return l >= 0;
         }
-        void length$Aspect$Len() { }
-        @NotModified
-        int length() { return 0; }
+
+        default void length$Aspect$Len() {
+        }
+
+        int length();
     }
+
+    // a class, because we need to annotate the constructor
 
     @E2Container
     static abstract class String$ implements CharSequence {
@@ -147,6 +124,7 @@ class JavaLang {
         boolean String$Modification$Len(int post) {
             return post == 0;
         }
+
         String$() {
         }
 
@@ -163,7 +141,7 @@ class JavaLang {
             return null;
         }
 
-        @Override
+        @NotNull
         public IntStream codePoints() {
             return null;
         }
@@ -308,6 +286,8 @@ class JavaLang {
         }
     }
 
+    // a class, because we want to annotate the constructor
+
     @Container
     static abstract class StringBuilder$ implements CharSequence {
 
@@ -349,7 +329,10 @@ class JavaLang {
             return null;
         }
 
-        boolean append$Modification$Len(int post, int prev, int i) { return post == prev + Integer.toString(i).length(); }
+        boolean append$Modification$Len(int post, int prev, int i) {
+            return post == prev + Integer.toString(i).length();
+        }
+
         @Fluent
         @Modified
         StringBuilder append(int i) {
@@ -362,7 +345,10 @@ class JavaLang {
             return null;
         }
 
-        boolean append$Modification$Len(int post, int prev, String str) { return post == prev + (str == null ? 4: str.length()); }
+        boolean append$Modification$Len(int post, int prev, String str) {
+            return post == prev + (str == null ? 4 : str.length());
+        }
+
         @Fluent
         @Modified
         StringBuilder append(String str) {
@@ -375,7 +361,10 @@ class JavaLang {
             return null;
         }
 
-        int toString$Transfer$Len(int len) { return len; }
+        int toString$Transfer$Len(int len) {
+            return len;
+        }
+
         @Override
         public String toString() {
             return "x";
@@ -383,48 +372,47 @@ class JavaLang {
     }
 
     @E2Container
-    static class Integer$ {
+    interface Integer$ {
 
         @NotNull
-        String toString(int i) { return null; }
+        String toString(int i);
     }
 
     @E2Container
-    static class Boolean$ {
-        static boolean parseBoolean(@NotNull String string) {
-            return false;
-        }
+    interface Boolean$ {
+        boolean parseBoolean(@NotNull String string);
     }
 
     @UtilityClass
-    static class Math$ {
-        //@NotModified implied by @UtilityClass, which implies @E2Immutable
+    interface Math$ {
         static int max(int a, int b) {
             return 0;
         }
     }
 
-    static class System$ {
+    interface System$ {
         @IgnoreModifications
         @NotNull
-        static final PrintStream out = null;
-        @NotNull
-        @IgnoreModifications
-        static final PrintStream err = null;
+        PrintStream out = null;
 
-        static void arraycopy(@NotNull @NotModified Object src, int srcPos, @NotNull @Modified Object dest, int destPos, int length) {
-        }
+        @NotNull
+        @IgnoreModifications
+        PrintStream err = null;
+
+        void arraycopy(@NotNull @NotModified Object src,
+                       int srcPos,
+                       @NotNull @Modified Object dest,
+                       int destPos,
+                       int length);
     }
 
-    static class Comparable$<T> {
-        int compareTo$Value(T t, int retVal) {
+    @E2Container
+    interface Comparable$<T> {
+        default int compareTo$Value(T t, int retVal) {
             return equals(t) || t.equals(this) ? 0 : retVal;
         }
 
-        // implicit: @NotModified!
-        int compareTo(@NotNull @NotModified T t) {
-            return 0;
-        }
+        int compareTo(@NotNull T t);
     }
 
 }

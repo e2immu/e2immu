@@ -15,7 +15,6 @@
 package org.e2immu.annotatedapi;
 
 import org.e2immu.annotation.Modified;
-import org.e2immu.annotation.NotModified;
 import org.e2immu.annotation.NotNull;
 
 import java.util.Comparator;
@@ -24,102 +23,71 @@ public class JavaUtilFunction {
 
     public static final String PACKAGE_NAME = "java.util.function";
 
-// it is important to note that get cannot be marked @Independent, because a supplier
-// is a simple way to link an object from the outside world to a field.
-
-    @FunctionalInterface
-    public interface Supplier$<T> {
+    interface Supplier$<T> {
         @Modified
         T get();
     }
 
-// it is important to note that accept cannot be marked @Independent, because a consumer
-// is a simple way to expose a field to the outside world.
 
-    @FunctionalInterface
-    public interface Consumer$<T> {
+    interface Consumer$<T> {
         @Modified
         void accept(T t);
 
-        default java.util.function.Consumer<T> andThen(@NotNull java.util.function.Consumer<? super T> after) {
-            return null;
-        }
+        @NotNull
+        java.util.function.Consumer<T> andThen(@NotNull java.util.function.Consumer<? super T> after);
     }
 
-    @FunctionalInterface
-    public interface Predicate$<T> {
+    interface Predicate$<T> {
         @Modified
         boolean test(T t);
     }
 
-    @FunctionalInterface
-    public interface Function$<T, R> {
+    interface Function$<T, R> {
         @Modified
         R apply(T t);
 
         @NotNull
-        @NotModified
-        default <V> java.util.function.Function<T, V> andThen(@NotNull java.util.function.Function<? super R, ? extends V> after) {
-            return null;
-        }
+        <V> java.util.function.Function<T, V> andThen(@NotNull java.util.function.Function<? super R, ? extends V> after);
 
         @NotNull
-        @NotModified
-        default <V> java.util.function.Function<V, R> compose(@NotNull java.util.function.Function<? super V, ? extends T> before) {
-            return null;
-        }
+        <V> java.util.function.Function<V, R> compose(@NotNull java.util.function.Function<? super V, ? extends T> before);
 
         @NotNull
-        @NotModified
-        static <T> java.util.function.Function<T, T> identity() {
-            return null;
-        }
+        <T> java.util.function.Function<T, T> identity();
     }
 
-    @FunctionalInterface
-    public interface BiFunction$<T, U, R> {
+    interface BiFunction$<T, U, R> {
 
         @Modified
         R apply(T t, U u);
 
-        default <V> java.util.function.BiFunction<T, U, V> andThen(@NotNull java.util.function.Function<? super R, ? extends V> after) {
-            return null;
-        }
+        @NotNull
+        <V> java.util.function.BiFunction<T, U, V> andThen(@NotNull java.util.function.Function<? super R, ? extends V> after);
     }
 
-    @FunctionalInterface
-    public interface BinaryOperator$<T> extends java.util.function.BiFunction<T, T, T> {
+    interface BinaryOperator$<T> extends java.util.function.BiFunction<T, T, T> {
 
-        @NotModified
-        static <T> java.util.function.BinaryOperator<T> maxBy(@NotNull Comparator<? super T> comparator) {
-            return null;
-        }
+        @NotNull
+        <TT> java.util.function.BinaryOperator<T> maxBy(@NotNull Comparator<? super TT> comparator);
 
-        @NotModified
-        static <T> java.util.function.BinaryOperator<T> minBy(@NotNull Comparator<? super T> comparator) {
-            return null;
-        }
+        @NotNull
+        <TT> java.util.function.BinaryOperator<T> minBy(@NotNull Comparator<? super TT> comparator);
     }
 
-    @FunctionalInterface
-    public interface BiConsumer$<T, U> {
+    interface BiConsumer$<T, U> {
         @Modified
         void accept(T t, U u);
 
         @NotNull
-        default java.util.function.BiConsumer<T, U> andThen(@NotNull java.util.function.BiConsumer<? super T, ? super U> after) {
-            return null;
-        }
+        java.util.function.BiConsumer<T, U> andThen(@NotNull java.util.function.BiConsumer<? super T, ? super U> after);
     }
 
-    @FunctionalInterface
-    public interface ToIntFunction$<R> {
+    interface ToIntFunction$<R> {
         @Modified
         int applyAsInt(R value);
     }
 
-    @FunctionalInterface
-    public interface IntFunction$<R> {
+    interface IntFunction$<R> {
         @Modified
         R apply(int value);
     }

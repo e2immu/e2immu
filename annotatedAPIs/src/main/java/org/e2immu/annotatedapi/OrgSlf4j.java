@@ -20,57 +20,37 @@ import org.e2immu.annotation.NotNull;
 public class OrgSlf4j {
     public static final String PACKAGE_NAME = "org.slf4j";
 
-    static class Logger$ {
-        final public String ROOT_LOGGER_NAME = "ROOT";
-
+    interface Logger$ {
         /*
-        The reason we want to add @NotModified on the methods, is that these
-        modifications are outside of the scope of what we're interested in.
+        The reason we want (implicit) @NotModified on the methods, is that these
+        modifications are outside the scope of what we're interested in.
          */
-        @NotModified
-        public void info(@NotNull String s, @NotModified Object... objects) {
-        }
+        void info(@NotNull String s, @NotModified Object... objects);
 
-        @NotModified
-        public void warn(@NotNull String s, @NotModified Object... objects) {
-        }
+        void warn(@NotNull String s, @NotModified Object... objects);
 
-        @NotModified
-        public void error(@NotNull String s, @NotModified Object... objects) {
-        }
+        void error(@NotNull String s, @NotModified Object... objects);
 
-        @NotModified
-        public void debug(@NotNull String s, @NotModified Object object1, @NotModified Object object2) {
-        }
+        void debug(@NotNull String s, @NotModified Object object1, @NotModified Object object2);
 
-        @NotModified
-        public void debug(@NotNull String s, @NotModified Object... objects) {
-        }
+        void debug(@NotNull String s, @NotModified Object... objects);
 
-        @NotModified
-        public void debug(@NotNull String s) {
-        }
+        void debug(@NotNull String s);
     }
 
     interface ILoggerFactory$ {
         @NotNull
-        public org.slf4j.Logger getLogger(String name);
+        org.slf4j.Logger getLogger(String name);
     }
 
-    static class LoggerFactory$ {
+    interface LoggerFactory$ {
         @NotNull
-        public static org.slf4j.Logger getLogger(@NotNull Class<?> clazz) {
-            return null;
-        }
+        org.slf4j.Logger getLogger(@NotNull Class<?> clazz);
 
         @NotNull
-        public static org.slf4j.Logger getLogger(@NotNull String string) {
-            return null;
-        }
+        org.slf4j.Logger getLogger(@NotNull String string);
 
         @NotNull
-        public static org.slf4j.ILoggerFactory getILoggerFactory() {
-            return null;
-        }
+        org.slf4j.ILoggerFactory getILoggerFactory();
     }
 }
