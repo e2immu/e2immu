@@ -16,7 +16,6 @@ package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
-import org.e2immu.annotation.AnnotationMode;
 
 import java.util.Set;
 
@@ -59,17 +58,17 @@ public enum VariableProperty {
     and the corresponding code in StatementAnalysis.copyBackLocalCopies
      */
     NOT_NULL_PARAMETER("@NotNull parameter", MultiLevel.NULLABLE, MultiLevel.EFFECTIVELY_CONTENT2_NOT_NULL,
-            MultiLevel.NULLABLE, MultiLevel.EFFECTIVELY_NOT_NULL),
+            MultiLevel.NULLABLE),
     EXTERNAL_NOT_NULL("external @NotNull", MultiLevel.NULLABLE, MultiLevel.EFFECTIVELY_CONTENT2_NOT_NULL,
-            MultiLevel.NULLABLE, MultiLevel.EFFECTIVELY_NOT_NULL),
+            MultiLevel.NULLABLE),
     NOT_NULL_EXPRESSION("@NotNull", MultiLevel.NULLABLE, MultiLevel.EFFECTIVELY_CONTENT2_NOT_NULL,
-            MultiLevel.NULLABLE, MultiLevel.EFFECTIVELY_NOT_NULL),
+            MultiLevel.NULLABLE),
     CONTEXT_NOT_NULL("not null in context", MultiLevel.NULLABLE, MultiLevel.EFFECTIVELY_CONTENT2_NOT_NULL,
-            MultiLevel.NULLABLE, MultiLevel.EFFECTIVELY_NOT_NULL),
+            MultiLevel.NULLABLE),
     CONTEXT_NOT_NULL_DELAY("not null in context delay"),
 
     CONTEXT_NOT_NULL_FOR_PARENT("not null in context for parent", MultiLevel.NULLABLE, MultiLevel.EFFECTIVELY_CONTENT2_NOT_NULL,
-            MultiLevel.NULLABLE, MultiLevel.EFFECTIVELY_NOT_NULL),
+            MultiLevel.NULLABLE),
     CONTEXT_NOT_NULL_FOR_PARENT_DELAY("cnn4parent delay"),
     CONTEXT_NOT_NULL_FOR_PARENT_DELAY_RESOLVED("cnn4parent delay resolved"),
 
@@ -89,19 +88,14 @@ public enum VariableProperty {
 
     IMMUTABLE_BEFORE_CONTRACTED("immutable before contracted"),
     CONTEXT_IMMUTABLE_DELAY("context immutable delay"),
-    NEXT_CONTEXT_IMMUTABLE("next context @Immutable", MultiLevel.MUTABLE, MultiLevel.EFFECTIVELY_E2IMMUTABLE, MultiLevel.MUTABLE,
-            MultiLevel.MUTABLE),
+    NEXT_CONTEXT_IMMUTABLE("next context @Immutable", MultiLevel.MUTABLE, MultiLevel.EFFECTIVELY_E2IMMUTABLE, MultiLevel.MUTABLE),
 
-    IMMUTABLE("@Immutable", MultiLevel.MUTABLE, MultiLevel.EFFECTIVELY_E2IMMUTABLE, MultiLevel.MUTABLE,
-            MultiLevel.MUTABLE),
-    CONTEXT_IMMUTABLE("context @Immutable", MultiLevel.MUTABLE, MultiLevel.EFFECTIVELY_E2IMMUTABLE, MultiLevel.MUTABLE,
-            MultiLevel.MUTABLE),
-    EXTERNAL_IMMUTABLE("external @Immutable", MultiLevel.MUTABLE, MultiLevel.EFFECTIVELY_E2IMMUTABLE, MultiLevel.MUTABLE,
-            MultiLevel.MUTABLE),
+    IMMUTABLE("@Immutable", MultiLevel.MUTABLE, MultiLevel.EFFECTIVELY_E2IMMUTABLE, MultiLevel.MUTABLE),
+    CONTEXT_IMMUTABLE("context @Immutable", MultiLevel.MUTABLE, MultiLevel.EFFECTIVELY_E2IMMUTABLE, MultiLevel.MUTABLE),
+    EXTERNAL_IMMUTABLE("external @Immutable", MultiLevel.MUTABLE, MultiLevel.EFFECTIVELY_E2IMMUTABLE, MultiLevel.MUTABLE),
 
     // internal, temporary
-    PARTIAL_EXTERNAL_IMMUTABLE("partial external @Immutable", MultiLevel.MUTABLE, MultiLevel.EFFECTIVELY_E2IMMUTABLE, MultiLevel.MUTABLE,
-            MultiLevel.MUTABLE),
+    PARTIAL_EXTERNAL_IMMUTABLE("partial external @Immutable", MultiLevel.MUTABLE, MultiLevel.EFFECTIVELY_E2IMMUTABLE, MultiLevel.MUTABLE),
     /*
     Modification.
 
@@ -115,14 +109,17 @@ public enum VariableProperty {
     Modification is computed on linked variables.
     Delays on modification are governed by CONTEXT_MODIFIED_DELAY
      */
-    MODIFIED_VARIABLE("@Modified variable", Level.FALSE, Level.TRUE, Level.TRUE, Level.FALSE),
+    /**
+     * The default for parameters is @Modified
+     */
+    MODIFIED_VARIABLE("@Modified variable", Level.FALSE, Level.TRUE, Level.TRUE),
     MODIFIED_OUTSIDE_METHOD("modified outside method"),
     CONTEXT_MODIFIED("modified in context"),
     /**
-     * In green mode, @Modified is the default, in red mode @NotModified is.
+     * The default for methods is @NotModified
      */
-    MODIFIED_METHOD("@Modified method", Level.FALSE, Level.TRUE, Level.TRUE, Level.FALSE),
-    TEMP_MODIFIED_METHOD("@Modified method, temp", Level.FALSE, Level.TRUE, Level.TRUE, Level.FALSE),
+    MODIFIED_METHOD("@Modified method", Level.FALSE, Level.TRUE, Level.FALSE),
+    TEMP_MODIFIED_METHOD("@Modified method, temp", Level.FALSE, Level.TRUE, Level.FALSE),
 
     /*
     @Dependent, @Independent, @Dependent1, @Dependent2
@@ -137,7 +134,7 @@ public enum VariableProperty {
 
     @Dependent is the default in green mode, @Independent is the default in red mode.
      */
-    INDEPENDENT("@Independent", MultiLevel.DEPENDENT, MultiLevel.INDEPENDENT, MultiLevel.DEPENDENT, MultiLevel.INDEPENDENT),
+    INDEPENDENT("@Independent", MultiLevel.DEPENDENT, MultiLevel.INDEPENDENT, MultiLevel.DEPENDENT),
 
     /*
     group of more simple properties
@@ -146,13 +143,13 @@ public enum VariableProperty {
     /**
      * In green mode, @Variable is the default, in red mode, @Final is.
      */
-    FINAL("@Final", Level.FALSE, Level.TRUE, Level.FALSE, Level.TRUE),
+    FINAL("@Final", Level.FALSE, Level.TRUE, Level.FALSE),
     FINALIZER("@Finalizer"),
 
     /**
      * In green mode, @MutableModifiesArguments is the default, in red mode, @Container is.
      */
-    CONTAINER("@Container", Level.FALSE, Level.TRUE, Level.FALSE, Level.TRUE),
+    CONTAINER("@Container", Level.FALSE, Level.TRUE, Level.FALSE),
     CONSTANT("@Constant"),
     FLUENT("@Fluent"),
     IDENTITY("@Identity"),
@@ -170,23 +167,20 @@ public enum VariableProperty {
     public final String name;
     public final int best;
     public final int falseValue;
-    private final int valueWhenAbsentInRedMode;
-    private final int valueWhenAbsentInGreenMode;
+    private final int valueWhenAbsent;
 
     VariableProperty(String name) {
-        this(name, Level.FALSE, Level.TRUE, Level.FALSE, Level.FALSE);
+        this(name, Level.FALSE, Level.TRUE, Level.FALSE);
     }
 
     VariableProperty(String name,
                      int falseValue,
                      int best,
-                     int valueWhenAbsentInGreenMode,
-                     int valueWhenAbsentInRedMode) {
+                     int valueWhenAbsent) {
         this.name = name;
         this.best = best;
         this.falseValue = falseValue;
-        this.valueWhenAbsentInGreenMode = valueWhenAbsentInGreenMode;
-        this.valueWhenAbsentInRedMode = valueWhenAbsentInRedMode;
+        this.valueWhenAbsent = valueWhenAbsent;
     }
 
     @Override
@@ -194,10 +188,8 @@ public enum VariableProperty {
         return name;
     }
 
-    public int valueWhenAbsent(AnnotationMode annotationMode) {
-        if (annotationMode == AnnotationMode.GREEN) return valueWhenAbsentInGreenMode;
-        if (annotationMode == AnnotationMode.RED) return valueWhenAbsentInRedMode;
-        throw new UnsupportedOperationException();
+    public int valueWhenAbsent() {
+        return valueWhenAbsent;
     }
 
 }

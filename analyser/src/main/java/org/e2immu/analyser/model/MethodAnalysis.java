@@ -189,7 +189,7 @@ public interface MethodAnalysis extends Analysis {
                     return Level.FALSE;
                 }
             }
-            return variableProperty.valueWhenAbsent(annotationMode());
+            return variableProperty.valueWhenAbsent();
         }
         return max;
     }

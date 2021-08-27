@@ -24,7 +24,6 @@ import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.visitor.*;
-import org.e2immu.annotation.AnnotationMode;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -77,7 +76,6 @@ public class Test_16_Modification extends CommonTestRunner {
 
         TypeMapVisitor typeMapVisitor = typeMap -> {
             TypeInfo set = typeMap.get(Set.class);
-            assertEquals(AnnotationMode.GREEN, set.typeInspection.get().annotationMode());
             MethodInfo add = set.findUniqueMethod("add", 1);
             assertEquals(Level.TRUE, add.methodAnalysis.get().getProperty(VariableProperty.MODIFIED_METHOD));
 

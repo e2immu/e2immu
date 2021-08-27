@@ -20,7 +20,6 @@ import org.e2immu.analyser.analyser.AnalysisProvider;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Primitives;
-import org.e2immu.annotation.AnnotationMode;
 import org.e2immu.support.FlipSwitch;
 import org.e2immu.support.SetOnceMap;
 
@@ -48,11 +47,6 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
     @Override
     public Location location() {
         return new Location(parameterInfo);
-    }
-
-    @Override
-    public AnnotationMode annotationMode() {
-        return parameterInfo.owner.typeInfo.typeInspection.get().annotationMode();
     }
 
     public static class Builder extends AbstractAnalysisBuilder implements ParameterAnalysis {
@@ -90,11 +84,6 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
         @Override
         public Location location() {
             return location;
-        }
-
-        @Override
-        public AnnotationMode annotationMode() {
-            return parameterInfo.owner.typeInfo.typeInspection.get().annotationMode();
         }
 
         @Override

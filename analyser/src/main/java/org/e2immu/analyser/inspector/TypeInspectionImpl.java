@@ -47,7 +47,6 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
     public final List<TypeParameter> typeParameters;
     public final List<ParameterizedType> interfacesImplemented;
     public final TypeModifier access;
-    public final AnnotationMode annotationMode;
     public final Inspector inspector;
 
     private TypeInspectionImpl(TypeInfo typeInfo,
@@ -63,7 +62,6 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
                                List<TypeInfo> subTypes,
                                List<TypeInfo> permittedWhenSealed,
                                List<AnnotationExpression> annotations,
-                               AnnotationMode annotationMode,
                                Inspector inspector,
                                boolean synthetic) {
         super(annotations, synthetic);
@@ -78,7 +76,6 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
         this.modifiers = modifiers;
         this.subTypes = subTypes;
         this.access = access;
-        this.annotationMode = annotationMode;
         this.permittedWhenSealed = permittedWhenSealed;
         this.inspector = inspector;
     }
@@ -146,11 +143,6 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
     @Override
     public TypeModifier access() {
         return access;
-    }
-
-    @Override
-    public AnnotationMode annotationMode() {
-        return annotationMode;
     }
 
     @Override
@@ -368,34 +360,8 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
                     subTypes(),
                     permittedWhenSealed(),
                     getAnnotations(),
-                    annotationMode(),
                     inspector,
                     isSynthetic());
-        }
-
-        private static final Set<String> GREEN_MODE_ANNOTATIONS_ON_METHODS = Set.of(
-                Modified.class.getCanonicalName(),
-                Dependent.class.getCanonicalName());
-        private static final Set<String> GREEN_MODE_ANNOTATIONS_ON_FIELDS = Set.of(
-                Variable.class.getCanonicalName());
-        private static final Set<String> GREEN_MODE_ANNOTATIONS_ON_TYPES = Set.of(
-                org.e2immu.annotation.MutableModifiesArguments.class.getCanonicalName());
-
-        private AnnotationMode computeAnnotationMode() {
-            boolean haveGreenModeAnnotation = methodsAndConstructors().stream()
-                    .filter(methodInfo -> methodInfo.methodInspection.isSet())
-                    .flatMap(methodInfo -> methodInfo.methodInspection.get().getAnnotations().stream())
-                    .anyMatch(ae -> GREEN_MODE_ANNOTATIONS_ON_METHODS.contains(ae.typeInfo().fullyQualifiedName)) ||
-                    fields().stream()
-                            .filter(fieldInfo -> fieldInfo.fieldInspection.isSet())
-                            .flatMap(fieldInfo -> fieldInfo.fieldInspection.get().getAnnotations().stream())
-                            .anyMatch(ae -> GREEN_MODE_ANNOTATIONS_ON_FIELDS.contains(ae.typeInfo().fullyQualifiedName)) ||
-                    Stream.concat(annotations.stream(), subTypes.stream()
-                            .filter(sub -> sub.typeInspection.isSet())
-                            .flatMap(sub -> sub.typeInspection.get().getAnnotations().stream()))
-                            .anyMatch(ae -> GREEN_MODE_ANNOTATIONS_ON_TYPES.contains(ae.typeInfo().fullyQualifiedName));
-
-            return haveGreenModeAnnotation ? AnnotationMode.RED : AnnotationMode.GREEN;
         }
 
         @Override
@@ -455,12 +421,6 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
             if (modifiers.contains(TypeModifier.PRIVATE)) return TypeModifier.PRIVATE;
             return TypeModifier.PACKAGE;
         }
-
-        @Override
-        public AnnotationMode annotationMode() {
-            return computeAnnotationMode();
-        }
-
 
         public void recursivelyAddToTypeStore(boolean parentIsPrimaryType,
                                               boolean parentIsDollarType,

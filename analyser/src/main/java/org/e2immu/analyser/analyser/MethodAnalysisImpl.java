@@ -21,7 +21,6 @@ import org.e2immu.analyser.model.expression.ContractMark;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
-import org.e2immu.annotation.AnnotationMode;
 import org.e2immu.support.SetOnce;
 import org.e2immu.support.SetOnceMap;
 import org.slf4j.Logger;
@@ -147,11 +146,6 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
         return new Location(methodInfo);
     }
 
-    @Override
-    public AnnotationMode annotationMode() {
-        return methodInfo.typeInfo.typeInspection.get().annotationMode();
-    }
-
     public static class Builder extends AbstractAnalysisBuilder implements MethodAnalysis {
         public final ParameterizedType returnType;
         public final MethodInfo methodInfo;
@@ -247,11 +241,6 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
         @Override
         public Location location() {
             return new Location(methodInfo);
-        }
-
-        @Override
-        public AnnotationMode annotationMode() {
-            return methodInfo.typeInfo.typeInspection.get().annotationMode();
         }
 
         @Override
@@ -366,17 +355,6 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
 
         public void addCompanion(CompanionMethodName companionMethodName, MethodInfo companion) {
             computedCompanions.put(companionMethodName, companion);
-        }
-
-        public void minimalInfoForEmptyMethod(Primitives primitives) {
-            preconditionForEventual.set(Optional.empty());
-            precondition.set(Precondition.empty(primitives));
-            if (!methodInfo.isAbstract()) {
-                setProperty(VariableProperty.MODIFIED_METHOD, Level.FALSE);
-                setProperty(VariableProperty.INDEPENDENT, MultiLevel.EFFECTIVE);
-                setProperty(VariableProperty.FLUENT, Level.FALSE);
-                setProperty(VariableProperty.IDENTITY, Level.FALSE);
-            }
         }
 
         public void setEventual(Eventual eventual) {

@@ -14,12 +14,7 @@
 
 package org.e2immu.analyser.model;
 
-import org.e2immu.analyser.analyser.AnnotationParameters;
 import org.e2immu.analyser.analyser.VariableProperty;
-import org.e2immu.analyser.output.OutputBuilder;
-import org.e2immu.analyser.output.Symbol;
-import org.e2immu.analyser.output.Text;
-import org.e2immu.annotation.AnnotationMode;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -94,14 +89,10 @@ public interface Analysis {
      * Reverts to <code>variableProperty.valueWhenAbsent(annotationMode())</code> when no value present in map.
      */
     default int getPropertyFromMapNeverDelay(VariableProperty variableProperty) {
-        return variableProperty.valueWhenAbsent(annotationMode());
+        return variableProperty.valueWhenAbsent();
     }
 
     Location location();
-
-    default AnnotationMode annotationMode() {
-        return AnnotationMode.GREEN;
-    }
 
     default Analysis build() {
         throw new UnsupportedOperationException();

@@ -22,7 +22,6 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.visitor.*;
-import org.e2immu.annotation.AnnotationMode;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -70,11 +69,6 @@ public class TestExampleManualIterator1 extends CommonTestRunner {
             assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL,
                     param0.parameterAnalysis.get().getProperty(VariableProperty.NOT_NULL_EXPRESSION));
         }
-        if ("MyIterator".equals(typeInfo.simpleName)) {
-            //MethodInfo hasNext = typeInfo.findUniqueMethod("hasNext", 0);
-            assertSame(AnnotationMode.GREEN, typeInfo.typeInspection.get().annotationMode());
-            // assertEquals(Level.TRUE, hasNext.methodAnalysis.get().getProperty(VariableProperty.MODIFIED));
-        }
         if ("ExampleManualIterator1".equals(typeInfo.simpleName)) {
             assertEquals("E", d.typeAnalysis().getTransparentTypes()
                     .stream().map(ParameterizedType::detailedString).sorted().collect(Collectors.joining(";")));
@@ -92,7 +86,6 @@ public class TestExampleManualIterator1 extends CommonTestRunner {
 
     TypeMapVisitor typeMapVisitor = typeMap -> {
         TypeInfo list = typeMap.get(List.class);
-        assertSame(AnnotationMode.GREEN, list.typeInspection.get().annotationMode());
         MethodInfo size = list.findUniqueMethod("size", 0);
         assertEquals(Level.FALSE, size.methodAnalysis.get().getProperty(VariableProperty.MODIFIED_METHOD));
     };

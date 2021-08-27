@@ -20,7 +20,6 @@ import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.visitor.*;
-import org.e2immu.annotation.AnnotationMode;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -488,7 +487,6 @@ public class Test_17_Container extends CommonTestRunner {
 
         TypeMapVisitor typeMapVisitor = typeMap -> {
             TypeInfo stream = typeMap.get(Stream.class);
-            assertEquals(AnnotationMode.GREEN, stream.typeInspection.get().annotationMode());
             MethodInfo sorted = stream.findUniqueMethod("sorted", 0);
             MethodAnalysis sortedAnalysis = sorted.methodAnalysis.get();
             assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL,

@@ -51,7 +51,7 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
     }
 
     public int getPropertyFromMapNeverDelay(VariableProperty variableProperty) {
-        return properties.getOrDefault(variableProperty, variableProperty.valueWhenAbsent(annotationMode()));
+        return properties.getOrDefault(variableProperty, variableProperty.valueWhenAbsent());
     }
 
     public void setProperty(VariableProperty variableProperty, int i) {

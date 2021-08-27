@@ -20,7 +20,6 @@ import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
-import org.e2immu.annotation.AnnotationMode;
 
 import java.util.HashSet;
 import java.util.List;
@@ -55,8 +54,6 @@ public interface TypeInspection extends Inspection {
     List<ParameterizedType> interfacesImplemented();
 
     TypeModifier access();
-
-    AnnotationMode annotationMode();
 
     Inspector inspector();
 

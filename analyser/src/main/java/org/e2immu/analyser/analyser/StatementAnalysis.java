@@ -28,7 +28,6 @@ import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.Pair;
 import org.e2immu.analyser.util.StringUtil;
-import org.e2immu.annotation.AnnotationMode;
 import org.e2immu.annotation.Container;
 import org.e2immu.annotation.NotNull;
 import org.e2immu.support.AddOnceSet;
@@ -318,11 +317,6 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
     public boolean containsMessage(Message.Label messageLabel) {
         return localMessageStream().anyMatch(message -> message.message() == messageLabel &&
                 message.location().equals(location()));
-    }
-
-    @Override
-    public AnnotationMode annotationMode() {
-        throw new UnsupportedOperationException();
     }
 
     @Override

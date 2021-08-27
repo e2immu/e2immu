@@ -19,7 +19,6 @@ import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Primitives;
-import org.e2immu.annotation.AnnotationMode;
 import org.e2immu.support.AddOnceSet;
 import org.e2immu.support.FlipSwitch;
 import org.e2immu.support.SetOnce;
@@ -92,11 +91,6 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
     @Override
     public Location location() {
         return new Location(typeInfo);
-    }
-
-    @Override
-    public AnnotationMode annotationMode() {
-        return typeInfo.typeInspection.get().annotationMode();
     }
 
     @Override
@@ -254,11 +248,6 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
         @Override
         public Location location() {
             return new Location(typeInfo);
-        }
-
-        @Override
-        public AnnotationMode annotationMode() {
-            return typeInfo.typeInspection.get().annotationMode();
         }
 
         @Override

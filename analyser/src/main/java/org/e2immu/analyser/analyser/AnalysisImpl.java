@@ -49,7 +49,7 @@ public abstract class AnalysisImpl implements Analysis {
     }
 
     public int getPropertyFromMapNeverDelay(VariableProperty variableProperty) {
-        return properties.getOrDefault(variableProperty, variableProperty.valueWhenAbsent(annotationMode()));
+        return properties.getOrDefault(variableProperty, variableProperty.valueWhenAbsent());
     }
 
     @Override

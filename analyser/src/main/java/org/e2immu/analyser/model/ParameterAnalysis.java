@@ -105,7 +105,7 @@ public interface ParameterAnalysis extends Analysis {
                     }
                 }
             }
-            return variableProperty.valueWhenAbsent(annotationMode());
+            return variableProperty.valueWhenAbsent();
 
         }
         return max;

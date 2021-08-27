@@ -18,7 +18,6 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Primitives;
-import org.e2immu.annotation.AnnotationMode;
 import org.e2immu.annotation.NotModified;
 import org.e2immu.support.EventuallyFinal;
 import org.e2immu.support.FlipSwitch;
@@ -100,11 +99,6 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
     }
 
     @Override
-    public AnnotationMode annotationMode() {
-        return fieldInfo.owner.typeInspection.get().annotationMode();
-    }
-
-    @Override
     public FieldInfo getFieldInfo() {
         return fieldInfo;
     }
@@ -171,11 +165,6 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
         @Override
         public Location location() {
             return new Location(fieldInfo);
-        }
-
-        @Override
-        public AnnotationMode annotationMode() {
-            return typeAnalysisOfOwner.annotationMode();
         }
 
         // if the field turns out to be effectively final, it can have a value
